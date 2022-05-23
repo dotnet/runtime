@@ -723,6 +723,7 @@ namespace System
         static byte System.Numerics.IMinMaxValue<System.Byte>.MinValue { get { throw null; } }
         static byte System.Numerics.IMultiplicativeIdentity<System.Byte,System.Byte>.MultiplicativeIdentity { get { throw null; } }
         static byte System.Numerics.INumberBase<System.Byte>.One { get { throw null; } }
+        static int System.Numerics.INumberBase<System.Byte>.Radix { get { throw null; } }
         static byte System.Numerics.INumberBase<System.Byte>.Zero { get { throw null; } }
         public static byte Clamp(byte value, byte min, byte max) { throw null; }
         public int CompareTo(byte value) { throw null; }
@@ -735,6 +736,8 @@ namespace System
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
+        public static bool IsEvenInteger(byte value) { throw null; }
+        public static bool IsOddInteger(byte value) { throw null; }
         public static bool IsPow2(byte value) { throw null; }
         public static byte LeadingZeroCount(byte value) { throw null; }
         public static byte Log2(byte value) { throw null; }
@@ -791,14 +794,21 @@ namespace System
         static byte System.Numerics.IMultiplyOperators<byte, byte, byte>.operator checked *(byte left, byte right) { throw null; }
         static byte System.Numerics.IMultiplyOperators<byte, byte, byte>.operator *(byte left, byte right) { throw null; }
         static byte System.Numerics.INumberBase<byte>.Abs(byte value) { throw null; }
+        static bool System.Numerics.INumberBase<byte>.IsCanonical(byte value) { throw null; }
+        static bool System.Numerics.INumberBase<byte>.IsComplexNumber(byte value) { throw null; }
         static bool System.Numerics.INumberBase<byte>.IsFinite(byte value) { throw null; }
+        static bool System.Numerics.INumberBase<byte>.IsImaginaryNumber(byte value) { throw null; }
         static bool System.Numerics.INumberBase<byte>.IsInfinity(byte value) { throw null; }
+        static bool System.Numerics.INumberBase<byte>.IsInteger(byte value) { throw null; }
         static bool System.Numerics.INumberBase<byte>.IsNaN(byte value) { throw null; }
         static bool System.Numerics.INumberBase<byte>.IsNegative(byte value) { throw null; }
         static bool System.Numerics.INumberBase<byte>.IsNegativeInfinity(byte value) { throw null; }
         static bool System.Numerics.INumberBase<byte>.IsNormal(byte value) { throw null; }
+        static bool System.Numerics.INumberBase<byte>.IsPositive(byte value) { throw null; }
         static bool System.Numerics.INumberBase<byte>.IsPositiveInfinity(byte value) { throw null; }
+        static bool System.Numerics.INumberBase<byte>.IsRealNumber(byte value) { throw null; }
         static bool System.Numerics.INumberBase<byte>.IsSubnormal(byte value) { throw null; }
+        static bool System.Numerics.INumberBase<byte>.IsZero(byte value) { throw null; }
         static byte System.Numerics.INumberBase<byte>.MaxMagnitude(byte x, byte y) { throw null; }
         static byte System.Numerics.INumberBase<byte>.MaxMagnitudeNumber(byte x, byte y) { throw null; }
         static byte System.Numerics.INumberBase<byte>.MinMagnitude(byte x, byte y) { throw null; }
@@ -845,6 +855,7 @@ namespace System
         static char System.Numerics.IMinMaxValue<System.Char>.MinValue { get { throw null; } }
         static char System.Numerics.IMultiplicativeIdentity<System.Char,System.Char>.MultiplicativeIdentity { get { throw null; } }
         static char System.Numerics.INumberBase<System.Char>.One { get { throw null; } }
+        static int System.Numerics.INumberBase<System.Char>.Radix { get { throw null; } }
         static char System.Numerics.INumberBase<System.Char>.Zero { get { throw null; } }
         public int CompareTo(char value) { throw null; }
         public int CompareTo(object? value) { throw null; }
@@ -958,14 +969,23 @@ namespace System
         static char System.Numerics.INumberBase<char>.CreateChecked<TOther>(TOther value) { throw null; }
         static char System.Numerics.INumberBase<char>.CreateSaturating<TOther>(TOther value) { throw null; }
         static char System.Numerics.INumberBase<char>.CreateTruncating<TOther>(TOther value) { throw null; }
+        static bool System.Numerics.INumberBase<char>.IsCanonical(char value) { throw null; }
+        static bool System.Numerics.INumberBase<char>.IsComplexNumber(char value) { throw null; }
+        static bool System.Numerics.INumberBase<char>.IsEvenInteger(char value) { throw null; }
         static bool System.Numerics.INumberBase<char>.IsFinite(char value) { throw null; }
+        static bool System.Numerics.INumberBase<char>.IsImaginaryNumber(char value) { throw null; }
         static bool System.Numerics.INumberBase<char>.IsInfinity(char value) { throw null; }
+        static bool System.Numerics.INumberBase<char>.IsInteger(char value) { throw null; }
         static bool System.Numerics.INumberBase<char>.IsNaN(char value) { throw null; }
         static bool System.Numerics.INumberBase<char>.IsNegative(char value) { throw null; }
         static bool System.Numerics.INumberBase<char>.IsNegativeInfinity(char value) { throw null; }
         static bool System.Numerics.INumberBase<char>.IsNormal(char value) { throw null; }
+        static bool System.Numerics.INumberBase<char>.IsOddInteger(char value) { throw null; }
+        static bool System.Numerics.INumberBase<char>.IsPositive(char value) { throw null; }
         static bool System.Numerics.INumberBase<char>.IsPositiveInfinity(char value) { throw null; }
+        static bool System.Numerics.INumberBase<char>.IsRealNumber(char value) { throw null; }
         static bool System.Numerics.INumberBase<char>.IsSubnormal(char value) { throw null; }
+        static bool System.Numerics.INumberBase<char>.IsZero(char value) { throw null; }
         static char System.Numerics.INumberBase<char>.MaxMagnitude(char x, char y) { throw null; }
         static char System.Numerics.INumberBase<char>.MaxMagnitudeNumber(char x, char y) { throw null; }
         static char System.Numerics.INumberBase<char>.MinMagnitude(char x, char y) { throw null; }
@@ -1857,6 +1877,7 @@ namespace System
         static decimal System.Numerics.IMinMaxValue<System.Decimal>.MinValue { get { throw null; } }
         static decimal System.Numerics.IMultiplicativeIdentity<System.Decimal,System.Decimal>.MultiplicativeIdentity { get { throw null; } }
         static decimal System.Numerics.INumberBase<System.Decimal>.One { get { throw null; } }
+        static int System.Numerics.INumberBase<System.Decimal>.Radix { get { throw null; } }
         static decimal System.Numerics.INumberBase<System.Decimal>.Zero { get { throw null; } }
         static decimal System.Numerics.ISignedNumber<System.Decimal>.NegativeOne { get { throw null; } }
         public static decimal Abs(decimal value) { throw null; }
@@ -1880,7 +1901,12 @@ namespace System
         public static int GetBits(decimal d, System.Span<int> destination) { throw null; }
         public override int GetHashCode() { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
+        public static bool IsCanonical(decimal value) { throw null; }
+        public static bool IsEvenInteger(decimal value) { throw null; }
+        public static bool IsInteger(decimal value) { throw null; }
         public static bool IsNegative(decimal value) { throw null; }
+        public static bool IsOddInteger(decimal value) { throw null; }
+        public static bool IsPositive(decimal value) { throw null; }
         public static decimal Max(decimal x, decimal y) { throw null; }
         public static decimal MaxMagnitude(decimal x, decimal y) { throw null; }
         public static decimal Min(decimal x, decimal y) { throw null; }
@@ -1973,13 +1999,17 @@ namespace System
         bool System.Numerics.IFloatingPoint<decimal>.TryWriteSignificandBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         bool System.Numerics.IFloatingPoint<decimal>.TryWriteSignificandLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         static decimal System.Numerics.IIncrementOperators<decimal>.operator checked ++(decimal value) { throw null; }
+        static bool System.Numerics.INumberBase<decimal>.IsComplexNumber(decimal value) { throw null; }
         static bool System.Numerics.INumberBase<decimal>.IsFinite(decimal value) { throw null; }
+        static bool System.Numerics.INumberBase<decimal>.IsImaginaryNumber(decimal value) { throw null; }
         static bool System.Numerics.INumberBase<decimal>.IsInfinity(decimal value) { throw null; }
         static bool System.Numerics.INumberBase<decimal>.IsNaN(decimal value) { throw null; }
         static bool System.Numerics.INumberBase<decimal>.IsNegativeInfinity(decimal value) { throw null; }
         static bool System.Numerics.INumberBase<decimal>.IsNormal(decimal value) { throw null; }
         static bool System.Numerics.INumberBase<decimal>.IsPositiveInfinity(decimal value) { throw null; }
+        static bool System.Numerics.INumberBase<decimal>.IsRealNumber(decimal value) { throw null; }
         static bool System.Numerics.INumberBase<decimal>.IsSubnormal(decimal value) { throw null; }
+        static bool System.Numerics.INumberBase<decimal>.IsZero(decimal value) { throw null; }
         static decimal System.Numerics.INumberBase<decimal>.MaxMagnitudeNumber(decimal x, decimal y) { throw null; }
         static decimal System.Numerics.INumberBase<decimal>.MinMagnitudeNumber(decimal x, decimal y) { throw null; }
         static decimal System.Numerics.INumber<decimal>.MaxNumber(decimal x, decimal y) { throw null; }
@@ -2090,6 +2120,7 @@ namespace System
         static double System.Numerics.IMinMaxValue<System.Double>.MinValue { get { throw null; } }
         static double System.Numerics.IMultiplicativeIdentity<System.Double,System.Double>.MultiplicativeIdentity { get { throw null; } }
         static double System.Numerics.INumberBase<System.Double>.One { get { throw null; } }
+        static int System.Numerics.INumberBase<System.Double>.Radix { get { throw null; } }
         static double System.Numerics.INumberBase<System.Double>.Zero { get { throw null; } }
         static double System.Numerics.ISignedNumber<System.Double>.NegativeOne { get { throw null; } }
         public static double Abs(double value) { throw null; }
@@ -2127,14 +2158,19 @@ namespace System
         public System.TypeCode GetTypeCode() { throw null; }
         public static double Ieee754Remainder(double left, double right) { throw null; }
         public static int ILogB(double x) { throw null; }
+        public static bool IsEvenInteger(double value) { throw null; }
         public static bool IsFinite(double d) { throw null; }
         public static bool IsInfinity(double d) { throw null; }
+        public static bool IsInteger(double value) { throw null; }
         public static bool IsNaN(double d) { throw null; }
         public static bool IsNegative(double d) { throw null; }
         public static bool IsNegativeInfinity(double d) { throw null; }
         public static bool IsNormal(double d) { throw null; }
+        public static bool IsOddInteger(double value) { throw null; }
+        public static bool IsPositive(double value) { throw null; }
         public static bool IsPositiveInfinity(double d) { throw null; }
         public static bool IsPow2(double value) { throw null; }
+        public static bool IsRealNumber(double value) { throw null; }
         public static bool IsSubnormal(double d) { throw null; }
         public static double Log(double x) { throw null; }
         public static double Log(double x, double newBase) { throw null; }
@@ -2214,6 +2250,10 @@ namespace System
         static double System.Numerics.IModulusOperators<double, double, double>.operator %(double left, double right) { throw null; }
         static double System.Numerics.IMultiplyOperators<double, double, double>.operator checked *(double left, double right) { throw null; }
         static double System.Numerics.IMultiplyOperators<double, double, double>.operator *(double left, double right) { throw null; }
+        static bool System.Numerics.INumberBase<double>.IsCanonical(double value) { throw null; }
+        static bool System.Numerics.INumberBase<double>.IsComplexNumber(double value) { throw null; }
+        static bool System.Numerics.INumberBase<double>.IsImaginaryNumber(double value) { throw null; }
+        static bool System.Numerics.INumberBase<double>.IsZero(double value) { throw null; }
         static double System.Numerics.ISubtractionOperators<double, double, double>.operator checked -(double left, double right) { throw null; }
         static double System.Numerics.ISubtractionOperators<double, double, double>.operator -(double left, double right) { throw null; }
         static double System.Numerics.IUnaryNegationOperators<double, double>.operator checked -(double value) { throw null; }
@@ -2694,12 +2734,11 @@ namespace System
         public static System.Half One { get { throw null; } }
         public static System.Half Pi { get { throw null; } }
         public static System.Half PositiveInfinity { get { throw null; } }
-        public static System.Half Zero { get { throw null; } }
         static System.Half System.Numerics.IAdditiveIdentity<System.Half,System.Half>.AdditiveIdentity { get { throw null; } }
-        static System.Half System.Numerics.INumberBase<System.Half>.One { get { throw null; } }
-        static System.Half System.Numerics.INumberBase<System.Half>.Zero { get { throw null; } }
+        static int System.Numerics.INumberBase<System.Half>.Radix { get { throw null; } }
         static System.Half System.Numerics.ISignedNumber<System.Half>.NegativeOne { get { throw null; } }
         public static System.Half Tau { get { throw null; } }
+        public static System.Half Zero { get { throw null; } }
         public static System.Half Abs(System.Half value) { throw null; }
         public static System.Half Acos(System.Half x) { throw null; }
         public static System.Half Acosh(System.Half x) { throw null; }
@@ -2734,14 +2773,19 @@ namespace System
         public override int GetHashCode() { throw null; }
         public static System.Half Ieee754Remainder(System.Half left, System.Half right) { throw null; }
         public static int ILogB(System.Half x) { throw null; }
+        public static bool IsEvenInteger(System.Half value) { throw null; }
         public static bool IsFinite(System.Half value) { throw null; }
         public static bool IsInfinity(System.Half value) { throw null; }
+        public static bool IsInteger(System.Half value) { throw null; }
         public static bool IsNaN(System.Half value) { throw null; }
         public static bool IsNegative(System.Half value) { throw null; }
         public static bool IsNegativeInfinity(System.Half value) { throw null; }
         public static bool IsNormal(System.Half value) { throw null; }
+        public static bool IsOddInteger(System.Half value) { throw null; }
+        public static bool IsPositive(System.Half value) { throw null; }
         public static bool IsPositiveInfinity(System.Half value) { throw null; }
         public static bool IsPow2(System.Half value) { throw null; }
+        public static bool IsRealNumber(System.Half value) { throw null; }
         public static bool IsSubnormal(System.Half value) { throw null; }
         public static System.Half Log(System.Half x) { throw null; }
         public static System.Half Log(System.Half x, System.Half newBase) { throw null; }
@@ -2813,6 +2857,10 @@ namespace System
         bool System.Numerics.IFloatingPoint<System.Half>.TryWriteSignificandLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         static System.Half System.Numerics.IIncrementOperators<System.Half>.operator checked ++(System.Half value) { throw null; }
         static System.Half System.Numerics.IMultiplyOperators<System.Half, System.Half, System.Half>.operator checked *(System.Half left, System.Half right) { throw null; }
+        static bool System.Numerics.INumberBase<System.Half>.IsCanonical(System.Half value) { throw null; }
+        static bool System.Numerics.INumberBase<System.Half>.IsComplexNumber(System.Half value) { throw null; }
+        static bool System.Numerics.INumberBase<System.Half>.IsImaginaryNumber(System.Half value) { throw null; }
+        static bool System.Numerics.INumberBase<System.Half>.IsZero(System.Half value) { throw null; }
         static System.Half System.Numerics.ISubtractionOperators<System.Half, System.Half, System.Half>.operator checked -(System.Half left, System.Half right) { throw null; }
         static System.Half System.Numerics.IUnaryNegationOperators<System.Half, System.Half>.operator checked -(System.Half value) { throw null; }
         public static System.Half Tan(System.Half x) { throw null; }
@@ -2967,6 +3015,7 @@ namespace System
         public static System.Int128 One { get { throw null; } }
         static System.Int128 System.Numerics.IAdditiveIdentity<System.Int128,System.Int128>.AdditiveIdentity { get { throw null; } }
         static System.Int128 System.Numerics.IMultiplicativeIdentity<System.Int128,System.Int128>.MultiplicativeIdentity { get { throw null; } }
+        static int System.Numerics.INumberBase<System.Int128>.Radix { get { throw null; } }
         public static System.Int128 Zero { get { throw null; } }
         public static System.Int128 Abs(System.Int128 value) { throw null; }
         public static System.Int128 Clamp(System.Int128 value, System.Int128 min, System.Int128 max) { throw null; }
@@ -2980,7 +3029,10 @@ namespace System
         public bool Equals(System.Int128 other) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
+        public static bool IsEvenInteger(System.Int128 value) { throw null; }
         public static bool IsNegative(System.Int128 value) { throw null; }
+        public static bool IsOddInteger(System.Int128 value) { throw null; }
+        public static bool IsPositive(System.Int128 value) { throw null; }
         public static bool IsPow2(System.Int128 value) { throw null; }
         public static System.Int128 LeadingZeroCount(System.Int128 value) { throw null; }
         public static System.Int128 Log2(System.Int128 value) { throw null; }
@@ -3094,13 +3146,19 @@ namespace System
         int System.Numerics.IBinaryInteger<System.Int128>.GetShortestBitLength() { throw null; }
         bool System.Numerics.IBinaryInteger<System.Int128>.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         bool System.Numerics.IBinaryInteger<System.Int128>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
+        static bool System.Numerics.INumberBase<System.Int128>.IsCanonical(System.Int128 value) { throw null; }
+        static bool System.Numerics.INumberBase<System.Int128>.IsComplexNumber(System.Int128 value) { throw null; }
         static bool System.Numerics.INumberBase<System.Int128>.IsFinite(System.Int128 value) { throw null; }
+        static bool System.Numerics.INumberBase<System.Int128>.IsImaginaryNumber(System.Int128 value) { throw null; }
         static bool System.Numerics.INumberBase<System.Int128>.IsInfinity(System.Int128 value) { throw null; }
+        static bool System.Numerics.INumberBase<System.Int128>.IsInteger(System.Int128 value) { throw null; }
         static bool System.Numerics.INumberBase<System.Int128>.IsNaN(System.Int128 value) { throw null; }
         static bool System.Numerics.INumberBase<System.Int128>.IsNegativeInfinity(System.Int128 value) { throw null; }
         static bool System.Numerics.INumberBase<System.Int128>.IsNormal(System.Int128 value) { throw null; }
         static bool System.Numerics.INumberBase<System.Int128>.IsPositiveInfinity(System.Int128 value) { throw null; }
+        static bool System.Numerics.INumberBase<System.Int128>.IsRealNumber(System.Int128 value) { throw null; }
         static bool System.Numerics.INumberBase<System.Int128>.IsSubnormal(System.Int128 value) { throw null; }
+        static bool System.Numerics.INumberBase<System.Int128>.IsZero(System.Int128 value) { throw null; }
         static System.Int128 System.Numerics.INumberBase<System.Int128>.MaxMagnitudeNumber(System.Int128 x, System.Int128 y) { throw null; }
         static System.Int128 System.Numerics.INumberBase<System.Int128>.MinMagnitudeNumber(System.Int128 x, System.Int128 y) { throw null; }
         static System.Int128 System.Numerics.INumber<System.Int128>.MaxNumber(System.Int128 x, System.Int128 y) { throw null; }
@@ -3129,6 +3187,7 @@ namespace System
         static short System.Numerics.IMinMaxValue<System.Int16>.MinValue { get { throw null; } }
         static short System.Numerics.IMultiplicativeIdentity<System.Int16,System.Int16>.MultiplicativeIdentity { get { throw null; } }
         static short System.Numerics.INumberBase<System.Int16>.One { get { throw null; } }
+        static int System.Numerics.INumberBase<System.Int16>.Radix { get { throw null; } }
         static short System.Numerics.INumberBase<System.Int16>.Zero { get { throw null; } }
         static short System.Numerics.ISignedNumber<System.Int16>.NegativeOne { get { throw null; } }
         public static short Abs(short value) { throw null; }
@@ -3144,7 +3203,10 @@ namespace System
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
+        public static bool IsEvenInteger(short value) { throw null; }
         public static bool IsNegative(short value) { throw null; }
+        public static bool IsOddInteger(short value) { throw null; }
+        public static bool IsPositive(short value) { throw null; }
         public static bool IsPow2(short value) { throw null; }
         public static short LeadingZeroCount(short value) { throw null; }
         public static short Log2(short value) { throw null; }
@@ -3202,13 +3264,19 @@ namespace System
         static short System.Numerics.IModulusOperators<short, short, short>.operator %(short left, short right) { throw null; }
         static short System.Numerics.IMultiplyOperators<short, short, short>.operator checked *(short left, short right) { throw null; }
         static short System.Numerics.IMultiplyOperators<short, short, short>.operator *(short left, short right) { throw null; }
+        static bool System.Numerics.INumberBase<short>.IsCanonical(short value) { throw null; }
+        static bool System.Numerics.INumberBase<short>.IsComplexNumber(short value) { throw null; }
         static bool System.Numerics.INumberBase<short>.IsFinite(short value) { throw null; }
+        static bool System.Numerics.INumberBase<short>.IsImaginaryNumber(short value) { throw null; }
         static bool System.Numerics.INumberBase<short>.IsInfinity(short value) { throw null; }
+        static bool System.Numerics.INumberBase<short>.IsInteger(short value) { throw null; }
         static bool System.Numerics.INumberBase<short>.IsNaN(short value) { throw null; }
         static bool System.Numerics.INumberBase<short>.IsNegativeInfinity(short value) { throw null; }
         static bool System.Numerics.INumberBase<short>.IsNormal(short value) { throw null; }
         static bool System.Numerics.INumberBase<short>.IsPositiveInfinity(short value) { throw null; }
+        static bool System.Numerics.INumberBase<short>.IsRealNumber(short value) { throw null; }
         static bool System.Numerics.INumberBase<short>.IsSubnormal(short value) { throw null; }
+        static bool System.Numerics.INumberBase<short>.IsZero(short value) { throw null; }
         static short System.Numerics.INumberBase<short>.MaxMagnitudeNumber(short x, short y) { throw null; }
         static short System.Numerics.INumberBase<short>.MinMagnitudeNumber(short x, short y) { throw null; }
         static short System.Numerics.INumber<short>.MaxNumber(short x, short y) { throw null; }
@@ -3245,6 +3313,7 @@ namespace System
         static int System.Numerics.IMinMaxValue<System.Int32>.MinValue { get { throw null; } }
         static int System.Numerics.IMultiplicativeIdentity<System.Int32,System.Int32>.MultiplicativeIdentity { get { throw null; } }
         static int System.Numerics.INumberBase<System.Int32>.One { get { throw null; } }
+        static int System.Numerics.INumberBase<System.Int32>.Radix { get { throw null; } }
         static int System.Numerics.INumberBase<System.Int32>.Zero { get { throw null; } }
         static int System.Numerics.ISignedNumber<System.Int32>.NegativeOne { get { throw null; } }
         public static int Abs(int value) { throw null; }
@@ -3260,7 +3329,10 @@ namespace System
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
+        public static bool IsEvenInteger(int value) { throw null; }
         public static bool IsNegative(int value) { throw null; }
+        public static bool IsOddInteger(int value) { throw null; }
+        public static bool IsPositive(int value) { throw null; }
         public static bool IsPow2(int value) { throw null; }
         public static int LeadingZeroCount(int value) { throw null; }
         public static int Log2(int value) { throw null; }
@@ -3318,13 +3390,19 @@ namespace System
         static int System.Numerics.IModulusOperators<int, int, int>.operator %(int left, int right) { throw null; }
         static int System.Numerics.IMultiplyOperators<int, int, int>.operator checked *(int left, int right) { throw null; }
         static int System.Numerics.IMultiplyOperators<int, int, int>.operator *(int left, int right) { throw null; }
+        static bool System.Numerics.INumberBase<int>.IsCanonical(int value) { throw null; }
+        static bool System.Numerics.INumberBase<int>.IsComplexNumber(int value) { throw null; }
         static bool System.Numerics.INumberBase<int>.IsFinite(int value) { throw null; }
+        static bool System.Numerics.INumberBase<int>.IsImaginaryNumber(int value) { throw null; }
         static bool System.Numerics.INumberBase<int>.IsInfinity(int value) { throw null; }
+        static bool System.Numerics.INumberBase<int>.IsInteger(int value) { throw null; }
         static bool System.Numerics.INumberBase<int>.IsNaN(int value) { throw null; }
         static bool System.Numerics.INumberBase<int>.IsNegativeInfinity(int value) { throw null; }
         static bool System.Numerics.INumberBase<int>.IsNormal(int value) { throw null; }
         static bool System.Numerics.INumberBase<int>.IsPositiveInfinity(int value) { throw null; }
+        static bool System.Numerics.INumberBase<int>.IsRealNumber(int value) { throw null; }
         static bool System.Numerics.INumberBase<int>.IsSubnormal(int value) { throw null; }
+        static bool System.Numerics.INumberBase<int>.IsZero(int value) { throw null; }
         static int System.Numerics.INumberBase<int>.MaxMagnitudeNumber(int x, int y) { throw null; }
         static int System.Numerics.INumberBase<int>.MinMagnitudeNumber(int x, int y) { throw null; }
         static int System.Numerics.INumber<int>.MaxNumber(int x, int y) { throw null; }
@@ -3361,6 +3439,7 @@ namespace System
         static long System.Numerics.IMinMaxValue<System.Int64>.MinValue { get { throw null; } }
         static long System.Numerics.IMultiplicativeIdentity<System.Int64,System.Int64>.MultiplicativeIdentity { get { throw null; } }
         static long System.Numerics.INumberBase<System.Int64>.One { get { throw null; } }
+        static int System.Numerics.INumberBase<System.Int64>.Radix { get { throw null; } }
         static long System.Numerics.INumberBase<System.Int64>.Zero { get { throw null; } }
         static long System.Numerics.ISignedNumber<System.Int64>.NegativeOne { get { throw null; } }
         public static long Abs(long value) { throw null; }
@@ -3376,7 +3455,10 @@ namespace System
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
+        public static bool IsEvenInteger(long value) { throw null; }
         public static bool IsNegative(long value) { throw null; }
+        public static bool IsOddInteger(long value) { throw null; }
+        public static bool IsPositive(long value) { throw null; }
         public static bool IsPow2(long value) { throw null; }
         public static long LeadingZeroCount(long value) { throw null; }
         public static long Log2(long value) { throw null; }
@@ -3434,13 +3516,19 @@ namespace System
         static long System.Numerics.IModulusOperators<long, long, long>.operator %(long left, long right) { throw null; }
         static long System.Numerics.IMultiplyOperators<long, long, long>.operator checked *(long left, long right) { throw null; }
         static long System.Numerics.IMultiplyOperators<long, long, long>.operator *(long left, long right) { throw null; }
+        static bool System.Numerics.INumberBase<long>.IsCanonical(long value) { throw null; }
+        static bool System.Numerics.INumberBase<long>.IsComplexNumber(long value) { throw null; }
         static bool System.Numerics.INumberBase<long>.IsFinite(long value) { throw null; }
+        static bool System.Numerics.INumberBase<long>.IsImaginaryNumber(long value) { throw null; }
         static bool System.Numerics.INumberBase<long>.IsInfinity(long value) { throw null; }
+        static bool System.Numerics.INumberBase<long>.IsInteger(long value) { throw null; }
         static bool System.Numerics.INumberBase<long>.IsNaN(long value) { throw null; }
         static bool System.Numerics.INumberBase<long>.IsNegativeInfinity(long value) { throw null; }
         static bool System.Numerics.INumberBase<long>.IsNormal(long value) { throw null; }
         static bool System.Numerics.INumberBase<long>.IsPositiveInfinity(long value) { throw null; }
+        static bool System.Numerics.INumberBase<long>.IsRealNumber(long value) { throw null; }
         static bool System.Numerics.INumberBase<long>.IsSubnormal(long value) { throw null; }
+        static bool System.Numerics.INumberBase<long>.IsZero(long value) { throw null; }
         static long System.Numerics.INumberBase<long>.MaxMagnitudeNumber(long x, long y) { throw null; }
         static long System.Numerics.INumberBase<long>.MinMagnitudeNumber(long x, long y) { throw null; }
         static long System.Numerics.INumber<long>.MaxNumber(long x, long y) { throw null; }
@@ -3483,6 +3571,7 @@ namespace System
         static nint System.Numerics.IMinMaxValue<nint>.MinValue { get { throw null; } }
         static nint System.Numerics.IMultiplicativeIdentity<nint,nint>.MultiplicativeIdentity { get { throw null; } }
         static nint System.Numerics.INumberBase<nint>.One { get { throw null; } }
+        static int System.Numerics.INumberBase<nint>.Radix { get { throw null; } }
         static nint System.Numerics.INumberBase<nint>.Zero { get { throw null; } }
         static nint System.Numerics.ISignedNumber<nint>.NegativeOne { get { throw null; } }
         public static nint Abs(nint value) { throw null; }
@@ -3498,7 +3587,10 @@ namespace System
         public bool Equals(nint other) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
+        public static bool IsEvenInteger(nint value) { throw null; }
         public static bool IsNegative(nint value) { throw null; }
+        public static bool IsOddInteger(nint value) { throw null; }
+        public static bool IsPositive(nint value) { throw null; }
         public static bool IsPow2(nint value) { throw null; }
         public static nint LeadingZeroCount(nint value) { throw null; }
         public static nint Log2(nint value) { throw null; }
@@ -3552,13 +3644,19 @@ namespace System
         static nint System.Numerics.IModulusOperators<nint, nint, nint>.operator %(nint left, nint right) { throw null; }
         static nint System.Numerics.IMultiplyOperators<nint, nint, nint>.operator checked *(nint left, nint right) { throw null; }
         static nint System.Numerics.IMultiplyOperators<nint, nint, nint>.operator *(nint left, nint right) { throw null; }
+        static bool System.Numerics.INumberBase<nint>.IsCanonical(nint value) { throw null; }
+        static bool System.Numerics.INumberBase<nint>.IsComplexNumber(nint value) { throw null; }
         static bool System.Numerics.INumberBase<nint>.IsFinite(nint value) { throw null; }
+        static bool System.Numerics.INumberBase<nint>.IsImaginaryNumber(nint value) { throw null; }
         static bool System.Numerics.INumberBase<nint>.IsInfinity(nint value) { throw null; }
+        static bool System.Numerics.INumberBase<nint>.IsInteger(nint value) { throw null; }
         static bool System.Numerics.INumberBase<nint>.IsNaN(nint value) { throw null; }
         static bool System.Numerics.INumberBase<nint>.IsNegativeInfinity(nint value) { throw null; }
         static bool System.Numerics.INumberBase<nint>.IsNormal(nint value) { throw null; }
         static bool System.Numerics.INumberBase<nint>.IsPositiveInfinity(nint value) { throw null; }
+        static bool System.Numerics.INumberBase<nint>.IsRealNumber(nint value) { throw null; }
         static bool System.Numerics.INumberBase<nint>.IsSubnormal(nint value) { throw null; }
+        static bool System.Numerics.INumberBase<nint>.IsZero(nint value) { throw null; }
         static nint System.Numerics.INumberBase<nint>.MaxMagnitudeNumber(nint x, nint y) { throw null; }
         static nint System.Numerics.INumberBase<nint>.MinMagnitudeNumber(nint x, nint y) { throw null; }
         static nint System.Numerics.INumber<nint>.MaxNumber(nint x, nint y) { throw null; }
@@ -4405,6 +4503,7 @@ namespace System
         static sbyte System.Numerics.IMinMaxValue<System.SByte>.MinValue { get { throw null; } }
         static sbyte System.Numerics.IMultiplicativeIdentity<System.SByte,System.SByte>.MultiplicativeIdentity { get { throw null; } }
         static sbyte System.Numerics.INumberBase<System.SByte>.One { get { throw null; } }
+        static int System.Numerics.INumberBase<System.SByte>.Radix { get { throw null; } }
         static sbyte System.Numerics.INumberBase<System.SByte>.Zero { get { throw null; } }
         static sbyte System.Numerics.ISignedNumber<System.SByte>.NegativeOne { get { throw null; } }
         public static sbyte Abs(sbyte value) { throw null; }
@@ -4420,7 +4519,10 @@ namespace System
         public bool Equals(sbyte obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
+        public static bool IsEvenInteger(sbyte value) { throw null; }
         public static bool IsNegative(sbyte value) { throw null; }
+        public static bool IsOddInteger(sbyte value) { throw null; }
+        public static bool IsPositive(sbyte value) { throw null; }
         public static bool IsPow2(sbyte value) { throw null; }
         public static sbyte LeadingZeroCount(sbyte value) { throw null; }
         public static sbyte Log2(sbyte value) { throw null; }
@@ -4478,13 +4580,19 @@ namespace System
         static sbyte System.Numerics.IModulusOperators<sbyte, sbyte, sbyte>.operator %(sbyte left, sbyte right) { throw null; }
         static sbyte System.Numerics.IMultiplyOperators<sbyte, sbyte, sbyte>.operator checked *(sbyte left, sbyte right) { throw null; }
         static sbyte System.Numerics.IMultiplyOperators<sbyte, sbyte, sbyte>.operator *(sbyte left, sbyte right) { throw null; }
+        static bool System.Numerics.INumberBase<sbyte>.IsCanonical(sbyte value) { throw null; }
+        static bool System.Numerics.INumberBase<sbyte>.IsComplexNumber(sbyte value) { throw null; }
         static bool System.Numerics.INumberBase<sbyte>.IsFinite(sbyte value) { throw null; }
+        static bool System.Numerics.INumberBase<sbyte>.IsImaginaryNumber(sbyte value) { throw null; }
         static bool System.Numerics.INumberBase<sbyte>.IsInfinity(sbyte value) { throw null; }
+        static bool System.Numerics.INumberBase<sbyte>.IsInteger(sbyte value) { throw null; }
         static bool System.Numerics.INumberBase<sbyte>.IsNaN(sbyte value) { throw null; }
         static bool System.Numerics.INumberBase<sbyte>.IsNegativeInfinity(sbyte value) { throw null; }
         static bool System.Numerics.INumberBase<sbyte>.IsNormal(sbyte value) { throw null; }
         static bool System.Numerics.INumberBase<sbyte>.IsPositiveInfinity(sbyte value) { throw null; }
+        static bool System.Numerics.INumberBase<sbyte>.IsRealNumber(sbyte value) { throw null; }
         static bool System.Numerics.INumberBase<sbyte>.IsSubnormal(sbyte value) { throw null; }
+        static bool System.Numerics.INumberBase<sbyte>.IsZero(sbyte value) { throw null; }
         static sbyte System.Numerics.INumberBase<sbyte>.MaxMagnitudeNumber(sbyte x, sbyte y) { throw null; }
         static sbyte System.Numerics.INumberBase<sbyte>.MinMagnitudeNumber(sbyte x, sbyte y) { throw null; }
         static sbyte System.Numerics.INumber<sbyte>.MaxNumber(sbyte x, sbyte y) { throw null; }
@@ -4542,6 +4650,7 @@ namespace System
         static float System.Numerics.IMinMaxValue<System.Single>.MinValue { get { throw null; } }
         static float System.Numerics.IMultiplicativeIdentity<System.Single,System.Single>.MultiplicativeIdentity { get { throw null; } }
         static float System.Numerics.INumberBase<System.Single>.One { get { throw null; } }
+        static int System.Numerics.INumberBase<System.Single>.Radix { get { throw null; } }
         static float System.Numerics.INumberBase<System.Single>.Zero { get { throw null; } }
         static float System.Numerics.ISignedNumber<System.Single>.NegativeOne { get { throw null; } }
         public static float Abs(float value) { throw null; }
@@ -4579,14 +4688,19 @@ namespace System
         public System.TypeCode GetTypeCode() { throw null; }
         public static float Ieee754Remainder(float left, float right) { throw null; }
         public static int ILogB(float x) { throw null; }
+        public static bool IsEvenInteger(float value) { throw null; }
         public static bool IsFinite(float f) { throw null; }
         public static bool IsInfinity(float f) { throw null; }
+        public static bool IsInteger(float value) { throw null; }
         public static bool IsNaN(float f) { throw null; }
         public static bool IsNegative(float f) { throw null; }
         public static bool IsNegativeInfinity(float f) { throw null; }
         public static bool IsNormal(float f) { throw null; }
+        public static bool IsOddInteger(float value) { throw null; }
+        public static bool IsPositive(float value) { throw null; }
         public static bool IsPositiveInfinity(float f) { throw null; }
         public static bool IsPow2(float value) { throw null; }
+        public static bool IsRealNumber(float value) { throw null; }
         public static bool IsSubnormal(float f) { throw null; }
         public static float Log(float x) { throw null; }
         public static float Log(float x, float newBase) { throw null; }
@@ -4666,6 +4780,10 @@ namespace System
         static float System.Numerics.IModulusOperators<float, float, float>.operator %(float left, float right) { throw null; }
         static float System.Numerics.IMultiplyOperators<float, float, float>.operator checked *(float left, float right) { throw null; }
         static float System.Numerics.IMultiplyOperators<float, float, float>.operator *(float left, float right) { throw null; }
+        static bool System.Numerics.INumberBase<float>.IsCanonical(float value) { throw null; }
+        static bool System.Numerics.INumberBase<float>.IsComplexNumber(float value) { throw null; }
+        static bool System.Numerics.INumberBase<float>.IsImaginaryNumber(float value) { throw null; }
+        static bool System.Numerics.INumberBase<float>.IsZero(float value) { throw null; }
         static float System.Numerics.ISubtractionOperators<float, float, float>.operator checked -(float left, float right) { throw null; }
         static float System.Numerics.ISubtractionOperators<float, float, float>.operator -(float left, float right) { throw null; }
         static float System.Numerics.IUnaryNegationOperators<float, float>.operator checked -(float value) { throw null; }
@@ -5865,6 +5983,7 @@ namespace System
         public static System.UInt128 One { get { throw null; } }
         static System.UInt128 System.Numerics.IAdditiveIdentity<System.UInt128,System.UInt128>.AdditiveIdentity { get { throw null; } }
         static System.UInt128 System.Numerics.IMultiplicativeIdentity<System.UInt128,System.UInt128>.MultiplicativeIdentity { get { throw null; } }
+        static int System.Numerics.INumberBase<System.UInt128>.Radix { get { throw null; } }
         public static System.UInt128 Zero { get { throw null; } }
         public static System.UInt128 Clamp(System.UInt128 value, System.UInt128 min, System.UInt128 max) { throw null; }
         public int CompareTo(object? value) { throw null; }
@@ -5876,6 +5995,8 @@ namespace System
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(System.UInt128 other) { throw null; }
         public override int GetHashCode() { throw null; }
+        public static bool IsEvenInteger(System.UInt128 value) { throw null; }
+        public static bool IsOddInteger(System.UInt128 value) { throw null; }
         public static bool IsPow2(System.UInt128 value) { throw null; }
         public static System.UInt128 LeadingZeroCount(System.UInt128 value) { throw null; }
         public static System.UInt128 Log2(System.UInt128 value) { throw null; }
@@ -5994,14 +6115,21 @@ namespace System
         bool System.Numerics.IBinaryInteger<System.UInt128>.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         bool System.Numerics.IBinaryInteger<System.UInt128>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         static System.UInt128 System.Numerics.INumberBase<System.UInt128>.Abs(System.UInt128 value) { throw null; }
+        static bool System.Numerics.INumberBase<System.UInt128>.IsCanonical(System.UInt128 value) { throw null; }
+        static bool System.Numerics.INumberBase<System.UInt128>.IsComplexNumber(System.UInt128 value) { throw null; }
         static bool System.Numerics.INumberBase<System.UInt128>.IsFinite(System.UInt128 value) { throw null; }
+        static bool System.Numerics.INumberBase<System.UInt128>.IsImaginaryNumber(System.UInt128 value) { throw null; }
         static bool System.Numerics.INumberBase<System.UInt128>.IsInfinity(System.UInt128 value) { throw null; }
+        static bool System.Numerics.INumberBase<System.UInt128>.IsInteger(System.UInt128 value) { throw null; }
         static bool System.Numerics.INumberBase<System.UInt128>.IsNaN(System.UInt128 value) { throw null; }
         static bool System.Numerics.INumberBase<System.UInt128>.IsNegative(System.UInt128 value) { throw null; }
         static bool System.Numerics.INumberBase<System.UInt128>.IsNegativeInfinity(System.UInt128 value) { throw null; }
         static bool System.Numerics.INumberBase<System.UInt128>.IsNormal(System.UInt128 value) { throw null; }
+        static bool System.Numerics.INumberBase<System.UInt128>.IsPositive(System.UInt128 value) { throw null; }
         static bool System.Numerics.INumberBase<System.UInt128>.IsPositiveInfinity(System.UInt128 value) { throw null; }
+        static bool System.Numerics.INumberBase<System.UInt128>.IsRealNumber(System.UInt128 value) { throw null; }
         static bool System.Numerics.INumberBase<System.UInt128>.IsSubnormal(System.UInt128 value) { throw null; }
+        static bool System.Numerics.INumberBase<System.UInt128>.IsZero(System.UInt128 value) { throw null; }
         static System.UInt128 System.Numerics.INumberBase<System.UInt128>.MaxMagnitude(System.UInt128 x, System.UInt128 y) { throw null; }
         static System.UInt128 System.Numerics.INumberBase<System.UInt128>.MaxMagnitudeNumber(System.UInt128 x, System.UInt128 y) { throw null; }
         static System.UInt128 System.Numerics.INumberBase<System.UInt128>.MinMagnitude(System.UInt128 x, System.UInt128 y) { throw null; }
@@ -6034,6 +6162,7 @@ namespace System
         static ushort System.Numerics.IMinMaxValue<System.UInt16>.MinValue { get { throw null; } }
         static ushort System.Numerics.IMultiplicativeIdentity<System.UInt16,System.UInt16>.MultiplicativeIdentity { get { throw null; } }
         static ushort System.Numerics.INumberBase<System.UInt16>.One { get { throw null; } }
+        static int System.Numerics.INumberBase<System.UInt16>.Radix { get { throw null; } }
         static ushort System.Numerics.INumberBase<System.UInt16>.Zero { get { throw null; } }
         public static ushort Clamp(ushort value, ushort min, ushort max) { throw null; }
         public int CompareTo(object? value) { throw null; }
@@ -6046,6 +6175,8 @@ namespace System
         public bool Equals(ushort obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
+        public static bool IsEvenInteger(ushort value) { throw null; }
+        public static bool IsOddInteger(ushort value) { throw null; }
         public static bool IsPow2(ushort value) { throw null; }
         public static ushort LeadingZeroCount(ushort value) { throw null; }
         public static ushort Log2(ushort value) { throw null; }
@@ -6102,14 +6233,21 @@ namespace System
         static ushort System.Numerics.IMultiplyOperators<ushort, ushort, ushort>.operator checked *(ushort left, ushort right) { throw null; }
         static ushort System.Numerics.IMultiplyOperators<ushort, ushort, ushort>.operator *(ushort left, ushort right) { throw null; }
         static ushort System.Numerics.INumberBase<ushort>.Abs(ushort value) { throw null; }
+        static bool System.Numerics.INumberBase<ushort>.IsCanonical(ushort value) { throw null; }
+        static bool System.Numerics.INumberBase<ushort>.IsComplexNumber(ushort value) { throw null; }
         static bool System.Numerics.INumberBase<ushort>.IsFinite(ushort value) { throw null; }
+        static bool System.Numerics.INumberBase<ushort>.IsImaginaryNumber(ushort value) { throw null; }
         static bool System.Numerics.INumberBase<ushort>.IsInfinity(ushort value) { throw null; }
+        static bool System.Numerics.INumberBase<ushort>.IsInteger(ushort value) { throw null; }
         static bool System.Numerics.INumberBase<ushort>.IsNaN(ushort value) { throw null; }
         static bool System.Numerics.INumberBase<ushort>.IsNegative(ushort value) { throw null; }
         static bool System.Numerics.INumberBase<ushort>.IsNegativeInfinity(ushort value) { throw null; }
         static bool System.Numerics.INumberBase<ushort>.IsNormal(ushort value) { throw null; }
+        static bool System.Numerics.INumberBase<ushort>.IsPositive(ushort value) { throw null; }
         static bool System.Numerics.INumberBase<ushort>.IsPositiveInfinity(ushort value) { throw null; }
+        static bool System.Numerics.INumberBase<ushort>.IsRealNumber(ushort value) { throw null; }
         static bool System.Numerics.INumberBase<ushort>.IsSubnormal(ushort value) { throw null; }
+        static bool System.Numerics.INumberBase<ushort>.IsZero(ushort value) { throw null; }
         static ushort System.Numerics.INumberBase<ushort>.MaxMagnitude(ushort x, ushort y) { throw null; }
         static ushort System.Numerics.INumberBase<ushort>.MaxMagnitudeNumber(ushort x, ushort y) { throw null; }
         static ushort System.Numerics.INumberBase<ushort>.MinMagnitude(ushort x, ushort y) { throw null; }
@@ -6150,6 +6288,7 @@ namespace System
         static uint System.Numerics.IMinMaxValue<System.UInt32>.MinValue { get { throw null; } }
         static uint System.Numerics.IMultiplicativeIdentity<System.UInt32,System.UInt32>.MultiplicativeIdentity { get { throw null; } }
         static uint System.Numerics.INumberBase<System.UInt32>.One { get { throw null; } }
+        static int System.Numerics.INumberBase<System.UInt32>.Radix { get { throw null; } }
         static uint System.Numerics.INumberBase<System.UInt32>.Zero { get { throw null; } }
         public static uint Clamp(uint value, uint min, uint max) { throw null; }
         public int CompareTo(object? value) { throw null; }
@@ -6162,6 +6301,8 @@ namespace System
         public bool Equals(uint obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
+        public static bool IsEvenInteger(uint value) { throw null; }
+        public static bool IsOddInteger(uint value) { throw null; }
         public static bool IsPow2(uint value) { throw null; }
         public static uint LeadingZeroCount(uint value) { throw null; }
         public static uint Log2(uint value) { throw null; }
@@ -6218,14 +6359,21 @@ namespace System
         static uint System.Numerics.IMultiplyOperators<uint, uint, uint>.operator checked *(uint left, uint right) { throw null; }
         static uint System.Numerics.IMultiplyOperators<uint, uint, uint>.operator *(uint left, uint right) { throw null; }
         static uint System.Numerics.INumberBase<uint>.Abs(uint value) { throw null; }
+        static bool System.Numerics.INumberBase<uint>.IsCanonical(uint value) { throw null; }
+        static bool System.Numerics.INumberBase<uint>.IsComplexNumber(uint value) { throw null; }
         static bool System.Numerics.INumberBase<uint>.IsFinite(uint value) { throw null; }
+        static bool System.Numerics.INumberBase<uint>.IsImaginaryNumber(uint value) { throw null; }
         static bool System.Numerics.INumberBase<uint>.IsInfinity(uint value) { throw null; }
+        static bool System.Numerics.INumberBase<uint>.IsInteger(uint value) { throw null; }
         static bool System.Numerics.INumberBase<uint>.IsNaN(uint value) { throw null; }
         static bool System.Numerics.INumberBase<uint>.IsNegative(uint value) { throw null; }
         static bool System.Numerics.INumberBase<uint>.IsNegativeInfinity(uint value) { throw null; }
         static bool System.Numerics.INumberBase<uint>.IsNormal(uint value) { throw null; }
+        static bool System.Numerics.INumberBase<uint>.IsPositive(uint value) { throw null; }
         static bool System.Numerics.INumberBase<uint>.IsPositiveInfinity(uint value) { throw null; }
+        static bool System.Numerics.INumberBase<uint>.IsRealNumber(uint value) { throw null; }
         static bool System.Numerics.INumberBase<uint>.IsSubnormal(uint value) { throw null; }
+        static bool System.Numerics.INumberBase<uint>.IsZero(uint value) { throw null; }
         static uint System.Numerics.INumberBase<uint>.MaxMagnitude(uint x, uint y) { throw null; }
         static uint System.Numerics.INumberBase<uint>.MaxMagnitudeNumber(uint x, uint y) { throw null; }
         static uint System.Numerics.INumberBase<uint>.MinMagnitude(uint x, uint y) { throw null; }
@@ -6266,6 +6414,7 @@ namespace System
         static ulong System.Numerics.IMinMaxValue<System.UInt64>.MinValue { get { throw null; } }
         static ulong System.Numerics.IMultiplicativeIdentity<System.UInt64,System.UInt64>.MultiplicativeIdentity { get { throw null; } }
         static ulong System.Numerics.INumberBase<System.UInt64>.One { get { throw null; } }
+        static int System.Numerics.INumberBase<System.UInt64>.Radix { get { throw null; } }
         static ulong System.Numerics.INumberBase<System.UInt64>.Zero { get { throw null; } }
         public static ulong Clamp(ulong value, ulong min, ulong max) { throw null; }
         public int CompareTo(object? value) { throw null; }
@@ -6278,6 +6427,8 @@ namespace System
         public bool Equals(ulong obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
+        public static bool IsEvenInteger(ulong value) { throw null; }
+        public static bool IsOddInteger(ulong value) { throw null; }
         public static bool IsPow2(ulong value) { throw null; }
         public static ulong LeadingZeroCount(ulong value) { throw null; }
         public static ulong Log2(ulong value) { throw null; }
@@ -6334,14 +6485,21 @@ namespace System
         static ulong System.Numerics.IMultiplyOperators<ulong, ulong, ulong>.operator checked *(ulong left, ulong right) { throw null; }
         static ulong System.Numerics.IMultiplyOperators<ulong, ulong, ulong>.operator *(ulong left, ulong right) { throw null; }
         static ulong System.Numerics.INumberBase<ulong>.Abs(ulong value) { throw null; }
+        static bool System.Numerics.INumberBase<ulong>.IsCanonical(ulong value) { throw null; }
+        static bool System.Numerics.INumberBase<ulong>.IsComplexNumber(ulong value) { throw null; }
         static bool System.Numerics.INumberBase<ulong>.IsFinite(ulong value) { throw null; }
+        static bool System.Numerics.INumberBase<ulong>.IsImaginaryNumber(ulong value) { throw null; }
         static bool System.Numerics.INumberBase<ulong>.IsInfinity(ulong value) { throw null; }
+        static bool System.Numerics.INumberBase<ulong>.IsInteger(ulong value) { throw null; }
         static bool System.Numerics.INumberBase<ulong>.IsNaN(ulong value) { throw null; }
         static bool System.Numerics.INumberBase<ulong>.IsNegative(ulong value) { throw null; }
         static bool System.Numerics.INumberBase<ulong>.IsNegativeInfinity(ulong value) { throw null; }
         static bool System.Numerics.INumberBase<ulong>.IsNormal(ulong value) { throw null; }
+        static bool System.Numerics.INumberBase<ulong>.IsPositive(ulong value) { throw null; }
         static bool System.Numerics.INumberBase<ulong>.IsPositiveInfinity(ulong value) { throw null; }
+        static bool System.Numerics.INumberBase<ulong>.IsRealNumber(ulong value) { throw null; }
         static bool System.Numerics.INumberBase<ulong>.IsSubnormal(ulong value) { throw null; }
+        static bool System.Numerics.INumberBase<ulong>.IsZero(ulong value) { throw null; }
         static ulong System.Numerics.INumberBase<ulong>.MaxMagnitude(ulong x, ulong y) { throw null; }
         static ulong System.Numerics.INumberBase<ulong>.MaxMagnitudeNumber(ulong x, ulong y) { throw null; }
         static ulong System.Numerics.INumberBase<ulong>.MinMagnitude(ulong x, ulong y) { throw null; }
@@ -6387,6 +6545,7 @@ namespace System
         static nuint System.Numerics.IMinMaxValue<nuint>.MinValue { get { throw null; } }
         static nuint System.Numerics.IMultiplicativeIdentity<nuint,nuint>.MultiplicativeIdentity { get { throw null; } }
         static nuint System.Numerics.INumberBase<nuint>.One { get { throw null; } }
+        static int System.Numerics.INumberBase<nuint>.Radix { get { throw null; } }
         static nuint System.Numerics.INumberBase<nuint>.Zero { get { throw null; } }
         public static nuint Add(nuint pointer, int offset) { throw null; }
         public static nuint Clamp(nuint value, nuint min, nuint max) { throw null; }
@@ -6399,6 +6558,8 @@ namespace System
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(nuint other) { throw null; }
         public override int GetHashCode() { throw null; }
+        public static bool IsEvenInteger(nuint value) { throw null; }
+        public static bool IsOddInteger(nuint value) { throw null; }
         public static bool IsPow2(nuint value) { throw null; }
         public static nuint LeadingZeroCount(nuint value) { throw null; }
         public static nuint Log2(nuint value) { throw null; }
@@ -6449,14 +6610,21 @@ namespace System
         static nuint System.Numerics.IMultiplyOperators<nuint, nuint, nuint>.operator checked *(nuint left, nuint right) { throw null; }
         static nuint System.Numerics.IMultiplyOperators<nuint, nuint, nuint>.operator *(nuint left, nuint right) { throw null; }
         static nuint System.Numerics.INumberBase<nuint>.Abs(nuint value) { throw null; }
+        static bool System.Numerics.INumberBase<nuint>.IsCanonical(nuint value) { throw null; }
+        static bool System.Numerics.INumberBase<nuint>.IsComplexNumber(nuint value) { throw null; }
         static bool System.Numerics.INumberBase<nuint>.IsFinite(nuint value) { throw null; }
+        static bool System.Numerics.INumberBase<nuint>.IsImaginaryNumber(nuint value) { throw null; }
         static bool System.Numerics.INumberBase<nuint>.IsInfinity(nuint value) { throw null; }
+        static bool System.Numerics.INumberBase<nuint>.IsInteger(nuint value) { throw null; }
         static bool System.Numerics.INumberBase<nuint>.IsNaN(nuint value) { throw null; }
         static bool System.Numerics.INumberBase<nuint>.IsNegative(nuint value) { throw null; }
         static bool System.Numerics.INumberBase<nuint>.IsNegativeInfinity(nuint value) { throw null; }
         static bool System.Numerics.INumberBase<nuint>.IsNormal(nuint value) { throw null; }
+        static bool System.Numerics.INumberBase<nuint>.IsPositive(nuint value) { throw null; }
         static bool System.Numerics.INumberBase<nuint>.IsPositiveInfinity(nuint value) { throw null; }
+        static bool System.Numerics.INumberBase<nuint>.IsRealNumber(nuint value) { throw null; }
         static bool System.Numerics.INumberBase<nuint>.IsSubnormal(nuint value) { throw null; }
+        static bool System.Numerics.INumberBase<nuint>.IsZero(nuint value) { throw null; }
         static nuint System.Numerics.INumberBase<nuint>.MaxMagnitude(nuint x, nuint y) { throw null; }
         static nuint System.Numerics.INumberBase<nuint>.MaxMagnitudeNumber(nuint x, nuint y) { throw null; }
         static nuint System.Numerics.INumberBase<nuint>.MinMagnitude(nuint x, nuint y) { throw null; }
@@ -10244,19 +10412,29 @@ namespace System.Numerics
     public partial interface INumberBase<TSelf> : System.IEquatable<TSelf>, System.IFormattable, System.IParsable<TSelf>, System.ISpanFormattable, System.ISpanParsable<TSelf>, System.Numerics.IAdditionOperators<TSelf, TSelf, TSelf>, System.Numerics.IAdditiveIdentity<TSelf, TSelf>, System.Numerics.IDecrementOperators<TSelf>, System.Numerics.IDivisionOperators<TSelf, TSelf, TSelf>, System.Numerics.IEqualityOperators<TSelf, TSelf>, System.Numerics.IIncrementOperators<TSelf>, System.Numerics.IMultiplicativeIdentity<TSelf, TSelf>, System.Numerics.IMultiplyOperators<TSelf, TSelf, TSelf>, System.Numerics.ISubtractionOperators<TSelf, TSelf, TSelf>, System.Numerics.IUnaryNegationOperators<TSelf, TSelf>, System.Numerics.IUnaryPlusOperators<TSelf, TSelf> where TSelf : System.Numerics.INumberBase<TSelf>
     {
         static abstract TSelf One { get; }
+        static abstract int Radix { get; }
         static abstract TSelf Zero { get; }
         static abstract TSelf Abs(TSelf value);
         static abstract TSelf CreateChecked<TOther>(TOther value) where TOther : INumberBase<TOther>;
         static abstract TSelf CreateSaturating<TOther>(TOther value) where TOther : INumberBase<TOther>;
         static abstract TSelf CreateTruncating<TOther>(TOther value) where TOther : INumberBase<TOther>;
+        static abstract bool IsCanonical(TSelf value);
+        static abstract bool IsComplexNumber(TSelf value);
+        static abstract bool IsEvenInteger(TSelf value);
         static abstract bool IsFinite(TSelf value);
+        static abstract bool IsImaginaryNumber(TSelf value);
         static abstract bool IsInfinity(TSelf value);
+        static abstract bool IsInteger(TSelf value);
         static abstract bool IsNaN(TSelf value);
         static abstract bool IsNegative(TSelf value);
         static abstract bool IsNegativeInfinity(TSelf value);
         static abstract bool IsNormal(TSelf value);
+        static abstract bool IsOddInteger(TSelf value);
+        static abstract bool IsPositive(TSelf value);
         static abstract bool IsPositiveInfinity(TSelf value);
+        static abstract bool IsRealNumber(TSelf value);
         static abstract bool IsSubnormal(TSelf value);
+        static abstract bool IsZero(TSelf value);
         static abstract TSelf MaxMagnitude(TSelf x, TSelf y);
         static abstract TSelf MaxMagnitudeNumber(TSelf x, TSelf y);
         static abstract TSelf MinMagnitude(TSelf x, TSelf y);

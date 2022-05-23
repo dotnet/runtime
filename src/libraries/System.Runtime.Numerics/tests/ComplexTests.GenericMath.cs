@@ -258,6 +258,12 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public static void RadixTest()
+        {
+            Assert.Equal(2, NumberBaseHelper<Complex>.Radix);
+        }
+
+        [Fact]
         public static void ZeroTest()
         {
             AssertBitwiseEqual(0.0, NumberBaseHelper<Complex>.Zero);
@@ -692,6 +698,186 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public static void IsCanonicalTest()
+        {
+            Assert.True(NumberBaseHelper<Complex>.IsCanonical(double.NegativeInfinity));
+            Assert.True(NumberBaseHelper<Complex>.IsCanonical(double.MinValue));
+            Assert.True(NumberBaseHelper<Complex>.IsCanonical(-1.0));
+            Assert.True(NumberBaseHelper<Complex>.IsCanonical(-MinNormal));
+            Assert.True(NumberBaseHelper<Complex>.IsCanonical(-MaxSubnormal));
+            Assert.True(NumberBaseHelper<Complex>.IsCanonical(-double.Epsilon));
+            Assert.True(NumberBaseHelper<Complex>.IsCanonical(-0.0));
+            Assert.True(NumberBaseHelper<Complex>.IsCanonical(double.NaN));
+            Assert.True(NumberBaseHelper<Complex>.IsCanonical(0.0));
+            Assert.True(NumberBaseHelper<Complex>.IsCanonical(double.Epsilon));
+            Assert.True(NumberBaseHelper<Complex>.IsCanonical(MaxSubnormal));
+            Assert.True(NumberBaseHelper<Complex>.IsCanonical(MinNormal));
+            Assert.True(NumberBaseHelper<Complex>.IsCanonical(1.0));
+            Assert.True(NumberBaseHelper<Complex>.IsCanonical(double.MaxValue));
+            Assert.True(NumberBaseHelper<Complex>.IsCanonical(double.PositiveInfinity));
+
+            Assert.True(NumberBaseHelper<Complex>.IsCanonical(new Complex(-1.0, double.NegativeInfinity)));
+            Assert.True(NumberBaseHelper<Complex>.IsCanonical(new Complex(-1.0, -1.0)));
+            Assert.True(NumberBaseHelper<Complex>.IsCanonical(new Complex(-1.0, -0.0)));
+            Assert.True(NumberBaseHelper<Complex>.IsCanonical(new Complex(-1.0, double.NaN)));
+            Assert.True(NumberBaseHelper<Complex>.IsCanonical(new Complex(-1.0, 0.0)));
+            Assert.True(NumberBaseHelper<Complex>.IsCanonical(new Complex(-1.0, 1.0)));
+            Assert.True(NumberBaseHelper<Complex>.IsCanonical(new Complex(-1.0, double.PositiveInfinity)));
+
+            Assert.True(NumberBaseHelper<Complex>.IsCanonical(new Complex(-0.0, double.NegativeInfinity)));
+            Assert.True(NumberBaseHelper<Complex>.IsCanonical(new Complex(-0.0, -1.0)));
+            Assert.True(NumberBaseHelper<Complex>.IsCanonical(new Complex(-0.0, -0.0)));
+            Assert.True(NumberBaseHelper<Complex>.IsCanonical(new Complex(-0.0, double.NaN)));
+            Assert.True(NumberBaseHelper<Complex>.IsCanonical(new Complex(-0.0, 0.0)));
+            Assert.True(NumberBaseHelper<Complex>.IsCanonical(new Complex(-0.0, 1.0)));
+            Assert.True(NumberBaseHelper<Complex>.IsCanonical(new Complex(-0.0, double.PositiveInfinity)));
+
+            Assert.True(NumberBaseHelper<Complex>.IsCanonical(new Complex(double.NaN, double.NegativeInfinity)));
+            Assert.True(NumberBaseHelper<Complex>.IsCanonical(new Complex(double.NaN, -1.0)));
+            Assert.True(NumberBaseHelper<Complex>.IsCanonical(new Complex(double.NaN, -0.0)));
+            Assert.True(NumberBaseHelper<Complex>.IsCanonical(new Complex(double.NaN, double.NaN)));
+            Assert.True(NumberBaseHelper<Complex>.IsCanonical(new Complex(double.NaN, 0.0)));
+            Assert.True(NumberBaseHelper<Complex>.IsCanonical(new Complex(double.NaN, 1.0)));
+            Assert.True(NumberBaseHelper<Complex>.IsCanonical(new Complex(double.NaN, double.PositiveInfinity)));
+
+            Assert.True(NumberBaseHelper<Complex>.IsCanonical(new Complex(0.0, double.NegativeInfinity)));
+            Assert.True(NumberBaseHelper<Complex>.IsCanonical(new Complex(0.0, -1.0)));
+            Assert.True(NumberBaseHelper<Complex>.IsCanonical(new Complex(0.0, -0.0)));
+            Assert.True(NumberBaseHelper<Complex>.IsCanonical(new Complex(0.0, double.NaN)));
+            Assert.True(NumberBaseHelper<Complex>.IsCanonical(new Complex(0.0, 0.0)));
+            Assert.True(NumberBaseHelper<Complex>.IsCanonical(new Complex(0.0, 1.0)));
+            Assert.True(NumberBaseHelper<Complex>.IsCanonical(new Complex(0.0, double.PositiveInfinity)));
+
+            Assert.True(NumberBaseHelper<Complex>.IsCanonical(new Complex(1.0, double.NegativeInfinity)));
+            Assert.True(NumberBaseHelper<Complex>.IsCanonical(new Complex(1.0, -1.0)));
+            Assert.True(NumberBaseHelper<Complex>.IsCanonical(new Complex(1.0, -0.0)));
+            Assert.True(NumberBaseHelper<Complex>.IsCanonical(new Complex(1.0, double.NaN)));
+            Assert.True(NumberBaseHelper<Complex>.IsCanonical(new Complex(1.0, 0.0)));
+            Assert.True(NumberBaseHelper<Complex>.IsCanonical(new Complex(1.0, 1.0)));
+            Assert.True(NumberBaseHelper<Complex>.IsCanonical(new Complex(1.0, double.PositiveInfinity)));
+        }
+
+        [Fact]
+        public static void IsComplexNumberTest()
+        {
+            Assert.False(NumberBaseHelper<Complex>.IsComplexNumber(double.NegativeInfinity));
+            Assert.False(NumberBaseHelper<Complex>.IsComplexNumber(double.MinValue));
+            Assert.False(NumberBaseHelper<Complex>.IsComplexNumber(-1.0));
+            Assert.False(NumberBaseHelper<Complex>.IsComplexNumber(-MinNormal));
+            Assert.False(NumberBaseHelper<Complex>.IsComplexNumber(-MaxSubnormal));
+            Assert.False(NumberBaseHelper<Complex>.IsComplexNumber(-double.Epsilon));
+            Assert.False(NumberBaseHelper<Complex>.IsComplexNumber(-0.0));
+            Assert.False(NumberBaseHelper<Complex>.IsComplexNumber(double.NaN));
+            Assert.False(NumberBaseHelper<Complex>.IsComplexNumber(0.0));
+            Assert.False(NumberBaseHelper<Complex>.IsComplexNumber(double.Epsilon));
+            Assert.False(NumberBaseHelper<Complex>.IsComplexNumber(MaxSubnormal));
+            Assert.False(NumberBaseHelper<Complex>.IsComplexNumber(MinNormal));
+            Assert.False(NumberBaseHelper<Complex>.IsComplexNumber(1.0));
+            Assert.False(NumberBaseHelper<Complex>.IsComplexNumber(double.MaxValue));
+            Assert.False(NumberBaseHelper<Complex>.IsComplexNumber(double.PositiveInfinity));
+
+            Assert.True(NumberBaseHelper<Complex>.IsComplexNumber(new Complex(-1.0, double.NegativeInfinity)));
+            Assert.True(NumberBaseHelper<Complex>.IsComplexNumber(new Complex(-1.0, -1.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsComplexNumber(new Complex(-1.0, -0.0)));
+            Assert.True(NumberBaseHelper<Complex>.IsComplexNumber(new Complex(-1.0, double.NaN)));
+            Assert.False(NumberBaseHelper<Complex>.IsComplexNumber(new Complex(-1.0, 0.0)));
+            Assert.True(NumberBaseHelper<Complex>.IsComplexNumber(new Complex(-1.0, 1.0)));
+            Assert.True(NumberBaseHelper<Complex>.IsComplexNumber(new Complex(-1.0, double.PositiveInfinity)));
+
+            Assert.False(NumberBaseHelper<Complex>.IsComplexNumber(new Complex(-0.0, double.NegativeInfinity)));
+            Assert.False(NumberBaseHelper<Complex>.IsComplexNumber(new Complex(-0.0, -1.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsComplexNumber(new Complex(-0.0, -0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsComplexNumber(new Complex(-0.0, double.NaN)));
+            Assert.False(NumberBaseHelper<Complex>.IsComplexNumber(new Complex(-0.0, 0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsComplexNumber(new Complex(-0.0, 1.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsComplexNumber(new Complex(-0.0, double.PositiveInfinity)));
+
+            Assert.True(NumberBaseHelper<Complex>.IsComplexNumber(new Complex(double.NaN, double.NegativeInfinity)));
+            Assert.True(NumberBaseHelper<Complex>.IsComplexNumber(new Complex(double.NaN, -1.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsComplexNumber(new Complex(double.NaN, -0.0)));
+            Assert.True(NumberBaseHelper<Complex>.IsComplexNumber(new Complex(double.NaN, double.NaN)));
+            Assert.False(NumberBaseHelper<Complex>.IsComplexNumber(new Complex(double.NaN, 0.0)));
+            Assert.True(NumberBaseHelper<Complex>.IsComplexNumber(new Complex(double.NaN, 1.0)));
+            Assert.True(NumberBaseHelper<Complex>.IsComplexNumber(new Complex(double.NaN, double.PositiveInfinity)));
+
+            Assert.False(NumberBaseHelper<Complex>.IsComplexNumber(new Complex(0.0, double.NegativeInfinity)));
+            Assert.False(NumberBaseHelper<Complex>.IsComplexNumber(new Complex(0.0, -1.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsComplexNumber(new Complex(0.0, -0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsComplexNumber(new Complex(0.0, double.NaN)));
+            Assert.False(NumberBaseHelper<Complex>.IsComplexNumber(new Complex(0.0, 0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsComplexNumber(new Complex(0.0, 1.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsComplexNumber(new Complex(0.0, double.PositiveInfinity)));
+
+            Assert.True(NumberBaseHelper<Complex>.IsComplexNumber(new Complex(1.0, double.NegativeInfinity)));
+            Assert.True(NumberBaseHelper<Complex>.IsComplexNumber(new Complex(1.0, -1.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsComplexNumber(new Complex(1.0, -0.0)));
+            Assert.True(NumberBaseHelper<Complex>.IsComplexNumber(new Complex(1.0, double.NaN)));
+            Assert.False(NumberBaseHelper<Complex>.IsComplexNumber(new Complex(1.0, 0.0)));
+            Assert.True(NumberBaseHelper<Complex>.IsComplexNumber(new Complex(1.0, 1.0)));
+            Assert.True(NumberBaseHelper<Complex>.IsComplexNumber(new Complex(1.0, double.PositiveInfinity)));
+        }
+
+        [Fact]
+        public static void IsEvenIntegerTest()
+        {
+            Assert.False(NumberBaseHelper<Complex>.IsEvenInteger(double.NegativeInfinity));
+            Assert.True(NumberBaseHelper<Complex>.IsEvenInteger(double.MinValue));
+            Assert.False(NumberBaseHelper<Complex>.IsEvenInteger(-1.0));
+            Assert.False(NumberBaseHelper<Complex>.IsEvenInteger(-MinNormal));
+            Assert.False(NumberBaseHelper<Complex>.IsEvenInteger(-MaxSubnormal));
+            Assert.False(NumberBaseHelper<Complex>.IsEvenInteger(-double.Epsilon));
+            Assert.True(NumberBaseHelper<Complex>.IsEvenInteger(-0.0));
+            Assert.False(NumberBaseHelper<Complex>.IsEvenInteger(double.NaN));
+            Assert.True(NumberBaseHelper<Complex>.IsEvenInteger(0.0));
+            Assert.False(NumberBaseHelper<Complex>.IsEvenInteger(double.Epsilon));
+            Assert.False(NumberBaseHelper<Complex>.IsEvenInteger(MaxSubnormal));
+            Assert.False(NumberBaseHelper<Complex>.IsEvenInteger(MinNormal));
+            Assert.False(NumberBaseHelper<Complex>.IsEvenInteger(1.0));
+            Assert.True(NumberBaseHelper<Complex>.IsEvenInteger(double.MaxValue));
+            Assert.False(NumberBaseHelper<Complex>.IsEvenInteger(double.PositiveInfinity));
+
+            Assert.False(NumberBaseHelper<Complex>.IsEvenInteger(new Complex(-1.0, double.NegativeInfinity)));
+            Assert.False(NumberBaseHelper<Complex>.IsEvenInteger(new Complex(-1.0, -1.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsEvenInteger(new Complex(-1.0, -0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsEvenInteger(new Complex(-1.0, double.NaN)));
+            Assert.False(NumberBaseHelper<Complex>.IsEvenInteger(new Complex(-1.0, 0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsEvenInteger(new Complex(-1.0, 1.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsEvenInteger(new Complex(-1.0, double.PositiveInfinity)));
+
+            Assert.False(NumberBaseHelper<Complex>.IsEvenInteger(new Complex(-0.0, double.NegativeInfinity)));
+            Assert.False(NumberBaseHelper<Complex>.IsEvenInteger(new Complex(-0.0, -1.0)));
+            Assert.True(NumberBaseHelper<Complex>.IsEvenInteger(new Complex(-0.0, -0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsEvenInteger(new Complex(-0.0, double.NaN)));
+            Assert.True(NumberBaseHelper<Complex>.IsEvenInteger(new Complex(-0.0, 0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsEvenInteger(new Complex(-0.0, 1.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsEvenInteger(new Complex(-0.0, double.PositiveInfinity)));
+
+            Assert.False(NumberBaseHelper<Complex>.IsEvenInteger(new Complex(double.NaN, double.NegativeInfinity)));
+            Assert.False(NumberBaseHelper<Complex>.IsEvenInteger(new Complex(double.NaN, -1.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsEvenInteger(new Complex(double.NaN, -0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsEvenInteger(new Complex(double.NaN, double.NaN)));
+            Assert.False(NumberBaseHelper<Complex>.IsEvenInteger(new Complex(double.NaN, 0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsEvenInteger(new Complex(double.NaN, 1.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsEvenInteger(new Complex(double.NaN, double.PositiveInfinity)));
+
+            Assert.False(NumberBaseHelper<Complex>.IsEvenInteger(new Complex(0.0, double.NegativeInfinity)));
+            Assert.False(NumberBaseHelper<Complex>.IsEvenInteger(new Complex(0.0, -1.0)));
+            Assert.True(NumberBaseHelper<Complex>.IsEvenInteger(new Complex(0.0, -0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsEvenInteger(new Complex(0.0, double.NaN)));
+            Assert.True(NumberBaseHelper<Complex>.IsEvenInteger(new Complex(0.0, 0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsEvenInteger(new Complex(0.0, 1.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsEvenInteger(new Complex(0.0, double.PositiveInfinity)));
+
+            Assert.False(NumberBaseHelper<Complex>.IsEvenInteger(new Complex(1.0, double.NegativeInfinity)));
+            Assert.False(NumberBaseHelper<Complex>.IsEvenInteger(new Complex(1.0, -1.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsEvenInteger(new Complex(1.0, -0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsEvenInteger(new Complex(1.0, double.NaN)));
+            Assert.False(NumberBaseHelper<Complex>.IsEvenInteger(new Complex(1.0, 0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsEvenInteger(new Complex(1.0, 1.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsEvenInteger(new Complex(1.0, double.PositiveInfinity)));
+        }
+
+        [Fact]
         public static void IsFiniteTest()
         {
             Assert.False(NumberBaseHelper<Complex>.IsFinite(double.NegativeInfinity));
@@ -752,6 +938,66 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public static void IsImaginaryNumberTest()
+        {
+            Assert.False(NumberBaseHelper<Complex>.IsImaginaryNumber(double.NegativeInfinity));
+            Assert.False(NumberBaseHelper<Complex>.IsImaginaryNumber(double.MinValue));
+            Assert.False(NumberBaseHelper<Complex>.IsImaginaryNumber(-1.0));
+            Assert.False(NumberBaseHelper<Complex>.IsImaginaryNumber(-MinNormal));
+            Assert.False(NumberBaseHelper<Complex>.IsImaginaryNumber(-MaxSubnormal));
+            Assert.False(NumberBaseHelper<Complex>.IsImaginaryNumber(-double.Epsilon));
+            Assert.True(NumberBaseHelper<Complex>.IsImaginaryNumber(-0.0));
+            Assert.False(NumberBaseHelper<Complex>.IsImaginaryNumber(double.NaN));
+            Assert.True(NumberBaseHelper<Complex>.IsImaginaryNumber(0.0));
+            Assert.False(NumberBaseHelper<Complex>.IsImaginaryNumber(double.Epsilon));
+            Assert.False(NumberBaseHelper<Complex>.IsImaginaryNumber(MaxSubnormal));
+            Assert.False(NumberBaseHelper<Complex>.IsImaginaryNumber(MinNormal));
+            Assert.False(NumberBaseHelper<Complex>.IsImaginaryNumber(1.0));
+            Assert.False(NumberBaseHelper<Complex>.IsImaginaryNumber(double.MaxValue));
+            Assert.False(NumberBaseHelper<Complex>.IsImaginaryNumber(double.PositiveInfinity));
+
+            Assert.False(NumberBaseHelper<Complex>.IsImaginaryNumber(new Complex(-1.0, double.NegativeInfinity)));
+            Assert.False(NumberBaseHelper<Complex>.IsImaginaryNumber(new Complex(-1.0, -1.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsImaginaryNumber(new Complex(-1.0, -0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsImaginaryNumber(new Complex(-1.0, double.NaN)));
+            Assert.False(NumberBaseHelper<Complex>.IsImaginaryNumber(new Complex(-1.0, 0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsImaginaryNumber(new Complex(-1.0, 1.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsImaginaryNumber(new Complex(-1.0, double.PositiveInfinity)));
+
+            Assert.True(NumberBaseHelper<Complex>.IsImaginaryNumber(new Complex(-0.0, double.NegativeInfinity)));
+            Assert.True(NumberBaseHelper<Complex>.IsImaginaryNumber(new Complex(-0.0, -1.0)));
+            Assert.True(NumberBaseHelper<Complex>.IsImaginaryNumber(new Complex(-0.0, -0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsImaginaryNumber(new Complex(-0.0, double.NaN)));
+            Assert.True(NumberBaseHelper<Complex>.IsImaginaryNumber(new Complex(-0.0, 0.0)));
+            Assert.True(NumberBaseHelper<Complex>.IsImaginaryNumber(new Complex(-0.0, 1.0)));
+            Assert.True(NumberBaseHelper<Complex>.IsImaginaryNumber(new Complex(-0.0, double.PositiveInfinity)));
+
+            Assert.False(NumberBaseHelper<Complex>.IsImaginaryNumber(new Complex(double.NaN, double.NegativeInfinity)));
+            Assert.False(NumberBaseHelper<Complex>.IsImaginaryNumber(new Complex(double.NaN, -1.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsImaginaryNumber(new Complex(double.NaN, -0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsImaginaryNumber(new Complex(double.NaN, double.NaN)));
+            Assert.False(NumberBaseHelper<Complex>.IsImaginaryNumber(new Complex(double.NaN, 0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsImaginaryNumber(new Complex(double.NaN, 1.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsImaginaryNumber(new Complex(double.NaN, double.PositiveInfinity)));
+
+            Assert.True(NumberBaseHelper<Complex>.IsImaginaryNumber(new Complex(0.0, double.NegativeInfinity)));
+            Assert.True(NumberBaseHelper<Complex>.IsImaginaryNumber(new Complex(0.0, -1.0)));
+            Assert.True(NumberBaseHelper<Complex>.IsImaginaryNumber(new Complex(0.0, -0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsImaginaryNumber(new Complex(0.0, double.NaN)));
+            Assert.True(NumberBaseHelper<Complex>.IsImaginaryNumber(new Complex(0.0, 0.0)));
+            Assert.True(NumberBaseHelper<Complex>.IsImaginaryNumber(new Complex(0.0, 1.0)));
+            Assert.True(NumberBaseHelper<Complex>.IsImaginaryNumber(new Complex(0.0, double.PositiveInfinity)));
+
+            Assert.False(NumberBaseHelper<Complex>.IsImaginaryNumber(new Complex(1.0, double.NegativeInfinity)));
+            Assert.False(NumberBaseHelper<Complex>.IsImaginaryNumber(new Complex(1.0, -1.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsImaginaryNumber(new Complex(1.0, -0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsImaginaryNumber(new Complex(1.0, double.NaN)));
+            Assert.False(NumberBaseHelper<Complex>.IsImaginaryNumber(new Complex(1.0, 0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsImaginaryNumber(new Complex(1.0, 1.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsImaginaryNumber(new Complex(1.0, double.PositiveInfinity)));
+        }
+
+        [Fact]
         public static void IsInfinityTest()
         {
             Assert.True(NumberBaseHelper<Complex>.IsInfinity(double.NegativeInfinity));
@@ -809,6 +1055,66 @@ namespace System.Numerics.Tests
             Assert.False(NumberBaseHelper<Complex>.IsInfinity(new Complex(1.0, 0.0)));
             Assert.False(NumberBaseHelper<Complex>.IsInfinity(new Complex(1.0, 1.0)));
             Assert.True(NumberBaseHelper<Complex>.IsInfinity(new Complex(1.0, double.PositiveInfinity)));
+        }
+
+        [Fact]
+        public static void IsIntegerTest()
+        {
+            Assert.False(NumberBaseHelper<Complex>.IsInteger(double.NegativeInfinity));
+            Assert.True(NumberBaseHelper<Complex>.IsInteger(double.MinValue));
+            Assert.True(NumberBaseHelper<Complex>.IsInteger(-1.0));
+            Assert.False(NumberBaseHelper<Complex>.IsInteger(-MinNormal));
+            Assert.False(NumberBaseHelper<Complex>.IsInteger(-MaxSubnormal));
+            Assert.False(NumberBaseHelper<Complex>.IsInteger(-double.Epsilon));
+            Assert.True(NumberBaseHelper<Complex>.IsInteger(-0.0));
+            Assert.False(NumberBaseHelper<Complex>.IsInteger(double.NaN));
+            Assert.True(NumberBaseHelper<Complex>.IsInteger(0.0));
+            Assert.False(NumberBaseHelper<Complex>.IsInteger(double.Epsilon));
+            Assert.False(NumberBaseHelper<Complex>.IsInteger(MaxSubnormal));
+            Assert.False(NumberBaseHelper<Complex>.IsInteger(MinNormal));
+            Assert.True(NumberBaseHelper<Complex>.IsInteger(1.0));
+            Assert.True(NumberBaseHelper<Complex>.IsInteger(double.MaxValue));
+            Assert.False(NumberBaseHelper<Complex>.IsInteger(double.PositiveInfinity));
+
+            Assert.False(NumberBaseHelper<Complex>.IsInteger(new Complex(-1.0, double.NegativeInfinity)));
+            Assert.False(NumberBaseHelper<Complex>.IsInteger(new Complex(-1.0, -1.0)));
+            Assert.True(NumberBaseHelper<Complex>.IsInteger(new Complex(-1.0, -0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsInteger(new Complex(-1.0, double.NaN)));
+            Assert.True(NumberBaseHelper<Complex>.IsInteger(new Complex(-1.0, 0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsInteger(new Complex(-1.0, 1.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsInteger(new Complex(-1.0, double.PositiveInfinity)));
+
+            Assert.False(NumberBaseHelper<Complex>.IsInteger(new Complex(-0.0, double.NegativeInfinity)));
+            Assert.False(NumberBaseHelper<Complex>.IsInteger(new Complex(-0.0, -1.0)));
+            Assert.True(NumberBaseHelper<Complex>.IsInteger(new Complex(-0.0, -0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsInteger(new Complex(-0.0, double.NaN)));
+            Assert.True(NumberBaseHelper<Complex>.IsInteger(new Complex(-0.0, 0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsInteger(new Complex(-0.0, 1.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsInteger(new Complex(-0.0, double.PositiveInfinity)));
+
+            Assert.False(NumberBaseHelper<Complex>.IsInteger(new Complex(double.NaN, double.NegativeInfinity)));
+            Assert.False(NumberBaseHelper<Complex>.IsInteger(new Complex(double.NaN, -1.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsInteger(new Complex(double.NaN, -0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsInteger(new Complex(double.NaN, double.NaN)));
+            Assert.False(NumberBaseHelper<Complex>.IsInteger(new Complex(double.NaN, 0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsInteger(new Complex(double.NaN, 1.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsInteger(new Complex(double.NaN, double.PositiveInfinity)));
+
+            Assert.False(NumberBaseHelper<Complex>.IsInteger(new Complex(0.0, double.NegativeInfinity)));
+            Assert.False(NumberBaseHelper<Complex>.IsInteger(new Complex(0.0, -1.0)));
+            Assert.True(NumberBaseHelper<Complex>.IsInteger(new Complex(0.0, -0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsInteger(new Complex(0.0, double.NaN)));
+            Assert.True(NumberBaseHelper<Complex>.IsInteger(new Complex(0.0, 0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsInteger(new Complex(0.0, 1.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsInteger(new Complex(0.0, double.PositiveInfinity)));
+
+            Assert.False(NumberBaseHelper<Complex>.IsInteger(new Complex(1.0, double.NegativeInfinity)));
+            Assert.False(NumberBaseHelper<Complex>.IsInteger(new Complex(1.0, -1.0)));
+            Assert.True(NumberBaseHelper<Complex>.IsInteger(new Complex(1.0, -0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsInteger(new Complex(1.0, double.NaN)));
+            Assert.True(NumberBaseHelper<Complex>.IsInteger(new Complex(1.0, 0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsInteger(new Complex(1.0, 1.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsInteger(new Complex(1.0, double.PositiveInfinity)));
         }
 
         [Fact]
@@ -1052,6 +1358,126 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public static void IsOddIntegerTest()
+        {
+            Assert.False(NumberBaseHelper<Complex>.IsOddInteger(double.NegativeInfinity));
+            Assert.False(NumberBaseHelper<Complex>.IsOddInteger(double.MinValue));
+            Assert.True(NumberBaseHelper<Complex>.IsOddInteger(-1.0));
+            Assert.False(NumberBaseHelper<Complex>.IsOddInteger(-MinNormal));
+            Assert.False(NumberBaseHelper<Complex>.IsOddInteger(-MaxSubnormal));
+            Assert.False(NumberBaseHelper<Complex>.IsOddInteger(-double.Epsilon));
+            Assert.False(NumberBaseHelper<Complex>.IsOddInteger(-0.0));
+            Assert.False(NumberBaseHelper<Complex>.IsOddInteger(double.NaN));
+            Assert.False(NumberBaseHelper<Complex>.IsOddInteger(0.0));
+            Assert.False(NumberBaseHelper<Complex>.IsOddInteger(double.Epsilon));
+            Assert.False(NumberBaseHelper<Complex>.IsOddInteger(MaxSubnormal));
+            Assert.False(NumberBaseHelper<Complex>.IsOddInteger(MinNormal));
+            Assert.True(NumberBaseHelper<Complex>.IsOddInteger(1.0));
+            Assert.False(NumberBaseHelper<Complex>.IsOddInteger(double.MaxValue));
+            Assert.False(NumberBaseHelper<Complex>.IsOddInteger(double.PositiveInfinity));
+
+            Assert.False(NumberBaseHelper<Complex>.IsOddInteger(new Complex(-1.0, double.NegativeInfinity)));
+            Assert.False(NumberBaseHelper<Complex>.IsOddInteger(new Complex(-1.0, -1.0)));
+            Assert.True(NumberBaseHelper<Complex>.IsOddInteger(new Complex(-1.0, -0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsOddInteger(new Complex(-1.0, double.NaN)));
+            Assert.True(NumberBaseHelper<Complex>.IsOddInteger(new Complex(-1.0, 0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsOddInteger(new Complex(-1.0, 1.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsOddInteger(new Complex(-1.0, double.PositiveInfinity)));
+
+            Assert.False(NumberBaseHelper<Complex>.IsOddInteger(new Complex(-0.0, double.NegativeInfinity)));
+            Assert.False(NumberBaseHelper<Complex>.IsOddInteger(new Complex(-0.0, -1.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsOddInteger(new Complex(-0.0, -0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsOddInteger(new Complex(-0.0, double.NaN)));
+            Assert.False(NumberBaseHelper<Complex>.IsOddInteger(new Complex(-0.0, 0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsOddInteger(new Complex(-0.0, 1.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsOddInteger(new Complex(-0.0, double.PositiveInfinity)));
+
+            Assert.False(NumberBaseHelper<Complex>.IsOddInteger(new Complex(double.NaN, double.NegativeInfinity)));
+            Assert.False(NumberBaseHelper<Complex>.IsOddInteger(new Complex(double.NaN, -1.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsOddInteger(new Complex(double.NaN, -0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsOddInteger(new Complex(double.NaN, double.NaN)));
+            Assert.False(NumberBaseHelper<Complex>.IsOddInteger(new Complex(double.NaN, 0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsOddInteger(new Complex(double.NaN, 1.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsOddInteger(new Complex(double.NaN, double.PositiveInfinity)));
+
+            Assert.False(NumberBaseHelper<Complex>.IsOddInteger(new Complex(0.0, double.NegativeInfinity)));
+            Assert.False(NumberBaseHelper<Complex>.IsOddInteger(new Complex(0.0, -1.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsOddInteger(new Complex(0.0, -0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsOddInteger(new Complex(0.0, double.NaN)));
+            Assert.False(NumberBaseHelper<Complex>.IsOddInteger(new Complex(0.0, 0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsOddInteger(new Complex(0.0, 1.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsOddInteger(new Complex(0.0, double.PositiveInfinity)));
+
+            Assert.False(NumberBaseHelper<Complex>.IsOddInteger(new Complex(1.0, double.NegativeInfinity)));
+            Assert.False(NumberBaseHelper<Complex>.IsOddInteger(new Complex(1.0, -1.0)));
+            Assert.True(NumberBaseHelper<Complex>.IsOddInteger(new Complex(1.0, -0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsOddInteger(new Complex(1.0, double.NaN)));
+            Assert.True(NumberBaseHelper<Complex>.IsOddInteger(new Complex(1.0, 0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsOddInteger(new Complex(1.0, 1.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsOddInteger(new Complex(1.0, double.PositiveInfinity)));
+        }
+
+        [Fact]
+        public static void IsPositiveTest()
+        {
+            Assert.False(NumberBaseHelper<Complex>.IsPositive(double.NegativeInfinity));
+            Assert.False(NumberBaseHelper<Complex>.IsPositive(double.MinValue));
+            Assert.False(NumberBaseHelper<Complex>.IsPositive(-1.0));
+            Assert.False(NumberBaseHelper<Complex>.IsPositive(-MinNormal));
+            Assert.False(NumberBaseHelper<Complex>.IsPositive(-MaxSubnormal));
+            Assert.False(NumberBaseHelper<Complex>.IsPositive(-double.Epsilon));
+            Assert.False(NumberBaseHelper<Complex>.IsPositive(-0.0));
+            Assert.False(NumberBaseHelper<Complex>.IsPositive(double.NaN));
+            Assert.True(NumberBaseHelper<Complex>.IsPositive(0.0));
+            Assert.True(NumberBaseHelper<Complex>.IsPositive(double.Epsilon));
+            Assert.True(NumberBaseHelper<Complex>.IsPositive(MaxSubnormal));
+            Assert.True(NumberBaseHelper<Complex>.IsPositive(MinNormal));
+            Assert.True(NumberBaseHelper<Complex>.IsPositive(1.0));
+            Assert.True(NumberBaseHelper<Complex>.IsPositive(double.MaxValue));
+            Assert.True(NumberBaseHelper<Complex>.IsPositive(double.PositiveInfinity));
+
+            Assert.False(NumberBaseHelper<Complex>.IsPositive(new Complex(-1.0, double.NegativeInfinity)));
+            Assert.False(NumberBaseHelper<Complex>.IsPositive(new Complex(-1.0, -1.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsPositive(new Complex(-1.0, -0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsPositive(new Complex(-1.0, double.NaN)));
+            Assert.False(NumberBaseHelper<Complex>.IsPositive(new Complex(-1.0, 0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsPositive(new Complex(-1.0, 1.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsPositive(new Complex(-1.0, double.PositiveInfinity)));
+
+            Assert.False(NumberBaseHelper<Complex>.IsPositive(new Complex(-0.0, double.NegativeInfinity)));
+            Assert.False(NumberBaseHelper<Complex>.IsPositive(new Complex(-0.0, -1.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsPositive(new Complex(-0.0, -0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsPositive(new Complex(-0.0, double.NaN)));
+            Assert.False(NumberBaseHelper<Complex>.IsPositive(new Complex(-0.0, 0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsPositive(new Complex(-0.0, 1.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsPositive(new Complex(-0.0, double.PositiveInfinity)));
+
+            Assert.False(NumberBaseHelper<Complex>.IsPositive(new Complex(double.NaN, double.NegativeInfinity)));
+            Assert.False(NumberBaseHelper<Complex>.IsPositive(new Complex(double.NaN, -1.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsPositive(new Complex(double.NaN, -0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsPositive(new Complex(double.NaN, double.NaN)));
+            Assert.False(NumberBaseHelper<Complex>.IsPositive(new Complex(double.NaN, 0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsPositive(new Complex(double.NaN, 1.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsPositive(new Complex(double.NaN, double.PositiveInfinity)));
+
+            Assert.False(NumberBaseHelper<Complex>.IsPositive(new Complex(0.0, double.NegativeInfinity)));
+            Assert.False(NumberBaseHelper<Complex>.IsPositive(new Complex(0.0, -1.0)));
+            Assert.True(NumberBaseHelper<Complex>.IsPositive(new Complex(0.0, -0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsPositive(new Complex(0.0, double.NaN)));
+            Assert.True(NumberBaseHelper<Complex>.IsPositive(new Complex(0.0, 0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsPositive(new Complex(0.0, 1.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsPositive(new Complex(0.0, double.PositiveInfinity)));
+
+            Assert.False(NumberBaseHelper<Complex>.IsPositive(new Complex(1.0, double.NegativeInfinity)));
+            Assert.False(NumberBaseHelper<Complex>.IsPositive(new Complex(1.0, -1.0)));
+            Assert.True(NumberBaseHelper<Complex>.IsPositive(new Complex(1.0, -0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsPositive(new Complex(1.0, double.NaN)));
+            Assert.True(NumberBaseHelper<Complex>.IsPositive(new Complex(1.0, 0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsPositive(new Complex(1.0, 1.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsPositive(new Complex(1.0, double.PositiveInfinity)));
+        }
+
+        [Fact]
         public static void IsPositiveInfinityTest()
         {
             Assert.False(NumberBaseHelper<Complex>.IsPositiveInfinity(double.NegativeInfinity));
@@ -1112,6 +1538,66 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public static void IsRealNumberTest()
+        {
+            Assert.True(NumberBaseHelper<Complex>.IsRealNumber(double.NegativeInfinity));
+            Assert.True(NumberBaseHelper<Complex>.IsRealNumber(double.MinValue));
+            Assert.True(NumberBaseHelper<Complex>.IsRealNumber(-1.0));
+            Assert.True(NumberBaseHelper<Complex>.IsRealNumber(-MinNormal));
+            Assert.True(NumberBaseHelper<Complex>.IsRealNumber(-MaxSubnormal));
+            Assert.True(NumberBaseHelper<Complex>.IsRealNumber(-double.Epsilon));
+            Assert.True(NumberBaseHelper<Complex>.IsRealNumber(-0.0));
+            Assert.False(NumberBaseHelper<Complex>.IsRealNumber(double.NaN));
+            Assert.True(NumberBaseHelper<Complex>.IsRealNumber(0.0));
+            Assert.True(NumberBaseHelper<Complex>.IsRealNumber(double.Epsilon));
+            Assert.True(NumberBaseHelper<Complex>.IsRealNumber(MaxSubnormal));
+            Assert.True(NumberBaseHelper<Complex>.IsRealNumber(MinNormal));
+            Assert.True(NumberBaseHelper<Complex>.IsRealNumber(1.0));
+            Assert.True(NumberBaseHelper<Complex>.IsRealNumber(double.MaxValue));
+            Assert.True(NumberBaseHelper<Complex>.IsRealNumber(double.PositiveInfinity));
+
+            Assert.False(NumberBaseHelper<Complex>.IsRealNumber(new Complex(-1.0, double.NegativeInfinity)));
+            Assert.False(NumberBaseHelper<Complex>.IsRealNumber(new Complex(-1.0, -1.0)));
+            Assert.True(NumberBaseHelper<Complex>.IsRealNumber(new Complex(-1.0, -0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsRealNumber(new Complex(-1.0, double.NaN)));
+            Assert.True(NumberBaseHelper<Complex>.IsRealNumber(new Complex(-1.0, 0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsRealNumber(new Complex(-1.0, 1.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsRealNumber(new Complex(-1.0, double.PositiveInfinity)));
+
+            Assert.False(NumberBaseHelper<Complex>.IsRealNumber(new Complex(-0.0, double.NegativeInfinity)));
+            Assert.False(NumberBaseHelper<Complex>.IsRealNumber(new Complex(-0.0, -1.0)));
+            Assert.True(NumberBaseHelper<Complex>.IsRealNumber(new Complex(-0.0, -0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsRealNumber(new Complex(-0.0, double.NaN)));
+            Assert.True(NumberBaseHelper<Complex>.IsRealNumber(new Complex(-0.0, 0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsRealNumber(new Complex(-0.0, 1.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsRealNumber(new Complex(-0.0, double.PositiveInfinity)));
+
+            Assert.False(NumberBaseHelper<Complex>.IsRealNumber(new Complex(double.NaN, double.NegativeInfinity)));
+            Assert.False(NumberBaseHelper<Complex>.IsRealNumber(new Complex(double.NaN, -1.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsRealNumber(new Complex(double.NaN, -0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsRealNumber(new Complex(double.NaN, double.NaN)));
+            Assert.False(NumberBaseHelper<Complex>.IsRealNumber(new Complex(double.NaN, 0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsRealNumber(new Complex(double.NaN, 1.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsRealNumber(new Complex(double.NaN, double.PositiveInfinity)));
+
+            Assert.False(NumberBaseHelper<Complex>.IsRealNumber(new Complex(0.0, double.NegativeInfinity)));
+            Assert.False(NumberBaseHelper<Complex>.IsRealNumber(new Complex(0.0, -1.0)));
+            Assert.True(NumberBaseHelper<Complex>.IsRealNumber(new Complex(0.0, -0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsRealNumber(new Complex(0.0, double.NaN)));
+            Assert.True(NumberBaseHelper<Complex>.IsRealNumber(new Complex(0.0, 0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsRealNumber(new Complex(0.0, 1.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsRealNumber(new Complex(0.0, double.PositiveInfinity)));
+
+            Assert.False(NumberBaseHelper<Complex>.IsRealNumber(new Complex(1.0, double.NegativeInfinity)));
+            Assert.False(NumberBaseHelper<Complex>.IsRealNumber(new Complex(1.0, -1.0)));
+            Assert.True(NumberBaseHelper<Complex>.IsRealNumber(new Complex(1.0, -0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsRealNumber(new Complex(1.0, double.NaN)));
+            Assert.True(NumberBaseHelper<Complex>.IsRealNumber(new Complex(1.0, 0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsRealNumber(new Complex(1.0, 1.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsRealNumber(new Complex(1.0, double.PositiveInfinity)));
+        }
+
+        [Fact]
         public static void IsSubnormalTest()
         {
             Assert.False(NumberBaseHelper<Complex>.IsSubnormal(double.NegativeInfinity));
@@ -1169,6 +1655,66 @@ namespace System.Numerics.Tests
             Assert.False(NumberBaseHelper<Complex>.IsSubnormal(new Complex(1.0, 0.0)));
             Assert.False(NumberBaseHelper<Complex>.IsSubnormal(new Complex(1.0, 1.0)));
             Assert.False(NumberBaseHelper<Complex>.IsSubnormal(new Complex(1.0, double.PositiveInfinity)));
+        }
+
+        [Fact]
+        public static void IsZeroTest()
+        {
+            Assert.False(NumberBaseHelper<Complex>.IsZero(double.NegativeInfinity));
+            Assert.False(NumberBaseHelper<Complex>.IsZero(double.MinValue));
+            Assert.False(NumberBaseHelper<Complex>.IsZero(-1.0));
+            Assert.False(NumberBaseHelper<Complex>.IsZero(-MinNormal));
+            Assert.False(NumberBaseHelper<Complex>.IsZero(-MaxSubnormal));
+            Assert.False(NumberBaseHelper<Complex>.IsZero(-double.Epsilon));
+            Assert.True(NumberBaseHelper<Complex>.IsZero(-0.0));
+            Assert.False(NumberBaseHelper<Complex>.IsZero(double.NaN));
+            Assert.True(NumberBaseHelper<Complex>.IsZero(0.0));
+            Assert.False(NumberBaseHelper<Complex>.IsZero(double.Epsilon));
+            Assert.False(NumberBaseHelper<Complex>.IsZero(MaxSubnormal));
+            Assert.False(NumberBaseHelper<Complex>.IsZero(MinNormal));
+            Assert.False(NumberBaseHelper<Complex>.IsZero(1.0));
+            Assert.False(NumberBaseHelper<Complex>.IsZero(double.MaxValue));
+            Assert.False(NumberBaseHelper<Complex>.IsZero(double.PositiveInfinity));
+
+            Assert.False(NumberBaseHelper<Complex>.IsZero(new Complex(-1.0, double.NegativeInfinity)));
+            Assert.False(NumberBaseHelper<Complex>.IsZero(new Complex(-1.0, -1.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsZero(new Complex(-1.0, -0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsZero(new Complex(-1.0, double.NaN)));
+            Assert.False(NumberBaseHelper<Complex>.IsZero(new Complex(-1.0, 0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsZero(new Complex(-1.0, 1.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsZero(new Complex(-1.0, double.PositiveInfinity)));
+
+            Assert.False(NumberBaseHelper<Complex>.IsZero(new Complex(-0.0, double.NegativeInfinity)));
+            Assert.False(NumberBaseHelper<Complex>.IsZero(new Complex(-0.0, -1.0)));
+            Assert.True(NumberBaseHelper<Complex>.IsZero(new Complex(-0.0, -0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsZero(new Complex(-0.0, double.NaN)));
+            Assert.True(NumberBaseHelper<Complex>.IsZero(new Complex(-0.0, 0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsZero(new Complex(-0.0, 1.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsZero(new Complex(-0.0, double.PositiveInfinity)));
+
+            Assert.False(NumberBaseHelper<Complex>.IsZero(new Complex(double.NaN, double.NegativeInfinity)));
+            Assert.False(NumberBaseHelper<Complex>.IsZero(new Complex(double.NaN, -1.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsZero(new Complex(double.NaN, -0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsZero(new Complex(double.NaN, double.NaN)));
+            Assert.False(NumberBaseHelper<Complex>.IsZero(new Complex(double.NaN, 0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsZero(new Complex(double.NaN, 1.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsZero(new Complex(double.NaN, double.PositiveInfinity)));
+
+            Assert.False(NumberBaseHelper<Complex>.IsZero(new Complex(0.0, double.NegativeInfinity)));
+            Assert.False(NumberBaseHelper<Complex>.IsZero(new Complex(0.0, -1.0)));
+            Assert.True(NumberBaseHelper<Complex>.IsZero(new Complex(0.0, -0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsZero(new Complex(0.0, double.NaN)));
+            Assert.True(NumberBaseHelper<Complex>.IsZero(new Complex(0.0, 0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsZero(new Complex(0.0, 1.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsZero(new Complex(0.0, double.PositiveInfinity)));
+
+            Assert.False(NumberBaseHelper<Complex>.IsZero(new Complex(1.0, double.NegativeInfinity)));
+            Assert.False(NumberBaseHelper<Complex>.IsZero(new Complex(1.0, -1.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsZero(new Complex(1.0, -0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsZero(new Complex(1.0, double.NaN)));
+            Assert.False(NumberBaseHelper<Complex>.IsZero(new Complex(1.0, 0.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsZero(new Complex(1.0, 1.0)));
+            Assert.False(NumberBaseHelper<Complex>.IsZero(new Complex(1.0, double.PositiveInfinity)));
         }
 
         [Fact]
