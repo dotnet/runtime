@@ -12913,39 +12913,6 @@ GenTree* Compiler::fgOptimizeAddition(GenTreeOp* add)
             DEBUG_DESTROY_NODE(add);
             return op1;
         }
-
-        // Fold (~x + GT_CNS_INT/GT_CNS_LNG) to ((GT_CNS_INT/GT_CNS_LNG - 1) - x).
-        // Ex. (~x + 2) = (1 - x)
-        if (op1->OperIs(GT_NOT) && op2->IsIntegralConst() &&
-            (op2->AsIntCon()->IconValue() > 1 || op2->AsIntCon()->IconValue() < 1))
-        {
-        
-            add->SetOper(GT_SUB);
-        
-            add->gtOp1              = op2;
-            GenTreeIntCon* constOp2 = op2->AsIntCon();
-            constOp2->SetValueTruncating(constOp2->IconValue() - 1);
-        
-            add->gtOp2 = op1->AsOp()->gtGetOp1();
-            DEBUG_DESTROY_NODE(op1);
-        
-            return add;
-        }
-
-        // Fold (-1 - (~x)) to x
-        if ((op1->OperIs(GT_NEG) && op1->AsOp()->gtGetOp1()->OperIs(GT_NOT)) &&
-            op2->IsIntegralConst(-1)) 
-        {
-            GenTree* res = op1->AsOp()->gtGetOp1()->AsOp()->gtGetOp1();
-            res->SetVNsFromNode(add);
-
-            DEBUG_DESTROY_NODE(op1);
-            DEBUG_DESTROY_NODE(op2);
-            DEBUG_DESTROY_NODE(add);
-            return res;
-        }
-
-       
     }
 
     return nullptr;
