@@ -110,12 +110,12 @@ namespace ILLink.Shared.TrimAnalysis
 		private partial bool MarkAssociatedProperty (MethodProxy method)
 		{
             var propertyDefinition = method.Method.GetPropertyForAccessor();
-			if (propertyDefinition != null) {
-				_reflectionMarker.MarkProperty (_diagnosticContext.Origin, propertyDefinition, _memberWithRequirements);
-				return true;
-			}
+            if (propertyDefinition is null) {
+                return false;
+            }
 
-			return false;
+			_reflectionMarker.MarkProperty (_diagnosticContext.Origin, propertyDefinition, _memberWithRequirements);
+			return true;
 		}
 
 		private partial string GetContainingSymbolDisplayName () => _callingMethod.GetDisplayName ();

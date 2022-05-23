@@ -152,4 +152,7 @@ Global
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {A484CF9D-B203-427F-9D15-A5BBC6013421}
 	EndGlobalSection
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		ILLink.Shared\ILLink.Shared.projitems*{83a832de-bf4a-44c4-b361-90f5f88b979b}*SharedItemsImports = 5
+	EndGlobalSection
 EndGlobal
