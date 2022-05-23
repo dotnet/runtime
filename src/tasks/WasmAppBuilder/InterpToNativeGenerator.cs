@@ -24,19 +24,15 @@ public class InterpToNativeGenerator
 
     public InterpToNativeGenerator(TaskLoggingHelper log) => Log = log;
 
-    private static string TypeToSigType(char c)
+    private static string TypeToSigType(char c) => c switch
     {
-        switch (c)
-        {
-            case 'V': return "void";
-            case 'I': return "int";
-            case 'L': return "int64_t";
-            case 'F': return "float";
-            case 'D': return "double";
-            default:
-                throw new Exception("Can't handle " + c);
-        }
-    }
+        'V' => "void",
+        'I' => "int",
+        'L' => "int64_t",
+        'F' => "float",
+        'D' => "double",
+        _ => throw new Exception("Can't handle " + c)
+    };
 
     public void Generate(IEnumerable<string> cookies, string outputPath)
     {

@@ -218,45 +218,36 @@ public class IcallTableGenerator
         {
             sb.Append(t.Name switch
             {
-                "Char" => "char",
-                "Boolean" => "bool",
-                "Int8" => "sbyte",
-                "UInt8" => "byte",
-                "Int16" => "int16",
-                "UInt16" => "uint16",
-                "Int32" => "int",
-                "UInt32" => "uint",
-                "Int64" => "long",
-                "UInt64" => "ulong",
-                "IntPtr" => "intptr",
-                "UIntPtr" => "uintptr",
-                "Single" => "single",
-                "Double" => "double",
-                "Object" => "object",
-                "String" => "string",
+                nameof(Char) => "char",
+                nameof(Boolean) => "bool",
+                nameof(SByte) => "sbyte",
+                nameof(Byte) => "byte",
+                nameof(Int16) => "int16",
+                nameof(UInt16) => "uint16",
+                nameof(Int32) => "int",
+                nameof(UInt32) => "uint",
+                nameof(Int64) => "long",
+                nameof(UInt64) => "ulong",
+                nameof(IntPtr) => "intptr",
+                nameof(UIntPtr) => "uintptr",
+                nameof(Single) => "single",
+                nameof(Double) => "double",
+                nameof(Object) => "object",
+                nameof(String) => "string",
                 _ => throw new NotImplementedException (t.FullName)
             });
         }
     }
 
-    private static string MapType (Type t)
+    private static string MapType(Type t) => t.Name switch
     {
-        switch (t.Name)
-        {
-            case "Void":
-                return "void";
-            case "Double":
-                return "double";
-            case "Single":
-                return "float";
-            case "Int64":
-                return "int64_t";
-            case "UInt64":
-                return "uint64_t";
-            default:
-                return "int";
-        }
-    }
+        "Void" => "void",
+        nameof(Double) => "double",
+        nameof(Single) => "float",
+        nameof(Int64) => "int64_t",
+        nameof(UInt64) => "uint64_t",
+        _ => "int",
+    };
 
     private static string GenIcallDecl (Icall icall)
     {

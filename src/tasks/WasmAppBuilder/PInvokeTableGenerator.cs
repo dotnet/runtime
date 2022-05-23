@@ -241,22 +241,15 @@ public class PInvokeTableGenerator
         return FixupSymbolName(sb.ToString());
     }
 
-    private static string MapType (Type t)
+    private static string MapType(Type t) => t.Name switch
     {
-        string name = t.Name;
-        if (name == "Void")
-            return "void";
-        else if (name == "Double")
-            return "double";
-        else if (name == "Single")
-            return "float";
-        else if (name == "Int64")
-            return "int64_t";
-        else if (name == "UInt64")
-            return "uint64_t";
-        else
-            return "int";
-    }
+        "Void" => "void",
+        nameof(Double) => "double",
+        nameof(Single) => "float",
+        nameof(Int64) => "int64_t",
+        nameof(UInt64) => "uint64_t",
+        _ => "int"
+    };
 
     // FIXME: System.Reflection.MetadataLoadContext can't decode function pointer types
     // https://github.com/dotnet/runtime/issues/43791
