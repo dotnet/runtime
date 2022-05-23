@@ -12245,7 +12245,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
         op2->gtFlags |= GTF_DONT_CSE;
 
         GenTreeCall* call = gtNewHelperCallNode(helper, TYP_REF, op2, op1);
-        if (impIsCastHelperEligibleForClassProbe(call) && !impIsClassExact(pResolvedToken->hClass))
+        if ((JitConfig.JitClassProfiling() > 0) && impIsCastHelperEligibleForClassProbe(call) && !impIsClassExact(pResolvedToken->hClass))
         {
             HandleHistogramProfileCandidateInfo* pInfo  = new (this, CMK_Inlining) HandleHistogramProfileCandidateInfo;
             pInfo->ilOffset                             = ilOffset;
@@ -22187,9 +22187,17 @@ Compiler::GDVProbeType Compiler::compClassifyGDVProbeType(GenTreeCall* call)
         return GDVProbeType::None;
     }
 
-    bool createTypeHistogram =
-        (JitConfig.JitClassProfiling() > 0) &&
-        (call->IsVirtualStub() || call->IsVirtualVtable() || impIsCastHelperEligibleForClassProbe(call));
+    bool createTypeHistogram = false;
+    if (JitConfig.JitClassProfiling() > 0)
+    {
+        createTypeHistogram = call->IsVirtualStub() || call->IsVirtualVtable();
+
+        // Cast helpers may conditionally (depending on whether the class is
+        // exact or not) have probes. For those helpers we do not use this
+        // function to classify the probe type until after we have decided on
+        // whether we probe them or not.
+        createTypeHistogram = createTypeHistogram || (impIsCastHelperEligibleForClassProbe(call) && (call->gtHandleHistogramProfileCandidateInfo != nullptr));
+    }
 
     bool createMethodHistogram =
         (JitConfig.JitMethodProfiling() > 0) && (call->IsVirtualVtable() || call->IsDelegateInvoke());
