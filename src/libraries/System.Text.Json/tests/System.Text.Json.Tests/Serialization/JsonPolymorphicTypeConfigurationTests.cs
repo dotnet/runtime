@@ -175,8 +175,8 @@ namespace System.Text.Json.Tests.Serialization
 
             Assert.Throws<InvalidOperationException>(() => config.WithDerivedType(typeof(GenericClass<string>), "derived2"));
             Assert.Throws<InvalidOperationException>(() => config.WithDerivedType(typeof(GenericClass<string>), 42));
-            Assert.Throws<InvalidOperationException>(() => config.CustomTypeDiscriminatorPropertyName = "_case");
-            Assert.Throws<InvalidOperationException>(() => config.UnknownDerivedTypeHandling = JsonUnknownDerivedTypeHandling.FallbackToBaseType);
+            Assert.Throws<InvalidOperationException>(() => config.TypeDiscriminatorPropertyName = "_case");
+            Assert.Throws<InvalidOperationException>(() => config.UnknownDerivedTypeHandling = JsonUnknownDerivedTypeHandling.FallBackToBaseType);
             Assert.Throws<InvalidOperationException>(() => config.IgnoreUnrecognizedTypeDiscriminators = true);
         }
 

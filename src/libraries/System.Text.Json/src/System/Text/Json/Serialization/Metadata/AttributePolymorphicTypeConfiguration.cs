@@ -43,7 +43,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         public Type BaseType { get; }
 
-        public string? CustomTypeDiscriminatorPropertyName => _polymorphicTypeAttribute?.CustomTypeDiscriminatorPropertyName;
+        public string? TypeDiscriminatorPropertyName => _polymorphicTypeAttribute?.TypeDiscriminatorPropertyName;
 
         public JsonUnknownDerivedTypeHandling UnknownDerivedTypeHandling => _polymorphicTypeAttribute?.UnknownDerivedTypeHandling ?? default;
 

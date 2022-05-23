@@ -36,7 +36,7 @@ namespace System.Text.Json.Serialization.Metadata
             foreach ((Type derivedType, object? typeDiscriminatorId) in configuration.GetSupportedDerivedTypes())
             {
                 if (!IsSupportedDerivedType(BaseType, derivedType) ||
-                    (derivedType.IsAbstract && UnknownDerivedTypeHandling != JsonUnknownDerivedTypeHandling.FallbackToNearestAncestor))
+                    (derivedType.IsAbstract && UnknownDerivedTypeHandling != JsonUnknownDerivedTypeHandling.FallBackToNearestAncestor))
                 {
                     ThrowHelper.ThrowInvalidOperationException_DerivedTypeNotSupported(BaseType, derivedType);
                 }
@@ -81,7 +81,7 @@ namespace System.Text.Json.Serialization.Metadata
                     ThrowHelper.ThrowNotSupportedException_BaseConverterDoesNotSupportMetadata(BaseType);
                 }
 
-                if (configuration.CustomTypeDiscriminatorPropertyName is string customPropertyName)
+                if (configuration.TypeDiscriminatorPropertyName is string customPropertyName)
                 {
                     JsonEncodedText jsonEncodedName = JsonEncodedText.Encode(customPropertyName, options.Encoder);
 
@@ -91,7 +91,7 @@ namespace System.Text.Json.Serialization.Metadata
                         ThrowHelper.ThrowInvalidOperationException_InvalidCustomTypeDiscriminatorPropertyName();
                     }
 
-                    CustomTypeDiscriminatorPropertyName = customPropertyName;
+                    TypeDiscriminatorPropertyName = customPropertyName;
                     CustomTypeDiscriminatorPropertyNameUtf8 = jsonEncodedName.EncodedUtf8Bytes.ToArray();
                     CustomTypeDiscriminatorPropertyNameJsonEncoded = jsonEncodedName;
                 }
@@ -102,7 +102,7 @@ namespace System.Text.Json.Serialization.Metadata
         public JsonUnknownDerivedTypeHandling UnknownDerivedTypeHandling { get; }
         public bool UsesTypeDiscriminators { get; }
         public bool IgnoreUnrecognizedTypeDiscriminators { get; }
-        public string? CustomTypeDiscriminatorPropertyName { get; }
+        public string? TypeDiscriminatorPropertyName { get; }
         public byte[]? CustomTypeDiscriminatorPropertyNameUtf8 { get; }
         public JsonEncodedText? CustomTypeDiscriminatorPropertyNameJsonEncoded { get; }
 
@@ -114,13 +114,13 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 switch (UnknownDerivedTypeHandling)
                 {
-                    case JsonUnknownDerivedTypeHandling.FallbackToNearestAncestor:
+                    case JsonUnknownDerivedTypeHandling.FallBackToNearestAncestor:
                         // Calculate (and cache the result) of the nearest ancestor for given runtime type.
                         // A `null` result denotes no matching ancestor type, we also cache that.
                         result = CalculateNearestAncestor(runtimeType);
                         _typeToDiscriminatorId[runtimeType] = result;
                         break;
-                    case JsonUnknownDerivedTypeHandling.FallbackToBaseType:
+                    case JsonUnknownDerivedTypeHandling.FallBackToBaseType:
                         // Recover the polymorphic contract (i.e. any type discriminators) for the base type, if it exists.
                         _typeToDiscriminatorId.TryGetValue(BaseType, out result);
                         _typeToDiscriminatorId[runtimeType] = result;
@@ -190,7 +190,7 @@ namespace System.Text.Json.Serialization.Metadata
         {
             Debug.Assert(!type.IsAbstract);
             Debug.Assert(BaseType.IsAssignableFrom(type));
-            Debug.Assert(UnknownDerivedTypeHandling == JsonUnknownDerivedTypeHandling.FallbackToNearestAncestor);
+            Debug.Assert(UnknownDerivedTypeHandling == JsonUnknownDerivedTypeHandling.FallBackToNearestAncestor);
 
             if (type == BaseType)
             {

@@ -9,7 +9,7 @@ namespace System.Text.Json.Serialization.Metadata
     {
 #pragma warning disable CA2252 // This API requires opting into preview features
         Type BaseType { get; }
-        string? CustomTypeDiscriminatorPropertyName { get; }
+        string? TypeDiscriminatorPropertyName { get; }
         JsonUnknownDerivedTypeHandling UnknownDerivedTypeHandling { get; }
         bool IgnoreUnrecognizedTypeDiscriminators { get; }
         IEnumerable<(Type DerivedType, object? TypeDiscriminatorId)> GetSupportedDerivedTypes();

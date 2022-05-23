@@ -873,8 +873,8 @@ namespace System.Text.Json.Serialization
     public partial class JsonDerivedTypeAttribute : System.Text.Json.Serialization.JsonAttribute
     {
         public JsonDerivedTypeAttribute(System.Type derivedType) { }
-        public JsonDerivedTypeAttribute(System.Type derivedType, string typeDiscriminatorId) { }
         public JsonDerivedTypeAttribute(System.Type derivedType, int typeDiscriminatorId) { }
+        public JsonDerivedTypeAttribute(System.Type derivedType, string typeDiscriminatorId) { }
         public System.Type DerivedType { get { throw null; } }
         public object? TypeDiscriminatorId { get { throw null; } }
     }
@@ -924,7 +924,7 @@ namespace System.Text.Json.Serialization
     public sealed partial class JsonPolymorphicAttribute : System.Text.Json.Serialization.JsonAttribute
     {
         public JsonPolymorphicAttribute() { }
-        public string? CustomTypeDiscriminatorPropertyName { get { throw null; } set { } }
+        public string? TypeDiscriminatorPropertyName { get { throw null; } set { } }
         public bool IgnoreUnrecognizedTypeDiscriminators { get { throw null; } set { } }
         public System.Text.Json.Serialization.JsonUnknownDerivedTypeHandling UnknownDerivedTypeHandling { get { throw null; } set { } }
     }
@@ -984,8 +984,8 @@ namespace System.Text.Json.Serialization
     public enum JsonUnknownDerivedTypeHandling
     {
         FailSerialization = 0,
-        FallbackToBaseType = 1,
-        FallbackToNearestAncestor = 2
+        FallBackToBaseType = 1,
+        FallBackToNearestAncestor = 2
     }
     public enum JsonUnknownTypeHandling
     {
@@ -996,7 +996,7 @@ namespace System.Text.Json.Serialization
     {
         public JsonPolymorphicTypeConfiguration(System.Type baseType) { }
         public System.Type BaseType { get { throw null; } }
-        public string? CustomTypeDiscriminatorPropertyName { get { throw null; } set { } }
+        public string? TypeDiscriminatorPropertyName { get { throw null; } set { } }
         public bool IgnoreUnrecognizedTypeDiscriminators { get { throw null; } set { } }
         int System.Collections.Generic.ICollection<(System.Type DerivedType, object? TypeDiscriminatorId)>.Count { get { throw null; } }
         public System.Text.Json.Serialization.JsonUnknownDerivedTypeHandling UnknownDerivedTypeHandling { get { throw null; } set { } }

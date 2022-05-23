@@ -230,7 +230,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [InlineData(JsonUnknownDerivedTypeHandling.FailSerialization)]
-        [InlineData(JsonUnknownDerivedTypeHandling.FallbackToBaseType)]
+        [InlineData(JsonUnknownDerivedTypeHandling.FallBackToBaseType)]
         public async Task PolymorphicClass_ConfigWithAbstractClass_ShouldThrowNotSupportedException(JsonUnknownDerivedTypeHandling jsonUnknownDerivedTypeHandling)
         {
             var options = new JsonSerializerOptions
@@ -278,7 +278,7 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             // Ensure derived class polymorphic configuration is not inherited by base class polymorphic configuration
-            [JsonPolymorphic(CustomTypeDiscriminatorPropertyName = "$case")]
+            [JsonPolymorphic(TypeDiscriminatorPropertyName = "$case")]
             [JsonDerivedType(typeof(DerivedClass), "derivedClassOfDerivedClass1")]
             public class DerivedClass1_TypeDiscriminator : PolymorphicClass
             {
@@ -598,8 +598,8 @@ namespace System.Text.Json.Serialization.Tests
                     {
                         new JsonPolymorphicTypeConfiguration<PolymorphicClass>
                         {
-                            CustomTypeDiscriminatorPropertyName = "_case",
-                            UnknownDerivedTypeHandling = JsonUnknownDerivedTypeHandling.FallbackToBaseType
+                            TypeDiscriminatorPropertyName = "_case",
+                            UnknownDerivedTypeHandling = JsonUnknownDerivedTypeHandling.FallBackToBaseType
                         }
                         .WithDerivedType<DerivedClass1_NoTypeDiscriminator>()
                         .WithDerivedType<DerivedClass1_TypeDiscriminator>("derivedClass1")
@@ -722,8 +722,8 @@ namespace System.Text.Json.Serialization.Tests
                     {
                         new JsonPolymorphicTypeConfiguration<PolymorphicClass>
                         {
-                            CustomTypeDiscriminatorPropertyName = "_case",
-                            UnknownDerivedTypeHandling = JsonUnknownDerivedTypeHandling.FallbackToNearestAncestor
+                            TypeDiscriminatorPropertyName = "_case",
+                            UnknownDerivedTypeHandling = JsonUnknownDerivedTypeHandling.FallBackToNearestAncestor
                         }
                         .WithDerivedType<DerivedClass1_NoTypeDiscriminator>()
                         .WithDerivedType<DerivedClass1_TypeDiscriminator>("derivedClass1")
@@ -1336,7 +1336,7 @@ namespace System.Text.Json.Serialization.Tests
                         {
                             new JsonPolymorphicTypeConfiguration<PolymorphicInterface>
                             {
-                                UnknownDerivedTypeHandling = JsonUnknownDerivedTypeHandling.FallbackToNearestAncestor
+                                UnknownDerivedTypeHandling = JsonUnknownDerivedTypeHandling.FallBackToNearestAncestor
                             }
                             .WithDerivedType<DerivedClass_TypeDiscriminator>("derivedClass")
                             .WithDerivedType<DerivedStruct_NoTypeDiscriminator>()
@@ -1391,13 +1391,13 @@ namespace System.Text.Json.Serialization.Tests
                 {
                     yield return (
                         new DiamondKind1(),
-                        new JsonPolymorphicTypeConfiguration<PolymorphicInterface> { UnknownDerivedTypeHandling = JsonUnknownDerivedTypeHandling.FallbackToNearestAncestor }
+                        new JsonPolymorphicTypeConfiguration<PolymorphicInterface> { UnknownDerivedTypeHandling = JsonUnknownDerivedTypeHandling.FallBackToNearestAncestor }
                             .WithDerivedType<DerivedInterface1>()
                             .WithDerivedType<DerivedInterface2>());
 
                     yield return (
                         new DiamondKind2(),
-                        new JsonPolymorphicTypeConfiguration<PolymorphicInterface> { UnknownDerivedTypeHandling = JsonUnknownDerivedTypeHandling.FallbackToNearestAncestor }
+                        new JsonPolymorphicTypeConfiguration<PolymorphicInterface> { UnknownDerivedTypeHandling = JsonUnknownDerivedTypeHandling.FallBackToNearestAncestor }
                             .WithDerivedType<DerivedInterface1>()
                             .WithDerivedType<DerivedClass_TypeDiscriminator>());
                 }
@@ -1471,7 +1471,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(expectedJsonPath, exception.Path);
         }
 
-        [JsonPolymorphic(UnknownDerivedTypeHandling = JsonUnknownDerivedTypeHandling.FallbackToNearestAncestor, IgnoreUnrecognizedTypeDiscriminators = true)]
+        [JsonPolymorphic(UnknownDerivedTypeHandling = JsonUnknownDerivedTypeHandling.FallBackToNearestAncestor, IgnoreUnrecognizedTypeDiscriminators = true)]
         [JsonDerivedType(typeof(PolymorphicList), "baseList")]
         [JsonDerivedType(typeof(DerivedList1), "derivedList")]
         public class PolymorphicList : List<int>
@@ -1561,7 +1561,7 @@ namespace System.Text.Json.Serialization.Tests
                 {
                     new JsonPolymorphicTypeConfiguration<IEnumerable<int>>
                     {
-                        UnknownDerivedTypeHandling = JsonUnknownDerivedTypeHandling.FallbackToNearestAncestor
+                        UnknownDerivedTypeHandling = JsonUnknownDerivedTypeHandling.FallBackToNearestAncestor
                     }
                     .WithDerivedType<List<int>>("list")
                     .WithDerivedType<Queue<int>>("queue")
@@ -1630,7 +1630,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(expectedJsonPath, exception.Path);
         }
 
-        [JsonPolymorphic(UnknownDerivedTypeHandling = JsonUnknownDerivedTypeHandling.FallbackToNearestAncestor, IgnoreUnrecognizedTypeDiscriminators = true)]
+        [JsonPolymorphic(UnknownDerivedTypeHandling = JsonUnknownDerivedTypeHandling.FallBackToNearestAncestor, IgnoreUnrecognizedTypeDiscriminators = true)]
         [JsonDerivedType(typeof(PolymorphicDictionary), "baseDictionary")]
         [JsonDerivedType(typeof(DerivedDictionary1), "derivedDictionary")]
         public class PolymorphicDictionary : Dictionary<string, int>
@@ -1720,7 +1720,7 @@ namespace System.Text.Json.Serialization.Tests
                 {
                     new JsonPolymorphicTypeConfiguration<IEnumerable<KeyValuePair<int, object>>>
                     {
-                        UnknownDerivedTypeHandling = JsonUnknownDerivedTypeHandling.FallbackToNearestAncestor
+                        UnknownDerivedTypeHandling = JsonUnknownDerivedTypeHandling.FallBackToNearestAncestor
                     }
                     .WithDerivedType<Dictionary<int, object>>("dictionary")
                     .WithDerivedType<SortedDictionary<int, object>>("sortedDictionary")
@@ -1994,7 +1994,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(expectedValues, result, PolymorphicEqualityComparer<PolymorphicClassWithCustomTypeDiscriminator>.Instance);
         }
 
-        [JsonPolymorphic(CustomTypeDiscriminatorPropertyName = "case")]
+        [JsonPolymorphic(TypeDiscriminatorPropertyName = "case")]
         [JsonDerivedType(typeof(PolymorphicClassWithCustomTypeDiscriminator), "baseClass")]
         [JsonDerivedType(typeof(DerivedClass), "derivedClass")]
         [JsonDerivedType(typeof(DerivedCollection), "derivedCollection")]
@@ -2165,7 +2165,7 @@ namespace System.Text.Json.Serialization.Tests
                 {
                     new JsonPolymorphicTypeConfiguration<PolymorphicInterfaceWithInterfaceDerivedType>()
                     {
-                        UnknownDerivedTypeHandling = JsonUnknownDerivedTypeHandling.FallbackToNearestAncestor
+                        UnknownDerivedTypeHandling = JsonUnknownDerivedTypeHandling.FallBackToNearestAncestor
                     }
                     .WithDerivedType<PolymorphicInterfaceWithInterfaceDerivedType.DerivedInterface>("derivedInterface")
                     .WithDerivedType<PolymorphicInterfaceWithInterfaceDerivedType.DerivedClass>("derivedClass")
@@ -2368,7 +2368,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.IsType<PolymorphicClass_InvalidCustomTypeDiscriminatorPropertyName.DerivedClass>(deserializeResult);
         }
 
-        [JsonPolymorphic(CustomTypeDiscriminatorPropertyName = "$id")]
+        [JsonPolymorphic(TypeDiscriminatorPropertyName = "$id")]
         [JsonDerivedType(typeof(DerivedClass), "derivedClass")]
         public class PolymorphicClass_InvalidCustomTypeDiscriminatorPropertyName
         {
@@ -2392,7 +2392,7 @@ namespace System.Text.Json.Serialization.Tests
                     {
                         new JsonPolymorphicTypeConfiguration<PolymorphicClass_InvalidCustomTypeDiscriminatorPropertyName>
                         {
-                            CustomTypeDiscriminatorPropertyName = customPropertyName
+                            TypeDiscriminatorPropertyName = customPropertyName
                         }
                         .WithDerivedType<DerivedClass>("derivedClass")
                     }
