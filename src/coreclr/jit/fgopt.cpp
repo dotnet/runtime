@@ -649,8 +649,10 @@ void Compiler::fgComputeReachability()
 //         be removed. For Arm32, do not remove BBJ_ALWAYS block of
 //         BBJ_CALLFINALLY/BBJ_ALWAYS pair.
 //
-void Compiler::fgRemoveDeadBlocks()
+bool Compiler::fgRemoveDeadBlocks()
 {
+    JITDUMP("\n*************** In fgRemoveDeadBlocks()");
+
     jitstd::list<BasicBlock*> worklist(jitstd::allocator<void>(getAllocator(CMK_Reachability)));
     worklist.push_back(fgFirstBB);
 
@@ -730,6 +732,7 @@ void Compiler::fgRemoveDeadBlocks()
     fgVerifyHandlerTab();
     fgDebugCheckBBlist(false);
 #endif // DEBUG
+    return changed;
 }
 
 //-------------------------------------------------------------

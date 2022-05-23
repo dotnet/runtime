@@ -173,7 +173,7 @@ int LinearScan::BuildShiftLongCarry(GenTree* tree)
 }
 
 //------------------------------------------------------------------------
-// BuildNode: Build the RefPositions for for a node
+// BuildNode: Build the RefPositions for a node
 //
 // Arguments:
 //    treeNode - the node of interest

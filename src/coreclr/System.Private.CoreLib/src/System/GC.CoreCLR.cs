@@ -711,5 +711,13 @@ namespace System
 
             return Unsafe.As<T[]>(AllocateNewArray(typeof(T[]).TypeHandle.Value, length, flags));
         }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern long _GetTotalPauseDuration();
+
+        public static TimeSpan GetTotalPauseDuration()
+        {
+            return new TimeSpan(_GetTotalPauseDuration());
+        }
     }
 }

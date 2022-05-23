@@ -1794,7 +1794,6 @@ TypeHandle MethodTable::SetupCoClassForInterface()
         CoClassType = TypeName::GetTypeUsingCASearchRules(ss, GetAssembly());
 
         // Cache the coclass type
-        g_IBCLogger.LogEEClassCOWTableAccess(this);
         GetClass_NoLogging()->SetCoClassForInterface(CoClassType);
     }
     return CoClassType;
@@ -2169,7 +2168,6 @@ CorIfaceAttr MethodTable::GetComInterfaceType()
     }
 
     // Cache the interface type
-    g_IBCLogger.LogEEClassCOWTableAccess(this);
     GetClass_NoLogging()->SetComInterfaceType(ItfType);
 
     return ItfType;

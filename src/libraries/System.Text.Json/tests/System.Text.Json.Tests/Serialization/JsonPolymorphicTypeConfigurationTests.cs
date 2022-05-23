@@ -16,7 +16,7 @@ namespace System.Text.Json.Tests.Serialization
         [InlineData(typeof(Interface))]
         [InlineData(typeof(Class))]
         [InlineData(typeof(GenericClass<int>))]
-        public static void SupportedBaseTypeArgument_ShouldSucced(Type baseType)
+        public static void SupportedBaseTypeArgument_ShouldSucceed(Type baseType)
         {
             var configuration = new JsonPolymorphicTypeConfiguration(baseType);
             Assert.Equal(baseType, configuration.BaseType);
@@ -30,7 +30,7 @@ namespace System.Text.Json.Tests.Serialization
         [InlineData(typeof(Interface), typeof(Class))]
         [InlineData(typeof(Interface), typeof(Struct))]
         [InlineData(typeof(Class), typeof(GenericClass<int>))]
-        public static void SupportedDerivedTypeArgument_ShouldSucced(Type baseType, Type derivedType)
+        public static void SupportedDerivedTypeArgument_ShouldSucceed(Type baseType, Type derivedType)
         {
             var configuration = new JsonPolymorphicTypeConfiguration(baseType).WithDerivedType(derivedType);
             Assert.Equal(new[] { (derivedType, (string)null) }, configuration);
@@ -153,6 +153,6 @@ namespace System.Text.Json.Tests.Serialization
         private class Class : Interface { }
         private struct Struct : Interface { }
         private sealed class SealedClass : Interface { }
-        private class GenericClass<T> : Class { } 
+        private class GenericClass<T> : Class { }
     }
 }

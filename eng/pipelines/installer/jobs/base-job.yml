@@ -472,7 +472,7 @@ jobs:
       name: ${{ coalesce(parameters.name, parameters.platform) }}
       runtimeFlavor: ${{ parameters.runtimeFlavor }}
       runtimeVariant: ${{ parameters.runtimeVariant }}
-      skipTests: $(SkipTests)
+      skipTests: ${{ variables.SkipTests }}
       isOfficialBuild: ${{ eq(parameters.isOfficialBuild, true) }}
       pgoType: ${{ parameters.pgoType }}
 

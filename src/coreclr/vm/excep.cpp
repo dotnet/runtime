@@ -12092,15 +12092,17 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(EXCEPINFO *pExcepInfo)
 //==========================================================================
 
 
-VOID GetAssemblyDetailInfo(SString<EncodingUnicode>    &sType,
-                           SString<EncodingUnicode>    &sAssemblyDisplayName,
+VOID GetAssemblyDetailInfo(SString<EncodingUnicode> &sType,
+                           SString<EncodingUnicode> &sAssemblyDisplayName,
                            PEAssembly *pPEAssembly,
                            SString<EncodingUnicode> &sAssemblyDetailInfo)
 {
     WRAPPER_NO_CONTRACT;
 
-    InlineSString<MAX_LONGPATH, EncodingUnicode> sFormat;
-    const WCHAR *pwzLoadContext = W("Default");
+    StackSString<EncodingUnicode> sFormat;
+    StackSString<EncodingUnicode> sAlcName;
+
+    pPEAssembly->GetAssemblyBinder()->GetNameForDiagnostics(sAlcName);
 
     if (pPEAssembly->GetPath().IsEmpty())
     {
@@ -12109,7 +12111,7 @@ VOID GetAssemblyDetailInfo(SString<EncodingUnicode>    &sType,
         sAssemblyDetailInfo.Printf((LPCWSTR)sFormat,
                                    (LPCWSTR)sType,
                                    (LPCWSTR)sAssemblyDisplayName,
-                                   pwzLoadContext);
+                                   (LPCWSTR)sAlcName);
     }
     else
     {
@@ -12118,7 +12120,7 @@ VOID GetAssemblyDetailInfo(SString<EncodingUnicode>    &sType,
         sAssemblyDetailInfo.Printf((LPCWSTR)sFormat,
                                    (LPCWSTR)sType,
                                    (LPCWSTR)sAssemblyDisplayName,
-                                   pwzLoadContext,
+                                   (LPCWSTR)sAlcName,
                                    (LPCWSTR)pPEAssembly->GetPath());
     }
 }
@@ -12149,17 +12151,17 @@ VOID CheckAndThrowSameTypeAndAssemblyInvalidCastException(TypeHandle thCastFrom,
          _ASSERTE(pPEAssemblyTypeFrom != NULL);
          _ASSERTE(pPEAssemblyTypeTo != NULL);
 
-         InlineSString<MAX_LONGPATH, EncodingUnicode> sAssemblyFromDisplayName;
-         InlineSString<MAX_LONGPATH, EncodingUnicode> sAssemblyToDisplayName;
+         StackSString<EncodingUnicode> sAssemblyFromDisplayName;
+         StackSString<EncodingUnicode> sAssemblyToDisplayName;
 
          pPEAssemblyTypeFrom->GetDisplayName(sAssemblyFromDisplayName);
          pPEAssemblyTypeTo->GetDisplayName(sAssemblyToDisplayName);
 
          // Found the culprit case. Now format the new exception text.
-         InlineSString<MAX_CLASSNAME_LENGTH + 1, EncodingUnicode> strCastFromName;
-         InlineSString<MAX_CLASSNAME_LENGTH + 1, EncodingUnicode> strCastToName;
-         InlineSString<MAX_LONGPATH, EncodingUnicode> sAssemblyDetailInfoFrom;
-         InlineSString<MAX_LONGPATH, EncodingUnicode> sAssemblyDetailInfoTo;
+         StackSString<EncodingUnicode> strCastFromName;
+         StackSString<EncodingUnicode> strCastToName;
+         StackSString<EncodingUnicode> sAssemblyDetailInfoFrom;
+         StackSString<EncodingUnicode> sAssemblyDetailInfoTo;
 
          thCastFrom.GetName(strCastFromName);
          thCastTo.GetName(strCastToName);

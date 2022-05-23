@@ -362,7 +362,7 @@ FCIMPL1(AssemblyBaseObject*, RuntimeTypeHandle::GetAssembly, ReflectClassBaseObj
 FCIMPLEND
 
 
-FCIMPL1(FC_BOOL_RET, RuntimeFieldHandle::AcquiresContextFromThis, FieldDesc *pField)
+FCIMPL1(FC_BOOL_RET, RuntimeFieldHandle::AcquiresContextFromThis, FieldDesc* pField)
 {
     CONTRACTL {
         FCALL_CHECK;
@@ -372,6 +372,29 @@ FCIMPL1(FC_BOOL_RET, RuntimeFieldHandle::AcquiresContextFromThis, FieldDesc *pFi
 
     FC_RETURN_BOOL(pField->IsSharedByGenericInstantiations());
 
+}
+FCIMPLEND
+
+FCIMPL1(Object*, RuntimeFieldHandle::GetLoaderAllocator, FieldDesc* pField)
+{
+    CONTRACTL {
+        FCALL_CHECK;
+    }
+    CONTRACTL_END;
+
+    OBJECTREF loaderAllocator = NULL;
+
+    if (!pField)
+        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
+
+    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(loaderAllocator);
+
+    LoaderAllocator *pLoaderAllocator = pField->GetApproxEnclosingMethodTable()->GetLoaderAllocator();
+    loaderAllocator = pLoaderAllocator->GetExposedObject();
+
+    HELPER_METHOD_FRAME_END();
+
+    return OBJECTREFToObject(loaderAllocator);
 }
 FCIMPLEND
 

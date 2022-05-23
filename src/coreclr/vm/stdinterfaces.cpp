@@ -2171,7 +2171,7 @@ HRESULT __stdcall Marshal_GetUnmarshalClass (
     {
         if(!pSimpleWrap->GetComCallWrapperTemplate()->IsSafeTypeForMarshalling())
         {
-            LogInterop(W("Unmarshal class blocked for reflection types."));
+            LogInterop("Unmarshal class blocked for reflection types.");
             hr = E_NOINTERFACE;
             return hr;
         }
@@ -2241,7 +2241,7 @@ HRESULT __stdcall Marshal_MarshalInterface (
     {
         if(!pSimpleWrap->GetComCallWrapperTemplate()->IsSafeTypeForMarshalling())
         {
-            LogInterop(W("Marshal interface blocked for reflection types."));
+            LogInterop("Marshal interface blocked for reflection types.");
             hr = E_NOINTERFACE;
             return hr;
         }

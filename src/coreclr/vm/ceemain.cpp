@@ -1238,41 +1238,6 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
         PerfMap::Destroy();
 #endif
 
-        {
-            // If we're doing basic block profiling, we need to write the log files to disk.
-            static BOOL fIBCLoggingDone = FALSE;
-            if (!fIBCLoggingDone)
-            {
-                if (g_IBCLogger.InstrEnabled())
-                {
-                    Thread * pThread = GetThreadNULLOk();
-                    ThreadLocalIBCInfo* pInfo = NULL;
-
-                    if (pThread != NULL)
-                    {
-                        pInfo = pThread->GetIBCInfo();
-                        if (pInfo == NULL)
-                        {
-                            CONTRACT_VIOLATION( ThrowsViolation | FaultViolation);
-                            pInfo = new ThreadLocalIBCInfo();
-                            pThread->SetIBCInfo(pInfo);
-                        }
-                    }
-
-                    // Acquire the Crst lock before creating the IBCLoggingDisabler object.
-                    // Only one thread at a time can be processing an IBC logging event.
-                    CrstHolder lock(IBCLogger::GetSync());
-                    {
-                        IBCLoggingDisabler disableLogging( pInfo );  // runs IBCLoggingDisabler::DisableLogging
-
-                        CONTRACT_VIOLATION(GCViolation);
-                        Module::WriteAllModuleProfileData(true);
-                    }
-                }
-                fIBCLoggingDone = TRUE;
-            }
-        }
-
         ceeInf.JitProcessShutdownWork();  // Do anything JIT-related that needs to happen at shutdown.
 
 #ifdef FEATURE_INTERPRETER

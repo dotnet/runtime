@@ -48,7 +48,6 @@
 
 #include "packedfields.inl"
 #include "array.h"
-#define IBCLOG(x) g_IBCLogger.##x
 
 VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr);
 

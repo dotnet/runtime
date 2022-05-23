@@ -545,7 +545,7 @@ namespace Internal.Runtime.TypeLoader
         }
 
         /// <summary>
-        /// Does a method actually recieve a VTable slot. (Must not be called for interface methods)
+        /// Does a method actually receive a VTable slot. (Must not be called for interface methods)
         /// </summary>
         /// <param name="method"></param>
         /// <returns></returns>

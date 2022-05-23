@@ -337,17 +337,19 @@ public:
 
         return MatchCaseInsensitive(End() - s.GetCount(), s);
     }
+    
+    SString &operator= (const SString &s) { WRAPPER_NO_CONTRACT; Set(s); return *this; }
 
     const SString& operator+=(const SString& s)
     {
+        WRAPPER_NO_CONTRACT;
         Append(s);
         return *this;
     }
 
     operator const char_t* () const
     {
-        _ASSERTE(!"Not implemented");
-        return nullptr;
+        return GetRawBuffer();
     }
 
     void Append(const SString &s);
@@ -761,6 +763,7 @@ public:
         SBuffer::EnumMemoryRegions(flags);
     }
 #endif
+
     // -------------------------------------------------------------------
     // Check functions
     // -------------------------------------------------------------------

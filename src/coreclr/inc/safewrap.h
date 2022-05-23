@@ -25,9 +25,7 @@ consistency's sake.
     Return non-oom failure codes because callees actually freqeuntly expect an API to fail.
     For example, the callee will have special handling for file-not-found.
 
-    For convenience, you could add a no-throwing wrapper version of the API:
-        ClrGetEnvironmentVariable   <-- default throws on oom.
-        ClrGetEnvironmentVariableNoThrow <-- never throws.
+    For convenience, you could add a no-throwing wrapper version of the API.
 
 - NAMING: Prefix the name with 'Clr', just like we do for win32 APIs going through hosting.
 
@@ -57,47 +55,6 @@ consistency's sake.
 #define _safewrap_h_
 
 #include "holder.h"
-
-template<typename TEncoding>
-class SString;
-struct EncodingUTF8;
-struct EncodingUnicode;
-bool ClrGetEnvironmentVariable(LPCSTR szEnvVarName, SString<EncodingUTF8> & value);
-bool ClrGetEnvironmentVariableNoThrow(LPCSTR szEnvVarName, SString<EncodingUTF8> & value);
-void ClrGetModuleFileName(HMODULE hModule, SString<EncodingUnicode> & value);
-
-void ClrGetCurrentDirectory(SString<EncodingUnicode> & value);
-
-
-/* --------------------------------------------------------------------------- *
- * Simple wrapper around WszFindFirstFile/WszFindNextFile
- * --------------------------------------------------------------------------- */
-class ClrDirectoryEnumerator
-{
-    WIN32_FIND_DATAW    data;
-    FindHandleHolder    dirHandle;
-    BOOL                fFindNext; // Skip FindNextFile first time around
-
-public:
-    ClrDirectoryEnumerator(LPCWSTR pBaseDirectory, LPCWSTR pMask = W("*"));
-    bool Next();
-
-    LPCWSTR GetFileName()
-    {
-        return data.cFileName;
-    }
-
-    DWORD GetFileAttributes()
-    {
-        return data.dwFileAttributes;
-    }
-
-    void Close()
-    {
-        dirHandle.Clear();
-    }
-};
-
 
 /* --------------------------------------------------------------------------- *
  * Simple wrapper around RegisterEventSource/ReportEvent/DeregisterEventSource

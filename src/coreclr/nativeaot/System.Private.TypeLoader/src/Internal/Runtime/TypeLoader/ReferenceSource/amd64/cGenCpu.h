@@ -62,7 +62,7 @@ EXTERN_C void FastCallFinalizeWorker(Object *obj, PCODE funcPtr);
 #define HAS_THISPTR_RETBUF_PRECODE              1
 
 #define CODE_SIZE_ALIGN                         16   // must alloc code blocks on 8-byte boundaries; for perf reasons we use 16 byte boundaries
-#define CACHE_LINE_SIZE                         64   // Current AMD64 processors have 64-byte cache lines as per AMD64 optmization manual
+#define CACHE_LINE_SIZE                         64   // Current AMD64 processors have 64-byte cache lines as per AMD64 optimization manual
 #define LOG2SLOT                                LOG2_PTRSIZE
 
 #define ENREGISTERED_RETURNTYPE_MAXSIZE         8    // bytes
@@ -124,7 +124,7 @@ ARG_SLOT FPSpillToR4(void* pSpillSlot)
     return *(DWORD*)pSpillSlot;
 }
 
-inline    
+inline
 ARG_SLOT FPSpillToR8(void* pSpillSlot)
 {
     LIMITED_METHOD_CONTRACT;
@@ -265,7 +265,7 @@ struct EHContext {
 // Exception handling
 //**********************************************************************
 
-inline PCODE GetIP(const CONTEXT * context) 
+inline PCODE GetIP(const CONTEXT * context)
 {
     CONTRACTL
     {
@@ -281,7 +281,7 @@ inline PCODE GetIP(const CONTEXT * context)
     return PCODE(context->Rip);
 }
 
-inline void SetIP(CONTEXT* context, PCODE rip) 
+inline void SetIP(CONTEXT* context, PCODE rip)
 {
     CONTRACTL
     {
@@ -305,14 +305,14 @@ inline TADDR GetSP(const CONTEXT * context)
         NOTHROW;
         GC_NOTRIGGER;
         SUPPORTS_DAC;
-        
+
         PRECONDITION(CheckPointer(context));
     }
     CONTRACTL_END;
 
     return (TADDR)context->Rsp;
 }
-inline void SetSP(CONTEXT *context, TADDR rsp) 
+inline void SetSP(CONTEXT *context, TADDR rsp)
 {
     CONTRACTL
     {
@@ -320,7 +320,7 @@ inline void SetSP(CONTEXT *context, TADDR rsp)
         NOTHROW;
         GC_NOTRIGGER;
         SUPPORTS_DAC;
-        
+
         PRECONDITION(CheckPointer(context));
     }
     CONTRACTL_END;
@@ -397,7 +397,7 @@ extern "C" void getFPReturn(int fpSize, INT64 *retval);
 
 struct ComToManagedExRecord; // defined in cgencpu.cpp
 
-inline BOOL IsUnmanagedValueTypeReturnedByRef(UINT sizeofvaluetype) 
+inline BOOL IsUnmanagedValueTypeReturnedByRef(UINT sizeofvaluetype)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -422,7 +422,7 @@ DECLSPEC_ALIGN(8) struct UMEntryThunkCode
     BYTE            m_padding[4];
     BYTE            m_movR10[2];    // MOV R10,
     LPVOID          m_uet;          //          pointer to start of this structure
-    BYTE            m_movRAX[2];    // MOV RAX, 
+    BYTE            m_movRAX[2];    // MOV RAX,
     DECLSPEC_ALIGN(8)
     const BYTE*     m_execstub;     //          pointer to destination code // ensure this is qword aligned
     BYTE            m_jmpRAX[3];    // JMP RAX
@@ -442,7 +442,7 @@ DECLSPEC_ALIGN(8) struct UMEntryThunkCode
         LIMITED_METHOD_CONTRACT;
 
         return offsetof(UMEntryThunkCode, m_movR10);
-    }    
+    }
 };
 #include <poppack.h>
 
@@ -456,7 +456,7 @@ DWORD GetOffsetAtEndOfFunction(ULONGLONG           uImageBase,
 
 // ClrFlushInstructionCache is used when we want to call FlushInstructionCache
 // for a specific architecture in the common code, but not for other architectures.
-// We call ClrFlushInstructionCache whenever we create or modify code in the heap. 
+// We call ClrFlushInstructionCache whenever we create or modify code in the heap.
 // Currently ClrFlushInstructionCache has no effect on AMD64
 //
 

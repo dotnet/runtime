@@ -155,6 +155,40 @@ template<class T> void DeleteDbiMemory(T *p)
     g_pAllocator->Free((BYTE*) p);
 }
 
+void* AllocDbiMemory(size_t size)
+{
+    void *result;
+    if (g_pAllocator != nullptr)
+    {
+        result = g_pAllocator->Alloc(size);
+    }
+    else
+    {
+        result = new (nothrow) BYTE[size];
+    }
+    if (result == NULL)
+    {
+        ThrowOutOfMemory();
+    }
+    return result;
+}
+
+void DeleteDbiMemory(void* p)
+{
+    if (p == NULL)
+    {
+        return;
+    }
+    if (g_pAllocator != nullptr)
+    {
+        g_pAllocator->Free((BYTE*)p);
+    }
+    else
+    {
+        ::delete (BYTE*)p;
+    }
+}
+
 // Delete memory and invoke dtor for memory allocated with 'operator (forDbi) new[]'
 // There's an inherent risk here - where each element's destructor will get called within
 // the context of the DAC. If the destructor tries to use the CRT allocator logic expecting
@@ -868,7 +902,7 @@ void DacDbiInterfaceImpl::GetNativeVarData(MethodDesc *    pMethodDesc,
         return;
     }
 
-    NewHolder<ICorDebugInfo::NativeVarInfo> nativeVars(NULL);
+    NewArrayHolder<ICorDebugInfo::NativeVarInfo> nativeVars(NULL);
 
     DebugInfoRequest request;
     request.InitFromStartingAddr(pMethodDesc, CORDB_ADDRESS_TO_TADDR(startAddr));

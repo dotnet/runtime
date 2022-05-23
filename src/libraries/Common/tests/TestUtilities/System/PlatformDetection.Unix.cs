@@ -32,6 +32,7 @@ namespace System
         public static bool IsSLES => IsDistroAndVersion("sles");
         public static bool IsTizen => IsDistroAndVersion("tizen");
         public static bool IsFedora => IsDistroAndVersion("fedora");
+        public static bool IsLinuxBionic => IsBionic();
 
         // OSX family
         public static bool IsOSXLike => IsOSX || IsiOS || IstvOS || IsMacCatalyst;
@@ -171,6 +172,21 @@ namespace System
             {
                 throw new FormatException($"Failed to parse version string: '{versionString}'", exc);
             }
+        }
+
+        /// <summary>
+        /// Assume that Android environment variables but Linux OS mean Android libc
+        /// </summary>
+        private static bool IsBionic()
+        {
+            if (IsLinux)
+            {
+                if (!String.IsNullOrEmpty(Environment.GetEnvironmentVariable("ANDROID_STORAGE")))
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         private static DistroInfo GetDistroInfo()

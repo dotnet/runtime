@@ -29,7 +29,6 @@ extern "C" {
 #if defined(_DEBUG)
 bool GetStackTraceAtContext(SString<EncodingASCII> & s, struct _CONTEXT * pContext);
 
-void _cdecl DbgWriteEx(LPCTSTR szFmt, ...);
 bool _DbgBreakCheck(LPCSTR szFile, int iLine, LPCSTR szExpr, BOOL fConstrained = FALSE);
 
 extern VOID ANALYZER_NORETURN DbgAssertDialog(const char *szFile, int iLine, const char *szExpr);

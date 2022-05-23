@@ -96,9 +96,9 @@ jobs:
       - OSX.1200.Amd64.Open
 
     # Android
-    - ${{ if in(parameters.platform, 'Android_x86', 'Android_x64') }}:
+    - ${{ if in(parameters.platform, 'Android_x86', 'Android_x64', 'Linux_bionic_x64') }}:
       - Ubuntu.1804.Amd64.Android.29.Open
-    - ${{ if in(parameters.platform, 'Android_arm', 'Android_arm64') }}:
+    - ${{ if in(parameters.platform, 'Android_arm', 'Android_arm64', 'Linux_bionic_arm64') }}:
       - Windows.10.Amd64.Android.Open
 
     # iOS Simulator/Mac Catalyst arm64

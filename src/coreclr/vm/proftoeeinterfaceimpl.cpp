@@ -4156,7 +4156,7 @@ HRESULT ProfToEEInterfaceImpl::GetModuleInfo2(ModuleID     moduleId,
         if (pAssemblyId != NULL)
         {
             // Lie and say the assembly isn't available until we are loaded (even though it is.)
-            // This is for backward compatibilty - we may want to change it
+            // This is for backward compatibility - we may want to change it
             if (pModule->IsProfilerNotified())
             {
                 Assembly *pAssembly = pModule->GetAssembly();
