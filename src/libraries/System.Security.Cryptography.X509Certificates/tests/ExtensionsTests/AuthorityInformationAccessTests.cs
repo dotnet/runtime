@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Formats.Asn1;
 using System.Linq;
 using Test.Cryptography;
@@ -116,16 +117,30 @@ namespace System.Security.Cryptography.X509Certificates.Tests.ExtensionsTests
         [Fact]
         public static void BuildEmpty()
         {
-            X509AuthorityInformationAccessExtension aia = new X509AuthorityInformationAccessExtension(
-                Enumerable.Empty<string>(),
-                Enumerable.Empty<string>());
+            static void AssertProperException(Action action)
+            {
+                ArgumentException ex = Assert.Throws<ArgumentException>(action);
+                Assert.Null(ex.ParamName);
+            }
+            AssertProperException(
+                () => new X509AuthorityInformationAccessExtension(
+                    Enumerable.Empty<string>(),
+                    Enumerable.Empty<string>()));
 
-            Assert.False(aia.Critical, "aia.Critical");
-            Assert.NotNull(aia.Oid);
-            Assert.Equal("1.3.6.1.5.5.7.1.1", aia.Oid.Value);
-            Assert.NotNull(aia.RawData);
+            AssertProperException(
+                () => new X509AuthorityInformationAccessExtension(
+                    Enumerable.Empty<string>(),
+                    null));
 
-            AssertExtensions.SequenceEqual(new byte[] { 0x30, 0x00 }, aia.RawData);
+            AssertProperException(
+                () => new X509AuthorityInformationAccessExtension(
+                    null,
+                    Enumerable.Empty<string>()));
+
+            AssertProperException(
+                () => new X509AuthorityInformationAccessExtension(
+                    null,
+                    null));
         }
 
         [Fact]
@@ -261,6 +276,139 @@ namespace System.Security.Cryptography.X509Certificates.Tests.ExtensionsTests
                     caIssuersValues,
                     aia.EnumerateUris(new Oid(value: CertificateAuthorityIssuers, friendlyName: OcspEndpoint)));
             }
+        }
+
+        [Fact]
+        public static void IndependentEnumeration()
+        {
+            X509AuthorityInformationAccessExtension aia;
+
+            string[] caIssuersValues =
+            {
+                "ldap:///CN=Microsoft%20Corporate%20Root%20Authority,CN=AIA,CN=Public%20Key%20Services,CN=Services,CN=Configuration,DC=Corp,DC=Microsoft,DC=Com?cACertificate?base?objectclass=certificationAuthority",
+                "ldap://corp.microsoft.com/CN=Microsoft%20Corporate%20Root%20Authority,CN=AIA,CN=Public%20Key%20Services,CN=Services,CN=Configuration,DC=Corp,DC=Microsoft,DC=Com?cACertificate?base?objectclass=certificationAuthority",
+                "http://www.microsoft.com/pki/mscorp/mscra1.crt",
+            };
+
+            using (X509Certificate2 cert = new X509Certificate2(TestFiles.MicrosoftRootCertFile))
+            {
+                aia = cert.Extensions.OfType<X509AuthorityInformationAccessExtension>().Single();
+            }
+
+            IEnumerable<string> able1 = aia.EnumerateCAIssuersUris();
+            IEnumerator<string> ator1 = able1.GetEnumerator();
+
+            Assert.True(ator1.MoveNext());
+            Assert.Equal(caIssuersValues[0], ator1.Current);
+
+            IEnumerator<string> ator2 = able1.GetEnumerator();
+
+            Assert.True(ator1.MoveNext());
+            Assert.Equal(caIssuersValues[1], ator1.Current);
+            Assert.True(ator2.MoveNext());
+            Assert.Equal(caIssuersValues[0], ator2.Current);
+
+            IEnumerable<string> able2 = aia.EnumerateCAIssuersUris();
+            IEnumerator<string> ator3 = able2.GetEnumerator();
+
+            Assert.True(ator1.MoveNext());
+            Assert.Equal(caIssuersValues[2], ator1.Current);
+            Assert.True(ator2.MoveNext());
+            Assert.Equal(caIssuersValues[1], ator2.Current);
+            Assert.True(ator3.MoveNext());
+            Assert.Equal(caIssuersValues[0], ator3.Current);
+
+            Assert.False(ator1.MoveNext());
+            Assert.True(ator2.MoveNext());
+            Assert.Equal(caIssuersValues[2], ator2.Current);
+            Assert.True(ator3.MoveNext());
+            Assert.Equal(caIssuersValues[1], ator3.Current);
+
+            Assert.False(ator1.MoveNext());
+            Assert.False(ator2.MoveNext());
+            Assert.True(ator3.MoveNext());
+            Assert.Equal(caIssuersValues[2], ator3.Current);
+
+            Assert.False(ator1.MoveNext());
+            Assert.False(ator2.MoveNext());
+            Assert.False(ator3.MoveNext());
+        }
+
+        [Fact]
+        public static void DecodeInvalid_Boolean()
+        {
+            DecodeInvalid("0101FF");
+        }
+
+        [Fact]
+        public static void DecodeInvalid_SequenceOfBoolean()
+        {
+            DecodeInvalid("03060101000101FF");
+        }
+
+        [Fact]
+        public static void DecodeInvalid_NonIA5Uri()
+        {
+            // SEQUENCE OF
+            //   SEQUENCE(OCSP, "A")
+            //   SEQUENCE(OCSP, "B")
+            //   SEQUENCE(OCSP, 0x80)
+            //   SEQUENCE(CAIssuers, "D")
+
+            const string BadHex =
+                "303C300D06082B06010505073001860141300D06082B06010505073001860142" +
+                "300D06082B06010505073001860180300D06082B06010505073002860144";
+
+            DecodeInvalid(BadHex);
+        }
+
+        [Fact]
+        public static void DecodeInvalid_TwoValues()
+        {
+            // SEQUENCE OF (empty)
+            // SEQUENCE OF (empty)
+            DecodeInvalid("30003000");
+        }
+
+        [Fact]
+        public static void DecodeInvalid_TooManyFields()
+        {
+            // SEQUENCE OF
+            //   SEQUENCE(OCSP, "A", FALSE)
+
+            DecodeInvalid("301006082B06010505073002860144010100");
+        }
+
+        [Fact]
+        public static void DecodeInvalid_TooFew()
+        {
+            // SEQUENCE OF
+            //   SEQUENCE(OCSP)
+
+            DecodeInvalid("300A06082B06010505073002");
+        }
+
+        private static void DecodeInvalid(string invalidEncodingHex)
+        {
+            byte[] invalidEncoding = Convert.FromHexString(invalidEncodingHex);
+
+            Assert.Throws<CryptographicException>(
+                () => new X509AuthorityInformationAccessExtension(invalidEncoding));
+
+            Assert.Throws<CryptographicException>(
+                () => new X509AuthorityInformationAccessExtension(new ReadOnlySpan<byte>(invalidEncoding)));
+
+            X509Extension unverified = new X509Extension(
+                "1.3.6.1.5.5.7.1.1",
+                invalidEncoding,
+                critical: false);
+
+            X509AuthorityInformationAccessExtension aia = new X509AuthorityInformationAccessExtension();
+            aia.CopyFrom(unverified);
+
+            Assert.Throws<CryptographicException>(() => aia.EnumerateCAIssuersUris());
+            Assert.Throws<CryptographicException>(() => aia.EnumerateOcspUris());
+            Assert.Throws<CryptographicException>(() => aia.EnumerateUris("0.0"));
         }
     }
 }

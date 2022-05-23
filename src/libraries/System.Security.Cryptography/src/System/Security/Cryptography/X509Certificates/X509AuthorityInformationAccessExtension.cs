@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Formats.Asn1;
-using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.X509Certificates.Asn1;
 
 namespace System.Security.Cryptography.X509Certificates
@@ -82,6 +82,15 @@ namespace System.Security.Cryptography.X509Certificates
         ///   <see langword="true" /> if the extension is critical;
         ///   otherwise, <see langword="false" />.
         /// </param>
+        /// <exception cref="ArgumentException">
+        ///   Both <paramref name="ocspUris"/> and <paramref name="caIssuersUris"/> are
+        ///   either <see langword="null" /> or empty.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   One of the values in <paramref name="ocspUris"/> or <paramref name="caIssuersUris"/>
+        ///   contains characters outside of the International Alphabet 5 (IA5) character space
+        ///   (which is equivalent to 7-bit US-ASCII).
+        /// </exception>
         public X509AuthorityInformationAccessExtension(
             IEnumerable<string>? ocspUris,
             IEnumerable<string>? caIssuersUris,
@@ -125,6 +134,8 @@ namespace System.Security.Cryptography.X509Certificates
         {
             ArgumentNullException.ThrowIfNull(accessMethodOid);
 
+            _decoded ??= Decode(RawData);
+
             return EnumerateUrisCore(accessMethodOid);
         }
 
@@ -166,15 +177,12 @@ namespace System.Security.Cryptography.X509Certificates
                     nameof(accessMethodOid));
             }
 
-            return EnumerateUrisCore(accessMethodOid.Value);
+            return EnumerateUris(accessMethodOid.Value);
         }
 
         private IEnumerable<string> EnumerateUrisCore(string accessMethodOid)
         {
-            if (_decoded is null)
-            {
-                _decoded = Decode(RawData);
-            }
+            Debug.Assert(_decoded is not null);
 
             for (int i = 0; i < _decoded.Length; i++)
             {
@@ -274,6 +282,7 @@ namespace System.Security.Cryptography.X509Certificates
             IEnumerable<string>? caIssuersUris)
         {
             AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+            bool empty = true;
 
             static void WriteAccessMethod(AsnWriter writer, string oid, string value)
             {
@@ -302,6 +311,7 @@ namespace System.Security.Cryptography.X509Certificates
                 foreach (string uri in ocspUris)
                 {
                     WriteAccessMethod(writer, Oids.OcspEndpoint, uri);
+                    empty = false;
                 }
             }
 
@@ -310,10 +320,17 @@ namespace System.Security.Cryptography.X509Certificates
                 foreach (string uri in caIssuersUris)
                 {
                     WriteAccessMethod(writer, Oids.CertificateAuthorityIssuers, uri);
+                    empty = false;
                 }
             }
 
             writer.PopSequence();
+
+            if (empty)
+            {
+                throw new ArgumentException(SR.Cryptography_X509_AIA_MustNotBuildEmpty);
+            }
+
             return writer.Encode();
         }
     }
