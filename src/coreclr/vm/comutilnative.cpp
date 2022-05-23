@@ -1847,21 +1847,6 @@ FCIMPL1(FC_BOOL_RET, ValueTypeHelper::CanCompareBits, Object* obj)
 }
 FCIMPLEND
 
-FCIMPL2(FC_BOOL_RET, ValueTypeHelper::FastEqualsCheck, Object* obj1, Object* obj2)
-{
-    FCALL_CONTRACT;
-
-    _ASSERTE(obj1 != NULL);
-    _ASSERTE(obj2 != NULL);
-    _ASSERTE(!obj1->GetMethodTable()->ContainsPointers());
-    _ASSERTE(obj1->GetSize() == obj2->GetSize());
-
-    TypeHandle pTh = obj1->GetTypeHandle();
-
-    FC_RETURN_BOOL(memcmp(obj1->GetData(),obj2->GetData(),pTh.GetSize()) == 0);
-}
-FCIMPLEND
-
 static INT32 FastGetValueTypeHashCodeHelper(MethodTable *mt, void *pObjRef)
 {
     CONTRACTL

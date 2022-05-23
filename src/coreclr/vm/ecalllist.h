@@ -83,7 +83,6 @@ FCFuncEnd()
 
 FCFuncStart(gValueTypeFuncs)
     FCFuncElement("CanCompareBits", ValueTypeHelper::CanCompareBits)
-    FCFuncElement("FastEqualsCheck", ValueTypeHelper::FastEqualsCheck)
     FCFuncElement("GetHashCode", ValueTypeHelper::GetHashCode)
 FCFuncEnd()
 

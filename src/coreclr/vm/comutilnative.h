@@ -218,7 +218,6 @@ extern "C" void QCALLTYPE Interlocked_MemoryBarrierProcessWide();
 class ValueTypeHelper {
 public:
     static FCDECL1(FC_BOOL_RET, CanCompareBits, Object* obj);
-    static FCDECL2(FC_BOOL_RET, FastEqualsCheck, Object* obj1, Object* obj2);
     static FCDECL1(INT32, GetHashCode, Object* objRef);
 };
 

@@ -71,8 +71,17 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern bool CanCompareBits(object obj);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern bool FastEqualsCheck(object a, object b);
+        private static unsafe bool FastEqualsCheck(object a, object b)
+        {
+            MethodTable* pMT = RuntimeHelpers.GetMethodTable(a);
+            Debug.Assert(!pMT->ContainsGCPointers);
+            Debug.Assert(!pMT->HasComponentSize);
+
+            // See RuntimeHelpers.GetRawObjectDataSize
+            // Omitting component size for value type
+            nuint rawSize = pMT->BaseSize - (nuint)(2 * sizeof(IntPtr));
+            return SpanHelpers.SequenceEqual(ref RuntimeHelpers.GetRawData(a), ref RuntimeHelpers.GetRawData(b), rawSize);
+        }
 
         /*=================================GetHashCode==================================
         **Action: Our algorithm for returning the hashcode is a little bit complex.  We look
