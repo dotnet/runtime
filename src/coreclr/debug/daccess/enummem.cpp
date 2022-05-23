@@ -99,7 +99,7 @@ HRESULT ClrDataAccess::EnumMemCollectImages()
                     ulSize = assembly->GetLoadedLayout()->GetSize();
                 }
 
-                // memory are mapped in in GetOsPageSize() size.
+                // memory are mapped in GetOsPageSize() size.
                 // Some memory are mapped in but some are not. You cannot
                 // write all in one block. So iterating through page size
                 //
@@ -787,7 +787,7 @@ HRESULT ClrDataAccess::EnumMemWalkStackHelper(CLRDataEnumMemoryFlags flags,
 
                         if (!pThread->IsAddressInStack(currentSP))
                         {
-                            _ASSERTE(!"Target stack has been corrupted, SP must in in the stack range.");
+                            _ASSERTE(!"Target stack has been corrupted, SP must in the stack range.");
                             break;
                         }
                     }

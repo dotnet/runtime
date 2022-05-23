@@ -28,8 +28,6 @@ Abstract:
     If you want to add a PAL_ wrapper function to a native function in
     here, you also need to edit palinternal.h and win32pal.h.
 
-
-
 --*/
 
 #ifndef __PAL_H__
@@ -1596,7 +1594,7 @@ typedef struct _XMM_SAVE_AREA32 {
 //
 // If the context record is used as an input parameter, then for each
 // portion of the context record controlled by a flag whose value is
-// set, it is assumed that that portion of the context record contains
+// set, it is assumed that such portion of the context record contains
 // valid context. If the context record is being used to modify a threads
 // context, then only that portion of the threads context is modified.
 //
@@ -1842,7 +1840,7 @@ typedef struct _NEON128 {
 //
 // If the context record is used as an input parameter, then for each
 // portion of the context record controlled by a flag whose value is
-// set, it is assumed that that portion of the context record contains
+// set, it is assumed that such portion of the context record contains
 // valid context. If the context record is being used to modify a threads
 // context, then only that portion of the threads context is modified.
 //
@@ -2024,7 +2022,7 @@ typedef struct _IMAGE_ARM_RUNTIME_FUNCTION_ENTRY {
 //
 // If the context record is used as an input parameter, then for each
 // portion of the context record controlled by a flag whose value is
-// set, it is assumed that that portion of the context record contains
+// set, it is assumed that such portion of the context record contains
 // valid context. If the context record is being used to modify a threads
 // context, then only that portion of the threads context is modified.
 //
@@ -2201,7 +2199,7 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 //
 // If the context record is used as an input parameter, then for each
 // portion of the context record controlled by a flag whose value is
-// set, it is assumed that that portion of the context record contains
+// set, it is assumed that such portion of the context record contains
 // valid context. If the context record is being used to modify a threads
 // context, then only that portion of the threads context is modified.
 //

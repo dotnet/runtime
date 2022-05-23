@@ -2707,8 +2707,7 @@ namespace Internal.JitInterface
             }
 
             // If both sides are arrays, then the result is either an array or g_pArrayClass.  The above is
-            // actually true about the element type for references types, but I think that that is a little
-            // excessive for sanity.
+            // actually true for reference types as well, but it is a little excessive to deal with.
             if (type1.IsArray && type2.IsArray)
             {
                 TypeDesc arrayClass = _compilation.TypeSystemContext.GetWellKnownType(WellKnownType.Array);

@@ -694,7 +694,7 @@ void PEImage::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     // This just gets the image headers into the dump.
     // This is used, for example, for ngen images to ensure we have the debug directory so we
     // can find the managed PDBs.
-    // No lock here as the processs should be suspended.
+    // No lock here as the process should be suspended.
     if (m_pLayouts[IMAGE_FLAT].IsValid() && m_pLayouts[IMAGE_FLAT]!=NULL)
         m_pLayouts[IMAGE_FLAT]->EnumMemoryRegions(flags);
     if (m_pLayouts[IMAGE_LOADED].IsValid() &&  m_pLayouts[IMAGE_LOADED]!=NULL)

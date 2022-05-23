@@ -2478,10 +2478,6 @@ void FileLoadLock::HolderLeave(FileLoadLock *pThis)
 }
 
 
-
-
-
-
 //
 // Assembly loading:
 //
@@ -2499,7 +2495,7 @@ void FileLoadLock::HolderLeave(FileLoadLock *pThis)
 // this constraint is expected and can be dealt with.
 //
 // Note that there is one case where this still doesn't handle recursion, and that is the
-// security subsytem. The security system runs managed code, and thus must typically fully
+// security subsystem. The security system runs managed code, and thus must typically fully
 // initialize assemblies of permission sets it is trying to use. (And of course, these may be used
 // while those assemblies are initializing.)  This is dealt with in the historical manner - namely
 // the security system passes in a special flag which says that it will deal with null return values
