@@ -14547,8 +14547,8 @@ ULONG EECodeInfo::GetFixedStackSize()
 
 #define kRBP    5
 // The information returned by this method is only valid if we are not in a prolog or an epilog.
-// Since this method is only used for the security stackwalk cache, this assumption is valid, since
-// we cannot make a call in a prolog or an epilog.
+// Since this method is only used for the security stackwalk cache and EnC transition, this assumption is
+// valid, since we cannot see these in a prolog or an epilog.
 //
 // The next assumption is that only rbp is used as a frame register in jitted code.  There is an
 // assert below to guard this assumption.

@@ -1692,6 +1692,13 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
         saveRegsPlusPSPSize += MAX_REG_ARG * REGSIZE_BYTES;
     }
 
+    if (compiler->lvaMonAcquired != BAD_VAR_NUM)
+    {
+        // We furthermore allocate the "monitor acquired" bool between PSP and
+        // the saved registers because this is part of the EnC header.
+        saveRegsPlusPSPSize += compiler->lvaLclSize(compiler->lvaMonAcquired);
+    }
+
     unsigned const saveRegsPlusPSPSizeAligned = roundUp(saveRegsPlusPSPSize, STACK_ALIGN);
 
     assert(compiler->lvaOutgoingArgSpaceSize % REGSIZE_BYTES == 0);
