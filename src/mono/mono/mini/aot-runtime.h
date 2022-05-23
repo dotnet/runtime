@@ -9,7 +9,6 @@
 #define __MONO_AOT_RUNTIME_H__
 
 #include "mini.h"
-#include "mini/interp/interp.h"
 
 /* Version number of the AOT file format */
 #define MONO_AOT_FILE_VERSION 183
@@ -282,6 +281,8 @@ typedef guint32 (*MonoAotResolvePltInfoOffset)(gpointer amodule, guint32 plt_ent
 #endif
 
 #ifdef HOST_WASM
+
+#include "mini/interp/interp.h"
 
 MONO_API void
 mono_wasm_install_interp_to_native_callback (MonoWasmNativeToInterpCallback cb);

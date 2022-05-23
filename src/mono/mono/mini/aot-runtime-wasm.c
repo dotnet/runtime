@@ -10,6 +10,7 @@
 #include "mini.h"
 #include <mono/jit/mono-private-unstable.h>
 #include "interp/interp.h"
+#include "aot-runtime.h"
 
 #ifdef TARGET_WASM
 
