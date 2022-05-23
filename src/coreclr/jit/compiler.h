@@ -70,16 +70,17 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
  *                  Forward declarations
  */
 
-struct InfoHdr;            // defined in GCInfo.h
-struct escapeMapping_t;    // defined in fgdiagnostic.cpp
-class emitter;             // defined in emit.h
-struct ShadowParamVarInfo; // defined in GSChecks.cpp
-struct InitVarDscInfo;     // defined in register_arg_convention.h
-class FgStack;             // defined in fgbasic.cpp
-class Instrumentor;        // defined in fgprofile.cpp
-class SpanningTreeVisitor; // defined in fgprofile.cpp
-class CSE_DataFlow;        // defined in OptCSE.cpp
-class OptBoolsDsc;         // defined in optimizer.cpp
+struct InfoHdr;              // defined in GCInfo.h
+struct escapeMapping_t;      // defined in fgdiagnostic.cpp
+class emitter;               // defined in emit.h
+struct ShadowParamVarInfo;   // defined in GSChecks.cpp
+struct InitVarDscInfo;       // defined in register_arg_convention.h
+class FgStack;               // defined in fgbasic.cpp
+class Instrumentor;          // defined in fgprofile.cpp
+class SpanningTreeVisitor;   // defined in fgprofile.cpp
+class CSE_DataFlow;          // defined in OptCSE.cpp
+class OptBoolsDsc;           // defined in optimizer.cpp
+struct RelopImplicationInfo; // defined in redundantbranchopts.cpp
 #ifdef DEBUG
 struct IndentStack;
 #endif
@@ -6900,6 +6901,7 @@ public:
     bool optRedundantBranch(BasicBlock* const block);
     bool optJumpThread(BasicBlock* const block, BasicBlock* const domBlock, bool domIsSameRelop);
     bool optReachable(BasicBlock* const fromBlock, BasicBlock* const toBlock, BasicBlock* const excludedBlock);
+    void optRelopImpliesRelop(RelopImplicationInfo* rii);
 
     /**************************************************************************
      *               Value/Assertion propagation
