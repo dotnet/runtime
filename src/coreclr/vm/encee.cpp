@@ -713,7 +713,7 @@ HRESULT EditAndContinueModule::ResumeInUpdatedFunction(
     // Win32 handlers on the stack so cannot ever return from this function.
     EEPOLICY_HANDLE_FATAL_ERROR(CORDBG_E_ENC_INTERNAL_ERROR);
     return hr;
-#endif // #if defined(TARGET_ARM)
+#endif // #if defined(TARGET_ARM) || defined(TARGET_LOONGARCH64)
 }
 
 //---------------------------------------------------------------------------------------
