@@ -25,6 +25,8 @@ public class PInvokeTableGenerator
         foreach (var module in pinvokeModules)
             modules [module] = module;
 
+        var signatures = new List<string>();
+
         var pinvokes = new List<PInvoke>();
         var callbacks = new List<PInvokeCallback>();
 
@@ -34,7 +36,7 @@ public class PInvokeTableGenerator
         {
             var a = mlc.LoadFromAssemblyPath(aname);
             foreach (var type in a.GetTypes())
-                CollectPInvokes(pinvokes, callbacks, type);
+                CollectPInvokes(pinvokes, callbacks, signatures, type);
         }
 
         string tmpFileName = Path.GetTempFileName();
@@ -51,10 +53,10 @@ public class PInvokeTableGenerator
 
         File.Delete(tmpFileName);
 
-        return pinvokes.Select(p => CookieHelper.BuildCookie(p.Method));
+        return signatures;
     }
 
-    private void CollectPInvokes(List<PInvoke> pinvokes, List<PInvokeCallback> callbacks, Type type)
+    private void CollectPInvokes(List<PInvoke> pinvokes, List<PInvokeCallback> callbacks, List<string> signatures, Type type)
     {
         foreach (var method in type.GetMethods(BindingFlags.DeclaredOnly|BindingFlags.Public|BindingFlags.NonPublic|BindingFlags.Static|BindingFlags.Instance))
         {
@@ -77,6 +79,7 @@ public class PInvokeTableGenerator
                 var module = (string)dllimport.ConstructorArguments[0].Value!;
                 var entrypoint = (string)dllimport.NamedArguments.First(arg => arg.MemberName == "EntryPoint").TypedValue.Value!;
                 pinvokes.Add(new PInvoke(entrypoint, module, method));
+                signatures.Add(CookieHelper.BuildCookie(method));
             }
 
             foreach (CustomAttributeData cattr in CustomAttributeData.GetCustomAttributes(method))

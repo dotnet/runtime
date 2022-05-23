@@ -65,7 +65,7 @@ public class InterpToNativeGenerator
         w.WriteLine(@"#include <stdlib.h>");
         w.WriteLine("");
 
-        var signatures = cookies.ToArray();
+        var signatures = cookies.Distinct().ToArray();
         foreach (var c in signatures)
         {
             w.WriteLine("static void");

@@ -19,6 +19,7 @@ public class IcallTableGenerator
     public string[]? Cookies { get; private set; }
 
     private List<Icall> _icalls = new List<Icall> ();
+    private List<string> signatures = new List<string>();
     private Dictionary<string, IcallClass> _runtimeIcalls = new Dictionary<string, IcallClass> ();
 
     protected TaskLoggingHelper Log { get; set; }
@@ -33,6 +34,9 @@ public class IcallTableGenerator
     //
     public IEnumerable<string> GenIcallTable(string? runtimeIcallTableFile, string[] assemblies, string? outputPath)
     {
+        _icalls.Clear();
+        signatures.Clear();
+
         if (runtimeIcallTableFile != null)
             ReadTable (runtimeIcallTableFile);
 
@@ -59,7 +63,7 @@ public class IcallTableGenerator
             File.Delete(tmpFileName);
         }
 
-        return _icalls.Select(p => CookieHelper.BuildCookie(p.Method!));
+        return signatures;
     }
 
     private void EmitTable (StreamWriter w)
@@ -159,6 +163,7 @@ public class IcallTableGenerator
             icall.TokenIndex = (int)method.MetadataToken & 0xffffff;
             icall.Assembly = method.DeclaringType.Module.Assembly.GetName().Name;
             _icalls.Add (icall);
+            signatures.Add(CookieHelper.BuildCookie(method));
          }
 
         foreach (var nestedType in type.GetNestedTypes())
