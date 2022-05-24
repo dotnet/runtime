@@ -5475,7 +5475,7 @@ HCIMPL4(void, JIT_MethodProfile32, Object *obj, CORINFO_METHOD_HANDLE baseMethod
 
     // Resolve method
     MethodDesc* pMD = NULL;
-    if (pMT->IsDelegate())
+    if (pMT->IsDelegate() && (pBaseMD == ((DelegateEEClass*)pMT->GetClass())->GetInvokeMethod()))
     {
         // We handle only the common "direct" delegate as that is in any case
         // the only one we can reasonably do GDV for. For instance, open
