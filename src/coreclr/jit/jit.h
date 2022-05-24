@@ -852,5 +852,13 @@ extern "C" UINT32 WINAPI getLikelyClasses(LikelyClassRecord*                    
                                           int32_t                                ilOffset);
 
 /*****************************************************************************/
+
+// The maximum array length is defined to be slightly less than the maximum signed 32-bit integer.
+// See https://github.com/dotnet/runtime/pull/43301, https://msdn.microsoft.com/en-us/windows/apps/hh285054.aspx.
+// CLR throws IDS_EE_ARRAY_DIMENSIONS_EXCEEDED if array length is too large. The practical limit is likely smaller
+// due to memory fragmentation.
+#define ARRLEN_MAX (0x7FFFFFC7)
+
+/*****************************************************************************/
 #endif //_JIT_H_
 /*****************************************************************************/

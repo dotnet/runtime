@@ -1056,12 +1056,6 @@ Range RangeCheck::ComputeRangeForLocalDef(BasicBlock*          block,
     return range;
 }
 
-// https://msdn.microsoft.com/en-us/windows/apps/hh285054.aspx
-// CLR throws IDS_EE_ARRAY_DIMENSIONS_EXCEEDED if array length is > INT_MAX.
-// new byte[INT_MAX]; still throws OutOfMemoryException on my system with 32 GB RAM.
-// I believe practical limits are still smaller than this number.
-#define ARRLEN_MAX (0x7FFFFFFF)
-
 // Get the limit's maximum possible value, treating array length to be ARRLEN_MAX.
 bool RangeCheck::GetLimitMax(Limit& limit, int* pMax)
 {
