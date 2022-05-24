@@ -2712,7 +2712,7 @@ void EEClass::AddChunk (MethodDescChunk* pNewChunk)
     else
     {
         // Current chunk needs to be added to the end of the list so that
-        // when all methods loaded they would come in declared order
+        // when reflection is iterating all methods, they would come in declared order
         while (head->GetNextChunk() != NULL)
             head = head->GetNextChunk();
 
