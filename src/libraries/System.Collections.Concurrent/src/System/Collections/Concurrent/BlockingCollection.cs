@@ -604,7 +604,7 @@ namespace System.Collections.Concurrent
         {
             ValidateTimeout(timeout);
 
-            //If the collection is completed then there is no need remove an item.
+            // If the collection is completed then there is no need remove an item.
             if (IsCompleted)
             {
                 item = default(T);
@@ -633,7 +633,7 @@ namespace System.Collections.Concurrent
         {
             ValidateMillisecondsTimeout(millisecondsTimeout);
 
-            //If the collection is completed then there is no need remove an item.
+            // If the collection is completed then there is no need remove an item.
             if (IsCompleted)
             {
                 item = default(T);
@@ -666,7 +666,8 @@ namespace System.Collections.Concurrent
         {
             ValidateMillisecondsTimeout(millisecondsTimeout);
 
-            //If the collection is completed then there is no need remove an item.
+            cancellationToken.ThrowIfCancellationRequested();
+            // If the collection is completed then there is no need remove an item.
             if (IsCompleted)
             {
                 item = default(T);
@@ -696,8 +697,6 @@ namespace System.Collections.Concurrent
         {
             Debug.Assert(!_isDisposed);
             item = default(T)!;
-
-            cancellationToken.ThrowIfCancellationRequested();
 
             bool waitForSemaphoreWasSuccessful = false;
 
@@ -1664,6 +1663,7 @@ namespace System.Collections.Concurrent
         /// <exception cref="OperationCanceledException">If the <see cref="CancellationToken"/> is canceled.</exception>
         public IEnumerable<T> GetConsumingEnumerable(CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             CancellationTokenSource? linkedTokenSource = null;
             try
             {
