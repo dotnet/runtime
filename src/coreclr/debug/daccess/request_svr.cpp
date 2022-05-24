@@ -48,7 +48,8 @@ HRESULT GetServerHeapData(CLRDATA_ADDRESS addr, DacpHeapSegmentData *pSegment)
     pSegment->next = (CLRDATA_ADDRESS)dac_cast<TADDR>(pHeapSegment->next);
     pSegment->gc_heap = (CLRDATA_ADDRESS)pHeapSegment->heap;
 
-    dac_gc_heap heap = LoadGcHeapData(pSegment->gc_heap);
+    TADDR heapAddress = TO_TADDR(pSegment->gc_heap);
+    dac_gc_heap heap = LoadGcHeapData(heapAddress);
 
     if (pSegment->segmentAddr == heap.ephemeral_heap_segment.GetAddr())
     {
