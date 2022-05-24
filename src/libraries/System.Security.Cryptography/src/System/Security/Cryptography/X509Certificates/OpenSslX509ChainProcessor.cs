@@ -12,6 +12,7 @@ using System.Security.Cryptography.X509Certificates.Asn1;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
 using Internal.Cryptography;
+using Interop.Crypto;
 
 using X509VerifyStatusCodeUniversal = Interop.Crypto.X509VerifyStatusCodeUniversal;
 
@@ -1029,7 +1030,7 @@ namespace System.Security.Cryptography.X509Certificates
             List<X509ChainStatus> overallStatus,
             ref bool overallHasNotSignatureValid)
         {
-            foreach (var errorCode in errorCodes)
+            foreach (X509VerifyStatusCode errorCode in errorCodes)
             {
                 AddElementStatus(errorCode, elementStatus, overallStatus, ref overallHasNotSignatureValid);
             }
