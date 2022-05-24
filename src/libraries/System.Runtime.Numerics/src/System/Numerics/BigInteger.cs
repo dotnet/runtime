@@ -3450,7 +3450,7 @@ namespace System.Numerics
         }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.GetShortestBitLength()" />
-        long IBinaryInteger<BigInteger>.GetShortestBitLength()
+        int IBinaryInteger<BigInteger>.GetShortestBitLength()
         {
             AssertValid();
             uint[]? bits = _bits;
@@ -3461,39 +3461,146 @@ namespace System.Numerics
 
                 if (value >= 0)
                 {
-                    return (sizeof(int) * 8) - int.LeadingZeroCount(value);
+                    return (sizeof(int) * 8) - BitOperations.LeadingZeroCount((uint)(value));
                 }
                 else
                 {
-                    return (sizeof(int) * 8) + 1 - int.LeadingZeroCount(~value);
+                    return (sizeof(int) * 8) + 1 - BitOperations.LeadingZeroCount((uint)(~value));
                 }
             }
 
-            long result = (bits.Length - 1) * 32;
+            int result = (bits.Length - 1) * 32;
 
             if (_sign >= 0)
             {
-                result += (sizeof(uint) * 8) - uint.LeadingZeroCount(bits[^1]);
+                result += (sizeof(uint) * 8) - BitOperations.LeadingZeroCount(bits[^1]);
             }
             else
             {
-                result += (sizeof(uint) * 8) + 1 - uint.LeadingZeroCount(~bits[^1]);
+                uint part = ~bits[^1] + 1;
+
+                // We need to remove the "carry" (the +1) if any of the initial
+                // bytes are not zero. This ensures we get the correct two's complement
+                // part for the computation.
+
+                for (int index = 0; index < bits.Length - 1; index++)
+                {
+                    if (bits[index] != 0)
+                    {
+                        part -= 1;
+                        break;
+                    }
+                }
+
+                result += (sizeof(uint) * 8) + 1 - BitOperations.LeadingZeroCount(~part);
             }
 
             return result;
         }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.GetByteCount()" />
-        int IBinaryInteger<BigInteger>.GetByteCount()
+        int IBinaryInteger<BigInteger>.GetByteCount() => GetGenericMathByteCount();
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.TryWriteBigEndian(Span{byte}, out int)" />
+        bool IBinaryInteger<BigInteger>.TryWriteBigEndian(Span<byte> destination, out int bytesWritten)
         {
             AssertValid();
             uint[]? bits = _bits;
 
-            if (bits is null)
+            int byteCount = GetGenericMathByteCount();
+
+            if (destination.Length >= byteCount)
             {
-                return sizeof(int);
+                if (bits is null)
+                {
+                    int value = BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(_sign) : _sign;
+                    Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), value);
+                }
+                else if (_sign >= 0)
+                {
+                    // When the value is positive, we simply need to copy all bits as big endian
+
+                    ref byte startAddress = ref MemoryMarshal.GetReference(destination);
+                    ref byte address = ref Unsafe.Add(ref startAddress, (bits.Length - 1) * sizeof(uint));
+
+                    for (int i = 0; i < bits.Length; i++)
+                    {
+                        uint part = bits[i];
+
+                        if (BitConverter.IsLittleEndian)
+                        {
+                            part = BinaryPrimitives.ReverseEndianness(part);
+                        }
+
+                        Unsafe.WriteUnaligned(ref address, part);
+                        address = ref Unsafe.Subtract(ref address, sizeof(uint));
+                    }
+                }
+                else
+                {
+                    // When the value is negative, we need to copy the two's complement representation
+                    // We'll do this "inline" to avoid needing to unnecessarily allocate.
+
+                    ref byte startAddress = ref MemoryMarshal.GetReference(destination);
+                    ref byte address = ref Unsafe.Add(ref startAddress, byteCount - sizeof(uint));
+
+                    int i = 0;
+                    uint part;
+
+                    do
+                    {
+                        // first do complement and +1 as long as carry is needed
+                        part = ~bits[i] + 1;
+
+                        if (BitConverter.IsLittleEndian)
+                        {
+                            part = BinaryPrimitives.ReverseEndianness(part);
+                        }
+
+                        Unsafe.WriteUnaligned(ref address, part);
+                        address = ref Unsafe.Subtract(ref address, sizeof(uint));
+
+                        i++;
+                    }
+                    while ((part == 0) && (i < bits.Length));
+
+                    while (i < bits.Length)
+                    {
+                        // now ones complement is sufficient
+                        part = ~bits[i];
+
+                        if (BitConverter.IsLittleEndian)
+                        {
+                            part = BinaryPrimitives.ReverseEndianness(part);
+                        }
+
+                        Unsafe.WriteUnaligned(ref address, part);
+                        address = ref Unsafe.Subtract(ref address, sizeof(uint));
+
+                        i++;
+                    }
+
+                    if (Unsafe.AreSame(ref address, ref startAddress))
+                    {
+                        // We need one extra part to represent the sign as the most
+                        // significant bit of the two's complement value was 0.
+                        Unsafe.WriteUnaligned(ref address, uint.MaxValue);
+                    }
+                    else
+                    {
+                        // Otherwise we should have been precisely one part behind address
+                        Debug.Assert(Unsafe.AreSame(ref startAddress, ref Unsafe.Add(ref address, sizeof(uint))));
+                    }
+                }
+
+                bytesWritten = byteCount;
+                return true;
             }
-            return bits.Length * 4;
+            else
+            {
+                bytesWritten = 0;
+                return false;
+            }
         }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TryWriteLittleEndian(Span{byte}, out int)" />
@@ -3502,7 +3609,7 @@ namespace System.Numerics
             AssertValid();
             uint[]? bits = _bits;
 
-            int byteCount = (bits is null) ? sizeof(int) : bits.Length * 4;
+            int byteCount = GetGenericMathByteCount();
 
             if (destination.Length >= byteCount)
             {
@@ -3536,13 +3643,20 @@ namespace System.Numerics
                     // We'll do this "inline" to avoid needing to unnecessarily allocate.
 
                     ref byte address = ref MemoryMarshal.GetReference(destination);
+                    ref byte lastAddress = ref Unsafe.Add(ref address, byteCount - sizeof(uint));
 
                     int i = 0;
                     uint part;
 
                     do
                     {
+                        // first do complement and +1 as long as carry is needed
                         part = ~bits[i] + 1;
+
+                        if (!BitConverter.IsLittleEndian)
+                        {
+                            part = BinaryPrimitives.ReverseEndianness(part);
+                        }
 
                         Unsafe.WriteUnaligned(ref address, part);
                         address = ref Unsafe.Add(ref address, sizeof(uint));
@@ -3553,12 +3667,30 @@ namespace System.Numerics
 
                     while (i < bits.Length)
                     {
+                        // now ones complement is sufficient
                         part = ~bits[i];
+
+                        if (!BitConverter.IsLittleEndian)
+                        {
+                            part = BinaryPrimitives.ReverseEndianness(part);
+                        }
 
                         Unsafe.WriteUnaligned(ref address, part);
                         address = ref Unsafe.Add(ref address, sizeof(uint));
 
                         i++;
+                    }
+
+                    if (Unsafe.AreSame(ref address, ref lastAddress))
+                    {
+                        // We need one extra part to represent the sign as the most
+                        // significant bit of the two's complement value was 0.
+                        Unsafe.WriteUnaligned(ref address, uint.MaxValue);
+                    }
+                    else
+                    {
+                        // Otherwise we should have been precisely one part ahead address
+                        Debug.Assert(Unsafe.AreSame(ref lastAddress, ref Unsafe.Subtract(ref address, sizeof(uint))));
                     }
                 }
 
@@ -3570,6 +3702,46 @@ namespace System.Numerics
                 bytesWritten = 0;
                 return false;
             }
+        }
+
+        private int GetGenericMathByteCount()
+        {
+            AssertValid();
+            uint[]? bits = _bits;
+
+            if (bits is null)
+            {
+                return sizeof(int);
+            }
+
+            int result = bits.Length * 4;
+
+            if (_sign < 0)
+            {
+                uint part = ~bits[^1] + 1;
+
+                // We need to remove the "carry" (the +1) if any of the initial
+                // bytes are not zero. This ensures we get the correct two's complement
+                // part for the computation.
+
+                for (int index = 0; index < bits.Length - 1; index++)
+                {
+                    if (bits[index] != 0)
+                    {
+                        part -= 1;
+                        break;
+                    }
+                }
+
+                if ((int)part >= 0)
+                {
+                    // When the most significant bit of the part is zero
+                    // we need another part to represent the value.
+                    result += sizeof(uint);
+                }
+            }
+
+            return result;
         }
 
         //
@@ -3690,10 +3862,36 @@ namespace System.Numerics
             return (currentSign == targetSign) ? value : -value;
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.CreateChecked{TOther}(TOther)" />
+        /// <inheritdoc cref="INumber{TSelf}.MaxNumber(TSelf, TSelf)" />
+        static BigInteger INumber<BigInteger>.MaxNumber(BigInteger x, BigInteger y) => Max(x, y);
+
+        /// <inheritdoc cref="INumber{TSelf}.MinNumber(TSelf, TSelf)" />
+        static BigInteger INumber<BigInteger>.MinNumber(BigInteger x, BigInteger y) => Min(x, y);
+
+        /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
+        static int INumber<BigInteger>.Sign(BigInteger value)
+        {
+            value.AssertValid();
+
+            if (value._bits is null)
+            {
+                return int.Sign(value._sign);
+            }
+
+            return value._sign;
+        }
+
+        //
+        // INumberBase
+        //
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Radix" />
+        static int INumberBase<BigInteger>.Radix => 2;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static BigInteger CreateChecked<TOther>(TOther value)
-            where TOther : INumber<TOther>
+            where TOther : INumberBase<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -3762,10 +3960,10 @@ namespace System.Numerics
             }
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.CreateSaturating{TOther}(TOther)" />
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateSaturating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static BigInteger CreateSaturating<TOther>(TOther value)
-            where TOther : INumber<TOther>
+            where TOther : INumberBase<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -3834,10 +4032,10 @@ namespace System.Numerics
             }
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.CreateTruncating{TOther}(TOther)" />
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateTruncating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static BigInteger CreateTruncating<TOther>(TOther value)
-            where TOther : INumber<TOther>
+            where TOther : INumberBase<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -3906,48 +4104,141 @@ namespace System.Numerics
             }
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.IsNegative(TSelf)" />
+        /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
+        static bool INumberBase<BigInteger>.IsCanonical(BigInteger value) => true;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsComplexNumber(TSelf)" />
+        static bool INumberBase<BigInteger>.IsComplexNumber(BigInteger value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsEvenInteger(TSelf)" />
+        public static bool IsEvenInteger(BigInteger value)
+        {
+            value.AssertValid();
+
+            if (value._bits is null)
+            {
+                return (value._sign & 1) == 0;
+            }
+            return (value._bits[0] & 1) == 0;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsFinite(TSelf)" />
+        static bool INumberBase<BigInteger>.IsFinite(BigInteger value) => true;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsImaginaryNumber(TSelf)" />
+        static bool INumberBase<BigInteger>.IsImaginaryNumber(BigInteger value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsInfinity(TSelf)" />
+        static bool INumberBase<BigInteger>.IsInfinity(BigInteger value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsInteger(TSelf)" />
+        static bool INumberBase<BigInteger>.IsInteger(BigInteger value) => true;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNaN(TSelf)" />
+        static bool INumberBase<BigInteger>.IsNaN(BigInteger value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNegative(TSelf)" />
         public static bool IsNegative(BigInteger value)
         {
             value.AssertValid();
             return value._sign < 0;
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.MaxMagnitude(TSelf, TSelf)" />
-        public static BigInteger MaxMagnitude(BigInteger x, BigInteger y)
-        {
-            x.AssertValid();
-            y.AssertValid();
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNegativeInfinity(TSelf)" />
+        static bool INumberBase<BigInteger>.IsNegativeInfinity(BigInteger value) => false;
 
-            return (Abs(x) >= Abs(y)) ? x : y;
-        }
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNormal(TSelf)" />
+        static bool INumberBase<BigInteger>.IsNormal(BigInteger value) => (value != 0);
 
-        /// <inheritdoc cref="INumber{TSelf}.MinMagnitude(TSelf, TSelf)" />
-        public static BigInteger MinMagnitude(BigInteger x, BigInteger y)
-        {
-            x.AssertValid();
-            y.AssertValid();
-
-            return (Abs(x) <= Abs(y)) ? x : y;
-        }
-
-        /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
-        static int INumber<BigInteger>.Sign(BigInteger value)
+        /// <inheritdoc cref="INumberBase{TSelf}.IsOddInteger(TSelf)" />
+        public static bool IsOddInteger(BigInteger value)
         {
             value.AssertValid();
 
             if (value._bits is null)
             {
-                return int.Sign(value._sign);
+                return (value._sign & 1) != 0;
             }
-
-            return value._sign;
+            return (value._bits[0] & 1) != 0;
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
+        /// <inheritdoc cref="INumberBase{TSelf}.IsPositive(TSelf)" />
+        public static bool IsPositive(BigInteger value)
+        {
+            value.AssertValid();
+            return value._sign >= 0;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsPositiveInfinity(TSelf)" />
+        static bool INumberBase<BigInteger>.IsPositiveInfinity(BigInteger value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsRealNumber(TSelf)" />
+        static bool INumberBase<BigInteger>.IsRealNumber(BigInteger value) => true;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsSubnormal(TSelf)" />
+        static bool INumberBase<BigInteger>.IsSubnormal(BigInteger value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsZero(TSelf)" />
+        static bool INumberBase<BigInteger>.IsZero(BigInteger value)
+        {
+            value.AssertValid();
+            return value._sign == 0;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitude(TSelf, TSelf)" />
+        public static BigInteger MaxMagnitude(BigInteger x, BigInteger y)
+        {
+            x.AssertValid();
+            y.AssertValid();
+
+            BigInteger ax = Abs(x);
+            BigInteger ay = Abs(y);
+
+            if (ax > ay)
+            {
+                return x;
+            }
+
+            if (ax == ay)
+            {
+                return IsNegative(x) ? y : x;
+            }
+
+            return y;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitudeNumber(TSelf, TSelf)" />
+        static BigInteger INumberBase<BigInteger>.MaxMagnitudeNumber(BigInteger x, BigInteger y) => MaxMagnitude(x, y);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitude(TSelf, TSelf)" />
+        public static BigInteger MinMagnitude(BigInteger x, BigInteger y)
+        {
+            x.AssertValid();
+            y.AssertValid();
+
+            BigInteger ax = Abs(x);
+            BigInteger ay = Abs(y);
+
+            if (ax < ay)
+            {
+                return x;
+            }
+
+            if (ax == ay)
+            {
+                return IsNegative(x) ? x : y;
+            }
+
+            return y;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
+        static BigInteger INumberBase<BigInteger>.MinMagnitudeNumber(BigInteger x, BigInteger y) => MinMagnitude(x, y);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryCreate<TOther>(TOther value, out BigInteger result)
-            where TOther : INumber<TOther>
+            where TOther : INumberBase<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {

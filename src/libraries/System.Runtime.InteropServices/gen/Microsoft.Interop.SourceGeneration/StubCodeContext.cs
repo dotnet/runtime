@@ -91,7 +91,7 @@ namespace Microsoft.Interop
         /// </summary>
         public StubCodeContext? ParentContext { get; protected init; }
 
-        public const string GeneratedNativeIdentifierSuffix = "_gen_native";
+        public const string GeneratedNativeIdentifierSuffix = "_native";
 
         /// <summary>
         /// Get managed and native instance identifiers for the <paramref name="info"/>

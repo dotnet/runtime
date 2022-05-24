@@ -83,7 +83,7 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Ping\tests\FunctionalTests\System.Net.Ping.Functional.Tests.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetsMobile)' == 'true' or '$(TargetArchitecture)' == 'ARMv6'">
+  <ItemGroup Condition="'$(TargetsMobile)' == 'true' or '$(TargetsLinuxBionic)' == 'true' or '$(TargetArchitecture)' == 'ARMv6'">
     <!-- LibraryImportGenerator runtime tests depend on DNNE, which does not support mobile platforms. -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\LibraryImportGenerator.Tests\LibraryImportGenerator.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\LibraryImportGenerator.UnitTests\LibraryImportGenerator.Unit.Tests.csproj" />
@@ -134,7 +134,20 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.OpenSsl\tests\System.Security.Cryptography.OpenSsl.Tests.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetOS)' == 'Android' and '$(RunDisabledAndroidTests)' != 'true'">
+  <ItemGroup Condition="'$(TargetsLinuxBionic)' == 'true' and '$(TargetArchitecture)' == 'x64' and '$(RunDisabledAndroidTests)' != 'true'">
+    <!-- Fails on Helix, cannot repro locally -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Tasks.Parallel\tests\System.Threading.Tasks.Parallel.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.ThreadPool\tests\System.Threading.ThreadPool.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.FileProviders.Physical\tests\Microsoft.Extensions.FileProviders.Physical.Tests.csproj" />
+
+    <!-- Timeout on Helix, cannot repro locally -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Security\tests\FunctionalTests\System.Net.Security.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Requests\tests\System.Net.Requests.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Mail\tests\Functional\System.Net.Mail.Functional.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.FileSystem\tests\DisabledFileLockingTests\System.IO.FileSystem.DisabledFileLocking.Tests.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="('$(TargetOS)' == 'Android' or '$(TargetsLinuxBionic)' == 'true') and '$(RunDisabledAndroidTests)' != 'true'">
     <!-- Tests time out intermittently -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Hosting\tests\UnitTests\Microsoft.Extensions.Hosting.Unit.Tests.csproj" />
 
@@ -177,7 +190,7 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Dynamic.Runtime/tests/System.Dynamic.Runtime.Tests.csproj"/>
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetOS)' == 'Android' and '$(TargetArchitecture)' == 'arm64' and '$(RunDisabledAndroidTests)' != 'true'">
+  <ItemGroup Condition="('$(TargetOS)' == 'Android' or '$(TargetsLinuxBionic)' == 'true') and '$(TargetArchitecture)' == 'arm64' and '$(RunDisabledAndroidTests)' != 'true'">
     <!-- Crashes on CI (possibly flakey) https://github.com/dotnet/runtime/issues/52615 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Configuration/tests/FunctionalTests/Microsoft.Extensions.Configuration.Functional.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Configuration.Binder/tests/Microsoft.Extensions.Configuration.Binder.Tests.csproj" />
@@ -199,7 +212,7 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.DispatchProxy/tests/System.Reflection.DispatchProxy.Tests.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetOS)' == 'Android' and '$(TargetArchitecture)' == 'x64' and '$(RunDisabledAndroidTests)' != 'true'">
+  <ItemGroup Condition="('$(TargetOS)' == 'Android' or '$(TargetsLinuxBionic)' == 'true') and '$(TargetArchitecture)' == 'x64' and '$(RunDisabledAndroidTests)' != 'true'">
     <!-- Test flakiness on x64 https://github.com/dotnet/runtime/issues/49937 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading\tests\System.Threading.Tests.csproj" />
 
@@ -207,7 +220,7 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography\tests\System.Security.Cryptography.Tests.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetOS)' == 'Android' and '$(TargetArchitecture)' == 'x86' and '$(RunDisabledAndroidTests)' != 'true'">
+  <ItemGroup Condition="('$(TargetOS)' == 'Android' or '$(TargetsLinuxBionic)' == 'true') and '$(TargetArchitecture)' == 'x86' and '$(RunDisabledAndroidTests)' != 'true'">
     <!-- Crashes only on x86 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Primitives\tests\Microsoft.Extensions.Primitives.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Extensions\tests\System.Runtime.Extensions.Tests.csproj" />

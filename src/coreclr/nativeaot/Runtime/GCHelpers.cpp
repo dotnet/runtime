@@ -339,3 +339,8 @@ EXTERN_C REDHAWK_API void RhAllocateNewObject(MethodTable* pEEType, uint32_t fla
 
     pThread->EnablePreemptiveMode();
 }
+
+COOP_PINVOKE_HELPER(int64_t, RhGetTotalPauseDuration, ())
+{
+    return GCHeapUtilities::GetGCHeap()->GetTotalPauseDuration();
+}

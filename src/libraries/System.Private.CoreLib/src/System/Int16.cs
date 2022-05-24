@@ -340,7 +340,7 @@ namespace System
         public static short TrailingZeroCount(short value) => (byte)(BitOperations.TrailingZeroCount(value << 16) - 16);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.GetShortestBitLength()" />
-        long IBinaryInteger<short>.GetShortestBitLength()
+        int IBinaryInteger<short>.GetShortestBitLength()
         {
             short value = m_value;
 
@@ -356,6 +356,24 @@ namespace System
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.GetByteCount()" />
         int IBinaryInteger<short>.GetByteCount() => sizeof(short);
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.TryWriteBigEndian(Span{byte}, out int)" />
+        bool IBinaryInteger<short>.TryWriteBigEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length >= sizeof(short))
+            {
+                short value = BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(m_value) : m_value;
+                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), value);
+
+                bytesWritten = sizeof(short);
+                return true;
+            }
+            else
+            {
+                bytesWritten = 0;
+                return false;
+            }
+        }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TryWriteLittleEndian(Span{byte}, out int)" />
         bool IBinaryInteger<short>.TryWriteLittleEndian(Span<byte> destination, out int bytesWritten)
@@ -502,9 +520,6 @@ namespace System
         // INumber
         //
 
-        /// <inheritdoc cref="INumber{TSelf}.Abs(TSelf)" />
-        public static short Abs(short value) => Math.Abs(value);
-
         /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
         public static short Clamp(short value, short min, short max) => Math.Clamp(value, min, max);
 
@@ -531,10 +546,41 @@ namespace System
             return (short)(-absValue);
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.CreateChecked{TOther}(TOther)" />
+        /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
+        public static short Max(short x, short y) => Math.Max(x, y);
+
+        /// <inheritdoc cref="INumber{TSelf}.MaxNumber(TSelf, TSelf)" />
+        static short INumber<short>.MaxNumber(short x, short y) => Max(x, y);
+
+        /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
+        public static short Min(short x, short y) => Math.Min(x, y);
+
+        /// <inheritdoc cref="INumber{TSelf}.MinNumber(TSelf, TSelf)" />
+        static short INumber<short>.MinNumber(short x, short y) => Min(x, y);
+
+        /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
+        public static int Sign(short value) => Math.Sign(value);
+
+        //
+        // INumberBase
+        //
+
+        /// <inheritdoc cref="INumberBase{TSelf}.One" />
+        static short INumberBase<short>.One => One;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Radix" />
+        static int INumberBase<short>.Radix => 2;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
+        static short INumberBase<short>.Zero => Zero;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Abs(TSelf)" />
+        public static short Abs(short value) => Math.Abs(value);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static short CreateChecked<TOther>(TOther value)
-            where TOther : INumber<TOther>
+            where TOther : INumberBase<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -599,10 +645,10 @@ namespace System
             }
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.CreateSaturating{TOther}(TOther)" />
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateSaturating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static short CreateSaturating<TOther>(TOther value)
-            where TOther : INumber<TOther>
+            where TOther : INumberBase<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -684,10 +730,10 @@ namespace System
             }
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.CreateTruncating{TOther}(TOther)" />
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateTruncating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static short CreateTruncating<TOther>(TOther value)
-            where TOther : INumber<TOther>
+            where TOther : INumberBase<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -752,13 +798,58 @@ namespace System
             }
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.IsNegative(TSelf)" />
+        /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
+        static bool INumberBase<short>.IsCanonical(short value) => true;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsComplexNumber(TSelf)" />
+        static bool INumberBase<short>.IsComplexNumber(short value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsEvenInteger(TSelf)" />
+        public static bool IsEvenInteger(short value) => (value & 1) == 0;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsFinite(TSelf)" />
+        static bool INumberBase<short>.IsFinite(short value) => true;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsImaginaryNumber(TSelf)" />
+        static bool INumberBase<short>.IsImaginaryNumber(short value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsInfinity(TSelf)" />
+        static bool INumberBase<short>.IsInfinity(short value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsInteger(TSelf)" />
+        static bool INumberBase<short>.IsInteger(short value) => true;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNaN(TSelf)" />
+        static bool INumberBase<short>.IsNaN(short value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNegative(TSelf)" />
         public static bool IsNegative(short value) => value < 0;
 
-        /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
-        public static short Max(short x, short y) => Math.Max(x, y);
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNegativeInfinity(TSelf)" />
+        static bool INumberBase<short>.IsNegativeInfinity(short value) => false;
 
-        /// <inheritdoc cref="INumber{TSelf}.MaxMagnitude(TSelf, TSelf)" />
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNormal(TSelf)" />
+        static bool INumberBase<short>.IsNormal(short value) => value != 0;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsOddInteger(TSelf)" />
+        public static bool IsOddInteger(short value) => (value & 1) != 0;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsPositive(TSelf)" />
+        public static bool IsPositive(short value) => value >= 0;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsPositiveInfinity(TSelf)" />
+        static bool INumberBase<short>.IsPositiveInfinity(short value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsRealNumber(TSelf)" />
+        static bool INumberBase<short>.IsRealNumber(short value) => true;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsSubnormal(TSelf)" />
+        static bool INumberBase<short>.IsSubnormal(short value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsZero(TSelf)" />
+        static bool INumberBase<short>.IsZero(short value) => (value == 0);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitude(TSelf, TSelf)" />
         public static short MaxMagnitude(short x, short y)
         {
             short absX = x;
@@ -785,13 +876,23 @@ namespace System
                 }
             }
 
-            return (absX >= absY) ? x : y;
+            if (absX > absY)
+            {
+                return x;
+            }
+
+            if (absX == absY)
+            {
+                return IsNegative(x) ? y : x;
+            }
+
+            return y;
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
-        public static short Min(short x, short y) => Math.Min(x, y);
+        /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitudeNumber(TSelf, TSelf)" />
+        static short INumberBase<short>.MaxMagnitudeNumber(short x, short y) => MaxMagnitude(x, y);
 
-        /// <inheritdoc cref="INumber{TSelf}.MinMagnitude(TSelf, TSelf)" />
+        /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitude(TSelf, TSelf)" />
         public static short MinMagnitude(short x, short y)
         {
             short absX = x;
@@ -818,16 +919,26 @@ namespace System
                 }
             }
 
-            return (absX <= absY) ? x : y;
+            if (absX < absY)
+            {
+                return x;
+            }
+
+            if (absX == absY)
+            {
+                return IsNegative(x) ? x : y;
+            }
+
+            return y;
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
-        public static int Sign(short value) => Math.Sign(value);
+        /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
+        static short INumberBase<short>.MinMagnitudeNumber(short x, short y) => MinMagnitude(x, y);
 
-        /// <inheritdoc cref="INumber{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
+        /// <inheritdoc cref="INumberBase{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryCreate<TOther>(TOther value, out short result)
-            where TOther : INumber<TOther>
+            where TOther : INumberBase<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -994,16 +1105,6 @@ namespace System
                 return false;
             }
         }
-
-        //
-        // INumberBase
-        //
-
-        /// <inheritdoc cref="INumberBase{TSelf}.One" />
-        static short INumberBase<short>.One => One;
-
-        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
-        static short INumberBase<short>.Zero => Zero;
 
         //
         // IParsable

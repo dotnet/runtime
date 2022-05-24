@@ -43310,7 +43310,7 @@ void gc_heap::verify_heap (BOOL begin_gc_p)
     uint8_t*        e_high = 0;
     uint8_t*        next_boundary = 0;
 #else //USE_REGIONS
-    // For no regions the gen number is seperately reduced when we detect the ephemeral seg.
+    // For no regions the gen number is separately reduced when we detect the ephemeral seg.
     int gen_num_to_stop = max_generation;
     uint8_t*        e_high = ephemeral_high;
     uint8_t*        next_boundary = generation_allocation_start (generation_of (max_generation - 1));
@@ -46337,6 +46337,11 @@ void GCHeap::GetMemoryInfo(uint64_t* highMemLoadThresholdBytes,
     }
 #endif //BACKGROUND_GC
 #endif //_DEBUG
+}
+
+int64_t GCHeap::GetTotalPauseDuration()
+{
+    return (int64_t)(gc_heap::total_suspended_time * 10);
 }
 
 uint32_t GCHeap::GetMemoryLoad()

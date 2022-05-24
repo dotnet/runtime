@@ -255,6 +255,8 @@
              Link="Common\System\Security\Cryptography\RSAKeyFormatHelper.Encrypted.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\RsaPaddingProcessor.cs"
              Link="Common\System\Security\Cryptography\RsaPaddingProcessor.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
+             Link="Common\System\Text\ValueStringBuilder.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
              Link="Common\System\Threading\Tasks\TaskToApm.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafePasswordHandle.cs" />
@@ -441,6 +443,7 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\X500DistinguishedNameBuilder.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X500DistinguishedNameFlags.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X501Attribute.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509AuthorityInformationAccessExtension.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509BasicConstraintsExtension.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Certificate.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Certificate2.cs" />

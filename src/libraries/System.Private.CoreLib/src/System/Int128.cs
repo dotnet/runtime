@@ -799,7 +799,7 @@ namespace System
         }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.GetShortestBitLength()" />
-        long IBinaryInteger<Int128>.GetShortestBitLength()
+        int IBinaryInteger<Int128>.GetShortestBitLength()
         {
             Int128 value = this;
 
@@ -816,6 +816,35 @@ namespace System
         /// <inheritdoc cref="IBinaryInteger{TSelf}.GetByteCount()" />
         int IBinaryInteger<Int128>.GetByteCount() => Size;
 
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.TryWriteBigEndian(Span{byte}, out int)" />
+        bool IBinaryInteger<Int128>.TryWriteBigEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length >= Size)
+            {
+                ulong lower = _lower;
+                ulong upper = _upper;
+
+                if (BitConverter.IsLittleEndian)
+                {
+                    lower = BinaryPrimitives.ReverseEndianness(lower);
+                    upper = BinaryPrimitives.ReverseEndianness(upper);
+                }
+
+                ref byte address = ref MemoryMarshal.GetReference(destination);
+
+                Unsafe.WriteUnaligned(ref address, upper);
+                Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref address, sizeof(ulong)), lower);
+
+                bytesWritten = Size;
+                return true;
+            }
+            else
+            {
+                bytesWritten = 0;
+                return false;
+            }
+        }
+
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TryWriteLittleEndian(Span{byte}, out int)" />
         bool IBinaryInteger<Int128>.TryWriteLittleEndian(Span<byte> destination, out int bytesWritten)
         {
@@ -826,9 +855,8 @@ namespace System
 
                 if (!BitConverter.IsLittleEndian)
                 {
-                    ulong tmp = lower;
-                    lower = BinaryPrimitives.ReverseEndianness(upper);
-                    upper = BinaryPrimitives.ReverseEndianness(tmp);
+                    lower = BinaryPrimitives.ReverseEndianness(lower);
+                    upper = BinaryPrimitives.ReverseEndianness(upper);
                 }
 
                 ref byte address = ref MemoryMarshal.GetReference(destination);
@@ -1160,21 +1188,6 @@ namespace System
         // INumber
         //
 
-        /// <inheritdoc cref="INumber{TSelf}.Abs(TSelf)" />
-        public static Int128 Abs(Int128 value)
-        {
-            if (IsNegative(value))
-            {
-                value = -value;
-
-                if (IsNegative(value))
-                {
-                    Math.ThrowNegateTwosCompOverflow();
-                }
-            }
-            return value;
-        }
-
         /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
         public static Int128 Clamp(Int128 value, Int128 min, Int128 max)
         {
@@ -1216,10 +1229,67 @@ namespace System
             return -absValue;
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.CreateChecked{TOther}(TOther)" />
+        /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
+        public static Int128 Max(Int128 x, Int128 y) => (x >= y) ? x : y;
+
+        /// <inheritdoc cref="INumber{TSelf}.MaxNumber(TSelf, TSelf)" />
+        static Int128 INumber<Int128>.MaxNumber(Int128 x, Int128 y) => Max(x, y);
+
+        /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
+        public static Int128 Min(Int128 x, Int128 y) => (x <= y) ? x : y;
+
+        /// <inheritdoc cref="INumber{TSelf}.MinNumber(TSelf, TSelf)" />
+        static Int128 INumber<Int128>.MinNumber(Int128 x, Int128 y) => Min(x, y);
+
+        /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
+        public static int Sign(Int128 value)
+        {
+            if (IsNegative(value))
+            {
+                return -1;
+            }
+            else if (value != default)
+            {
+                return 1;
+            }
+            else
+            {
+                return 0;
+            }
+        }
+
+        //
+        // INumberBase
+        //
+
+        /// <inheritdoc cref="INumberBase{TSelf}.One" />
+        public static Int128 One => new Int128(0, 1);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Radix" />
+        static int INumberBase<Int128>.Radix => 2;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
+        public static Int128 Zero => default;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Abs(TSelf)" />
+        public static Int128 Abs(Int128 value)
+        {
+            if (IsNegative(value))
+            {
+                value = -value;
+
+                if (IsNegative(value))
+                {
+                    Math.ThrowNegateTwosCompOverflow();
+                }
+            }
+            return value;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Int128 CreateChecked<TOther>(TOther value)
-            where TOther : INumber<TOther>
+            where TOther : INumberBase<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -1288,10 +1358,10 @@ namespace System
             }
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.CreateSaturating{TOther}(TOther)" />
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateSaturating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Int128 CreateSaturating<TOther>(TOther value)
-            where TOther : INumber<TOther>
+            where TOther : INumberBase<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -1360,10 +1430,10 @@ namespace System
             }
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.CreateTruncating{TOther}(TOther)" />
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateTruncating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Int128 CreateTruncating<TOther>(TOther value)
-            where TOther : INumber<TOther>
+            where TOther : INumberBase<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -1432,15 +1502,58 @@ namespace System
             }
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.IsNegative(TSelf)" />
+        /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
+        static bool INumberBase<Int128>.IsCanonical(Int128 value) => true;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsComplexNumber(TSelf)" />
+        static bool INumberBase<Int128>.IsComplexNumber(Int128 value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsEvenInteger(TSelf)" />
+        public static bool IsEvenInteger(Int128 value) => (value._lower & 1) == 0;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsFinite(TSelf)" />
+        static bool INumberBase<Int128>.IsFinite(Int128 value) => true;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsImaginaryNumber(TSelf)" />
+        static bool INumberBase<Int128>.IsImaginaryNumber(Int128 value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsInfinity(TSelf)" />
+        static bool INumberBase<Int128>.IsInfinity(Int128 value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsInteger(TSelf)" />
+        static bool INumberBase<Int128>.IsInteger(Int128 value) => true;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNaN(TSelf)" />
+        static bool INumberBase<Int128>.IsNaN(Int128 value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNegative(TSelf)" />
         public static bool IsNegative(Int128 value) => (long)value._upper < 0;
 
-        internal static bool IsPositive(Int128 value) => (long)value._upper >= 0;
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNegativeInfinity(TSelf)" />
+        static bool INumberBase<Int128>.IsNegativeInfinity(Int128 value) => false;
 
-        /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
-        public static Int128 Max(Int128 x, Int128 y) => (x >= y) ? x : y;
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNormal(TSelf)" />
+        static bool INumberBase<Int128>.IsNormal(Int128 value) => value != 0;
 
-        /// <inheritdoc cref="INumber{TSelf}.MaxMagnitude(TSelf, TSelf)" />
+        /// <inheritdoc cref="INumberBase{TSelf}.IsOddInteger(TSelf)" />
+        public static bool IsOddInteger(Int128 value) => (value._lower & 1) != 0;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsPositive(TSelf)" />
+        public static bool IsPositive(Int128 value) => (long)value._upper >= 0;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsPositiveInfinity(TSelf)" />
+        static bool INumberBase<Int128>.IsPositiveInfinity(Int128 value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsRealNumber(TSelf)" />
+        static bool INumberBase<Int128>.IsRealNumber(Int128 value) => true;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsSubnormal(TSelf)" />
+        static bool INumberBase<Int128>.IsSubnormal(Int128 value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsZero(TSelf)" />
+        static bool INumberBase<Int128>.IsZero(Int128 value) => (value == 0);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitude(TSelf, TSelf)" />
         public static Int128 MaxMagnitude(Int128 x, Int128 y)
         {
             Int128 absX = x;
@@ -1467,13 +1580,23 @@ namespace System
                 }
             }
 
-            return (absX >= absY) ? x : y;
+            if (absX > absY)
+            {
+                return x;
+            }
+
+            if (absX == absY)
+            {
+                return IsNegative(x) ? y : x;
+            }
+
+            return y;
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
-        public static Int128 Min(Int128 x, Int128 y) => (x <= y) ? x : y;
+        /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitudeNumber(TSelf, TSelf)" />
+        static Int128 INumberBase<Int128>.MaxMagnitudeNumber(Int128 x, Int128 y) => MaxMagnitude(x, y);
 
-        /// <inheritdoc cref="INumber{TSelf}.MinMagnitude(TSelf, TSelf)" />
+        /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitude(TSelf, TSelf)" />
         public static Int128 MinMagnitude(Int128 x, Int128 y)
         {
             Int128 absX = x;
@@ -1500,30 +1623,26 @@ namespace System
                 }
             }
 
-            return (absX <= absY) ? x : y;
+            if (absX < absY)
+            {
+                return x;
+            }
+
+            if (absX == absY)
+            {
+                return IsNegative(x) ? x : y;
+            }
+
+            return y;
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
-        public static int Sign(Int128 value)
-        {
-            if (IsNegative(value))
-            {
-                return -1;
-            }
-            else if (value != default)
-            {
-                return 1;
-            }
-            else
-            {
-                return 0;
-            }
-        }
+        /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
+        static Int128 INumberBase<Int128>.MinMagnitudeNumber(Int128 x, Int128 y) => MinMagnitude(x, y);
 
-        /// <inheritdoc cref="INumber{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
+        /// <inheritdoc cref="INumberBase{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryCreate<TOther>(TOther value, out Int128 result)
-            where TOther : INumber<TOther>
+            where TOther : INumberBase<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -1631,16 +1750,6 @@ namespace System
                 return false;
             }
         }
-
-        //
-        // INumberBase
-        //
-
-        /// <inheritdoc cref="INumberBase{TSelf}.One" />
-        public static Int128 One => new Int128(0, 1);
-
-        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
-        public static Int128 Zero => default;
 
         //
         // IParsable

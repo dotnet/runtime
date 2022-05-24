@@ -6316,7 +6316,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     {
         // Default configuration
         codeGen->SetSaveFpLrWithAllCalleeSavedRegisters((getNeedsGSSecurityCookie() && compLocallocUsed) ||
-                                                        compStressCompile(STRESS_GENERIC_VARN, 20));
+                                                        opts.compDbgEnC || compStressCompile(STRESS_GENERIC_VARN, 20));
     }
     else if (opts.compJitSaveFpLrWithCalleeSavedRegisters == 1)
     {
@@ -6500,12 +6500,38 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     }
 #endif // TARGET_AMD64
 
+    if (lvaMonAcquired != BAD_VAR_NUM)
+    {
+        // For OSR we use the flag set up by the original method.
+        //
+        if (opts.IsOSR())
+        {
+            assert(info.compPatchpointInfo->HasMonitorAcquired());
+            int originalOffset = info.compPatchpointInfo->MonitorAcquiredOffset();
+            int offset         = originalFrameStkOffs + originalOffset;
+
+            JITDUMP(
+                "---OSR--- V%02u (on tier0 frame, monitor aquired) tier0 FP-rel offset %d tier0 frame offset %d new "
+                "virt offset %d\n",
+                lvaMonAcquired, originalOffset, originalFrameStkOffs, offset);
+
+            lvaTable[lvaMonAcquired].SetStackOffset(offset);
+        }
+        else
+        {
+            // This var must go first, in what is called the 'frame header' for EnC so that it is
+            // preserved when remapping occurs.  See vm\eetwain.cpp for detailed comment specifying frame
+            // layout requirements for EnC to work.
+            stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaMonAcquired, lvaLclSize(lvaMonAcquired), stkOffs);
+        }
+    }
+
 #if defined(FEATURE_EH_FUNCLETS) && (defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64))
     if (lvaPSPSym != BAD_VAR_NUM)
     {
-        // On ARM/ARM64, if we need a PSPSym, allocate it first, before anything else, including
-        // padding (so we can avoid computing the same padding in the funclet
-        // frame). Note that there is no special padding requirement for the PSPSym.
+        // On ARM/ARM64, if we need a PSPSym we allocate it early since funclets
+        // will need to have it at the same caller-SP relative offset so anything
+        // allocated before this will also leak into the funclet's frame.
         noway_assert(codeGen->isFramePointerUsed()); // We need an explicit frame pointer
         stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaPSPSym, TARGET_POINTER_SIZE, stkOffs);
     }
@@ -6540,32 +6566,6 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
             }
             // We should now have a double-aligned (stkOffs+preSpillSize)
             noway_assert(((stkOffs + preSpillSize) % (2 * TARGET_POINTER_SIZE)) == 0);
-        }
-    }
-
-    if (lvaMonAcquired != BAD_VAR_NUM)
-    {
-        // For OSR we use the flag set up by the original method.
-        //
-        if (opts.IsOSR())
-        {
-            assert(info.compPatchpointInfo->HasMonitorAcquired());
-            int originalOffset = info.compPatchpointInfo->MonitorAcquiredOffset();
-            int offset         = originalFrameStkOffs + originalOffset;
-
-            JITDUMP(
-                "---OSR--- V%02u (on tier0 frame, monitor aquired) tier0 FP-rel offset %d tier0 frame offset %d new "
-                "virt offset %d\n",
-                lvaMonAcquired, originalOffset, originalFrameStkOffs, offset);
-
-            lvaTable[lvaMonAcquired].SetStackOffset(offset);
-        }
-        else
-        {
-            // This var must go first, in what is called the 'frame header' for EnC so that it is
-            // preserved when remapping occurs.  See vm\eetwain.cpp for detailed comment specifying frame
-            // layout requirements for EnC to work.
-            stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaMonAcquired, lvaLclSize(lvaMonAcquired), stkOffs);
         }
     }
 

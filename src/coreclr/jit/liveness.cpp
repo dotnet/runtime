@@ -2006,7 +2006,13 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
 
                 if (isDeadStore && fgTryRemoveDeadStoreLIR(node, lclVarNode, block))
                 {
-                    lclVarNode->Data()->SetUnusedValue();
+                    GenTree* data = lclVarNode->Data();
+                    data->SetUnusedValue();
+
+                    if (data->isIndir())
+                    {
+                        Lowering::TransformUnusedIndirection(data->AsIndir(), this, block);
+                    }
                 }
                 break;
             }

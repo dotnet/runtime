@@ -93,7 +93,7 @@ try {
               $ToolVersion = ""
             }
             $ArcadeToolsDirectory = "C:\arcade-tools"
-            if (-not (Test-Path $ArcadeToolsDirectory)) {
+            if (Test-Path $ArcadeToolsDirectory -eq $False) {
               Write-Error "Arcade tools directory '$ArcadeToolsDirectory' was not found; artifacts were not properly installed."
               exit 1
             }
@@ -103,14 +103,13 @@ try {
               exit 1
             }
             $BinPathFile = "$($ToolDirectory.FullName)\binpath.txt"
-            if (-not (Test-Path -Path "$BinPathFile")) {
+            if (Test-Path -Path "$BinPathFile" -eq $False) {
               Write-Error "Unable to find binpath.txt in '$($ToolDirectory.FullName)' ($ToolName $ToolVersion); artifact is either installed incorrectly or is not a bootstrappable tool."
               exit 1
             }
             $BinPath = Get-Content "$BinPathFile"
-            $ToolPath = Convert-Path -Path $BinPath
-            Write-Host "Adding $ToolName to the path ($ToolPath)..."
-            Write-Host "##vso[task.prependpath]$ToolPath"
+            Write-Host "Adding $ToolName to the path ($(Convert-Path -Path $BinPath))..."
+            Write-Host "##vso[task.prependpath]$(Convert-Path -Path $BinPath)"
           }
         }
         exit 0
@@ -189,7 +188,7 @@ try {
     Write-Host "##vso[task.prependpath]$(Convert-Path -Path $InstallBin)"
     return $InstallBin
   }
-  elseif (-not ($PathPromotion)) {
+  else {
     Write-PipelineTelemetryError -Category 'NativeToolsBootstrap' -Message 'Native tools install directory does not exist, installation failed'
     exit 1
   }

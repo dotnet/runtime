@@ -319,22 +319,40 @@ namespace System
         public static long TrailingZeroCount(long value) => BitOperations.TrailingZeroCount(value);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.GetShortestBitLength()" />
-        long IBinaryInteger<long>.GetShortestBitLength()
+        int IBinaryInteger<long>.GetShortestBitLength()
         {
             long value = m_value;
 
             if (value >= 0)
             {
-                return (sizeof(long) * 8) - LeadingZeroCount(value);
+                return (sizeof(long) * 8) - BitOperations.LeadingZeroCount((ulong)(value));
             }
             else
             {
-                return (sizeof(long) * 8) + 1 - LeadingZeroCount(~value);
+                return (sizeof(long) * 8) + 1 - BitOperations.LeadingZeroCount((ulong)(~value));
             }
         }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.GetByteCount()" />
         int IBinaryInteger<long>.GetByteCount() => sizeof(long);
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.TryWriteBigEndian(Span{byte}, out int)" />
+        bool IBinaryInteger<long>.TryWriteBigEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length >= sizeof(long))
+            {
+                long value = BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(m_value) : m_value;
+                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), value);
+
+                bytesWritten = sizeof(long);
+                return true;
+            }
+            else
+            {
+                bytesWritten = 0;
+                return false;
+            }
+        }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TryWriteLittleEndian(Span{byte}, out int)" />
         bool IBinaryInteger<long>.TryWriteLittleEndian(Span<byte> destination, out int bytesWritten)
@@ -481,9 +499,6 @@ namespace System
         // INumber
         //
 
-        /// <inheritdoc cref="INumber{TSelf}.Abs(TSelf)" />
-        public static long Abs(long value) => Math.Abs(value);
-
         /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
         public static long Clamp(long value, long min, long max) => Math.Clamp(value, min, max);
 
@@ -510,10 +525,41 @@ namespace System
             return -absValue;
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.CreateChecked{TOther}(TOther)" />
+        /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
+        public static long Max(long x, long y) => Math.Max(x, y);
+
+        /// <inheritdoc cref="INumber{TSelf}.MaxNumber(TSelf, TSelf)" />
+        static long INumber<long>.MaxNumber(long x, long y) => Max(x, y);
+
+        /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
+        public static long Min(long x, long y) => Math.Min(x, y);
+
+        /// <inheritdoc cref="INumber{TSelf}.MinNumber(TSelf, TSelf)" />
+        static long INumber<long>.MinNumber(long x, long y) => Min(x, y);
+
+        /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
+        public static int Sign(long value) => Math.Sign(value);
+
+        //
+        // INumberBase
+        //
+
+        /// <inheritdoc cref="INumberBase{TSelf}.One" />
+        static long INumberBase<long>.One => One;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Radix" />
+        static int INumberBase<long>.Radix => 2;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
+        static long INumberBase<long>.Zero => Zero;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Abs(TSelf)" />
+        public static long Abs(long value) => Math.Abs(value);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static long CreateChecked<TOther>(TOther value)
-            where TOther : INumber<TOther>
+            where TOther : INumberBase<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -578,10 +624,10 @@ namespace System
             }
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.CreateSaturating{TOther}(TOther)" />
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateSaturating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static long CreateSaturating<TOther>(TOther value)
-            where TOther : INumber<TOther>
+            where TOther : INumberBase<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -654,10 +700,10 @@ namespace System
             }
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.CreateTruncating{TOther}(TOther)" />
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateTruncating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static long CreateTruncating<TOther>(TOther value)
-            where TOther : INumber<TOther>
+            where TOther : INumberBase<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -722,13 +768,58 @@ namespace System
             }
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.IsNegative(TSelf)" />
+        /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
+        static bool INumberBase<long>.IsCanonical(long value) => true;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsComplexNumber(TSelf)" />
+        static bool INumberBase<long>.IsComplexNumber(long value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsEvenInteger(TSelf)" />
+        public static bool IsEvenInteger(long value) => (value & 1) == 0;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsFinite(TSelf)" />
+        static bool INumberBase<long>.IsFinite(long value) => true;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsImaginaryNumber(TSelf)" />
+        static bool INumberBase<long>.IsImaginaryNumber(long value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsInfinity(TSelf)" />
+        static bool INumberBase<long>.IsInfinity(long value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsInteger(TSelf)" />
+        static bool INumberBase<long>.IsInteger(long value) => true;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNaN(TSelf)" />
+        static bool INumberBase<long>.IsNaN(long value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNegative(TSelf)" />
         public static bool IsNegative(long value) => value < 0;
 
-        /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
-        public static long Max(long x, long y) => Math.Max(x, y);
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNegativeInfinity(TSelf)" />
+        static bool INumberBase<long>.IsNegativeInfinity(long value) => false;
 
-        /// <inheritdoc cref="INumber{TSelf}.MaxMagnitude(TSelf, TSelf)" />
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNormal(TSelf)" />
+        static bool INumberBase<long>.IsNormal(long value) => value != 0;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsOddInteger(TSelf)" />
+        public static bool IsOddInteger(long value) => (value & 1) != 0;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsPositive(TSelf)" />
+        public static bool IsPositive(long value) => value >= 0;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsPositiveInfinity(TSelf)" />
+        static bool INumberBase<long>.IsPositiveInfinity(long value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsRealNumber(TSelf)" />
+        static bool INumberBase<long>.IsRealNumber(long value) => true;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsSubnormal(TSelf)" />
+        static bool INumberBase<long>.IsSubnormal(long value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsZero(TSelf)" />
+        static bool INumberBase<long>.IsZero(long value) => (value == 0);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitude(TSelf, TSelf)" />
         public static long MaxMagnitude(long x, long y)
         {
             long absX = x;
@@ -755,13 +846,23 @@ namespace System
                 }
             }
 
-            return (absX >= absY) ? x : y;
+            if (absX > absY)
+            {
+                return x;
+            }
+
+            if (absX == absY)
+            {
+                return IsNegative(x) ? y : x;
+            }
+
+            return y;
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
-        public static long Min(long x, long y) => Math.Min(x, y);
+        /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitudeNumber(TSelf, TSelf)" />
+        static long INumberBase<long>.MaxMagnitudeNumber(long x, long y) => MaxMagnitude(x, y);
 
-        /// <inheritdoc cref="INumber{TSelf}.MinMagnitude(TSelf, TSelf)" />
+        /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitude(TSelf, TSelf)" />
         public static long MinMagnitude(long x, long y)
         {
             long absX = x;
@@ -788,16 +889,26 @@ namespace System
                 }
             }
 
-            return (absX <= absY) ? x : y;
+            if (absX < absY)
+            {
+                return x;
+            }
+
+            if (absX == absY)
+            {
+                return IsNegative(x) ? x : y;
+            }
+
+            return y;
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
-        public static int Sign(long value) => Math.Sign(value);
+        /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
+        static long INumberBase<long>.MinMagnitudeNumber(long x, long y) => MinMagnitude(x, y);
 
-        /// <inheritdoc cref="INumber{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
+        /// <inheritdoc cref="INumberBase{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryCreate<TOther>(TOther value, out long result)
-            where TOther : INumber<TOther>
+            where TOther : INumberBase<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -916,16 +1027,6 @@ namespace System
                 return false;
             }
         }
-
-        //
-        // INumberBase
-        //
-
-        /// <inheritdoc cref="INumberBase{TSelf}.One" />
-        static long INumberBase<long>.One => One;
-
-        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
-        static long INumberBase<long>.Zero => Zero;
 
         //
         // IParsable

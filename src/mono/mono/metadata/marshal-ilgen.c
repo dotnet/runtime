@@ -321,7 +321,7 @@ emit_invoke_call (MonoMethodBuilder *mb, MonoMethod *method,
 		if (m_type_is_byref (t)) {
 			mono_mb_emit_byte (mb, CEE_LDIND_I);
 			/* A Nullable<T> type don't have a boxed form, it's either null or a boxed T.
-			 * So to make this work we unbox it to a local variablee and push a reference to that.
+			 * So to make this work we unbox it to a local variable and push a reference to that.
 			 */
 			if (t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type_internal (t))) {
 				tmp_nullable_locals [i] = mono_mb_add_local (mb, m_class_get_byval_arg (mono_class_from_mono_type_internal (t)));

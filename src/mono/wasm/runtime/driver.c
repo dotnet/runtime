@@ -875,13 +875,13 @@ _marshal_type_from_mono_type (int mono_type, MonoClass *klass, MonoType *type)
 	case MONO_TYPE_PTR:
 		return MARSHAL_TYPE_POINTER;
 	case MONO_TYPE_I1:
-	case MONO_TYPE_U1:
 	case MONO_TYPE_I2:
-	case MONO_TYPE_U2:
 	case MONO_TYPE_I4:
 		return MARSHAL_TYPE_INT;
 	case MONO_TYPE_CHAR:
 		return MARSHAL_TYPE_CHAR;
+	case MONO_TYPE_U1:
+	case MONO_TYPE_U2:
 	case MONO_TYPE_U4:  // The distinction between this and signed int is
 						// important due to how numbers work in JavaScript
 		return MARSHAL_TYPE_UINT32;

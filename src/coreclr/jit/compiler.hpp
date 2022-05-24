@@ -4579,7 +4579,7 @@ inline unsigned short LclVarDsc::lvRefCnt(RefCountState state) const
 //    state: the requestor's expected ref count state; defaults to RCS_NORMAL
 //
 // Notes:
-//    It is currently the caller's responsibilty to ensure this increment
+//    It is currently the caller's responsibility to ensure this increment
 //    will not cause overflow.
 
 inline void LclVarDsc::incLvRefCnt(unsigned short delta, RefCountState state)
@@ -4653,7 +4653,7 @@ inline weight_t LclVarDsc::lvRefCntWtd(RefCountState state) const
 //    state: the requestor's expected ref count state; defaults to RCS_NORMAL
 //
 // Notes:
-//    It is currently the caller's responsibilty to ensure this increment
+//    It is currently the caller's responsibility to ensure this increment
 //    will not cause overflow.
 
 inline void LclVarDsc::incLvRefCntWtd(weight_t delta, RefCountState state)
