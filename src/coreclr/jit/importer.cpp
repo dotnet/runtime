@@ -22403,30 +22403,6 @@ void Compiler::pickGDV(GenTreeCall*           call,
     *methodGuess = NO_METHOD_HANDLE;
     *likelihood  = 0;
 
-#ifdef DEBUG
-    // Optional stress mode to pick a random known class, rather than
-    // the most likely known class.
-    //
-    if (JitConfig.JitRandomGuardedDevirtualization() != 0)
-    {
-        // Reuse the random inliner's random state.
-        //
-        CLRRandom* const random =
-            impInlineRoot()->m_inlineStrategy->GetRandom(JitConfig.JitRandomGuardedDevirtualization());
-        getRandomGDV(fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset, random, classGuess, methodGuess);
-        if (*classGuess != NO_CLASS_HANDLE)
-        {
-            JITDUMP("Picked random class for GDV: %p (%s)\n", *classGuess, eeGetClassName(*classGuess));
-            return;
-        }
-        if (*methodGuess != NO_METHOD_HANDLE)
-        {
-            JITDUMP("Picked random method for GDV: %p (%s)\n", *methodGuess, eeGetMethodFullName(*methodGuess));
-            return;
-        }
-    }
-#endif
-
     const int               maxLikelyClasses = 32;
     LikelyClassMethodRecord likelyClasses[maxLikelyClasses];
     unsigned                numberOfClasses = 0;
@@ -22503,6 +22479,28 @@ void Compiler::pickGDV(GenTreeCall*           call,
                     JITDUMP("  %u) %s [likelihood:%u%%]\n", i + 1, methName, likelyMethods[i].likelihood);
                     break;
             }
+        }
+    }
+
+    // Optional stress mode to pick a random known class, rather than
+    // the most likely known class.
+    //
+    if (JitConfig.JitRandomGuardedDevirtualization() != 0)
+    {
+        // Reuse the random inliner's random state.
+        //
+        CLRRandom* const random =
+            impInlineRoot()->m_inlineStrategy->GetRandom(JitConfig.JitRandomGuardedDevirtualization());
+        getRandomGDV(fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset, random, classGuess, methodGuess);
+        if (*classGuess != NO_CLASS_HANDLE)
+        {
+            JITDUMP("Picked random class for GDV: %p (%s)\n", *classGuess, eeGetClassName(*classGuess));
+            return;
+        }
+        if (*methodGuess != NO_METHOD_HANDLE)
+        {
+            JITDUMP("Picked random method for GDV: %p (%s)\n", *methodGuess, eeGetMethodFullName(*methodGuess));
+            return;
         }
     }
 #endif
