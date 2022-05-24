@@ -945,6 +945,7 @@ private:
                 {
                     // We already loaded the target once for the check, so reuse it from the temp.
                     call->gtControlExpr = compiler->gtNewLclvNode(m_targetLclNum, TYP_I_IMPL);
+                    call->SetExpandedEarly();
                 }
                 else if (call->IsDelegateInvoke())
                 {

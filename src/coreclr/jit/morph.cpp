@@ -6643,9 +6643,11 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
                                              (call->gtCallType == CT_USER_FUNC) ? call->gtCallMethHnd : nullptr,
                                              call->IsTailPrefixedCall(), tailCallResult, nullptr);
 
-    // Are we currently planning to expand the gtControlExpr as an early virtual call target?
+    // Do some profitability checks for whether we should expand a vtable call
+    // target early. Note that we may already have expanded it due to GDV at
+    // this point, so make sure we do not undo that work.
     //
-    if (call->IsExpandedEarly() && call->IsVirtualVtable())
+    if (call->IsExpandedEarly() && call->IsVirtualVtable() && (call->gtControlExpr == nullptr))
     {
         assert(call->gtArgs.HasThisPointer());
         // It isn't alway profitable to expand a virtual call early
