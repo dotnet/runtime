@@ -858,6 +858,64 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void CreateSaturatingFromDecimalTest()
+        {
+            Assert.Equal((uint)0x0000_0000, NumberBaseHelper<uint>.CreateSaturating<decimal>(-0.0m));
+            Assert.Equal((uint)0x0000_0000, NumberBaseHelper<uint>.CreateSaturating<decimal>(+0.0m));
+            Assert.Equal((uint)0x0000_0001, NumberBaseHelper<uint>.CreateSaturating<decimal>(+1.0m));
+
+            Assert.Equal((uint)0x0000_0000, NumberBaseHelper<uint>.CreateSaturating<decimal>(decimal.MinValue));
+            Assert.Equal((uint)0xFFFF_FFFF, NumberBaseHelper<uint>.CreateSaturating<decimal>(decimal.MaxValue));
+            Assert.Equal((uint)0x0000_0000, NumberBaseHelper<uint>.CreateSaturating<decimal>(decimal.MinusOne));
+        }
+
+        [Fact]
+        public static void CreateSaturatingFromDoubleTest()
+        {
+            Assert.Equal((uint)0x0000_0000, NumberBaseHelper<uint>.CreateSaturating<double>(+0.0));
+            Assert.Equal((uint)0x0000_0000, NumberBaseHelper<uint>.CreateSaturating<double>(-0.0));
+
+
+            Assert.Equal((uint)0x0000_0000, NumberBaseHelper<uint>.CreateSaturating<double>(-double.Epsilon));
+            Assert.Equal((uint)0x0000_0000, NumberBaseHelper<uint>.CreateSaturating<double>(+double.Epsilon));
+
+            Assert.Equal((uint)0x0000_0001, NumberBaseHelper<uint>.CreateSaturating<double>(+1.0));
+            Assert.Equal((uint)0xFFFF_FFFF, NumberBaseHelper<uint>.CreateSaturating<double>(+4294967295.0));
+
+            Assert.Equal((uint)0x0000_0000, NumberBaseHelper<uint>.CreateSaturating<double>(-1.0));
+            Assert.Equal((uint)0xFFFF_FFFF, NumberBaseHelper<uint>.CreateSaturating<double>(+4294967296.0));
+
+            Assert.Equal((uint)0xFFFF_FFFF, NumberBaseHelper<uint>.CreateSaturating<double>(double.PositiveInfinity));
+            Assert.Equal((uint)0x0000_0000, NumberBaseHelper<uint>.CreateSaturating<double>(double.NegativeInfinity));
+
+            Assert.Equal((uint)0xFFFF_FFFF, NumberBaseHelper<uint>.CreateSaturating<double>(double.MaxValue));
+            Assert.Equal((uint)0x0000_0000, NumberBaseHelper<uint>.CreateSaturating<double>(double.MinValue));
+
+            Assert.Equal((uint)0x0000_0000, NumberBaseHelper<uint>.CreateSaturating<double>(double.NaN));
+        }
+
+        [Fact]
+        public static void CreateSaturatingFromHalfTest()
+        {
+            Assert.Equal((uint)0x0000_0000, NumberBaseHelper<uint>.CreateSaturating<Half>(Half.Zero));
+            Assert.Equal((uint)0x0000_0000, NumberBaseHelper<uint>.CreateSaturating<Half>(Half.NegativeZero));
+
+            Assert.Equal((uint)0x0000_0000, NumberBaseHelper<uint>.CreateSaturating<Half>(-Half.Epsilon));
+            Assert.Equal((uint)0x0000_0000, NumberBaseHelper<uint>.CreateSaturating<Half>(+Half.Epsilon));
+
+            Assert.Equal((uint)0x0000_0001, NumberBaseHelper<uint>.CreateSaturating<Half>(Half.One));
+            Assert.Equal((uint)0x0000_FFE0, NumberBaseHelper<uint>.CreateSaturating<Half>(Half.MaxValue));
+
+            Assert.Equal((uint)0x0000_0000, NumberBaseHelper<uint>.CreateSaturating<Half>(Half.NegativeOne));
+
+            Assert.Equal((uint)0xFFFF_FFFF, NumberBaseHelper<uint>.CreateSaturating<Half>(Half.PositiveInfinity));
+            Assert.Equal((uint)0x0000_0000, NumberBaseHelper<uint>.CreateSaturating<Half>(Half.NegativeInfinity));
+
+            Assert.Equal((uint)0x0000_0000, NumberBaseHelper<uint>.CreateSaturating<Half>(Half.MinValue));
+            Assert.Equal((uint)0x0000_0000, NumberBaseHelper<uint>.CreateSaturating<Half>(Half.NaN));
+        }
+
+        [Fact]
         public static void CreateSaturatingFromInt16Test()
         {
             Assert.Equal((uint)0x00000000, NumberBaseHelper<uint>.CreateSaturating<short>(0x0000));
@@ -888,6 +946,16 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void CreateSaturatingFromInt128Test()
+        {
+            Assert.Equal((uint)0x0000_0000, NumberBaseHelper<uint>.CreateSaturating<Int128>(Int128.Zero));
+            Assert.Equal((uint)0x0000_0001, NumberBaseHelper<uint>.CreateSaturating<Int128>(Int128.One));
+            Assert.Equal((uint)0xFFFF_FFFF, NumberBaseHelper<uint>.CreateSaturating<Int128>(Int128.MaxValue));
+            Assert.Equal((uint)0x0000_0000, NumberBaseHelper<uint>.CreateSaturating<Int128>(Int128.MinValue));
+            Assert.Equal((uint)0x0000_0000, NumberBaseHelper<uint>.CreateSaturating<Int128>(Int128.NegativeOne));
+        }
+
+        [Fact]
         public static void CreateSaturatingFromIntPtrTest()
         {
             if (Environment.Is64BitProcess)
@@ -909,6 +977,41 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void CreateSaturatingFromNFloatTest()
+        {
+            Assert.Equal((uint)0x0000_0000, NumberBaseHelper<uint>.CreateSaturating<NFloat>(0.0f));
+            Assert.Equal((uint)0x0000_0000, NumberBaseHelper<uint>.CreateSaturating<NFloat>(NFloat.NegativeZero));
+
+            Assert.Equal((uint)0x0000_0000, NumberBaseHelper<uint>.CreateSaturating<NFloat>(-NFloat.Epsilon));
+            Assert.Equal((uint)0x0000_0000, NumberBaseHelper<uint>.CreateSaturating<NFloat>(+NFloat.Epsilon));
+
+            if (Environment.Is64BitProcess)
+            {
+                Assert.Equal((uint)0x0000_0001, NumberBaseHelper<uint>.CreateSaturating<NFloat>(1.0f));
+                Assert.Equal((uint)0xFFFF_FFFF, NumberBaseHelper<uint>.CreateSaturating<NFloat>((NFloat)(4294967295.0)));
+
+                Assert.Equal((uint)0x0000_0000, NumberBaseHelper<uint>.CreateSaturating<NFloat>(-1.0f));
+                Assert.Equal((uint)0xFFFF_FFFF, NumberBaseHelper<uint>.CreateSaturating<NFloat>(+4294967296.0f));
+            }
+            else
+            {
+                Assert.Equal((uint)0x0000_0001, NumberBaseHelper<uint>.CreateSaturating<NFloat>(1.0f));
+                Assert.Equal((uint)0xFFFF_FF00, NumberBaseHelper<uint>.CreateSaturating<NFloat>(4294967040.0f));
+
+                Assert.Equal((uint)0x0000_0000, NumberBaseHelper<uint>.CreateSaturating<NFloat>(-1.0f));
+                Assert.Equal((uint)0xFFFF_FFFF, NumberBaseHelper<uint>.CreateSaturating<NFloat>(+4294967296.0f));
+            }
+
+            Assert.Equal((uint)0xFFFF_FFFF, NumberBaseHelper<uint>.CreateSaturating<NFloat>(NFloat.PositiveInfinity));
+            Assert.Equal((uint)0x0000_0000, NumberBaseHelper<uint>.CreateSaturating<NFloat>(NFloat.NegativeInfinity));
+
+            Assert.Equal((uint)0xFFFF_FFFF, NumberBaseHelper<uint>.CreateSaturating<NFloat>(NFloat.MaxValue));
+            Assert.Equal((uint)0x0000_0000, NumberBaseHelper<uint>.CreateSaturating<NFloat>(NFloat.MinValue));
+
+            Assert.Equal((uint)0x0000_0000, NumberBaseHelper<uint>.CreateSaturating<NFloat>(NFloat.NaN));
+        }
+
+        [Fact]
         public static void CreateSaturatingFromSByteTest()
         {
             Assert.Equal((uint)0x00000000, NumberBaseHelper<uint>.CreateSaturating<sbyte>(0x00));
@@ -916,6 +1019,30 @@ namespace System.Tests
             Assert.Equal((uint)0x0000007F, NumberBaseHelper<uint>.CreateSaturating<sbyte>(0x7F));
             Assert.Equal((uint)0x00000000, NumberBaseHelper<uint>.CreateSaturating<sbyte>(unchecked((sbyte)0x80)));
             Assert.Equal((uint)0x00000000, NumberBaseHelper<uint>.CreateSaturating<sbyte>(unchecked((sbyte)0xFF)));
+        }
+
+        [Fact]
+        public static void CreateSaturatingFromSingleTest()
+        {
+            Assert.Equal((uint)0x0000_0000, NumberBaseHelper<uint>.CreateSaturating<float>(+0.0f));
+            Assert.Equal((uint)0x0000_0000, NumberBaseHelper<uint>.CreateSaturating<float>(-0.0f));
+
+            Assert.Equal((uint)0x0000_0000, NumberBaseHelper<uint>.CreateSaturating<float>(-float.Epsilon));
+            Assert.Equal((uint)0x0000_0000, NumberBaseHelper<uint>.CreateSaturating<float>(-float.Epsilon));
+
+            Assert.Equal((uint)0x0000_0001, NumberBaseHelper<uint>.CreateSaturating<float>(+1.0f));
+            Assert.Equal((uint)0xFFFF_FF00, NumberBaseHelper<uint>.CreateSaturating<float>(+4294967040.0f));
+
+            Assert.Equal((uint)0x0000_0000, NumberBaseHelper<uint>.CreateSaturating<float>(-1.0f));
+            Assert.Equal((uint)0xFFFF_FFFF, NumberBaseHelper<uint>.CreateSaturating<float>(+4294967296.0f));
+
+            Assert.Equal((uint)0xFFFF_FFFF, NumberBaseHelper<uint>.CreateSaturating<float>(float.PositiveInfinity));
+            Assert.Equal((uint)0x0000_0000, NumberBaseHelper<uint>.CreateSaturating<float>(float.NegativeInfinity));
+
+            Assert.Equal((uint)0xFFFF_FFFF, NumberBaseHelper<uint>.CreateSaturating<float>(float.MaxValue));
+            Assert.Equal((uint)0x0000_0000, NumberBaseHelper<uint>.CreateSaturating<float>(float.MinValue));
+
+            Assert.Equal((uint)0x0000_0000, NumberBaseHelper<uint>.CreateSaturating<float>(float.NaN));
         }
 
         [Fact]
@@ -946,6 +1073,16 @@ namespace System.Tests
             Assert.Equal((uint)0xFFFFFFFF, NumberBaseHelper<uint>.CreateSaturating<ulong>(0x7FFFFFFFFFFFFFFF));
             Assert.Equal((uint)0xFFFFFFFF, NumberBaseHelper<uint>.CreateSaturating<ulong>(0x8000000000000000));
             Assert.Equal((uint)0xFFFFFFFF, NumberBaseHelper<uint>.CreateSaturating<ulong>(0xFFFFFFFFFFFFFFFF));
+        }
+
+        [Fact]
+        public static void CreateSaturatingFromUInt128Test()
+        {
+            Assert.Equal((uint)0x0000_0000, NumberBaseHelper<uint>.CreateSaturating<UInt128>(UInt128.Zero));
+            Assert.Equal((uint)0x0000_0001, NumberBaseHelper<uint>.CreateSaturating<UInt128>(UInt128.One));
+            Assert.Equal((uint)0xFFFF_FFFF, NumberBaseHelper<uint>.CreateSaturating<UInt128>(UInt128Tests_GenericMath.Int128MaxValue));
+            Assert.Equal((uint)0xFFFF_FFFF, NumberBaseHelper<uint>.CreateSaturating<UInt128>(UInt128Tests_GenericMath.Int128MaxValuePlusOne));
+            Assert.Equal((uint)0xFFFF_FFFF, NumberBaseHelper<uint>.CreateSaturating<UInt128>(UInt128.MaxValue));
         }
 
         [Fact]
