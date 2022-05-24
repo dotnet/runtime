@@ -150,7 +150,7 @@ namespace LibraryImportGenerator.IntegrationTests
         public void ByValueCollectionWithNonBlittableElements_WithDefaultMarshalling()
         {
             var strings = new WrappedList<string>(GetStringList());
-            Assert.Equal(strings.Sum(str => str?.Length ?? 0), NativeExportsNE.Collections.SumStringLengths(strings));
+            Assert.Equal(strings.Wrapped.Sum(str => str?.Length ?? 0), NativeExportsNE.Collections.SumStringLengths(strings));
         }
 
         [Fact]

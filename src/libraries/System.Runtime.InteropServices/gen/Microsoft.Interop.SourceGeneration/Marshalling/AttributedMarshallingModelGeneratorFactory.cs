@@ -315,9 +315,9 @@ namespace Microsoft.Interop
                 numElementsExpression = GetNumElementsExpressionFromMarshallingInfo(info, collectionInfo.ElementCountInfo, context);
             }
 
-            bool isBlittable = elementMarshaller is BlittableMarshaller;
+            bool elementIsBlittable = elementMarshaller is BlittableMarshaller;
 
-            if (isBlittable)
+            if (elementIsBlittable)
             {
                 marshallingStrategy = new LinearCollectionWithBlittableElementsMarshalling(marshallingStrategy, collectionInfo.ElementType.Syntax, numElementsExpression);
             }
@@ -341,12 +341,12 @@ namespace Microsoft.Interop
                 return new ArrayMarshaller(
                     new CustomNativeTypeMarshallingGenerator(marshallingStrategy, enableByValueContentsMarshalling: true),
                     elementType,
-                    isBlittable);
+                    elementIsBlittable);
             }
 
             IMarshallingGenerator marshallingGenerator = new CustomNativeTypeMarshallingGenerator(marshallingStrategy, enableByValueContentsMarshalling: false);
 
-            if (collectionInfo.PinningFeatures.HasFlag(CustomTypeMarshallerPinning.ManagedType) && isBlittable)
+            if (collectionInfo.PinningFeatures.HasFlag(CustomTypeMarshallerPinning.ManagedType) && elementIsBlittable)
             {
                 return new PinnableManagedValueMarshaller(marshallingGenerator);
             }
