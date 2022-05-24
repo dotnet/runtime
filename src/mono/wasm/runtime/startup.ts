@@ -15,6 +15,7 @@ import { VoidPtr, CharPtr } from "./types/emscripten";
 import { DotnetPublicAPI } from "./exports";
 import { mono_on_abort } from "./run";
 import { mono_wasm_new_root } from "./roots";
+import { init_crypto } from "./crypto-worker";
 
 export let runtime_is_initialized_resolve: Function;
 export let runtime_is_initialized_reject: Function;
@@ -118,6 +119,8 @@ async function mono_wasm_pre_init(): Promise<void> {
     if (ENVIRONMENT_IS_NODE && ENVIRONMENT_IS_ESM) {
         await requirePromise;
     }
+
+    init_crypto();
 
     if (moduleExt.configSrc) {
         try {
