@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { Module } from "./imports";
-import { assert } from "./types";
+import { mono_assert } from "./types";
 
 let mono_wasm_crypto: {
     channel: LibraryChannel
@@ -14,7 +14,7 @@ export function dotnet_browser_can_use_simple_digest_hash(): number {
 }
 
 export function dotnet_browser_simple_digest_hash(ver: number, input_buffer: number, input_len: number, output_buffer: number, output_len: number): number {
-    assert(!!mono_wasm_crypto, "subtle crypto not initialized");
+    mono_assert(!!mono_wasm_crypto, "subtle crypto not initialized");
 
     const msg = {
         func: "digest",
