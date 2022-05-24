@@ -33,7 +33,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             bool containsDerivedTypes = false;
-            foreach ((Type derivedType, object? typeDiscriminatorId) in configuration.GetSupportedDerivedTypes())
+            foreach ((Type derivedType, object? typeDiscriminator) in configuration.GetSupportedDerivedTypes())
             {
                 if (!IsSupportedDerivedType(BaseType, derivedType) ||
                     (derivedType.IsAbstract && UnknownDerivedTypeHandling != JsonUnknownDerivedTypeHandling.FallBackToNearestAncestor))
@@ -41,20 +41,20 @@ namespace System.Text.Json.Serialization.Metadata
                     ThrowHelper.ThrowInvalidOperationException_DerivedTypeNotSupported(BaseType, derivedType);
                 }
 
-                Debug.Assert(typeDiscriminatorId is null or int or string);
+                Debug.Assert(typeDiscriminator is null or int or string);
 
-                var derivedJsonTypeInfo = new DerivedJsonTypeInfo(derivedType, typeDiscriminatorId);
+                var derivedJsonTypeInfo = new DerivedJsonTypeInfo(derivedType, typeDiscriminator);
 
                 if (!_typeToDiscriminatorId.TryAdd(derivedType, derivedJsonTypeInfo))
                 {
                     ThrowHelper.ThrowInvalidOperationException_DerivedTypeIsAlreadySpecified(BaseType, derivedType);
                 }
 
-                if (typeDiscriminatorId is not null)
+                if (typeDiscriminator is not null)
                 {
-                    if (!(_discriminatorIdtoType ??= new()).TryAdd(typeDiscriminatorId, derivedJsonTypeInfo))
+                    if (!(_discriminatorIdtoType ??= new()).TryAdd(typeDiscriminator, derivedJsonTypeInfo))
                     {
-                        ThrowHelper.ThrowInvalidOperationException_TypeDicriminatorIdIsAlreadySpecified(BaseType, typeDiscriminatorId);
+                        ThrowHelper.ThrowInvalidOperationException_TypeDicriminatorIdIsAlreadySpecified(BaseType, typeDiscriminator);
                     }
 
                     UsesTypeDiscriminators = true;
@@ -100,7 +100,7 @@ namespace System.Text.Json.Serialization.Metadata
         public byte[]? CustomTypeDiscriminatorPropertyNameUtf8 { get; }
         public JsonEncodedText? CustomTypeDiscriminatorPropertyNameJsonEncoded { get; }
 
-        public bool TryGetDerivedJsonTypeInfo(Type runtimeType, [NotNullWhen(true)] out JsonTypeInfo? jsonTypeInfo, out object? typeDiscriminatorId)
+        public bool TryGetDerivedJsonTypeInfo(Type runtimeType, [NotNullWhen(true)] out JsonTypeInfo? jsonTypeInfo, out object? typeDiscriminator)
         {
             Debug.Assert(BaseType.IsAssignableFrom(runtimeType));
 
@@ -133,33 +133,33 @@ namespace System.Text.Json.Serialization.Metadata
             if (result is null)
             {
                 jsonTypeInfo = null;
-                typeDiscriminatorId = null;
+                typeDiscriminator = null;
                 return false;
             }
             else
             {
                 jsonTypeInfo = result.GetJsonTypeInfo(_options);
-                typeDiscriminatorId = result.TypeDiscriminatorId;
+                typeDiscriminator = result.TypeDiscriminator;
                 return true;
             }
         }
 
-        public bool TryGetDerivedJsonTypeInfo(object typeDiscriminatorId, [NotNullWhen(true)] out JsonTypeInfo? jsonTypeInfo)
+        public bool TryGetDerivedJsonTypeInfo(object typeDiscriminator, [NotNullWhen(true)] out JsonTypeInfo? jsonTypeInfo)
         {
-            Debug.Assert(typeDiscriminatorId is int or string);
+            Debug.Assert(typeDiscriminator is int or string);
             Debug.Assert(UsesTypeDiscriminators);
             Debug.Assert(_discriminatorIdtoType != null);
 
-            if (_discriminatorIdtoType.TryGetValue(typeDiscriminatorId, out DerivedJsonTypeInfo? result))
+            if (_discriminatorIdtoType.TryGetValue(typeDiscriminator, out DerivedJsonTypeInfo? result))
             {
-                Debug.Assert(typeDiscriminatorId.Equals(result.TypeDiscriminatorId));
+                Debug.Assert(typeDiscriminator.Equals(result.TypeDiscriminator));
                 jsonTypeInfo = result.GetJsonTypeInfo(_options);
                 return true;
             }
 
             if (!IgnoreUnrecognizedTypeDiscriminators)
             {
-                ThrowHelper.ThrowJsonException_UnrecognizedTypeDiscriminator(typeDiscriminatorId);
+                ThrowHelper.ThrowJsonException_UnrecognizedTypeDiscriminator(typeDiscriminator);
             }
 
             jsonTypeInfo = null;
@@ -236,16 +236,16 @@ namespace System.Text.Json.Serialization.Metadata
         {
             private volatile JsonTypeInfo? _jsonTypeInfo;
 
-            public DerivedJsonTypeInfo(Type type, object? typeDiscriminatorId)
+            public DerivedJsonTypeInfo(Type type, object? typeDiscriminator)
             {
-                Debug.Assert(typeDiscriminatorId is null or int or string);
+                Debug.Assert(typeDiscriminator is null or int or string);
 
                 DerivedType = type;
-                TypeDiscriminatorId = typeDiscriminatorId;
+                TypeDiscriminator = typeDiscriminator;
             }
 
             public Type DerivedType { get; }
-            public object? TypeDiscriminatorId { get; }
+            public object? TypeDiscriminator { get; }
             public JsonTypeInfo GetJsonTypeInfo(JsonSerializerOptions options)
                 => _jsonTypeInfo ??= options.GetOrAddJsonTypeInfo(DerivedType);
         }

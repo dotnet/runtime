@@ -53,9 +53,9 @@ namespace System.Text.Json.Tests.Serialization
 
             configuration =
                 new JsonPolymorphicTypeConfiguration(typeof(Class))
-                    .WithDerivedType(typeof(Class), "typeDiscriminatorId");
+                    .WithDerivedType(typeof(Class), "typeDiscriminator");
 
-            Assert.Equal(new (Type, object?)[] { (typeof(Class), "typeDiscriminatorId") }, configuration);
+            Assert.Equal(new (Type, object?)[] { (typeof(Class), "typeDiscriminator") }, configuration);
 
             configuration =
                 new JsonPolymorphicTypeConfiguration(typeof(Class))

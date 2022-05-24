@@ -252,7 +252,7 @@ namespace System.Text.Json.Serialization.Tests
         [JsonDerivedType(typeof(DerivedClass1_TypeDiscriminator.DerivedClass), "derivedClassOfDerivedClass1")]
         [JsonDerivedType(typeof(DerivedClass2_NoTypeDiscriminator))]
         [JsonDerivedType(typeof(DerivedClass2_TypeDiscriminator), "derivedClass2")]
-        [JsonDerivedType(typeof(DerivedClass_IntegerTypeDiscriminator), typeDiscriminatorId: -1)]
+        [JsonDerivedType(typeof(DerivedClass_IntegerTypeDiscriminator), typeDiscriminator: -1)]
         [JsonDerivedType(typeof(DerivedCollection_NoTypeDiscriminator))]
         [JsonDerivedType(typeof(DerivedCollection_TypeDiscriminator), "derivedCollection")]
         [JsonDerivedType(typeof(DerivedCollection_TypeDiscriminator.DerivedClass), "derivedCollectionOfDerivedCollection")]

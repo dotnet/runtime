@@ -22,22 +22,22 @@ namespace System.Text.Json.Serialization
         /// Initializes a new attribute with specified parameters.
         /// </summary>
         /// <param name="derivedType">A derived type that should be supported in polymorphic serialization of the declared base type.</param>
-        /// <param name="typeDiscriminatorId">The type discriminator identifier to be used for the serialization of the subtype.</param>
-        public JsonDerivedTypeAttribute(Type derivedType, string typeDiscriminatorId)
+        /// <param name="typeDiscriminator">The type discriminator identifier to be used for the serialization of the subtype.</param>
+        public JsonDerivedTypeAttribute(Type derivedType, string typeDiscriminator)
         {
             DerivedType = derivedType;
-            TypeDiscriminatorId = typeDiscriminatorId;
+            TypeDiscriminator = typeDiscriminator;
         }
 
         /// <summary>
         /// Initializes a new attribute with specified parameters.
         /// </summary>
         /// <param name="derivedType">A derived type that should be supported in polymorphic serialization of the declared base type.</param>
-        /// <param name="typeDiscriminatorId">The type discriminator identifier to be used for the serialization of the subtype.</param>
-        public JsonDerivedTypeAttribute(Type derivedType, int typeDiscriminatorId)
+        /// <param name="typeDiscriminator">The type discriminator identifier to be used for the serialization of the subtype.</param>
+        public JsonDerivedTypeAttribute(Type derivedType, int typeDiscriminator)
         {
             DerivedType = derivedType;
-            TypeDiscriminatorId = typeDiscriminatorId;
+            TypeDiscriminator = typeDiscriminator;
         }
 
         /// <summary>
@@ -48,6 +48,6 @@ namespace System.Text.Json.Serialization
         /// <summary>
         /// The type discriminator identifier to be used for the serialization of the subtype.
         /// </summary>
-        public object? TypeDiscriminatorId { get; }
+        public object? TypeDiscriminator { get; }
     }
 }

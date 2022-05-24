@@ -49,11 +49,11 @@ namespace System.Text.Json.Serialization.Metadata
 
         public bool IgnoreUnrecognizedTypeDiscriminators => _polymorphicTypeAttribute?.IgnoreUnrecognizedTypeDiscriminators ?? false;
 
-        public IEnumerable<(Type DerivedType, object? TypeDiscriminatorId)> GetSupportedDerivedTypes()
+        public IEnumerable<(Type DerivedType, object? TypeDiscriminator)> GetSupportedDerivedTypes()
         {
             foreach (JsonDerivedTypeAttribute attribute in _derivedTypeAttributes)
             {
-                yield return (attribute.DerivedType, attribute.TypeDiscriminatorId);
+                yield return (attribute.DerivedType, attribute.TypeDiscriminator);
             }
         }
 #pragma warning restore CA2252 // This API requires opting into preview features

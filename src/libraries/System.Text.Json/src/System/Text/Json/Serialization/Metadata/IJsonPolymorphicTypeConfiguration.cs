@@ -12,7 +12,7 @@ namespace System.Text.Json.Serialization.Metadata
         string? TypeDiscriminatorPropertyName { get; }
         JsonUnknownDerivedTypeHandling UnknownDerivedTypeHandling { get; }
         bool IgnoreUnrecognizedTypeDiscriminators { get; }
-        IEnumerable<(Type DerivedType, object? TypeDiscriminatorId)> GetSupportedDerivedTypes();
+        IEnumerable<(Type DerivedType, object? TypeDiscriminator)> GetSupportedDerivedTypes();
 #pragma warning restore CA2252 // This API requires opting into preview features
     }
 }
