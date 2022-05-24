@@ -2920,23 +2920,23 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
         return;
     }
 
+    MethodDesc* pTargetMD = (MethodDesc*)pResolvedToken->hMethod;
     MethodDesc* pContextMD = GetMethodFromContext(pResolvedToken->tokenContext);
     MethodTable* pContextMT = pContextMD->GetMethodTable();
+    bool targetIsStaticVirtual = (pTargetMD != nullptr && pTargetMD->IsStatic() && pConstrainedResolvedToken != nullptr);
+
+    if (targetIsStaticVirtual)
+    {
+        EncodeStaticVirtualRuntimeLookup(pResultLookup, pResolvedToken->hMethod);
+        if (!pContextMD->IsSharedByGenericInstantiations())
+        {
+            return;
+        }
+    }
 
     // There is a pathological case where invalid IL refereces __Canon type directly, but there is no dictionary availabled to store the lookup.
     if (!pContextMD->IsSharedByGenericInstantiations())
     {
-        if (pTemplateMD->IsStatic() && pConstrainedResolvedToken != nullptr)
-        {
-            pResultLookup->lookupKind.runtimeLookupKind = CORINFO_LOOKUP_VIRTUALSTATIC;
-            pResult->signature = (void*)pResolvedToken->hMethod;
-            pResult->helper = CORINFO_HELP_VIRTUAL_STATIC;
-            pResult->indirections = CORINFO_USEHELPER;
-            pResult->testForNull = 0;
-            pResult->testForFixup = 0;
-            return;
-        }
-    
         COMPlusThrow(kInvalidProgramException);
     }
 
@@ -2952,6 +2952,13 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
             pResultLookup->lookupKind.runtimeLookupKind = CORINFO_LOOKUP_CLASSPARAM;
         else
             pResultLookup->lookupKind.runtimeLookupKind = CORINFO_LOOKUP_THISOBJ;
+    }
+
+    if (targetIsStaticVirtual)
+    {
+        // For SVM lookup, we just need to fill in the generic context lookup kind, the runtime helper
+        // will take care of resolving the actual target method.
+        return;
     }
 
     // If we've got a  method type parameter of any kind then we must look in the method desc arg

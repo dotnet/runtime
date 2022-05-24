@@ -3375,7 +3375,7 @@ NOINLINE HCIMPL3(CORINFO_MethodPtr, JIT_VirtualFunctionPointer_Framed, Object * 
 }
 HCIMPLEND
 
-HCIMPL2(void*, JIT_DispatchVirtualStatic, MethodTable *constrainedType, MethodDesc *interfaceMethod)
+HCIMPL2(void*, JIT_DispatchVirtualStatic, MethodDesc *interfaceMethod, MethodTable *constrainedType)
 {
     FCALL_CONTRACT;
 

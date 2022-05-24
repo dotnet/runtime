@@ -1171,6 +1171,7 @@
     // Code size       189 (0xbd)
     .maxstack  10
     .locals init (class [mscorlib]System.Type[] V_4)
+/*
     IL_0000:  nop
     IL_0001:  ldstr      "Calling I1.Func on I4Class - expecting I4.Func"
     IL_0006:  call       void [mscorlib]System.Console::WriteLine(string)
@@ -1409,6 +1410,7 @@
               ldstr      "S must be string"
               call       void Test::Assert(bool, string)
               nop
+*/
 
               ldstr      "Calling ResolutionAtRuntime::RuntimeResolvedFunc<ResolutionAtRuntime, object> - expecting ResolutionAtRuntime.FuncObject"
               call       void [mscorlib]System.Console::WriteLine(string)
@@ -1443,8 +1445,8 @@
     .maxstack  1
     .locals init (int32 V_0)
     IL_0000:  nop
-    IL_0001:  call       void Program::Negative()
-    IL_0006:  nop
+//    IL_0001:  call       void Program::Negative()
+//    IL_0006:  nop
     IL_0007:  call       void Program::Positive()
     IL_000c:  nop
     IL_000d:  call       int32 Test::Ret()

@@ -1957,7 +1957,7 @@ GenTree* Compiler::impTokenToHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     }
 
     // Generate the full lookup tree. May be null if we're abandoning an inline attempt.
-    GenTree* result = impLookupToTree(pResolvedToken, nullptr, &embedInfo.lookup, gtTokenToIconFlags(pResolvedToken->token),
+    GenTree* result = impLookupToTree(pResolvedToken, &embedInfo.lookup, gtTokenToIconFlags(pResolvedToken->token),
                                       embedInfo.compileTimeHandle);
 
     // If we have a result and it requires runtime lookup, wrap it in a runtime lookup node.
@@ -1970,7 +1970,6 @@ GenTree* Compiler::impTokenToHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 }
 
 GenTree* Compiler::impLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                   CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
                                    CORINFO_LOOKUP*         pLookup,
                                    GenTreeFlags            handleFlags,
                                    void*                   compileTimeHandle)
@@ -2028,7 +2027,7 @@ GenTree* Compiler::impLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 
     // Need to use dictionary-based access which depends on the typeContext
     // which is only available at runtime, not at compile-time.
-    return impRuntimeLookupToTree(pResolvedToken, pConstrainedResolvedToken, pLookup, compileTimeHandle);
+    return impRuntimeLookupToTree(pResolvedToken, nullptr, pLookup, compileTimeHandle);
 }
 
 #ifdef FEATURE_READYTORUN
@@ -2142,7 +2141,7 @@ GenTreeCall* Compiler::impReadyToRunHelperToTree(CORINFO_RESOLVED_TOKEN* pResolv
 }
 #endif
 
-GenTree* Compiler::impMethodPointer(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_RESOLVED_TOKEN *pConstrainedResolvedToken, CORINFO_CALL_INFO* pCallInfo)
+GenTree* Compiler::impMethodPointer(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CALL_INFO* pCallInfo)
 {
     GenTree* op1 = nullptr;
 
@@ -2160,11 +2159,7 @@ GenTree* Compiler::impMethodPointer(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORI
             break;
 
         case CORINFO_CALL_CODE_POINTER:
-            op1 = impLookupToTree(pResolvedToken, nullptr, &pCallInfo->codePointerLookup, GTF_ICON_FTN_ADDR, pCallInfo->hMethod);
-            break;
-
-        case CORINFO_VIRTUALSTATICCALL_STUB:
-            op1 = impLookupToTree(pResolvedToken, pConstrainedResolvedToken, &pCallInfo->codePointerLookup, GTF_ICON_FTN_ADDR, pCallInfo->hMethod);
+            op1 = impLookupToTree(pResolvedToken, &pCallInfo->codePointerLookup, GTF_ICON_FTN_ADDR, pCallInfo->hMethod);
             break;
 
         default:
@@ -2216,6 +2211,7 @@ GenTree* Compiler::getRuntimeContextTree(CORINFO_RUNTIME_LOOKUP_KIND kind)
     else
     {
         assert(kind == CORINFO_LOOKUP_VIRTUALSTATIC);
+        ctxTree = gtNewNull();
     }
     return ctxTree;
 }
@@ -2243,17 +2239,7 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
                                           CORINFO_LOOKUP*         pLookup,
                                           void*                   compileTimeHandle)
 {
-    GenTree* ctxTree;
-
-    if (pLookup->lookupKind.runtimeLookupKind == CORINFO_LOOKUP_VIRTUALSTATIC)
-    {
-        ctxTree = gtNewIconEmbClsHndNode(pConstrainedResolvedToken->hClass);
-    }
-    else
-    {
-        ctxTree = getRuntimeContextTree(pLookup->lookupKind.runtimeLookupKind);
-    }
-
+    GenTree* ctxTree = getRuntimeContextTree(pLookup->lookupKind.runtimeLookupKind);
     CORINFO_RUNTIME_LOOKUP* pRuntimeLookup = &pLookup->runtimeLookup;
     // It's available only via the run-time helper function
     if (pRuntimeLookup->indirections == CORINFO_USEHELPER)
@@ -2265,7 +2251,24 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
                                              &pLookup->lookupKind, ctxTree);
         }
 #endif
-        return gtNewRuntimeLookupHelperCallNode(pRuntimeLookup, ctxTree, compileTimeHandle);
+        GenTree* argNode;
+        if (pConstrainedResolvedToken != nullptr)
+        {
+            // SVM call: use generic lookup to resolve the exact type and method
+            argNode = gtNewHelperCallNode(
+                CORINFO_HELP_RUNTIMEHANDLE_CLASS,
+                TYP_I_IMPL,
+                gtNewIconEmbHndNode(pConstrainedResolvedToken->hClass, nullptr, GTF_ICON_GLOBAL_PTR, pConstrainedResolvedToken->hClass));
+            ctxTree = gtNewHelperCallNode(
+                CORINFO_HELP_RUNTIMEHANDLE_METHOD,
+                TYP_I_IMPL,
+                gtNewIconEmbHndNode(pResolvedToken->hMethod, nullptr, GTF_ICON_GLOBAL_PTR, pResolvedToken->hMethod));
+        }
+        else
+        {
+            argNode = gtNewIconEmbHndNode(pRuntimeLookup->signature, nullptr, GTF_ICON_GLOBAL_PTR, compileTimeHandle);
+        }
+        return gtNewRuntimeLookupHelperCallNode(pRuntimeLookup, ctxTree, argNode);
     }
 
     // Slot pointer
@@ -9985,7 +9988,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
     if (sig->callConv & CORINFO_CALLCONV_PARAMTYPE)
     {
-        assert(call->AsCall()->gtCallType == CT_USER_FUNC);
+        assert(call->AsCall()->gtCallType == CT_USER_FUNC || call->AsCall()->gtCallType == CT_INDIRECT);
         if (clsHnd == nullptr)
         {
             NO_WAY("CALLI on parameterized type");
