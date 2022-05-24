@@ -70,7 +70,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             TrustedRoot,
             UntrustedRoot,
-            PartialChain
+            PartialChain,
+            EndCertNotSignatureValid
         }
 
         public static IEnumerable<object[]> BuildChainWithNotSignatureValidData()
@@ -78,6 +79,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             yield return new object[] { true, X509ChainStatusFlags.NoError, BuildChainWithNotSignatureValidTest.TrustedRoot };
             yield return new object[] { false, X509ChainStatusFlags.UntrustedRoot | X509ChainStatusFlags.NotSignatureValid, BuildChainWithNotSignatureValidTest.UntrustedRoot };
             yield return new object[] { false, X509ChainStatusFlags.PartialChain, BuildChainWithNotSignatureValidTest.PartialChain };
+            yield return new object[] { false, X509ChainStatusFlags.NotSignatureValid, BuildChainWithNotSignatureValidTest.EndCertNotSignatureValid };
         }
 
         [Theory]
@@ -94,10 +96,21 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 out X509Certificate2 rootCert,
                 testName: test.ToString());
 
-            // Make root cert signature invalid.
-            X509Certificate2 tampered = TestDataGenerator.TamperSignature(rootCert);
-            rootCert.Dispose();
-            rootCert = tampered;
+            X509Certificate2 tampered;
+            switch (test)
+            {
+                case BuildChainWithNotSignatureValidTest.EndCertNotSignatureValid:
+                    tampered = TestDataGenerator.TamperSignature(endCert);
+                    endCert.Dispose();
+                    endCert = tampered;
+                    break;
+                default:
+                    // Make root cert signature invalid.
+                    tampered = TestDataGenerator.TamperSignature(rootCert);
+                    rootCert.Dispose();
+                    rootCert = tampered;
+                    break;
+            }
 
             using (endCert)
             using (intermediateCert)
@@ -113,6 +126,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 switch (test)
                 {
                     case BuildChainWithNotSignatureValidTest.TrustedRoot:
+                    case BuildChainWithNotSignatureValidTest.EndCertNotSignatureValid:
                         chainTest.ChainPolicy.ExtraStore.Add(intermediateCert);
                         chainTest.ChainPolicy.CustomTrustStore.Add(rootCert);
                         break;
