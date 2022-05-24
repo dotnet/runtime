@@ -18,7 +18,7 @@
 #undef VERIFY
 
 template<typename TEncoding>
-class SString;
+class EString;
 
 struct EncodingASCII;
 
@@ -27,7 +27,7 @@ extern "C" {
 #endif // __cplusplus
 
 #if defined(_DEBUG)
-bool GetStackTraceAtContext(SString<EncodingASCII> & s, struct _CONTEXT * pContext);
+bool GetStackTraceAtContext(EString<EncodingASCII> & s, struct _CONTEXT * pContext);
 
 bool _DbgBreakCheck(LPCSTR szFile, int iLine, LPCSTR szExpr, BOOL fConstrained = FALSE);
 

@@ -985,7 +985,7 @@ const char* TrySigUncompressAndDumpSimpleNativeType(
         PCCOR_SIGNATURE pData,              // [IN] compressed data
         ULONG       *pDataOut,              // [OUT] the expanded *pData
         ULONG       &cbCur,
-        SString<EncodingASCII> &buf)
+        EString<EncodingASCII> &buf)
 {
     const char* sz = NULL;
     ULONG ulSize = CorSigUncompressData(pData, pDataOut);
@@ -1053,7 +1053,7 @@ const char* TrySigUncompressAndDumpSimpleNativeType(
 bool TrySigUncompress(PCCOR_SIGNATURE pData,              // [IN] compressed data
                       ULONG       *pDataOut,              // [OUT] the expanded *pData
                       ULONG       &cbCur,
-                      SString<EncodingASCII> &buf)
+                      EString<EncodingASCII> &buf)
 {
     ULONG ulSize = CorSigUncompressData(pData, pDataOut);
     if (ulSize == (ULONG)-1)
@@ -1086,7 +1086,7 @@ char* DumpMarshaling(IMDInternalImport* pImport,
 
     PCCOR_SIGNATURE pSigNativeType = NULL;
     ULONG           cbNativeType = 0;
-    SString<EncodingASCII> buf;
+    EString<EncodingASCII> buf;
     if (RidFromToken(tok) &&
         SUCCEEDED(pImport->GetFieldMarshal( // return error if no native type associate with the token
             tok,                // [IN] given fielddef
@@ -1506,7 +1506,7 @@ error:
             buf.AppendPrintf(" %2.2X", *pSigNativeType++);
         buf.Append(" }) ");
 
-        SString<EncodingUnicode> wbuf;
+        SString wbuf;
         buf.ConvertToUnicode(wbuf);
 
         char * tgt = szString + strlen(szString);
@@ -1524,7 +1524,7 @@ error:
     else
     {
         char * tgt = szString + strlen(szString);
-        SString<EncodingUnicode> wbuf;
+        SString wbuf;
         buf.ConvertToUnicode(wbuf);
         int sprintf_ret = sprintf_s(tgt, cchszString - (tgt - szString), "%S", (LPCWSTR)wbuf);
         if (sprintf_ret == -1)

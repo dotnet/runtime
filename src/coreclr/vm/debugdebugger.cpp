@@ -261,10 +261,10 @@ extern "C" void QCALLTYPE DebugDebugger_Log(INT32 Level, PCWSTR pwzModule, PCWST
     {
         if (IsLoggingHelper() )
         {
-            // Copy log message and category into our own SString to protect against GC
+            // Copy log message and category into our own EString to protect against GC
             // Strings may contain embedded nulls, but we need to handle null-terminated
             // strings, so use truncate now.
-            StackSString<EncodingUnicode> switchName;
+            StackSString switchName;
             if (pwzModule != NULL)
             {
                 // truncate if necessary
@@ -276,7 +276,7 @@ extern "C" void QCALLTYPE DebugDebugger_Log(INT32 Level, PCWSTR pwzModule, PCWST
                 switchName.Set(pwzModule, iLen);
             }
 
-            SString<EncodingUnicode> message;
+            SString message;
             if (pwzMessage != NULL)
             {
                 message.Set(pwzMessage, (COUNT_T) wcslen(pwzMessage));
@@ -785,7 +785,7 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
                     else
                     {
                         // Set the pdb path (assembly file name)
-                        SString<EncodingUnicode> assemblyPath = pPEAssembly->GetIdentityPath();
+                        SString assemblyPath = pPEAssembly->GetIdentityPath();
                         if (!assemblyPath.IsEmpty())
                         {
                             OBJECTREF obj = (OBJECTREF)StringObject::NewString(assemblyPath);

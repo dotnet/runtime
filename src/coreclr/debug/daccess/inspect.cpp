@@ -2304,7 +2304,7 @@ ClrDataTypeDefinition::GetName(
         }
         else
         {
-            StackSString<EncodingUnicode> ssClassNameBuf;
+            StackSString ssClassNameBuf;
             m_typeHandle.GetName(ssClassNameBuf);
             if (wcsncpy_s(nameBuf, bufLen, ssClassNameBuf, _TRUNCATE) == STRUNCATE)
             {
@@ -3443,7 +3443,7 @@ ClrDataTypeInstance::GetName(
 
     EX_TRY
     {
-        StackSString<EncodingUnicode> ssClassNameBuf;
+        StackSString ssClassNameBuf;
 
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
         PAL_CPP_TRY

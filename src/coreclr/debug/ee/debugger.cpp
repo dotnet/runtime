@@ -2061,11 +2061,11 @@ HRESULT Debugger::StartupPhase2(Thread * pThread)
                 // We've already created the helper thread (which can service the attach request)
                 // So just do a normal jit-attach now.
 
-                SString<EncodingUnicode> szName(W("DebuggerStressStartup"));
-                SString<EncodingUnicode> szDescription(W("MDA used for debugger-stress scenario. This is fired to trigger a jit-attach")
+                SString szName(W("DebuggerStressStartup"));
+                SString szDescription(W("MDA used for debugger-stress scenario. This is fired to trigger a jit-attach")
                     W("to allow us to attach a debugger to any managed app that starts up.")
                     W("This MDA is only fired when the 'DbgAttachOnStartup' COM+ knob/reg-key is set on checked builds."));
-                SString<EncodingUnicode> szXML(W("<xml>See the description</xml>"));
+                SString szXML(W("<xml>See the description</xml>"));
 
                 SendMDANotification(
                     NULL, // NULL b/c we don't have a thread yet
@@ -6753,7 +6753,7 @@ CLR_DEBUGGING_PROCESS_FLAGS Debugger::GetAttachStateFlags()
 //
 // Throws on error (like OOM).
 //-----------------------------------------------------------------------------
-bool Debugger::GetCompleteDebuggerLaunchString(SString<EncodingUnicode> * pStrArgsBuf)
+bool Debugger::GetCompleteDebuggerLaunchString(SString * pStrArgsBuf)
 {
     CONTRACTL
     {
@@ -6765,7 +6765,7 @@ bool Debugger::GetCompleteDebuggerLaunchString(SString<EncodingUnicode> * pStrAr
 #ifndef TARGET_UNIX
     DWORD pid = GetCurrentProcessId();
 
-    SString<EncodingUnicode> ssDebuggerString;
+    SString ssDebuggerString;
     GetDebuggerSettingInfo(ssDebuggerString, NULL);
 
     if (ssDebuggerString.IsEmpty())
@@ -6866,7 +6866,7 @@ HRESULT Debugger::EDAHelper(PROCESS_INFORMATION *pProcessInfo)
 
     BOOL fCreateSucceeded = FALSE;
 
-    StackSString<EncodingUnicode> strDbgCommand;
+    StackSString strDbgCommand;
     const WCHAR * wszDbgCommand = NULL;
 
     EX_TRY
@@ -14009,14 +14009,14 @@ Debugger::InsertToMethodInfoList( DebuggerMethodInfo *dmi )
 }
 
 //-----------------------------------------------------------------------------
-// Helper to get an SString through the IPC buffer.
-// We do this by putting the SString data into a LS_RS_buffer object,
+// Helper to get an EString through the IPC buffer.
+// We do this by putting the EString data into a LS_RS_buffer object,
 // and then the RS reads it out as soon as it's queued.
-// It's very very important that the SString's buffer is around while we send the event.
-// So we pass the SString by reference in case there's an implicit conversion (because
+// It's very very important that the EString's buffer is around while we send the event.
+// So we pass the EString by reference in case there's an implicit conversion (because
 // we don't want to do the conversion on a temporary object and then lose that object).
 //-----------------------------------------------------------------------------
-void SetLSBufferFromSString(Ls_Rs_StringBuffer * pBuffer, SString<EncodingUnicode> & str)
+void SetLSBufferFromEString(Ls_Rs_StringBuffer * pBuffer, SString & str)
 {
     // Copy string contents (+1 for null terminator) into a LS_RS_Buffer.
     // Then the RS can pull it out as a null-terminated string.
@@ -14033,17 +14033,17 @@ struct SendMDANotificationParams
 {
     Thread * m_pThread; // may be NULL. Lets us send on behalf of other threads.
 
-    // Pass SStrings by ptr in case to guarantee that they're shared (in case we internally modify their storage).
-    SString<EncodingUnicode> * m_szName;
-    SString<EncodingUnicode> * m_szDescription;
-    SString<EncodingUnicode> * m_szXML;
+    // Pass EStrings by ptr in case to guarantee that they're shared (in case we internally modify their storage).
+    SString * m_szName;
+    SString * m_szDescription;
+    SString * m_szXML;
     CorDebugMDAFlags m_flags;
 
     SendMDANotificationParams(
         Thread * pThread, // may be NULL. Lets us send on behalf of other threads.
-        SString<EncodingUnicode> * szName,
-        SString<EncodingUnicode> * szDescription,
-        SString<EncodingUnicode> * szXML,
+        SString * szName,
+        SString * szDescription,
+        SString * szXML,
         CorDebugMDAFlags flags
     ) :
         m_pThread(pThread),
@@ -14077,9 +14077,9 @@ void Debugger::SendRawMDANotification(
                  pThread,
                  pAppDomain);
 
-    SetLSBufferFromSString(&ipce->MDANotification.szName, *(params->m_szName));
-    SetLSBufferFromSString(&ipce->MDANotification.szDescription, *(params->m_szDescription));
-    SetLSBufferFromSString(&ipce->MDANotification.szXml, *(params->m_szXML));
+    SetLSBufferFromEString(&ipce->MDANotification.szName, *(params->m_szName));
+    SetLSBufferFromEString(&ipce->MDANotification.szDescription, *(params->m_szDescription));
+    SetLSBufferFromEString(&ipce->MDANotification.szXml, *(params->m_szXML));
     ipce->MDANotification.dwOSThreadId = GetCurrentThreadId();
     ipce->MDANotification.flags = params->m_flags;
 
@@ -14104,9 +14104,9 @@ void Debugger::SendRawMDANotification(
 //-----------------------------------------------------------------------------
 void Debugger::SendMDANotification(
     Thread * pThread, // may be NULL. Lets us send on behalf of other threads.
-    SString<EncodingUnicode> * szName,
-    SString<EncodingUnicode> * szDescription,
-    SString<EncodingUnicode> * szXML,
+    SString * szName,
+    SString * szDescription,
+    SString * szXML,
     CorDebugMDAFlags flags,
     BOOL bAttach
 )
@@ -14236,8 +14236,8 @@ void Debugger::SendMDANotification(
 // so we shouldn't base our behavior on it in any way.
 //*************************************************************
 void Debugger::SendLogMessage(int iLevel,
-                              SString<EncodingUnicode> * pSwitchName,
-                              SString<EncodingUnicode> * pMessage)
+                              SString * pSwitchName,
+                              SString * pMessage)
 {
     CONTRACTL
     {
@@ -14287,8 +14287,8 @@ void Debugger::SendRawLogMessage(
     Thread                                    *pThread,
     AppDomain                                 *pAppDomain,
     int                                        iLevel,
-    SString<EncodingUnicode> *   pCategory,
-    SString<EncodingUnicode> *   pMessage
+    SString *   pCategory,
+    SString *   pMessage
 )
 {
     DebuggerIPCEvent* ipce;
@@ -14315,7 +14315,7 @@ void Debugger::SendRawLogMessage(
 
     ipce->FirstLogMessage.iLevel = iLevel;
     ipce->FirstLogMessage.szCategory.SetString(*pCategory);
-    SetLSBufferFromSString(&ipce->FirstLogMessage.szContent, *pMessage);
+    SetLSBufferFromEString(&ipce->FirstLogMessage.szContent, *pMessage);
 
     m_pRCThread->SendIPCEvent();
 }
@@ -14769,7 +14769,7 @@ HRESULT Debugger::InitAppDomainIPC(void)
     } hEnsureCleanup(this);
 
     DWORD dwStrLen = 0;
-    SString<EncodingUnicode> szExeName;
+    SString szExeName;
     int i;
 
     // all fields in the object can be zero initialized.

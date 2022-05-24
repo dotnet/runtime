@@ -27,7 +27,7 @@ namespace BinderTracing
     {
     public:
         // This class assumes the assembly spec will have a longer lifetime than itself
-        AssemblyBindOperation(AssemblySpec *assemblySpec, const SString<EncodingUnicode>& assemblyPath = SString<EncodingUnicode>::Empty());
+        AssemblyBindOperation(AssemblySpec *assemblySpec, const SString& assemblyPath = SString::Empty());
         ~AssemblyBindOperation();
 
         void SetResult(PEAssembly *assembly, bool cached = false);
@@ -35,11 +35,11 @@ namespace BinderTracing
         struct BindRequest
         {
             AssemblySpec *AssemblySpec;
-            SString<EncodingUnicode> AssemblyName;
-            SString<EncodingUnicode> AssemblyPath;
-            SString<EncodingUnicode> RequestingAssembly;
-            SString<EncodingUnicode> AssemblyLoadContext;
-            SString<EncodingUnicode> RequestingAssemblyLoadContext;
+            SString AssemblyName;
+            SString AssemblyPath;
+            SString RequestingAssembly;
+            SString AssemblyLoadContext;
+            SString RequestingAssemblyLoadContext;
         };
 
     private:
@@ -164,9 +164,9 @@ namespace BinderTracing
 
         BINDER_SPACE::AssemblyName *m_assemblyNameObject;
         PathString m_assemblyName;
-        SString<EncodingUnicode> m_assemblyLoadContextName;
+        SString m_assemblyLoadContextName;
 
-        SString<EncodingUnicode> m_exceptionMessage;
+        SString m_exceptionMessage;
         BINDER_SPACE::Assembly *m_pFoundAssembly;
 
         void TraceStage(Stage stage, HRESULT hr, BINDER_SPACE::Assembly *resultAssembly, const WCHAR *errorMessage = nullptr);

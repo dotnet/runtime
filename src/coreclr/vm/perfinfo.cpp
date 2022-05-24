@@ -15,13 +15,13 @@ PerfInfo::PerfInfo(int pid)
 {
     LIMITED_METHOD_CONTRACT;
 
-    SString<EncodingUnicode> tempPath;
+    SString tempPath;
     if (!WszGetTempPath(tempPath))
     {
         return;
     }
 
-    SString<EncodingUnicode> path;
+    SString path;
     path.Printf(W("%sperfinfo-%d.map"), (LPCWSTR)tempPath, pid);
     OpenFile(path);
 }
@@ -38,8 +38,8 @@ void PerfInfo::LogImage(PEAssembly* pPEAssembly, WCHAR* guid)
         PRECONDITION(guid != nullptr);
     } CONTRACTL_END;
 
-    SString<EncodingUnicode> value;
-    const SString<EncodingUnicode>& path = pPEAssembly->GetPath();
+    SString value;
+    const SString& path = pPEAssembly->GetPath();
     if (path.IsEmpty())
     {
         return;
@@ -57,14 +57,14 @@ void PerfInfo::LogImage(PEAssembly* pPEAssembly, WCHAR* guid)
 
     value.Printf(W("%s%c%s%c%p"), (LPCWSTR)path, sDelimiter, guid, sDelimiter, baseAddr);
 
-    SString<EncodingUnicode> command;
+    SString command;
     command.Printf(W("%s"), W("ImageLoad"));
     WriteLine(command, value);
 
 }
 
 // Writes a command line, with "type" being the type of command, with "value" as the command's corresponding instructions/values. This is to be used to log specific information, e.g. LogImage
-void PerfInfo::WriteLine(SString<EncodingUnicode>& type, SString<EncodingUnicode>& value)
+void PerfInfo::WriteLine(SString& type, SString& value)
 {
 
     CONTRACTL
@@ -79,13 +79,13 @@ void PerfInfo::WriteLine(SString<EncodingUnicode>& type, SString<EncodingUnicode
         return;
     }
 
-    SString<EncodingUnicode> line;
+    SString line;
     line.Printf(W("%s%c%s%c\n"),
             (LPCWSTR)type, sDelimiter, (LPCWSTR)value, sDelimiter);
 
     EX_TRY
     {
-        SString<EncodingUTF8> lineUTF8(line.MoveToUTF8());
+        EString<EncodingUTF8> lineUTF8(line.MoveToUTF8());
         const char* strLine = lineUTF8;
         ULONG inCount = lineUTF8.GetCount();
         ULONG outCount;
@@ -101,7 +101,7 @@ void PerfInfo::WriteLine(SString<EncodingUnicode>& type, SString<EncodingUnicode
 }
 
 // Opens a file ready to be written in.
-void PerfInfo::OpenFile(SString<EncodingUnicode>& path)
+void PerfInfo::OpenFile(SString& path)
 {
     STANDARD_VM_CONTRACT;
 

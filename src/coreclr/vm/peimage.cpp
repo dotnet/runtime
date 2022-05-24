@@ -167,7 +167,7 @@ ULONG PEImage::Release()
 }
 
 /* static */
-CHECK PEImage::CheckCanonicalFullPath(const SString<EncodingUnicode> &path)
+CHECK PEImage::CheckCanonicalFullPath(const SString &path)
 {
     CONTRACT_CHECK
     {
@@ -181,9 +181,9 @@ CHECK PEImage::CheckCanonicalFullPath(const SString<EncodingUnicode> &path)
     {
         // This is not intended to be an exhaustive test, just to provide a sanity check
 
-        SString<EncodingUnicode>::CIterator i = path.Begin();
+        SString::CIterator i = path.Begin();
 
-        SString<EncodingUnicode> sNetworkPathPrefix(SharedData, W("\\\\"));
+        SString sNetworkPathPrefix(SString::Literal, W("\\\\"));
         if (path.Skip(i, sNetworkPathPrefix))
         {
             // Network path
@@ -192,7 +192,7 @@ CHECK PEImage::CheckCanonicalFullPath(const SString<EncodingUnicode> &path)
         {
             // Drive path
             i++;
-            SString<EncodingUnicode> sDrivePath(SharedData, W(":\\"));
+            SString sDrivePath(SString::Literal, W(":\\"));
             CCHECK(path.Skip(i, sDrivePath));
         }
         else
@@ -207,8 +207,8 @@ CHECK PEImage::CheckCanonicalFullPath(const SString<EncodingUnicode> &path)
             {
 
                 // Check for . or ..
-                SString<EncodingUnicode> sParentDir(SharedData, W(".."));
-                SString<EncodingUnicode> sCurrentDir(SharedData, W("."));
+                SString sParentDir(SString::Literal, W(".."));
+                SString sCurrentDir(SString::Literal, W("."));
                 if ((path.Skip(i, sParentDir) || path.Skip(i, sCurrentDir))
                     && (path.Match(i, '\\')))
                 {
@@ -253,7 +253,7 @@ BOOL PEImage::CompareImage(UPTR u1, UPTR u2)
     HRESULT hr;
     EX_TRY
     {
-        SString<EncodingUnicode> path(SharedData, pLocator->m_pPath);
+        SString path(SString::Literal, pLocator->m_pPath);
 
 #ifdef FEATURE_CASE_SENSITIVE_FILESYSTEM
         if (pImage->GetPath().Equals(path))
@@ -900,7 +900,7 @@ PTR_PEImage PEImage::CreateFromHMODULE(HMODULE hMod)
     }
     CONTRACT_END;
 
-    StackSString<EncodingUnicode> path;
+    StackSString path;
     WszGetModuleFileName(hMod, path);
     PEImageHolder pImage(PEImage::OpenImage(path, MDInternalImport_Default));
 

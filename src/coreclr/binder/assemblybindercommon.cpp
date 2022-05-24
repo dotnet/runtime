@@ -251,7 +251,7 @@ namespace BINDER_SPACE
     }
 
     /* static */
-    HRESULT AssemblyBinderCommon::BindToSystem(SString<EncodingUnicode> &systemDirectory,
+    HRESULT AssemblyBinderCommon::BindToSystem(SString &systemDirectory,
                                                Assembly **ppSystemAssembly)
     {
         HRESULT hr = S_OK;
@@ -269,8 +269,8 @@ namespace BINDER_SPACE
         //   * Absolute path when looking for a file on disk
         //   * Bundle-relative path when looking within the single-file bundle.
 
-        StackSString<EncodingUnicode> sCoreLibName(CoreLibName_IL_W);
-        StackSString<EncodingUnicode> sCoreLib;
+        StackSString sCoreLibName(CoreLibName_IL_W);
+        StackSString sCoreLib;
         BinderTracing::PathSource pathSource = BinderTracing::PathSource::Bundle;
         BundleFileLocation bundleFileLocation = Bundle::ProbeAppBundle(sCoreLibName, /*pathIsBundleRelative */ true);
         if (!bundleFileLocation.IsValid())
@@ -290,14 +290,14 @@ namespace BINDER_SPACE
         if (hr == HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND))
         {
             // Try to find corelib in the TPA
-            StackSString<EncodingUnicode> sCoreLibSimpleName(CoreLibName_W);
-            StackSString<EncodingUnicode> sTrustedPlatformAssemblies = Configuration::GetKnobStringValue(W("TRUSTED_PLATFORM_ASSEMBLIES"));
+            StackSString sCoreLibSimpleName(CoreLibName_W);
+            StackSString sTrustedPlatformAssemblies = Configuration::GetKnobStringValue(W("TRUSTED_PLATFORM_ASSEMBLIES"));
 
             bool found = false;
-            for (SString<EncodingUnicode>::Iterator i = sTrustedPlatformAssemblies.Begin(); i != sTrustedPlatformAssemblies.End(); )
+            for (SString::Iterator i = sTrustedPlatformAssemblies.Begin(); i != sTrustedPlatformAssemblies.End(); )
             {
-                SString<EncodingUnicode> fileName;
-                SString<EncodingUnicode> simpleName;
+                SString fileName;
+                SString simpleName;
                 bool isNativeImage = false;
                 HRESULT pathResult = S_OK;
                 IF_FAIL_GO(pathResult = GetNextTPAPath(sTrustedPlatformAssemblies, i, /*dllOnly*/ true, fileName, simpleName, isNativeImage));
@@ -337,9 +337,9 @@ namespace BINDER_SPACE
 
 
     /* static */
-    HRESULT AssemblyBinderCommon::BindToSystemSatellite(SString<EncodingUnicode>& systemDirectory,
-        SString<EncodingUnicode>& simpleName,
-        SString<EncodingUnicode>& cultureName,
+    HRESULT AssemblyBinderCommon::BindToSystemSatellite(SString& systemDirectory,
+        SString& simpleName,
+        SString& cultureName,
         Assembly** ppSystemAssembly)
     {
         HRESULT hr = S_OK;
@@ -347,7 +347,7 @@ namespace BINDER_SPACE
         _ASSERTE(ppSystemAssembly != NULL);
 
         // Satellite assembly's relative path
-        StackSString<EncodingUnicode> relativePath;
+        StackSString relativePath;
 
         // append culture name
         if (!cultureName.IsEmpty())
@@ -364,7 +364,7 @@ namespace BINDER_SPACE
         // Satellite assembly's path:
         //   * Absolute path when looking for a file on disk
         //   * Bundle-relative path when looking within the single-file bundle.
-        StackSString<EncodingUnicode> sCoreLibSatellite;
+        StackSString sCoreLibSatellite;
 
         BinderTracing::PathSource pathSource = BinderTracing::PathSource::Bundle;
         BundleFileLocation bundleFileLocation = Bundle::ProbeAppBundle(relativePath, /*pathIsBundleRelative */ true);
@@ -592,7 +592,7 @@ namespace BINDER_SPACE
     {
         HRESULT BindSatelliteResourceFromBundle(
             AssemblyName*              pRequestedAssemblyName,
-            SString<EncodingUnicode> &relativePath,
+            SString &relativePath,
             BindResult*                pBindResult)
         {
             HRESULT hr = S_OK;
@@ -639,7 +639,7 @@ namespace BINDER_SPACE
         HRESULT BindSatelliteResourceByProbingPaths(
             const StringArrayList<EncodingUnicode> *pResourceRoots,
             AssemblyName             *pRequestedAssemblyName,
-            SString<EncodingUnicode>&relativePath,
+            SString&relativePath,
             BindResult               *pBindResult,
             BinderTracing::PathSource pathSource)
         {
@@ -648,8 +648,8 @@ namespace BINDER_SPACE
             for (UINT i = 0; i < pResourceRoots->GetCount(); i++)
             {
                 ReleaseHolder<Assembly> pAssembly;
-                SString<EncodingUnicode> &wszBindingPath = (*pResourceRoots)[i];
-                SString<EncodingUnicode> fileName(wszBindingPath);
+                SString &wszBindingPath = (*pResourceRoots)[i];
+                SString fileName(wszBindingPath);
                 CombinePath(fileName, relativePath, fileName);
 
                 hr = AssemblyBinderCommon::GetAssembly(fileName,
@@ -701,13 +701,13 @@ namespace BINDER_SPACE
             // names as platform ones.
 
             HRESULT hr = S_OK;
-            const SString<EncodingUnicode>& simpleNameRef = pRequestedAssemblyName->GetSimpleName();
-            SString<EncodingUnicode>& cultureRef = pRequestedAssemblyName->GetCulture();
+            const SString& simpleNameRef = pRequestedAssemblyName->GetSimpleName();
+            SString& cultureRef = pRequestedAssemblyName->GetCulture();
 
             _ASSERTE(!pRequestedAssemblyName->IsNeutralCulture());
 
             ReleaseHolder<Assembly> pAssembly;
-            SString<EncodingUnicode> fileName;
+            SString fileName;
             CombinePath(fileName, cultureRef, fileName);
             CombinePath(fileName, simpleNameRef, fileName);
             fileName.Append(W(".dll"));
@@ -744,7 +744,7 @@ namespace BINDER_SPACE
             AssemblyName            *pRequestedAssemblyName,
             Assembly                **ppAssembly)
         {
-            const SString<EncodingUnicode> &simpleName = pRequestedAssemblyName->GetSimpleName();
+            const SString &simpleName = pRequestedAssemblyName->GetSimpleName();
             BinderTracing::PathSource pathSource = BinderTracing::PathSource::AppPaths;
             // Loop through the binding paths looking for a matching assembly
             for (DWORD i = 0; i < pBindingPaths->GetCount(); i++)
@@ -839,7 +839,7 @@ namespace BINDER_SPACE
         else
         {
             ReleaseHolder<Assembly> pTPAAssembly;
-            const SString<EncodingUnicode>& simpleName = pRequestedAssemblyName->GetSimpleName();
+            const SString& simpleName = pRequestedAssemblyName->GetSimpleName();
 
             // Is assembly in the bundle?
             // Single-file bundle contents take precedence over TPA.
@@ -855,10 +855,10 @@ namespace BINDER_SPACE
                 // Loop through the binding paths looking for a matching assembly
                 for (int i = 0; i < 2; i++)
                 {
-                    SString<EncodingUnicode> assemblyFileName(simpleName);
+                    SString assemblyFileName(simpleName);
                     assemblyFileName.Append(candidates[i]);
 
-                    SString<EncodingUnicode> assemblyFilePath;
+                    SString assemblyFilePath;
                     Bundle::AppBundle->BasePath().ConvertToUnicode(assemblyFilePath);
                     assemblyFilePath.Append(assemblyFileName);
 
@@ -896,7 +896,7 @@ namespace BINDER_SPACE
             {
                 if (pTpaEntry->m_wszNIFileName != nullptr)
                 {
-                    SString<EncodingUnicode> fileName(pTpaEntry->m_wszNIFileName);
+                    SString fileName(pTpaEntry->m_wszNIFileName);
 
                     hr = GetAssembly(fileName,
                                      TRUE,  // fIsInTPA
@@ -906,7 +906,7 @@ namespace BINDER_SPACE
                 else
                 {
                     _ASSERTE(pTpaEntry->m_wszILFileName != nullptr);
-                    SString<EncodingUnicode> fileName(pTpaEntry->m_wszILFileName);
+                    SString fileName(pTpaEntry->m_wszILFileName);
 
                     hr = GetAssembly(fileName,
                                      TRUE,  // fIsInTPA
@@ -994,7 +994,7 @@ namespace BINDER_SPACE
     }
 
     /* static */
-    HRESULT AssemblyBinderCommon::GetAssembly(SString<EncodingUnicode> &assemblyPath,
+    HRESULT AssemblyBinderCommon::GetAssembly(SString &assemblyPath,
                                               BOOL               fIsInTPA,
                                               Assembly           **ppAssembly,
                                               BundleFileLocation bundleFileLocation)

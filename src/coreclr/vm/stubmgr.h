@@ -85,7 +85,7 @@ public:
     // Get a string representation of this TraceDestination
     // Uses the supplied buffer to store the memory (or may return a string literal).
     // This will also print the TD's arguments.
-    const char * DbgToString(SString<EncodingUTF8> &buffer);
+    const char * DbgToString(EString<EncodingUTF8> &buffer);
 #endif
 
     // Initialize for unmanaged code.
@@ -297,11 +297,11 @@ public:
     static void DbgWriteLog(const CHAR *format, ...);
 
     // Get the log as a string.
-    static void DbgGetLog(SString<EncodingUTF8> * pStringOut);
+    static void DbgGetLog(EString<EncodingUTF8> * pStringOut);
 
 protected:
-    // Implement log as a SString.
-    static SString<EncodingUTF8> * s_pDbgStubManagerLog;
+    // Implement log as a EString.
+    static EString<EncodingUTF8> * s_pDbgStubManagerLog;
 
     static CrstStatic s_DbgLogCrst;
 

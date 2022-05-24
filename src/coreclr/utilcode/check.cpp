@@ -107,13 +107,13 @@ void CHECK::Trigger(LPCSTR reason)
     STATIC_CONTRACT_GC_NOTRIGGER;
 
     const char *messageString = NULL;
-    NewHolder<StackSString<EncodingASCII>> pMessage(NULL);
+    NewHolder<StackEString<EncodingASCII>> pMessage(NULL);
 
     EX_TRY
     {
         FAULT_NOT_FATAL();
 
-        pMessage = new StackSString<EncodingASCII>();
+        pMessage = new StackEString<EncodingASCII>();
 
         pMessage->Append(reason);
         pMessage->Append(": ");
@@ -172,7 +172,7 @@ void CHECK::Setup(LPCSTR message, LPCSTR condition, LPCSTR file, INT line)
             FAULT_NOT_FATAL();
             // Try to build a stack of condition failures
 
-            StackSString<EncodingUTF8> context;
+            StackEString<EncodingUTF8> context;
             context.Printf("%s\n\t%s%s FAILED: %s\n\t\t%s, line: %d",
                            m_condition,
                            message && *message ? message : "",
@@ -222,7 +222,7 @@ LPCSTR CHECK::FormatMessage(LPCSTR messageFormat, ...)
     else
     {
         // This path is only run in debug.  TakesLockViolation suppresses
-        // problems with SString below.
+        // problems with EString below.
         CONTRACT_VIOLATION(FaultNotFatal|TakesLockViolation);
 
         EX_TRY
@@ -233,7 +233,7 @@ LPCSTR CHECK::FormatMessage(LPCSTR messageFormat, ...)
             va_list args;
             va_start( args, messageFormat);
 
-            SString<EncodingUTF8> s;
+            EString<EncodingUTF8> s;
             s.VPrintf(messageFormat, args);
 
             va_end(args);
@@ -252,7 +252,7 @@ LPCSTR CHECK::FormatMessage(LPCSTR messageFormat, ...)
     return result;
 }
 
-LPCSTR CHECK::AllocateDynamicMessage(const SString<EncodingUTF8> &s)
+LPCSTR CHECK::AllocateDynamicMessage(const EString<EncodingUTF8> &s)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;

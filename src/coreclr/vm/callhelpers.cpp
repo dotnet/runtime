@@ -601,7 +601,7 @@ void CallDefaultConstructor(OBJECTREF ref)
 
     if (!pMT->HasDefaultConstructor())
     {
-        SString<EncodingUnicode> ctorMethodName(COR_CTOR_METHOD_NAME_W);
+        SString ctorMethodName(COR_CTOR_METHOD_NAME_W);
         COMPlusThrowNonLocalized(kMissingMethodException, (LPCWSTR)ctorMethodName);
     }
 

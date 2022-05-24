@@ -306,7 +306,7 @@ private:
 
     HRESULT ReadCheckFile(const WCHAR * pFileName);
 
-    DomainAssembly * LoadAssembly(const SString<EncodingUTF8> & assemblyName);
+    DomainAssembly * LoadAssembly(const EString<EncodingUTF8> & assemblyName);
 
 public:
 
@@ -606,7 +606,7 @@ class MulticoreJitRecorder
 private:
     AppDomain               * m_pDomain;            // AutoStartProfile could be called from SystemDomain
     AssemblyBinder          * m_pBinder;
-    SString<EncodingUnicode> m_fullFileName;
+    SString m_fullFileName;
     MulticoreJitPlayerStat  & m_stats;
 
     RecorderModuleInfo        * m_ModuleList;

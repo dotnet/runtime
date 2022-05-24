@@ -53,7 +53,7 @@ void LogTraceDestination(const char * szHint, PCODE stubAddr, TraceDestination *
 #ifdef _DEBUG
 // Get a string representation of this TraceDestination
 // Uses the supplied buffer to store the memory (or may return a string literal).
-const char * TraceDestination::DbgToString(SString<EncodingUTF8> & buffer)
+const char * TraceDestination::DbgToString(EString<EncodingUTF8> & buffer)
 {
     CONTRACTL
     {
@@ -196,7 +196,7 @@ void TraceDestination::InitForUnjittedMethod(MethodDesc * pDesc)
 
 // Initialize statics.
 #ifdef _DEBUG
-SString<EncodingUTF8> * StubManager::s_pDbgStubManagerLog = NULL;
+EString<EncodingUTF8> * StubManager::s_pDbgStubManagerLog = NULL;
 CrstStatic StubManager::s_DbgLogCrst;
 
 #endif
@@ -541,7 +541,7 @@ BOOL StubManager::TraceStub(PCODE stubStartAddress, TraceDestination *trace)
             {
                 SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE;
                 FAULT_NOT_FATAL();
-                SString<EncodingUTF8> buffer;
+                EString<EncodingUTF8> buffer;
                 DbgWriteLog("  td=%s\n", trace->DbgToString(buffer));
             }
             else
@@ -739,7 +739,7 @@ void StubManager::TerminateStubManagers()
 //-----------------------------------------------------------
 bool StubManager::IsStubLoggingEnabled()
 {
-    // Our current logging impl uses SString, which uses new(), which can't be called
+    // Our current logging impl uses EString, which uses new(), which can't be called
     // on the helper thread. (B/c it may deadlock. See SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE)
 
     // We avoid this by just not logging when native-debugging.
@@ -786,7 +786,7 @@ void StubManager::DbgBeginLog(TADDR addrCallInstruction, TADDR addrCallTarget)
         {
             if (s_pDbgStubManagerLog == NULL)
             {
-                s_pDbgStubManagerLog = new SString<EncodingUTF8>();
+                s_pDbgStubManagerLog = new EString<EncodingUTF8>();
             }
             s_pDbgStubManagerLog->Clear();
         }
@@ -888,7 +888,7 @@ void StubManager::DbgWriteLog(const CHAR *format, ...)
 //-----------------------------------------------------------
 // Get the log as a string.
 //-----------------------------------------------------------
-void StubManager::DbgGetLog(SString<EncodingUTF8> * pStringOut)
+void StubManager::DbgGetLog(EString<EncodingUTF8> * pStringOut)
 {
 #ifndef DACCESS_COMPILE
     CONTRACTL

@@ -232,7 +232,7 @@ CRITSEC_COOKIE ProfilingAPIUtility::s_csStatus = NULL;
 //
 
 // static
-void ProfilingAPIUtility::AppendSupplementaryInformation(int iStringResource, SString<EncodingUnicode> * pString)
+void ProfilingAPIUtility::AppendSupplementaryInformation(int iStringResource, SString * pString)
 {
     CONTRACTL
     {
@@ -245,7 +245,7 @@ void ProfilingAPIUtility::AppendSupplementaryInformation(int iStringResource, SS
     }
     CONTRACTL_END;
 
-    StackSString<EncodingUnicode> supplementaryInformation;
+    StackSString supplementaryInformation;
 
     if (!LoadResource(
         supplementaryInformation,
@@ -296,8 +296,8 @@ void ProfilingAPIUtility::LogProfEventVA(
     }
     CONTRACTL_END;
 
-    StackSString<EncodingUnicode> messageFromResource;
-    StackSString<EncodingUnicode> messageToLog;
+    StackSString messageFromResource;
+    StackSString messageToLog;
 
     if (!LoadResource(
         messageFromResource,

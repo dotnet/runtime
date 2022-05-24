@@ -1,27 +1,27 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // ---------------------------------------------------------------------------
-// SString.h  (Safe String)
+// EString.h  (Safe String)
 //
 
 // ---------------------------------------------------------------------------
 
 // ------------------------------------------------------------------------------------------
-// SString is the "standard" string representation for the EE.  Its has two purposes.
+// EString is the "standard" string representation for the EE.  Its has two purposes.
 // (1) it provides an easy-to-use, relatively efficient, string class for APIs to standardize
 //      on.
 // (2) it completely encapsulates all "unsafe" string operations - that is, string operations
 //      which yield possible buffer overrun bugs.  Typesafe use of this API should help guarantee
 //      safety.
 //
-// A SString is conceptually unicode, although the internal conversion might be delayed as long as possible
+// A EString is conceptually unicode, although the internal conversion might be delayed as long as possible
 // Basically it's up to the implementation whether conversion takes place immediately or is delayed, and if
 // delayed, what operations trigger the conversion.
 //
 // Note that anywhere you express a "position" in a string, it is in terms of the Unicode representation of the
 // string.
 //
-// If you need a direct non-unicode representation, you will have to provide a fresh SString which can
+// If you need a direct non-unicode representation, you will have to provide a fresh EString which can
 // receive a conversion operation if necessary.
 //
 // The alternate encodings available are:
@@ -65,7 +65,7 @@ typedef UTF8 *LPUTF8;
 typedef const UTF8 *LPCUTF8;
 
 // ==========================================================================================
-// SString is the base class for safe strings.
+// EString is the base class for safe strings.
 // ==========================================================================================
 
 int CaseCompareHelperA(const CHAR *buffer1, const CHAR *buffer2, COUNT_T count, BOOL stopOnNull, BOOL stopOnCount);
@@ -191,21 +191,23 @@ struct EncodingUTF8
 };
 
 template<typename TEncoding>
-class SString;
+class EString;
 
 template<typename TEncoding>
-using PTR_SString = DPTR(SString<TEncoding>);
+using PTR_EString = DPTR(EString<TEncoding>);
+
+using PTR_SString = PTR_EString<EncodingUnicode>;
 
 class StaticStringHelpers
 {
     friend struct _DacGlobals;
     template<typename TEncoding>
-    friend class SString;
+    friend class EString;
     static const BYTE s_EmptyBuffer[2];
     
-    SPTR_DECL(SString<EncodingUnicode>, s_EmptyUnicode);
-    SPTR_DECL(SString<EncodingUTF8>, s_EmptyUtf8);
-    SPTR_DECL(SString<EncodingASCII>, s_EmptyAscii);
+    SPTR_DECL(EString<EncodingUnicode>, s_EmptyUnicode);
+    SPTR_DECL(EString<EncodingUTF8>, s_EmptyUtf8);
+    SPTR_DECL(EString<EncodingASCII>, s_EmptyAscii);
 
     CHECK CheckStartup();
 
@@ -228,71 +230,70 @@ public:
     static int _tstrnicmp(const WCHAR *buffer1, const WCHAR *buffer2, COUNT_T count);
 };
 
-enum shared_data_t { SharedData };
-
 template<typename TEncoding>
-class SString : private SBuffer
+class EString : private SBuffer
 {
 protected:
     using char_t = typename TEncoding::char_t;
 public:
-    SString(void* buffer, COUNT_T size, bool isAllocated);
+    enum literal_tag_t { Literal };
+    EString(void* buffer, COUNT_T size, bool isAllocated);
     class Iterator;
     class CIterator;
-    friend HRESULT LoadResourceAndReturnHR(SString<EncodingUnicode>& buffer, CCompRC* pResourceDLL, CCompRC::ResourceCategory eCategory, int resourceID);
-    SString();
+    friend HRESULT LoadResourceAndReturnHR(EString<EncodingUnicode>& buffer, CCompRC* pResourceDLL, CCompRC::ResourceCategory eCategory, int resourceID);
+    EString();
 
-    SString(shared_data_t, const char_t* str)
+    EString(literal_tag_t, const char_t* str)
         :SBuffer(Immutable, reinterpret_cast<const BYTE*>(str), static_cast<COUNT_T>(((TEncoding::strlen(str) + 1) * sizeof(char_t))))
     {
     }
 
-    SString(const char_t* str)
-        :SString()
+    EString(const char_t* str)
+        :EString()
     {
         Set(str);
     }
-    SString(const char_t* str, COUNT_T count)
-        :SString()
+    EString(const char_t* str, COUNT_T count)
+        :EString()
     {
         Set(str, count);
     }
     
-    SString(const SString &s, const CIterator &start, const CIterator &end)
-        :SString()
+    EString(const EString &s, const CIterator &start, const CIterator &end)
+        :EString()
     {
         Set(s, start, end);
     }
 
-    explicit SString(const SString& s)
-        :SString()
+    explicit EString(const EString& s)
+        :EString()
     {
         Set(s);
     }
 
-    SString(SString&& s);
+    EString(EString&& s);
 
-    SString(const SString& s, const SString& s1)
-        :SString()
+    EString(const EString& s, const EString& s1)
+        :EString()
     {
         Set(s, s1);
     }
 
-    SString(const SString& s, const SString& s1, const SString& s2)
-        :SString()
+    EString(const EString& s, const EString& s1, const EString& s2)
+        :EString()
     {
         Set(s, s1, s2);
     }
 
-    SString(const SString& s, const SString& s1, const SString& s2, const SString& s3)
-        :SString()
+    EString(const EString& s, const EString& s1, const EString& s2, const EString& s3)
+        :EString()
     {
         Set(s, s1, s2, s3);
     }
 
-    SString(const SString &s, const CIterator &i, COUNT_T count);
+    EString(const EString &s, const CIterator &i, COUNT_T count);
 
-    static const SString& Empty();
+    static const EString& Empty();
     
     // Return the number of characters in the string (excluding the terminating NULL).
     BOOL IsEmpty() const;
@@ -310,11 +311,11 @@ public:
     void Trim() const;
 
         // Returns TRUE if this string begins with the contents of s
-    BOOL BeginsWith(const SString &s) const { return Match(Begin(), s); }
-    BOOL BeginsWithCaseInsensitive(const SString &s) const { return MatchCaseInsensitive(Begin(), s); } // invariant locale
+    BOOL BeginsWith(const EString &s) const { return Match(Begin(), s); }
+    BOOL BeginsWithCaseInsensitive(const EString &s) const { return MatchCaseInsensitive(Begin(), s); } // invariant locale
 
     // Returns TRUE if this string ends with the contents of s
-    BOOL EndsWith(const SString& s) const
+    BOOL EndsWith(const EString& s) const
     {
         WRAPPER_NO_CONTRACT;
 
@@ -327,7 +328,7 @@ public:
         return Match(End() - s.GetCount(), s);
     }
 
-    BOOL EndsWithCaseInsensitive(const SString &s) const // invariant locale
+    BOOL EndsWithCaseInsensitive(const EString &s) const // invariant locale
     {
         WRAPPER_NO_CONTRACT;
 
@@ -340,10 +341,10 @@ public:
         return MatchCaseInsensitive(End() - s.GetCount(), s);
     }
     
-    SString &operator= (const SString &s) { WRAPPER_NO_CONTRACT; Set(s); return *this; }
-    SString &operator= (SString &&s) { WRAPPER_NO_CONTRACT; Set(s); return *this; } // TODO: Look at stealing the buffer from the rhs value if we'd have to reallocate (and always clear the rhs for deterministic behavior).
+    EString &operator= (const EString &s) { WRAPPER_NO_CONTRACT; Set(s); return *this; }
+    EString &operator= (EString &&s) { WRAPPER_NO_CONTRACT; Set(s); return *this; } // TODO: Look at stealing the buffer from the rhs value if we'd have to reallocate (and always clear the rhs for deterministic behavior).
 
-    const SString& operator+=(const SString& s)
+    const EString& operator+=(const EString& s)
     {
         WRAPPER_NO_CONTRACT;
         Append(s);
@@ -355,7 +356,7 @@ public:
         return GetRawBuffer();
     }
 
-    void Append(const SString &s);
+    void Append(const EString &s);
 
     void Append(const char_t* s);
 
@@ -364,25 +365,25 @@ public:
     // Do a string comparison. Return 0 if the strings
     // have the same value,  -1 if this is "less than" s, or 1 if
     // this is "greater than" s.
-    int Compare(const SString &s) const;
-    int CompareCaseInsensitive(const SString& s) const; // invariant locale
+    int Compare(const EString &s) const;
+    int CompareCaseInsensitive(const EString& s) const; // invariant locale
 
     // Do a case sensitive string comparison. Return TRUE if the strings
     // have the same value FALSE if not.
-    BOOL Equals(const SString &s) const;
-    BOOL EqualsCaseInsensitive(const SString &s) const; // invariant locale
+    BOOL Equals(const EString &s) const;
+    BOOL EqualsCaseInsensitive(const EString &s) const; // invariant locale
 
     // Set this string to the concatenation of s1,s2,s3,s4
-    void Set(const SString &s);
+    void Set(const EString &s);
 
-    void Set(const SString& s1, const SString& s2)
+    void Set(const EString& s1, const EString& s2)
     {
         Preallocate(s1.GetCount() + s2.GetCount());
         Set(s1);
         Append(s2);
     }
 
-    void Set(const SString &s1, const SString &s2, const SString &s3)
+    void Set(const EString &s1, const EString &s2, const EString &s3)
     {
         Preallocate(s1.GetCount() + s2.GetCount() + s3.GetCount());
         Set(s1);
@@ -390,7 +391,7 @@ public:
         Append(s3);
     }
 
-    void Set(const SString &s1, const SString &s2, const SString &s3, const SString &s4)
+    void Set(const EString &s1, const EString &s2, const EString &s3, const EString &s4)
     {
         Preallocate(s1.GetCount() + s2.GetCount() + s3.GetCount() + s4.GetCount());
         Set(s1);
@@ -400,10 +401,10 @@ public:
     }
     
     // Set this string to the substring of s, starting at i, of length characters.
-    void Set(const SString &s, const CIterator &i, COUNT_T length);
+    void Set(const EString &s, const CIterator &i, COUNT_T length);
 
     // Set this string to the substring of s, starting at start and ending at end (exclusive)
-    void Set(const SString &s, const CIterator &start, const CIterator &end);
+    void Set(const EString &s, const CIterator &start, const CIterator &end);
 
     // Set this string to a copy of the given string
     void Set(const char_t*string);
@@ -415,7 +416,7 @@ public:
 
     // Set this string to point to an existing string. The memory will be shared,
     // so it is the responsibility of the owner of the parameter to ensure lifetime
-    // is at least as long as this SString.
+    // is at least as long as this EString.
     void SetLiteral(const char_t* string);
     void SetPreallocated(const char_t*string, COUNT_T count);
 
@@ -444,11 +445,11 @@ public:
     void AppendVPrintf(const char_t* format, va_list args);
 
     BOOL FormatMessage(DWORD dwFlags, LPCVOID lpSource, DWORD dwMessageId, DWORD dwLanguageId,
-                            const SString &arg1 = Empty(), const SString &arg2 = Empty(),
-                            const SString &arg3 = Empty(), const SString &arg4 = Empty(),
-                            const SString &arg5 = Empty(), const SString &arg6 = Empty(),
-                            const SString &arg7 = Empty(), const SString &arg8 = Empty(),
-                            const SString &arg9 = Empty(), const SString &arg10 = Empty()) = delete;
+                            const EString &arg1 = Empty(), const EString &arg2 = Empty(),
+                            const EString &arg3 = Empty(), const EString &arg4 = Empty(),
+                            const EString &arg5 = Empty(), const EString &arg6 = Empty(),
+                            const EString &arg7 = Empty(), const EString &arg8 = Empty(),
+                            const EString &arg9 = Empty(), const EString &arg10 = Empty()) = delete;
 
     void Resize(COUNT_T count, SBuffer::Preserve preserve = SBuffer::PRESERVE)
     {
@@ -493,7 +494,7 @@ public:
     // Iterators:
     // ------------------------------------------------------------------
 
-    // SString splits iterators into two categories.
+    // EString splits iterators into two categories.
     //
     // CIterator and Iterator are cheap to create, but allow only read-only
     // access to the string.
@@ -505,7 +506,7 @@ public:
 
     class EMPTY_BASES_DECL Index : public SBuffer::Index
     {
-        friend class SString;
+        friend class EString;
 
         friend class Indexer<const char_t, CIterator>;
         friend class Indexer<char_t, Iterator>;
@@ -514,13 +515,13 @@ public:
         int               m_characterSizeShift;
 
         Index();
-        Index(SString *string, SCOUNT_T index);
+        Index(EString *string, SCOUNT_T index);
         BYTE &GetAt(SCOUNT_T delta) const;
         void Skip(SCOUNT_T delta);
         SCOUNT_T Subtract(const Index &i) const;
         CHECK DoCheck(SCOUNT_T delta) const;
 
-        void Resync(const SString *string, BYTE *ptr) const;
+        void Resync(const EString *string, BYTE *ptr) const;
 
         const char_t* GetBuffer() const;
 
@@ -537,7 +538,7 @@ public:
 
     class EMPTY_BASES_DECL CIterator : public Index, public Indexer<const char_t, CIterator>
     {
-        friend class SString;
+        friend class EString;
 
       public:
         const Iterator &ConstCast() const
@@ -564,8 +565,8 @@ public:
         {
         }
 
-        CIterator(const SString *string, int index)
-          : Index(const_cast<SString *>(string), index)
+        CIterator(const EString *string, int index)
+          : Index(const_cast<EString *>(string), index)
         {
         }
 
@@ -578,7 +579,7 @@ public:
 
     class EMPTY_BASES_DECL Iterator : public Index, public Indexer<char_t, Iterator>
     {
-        friend class SString;
+        friend class EString;
 
       public:
         operator const CIterator &() const
@@ -605,7 +606,7 @@ public:
         {
         }
 
-        Iterator(SString *string, int index)
+        Iterator(EString *string, int index)
           : Index(string, index)
         {
             SUPPORTS_DAC;
@@ -634,21 +635,21 @@ public:
         *(char_t*)i.m_ptr = c;
     }
 
-    void Replace(const Iterator &i, COUNT_T length, const SString &s);
-    void Insert(const Iterator &i, const SString &s);
+    void Replace(const Iterator &i, COUNT_T length, const EString &s);
+    void Insert(const Iterator &i, const EString &s);
     void Insert(const Iterator &i, const char_t *s);
 
-    BOOL Find(CIterator &i, const SString &s) const;
-    BOOL Find(CIterator &i, const char_t *s) const { return Find(i, SString(SharedData, s)); }
+    BOOL Find(CIterator &i, const EString &s) const;
+    BOOL Find(CIterator &i, const char_t *s) const { return Find(i, EString(EString::Literal, s)); }
     BOOL Find(CIterator &i, char_t s) const;
-    BOOL FindBack(CIterator &i, const SString &s) const;
-    BOOL FindBack(CIterator &i, const char_t *s) const { return FindBack(i, SString(SharedData, s)); }
+    BOOL FindBack(CIterator &i, const EString &s) const;
+    BOOL FindBack(CIterator &i, const char_t *s) const { return FindBack(i, EString(EString::Literal, s)); }
     BOOL FindBack(CIterator &i, char_t s) const;
-    BOOL Skip(CIterator &i, const SString &s) const;
+    BOOL Skip(CIterator &i, const EString &s) const;
     BOOL Skip(CIterator &i, char_t s) const;
-    BOOL Match(const CIterator &i, const SString &s) const;
+    BOOL Match(const CIterator &i, const EString &s) const;
     BOOL Match(const CIterator &i, char_t s) const;
-    BOOL MatchCaseInsensitive(const CIterator &i, const SString &s) const;
+    BOOL MatchCaseInsensitive(const CIterator &i, const EString &s) const;
     
     //Returns a copy of the string, allocated with new[]. The caller is reponsible for lifetime of the string
     char_t* CreateCopyOfString() const
@@ -676,16 +677,16 @@ public:
     // Conversion/Move routines
     void LowerCase();
     void UpperCase();
-    COUNT_T ConvertToUTF8(SString<EncodingUTF8>& resultBuffer) const;
-    COUNT_T ConvertToUnicode(SString<EncodingUnicode>& resultBuffer) const;
-    SString<EncodingUTF8> MoveToUTF8();
-    SString<EncodingUnicode> MoveToUnicode();
+    COUNT_T ConvertToUTF8(EString<EncodingUTF8>& resultBuffer) const;
+    COUNT_T ConvertToUnicode(EString<EncodingUnicode>& resultBuffer) const;
+    EString<EncodingUTF8> MoveToUTF8();
+    EString<EncodingUnicode> MoveToUnicode();
 
     //-------------------------------------------------------------------
     // Accessing the string contents directly
     //-------------------------------------------------------------------
 
-    // To write directly to the SString's underlying buffer:
+    // To write directly to the EString's underlying buffer:
     // 1) Call OpenBuffer() and pass it the count of characters
     // you need. (Not including the null-terminator).
     // 2) That returns a pointer to the raw buffer which you can write to.
@@ -694,7 +695,7 @@ public:
     // the null). The pointer from step 1 is now invalid.
 
     // example usage:
-    // void GetName(SString<EncodingUTF8> & str) {
+    // void GetName(EString<EncodingUTF8> & str) {
     //      char * p = str.OpenBuffer(3);
     //      strcpy(p, "Cat");
     //      str.CloseBuffer();
@@ -721,7 +722,7 @@ public:
     // Call after OpenBuffer().
 
     // Provide the count of characters actually used (not including the
-    // null terminator). This will make sure the SString's size is correct
+    // null terminator). This will make sure the EString's size is correct
     // and that we have a null-terminator.
     void CloseBuffer(COUNT_T finalCount)
     {
@@ -745,7 +746,7 @@ public:
     // DAC access to string functions.
     // Note that other accessors above are not DAC-safe and will return TARGET pointers into
     // the string instead of copying the string over to the host.
-    // @dbgtodo  dac support: Prevent usage of such DAC-unsafe SString APIs in DAC code
+    // @dbgtodo  dac support: Prevent usage of such DAC-unsafe EString APIs in DAC code
     void* DacGetRawContent(void) const
     {
         return SBuffer::DacGetRawContent();
@@ -818,76 +819,90 @@ private:
     BOOL IsAllocated() const;
 };
 
-inline SString<EncodingUnicode> SL(const WCHAR* str)
+using SString = EString<EncodingUnicode>;
+
+inline SString SL(const WCHAR* str)
 {
-    return {SharedData, str};
+    return {SString::Literal, str};
 }
 
 // ===========================================================================
-// InlineSString is used for stack allocation of strings, or when the string contents
+// InlineEString is used for stack allocation of strings, or when the string contents
 // are expected or known to be small.  Note that it still supports expandability via
 // heap allocation if necessary.
 // ===========================================================================
 
 template <COUNT_T MEMSIZE, typename TEncoding>
-class InlineSString : public SString<TEncoding>
+class InlineEString : public EString<TEncoding>
 {
-    using typename SString<TEncoding>::char_t;
+    using typename EString<TEncoding>::char_t;
 private:
-    DAC_ALIGNAS(SString<TEncoding>)
+    DAC_ALIGNAS(EString<TEncoding>)
     char_t m_inline[SBUFFER_PADDED_SIZE(MEMSIZE)];
 public:
-    InlineSString()
-        :SString<TEncoding>(m_inline, MEMSIZE, /* isAllocated */ false)
+    InlineEString()
+        :EString<TEncoding>(m_inline, MEMSIZE, /* isAllocated */ false)
     {
 
     }
 
-    InlineSString(const char_t c)
-        :InlineSString()
+    InlineEString(const char_t c)
+        :InlineEString()
     {
-        SString<TEncoding>::Set(c);
+        EString<TEncoding>::Set(c);
     }
 
-    InlineSString(const char_t* str)
-        :InlineSString()
+    InlineEString(const char_t* str)
+        :InlineEString()
     {
-        SString<TEncoding>::Set(str);
+        EString<TEncoding>::Set(str);
     }
-    InlineSString(const char_t* str, COUNT_T count)
-        :InlineSString()
+
+    InlineEString(literal_tag_t, const char_t* str)
+        :InlineEString()
     {
-        SString<TEncoding>::Set(str, count);
+        EString<TEncoding>::SetLiteral(str);
+    }
+
+    InlineEString(const char_t* str, COUNT_T count)
+        :InlineEString()
+    {
+        EString<TEncoding>::Set(str, count);
     }
 };
 
+template<COUNT_T MEMSIZE>
+using InlineSString = InlineEString<MEMSIZE, EncodingUnicode>;
+
 // ================================================================================
-// StackSString is a lot like CQuickBytes.  Use it to create an SString object
+// StackEString is a lot like CQuickBytes.  Use it to create an EString object
 // using some stack space as a preallocated buffer.
 // ================================================================================
 
 template<typename TEncoding>
-using StackSString = InlineSString<512, TEncoding>;
+using StackEString = InlineEString<512, TEncoding>;
+using StackSString = StackEString<EncodingUnicode>;
 
 // This is a smaller version for when it is known that the string that's going to
 // be needed is small and it's preferable not to take up the stack space.
 template<typename TEncoding>
-using SmallStackSString = InlineSString<32, TEncoding>;
+using SmallStackEString = InlineEString<32, TEncoding>;
+using SmallStackSString = SmallStackEString<EncodingUnicode>;
 
 // To be used specifically for path strings.
 #ifdef _DEBUG
 // This is a smaller version for debug builds to exercise the buffer allocation path
-typedef InlineSString<32, EncodingUnicode> PathString;
-typedef InlineSString<2 * 32, EncodingUnicode> LongPathString;
+typedef InlineEString<32, EncodingUnicode> PathString;
+typedef InlineEString<2 * 32, EncodingUnicode> LongPathString;
 #else
 // Set it to the current MAX_PATH
-typedef InlineSString<260, EncodingUnicode> PathString;
-typedef InlineSString<2 * 260, EncodingUnicode> LongPathString;
+typedef InlineEString<260, EncodingUnicode> PathString;
+typedef InlineEString<2 * 260, EncodingUnicode> LongPathString;
 #endif
 
-BOOL LoadResource(SString<EncodingUnicode>& buffer, CCompRC::ResourceCategory eCategory, int resourceID);
-HRESULT LoadResourceAndReturnHR(SString<EncodingUnicode>& buffer, CCompRC::ResourceCategory eCategory, int resourceID);
-HRESULT LoadResourceAndReturnHR(SString<EncodingUnicode>& buffer, CCompRC* pResourceDLL, CCompRC::ResourceCategory eCategory, int resourceID);
+BOOL LoadResource(EString<EncodingUnicode>& buffer, CCompRC::ResourceCategory eCategory, int resourceID);
+HRESULT LoadResourceAndReturnHR(EString<EncodingUnicode>& buffer, CCompRC::ResourceCategory eCategory, int resourceID);
+HRESULT LoadResourceAndReturnHR(EString<EncodingUnicode>& buffer, CCompRC* pResourceDLL, CCompRC::ResourceCategory eCategory, int resourceID);
 
 // ================================================================================
 // Inline definitions

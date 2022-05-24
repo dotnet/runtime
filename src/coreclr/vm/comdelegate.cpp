@@ -924,8 +924,8 @@ FCIMPL5(FC_BOOL_RET, COMDelegate::BindToMethodName,
     //
 
     // get the name in UTF8 format
-    SString<EncodingUnicode> wszName(SharedData, gc.methodName->GetBuffer());
-    StackSString<EncodingUTF8> utf8Name;
+    SString wszName(SString::Literal, gc.methodName->GetBuffer());
+    StackEString<EncodingUTF8> utf8Name;
     wszName.ConvertToUTF8(utf8Name);
     LPCUTF8 szNameStr = utf8Name;
 

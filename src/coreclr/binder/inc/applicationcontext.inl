@@ -24,7 +24,7 @@ void ApplicationContext::IncrementVersion()
     InterlockedIncrement(&m_cVersion);
 }
 
-SString<EncodingUnicode> &ApplicationContext::GetApplicationName()
+SString &ApplicationContext::GetApplicationName()
 {
     return m_applicationName;
 }
@@ -40,7 +40,7 @@ FailureCache *ApplicationContext::GetFailureCache()
     return m_pFailureCache;
 }
 
-HRESULT ApplicationContext::AddToFailureCache(SString<EncodingUnicode> &assemblyNameOrPath,
+HRESULT ApplicationContext::AddToFailureCache(SString &assemblyNameOrPath,
                                               HRESULT  hrBindResult)
 {
     HRESULT hr = GetFailureCache()->Add(assemblyNameOrPath, hrBindResult);

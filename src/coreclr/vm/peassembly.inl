@@ -154,7 +154,7 @@ inline void PEAssembly::GetMVID(GUID *pMvid)
 // Descriptive strings
 // ------------------------------------------------------------
 
-inline const SString<EncodingUnicode>& PEAssembly::GetPath()
+inline const SString& PEAssembly::GetPath()
 {
     CONTRACTL
     {
@@ -169,7 +169,7 @@ inline const SString<EncodingUnicode>& PEAssembly::GetPath()
 
     if (IsDynamic() || m_PEImage->IsInBundle ())
     {
-        return SString<EncodingUnicode>::Empty();
+        return SString::Empty();
     }
 
     return m_PEImage->GetPath();
@@ -178,7 +178,7 @@ inline const SString<EncodingUnicode>& PEAssembly::GetPath()
 //
 // Returns the identity path even for single-file/bundled apps.
 //
-inline const SString<EncodingUnicode>& PEAssembly::GetIdentityPath()
+inline const SString& PEAssembly::GetIdentityPath()
 {
     CONTRACTL
     {
@@ -193,14 +193,14 @@ inline const SString<EncodingUnicode>& PEAssembly::GetIdentityPath()
 
     if (m_PEImage == nullptr)
     {
-        return SString<EncodingUnicode>::Empty();
+        return SString::Empty();
     }
 
     return m_PEImage->GetPath();
 }
 
 #ifdef DACCESS_COMPILE
-inline const SString<EncodingUnicode> &PEAssembly::GetModuleFileNameHint()
+inline const SString &PEAssembly::GetModuleFileNameHint()
 {
     CONTRACTL
     {
@@ -213,7 +213,7 @@ inline const SString<EncodingUnicode> &PEAssembly::GetModuleFileNameHint()
 
     if (IsDynamic())
     {
-        return SString<EncodingUnicode>::Empty();
+        return SString::Empty();
     }
     else
         return m_PEImage->GetModuleFileNameHintForDAC();
@@ -737,7 +737,7 @@ inline BOOL PEAssembly::IsPtrInPEImage(PTR_CVOID data)
 // ------------------------------------------------------------
 // Descriptive strings
 // ------------------------------------------------------------
-inline void PEAssembly::GetDisplayName(SString<EncodingUnicode> &result, DWORD flags)
+inline void PEAssembly::GetDisplayName(SString &result, DWORD flags)
 {
     CONTRACTL
     {

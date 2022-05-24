@@ -1490,7 +1490,7 @@ namespace
 
 bool GCToEEInterface::CreateThread(void (*threadStart)(void*), void* arg, bool is_suspendable, const char* name)
 {
-    InlineSString<MaxThreadNameSize, EncodingUnicode> wideName;
+    InlineEString<MaxThreadNameSize, EncodingUnicode> wideName;
     const WCHAR* namePtr = nullptr;
     EX_TRY
     {

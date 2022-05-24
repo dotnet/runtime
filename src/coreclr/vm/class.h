@@ -507,18 +507,18 @@ typedef struct
 #define DEFAULT_NONSTACK_CLASSNAME_SIZE (MAX_CLASSNAME_LENGTH/4)
 
 #define DefineFullyQualifiedNameForClass() \
-    InlineSString<DEFAULT_NONSTACK_CLASSNAME_SIZE, EncodingUTF8> _utf8_; \
-    InlineSString<DEFAULT_NONSTACK_CLASSNAME_SIZE, EncodingUnicode> _ssclsname_;
+    InlineEString<DEFAULT_NONSTACK_CLASSNAME_SIZE, EncodingUTF8> _utf8_; \
+    InlineEString<DEFAULT_NONSTACK_CLASSNAME_SIZE, EncodingUnicode> _ssclsname_;
 
 #define DefineFullyQualifiedNameForClassOnStack() \
     ScratchBuffer<MAX_CLASSNAME_LENGTH> _scratchbuffer_; \
-    InlineSString<MAX_CLASSNAME_LENGTH, EncodingUnicode> _ssclsname_;
+    InlineEString<MAX_CLASSNAME_LENGTH, EncodingUnicode> _ssclsname_;
 
 #define DefineFullyQualifiedNameForClassW() \
-    InlineSString<DEFAULT_NONSTACK_CLASSNAME_SIZE, EncodingUnicode> _ssclsname_w_;
+    InlineEString<DEFAULT_NONSTACK_CLASSNAME_SIZE, EncodingUnicode> _ssclsname_w_;
 
 #define DefineFullyQualifiedNameForClassWOnStack() \
-    InlineSString<MAX_CLASSNAME_LENGTH, EncodingUnicode> _ssclsname_w_;
+    InlineEString<MAX_CLASSNAME_LENGTH, EncodingUnicode> _ssclsname_w_;
 
 #define GetFullyQualifiedNameForClassNestedAware(pClass) \
     (pClass->_GetFullyQualifiedNameForClassNestedAware(_ssclsname_), _ssclsname_.ConvertToUTF8(_utf8_), (LPCUTF8)_utf8_)

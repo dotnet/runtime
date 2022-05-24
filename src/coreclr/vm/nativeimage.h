@@ -23,7 +23,7 @@ struct AssemblyNameIndex
 class AssemblyNameIndexHashTraits : public NoRemoveSHashTraits< DefaultSHashTraits<AssemblyNameIndex> >
 {
 public:
-    // Similar to BaseAssemblySpec::CompareStrings, we're using temporary SStrings that throw
+    // Similar to BaseAssemblySpec::CompareStrings, we're using temporary EStrings that throw
     // for case-insensitive UTF8 assembly name comparisons.
     static const bool s_NoThrow = false;
 
@@ -42,7 +42,7 @@ typedef DPTR(class NativeImage) PTR_NativeImage;
 class NativeImageIndexTraits : public NoRemoveSHashTraits<MapSHashTraits<LPCUTF8, PTR_NativeImage>>
 {
 public:
-    // Similar to BaseAssemblySpec::CompareStrings, we're using temporary SStrings that throw
+    // Similar to BaseAssemblySpec::CompareStrings, we're using temporary EStrings that throw
     // for case-insensitive UTF8 assembly name comparisons.
     static const bool s_NoThrow = false;
 

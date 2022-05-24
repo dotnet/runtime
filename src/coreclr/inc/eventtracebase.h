@@ -683,7 +683,7 @@ class BaseDomain;
 class AppDomain;
 struct EncodingUTF8;
 template<typename TEncoding>
-class SString;
+class EString;
 class CrawlFrame;
 class LoaderAllocator;
 class AssemblyLoaderAllocator;
@@ -901,9 +901,9 @@ namespace ETW
             BOOL fSendILToNativeMapEvent,
             BOOL fGetCodeIds);
         static VOID SendEventsForNgenMethods(Module *pModule, DWORD dwEventOptions);
-        static VOID SendMethodJitStartEvent(MethodDesc *pMethodDesc, SString<EncodingUnicode> *namespaceOrClassName=NULL, SString<EncodingUTF8> *methodName=NULL, SString<EncodingUTF8> *methodSignature=NULL);
+        static VOID SendMethodJitStartEvent(MethodDesc *pMethodDesc, SString *namespaceOrClassName=NULL, EString<EncodingUTF8> *methodName=NULL, EString<EncodingUTF8> *methodSignature=NULL);
         static VOID SendMethodILToNativeMapEvent(MethodDesc * pMethodDesc, DWORD dwEventOptions, PCODE pNativeCodeStartAddress, ReJITID ilCodeId);
-        static VOID SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptions, BOOL bIsJit, SString<EncodingUnicode> *namespaceOrClassName=NULL, SString<EncodingUTF8> *methodName=NULL, SString<EncodingUTF8> *methodSignature=NULL, PCODE pNativeCodeStartAddress = 0, PrepareCodeConfig *pConfig = NULL);
+        static VOID SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptions, BOOL bIsJit, SString *namespaceOrClassName=NULL, EString<EncodingUTF8> *methodName=NULL, EString<EncodingUTF8> *methodSignature=NULL, PCODE pNativeCodeStartAddress = 0, PrepareCodeConfig *pConfig = NULL);
         static VOID SendHelperEvent(ULONGLONG ullHelperStartAddress, ULONG ulHelperSize, LPCWSTR pHelperName);
         static VOID SendMethodDetailsEvent(MethodDesc *pMethodDesc);
     public:
@@ -934,8 +934,8 @@ namespace ETW
 
         static VOID GetR2RGetEntryPointStart(MethodDesc *pMethodDesc);
         static VOID GetR2RGetEntryPoint(MethodDesc *pMethodDesc, PCODE pEntryPoint);
-        static VOID MethodJitting(MethodDesc *pMethodDesc, SString<EncodingUnicode> *namespaceOrClassName, SString<EncodingUTF8> *methodName, SString<EncodingUTF8> *methodSignature);
-        static VOID MethodJitted(MethodDesc *pMethodDesc, SString<EncodingUnicode> *namespaceOrClassName, SString<EncodingUTF8> *methodName, SString<EncodingUTF8> *methodSignature, PCODE pNativeCodeStartAddress, PrepareCodeConfig *pConfig);
+        static VOID MethodJitting(MethodDesc *pMethodDesc, SString *namespaceOrClassName, EString<EncodingUTF8> *methodName, EString<EncodingUTF8> *methodSignature);
+        static VOID MethodJitted(MethodDesc *pMethodDesc, SString *namespaceOrClassName, EString<EncodingUTF8> *methodName, EString<EncodingUTF8> *methodSignature, PCODE pNativeCodeStartAddress, PrepareCodeConfig *pConfig);
         static VOID StubInitialized(ULONGLONG ullHelperStartAddress, LPCWSTR pHelperName);
         static VOID StubsInitialized(PVOID *pHelperStartAddress, PVOID *pHelperNames, LONG ulNoOfHelpers);
         static VOID MethodRestored(MethodDesc * pMethodDesc);
@@ -946,8 +946,8 @@ namespace ETW
     public:
         static VOID GetR2RGetEntryPointStart(MethodDesc *pMethodDesc) {};
         static VOID GetR2RGetEntryPoint(MethodDesc *pMethodDesc, PCODE pEntryPoint) {};
-        static VOID MethodJitting(MethodDesc *pMethodDesc, SString<EncodingUnicode> *namespaceOrClassName, SString<EncodingUTF8> *methodName, SString<EncodingUTF8> *methodSignature);
-        static VOID MethodJitted(MethodDesc *pMethodDesc, SString<EncodingUnicode> *namespaceOrClassName, SString<EncodingUTF8> *methodName, SString<EncodingUTF8> *methodSignature, PCODE pNativeCodeStartAddress, PrepareCodeConfig *pConfig);
+        static VOID MethodJitting(MethodDesc *pMethodDesc, SString *namespaceOrClassName, EString<EncodingUTF8> *methodName, EString<EncodingUTF8> *methodSignature);
+        static VOID MethodJitted(MethodDesc *pMethodDesc, SString *namespaceOrClassName, EString<EncodingUTF8> *methodName, EString<EncodingUTF8> *methodSignature, PCODE pNativeCodeStartAddress, PrepareCodeConfig *pConfig);
         static VOID StubInitialized(ULONGLONG ullHelperStartAddress, LPCWSTR pHelperName) {};
         static VOID StubsInitialized(PVOID *pHelperStartAddress, PVOID *pHelperNames, LONG ulNoOfHelpers) {};
         static VOID MethodRestored(MethodDesc * pMethodDesc) {};

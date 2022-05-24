@@ -92,7 +92,7 @@ BOOL EventRedirectionPipeline::DebugSetProcessKillOnExit(bool fKillOnExit)
 //---------------------------------------------------------------------------------------
 HRESULT EventRedirectionPipeline::AttachDebuggerToTarget(LPCWSTR szOptions, DWORD pidTarget)
 {
-    SString<EncodingUnicode> s;
+    SString s;
 
     BOOL fRemap = false;
 

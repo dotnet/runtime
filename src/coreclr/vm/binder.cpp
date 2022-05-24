@@ -800,7 +800,7 @@ static void FCallCheckSignature(MethodDesc* pMD, PCODE pImpl)
 
             size_t len = pUnmanagedTypeEnd - pUnmanagedArg;
             // generate the unmanaged argument signature to show them in the error message if possible
-            StackSString<EncodingASCII> ssUnmanagedType(pUnmanagedArg, (COUNT_T)len);
+            StackEString<EncodingASCII> ssUnmanagedType(pUnmanagedArg, (COUNT_T)len);
             const char * pUnManagedType = ssUnmanagedType;
 
             if (expectedType != NULL)

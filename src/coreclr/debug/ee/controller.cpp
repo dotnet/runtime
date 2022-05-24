@@ -7386,7 +7386,7 @@ void DebuggerStepper::TriggerMethodEnter(Thread * thread,
         // at native offset 0 (before the prolog) and before we get the TME. That means if
         // we do get the TME, then there was no stub-manager to find us.
 
-        SString<EncodingUTF8> sLog;
+        EString<EncodingUTF8> sLog;
         StubManager::DbgGetLog(&sLog);
 
         // Assert b/c the Stub-manager should have caught us first.

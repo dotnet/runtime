@@ -1229,7 +1229,7 @@ bool EEDbgInterfaceImpl::TraceFrame(Thread *thread,
     {
         SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE;
         FAULT_NOT_FATAL();
-        SString<EncodingUTF8> buffer;
+        EString<EncodingUTF8> buffer;
         StubManager::DbgWriteLog("  td=%s\n", trace->DbgToString(buffer));
     }
     else
@@ -1275,7 +1275,7 @@ bool EEDbgInterfaceImpl::TraceManager(Thread *thread,
     {
         // Should never be on helper thread
         FAULT_NOT_FATAL();
-        SString<EncodingUTF8> buffer;
+        EString<EncodingUTF8> buffer;
         StubManager::DbgWriteLog("  td=%s\n", trace->DbgToString(buffer));
     }
     else

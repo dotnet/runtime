@@ -158,9 +158,9 @@ static int UtilMessageBoxNonLocalizedVA(
 
     EX_TRY
     {
-        StackSString<EncodingUnicode> formattedMessage;
-        StackSString<EncodingUnicode> formattedTitle;
-        SString<EncodingUnicode> details(lpDetails);
+        StackSString formattedMessage;
+        StackSString formattedTitle;
+        SString details(lpDetails);
         PathString fileName;
         BOOL fDisplayMsgBox = TRUE;
 
@@ -189,7 +189,7 @@ static int UtilMessageBoxNonLocalizedVA(
         //
         // We may still however attempt to display the message box if the MB_SERVICE_NOTIFICATION
         // message box style was specified.
-        StackSString<EncodingUnicode> message;
+        StackSString message;
 
         message.Printf(W(".NET Runtime version : %s - "), CLR_PRODUCT_VERSION_L);
         if (lpTitle)
@@ -266,8 +266,8 @@ int UtilMessageBoxVA(
     }
     CONTRACTL_END;
 
-    SString<EncodingUnicode> text;
-    SString<EncodingUnicode> title;
+    SString text;
+    SString title;
     int result = IDCANCEL;
 
     EX_TRY

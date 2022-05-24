@@ -80,22 +80,22 @@ namespace BINDER_SPACE
                         ));
 
         {
-            StackSString<EncodingUTF8> culture(amd.szLocale);
-            SString<EncodingUnicode> cultureUnicode;
+            StackEString<EncodingUTF8> culture(amd.szLocale);
+            SString cultureUnicode;
             culture.ConvertToUnicode(cultureUnicode);
 
-            SString<EncodingUnicode>::CIterator itr = cultureUnicode.Begin();
+            SString::CIterator itr = cultureUnicode.Begin();
             if (cultureUnicode.Find(itr, L';'))
             {
-                cultureUnicode = SString<EncodingUnicode>(cultureUnicode, cultureUnicode.Begin(), itr-1);
+                cultureUnicode = SString(cultureUnicode, cultureUnicode.Begin(), itr-1);
             }
 
             SetCulture(cultureUnicode);
         }
 
         {
-            StackSString<EncodingUTF8> assemblyName(pAssemblyName);
-            SString<EncodingUnicode> assemblyNameUnicode;
+            StackEString<EncodingUTF8> assemblyName(pAssemblyName);
+            SString assemblyNameUnicode;
             assemblyName.ConvertToUnicode(assemblyNameUnicode);
 
             COUNT_T assemblyNameLength = assemblyName.GetCount();
@@ -352,7 +352,7 @@ namespace BINDER_SPACE
         return fEquals;
     }
 
-    void AssemblyName::GetDisplayName(SString<EncodingUnicode> &displayName,
+    void AssemblyName::GetDisplayName(SString &displayName,
                                       DWORD       dwIncludeFlags)
     {
         DWORD dwUseIdentityFlags = m_dwIdentityFlags;
@@ -378,9 +378,9 @@ namespace BINDER_SPACE
         TextualIdentityParser::ToString(this, dwUseIdentityFlags, displayName);
     }
 
-    SString<EncodingUnicode> &AssemblyName::GetNormalizedCulture()
+    SString &AssemblyName::GetNormalizedCulture()
     {
-        SString<EncodingUnicode> &culture = GetCulture();
+        SString &culture = GetCulture();
 
         if (culture.IsEmpty())
         {

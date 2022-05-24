@@ -114,12 +114,12 @@ public:
     // ------------------------------------------------------------
 
     // Path is the file path to the file; empty if not a file
-    const SString<EncodingUnicode>& GetPath();
-    const SString<EncodingUnicode>& GetIdentityPath();
+    const SString& GetPath();
+    const SString& GetIdentityPath();
 
 #ifdef DACCESS_COMPILE
     // This is the metadata module name. Used as a hint as file name.
-    const SString<EncodingUnicode> &GetModuleFileNameHint();
+    const SString &GetModuleFileNameHint();
 #endif // DACCESS_COMPILE
 
     LPCWSTR GetPathForErrorMessages();
@@ -127,13 +127,13 @@ public:
     // Codebase is the fusion codebase or path for the assembly.  It is in URL format.
     // Note this may be obtained from the parent PEAssembly if we don't have a path or fusion
     // assembly.
-    BOOL GetCodeBase(SString<EncodingUnicode>& result);
+    BOOL GetCodeBase(SString& result);
 
     // Full name is the most descriptive name available (path, codebase, or name as appropriate)
-    void GetPathOrCodeBase(SString<EncodingUnicode>& result);
+    void GetPathOrCodeBase(SString& result);
 
     // Display name is the fusion binding name for an assembly
-    void GetDisplayName(SString<EncodingUnicode>& result, DWORD flags = 0);
+    void GetDisplayName(SString& result, DWORD flags = 0);
 
 #ifdef LOGGING
     // This is useful for log messages
@@ -350,9 +350,9 @@ public:
       // Utility functions
       // ------------------------------------------------------------
 
-      static void PathToUrl(SString<EncodingUnicode>& string);
-      static void UrlToPath(SString<EncodingUnicode>& string);
-      static BOOL FindLastPathSeparator(const SString<EncodingUnicode>& path, SString<EncodingUnicode>::Iterator& i);
+      static void PathToUrl(SString& string);
+      static void UrlToPath(SString& string);
+      static BOOL FindLastPathSeparator(const SString& path, SString::Iterator& i);
 
 private:
     // ------------------------------------------------------------
@@ -394,7 +394,7 @@ private:
 
 #ifdef _DEBUG
     LPCWSTR                 m_pDebugName;
-    SString<EncodingUnicode> m_debugName;
+    SString m_debugName;
 #endif
 
     // IL image, NULL if dynamic

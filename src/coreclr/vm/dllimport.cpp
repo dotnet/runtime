@@ -925,10 +925,10 @@ public:
     }
 
     //
-    // Truncates a SString by first converting it to unicode and truncate it
+    // Truncates a EString by first converting it to unicode and truncate it
     // if it is larger than size. "..." will be appended if it is truncated.
     //
-    void TruncateUnicodeString(SString<EncodingUnicode> &string, COUNT_T bufSize)
+    void TruncateUnicodeString(SString &string, COUNT_T bufSize)
     {
         if ((string.GetCount() + 1) * sizeof(WCHAR) > bufSize)
         {
@@ -957,8 +957,8 @@ public:
         // Interop Method Information
         //
         MethodDesc *pTargetMD = m_slIL.GetTargetMD();
-        SString<EncodingUnicode> strNamespaceOrClassName;
-        SString<EncodingUTF8> strMethodName, strMethodSignature;
+        SString strNamespaceOrClassName;
+        EString<EncodingUTF8> strMethodName, strMethodSignature;
         UINT64 uModuleId = 0;
 
         if (pTargetMD)
@@ -970,8 +970,8 @@ public:
         //
         // Stub Method Signature
         //
-        SString<EncodingUnicode> stubNamespaceOrClassName;
-        SString<EncodingUTF8> stubMethodName, stubMethodSignature;
+        SString stubNamespaceOrClassName;
+        EString<EncodingUTF8> stubMethodName, stubMethodSignature;
         pStubMD->GetMethodInfoWithNewSig(stubNamespaceOrClassName, stubMethodName, stubMethodSignature);
 
         IMDInternalImport *pStubImport = pStubMD->GetModule()->GetMDImport();
@@ -979,12 +979,12 @@ public:
         CQuickBytes qbLocal;
         PrettyPrintSig(pbLocalSig, (DWORD)cbSig, NULL, &qbLocal,  pStubImport, NULL);
 
-        SString<EncodingUTF8> strLocalSig((LPCUTF8)qbLocal.Ptr());
+        EString<EncodingUTF8> strLocalSig((LPCUTF8)qbLocal.Ptr());
 
         //
         // Native Signature
         //
-        SString<EncodingUTF8> strNativeSignature {};
+        EString<EncodingUTF8> strNativeSignature {};
         if (m_dwStubFlags & NDIRECTSTUB_FL_REVERSE_INTEROP)
         {
             // Reverse interop. Use StubSignature
@@ -1006,12 +1006,12 @@ public:
         //
         // Dump IL stub code
         //
-        SString<EncodingUTF8> strILStubCode;
+        EString<EncodingUTF8> strILStubCode;
         strILStubCode.Preallocate(4096);    // Preallocate 4K bytes to avoid unnecessary growth
 
-        SString<EncodingUnicode> codeSizeFormat;
+        SString codeSizeFormat;
         LoadResource(codeSizeFormat, CCompRC::Optional, IDS_EE_INTEROP_CODE_SIZE_COMMENT);
-        SString<EncodingUTF8> codeSizeFormatUTF8;
+        EString<EncodingUTF8> codeSizeFormatUTF8;
         codeSizeFormat.ConvertToUTF8(codeSizeFormatUTF8);
         strILStubCode.AppendPrintf("// %s\t%d (0x%04x)\n", (LPCUTF8)codeSizeFormatUTF8, cbCode, cbCode);
         strILStubCode.AppendPrintf(".maxstack %d \n", maxStack);
@@ -1067,7 +1067,7 @@ public:
         // Truncate string fields. Make sure the whole event is less than 64KB
         //
 
-        SString<EncodingUnicode> strMethodNameW, strMethodSignatureW, strNativeSignatureW, stubMethodSignatureW, strILStubCodeW;
+        SString strMethodNameW, strMethodSignatureW, strNativeSignatureW, stubMethodSignatureW, strILStubCodeW;
         strMethodName.ConvertToUnicode(strMethodNameW);
         strMethodSignature.ConvertToUnicode(strMethodSignatureW);
         strNativeSignature.ConvertToUnicode(strNativeSignatureW);
@@ -4547,10 +4547,10 @@ HRESULT FindPredefinedILStubMethod(MethodDesc *pTargetMD, DWORD dwStubFlags, Met
     ULONG cbMethodName;
     IfFailRet(parser.GetNonEmptyString(&pMethodName, &cbMethodName));
 
-    StackSString<EncodingUnicode> typeName;
-    SString<EncodingUTF8>(pTypeName, cbTypeName).ConvertToUnicode(typeName);
-    StackSString<EncodingUnicode> methodName;
-    SString<EncodingUTF8>(pMethodName, cbMethodName).ConvertToUnicode(methodName);
+    StackSString typeName;
+    EString<EncodingUTF8>(pTypeName, cbTypeName).ConvertToUnicode(typeName);
+    StackSString methodName;
+    EString<EncodingUTF8>(pMethodName, cbMethodName).ConvertToUnicode(methodName);
 
     //
     // Retrieve the type
@@ -4560,10 +4560,10 @@ HRESULT FindPredefinedILStubMethod(MethodDesc *pTargetMD, DWORD dwStubFlags, Met
 
     MethodTable *pStubClassMT = stubClassType.AsMethodTable();
 
-    StackSString<EncodingUnicode> stubClassName;
+    StackSString stubClassName;
     pStubClassMT->_GetFullyQualifiedNameForClassNestedAware(stubClassName);
 
-    StackSString<EncodingUnicode> targetInterfaceName;
+    StackSString targetInterfaceName;
     pTargetMT->_GetFullyQualifiedNameForClassNestedAware(targetInterfaceName);
 
     // Restrict to same assembly only to reduce test cost
@@ -4679,10 +4679,10 @@ HRESULT FindPredefinedILStubMethod(MethodDesc *pTargetMD, DWORD dwStubFlags, Met
 
             // Unfortunately the PrettyPrintSig doesn't print 'static' when the function is static
             // so we need to append 'static' here. No need to localize
-            SString<EncodingUTF8> signature((LPCUTF8)"static ");
+            EString<EncodingUTF8> signature((LPCUTF8)"static ");
             signature.Append((LPCUTF8) qbSig.Ptr());
 
-            SString<EncodingUnicode> sigW;
+            SString sigW;
             signature.ConvertToUnicode(sigW);
 
             COMPlusThrow(
@@ -4959,7 +4959,7 @@ namespace
                             if (SF_IsStructMarshalStub(dwStubFlags))
                             {
                                 _ASSERTE(pSigDesc->m_pMT != nullptr);
-                                StackSString<EncodingUnicode> strTypeName;
+                                StackSString strTypeName;
                                 TypeString::AppendType(strTypeName, TypeHandle(pSigDesc->m_pMT));
                                 COMPlusThrow(kTypeLoadException, IDS_CANNOT_MARSHAL_RECURSIVE_DEF, (LPCWSTR)strTypeName);
                             }
@@ -4994,7 +4994,7 @@ namespace
                                     if (SF_IsStructMarshalStub(dwStubFlags))
                                     {
                                         _ASSERTE(pSigDesc->m_pMT != nullptr);
-                                        StackSString<EncodingUnicode> strTypeName;
+                                        StackSString strTypeName;
                                         TypeString::AppendType(strTypeName, TypeHandle(pSigDesc->m_pMT));
                                         COMPlusThrow(kTypeLoadException, IDS_CANNOT_MARSHAL_RECURSIVE_DEF, (LPCWSTR)strTypeName);
                                     }

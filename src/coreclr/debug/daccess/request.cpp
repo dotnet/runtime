@@ -1364,7 +1364,7 @@ ClrDataAccess::GetMethodDescName(CLRDATA_ADDRESS methodDesc, unsigned int count,
     SOSDacEnter();
 
     MethodDesc* pMD = PTR_MethodDesc(TO_TADDR(methodDesc));
-    StackSString<EncodingUnicode> str;
+    StackSString str;
 
     EX_TRY
     {
@@ -1547,7 +1547,7 @@ ClrDataAccess::GetObjectClassName(CLRDATA_ADDRESS obj, unsigned int count, _Inou
         }
         else
         {
-            StackSString<EncodingUnicode> s;
+            StackSString s;
             TypeString::AppendType(s, TypeHandle(mt), TypeString::FormatNamespace|TypeString::FormatFullInst);
             const WCHAR *val = (LPCWSTR)s;
 
@@ -1811,7 +1811,7 @@ ClrDataAccess::GetMethodTableName(CLRDATA_ADDRESS mt, unsigned int count, _Inout
         }
         else
         {
-            StackSString<EncodingUnicode> s;
+            StackSString s;
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
             EX_TRY
             {
@@ -2093,7 +2093,7 @@ ClrDataAccess::GetPEFileName(CLRDATA_ADDRESS addr, unsigned int count, _Inout_up
     }
     else if (!pPEAssembly->IsDynamic())
     {
-        StackSString<EncodingUnicode> displayName;
+        StackSString displayName;
         pPEAssembly->GetDisplayName(displayName, 0);
 
         if (displayName.IsEmpty())
@@ -2657,7 +2657,7 @@ ClrDataAccess::GetAssemblyName(CLRDATA_ADDRESS assembly, unsigned int count, _In
     }
     else if (!pAssembly->GetPEAssembly()->IsDynamic())
     {
-        StackSString<EncodingUnicode> displayName;
+        StackSString displayName;
         pAssembly->GetPEAssembly()->GetDisplayName(displayName, 0);
 
         const WCHAR *val = (LPCWSTR)displayName;

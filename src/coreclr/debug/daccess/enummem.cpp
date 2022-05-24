@@ -373,7 +373,7 @@ HRESULT ClrDataAccess::DumpManagedObject(CLRDataEnumMemoryFlags flags, OBJECTREF
             {
                 pMethodTable->EnumMemoryRegions(flags);
 
-                StackSString<EncodingUnicode> s;
+                StackSString s;
 
                 // This might look odd. We are not using variable s after forming it.
                 // That is because our DAC inspecting API is using TypeString to form
@@ -458,7 +458,7 @@ HRESULT ClrDataAccess::DumpManagedExcepObject(CLRDataEnumMemoryFlags flags, OBJE
     EX_TRY
     {
         MethodTable * pMethodTable = objRef->GetGCSafeMethodTable();
-        StackSString<EncodingUnicode> s;
+        StackSString s;
         TypeString::AppendType(s, TypeHandle(pMethodTable), TypeString::FormatNamespace|TypeString::FormatFullInst);
         DacMdCacheAddEEName(dac_cast<TADDR>(pMethodTable), s);
     }
@@ -569,8 +569,8 @@ HRESULT ClrDataAccess::DumpManagedStackTraceStringObject(CLRDataEnumMemoryFlags 
 
     if (flags == CLRDATA_ENUM_MEM_TRIAGE)
     {
-        // StringObject::GetSString does not support DAC, use GetBuffer/GetStringLength
-        SString<EncodingUnicode> stackTrace(dac_cast<PTR_WSTR>((TADDR)orefStackTrace->GetBuffer()), orefStackTrace->GetStringLength());
+        // StringObject::GetEString does not support DAC, use GetBuffer/GetStringLength
+        SString stackTrace(dac_cast<PTR_WSTR>((TADDR)orefStackTrace->GetBuffer()), orefStackTrace->GetStringLength());
 
         StripFileInfoFromStackTrace(stackTrace);
 

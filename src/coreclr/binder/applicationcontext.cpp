@@ -78,9 +78,9 @@ namespace BINDER_SPACE
         return hr;
     }
 
-    HRESULT ApplicationContext::SetupBindingPaths(SString<EncodingUnicode> &sTrustedPlatformAssemblies,
-                                                  SString<EncodingUnicode> &sPlatformResourceRoots,
-                                                  SString<EncodingUnicode> &sAppPaths,
+    HRESULT ApplicationContext::SetupBindingPaths(SString &sTrustedPlatformAssemblies,
+                                                  SString &sPlatformResourceRoots,
+                                                  SString &sAppPaths,
                                                   BOOL     fAcquireLock)
     {
         HRESULT hr = S_OK;
@@ -96,10 +96,10 @@ namespace BINDER_SPACE
         //
         m_pTrustedPlatformAssemblyMap = new SimpleNameToFileNameMap();
 
-        for (SString<EncodingUnicode>::Iterator i = sTrustedPlatformAssemblies.Begin(); i != sTrustedPlatformAssemblies.End(); )
+        for (SString::Iterator i = sTrustedPlatformAssemblies.Begin(); i != sTrustedPlatformAssemblies.End(); )
         {
-            SString<EncodingUnicode> fileName;
-            SString<EncodingUnicode> simpleName;
+            SString fileName;
+            SString simpleName;
             bool isNativeImage = false;
             HRESULT pathResult = S_OK;
             IF_FAIL_GO(pathResult = GetNextTPAPath(sTrustedPlatformAssemblies, i, /*dllOnly*/ false, fileName, simpleName, isNativeImage));
@@ -166,9 +166,9 @@ namespace BINDER_SPACE
         //
         // Parse PlatformResourceRoots
         //
-        for (SString<EncodingUnicode>::Iterator i = sPlatformResourceRoots.Begin(); i != sPlatformResourceRoots.End(); )
+        for (SString::Iterator i = sPlatformResourceRoots.Begin(); i != sPlatformResourceRoots.End(); )
         {
-            SString<EncodingUnicode> pathName;
+            SString pathName;
             HRESULT pathResult = S_OK;
 
             IF_FAIL_GO(pathResult = GetNextPath(sPlatformResourceRoots, i, pathName));
@@ -188,9 +188,9 @@ namespace BINDER_SPACE
         //
         // Parse AppPaths
         //
-        for (SString<EncodingUnicode>::Iterator i = sAppPaths.Begin(); i != sAppPaths.End(); )
+        for (SString::Iterator i = sAppPaths.Begin(); i != sAppPaths.End(); )
         {
-            SString<EncodingUnicode> pathName;
+            SString pathName;
             HRESULT pathResult = S_OK;
 
             IF_FAIL_GO(pathResult = GetNextPath(sAppPaths, i, pathName));

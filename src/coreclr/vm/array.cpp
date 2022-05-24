@@ -399,7 +399,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
         // The only way for dwComponentSize to be large is to be part of a value class. If this changes
         // then the check will need to be moved outside valueclass check.
         if(dwComponentSize > MAX_SIZE_FOR_VALUECLASS_IN_ARRAY) {
-            StackSString<EncodingUnicode> ssElemName;
+            StackSString ssElemName;
             elemTypeHnd.GetName(ssElemName);
             MAKE_UTF8PTR_FROMWIDE(szElemName, ssElemName);
             elemTypeHnd.GetAssembly()->ThrowTypeLoadException(szElemName, IDS_CLASSLOAD_VALUECLASSTOOLARGE);
@@ -507,7 +507,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     }
 
 #ifdef _DEBUG
-    StackSString<EncodingUnicode> debugName;
+    StackSString debugName;
     TypeString::AppendType(debugName, TypeHandle(pMT));
     MAKE_UTF8PTR_FROMWIDE(pDebugNameUTF8, debugName);
     S_SIZE_T safeLen = S_SIZE_T(strlen(pDebugNameUTF8))+S_SIZE_T(1);
@@ -652,7 +652,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
 
                 unsigned short NumPtrs = (unsigned short) (numPtrsInBytes / TARGET_POINTER_SIZE);
                 if(skip > MAX_SIZE_FOR_VALUECLASS_IN_ARRAY || numPtrsInBytes > MAX_PTRS_FOR_VALUECLASSS_IN_ARRAY) {
-                    StackSString<EncodingUnicode> ssElemName;
+                    StackSString ssElemName;
                     elemTypeHnd.GetName(ssElemName);
 
                     MAKE_UTF8PTR_FROMWIDE(scratch, ssElemName);

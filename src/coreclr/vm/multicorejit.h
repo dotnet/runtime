@@ -205,7 +205,7 @@ private:
                                                        // We're just afraid of keeping pointer to player
 
     MulticoreJitRecorder  *   m_pMulticoreJitRecorder;   // pointer to current recorder
-    SString<EncodingUnicode> m_profileRoot;           // profile root string
+    SString m_profileRoot;           // profile root string
     LONG                      m_fSetProfileRootCalled;   // SetProfileRoot has been called
     LONG                      m_fAutoStartCalled;
     bool                      m_fRecorderActive;         // Manager open for recording/event, turned on when initialized properly, turned off when at full capacity

@@ -21,7 +21,7 @@
 //
 // TypeName
 //
-SString<EncodingUnicode>* TypeName::ToString(SString<EncodingUnicode>* pBuf, BOOL bAssemblySpec, BOOL bSignature, BOOL bGenericArguments)
+SString* TypeName::ToString(SString* pBuf, BOOL bAssemblySpec, BOOL bSignature, BOOL bGenericArguments)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -129,8 +129,8 @@ extern "C" void QCALLTYPE TypeName_CreateTypeNameParser(LPCWSTR wszTypeName, QCa
     {
         if (throwOnError)
         {
-            StackSString<EncodingUnicode> buf;
-            StackSString<EncodingUnicode> msg(W("typeName@"));
+            StackSString buf;
+            StackSString msg(W("typeName@"));
             COUNT_T size = buf.GetAllocation();
             _itow_s(error, buf.OpenBuffer(size), size, /*radix*/10);
             buf.CloseBuffer();
@@ -171,7 +171,7 @@ extern "C" void QCALLTYPE TypeName_GetNames(TypeName * pTypeName, QCall::ObjectH
 
     BEGIN_QCALL;
 
-    SArray<SString<EncodingUnicode>*> names = pTypeName->GetNames();
+    SArray<SString*> names = pTypeName->GetNames();
     COUNT_T count = names.GetCount();
 
     GCX_COOP();
@@ -366,7 +366,7 @@ TypeName::TypeNameParser::TypeNameTokens TypeName::TypeNameParser::LexAToken(BOO
     return TypeNameIdentifier;
 }
 
-BOOL TypeName::TypeNameParser::GetIdentifier(SString<EncodingUnicode>* sszId, TypeName::TypeNameParser::TypeNameIdentifiers identifierType)
+BOOL TypeName::TypeNameParser::GetIdentifier(SString* sszId, TypeName::TypeNameParser::TypeNameIdentifiers identifierType)
 {
     CONTRACTL
     {
@@ -807,7 +807,7 @@ TypeHandle TypeName::GetTypeUsingCASearchRules(LPCUTF8 szTypeName, Assembly *pRe
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_FAULT;
 
-    StackSString<EncodingUTF8> sszAssemblyQualifiedName(szTypeName);
+    StackEString<EncodingUTF8> sszAssemblyQualifiedName(szTypeName);
     MAKE_WIDEPTR_FROMUTF8(wszAssemblyQualifiedName, szTypeName);
     return GetTypeUsingCASearchRules(wszAssemblyQualifiedName, pRequestingAssembly, pfNameIsAsmQualified, bDoVisibilityChecks);
 }
@@ -839,8 +839,8 @@ TypeHandle TypeName::GetTypeUsingCASearchRules(LPCWSTR szTypeName, Assembly *pRe
 
     if (error != (DWORD)-1)
     {
-        StackSString<EncodingUnicode> buf;
-        StackSString<EncodingUnicode> msg(W("typeName@"));
+        StackSString buf;
+        StackSString msg(W("typeName@"));
         COUNT_T size = buf.GetAllocation();
         _itow_s(error,buf.OpenBuffer(size),size,10);
         buf.CloseBuffer();
@@ -926,8 +926,8 @@ TypeHandle TypeName::GetTypeUsingCASearchRules(LPCWSTR szTypeName, Assembly *pRe
         if (!bThrowIfNotFound)
             return TypeHandle();
 
-        StackSString<EncodingUnicode> buf;
-        StackSString<EncodingUnicode> msg(W("typeName@"));
+        StackSString buf;
+        StackSString msg(W("typeName@"));
         COUNT_T size = buf.GetAllocation();
         _itow_s(error, buf.OpenBuffer(size), size, /*radix*/10);
         buf.CloseBuffer();
@@ -956,8 +956,8 @@ TypeHandle TypeName::GetTypeUsingCASearchRules(LPCWSTR szTypeName, Assembly *pRe
             if (!bThrowIfNotFound)
                 return TypeHandle();
 
-            StackSString<EncodingUnicode> buf;
-            StackSString<EncodingUnicode> msg(W("typeName@"));
+            StackSString buf;
+            StackSString msg(W("typeName@"));
             COUNT_T size = buf.GetAllocation();
             _itow_s(error-1,buf.OpenBuffer(size),size,10);
             buf.CloseBuffer();
@@ -1011,8 +1011,8 @@ TypeHandle TypeName::GetTypeUsingCASearchRules(LPCWSTR szTypeName, Assembly *pRe
 
     if (error != (DWORD)-1)
     {
-        StackSString<EncodingUnicode> buf;
-        StackSString<EncodingUnicode> msg(W("typeName@"));
+        StackSString buf;
+        StackSString msg(W("typeName@"));
         COUNT_T size = buf.GetAllocation();
         _itow_s(error,buf.OpenBuffer(size),size,10);
         buf.CloseBuffer();
@@ -1144,7 +1144,7 @@ TypeHandle TypeName::GetTypeFromAsm()
                 for (COUNT_T i = 0; i < GetNames().GetCount(); i ++)
                     tnb.AddName(*(GetNames()[i]));
 
-                SString<EncodingUTF8> bufFullName;
+                EString<EncodingUTF8> bufFullName;
                 tnb.GetString()->ConvertToUTF8(bufFullName);
                 DomainAssembly* pDomainAssembly = pDomain->RaiseTypeResolveEventThrowing(pRequestingAssembly?pRequestingAssembly->GetDomainAssembly():NULL, bufFullName, pAsmRef);
                 if (pDomainAssembly)
@@ -1230,7 +1230,7 @@ TypeHandle TypeName::GetTypeFromAsm()
 
     if (th.IsNull() && bThrowIfNotFound)
     {
-        StackSString<EncodingUnicode> buf;
+        StackSString buf;
         LPCWSTR wszName = *ToString(&buf);
         MAKE_UTF8PTR_FROMWIDE(szName, wszName);
 
@@ -1274,7 +1274,7 @@ TypeName::GetTypeHaveAssemblyHelper(
     WRAPPER_NO_CONTRACT;
 
     TypeHandle th = TypeHandle();
-    SArray<SString<EncodingUnicode> *> & names = GetNames();
+    SArray<SString *> & names = GetNames();
     Module *      pManifestModule = pAssembly->GetModule();
     Module *      pLookOnlyInModule = NULL;
     ClassLoader * pClassLoader = pAssembly->GetLoader();
@@ -1299,13 +1299,13 @@ TypeName::GetTypeHaveAssemblyHelper(
         for (COUNT_T i = 0; i < names.GetCount(); i ++)
         {
             // each extra name represents one more level of nesting
-            StackSString<EncodingUnicode> name(*(names[i]));
+            StackSString name(*(names[i]));
 
             // The type name is expected to be lower-cased by the caller for case-insensitive lookups
             if (bIgnoreCase)
                 name.LowerCase();
 
-            StackSString<EncodingUTF8> buffer;
+            StackEString<EncodingUTF8> buffer;
             name.ConvertToUTF8(buffer);
             typeName.SetName(buffer);
 
@@ -1393,7 +1393,7 @@ TypeName::GetTypeHaveAssemblyHelper(
 
 
 DomainAssembly * LoadDomainAssembly(
-    SString<EncodingUnicode> *  psszAssemblySpec,
+    SString *  psszAssemblySpec,
     Assembly * pRequestingAssembly,
     AssemblyBinder * pBinder,
     BOOL       bThrowIfNotFound)
@@ -1410,7 +1410,7 @@ DomainAssembly * LoadDomainAssembly(
     AssemblySpec spec;
     DomainAssembly *pDomainAssembly = NULL;
 
-    StackSString<EncodingUTF8> ssAssemblyName;
+    StackEString<EncodingUTF8> ssAssemblyName;
     psszAssemblySpec->ConvertToUTF8(ssAssemblyName);
     spec.Init(ssAssemblyName);
 

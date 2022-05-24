@@ -1368,9 +1368,9 @@ ep_rt_method_get_full_name (
 	bool result = true;
 	EX_TRY
 	{
-		SString<EncodingUnicode> method_name;
+		SString method_name;
 		TypeString::AppendMethodInternal (method_name, method, TypeString::FormatNamespace | TypeString::FormatSignature);
-		SString<EncodingUTF8> conversion(method_name.MoveToUTF8());
+		EString<EncodingUTF8> conversion(method_name.MoveToUTF8());
 		const ep_char8_t *method_name_utf8 = conversion;
 		if (method_name_utf8) {
 			size_t method_name_utf8_len = strlen (method_name_utf8) + 1;

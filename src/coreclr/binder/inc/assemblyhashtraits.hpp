@@ -29,7 +29,7 @@ namespace BINDER_SPACE
 
         typedef AssemblyName* key_t;
 
-        // GetKey, Equals and Hash can throw due to SString
+        // GetKey, Equals and Hash can throw due to EString
         static const bool s_NoThrow = false;
 
         static key_t GetKey(element_t pAssemblyEntry)

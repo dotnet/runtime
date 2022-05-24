@@ -27,7 +27,7 @@
 // stack preallocation size.
 //
 // SBuffer is "subclassable" to add content typeing to the buffer. See SArray and
-// SString for examples.
+// EString for examples.
 // --------------------------------------------------------------------------------
 
 
@@ -225,7 +225,7 @@ class SBuffer
     operator const void *() const;
     operator const BYTE *() const;
 
-    // To write directly to the SString's underlying buffer:
+    // To write directly to the EString's underlying buffer:
     // 1) Call OpenRawBuffer() and pass it the count of bytes
     // you need.
     // 2) That returns a pointer to the raw buffer which you can write to.
@@ -297,7 +297,7 @@ class SBuffer
 
     //--------------------------------------------------------------------
     // We define some extra flags and fields for subclasses (these are specifically
-    // designed for SString, but use otherwise if desired.)
+    // designed for EString, but use otherwise if desired.)
     //--------------------------------------------------------------------
 
     BOOL IsFlag1() const;

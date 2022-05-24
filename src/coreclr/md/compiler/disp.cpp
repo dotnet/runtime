@@ -63,7 +63,7 @@ Disp::DefineScope(
 {
 #ifdef FEATURE_METADATA_EMIT
     HRESULT     hr = S_OK;
-    SString<EncodingUnicode> szFileName(W("file:"), shared_data_t {});
+    SString szFileName(SString::Literal, W("file:"));
     PathString szFileNameSuffix;
     BEGIN_ENTRYPOINT_NOTHROW;
 

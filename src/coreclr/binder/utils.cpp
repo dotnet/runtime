@@ -32,11 +32,11 @@ namespace BINDER_SPACE
         }
     }
 
-    void CombinePath(const SString<EncodingUnicode> &pathA,
-                     const SString<EncodingUnicode> &pathB,
-                     SString<EncodingUnicode> &combinedPath)
+    void CombinePath(const SString &pathA,
+                     const SString &pathB,
+                     SString &combinedPath)
     {
-        SString<EncodingUnicode> platformPathSeparator(SharedData, GetPlatformPathSeparator());
+        SString platformPathSeparator(SString::Literal, GetPlatformPathSeparator());
         combinedPath.Set(pathA);
 
         if (!combinedPath.IsEmpty() && !combinedPath.EndsWith(platformPathSeparator))
@@ -76,7 +76,7 @@ namespace BINDER_SPACE
         return RuntimeFileNotFound(hr);
     }
 
-    HRESULT GetNextPath(const SString<EncodingUnicode>& paths, SString<EncodingUnicode>::CIterator& startPos, SString<EncodingUnicode>& outPath)
+    HRESULT GetNextPath(const SString& paths, SString::CIterator& startPos, SString& outPath)
     {
         HRESULT hr = S_OK;
 
@@ -98,8 +98,8 @@ namespace BINDER_SPACE
             wrappedWithQuotes = true;
         }
 
-        SString<EncodingUnicode>::CIterator iEnd = startPos;      // Where current path ends
-        SString<EncodingUnicode>::CIterator iNext;                // Where next path starts
+        SString::CIterator iEnd = startPos;      // Where current path ends
+        SString::CIterator iNext;                // Where next path starts
         if (wrappedWithQuotes)
         {
             if (paths.Find(iEnd, W('\"')))
@@ -144,7 +144,7 @@ namespace BINDER_SPACE
         return hr;
     }
 
-    HRESULT GetNextTPAPath(const SString<EncodingUnicode>& paths, SString<EncodingUnicode>::CIterator& startPos, bool dllOnly, SString<EncodingUnicode>& outPath, SString<EncodingUnicode>& simpleName, bool& isNativeImage)
+    HRESULT GetNextTPAPath(const SString& paths, SString::CIterator& startPos, bool dllOnly, SString& outPath, SString& simpleName, bool& isNativeImage)
     {
         HRESULT hr = S_OK;
         isNativeImage = false;
@@ -163,7 +163,7 @@ namespace BINDER_SPACE
 
         {
             // Find the beginning of the simple name
-            SString<EncodingUnicode>::CIterator iSimpleNameStart = outPath.End();
+            SString::CIterator iSimpleNameStart = outPath.End();
 
             if (!outPath.FindBack(iSimpleNameStart, DIRECTORY_SEPARATOR_CHAR_W))
             {
@@ -180,10 +180,10 @@ namespace BINDER_SPACE
                 GO_WITH_HRESULT(E_INVALIDARG);
             }
 
-            const SString<EncodingUnicode> sNiDll(SharedData, W(".ni.dll"));
-            const SString<EncodingUnicode> sNiExe(SharedData, W(".ni.exe"));
-            const SString<EncodingUnicode> sDll(SharedData, W(".dll"));
-            const SString<EncodingUnicode> sExe(SharedData, W(".exe"));
+            const SString sNiDll(SString::Literal, W(".ni.dll"));
+            const SString sNiExe(SString::Literal, W(".ni.exe"));
+            const SString sDll(SString::Literal, W(".dll"));
+            const SString sExe(SString::Literal, W(".exe"));
 
             if (!dllOnly && (outPath.EndsWithCaseInsensitive(sNiDll) ||
                 outPath.EndsWithCaseInsensitive(sNiExe)))

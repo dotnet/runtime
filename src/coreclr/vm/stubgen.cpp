@@ -24,7 +24,7 @@
 //   ....[.....\xxxxx]..0...  -> ....[xxxxx]..0...
 //       ^     ^        ^
 
-void DumpIL_RemoveFullPath(SString<EncodingUTF8> &strTokenFormatting)
+void DumpIL_RemoveFullPath(EString<EncodingUTF8> &strTokenFormatting)
 {
     STANDARD_VM_CONTRACT;
     if (strTokenFormatting.IsEmpty())
@@ -45,7 +45,7 @@ void DumpIL_RemoveFullPath(SString<EncodingUTF8> &strTokenFormatting)
     }
 }
 
-void ILStubLinker::DumpIL_FormatToken(mdToken token, SString<EncodingUTF8> &strTokenFormatting)
+void ILStubLinker::DumpIL_FormatToken(mdToken token, EString<EncodingUTF8> &strTokenFormatting)
 {
     void* pvLookupRetVal = (void*)POISONC;
     _ASSERTE(strTokenFormatting.IsEmpty());
@@ -58,7 +58,7 @@ void ILStubLinker::DumpIL_FormatToken(mdToken token, SString<EncodingUTF8> &strT
             pvLookupRetVal = pMD;
             CONSISTENCY_CHECK(CheckPointer(pMD));
 
-            StackSString<EncodingUnicode> methodInfo;
+            StackSString methodInfo;
             pMD->GetFullMethodInfo(methodInfo);
             methodInfo.ConvertToUTF8(strTokenFormatting);
         }
@@ -68,7 +68,7 @@ void ILStubLinker::DumpIL_FormatToken(mdToken token, SString<EncodingUTF8> &strT
             pvLookupRetVal = typeHnd.AsPtr();
             CONSISTENCY_CHECK(!typeHnd.IsNull());
 
-            SString<EncodingUnicode> typeName;
+            SString typeName;
             MethodTable *pMT = NULL;
             if (typeHnd.IsTypeDesc())
             {
@@ -93,11 +93,11 @@ void ILStubLinker::DumpIL_FormatToken(mdToken token, SString<EncodingUTF8> &strT
             pvLookupRetVal = pFD;
             CONSISTENCY_CHECK(CheckPointer(pFD));
 
-            SString<EncodingUnicode> typeName;
+            SString typeName;
             TypeString::AppendType(typeName, TypeHandle(pFD->GetApproxEnclosingMethodTable()));
 
-            SString<EncodingUTF8> strFieldName(pFD->GetName());
-            SString<EncodingUTF8> typeNameUTF8;
+            EString<EncodingUTF8> strFieldName(pFD->GetName());
+            EString<EncodingUTF8> typeNameUTF8;
             typeName.ConvertToUTF8(typeNameUTF8);
             strTokenFormatting.Append(typeNameUTF8);
             strTokenFormatting.Append("::");
@@ -450,13 +450,13 @@ ILStubLinker::LogILInstruction(
     bool            isLabeled,
     INT             iCurStack,
     ILInstruction * pInstruction,
-    SString<EncodingUTF8> *       pDumpILStubCode)
+    EString<EncodingUTF8> *       pDumpILStubCode)
 {
     STANDARD_VM_CONTRACT;
     //
     // format label
     //
-    SString<EncodingUTF8> strLabel;
+    EString<EncodingUTF8> strLabel;
 
     if (isLabeled)
     {
@@ -470,11 +470,11 @@ ILStubLinker::LogILInstruction(
     //
     // format opcode
     //
-    SString<EncodingUTF8> strOpcode;
+    EString<EncodingUTF8> strOpcode;
 
     ILCodeStream::ILInstrEnum instr = (ILCodeStream::ILInstrEnum)pInstruction->uInstruction;
     size_t      cbOpcodeName = strlen(s_rgOpcodeNames[instr]);
-    SString<EncodingUTF8> strOpcodeName;
+    EString<EncodingUTF8> strOpcodeName;
     strOpcodeName.Set(s_rgOpcodeNames[instr]);
     // Set the width of the opcode to 15.
     strOpcode.Set("               ");
@@ -485,11 +485,11 @@ ILStubLinker::LogILInstruction(
     //
 
     static const size_t c_cchPreallocateArgument = 512;
-    SString<EncodingUTF8> strArgument;
+    EString<EncodingUTF8> strArgument;
     strArgument.Preallocate(c_cchPreallocateArgument);
 
     static const size_t c_cchPreallocateTokenName = 1024;
-    SString<EncodingUTF8> strTokenName;
+    EString<EncodingUTF8> strTokenName;
     strTokenName.Preallocate(c_cchPreallocateTokenName);
 
     if (ILCodeStream::IsBranchInstruction(instr))
@@ -500,7 +500,7 @@ ILStubLinker::LogILInstruction(
     }
     else if ((ILCodeStream::ILInstrEnum)CEE_NOP == instr)
     {
-        SString<EncodingUTF8> strInstruction;
+        EString<EncodingUTF8> strInstruction;
         strInstruction.Printf("%s", (char *)pInstruction->uArg);
         strArgument.Set(strInstruction);
     }
@@ -566,7 +566,7 @@ ILStubLinker::LogILStubWorker(
     UINT            numInstr,
     size_t *        pcbCode,
     INT *           piCurStack,
-    SString<EncodingUTF8> *       pDumpILStubCode)
+    EString<EncodingUTF8> *       pDumpILStubCode)
 {
     CONTRACTL
     {
@@ -648,7 +648,7 @@ static void LogJitFlags(DWORD facility, DWORD level, CORJIT_FLAGS jitFlags)
     }
 }
 
-void ILStubLinker::LogILStub(CORJIT_FLAGS jitFlags, SString<EncodingUTF8> *pDumpILStubCode)
+void ILStubLinker::LogILStub(CORJIT_FLAGS jitFlags, EString<EncodingUTF8> *pDumpILStubCode)
 {
     CONTRACTL
     {

@@ -62,17 +62,17 @@ void ComClassFactory::ThrowHRMsg(HRESULT hr, DWORD dwMsgResID)
     }
     CONTRACTL_END;
 
-    SString<EncodingUnicode> strMessage;
-    SString<EncodingUnicode> strResource;
+    SString strMessage;
+    SString strResource;
     WCHAR strClsid[39];
-    SString<EncodingUnicode> strHRDescription;
+    SString strHRDescription;
 
     // Obtain the textual representation of the HRESULT.
     StringFromGUID2(m_rclsid, strClsid, sizeof(strClsid) / sizeof(WCHAR));
 
-    SString<EncodingUTF8> strHRHex;
+    EString<EncodingUTF8> strHRHex;
     strHRHex.Printf("%.8x", hr);
-    SString<EncodingUnicode>strHRHexW;
+    SString strHRHexW;
     strHRHex.ConvertToUnicode(strHRHexW);
 
     // Obtain the description of the HRESULT.
@@ -504,17 +504,17 @@ IClassFactory *ComClassFactory::GetIClassFactory()
     // explaining the failure.
     if (FAILED(hr))
     {
-        SString<EncodingUnicode> strMessage;
-        SString<EncodingUnicode> strResource;
+        SString strMessage;
+        SString strResource;
         WCHAR strClsid[39];
-        SString<EncodingUnicode> strHRDescription;
+        SString strHRDescription;
 
         // Obtain the textual representation of the HRESULT.
         StringFromGUID2(m_rclsid, strClsid, sizeof(strClsid) / sizeof(WCHAR));
 
-        SString<EncodingUTF8> strHRHex;
+        EString<EncodingUTF8> strHRHex;
         strHRHex.Printf("%.8x", hr);
-        SString<EncodingUnicode>strHRHexW;
+        SString strHRHexW;
         strHRHex.ConvertToUnicode(strHRHexW);
 
         // Obtain the description of the HRESULT.
@@ -2605,11 +2605,11 @@ void ComObject::ThrowInvalidCastException(OBJECTREF *pObj, MethodTable *pCastToM
     IID *pNativeIID = NULL;
     GUID iid;
 
-    // Use an InlineSString with a size of MAX_CLASSNAME_LENGTH + 1 to prevent
+    // Use an InlineEString with a size of MAX_CLASSNAME_LENGTH + 1 to prevent
     // TypeHandle::GetName from having to allocate a new block of memory. This
     // significantly improves the performance of throwing an InvalidCastException.
-    InlineSString<MAX_CLASSNAME_LENGTH + 1, EncodingUnicode> strComObjClassName;
-    InlineSString<MAX_CLASSNAME_LENGTH + 1, EncodingUnicode> strCastToName;
+    InlineEString<MAX_CLASSNAME_LENGTH + 1, EncodingUnicode> strComObjClassName;
+    InlineEString<MAX_CLASSNAME_LENGTH + 1, EncodingUnicode> strCastToName;
 
     TypeHandle thClass = (*pObj)->GetTypeHandle();
     TypeHandle thCastTo = TypeHandle(pCastToMT);
@@ -2643,7 +2643,7 @@ void ComObject::ThrowInvalidCastException(OBJECTREF *pObj, MethodTable *pCastToM
         StringFromGUID2(iid, strIID, sizeof(strIID) / sizeof(WCHAR));
 
         // Obtain the textual description of the HRESULT.
-        SString<EncodingUnicode> strHRDescription;
+        SString strHRDescription;
         GetHRMsg(hr, strHRDescription);
 
         if (thCastTo.IsComEventItfType())
@@ -2683,7 +2683,7 @@ void ComObject::ThrowInvalidCastException(OBJECTREF *pObj, MethodTable *pCastToM
                 COMPlusThrow(kInvalidCastException, IDS_EE_CANNOTCAST, strComObjClassName, strCastToName);
 
             // Obtain the textual description of the 2nd HRESULT.
-            SString<EncodingUnicode> strHR2Description;
+            SString strHR2Description;
             GetHRMsg(hr2, strHR2Description);
 
             COMPlusThrow(kInvalidCastException, IDS_EE_RCW_INVALIDCAST_MNGSTDITF, strHRDescription, strComObjClassName,

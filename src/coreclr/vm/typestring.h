@@ -33,7 +33,7 @@ class TypeNameBuilder
 {
 private:
     friend class TypeString;
-    friend SString<EncodingUnicode>* TypeName::ToString(SString<EncodingUnicode>*, BOOL, BOOL, BOOL);
+    friend SString* TypeName::ToString(SString*, BOOL, BOOL, BOOL);
     friend TypeHandle TypeName::GetTypeWorker(BOOL, BOOL, Assembly*, BOOL, BOOL, Assembly*,
         AssemblyBinder * pBinder,
         OBJECTREF *);
@@ -99,12 +99,12 @@ public:
     ParseState;
 
 public:
-    TypeNameBuilder(SString<EncodingUnicode>* pStr, ParseState parseState = ParseStateSTART);
+    TypeNameBuilder(SString* pStr, ParseState parseState = ParseStateSTART);
     TypeNameBuilder() { WRAPPER_NO_CONTRACT; m_pStr = &m_str; Clear(); }
     void SetUseAngleBracketsForGenerics(BOOL value) { m_bUseAngleBracketsForGenerics = value; }
     void Append(LPCWSTR pStr) { WRAPPER_NO_CONTRACT; m_pStr->Append(pStr); }
     void Append(WCHAR c) { WRAPPER_NO_CONTRACT; m_pStr->Append(c); }
-    SString<EncodingUnicode>* GetString() { WRAPPER_NO_CONTRACT; return m_pStr; }
+    SString* GetString() { WRAPPER_NO_CONTRACT; return m_pStr; }
 
 private:
     void EscapeName(LPCWSTR szName);
@@ -118,8 +118,8 @@ private:
 
 private:
     ParseState m_parseState;
-    SString<EncodingUnicode>* m_pStr;
-    InlineSString<256, EncodingUnicode> m_str;
+    SString* m_pStr;
+    InlineEString<256, EncodingUnicode> m_str;
     DWORD m_instNesting;
     BOOL m_bFirstInstArg;
     BOOL m_bNestedName;
@@ -163,51 +163,51 @@ public:
 public:
     // Append the name of the type td to the string
     // The following flags in the FormatFlags argument are significant: FormatNamespace
-    static void AppendTypeDef(SString<EncodingUnicode>& tnb, IMDInternalImport *pImport, mdTypeDef td, DWORD format = FormatNamespace);
+    static void AppendTypeDef(SString& tnb, IMDInternalImport *pImport, mdTypeDef td, DWORD format = FormatNamespace);
 
     // Append a square-bracket-enclosed, comma-separated list of n type parameters in inst to the string s
     // and enclose each parameter in square brackets to disambiguate the commas
     // The following flags in the FormatFlags argument are significant: FormatNamespace FormatFullInst FormatAssembly FormatNoVersion
-    static void AppendInst(SString<EncodingUnicode>& s, Instantiation inst, DWORD format = FormatNamespace);
+    static void AppendInst(SString& s, Instantiation inst, DWORD format = FormatNamespace);
 
     // Append a representation of the type t to the string s
     // The following flags in the FormatFlags argument are significant: FormatNamespace FormatFullInst FormatAssembly FormatNoVersion
-    static void AppendType(SString<EncodingUnicode>& s, TypeHandle t, DWORD format = FormatNamespace);
+    static void AppendType(SString& s, TypeHandle t, DWORD format = FormatNamespace);
 
     // Append a representation of the type t to the string s, using the generic
     // instantiation info provided, instead of the instantiation in the TypeHandle.
-    static void AppendType(SString<EncodingUnicode>& s, TypeHandle t, Instantiation typeInstantiation, DWORD format = FormatNamespace);
+    static void AppendType(SString& s, TypeHandle t, Instantiation typeInstantiation, DWORD format = FormatNamespace);
 
-    static void AppendTypeKey(SString<EncodingUnicode>& s, TypeKey *pTypeKey, DWORD format = FormatNamespace);
+    static void AppendTypeKey(SString& s, TypeKey *pTypeKey, DWORD format = FormatNamespace);
 
     // Appends the method name and generic instantiation info.  This might
     // look like "Namespace.ClassName[T].Foo[U, V]()"
-    static void AppendMethod(SString<EncodingUnicode>& s, MethodDesc *pMD, Instantiation typeInstantiation, const DWORD format = FormatNamespace|FormatSignature);
+    static void AppendMethod(SString& s, MethodDesc *pMD, Instantiation typeInstantiation, const DWORD format = FormatNamespace|FormatSignature);
 
     // Append a representation of the method m to the string s
     // The following flags in the FormatFlags argument are significant: FormatNamespace FormatFullInst FormatAssembly FormatSignature  FormatNoVersion
-    static void AppendMethodInternal(SString<EncodingUnicode>& s, MethodDesc *pMD, const DWORD format = FormatNamespace|FormatSignature|FormatStubInfo);
+    static void AppendMethodInternal(SString& s, MethodDesc *pMD, const DWORD format = FormatNamespace|FormatSignature|FormatStubInfo);
 
     // Append the field name and generic instantiation info.
-    static void AppendField(SString<EncodingUnicode>& s, FieldDesc *pFD, Instantiation typeInstantiation, const DWORD format = FormatNamespace);
+    static void AppendField(SString& s, FieldDesc *pFD, Instantiation typeInstantiation, const DWORD format = FormatNamespace);
 #ifdef _DEBUG
     // These versions are NOTHROWS. They are meant for diagnostic purposes only
     // as they may leave "s" in a bad state if there are any problems/exceptions.
-    static void AppendMethodDebug(SString<EncodingUnicode>& s, MethodDesc *pMD);
-    static void AppendTypeDebug(SString<EncodingUnicode>& s, TypeHandle t);
-    static void AppendTypeKeyDebug(SString<EncodingUnicode>& s, TypeKey* pTypeKey);
+    static void AppendMethodDebug(SString& s, MethodDesc *pMD);
+    static void AppendTypeDebug(SString& s, TypeHandle t);
+    static void AppendTypeKeyDebug(SString& s, TypeKey* pTypeKey);
 #endif
 
 private:
     friend class TypeNameBuilder;
-    static void AppendMethodImpl(SString<EncodingUnicode>& s, MethodDesc *pMD, Instantiation typeInstantiation, const DWORD format);
+    static void AppendMethodImpl(SString& s, MethodDesc *pMD, Instantiation typeInstantiation, const DWORD format);
     static void AppendTypeDef(TypeNameBuilder& tnb, IMDInternalImport *pImport, mdTypeDef td, DWORD format = FormatNamespace);
     static void AppendNestedTypeDef(TypeNameBuilder& tnb, IMDInternalImport *pImport, mdTypeDef td, DWORD format = FormatNamespace);
     static void AppendInst(TypeNameBuilder& tnb, Instantiation inst, DWORD format = FormatNamespace);
     static void AppendType(TypeNameBuilder& tnb, TypeHandle t, Instantiation typeInstantiation, DWORD format = FormatNamespace); // ????
     static void AppendTypeKey(TypeNameBuilder& tnb, TypeKey *pTypeKey, DWORD format = FormatNamespace);
     static void AppendParamTypeQualifier(TypeNameBuilder& tnb, CorElementType kind, DWORD rank);
-    static void EscapeSimpleTypeName(SString<EncodingUnicode>* ssTypeName, SString<EncodingUnicode>* ssEscapedTypeName);
+    static void EscapeSimpleTypeName(SString* ssTypeName, SString* ssEscapedTypeName);
     static bool ContainsReservedChar(LPCWSTR pTypeName);
 };
 

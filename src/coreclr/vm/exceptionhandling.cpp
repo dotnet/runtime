@@ -1031,7 +1031,7 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord
             if (IsProcessCorruptedStateException(pExceptionRecord->ExceptionCode, pTracker->GetThrowable()))
             {
                 OBJECTREF oThrowable = NULL;
-                SString<EncodingUnicode> message;
+                SString message;
 
                 GCPROTECT_BEGIN(oThrowable);
                 oThrowable = pTracker->GetThrowable();
@@ -3026,7 +3026,7 @@ CLRUnwindStatus ExceptionTracker::ProcessManagedCallFrame(
                                 }
                                 EX_CATCH_EX(Exception)
                                 {
-                                    SString<EncodingUnicode> msg;
+                                    SString msg;
                                     GET_EXCEPTION()->GetMessage(msg);
                                     msg.Insert(msg.Begin(), W("Cannot resolve EH clause:\n"));
                                     EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_FAILFAST, msg);

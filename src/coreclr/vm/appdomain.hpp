@@ -1452,7 +1452,7 @@ public:
 // Stores binding information about failed assembly loads for DAC
 //
 struct FailedAssembly {
-    SString<EncodingASCII> displayName;
+    EString<EncodingASCII> displayName;
     HRESULT error;
 
     void Initialize(AssemblySpec *pSpec, Exception *ex)
@@ -1775,10 +1775,10 @@ public:
             return m_i.Next();
         }
 
-        SString<EncodingUnicode>* GetPath()
+        SString* GetPath()
         {
             WRAPPER_NO_CONTRACT;
-            return dac_cast<PTR_SString<EncodingUnicode>>(m_i.GetElement());
+            return dac_cast<PTR_SString>(m_i.GetElement());
         }
     };
 
@@ -2196,7 +2196,7 @@ private:
     // The one and only AppDomain
     SPTR_DECL(AppDomain, m_pTheAppDomain);
 
-    SString<EncodingUnicode> m_friendlyName;
+    SString m_friendlyName;
     PTR_Assembly    m_pRootAssembly;
 
     // General purpose flags.
@@ -2567,7 +2567,7 @@ public:
     }
 
 #ifndef DACCESS_COMPILE
-    BOOL IsBaseLibrary(SString<EncodingUnicode> &path)
+    BOOL IsBaseLibrary(SString &path)
     {
         WRAPPER_NO_CONTRACT;
 
@@ -2583,12 +2583,12 @@ public:
         return FALSE;
     }
 
-    BOOL IsBaseLibrarySatellite(SString<EncodingASCII> &path)
+    BOOL IsBaseLibrarySatellite(EString<EncodingASCII> &path)
     {
         WRAPPER_NO_CONTRACT;
 
         // See if it is the installation path to corelib.resources
-        SString<EncodingASCII> s(g_psBaseLibrarySatelliteAssemblyName);
+        EString<EncodingASCII> s(g_psBaseLibrarySatelliteAssemblyName);
         if (path.EqualsCaseInsensitive(s))
             return TRUE;
 
@@ -2633,9 +2633,9 @@ private:
     GlobalLoaderAllocator m_GlobalAllocator;
 
 
-    InlineSString<100, EncodingUnicode>  m_BaseLibrary;
+    InlineEString<100, EncodingUnicode>  m_BaseLibrary;
 
-    InlineSString<100, EncodingUnicode>  m_SystemDirectory;
+    InlineEString<100, EncodingUnicode>  m_SystemDirectory;
 
     // <TODO>@TODO: CTS, we can keep the com modules in a single assembly or in different assemblies.
     // We are currently using different assemblies but this is potentitially to slow...</TODO>

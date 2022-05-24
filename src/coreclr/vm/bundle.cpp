@@ -15,7 +15,7 @@
 
 Bundle *Bundle::AppBundle = nullptr;
 
-const SString<EncodingUTF8> &BundleFileLocation::Path() const
+const EString<EncodingUTF8> &BundleFileLocation::Path() const
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -49,7 +49,7 @@ Bundle::Bundle(LPCSTR bundlePath, BundleProbeFn *probe)
     m_basePathLength = (COUNT_T)baseLen;
 }
 
-BundleFileLocation Bundle::Probe(const SString<EncodingUTF8>& path, bool pathIsBundleRelative) const
+BundleFileLocation Bundle::Probe(const EString<EncodingUTF8>& path, bool pathIsBundleRelative) const
 {
     STANDARD_VM_CONTRACT;
 
@@ -98,11 +98,11 @@ BundleFileLocation Bundle::Probe(const SString<EncodingUTF8>& path, bool pathIsB
     return loc;
 }
 
-BundleFileLocation Bundle::ProbeAppBundle(const SString<EncodingUnicode>& path, bool pathIsBundleRelative)
+BundleFileLocation Bundle::ProbeAppBundle(const SString& path, bool pathIsBundleRelative)
 {
     STANDARD_VM_CONTRACT;
 
-    StackSString<EncodingUTF8> pathUtf8;
+    StackEString<EncodingUTF8> pathUtf8;
     path.ConvertToUTF8(pathUtf8);
 
     return AppIsBundle() ? AppBundle->Probe(pathUtf8, pathIsBundleRelative) : BundleFileLocation::Invalid();

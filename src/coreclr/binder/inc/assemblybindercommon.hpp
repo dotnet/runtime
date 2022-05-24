@@ -33,15 +33,15 @@ namespace BINDER_SPACE
                                     /* in */  bool                 excludeAppPaths,
                                     /* out */ Assembly           **ppAssembly);
 
-        static HRESULT BindToSystem(/* in */ SString<EncodingUnicode> &systemDirectory,
+        static HRESULT BindToSystem(/* in */ SString &systemDirectory,
                                     /* out */ Assembly **ppSystemAssembly);
 
-        static HRESULT BindToSystemSatellite(/* in */ SString<EncodingUnicode>   &systemDirectory,
-                                             /* in */ SString<EncodingUnicode>   &simpleName,
-                                             /* in */ SString<EncodingUnicode>   &cultureName,
+        static HRESULT BindToSystemSatellite(/* in */ SString   &systemDirectory,
+                                             /* in */ SString   &simpleName,
+                                             /* in */ SString   &cultureName,
                                              /* out */ Assembly                  **ppSystemAssembly);
 
-        static HRESULT GetAssembly(/* in */  SString<EncodingUnicode>    &assemblyPath,
+        static HRESULT GetAssembly(/* in */  SString    &assemblyPath,
                                    /* in */  BOOL         fIsInTPA,
                                    /* out */ Assembly   **ppAssembly,
                                    /* in */  BundleFileLocation bundleFileLocation = BundleFileLocation::Invalid());

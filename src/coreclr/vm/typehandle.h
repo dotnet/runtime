@@ -216,7 +216,7 @@ public:
 
     // Returns the type name, including the generic instantiation if possible.
     // See the TypeString class for better control over name formatting.
-    void GetName(SString<EncodingUnicode> &result) const;
+    void GetName(SString &result) const;
 
     // Returns the ELEMENT_TYPE_* that you would use in a signature
     // The only normalization that happens is that for type handles

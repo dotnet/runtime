@@ -217,8 +217,8 @@ void PgoManager::WritePgoData()
 
         fprintf(pgoDataFile, s_MethodHeaderString, pgoData->header.codehash, pgoData->header.methodhash, pgoData->header.ilSize, schemaItems);
 
-        SString<EncodingUnicode> tClass;
-        SString<EncodingUTF8> tMethodName, tMethodSignature;
+        SString tClass;
+        EString<EncodingUTF8> tMethodName, tMethodSignature;
         pgoData->header.method->GetMethodInfo(tClass, tMethodName, tMethodSignature);
 
         fprintf(pgoDataFile, "MethodName: %s.%s\n", (LPCUTF8)tClass.MoveToUTF8(), (LPCUTF8)tMethodName);
@@ -260,7 +260,7 @@ void PgoManager::WritePgoData()
                             }
                             else
                             {
-                                StackSString<EncodingUnicode> ss;
+                                StackSString ss;
                                 TypeString::AppendType(ss, th, TypeString::FormatNamespace | TypeString::FormatFullInst | TypeString::FormatAssembly);
                                 if (ss.GetCount() > 8192)
                                 {
@@ -268,7 +268,7 @@ void PgoManager::WritePgoData()
                                 }
                                 else
                                 {
-                                    StackSString<EncodingUTF8> ssUtf8;
+                                    StackEString<EncodingUTF8> ssUtf8;
                                     ss.ConvertToUTF8(ssUtf8);
                                     fprintf(pgoDataFile, s_TypeHandle, (LPCUTF8)ssUtf8);
                                 }
@@ -289,10 +289,10 @@ void PgoManager::WritePgoData()
                             }
                             else
                             {
-                                SString<EncodingUnicode> garbage1;
-                                SString<EncodingUTF8> tMethodName, garbage2;
+                                SString garbage1;
+                                EString<EncodingUTF8> tMethodName, garbage2;
                                 md->GetMethodInfo(garbage1, tMethodName, garbage2);
-                                StackSString<EncodingUnicode> tTypeName;
+                                StackSString tTypeName;
                                 TypeString::AppendType(tTypeName, TypeHandle(md->GetMethodTable()), TypeString::FormatNamespace | TypeString::FormatFullInst | TypeString::FormatAssembly);
                                 // Format is:
                                 // MethodName|@|fully_qualified_type_name
@@ -866,7 +866,7 @@ HRESULT PgoManager::getPgoInstrumentationResults(MethodDesc* pMD, BYTE** pAlloca
                                                 if (sep != nullptr)
                                                 {
                                                     MAKE_WIDEPTR_FROMUTF8(typeString, sep + 3);
-                                                    StackSString<EncodingUTF8> methodString(string, (COUNT_T)(sep - string));
+                                                    StackEString<EncodingUTF8> methodString(string, (COUNT_T)(sep - string));
                                                     TypeHandle th = TypeName::GetTypeManaged((LPCWSTR)typeString, NULL, FALSE, FALSE, FALSE, NULL, NULL);
                                                     if (!th.IsNull())
                                                     {

@@ -519,7 +519,7 @@ private:
 #endif
 
 #ifdef _DEBUG
-    InlineSString<MAX_CLASSNAME_LENGTH, EncodingUTF8> ssClsNameBuff;
+    InlineEString<MAX_CLASSNAME_LENGTH, EncodingUTF8> ssClsNameBuff;
 #endif
 
 public:

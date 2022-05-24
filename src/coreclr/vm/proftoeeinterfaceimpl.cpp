@@ -4106,7 +4106,7 @@ HRESULT ProfToEEInterfaceImpl::GetModuleInfo2(ModuleID     moduleId,
         // modules, then rather than returning an empty string for the name, just use the
         // module name from metadata (a.k.a. Module.ScopeName). This is required to
         // support SQL F1 sampling profiling.
-        StackSString<EncodingUnicode> strScopeName;
+        StackSString strScopeName;
         LPCUTF8 szScopeName = NULL;
         if ((*wszFileName == W('\0')) && SUCCEEDED(pModule->GetScopeName(&szScopeName)))
         {
@@ -5646,7 +5646,7 @@ HRESULT ProfToEEInterfaceImpl::GetAssemblyInfo(AssemblyID    assemblyId,
 {
     CONTRACTL
     {
-        // SString constructor throws
+        // EString constructor throws
         THROWS;
 
         // Yay!
@@ -5685,7 +5685,7 @@ HRESULT ProfToEEInterfaceImpl::GetAssemblyInfo(AssemblyID    assemblyId,
     if (pcchName || szName)
     {
         // Get the friendly name of the assembly
-        SString<EncodingUnicode> name(SString<EncodingUTF8>(pAssembly->GetSimpleName()).MoveToUnicode());
+        SString name(EString<EncodingUTF8>(pAssembly->GetSimpleName()).MoveToUnicode());
 
         const COUNT_T nameLength = name.GetCount() + 1;
 
@@ -6472,7 +6472,7 @@ HRESULT ProfToEEInterfaceImpl::GetDynamicFunctionInfo(FunctionID functionId,
         if (pcchName != NULL)
             *pcchName = 0;
 
-        StackSString<EncodingUnicode> ss;
+        StackSString ss;
         MAKE_WIDEPTR_FROMUTF8(pName, pMethDesc->GetName());
         ss.Set(pName);
         LPCWSTR methodName = ss;

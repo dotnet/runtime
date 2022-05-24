@@ -1866,11 +1866,11 @@ static void LoadAndInitializeJIT(LPCWSTR pwzJitName DEBUGARG(LPCWSTR pwzJitPath)
             PathString CoreClrFolderHolder;
             if (GetClrModulePathName(CoreClrFolderHolder) && !CoreClrFolderHolder.IsEmpty())
             {
-                SString<EncodingUnicode>::Iterator iter = CoreClrFolderHolder.End();
+                SString::Iterator iter = CoreClrFolderHolder.End();
                 BOOL findSep = CoreClrFolderHolder.FindBack(iter, DIRECTORY_SEPARATOR_CHAR_W);
                 if (findSep)
                 {
-                    SString<EncodingUnicode> sJitName(pwzJitName);
+                    SString sJitName(pwzJitName);
                     CoreClrFolderHolder.Replace(iter + 1, CoreClrFolderHolder.End() - (iter + 1), sJitName);
 
                     *phJit = CLRLoadLibrary(CoreClrFolderHolder);

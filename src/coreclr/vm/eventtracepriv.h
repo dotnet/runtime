@@ -7,7 +7,7 @@
 // clients of eventtrace.cpp, and thus don't belong in eventtrace.h. Also, since
 // inclusions of this file are tightly controlled (basically just by eventtrace.cpp), we
 // can assume some classes are defined that aren't necessarily defined when eventtrace.h
-// is #included (e.g., StackSString and StackSArray).
+// is #included (e.g., StackEString and StackSArray).
 //
 
 //
@@ -234,7 +234,7 @@ public:
     // this is 0.)
     ULONGLONG ullSingleTypeParameter;
 #else   // FEATURE_REDHAWK
-    StackSString<EncodingUnicode> sName;
+    StackSString sName;
     StackSArray<ULONGLONG> rgTypeParameters;
 #endif // FEATURE_REDHAWK
 };

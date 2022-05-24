@@ -378,7 +378,7 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
                 pDL = DictionaryLayout::Allocate(NUM_DICTIONARY_SLOTS, pAllocator, &amt);
 #ifdef _DEBUG
                 {
-                    SString<EncodingUnicode> name;
+                    SString name;
                     TypeString::AppendMethodDebug(name, pGenericMDescInRepMT);
                     DWORD dictionarySlotSize;
                     DWORD dictionaryAllocSize = DictionaryLayout::GetDictionarySizeFromLayout(pGenericMDescInRepMT->GetNumGenericMethodArgs(), pDL, &dictionarySlotSize);
@@ -473,9 +473,9 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
                 amt.SuppressRelease();
 
 #ifdef _DEBUG
-                SString<EncodingUnicode> name{};
+                SString name{};
                 TypeString::AppendMethodDebug(name, pNewMD);
-                SString<EncodingUTF8> nameUTF8;
+                EString<EncodingUTF8> nameUTF8;
                 name.ConvertToUTF8(nameUTF8);
                 const char* pDebugNameUTF8 = (LPCUTF8)nameUTF8;
                 const char* verb = "Created";
@@ -1647,15 +1647,15 @@ BOOL MethodDesc::SatisfiesMethodConstraints(TypeHandle thParent, BOOL fThrowIfNo
         {
             if (fThrowIfNotSatisfied)
             {
-                SString<EncodingUnicode> sParentName;
+                SString sParentName;
                 TypeString::AppendType(sParentName, thParent);
 
                 MAKE_WIDEPTR_FROMUTF8(sMethodName, GetName());
 
-                SString<EncodingUnicode> sActualParamName;
+                SString sActualParamName;
                 TypeString::AppendType(sActualParamName, methodInst[i]);
 
-                SString<EncodingUnicode> sFormalParamName;
+                SString sFormalParamName;
                 TypeString::AppendType(sFormalParamName, typicalInst[i]);
 
                 COMPlusThrow(kVerificationException,

@@ -21,17 +21,17 @@ private:
         static const WCHAR DirectorySeparatorChar;
         static const WCHAR AltDirectorySeparatorChar;
 public:
-        static BOOL ContainsDirectorySeparator(SString<EncodingUnicode> & path);
+        static BOOL ContainsDirectorySeparator(SString & path);
         static BOOL IsDirectorySeparator(WCHAR c);
-        static BOOL IsPathNotFullyQualified(const SString<EncodingUnicode> & path);
+        static BOOL IsPathNotFullyQualified(const SString & path);
 
-        static HRESULT NormalizePath(SString<EncodingUnicode>& path);
+        static HRESULT NormalizePath(SString& path);
 
 #ifdef HOST_WINDOWS
-        static BOOL IsExtended(const SString<EncodingUnicode> & path);
-        static BOOL IsUNCExtended(const SString<EncodingUnicode> & path);
-        static BOOL IsDevice(const SString<EncodingUnicode> & path);
-        static void NormalizeDirectorySeparators(SString<EncodingUnicode>& path);
+        static BOOL IsExtended(const SString & path);
+        static BOOL IsUNCExtended(const SString & path);
+        static BOOL IsDevice(const SString & path);
+        static void NormalizeDirectorySeparators(SString& path);
 #endif
 };
 
@@ -55,7 +55,7 @@ LoadLibraryExWrapper(
     EX_TRY
     {
 
-        SString<EncodingUnicode> path(SharedData, lpLibFileName);
+        LongPathString path(LongPathString::Literal, lpLibFileName);
 
         if (LongFile::IsPathNotFullyQualified(path) || SUCCEEDED(LongFile::NormalizePath(path)))
         {
@@ -107,7 +107,7 @@ CreateFileWrapper(
 
     EX_TRY
     {
-        SString<EncodingUnicode> path(SharedData, lpFileName);
+        LongPathString path(LongPathString::Literal, lpFileName);
 
         if (SUCCEEDED(LongFile::NormalizePath(path)))
         {
@@ -154,7 +154,7 @@ GetFileAttributesWrapper(
 
     EX_TRY
     {
-        SString<EncodingUnicode> path(SharedData, lpFileName);
+        LongPathString path(LongPathString::Literal, lpFileName);
 
         if (SUCCEEDED(LongFile::NormalizePath(path)))
         {
@@ -198,7 +198,7 @@ GetFileAttributesExWrapper(
 
     EX_TRY
     {
-        SString<EncodingUnicode> path(SharedData, lpFileName);
+        LongPathString path(LongPathString::Literal, lpFileName);
 
         if (SUCCEEDED(LongFile::NormalizePath(path)))
         {
@@ -243,7 +243,7 @@ DeleteFileWrapper(
 
     EX_TRY
     {
-        SString<EncodingUnicode> path(SharedData, lpFileName);
+        LongPathString path(LongPathString::Literal, lpFileName);
 
         if (SUCCEEDED(LongFile::NormalizePath(path)))
         {
@@ -274,7 +274,7 @@ SearchPathWrapper(
         _In_ LPCWSTR lpFileName,
         _In_opt_ LPCWSTR lpExtension,
         _In_ BOOL getPath,
-        SString<EncodingUnicode>& lpBuffer,
+        SString& lpBuffer,
         _Out_opt_ LPWSTR * lpFilePart
         )
 {
@@ -290,7 +290,7 @@ SearchPathWrapper(
 
     EX_TRY
     {
-        SString<EncodingUnicode> Existingpath(SharedData, lpPath);
+        SString Existingpath(SString::Literal, lpPath);
 
         if (lpPath != NULL)
         {
@@ -365,7 +365,7 @@ SearchPathWrapper(
 DWORD
 GetModuleFileNameWrapper(
     _In_opt_ HMODULE hModule,
-    SString<EncodingUnicode>& buffer
+    SString& buffer
     )
 {
     CONTRACTL
@@ -420,7 +420,7 @@ GetModuleFileNameWrapper(
 }
 
 DWORD WINAPI GetTempPathWrapper(
-    SString<EncodingUnicode>& lpBuffer
+    SString& lpBuffer
     )
 {
     CONTRACTL
@@ -461,7 +461,7 @@ DWORD WINAPI GetTempPathWrapper(
 }
 
 DWORD WINAPI GetCurrentDirectoryWrapper(
-    SString<EncodingUnicode>&  lpBuffer
+    SString&  lpBuffer
     )
 {
     CONTRACTL
@@ -503,7 +503,7 @@ DWORD WINAPI GetCurrentDirectoryWrapper(
 
 DWORD WINAPI GetEnvironmentVariableWrapper(
     _In_opt_  LPCTSTR lpName,
-    _Out_opt_ SString<EncodingUnicode>&  lpBuffer
+    _Out_opt_ SString&  lpBuffer
     )
 {
     CONTRACTL
@@ -586,8 +586,8 @@ CopyFileExWrapper(
 
     EX_TRY
     {
-        SString<EncodingUnicode> Existingpath(SharedData, lpExistingFileName);
-        SString<EncodingUnicode> Newpath(SharedData, lpNewFileName);
+        LongPathString Existingpath(LongPathString::Literal, lpExistingFileName);
+        LongPathString Newpath(LongPathString::Literal, lpNewFileName);
 
         if (SUCCEEDED(LongFile::NormalizePath(Existingpath)) && SUCCEEDED(LongFile::NormalizePath(Newpath)))
         {
@@ -628,9 +628,9 @@ const WCHAR* LongFile::DevicePathPrefix = W("\\\\.\\");
 const WCHAR* LongFile::UNCExtendedPathPrefix = W("\\\\?\\UNC\\");
 const WCHAR* LongFile::UNCPathPrefix = UNCPATHPREFIX;
 
-void LongFile::NormalizeDirectorySeparators(SString<EncodingUnicode>& path)
+void LongFile::NormalizeDirectorySeparators(SString& path)
 {
-    for(auto i = path.Begin(); i < path.End(); ++i)
+    for(SString::Iterator i = path.Begin(); i < path.End(); ++i)
     {
         if (*i == AltDirectorySeparatorChar)
         {
@@ -639,12 +639,12 @@ void LongFile::NormalizeDirectorySeparators(SString<EncodingUnicode>& path)
     }
 }
 
-BOOL LongFile::IsExtended(const SString<EncodingUnicode> & path)
+BOOL LongFile::IsExtended(const SString & path)
 {
     return path.BeginsWith(SL(ExtendedPrefix));
 }
 
-BOOL LongFile::IsUNCExtended(const SString<EncodingUnicode> & path)
+BOOL LongFile::IsUNCExtended(const SString & path)
 {
     return path.BeginsWith(SL(UNCExtendedPathPrefix));
 }
@@ -657,7 +657,7 @@ BOOL LongFile::IsUNCExtended(const SString<EncodingUnicode> & path)
 // Handles paths that use the alternate directory separator.  It is a frequent mistake to
 // assume that rooted paths (Path.IsPathRooted) are not relative.  This isn't the case.
 
-BOOL LongFile::IsPathNotFullyQualified(const SString<EncodingUnicode> & path)
+BOOL LongFile::IsPathNotFullyQualified(const SString & path)
 {
     if (path.GetCount() < 2)
     {
@@ -674,7 +674,7 @@ BOOL LongFile::IsPathNotFullyQualified(const SString<EncodingUnicode> & path)
             && IsDirectorySeparator(path[2]));
 }
 
-BOOL LongFile::IsDevice(const SString<EncodingUnicode> & path)
+BOOL LongFile::IsDevice(const SString & path)
 {
     return path.BeginsWith(SL(DevicePathPrefix));
 }
@@ -683,7 +683,7 @@ BOOL LongFile::IsDevice(const SString<EncodingUnicode> & path)
 // The normalization examples are :
 //  C:\foo\<long>\bar   => \\?\C:\foo\<long>\bar
 //  \\server\<long>\bar => \\?\UNC\server\<long>\bar
-HRESULT LongFile::NormalizePath(SString<EncodingUnicode> & path)
+HRESULT LongFile::NormalizePath(SString & path)
 {
     HRESULT hr        = S_OK;
     DWORD   ret       = 0;
@@ -696,8 +696,8 @@ HRESULT LongFile::NormalizePath(SString<EncodingUnicode> & path)
 
     //Now the path will be normalized
 
-    SString<EncodingUnicode> originalPath(path);
-    SString<EncodingUnicode> prefix(ExtendedPrefix);
+    SString originalPath(path);
+    SString prefix(ExtendedPrefix);
     prefixLen = prefix.GetCount();
 
     if (path.BeginsWith(SL(UNCPathPrefix)))
@@ -747,7 +747,7 @@ HRESULT LongFile::NormalizePath(SString<EncodingUnicode> & path)
         }
     }
 
-	SString<EncodingUnicode> fullpath(SharedData, buffer + prefixLen);
+	SString fullpath(SString::Literal, buffer + prefixLen);
 
     //Check if the resolved path is a UNC. By default we assume relative path to resolve to disk
     if (fullpath.BeginsWith(SL(UNCPathPrefix)) && prefixLen != prefix.GetCount() - (COUNT_T)wcslen(UNCPATHPREFIX))
@@ -769,19 +769,19 @@ HRESULT LongFile::NormalizePath(SString<EncodingUnicode> & path)
     return S_OK;
 }
 #else
-BOOL LongFile::IsPathNotFullyQualified(const SString<EncodingUnicode> & path)
+BOOL LongFile::IsPathNotFullyQualified(const SString & path)
 {
     return TRUE;
 }
 
 //Don't need to do anything For XPlat
-HRESULT LongFile::NormalizePath(SString<EncodingUnicode> & path)
+HRESULT LongFile::NormalizePath(SString & path)
 {
     return S_OK;
 }
 #endif //HOST_WINDOWS
 
-BOOL LongFile::ContainsDirectorySeparator(SString<EncodingUnicode> & path)
+BOOL LongFile::ContainsDirectorySeparator(SString & path)
 {
     return path.Find(path.Begin(), DirectorySeparatorChar) || path.Find(path.Begin(), AltDirectorySeparatorChar);
 }

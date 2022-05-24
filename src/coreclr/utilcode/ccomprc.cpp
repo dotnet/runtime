@@ -571,7 +571,7 @@ HRESULT CCompRC::LoadResourceFile(HRESOURCEDLL * pHInst, LPCWSTR lpFileName)
 //  3. Dll in root path (<dir passed>\mscorrc.dll)
 //*****************************************************************************
 HRESULT CCompRC::LoadLibraryHelper(HRESOURCEDLL *pHInst,
-                                   SString<EncodingUnicode>& rcPath)
+                                   SString& rcPath)
 {
     CONTRACTL
     {
@@ -603,7 +603,7 @@ HRESULT CCompRC::LoadLibraryHelper(HRESOURCEDLL *pHInst,
     {
         EX_TRY
         {
-            cultureNames.Append(SString<EncodingUnicode>::Empty());
+            cultureNames.Append(SString::Empty());
         }
         EX_CATCH_HRESULT(hr);
     }
@@ -614,7 +614,7 @@ HRESULT CCompRC::LoadLibraryHelper(HRESOURCEDLL *pHInst,
     {
         for (DWORD i=0; i< cultureNames.GetCount();i++)
         {
-            SString<EncodingUnicode>& sLang = cultureNames[i];
+            SString& sLang = cultureNames[i];
 
             PathString rcPathName(rcPath);
 

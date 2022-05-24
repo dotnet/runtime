@@ -58,7 +58,7 @@ static void ValidatePEFileMachineType(PEAssembly *pPEAssembly)
 #endif // BIT64_
 
         // Image has required machine that doesn't match the CLR.
-        StackSString<EncodingUnicode> name;
+        StackSString name;
         pPEAssembly->GetDisplayName(name);
 
         COMPlusThrow(kBadImageFormatException, IDS_CLASSLOAD_WRONGCPU, (LPCWSTR)name);
@@ -171,7 +171,7 @@ BOOL PEAssembly::Equals(PEImage *pImage)
 // Descriptive strings
 // ------------------------------------------------------------
 
-void PEAssembly::GetPathOrCodeBase(SString<EncodingUnicode> &result)
+void PEAssembly::GetPathOrCodeBase(SString &result)
 {
     CONTRACTL
     {
@@ -869,7 +869,7 @@ PEAssembly *PEAssembly::Create(IMetaDataAssemblyEmit *pAssemblyEmit)
 
 // Supports implementation of the legacy Assembly.CodeBase property.
 // Returns false if the assembly was loaded from a bundle, true otherwise
-BOOL PEAssembly::GetCodeBase(SString<EncodingUnicode> &result)
+BOOL PEAssembly::GetCodeBase(SString &result)
 {
     CONTRACTL
     {
@@ -893,13 +893,13 @@ BOOL PEAssembly::GetCodeBase(SString<EncodingUnicode> &result)
     }
     else
     {
-        result.Set(SString<EncodingUnicode>::Empty());
+        result.Set(SString::Empty());
         return FALSE;
     }
 }
 
 /* static */
-void PEAssembly::PathToUrl(SString<EncodingUnicode> &string)
+void PEAssembly::PathToUrl(SString &string)
 {
     CONTRACTL
     {
@@ -911,7 +911,7 @@ void PEAssembly::PathToUrl(SString<EncodingUnicode> &string)
     }
     CONTRACTL_END;
 
-    SString<EncodingUnicode>::Iterator i = string.Begin();
+    SString::Iterator i = string.Begin();
 
 #if !defined(TARGET_UNIX)
     if (i[0] == W('\\'))
@@ -929,7 +929,7 @@ void PEAssembly::PathToUrl(SString<EncodingUnicode> &string)
 #else
     // Unix doesn't have a distinction between a network or a local path
     _ASSERTE( i[0] == W('\\') || i[0] == W('/'));
-    SString<EncodingUnicode> sss(SharedData, W("file://"));
+    SString sss(SString::Literal, W("file://"));
     string.Insert(i, sss);
     string.Skip(i, sss);
 #endif
@@ -940,7 +940,7 @@ void PEAssembly::PathToUrl(SString<EncodingUnicode> &string)
     }
 }
 
-void PEAssembly::UrlToPath(SString<EncodingUnicode> &string)
+void PEAssembly::UrlToPath(SString &string)
 {
     CONTRACT_VOID
     {
@@ -949,11 +949,11 @@ void PEAssembly::UrlToPath(SString<EncodingUnicode> &string)
     }
     CONTRACT_END;
 
-    SString<EncodingUnicode>::Iterator i = string.Begin();
+    SString::Iterator i = string.Begin();
 
-    SString<EncodingUnicode> sss2(SharedData, W("file://"));
+    SString sss2(SString::Literal, W("file://"));
 #if !defined(TARGET_UNIX)
-    SString<EncodingUnicode> sss3(SharedData, W("file:///"));
+    SString sss3(SString::Literal, W("file:///"));
     if (string.MatchCaseInsensitive(i, sss3))
         string.Delete(i, 8);
     else
@@ -969,11 +969,11 @@ void PEAssembly::UrlToPath(SString<EncodingUnicode> &string)
     RETURN;
 }
 
-BOOL PEAssembly::FindLastPathSeparator(const SString<EncodingUnicode> &path, SString<EncodingUnicode>::Iterator &i)
+BOOL PEAssembly::FindLastPathSeparator(const SString &path, SString::Iterator &i)
 {
 #ifdef TARGET_UNIX
-    SString<EncodingUnicode>::Iterator slash = i;
-    SString<EncodingUnicode>::Iterator backSlash = i;
+    SString::Iterator slash = i;
+    SString::Iterator backSlash = i;
     BOOL foundSlash = path.FindBack(slash, '/');
     BOOL foundBackSlash = path.FindBack(backSlash, '\\');
     if (!foundSlash && !foundBackSlash)

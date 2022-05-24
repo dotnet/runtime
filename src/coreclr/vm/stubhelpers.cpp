@@ -98,7 +98,7 @@ MethodDesc *StubHelpers::ResolveInteropMethod(Object *pThisUNSAFE, MethodDesc *p
 }
 
 // static
-void StubHelpers::FormatValidationMessage(MethodDesc *pMD, SString<EncodingUnicode> &ssErrorString)
+void StubHelpers::FormatValidationMessage(MethodDesc *pMD, SString &ssErrorString)
 {
     CONTRACTL
     {
@@ -119,7 +119,7 @@ void StubHelpers::FormatValidationMessage(MethodDesc *pMD, SString<EncodingUnico
     {
         ssErrorString.Append(W("method '"));
 
-        StackSString<EncodingUnicode> ssClassName;
+        StackSString ssClassName;
         pMD->GetMethodTable()->_GetFullyQualifiedNameForClass(ssClassName);
 
         ssErrorString.Append(ssClassName);
@@ -142,7 +142,7 @@ void StubHelpers::ProcessByrefValidationList()
     }
     CONTRACTL_END;
 
-    StackSString<EncodingUnicode> errorString;
+    StackSString errorString;
     ByrefValidationEntry entry = { NULL, NULL };
 
     EX_TRY
@@ -857,7 +857,7 @@ FCIMPL3(void, StubHelpers::ValidateObject, Object *pObjUNSAFE, MethodDesc *pMD, 
 #ifdef VERIFY_HEAP
     HELPER_METHOD_FRAME_BEGIN_0();
 
-    StackSString<EncodingUnicode> errorString;
+    StackSString errorString;
     EX_TRY
     {
         AVInRuntimeImplOkayHolder AVOkay;

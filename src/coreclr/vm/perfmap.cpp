@@ -98,7 +98,7 @@ PerfMap::PerfMap(int pid)
         return;
     }
 
-    SString<EncodingUnicode> path;
+    SString path;
     path.Printf(W("%sperf-%d.map"), &tempPath, pid);
 
     // Open the map file for writing.
@@ -134,7 +134,7 @@ PerfMap::~PerfMap()
 }
 
 // Open the specified destination map file.
-void PerfMap::OpenFile(SString<EncodingUnicode>& path)
+void PerfMap::OpenFile(SString& path)
 {
     STANDARD_VM_CONTRACT;
 
@@ -152,7 +152,7 @@ void PerfMap::OpenFile(SString<EncodingUnicode>& path)
 }
 
 // Write a line to the map file.
-void PerfMap::WriteLine(SString<EncodingUTF8>& line)
+void PerfMap::WriteLine(EString<EncodingUTF8>& line)
 {
     STANDARD_VM_CONTRACT;
 
@@ -198,16 +198,16 @@ void PerfMap::LogMethod(MethodDesc * pMethod, PCODE pCode, size_t codeSize, cons
     EX_TRY
     {
         // Get the full method signature.
-        SString<EncodingUnicode> nameW;
+        SString nameW;
         pMethod->GetFullMethodInfo(nameW);
-        SString<EncodingUTF8> name(nameW.MoveToUTF8());
+        EString<EncodingUTF8> name(nameW.MoveToUTF8());
 
         // Build the map file line.
         if (optimizationTier != nullptr && s_ShowOptimizationTiers)
         {
             name.AppendPrintf("[%s]", optimizationTier);
         }
-        SString<EncodingUTF8> line;
+        EString<EncodingUTF8> line;
         line.Printf(FMT_CODE_ADDR " %x %s\n", pCode, codeSize, (LPCUTF8)name);
 
         // Write the line.
@@ -294,9 +294,9 @@ void PerfMap::LogPreCompiledMethod(MethodDesc * pMethod, PCODE pCode)
     EX_TRY
     {
         // Get the full method signature.
-        SString<EncodingUnicode> nameW;
+        SString nameW;
         pMethod->GetFullMethodInfo(nameW);
-        SString<EncodingUTF8> name(nameW.MoveToUTF8());
+        EString<EncodingUTF8> name(nameW.MoveToUTF8());
 
         if (s_ShowOptimizationTiers)
         {
@@ -347,9 +347,9 @@ void PerfMap::LogStubs(const char* stubType, const char* stubOwner, PCODE pCode,
         }
 
         // Build the map file line.
-        SString<EncodingUTF8> name;
+        EString<EncodingUTF8> name;
         name.Printf("stub<%d> %s<%s>", ++(s_Current->m_StubsMapped), stubType, stubOwner);
-        SString<EncodingUTF8> line;
+        EString<EncodingUTF8> line;
         line.Printf(FMT_CODE_ADDR " %x %s\n", pCode, codeSize, (LPCUTF8)name);
 
         // Write the line.
@@ -395,7 +395,7 @@ NativeImagePerfMap::NativeImagePerfMap(Assembly * pAssembly, BSTR pDestPath)
 
     // Build the path to the perfmap file, which consists of <inputpath><imagesimplename>.ni.<signature>.map.
     // Example: /tmp/System.Private.CoreLib.ni.{GUID}.map
-    SString<EncodingUnicode> sDestPerfMapPath;
+    SString sDestPerfMapPath;
     sDestPerfMapPath.Printf(W("%s%S.ni.%s.map"), pDestPath, lpcSimpleName, wszSignature);
 
     // Open the perf map file.

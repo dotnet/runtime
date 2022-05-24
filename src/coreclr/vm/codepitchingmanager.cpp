@@ -126,7 +126,7 @@ static COUNT_T GetFullHash(MethodDesc* pMD)
 
     COUNT_T hash = HashStringA(moduleName);         // Start the hash with the Module name
 
-    SString className, methodName, methodSig;
+    EString className, methodName, methodSig;
 
     pMD->GetMethodInfo(className, methodName, methodSig);
 
@@ -229,7 +229,7 @@ static void LookupOrCreateInPitchingCandidate(MethodDesc* pMD, ULONG sizeOfCode)
 #ifdef _DEBUG
         if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitPitchPrintStat) != 0)
         {
-            SString className, methodName, methodSig;
+            EString className, methodName, methodSig;
             pMD->GetMethodInfo(className, methodName, methodSig);
 
             StackScratchBuffer scratch;
@@ -415,7 +415,7 @@ void MethodDesc::PitchNativeCode()
 
     if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitPitchPrintStat) != 0)
     {
-        SString className, methodName, methodSig;
+        EString className, methodName, methodSig;
         GetMethodInfo(className, methodName, methodSig);
 
         StackScratchBuffer scratch;

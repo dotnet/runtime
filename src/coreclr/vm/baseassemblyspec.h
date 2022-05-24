@@ -51,8 +51,8 @@ public:
     HRESULT Init(mdToken tkAssemblyRef, IMDInternalImport *pImport);
     HRESULT Init(mdAssembly tkAssemblyRef, IMetaDataAssemblyImport* pImport);
 
-    void Init(const SString<EncodingUTF8>& assemblyDisplayName);
-    HRESULT InitNoThrow(const SString<EncodingUTF8>& assemblyDisplayName);
+    void Init(const EString<EncodingUTF8>& assemblyDisplayName);
+    HRESULT InitNoThrow(const EString<EncodingUTF8>& assemblyDisplayName);
 
     // Note that this method does not clone the fields!
     VOID CopyFrom(const BaseAssemblySpec *pSpec);
@@ -77,7 +77,7 @@ public:
     DWORD Hash();
 
     LPCSTR GetName() const;
-    inline void GetName(SString<EncodingUTF8> & ssName) const { WRAPPER_NO_CONTRACT; ssName.Set(GetName()); }
+    inline void GetName(EString<EncodingUTF8> & ssName) const { WRAPPER_NO_CONTRACT; ssName.Set(GetName()); }
 
     void SetName(LPCSTR szName);
 
@@ -106,7 +106,7 @@ public:
     static int CompareStrings(LPCUTF8 string1, LPCUTF8 string2);
     static BOOL RefMatchesDef(const BaseAssemblySpec* pRef, const BaseAssemblySpec* pDef);
 
-    void GetDisplayName(DWORD flags, SString<EncodingUnicode> &result) const;
+    void GetDisplayName(DWORD flags, SString &result) const;
 
 protected: // static
     static BOOL CompareRefToDef(const BaseAssemblySpec *pRef, const BaseAssemblySpec *pDef);

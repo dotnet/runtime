@@ -180,7 +180,7 @@ namespace
         // - An empty string will be treated as NULL.
         // - A string ending will a backslash will be treated as a prefix for where to look for the DLL
         //   if the InProcServer32 value is just a DLL name and not a full path.
-        StackSString<EncodingUnicode> ssDllName;
+        StackSString ssDllName;
         if ((wszDllPath == nullptr) || (wszDllPath[0] == W('\0')) || fIsDllPathPrefix)
         {
 #ifdef HOST_WINDOWS
@@ -2943,7 +2943,7 @@ namespace Util
 
 namespace Reg
 {
-    HRESULT ReadStringValue(HKEY hKey, LPCWSTR wszSubKeyName, LPCWSTR wszValueName, SString<EncodingUnicode> & ssValue)
+    HRESULT ReadStringValue(HKEY hKey, LPCWSTR wszSubKeyName, LPCWSTR wszValueName, SString & ssValue)
     {
         STANDARD_VM_CONTRACT;
 
@@ -2983,7 +2983,7 @@ namespace Reg
             {
                 // Can't count on the returned size being accurate - I've seen at least
                 // one string with an extra NULL at the end that will cause the resulting
-                // SString to count the extra NULL as part of the string. An extra
+                // EString to count the extra NULL as part of the string. An extra
                 // terminating NULL is not a legitimate scenario for REG_SZ - this must
                 // be done using REG_MULTI_SZ - however this was tolerated in the
                 // past and so it would be a breaking change to stop doing so.
@@ -3014,7 +3014,7 @@ namespace Reg
         HRESULT hr = S_OK;
         EX_TRY
         {
-            StackSString<EncodingUnicode> ssValue;
+            StackSString ssValue;
             if (SUCCEEDED(hr = ReadStringValue(hKey, wszSubKey, wszName, ssValue)))
             {
                 *pwszValue = new WCHAR[ssValue.GetCount() + 1];
@@ -3032,7 +3032,7 @@ namespace Com
     {
         __success(return == S_OK)
         static
-        HRESULT FindSubKeyDefaultValueForCLSID(REFCLSID rclsid, LPCWSTR wszSubKeyName, SString<EncodingUnicode> & ssValue)
+        HRESULT FindSubKeyDefaultValueForCLSID(REFCLSID rclsid, LPCWSTR wszSubKeyName, SString & ssValue)
         {
             STANDARD_VM_CONTRACT;
 
@@ -3040,7 +3040,7 @@ namespace Com
             if (GuidToLPWSTR(rclsid, wszClsid, ARRAY_SIZE(wszClsid)) == 0)
                 return E_UNEXPECTED;
 
-            StackSString<EncodingUnicode> ssKeyName;
+            StackSString ssKeyName;
             ssKeyName.Append(SL(W("CLSID\\")));
             ssKeyName.Append(wszClsid);
             ssKeyName.Append(SL(W("\\")));
@@ -3071,7 +3071,7 @@ namespace Com
                 ssValue.Clear();
 
                 // Force to use HKLM
-                StackSString<EncodingUnicode> ssHklmKeyName(SL(W("SOFTWARE\\Classes\\")));
+                StackSString ssHklmKeyName(SL(W("SOFTWARE\\Classes\\")));
                 ssHklmKeyName.Append(ssKeyName);
                 return Clr::Util::Reg::ReadStringValue(HKEY_LOCAL_MACHINE, ssHklmKeyName, nullptr, ssValue);
             }
@@ -3080,7 +3080,7 @@ namespace Com
         }
     }
 
-    HRESULT FindInprocServer32UsingCLSID(REFCLSID rclsid, SString<EncodingUnicode> & ssInprocServer32Name)
+    HRESULT FindInprocServer32UsingCLSID(REFCLSID rclsid, SString & ssInprocServer32Name)
     {
         WRAPPER_NO_CONTRACT;
         return __imp::FindSubKeyDefaultValueForCLSID(rclsid, W("InprocServer32"), ssInprocServer32Name);

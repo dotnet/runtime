@@ -16,11 +16,11 @@ class StringArrayList
     ArrayList m_Elements;
 public:
     DWORD GetCount() const;
-    SString<TEncoding>& operator[] (DWORD idx) const;
-    SString<TEncoding>& Get (DWORD idx) const;
+    EString<TEncoding>& operator[] (DWORD idx) const;
+    EString<TEncoding>& Get (DWORD idx) const;
 #ifndef DACCESS_COMPILE
-    void Append(const SString<TEncoding>& string);
-    void AppendIfNotThere(const SString<TEncoding>& string);
+    void Append(const EString<TEncoding>& string);
+    void AppendIfNotThere(const EString<TEncoding>& string);
 #endif
     ~StringArrayList();
 };

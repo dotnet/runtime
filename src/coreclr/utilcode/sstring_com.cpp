@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // ---------------------------------------------------------------------------
-// SString_COM.cpp
+// EString_COM.cpp
 
 // ---------------------------------------------------------------------------
 
@@ -15,18 +15,18 @@
 //----------------------------------------------------------------------------
 // Load the string resource into this string.
 //----------------------------------------------------------------------------
-BOOL LoadResource(SString<EncodingUnicode>& buffer, CCompRC::ResourceCategory eCategory, int resourceID)
+BOOL LoadResource(EString<EncodingUnicode>& buffer, CCompRC::ResourceCategory eCategory, int resourceID)
 {
     return SUCCEEDED(LoadResourceAndReturnHR(buffer, eCategory, resourceID));
 }
 
-HRESULT LoadResourceAndReturnHR(SString<EncodingUnicode>& buffer, CCompRC::ResourceCategory eCategory, int resourceID)
+HRESULT LoadResourceAndReturnHR(EString<EncodingUnicode>& buffer, CCompRC::ResourceCategory eCategory, int resourceID)
 {
     WRAPPER_NO_CONTRACT;
     return LoadResourceAndReturnHR(buffer, NULL, eCategory,resourceID);
 }
 
-HRESULT LoadResourceAndReturnHR(SString<EncodingUnicode>& buffer, CCompRC* pResourceDLL, CCompRC::ResourceCategory eCategory, int resourceID)
+HRESULT LoadResourceAndReturnHR(EString<EncodingUnicode>& buffer, CCompRC* pResourceDLL, CCompRC::ResourceCategory eCategory, int resourceID)
 {
     CONTRACT(BOOL)
     {
@@ -82,7 +82,7 @@ HRESULT LoadResourceAndReturnHR(SString<EncodingUnicode>& buffer, CCompRC* pReso
 
             if (SUCCEEDED(hr))
             {
-                // Truncate(Begin() + (COUNT_T) wcslen(GetRawUnicode()));
+                buffer.Truncate(buffer.Begin() + (COUNT_T) wcslen(buffer.GetRawBuffer()));
             }
 
         }
@@ -95,4 +95,4 @@ HRESULT LoadResourceAndReturnHR(SString<EncodingUnicode>& buffer, CCompRC* pReso
 #endif //!FEATURE_UTILCODE_NO_DEPENDENCIES
 
     RETURN hr;
-} // StaticStringHelpers::LoadResourceAndReturnHR
+}

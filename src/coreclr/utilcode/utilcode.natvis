@@ -7,7 +7,7 @@ The .NET Foundation licenses this file to you under the MIT license.
 
 
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
-    <Type Name="SString">
+    <Type Name="EString">
         <DisplayString Condition="(m_flags &amp; REPRESENTATION_MASK) == REPRESENTATION_EMPTY">[Empty]</DisplayString>
         <DisplayString Condition="(m_flags &amp; REPRESENTATION_MASK) == REPRESENTATION_UNICODE">[Unicode] {m_buffer,su}</DisplayString>
         <DisplayString Condition="(m_flags &amp; REPRESENTATION_MASK) == REPRESENTATION_ASCII">[ASCII] {m_buffer,s}</DisplayString>

@@ -183,11 +183,11 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
 #ifdef _DEBUG
     if (LoggingOn(LF_CLASSLOADER, LL_INFO1000) || g_pConfig->BreakOnInstantiationEnabled())
     {
-        StackSString<EncodingUnicode> debugTypeKeyName;
+        StackSString debugTypeKeyName;
         TypeString::AppendTypeKeyDebug(debugTypeKeyName, pTypeKey);
         LOG((LF_CLASSLOADER, LL_INFO1000, "GENERICS: New instantiation requested: %S\n", (LPCWSTR)debugTypeKeyName));
 
-        StackSString<EncodingUTF8> buf;
+        StackEString<EncodingUTF8> buf;
         debugTypeKeyName.ConvertToUTF8(buf);
         if (g_pConfig->ShouldBreakOnInstantiation(buf))
             CONSISTENCY_CHECK_MSGF(false, ("BreakOnInstantiation: typename '%s' ", (LPCUTF8)buf));
@@ -473,9 +473,9 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
 
 #ifdef _DEBUG
     // Name for debugging
-    StackSString<EncodingUnicode> debug_ClassNameString;
+    StackSString debug_ClassNameString;
     TypeString::AppendTypeKey(debug_ClassNameString, pTypeKey, TypeString::FormatNamespace | TypeString::FormatAngleBrackets | TypeString::FormatFullInst);
-    const SString<EncodingUTF8> debug_ClassNameBuffer(debug_ClassNameString.MoveToUTF8());
+    const EString<EncodingUTF8> debug_ClassNameBuffer(debug_ClassNameString.MoveToUTF8());
     S_SIZE_T safeLen = S_SIZE_T(strlen(debug_ClassNameBuffer)) + S_SIZE_T(1);
     if (safeLen.IsOverflow()) COMPlusThrowHR(COR_E_OVERFLOW);
 

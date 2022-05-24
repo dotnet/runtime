@@ -181,7 +181,7 @@ public:
             *m_ppStringObject = STRINGREFToObject(s);
         }
 
-        void Set(const SString<EncodingUnicode>& value);
+        void Set(const SString& value);
         void Set(LPCWSTR pwzValue);
         void Set(LPCUTF8 pszValue);
 #endif // !DACCESS_COMPILE

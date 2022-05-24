@@ -24,9 +24,9 @@
 #include "yieldprocessornormalized.h"
 
 template<typename TEncoding>
-class SString;
-
+class EString;
 struct EncodingUnicode;
+using SString = EString<EncodingUnicode>;
 
 #if !defined(_DEBUG_IMPL) && defined(_DEBUG) && !defined(DACCESS_COMPILE)
 #define _DEBUG_IMPL 1
@@ -97,7 +97,7 @@ typedef Holder<CRITSEC_COOKIE, ClrEnterCriticalSection, ClrLeaveCriticalSection,
 FORCEINLINE void VoidClrDeleteCriticalSection(CRITSEC_COOKIE cs) { if (cs != NULL) ClrDeleteCriticalSection(cs); }
 typedef Wrapper<CRITSEC_COOKIE, DoNothing<CRITSEC_COOKIE>, VoidClrDeleteCriticalSection, NULL> CRITSEC_AllocationHolder;
 
-DWORD GetClrModulePathName(SString<EncodingUnicode>& buffer);
+DWORD GetClrModulePathName(SString& buffer);
 
 extern thread_local int t_CantAllocCount;
 

@@ -956,8 +956,8 @@ kernel32!FindNextFileNameW
 kernel32!FindNextFileW
 kernel32!FindNextStreamW
 kernel32!FindNextVolumeW
-kernel32!FindNLSString
-kernel32!FindNLSStringEx
+kernel32!FindNLEString
+kernel32!FindNLEStringEx
 kernel32!FindResourceExW
 kernel32!FindResourceW
 kernel32!FindStringOrdinal

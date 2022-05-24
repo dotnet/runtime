@@ -318,7 +318,7 @@ public:
 		ep_add_provider_to_session (provider, session);
 	}
 
-	static inline EventPipeProvider * CreateProvider(const SString<EncodingUnicode> &providerName, EventPipeCallback callback)
+	static inline EventPipeProvider * CreateProvider(const SString &providerName, EventPipeCallback callback)
 	{
 		CONTRACTL
 		{

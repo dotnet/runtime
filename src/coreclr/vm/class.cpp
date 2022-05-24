@@ -1159,14 +1159,14 @@ void ClassLoader::ValidateMethodsWithCovariantReturnTypes(MethodTable* pMT)
 
             if (!IsCompatibleWith(hType1, hType2))
             {
-                SString<EncodingUnicode> strAssemblyName;
+                SString strAssemblyName;
                 pMD->GetAssembly()->GetDisplayName(strAssemblyName);
 
-                SString<EncodingUnicode> strInvalidTypeName;
+                SString strInvalidTypeName;
                 TypeString::AppendType(strInvalidTypeName, TypeHandle(pMD->GetMethodTable()));
 
-                SString<EncodingUnicode> strInvalidMethodName;
-                SString<EncodingUnicode> strParentMethodName;
+                SString strInvalidMethodName;
+                SString strParentMethodName;
                 {
                     CONTRACT_VIOLATION(LoadsTypeViolation);
                     TypeString::AppendMethod(strInvalidMethodName, pMD, pMD->GetMethodInstantiation());
@@ -1787,7 +1787,7 @@ TypeHandle MethodTable::SetupCoClassForInterface()
         IfFailThrow(cap.GetNonNullString(&szName, &cbName));
 
         // Copy the name to a temporary buffer and NULL terminate it.
-        StackSString<EncodingUTF8> ss(szName, cbName);
+        StackEString<EncodingUTF8> ss(szName, cbName);
 
         // Try to load the class using its name as a fully qualified name. If that fails,
         // then we try to load it in the assembly of the current class.
@@ -1834,7 +1834,7 @@ void MethodTable::GetEventInterfaceInfo(MethodTable **ppSrcItfClass, MethodTable
     IfFailThrow(cap.GetNonNullString(&szName, &cbName));
 
     // Copy the name to a temporary buffer and NULL terminate it.
-    StackSString<EncodingUTF8> ss(szName, cbName);
+    StackEString<EncodingUTF8> ss(szName, cbName);
 
     // Try to load the class using its name as a fully qualified name. If that fails,
     // then we try to load it in the assembly of the current class.
@@ -1970,7 +1970,7 @@ CorNativeLinkType MethodTable::GetCharSet()
 // You probably should not use these functions directly.
 //
 template<typename RedirectFunctor>
-SString<EncodingUnicode> &MethodTable::_GetFullyQualifiedNameForClassNestedAwareInternal(SString<EncodingUnicode> &ssBuf)
+SString &MethodTable::_GetFullyQualifiedNameForClassNestedAwareInternal(SString &ssBuf)
 {
     CONTRACTL {
         THROWS;
@@ -1988,7 +1988,7 @@ SString<EncodingUnicode> &MethodTable::_GetFullyQualifiedNameForClassNestedAware
         return ssBuf;
     }
 
-    StackSString<EncodingUTF8> ssName(pszName);
+    StackEString<EncodingUTF8> ssName(pszName);
 
     mdTypeDef mdEncl = GetCl();
     IMDInternalImport *pImport = GetMDImport();
@@ -2000,8 +2000,8 @@ SString<EncodingUnicode> &MethodTable::_GetFullyQualifiedNameForClassNestedAware
     RedirectFunctor redirectFunctor;
     if (IsTdNested(dwAttr))
     {
-        StackSString<EncodingUTF8> ssFullyQualifiedName;
-        StackSString<EncodingUTF8> ssPath;
+        StackEString<EncodingUTF8> ssFullyQualifiedName;
+        StackEString<EncodingUTF8> ssPath;
 
         // Build the nesting chain.
         while (SUCCEEDED(pImport->GetNestedClassProps(mdEncl, &mdEncl)))
@@ -2014,19 +2014,19 @@ SString<EncodingUnicode> &MethodTable::_GetFullyQualifiedNameForClassNestedAware
                 &szEnclNameSpace));
 
             ns::MakePath(ssPath,
-                StackSString<EncodingUTF8>(redirectFunctor(szEnclNameSpace)),
-                StackSString<EncodingUTF8>(szEnclName));
+                StackEString<EncodingUTF8>(redirectFunctor(szEnclNameSpace)),
+                StackEString<EncodingUTF8>(szEnclName));
             ns::MakeNestedTypeName(ssFullyQualifiedName, ssPath, ssName);
 
             ssName = ssFullyQualifiedName;
         }
     }
 
-    StackSString<EncodingUTF8> ss;
+    StackEString<EncodingUTF8> ss;
 
     ns::MakePath(
         ss,
-        StackSString<EncodingUTF8>(redirectFunctor(pszNamespace)), ssName);
+        StackEString<EncodingUTF8>(redirectFunctor(pszNamespace)), ssName);
 
     ss.ConvertToUnicode(ssBuf);
 
@@ -2044,7 +2044,7 @@ public :
     }
 };
 
-SString<EncodingUnicode> &MethodTable::_GetFullyQualifiedNameForClassNestedAware(SString<EncodingUnicode> &ssBuf)
+SString &MethodTable::_GetFullyQualifiedNameForClassNestedAware(SString &ssBuf)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -2052,7 +2052,7 @@ SString<EncodingUnicode> &MethodTable::_GetFullyQualifiedNameForClassNestedAware
 }
 
 //*******************************************************************************
-SString<EncodingUnicode> &MethodTable::_GetFullyQualifiedNameForClass(SString<EncodingUnicode> &ssBuf)
+SString &MethodTable::_GetFullyQualifiedNameForClass(SString &ssBuf)
 {
     CONTRACTL
     {
@@ -2077,11 +2077,11 @@ SString<EncodingUnicode> &MethodTable::_GetFullyQualifiedNameForClass(SString<En
         LPCUTF8 szName;
         IfFailThrow(GetMDImport()->GetNameOfTypeDef(GetCl(), &szName, &szNamespace));
 
-        StackSString<EncodingUTF8> ss;
+        StackEString<EncodingUTF8> ss;
 
         ns::MakePath(ss,
-                     StackSString<EncodingUTF8>(szNamespace),
-                     StackSString<EncodingUTF8>(szName));
+                     StackEString<EncodingUTF8>(szNamespace),
+                     StackEString<EncodingUTF8>(szName));
 
         ss.ConvertToUnicode(ssBuf);
     }
@@ -2218,7 +2218,7 @@ void MethodTable::DebugRecursivelyDumpInstanceFields(LPCUTF8 pszClassName, BOOL 
 
     EX_TRY
     {
-        StackSString<EncodingUnicode> ssBuff;
+        StackSString ssBuff;
 
         DWORD cParentInstanceFields;
         DWORD i;
@@ -2290,7 +2290,7 @@ void MethodTable::DebugDumpFieldLayout(LPCUTF8 pszClassName, BOOL debug)
 
     EX_TRY
     {
-        StackSString<EncodingUnicode> ssBuff;
+        StackSString ssBuff;
 
         DWORD i;
         DWORD cParentInstanceFields;
@@ -2407,7 +2407,7 @@ MethodTable::DebugDumpGCDesc(
 
     EX_TRY
     {
-        StackSString<EncodingUnicode> ssBuff;
+        StackSString ssBuff;
 
         if (fDebug)
         {

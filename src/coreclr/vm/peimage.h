@@ -134,8 +134,8 @@ public:
 
     BOOL  HasPath();
     ULONG GetPathHash();
-    const SString<EncodingUnicode>& GetPath();
-    SString<EncodingUnicode> GetPathToLoad();
+    const SString& GetPath();
+    SString GetPathToLoad();
     LPCWSTR GetPathForErrorMessages() { return GetPath(); }
 
     BOOL IsFile();
@@ -176,7 +176,7 @@ public:
 
     // Check utilites
     static CHECK CheckStartup();
-    static CHECK CheckCanonicalFullPath(const SString<EncodingUnicode>& path);
+    static CHECK CheckCanonicalFullPath(const SString& path);
 
     CHECK CheckFormat();
     CHECK CheckILFormat();
@@ -185,7 +185,7 @@ public:
     void SetModuleFileNameHintForDAC();
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
-    const SString<EncodingUnicode> &GetModuleFileNameHintForDAC();
+    const SString &GetModuleFileNameHintForDAC();
 #endif
 
 private:
@@ -291,7 +291,7 @@ private:
     // Instance fields
     // ------------------------------------------------------------
 
-    SString<EncodingUnicode> m_path;
+    SString m_path;
     LONG                      m_refCount;
 
     // means this is a unique (deduped) instance.
@@ -312,7 +312,7 @@ private:
     // disk IL. This really is a workaround. The real fix is for fusion loader
     // hook (public API on hosting) to take an additional file name hint.
     // We are piggy backing on the fact that module name is the same as file name!!!
-    SString<EncodingUnicode>   m_sModuleFileNameHintUsedByDac; // This is only used by DAC
+    SString   m_sModuleFileNameHintUsedByDac; // This is only used by DAC
 
     enum
     {

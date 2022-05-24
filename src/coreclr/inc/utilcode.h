@@ -778,7 +778,7 @@ private:
     HRESULT GetLibrary(LocaleID langId, HRESOURCEDLL* phInst);
 #ifndef DACCESS_COMPILE
     HRESULT LoadLibraryHelper(HRESOURCEDLL *pHInst,
-                              SString<EncodingUnicode>& rcPath);
+                              SString& rcPath);
     HRESULT LoadLibraryThrows(HRESOURCEDLL * pHInst);
     HRESULT LoadLibrary(HRESOURCEDLL * pHInst);
     HRESULT LoadResourceFile(HRESOURCEDLL * pHInst, LPCWSTR lpFileName);
@@ -3804,12 +3804,12 @@ BOOL GetRegistryLongValue(HKEY    hKeyParent,              // Parent key.
                           long    *pValue,                 // Put value here, if found.
                           BOOL    fReadNonVirtualizedKey); // Whether to read 64-bit hive on WOW64
 
-HRESULT GetCurrentModuleFileName(SString<EncodingUnicode>& pBuffer);
+HRESULT GetCurrentModuleFileName(SString& pBuffer);
 
 //*****************************************************************************
 // Retrieve information regarding what registered default debugger
 //*****************************************************************************
-void GetDebuggerSettingInfo(SString<EncodingUnicode> &debuggerKeyValue, BOOL *pfAuto);
+void GetDebuggerSettingInfo(SString &debuggerKeyValue, BOOL *pfAuto);
 HRESULT GetDebuggerSettingInfoWorker(_Out_writes_to_opt_(*pcchDebuggerString, *pcchDebuggerString) LPWSTR wszDebuggerString, DWORD * pcchDebuggerString, BOOL * pfAuto);
 
 void TrimWhiteSpace(__inout_ecount(*pcch)  LPCWSTR *pwsz, __inout LPDWORD pcch);
@@ -4604,8 +4604,8 @@ inline T* InterlockedCompareExchangeT(
 
 // Returns the directory for clr module. So, if path was for "C:\Dir1\Dir2\Filename.DLL",
 // then this would return "C:\Dir1\Dir2\" (note the trailing backslash).
-HRESULT GetClrModuleDirectory(SString<EncodingUnicode>& wszPath);
-HRESULT CopySystemDirectory(const SString<EncodingUnicode>& pPathString, SString<EncodingUnicode>& pbuffer);
+HRESULT GetClrModuleDirectory(SString& wszPath);
+HRESULT CopySystemDirectory(const SString& pPathString, SString& pbuffer);
 
 HMODULE LoadLocalizedResourceDLLForSDK(_In_z_ LPCWSTR wzResourceDllName, _In_opt_z_ LPCWSTR modulePath=NULL, bool trySelf=true);
 // This is a slight variation that can be used for anything else
@@ -4619,7 +4619,7 @@ namespace Clr { namespace Util
 #ifdef HOST_WINDOWS
 namespace Com
 {
-    HRESULT FindInprocServer32UsingCLSID(REFCLSID rclsid, SString<EncodingUnicode> & ssInprocServer32Name);
+    HRESULT FindInprocServer32UsingCLSID(REFCLSID rclsid, SString & ssInprocServer32Name);
 }
 #endif // HOST_WINDOWS
 

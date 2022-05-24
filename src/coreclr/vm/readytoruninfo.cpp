@@ -406,7 +406,7 @@ static void LogR2r(const char *msg, PEAssembly *pPEAssembly)
         if (SUCCEEDED(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ReadyToRunLogFile, &wszReadyToRunLogFile)) && wszReadyToRunLogFile)
         {
             // Append process ID to the log file name, so multiple processes can log at the same time.
-            StackSString<EncodingUnicode> fullname;
+            StackSString fullname;
             fullname.Printf(W("%s.%u"), wszReadyToRunLogFile.GetValue(), GetCurrentProcessId());
             r2rLogFile = _wfopen((LPCWSTR)fullname, W("w"));
         }

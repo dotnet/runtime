@@ -214,7 +214,7 @@ void PendingTypeLoadTable::Dump()
     {
         for (TableEntry *pSearch = m_pBuckets[i]; pSearch; pSearch = pSearch->pNext)
         {
-            SString<EncodingUnicode> name;
+            SString name;
             TypeKey entryTypeKey = pSearch->pData->GetTypeKey();
             TypeString::AppendTypeKeyDebug(name, &entryTypeKey);
             LOG((LF_CLASSLOADER, LL_INFO10000, "  Entry %S with handle %p at level %s\n", (LPCWSTR)name, pSearch->pData->m_typeHandle.AsPtr(),

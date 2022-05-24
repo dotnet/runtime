@@ -89,7 +89,7 @@ namespace BINDER_SPACE
     /* static */
     HRESULT TextualIdentityParser::ToString(AssemblyIdentity *pAssemblyIdentity,
                                             DWORD             dwIdentityFlags,
-                                            SString<EncodingUnicode> &textualIdentity)
+                                            SString &textualIdentity)
     {
         HRESULT hr = S_OK;
 
@@ -97,7 +97,7 @@ namespace BINDER_SPACE
 
         EX_TRY
         {
-            SmallStackSString<EncodingUnicode> tmpString;
+            SmallStackSString tmpString;
 
             textualIdentity.Clear();
 
@@ -186,7 +186,7 @@ namespace BINDER_SPACE
 
     /* static */
     void TextualIdentityParser::BlobToHex(SBuffer &publicKeyOrTokenBLOB,
-                                          SString<EncodingUnicode> &publicKeyOrToken)
+                                          SString &publicKeyOrToken)
     {
         UINT cbPublicKeyOrTokenBLOB = publicKeyOrTokenBLOB.GetSize();
         WCHAR *pwzpublicKeyOrToken =
@@ -197,15 +197,15 @@ namespace BINDER_SPACE
     }
 
     /* static */
-    void TextualIdentityParser::EscapeString(SString<EncodingUnicode> &input,
-                                             SString<EncodingUnicode> &result)
+    void TextualIdentityParser::EscapeString(SString &input,
+                                             SString &result)
     {
         BOOL fNeedQuotes = FALSE;
         WCHAR wcQuoteCharacter = W('"');
 
-        SmallStackSString<EncodingUnicode> tmpString;
-        SString<EncodingUnicode>::Iterator cursor = input.Begin();
-        SString<EncodingUnicode>::Iterator end = input.End() - 1;
+        SmallStackSString tmpString;
+        SString::Iterator cursor = input.Begin();
+        SString::Iterator end = input.End() - 1;
 
         // Leading/Trailing white space require quotes
         if (IsWhitespace(cursor[0]) || IsWhitespace(end[0]))

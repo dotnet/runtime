@@ -199,10 +199,10 @@ namespace
 
 #if defined(DEBUG) && !defined(SELF_NO_HOST)
                 // Validate the cache and no-cache logic result in the same answer
-                SString<EncodingUnicode> nameToConvert(name);
-                SString<EncodingUTF8> nameAsUTF8;
+                SString nameToConvert(name);
+                EString<EncodingUTF8> nameAsUTF8;
                 nameToConvert.ConvertToUTF8(nameAsUTF8);
-                SString<EncodingUTF8> valueAsUTF8;
+                EString<EncodingUTF8> valueAsUTF8;
                 temp.ConvertToUTF8(valueAsUTF8);
 
                 CLRConfigNoCache nonCache = CLRConfigNoCache::Get((LPCUTF8)nameAsUTF8, noPrefix);

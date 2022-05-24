@@ -42,7 +42,7 @@ extern "C" mdTypeRef QCALLTYPE ModuleBuilder_GetTypeRef(QCall::ModuleHandle pMod
         COMPlusThrow(kArgumentNullException, W("ArgumentNull_String"));
     }
 
-    InlineSString<128, EncodingUnicode> ssNameUnescaped;
+    InlineEString<128, EncodingUnicode> ssNameUnescaped;
     LPCWSTR wszTemp = wszFullName;
 
     WCHAR c;
@@ -658,7 +658,7 @@ extern "C" void QCALLTYPE RuntimeModule_GetScopeName(QCall::ModuleHandle pModule
     END_QCALL;
 }
 
-static void ReplaceNiExtension(SString<EncodingUnicode>& fileName, PCWSTR pwzOldSuffix, PCWSTR pwzNewSuffix)
+static void ReplaceNiExtension(SString& fileName, PCWSTR pwzOldSuffix, PCWSTR pwzNewSuffix)
 {
     STANDARD_VM_CONTRACT;
 

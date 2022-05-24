@@ -85,17 +85,17 @@ namespace BINDER_SPACE
         ~ApplicationContext();
         HRESULT Init();
 
-        inline SString<EncodingUnicode> &GetApplicationName();
+        inline SString &GetApplicationName();
 
-        HRESULT SetupBindingPaths(/* in */ SString<EncodingUnicode> &sTrustedPlatformAssemblies,
-                                  /* in */ SString<EncodingUnicode> &sPlatformResourceRoots,
-                                  /* in */ SString<EncodingUnicode> &sAppPaths,
+        HRESULT SetupBindingPaths(/* in */ SString &sTrustedPlatformAssemblies,
+                                  /* in */ SString &sPlatformResourceRoots,
+                                  /* in */ SString &sAppPaths,
                                   /* in */ BOOL     fAcquireLock);
 
         // Getters/Setter
         inline ExecutionContext *GetExecutionContext();
         inline FailureCache *GetFailureCache();
-        inline HRESULT AddToFailureCache(SString<EncodingUnicode> &assemblyNameOrPath,
+        inline HRESULT AddToFailureCache(SString &assemblyNameOrPath,
                                          HRESULT  hrBindResult);
         inline StringArrayList<EncodingUnicode> *GetAppPaths();
         inline SimpleNameToFileNameMap *GetTpaList();
@@ -109,7 +109,7 @@ namespace BINDER_SPACE
 
     private:
         Volatile<LONG>     m_cVersion;
-        SString<EncodingUnicode>            m_applicationName;
+        SString            m_applicationName;
         ExecutionContext  *m_pExecutionContext;
         FailureCache      *m_pFailureCache;
         CRITSEC_COOKIE     m_contextCS;

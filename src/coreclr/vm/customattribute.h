@@ -138,15 +138,15 @@ private:
 
     static HRESULT InitCaType(
         CustomAttributeType* pType,
-        Factory<SString<EncodingUnicode>>* pSstringFactory,
-        Factory<SString<EncodingUTF8>>* pStackScratchBufferFactory,
+        Factory<SString>* pSstringFactory,
+        Factory<EString<EncodingUTF8>>* pStackScratchBufferFactory,
         CaType* pCaType);
 
     static HRESULT ParseCaType(
         CustomAttributeParser &ca,
         CaType* pCaType,
         DomainAssembly* pDomainAssembly,
-        StackSString<EncodingUnicode>* ss = NULL);
+        StackSString* ss = NULL);
 
     static TypeHandle GetTypeForEnum(
         LPCUTF8 szEnumName,

@@ -31,7 +31,7 @@ TypeHandle Attribute::GetTypeForEnum(LPCUTF8 szEnumName, COUNT_T cbEnumName, Dom
     }
     CONTRACTL_END;
 
-    StackSString<EncodingUTF8> sszEnumName(szEnumName, cbEnumName);
+    StackEString<EncodingUTF8> sszEnumName(szEnumName, cbEnumName);
     return TypeName::GetTypeUsingCASearchRules(sszEnumName, pDomainAssembly->GetAssembly());
 }
 
@@ -40,7 +40,7 @@ HRESULT Attribute::ParseCaType(
     CustomAttributeParser &ca,
     CaType* pCaType,
     DomainAssembly* pDomainAssembly,
-    StackSString<EncodingUnicode>* ss)
+    StackSString* ss)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -382,11 +382,11 @@ HRESULT Attribute::ParseCaNamedArgs(
 
         // Get argument type information
         CaType* pNamedArgType = &namedArg.type;
-        StackSString<EncodingUnicode> ss;
+        StackSString ss;
         IfFailGo(Attribute::ParseCaType(ca, pNamedArgType, pDomainAssembly, &ss));
 
         LPCSTR szLoadedEnumName = NULL;
-        StackSString<EncodingUTF8> buff;
+        StackEString<EncodingUTF8> buff;
 
         if (pNamedArgType->tag == SERIALIZATION_TYPE_ENUM ||
             (pNamedArgType->tag == SERIALIZATION_TYPE_SZARRAY && pNamedArgType->arrayType == SERIALIZATION_TYPE_ENUM ))
@@ -469,7 +469,7 @@ ErrExit:
 }
 
 /*static*/
-HRESULT Attribute::InitCaType(CustomAttributeType* pType, Factory<SString<EncodingUnicode>>* pSstringFactory, Factory<SString<EncodingUTF8>>* pStackScratchBufferFactory, CaType* pCaType)
+HRESULT Attribute::InitCaType(CustomAttributeType* pType, Factory<SString>* pSstringFactory, Factory<EString<EncodingUTF8>>* pStackScratchBufferFactory, CaType* pCaType)
 {
     CONTRACTL {
         THROWS;
@@ -481,8 +481,8 @@ HRESULT Attribute::InitCaType(CustomAttributeType* pType, Factory<SString<Encodi
 
     HRESULT hr = S_OK;
 
-    SString<EncodingUnicode>* psszName = NULL;
-    SString<EncodingUTF8>* scratchBuffer = NULL;
+    SString* psszName = NULL;
+    EString<EncodingUTF8>* scratchBuffer = NULL;
 
     IfNullGo(psszName = pSstringFactory->Create());
     IfNullGo(scratchBuffer = pStackScratchBufferFactory->Create());
@@ -539,8 +539,8 @@ FCIMPL5(VOID, Attribute::ParseAttributeArguments, void* pCa, INT32 cCa,
         // on what we can allocate inline here. Leave the Windows versions alone to retain the perf benefits
         // since we don't have the same constraints.
         NewHolder<CaValueArrayFactory> pCaValueArrayFactory = new InlineFactory<SArray<CaValue>, 4>();
-        InlineFactory<SString<EncodingUTF8>, 4> utf8SStringFactory;
-        InlineFactory<SString<EncodingUnicode>, 4> sstringFactory;
+        InlineFactory<EString<EncodingUTF8>, 4> utf8EStringFactory;
+        InlineFactory<SString, 4> sstringFactory;
 #else // __GNUC__
 
         // Preallocate 4 elements in each of the following factories for optimal performance.
@@ -552,9 +552,9 @@ FCIMPL5(VOID, Attribute::ParseAttributeArguments, void* pCa, INT32 cCa,
         InlineFactory<SArray<CaValue>, 4> caValueArrayFactory;
         InlineFactory<SArray<CaValue>, 4> *pCaValueArrayFactory = &caValueArrayFactory;
 
-        // Need one SString per ctor arg and two per named arg
-        InlineFactory<SString<EncodingUTF8>, 4> utf8SStringFactory;
-        InlineFactory<SString<EncodingUnicode>, 4> sstringFactory;
+        // Need one EString per ctor arg and two per named arg
+        InlineFactory<EString<EncodingUTF8>, 4> utf8EStringFactory;
+        InlineFactory<SString, 4> sstringFactory;
 #endif // __GNUC__
 
         cArgs = (*ppCustomAttributeArguments)->GetNumComponents();
@@ -571,7 +571,7 @@ FCIMPL5(VOID, Attribute::ParseAttributeArguments, void* pCa, INT32 cCa,
             for (COUNT_T i = 0; i < cArgs; i ++)
             {
                 CaType caType;
-                IfFailGo(Attribute::InitCaType(&gc.pArgs[i].m_type, &sstringFactory, &utf8SStringFactory, &caType));
+                IfFailGo(Attribute::InitCaType(&gc.pArgs[i].m_type, &sstringFactory, &utf8EStringFactory, &caType));
 
                 pCaArgs[i].Init(caType);
             }
@@ -593,15 +593,15 @@ FCIMPL5(VOID, Attribute::ParseAttributeArguments, void* pCa, INT32 cCa,
                 CustomAttributeNamedArgument* pNamedArg = &gc.pNamedArgs[i];
 
                 CaType caType;
-                IfFailGo(Attribute::InitCaType(&pNamedArg->m_type, &sstringFactory, &utf8SStringFactory, &caType));
+                IfFailGo(Attribute::InitCaType(&pNamedArg->m_type, &sstringFactory, &utf8EStringFactory, &caType));
 
-                SString<EncodingUnicode>* psszName = NULL;
+                SString* psszName = NULL;
                 IfNullGo(psszName = sstringFactory.Create());
 
                 psszName->Set(pNamedArg->m_argumentName->GetBuffer());
 
-                SString<EncodingUTF8>* scratchBuffer = NULL;
-                IfNullGo(scratchBuffer = utf8SStringFactory.Create());
+                EString<EncodingUTF8>* scratchBuffer = NULL;
+                IfNullGo(scratchBuffer = utf8EStringFactory.Create());
                 psszName->ConvertToUTF8(*scratchBuffer);
 
                 pCaNamedArgs[i].Init(

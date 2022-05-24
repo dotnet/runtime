@@ -964,7 +964,7 @@ bool BaseBucketParamsManager::GetFileVersionInfoForModule(Module* pModule, USHOR
         if (!succeeded)
         {
             LPCWSTR modulePath = pPEAssembly->GetPath();
-            if (modulePath != NULL && modulePath != SString<EncodingUnicode>::Empty() && SUCCEEDED(DwGetFileVersionInfo(modulePath, major, minor, build, revision)))
+            if (modulePath != NULL && modulePath != SString::Empty() && SUCCEEDED(DwGetFileVersionInfo(modulePath, major, minor, build, revision)))
             {
                 succeeded = true;
             }

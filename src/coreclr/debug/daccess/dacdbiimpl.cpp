@@ -649,7 +649,7 @@ void DacDbiInterfaceImpl::GetAppDomainFullName(
     AppDomain * pAppDomain = vmAppDomain.GetDacPtr();
 
     // Get the AppDomain name from the VM without changing anything
-    // We might be able to simplify this, eg. by returning an SString.
+    // We might be able to simplify this, eg. by returning an EString.
     bool fIsUtf8;
     PVOID pRawName = pAppDomain->GetFriendlyNameNoSet(&fIsUtf8);
 

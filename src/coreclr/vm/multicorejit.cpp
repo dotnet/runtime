@@ -49,7 +49,7 @@ void MulticoreJitFireEtwA(const WCHAR * pAction, const char * pTarget, int p1, i
         if (EventEnabledMulticoreJit())
         {
             MAKE_WIDEPTR_FROMUTF8(wTargetStr, pTarget);
-            SString<EncodingUnicode> wTarget(wTargetStr);
+            SString wTarget(wTargetStr);
 
             FireEtwMulticoreJit(GetClrInstanceId(), pAction, (LPCWSTR)wTarget, p1, p2, p3);
         }
@@ -307,10 +307,10 @@ bool RecorderModuleInfo::SetModule(Module * pMod)
     unsigned lenModuleName = (unsigned) strlen(pModuleName);
     simpleName.Set((const BYTE *) pModuleName, lenModuleName); // SBuffer::Set copies over name
 
-    SString<EncodingUnicode> sAssemblyName;
+    SString sAssemblyName;
     pMod->GetAssembly()->GetPEAssembly()->GetDisplayName(sAssemblyName);
 
-    SString<EncodingUTF8> sAssemblyNameUTF8(sAssemblyName.MoveToUTF8());
+    EString<EncodingUTF8> sAssemblyNameUTF8(sAssemblyName.MoveToUTF8());
     unsigned lenAssemblyName = sAssemblyNameUTF8.GetCount();
     assemblyName.Set((const BYTE *) (LPCUTF8)sAssemblyNameUTF8, lenAssemblyName);
 

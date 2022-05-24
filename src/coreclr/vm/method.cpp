@@ -290,7 +290,7 @@ LPCUTF8 MethodDesc::GetName()
 /*
  * Function to get a method's name, its namespace
  */
-VOID MethodDesc::GetMethodInfoNoSig(SString<EncodingUnicode> &namespaceOrClassName, SString<EncodingUTF8> &methodName)
+VOID MethodDesc::GetMethodInfoNoSig(SString &namespaceOrClassName, EString<EncodingUTF8> &methodName)
 {
     static LPCWSTR pDynamicClassName = W("dynamicClass");
 
@@ -307,7 +307,7 @@ VOID MethodDesc::GetMethodInfoNoSig(SString<EncodingUnicode> &namespaceOrClassNa
 /*
  * Function to get a method's name, its namespace and signature (legacy format)
  */
-VOID MethodDesc::GetMethodInfo(SString<EncodingUnicode> &namespaceOrClassName, SString<EncodingUTF8> &methodName, SString<EncodingUTF8> &methodSignature)
+VOID MethodDesc::GetMethodInfo(SString &namespaceOrClassName, EString<EncodingUTF8> &methodName, EString<EncodingUTF8> &methodSignature)
 {
     GetMethodInfoNoSig(namespaceOrClassName, methodName);
 
@@ -324,7 +324,7 @@ VOID MethodDesc::GetMethodInfo(SString<EncodingUnicode> &namespaceOrClassName, S
 /*
  * Function to get a method's name, its namespace and signature (new format)
  */
-VOID MethodDesc::GetMethodInfoWithNewSig(SString<EncodingUnicode> &namespaceOrClassName, SString<EncodingUTF8> &methodName, SString<EncodingUTF8> &methodSignature)
+VOID MethodDesc::GetMethodInfoWithNewSig(SString &namespaceOrClassName, EString<EncodingUTF8> &methodName, EString<EncodingUTF8> &methodSignature)
 {
     GetMethodInfoNoSig(namespaceOrClassName, methodName);
 
@@ -342,10 +342,10 @@ VOID MethodDesc::GetMethodInfoWithNewSig(SString<EncodingUnicode> &namespaceOrCl
  * Function to get a method's full name, something like
  * void [mscorlib]System.StubHelpers.BSTRMarshaler::ClearNative(native int)
  */
-VOID MethodDesc::GetFullMethodInfo(SString<EncodingUnicode>& fullMethodSigName)
+VOID MethodDesc::GetFullMethodInfo(SString& fullMethodSigName)
 {
-    SString<EncodingUnicode> namespaceOrClassName;
-    SString<EncodingUTF8> methodName;
+    SString namespaceOrClassName;
+    EString<EncodingUTF8> methodName;
     GetMethodInfoNoSig(namespaceOrClassName, methodName);
 
     // signature
@@ -353,8 +353,8 @@ VOID MethodDesc::GetFullMethodInfo(SString<EncodingUnicode>& fullMethodSigName)
     ULONG cSig = 0;
     PCCOR_SIGNATURE pSig;
 
-    SString<EncodingUTF8> methodFullName;
-    StackSString<EncodingUTF8> namespaceNameBuffer(namespaceOrClassName.MoveToUTF8());
+    EString<EncodingUTF8> methodFullName;
+    StackEString<EncodingUTF8> namespaceNameBuffer(namespaceOrClassName.MoveToUTF8());
     methodFullName.AppendPrintf(
         (LPCUTF8)"[%s] %s::%s",
         GetModule()->GetAssembly()->GetSimpleName(),
@@ -3692,11 +3692,11 @@ void ComPlusCallMethodDesc::InitComEventCallInfo()
         pItfMD = (ComPlusCallMethodDesc*)pItfMT->GetMethodDescForSlot(itfSlotNum);
 
         // Retrieve the event provider class name.
-        StackSString<EncodingUnicode> ssEvProvClassName;
+        StackSString ssEvProvClassName;
         pEvProvClass->_GetFullyQualifiedNameForClass(ssEvProvClassName);
 
         // Retrieve the COM event interface class name.
-        StackSString<EncodingUnicode> ssEvItfName;
+        StackSString ssEvItfName;
         pItfMT->_GetFullyQualifiedNameForClass(ssEvItfName);
 
         // Convert the method name to unicode.
@@ -3743,14 +3743,14 @@ MethodDesc::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     {
         // The assembling of the string below implicitly dumps the memory we need.
 
-        StackSString<EncodingUnicode> str;
+        StackSString str;
         TypeString::AppendMethodInternal(str, this, TypeString::FormatSignature|TypeString::FormatNamespace|TypeString::FormatFullInst);
 
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
         if (flags == CLRDATA_ENUM_MEM_MINI || flags == CLRDATA_ENUM_MEM_TRIAGE)
         {
             // we want to save just the method name, so truncate at the open paranthesis
-            SString<EncodingUnicode>::Iterator it = str.Begin();
+            SString::Iterator it = str.Begin();
             if (str.Find(it, W('(')))
             {
                 // ensure the symbol ends in "()" to minimize regressions

@@ -202,11 +202,11 @@ static void ConstructKeyFromDataCaseInsensitive(EEClassHashTable::ConstructKeyCa
 
     LPCUTF8 Key[2];
 
-    StackSString<EncodingUTF8> nameSpace(pszNameSpace);
+    StackEString<EncodingUTF8> nameSpace(pszNameSpace);
     nameSpace.LowerCase();
     Key[0] = nameSpace;
 
-    StackSString<EncodingUTF8> name(pszName);
+    StackEString<EncodingUTF8> name(pszName);
     name.LowerCase();
     Key[1] = name;
 

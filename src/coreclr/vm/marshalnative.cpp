@@ -272,7 +272,7 @@ FCIMPL2(UINT32, MarshalNative::SizeOfClass, ReflectClassBaseObject* refClassUNSA
         if (!IsStructMarshalable(th))
         {
             // It isn't marshalable so throw an ArgumentException.
-            StackSString<EncodingUnicode> strTypeName;
+            StackSString strTypeName;
             TypeString::AppendType(strTypeName, th);
             COMPlusThrow(kArgumentException, IDS_CANNOT_MARSHAL, strTypeName, NULL, NULL);
         }
@@ -317,7 +317,7 @@ FCIMPL1(UINT32, MarshalNative::OffsetOfHelper, ReflectFieldObject *pFieldUNSAFE)
         if (!IsStructMarshalable(th))
         {
             // It isn't marshalable so throw an ArgumentException.
-            StackSString<EncodingUnicode> strTypeName;
+            StackSString strTypeName;
             TypeString::AppendType(strTypeName, th);
             COMPlusThrow(kArgumentException, IDS_CANNOT_MARSHAL, strTypeName, NULL, NULL);
         }

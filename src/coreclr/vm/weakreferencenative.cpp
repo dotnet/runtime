@@ -315,10 +315,10 @@ NOINLINE Object* LoadComWeakReferenceTarget(WEAKREFERENCEREF weakReference, Type
         TypeHandle rcwType(gc.rcw->GetMethodTable());
         if (!rcwType.CanCastTo(targetType))
         {
-            SString<EncodingUnicode> weakReferenceTypeName;
+            SString weakReferenceTypeName;
             TypeString::AppendType(weakReferenceTypeName, targetType, TypeString::FormatNamespace | TypeString::FormatFullInst | TypeString::FormatAssembly);
 
-            SString<EncodingUnicode> resolvedTypeName;
+            SString resolvedTypeName;
             TypeString::AppendType(resolvedTypeName, rcwType, TypeString::FormatNamespace | TypeString::FormatFullInst | TypeString::FormatAssembly);
 
             COMPlusThrow(kInvalidCastException, IDS_EE_NATIVE_COM_WEAKREF_BAD_TYPE, weakReferenceTypeName, resolvedTypeName);

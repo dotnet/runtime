@@ -5,9 +5,9 @@
 #define _WIN_PATH_APIS_WRAPPER_
 
 template<typename TEncoding>
-class SString;
-
+class EString;
 struct EncodingUnicode;
+using SString = EString<EncodingUnicode>;
 
 HMODULE
 LoadLibraryExWrapper(
@@ -62,27 +62,27 @@ SearchPathWrapper(
     _In_ LPCWSTR lpFileName,
     _In_opt_ LPCWSTR lpExtension,
     _In_ BOOL getPath,
-    SString<EncodingUnicode>& lpBuffer,
+    SString& lpBuffer,
     _Out_opt_ LPWSTR * lpFilePart
     );
 
 DWORD WINAPI GetTempPathWrapper(
-    SString<EncodingUnicode>& lpBuffer
+    SString& lpBuffer
     );
 
 DWORD WINAPI GetCurrentDirectoryWrapper(
-    SString<EncodingUnicode>&  lpBuffer
+    SString&  lpBuffer
     );
 
 DWORD
 GetModuleFileNameWrapper(
     _In_opt_ HMODULE hModule,
-    SString<EncodingUnicode>& buffer
+    SString& buffer
     );
 
 DWORD WINAPI GetEnvironmentVariableWrapper(
     _In_opt_  LPCTSTR lpName,
-    _Out_opt_ SString<EncodingUnicode>&  lpBuffer
+    _Out_opt_ SString&  lpBuffer
     );
 
 #endif //_WIN_PATH_APIS_WRAPPER_

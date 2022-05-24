@@ -61,7 +61,7 @@
 //--------------------------------------------------------------------------------
 
 template<typename TEncoding>
-class SString;
+class EString;
 
 struct EncodingUTF8;
 
@@ -150,7 +150,7 @@ public: // !!! NOTE: Called from macros only!!!
 
   private:
 #ifdef _DEBUG
-    static LPCSTR AllocateDynamicMessage(const SString<EncodingUTF8> &s);
+    static LPCSTR AllocateDynamicMessage(const EString<EncodingUTF8> &s);
 #endif
 };
 

@@ -250,7 +250,7 @@ Assembly *AssemblyBaseObject::GetAssembly()
     return m_pAssembly->GetAssembly();
 }
 
-STRINGREF AllocateString(SString<EncodingUnicode> sstr)
+STRINGREF AllocateString(SString sstr)
 {
     CONTRACTL {
         THROWS;

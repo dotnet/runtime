@@ -19,28 +19,28 @@ BOOL AssemblyNameIndexHashTraits::Equals(LPCUTF8 a, LPCUTF8 b)
 {
     WRAPPER_NO_CONTRACT;
 
-    return SString<EncodingUTF8>(SharedData, a).CompareCaseInsensitive(SString<EncodingUTF8>(SharedData, b)) == 0;
+    return EString<EncodingUTF8>(EString<EncodingUTF8>::Literal, a).CompareCaseInsensitive(EString<EncodingUTF8>(EString<EncodingUTF8>::Literal, b)) == 0;
 }
 
 AssemblyNameIndexHashTraits::count_t AssemblyNameIndexHashTraits::Hash(LPCUTF8 s)
 {
     WRAPPER_NO_CONTRACT;
 
-    return SString<EncodingUTF8>(SharedData, s).HashCaseInsensitive();
+    return EString<EncodingUTF8>(EString<EncodingUTF8>::Literal, s).HashCaseInsensitive();
 }
 
 BOOL NativeImageIndexTraits::Equals(LPCUTF8 a, LPCUTF8 b)
 {
     WRAPPER_NO_CONTRACT;
 
-    return SString<EncodingUTF8>(SharedData, a).CompareCaseInsensitive(SString<EncodingUTF8>(SharedData, b)) == 0;
+    return EString<EncodingUTF8>(EString<EncodingUTF8>::Literal, a).CompareCaseInsensitive(EString<EncodingUTF8>(EString<EncodingUTF8>::Literal, b)) == 0;
 }
 
 NativeImageIndexTraits::count_t NativeImageIndexTraits::Hash(LPCUTF8 a)
 {
     WRAPPER_NO_CONTRACT;
 
-    return SString<EncodingUTF8>(SharedData, a).HashCaseInsensitive();
+    return EString<EncodingUTF8>(EString<EncodingUTF8>::Literal, a).HashCaseInsensitive();
 }
 
 NativeImage::NativeImage(AssemblyBinder *pAssemblyBinder, PEImageLayout *pImageLayout, LPCUTF8 imageFileName)
@@ -134,17 +134,17 @@ NativeImage *NativeImage::Open(
         }
     }
 
-    SString<EncodingUnicode> path(componentModule->GetPath());
-    SString<EncodingUnicode>::Iterator lastPathSeparatorIter = path.End();
+    SString path(componentModule->GetPath());
+    SString::Iterator lastPathSeparatorIter = path.End();
     size_t pathDirLength = 0;
     if (PEAssembly::FindLastPathSeparator(path, lastPathSeparatorIter))
     {
         pathDirLength = (lastPathSeparatorIter - path.Begin()) + 1;
     }
 
-    SString<EncodingUnicode> compositeImageFileName;
-    SString<EncodingUTF8>(nativeImageFileName).ConvertToUnicode(compositeImageFileName);
-    SString<EncodingUnicode> fullPath;
+    SString compositeImageFileName;
+    EString<EncodingUTF8>(nativeImageFileName).ConvertToUnicode(compositeImageFileName);
+    SString fullPath;
     fullPath.Set(path, path.Begin(), (COUNT_T)pathDirLength);
     fullPath += compositeImageFileName;
     LPWSTR searchPathsConfig;
@@ -174,11 +174,11 @@ NativeImage *NativeImage::Open(
         }
         EX_CATCH
         {
-            SString<EncodingUnicode> searchPaths(searchPathsConfig);
-            SString<EncodingUnicode>::CIterator start = searchPaths.Begin();
+            SString searchPaths(searchPathsConfig);
+            SString::CIterator start = searchPaths.Begin();
             while (start != searchPaths.End())
             {
-                SString<EncodingUnicode>::CIterator end = start;
+                SString::CIterator end = start;
                 if (!searchPaths.Find(end, PATH_SEPARATOR_CHAR_W))
                 {
                     end = searchPaths.End();
@@ -323,7 +323,7 @@ void NativeImage::CheckAssemblyMvid(Assembly *assembly) const
     StringFromGUID2(*componentMvid, componentMvidText, MVID_TEXT_LENGTH);
     MAKE_UTF8PTR_FROMWIDE(componentMvidTextUTF8, componentMvidText);
 
-    SString<EncodingUTF8> message;
+    EString<EncodingUTF8> message;
     message.Printf("MVID mismatch between loaded assembly '%s' (MVID = %s) and an assembly with the same simple name embedded in the native image '%s' (MVID = %s)",
         assembly->GetSimpleName(),
         assemblyMvidTextUTF8,

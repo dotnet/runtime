@@ -134,7 +134,7 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
         dumpChanges = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EncDumpApplyChanges);
 
     if (dumpChanges> 0) {
-        SString<EncodingUnicode> fn;
+        SString fn;
         int ec;
         fn.Printf(W("ApplyChanges.%d.dmeta"), m_applyChangesCount);
         FILE *fp;
@@ -557,18 +557,18 @@ PCODE EditAndContinueModule::JitUpdatedFunction( MethodDesc *pMD,
     } EX_CATCH {
 #ifdef _DEBUG
         {
-            // This is debug-only code to print out the error string, but SString can throw.
+            // This is debug-only code to print out the error string, but EString can throw.
             // This function is no-throw, and we can't put an EX_TRY inside an EX_CATCH block, so
             // we just have the violation.
             CONTRACT_VIOLATION(ThrowsViolation);
 
-            StackSString<EncodingUnicode> exceptionMessage;
-            SString<EncodingUnicode> errorMessage;
+            StackSString exceptionMessage;
+            SString errorMessage;
             GetExceptionMessage(GET_THROWABLE(), exceptionMessage);
             errorMessage.Append(W("**Error: Probable rude edit.**\n\n")
                                 W("EnCModule::JITUpdatedFunction JIT failed with the following exception:\n\n"));
             errorMessage.Append(exceptionMessage);
-            SString<EncodingUTF8> buffer(errorMessage.MoveToUTF8());
+            EString<EncodingUTF8> buffer(errorMessage.MoveToUTF8());
             DbgAssertDialog(__FILE__, __LINE__, buffer);
             LOG((LF_ENC, LL_INFO100, (LPCUTF8)buffer));
         }

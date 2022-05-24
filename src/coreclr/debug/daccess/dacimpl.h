@@ -1415,7 +1415,7 @@ public:
     // Used during triage/mini-dump collection to populate the map of
     // pointers to EE struct (MethodDesc* for now) to their corresponding
     // name.
-    bool MdCacheAddEEName(TADDR taEEStruct, const SString<EncodingUnicode>& name);
+    bool MdCacheAddEEName(TADDR taEEStruct, const SString& name);
 
     // Used to mark the end point for the name caching. Will update streams
     // based on built caches
@@ -1423,7 +1423,7 @@ public:
 
     // Used during triage/mini-dump analysis to retrieve the name associated
     // with an EE struct pointer (MethodDesc* for now).
-    bool MdCacheGetEEName(TADDR taEEStruct, SString<EncodingUnicode> & eeName);
+    bool MdCacheGetEEName(TADDR taEEStruct, SString & eeName);
 
 #endif // FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 

@@ -334,7 +334,7 @@ TypeHandle ClassLoader::LoadTypeHandleThrowIfFailed(NameHandle* pName, ClassLoad
                 if (szName == NULL)
                     szName = "<UNKNOWN>";
 
-                StackSString<EncodingUnicode> codeBase;
+                StackSString codeBase;
                 GetAssembly()->GetCodeBase(codeBase);
 
                 LOG((LF_CLASSLOADER, LL_INFO10, "Failed to find class \"%s\" in the manifest for assembly \"%ws\"\n", szName, (LPCWSTR)codeBase));
@@ -909,8 +909,8 @@ void DECLSPEC_NORETURN ClassLoader::ThrowTypeLoadException(TypeKey *pKey,
 {
     STATIC_CONTRACT_THROWS;
 
-    StackSString<EncodingUnicode> fullName;
-    StackSString<EncodingUnicode> assemblyName;
+    StackSString fullName;
+    StackSString assemblyName;
     TypeString::AppendTypeKey(fullName, pKey);
     pKey->GetModule()->GetAssembly()->GetDisplayName(assemblyName);
     ::ThrowTypeLoadException(fullName, assemblyName, NULL, resIDWhy);
@@ -1324,13 +1324,13 @@ bool CompareNameHandleWithTypeHandleNoThrow(
         // This block is specifically designed to handle transient faults such
         // as OOM exceptions.
         CONTRACT_VIOLATION(FaultViolation | ThrowsViolation);
-        StackSString<EncodingUTF8> ssBuiltName;
+        StackEString<EncodingUTF8> ssBuiltName;
         ns::MakePath(ssBuiltName,
-                     StackSString<EncodingUTF8>(pName->GetNameSpace()),
-                     StackSString<EncodingUTF8>(pName->GetName()));
-        StackSString<EncodingUnicode> ssName;
+                     StackEString<EncodingUTF8>(pName->GetNameSpace()),
+                     StackEString<EncodingUTF8>(pName->GetName()));
+        StackSString ssName;
         typeHnd.GetName(ssName);
-        StackSString<EncodingUnicode> wssBuiltName;
+        StackSString wssBuiltName;
         ssBuiltName.ConvertToUnicode(wssBuiltName);
         fRet = ssName.Equals(wssBuiltName) == TRUE;
     }
@@ -1749,11 +1749,11 @@ VOID ClassLoader::CreateCanonicallyCasedKey(LPCUTF8 pszNameSpace, LPCUTF8 pszNam
     }
     CONTRACTL_END
 
-    StackSString<EncodingUTF8> nameSpace(pszNameSpace);
+    StackEString<EncodingUTF8> nameSpace(pszNameSpace);
     nameSpace.LowerCase();
     pszNameSpace = nameSpace;
 
-    StackSString<EncodingUTF8> name(pszName);
+    StackEString<EncodingUTF8> name(pszName);
     name.LowerCase();
     pszName = name;
 
@@ -2821,7 +2821,7 @@ TypeHandle ClassLoader::DoIncrementalLoad(TypeKey *pTypeKey, TypeHandle typeHnd,
 #ifdef _DEBUG
     if (LoggingOn(LF_CLASSLOADER, LL_INFO10000))
     {
-        SString<EncodingUnicode> name;
+        SString name;
         TypeString::AppendTypeKeyDebug(name, pTypeKey);
         LOG((LF_CLASSLOADER, LL_INFO10000, "PHASEDLOAD: About to do incremental load of type %S (%p) from level %s\n", (LPCWSTR)name, typeHnd.AsPtr(), classLoadLevelName[currentLevel]));
     }
@@ -3223,7 +3223,7 @@ TypeHandle ClassLoader::LoadTypeHandleForTypeKey(TypeKey *pTypeKey,
 #ifdef _DEBUG
     if (LoggingOn(LF_CLASSLOADER, LL_INFO1000))
     {
-        SString<EncodingUnicode> name;
+        SString name;
         TypeString::AppendTypeKeyDebug(name, pTypeKey);
         LOG((LF_CLASSLOADER, LL_INFO10000, "PHASEDLOAD: LoadTypeHandleForTypeKey for type %S to level %s\n", (LPCWSTR)name, classLoadLevelName[targetLevel]));
         CrstHolder unresolvedClassLockHolder(&m_UnresolvedClassLock);
@@ -4230,7 +4230,7 @@ void DECLSPEC_NORETURN ThrowFieldAccessException(MethodDesc* pCallerMD,
             messageID = IDS_E_FIELDACCESS;
         }
 
-        EX_THROW_WITH_INNER(EEFieldException, (pFD, pCallerMD, SString<EncodingUnicode>::Empty(), messageID), pInnerException);
+        EX_THROW_WITH_INNER(EEFieldException, (pFD, pCallerMD, SString::Empty(), messageID), pInnerException);
     }
     else
     {
@@ -4283,7 +4283,7 @@ void DECLSPEC_NORETURN ThrowMethodAccessException(MethodDesc* pCallerMD,
             messageID = IDS_E_METHODACCESS;
         }
 
-        EX_THROW_WITH_INNER(EEMethodException, (pCalleeMD, pCallerMD, SString<EncodingUnicode>::Empty(), messageID), pInnerException);
+        EX_THROW_WITH_INNER(EEMethodException, (pCalleeMD, pCallerMD, SString::Empty(), messageID), pInnerException);
     }
     else
     {
@@ -4336,7 +4336,7 @@ void DECLSPEC_NORETURN ThrowTypeAccessException(MethodDesc* pCallerMD,
             messageID = IDS_E_TYPEACCESS;
         }
 
-        EX_THROW_WITH_INNER(EETypeAccessException, (pMT, pCallerMD, SString<EncodingUnicode>::Empty(), messageID), pInnerException);
+        EX_THROW_WITH_INNER(EETypeAccessException, (pMT, pCallerMD, SString::Empty(), messageID), pInnerException);
     }
     else
     {

@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // ---------------------------------------------------------------------------
-// SString.cpp
+// EString.cpp
 //
 
 // ---------------------------------------------------------------------------
@@ -23,19 +23,19 @@
 // Have one internal, well-known, literal for the empty string.
 const BYTE StaticStringHelpers::s_EmptyBuffer[2] = { 0 };
 
-SPTR_IMPL(SString<EncodingUnicode>, StaticStringHelpers, s_EmptyUnicode);
-SPTR_IMPL(SString<EncodingUTF8>, StaticStringHelpers, s_EmptyUtf8);
-SPTR_IMPL(SString<EncodingASCII>, StaticStringHelpers, s_EmptyAscii);
+SPTR_IMPL(EString<EncodingUnicode>, StaticStringHelpers, s_EmptyUnicode);
+SPTR_IMPL(EString<EncodingUTF8>, StaticStringHelpers, s_EmptyUtf8);
+SPTR_IMPL(EString<EncodingASCII>, StaticStringHelpers, s_EmptyAscii);
 
 #ifndef DACCESS_COMPILE
 namespace
 {
-    alignas(SString<EncodingUnicode>)
-    BYTE emptyUnicodeSpace[(sizeof(SString<EncodingUnicode>))] = { 0 };
-    alignas(SString<EncodingUnicode>)
-    BYTE emptyUtf8Space[(sizeof(SString<EncodingUTF8>))] = { 0 };
-    alignas(SString<EncodingUnicode>)
-    BYTE emptyAsciiSpace[(sizeof(SString<EncodingASCII>))] = { 0 };
+    alignas(SString)
+    BYTE emptyUnicodeSpace[(sizeof(SString))] = { 0 };
+    alignas(SString)
+    BYTE emptyUtf8Space[(sizeof(EString<EncodingUTF8>))] = { 0 };
+    alignas(SString)
+    BYTE emptyAsciiSpace[(sizeof(EString<EncodingASCII>))] = { 0 };
 }
 #endif
 
@@ -47,17 +47,17 @@ void StaticStringHelpers::Startup()
 #ifndef DACCESS_COMPILE
     if (s_EmptyUnicode == NULL)
     {
-        s_EmptyUnicode = PTR_SString<EncodingUnicode>(new (emptyUnicodeSpace) SString<EncodingUnicode>());
+        s_EmptyUnicode = PTR_SString(new (emptyUnicodeSpace) SString());
         MemoryBarrier();
     }
     if (s_EmptyUtf8 == NULL)
     {
-        s_EmptyUtf8 = PTR_SString<EncodingUTF8>(new (emptyUtf8Space) SString<EncodingUTF8>());
+        s_EmptyUtf8 = PTR_EString<EncodingUTF8>(new (emptyUtf8Space) EString<EncodingUTF8>());
         MemoryBarrier();
     }
     if (s_EmptyAscii == NULL)
     {
-        s_EmptyAscii = PTR_SString<EncodingASCII>(new (emptyAsciiSpace) SString<EncodingASCII>());
+        s_EmptyAscii = PTR_EString<EncodingASCII>(new (emptyAsciiSpace) EString<EncodingASCII>());
         MemoryBarrier();
     }
 #endif // DACCESS_COMPILE
@@ -237,7 +237,7 @@ int CaseHashHelperA(const CHAR *buffer, COUNT_T count)
 }
 
 template<>
-COUNT_T SString<EncodingUTF8>::ConvertToUTF8(SString<EncodingUTF8>& s) const
+COUNT_T EString<EncodingUTF8>::ConvertToUTF8(EString<EncodingUTF8>& s) const
 {
     CONTRACT(COUNT_T)
     {
@@ -251,7 +251,7 @@ COUNT_T SString<EncodingUTF8>::ConvertToUTF8(SString<EncodingUTF8>& s) const
 }
 
 template<>
-COUNT_T SString<EncodingASCII>::ConvertToUTF8(SString<EncodingUTF8> &s) const
+COUNT_T EString<EncodingASCII>::ConvertToUTF8(EString<EncodingUTF8> &s) const
 {
     CONTRACT(COUNT_T)
     {
@@ -266,7 +266,7 @@ COUNT_T SString<EncodingASCII>::ConvertToUTF8(SString<EncodingUTF8> &s) const
 }
 
 template<>
-COUNT_T SString<EncodingUnicode>::ConvertToUTF8(SString<EncodingUTF8>& s) const
+COUNT_T SString::ConvertToUTF8(EString<EncodingUTF8>& s) const
 {
     CONTRACT(COUNT_T)
     {
@@ -287,7 +287,7 @@ COUNT_T SString<EncodingUnicode>::ConvertToUTF8(SString<EncodingUTF8>& s) const
         LPUTF8 buffer = s.OpenBuffer(length);
 
 	//FString::Unicode_Utf8 expects an array all the time
-        //we optimize the empty string by replacing it with null for SString above in Resize
+        //we optimize the empty string by replacing it with null for EString above in Resize
         if (length > 0)
         {
             hr = FString::Unicode_Utf8(GetRawBuffer(), allAscii, buffer, length);
@@ -302,7 +302,7 @@ COUNT_T SString<EncodingUnicode>::ConvertToUTF8(SString<EncodingUTF8>& s) const
 }
 
 template<>
-COUNT_T SString<EncodingUTF8>::ConvertToUnicode(SString<EncodingUnicode>& s) const
+COUNT_T EString<EncodingUTF8>::ConvertToUnicode(SString& s) const
 {
     CONTRACT(COUNT_T)
     {
@@ -327,7 +327,7 @@ COUNT_T SString<EncodingUTF8>::ConvertToUnicode(SString<EncodingUnicode>& s) con
 }
 
 template<>
-COUNT_T SString<EncodingUnicode>::ConvertToUnicode(SString<EncodingUnicode>& s) const
+COUNT_T SString::ConvertToUnicode(SString& s) const
 {
     CONTRACT(COUNT_T)
     {
@@ -347,7 +347,7 @@ COUNT_T SString<EncodingUnicode>::ConvertToUnicode(SString<EncodingUnicode>& s) 
 //-----------------------------------------------------------------------------
 
 template<>
-void SString<EncodingUnicode>::LowerCase()
+void SString::LowerCase()
 {
     SS_CONTRACT_VOID
     {
@@ -364,7 +364,7 @@ void SString<EncodingUnicode>::LowerCase()
     }
 }
 template<>
-void SString<EncodingUTF8>::LowerCase()
+void EString<EncodingUTF8>::LowerCase()
 {
     SS_CONTRACT_VOID
     {
@@ -376,7 +376,7 @@ void SString<EncodingUTF8>::LowerCase()
     }
     SS_CONTRACT_END;
 
-    StackSString<EncodingUnicode> buffer;
+    StackSString buffer;
     ConvertToUnicode(buffer);
 
     buffer.LowerCase();
@@ -384,7 +384,7 @@ void SString<EncodingUTF8>::LowerCase()
 }
 
 template<>
-void SString<EncodingASCII>::LowerCase()
+void EString<EncodingASCII>::LowerCase()
 {
     SS_CONTRACT_VOID
     {
@@ -396,7 +396,7 @@ void SString<EncodingASCII>::LowerCase()
     }
     SS_CONTRACT_END;
 
-    StackSString<EncodingUnicode> buffer;
+    StackSString buffer;
     ConvertToUnicode(buffer);
 
     for (CHAR *pwch = GetRawBuffer(); pwch < GetRawBuffer() + GetCount(); ++pwch)
@@ -413,7 +413,7 @@ void SString<EncodingASCII>::LowerCase()
 
 
 template<>
-void SString<EncodingUnicode>::UpperCase()
+void SString::UpperCase()
 {
     SS_CONTRACT_VOID
     {
@@ -430,7 +430,7 @@ void SString<EncodingUnicode>::UpperCase()
     }
 }
 template<>
-void SString<EncodingUTF8>::UpperCase()
+void EString<EncodingUTF8>::UpperCase()
 {
     SS_CONTRACT_VOID
     {
@@ -442,7 +442,7 @@ void SString<EncodingUTF8>::UpperCase()
     }
     SS_CONTRACT_END;
 
-    StackSString<EncodingUnicode> buffer;
+    StackSString buffer;
     ConvertToUnicode(buffer);
 
     buffer.UpperCase();
@@ -450,7 +450,7 @@ void SString<EncodingUTF8>::UpperCase()
 }
 
 template<>
-void SString<EncodingASCII>::UpperCase()
+void EString<EncodingASCII>::UpperCase()
 {
     SS_CONTRACT_VOID
     {
@@ -462,7 +462,7 @@ void SString<EncodingASCII>::UpperCase()
     }
     SS_CONTRACT_END;
 
-    StackSString<EncodingUnicode> buffer;
+    StackSString buffer;
     ConvertToUnicode(buffer);
 
     for (CHAR *pwch = GetRawBuffer(); pwch < GetRawBuffer() + GetCount(); ++pwch)
@@ -480,7 +480,7 @@ void SString<EncodingASCII>::UpperCase()
 // Arguments:
 //    cBufChars - size of pBuffer in count of unicode characters.
 //    pBuffer - a buffer of cBufChars unicode chars.
-//    pcNeedChars - space to store the number of unicode chars in the SString.
+//    pcNeedChars - space to store the number of unicode chars in the EString.
 //
 // Returns:
 //    true if successful - and buffer is filled with the unicode representation of
@@ -488,7 +488,7 @@ void SString<EncodingASCII>::UpperCase()
 //    false if unsuccessful.
 //
 template<>
-bool SString<EncodingUnicode>::DacGetUnicode(COUNT_T                                   cBufChars,
+bool SString::DacGetUnicode(COUNT_T                                   cBufChars,
                             _Inout_updates_z_(cBufChars) WCHAR * pBuffer,
                             COUNT_T *                                 pcNeedChars) const
 {
@@ -545,7 +545,7 @@ bool SString<EncodingUnicode>::DacGetUnicode(COUNT_T                            
 // Arguments:
 //    cBufChars - size of pBuffer in count of unicode characters.
 //    pBuffer - a buffer of cBufChars unicode chars.
-//    pcNeedChars - space to store the number of unicode chars in the SString.
+//    pcNeedChars - space to store the number of unicode chars in the EString.
 //
 // Returns:
 //    true if successful - and buffer is filled with the unicode representation of
@@ -553,7 +553,7 @@ bool SString<EncodingUnicode>::DacGetUnicode(COUNT_T                            
 //    false if unsuccessful.
 //
 template<>
-bool SString<EncodingASCII>::DacGetUnicode(COUNT_T                                   cBufChars,
+bool EString<EncodingASCII>::DacGetUnicode(COUNT_T                                   cBufChars,
                             _Inout_updates_z_(cBufChars) WCHAR * pBuffer,
                             COUNT_T *                                 pcNeedChars) const
 {
@@ -605,7 +605,7 @@ bool SString<EncodingASCII>::DacGetUnicode(COUNT_T                              
 // Arguments:
 //    cBufChars - size of pBuffer in count of unicode characters.
 //    pBuffer - a buffer of cBufChars unicode chars.
-//    pcNeedChars - space to store the number of unicode chars in the SString.
+//    pcNeedChars - space to store the number of unicode chars in the EString.
 //
 // Returns:
 //    true if successful - and buffer is filled with the unicode representation of
@@ -613,7 +613,7 @@ bool SString<EncodingASCII>::DacGetUnicode(COUNT_T                              
 //    false if unsuccessful.
 //
 template<>
-bool SString<EncodingUTF8>::DacGetUnicode(COUNT_T                                   cBufChars,
+bool EString<EncodingUTF8>::DacGetUnicode(COUNT_T                                   cBufChars,
                             _Inout_updates_z_(cBufChars) WCHAR * pBuffer,
                             COUNT_T *                                 pcNeedChars) const
 {
@@ -663,7 +663,7 @@ bool SString<EncodingUTF8>::DacGetUnicode(COUNT_T                               
 
 // Return a global empty string
 template<>
-const SString<EncodingUnicode> &SString<EncodingUnicode>::Empty()
+const SString &SString::Empty()
 {
 #ifdef SSTRING_EXTRA_CHECKS
     CONTRACTL
@@ -689,7 +689,7 @@ const SString<EncodingUnicode> &SString<EncodingUnicode>::Empty()
 
 // Return a global empty string
 template<>
-const SString<EncodingUTF8> &SString<EncodingUTF8>::Empty()
+const EString<EncodingUTF8> &EString<EncodingUTF8>::Empty()
 {
 #ifdef SSTRING_EXTRA_CHECKS
     CONTRACTL
@@ -715,7 +715,7 @@ const SString<EncodingUTF8> &SString<EncodingUTF8>::Empty()
 
 // Return a global empty string
 template<>
-const SString<EncodingASCII> &SString<EncodingASCII>::Empty()
+const EString<EncodingASCII> &EString<EncodingASCII>::Empty()
 {
 #ifdef SSTRING_EXTRA_CHECKS
     CONTRACTL

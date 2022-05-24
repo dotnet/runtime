@@ -16,7 +16,8 @@ struct EncodingUnicode;
 struct EncodingUTF8;
 
 template<class TEncoding>
-class SString;
+class EString;
+using SString = EString<EncodingUnicode>;
 
 struct ns
 {
@@ -160,15 +161,15 @@ int MakePath(                           // true ok, false out of memory
 
 static
 void MakePath(                          // throws on out of memory
-    SString<EncodingUTF8>       &ssBuf,               // Where to put results.
-    const SString<EncodingUTF8> &ssNameSpace,         // Namespace for name.
-    const SString<EncodingUTF8> &ssName);             // Final part of name.
+    EString<EncodingUTF8>       &ssBuf,               // Where to put results.
+    const EString<EncodingUTF8> &ssNameSpace,         // Namespace for name.
+    const EString<EncodingUTF8> &ssName);             // Final part of name.
 
 static
 void MakePath(                          // throws on out of memory
-    SString<EncodingUnicode>       &ssBuf,               // Where to put results.
-    const SString<EncodingUnicode> &ssNameSpace,         // Namespace for name.
-    const SString<EncodingUnicode> &ssName);             // Final part of name.
+    SString       &ssBuf,               // Where to put results.
+    const SString &ssNameSpace,         // Namespace for name.
+    const SString &ssName);             // Final part of name.
 
 //*****************************************************************************
 // Concatinate type names to assembly names
@@ -203,9 +204,9 @@ int MakeNestedTypeName(                 // true ok, false truncation.
 
 static
 void MakeNestedTypeName(                // throws on out of memory
-    SString<EncodingUTF8>        &ssBuf,              // output path for name.
-    const SString<EncodingUTF8>  &ssEnclosingName,    // Full name for enclosing type
-    const SString<EncodingUTF8>  &ssNestedName);      // Full name for nested type
+    EString<EncodingUTF8>        &ssBuf,              // output path for name.
+    const EString<EncodingUTF8>  &ssEnclosingName,    // Full name for enclosing type
+    const EString<EncodingUTF8>  &ssNestedName);      // Full name for nested type
 }; // struct ns
 
 #ifndef NAMESPACE_SEPARATOR_CHAR

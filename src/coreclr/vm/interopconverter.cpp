@@ -64,8 +64,8 @@ namespace
         if (CanCastComObject(*obj, pMTClass))
             return;
 
-        StackSString<EncodingUnicode> ssObjClsName;
-        StackSString<EncodingUnicode> ssDestClsName;
+        StackSString ssObjClsName;
+        StackSString ssDestClsName;
 
         (*obj)->GetMethodTable()->_GetFullyQualifiedNameForClass(ssObjClsName);
         pMTClass->_GetFullyQualifiedNameForClass(ssDestClsName);

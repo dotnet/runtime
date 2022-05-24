@@ -28,7 +28,7 @@ class SymbolInfo:  IMetaDataEmit,  IMetaDataImport
     {
         mdMethodDef method;
         mdTypeDef cls;
-        SString<EncodingUnicode> wszName;
+        SString wszName;
         MethodProps() : method(mdTokenNil)  {};
     };
 
@@ -36,7 +36,7 @@ class SymbolInfo:  IMetaDataEmit,  IMetaDataImport
     {
         mdTypeDef cls;
         DWORD flags;
-        SString<EncodingUnicode> wszName;
+        SString wszName;
         mdTypeDef tkEnclosing;
         ClassProps(mdToken c, DWORD f, LPCWSTR name, mdToken tkE):
             cls(c),flags(f),wszName(name),tkEnclosing(tkE) {}

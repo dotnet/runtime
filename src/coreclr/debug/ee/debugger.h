@@ -2223,8 +2223,8 @@ public:
         Thread                                    *pThread,
         AppDomain                                 *pAppDomain,
         int                                        iLevel,
-        SString<EncodingUnicode> *   pCategory,
-        SString<EncodingUnicode> *   pMessage);
+        SString *   pCategory,
+        SString *   pMessage);
 
 
     // Helper function to send MDA notification
@@ -2394,8 +2394,8 @@ public:
         BOOL useManagedBPForManagedAttach, BOOL explicitUserRequest);
 
     void SendLogMessage (int iLevel,
-                         SString<EncodingUnicode> * pSwitchName,
-                         SString<EncodingUnicode> * pMessage);
+                         SString * pSwitchName,
+                         SString * pMessage);
 
     void SendLogSwitchSetting (int iLevel,
                                int iReason,
@@ -2417,9 +2417,9 @@ public:
     // Send an MDA notification. This ultimately translates to an ICorDebugMDA object on the Right-Side.
     void SendMDANotification(
         Thread * pThread, // may be NULL. Lets us send on behalf of other threads.
-        SString<EncodingUnicode> * szName,
-        SString<EncodingUnicode> * szDescription,
-        SString<EncodingUnicode> * szXML,
+        SString * szName,
+        SString * szDescription,
+        SString * szXML,
         CorDebugMDAFlags flags,
         BOOL bAttach
     );
@@ -2733,7 +2733,7 @@ private:
                                       BYTE *pIL);
 #endif // EnC_SUPPORTED
 
-    bool GetCompleteDebuggerLaunchString(SString<EncodingUnicode> * pStrArgsBuf);
+    bool GetCompleteDebuggerLaunchString(SString * pStrArgsBuf);
 
     // Launch a debugger for jit-attach
     void EnsureDebuggerAttached(Thread * pThread, EXCEPTION_POINTERS * pExceptionInfo, BOOL willSendManagedEvent, BOOL explicitUserRequest);

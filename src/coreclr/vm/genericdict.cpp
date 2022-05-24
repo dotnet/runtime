@@ -1087,17 +1087,17 @@ Dictionary::PopulateEntry(
                 // It's not clear if anyone would need them and the implementation complexity is not worth it at this time.
                 if (!pResolvedMD->IsStatic() && !pResolvedMD->GetMethodTable()->IsValueType() && constraintType.GetMethodTable()->IsValueType())
                 {
-                    SString<EncodingUnicode> assemblyName;
+                    SString assemblyName;
 
                     constraintType.GetMethodTable()->GetAssembly()->GetDisplayName(assemblyName);
 
-                    SString<EncodingUnicode> strInterfaceName;
+                    SString strInterfaceName;
                     TypeString::AppendType(strInterfaceName, ownerType);
 
-                    SString<EncodingUnicode> strMethodName;
+                    SString strMethodName;
                     TypeString::AppendMethod(strMethodName, pMethod, pMethod->GetMethodInstantiation());
 
-                    SString<EncodingUnicode> strTargetClassName;
+                    SString strTargetClassName;
                     TypeString::AppendType(strTargetClassName, constraintType.GetMethodTable());
 
                     COMPlusThrow(

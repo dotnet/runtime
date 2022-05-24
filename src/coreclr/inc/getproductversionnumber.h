@@ -31,7 +31,7 @@
 // Notes:
 //    Throws on error
 
-void inline GetProductVersionNumber(SString<EncodingUnicode> &szFullPath, DWORD * pdwVersionMS, DWORD * pdwVersionLS)
+void inline GetProductVersionNumber(SString &szFullPath, DWORD * pdwVersionMS, DWORD * pdwVersionLS)
 {
     WRAPPER_NO_CONTRACT;
 #ifndef TARGET_UNIX

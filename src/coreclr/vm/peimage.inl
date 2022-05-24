@@ -25,20 +25,20 @@ inline ULONG PEImage::AddRef()
     RETURN (static_cast<ULONG>(FastInterlockIncrement(&m_refCount)));
 }
 
-inline const SString<EncodingUnicode> &PEImage::GetPath()
+inline const SString &PEImage::GetPath()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
     return m_path;
 }
 
-inline SString<EncodingUnicode> PEImage::GetPathToLoad()
+inline SString PEImage::GetPathToLoad()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
     if (IsInBundle())
     {
-        SString<EncodingUnicode> bundleLocation;
+        SString bundleLocation;
         m_bundleFileLocation.Path().ConvertToUnicode(bundleLocation);
         return bundleLocation;
     }
@@ -96,7 +96,7 @@ inline void PEImage::SetModuleFileNameHintForDAC()
 }
 
 #ifdef DACCESS_COMPILE
-inline const SString<EncodingUnicode> &PEImage::GetModuleFileNameHintForDAC()
+inline const SString &PEImage::GetModuleFileNameHintForDAC()
 {
     LIMITED_METHOD_CONTRACT;
 

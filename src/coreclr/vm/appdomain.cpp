@@ -794,14 +794,14 @@ void AppDomain::SetNativeDllSearchDirectories(LPCWSTR wszNativeDllSearchDirector
 {
     STANDARD_VM_CONTRACT;
 
-    SString<EncodingUnicode> sDirectories(wszNativeDllSearchDirectories);
+    SString sDirectories(wszNativeDllSearchDirectories);
 
     if (sDirectories.GetCount() > 0)
     {
-        SString<EncodingUnicode>::CIterator start = sDirectories.Begin();
-        SString<EncodingUnicode>::CIterator itr = sDirectories.Begin();
-        SString<EncodingUnicode>::CIterator end = sDirectories.End();
-        SString<EncodingUnicode> qualifiedPath;
+        SString::CIterator start = sDirectories.Begin();
+        SString::CIterator itr = sDirectories.Begin();
+        SString::CIterator end = sDirectories.End();
+        SString qualifiedPath;
 
         while (itr != end)
         {
@@ -812,7 +812,7 @@ void AppDomain::SetNativeDllSearchDirectories(LPCWSTR wszNativeDllSearchDirector
                 itr = end;
             }
 
-            SString<EncodingUnicode> qualifiedPath(sDirectories, start, itr);
+            SString qualifiedPath(sDirectories, start, itr);
 
             if (found)
             {
@@ -828,7 +828,7 @@ void AppDomain::SetNativeDllSearchDirectories(LPCWSTR wszNativeDllSearchDirector
                     qualifiedPath.Append(DIRECTORY_SEPARATOR_STR_W);
                 }
 
-                NewHolder<SString<EncodingUnicode>> stringHolder(new SString<EncodingUnicode>(qualifiedPath));
+                NewHolder<SString> stringHolder(new SString(qualifiedPath));
                 IfFailThrow(m_NativeDllSearchDirectories.Append(stringHolder.GetValue()));
                 stringHolder.SuppressRelease();
             }
@@ -2757,7 +2757,7 @@ DomainAssembly* AppDomain::LoadDomainAssembly(AssemblySpec* pSpec,
 
             if (!EEFileLoadException::CheckType(pEx))
             {
-                StackSString<EncodingUnicode> name;
+                StackSString name;
                 pSpec->GetDisplayName(0, name);
                 pEx=new EEFileLoadException(name, pEx->GetHR(), pEx);
                 AddExceptionToCache(pSpec, pEx);
@@ -3191,7 +3191,7 @@ void AppDomain::SetFriendlyName(LPCWSTR pwzFriendlyName, BOOL fDebuggerCares/*=T
     CONTRACTL_END;
 
     // Do all computations into a temporary until we're ensured of success
-    SString<EncodingUnicode> tmpFriendlyName;
+    SString tmpFriendlyName;
 
 
     if (pwzFriendlyName)
@@ -3206,7 +3206,7 @@ void AppDomain::SetFriendlyName(LPCWSTR pwzFriendlyName, BOOL fDebuggerCares/*=T
             MAKE_WIDEPTR_FROMUTF8(pSimpleName, m_pRootAssembly->GetSimpleName());
             tmpFriendlyName.Set(pSimpleName);
 
-            SString<EncodingUnicode>::Iterator i = tmpFriendlyName.End();
+            SString::Iterator i = tmpFriendlyName.End();
             if (tmpFriendlyName.FindBack(i, '.'))
                 tmpFriendlyName.Truncate(i);
         }
@@ -3732,7 +3732,7 @@ PEAssembly * AppDomain::BindAssemblySpec(
                             }
                             else
                             {
-                                StackSString<EncodingUnicode> exceptionDisplayName, failedSpecDisplayName;
+                                StackSString exceptionDisplayName, failedSpecDisplayName;
 
                                 ((EEFileLoadException*)ex)->GetName(exceptionDisplayName);
                                 pFailedSpec->GetDisplayName(0, failedSpecDisplayName);
@@ -4559,7 +4559,7 @@ AppDomain::RaiseAssemblyResolveEvent(
     }
     CONTRACT_END;
 
-    StackSString<EncodingUnicode> ssName;
+    StackSString ssName;
     pSpec->GetDisplayName(0, ssName);
 
     // Elevate threads allowed loading level.  This allows the host to load an assembly even in a restricted

@@ -190,7 +190,7 @@ BOOL GetRegistryLongValue(HKEY    hKeyParent,
 // Note:
 //
 //----------------------------------------------------------------------------
-HRESULT GetCurrentModuleFileName(SString<EncodingUnicode>& pBuffer)
+HRESULT GetCurrentModuleFileName(SString& pBuffer)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -266,7 +266,7 @@ BOOL IsCurrentModuleFileNameInAutoExclusionList()
 //*****************************************************************************
 // Retrieve information regarding what registered default debugger
 //*****************************************************************************
-void GetDebuggerSettingInfo(SString<EncodingUnicode> &ssDebuggerString, BOOL *pfAuto)
+void GetDebuggerSettingInfo(SString &ssDebuggerString, BOOL *pfAuto)
 {
     CONTRACTL
     {

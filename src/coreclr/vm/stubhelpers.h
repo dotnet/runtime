@@ -28,7 +28,7 @@ class StubHelpers
 
     static void ValidateObjectInternal(Object *pObjUNSAFE, BOOL fValidateNextObj);
     static MethodDesc *ResolveInteropMethod(Object *pThisUNSAFE, MethodDesc *pMD);
-    static void FormatValidationMessage(MethodDesc *pMD, SString<EncodingUnicode> &ssErrorString);
+    static void FormatValidationMessage(MethodDesc *pMD, SString &ssErrorString);
 
 public:
     static void Init();

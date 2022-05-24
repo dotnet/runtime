@@ -992,7 +992,7 @@ Module *Assembly::FindModuleByName(LPCSTR pszModuleName)
     }
     CONTRACT_END;
 
-    SString<EncodingUTF8> moduleName(pszModuleName);
+    EString<EncodingUTF8> moduleName(pszModuleName);
     moduleName.LowerCase();
 
     mdFile kFile = GetManifestFileToken(moduleName);
@@ -1554,7 +1554,7 @@ INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, BOOL waitForOtherThre
             RunMainPost();
     }
     else {
-        StackSString<EncodingUnicode> displayName;
+        StackSString displayName;
         GetDisplayName(displayName);
         COMPlusThrowHR(COR_E_MISSINGMETHOD, IDS_EE_FAILED_TO_FIND_MAIN, displayName);
     }
@@ -1609,7 +1609,7 @@ MethodDesc* Assembly::GetEntryPoint()
     // We need to get its properties and the class token for this MethodDef token.
     mdToken mdParent;
     if (FAILED(pModule->GetMDImport()->GetParentToken(mdEntry, &mdParent))) {
-        StackSString<EncodingUnicode> displayName;
+        StackSString displayName;
         GetDisplayName(displayName);
         COMPlusThrowHR(COR_E_BADIMAGEFORMAT, IDS_EE_ILLEGAL_TOKEN_FOR_MAIN, displayName);
     }
@@ -1627,7 +1627,7 @@ MethodDesc* Assembly::GetEntryPoint()
     if (hrValidParamList == CLDB_E_FILE_CORRUPT)
     {
         // Throw an exception for bad_image_format (because of corrupt metadata)
-        StackSString<EncodingUnicode> displayName;
+        StackSString displayName;
         GetDisplayName(displayName);
         COMPlusThrowHR(COR_E_BADIMAGEFORMAT, IDS_EE_ILLEGAL_TOKEN_FOR_MAIN, displayName);
     }
@@ -2038,7 +2038,7 @@ void DECLSPEC_NORETURN Assembly::ThrowTypeLoadException(LPCUTF8 pszNameSpace,
 {
     STATIC_CONTRACT_THROWS;
 
-    StackSString<EncodingUnicode> displayName;
+    StackSString displayName;
     GetDisplayName(displayName);
 
     ::ThrowTypeLoadException(pszNameSpace, pszTypeName, displayName,
@@ -2051,15 +2051,15 @@ void DECLSPEC_NORETURN Assembly::ThrowBadImageException(LPCUTF8 pszNameSpace,
 {
     STATIC_CONTRACT_THROWS;
 
-    StackSString<EncodingUnicode> displayName;
+    StackSString displayName;
     GetDisplayName(displayName);
 
-    StackSString<EncodingUTF8> fullName;
-    SString<EncodingUTF8> sNameSpace(pszNameSpace);
-    SString<EncodingUTF8> sTypeName(pszTypeName);
+    StackEString<EncodingUTF8> fullName;
+    EString<EncodingUTF8> sNameSpace(pszNameSpace);
+    EString<EncodingUTF8> sTypeName(pszTypeName);
     ns::MakePath(fullName, sNameSpace, sTypeName);
 
-    StackSString<EncodingUnicode> fullNameW;
+    StackSString fullNameW;
     fullName.ConvertToUnicode(fullNameW);
 
     COMPlusThrowHR(COR_E_BADIMAGEFORMAT, resIDWhy, fullNameW, displayName);
@@ -2230,7 +2230,7 @@ ReleaseHolder<FriendAssemblyDescriptor> FriendAssemblyDescriptor::CreateFriendAs
             }
 
             // Convert the string to Unicode.
-            StackSString<EncodingUTF8> displayName(szString, cbString);
+            StackEString<EncodingUTF8> displayName(szString, cbString);
 
             // Create an AssemblyNameObject from the string.
             FriendAssemblyNameHolder pFriendAssemblyName;

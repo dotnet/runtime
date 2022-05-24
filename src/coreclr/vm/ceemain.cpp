@@ -596,7 +596,7 @@ void EEStartupHelper()
 #endif
 
 
-        // SString initialization
+        // EString initialization
         // This needs to be done before config because config uses StaticStringHelpers::Empty()
         StaticStringHelpers::Startup();
 
@@ -1915,8 +1915,8 @@ static HRESULT GetThreadUICultureNames(StringArrayList<EncodingUnicode>* pCultur
 
     EX_TRY
     {
-        InlineSString<LOCALE_NAME_MAX_LENGTH, EncodingUnicode> sCulture;
-        InlineSString<LOCALE_NAME_MAX_LENGTH, EncodingUnicode> sParentCulture;
+        InlineEString<LOCALE_NAME_MAX_LENGTH, EncodingUnicode> sCulture;
+        InlineEString<LOCALE_NAME_MAX_LENGTH, EncodingUnicode> sParentCulture;
 
 #if 0 // Enable and test if/once the unmanaged runtime is localized
         Thread * pThread = GetThreadNULLOk();
@@ -1991,12 +1991,12 @@ static HRESULT GetThreadUICultureNames(StringArrayList<EncodingUnicode>* pCultur
 #endif // !TARGET_UNIX
         }
         // (LPCWSTR) to restrict the size to null terminated size
-        pCultureNames->AppendIfNotThere(SString<EncodingUnicode>((LPCWSTR)sCulture));
+        pCultureNames->AppendIfNotThere(SString((LPCWSTR)sCulture));
         // Disabling for Dev10 for consistency with managed resource lookup (see AppCompat bug notes in ResourceFallbackManager.cs)
         // Also, this is in the wrong order - put after the parent culture chain.
         //AddThreadPreferredUILanguages(pCultureNames);
-        pCultureNames->AppendIfNotThere(SString<EncodingUnicode>((LPCWSTR)sParentCulture));
-        pCultureNames->Append(SString<EncodingUnicode>::Empty());
+        pCultureNames->AppendIfNotThere(SString((LPCWSTR)sParentCulture));
+        pCultureNames->Append(SString::Empty());
     }
     EX_CATCH
     {

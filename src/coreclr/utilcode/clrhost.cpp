@@ -112,7 +112,7 @@ int RFS_HashStack ()
 
 #endif // FAILPOINTS_ENABLED
 
-DWORD GetClrModulePathName(SString<EncodingUnicode>& buffer)
+DWORD GetClrModulePathName(SString& buffer)
 {
 #ifdef HOST_WINDOWS
     return WszGetModuleFileName((HINSTANCE)GetClrModuleBase(), buffer);

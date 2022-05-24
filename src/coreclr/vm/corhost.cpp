@@ -458,14 +458,14 @@ HRESULT CorHost2::ExecuteInDefaultAppDomain(LPCWSTR pwzAssemblyPath,
     {
         Assembly *pAssembly = AssemblySpec::LoadAssembly(pwzAssemblyPath);
 
-        SString<EncodingUnicode> szTypeName(pwzTypeName);
-        StackSString<EncodingUTF8> typeName(szTypeName.MoveToUTF8());
+        SString szTypeName(pwzTypeName);
+        StackEString<EncodingUTF8> typeName(szTypeName.MoveToUTF8());
         MethodTable *pMT = ClassLoader::LoadTypeByNameThrowing(pAssembly,
                                                             NULL,
                                                             typeName).AsMethodTable();
 
-        SString<EncodingUnicode> szMethodName(pwzMethodName);
-        StackSString<EncodingUTF8> methodName(szMethodName.MoveToUTF8());
+        SString szMethodName(pwzMethodName);
+        StackEString<EncodingUTF8> methodName(szMethodName.MoveToUTF8());
         MethodDesc *pMethodMD = MemberLoader::FindMethod(pMT, methodName, &gsig_SM_Str_RetInt);
 
         if (!pMethodMD)
@@ -680,9 +680,9 @@ HRESULT CorHost2::CreateAppDomainWithManager(
     pDomain->SetNativeDllSearchDirectories(pwzNativeDllSearchDirectories);
 
     {
-        SString<EncodingUnicode> sTrustedPlatformAssemblies(pwzTrustedPlatformAssemblies);
-        SString<EncodingUnicode> sPlatformResourceRoots(pwzPlatformResourceRoots);
-        SString<EncodingUnicode> sAppPaths(pwzAppPaths);
+        SString sTrustedPlatformAssemblies(pwzTrustedPlatformAssemblies);
+        SString sPlatformResourceRoots(pwzPlatformResourceRoots);
+        SString sAppPaths(pwzAppPaths);
 
         DefaultAssemblyBinder *pBinder = pDomain->GetDefaultBinder();
         _ASSERTE(pBinder != NULL);
@@ -755,7 +755,7 @@ HRESULT CorHost2::CreateDelegate(
         GCX_PREEMP();
 
         AssemblySpec spec;
-        SString<EncodingUTF8> ssAssemblyName(szAssemblyName);
+        EString<EncodingUTF8> ssAssemblyName(szAssemblyName);
         spec.Init(ssAssemblyName);
         Assembly* pAsm=spec.LoadAssembly(FILE_ACTIVE);
 

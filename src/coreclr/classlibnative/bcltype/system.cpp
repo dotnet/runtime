@@ -288,7 +288,7 @@ void SystemNative::GenericFailFast(STRINGREF refMesgString, EXCEPTIONREF refExce
     }
 
     LPCWSTR argExceptionString = NULL;
-    StackSString<EncodingUnicode> msg;
+    StackSString msg;
     if (gc.refExceptionForWatsonBucketing != NULL)
     {
         GetExceptionMessage(gc.refExceptionForWatsonBucketing, msg);

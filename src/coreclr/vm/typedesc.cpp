@@ -163,7 +163,7 @@ Assembly* TypeDesc::GetAssembly() {
     return pModule->GetAssembly();
 }
 
-void TypeDesc::GetName(SString<EncodingUnicode> &ssBuf)
+void TypeDesc::GetName(SString &ssBuf)
 {
     CONTRACTL
     {
@@ -193,13 +193,13 @@ void TypeDesc::GetName(SString<EncodingUnicode> &ssBuf)
 void TypeDesc::ConstructName(CorElementType kind,
                              TypeHandle param,
                              int rank,
-                             SString<EncodingUnicode> &ssBuff)
+                             SString &ssBuff)
 {
     CONTRACTL
     {
         THROWS;
         GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM()); // SString operations can allocate.
+        INJECT_FAULT(COMPlusThrowOM()); // EString operations can allocate.
     }
     CONTRACTL_END
 

@@ -123,7 +123,7 @@ HRESULT SetupErrorInfo(OBJECTREF pThrownObject)
 #ifdef _DEBUG
                 EX_TRY
                 {
-                    StackSString<EncodingUnicode> message;
+                    StackSString message;
                     GetExceptionMessage(pThrownObject, message);
 
                     if (g_pConfig->ShouldExposeExceptionsInCOMToConsole())
@@ -1862,7 +1862,7 @@ DefaultInterfaceType GetDefaultInterfaceForClassInternal(TypeHandle hndClass, Ty
         IfFailThrow(cap.GetNonNullString(&szStr, &cbStr));
 
         // Allocate a new buffer that will contain the name of the default COM interface.
-        StackSString<EncodingUTF8> defItf(szStr, cbStr);
+        StackEString<EncodingUTF8> defItf(szStr, cbStr);
 
         // Load the default COM interface specified in the CA.
         {
@@ -1875,9 +1875,9 @@ DefaultInterfaceType GetDefaultInterfaceForClassInternal(TypeHandle hndClass, Ty
             if (!DefItfType.GetMethodTable())
             {
                 // This should only occur for TypeDesc's.
-                StackSString<EncodingUnicode> ssClassName;
+                StackSString ssClassName;
                 DefineFullyQualifiedNameForClassW()
-                StackSString<EncodingUnicode> defItfName;
+                StackSString defItfName;
                 defItf.ConvertToUnicode(defItfName);
                 COMPlusThrow(kTypeLoadException, IDS_EE_INVALIDCOMDEFITF,
                              GetFullyQualifiedNameForClassW(pClassMT),
@@ -1888,8 +1888,8 @@ DefaultInterfaceType GetDefaultInterfaceForClassInternal(TypeHandle hndClass, Ty
             // name of the type.
             if (!DefItfType.IsInterface())
             {
-                StackSString<EncodingUnicode> ssClassName;
-                StackSString<EncodingUnicode> ssInvalidItfName;
+                StackSString ssClassName;
+                StackSString ssInvalidItfName;
                 pClassMT->_GetFullyQualifiedNameForClass(ssClassName);
                 DefItfType.GetMethodTable()->_GetFullyQualifiedNameForClass(ssInvalidItfName);
                 COMPlusThrow(kTypeLoadException, IDS_EE_INVALIDCOMDEFITF,
@@ -1899,8 +1899,8 @@ DefaultInterfaceType GetDefaultInterfaceForClassInternal(TypeHandle hndClass, Ty
             // Make sure the class implements the interface.
             if (!pClassMT->CanCastToInterface(DefItfType.GetMethodTable()))
             {
-                StackSString<EncodingUnicode> ssClassName;
-                StackSString<EncodingUnicode> ssInvalidItfName;
+                StackSString ssClassName;
+                StackSString ssInvalidItfName;
                 pClassMT->_GetFullyQualifiedNameForClass(ssClassName);
                 DefItfType.GetMethodTable()->_GetFullyQualifiedNameForClass(ssInvalidItfName);
                 COMPlusThrow(kTypeLoadException, IDS_EE_COMDEFITFNOTSUPPORTED,
@@ -2149,8 +2149,8 @@ void GetComSourceInterfacesForClass(MethodTable *pMT, CQuickArray<MethodTable *>
                     if (!ItfType.GetMethodTable())
                     {
                         // This should only occur for TypeDesc's.
-                        StackSString<EncodingUnicode> ssInvalidItfName;
-                        SString<EncodingUTF8>(pCurrInterfaces).ConvertToUnicode(ssInvalidItfName);
+                        StackSString ssInvalidItfName;
+                        EString<EncodingUTF8>(pCurrInterfaces).ConvertToUnicode(ssInvalidItfName);
                         DefineFullyQualifiedNameForClassW()
                         COMPlusThrow(kTypeLoadException, IDS_EE_INVALIDCOMSOURCEITF,
                                      GetFullyQualifiedNameForClassW(pMT),
@@ -2161,8 +2161,8 @@ void GetComSourceInterfacesForClass(MethodTable *pMT, CQuickArray<MethodTable *>
                     // name of the type.
                     if (!ItfType.IsInterface())
                     {
-                        StackSString<EncodingUnicode> ssClassName;
-                        StackSString<EncodingUnicode> ssInvalidItfName;
+                        StackSString ssClassName;
+                        StackSString ssInvalidItfName;
                         pMT->_GetFullyQualifiedNameForClass(ssClassName);
                         ItfType.GetMethodTable()->_GetFullyQualifiedNameForClass(ssInvalidItfName);
                         COMPlusThrow(kTypeLoadException, IDS_EE_INVALIDCOMSOURCEITF,
@@ -2172,8 +2172,8 @@ void GetComSourceInterfacesForClass(MethodTable *pMT, CQuickArray<MethodTable *>
                     // Ensure the source interface is not generic.
                     if (ItfType.HasInstantiation())
                     {
-                        StackSString<EncodingUnicode> ssClassName;
-                        StackSString<EncodingUnicode> ssInvalidItfName;
+                        StackSString ssClassName;
+                        StackSString ssInvalidItfName;
                         pMT->_GetFullyQualifiedNameForClass(ssClassName);
                         ItfType.GetMethodTable()->_GetFullyQualifiedNameForClass(ssInvalidItfName);
                         COMPlusThrow(kTypeLoadException, IDS_EE_INVALIDCOMSOURCEITF,

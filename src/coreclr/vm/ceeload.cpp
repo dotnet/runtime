@@ -2518,7 +2518,7 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
         else
         {
             // The assembly is on disk, so try and load symbols based on the path to the assembly (case 1)
-            const SString<EncodingUnicode> &path = m_pPEAssembly->GetPath();
+            const SString &path = m_pPEAssembly->GetPath();
 
             // Call Fusion to ensure that any PDB's are shadow copied before
             // trying to get a symbol reader. This has to be done once per
@@ -3408,8 +3408,8 @@ DomainAssembly *Module::LoadModule(AppDomain *pDomain, mdFile kFile)
                                     NULL));
     }
 
-    SString<EncodingUnicode> name;
-    SString<EncodingUTF8>(psModuleName).ConvertToUnicode(name);
+    SString name;
+    EString<EncodingUTF8>(psModuleName).ConvertToUnicode(name);
     EEFileLoadException::Throw(name, COR_E_MULTIMODULEASSEMBLIESDIALLOWED, NULL);
     RETURN NULL;
 }

@@ -29,7 +29,7 @@ void CreateCrashDumpIfEnabled(bool stackoverflow = false);
 // Global state counter to implement SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE.
 Volatile<LONG> g_DbgSuppressAllocationAsserts = 0;
 
-static void GetExecutableFileNameUtf8(SString<EncodingUTF8>& value)
+static void GetExecutableFileNameUtf8(EString<EncodingUTF8>& value)
 {
     CONTRACTL
     {
@@ -38,7 +38,7 @@ static void GetExecutableFileNameUtf8(SString<EncodingUTF8>& value)
     }
     CONTRACTL_END;
 
-    InlineSString<_MAX_PATH, EncodingUnicode> tmp;
+    InlineEString<_MAX_PATH, EncodingUnicode> tmp;
     WCHAR * pCharBuf = tmp.OpenBuffer(_MAX_PATH);
     DWORD numChars = GetModuleFileNameW(0 /* Get current executable */, pCharBuf, _MAX_PATH);
     tmp.CloseBuffer(numChars);
@@ -257,7 +257,7 @@ BOOL LaunchJITDebugger()
 #ifndef TARGET_UNIX
     EX_TRY
     {
-        SString<EncodingUnicode> debugger;
+        SString debugger;
         GetDebuggerSettingInfo(debugger, NULL);
 
         SECURITY_ATTRIBUTES sa;
@@ -271,7 +271,7 @@ BOOL LaunchJITDebugger()
         if (eventHandle == NULL)
             ThrowOutOfMemory();
 
-        SString<EncodingUnicode> cmdLine;
+        SString cmdLine;
         cmdLine.Printf(debugger, GetCurrentProcessId(), eventHandle.GetValue());
 
         STARTUPINFO StartupInfo;
@@ -347,7 +347,7 @@ bool _DbgBreakCheck(
 
     char formatBuffer[4096];
 
-    SString<EncodingUTF8> modulePath;
+    EString<EncodingUTF8> modulePath;
     BOOL formattedMessages = FALSE;
 
     // If we are low on memory we cannot even format a message. If this happens we want to
@@ -607,7 +607,7 @@ VOID DbgAssertDialog(const char *szFile, int iLine, const char *szExpr)
 // Returns true if successful, false on failure (such as OOM).
 // This never throws.
 //-----------------------------------------------------------------------------
-extern "C" bool GetStackTraceAtContext(SString<EncodingASCII> & s, CONTEXT * pContext)
+extern "C" bool GetStackTraceAtContext(EString<EncodingASCII> & s, CONTEXT * pContext)
 {
     SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE;
     STATIC_CONTRACT_DEBUG_ONLY;
@@ -671,8 +671,8 @@ void DECLSPEC_NORETURN __FreeBuildAssertFail(const char *szFile, int iLine, cons
 
     __FreeBuildDebugBreak();
 
-    SString<EncodingUTF8> buffer;
-    SString<EncodingUTF8> modulePath;
+    EString<EncodingUTF8> buffer;
+    EString<EncodingUTF8> modulePath;
 
     GetExecutableFileNameUtf8(modulePath);
 

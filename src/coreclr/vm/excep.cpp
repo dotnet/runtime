@@ -209,7 +209,7 @@ ULONG GetExceptionMessage(OBJECTREF throwable,
         return 0;
     }
 
-    StackSString<EncodingUnicode> result;
+    StackSString result;
     GetExceptionMessage(throwable, result);
 
     ULONG length = result.GetCount();
@@ -231,7 +231,7 @@ ULONG GetExceptionMessage(OBJECTREF throwable,
 // Given an object, get the "message" from it.  If the object is an Exception
 //  call Exception.ToString, otherwise, call Object.ToString
 //-----------------------------------------------------------------------------
-void GetExceptionMessage(OBJECTREF throwable, SString<EncodingUnicode> &result)
+void GetExceptionMessage(OBJECTREF throwable, SString &result)
 {
     CONTRACTL
     {
@@ -246,7 +246,7 @@ void GetExceptionMessage(OBJECTREF throwable, SString<EncodingUnicode> &result)
 
     // If call returned NULL (not empty), oh well, no message.
     if (pString != NULL)
-        pString->GetSString(result);
+        pString->GetEString(result);
 } // void GetExceptionMessage()
 
 STRINGREF GetExceptionMessage(OBJECTREF throwable)
@@ -4029,7 +4029,7 @@ LPCWSTR g_createDumpCommandLine = nullptr;
 
 static void
 BuildCreateDumpCommandLine(
-    SString<EncodingUTF8>& commandLine,
+    EString<EncodingUTF8>& commandLine,
     LPCWSTR dumpName,
     int dumpType,
     bool diag)
@@ -4039,9 +4039,9 @@ BuildCreateDumpCommandLine(
     PathString coreclrPath;
     if (GetClrModulePathName(coreclrPath))
     {
-        SmallStackSString<EncodingUTF8> coreclrPathUtf8;
+        SmallStackEString<EncodingUTF8> coreclrPathUtf8;
         coreclrPath.ConvertToUTF8(coreclrPathUtf8);
-        SString<EncodingUTF8>::CIterator lastBackslash = coreclrPathUtf8.End();
+        EString<EncodingUTF8>::CIterator lastBackslash = coreclrPathUtf8.End();
         if (coreclrPathUtf8.FindBack(lastBackslash, W('\\')))
         {
             commandLine.Set(coreclrPathUtf8, coreclrPathUtf8.Begin(), lastBackslash + 1);
@@ -4144,7 +4144,7 @@ GenerateCrashDump(
     int dumpType,
     bool diag)
 {
-    SString<EncodingUTF8> commandLine;
+    EString<EncodingUTF8> commandLine;
     if (dumpType < 1 || dumpType > 4)
     {
         return false;
@@ -4154,7 +4154,7 @@ GenerateCrashDump(
         dumpName = nullptr;
     }
     BuildCreateDumpCommandLine(commandLine, dumpName, dumpType, diag);
-    SString<EncodingUnicode> commandLineW;
+    SString commandLineW;
     commandLine.ConvertToUnicode(commandLineW);
     return LaunchCreateDump(commandLineW);
 }
@@ -4169,9 +4169,9 @@ InitializeCrashDump()
         int dumpType = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DbgMiniDumpType);
         DWORD diag = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_CreateDumpDiagnostics);
 
-        SString<EncodingUTF8> commandLine;
+        EString<EncodingUTF8> commandLine;
         BuildCreateDumpCommandLine(commandLine, dumpName, dumpType, diag == 1);
-        SString<EncodingUnicode> commandLineW;
+        SString commandLineW;
         commandLine.ConvertToUnicode(commandLineW);
         g_createDumpCommandLine = commandLineW.CreateCopyOfString();
     }
@@ -5150,13 +5150,13 @@ LONG __stdcall COMUnhandledExceptionFilter(     // EXCEPTION_CONTINUE_SEARCH or 
 
 void PrintStackTraceToStdout();
 
-static SString<EncodingUnicode> GetExceptionMessageWrapper(Thread* pThread, OBJECTREF throwable)
+static SString GetExceptionMessageWrapper(Thread* pThread, OBJECTREF throwable)
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_MODE_COOPERATIVE;
     STATIC_CONTRACT_GC_TRIGGERS;
 
-    StackSString<EncodingUnicode> result;
+    StackSString result;
 
     INSTALL_NESTED_EXCEPTION_HANDLER(pThread->GetFrame());
     GetExceptionMessage(throwable, result);
@@ -5183,7 +5183,7 @@ DefaultCatchHandlerExceptionMessageWorker(Thread* pThread,
         PrintToStdErrW(buf);
         PrintToStdErrA(" ");
 
-        SString<EncodingUnicode> message = GetExceptionMessageWrapper(pThread, throwable);
+        SString message = GetExceptionMessageWrapper(pThread, throwable);
 
         if (!message.IsEmpty())
         {
@@ -5210,7 +5210,7 @@ DefaultCatchHandlerExceptionMessageWorker(Thread* pThread,
                 }
                 else
                 {
-                    StackSString<EncodingUnicode> s;
+                    StackSString s;
                     TypeString::AppendType(s, TypeHandle(throwable->GetMethodTable()), TypeString::FormatNamespace | TypeString::FormatFullInst);
                     reporter.AddDescription(s);
                     LogCallstackForEventReporter(reporter);
@@ -5741,15 +5741,15 @@ LONG CallOutFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pv)
 // Note: This is not general purpose routine. It handles only cases found
 // in TypeLoadException and FileLoadException.
 //==========================================================================
-static BOOL GetManagedFormatStringForResourceID(CCompRC::ResourceCategory eCategory, UINT32 resId, SString<EncodingUnicode> & converted)
+static BOOL GetManagedFormatStringForResourceID(CCompRC::ResourceCategory eCategory, UINT32 resId, SString & converted)
 {
     STANDARD_VM_CONTRACT;
 
-    StackSString<EncodingUnicode> temp;
+    StackSString temp;
     if (!LoadResource(temp, eCategory, resId))
         return FALSE;
 
-    SString<EncodingUnicode>::Iterator itr = temp.Begin();
+    SString::Iterator itr = temp.Begin();
     while (*itr)
     {
         WCHAR c = *itr++;
@@ -5794,7 +5794,7 @@ extern "C" void QCALLTYPE GetTypeLoadExceptionMessage(UINT32 resId, QCall::Strin
 
     BEGIN_QCALL;
 
-    StackSString<EncodingUnicode> format;
+    StackSString format;
     GetManagedFormatStringForResourceID(CCompRC::Error, resId ? resId : IDS_CLASSLOAD_GENERAL,  format);
     retString.Set(format);
 
@@ -5813,7 +5813,7 @@ extern "C" void QCALLTYPE GetFileLoadExceptionMessage(UINT32 hr, QCall::StringHa
 
     BEGIN_QCALL;
 
-    StackSString<EncodingUnicode> format;
+    StackSString format;
     GetManagedFormatStringForResourceID(CCompRC::Error, GetResourceIDForFileLoadExceptionHR(hr), format);
     retString.Set(format);
 
@@ -5852,7 +5852,7 @@ extern "C" void QCALLTYPE FileLoadException_GetMessageForHR(UINT32 hresult, QCal
             break;
     }
 
-    SString<EncodingUnicode> s;
+    SString s;
     GetHRMsg((HRESULT)hresult, s, bNoGeekStuff);
     retString.Set(s);
 
@@ -7571,7 +7571,7 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase3(PEXCEPTION_POINTERS pExcepti
                     //
 #if defined(_DEBUG)
                     const char * pStack = "<stack not available>";
-                    SString<EncodingASCII> sStack;
+                    EString<EncodingASCII> sStack;
                     if (GetStackTraceAtContext(sStack, pContext))
                     {
                         pStack = sStack;
@@ -8657,7 +8657,7 @@ BOOL ExceptionTypeOverridesStackTraceGetter(PTR_MethodTable pMT)
 
 // Removes source file names/paths and line information from a stack trace generated
 // by Environment.GetStackTrace.
-void StripFileInfoFromStackTrace(SString<EncodingUnicode> &ssStackTrace)
+void StripFileInfoFromStackTrace(SString &ssStackTrace)
 {
     CONTRACTL
     {
@@ -8668,8 +8668,8 @@ void StripFileInfoFromStackTrace(SString<EncodingUnicode> &ssStackTrace)
     }
     CONTRACTL_END;
 
-    SString<EncodingUnicode>::Iterator i = ssStackTrace.Begin();
-    SString<EncodingUnicode>::Iterator end;
+    SString::Iterator i = ssStackTrace.Begin();
+    SString::Iterator end;
     int countBracket = 0;
     int position = 0;
 
@@ -8684,7 +8684,7 @@ void StripFileInfoFromStackTrace(SString<EncodingUnicode> &ssStackTrace)
             if (countBracket == 1)
             {
                 end = i + 1;
-                SString<EncodingUnicode>::Iterator j = i + 1;
+                SString::Iterator j = i + 1;
                 while (j < ssStackTrace.End())
                 {
                     if (j[0] == W('\r') || j[0] == W('\n'))
@@ -11493,9 +11493,9 @@ VOID ThrowBadFormatWorker(UINT resID, LPCWSTR imageName DEBUGARG(_In_z_ const ch
     CONTRACTL_END
 
 #ifndef DACCESS_COMPILE
-    SString<EncodingUnicode> msgStr;
+    SString msgStr;
 
-    SString<EncodingUnicode> resStr;
+    SString resStr;
     if (resID == 0 || !LoadResource(resStr, CCompRC::Optional, resID))
     {
         LoadResource(resStr, CCompRC::Error, BFA_BAD_IL); // "Bad IL format."
@@ -11504,10 +11504,10 @@ VOID ThrowBadFormatWorker(UINT resID, LPCWSTR imageName DEBUGARG(_In_z_ const ch
 
     if ((imageName != NULL) && (imageName[0] != 0))
     {
-        SString<EncodingUnicode> suffixResStr;
+        SString suffixResStr;
         if (LoadResource(suffixResStr, CCompRC::Optional, COR_E_BADIMAGEFORMAT)) // "The format of the file '%1' is invalid."
         {
-            SString<EncodingUnicode> suffixMsgStr;
+            SString suffixMsgStr;
             suffixMsgStr.FormatMessage(FORMAT_MESSAGE_FROM_STRING, (LPCWSTR)suffixResStr, 0, 0, SL(imageName));
             msgStr.Append(W(" "));
             msgStr += suffixMsgStr;
@@ -11518,8 +11518,8 @@ VOID ThrowBadFormatWorker(UINT resID, LPCWSTR imageName DEBUGARG(_In_z_ const ch
     if (0 != strcmp(cond, "FALSE"))
     {
         msgStr += SL(W(" (Failed condition: ")); // this is in DEBUG only - not going to localize it.
-        SString<EncodingASCII> condStr(cond);
-        SString<EncodingUnicode> condStrW;
+        EString<EncodingASCII> condStr(cond);
+        SString condStrW;
         condStr.ConvertToUnicode(condStrW);
         msgStr += condStrW;
         msgStr += SL(W(")"));
@@ -11855,11 +11855,11 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrow(RuntimeExceptionKind reKind, LPCWSTR wsz
 
     if (pInnerException == NULL)
     {
-        EX_THROW(EEResourceException, (reKind, SString<EncodingUnicode>(wszResourceName)));
+        EX_THROW(EEResourceException, (reKind, SString(wszResourceName)));
     }
     else
     {
-        EX_THROW_WITH_INNER(EEResourceException, (reKind, SString<EncodingUnicode>(wszResourceName)), pInnerException);
+        EX_THROW_WITH_INNER(EEResourceException, (reKind, SString(wszResourceName)), pInnerException);
     }
 }
 
@@ -12092,15 +12092,15 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(EXCEPINFO *pExcepInfo)
 //==========================================================================
 
 
-VOID GetAssemblyDetailInfo(SString<EncodingUnicode> &sType,
-                           SString<EncodingUnicode> &sAssemblyDisplayName,
+VOID GetAssemblyDetailInfo(SString &sType,
+                           SString &sAssemblyDisplayName,
                            PEAssembly *pPEAssembly,
-                           SString<EncodingUnicode> &sAssemblyDetailInfo)
+                           SString &sAssemblyDetailInfo)
 {
     WRAPPER_NO_CONTRACT;
 
-    StackSString<EncodingUnicode> sFormat;
-    StackSString<EncodingUnicode> sAlcName;
+    StackSString sFormat;
+    StackSString sAlcName;
 
     pPEAssembly->GetAssemblyBinder()->GetNameForDiagnostics(sAlcName);
 
@@ -12151,27 +12151,27 @@ VOID CheckAndThrowSameTypeAndAssemblyInvalidCastException(TypeHandle thCastFrom,
          _ASSERTE(pPEAssemblyTypeFrom != NULL);
          _ASSERTE(pPEAssemblyTypeTo != NULL);
 
-         StackSString<EncodingUnicode> sAssemblyFromDisplayName;
-         StackSString<EncodingUnicode> sAssemblyToDisplayName;
+         StackSString sAssemblyFromDisplayName;
+         StackSString sAssemblyToDisplayName;
 
          pPEAssemblyTypeFrom->GetDisplayName(sAssemblyFromDisplayName);
          pPEAssemblyTypeTo->GetDisplayName(sAssemblyToDisplayName);
 
          // Found the culprit case. Now format the new exception text.
-         StackSString<EncodingUnicode> strCastFromName;
-         StackSString<EncodingUnicode> strCastToName;
-         StackSString<EncodingUnicode> sAssemblyDetailInfoFrom;
-         StackSString<EncodingUnicode> sAssemblyDetailInfoTo;
+         StackSString strCastFromName;
+         StackSString strCastToName;
+         StackSString sAssemblyDetailInfoFrom;
+         StackSString sAssemblyDetailInfoTo;
 
          thCastFrom.GetName(strCastFromName);
          thCastTo.GetName(strCastToName);
 
-         SString<EncodingUnicode> typeA(SharedData, W("A"));
+         SString typeA(SString::Literal, W("A"));
          GetAssemblyDetailInfo(typeA,
                                sAssemblyFromDisplayName,
                                pPEAssemblyTypeFrom,
                                sAssemblyDetailInfoFrom);
-         SString<EncodingUnicode> typeB(SharedData, W("B"));
+         SString typeB(SString::Literal, W("B"));
          GetAssemblyDetailInfo(typeB,
                                sAssemblyToDisplayName,
                                pPEAssemblyTypeTo,
@@ -12194,11 +12194,11 @@ VOID RealCOMPlusThrowInvalidCastException(TypeHandle thCastFrom, TypeHandle thCa
         MODE_COOPERATIVE;
     } CONTRACTL_END;
 
-    // Use an InlineSString with a size of MAX_CLASSNAME_LENGTH + 1 to prevent
+    // Use an InlineEString with a size of MAX_CLASSNAME_LENGTH + 1 to prevent
     // TypeHandle::GetName from having to allocate a new block of memory. This
     // significantly improves the performance of throwing an InvalidCastException.
-    InlineSString<MAX_CLASSNAME_LENGTH + 1, EncodingUnicode> strCastFromName;
-    InlineSString<MAX_CLASSNAME_LENGTH + 1, EncodingUnicode> strCastToName;
+    InlineEString<MAX_CLASSNAME_LENGTH + 1, EncodingUnicode> strCastFromName;
+    InlineEString<MAX_CLASSNAME_LENGTH + 1, EncodingUnicode> strCastToName;
 
     thCastTo.GetName(strCastToName);
     {

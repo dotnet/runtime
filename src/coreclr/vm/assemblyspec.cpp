@@ -230,9 +230,9 @@ void AssemblySpec::AssemblyNameInit(ASSEMBLYNAMEREF* pAsmName)
 
     NativeAssemblyNameParts nameParts;
 
-    StackSString<EncodingUnicode> ssName;
+    StackSString ssName;
     if (m_pAssemblyName != NULL)
-        SString<EncodingUTF8>(SharedData, m_pAssemblyName).ConvertToUnicode(ssName);
+        EString<EncodingUTF8>(EString<EncodingUTF8>::Literal, m_pAssemblyName).ConvertToUnicode(ssName);
     nameParts._pName = (m_pAssemblyName != NULL) ? (LPCWSTR)ssName : NULL;
 
     nameParts._major = m_context.usMajorVersion;
@@ -240,9 +240,9 @@ void AssemblySpec::AssemblyNameInit(ASSEMBLYNAMEREF* pAsmName)
     nameParts._build = m_context.usBuildNumber;
     nameParts._revision = m_context.usRevisionNumber;
 
-    SmallStackSString<EncodingUnicode> ssLocale;
+    SmallStackSString ssLocale;
     if (m_context.szLocale != NULL)
-        SString<EncodingUTF8>(SharedData, m_context.szLocale).ConvertToUnicode(ssLocale);
+        EString<EncodingUTF8>(EString<EncodingUTF8>::Literal, m_context.szLocale).ConvertToUnicode(ssLocale);
     nameParts._pCultureName = (m_context.szLocale != NULL) ? (LPCWSTR)ssLocale : NULL;
 
     nameParts._pPublicKeyOrToken = m_pbPublicKeyOrToken;
@@ -275,11 +275,11 @@ void AssemblySpec::InitializeAssemblyNameRef(_In_ BINDER_SPACE::AssemblyName* as
     AssemblySpec spec;
     spec.InitializeWithAssemblyIdentity(assemblyName);
 
-    StackSString<EncodingUTF8> nameUTF8;
+    StackEString<EncodingUTF8> nameUTF8;
     assemblyName->GetSimpleName().ConvertToUTF8(nameUTF8);
     spec.SetName(nameUTF8);
 
-    StackSString<EncodingUTF8> cultureUTF8;
+    StackEString<EncodingUTF8> cultureUTF8;
     if (assemblyName->Have(BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_CULTURE))
     {
         assemblyName->GetCulture().ConvertToUTF8(nameUTF8);
@@ -544,9 +544,9 @@ HRESULT AssemblySpec::EmitToken(
 
     EX_TRY
     {
-        SmallStackSString<EncodingUTF8> ssName;
+        SmallStackEString<EncodingUTF8> ssName;
         GetName(ssName);
-        SmallStackSString<EncodingUnicode> ssNameW;
+        SmallStackSString ssNameW;
         ssName.ConvertToUnicode(ssNameW);
 
         ASSEMBLYMETADATA AMD;

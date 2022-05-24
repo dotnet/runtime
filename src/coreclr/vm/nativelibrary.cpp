@@ -95,12 +95,12 @@ namespace
             return m_hr;
         }
 
-        SString<EncodingUTF8>& GetMessage()
+        EString<EncodingUTF8>& GetMessage()
         {
             return m_message;
         }
 
-        void DECLSPEC_NORETURN Throw(SString<EncodingUnicode> &libraryNameOrPath)
+        void DECLSPEC_NORETURN Throw(SString &libraryNameOrPath)
         {
             STANDARD_VM_CONTRACT;
 
@@ -118,7 +118,7 @@ namespace
             }
             else
             {
-                SString<EncodingUnicode> hrString;
+                SString hrString;
                 GetHRMsg(theHRESULT, hrString);
                 COMPlusThrow(kDllNotFoundException, IDS_EE_NDIRECT_LOADLIB_WIN, (LPCWSTR)libraryNameOrPath, hrString);
             }
@@ -144,7 +144,7 @@ namespace
 
         HRESULT m_hr;
         DWORD   m_priorityOfLastError;
-        SString<EncodingUTF8>  m_message;
+        EString<EncodingUTF8>  m_message;
     };  // class LoadLibErrorTracker
 
     // Load the library directly and return the raw system handle
@@ -248,8 +248,8 @@ NATIVE_LIBRARY_HANDLE NativeLibrary::LoadLibraryFromPath(LPCWSTR libraryPath, BO
 
     if (throwOnError && (hmod == nullptr))
     {
-        SString<EncodingUnicode> libraryPathSString(libraryPath);
-        errorTracker.Throw(libraryPathSString);
+        SString libraryPathEString(libraryPath);
+        errorTracker.Throw(libraryPathEString);
     }
     return hmod;
 }
@@ -465,9 +465,9 @@ namespace
 
         NATIVE_LIBRARY_HANDLE hmod = NULL;
 
-        SString<EncodingUnicode> path = pAssembly->GetPEAssembly()->GetPath();
+        SString path = pAssembly->GetPEAssembly()->GetPath();
 
-        SString<EncodingUnicode>::Iterator lastPathSeparatorIter = path.End();
+        SString::Iterator lastPathSeparatorIter = path.End();
         if (PEAssembly::FindLastPathSeparator(path, lastPathSeparatorIter))
         {
             lastPathSeparatorIter++;
@@ -493,7 +493,7 @@ namespace
             AppDomain::PathIterator pathIter = pDomain->IterateNativeDllSearchDirectories();
             while (hmod == NULL && pathIter.Next())
             {
-                SString<EncodingUnicode> qualifiedPath(*(pathIter.GetPath()));
+                SString qualifiedPath(*(pathIter.GetPath()));
                 qualifiedPath.Append(libName);
                 if (!Path::IsRelative(qualifiedPath))
                 {
@@ -507,7 +507,7 @@ namespace
 
 #ifdef TARGET_UNIX
     const int MaxVariationCount = 4;
-    void DetermineLibNameVariations(const WCHAR** libNameVariations, int* numberOfVariations, const SString<EncodingUnicode>& libName, bool libNameIsRelativePath)
+    void DetermineLibNameVariations(const WCHAR** libNameVariations, int* numberOfVariations, const SString& libName, bool libNameIsRelativePath)
     {
         // Supported lib name variations
         static auto NameFmt = W("%.0s%s%.0s");
@@ -527,7 +527,7 @@ namespace
             // We check if the suffix is contained in the name, because on Linux it is common to append
             // a version number to the library name (e.g. 'libicuuc.so.57').
             bool containsSuffix = false;
-            SString<EncodingUnicode>::CIterator it = libName.Begin();
+            SString::CIterator it = libName.Begin();
             if (libName.Find(it, PLATFORM_SHARED_LIB_SUFFIX_W))
             {
                 it += ARRAY_SIZE(PLATFORM_SHARED_LIB_SUFFIX_W);
@@ -568,7 +568,7 @@ namespace
     }
 #else // TARGET_UNIX
     const int MaxVariationCount = 2;
-    void DetermineLibNameVariations(const WCHAR** libNameVariations, int* numberOfVariations, const SString<EncodingUnicode>& libName, bool libNameIsRelativePath)
+    void DetermineLibNameVariations(const WCHAR** libNameVariations, int* numberOfVariations, const SString& libName, bool libNameIsRelativePath)
     {
         // Supported lib name variations
         static auto NameFmt = W("%.0s%s%.0s");
@@ -649,7 +649,7 @@ namespace
         DetermineLibNameVariations(prefixSuffixCombinations, &numberOfVariations, wszLibName, libNameIsRelativePath);
         for (int i = 0; i < numberOfVariations; i++)
         {
-            SString<EncodingUnicode> currLibNameVariation;
+            SString currLibNameVariation;
             currLibNameVariation.Printf(prefixSuffixCombinations[i], PLATFORM_SHARED_LIB_PREFIX_W, wszLibName, PLATFORM_SHARED_LIB_SUFFIX_W);
 
             // NATIVE_DLL_SEARCH_DIRECTORIES set by host is considered well known path
@@ -702,11 +702,11 @@ namespace
             while (COMCharacter::nativeIsWhiteSpace(*(++szComma)));
 
             AssemblySpec spec;
-            SString<EncodingUTF8> ssAssemblyDisplayName(szComma);
+            EString<EncodingUTF8> ssAssemblyDisplayName(szComma);
             if (SUCCEEDED(spec.InitNoThrow(ssAssemblyDisplayName)))
             {
                 // Need to perform case insensitive hashing.
-                SString<EncodingUTF8> moduleName(szLibName);
+                EString<EncodingUTF8> moduleName(szLibName);
                 moduleName.LowerCase();
                 Assembly *pAssembly = spec.LoadAssembly(FILE_LOADED);
                 Module *pModule = pAssembly->FindModuleByName(moduleName);
@@ -781,8 +781,8 @@ NATIVE_LIBRARY_HANDLE NativeLibrary::LoadLibraryByName(LPCWSTR libraryName, Asse
 
     if (throwOnError)
     {
-        SString<EncodingUnicode> libraryPathSString(libraryName);
-        errorTracker.Throw(libraryPathSString);
+        SString libraryPathEString(libraryName);
+        errorTracker.Throw(libraryPathEString);
     }
 
     return hmod;
@@ -863,7 +863,7 @@ NATIVE_LIBRARY_HANDLE NativeLibrary::LoadLibraryFromMethodDesc(NDirectMethodDesc
             COMPlusThrow(kEntryPointNotFoundException, IDS_EE_NDIRECT_GETPROCADDRESS_NONAME);
 
         MAKE_WIDEPTR_FROMUTF8(libName, pMD->GetLibName());
-        SString<EncodingUnicode> ssLibName(SharedData, libName);
+        SString ssLibName(SString::Literal, libName);
         errorTracker.Throw(ssLibName);
     }
 

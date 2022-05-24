@@ -658,13 +658,13 @@ VOID ThrowInteropParamException(UINT resID, UINT paramIdx)
     }
     CONTRACTL_END;
 
-    SString<EncodingUnicode> paramString;
+    SString paramString;
     if (paramIdx == 0)
         paramString.Set(W("return value"));
     else
         paramString.Printf(W("parameter #%u"), paramIdx);
 
-    SString<EncodingUnicode> errorString(W("Unknown error."));
+    SString errorString(W("Unknown error."));
     LoadResource(errorString, CCompRC::Error, resID);
 
     COMPlusThrow(kMarshalDirectiveException, IDS_EE_BADMARSHAL_ERROR_MSG, paramString, errorString);
@@ -758,13 +758,13 @@ OleColorMarshalingInfo::OleColorMarshalingInfo() :
     }
     CONTRACTL_END;
 
-    SString<EncodingUnicode> qualifiedColorTranslatorTypeName(COLOR_TRANSLATOR_ASM_QUAL_TYPE_NAME_W);
+    SString qualifiedColorTranslatorTypeName(COLOR_TRANSLATOR_ASM_QUAL_TYPE_NAME_W);
 
     // Load the color translator class.
     TypeHandle hndColorTranslatorType = TypeName::GetTypeFromAsmQualifiedName(qualifiedColorTranslatorTypeName);
 
 
-    SString<EncodingUnicode> qualifiedColorTypeName(COLOR_ASM_QUAL_TYPE_NAME_W);
+    SString qualifiedColorTypeName(COLOR_ASM_QUAL_TYPE_NAME_W);
     // Load the color class.
     m_hndColorType = TypeName::GetTypeFromAsmQualifiedName(qualifiedColorTypeName);
 
@@ -912,7 +912,7 @@ CustomMarshalerHelper *EEMarshalingData::GetCustomMarshalerHelper(Assembly *pAss
         _ASSERTE(strMarshalerTypeName && strCookie && !hndManagedType.IsNull());
 
         // Append a NULL terminator to the marshaler type name.
-        SString<EncodingUTF8> strCMMarshalerTypeName(strMarshalerTypeName, cMarshalerTypeNameBytes);
+        EString<EncodingUTF8> strCMMarshalerTypeName(strMarshalerTypeName, cMarshalerTypeNameBytes);
 
         // Load the custom marshaler class.
         BOOL fNameIsAsmQualified = FALSE;
@@ -2065,9 +2065,9 @@ MarshalInfo::MarshalInfo(Module* pModule,
                             {
                                 if (ParamInfo.m_cSafeArrayUserDefTypeNameBytes > 0)
                                 {
-                                    // Load the type. Use an SString for the string since we need to NULL terminate the string
+                                    // Load the type. Use an EString for the string since we need to NULL terminate the string
                                     // that comes from the metadata.
-                                    SString<EncodingUTF8> safeArrayUserDefTypeName(ParamInfo.m_strSafeArrayUserDefTypeName, ParamInfo.m_cSafeArrayUserDefTypeNameBytes);
+                                    EString<EncodingUTF8> safeArrayUserDefTypeName(ParamInfo.m_strSafeArrayUserDefTypeName, ParamInfo.m_cSafeArrayUserDefTypeNameBytes);
                                     thElement = TypeName::GetTypeUsingCASearchRules(safeArrayUserDefTypeName, pAssembly);
                                 }
                             }
@@ -2528,10 +2528,10 @@ void MarshalInfo::ThrowTypeLoadExceptionForInvalidFieldMarshal(FieldDesc* pField
 {
     DefineFullyQualifiedNameForClassW();
 
-    StackSString<EncodingUnicode> ssFieldName;
-    StackSString<EncodingUTF8>(pFieldDesc->GetName()).ConvertToUnicode(ssFieldName);
+    StackSString ssFieldName;
+    StackEString<EncodingUTF8>(pFieldDesc->GetName()).ConvertToUnicode(ssFieldName);
 
-    StackSString<EncodingUnicode> errorString(W("Unknown error."));
+    StackSString errorString(W("Unknown error."));
     LoadResource(errorString, CCompRC::Error, resID);
 
     COMPlusThrow(kTypeLoadException, IDS_EE_BADMARSHALFIELD_ERROR_MSG,
@@ -3252,7 +3252,7 @@ VOID MarshalInfo::DumpMarshalInfo(Module* pModule, SigPointer sig, const SigType
 
     if (LoggingOn(LF_MARSHALER, LL_INFO10))
     {
-        SString<EncodingUTF8> logbuf;
+        EString<EncodingUTF8> logbuf;
 
         IMDInternalImport *pInternalImport = pModule->GetMDImport();
 

@@ -92,7 +92,7 @@ ComPlusCallInfo *ComPlusCall::PopulateComPlusCallMethodDesc(MethodDesc* pMD, DWO
         if (pItfMD == NULL)
         {
             // the method does not implement any interface
-            StackSString<EncodingUnicode> ssClassName;
+            StackSString ssClassName;
             pMT->_GetFullyQualifiedNameForClass(ssClassName);
             MAKE_WIDEPTR_FROMUTF8(ssMethodName, pMD->GetName());
 

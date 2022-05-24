@@ -164,7 +164,7 @@ void GCToCLREventSink::FireGCAllocationTick_V4(uint64_t allocationAmount,
 
     void * typeId = nullptr;
     const WCHAR * name = nullptr;
-    InlineSString<MAX_CLASSNAME_LENGTH, EncodingUnicode> strTypeName;
+    InlineEString<MAX_CLASSNAME_LENGTH, EncodingUnicode> strTypeName;
     EX_TRY
     {
         TypeHandle th = GetThread()->GetTHAllocContextObj();
@@ -199,7 +199,7 @@ void GCToCLREventSink::FirePinObjectAtGCTime(void* object, uint8_t** ppObject)
 
     Object* obj = (Object*)object;
 
-    InlineSString<MAX_CLASSNAME_LENGTH, EncodingUnicode> strTypeName;
+    InlineEString<MAX_CLASSNAME_LENGTH, EncodingUnicode> strTypeName;
 
     EX_TRY
     {

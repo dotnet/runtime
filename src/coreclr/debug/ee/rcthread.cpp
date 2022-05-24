@@ -546,9 +546,9 @@ static LONG _debugFilter(LPEXCEPTION_POINTERS ep, PVOID pv)
     // We should never AV here. In a debug build, throw up an assert w/ lots of useful (private) info.
 #ifdef _DEBUG
     {
-        // We can't really use SStrings on the helper thread; though if we're at this point, we've already died.
+        // We can't really use EStrings on the helper thread; though if we're at this point, we've already died.
         // So go ahead and risk it and use them anyways.
-        SString<EncodingASCII> sStack;
+        EString<EncodingASCII> sStack;
         GetStackTraceAtContext(sStack, ep->ContextRecord);
         const CHAR *string = sStack;
 

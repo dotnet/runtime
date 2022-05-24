@@ -2303,7 +2303,7 @@ namespace serialization { namespace bin {
     //                buffer.
     //   - raw_deserialize() generates a value from its binary representation
     //                in a buffer.
-    // Beyond simple types the APIs below support SString instances. SStrings
+    // Beyond simple types the APIs below support EString instances. EStrings
     // are stored as UTF8 strings.
     //========================================================================
 
@@ -2468,23 +2468,23 @@ namespace serialization { namespace bin {
     };
 
     //
-    // Specialization for SString.
-    // SString serialization/deserialization is performed to/from a UTF8
+    // Specialization for EString.
+    // EString serialization/deserialization is performed to/from a UTF8
     // string.
     //
     template<>
-    class Traits<SString<EncodingUTF8>>
+    class Traits<EString<EncodingUTF8>>
     {
     public:
         static FORCEINLINE size_t
-        raw_size(const SString<EncodingUTF8> & val)
+        raw_size(const EString<EncodingUTF8> & val)
         {
             // make sure to include the NULL terminator
             return val.GetCount() + 1;
         }
 
         static FORCEINLINE size_t
-        raw_serialize(BYTE* dest, size_t destSize, const SString<EncodingUTF8> & val)
+        raw_serialize(BYTE* dest, size_t destSize, const EString<EncodingUTF8> & val)
         {
             // instead of calling raw_size() we inline it here, so we can reuse
             // the UTF8 string obtained below as an argument to memcpy.
@@ -2502,7 +2502,7 @@ namespace serialization { namespace bin {
         }
 
         static FORCEINLINE size_t
-        raw_deserialize(SString<EncodingUTF8> & val, const BYTE* src, size_t srcSize)
+        raw_deserialize(EString<EncodingUTF8> & val, const BYTE* src, size_t srcSize)
         {
             size_t cnt = strnlen((LPCUTF8)src, srcSize) + 1;
 
@@ -2519,11 +2519,11 @@ namespace serialization { namespace bin {
 
 #ifndef TARGET_UNIX
     //
-    // Specialization for SString-derived classes (like SStrings)
+    // Specialization for EString-derived classes (like EStrings)
     //
     template<typename T>
-    class Traits<T, typename std::enable_if<std::is_base_of<SString<EncodingUTF8>, T>::value>::type>
-        : public Traits<SString<EncodingUTF8>>
+    class Traits<T, typename std::enable_if<std::is_base_of<EString<EncodingUTF8>, T>::value>::type>
+        : public Traits<EString<EncodingUTF8>>
     {
     };
 #endif // !TARGET_UNIX
@@ -2682,9 +2682,9 @@ class DacEENamesStreamable
 {
 private:
     // the hash map storing the interesting mappings of EE* -> Names
-    MapSHash< TADDR, SString<EncodingUTF8>,
+    MapSHash< TADDR, EString<EncodingUTF8>,
               NoRemoveSHashTraits <
-                  NonDacAwareSHashTraits< MapSHashTraits <TADDR, SString<EncodingUTF8>> >
+                  NonDacAwareSHashTraits< MapSHashTraits <TADDR, EString<EncodingUTF8>> >
             > > m_hash;
 
     Reserve_Fnptr  m_reserveFn;
@@ -2725,13 +2725,13 @@ public:
 
     // Adds a new mapping from an EE struct pointer (e.g. MethodDesc*) to
     // its name
-    bool AddEEName(TADDR taEE, const SString<EncodingUnicode> & eeName)
+    bool AddEEName(TADDR taEE, const SString & eeName)
     {
         _ASSERTE(m_reserveFn != NULL && m_writeState != NULL);
 
         // as a micro-optimization convert to Utf8 here as both raw_size and
         // raw_serialize are optimized for Utf8...
-        StackSString<EncodingUTF8> seeName;
+        StackEString<EncodingUTF8> seeName;
         eeName.ConvertToUTF8(seeName);
 
         DWORD size = (DWORD)(serialization::bin::raw_size(taEE) +
@@ -2741,7 +2741,7 @@ public:
         if (m_reserveFn(size, m_writeState))
         {
             // if there's still space cache the entry in m_hash
-            m_hash.AddOrReplace(KeyValuePair<TADDR, SString<EncodingUTF8>>(taEE, seeName));
+            m_hash.AddOrReplace(KeyValuePair<TADDR, EString<EncodingUTF8>>(taEE, seeName));
             return true;
         }
         else
@@ -2752,9 +2752,9 @@ public:
 
     // Finds an EE name from a target address of an EE struct (e.g.
     // MethodDesc*)
-    bool FindEEName(TADDR taEE, SString<EncodingUnicode> & eeName) const
+    bool FindEEName(TADDR taEE, SString & eeName) const
     {
-        StackSString<EncodingUTF8> eeNameUTF8;
+        StackEString<EncodingUTF8> eeNameUTF8;
         eeName.ConvertToUTF8(eeNameUTF8);
         bool found = m_hash.Lookup(taEE, &eeNameUTF8) == TRUE;
         eeNameUTF8.ConvertToUnicode(eeName);
@@ -2799,13 +2799,13 @@ public:
         for (size_t i = 0; i < hdr.cnt; ++i)
         {
             TADDR taEE;
-            SString<EncodingUTF8> eeName;
+            EString<EncodingUTF8> eeName;
             in >> taEE >> eeName;
 
             if (!in)
                 return E_FAIL;
 
-            m_hash.AddOrReplace(KeyValuePair<TADDR, SString<EncodingUTF8>>(taEE, eeName));
+            m_hash.AddOrReplace(KeyValuePair<TADDR, EString<EncodingUTF8>>(taEE, eeName));
         }
 
         return S_OK;
@@ -2897,7 +2897,7 @@ public:
         return true;
     }
 
-    bool MdCacheAddEEName(TADDR taEEStruct, const SString<EncodingUnicode>& name)
+    bool MdCacheAddEEName(TADDR taEEStruct, const SString& name)
     {
         // don't cache unless we enabled "W"riting from a target that does not
         // already have a stream yet
@@ -2931,7 +2931,7 @@ public:
         return S_OK;
     }
 
-    bool MdCacheGetEEName(TADDR taEEStruct, SString<EncodingUnicode> & eeName)
+    bool MdCacheGetEEName(TADDR taEEStruct, SString & eeName)
     {
         if (!m_bStreamsRead)
         {
@@ -5631,7 +5631,7 @@ ClrDataAccess::GetFullMethodName(
     _Out_writes_to_opt_(symbolChars, *symbolLen) LPWSTR symbol
     )
 {
-    StackSString<EncodingUnicode> s;
+    StackSString s;
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
     PAL_CPP_TRY
     {
@@ -6922,7 +6922,7 @@ void ClrDataAccess::InitStreamsForWriting(IN CLRDataEnumMemoryFlags flags)
     EX_END_CATCH(SwallowAllExceptions)
 }
 
-bool ClrDataAccess::MdCacheAddEEName(TADDR taEEStruct, const SString<EncodingUnicode>& name)
+bool ClrDataAccess::MdCacheAddEEName(TADDR taEEStruct, const SString& name)
 {
     bool result = false;
     EX_TRY
@@ -6956,7 +6956,7 @@ void ClrDataAccess::EnumStreams(IN CLRDataEnumMemoryFlags flags)
     EX_END_CATCH(SwallowAllExceptions)
 }
 
-bool ClrDataAccess::MdCacheGetEEName(TADDR taEEStruct, SString<EncodingUnicode> & eeName)
+bool ClrDataAccess::MdCacheGetEEName(TADDR taEEStruct, SString & eeName)
 {
     bool result = false;
     EX_TRY

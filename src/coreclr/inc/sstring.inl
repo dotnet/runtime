@@ -116,7 +116,7 @@ inline int StaticStringHelpers::_tstrnicmp(const WCHAR *buffer1, const WCHAR *bu
 // Default constructor. Sets the string to the empty string.
 //----------------------------------------------------------------------------
 template<typename TEncoding>
-inline SString<TEncoding>::SString()
+inline EString<TEncoding>::EString()
   : SBuffer(Immutable, StaticStringHelpers::s_EmptyBuffer, sizeof(StaticStringHelpers::s_EmptyBuffer))
 {
 #ifdef SSTRING_EXTRA_CHECKS
@@ -138,7 +138,7 @@ inline SString<TEncoding>::SString()
 }
 
 template<typename TEncoding>
-inline SString<TEncoding>::SString(void* buffer, COUNT_T size, bool isAllocated)
+inline EString<TEncoding>::EString(void* buffer, COUNT_T size, bool isAllocated)
     : SBuffer(Prealloc, buffer, size)
 {
     // If this buffer was allocated on the heap, make sure to set the Allocated flag
@@ -150,16 +150,16 @@ inline SString<TEncoding>::SString(void* buffer, COUNT_T size, bool isAllocated)
 }
 
 template<typename TEncoding>
-inline SString<TEncoding>::SString(SString&& s)
-    : SString(s.GetRawBuffer(), s.GetSize(), s.IsAllocated())
+inline EString<TEncoding>::EString(EString&& s)
+    : EString(s.GetRawBuffer(), s.GetSize(), s.IsAllocated())
 {
-    // We're stealing the buffer from the r-value SString, so clear its "is allocated" flag.
+    // We're stealing the buffer from the r-value EString, so clear its "is allocated" flag.
     s.ClearAllocated();
     s = {};
 }
 
 template<typename TEncoding>
-inline SString<TEncoding>::SString(const SString &s, const CIterator &i, COUNT_T count)
+inline EString<TEncoding>::EString(const EString &s, const CIterator &i, COUNT_T count)
   : SBuffer(Immutable, StaticStringHelpers::s_EmptyBuffer, sizeof(StaticStringHelpers::s_EmptyBuffer))
 {
     SS_CONTRACT_VOID
@@ -187,7 +187,7 @@ inline SString<TEncoding>::SString(const SString &s, const CIterator &i, COUNT_T
 // length - number of characters to copy from s.
 //-----------------------------------------------------------------------------
 template<typename TEncoding>
-inline void SString<TEncoding>::Set(const SString &s, const CIterator &i, COUNT_T count)
+inline void EString<TEncoding>::Set(const EString &s, const CIterator &i, COUNT_T count)
 {
     SS_CONTRACT_VOID
     {
@@ -217,7 +217,7 @@ inline void SString<TEncoding>::Set(const SString &s, const CIterator &i, COUNT_
 // end - the position to end (exclusive)
 //-----------------------------------------------------------------------------
 template<typename TEncoding>
-inline void SString<TEncoding>::Set(const SString &s, const CIterator &start, const CIterator &end)
+inline void EString<TEncoding>::Set(const EString &s, const CIterator &start, const CIterator &end)
 {
     SS_CONTRACT_VOID
     {
@@ -245,7 +245,7 @@ inline void SString<TEncoding>::Set(const SString &s, const CIterator &start, co
 // Hash the string contents
 //-----------------------------------------------------------------------------
 template<typename TEncoding>
-ULONG SString<TEncoding>::Hash() const
+ULONG EString<TEncoding>::Hash() const
 {
     SS_CONTRACT(ULONG)
     {
@@ -255,7 +255,7 @@ ULONG SString<TEncoding>::Hash() const
     }
     SS_CONTRACT_END;
 
-    StackSString<EncodingUnicode> buffer;
+    StackSString buffer;
 
     ConvertToUnicode(buffer);
 
@@ -266,7 +266,7 @@ ULONG SString<TEncoding>::Hash() const
 // Hash the string contents
 //-----------------------------------------------------------------------------
 template<typename TEncoding>
-ULONG SString<TEncoding>::HashCaseInsensitive() const
+ULONG EString<TEncoding>::HashCaseInsensitive() const
 {
     SS_CONTRACT(ULONG)
     {
@@ -283,7 +283,7 @@ ULONG SString<TEncoding>::HashCaseInsensitive() const
 
 // Append s to the end of this string.
 template<typename TEncoding>
-inline void SString<TEncoding>::Append(const SString &s)
+inline void EString<TEncoding>::Append(const EString &s)
 {
     SS_CONTRACT_VOID
     {
@@ -301,7 +301,7 @@ inline void SString<TEncoding>::Append(const SString &s)
 }
 
 template<typename TEncoding>
-inline void SString<TEncoding>::Append(const char_t *string)
+inline void EString<TEncoding>::Append(const char_t *string)
 {
     SS_CONTRACT_VOID
     {
@@ -313,8 +313,8 @@ inline void SString<TEncoding>::Append(const char_t *string)
     }
     SS_CONTRACT_END;
 
-    // Wrap the string in temporary SString without copying it
-    SString s(SharedData, string);
+    // Wrap the string in temporary EString without copying it
+    EString s(EString::Literal, string);
     s.ClearImmutable();
     Append(s);
 
@@ -322,7 +322,7 @@ inline void SString<TEncoding>::Append(const char_t *string)
 }
 
 template<typename TEncoding>
-inline void SString<TEncoding>::Append(const char_t c)
+inline void EString<TEncoding>::Append(const char_t c)
 {
     SS_CONTRACT_VOID
     {
@@ -332,21 +332,21 @@ inline void SString<TEncoding>::Append(const char_t c)
     }
     SS_CONTRACT_END;
 
-    InlineSString<2 * sizeof(c), TEncoding> s(c);
+    InlineEString<2 * sizeof(c), TEncoding> s(c);
     Append(s);
 
     SS_RETURN;
 }
 
 template<typename TEncoding>
-BOOL SString<TEncoding>::Equals(const SString &s) const
+BOOL EString<TEncoding>::Equals(const EString &s) const
 {
     LIMITED_METHOD_CONTRACT;
     return Compare(s) == 0;
 }
 
 template<typename TEncoding>
-BOOL SString<TEncoding>::EqualsCaseInsensitive(const SString &s) const
+BOOL EString<TEncoding>::EqualsCaseInsensitive(const EString &s) const
 {
     LIMITED_METHOD_CONTRACT;
     return CompareCaseInsensitive(s) == 0;
@@ -358,7 +358,7 @@ BOOL SString<TEncoding>::EqualsCaseInsensitive(const SString &s) const
 // Return 0 if equal, <0 if this < s, >0 is this > s. (same as strcmp).
 //-----------------------------------------------------------------------------
 template<typename TEncoding>
-int SString<TEncoding>::Compare(const SString &source) const
+int EString<TEncoding>::Compare(const EString &source) const
 {
     CONTRACT(int)
     {
@@ -401,7 +401,7 @@ int SString<TEncoding>::Compare(const SString &source) const
 // Return 0 if equal, <0 if this < s, >0 is this > s. (same as strcmp).
 //-----------------------------------------------------------------------------
 template<typename TEncoding>
-int SString<TEncoding>::CompareCaseInsensitive(const SString &source) const
+int EString<TEncoding>::CompareCaseInsensitive(const EString &source) const
 {
     CONTRACT(int)
     {
@@ -441,7 +441,7 @@ int SString<TEncoding>::CompareCaseInsensitive(const SString &source) const
 }
 
 template<typename TEncoding>
-void SString<TEncoding>::Set(const SString& s)
+void EString<TEncoding>::Set(const EString& s)
 {
     SS_CONTRACT_VOID
     {
@@ -460,7 +460,7 @@ void SString<TEncoding>::Set(const SString& s)
 }
 
 template<typename TEncoding>
-void SString<TEncoding>::Set(const char_t* string)
+void EString<TEncoding>::Set(const char_t* string)
 {
     CONTRACT_VOID
     {
@@ -485,7 +485,7 @@ void SString<TEncoding>::Set(const char_t* string)
 }
 
 template<typename TEncoding>
-void SString<TEncoding>::Set(const char_t* string, COUNT_T count)
+void EString<TEncoding>::Set(const char_t* string, COUNT_T count)
 {
     CONTRACT_VOID
     {
@@ -510,7 +510,7 @@ void SString<TEncoding>::Set(const char_t* string, COUNT_T count)
 }
 
 template<typename TEncoding>
-void SString<TEncoding>::Set(const char_t c)
+void EString<TEncoding>::Set(const char_t c)
 {
     CONTRACT_VOID
     {
@@ -534,7 +534,7 @@ void SString<TEncoding>::Set(const char_t c)
 }
 
 template<typename TEncoding>
-void SString<TEncoding>::SetPreallocated(const char_t* string, COUNT_T count)
+void EString<TEncoding>::SetPreallocated(const char_t* string, COUNT_T count)
 {
     SS_CONTRACT_VOID
     {
@@ -555,27 +555,26 @@ void SString<TEncoding>::SetPreallocated(const char_t* string, COUNT_T count)
 }
 
 template<typename TEncoding>
-void SString<TEncoding>::SetLiteral(const char_t* string)
+void EString<TEncoding>::SetLiteral(const char_t* string)
 {
     SS_CONTRACT_VOID
     {
        INSTANCE_CHECK;
         PRECONDITION(CheckPointer(string, NULL_OK));
-        PRECONDITION(CheckCount(count));
         GC_NOTRIGGER;
         NOTHROW;
         SUPPORTS_DAC_HOST_ONLY;
     }
     SS_CONTRACT_END;
 
-    Set(SString(SharedData, string));
+    Set(EString(EString::Literal, string));
 
     SS_RETURN;
 }
 
 // Preallocate some space for the string buffer
 template<typename TEncoding>
-inline void SString<TEncoding>::Preallocate(COUNT_T characters) const
+inline void EString<TEncoding>::Preallocate(COUNT_T characters) const
 {
     WRAPPER_NO_CONTRACT;
 
@@ -585,14 +584,14 @@ inline void SString<TEncoding>::Preallocate(COUNT_T characters) const
 
 // Trim unused space from the buffer
 template<typename TEncoding>
-inline void SString<TEncoding>::Trim() const
+inline void EString<TEncoding>::Trim() const
 {
     WRAPPER_NO_CONTRACT;
 
     if (IsEmpty())
     {
         // Share the global empty string buffer.
-        const_cast<SString *>(this)->SBuffer::SetImmutable(StaticStringHelpers::s_EmptyBuffer, sizeof(StaticStringHelpers::s_EmptyBuffer));
+        const_cast<EString *>(this)->SBuffer::SetImmutable(StaticStringHelpers::s_EmptyBuffer, sizeof(StaticStringHelpers::s_EmptyBuffer));
     }
     else
     {
@@ -602,7 +601,7 @@ inline void SString<TEncoding>::Trim() const
 
 // RETURN true if the string is empty.
 template<typename TEncoding>
-inline BOOL SString<TEncoding>::IsEmpty() const
+inline BOOL EString<TEncoding>::IsEmpty() const
 {
     SS_CONTRACT(BOOL)
     {
@@ -623,7 +622,7 @@ inline BOOL SString<TEncoding>::IsEmpty() const
 // in the buffer to make our internal string null-terminated at that length.
 //----------------------------------------------------------------------------
 template<typename TEncoding>
-FORCEINLINE void SString<TEncoding>::NullTerminate()
+FORCEINLINE void EString<TEncoding>::NullTerminate()
 {
     SUPPORTS_DAC_HOST_ONLY;
 #ifdef SSTRING_EXTRA_CHECKS
@@ -652,7 +651,7 @@ FORCEINLINE void SString<TEncoding>::NullTerminate()
 // A literal string has immutable memory.
 //----------------------------------------------------------------------------
 template<typename TEncoding>
-inline BOOL SString<TEncoding>::IsLiteral() const
+inline BOOL EString<TEncoding>::IsLiteral() const
 {
     WRAPPER_NO_CONTRACT;
 
@@ -666,7 +665,7 @@ inline BOOL SString<TEncoding>::IsLiteral() const
 // stack-based strings (the buffer is on the stack)
 //----------------------------------------------------------------------------
 template<typename TEncoding>
-inline BOOL SString<TEncoding>::IsAllocated() const
+inline BOOL EString<TEncoding>::IsAllocated() const
 {
     WRAPPER_NO_CONTRACT;
 
@@ -678,7 +677,7 @@ inline BOOL SString<TEncoding>::IsAllocated() const
 // Asser that the iterator is within the given string.
 //----------------------------------------------------------------------------
 template<typename TEncoding>
-inline CHECK SString<TEncoding>::CheckIteratorRange(const CIterator &i) const
+inline CHECK EString<TEncoding>::CheckIteratorRange(const CIterator &i) const
 {
     CANNOT_HAVE_CONTRACT;
     CHECK(i >= Begin());
@@ -691,7 +690,7 @@ inline CHECK SString<TEncoding>::CheckIteratorRange(const CIterator &i) const
 // Asser that the iterator is within the given string.
 //----------------------------------------------------------------------------
 template<typename TEncoding>
-inline CHECK SString<TEncoding>::CheckIteratorRange(const CIterator &i, COUNT_T length) const
+inline CHECK EString<TEncoding>::CheckIteratorRange(const CIterator &i, COUNT_T length) const
 {
     CANNOT_HAVE_CONTRACT;
     CHECK(i >= Begin());
@@ -703,7 +702,7 @@ inline CHECK SString<TEncoding>::CheckIteratorRange(const CIterator &i, COUNT_T 
 // Assert that the string is empty
 //----------------------------------------------------------------------------
 template<typename TEncoding>
-inline CHECK SString<TEncoding>::CheckEmpty() const
+inline CHECK EString<TEncoding>::CheckEmpty() const
 {
     CANNOT_HAVE_CONTRACT;
     CHECK(IsEmpty());
@@ -714,7 +713,7 @@ inline CHECK SString<TEncoding>::CheckEmpty() const
 // Check the range of a count
 //----------------------------------------------------------------------------
 template<typename TEncoding>
-inline CHECK SString<TEncoding>::CheckCount(COUNT_T count)
+inline CHECK EString<TEncoding>::CheckCount(COUNT_T count)
 {
     CANNOT_HAVE_CONTRACT;
     CHECK(CheckSize(count*sizeof(WCHAR)));
@@ -727,7 +726,7 @@ inline CHECK SString<TEncoding>::CheckCount(COUNT_T count)
 //----------------------------------------------------------------------------
 
 template<typename TEncoding>
-inline CHECK SString<TEncoding>::Check() const
+inline CHECK EString<TEncoding>::Check() const
 {
     CANNOT_HAVE_CONTRACT;
     CHECK(SBuffer::Check());
@@ -735,7 +734,7 @@ inline CHECK SString<TEncoding>::Check() const
 }
 
 template<typename TEncoding>
-inline CHECK SString<TEncoding>::Invariant() const
+inline CHECK EString<TEncoding>::Invariant() const
 {
     CANNOT_HAVE_CONTRACT;
     CHECK(SBuffer::Invariant());
@@ -743,7 +742,7 @@ inline CHECK SString<TEncoding>::Invariant() const
 }
 
 template<typename TEncoding>
-inline CHECK SString<TEncoding>::InternalInvariant() const
+inline CHECK EString<TEncoding>::InternalInvariant() const
 {
     CANNOT_HAVE_CONTRACT;
     CHECK(SBuffer::InternalInvariant());
@@ -757,7 +756,7 @@ inline CHECK SString<TEncoding>::InternalInvariant() const
 // Ensures that the buffer is writable
 //----------------------------------------------------------------------------
 template<typename TEncoding>
-inline void SString<TEncoding>::EnsureWritable() const
+inline void EString<TEncoding>::EnsureWritable() const
 {
 #ifdef SSTRING_EXTRA_CHECKS
     CONTRACT_VOID
@@ -774,7 +773,7 @@ inline void SString<TEncoding>::EnsureWritable() const
 #endif //SSTRING_EXTRA_CHECKS
 
     if (IsLiteral())
-        const_cast<SString *>(this)->Resize(GetSize(), PRESERVE);
+        const_cast<EString *>(this)->Resize(GetSize(), PRESERVE);
 
     SS_RETURN;
 }
@@ -783,9 +782,9 @@ inline void SString<TEncoding>::EnsureWritable() const
 // Create CIterators on the string.
 //-----------------------------------------------------------------------------
 template<typename TEncoding>
-FORCEINLINE typename SString<TEncoding>::CIterator SString<TEncoding>::Begin() const
+FORCEINLINE typename EString<TEncoding>::CIterator EString<TEncoding>::Begin() const
 {
-    SS_CONTRACT(SString::CIterator)
+    SS_CONTRACT(EString::CIterator)
     {
         GC_NOTRIGGER;
         PRECONDITION(CheckPointer(this));
@@ -798,9 +797,9 @@ FORCEINLINE typename SString<TEncoding>::CIterator SString<TEncoding>::Begin() c
 }
 
 template<typename TEncoding>
-FORCEINLINE typename SString<TEncoding>::CIterator SString<TEncoding>::End() const
+FORCEINLINE typename EString<TEncoding>::CIterator EString<TEncoding>::End() const
 {
-    SS_CONTRACT(SString<TEncoding>::CIterator)
+    SS_CONTRACT(EString<TEncoding>::CIterator)
     {
         GC_NOTRIGGER;
         PRECONDITION(CheckPointer(this));
@@ -817,9 +816,9 @@ FORCEINLINE typename SString<TEncoding>::CIterator SString<TEncoding>::End() con
 //-----------------------------------------------------------------------------
 
 template<typename TEncoding>
-FORCEINLINE typename SString<TEncoding>::Iterator SString<TEncoding>::Begin()
+FORCEINLINE typename EString<TEncoding>::Iterator EString<TEncoding>::Begin()
 {
-    SS_CONTRACT(SString<TEncoding>::Iterator)
+    SS_CONTRACT(EString<TEncoding>::Iterator)
     {
         GC_NOTRIGGER;
         PRECONDITION(CheckPointer(this));
@@ -835,9 +834,9 @@ FORCEINLINE typename SString<TEncoding>::Iterator SString<TEncoding>::Begin()
 }
 
 template<typename TEncoding>
-FORCEINLINE typename SString<TEncoding>::Iterator SString<TEncoding>::End()
+FORCEINLINE typename EString<TEncoding>::Iterator EString<TEncoding>::End()
 {
-    SS_CONTRACT(SString<TEncoding>::Iterator)
+    SS_CONTRACT(EString<TEncoding>::Iterator)
     {
         GC_NOTRIGGER;
         PRECONDITION(CheckPointer(this));
@@ -857,13 +856,13 @@ FORCEINLINE typename SString<TEncoding>::Iterator SString<TEncoding>::End()
 //-----------------------------------------------------------------------------
 
 template<typename TEncoding>
-inline SString<TEncoding>::Index::Index()
+inline EString<TEncoding>::Index::Index()
 {
     LIMITED_METHOD_CONTRACT;
 }
 
 template<typename TEncoding>
-inline SString<TEncoding>::Index::Index(SString *string, SCOUNT_T index)
+inline EString<TEncoding>::Index::Index(EString *string, SCOUNT_T index)
   : SBuffer::Index(string, SizeToCount(index))
 {
     SS_CONTRACT_VOID
@@ -883,7 +882,7 @@ inline SString<TEncoding>::Index::Index(SString *string, SCOUNT_T index)
 }
 
 template<typename TEncoding>
-inline BYTE &SString<TEncoding>::Index::GetAt(SCOUNT_T delta) const
+inline BYTE &EString<TEncoding>::Index::GetAt(SCOUNT_T delta) const
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
@@ -891,7 +890,7 @@ inline BYTE &SString<TEncoding>::Index::GetAt(SCOUNT_T delta) const
 }
 
 template<typename TEncoding>
-inline void SString<TEncoding>::Index::Skip(SCOUNT_T delta)
+inline void EString<TEncoding>::Index::Skip(SCOUNT_T delta)
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
@@ -899,7 +898,7 @@ inline void SString<TEncoding>::Index::Skip(SCOUNT_T delta)
 }
 
 template<typename TEncoding>
-inline SCOUNT_T SString<TEncoding>::Index::Subtract(const Index &i) const
+inline SCOUNT_T EString<TEncoding>::Index::Subtract(const Index &i) const
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
@@ -907,18 +906,18 @@ inline SCOUNT_T SString<TEncoding>::Index::Subtract(const Index &i) const
 }
 
 template<typename TEncoding>
-inline CHECK SString<TEncoding>::Index::DoCheck(SCOUNT_T delta) const
+inline CHECK EString<TEncoding>::Index::DoCheck(SCOUNT_T delta) const
 {
     CANNOT_HAVE_CONTRACT;
 #if _DEBUG
-    const SString *string = (const SString *) GetContainerDebug();
+    const EString *string = (const EString *) GetContainerDebug();
 
 #endif
     CHECK_OK;
 }
 
 template<typename TEncoding>
-inline void SString<TEncoding>::Index::Resync(const SString *string, BYTE *ptr) const
+inline void EString<TEncoding>::Index::Resync(const EString *string, BYTE *ptr) const
 {
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
@@ -927,7 +926,7 @@ inline void SString<TEncoding>::Index::Resync(const SString *string, BYTE *ptr) 
 }
 
 template<typename TEncoding>
-inline auto SString<TEncoding>::Index::operator*() const -> const char_t&
+inline auto EString<TEncoding>::Index::operator*() const -> const char_t&
 {
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
@@ -936,7 +935,7 @@ inline auto SString<TEncoding>::Index::operator*() const -> const char_t&
 }
 
 template<typename TEncoding>
-inline auto SString<TEncoding>::Index::operator*() -> char_t&
+inline auto EString<TEncoding>::Index::operator*() -> char_t&
 {
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
@@ -945,13 +944,13 @@ inline auto SString<TEncoding>::Index::operator*() -> char_t&
 }
 
 template<typename TEncoding>
-inline void SString<TEncoding>::Index::operator->() const
+inline void EString<TEncoding>::Index::operator->() const
 {
     LIMITED_METHOD_CONTRACT;
 }
 
 template<typename TEncoding>
-inline auto SString<TEncoding>::Index::operator[](int index) const -> char_t
+inline auto EString<TEncoding>::Index::operator[](int index) const -> char_t
 {
     WRAPPER_NO_CONTRACT;
 
@@ -959,7 +958,7 @@ inline auto SString<TEncoding>::Index::operator[](int index) const -> char_t
 }
 
 template<typename TEncoding>
-inline auto SString<TEncoding>::Index::GetBuffer() const -> const char_t*
+inline auto EString<TEncoding>::Index::GetBuffer() const -> const char_t*
 {
     WRAPPER_NO_CONTRACT;
     return reinterpret_cast<const char_t*>(m_ptr);
@@ -975,7 +974,7 @@ inline auto SString<TEncoding>::Index::GetBuffer() const -> const char_t*
 // %S is too widespread in non-shipping code that such cleanup is not feasible.
 //
 template<typename TEncoding>
-void CheckForFormatStringGlobalizationIssues(const SString<TEncoding> &format, const SString<TEncoding> &result)
+void CheckForFormatStringGlobalizationIssues(const EString<TEncoding> &format, const EString<TEncoding> &result)
 {
     CONTRACTL
     {
@@ -988,7 +987,7 @@ void CheckForFormatStringGlobalizationIssues(const SString<TEncoding> &format, c
     BOOL fDangerousFormat = FALSE;
 
     // Check whether the format string contains the %S formatting specifier
-    typename SString<TEncoding>::CIterator itrFormat = format.Begin();
+    typename EString<TEncoding>::CIterator itrFormat = format.Begin();
     while (*itrFormat)
     {
         if (*itrFormat++ == '%')
@@ -1009,7 +1008,7 @@ void CheckForFormatStringGlobalizationIssues(const SString<TEncoding> &format, c
         // Now check whether there are any non-ASCII characters in the output.
 
         // Check whether the result contains non-Ascii characters
-        typename SString<TEncoding>::CIterator itrResult = format.Begin();
+        typename EString<TEncoding>::CIterator itrResult = format.Begin();
         while (*itrResult)
         {
             if (*itrResult++ > 127)
@@ -1030,7 +1029,7 @@ void CheckForFormatStringGlobalizationIssues(const SString<TEncoding> &format, c
 // Truncate this string to count characters.
 //-----------------------------------------------------------------------------
 template<typename TEncoding>
-void SString<TEncoding>::Truncate(const Iterator &i)
+void EString<TEncoding>::Truncate(const Iterator &i)
 {
     SS_CONTRACT_VOID
     {
@@ -1056,7 +1055,7 @@ void SString<TEncoding>::Truncate(const Iterator &i)
 // This is essentially a specialized version of the above for size 0
 //-----------------------------------------------------------------------------
 template<typename TEncoding>
-void SString<TEncoding>::Clear()
+void EString<TEncoding>::Clear()
 {
     CONTRACT_VOID
     {
@@ -1097,10 +1096,10 @@ void SString<TEncoding>::Clear()
 #endif
 
 template<typename TEncoding>
-void CheckForFormatStringGlobalizationIssues(const SString<TEncoding> &format, const SString<TEncoding> &result);
+void CheckForFormatStringGlobalizationIssues(const EString<TEncoding> &format, const EString<TEncoding> &result);
 
 template<typename TEncoding>
-void SString<TEncoding>::VPrintf(const char_t* format, va_list args)
+void EString<TEncoding>::VPrintf(const char_t* format, va_list args)
 {
     CONTRACT_VOID
     {
@@ -1126,7 +1125,7 @@ void SString<TEncoding>::VPrintf(const char_t* format, va_list args)
         {
             // succeeded
             Resize(result, PRESERVE);
-            SString<TEncoding> sss(format);
+            EString<TEncoding> sss(format);
             INDEBUG(CheckForFormatStringGlobalizationIssues(sss, *this));
             RETURN;
         }
@@ -1156,7 +1155,7 @@ void SString<TEncoding>::VPrintf(const char_t* format, va_list args)
         if (result >= 0)
         {
             Resize(result, PRESERVE);
-            SString<TEncoding> sss(format);
+            EString<TEncoding> sss(format);
             INDEBUG(CheckForFormatStringGlobalizationIssues(sss, *this));
             RETURN;
         }
@@ -1177,12 +1176,12 @@ void SString<TEncoding>::VPrintf(const char_t* format, va_list args)
 
 
 template<>
-inline BOOL SString<EncodingUnicode>::FormatMessage(DWORD dwFlags, LPCVOID lpSource, DWORD dwMessageId, DWORD dwLanguageId,
-                            const SString<EncodingUnicode> &arg1, const SString<EncodingUnicode> &arg2,
-                            const SString<EncodingUnicode> &arg3, const SString<EncodingUnicode> &arg4,
-                            const SString<EncodingUnicode> &arg5, const SString<EncodingUnicode> &arg6,
-                            const SString<EncodingUnicode> &arg7, const SString<EncodingUnicode> &arg8,
-                            const SString<EncodingUnicode> &arg9, const SString<EncodingUnicode> &arg10)
+inline BOOL SString::FormatMessage(DWORD dwFlags, LPCVOID lpSource, DWORD dwMessageId, DWORD dwLanguageId,
+                            const SString &arg1, const SString &arg2,
+                            const SString &arg3, const SString &arg4,
+                            const SString &arg5, const SString &arg6,
+                            const SString &arg7, const SString &arg8,
+                            const SString &arg9, const SString &arg10)
 {
     CONTRACT(BOOL)
     {
@@ -1241,7 +1240,7 @@ inline BOOL SString<EncodingUnicode>::FormatMessage(DWORD dwFlags, LPCVOID lpSou
 
 #ifdef DACCESS_COMPILE
 template<>
-inline const WCHAR * SString<EncodingUnicode>::DacGetRawUnicode() const
+inline const WCHAR * SString::DacGetRawUnicode() const
 {
     if (IsEmpty())
     {
@@ -1253,17 +1252,17 @@ inline const WCHAR * SString<EncodingUnicode>::DacGetRawUnicode() const
 #endif
 
 template<typename TEncoding>
-void SString<TEncoding>::AppendVPrintf(const char_t* format, va_list args)
+void EString<TEncoding>::AppendVPrintf(const char_t* format, va_list args)
 {
     WRAPPER_NO_CONTRACT;
 
-    StackSString<TEncoding> s;
+    StackEString<TEncoding> s;
     s.VPrintf(format, args);
     Append(s);
 }
 
 template<>
-inline COUNT_T SString<EncodingASCII>::ConvertToUnicode(SString<EncodingUnicode> &s) const
+inline COUNT_T EString<EncodingASCII>::ConvertToUnicode(SString &s) const
 {
     CONTRACT(COUNT_T)
     {
@@ -1309,47 +1308,47 @@ inline COUNT_T SString<EncodingASCII>::ConvertToUnicode(SString<EncodingUnicode>
 }
 
 template<typename TEncoding>
-SString<EncodingUTF8> SString<TEncoding>::MoveToUTF8()
+EString<EncodingUTF8> EString<TEncoding>::MoveToUTF8()
 {
-    StackSString<EncodingUTF8> buff;
+    StackEString<EncodingUTF8> buff;
     ConvertToUTF8(buff);
     if (IsAllocated())
     {
         ClearAllocated();
-        SString<EncodingUTF8> result(GetRawBuffer(), SBuffer::GetAllocation(), /* isAllocated */ true);
+        EString<EncodingUTF8> result(GetRawBuffer(), SBuffer::GetAllocation(), /* isAllocated */ true);
         *this = {};
     }
     return std::move(buff);
 }
 
 template<typename TEncoding>
-SString<EncodingUnicode> SString<TEncoding>::MoveToUnicode()
+EString<EncodingUnicode> EString<TEncoding>::MoveToUnicode()
 {
-    StackSString<EncodingUnicode> buff;
+    StackSString buff;
     ConvertToUnicode(buff);
     if (IsAllocated())
     {
         ClearAllocated();
-        SString<EncodingUnicode> result(GetRawBuffer(), SBuffer::GetAllocation(), /* isAllocated */ true);
+        SString result(GetRawBuffer(), SBuffer::GetAllocation(), /* isAllocated */ true);
         *this = {};
     }
     return std::move(buff);
 }
 
 template<>
-inline SString<EncodingUnicode> SString<EncodingASCII>::MoveToUnicode()
+inline SString EString<EncodingASCII>::MoveToUnicode()
 {
     // ASCII -> Unicode conversion supports in-place conversion if the buffer is large enough.
     if (IsAllocated() && SBuffer::GetAllocation() > GetCount() * sizeof(WCHAR))
     {
         ClearAllocated();
-        SString<EncodingUnicode> result(GetRawBuffer(), SBuffer::GetAllocation(), /* isAllocated */ true);
+        SString result(GetRawBuffer(), SBuffer::GetAllocation(), /* isAllocated */ true);
         ConvertToUnicode(result);
         *this = {};
         return result;
     }
 
-    StackSString<EncodingUnicode> buff;
+    StackSString buff;
     ConvertToUnicode(buff);
     return std::move(buff);
 }
@@ -1357,7 +1356,7 @@ inline SString<EncodingUnicode> SString<EncodingASCII>::MoveToUnicode()
 
 // Insert string at iterator position
 template<typename TEncoding>
-inline void SString<TEncoding>::Insert(const Iterator &i, const SString &s)
+inline void EString<TEncoding>::Insert(const Iterator &i, const EString &s)
 {
     SS_CONTRACT_VOID
     {
@@ -1376,7 +1375,7 @@ inline void SString<TEncoding>::Insert(const Iterator &i, const SString &s)
 }
 
 template<typename TEncoding>
-inline void SString<TEncoding>::Insert(const Iterator &i, const char_t *string)
+inline void EString<TEncoding>::Insert(const Iterator &i, const char_t *string)
 {
     SS_CONTRACT_VOID
     {
@@ -1388,7 +1387,7 @@ inline void SString<TEncoding>::Insert(const Iterator &i, const char_t *string)
     }
     SS_CONTRACT_END;
 
-    StackSString<TEncoding> s(string);
+    StackEString<TEncoding> s(string);
     Replace(i, 0, s);
 
     SS_RETURN;
@@ -1397,7 +1396,7 @@ inline void SString<TEncoding>::Insert(const Iterator &i, const char_t *string)
 // Replace the substring specified by position, length with the given string s.
 //-----------------------------------------------------------------------------
 template<typename TEncoding>
-void SString<TEncoding>::Replace(const Iterator &i, COUNT_T length, const SString &s)
+void EString<TEncoding>::Replace(const Iterator &i, COUNT_T length, const EString &s)
 {
     CONTRACT_VOID
     {
@@ -1422,7 +1421,7 @@ void SString<TEncoding>::Replace(const Iterator &i, COUNT_T length, const SStrin
 
 template<typename TEncoding>
 // Delete string at iterator position
-inline void SString<TEncoding>::Delete(const Iterator &i, COUNT_T length)
+inline void EString<TEncoding>::Delete(const Iterator &i, COUNT_T length)
 {
     SS_CONTRACT_VOID
     {
@@ -1441,7 +1440,7 @@ inline void SString<TEncoding>::Delete(const Iterator &i, COUNT_T length)
 
 
 template<typename TEncoding>
-BOOL SString<TEncoding>::Find(CIterator& i, const SString& s) const
+BOOL EString<TEncoding>::Find(CIterator& i, const EString& s) const
 {
     CONTRACT(BOOL)
     {
@@ -1469,7 +1468,7 @@ BOOL SString<TEncoding>::Find(CIterator& i, const SString& s) const
 }
 
 template<typename TEncoding>
-BOOL SString<TEncoding>::Find(CIterator& i, char_t s) const
+BOOL EString<TEncoding>::Find(CIterator& i, char_t s) const
 {
     CONTRACT(BOOL)
     {
@@ -1496,7 +1495,7 @@ BOOL SString<TEncoding>::Find(CIterator& i, char_t s) const
 }
 
 template<typename TEncoding>
-BOOL SString<TEncoding>::FindBack(CIterator& i, const SString& s) const
+BOOL EString<TEncoding>::FindBack(CIterator& i, const EString& s) const
 {
     CONTRACT(BOOL)
     {
@@ -1528,7 +1527,7 @@ BOOL SString<TEncoding>::FindBack(CIterator& i, const SString& s) const
 }
 
 template<typename TEncoding>
-BOOL SString<TEncoding>::FindBack(CIterator& i, char_t s) const
+BOOL EString<TEncoding>::FindBack(CIterator& i, char_t s) const
 {
     CONTRACT(BOOL)
     {
@@ -1559,7 +1558,7 @@ BOOL SString<TEncoding>::FindBack(CIterator& i, char_t s) const
 }
 
 template<typename TEncoding>
-inline BOOL SString<TEncoding>::Skip(CIterator &i, const SString &s) const
+inline BOOL EString<TEncoding>::Skip(CIterator &i, const EString &s) const
 {
     SS_CONTRACT(BOOL)
     {
@@ -1581,7 +1580,7 @@ inline BOOL SString<TEncoding>::Skip(CIterator &i, const SString &s) const
 }
 
 template<typename TEncoding>
-inline BOOL SString<TEncoding>::Skip(CIterator &i, char_t c) const
+inline BOOL EString<TEncoding>::Skip(CIterator &i, char_t c) const
 {
     SS_CONTRACT(BOOL)
     {
@@ -1602,7 +1601,7 @@ inline BOOL SString<TEncoding>::Skip(CIterator &i, char_t c) const
 }
 
 template<typename TEncoding>
-inline BOOL SString<TEncoding>::Match(const CIterator& i, const SString& s) const
+inline BOOL EString<TEncoding>::Match(const CIterator& i, const EString& s) const
 {
     CONTRACT(BOOL)
     {
@@ -1626,7 +1625,7 @@ inline BOOL SString<TEncoding>::Match(const CIterator& i, const SString& s) cons
 }
 
 template<typename TEncoding>
-inline BOOL SString<TEncoding>::MatchCaseInsensitive(const CIterator& i, const SString& s) const
+inline BOOL EString<TEncoding>::MatchCaseInsensitive(const CIterator& i, const EString& s) const
 {
     CONTRACT(BOOL)
     {
@@ -1650,7 +1649,7 @@ inline BOOL SString<TEncoding>::MatchCaseInsensitive(const CIterator& i, const S
 }
 
 template<typename TEncoding>
-inline BOOL SString<TEncoding>::Match(const CIterator &i, char_t c) const
+inline BOOL EString<TEncoding>::Match(const CIterator &i, char_t c) const
 {
     SS_CONTRACT(BOOL)
     {

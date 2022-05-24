@@ -29,9 +29,9 @@ private:
 
     const char sDelimiter = ';';
 
-    void OpenFile(SString<EncodingUnicode>& path);
+    void OpenFile(SString& path);
 
-    void WriteLine(SString<EncodingUnicode>& type, SString<EncodingUnicode>& value);
+    void WriteLine(SString& type, SString& value);
 
 };
 

@@ -79,7 +79,7 @@ VOID InstallEEFunctionTable (
 
     if (wszModuleName == NULL)
     {
-        StackSString<EncodingUnicode> ssTempName;
+        StackSString ssTempName;
         DWORD dwTempNameSize;
 
         // Leaves trailing backslash on path, producing something like "c:\windows\microsoft.net\framework\v4.0.x86dbg\"

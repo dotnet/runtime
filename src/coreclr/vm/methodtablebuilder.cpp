@@ -1342,15 +1342,15 @@ MethodTableBuilder::BuildMethodTableThrowing(
         pszDebugName = pszDebugNamespace = "Invalid TypeDef record";
     }
 
-    StackSString<EncodingUTF8> debugName(pszDebugName);
+    StackEString<EncodingUTF8> debugName(pszDebugName);
 
     // If there is an instantiation, update the debug name to include instantiation type names.
     if (bmtGenerics->HasInstantiation())
     {
-        StackSString<EncodingUTF8> debugName(GetDebugClassName());
-        StackSString<EncodingUnicode> instantiation;
+        StackEString<EncodingUTF8> debugName(GetDebugClassName());
+        StackSString instantiation;
         TypeString::AppendInst(instantiation, bmtGenerics->GetInstantiation(), TypeString::FormatBasic);
-        StackSString<EncodingUTF8> instantiationUTF8;
+        StackEString<EncodingUTF8> instantiationUTF8;
         instantiation.ConvertToUTF8(instantiationUTF8);
         debugName.Append(instantiationUTF8);
         const char* pDebugNameUTF8 = (LPCUTF8)debugName;
@@ -1895,9 +1895,9 @@ MethodTableBuilder::BuildMethodTableThrowing(
             {
                 {
                     MethodDesc *pMD = methIt->GetUnboxedMethodDesc();
-                    StackSString<EncodingUnicode> name{};
+                    StackSString name{};
                     TypeString::AppendMethodDebug(name, pMD);
-                    StackSString<EncodingUTF8> nameUTF8;
+                    StackEString<EncodingUTF8> nameUTF8;
                     name.ConvertToUTF8(nameUTF8);
                     const char* pDebugNameUTF8 = (LPCUTF8)nameUTF8;
                     S_SIZE_T safeLen = S_SIZE_T(strlen(pDebugNameUTF8)) + S_SIZE_T(1);
@@ -1911,9 +1911,9 @@ MethodTableBuilder::BuildMethodTableThrowing(
                 {
                     MethodDesc *pMD = methIt->GetMethodDesc();
 
-                    StackSString<EncodingUnicode> name{};
+                    StackSString name{};
                     TypeString::AppendMethodDebug(name, pMD);
-                    StackSString<EncodingUTF8> nameUTF8;
+                    StackEString<EncodingUTF8> nameUTF8;
                     name.ConvertToUTF8(nameUTF8);
                     const char* pDebugNameUTF8 = (LPCUTF8)nameUTF8;
                     S_SIZE_T safeLen = S_SIZE_T(strlen(pDebugNameUTF8))+S_SIZE_T(1);

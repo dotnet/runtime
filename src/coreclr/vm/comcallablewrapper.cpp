@@ -647,7 +647,7 @@ NOINLINE void LogCCWRefCountChange_BREAKPOINT(ComCallWrapper *pCCW)
         DebugBreak();
 }
 
-void SimpleComCallWrapper::BuildRefCountLogMessage(LPCWSTR wszOperation, StackSString<EncodingUnicode> &ssMessage, ULONG dwEstimatedRefCount)
+void SimpleComCallWrapper::BuildRefCountLogMessage(LPCWSTR wszOperation, StackSString &ssMessage, ULONG dwEstimatedRefCount)
 {
     CONTRACTL
     {
@@ -674,12 +674,12 @@ void SimpleComCallWrapper::BuildRefCountLogMessage(LPCWSTR wszOperation, StackSS
         {
             EX_TRY
             {
-                SString<EncodingUTF8> className(pszClassName);
-                SString<EncodingUTF8> nameSpace(pszNamespace);
+                EString<EncodingUTF8> className(pszClassName);
+                EString<EncodingUTF8> nameSpace(pszNamespace);
                 
-                SString<EncodingUnicode> classNameUnicode;
+                SString classNameUnicode;
                 className.ConvertToUnicode(classNameUnicode);
-                SString<EncodingUnicode> namespaceUnicode;
+                SString namespaceUnicode;
                 nameSpace.ConvertToUnicode(namespaceUnicode);
 
                 FireEtwCCWRefCountChange(
@@ -699,7 +699,7 @@ void SimpleComCallWrapper::BuildRefCountLogMessage(LPCWSTR wszOperation, StackSS
         {
             EX_TRY
             {
-                StackSString<EncodingUnicode> ssClassName;
+                StackSString ssClassName;
                 TypeString::AppendType(ssClassName, TypeHandle(m_pMT));
 
                 ssMessage.Printf(W("LogCCWRefCountChange[%s]: '%s', Object=poi(%p)"),
@@ -715,7 +715,7 @@ void SimpleComCallWrapper::BuildRefCountLogMessage(LPCWSTR wszOperation, StackSS
 }
 
 // static
-void SimpleComCallWrapper::LogRefCount(ComCallWrapper *pWrap, StackSString<EncodingUnicode> &ssMessage, ULONG dwRefCountToLog)
+void SimpleComCallWrapper::LogRefCount(ComCallWrapper *pWrap, StackSString &ssMessage, ULONG dwRefCountToLog)
 {
     CONTRACTL
     {
@@ -752,7 +752,7 @@ LONGLONG SimpleComCallWrapper::ReleaseImplWithLogging(LONGLONG * pRefCount)
 
     LONGLONG newRefCount;
 
-    StackSString<EncodingUnicode> ssMessage;
+    StackSString ssMessage;
     ComCallWrapper *pWrap = GetMainWrapper();
     BuildRefCountLogMessage(W("Release"), ssMessage, GET_EXT_COM_REF(READ_REF(*pRefCount)-1));
 
@@ -852,7 +852,7 @@ VOID SimpleComCallWrapper::Neuter()
     //   do this for each of the CCWs
     m_pWrap->Neuter();
 
-    StackSString<EncodingUnicode> ssMessage;
+    StackSString ssMessage;
     ComCallWrapper *pWrap = m_pWrap;
     if (g_pConfig->LogCCWRefCountChangeEnabled())
     {
@@ -4170,8 +4170,8 @@ void ComCallWrapperTemplate::CheckParentComVisibility(BOOL fForIDispatch)
         ComCallWrapperTemplate *invisParent = FindInvisibleParent();
         _ASSERTE(invisParent != NULL);
 
-        SString<EncodingUnicode> thisType;
-        SString<EncodingUnicode> invisParentType;
+        SString thisType;
+        SString invisParentType;
         TypeString::AppendType(thisType, m_thClass);
         TypeString::AppendType(invisParentType, invisParent->m_thClass);
         COMPlusThrow(kInvalidOperationException, IDS_EE_COM_INVISIBLE_PARENT, thisType, invisParentType);
@@ -4775,7 +4775,7 @@ ComCallWrapperTemplate* ComCallWrapperTemplate::CreateTemplate(TypeHandle thClas
 #if defined(_DEBUG)
             WCHAR rIID[40]; // {00000000-0000-0000-0000-000000000000}
             GuidToLPWSTR(IClassXIID, rIID, ARRAY_SIZE(rIID));
-            SString<EncodingUnicode> ssName;
+            SString ssName;
             thClass.GetName(ssName);
             LOG((LF_CORPROF, LL_INFO100, "COMClassicVTableCreated Class:%ls, IID:%ls, vTbl:%#08x\n",
                  (LPCWSTR)ssName, rIID, pComVtable));

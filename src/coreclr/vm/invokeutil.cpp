@@ -772,8 +772,8 @@ void InvokeUtil::SetValidField(CorElementType fldType,
     if (pField->IsStatic() && pDeclMT->IsClassInited() && IsFdInitOnly(pField->GetAttributes()))
     {
         DefineFullyQualifiedNameForClassW();
-        SString<EncodingUnicode> ssFieldName;
-        SString<EncodingUTF8>(pField->GetName()).ConvertToUnicode(ssFieldName);
+        SString ssFieldName;
+        EString<EncodingUTF8>(pField->GetName()).ConvertToUnicode(ssFieldName);
         COMPlusThrow(kFieldAccessException,
             IDS_EE_CANNOT_SET_INITONLY_STATIC_FIELD,
             ssFieldName,

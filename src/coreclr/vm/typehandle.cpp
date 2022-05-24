@@ -657,7 +657,7 @@ TypeHandle::CastResult TypeHandle::CanCastToCached(TypeHandle type)  const
 
 #endif // #ifndef DACCESS_COMPILE
 
-void TypeHandle::GetName(SString<EncodingUnicode> &result) const
+void TypeHandle::GetName(SString &result) const
 {
     CONTRACTL
     {
@@ -1352,18 +1352,18 @@ BOOL SatisfiesClassConstraints(TypeHandle instanceTypeHnd, TypeHandle typicalTyp
 
         if (!bSatisfiesConstraints)
         {
-            SmallStackSString<EncodingUTF8> argNum;
+            SmallStackEString<EncodingUTF8> argNum;
             argNum.Printf("%d", i);
-            SmallStackSString<EncodingUnicode> argNumW;
+            SmallStackSString argNumW;
             argNum.ConvertToUnicode(argNumW);
 
-            SString<EncodingUnicode> typicalTypeHndName;
+            SString typicalTypeHndName;
             TypeString::AppendType(typicalTypeHndName, typicalTypeHnd);
 
-            SString<EncodingUnicode> actualParamName;
+            SString actualParamName;
             TypeString::AppendType(actualParamName, actualInst[i]);
 
-            SString<EncodingUnicode> formalParamName;
+            SString formalParamName;
             TypeString::AppendType(formalParamName, formalInst[i]);
 
             COMPlusThrow(kTypeLoadException,
@@ -1506,7 +1506,7 @@ CHECK TypeHandle::CheckMatchesKey(TypeKey *pKey) const
     // Check first to avoid creating debug name
     if (!GetTypeKey().Equals(pKey))
     {
-        StackSString<EncodingUnicode> typeKeyString;
+        StackSString typeKeyString;
         CONTRACT_VIOLATION(GCViolation|ThrowsViolation);
         TypeString::AppendTypeKeyDebug(typeKeyString, pKey);
         if (!IsTypeDesc() && AsMethodTable()->IsArray())
@@ -1588,7 +1588,7 @@ CHECK TypeHandle::CheckLoadLevel(ClassLoadLevel requiredLevel)
     ClassLoadLevel actualLevel = GetLoadLevel();
     if (actualLevel < requiredLevel)
     {
-        //        SString debugTypeName;
+        //        EString debugTypeName;
         //        TypeString::AppendTypeDebug(debugTypeName, *this);
         CHECK(actualLevel >= requiredLevel);
         //        CHECK_MSGF(actualLevel >= requiredLevel,

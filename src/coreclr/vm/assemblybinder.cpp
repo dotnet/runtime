@@ -61,7 +61,7 @@ void AssemblyBinder::AddLoadedAssembly(Assembly* loadedAssembly)
     }
 }
 
-void AssemblyBinder::GetNameForDiagnosticsFromManagedALC(INT_PTR managedALC, /* out */ SString<EncodingUnicode>& alcName)
+void AssemblyBinder::GetNameForDiagnosticsFromManagedALC(INT_PTR managedALC, /* out */ SString& alcName)
 {
     if (managedALC == GetAppDomain()->GetDefaultBinder()->GetManagedAssemblyLoadContext())
     {
@@ -83,12 +83,12 @@ void AssemblyBinder::GetNameForDiagnosticsFromManagedALC(INT_PTR managedALC, /* 
     DECLARE_ARGHOLDER_ARRAY(args, 1);
     args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(*alc);
     CALL_MANAGED_METHOD_RETREF(gc.alcName, STRINGREF, args);
-    gc.alcName->GetSString(alcName);
+    gc.alcName->GetEString(alcName);
 
     GCPROTECT_END();
 }
 
-void AssemblyBinder::GetNameForDiagnostics(/*out*/ SString<EncodingUnicode>& alcName)
+void AssemblyBinder::GetNameForDiagnostics(/*out*/ SString& alcName)
 {
     _ASSERTE(this != nullptr);
 
@@ -102,7 +102,7 @@ void AssemblyBinder::GetNameForDiagnostics(/*out*/ SString<EncodingUnicode>& alc
     }
 }
 
-void AssemblyBinder::GetNameForDiagnosticsFromSpec(AssemblySpec* spec, /*out*/ SString<EncodingUnicode>& alcName)
+void AssemblyBinder::GetNameForDiagnosticsFromSpec(AssemblySpec* spec, /*out*/ SString& alcName)
 {
     _ASSERTE(spec != nullptr);
 

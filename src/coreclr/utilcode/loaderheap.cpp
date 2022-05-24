@@ -397,7 +397,7 @@ struct LoaderHeapEvent
     size_t           m_dwSize;              //Actual size of block (including validation tags, padding, everything)
 
 
-    void Describe(SString<EncodingASCII> *pSString)
+    void Describe(EString<EncodingASCII> *pEString)
     {
         CONTRACTL
         {
@@ -407,10 +407,10 @@ struct LoaderHeapEvent
         }
         CONTRACTL_END
 
-        pSString->Append("\n");
+        pEString->Append("\n");
 
         {
-            StackSString<EncodingASCII> buf;
+            StackEString<EncodingASCII> buf;
             if (m_allocationType == kFreedMem)
             {
                 buf.Printf("    Freed at:         %s (line %d)\n", m_szFile, m_lineNum);
@@ -420,18 +420,18 @@ struct LoaderHeapEvent
             {
                 buf.Printf("    Allocated at:     %s (line %d)\n", m_szFile, m_lineNum);
             }
-            pSString->Append(buf);
+            pEString->Append(buf);
         }
 
         if (!QuietValidate())
         {
-            pSString->Append("    *** THIS BLOCK HAS BEEN CORRUPTED ***\n");
+            pEString->Append("    *** THIS BLOCK HAS BEEN CORRUPTED ***\n");
         }
 
 
 
         {
-            StackSString<EncodingASCII> buf;
+            StackEString<EncodingASCII> buf;
             buf.Printf("    Type:          ");
             switch (m_allocationType)
             {
@@ -444,35 +444,35 @@ struct LoaderHeapEvent
                 default:
                     break;
             }
-            pSString->Append(buf);
+            pEString->Append(buf);
         }
 
 
         {
-            StackSString<EncodingASCII> buf;
+            StackEString<EncodingASCII> buf;
             buf.Printf("    Start of block:       0x%p\n", m_pMem);
-            pSString->Append(buf);
+            pEString->Append(buf);
         }
 
         {
-            StackSString<EncodingASCII> buf;
+            StackEString<EncodingASCII> buf;
             buf.Printf("    End of block:         0x%p\n", ((BYTE*)m_pMem) + m_dwSize - 1);
-            pSString->Append(buf);
+            pEString->Append(buf);
         }
 
         {
-            StackSString<EncodingASCII> buf;
+            StackEString<EncodingASCII> buf;
             buf.Printf("    Requested size:       %lu (0x%lx)\n", (ULONG)m_dwRequestedSize, (ULONG)m_dwRequestedSize);
-            pSString->Append(buf);
+            pEString->Append(buf);
         }
 
         {
-            StackSString<EncodingASCII> buf;
+            StackEString<EncodingASCII> buf;
             buf.Printf("    Actual size:          %lu (0x%lx)\n", (ULONG)m_dwSize, (ULONG)m_dwSize);
-            pSString->Append(buf);
+            pEString->Append(buf);
         }
 
-        pSString->Append("\n");
+        pEString->Append("\n");
     }
 
 
@@ -608,10 +608,10 @@ class LoaderHeapSniffer
         }
 
 
-        static VOID PitchSniffer(SString<EncodingASCII> *pSString)
+        static VOID PitchSniffer(EString<EncodingASCII> *pEString)
         {
             WRAPPER_NO_CONTRACT;
-            pSString->Append("\n"
+            pEString->Append("\n"
                              "\nBecause call-tracing wasn't turned on, we couldn't provide details about who last owned the affected memory block. To get more precise diagnostics,"
                              "\nset the following registry DWORD value:"
                              "\n"
@@ -1550,7 +1550,7 @@ void UnlockedLoaderHeap::UnlockedBackoutMem(void *pMem,
         {
             CONTRACT_VIOLATION(ThrowsViolation|FaultViolation); // We're reporting a heap corruption - who cares about violations
 
-            StackSString<EncodingASCII> message;
+            StackEString<EncodingASCII> message;
             message.Printf("HEAP VIOLATION: Invalid BackoutMem() call made at:\n"
                            "\n"
                            "     File: %s\n"
@@ -1593,7 +1593,7 @@ void UnlockedLoaderHeap::UnlockedBackoutMem(void *pMem,
 
             if (pTag->m_dwRequestedSize != dwRequestedSize)
             {
-                StackSString<EncodingASCII> buf;
+                StackEString<EncodingASCII> buf;
                 buf.Printf(
                         "Possible causes:\n"
                         "\n"
@@ -2163,7 +2163,7 @@ void LoaderHeapSniffer::ValidateFreeList(UnlockedLoaderHeap *pHeap)
     }
 
     {
-        StackSString<EncodingASCII> message;
+        StackEString<EncodingASCII> message;
 
         message.Printf("A loaderheap freelist has been corrupted. The bytes at or near address 0x%p appears to have been overwritten. We expected to see %s here.\n"
                        "\n"

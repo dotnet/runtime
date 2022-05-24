@@ -48,10 +48,10 @@ extern "C" BOOL QCALLTYPE MdUtf8String_EqualsCaseInsensitive(LPCUTF8 szLhs, LPCU
 
     // At this point, both the left and right strings are guaranteed to have the
     // same length.
-    StackSString<EncodingUTF8> lhs(szLhs, stringNumBytes);
-    StackSString<EncodingUTF8> rhs(szRhs, stringNumBytes);
+    StackEString<EncodingUTF8> lhs(szLhs, stringNumBytes);
+    StackEString<EncodingUTF8> rhs(szRhs, stringNumBytes);
 
-    // We can use SString for simple case insensitive compares
+    // We can use EString for simple case insensitive compares
     fStringsEqual = lhs.EqualsCaseInsensitive(rhs);
 
     END_QCALL;
@@ -70,7 +70,7 @@ extern "C" ULONG QCALLTYPE MdUtf8String_HashCaseInsensitive(LPCUTF8 sz, INT32 st
 
     BEGIN_QCALL;
 
-    StackSString<EncodingUTF8> str(sz, stringNumBytes);
+    StackEString<EncodingUTF8> str(sz, stringNumBytes);
     hashValue = str.HashCaseInsensitive();
 
     END_QCALL;
@@ -677,7 +677,7 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_ConstructInstantiation(MethodDesc 
 
     BEGIN_QCALL;
 
-    StackSString<EncodingUnicode> ss;
+    StackSString ss;
     TypeString::AppendInst(ss, pMethod->LoadMethodInstantiation(), format);
     retString.Set(ss);
 
@@ -690,7 +690,7 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_ConstructName(QCall::TypeHandle pTyp
 
     BEGIN_QCALL;
 
-    StackSString<EncodingUnicode> ss;
+    StackSString ss;
     TypeString::AppendType(ss, pTypeHandle.AsTypeHandle(), format);
     retString.Set(ss);
 

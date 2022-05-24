@@ -3828,7 +3828,7 @@ void ETW::ExceptionLog::ExceptionThrown(CrawlFrame* pCf, BOOL bIsReThrownExcepti
     }
     EX_TRY
     {
-        SString exceptionType(L"");
+        EString exceptionType(L"");
         LPWSTR exceptionMessage = NULL;
         BOOL bIsCLSCompliant = FALSE, bIsCSE = FALSE, bIsNestedException = FALSE, bHasInnerException = FALSE;
         UINT16 exceptionFlags = 0;
@@ -4169,7 +4169,7 @@ void ETW::InfoLog::RuntimeInformation(INT32 type)
 /*******************************************************/
 /* This is called by the runtime when a method is jitted completely */
 /*******************************************************/
-void ETW::MethodLog::MethodJitted(MethodDesc* pMethodDesc, SString* namespaceOrClassName, SString* methodName, SString* methodSignature, SIZE_T pCode, ReJITID rejitID)
+void ETW::MethodLog::MethodJitted(MethodDesc* pMethodDesc, EString* namespaceOrClassName, EString* methodName, EString* methodSignature, SIZE_T pCode, ReJITID rejitID)
 {
     CONTRACTL{
         NOTHROW;
@@ -4206,7 +4206,7 @@ void ETW::MethodLog::MethodJitted(MethodDesc* pMethodDesc, SString* namespaceOrC
 /*************************************************/
 /* This is called by the runtime when method jitting started */
 /*************************************************/
-void ETW::MethodLog::MethodJitting(MethodDesc* pMethodDesc, SString* namespaceOrClassName, SString* methodName, SString* methodSignature)
+void ETW::MethodLog::MethodJitting(MethodDesc* pMethodDesc, EString* namespaceOrClassName, EString* methodName, EString* methodSignature)
 {
     CONTRACTL{
         NOTHROW;
@@ -4850,7 +4850,7 @@ void ETW::LoaderLog::SendAssemblyEvent(Assembly* pAssembly, DWORD dwEventOptions
         (bHasNativeImage ? ETW::LoaderLog::LoaderStructs::NativeAssembly : 0) |
         (bIsCollectibleAssembly ? ETW::LoaderLog::LoaderStructs::CollectibleAssembly : 0));
 
-    SString sAssemblyPath;
+    EString sAssemblyPath;
     pAssembly->GetDisplayName(sAssemblyPath);
     LPWSTR lpszAssemblyPath = (LPWSTR)(LPCWSTR)sAssemblyPath;
 
@@ -5209,9 +5209,9 @@ void ETW::LoaderLog::SendModuleEvent(Module* pModule, DWORD dwEventOptions, BOOL
 
     LPCWSTR pEmptyString = L"";
 #ifndef FEATURE_PAL
-    SString moduleName = L"";
+    EString moduleName = L"";
 #else // !FEATURE_PAL
-    SString moduleName;
+    EString moduleName;
 #endif // !FEATURE_PAL
     if (!bIsDynamicAssembly)
     {
@@ -5238,8 +5238,8 @@ void ETW::LoaderLog::SendModuleEvent(Module* pModule, DWORD dwEventOptions, BOOL
     szDtraceOutput2 = (PCWSTR)ModuleNativePath;
 
     // Convert PDB paths to UNICODE
-    StackSString<EncodingUTF8> managedPdbPath(cvInfoIL.path);
-    StackSString<EncodingUTF8> nativePdbPath(cvInfoNative.path);
+    StackEString<EncodingUTF8> managedPdbPath(cvInfoIL.path);
+    StackEString<EncodingUTF8> nativePdbPath(cvInfoNative.path);
 #else // !FEATURE_DTRACE
     // since DTrace do not support UNICODE string, they need to be converted to ANSI string
     INT32 nSizeOfILPath = WideCharToMultiByte(ModuleILPath, szDtraceOutput1);
@@ -5311,7 +5311,7 @@ void ETW::LoaderLog::SendModuleEvent(Module* pModule, DWORD dwEventOptions, BOOL
 /*****************************************************************/
 /* This routine is used to send an ETW event just before a method starts jitting*/
 /*****************************************************************/
-void ETW::MethodLog::SendMethodJitStartEvent(MethodDesc* pMethodDesc, SString* namespaceOrClassName, SString* methodName, SString* methodSignature)
+void ETW::MethodLog::SendMethodJitStartEvent(MethodDesc* pMethodDesc, EString* namespaceOrClassName, EString* methodName, EString* methodSignature)
 {
     CONTRACTL{
         THROWS;
@@ -5366,7 +5366,7 @@ void ETW::MethodLog::SendMethodJitStartEvent(MethodDesc* pMethodDesc, SString* n
             ulMethodILSize = (ULONG)ILHeader.GetCodeSize();
         }
 
-        SString tNamespace, tMethodName, tMethodSignature;
+        EString tNamespace, tMethodName, tMethodSignature;
         if (!namespaceOrClassName || !methodName || !methodSignature || (methodName->IsEmpty() && namespaceOrClassName->IsEmpty() && methodSignature->IsEmpty()))
         {
             pMethodDesc->GetMethodInfo(tNamespace, tMethodName, tMethodSignature);
@@ -5408,7 +5408,7 @@ void ETW::MethodLog::SendMethodJitStartEvent(MethodDesc* pMethodDesc, SString* n
 /****************************************************************************/
 /* This routine is used to send a method load/unload or rundown event                              */
 /****************************************************************************/
-void ETW::MethodLog::SendMethodEvent(MethodDesc* pMethodDesc, DWORD dwEventOptions, BOOL bIsJit, SString* namespaceOrClassName, SString* methodName, SString* methodSignature, SIZE_T pCode, ReJITID rejitID)
+void ETW::MethodLog::SendMethodEvent(MethodDesc* pMethodDesc, DWORD dwEventOptions, BOOL bIsJit, EString* namespaceOrClassName, EString* methodName, EString* methodSignature, SIZE_T pCode, ReJITID rejitID)
 {
     CONTRACTL{
         THROWS;
@@ -5534,7 +5534,7 @@ void ETW::MethodLog::SendMethodEvent(MethodDesc* pMethodDesc, DWORD dwEventOptio
         ulColdMethodSize = (ULONG)methodRegionInfo.coldSize; // methodRegionInfo.coldSize is size_t and info.MethodLoadInfo.MethodSize is 32 bit; will give incorrect values on a 64-bit machine
     }
 
-    SString tNamespace, tMethodName, tMethodSignature;
+    EString tNamespace, tMethodName, tMethodSignature;
 
     // if verbose method load info needed, only then
     // find method name and signature and fire verbose method load info

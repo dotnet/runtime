@@ -854,10 +854,10 @@ class EMPTY_BASES_DECL WStringSHash : public SHash< StringSHashTraits<ELEMENT, W
 };
 
 template <typename ELEMENT, typename TEncoding>
-class EMPTY_BASES_DECL SStringSHashTraits : public PtrSHashTraits<ELEMENT, SString<TEncoding>>
+class EMPTY_BASES_DECL EStringSHashTraits : public PtrSHashTraits<ELEMENT, EString<TEncoding>>
 {
   public:
-    typedef PtrSHashTraits<ELEMENT, SString<TEncoding>> PARENT;
+    typedef PtrSHashTraits<ELEMENT, EString<TEncoding>> PARENT;
     typedef typename PARENT::element_t element_t;
     typedef typename PARENT::key_t key_t;
     typedef typename PARENT::count_t count_t;
@@ -877,7 +877,7 @@ class EMPTY_BASES_DECL SStringSHashTraits : public PtrSHashTraits<ELEMENT, SStri
 };
 
 template <typename ELEMENT, typename TEncoding>
-class EMPTY_BASES_DECL SStringSHash : public SHash< SStringSHashTraits<ELEMENT, TEncoding> >
+class EMPTY_BASES_DECL EStringSHash : public SHash< EStringSHashTraits<ELEMENT, TEncoding> >
 {
 };
 

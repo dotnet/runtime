@@ -230,7 +230,7 @@ class CallStackLogger
     {
         WRAPPER_NO_CONTRACT;
 
-        SString<EncodingUnicode> str(pWordAt);
+        SString str(pWordAt);
 
         MethodDesc* pMD = m_frames[index];
         TypeString::AppendMethodInternal(str, pMD, TypeString::FormatNamespace|TypeString::FormatFullInst|TypeString::FormatSignature);
@@ -255,7 +255,7 @@ public:
 
         if (m_largestCommonStartLength != 0)
         {
-            SmallStackSString<EncodingUnicode> repeatStr;
+            SmallStackSString repeatStr;
             repeatStr.AppendPrintf(W("Repeat %d times:\n"), m_largestCommonStartRepeat);
 
             PrintToStdErrW((LPCWSTR)repeatStr);
@@ -288,7 +288,7 @@ inline void LogCallstackForLogWorker(Thread* pThread)
 {
     WRAPPER_NO_CONTRACT;
 
-    SmallStackSString<EncodingUnicode> WordAt;
+    SmallStackSString WordAt;
 
     if (!LoadResource(WordAt, CCompRC::Optional, IDS_ER_WORDAT))
     {
@@ -371,7 +371,7 @@ void LogInfoForFatalError(UINT exitCode, LPCWSTR pszMessage, LPCWSTR errorSource
         else
         {
             // If no message was passed in, generate it from the exitCode
-            SString<EncodingUnicode> exitCodeMessage;
+            SString exitCodeMessage;
             GetHRMsg(exitCode, exitCodeMessage);
             PrintToStdErrW((LPCWSTR)exitCodeMessage);
         }
@@ -440,7 +440,7 @@ void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage
             else if (exitCode == (UINT)COR_E_CODECONTRACTFAILED)
                 failureType = EventReporter::ERT_CodeContractFailed;
             EventReporter reporter(failureType);
-            StackSString<EncodingUnicode> s(argExceptionString);
+            StackSString s(argExceptionString);
 
             if ((exitCode == (UINT)COR_E_FAILFAST) || (exitCode == (UINT)COR_E_CODECONTRACTFAILED) || (exitCode == (UINT)CLR_E_GC_OOM))
             {
@@ -460,11 +460,11 @@ void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage
             else
             {
                 // Fetch the localized Fatal Execution Engine Error text or fall back on a hardcoded variant if things get dire.
-                InlineSString<80, EncodingUnicode> ssMessage;
-                InlineSString<80, EncodingUnicode> ssErrorFormat;
+                InlineEString<80, EncodingUnicode> ssMessage;
+                InlineEString<80, EncodingUnicode> ssErrorFormat;
                 if(!LoadResource(ssErrorFormat, CCompRC::Optional, IDS_ER_UNMANAGEDFAILFASTMSG ))
                     ssErrorFormat.Set(W("at IP 0x%x (0x%x) with exit code 0x%x."));
-                SmallStackSString<EncodingUnicode> addressString;
+                SmallStackSString addressString;
                 addressString.Printf(W("%p"), pExceptionInfo? (PVOID)pExceptionInfo->ExceptionRecord->ExceptionAddress : (PVOID)address);
 
                 // We should always have the reference to the runtime's instance
@@ -473,10 +473,10 @@ void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage
                 // Setup the string to contain the runtime's base address. Thus, when customers report FEEE with just
                 // the event log entry containing this string, we can use the absolute and base addresses to determine
                 // where the fault happened inside the runtime.
-                SmallStackSString<EncodingUnicode> runtimeBaseAddressString;
+                SmallStackSString runtimeBaseAddressString;
                 runtimeBaseAddressString.Printf(W("%p"), GetClrModuleBase());
 
-                SmallStackSString<EncodingUnicode> exitCodeString;
+                SmallStackSString exitCodeString;
                 exitCodeString.Printf(W("%x"), exitCode);
 
                 // Format the string

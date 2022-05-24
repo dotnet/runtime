@@ -303,14 +303,14 @@ VOID __fastcall UMEntryThunk::ReportViolation(UMEntryThunk* pEntryThunk)
 
     MethodDesc* pMethodDesc = pEntryThunk->GetMethod();
 
-    SString<EncodingUnicode> namespaceOrClassName;
-    SString<EncodingUTF8> methodName;
-    SString<EncodingUTF8> moduleName;
+    SString namespaceOrClassName;
+    EString<EncodingUTF8> methodName;
+    EString<EncodingUTF8> moduleName;
 
     pMethodDesc->GetMethodInfoNoSig(namespaceOrClassName, methodName);
     moduleName.Set(pMethodDesc->GetModule()->GetSimpleName());
 
-    SString<EncodingUnicode> message;
+    SString message;
 
     message.Printf(W("A callback was made on a garbage collected delegate of type '%S!%s::%S'."),
         (LPCSTR)moduleName,

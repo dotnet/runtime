@@ -132,7 +132,7 @@ public:
     IErrorInfo *GetErrorInfo();
     HRESULT SetErrorInfo();
 
-    void GetMessage(SString<EncodingUnicode> &result);
+    void GetMessage(SString &result);
 
  protected:
 
@@ -223,17 +223,17 @@ class EEException : public CLRException
     // Virtual overrides
     HRESULT GetHR();
     IErrorInfo *GetErrorInfo();
-    void GetMessage(SString<EncodingUnicode> &result);
+    void GetMessage(SString &result);
     OBJECTREF CreateThrowable();
 
     // GetThrowableMessage returns a message to be stored in the throwable.
     // Returns FALSE if there is no useful value.
-    virtual BOOL GetThrowableMessage(SString<EncodingUnicode> &result);
+    virtual BOOL GetThrowableMessage(SString &result);
 
-    static BOOL GetResourceMessage(UINT iResourceID, SString<EncodingUnicode> &result,
-                                   const SString<EncodingUnicode> &arg1 = SString<EncodingUnicode>::Empty(), const SString<EncodingUnicode> &arg2 = SString<EncodingUnicode>::Empty(),
-                                   const SString<EncodingUnicode> &arg3 = SString<EncodingUnicode>::Empty(), const SString<EncodingUnicode> &arg4 = SString<EncodingUnicode>::Empty(),
-                                   const SString<EncodingUnicode> &arg5 = SString<EncodingUnicode>::Empty(), const SString<EncodingUnicode> &arg6 = SString<EncodingUnicode>::Empty());
+    static BOOL GetResourceMessage(UINT iResourceID, SString &result,
+                                   const SString &arg1 = SString::Empty(), const SString &arg2 = SString::Empty(),
+                                   const SString &arg3 = SString::Empty(), const SString &arg4 = SString::Empty(),
+                                   const SString &arg5 = SString::Empty(), const SString &arg6 = SString::Empty());
 
     // Note: reKind-->hr is a one-to-many relationship.
     //
@@ -273,10 +273,10 @@ class EEMessageException : public EEException
     UINT                                  m_resID;
     PathString   m_arg1;
     PathString   m_arg2;
-    SString<EncodingUnicode>             m_arg3;
-    SString<EncodingUnicode>             m_arg4;
-    SString<EncodingUnicode>             m_arg5;
-    SString<EncodingUnicode>             m_arg6;
+    SString             m_arg3;
+    SString             m_arg4;
+    SString             m_arg5;
+    SString             m_arg6;
 
  public:
     EEMessageException(RuntimeExceptionKind kind, UINT resID = 0, LPCWSTR szArg1 = NULL, LPCWSTR szArg2 = NULL,
@@ -293,7 +293,7 @@ class EEMessageException : public EEException
     // Virtual overrides
     HRESULT GetHR();
 
-    BOOL GetThrowableMessage(SString<EncodingUnicode> &result);
+    BOOL GetThrowableMessage(SString &result);
 
     UINT GetResID(void) { LIMITED_METHOD_CONTRACT; return m_resID; }
 
@@ -329,7 +329,7 @@ class EEMessageException : public EEException
         RETURN (PVOID&)boilerplate;
     }
 
-    BOOL GetResourceMessage(UINT iResourceID, SString<EncodingUnicode> &result);
+    BOOL GetResourceMessage(UINT iResourceID, SString &result);
 
 #ifdef _DEBUG
     EEMessageException()
@@ -350,16 +350,16 @@ class EEResourceException : public EEException
     friend bool DebugIsEECxxExceptionPointer(void* pv);
 
  private:
-    InlineSString<32, EncodingUnicode>        m_resourceName;
+    InlineEString<32, EncodingUnicode>        m_resourceName;
 
  public:
-    EEResourceException(RuntimeExceptionKind kind, const SString<EncodingUnicode> &resourceName);
+    EEResourceException(RuntimeExceptionKind kind, const SString &resourceName);
 
     // Unmanaged message text containing only the resource name (GC safe)
-    void GetMessage(SString<EncodingUnicode> &result);
+    void GetMessage(SString &result);
 
     // Throwable message containig the resource contents (not GC safe)
-    BOOL GetThrowableMessage(SString<EncodingUnicode> &result);
+    BOOL GetThrowableMessage(SString &result);
 
  protected:
 
@@ -416,7 +416,7 @@ class EECOMException : public EEException
     // Virtual overrides
     HRESULT GetHR();
 
-    BOOL GetThrowableMessage(SString<EncodingUnicode> &result);
+    BOOL GetThrowableMessage(SString &result);
     OBJECTREF CreateThrowable();
 
  protected:
@@ -448,14 +448,14 @@ class EEFieldException : public EEException
  private:
     FieldDesc   *m_pFD;
     MethodDesc  *m_pAccessingMD;
-    SString<EncodingUnicode> m_additionalContext;
+    SString m_additionalContext;
     UINT         m_messageID;
 
  public:
     EEFieldException(FieldDesc *pField);
-    EEFieldException(FieldDesc *pField, MethodDesc *pAccessingMD, const SString<EncodingUnicode> &additionalContext, UINT messageID);
+    EEFieldException(FieldDesc *pField, MethodDesc *pAccessingMD, const SString &additionalContext, UINT messageID);
 
-    BOOL GetThrowableMessage(SString<EncodingUnicode> &result);
+    BOOL GetThrowableMessage(SString &result);
     virtual BOOL IsDomainBound() {return TRUE;};
 protected:
 
@@ -486,14 +486,14 @@ class EEMethodException : public EEException
  private:
     MethodDesc *m_pMD;
     MethodDesc *m_pAccessingMD;
-    SString<EncodingUnicode> m_additionalContext;
+    SString m_additionalContext;
     UINT        m_messageID;
 
  public:
     EEMethodException(MethodDesc *pMethod);
-    EEMethodException(MethodDesc *pMethod, MethodDesc *pAccessingMD, const SString<EncodingUnicode> &additionalContext, UINT messageID);
+    EEMethodException(MethodDesc *pMethod, MethodDesc *pAccessingMD, const SString &additionalContext, UINT messageID);
 
-    BOOL GetThrowableMessage(SString<EncodingUnicode> &result);
+    BOOL GetThrowableMessage(SString &result);
     virtual BOOL IsDomainBound() {return TRUE;};
  protected:
 
@@ -525,14 +525,14 @@ class EETypeAccessException : public EEException
  private:
     MethodTable *m_pMT;
     MethodDesc  *m_pAccessingMD;
-    SString<EncodingUnicode> m_additionalContext;
+    SString m_additionalContext;
     UINT         m_messageID;
 
  public:
     EETypeAccessException(MethodTable *pMT);
-    EETypeAccessException(MethodTable *pMT, MethodDesc *pAccessingMD, const SString<EncodingUnicode> &additionalContext, UINT messageID);
+    EETypeAccessException(MethodTable *pMT, MethodDesc *pAccessingMD, const SString &additionalContext, UINT messageID);
 
-    BOOL GetThrowableMessage(SString<EncodingUnicode> &result);
+    BOOL GetThrowableMessage(SString &result);
     virtual BOOL IsDomainBound() {return TRUE;};
  protected:
 
@@ -562,8 +562,8 @@ class EEArgumentException : public EEException
     friend bool DebugIsEECxxExceptionPointer(void* pv);
 
  private:
-    InlineSString<32, EncodingUnicode>        m_argumentName;
-    InlineSString<32, EncodingUnicode>        m_resourceName;
+    InlineEString<32, EncodingUnicode>        m_argumentName;
+    InlineEString<32, EncodingUnicode>        m_resourceName;
 
  public:
     EEArgumentException(RuntimeExceptionKind reKind, LPCWSTR pArgName,
@@ -601,9 +601,9 @@ class EETypeLoadException : public EEException
     friend bool DebugIsEECxxExceptionPointer(void* pv);
 
   private:
-    InlineSString<64, EncodingUnicode> m_fullName;
-    SString<EncodingUnicode> m_pAssemblyName;
-    SString<EncodingUnicode> m_pMessageArg;
+    InlineEString<64, EncodingUnicode> m_fullName;
+    SString m_pAssemblyName;
+    SString m_pMessageArg;
     UINT                      m_resIDWhy;
 
  public:
@@ -614,7 +614,7 @@ class EETypeLoadException : public EEException
                         LPCWSTR pAssemblyName, LPCUTF8 pMessageArg, UINT resIDWhy);
 
     // virtual overrides
-    void GetMessage(SString<EncodingUnicode> &result);
+    void GetMessage(SString &result);
     OBJECTREF CreateThrowable();
 
  protected:
@@ -629,8 +629,8 @@ class EETypeLoadException : public EEException
         }
 
  private:
-    EETypeLoadException(const InlineSString<64, EncodingUTF8> &fullName, LPCWSTR pAssemblyName,
-                        const SString<EncodingUnicode> &pMessageArg, UINT resIDWhy)
+    EETypeLoadException(const InlineEString<64, EncodingUTF8> &fullName, LPCWSTR pAssemblyName,
+                        const SString &pMessageArg, UINT resIDWhy)
        : EEException(kTypeLoadException),
          m_pAssemblyName(pAssemblyName),
          m_pMessageArg(pMessageArg),
@@ -660,12 +660,12 @@ class EEFileLoadException : public EEException
     friend bool DebugIsEECxxExceptionPointer(void* pv);
 
   private:
-    SString<EncodingUnicode> m_name;
+    SString m_name;
     HRESULT m_hr;
 
   public:
 
-    EEFileLoadException(const SString<EncodingUnicode> &name, HRESULT hr, Exception *pInnerException = NULL);
+    EEFileLoadException(const SString &name, HRESULT hr, Exception *pInnerException = NULL);
     ~EEFileLoadException();
 
     // virtual overrides
@@ -674,8 +674,8 @@ class EEFileLoadException : public EEException
         LIMITED_METHOD_DAC_CONTRACT;
         return m_hr;
     }
-    void GetMessage(SString<EncodingUnicode> &result);
-    void GetName(SString<EncodingUnicode> &result);
+    void GetMessage(SString &result);
+    void GetName(SString &result);
     OBJECTREF CreateThrowable();
 
     static RuntimeExceptionKind GetFileLoadKind(HRESULT hr);
@@ -701,7 +701,7 @@ class EEFileLoadException : public EEException
     }
 #endif // _DEBUG
 
-    void SetFileName(const SString<EncodingUnicode> &fileName, BOOL removePath);
+    void SetFileName(const SString &fileName, BOOL removePath);
 };
 
 // -------------------------------------------------------------------------------------------------------
@@ -1030,7 +1030,7 @@ inline EEMessageException::EEMessageException(RuntimeExceptionKind kind, HRESULT
 }
 
 
-inline EEResourceException::EEResourceException(RuntimeExceptionKind kind, const SString<EncodingUnicode> &resourceName)
+inline EEResourceException::EEResourceException(RuntimeExceptionKind kind, const SString &resourceName)
   : EEException(kind),
     m_resourceName(resourceName)
 {
@@ -1047,7 +1047,7 @@ inline EEFieldException::EEFieldException(FieldDesc *pField)
     WRAPPER_NO_CONTRACT;
 }
 
-inline EEFieldException::EEFieldException(FieldDesc *pField, MethodDesc *pAccessingMD, const SString<EncodingUnicode> &additionalContext, UINT messageID)
+inline EEFieldException::EEFieldException(FieldDesc *pField, MethodDesc *pAccessingMD, const SString &additionalContext, UINT messageID)
     : EEException(kFieldAccessException),
       m_pFD(pField),
       m_pAccessingMD(pAccessingMD),
@@ -1065,7 +1065,7 @@ inline EEMethodException::EEMethodException(MethodDesc *pMethod)
     WRAPPER_NO_CONTRACT;
 }
 
-inline EEMethodException::EEMethodException(MethodDesc *pMethod, MethodDesc *pAccessingMD, const SString<EncodingUnicode> &additionalContext, UINT messageID)
+inline EEMethodException::EEMethodException(MethodDesc *pMethod, MethodDesc *pAccessingMD, const SString &additionalContext, UINT messageID)
     : EEException(kMethodAccessException),
       m_pMD(pMethod),
       m_pAccessingMD(pAccessingMD),
@@ -1082,7 +1082,7 @@ inline EETypeAccessException::EETypeAccessException(MethodTable *pMT)
 {
 }
 
-inline EETypeAccessException::EETypeAccessException(MethodTable *pMT, MethodDesc *pAccessingMD, const SString<EncodingUnicode> &additionalContext, UINT messageID)
+inline EETypeAccessException::EETypeAccessException(MethodTable *pMT, MethodDesc *pAccessingMD, const SString &additionalContext, UINT messageID)
     : EEException(kTypeAccessException),
       m_pMT(pMT),
       m_pAccessingMD(pAccessingMD),

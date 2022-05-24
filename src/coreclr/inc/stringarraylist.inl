@@ -4,17 +4,17 @@
 #include "ex.h"
 
 template<typename TEncoding>
-inline SString<TEncoding>& StringArrayList<TEncoding>::operator[] (DWORD idx) const
+inline EString<TEncoding>& StringArrayList<TEncoding>::operator[] (DWORD idx) const
 {
     WRAPPER_NO_CONTRACT;
     return Get(idx);
 }
 
 template<typename TEncoding>
-inline SString<TEncoding>& StringArrayList<TEncoding>::Get (DWORD idx) const
+inline EString<TEncoding>& StringArrayList<TEncoding>::Get (DWORD idx) const
 {
     WRAPPER_NO_CONTRACT;
-    PTR_SString<TEncoding> ppRet=(PTR_SString<TEncoding>)m_Elements.Get(idx);
+    PTR_EString<TEncoding> ppRet=(PTR_EString<TEncoding>)m_Elements.Get(idx);
     return *ppRet;
 }
 
@@ -27,7 +27,7 @@ inline DWORD StringArrayList<TEncoding>::GetCount() const
 
 #ifndef DACCESS_COMPILE
 template<typename TEncoding>
-inline void StringArrayList<TEncoding>::Append(const SString<TEncoding>& string)
+inline void StringArrayList<TEncoding>::Append(const EString<TEncoding>& string)
 {
     CONTRACTL
     {
@@ -35,13 +35,13 @@ inline void StringArrayList<TEncoding>::Append(const SString<TEncoding>& string)
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
-    NewHolder<SString<TEncoding>> pAdd = new SString<TEncoding>(string);
+    NewHolder<EString<TEncoding>> pAdd = new EString<TEncoding>(string);
     IfFailThrow(m_Elements.Append(pAdd));
     pAdd.SuppressRelease();
 }
 
 template<typename TEncoding>
-inline void StringArrayList<TEncoding>::AppendIfNotThere(const SString<TEncoding>& string)
+inline void StringArrayList<TEncoding>::AppendIfNotThere(const EString<TEncoding>& string)
 {
     CONTRACTL
     {
@@ -73,7 +73,7 @@ inline StringArrayList<TEncoding>::~StringArrayList()
 #ifndef DACCESS_COMPILE
     for (DWORD i=0;i< GetCount() ;i++)
     {
-        delete (SString<TEncoding>*)m_Elements.Get(i);
+        delete (EString<TEncoding>*)m_Elements.Get(i);
     }
 #endif
 }

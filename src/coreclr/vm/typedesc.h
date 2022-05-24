@@ -58,9 +58,9 @@ public:
     static void ConstructName(CorElementType kind,
                               TypeHandle param,
                               int rank,
-                              SString<EncodingUnicode> &ssBuff);
+                              SString &ssBuff);
 
-    void GetName(SString<EncodingUnicode> &ssBuf);
+    void GetName(SString &ssBuf);
 
     //-------------------------------------------------------------------
     // CASTING

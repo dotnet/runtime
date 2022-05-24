@@ -726,7 +726,7 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner, const BYTE* array, COUNT_T siz
         {
             // This is required to throw a BadImageFormatException for compatibility, but
             // use the message from ERROR_VIRUS_INFECTED to give better insight on what's wrong
-            SString<EncodingUnicode> virusHrString;
+            SString virusHrString;
             GetHRMsg(HRESULT_FROM_WIN32(ERROR_VIRUS_INFECTED), virusHrString);
             ThrowHR(COR_E_BADIMAGEFORMAT, virusHrString);
         }

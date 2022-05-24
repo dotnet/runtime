@@ -26,14 +26,14 @@ namespace BINDER_SPACE
     public:
         static HRESULT ToString(/* in */  AssemblyIdentity *pAssemblyIdentity,
                                 /* in */  DWORD             dwIdentityFlags,
-                                /* out */ SString<EncodingUnicode> &textualIdentity);
+                                /* out */ SString &textualIdentity);
 
         static void BlobToHex(/* in */  SBuffer &publicKeyOrTokenBLOB,
-                              /* out */ SString<EncodingUnicode> &publicKeyOrToken);
+                              /* out */ SString &publicKeyOrToken);
 
     protected:
-        static void EscapeString(/* in */ SString<EncodingUnicode> &input,
-                                 /* out*/ SString<EncodingUnicode> &result);
+        static void EscapeString(/* in */ SString &input,
+                                 /* out*/ SString &result);
     };
 };
 

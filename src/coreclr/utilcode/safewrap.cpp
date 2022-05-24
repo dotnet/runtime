@@ -5,7 +5,7 @@
 //
 
 //
-// This file contains wrapper functions for Win32 API's that take SStrings
+// This file contains wrapper functions for Win32 API's that take EStrings
 // and use CLR-safe holders.
 //
 // See guidelines in SafeWrap.h for writing these APIs.

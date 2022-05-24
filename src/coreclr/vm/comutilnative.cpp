@@ -575,7 +575,7 @@ extern "C" void QCALLTYPE ExceptionNative_GetMessageFromNativeResources(Exceptio
 
     BEGIN_QCALL;
 
-    SString<EncodingUnicode> buffer;
+    SString buffer;
     HRESULT hr = S_OK;
     const WCHAR * wszFallbackString = NULL;
 
