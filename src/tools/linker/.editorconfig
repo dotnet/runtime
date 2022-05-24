@@ -138,6 +138,9 @@ dotnet_diagnostic.CA2201.severity = none
 # xUnit1004: Test methods should not be skipped
 dotnet_diagnostic.xUnit1004.severity = none
 
+# CA1805: Member is explicitly initialized to it's default value
+dotnet_diagnostic.CA1805.severity = none
+
 [src/linker/ref/**/*.cs]
 
 # CA1822: Mark members as static

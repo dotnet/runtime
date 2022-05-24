@@ -374,9 +374,10 @@ namespace ILLink.Shared.TrimAnalysis
 
 			DynamicallyAccessedMemberTypes[]? typeGenericParameterAnnotations = null;
 			if (type.HasGenericParameters) {
+				var attrs = GetGeneratedTypeAttributes (type);
 				for (int genericParameterIndex = 0; genericParameterIndex < type.GenericParameters.Count; genericParameterIndex++) {
-					var genericParameter = type.GenericParameters[genericParameterIndex];
-					var annotation = GetMemberTypesForDynamicallyAccessedMembersAttribute (type, providerIfNotMember: genericParameter);
+					var provider = attrs?[genericParameterIndex] ?? type.GenericParameters[genericParameterIndex];
+					var annotation = GetMemberTypesForDynamicallyAccessedMembersAttribute (type, providerIfNotMember: provider);
 					if (annotation != DynamicallyAccessedMemberTypes.None) {
 						if (typeGenericParameterAnnotations == null)
 							typeGenericParameterAnnotations = new DynamicallyAccessedMemberTypes[type.GenericParameters.Count];
@@ -386,6 +387,16 @@ namespace ILLink.Shared.TrimAnalysis
 			}
 
 			return new TypeAnnotations (type, typeAnnotation, annotatedMethods.ToArray (), annotatedFields.ToArray (), typeGenericParameterAnnotations);
+		}
+
+		private IReadOnlyList<ICustomAttributeProvider>? GetGeneratedTypeAttributes (TypeDefinition typeDef)
+		{
+			if (!CompilerGeneratedNames.IsGeneratedType (typeDef.Name)) {
+				return null;
+			}
+			var attrs = _context.CompilerGeneratedState.GetGeneratedTypeAttributes (typeDef);
+			Debug.Assert (attrs is null || attrs.Count == typeDef.GenericParameters.Count);
+			return attrs;
 		}
 
 		bool ScanMethodBodyForFieldAccess (MethodBody body, bool write, out FieldDefinition? found)
