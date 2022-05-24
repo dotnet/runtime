@@ -253,7 +253,7 @@ namespace System.Diagnostics.Tracing
 
         [Event(75, Level = EventLevel.Informational, Message = Messages.WorkerThreadMinMax, Task = Tasks.Thread, Opcode = Opcodes.Sample, Version = 0, Keywords = Keywords.ThreadingKeyword)]
         public unsafe void ThreadPoolWorkerSetMinThreads(
-            int WorkerThreads, 
+            int WorkerThreads,
             int IOCompletionThreads,
             ushort ClrInstanceID = DefaultClrInstanceId)
         {
@@ -261,6 +261,7 @@ namespace System.Diagnostics.Tracing
             {
                 return;
             }
+            /*
             EventData* data = stackalloc EventData[2];
             data[0].DataPointer = (IntPtr)(&WorkerThreads);
             data[0].Size = sizeof(int);
@@ -269,6 +270,7 @@ namespace System.Diagnostics.Tracing
             data[1].Size = sizeof(int);
             data[1].Reserved = 0;
             WriteEventCore(76, 2, data);
+            */
         }
 
         [Event(76, Level = EventLevel.Informational, Message = Messages.WorkerThreadMinMax, Task = Tasks.Thread, Opcode = Opcodes.Sample, Version = 0, Keywords = Keywords.ThreadingKeyword)]
@@ -281,6 +283,7 @@ namespace System.Diagnostics.Tracing
             {
                 return;
             }
+            /*
             EventData* data = stackalloc EventData[2];
             data[0].DataPointer = (IntPtr)(&WorkerThreads);
             data[0].Size = sizeof(int);
@@ -289,6 +292,7 @@ namespace System.Diagnostics.Tracing
             data[1].Size = sizeof(int);
             data[1].Reserved = 0;
             WriteEventCore(76, 2, data);
+            */
         }
     }
 }

@@ -3548,14 +3548,14 @@
 
                     <event value="75" version="0" level="win:Informational"  template="ThreadPoolSetMinMaxThreads"
                            keywords="ThreadingKeyword"
-                           task="Thread"
+                           task="ThreadPoolWorkerThreadAdjustment"
                            opcode="Sample"
                            symbol="ThreadPoolSetMinThreads"
                            message="$(string.RuntimePublisher.ThreadPoolSetMinMaxThreads)"/>
 
                     <event value="76" version="0" level="win:Informational"  template="ThreadPoolSetMinMaxThreads"
                            keywords="ThreadingKeyword"
-                           task="Thread"
+                           task="ThreadPoolWorkerThreadAdjustment"
                            opcode="Sample"
                            symbol="ThreadPoolSetMaxThreads"
                            message="$(string.RuntimePublisher.ThreadPoolSetMinMaxThreads)"/>

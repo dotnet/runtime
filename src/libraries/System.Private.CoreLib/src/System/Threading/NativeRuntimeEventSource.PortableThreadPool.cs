@@ -400,8 +400,6 @@ namespace System.Diagnostics.Tracing
             data[2].Reserved    = 0;
             WriteEventCore(65, 3, data);
         }
-    }
-}
 
         [Event(75, Level = EventLevel.Informational, Message = Messages.WorkerThreadMinMax, Task = Tasks.Thread, Opcode = Opcodes.Sample, Version = 0, Keywords = Keywords.ThreadingKeyword)]
         public unsafe void ThreadPoolWorkerSetMinThreads(
@@ -413,16 +411,17 @@ namespace System.Diagnostics.Tracing
             {
                 return;
             }
-            /*
-            EventData* data = stackalloc EventData[2];
+            EventData* data = stackalloc EventData[3];
             data[0].DataPointer = (IntPtr)(&WorkerThreads);
             data[0].Size = sizeof(int);
             data[0].Reserved = 0;
             data[1].DataPointer = (IntPtr)(&IOCompletionThreads);
             data[1].Size = sizeof(int);
             data[1].Reserved = 0;
-            WriteEventCore(76, 2, data);
-            */
+            data[2].DataPointer = (IntPtr)(&ClrInstanceID);
+            data[2].Size = sizeof(ushort);
+            data[2].Reserved = 0;
+            WriteEventCore(76, 3, data);
         }
 
         [Event(76, Level = EventLevel.Informational, Message = Messages.WorkerThreadMinMax, Task = Tasks.Thread, Opcode = Opcodes.Sample, Version = 0, Keywords = Keywords.ThreadingKeyword)]
@@ -435,7 +434,6 @@ namespace System.Diagnostics.Tracing
             {
                 return;
             }
-            /*
             EventData* data = stackalloc EventData[2];
             data[0].DataPointer = (IntPtr)(&WorkerThreads);
             data[0].Size = sizeof(int);
@@ -443,6 +441,10 @@ namespace System.Diagnostics.Tracing
             data[1].DataPointer = (IntPtr)(&IOCompletionThreads);
             data[1].Size = sizeof(int);
             data[1].Reserved = 0;
+            data[2].DataPointer = (IntPtr)(&ClrInstanceID);
+            data[2].Size = sizeof(ushort);
+            data[2].Reserved = 0;
             WriteEventCore(76, 2, data);
-            */
         }
+    }
+}
