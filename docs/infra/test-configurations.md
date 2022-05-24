@@ -22,6 +22,19 @@ These configurations are tested in every pull request.
 
 ### Libraries Tests
 
+#### On coreclr change
+
+| **Platform**     | **Runtime config** | **Libraries config** |
+|------------------|--------------------|----------------------|
+| windows-x86      | Checked            | Debug                |
+| linux-musl-x64   | Checked            | Debug                |
+| OSX-x64          | Checked            | Debug                |
+| linux-arm64      | Checked            | Debug                |
+| linux-musl-arm   | Checked            | Release              |
+| linux-musl-arm64 | Checked            | Release              |
+| linux-x64        | Checked            | Release              |
+| windows-x64      | Checked            | Release              |
+
 ### Installer Tests
 
 All builds are
