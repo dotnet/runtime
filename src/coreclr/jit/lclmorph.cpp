@@ -608,17 +608,27 @@ private:
         bool hasHiddenStructArg = false;
         if (m_compiler->opts.compJitOptimizeStructHiddenBuffer)
         {
-            if (varTypeIsStruct(varDsc) && varDsc->lvIsTemp)
+            // We will only attempt this optimization for locals that are:
+            // a) Not susceptible to liveness bugs (see "lvaSetHiddenBufferStructArg").
+            // b) Do not later turn into indirections.
+            //
+            bool isSuitableLocal =
+                varTypeIsStruct(varDsc) && varDsc->lvIsTemp && !m_compiler->lvaIsImplicitByRefLocal(val.LclNum());
+#ifdef TARGET_X86
+            if (m_compiler->lvaIsArgAccessedViaVarArgsCookie(val.LclNum()))
             {
-                if ((callTree != nullptr) && callTree->gtArgs.HasRetBuffer() &&
-                    (val.Node() == callTree->gtArgs.GetRetBufferArg()->GetNode()))
-                {
-                    assert(!exposeParentLcl);
+                isSuitableLocal = false;
+            }
+#endif // TARGET_X86
 
-                    m_compiler->lvaSetHiddenBufferStructArg(val.LclNum());
-                    hasHiddenStructArg = true;
-                    callTree->gtCallMoreFlags |= GTF_CALL_M_RETBUFFARG_LCLOPT;
-                }
+            if (isSuitableLocal && (callTree != nullptr) && callTree->gtArgs.HasRetBuffer() &&
+                (val.Node() == callTree->gtArgs.GetRetBufferArg()->GetNode()))
+            {
+                assert(!exposeParentLcl);
+
+                m_compiler->lvaSetHiddenBufferStructArg(val.LclNum());
+                hasHiddenStructArg = true;
+                callTree->gtCallMoreFlags |= GTF_CALL_M_RETBUFFARG_LCLOPT;
             }
         }
 
@@ -838,15 +848,6 @@ private:
             return;
         }
 
-#ifdef TARGET_X86
-        if (m_compiler->info.compIsVarArgs && varDsc->lvIsParam && !varDsc->lvIsRegArg)
-        {
-            // TODO-ADDR: For now we ignore all stack parameters of varargs methods,
-            // fgMorphStackArgForVarArgs does not handle LCL_VAR|FLD_ADDR nodes.
-            return;
-        }
-#endif
-
         GenTree* addr = val.Node();
 
         if (val.Offset() > UINT16_MAX)
@@ -1028,15 +1029,6 @@ private:
             // (e.g. fgMorphImplicitByRefArgs does not handle LCL_FLD nodes).
             return IndirTransform::None;
         }
-
-#ifdef TARGET_X86
-        if (m_compiler->info.compIsVarArgs && varDsc->lvIsParam && !varDsc->lvIsRegArg)
-        {
-            // TODO-ADDR: For now we ignore all stack parameters of varargs methods,
-            // fgMorphStackArgForVarArgs does not handle LCL_FLD nodes.
-            return IndirTransform::None;
-        }
-#endif
 
         // As we are only handling non-promoted STRUCT locals right now, the only
         // possible transformation for non-STRUCT indirect uses is LCL_FLD.

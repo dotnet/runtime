@@ -4898,12 +4898,11 @@ GenTree* Compiler::fgMorphLocal(GenTreeLclVarCommon* lclNode)
 
 #ifdef TARGET_X86
 //------------------------------------------------------------------------
-// fgMorphExpandStackArgForVarArgs: Expand a local for a stack arg with varargs.
+// fgMorphExpandStackArgForVarArgs: Expand a stack arg node for varargs.
 //
 // Expands the node to use the varargs cookie as the base address, indirecting
-// off of it if necessary, similar to how implicit by-ref parameters are morphed.
-//
-// This transformation is only needed on x86.
+// off of it if necessary, similar to how implicit by-ref parameters are morphed
+// on non-x86 targets.
 //
 // Arguments:
 //    lclNode - The local node to (possibly) morph
@@ -4914,50 +4913,39 @@ GenTree* Compiler::fgMorphLocal(GenTreeLclVarCommon* lclNode)
 //
 GenTree* Compiler::fgMorphExpandStackArgForVarArgs(GenTreeLclVarCommon* lclNode)
 {
-    if (!info.compIsVarArgs)
+    if (!lvaIsArgAccessedViaVarArgsCookie(lclNode->GetLclNum()))
     {
         return nullptr;
     }
 
-    unsigned   lclNum = lclNode->GetLclNum();
-    LclVarDsc* varDsc = lvaGetDesc(lclNode);
+    LclVarDsc* varDsc       = lvaGetDesc(lclNode);
+    GenTree*   argsBaseAddr = gtNewLclvNode(lvaVarargsBaseOfStkArgs, TYP_I_IMPL);
+    ssize_t    offset =
+        varDsc->GetStackOffset() - codeGen->intRegState.rsCalleeRegArgCount * REGSIZE_BYTES - lclNode->GetLclOffs();
+    GenTree* offsetNode = gtNewIconNode(offset, TYP_I_IMPL);
+    GenTree* argAddr    = gtNewOperNode(GT_SUB, TYP_I_IMPL, argsBaseAddr, offsetNode);
 
-    if (varDsc->lvIsParam && !varDsc->lvIsRegArg && (lclNum != lvaVarargsHandleArg))
+    if (lclNode->OperIsLocalAddr())
     {
-        // Create the tree pointing at this argument.
-        GenTree* argsBaseAddr = gtNewLclvNode(lvaVarargsBaseOfStkArgs, TYP_I_IMPL);
-        GenTree* offsetNode   = gtNewIconNode(varDsc->GetStackOffset() -
-                                              codeGen->intRegState.rsCalleeRegArgCount * REGSIZE_BYTES -
-                                              lclNode->GetLclOffs(), TYP_I_IMPL);
-        GenTree* argAddr = gtNewOperNode(GT_SUB, TYP_I_IMPL, argsBaseAddr, offsetNode);
-
-        if (lclNode->OperIsLocalAddr())
-        {
-            return argAddr;
-        }
-
-        // Access the argument through an indirection.
-        GenTree* argNode;
-        if (varTypeIsStruct(lclNode))
-        {
-            // TODO-ADDR: update this once TYP_STRUCT LCL_FLD is supported.
-            assert(lclNode->OperIs(GT_LCL_VAR));
-            argNode = gtNewObjNode(varDsc->GetLayout(), argAddr);
-        }
-        else
-        {
-            argNode = gtNewIndir(lclNode->TypeGet(), argAddr);
-        }
-
-        if (varDsc->IsAddressExposed())
-        {
-            argNode->gtFlags |= GTF_GLOB_REF;
-        }
-
-        return argNode;
+        return argAddr;
     }
 
-    return nullptr;
+    GenTree* argNode;
+    if (varTypeIsStruct(lclNode))
+    {
+        argNode = gtNewObjNode(lclNode->GetLayout(this), argAddr);
+    }
+    else
+    {
+        argNode = gtNewIndir(lclNode->TypeGet(), argAddr);
+    }
+
+    if (varDsc->IsAddressExposed())
+    {
+        argNode->gtFlags |= GTF_GLOB_REF;
+    }
+
+    return argNode;
 }
 #endif
 

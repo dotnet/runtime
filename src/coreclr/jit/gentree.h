@@ -3284,6 +3284,8 @@ public:
 
     uint16_t GetLclOffs() const;
 
+    ClassLayout* GetLayout(Compiler* compiler) const;
+
     unsigned GetSsaNum() const
     {
         return _gtSsaNum;
