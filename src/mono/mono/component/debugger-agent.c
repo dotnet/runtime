@@ -1107,8 +1107,8 @@ socket_transport_connect (const char *address)
 					continue;
 
 				res = bind (sfd, &sockaddr.addr, sock_len);
-                if (res == -1)
-                    continue;
+				if (res == -1)
+					continue;
 
 				res = listen (sfd, 16);
 				if (res == -1)
