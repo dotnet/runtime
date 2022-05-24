@@ -1041,6 +1041,12 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void RadixTest()
+        {
+            Assert.Equal(2, NumberBaseHelper<nint>.Radix);
+        }
+
+        [Fact]
         public static void ZeroTest()
         {
             Assert.Equal((nint)0x00000000, NumberBaseHelper<nint>.Zero);
@@ -1574,6 +1580,69 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void IsCanonicalTest()
+        {
+            if (Environment.Is64BitProcess)
+            {
+                Assert.True(NumberBaseHelper<nint>.IsCanonical(unchecked((nint)0x0000000000000000)));
+                Assert.True(NumberBaseHelper<nint>.IsCanonical(unchecked((nint)0x0000000000000001)));
+                Assert.True(NumberBaseHelper<nint>.IsCanonical(unchecked((nint)0x7FFFFFFFFFFFFFFF)));
+                Assert.True(NumberBaseHelper<nint>.IsCanonical(unchecked((nint)0x8000000000000000)));
+                Assert.True(NumberBaseHelper<nint>.IsCanonical(unchecked((nint)0xFFFFFFFFFFFFFFFF)));
+            }
+            else
+            {
+                Assert.True(NumberBaseHelper<nint>.IsCanonical((nint)0x00000000));
+                Assert.True(NumberBaseHelper<nint>.IsCanonical((nint)0x00000001));
+                Assert.True(NumberBaseHelper<nint>.IsCanonical((nint)0x7FFFFFFF));
+                Assert.True(NumberBaseHelper<nint>.IsCanonical(unchecked((nint)0x80000000)));
+                Assert.True(NumberBaseHelper<nint>.IsCanonical(unchecked((nint)0xFFFFFFFF)));
+            }
+        }
+
+        [Fact]
+        public static void IsComplexNumberTest()
+        {
+            if (Environment.Is64BitProcess)
+            {
+                Assert.False(NumberBaseHelper<nint>.IsComplexNumber(unchecked((nint)0x0000000000000000)));
+                Assert.False(NumberBaseHelper<nint>.IsComplexNumber(unchecked((nint)0x0000000000000001)));
+                Assert.False(NumberBaseHelper<nint>.IsComplexNumber(unchecked((nint)0x7FFFFFFFFFFFFFFF)));
+                Assert.False(NumberBaseHelper<nint>.IsComplexNumber(unchecked((nint)0x8000000000000000)));
+                Assert.False(NumberBaseHelper<nint>.IsComplexNumber(unchecked((nint)0xFFFFFFFFFFFFFFFF)));
+            }
+            else
+            {
+                Assert.False(NumberBaseHelper<nint>.IsComplexNumber((nint)0x00000000));
+                Assert.False(NumberBaseHelper<nint>.IsComplexNumber((nint)0x00000001));
+                Assert.False(NumberBaseHelper<nint>.IsComplexNumber((nint)0x7FFFFFFF));
+                Assert.False(NumberBaseHelper<nint>.IsComplexNumber(unchecked((nint)0x80000000)));
+                Assert.False(NumberBaseHelper<nint>.IsComplexNumber(unchecked((nint)0xFFFFFFFF)));
+            }
+        }
+
+        [Fact]
+        public static void IsEvenIntegerTest()
+        {
+            if (Environment.Is64BitProcess)
+            {
+                Assert.True(NumberBaseHelper<nint>.IsEvenInteger(unchecked((nint)0x0000000000000000)));
+                Assert.False(NumberBaseHelper<nint>.IsEvenInteger(unchecked((nint)0x0000000000000001)));
+                Assert.False(NumberBaseHelper<nint>.IsEvenInteger(unchecked((nint)0x7FFFFFFFFFFFFFFF)));
+                Assert.True(NumberBaseHelper<nint>.IsEvenInteger(unchecked((nint)0x8000000000000000)));
+                Assert.False(NumberBaseHelper<nint>.IsEvenInteger(unchecked((nint)0xFFFFFFFFFFFFFFFF)));
+            }
+            else
+            {
+                Assert.True(NumberBaseHelper<nint>.IsEvenInteger((nint)0x00000000));
+                Assert.False(NumberBaseHelper<nint>.IsEvenInteger((nint)0x00000001));
+                Assert.False(NumberBaseHelper<nint>.IsEvenInteger((nint)0x7FFFFFFF));
+                Assert.True(NumberBaseHelper<nint>.IsEvenInteger(unchecked((nint)0x80000000)));
+                Assert.False(NumberBaseHelper<nint>.IsEvenInteger(unchecked((nint)0xFFFFFFFF)));
+            }
+        }
+
+        [Fact]
         public static void IsFiniteTest()
         {
             if (Environment.Is64BitProcess)
@@ -1595,6 +1664,27 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void IsImaginaryNumberTest()
+        {
+            if (Environment.Is64BitProcess)
+            {
+                Assert.False(NumberBaseHelper<nint>.IsImaginaryNumber(unchecked((nint)0x0000000000000000)));
+                Assert.False(NumberBaseHelper<nint>.IsImaginaryNumber(unchecked((nint)0x0000000000000001)));
+                Assert.False(NumberBaseHelper<nint>.IsImaginaryNumber(unchecked((nint)0x7FFFFFFFFFFFFFFF)));
+                Assert.False(NumberBaseHelper<nint>.IsImaginaryNumber(unchecked((nint)0x8000000000000000)));
+                Assert.False(NumberBaseHelper<nint>.IsImaginaryNumber(unchecked((nint)0xFFFFFFFFFFFFFFFF)));
+            }
+            else
+            {
+                Assert.False(NumberBaseHelper<nint>.IsImaginaryNumber((nint)0x00000000));
+                Assert.False(NumberBaseHelper<nint>.IsImaginaryNumber((nint)0x00000001));
+                Assert.False(NumberBaseHelper<nint>.IsImaginaryNumber((nint)0x7FFFFFFF));
+                Assert.False(NumberBaseHelper<nint>.IsImaginaryNumber(unchecked((nint)0x80000000)));
+                Assert.False(NumberBaseHelper<nint>.IsImaginaryNumber(unchecked((nint)0xFFFFFFFF)));
+            }
+        }
+
+        [Fact]
         public static void IsInfinityTest()
         {
             if (Environment.Is64BitProcess)
@@ -1612,6 +1702,27 @@ namespace System.Tests
                 Assert.False(NumberBaseHelper<nint>.IsInfinity((nint)0x7FFFFFFF));
                 Assert.False(NumberBaseHelper<nint>.IsInfinity(unchecked((nint)0x80000000)));
                 Assert.False(NumberBaseHelper<nint>.IsInfinity(unchecked((nint)0xFFFFFFFF)));
+            }
+        }
+
+        [Fact]
+        public static void IsIntegerTest()
+        {
+            if (Environment.Is64BitProcess)
+            {
+                Assert.True(NumberBaseHelper<nint>.IsInteger(unchecked((nint)0x0000000000000000)));
+                Assert.True(NumberBaseHelper<nint>.IsInteger(unchecked((nint)0x0000000000000001)));
+                Assert.True(NumberBaseHelper<nint>.IsInteger(unchecked((nint)0x7FFFFFFFFFFFFFFF)));
+                Assert.True(NumberBaseHelper<nint>.IsInteger(unchecked((nint)0x8000000000000000)));
+                Assert.True(NumberBaseHelper<nint>.IsInteger(unchecked((nint)0xFFFFFFFFFFFFFFFF)));
+            }
+            else
+            {
+                Assert.True(NumberBaseHelper<nint>.IsInteger((nint)0x00000000));
+                Assert.True(NumberBaseHelper<nint>.IsInteger((nint)0x00000001));
+                Assert.True(NumberBaseHelper<nint>.IsInteger((nint)0x7FFFFFFF));
+                Assert.True(NumberBaseHelper<nint>.IsInteger(unchecked((nint)0x80000000)));
+                Assert.True(NumberBaseHelper<nint>.IsInteger(unchecked((nint)0xFFFFFFFF)));
             }
         }
 
@@ -1700,6 +1811,48 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void IsOddIntegerTest()
+        {
+            if (Environment.Is64BitProcess)
+            {
+                Assert.False(NumberBaseHelper<nint>.IsOddInteger(unchecked((nint)0x0000000000000000)));
+                Assert.True(NumberBaseHelper<nint>.IsOddInteger(unchecked((nint)0x0000000000000001)));
+                Assert.True(NumberBaseHelper<nint>.IsOddInteger(unchecked((nint)0x7FFFFFFFFFFFFFFF)));
+                Assert.False(NumberBaseHelper<nint>.IsOddInteger(unchecked((nint)0x8000000000000000)));
+                Assert.True(NumberBaseHelper<nint>.IsOddInteger(unchecked((nint)0xFFFFFFFFFFFFFFFF)));
+            }
+            else
+            {
+                Assert.False(NumberBaseHelper<nint>.IsOddInteger((nint)0x00000000));
+                Assert.True(NumberBaseHelper<nint>.IsOddInteger((nint)0x00000001));
+                Assert.True(NumberBaseHelper<nint>.IsOddInteger((nint)0x7FFFFFFF));
+                Assert.False(NumberBaseHelper<nint>.IsOddInteger(unchecked((nint)0x80000000)));
+                Assert.True(NumberBaseHelper<nint>.IsOddInteger(unchecked((nint)0xFFFFFFFF)));
+            }
+        }
+
+        [Fact]
+        public static void IsPositiveTest()
+        {
+            if (Environment.Is64BitProcess)
+            {
+                Assert.True(NumberBaseHelper<nint>.IsPositive(unchecked((nint)0x0000000000000000)));
+                Assert.True(NumberBaseHelper<nint>.IsPositive(unchecked((nint)0x0000000000000001)));
+                Assert.True(NumberBaseHelper<nint>.IsPositive(unchecked((nint)0x7FFFFFFFFFFFFFFF)));
+                Assert.False(NumberBaseHelper<nint>.IsPositive(unchecked((nint)0x8000000000000000)));
+                Assert.False(NumberBaseHelper<nint>.IsPositive(unchecked((nint)0xFFFFFFFFFFFFFFFF)));
+            }
+            else
+            {
+                Assert.True(NumberBaseHelper<nint>.IsPositive((nint)0x00000000));
+                Assert.True(NumberBaseHelper<nint>.IsPositive((nint)0x00000001));
+                Assert.True(NumberBaseHelper<nint>.IsPositive((nint)0x7FFFFFFF));
+                Assert.False(NumberBaseHelper<nint>.IsPositive(unchecked((nint)0x80000000)));
+                Assert.False(NumberBaseHelper<nint>.IsPositive(unchecked((nint)0xFFFFFFFF)));
+            }
+        }
+
+        [Fact]
         public static void IsPositiveInfinityTest()
         {
             if (Environment.Is64BitProcess)
@@ -1721,6 +1874,27 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void IsRealNumberTest()
+        {
+            if (Environment.Is64BitProcess)
+            {
+                Assert.True(NumberBaseHelper<nint>.IsRealNumber(unchecked((nint)0x0000000000000000)));
+                Assert.True(NumberBaseHelper<nint>.IsRealNumber(unchecked((nint)0x0000000000000001)));
+                Assert.True(NumberBaseHelper<nint>.IsRealNumber(unchecked((nint)0x7FFFFFFFFFFFFFFF)));
+                Assert.True(NumberBaseHelper<nint>.IsRealNumber(unchecked((nint)0x8000000000000000)));
+                Assert.True(NumberBaseHelper<nint>.IsRealNumber(unchecked((nint)0xFFFFFFFFFFFFFFFF)));
+            }
+            else
+            {
+                Assert.True(NumberBaseHelper<nint>.IsRealNumber((nint)0x00000000));
+                Assert.True(NumberBaseHelper<nint>.IsRealNumber((nint)0x00000001));
+                Assert.True(NumberBaseHelper<nint>.IsRealNumber((nint)0x7FFFFFFF));
+                Assert.True(NumberBaseHelper<nint>.IsRealNumber(unchecked((nint)0x80000000)));
+                Assert.True(NumberBaseHelper<nint>.IsRealNumber(unchecked((nint)0xFFFFFFFF)));
+            }
+        }
+
+        [Fact]
         public static void IsSubnormalTest()
         {
             if (Environment.Is64BitProcess)
@@ -1738,6 +1912,27 @@ namespace System.Tests
                 Assert.False(NumberBaseHelper<nint>.IsSubnormal((nint)0x7FFFFFFF));
                 Assert.False(NumberBaseHelper<nint>.IsSubnormal(unchecked((nint)0x80000000)));
                 Assert.False(NumberBaseHelper<nint>.IsSubnormal(unchecked((nint)0xFFFFFFFF)));
+            }
+        }
+
+        [Fact]
+        public static void IsZeroTest()
+        {
+            if (Environment.Is64BitProcess)
+            {
+                Assert.True(NumberBaseHelper<nint>.IsZero(unchecked((nint)0x0000000000000000)));
+                Assert.False(NumberBaseHelper<nint>.IsZero(unchecked((nint)0x0000000000000001)));
+                Assert.False(NumberBaseHelper<nint>.IsZero(unchecked((nint)0x7FFFFFFFFFFFFFFF)));
+                Assert.False(NumberBaseHelper<nint>.IsZero(unchecked((nint)0x8000000000000000)));
+                Assert.False(NumberBaseHelper<nint>.IsZero(unchecked((nint)0xFFFFFFFFFFFFFFFF)));
+            }
+            else
+            {
+                Assert.True(NumberBaseHelper<nint>.IsZero((nint)0x00000000));
+                Assert.False(NumberBaseHelper<nint>.IsZero((nint)0x00000001));
+                Assert.False(NumberBaseHelper<nint>.IsZero((nint)0x7FFFFFFF));
+                Assert.False(NumberBaseHelper<nint>.IsZero(unchecked((nint)0x80000000)));
+                Assert.False(NumberBaseHelper<nint>.IsZero(unchecked((nint)0xFFFFFFFF)));
             }
         }
 

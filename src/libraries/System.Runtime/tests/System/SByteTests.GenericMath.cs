@@ -545,6 +545,12 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void RadixTest()
+        {
+            Assert.Equal(2, NumberBaseHelper<sbyte>.Radix);
+        }
+
+        [Fact]
         public static void ZeroTest()
         {
             Assert.Equal((sbyte)0x00, NumberBaseHelper<sbyte>.Zero);
@@ -957,6 +963,36 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void IsCanonicalTest()
+        {
+            Assert.True(NumberBaseHelper<sbyte>.IsCanonical((sbyte)0x00));
+            Assert.True(NumberBaseHelper<sbyte>.IsCanonical((sbyte)0x01));
+            Assert.True(NumberBaseHelper<sbyte>.IsCanonical((sbyte)0x7F));
+            Assert.True(NumberBaseHelper<sbyte>.IsCanonical(unchecked((sbyte)0x80)));
+            Assert.True(NumberBaseHelper<sbyte>.IsCanonical(unchecked((sbyte)0xFF)));
+        }
+
+        [Fact]
+        public static void IsComplexNumberTest()
+        {
+            Assert.False(NumberBaseHelper<sbyte>.IsComplexNumber((sbyte)0x00));
+            Assert.False(NumberBaseHelper<sbyte>.IsComplexNumber((sbyte)0x01));
+            Assert.False(NumberBaseHelper<sbyte>.IsComplexNumber((sbyte)0x7F));
+            Assert.False(NumberBaseHelper<sbyte>.IsComplexNumber(unchecked((sbyte)0x80)));
+            Assert.False(NumberBaseHelper<sbyte>.IsComplexNumber(unchecked((sbyte)0xFF)));
+        }
+
+        [Fact]
+        public static void IsEvenIntegerTest()
+        {
+            Assert.True(NumberBaseHelper<sbyte>.IsEvenInteger((sbyte)0x00));
+            Assert.False(NumberBaseHelper<sbyte>.IsEvenInteger((sbyte)0x01));
+            Assert.False(NumberBaseHelper<sbyte>.IsEvenInteger((sbyte)0x7F));
+            Assert.True(NumberBaseHelper<sbyte>.IsEvenInteger(unchecked((sbyte)0x80)));
+            Assert.False(NumberBaseHelper<sbyte>.IsEvenInteger(unchecked((sbyte)0xFF)));
+        }
+
+        [Fact]
         public static void IsFiniteTest()
         {
             Assert.True(NumberBaseHelper<sbyte>.IsFinite((sbyte)0x00));
@@ -967,6 +1003,16 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void IsImaginaryNumberTest()
+        {
+            Assert.False(NumberBaseHelper<sbyte>.IsImaginaryNumber((sbyte)0x00));
+            Assert.False(NumberBaseHelper<sbyte>.IsImaginaryNumber((sbyte)0x01));
+            Assert.False(NumberBaseHelper<sbyte>.IsImaginaryNumber((sbyte)0x7F));
+            Assert.False(NumberBaseHelper<sbyte>.IsImaginaryNumber(unchecked((sbyte)0x80)));
+            Assert.False(NumberBaseHelper<sbyte>.IsImaginaryNumber(unchecked((sbyte)0xFF)));
+        }
+
+        [Fact]
         public static void IsInfinityTest()
         {
             Assert.False(NumberBaseHelper<sbyte>.IsInfinity((sbyte)0x00));
@@ -974,6 +1020,16 @@ namespace System.Tests
             Assert.False(NumberBaseHelper<sbyte>.IsInfinity((sbyte)0x7F));
             Assert.False(NumberBaseHelper<sbyte>.IsInfinity(unchecked((sbyte)0x80)));
             Assert.False(NumberBaseHelper<sbyte>.IsInfinity(unchecked((sbyte)0xFF)));
+        }
+
+        [Fact]
+        public static void IsIntegerTest()
+        {
+            Assert.True(NumberBaseHelper<sbyte>.IsInteger((sbyte)0x00));
+            Assert.True(NumberBaseHelper<sbyte>.IsInteger((sbyte)0x01));
+            Assert.True(NumberBaseHelper<sbyte>.IsInteger((sbyte)0x7F));
+            Assert.True(NumberBaseHelper<sbyte>.IsInteger(unchecked((sbyte)0x80)));
+            Assert.True(NumberBaseHelper<sbyte>.IsInteger(unchecked((sbyte)0xFF)));
         }
 
         [Fact]
@@ -1017,6 +1073,26 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void IsOddIntegerTest()
+        {
+            Assert.False(NumberBaseHelper<sbyte>.IsOddInteger((sbyte)0x00));
+            Assert.True(NumberBaseHelper<sbyte>.IsOddInteger((sbyte)0x01));
+            Assert.True(NumberBaseHelper<sbyte>.IsOddInteger((sbyte)0x7F));
+            Assert.False(NumberBaseHelper<sbyte>.IsOddInteger(unchecked((sbyte)0x80)));
+            Assert.True(NumberBaseHelper<sbyte>.IsOddInteger(unchecked((sbyte)0xFF)));
+        }
+
+        [Fact]
+        public static void IsPositiveTest()
+        {
+            Assert.True(NumberBaseHelper<sbyte>.IsPositive((sbyte)0x00));
+            Assert.True(NumberBaseHelper<sbyte>.IsPositive((sbyte)0x01));
+            Assert.True(NumberBaseHelper<sbyte>.IsPositive((sbyte)0x7F));
+            Assert.False(NumberBaseHelper<sbyte>.IsPositive(unchecked((sbyte)0x80)));
+            Assert.False(NumberBaseHelper<sbyte>.IsPositive(unchecked((sbyte)0xFF)));
+        }
+
+        [Fact]
         public static void IsPositiveInfinityTest()
         {
             Assert.False(NumberBaseHelper<sbyte>.IsPositiveInfinity((sbyte)0x00));
@@ -1027,6 +1103,16 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void IsRealNumberTest()
+        {
+            Assert.True(NumberBaseHelper<sbyte>.IsRealNumber((sbyte)0x00));
+            Assert.True(NumberBaseHelper<sbyte>.IsRealNumber((sbyte)0x01));
+            Assert.True(NumberBaseHelper<sbyte>.IsRealNumber((sbyte)0x7F));
+            Assert.True(NumberBaseHelper<sbyte>.IsRealNumber(unchecked((sbyte)0x80)));
+            Assert.True(NumberBaseHelper<sbyte>.IsRealNumber(unchecked((sbyte)0xFF)));
+        }
+
+        [Fact]
         public static void IsSubnormalTest()
         {
             Assert.False(NumberBaseHelper<sbyte>.IsSubnormal((sbyte)0x00));
@@ -1034,6 +1120,16 @@ namespace System.Tests
             Assert.False(NumberBaseHelper<sbyte>.IsSubnormal((sbyte)0x7F));
             Assert.False(NumberBaseHelper<sbyte>.IsSubnormal(unchecked((sbyte)0x80)));
             Assert.False(NumberBaseHelper<sbyte>.IsSubnormal(unchecked((sbyte)0xFF)));
+        }
+
+        [Fact]
+        public static void IsZeroTest()
+        {
+            Assert.True(NumberBaseHelper<sbyte>.IsZero((sbyte)0x00));
+            Assert.False(NumberBaseHelper<sbyte>.IsZero((sbyte)0x01));
+            Assert.False(NumberBaseHelper<sbyte>.IsZero((sbyte)0x7F));
+            Assert.False(NumberBaseHelper<sbyte>.IsZero(unchecked((sbyte)0x80)));
+            Assert.False(NumberBaseHelper<sbyte>.IsZero(unchecked((sbyte)0xFF)));
         }
 
         [Fact]

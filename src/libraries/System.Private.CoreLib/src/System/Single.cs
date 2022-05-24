@@ -977,6 +977,9 @@ namespace System
         /// <inheritdoc cref="INumberBase{TSelf}.One" />
         static float INumberBase<float>.One => One;
 
+        /// <inheritdoc cref="INumberBase{TSelf}.Radix" />
+        static int INumberBase<float>.Radix => 2;
+
         /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
         static float INumberBase<float>.Zero => Zero;
 
@@ -1074,6 +1077,41 @@ namespace System
         {
             return CreateSaturating(value);
         }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
+        static bool INumberBase<float>.IsCanonical(float value) => true;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsComplexNumber(TSelf)" />
+        static bool INumberBase<float>.IsComplexNumber(float value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsEvenInteger(TSelf)" />
+        public static bool IsEvenInteger(float value) => IsInteger(value) && (Abs(value % 2) == 0);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsImaginaryNumber(TSelf)" />
+        static bool INumberBase<float>.IsImaginaryNumber(float value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsInteger(TSelf)" />
+        public static bool IsInteger(float value) => IsFinite(value) && (value == Truncate(value));
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsOddInteger(TSelf)" />
+        public static bool IsOddInteger(float value) => IsInteger(value) && (Abs((value) % 2) == 1);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsPositive(TSelf)" />
+        public static bool IsPositive(float value) => BitConverter.SingleToInt32Bits(value) >= 0;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsRealNumber(TSelf)" />
+        public static bool IsRealNumber(float value)
+        {
+            // A NaN will never equal itself so this is an
+            // easy and efficient way to check for a real number.
+
+#pragma warning disable CS1718
+            return value == value;
+#pragma warning restore CS1718
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsZero(TSelf)" />
+        static bool INumberBase<float>.IsZero(float value) => (value == 0);
 
         /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitude(TSelf, TSelf)" />
         public static float MaxMagnitude(float x, float y) => MathF.MaxMagnitude(x, y);

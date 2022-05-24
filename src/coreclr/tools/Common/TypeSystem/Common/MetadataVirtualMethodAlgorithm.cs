@@ -460,7 +460,7 @@ namespace Internal.TypeSystem
             foreach (MethodDesc memberMethod in unificationGroup.Members)
             {
                 // If a method is both overriden via MethodImpl and name/sig, we don't remove it from the unification list
-                // as the local MethodImpl takes priority over the name/sig match, and prevents the slot disunificaiton
+                // as the local MethodImpl takes priority over the name/sig match, and prevents the slot disunification.
                 if (FindSlotDefiningMethodForVirtualMethod(memberMethod) == FindSlotDefiningMethodForVirtualMethod(originalDefiningMethod))
                     continue;
 
@@ -525,7 +525,7 @@ namespace Internal.TypeSystem
                             unificationGroup.AddMethodRequiringSlotUnification(methodImplRequiredToRemainInEffect);
                         }
 
-                        // Add all members from the decl's unification group except for ones that have been seperated by name/sig matches
+                        // Add all members from the decl's unification group except for ones that have been separated by name/sig matches
                         // or previously processed methodimpls. NOTE: This implies that method impls are order dependent.
                         if (separatedMethods == null || !separatedMethods.Contains(addDeclGroup.DefiningMethod))
                         {

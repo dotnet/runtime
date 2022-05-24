@@ -925,6 +925,9 @@ namespace System.Numerics
         /// <inheritdoc cref="INumberBase{TSelf}.One" />
         static Complex INumberBase<Complex>.One => new Complex(1.0, 0.0);
 
+        /// <inheritdoc cref="INumberBase{TSelf}.Radix" />
+        static int INumberBase<Complex>.Radix => 2;
+
         /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
         static Complex INumberBase<Complex>.Zero => new Complex(0.0, 0.0);
 
@@ -1135,8 +1138,23 @@ namespace System.Numerics
             }
         }
 
+        /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
+        static bool INumberBase<Complex>.IsCanonical(Complex value) => true;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsComplexNumber(TSelf)" />
+        public static bool IsComplexNumber(Complex value) => (value.m_real != 0.0) && (value.m_imaginary != 0.0);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsEvenInteger(TSelf)" />
+        public static bool IsEvenInteger(Complex value) => (value.m_imaginary == 0) && double.IsEvenInteger(value.m_real);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsImaginaryNumber(TSelf)" />
+        public static bool IsImaginaryNumber(Complex value) => (value.m_real == 0.0) && double.IsRealNumber(value.m_imaginary);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsInteger(TSelf)" />
+        public static bool IsInteger(Complex value) => (value.m_imaginary == 0) && double.IsInteger(value.m_real);
+
         /// <inheritdoc cref="INumberBase{TSelf}.IsNegative(TSelf)" />
-        static bool INumberBase<Complex>.IsNegative(Complex value)
+        public static bool IsNegative(Complex value)
         {
             // since complex numbers do not have a well-defined concept of
             // negative we report false if this value has an imaginary part
@@ -1145,7 +1163,7 @@ namespace System.Numerics
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsNegativeInfinity(TSelf)" />
-        static bool INumberBase<Complex>.IsNegativeInfinity(Complex value)
+        public static bool IsNegativeInfinity(Complex value)
         {
             // since complex numbers do not have a well-defined concept of
             // negative we report false if this value has an imaginary part
@@ -1154,7 +1172,7 @@ namespace System.Numerics
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsNormal(TSelf)" />
-        static bool INumberBase<Complex>.IsNormal(Complex value)
+        public static bool IsNormal(Complex value)
         {
             // much as IsFinite requires both part to be finite, we require both
             // part to be "normal" (finite, non-zero, and non-subnormal) to be true
@@ -1163,8 +1181,20 @@ namespace System.Numerics
                 && ((value.m_imaginary == 0.0) || double.IsNormal(value.m_imaginary));
         }
 
+        /// <inheritdoc cref="INumberBase{TSelf}.IsOddInteger(TSelf)" />
+        public static bool IsOddInteger(Complex value) => (value.m_imaginary == 0) && double.IsOddInteger(value.m_real);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsPositive(TSelf)" />
+        public static bool IsPositive(Complex value)
+        {
+            // since complex numbers do not have a well-defined concept of
+            // negative we report false if this value has an imaginary part
+
+            return (value.m_imaginary == 0.0) && double.IsPositive(value.m_real);
+        }
+
         /// <inheritdoc cref="INumberBase{TSelf}.IsPositiveInfinity(TSelf)" />
-        static bool INumberBase<Complex>.IsPositiveInfinity(Complex value)
+        public static bool IsPositiveInfinity(Complex value)
         {
             // since complex numbers do not have a well-defined concept of
             // positive we report false if this value has an imaginary part
@@ -1172,14 +1202,20 @@ namespace System.Numerics
             return (value.m_imaginary == 0.0) && double.IsPositiveInfinity(value.m_real);
         }
 
+        /// <inheritdoc cref="INumberBase{TSelf}.IsRealNumber(TSelf)" />
+        public static bool IsRealNumber(Complex value) => (value.m_imaginary == 0.0) && double.IsRealNumber(value.m_real);
+
         /// <inheritdoc cref="INumberBase{TSelf}.IsSubnormal(TSelf)" />
-        static bool INumberBase<Complex>.IsSubnormal(Complex value)
+        public static bool IsSubnormal(Complex value)
         {
             // much as IsInfinite allows either part to be infinite, we allow either
             // part to be "subnormal" (finite, non-zero, and non-normal) to be true
 
             return double.IsSubnormal(value.m_real) || double.IsSubnormal(value.m_imaginary);
         }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsZero(TSelf)" />
+        static bool INumberBase<Complex>.IsZero(Complex value) => (value.m_real == 0.0) && (value.m_imaginary == 0.0);
 
         /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitude(TSelf, TSelf)" />
         public static Complex MaxMagnitude(Complex x, Complex y)

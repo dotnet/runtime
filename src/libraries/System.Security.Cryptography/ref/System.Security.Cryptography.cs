@@ -2557,6 +2557,18 @@ namespace System.Security.Cryptography.X509Certificates
         UseT61Encoding = 8192,
         ForceUTF8Encoding = 16384,
     }
+    public sealed partial class X509AuthorityInformationAccessExtension : System.Security.Cryptography.X509Certificates.X509Extension
+    {
+        public X509AuthorityInformationAccessExtension() { }
+        public X509AuthorityInformationAccessExtension(byte[] rawData, bool critical = false) { }
+        public X509AuthorityInformationAccessExtension(System.Collections.Generic.IEnumerable<string>? ocspUris, System.Collections.Generic.IEnumerable<string>? caIssuersUris, bool critical = false) { }
+        public X509AuthorityInformationAccessExtension(System.ReadOnlySpan<byte> rawData, bool critical = false) { }
+        public override void CopyFrom(System.Security.Cryptography.AsnEncodedData asnEncodedData) { }
+        public System.Collections.Generic.IEnumerable<string> EnumerateCAIssuersUris() { throw null; }
+        public System.Collections.Generic.IEnumerable<string> EnumerateOcspUris() { throw null; }
+        public System.Collections.Generic.IEnumerable<string> EnumerateUris(System.Security.Cryptography.Oid accessMethodOid) { throw null; }
+        public System.Collections.Generic.IEnumerable<string> EnumerateUris(string accessMethodOid) { throw null; }
+    }
     public sealed partial class X509BasicConstraintsExtension : System.Security.Cryptography.X509Certificates.X509Extension
     {
         public X509BasicConstraintsExtension() { }

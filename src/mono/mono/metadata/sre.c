@@ -3632,7 +3632,7 @@ typebuilder_setup_fields (MonoClass *klass, MonoError *error)
 	mono_class_set_field_def_values (klass, def_values);
 	/*
 	This is, guess what, a hack.
-	The issue is that the runtime doesn't know how to setup the fields of a typebuider and crash.
+	The issue is that the runtime doesn't know how to setup the fields of a typebuilder and crash.
 	On the static path no field class is resolved, only types are built. This is the right thing to do
 	but we suck.
 	Setting size_inited is harmless because we're doing the same job as mono_class_setup_fields anyway.

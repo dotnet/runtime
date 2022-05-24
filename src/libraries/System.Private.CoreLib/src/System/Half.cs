@@ -92,7 +92,7 @@ namespace System
         /// <inheritdoc cref="IMinMaxValue{TSelf}.MaxValue" />
         public static Half MaxValue => new Half(MaxValueBits);                      //  65504
 
-        private readonly ushort _value;
+        internal readonly ushort _value;
 
         internal Half(ushort value)
         {
@@ -1186,6 +1186,9 @@ namespace System
         /// <inheritdoc cref="INumberBase{TSelf}.One" />
         public static Half One => new Half(PositiveOneBits);
 
+        /// <inheritdoc cref="INumberBase{TSelf}.Radix" />
+        static int INumberBase<Half>.Radix => 2;
+
         /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
         public static Half Zero => new Half(PositiveZeroBits);
 
@@ -1283,6 +1286,41 @@ namespace System
         {
             return CreateSaturating(value);
         }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
+        static bool INumberBase<Half>.IsCanonical(Half value) => true;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsComplexNumber(TSelf)" />
+        static bool INumberBase<Half>.IsComplexNumber(Half value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsEvenInteger(TSelf)" />
+        public static bool IsEvenInteger(Half value) => float.IsEvenInteger((float)value);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsImaginaryNumber(TSelf)" />
+        static bool INumberBase<Half>.IsImaginaryNumber(Half value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsInteger(TSelf)" />
+        public static bool IsInteger(Half value) => float.IsInteger((float)value);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsOddInteger(TSelf)" />
+        public static bool IsOddInteger(Half value) => float.IsOddInteger((float)value);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsPositive(TSelf)" />
+        public static bool IsPositive(Half value) => (short)(value._value) >= 0;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsRealNumber(TSelf)" />
+        public static bool IsRealNumber(Half value)
+        {
+            // A NaN will never equal itself so this is an
+            // easy and efficient way to check for a real number.
+
+#pragma warning disable CS1718
+            return value == value;
+#pragma warning restore CS1718
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsZero(TSelf)" />
+        static bool INumberBase<Half>.IsZero(Half value) => (value == Zero);
 
         /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitude(TSelf, TSelf)" />
         public static Half MaxMagnitude(Half x, Half y) => (Half)MathF.MaxMagnitude((float)x, (float)y);

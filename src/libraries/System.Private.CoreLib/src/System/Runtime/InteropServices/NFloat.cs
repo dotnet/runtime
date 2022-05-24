@@ -1128,6 +1128,9 @@ namespace System.Runtime.InteropServices
         /// <inheritdoc cref="INumberBase{TSelf}.One" />
         static NFloat INumberBase<NFloat>.One => new NFloat(NativeType.One);
 
+        /// <inheritdoc cref="INumberBase{TSelf}.Radix" />
+        static int INumberBase<NFloat>.Radix => 2;
+
         /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
         static NFloat INumberBase<NFloat>.Zero => new NFloat(NativeType.Zero);
 
@@ -1221,6 +1224,33 @@ namespace System.Runtime.InteropServices
         {
             return CreateChecked(value);
         }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
+        static bool INumberBase<NFloat>.IsCanonical(NFloat value) => true;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsComplexNumber(TSelf)" />
+        static bool INumberBase<NFloat>.IsComplexNumber(NFloat value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsEvenInteger(TSelf)" />
+        public static bool IsEvenInteger(NFloat value) => NativeType.IsEvenInteger(value._value);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsImaginaryNumber(TSelf)" />
+        static bool INumberBase<NFloat>.IsImaginaryNumber(NFloat value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsInteger(TSelf)" />
+        public static bool IsInteger(NFloat value) => NativeType.IsInteger(value._value);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsOddInteger(TSelf)" />
+        public static bool IsOddInteger(NFloat value) => NativeType.IsOddInteger(value._value);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsPositive(TSelf)" />
+        public static bool IsPositive(NFloat value) => NativeType.IsPositive(value._value);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsRealNumber(TSelf)" />
+        public static bool IsRealNumber(NFloat value) => NativeType.IsRealNumber(value._value);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsZero(TSelf)" />
+        static bool INumberBase<NFloat>.IsZero(NFloat value) => (value == 0);
 
         /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitude(TSelf, TSelf)" />
         public static NFloat MaxMagnitude(NFloat x, NFloat y) => new NFloat(NativeType.MaxMagnitude(x._value, y._value));

@@ -830,6 +830,7 @@ namespace System.Runtime.InteropServices
         static System.Runtime.InteropServices.NFloat System.Numerics.IAdditiveIdentity<System.Runtime.InteropServices.NFloat,System.Runtime.InteropServices.NFloat>.AdditiveIdentity { get { throw null; } }
         static System.Runtime.InteropServices.NFloat System.Numerics.IMultiplicativeIdentity<System.Runtime.InteropServices.NFloat,System.Runtime.InteropServices.NFloat>.MultiplicativeIdentity { get { throw null; } }
         static System.Runtime.InteropServices.NFloat System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>.One { get { throw null; } }
+        static int System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>.Radix { get { throw null; } }
         static System.Runtime.InteropServices.NFloat System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>.Zero { get { throw null; } }
         static System.Runtime.InteropServices.NFloat System.Numerics.ISignedNumber<System.Runtime.InteropServices.NFloat>.NegativeOne { get { throw null; } }
         public static System.Runtime.InteropServices.NFloat Tau { get { throw null; } }
@@ -868,14 +869,19 @@ namespace System.Runtime.InteropServices
         public override int GetHashCode() { throw null; }
         public static System.Runtime.InteropServices.NFloat Ieee754Remainder(System.Runtime.InteropServices.NFloat left, System.Runtime.InteropServices.NFloat right) { throw null; }
         public static int ILogB(System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static bool IsEvenInteger(System.Runtime.InteropServices.NFloat value) { throw null; }
         public static bool IsFinite(System.Runtime.InteropServices.NFloat value) { throw null; }
         public static bool IsInfinity(System.Runtime.InteropServices.NFloat value) { throw null; }
+        public static bool IsInteger(System.Runtime.InteropServices.NFloat value) { throw null; }
         public static bool IsNaN(System.Runtime.InteropServices.NFloat value) { throw null; }
         public static bool IsNegative(System.Runtime.InteropServices.NFloat value) { throw null; }
         public static bool IsNegativeInfinity(System.Runtime.InteropServices.NFloat value) { throw null; }
         public static bool IsNormal(System.Runtime.InteropServices.NFloat value) { throw null; }
+        public static bool IsOddInteger(System.Runtime.InteropServices.NFloat value) { throw null; }
+        public static bool IsPositive(System.Runtime.InteropServices.NFloat value) { throw null; }
         public static bool IsPositiveInfinity(System.Runtime.InteropServices.NFloat value) { throw null; }
         public static bool IsPow2(System.Runtime.InteropServices.NFloat value) { throw null; }
+        public static bool IsRealNumber(System.Runtime.InteropServices.NFloat value) { throw null; }
         public static bool IsSubnormal(System.Runtime.InteropServices.NFloat value) { throw null; }
         public static System.Runtime.InteropServices.NFloat Log(System.Runtime.InteropServices.NFloat x) { throw null; }
         public static System.Runtime.InteropServices.NFloat Log(System.Runtime.InteropServices.NFloat x, System.Runtime.InteropServices.NFloat newBase) { throw null; }
@@ -981,6 +987,10 @@ namespace System.Runtime.InteropServices
         bool System.Numerics.IFloatingPoint<System.Runtime.InteropServices.NFloat>.TryWriteSignificandLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         static System.Runtime.InteropServices.NFloat System.Numerics.IIncrementOperators<System.Runtime.InteropServices.NFloat>.operator checked ++(System.Runtime.InteropServices.NFloat value) { throw null; }
         static System.Runtime.InteropServices.NFloat System.Numerics.IMultiplyOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>.operator checked *(System.Runtime.InteropServices.NFloat left, System.Runtime.InteropServices.NFloat right) { throw null; }
+        static bool System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>.IsCanonical(System.Runtime.InteropServices.NFloat value) { throw null; }
+        static bool System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>.IsComplexNumber(System.Runtime.InteropServices.NFloat value) { throw null; }
+        static bool System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>.IsImaginaryNumber(System.Runtime.InteropServices.NFloat value) { throw null; }
+        static bool System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>.IsZero(System.Runtime.InteropServices.NFloat value) { throw null; }
         static System.Runtime.InteropServices.NFloat System.Numerics.ISubtractionOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>.operator checked -(System.Runtime.InteropServices.NFloat left, System.Runtime.InteropServices.NFloat right) { throw null; }
         static System.Runtime.InteropServices.NFloat System.Numerics.IUnaryNegationOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>.operator checked -(System.Runtime.InteropServices.NFloat value) { throw null; }
         public static System.Runtime.InteropServices.NFloat Tan(System.Runtime.InteropServices.NFloat x) { throw null; }

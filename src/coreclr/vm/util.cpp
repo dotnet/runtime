@@ -1793,7 +1793,7 @@ void InitializeClrNotifications()
 // <TODO> FIX IN BETA 2
 //
 // g_dacNotificationFlags is only modified by the DAC and therefore the
-// optmizer can assume that it will always be its default value and has
+// optimizer can assume that it will always be its default value and has
 // been seen to eliminate the code in DoModuleLoadNotification,
 // etc... such that DAC notifications are no longer sent.
 //
