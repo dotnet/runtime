@@ -22,7 +22,7 @@ PerfInfo::PerfInfo(int pid)
     }
 
     SString<EncodingUnicode> path;
-    path.Printf("%Sperfinfo-%d.map", (LPCWSTR)tempPath, pid);
+    path.Printf(W("%sperfinfo-%d.map"), (LPCWSTR)tempPath, pid);
     OpenFile(path);
 }
 
@@ -39,7 +39,7 @@ void PerfInfo::LogImage(PEAssembly* pPEAssembly, WCHAR* guid)
     } CONTRACTL_END;
 
     SString<EncodingUnicode> value;
-    const SString& path = pPEAssembly->GetPath();
+    const SString<EncodingUnicode>& path = pPEAssembly->GetPath();
     if (path.IsEmpty())
     {
         return;
@@ -85,9 +85,9 @@ void PerfInfo::WriteLine(SString<EncodingUnicode>& type, SString<EncodingUnicode
 
     EX_TRY
     {
-        StackScratchBuffer scratch;
-        const char* strLine = line.GetANSI(scratch);
-        ULONG inCount = line.GetCount();
+        SString<EncodingUTF8> lineUTF8(line.MoveToUTF8());
+        const char* strLine = lineUTF8;
+        ULONG inCount = lineUTF8.GetCount();
         ULONG outCount;
 
         m_Stream->Write(strLine, inCount, &outCount);
@@ -101,7 +101,7 @@ void PerfInfo::WriteLine(SString<EncodingUnicode>& type, SString<EncodingUnicode
 }
 
 // Opens a file ready to be written in.
-void PerfInfo::OpenFile(SString& path)
+void PerfInfo::OpenFile(SString<EncodingUnicode>& path)
 {
     STANDARD_VM_CONTRACT;
 

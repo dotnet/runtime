@@ -40,7 +40,7 @@ private:
     PerfMap(int pid);
 
     // Write a line to the map file.
-    void WriteLine(SString<EncodingUnicode> & line);
+    void WriteLine(SString<EncodingUTF8> & line);
 
 protected:
     // Construct a new map without a specified file name.
@@ -51,7 +51,7 @@ protected:
     ~PerfMap();
 
     // Open the perf map file for write.
-    void OpenFile(SString& path);
+    void OpenFile(SString<EncodingUnicode>& path);
 
     // Does the actual work to log a method to the map.
     void LogMethod(MethodDesc * pMethod, PCODE pCode, size_t codeSize, const char *optimizationTier);

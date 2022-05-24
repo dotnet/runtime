@@ -6331,7 +6331,7 @@ VOID ETW::LoaderLog::SendModuleEvent(Module *pModule, DWORD dwEventOptions, BOOL
     CV_INFO_PDB70 cvInfoNative = {0};
     GetCodeViewInfo(pModule, &cvInfoIL, &cvInfoNative);
 
-    PCWCHAR ModuleILPath=(PCWCHAR)W(""), ModuleNativePath=(PCWCHAR)W("");
+    LPCWSTR ModuleILPath=(LPCWSTR)W(""), ModuleNativePath=(LPCWSTR)W("");
 
     if(bFireDomainModuleEvents)
     {
@@ -6342,8 +6342,8 @@ VOID ETW::LoaderLog::SendModuleEvent(Module *pModule, DWORD dwEventOptions, BOOL
 
     if(!bIsDynamicAssembly)
     {
-        ModuleILPath = (PCWCHAR)pModule->GetAssembly()->GetPEAssembly()->GetPEImage()->GetPath();
-        ModuleNativePath = (PCWCHAR)pEmptyString;
+        ModuleILPath = (LPCWSTR)pModule->GetAssembly()->GetPEAssembly()->GetPEImage()->GetPath();
+        ModuleNativePath = (LPCWSTR)pEmptyString;
     }
 
     // if we do not have a module path yet, we put the module name
@@ -6351,8 +6351,8 @@ VOID ETW::LoaderLog::SendModuleEvent(Module *pModule, DWORD dwEventOptions, BOOL
     {
         SString<EncodingUnicode> moduleName;
         SString<EncodingUTF8>(pModule->GetSimpleName()).ConvertToUnicode(moduleName);
-        ModuleILPath = (PCWCHAR)moduleName;
-        ModuleNativePath = (PCWCHAR)pEmptyString;
+        ModuleILPath = (LPCWSTR)moduleName;
+        ModuleNativePath = (LPCWSTR)pEmptyString;
     }
 
     /* prepare events args for ETW and ETM */

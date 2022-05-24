@@ -270,6 +270,8 @@ public:
         Set(s);
     }
 
+    SString(SString&& s);
+
     SString(const SString& s, const SString& s1)
         :SString()
     {
@@ -339,6 +341,7 @@ public:
     }
     
     SString &operator= (const SString &s) { WRAPPER_NO_CONTRACT; Set(s); return *this; }
+    SString &operator= (SString &&s) { WRAPPER_NO_CONTRACT; Set(s); return *this; } // TODO: Look at stealing the buffer from the rhs value if we'd have to reallocate (and always clear the rhs for deterministic behavior).
 
     const SString& operator+=(const SString& s)
     {
@@ -609,7 +612,7 @@ public:
         }
 
         // explicitly resolve these for gcc
-        typename const TEncoding::char_t& operator*() const { return Index::operator*(); }
+        const char_t& operator*() const { return Index::operator*(); }
         void operator->() const { Index::operator->(); }
         char_t operator[](int index) const { return Index::operator[](index); }
     };
@@ -829,12 +832,13 @@ inline SString<EncodingUnicode> SL(const WCHAR* str)
 template <COUNT_T MEMSIZE, typename TEncoding>
 class InlineSString : public SString<TEncoding>
 {
+    using typename SString<TEncoding>::char_t;
 private:
     DAC_ALIGNAS(SString<TEncoding>)
     char_t m_inline[SBUFFER_PADDED_SIZE(MEMSIZE)];
 public:
     InlineSString()
-        :SString(m_inline, MEMSIZE, /* isAllocated */ false)
+        :SString<TEncoding>(m_inline, MEMSIZE, /* isAllocated */ false)
     {
 
     }
@@ -842,18 +846,18 @@ public:
     InlineSString(const char_t c)
         :InlineSString()
     {
-        Set(c);
+        SString<TEncoding>::Set(c);
     }
 
     InlineSString(const char_t* str)
         :InlineSString()
     {
-        Set(str);
+        SString<TEncoding>::Set(str);
     }
     InlineSString(const char_t* str, COUNT_T count)
         :InlineSString()
     {
-        Set(str, count);
+        SString<TEncoding>::Set(str, count);
     }
 };
 

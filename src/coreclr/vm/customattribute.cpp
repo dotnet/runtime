@@ -539,8 +539,8 @@ FCIMPL5(VOID, Attribute::ParseAttributeArguments, void* pCa, INT32 cCa,
         // on what we can allocate inline here. Leave the Windows versions alone to retain the perf benefits
         // since we don't have the same constraints.
         NewHolder<CaValueArrayFactory> pCaValueArrayFactory = new InlineFactory<SArray<CaValue>, 4>();
-        InlineFactory<StackScratchBuffer, 4> stackScratchBufferFactory;
-        InlineFactory<SString, 4> sstringFactory;
+        InlineFactory<SString<EncodingUTF8>, 4> utf8SStringFactory;
+        InlineFactory<SString<EncodingUnicode>, 4> sstringFactory;
 #else // __GNUC__
 
         // Preallocate 4 elements in each of the following factories for optimal performance.

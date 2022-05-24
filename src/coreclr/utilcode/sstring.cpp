@@ -327,52 +327,6 @@ COUNT_T SString<EncodingUTF8>::ConvertToUnicode(SString<EncodingUnicode>& s) con
 }
 
 template<>
-COUNT_T SString<EncodingASCII>::ConvertToUnicode(SString<EncodingUnicode> &s) const
-{
-    CONTRACT(COUNT_T)
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        SUPPORTS_DAC_HOST_ONLY;
-    }
-    CONTRACT_END;
-
-    // Handle the empty case.
-    if (IsEmpty())
-    {
-        s.Clear();
-        RETURN GetCount() + 1;
-    }
-
-    CONSISTENCY_CHECK(CheckPointer(GetRawBuffer()));
-    CONSISTENCY_CHECK(GetCount() > 0);
-
-    // If dest is the same as this, then we need to preserve on resize.
-    WCHAR* buf = s.OpenBuffer(GetCount());
-
-    // Make sure the buffer is big enough.
-    CONSISTENCY_CHECK(s.GetAllocation() > (GetCount() * sizeof(WCHAR)));
-
-    // This is a poor man's widen. Since we know that the representation is ASCII,
-    // we can just pad the string with a bunch of zero-value bytes. Of course,
-    // we move from the end of the string to the start so that we can convert in
-    // place (in the case that dest.GetRawBuffer() == this.GetRawBuffer()).
-    WCHAR *outBuf = buf + s.GetCount();
-    ASCII *inBuf = GetRawBuffer() + GetCount();
-
-    while (GetRawBuffer() <= inBuf)
-    {
-        CONSISTENCY_CHECK(buf <= outBuf);
-        // The casting zero-extends the value, thus giving us the zero-valued byte.
-        *outBuf = (WCHAR) *inBuf;
-        outBuf--;
-        inBuf--;
-    }
-
-    RETURN GetCount() + 1;
-}
-
-template<>
 COUNT_T SString<EncodingUnicode>::ConvertToUnicode(SString<EncodingUnicode>& s) const
 {
     CONTRACT(COUNT_T)

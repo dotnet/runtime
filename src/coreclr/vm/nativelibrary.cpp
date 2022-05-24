@@ -105,9 +105,11 @@ namespace
             STANDARD_VM_CONTRACT;
 
 #if defined(__APPLE__)
-            COMPlusThrow(kDllNotFoundException, IDS_EE_NDIRECT_LOADLIB_MAC, (LPCWSTR)libraryNameOrPath, GetMessage());
+            MAKE_WIDEPTR_FROMUTF8(message, GetMessage());
+            COMPlusThrow(kDllNotFoundException, IDS_EE_NDIRECT_LOADLIB_MAC, (LPCWSTR)libraryNameOrPath, message);
 #elif defined(TARGET_UNIX)
-            COMPlusThrow(kDllNotFoundException, IDS_EE_NDIRECT_LOADLIB_LINUX, (LPCWSTR)libraryNameOrPath, GetMessage());
+            MAKE_WIDEPTR_FROMUTF8(message, GetMessage());
+            COMPlusThrow(kDllNotFoundException, IDS_EE_NDIRECT_LOADLIB_LINUX, (LPCWSTR)libraryNameOrPath, message);
 #else // __APPLE__
             HRESULT theHRESULT = GetHR();
             if (theHRESULT == HRESULT_FROM_WIN32(ERROR_BAD_EXE_FORMAT))

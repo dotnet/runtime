@@ -189,7 +189,7 @@ static int UtilMessageBoxNonLocalizedVA(
         //
         // We may still however attempt to display the message box if the MB_SERVICE_NOTIFICATION
         // message box style was specified.
-        StackSString message;
+        StackSString<EncodingUnicode> message;
 
         message.Printf(W(".NET Runtime version : %s - "), CLR_PRODUCT_VERSION_L);
         if (lpTitle)

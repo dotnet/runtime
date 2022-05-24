@@ -150,6 +150,15 @@ inline SString<TEncoding>::SString(void* buffer, COUNT_T size, bool isAllocated)
 }
 
 template<typename TEncoding>
+inline SString<TEncoding>::SString(SString&& s)
+    : SString(s.GetRawBuffer(), s.GetSize(), s.IsAllocated())
+{
+    // We're stealing the buffer from the r-value SString, so clear its "is allocated" flag.
+    s.ClearAllocated();
+    s = {};
+}
+
+template<typename TEncoding>
 inline SString<TEncoding>::SString(const SString &s, const CIterator &i, COUNT_T count)
   : SBuffer(Immutable, StaticStringHelpers::s_EmptyBuffer, sizeof(StaticStringHelpers::s_EmptyBuffer))
 {
@@ -583,7 +592,7 @@ inline void SString<TEncoding>::Trim() const
     if (IsEmpty())
     {
         // Share the global empty string buffer.
-        const_cast<SString *>(this)->SBuffer::SetImmutable(s_EmptyBuffer, sizeof(s_EmptyBuffer));
+        const_cast<SString *>(this)->SBuffer::SetImmutable(StaticStringHelpers::s_EmptyBuffer, sizeof(StaticStringHelpers::s_EmptyBuffer));
     }
     else
     {
@@ -647,7 +656,7 @@ inline BOOL SString<TEncoding>::IsLiteral() const
 {
     WRAPPER_NO_CONTRACT;
 
-    return SBuffer::IsImmutable() && (m_buffer != s_EmptyBuffer);
+    return SBuffer::IsImmutable() && (m_buffer != StaticStringHelpers::s_EmptyBuffer);
 }
 
 //----------------------------------------------------------------------------
@@ -923,7 +932,7 @@ inline auto SString<TEncoding>::Index::operator*() const -> const char_t&
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
 
-    return *(const TEncoding::char_t*)GetAt(0);
+    return *reinterpret_cast<const char_t*>(GetAt(0));
 }
 
 template<typename TEncoding>
@@ -932,7 +941,7 @@ inline auto SString<TEncoding>::Index::operator*() -> char_t&
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
 
-    return *(TEncoding::char_t*)GetAt(0);
+    return *reinterpret_cast<char_t*>(GetAt(0));
 }
 
 template<typename TEncoding>
@@ -946,7 +955,7 @@ inline auto SString<TEncoding>::Index::operator[](int index) const -> char_t
 {
     WRAPPER_NO_CONTRACT;
 
-    return *(TEncoding::char_t*)GetAt(index);
+    return *reinterpret_cast<char_t*>(GetAt(index));
 }
 
 template<typename TEncoding>
@@ -979,7 +988,7 @@ void CheckForFormatStringGlobalizationIssues(const SString<TEncoding> &format, c
     BOOL fDangerousFormat = FALSE;
 
     // Check whether the format string contains the %S formatting specifier
-    SString<TEncoding>::CIterator itrFormat = format.Begin();
+    typename SString<TEncoding>::CIterator itrFormat = format.Begin();
     while (*itrFormat)
     {
         if (*itrFormat++ == '%')
@@ -1000,7 +1009,7 @@ void CheckForFormatStringGlobalizationIssues(const SString<TEncoding> &format, c
         // Now check whether there are any non-ASCII characters in the output.
 
         // Check whether the result contains non-Ascii characters
-        SString<TEncoding>::CIterator itrResult = format.Begin();
+        typename SString<TEncoding>::CIterator itrResult = format.Begin();
         while (*itrResult)
         {
             if (*itrResult++ > 127)
@@ -1253,6 +1262,52 @@ void SString<TEncoding>::AppendVPrintf(const char_t* format, va_list args)
     Append(s);
 }
 
+template<>
+inline COUNT_T SString<EncodingASCII>::ConvertToUnicode(SString<EncodingUnicode> &s) const
+{
+    CONTRACT(COUNT_T)
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        SUPPORTS_DAC_HOST_ONLY;
+    }
+    CONTRACT_END;
+
+    // Handle the empty case.
+    if (IsEmpty())
+    {
+        s.Clear();
+        RETURN GetCount() + 1;
+    }
+
+    CONSISTENCY_CHECK(CheckPointer(GetRawBuffer()));
+    CONSISTENCY_CHECK(GetCount() > 0);
+
+    // If dest is the same as this, then we need to preserve on resize.
+    WCHAR* buf = s.OpenBuffer(GetCount());
+
+    // Make sure the buffer is big enough.
+    CONSISTENCY_CHECK(s.GetAllocation() > (GetCount() * sizeof(WCHAR)));
+
+    // This is a poor man's widen. Since we know that the representation is ASCII,
+    // we can just pad the string with a bunch of zero-value bytes. Of course,
+    // we move from the end of the string to the start so that we can convert in
+    // place (in the case that dest.GetRawBuffer() == this.GetRawBuffer()).
+    WCHAR *outBuf = buf + s.GetCount();
+    ASCII *inBuf = GetRawBuffer() + GetCount();
+
+    while (GetRawBuffer() <= inBuf)
+    {
+        CONSISTENCY_CHECK(buf <= outBuf);
+        // The casting zero-extends the value, thus giving us the zero-valued byte.
+        *outBuf = (WCHAR) *inBuf;
+        outBuf--;
+        inBuf--;
+    }
+
+    RETURN GetCount() + 1;
+}
+
 template<typename TEncoding>
 SString<EncodingUTF8> SString<TEncoding>::MoveToUTF8()
 {
@@ -1264,7 +1319,7 @@ SString<EncodingUTF8> SString<TEncoding>::MoveToUTF8()
         SString<EncodingUTF8> result(GetRawBuffer(), SBuffer::GetAllocation(), /* isAllocated */ true);
         *this = {};
     }
-    return buff;
+    return std::move(buff);
 }
 
 template<typename TEncoding>
@@ -1278,7 +1333,7 @@ SString<EncodingUnicode> SString<TEncoding>::MoveToUnicode()
         SString<EncodingUnicode> result(GetRawBuffer(), SBuffer::GetAllocation(), /* isAllocated */ true);
         *this = {};
     }
-    return buff;
+    return std::move(buff);
 }
 
 template<>
@@ -1296,7 +1351,7 @@ inline SString<EncodingUnicode> SString<EncodingASCII>::MoveToUnicode()
 
     StackSString<EncodingUnicode> buff;
     ConvertToUnicode(buff);
-    return buff;
+    return std::move(buff);
 }
 
 
@@ -1403,7 +1458,7 @@ BOOL SString<TEncoding>::Find(CIterator& i, const SString& s) const
     const char_t *end = GetRawBuffer() + GetCount() - count;
     while (start <= end)
     {
-        if (TEncoding::strcmp(start, s.GetRawBuffer(), count) == 0)
+        if (TEncoding::strncmp(start, s.GetRawBuffer(), count) == 0)
         {
             i.Resync(this, (BYTE*) start);
             RETURN TRUE;

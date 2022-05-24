@@ -134,7 +134,7 @@ PerfMap::~PerfMap()
 }
 
 // Open the specified destination map file.
-void PerfMap::OpenFile(SString& path)
+void PerfMap::OpenFile(SString<EncodingUnicode>& path)
 {
     STANDARD_VM_CONTRACT;
 
@@ -152,7 +152,7 @@ void PerfMap::OpenFile(SString& path)
 }
 
 // Write a line to the map file.
-void PerfMap::WriteLine(SString& line)
+void PerfMap::WriteLine(SString<EncodingUTF8>& line)
 {
     STANDARD_VM_CONTRACT;
 
@@ -160,8 +160,7 @@ void PerfMap::WriteLine(SString& line)
     {
         // Write the line.
         // The PAL already takes a lock when writing, so we don't need to do so here.
-        StackScratchBuffer scratch;
-        const char * strLine = line.GetANSI(scratch);
+        const char * strLine = line;
         ULONG inCount = line.GetCount();
         ULONG outCount;
         m_FileStream->Write(strLine, inCount, &outCount);
@@ -199,21 +198,21 @@ void PerfMap::LogMethod(MethodDesc * pMethod, PCODE pCode, size_t codeSize, cons
     EX_TRY
     {
         // Get the full method signature.
-        SString<EncodingUnicode> name;
-        pMethod->GetFullMethodInfo(name);
+        SString<EncodingUnicode> nameW;
+        pMethod->GetFullMethodInfo(nameW);
+        SString<EncodingUTF8> name(nameW.MoveToUTF8());
 
         // Build the map file line.
-        StackScratchBuffer scratch;
         if (optimizationTier != nullptr && s_ShowOptimizationTiers)
         {
             name.AppendPrintf("[%s]", optimizationTier);
         }
-        SString<EncodingUnicode> line;
-        line.Printf(FMT_CODE_ADDR " %x %s\n", pCode, codeSize, name.GetANSI(scratch));
+        SString<EncodingUTF8> line;
+        line.Printf(FMT_CODE_ADDR " %x %s\n", pCode, codeSize, (LPCUTF8)name);
 
         // Write the line.
         WriteLine(line);
-        PAL_PerfJitDump_LogMethod((void*)pCode, codeSize, name.GetANSI(scratch), nullptr, nullptr);
+        PAL_PerfJitDump_LogMethod((void*)pCode, codeSize, name, nullptr, nullptr);
     }
     EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
 }
@@ -295,31 +294,31 @@ void PerfMap::LogPreCompiledMethod(MethodDesc * pMethod, PCODE pCode)
     EX_TRY
     {
         // Get the full method signature.
-        SString<EncodingUnicode> name;
-        pMethod->GetFullMethodInfo(name);
-
-        StackScratchBuffer scratch;
+        SString<EncodingUnicode> nameW;
+        pMethod->GetFullMethodInfo(nameW);
+        SString<EncodingUTF8> name(nameW.MoveToUTF8());
 
         if (s_ShowOptimizationTiers)
         {
-            name.AppendPrintf(W("[PreJIT]"));
+            name.Append("[PreJIT]");
         }
 
         // NGEN can split code between hot and cold sections which are separate in memory.
         // Emit an entry for each section if it is used.
         if (methodRegionInfo.hotSize > 0)
         {
-            PAL_PerfJitDump_LogMethod((void*)methodRegionInfo.hotStartAddress, methodRegionInfo.hotSize, name.GetANSI(scratch), nullptr, nullptr);
+            PAL_PerfJitDump_LogMethod((void*)methodRegionInfo.hotStartAddress, methodRegionInfo.hotSize, name, nullptr, nullptr);
         }
 
         if (methodRegionInfo.coldSize > 0)
         {
             if (s_ShowOptimizationTiers)
             {
-                pMethod->GetFullMethodInfo(name);
-                name.AppendPrintf(W("[PreJit-cold]"));
+                pMethod->GetFullMethodInfo(nameW);
+                name = nameW.MoveToUTF8();
+                name.AppendPrintf("[PreJit-cold]");
             }
-            PAL_PerfJitDump_LogMethod((void*)methodRegionInfo.coldStartAddress, methodRegionInfo.coldSize, name.GetANSI(scratch), nullptr, nullptr);
+            PAL_PerfJitDump_LogMethod((void*)methodRegionInfo.coldStartAddress, methodRegionInfo.coldSize, name, nullptr, nullptr);
         }
     }
     EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
@@ -348,15 +347,14 @@ void PerfMap::LogStubs(const char* stubType, const char* stubOwner, PCODE pCode,
         }
 
         // Build the map file line.
-        StackScratchBuffer scratch;
-        SString<EncodingUnicode> name;
+        SString<EncodingUTF8> name;
         name.Printf("stub<%d> %s<%s>", ++(s_Current->m_StubsMapped), stubType, stubOwner);
-        SString<EncodingUnicode> line;
-        line.Printf(FMT_CODE_ADDR " %x %s\n", pCode, codeSize, name.GetANSI(scratch));
+        SString<EncodingUTF8> line;
+        line.Printf(FMT_CODE_ADDR " %x %s\n", pCode, codeSize, (LPCUTF8)name);
 
         // Write the line.
         s_Current->WriteLine(line);
-        PAL_PerfJitDump_LogMethod((void*)pCode, codeSize, name.GetANSI(scratch), nullptr, nullptr);
+        PAL_PerfJitDump_LogMethod((void*)pCode, codeSize, name, nullptr, nullptr);
     }
     EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
 }
@@ -398,7 +396,7 @@ NativeImagePerfMap::NativeImagePerfMap(Assembly * pAssembly, BSTR pDestPath)
     // Build the path to the perfmap file, which consists of <inputpath><imagesimplename>.ni.<signature>.map.
     // Example: /tmp/System.Private.CoreLib.ni.{GUID}.map
     SString<EncodingUnicode> sDestPerfMapPath;
-    sDestPerfMapPath.Printf("%S%s.ni.%S.map", pDestPath, lpcSimpleName, wszSignature);
+    sDestPerfMapPath.Printf(W("%s%S.ni.%s.map"), pDestPath, lpcSimpleName, wszSignature);
 
     // Open the perf map file.
     OpenFile(sDestPerfMapPath);

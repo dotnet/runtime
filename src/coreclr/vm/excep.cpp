@@ -5162,7 +5162,7 @@ static SString<EncodingUnicode> GetExceptionMessageWrapper(Thread* pThread, OBJE
     GetExceptionMessage(throwable, result);
     UNINSTALL_NESTED_EXCEPTION_HANDLER();
 
-    return result;
+    return std::move(result);
 }
 
 void STDMETHODCALLTYPE
