@@ -40,6 +40,7 @@ function _verify_args_for_method_call(args_marshal: string/*ArgsMarshalString*/,
     return has_args_marshal && has_args;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function _get_buffer_for_method_call(converter: Converter, token: BoundMethodToken | null): VoidPtr | undefined {
     if (!converter)
         return VoidPtrNull;
