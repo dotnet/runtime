@@ -4031,6 +4031,8 @@ emit_wasmbase_intrinsics (
 			g_assert (fsig->param_count == 1 && mono_metadata_type_equal (fsig->params [0], etype));
 			return emit_simd_ins (cfg, klass, type_to_expand_op (etype), args [0]->dreg, -1);
 		}
+		case SN_Shuffle:
+			return emit_simd_ins_for_sig (cfg, klass, OP_WASM_SIMD_SHUFFLE, -1, -1, fsig, args);
 		case SN_Swizzle:
 			return emit_simd_ins_for_sig (cfg, klass, OP_WASM_SIMD_SWIZZLE, -1, -1, fsig, args);
 	}
