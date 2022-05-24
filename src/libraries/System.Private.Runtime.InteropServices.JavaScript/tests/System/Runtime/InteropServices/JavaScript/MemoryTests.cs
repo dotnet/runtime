@@ -22,8 +22,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [InlineData(9007199254740991L)]//MAX_SAFE_INTEGER 
         public static unsafe void Int52TestOK(long value)
         {
-            ulong uv = (ulong)value;
-            Console.WriteLine("Int52TestOK "+ value+ " U " + uv + " = H " + uv.ToString("X"));
             long expected = value;
             long actual2 = value;
             var bagFn = new Function("ptr", "ptr2", @"

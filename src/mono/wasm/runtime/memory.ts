@@ -91,13 +91,16 @@ export function setI32(offset: _MemOffset, value: number): void {
  */
 export function setI52(offset: _MemOffset, value: number): void {
     // 52 bits = 0x1F_FFFF_FFFF_FFFF
+    // see also https://en.wikipedia.org/wiki/Double-precision_floating-point_format
     mono_assert(!Number.isNaN(value), "Can't convert Number.Nan into Int64");
     mono_assert(Number.isSafeInteger(value), "Overflow: value out of Number.isSafeInteger range");
     let hi: number;
     let lo: number;
     if (value < 0) {
         value = -1 - value;
+        // set sign and mask the integer bits of the hi dword
         hi = 0x8000_0000 + ((value >>> 32) ^ 0x001F_FFFF);
+        // mask lo dword and negate it
         lo = (value & 0xFFFF_FFFF) ^ 0xFFFF_FFFF;
     }
     else {
@@ -169,14 +172,19 @@ export function getI32(offset: _MemOffset): number {
  */
 export function getI52(offset: _MemOffset): number {
     // 52 bits = 0x1F_FFFF_FFFF_FFFF
+    // see also https://en.wikipedia.org/wiki/Double-precision_floating-point_format
     const hi = Module.HEAPU32[1 + (<any>offset >>> 2)];
     const lo = Module.HEAPU32[<any>offset >>> 2];
     const sign = hi & 0x8000_0000;
     const exp = hi & 0x7FE0_0000;
     if (sign) {
+        // for negative numbers, the integer would have all bits of exponent set to 1
         mono_assert(exp === 0x7FE0_0000, "Overflow: value out of Number.isSafeInteger range");
+        // mask and negate integer bits of hi dword
         const nhi = (hi & 0x001F_FFFF) ^ 0x001F_FFFF;
+        // all lo dword bits are for integer, negate them and force JS to treat it as int32
         const nlo = (lo ^ 0xFFFF_FFFF) >>> 0;
+        // shift hi dword and add lo, then make it negative again
         return -1 - ((nhi * 0x1_0000_0000) + nlo);
     }
     else {
