@@ -468,29 +468,13 @@ common_call_trampoline (host_mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTa
 			vtable_slot = mini_resolve_imt_method (vt, vtable_slot, imt_method, &impl_method, &addr, &need_rgctx_tramp, &variant_iface, error);
 			return_val_if_nok (error, NULL);
 
-			if (mono_class_has_dim_conflicts (vt->klass)) {
-				GSList *conflicts = mono_class_get_dim_conflicts (vt->klass);
-				GSList *l;
-				MonoMethod *decl = imt_method;
-
-				if (decl->is_inflated)
-					decl = mono_method_get_declaring_generic_method (decl);
-
-				gboolean in_conflict = FALSE;
-				for (l = conflicts; l; l = l->next) {
-					if (decl == l->data) {
-						in_conflict = TRUE;
-						break;
-					}
-				}
-				if (in_conflict) {
-					char *class_name = mono_class_full_name (vt->klass);
-					char *method_name = mono_method_full_name (decl, TRUE);
-					mono_error_set_ambiguous_implementation (error, "Could not call method '%s' with type '%s' because there are multiple incompatible interface methods overriding this method.", method_name, class_name);
-					g_free (class_name);
-					g_free (method_name);
-					return NULL;
-				}
+			if (mono_class_has_dim_conflicts (vt->klass) && mono_class_is_method_ambiguous (vt->klass, imt_method)) {
+				char *class_name = mono_class_full_name (vt->klass);
+				char *method_name = mono_method_full_name (imt_method, TRUE);
+				mono_error_set_ambiguous_implementation (error, "Could not call method '%s' with type '%s' because there are multiple incompatible interface methods overriding this method.", method_name, class_name);
+				g_free (class_name);
+				g_free (method_name);
+				return NULL;
 			}
 
 			/* We must handle magic interfaces on rank 1 arrays of ref types as if they were variant */

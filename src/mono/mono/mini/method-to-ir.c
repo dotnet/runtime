@@ -7460,6 +7460,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					cmethod = get_constrained_method (cfg, image, token, cil_method, constrained_class, generic_context);
 					CHECK_CFG_ERROR;
 
+					if (mono_class_has_dim_conflicts (constrained_class) &&
+							mono_class_is_method_ambiguous (constrained_class, cil_method))
+						mono_emit_jit_icall (cfg, mono_throw_ambiguous_implementation, NULL);
+
 					if (m_class_is_enumtype (constrained_class) && !strcmp (cmethod->name, "GetHashCode")) {
 						/* Use the corresponding method from the base type to avoid boxing */
 						MonoType *base_type = mono_class_enum_basetype_internal (constrained_class);
@@ -11321,7 +11325,7 @@ mono_ldptr:
 			MonoMethod *cil_method;
 			gboolean gshared_static_virtual = FALSE;
 
-			cmethod = mini_get_method (cfg, method, n, NULL, generic_context);
+			cil_method = cmethod = mini_get_method (cfg, method, n, NULL, generic_context);
 			CHECK_CFG_ERROR;
 
 			if (constrained_class) {
@@ -11329,8 +11333,11 @@ mono_ldptr:
 					gshared_static_virtual = TRUE;
 				} else {
 					cmethod = get_constrained_method (cfg, image, n, cmethod, constrained_class, generic_context);
-					constrained_class = NULL;
 					CHECK_CFG_ERROR;
+					if (mono_class_has_dim_conflicts (constrained_class) &&
+							mono_class_is_method_ambiguous (constrained_class, cil_method))
+						mono_emit_jit_icall (cfg, mono_throw_ambiguous_implementation, NULL);
+					constrained_class = NULL;
 				}
 			} else {
 				// we can't save token info if we have a constrained_class since
@@ -11342,7 +11349,6 @@ mono_ldptr:
 
 			context_used = mini_method_check_context_used (cfg, cmethod);
 
-			cil_method = cmethod;
 			if (!dont_verify && !cfg->skip_visibility && !mono_method_can_access_method (method, cmethod))
 				emit_method_access_failure (cfg, method, cil_method);
 
