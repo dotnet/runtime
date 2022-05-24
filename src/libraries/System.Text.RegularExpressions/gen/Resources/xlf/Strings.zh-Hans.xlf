@@ -203,8 +203,8 @@
         <note>{Locked="Int32.MaxValue"}</note>
       </trans-unit>
       <trans-unit id="RegexMatchTimeoutException_Occurred">
-        <source>The Regex engine has timed out while trying to match a pattern to an input string. This can occur for many reasons, including very large inputs or excessive backtracking caused by nested quantifiers, back-references and other factors.</source>
-        <target state="needs-review-translation">尝试将模式与输入字符串匹配时，RegEx 引擎超时。许多原因均可能导致出现这种情况，包括由嵌套限定符、反向引用和其他因素引起的大量输入或过度回溯。</target>
+        <source>The RegEx engine has timed out while trying to match a pattern to an input string. This can occur for many reasons, including very large inputs or excessive backtracking caused by nested quantifiers, back-references and other factors.</source>
+        <target state="translated">尝试将模式与输入字符串匹配时，RegEx 引擎超时。许多原因均可能导致出现这种情况，包括由嵌套限定符、反向引用和其他因素引起的大量输入或过度回溯。</target>
         <note />
       </trans-unit>
       <trans-unit id="RegexMethodMustHaveValidSignatureMessage">

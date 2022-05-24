@@ -620,6 +620,24 @@ public partial class A
             await VerifyCS.VerifyCodeFixAsync(test, expectedDiagnostic, fixedSource);
         }
 
+        [Theory]
+        [MemberData(nameof(InvocationTypes))]
+        public async Task NoDiagnosticForRegexOptionsNonBacktracking(InvocationType invocationType)
+        {
+            string isMatchInvocation = invocationType == InvocationType.Constructor ? @".IsMatch("""")" : string.Empty;
+            string test = @"using System.Text.RegularExpressions;
+
+public class Program
+{
+    public static void Main(string[] args)
+    {
+        var isMatch = " + ConstructRegexInvocation(invocationType, "\"\"", "RegexOptions.IgnoreCase | RegexOptions.NonBacktracking") + isMatchInvocation + @";
+    }
+}";
+
+            await VerifyCS.VerifyAnalyzerAsync(test);
+        }
+
         [Fact]
         public async Task AnayzerSupportsMultipleDiagnostics()
         {

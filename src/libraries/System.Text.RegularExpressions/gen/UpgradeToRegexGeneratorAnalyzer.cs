@@ -7,6 +7,8 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
@@ -24,6 +26,7 @@ namespace System.Text.RegularExpressions.Generator
     {
         private const string RegexTypeName = "System.Text.RegularExpressions.Regex";
         private const string RegexGeneratorTypeName = "System.Text.RegularExpressions.RegexGeneratorAttribute";
+        private const string RegexOptionsTypeName = "System.Text.RegularExpressions.RegexOptions";
 
         internal const string PatternIndexName = "PatternIndex";
         internal const string RegexOptionsIndexName = "RegexOptionsIndex";
@@ -37,7 +40,7 @@ namespace System.Text.RegularExpressions.Generator
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
             context.EnableConcurrentExecution();
 
-            context.RegisterCompilationStartAction(compilationContext =>
+            context.RegisterCompilationStartAction(async compilationContext =>
             {
                 Compilation compilation = compilationContext.Compilation;
 
@@ -46,12 +49,48 @@ namespace System.Text.RegularExpressions.Generator
                     return;
                 }
 
+                if (await ProjectUsesTopLevelStatements(compilation, compilationContext.CancellationToken).ConfigureAwait(false))
+                {
+                    return;
+                }
+
+                INamedTypeSymbol regexOptionsTypeSymbol = compilation.GetTypeByMetadataName(RegexOptionsTypeName);
+                if (regexOptionsTypeSymbol == null)
+                {
+                    return;
+                }
+
+                HashSet<IMethodSymbol> methodsWithFourParameters = GetMethodSymbolHash(compilation, regexTypeSymbol,
+                    new HashSet<string> { "Count", "EnumerateMatches", "IsMatch", "Match", "Matches", "Split" });
+
+                HashSet<IMethodSymbol> replaceStaticMethods = GetMethodSymbolHash(compilation, regexTypeSymbol, new HashSet<string> { "Replace" });
+
                 // Register analysis of calls to the Regex constructors
-                compilationContext.RegisterOperationAction(context => AnalyzeObjectCreation(context, regexTypeSymbol), OperationKind.ObjectCreation);
+                compilationContext.RegisterOperationAction(context => AnalyzeObjectCreation(context, regexTypeSymbol, regexOptionsTypeSymbol), OperationKind.ObjectCreation);
 
                 // Register analysis of calls to Regex static methods
-                compilationContext.RegisterOperationAction(context => AnalyzeInvocation(context, regexTypeSymbol), OperationKind.Invocation);
+                compilationContext.RegisterOperationAction(context => AnalyzeInvocation(context, regexTypeSymbol, regexOptionsTypeSymbol, methodsWithFourParameters, replaceStaticMethods), OperationKind.Invocation);
             });
+
+            static HashSet<IMethodSymbol> GetMethodSymbolHash(Compilation compilation, INamedTypeSymbol regexTypeSymbol, HashSet<string> methodNames)
+            {
+#pragma warning disable RS1024 // Compare symbols correctly
+                HashSet<IMethodSymbol> hash = new HashSet<IMethodSymbol>(SymbolEqualityComparer.Default);
+#pragma warning restore RS1024 // Compare symbols correctly
+                ImmutableArray<ISymbol> allMembers = regexTypeSymbol.GetMembers();
+
+                foreach(ISymbol member in allMembers)
+                {
+                    if (member is IMethodSymbol method &&
+                        method.IsStatic &&
+                        methodNames.Contains(method.Name))
+                    {
+                        hash.Add(method);
+                    }
+                }
+
+                return hash;
+            }
         }
 
         /// <summary>
@@ -59,7 +98,7 @@ namespace System.Text.RegularExpressions.Generator
         /// and checks if they could be using the source generator instead.
         /// </summary>
         /// <param name="context">The compilation context representing the invocation.</param>
-        private static void AnalyzeInvocation(OperationAnalysisContext context, INamedTypeSymbol regexTypeSymbol)
+        private static void AnalyzeInvocation(OperationAnalysisContext context, INamedTypeSymbol regexTypeSymbol, INamedTypeSymbol regexOptionsTypeSymbol, HashSet<IMethodSymbol> staticMethodsWithFourParameters, HashSet<IMethodSymbol> replaceStaticMethods)
         {
             // Ensure the invocation is a Regex static method.
             IInvocationOperation invocationOperation = (IInvocationOperation)context.Operation;
@@ -73,7 +112,7 @@ namespace System.Text.RegularExpressions.Generator
             // code fixer can later use that property bag to generate the code fix and emit the RegexGenerator attribute.
             // Most static methods have the same parameter overloads which are covered by the first if block. Replace static method takes extra parameters so that one
             // is treated specially.
-            if (method.Name is "IsMatch" or "Match" or "Matches" or "Split" or "Count" or "EnumerateMatches")
+            if (staticMethodsWithFourParameters.Contains(method))
             {
                 // if the static method invocation has a timeout, then don't emit a diagnostic.
                 if (invocationOperation.Arguments.Length > 3)
@@ -84,7 +123,7 @@ namespace System.Text.RegularExpressions.Generator
                 for (int i = 1; i < invocationOperation.Arguments.Length; i++)
                 {
                     // Ensure that all inputs to the static method are constant.
-                    if (!IsConstant(invocationOperation.Arguments[i]))
+                    if (!IsConstant(invocationOperation.Arguments[i], regexOptionsTypeSymbol))
                     {
                         return;
                     }
@@ -102,7 +141,7 @@ namespace System.Text.RegularExpressions.Generator
                 Debug.Assert(syntaxNodeForDiagnostic != null);
                 context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.UseRegexSourceGeneration, syntaxNodeForDiagnostic.GetLocation(), properties));
             }
-            else if (method.Name is "Replace")
+            else if (replaceStaticMethods.Contains(method))
             {
                 // if the static method invocation has a timeout, then don't emit a diagnostic.
                 if (invocationOperation.Arguments.Length > 4)
@@ -119,7 +158,7 @@ namespace System.Text.RegularExpressions.Generator
                     }
 
                     // Ensure that all inputs to the static method are constant.
-                    if (!IsConstant(invocationOperation.Arguments[i]))
+                    if (!IsConstant(invocationOperation.Arguments[i], regexOptionsTypeSymbol))
                     {
                         return;
                     }
@@ -144,7 +183,7 @@ namespace System.Text.RegularExpressions.Generator
         /// and checks if they could be using the source generator instead.
         /// </summary>
         /// <param name="context">The object creation context.</param>
-        private static void AnalyzeObjectCreation(OperationAnalysisContext context, INamedTypeSymbol regexTypeSymbol)
+        private static void AnalyzeObjectCreation(OperationAnalysisContext context, INamedTypeSymbol regexTypeSymbol, INamedTypeSymbol regexOptionsTypeSymbol)
         {
             // Ensure the object creation is a call to the Regex constructor.
             IObjectCreationOperation operation = (IObjectCreationOperation)context.Operation;
@@ -162,7 +201,7 @@ namespace System.Text.RegularExpressions.Generator
             // Ensure that all inputs to the constructor are constant.
             foreach (IArgumentOperation argument in operation.Arguments)
             {
-                if (!IsConstant(argument))
+                if (!IsConstant(argument, regexOptionsTypeSymbol))
                 {
                     return;
                 }
@@ -187,15 +226,36 @@ namespace System.Text.RegularExpressions.Generator
         /// </summary>
         /// <param name="argument">The argument to be analyzed.</param>
         /// <returns><see langword="true"/> if the argument is constant; otherwise, <see langword="false"/>.</returns>
-        private static bool IsConstant(IArgumentOperation argument)
+        private static bool IsConstant(IArgumentOperation argument, INamedTypeSymbol regexOptions)
         {
             IOperation valueOperation = argument.Value;
             if (valueOperation.ConstantValue.HasValue)
             {
+                // If using RegexOptions.NonBacktracking we should not emit a diagnostic.
+                if (SymbolEqualityComparer.Default.Equals(argument.Value.Type, regexOptions))
+                {
+                    RegexOptions value = (RegexOptions)((int)valueOperation.ConstantValue.Value);
+                    if ((value & RegexOptions.NonBacktracking) > 0)
+                    {
+                        return false;
+                    }
+                }
+
                 return true;
             }
 
             return false;
+        }
+
+        private static async Task<bool> ProjectUsesTopLevelStatements(Compilation compilation, CancellationToken cancellationToken)
+        {
+            SyntaxNode? root = await compilation.SyntaxTrees.FirstOrDefault().GetRootAsync(cancellationToken).ConfigureAwait(false);
+            if (root is null)
+            {
+                return false;
+            }
+
+            return root.DescendantNodesAndSelf().Where(node => node.IsKind(SyntaxKind.GlobalStatement)).Any();
         }
 
         /// <summary>

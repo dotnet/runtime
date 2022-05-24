@@ -203,8 +203,8 @@
         <note>{Locked="Int32.MaxValue"}</note>
       </trans-unit>
       <trans-unit id="RegexMatchTimeoutException_Occurred">
-        <source>The Regex engine has timed out while trying to match a pattern to an input string. This can occur for many reasons, including very large inputs or excessive backtracking caused by nested quantifiers, back-references and other factors.</source>
-        <target state="needs-review-translation">RegEx altyapısı bir deseni bir giriş dizesiyle eşleştirmeye çalışırken zaman aşımına uğradı. Bu birçok nedenle oluşabilir; buna çok büyük girişler ya da iç içe geçmiş miktar belirleyiciler, geri başvurular ve diğer faktörler nedeniyle oluşan aşırı geri dönüşler dahildir.</target>
+        <source>The RegEx engine has timed out while trying to match a pattern to an input string. This can occur for many reasons, including very large inputs or excessive backtracking caused by nested quantifiers, back-references and other factors.</source>
+        <target state="translated">RegEx altyapısı bir deseni bir giriş dizesiyle eşleştirmeye çalışırken zaman aşımına uğradı. Bu birçok nedenle oluşabilir; buna çok büyük girişler ya da iç içe geçmiş miktar belirleyiciler, geri başvurular ve diğer faktörler nedeniyle oluşan aşırı geri dönüşler dahildir.</target>
         <note />
       </trans-unit>
       <trans-unit id="RegexMethodMustHaveValidSignatureMessage">
