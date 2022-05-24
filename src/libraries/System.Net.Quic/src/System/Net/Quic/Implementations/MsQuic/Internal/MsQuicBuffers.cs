@@ -39,8 +39,29 @@ internal unsafe struct MsQuicBuffers : IDisposable
         NativeMemory.Free(buffers);
     }
 
+    private void Reserve(int count)
+    {
+        if (_handles.Length < count)
+        {
+            _handles = new MemoryHandle[count];
+            FreeNativeMemory();
+            _buffers = (QUIC_BUFFER*)NativeMemory.Alloc((nuint)count, (nuint)sizeof(QUIC_BUFFER));
+        }
+
+        _count = count;
+    }
+
+    private void SetBuffer(int index, ReadOnlyMemory<byte> buffer)
+    {
+        MemoryHandle handle = buffer.Pin();
+
+        _handles[index] = handle;
+        _buffers[index].Buffer = (byte*)handle.Pointer;
+        _buffers[index].Length = (uint)buffer.Length;
+    }
+
     /// <summary>
-    /// The method initializes QUIC_BUFFER* with data from inputs, converted via toBuffer.
+    /// Initializes QUIC_BUFFER* with data from inputs, converted via toBuffer.
     /// Note that the struct either needs to be freshly created via new or previously cleaned up with Reset.
     /// </summary>
     /// <param name="inputs">Inputs to get their byte array, pin them and pepare them to be passed to MsQuic as QUIC_BUFFER*.</param>
@@ -48,26 +69,61 @@ internal unsafe struct MsQuicBuffers : IDisposable
     /// <typeparam name="T">The type of the inputs.</typeparam>
     public void Initialize<T>(IList<T> inputs, Func<T, ReadOnlyMemory<byte>> toBuffer)
     {
-        if (_handles.Length < inputs.Count)
-        {
-            _handles = new MemoryHandle[inputs.Count];
-        }
-        if (_count < inputs.Count)
-        {
-            FreeNativeMemory();
-            _buffers = (QUIC_BUFFER*)NativeMemory.Alloc((nuint)sizeof(QUIC_BUFFER), (nuint)inputs.Count);
-        }
-
-        _count = inputs.Count;
+        Reserve(inputs.Count);
 
         for (int i = 0; i < inputs.Count; ++i)
         {
             ReadOnlyMemory<byte> buffer = toBuffer(inputs[i]);
-            MemoryHandle handle = buffer.Pin();
+            SetBuffer(i, buffer);
+        }
+    }
 
-            _handles[i] = handle;
-            _buffers[i].Buffer = (byte*)handle.Pointer;
-            _buffers[i].Length = (uint)buffer.Length;
+    /// <summary>
+    /// Initializes QUIC_BUFFER* with the provided buffer.
+    /// Note that the struct either needs to be freshly created via new or previously cleaned up with Reset.
+    /// </summary>
+    /// <param name="buffer">Buffer to be passed to MsQuic as QUIC_BUFFER*.</param>
+    public void Initialize(ReadOnlyMemory<byte> buffer)
+    {
+        Reserve(1);
+        SetBuffer(0, buffer);
+    }
+
+    /// <summary>
+    /// Initializes QUIC_BUFFER* with the provided buffers.
+    /// Note that the struct either needs to be freshly created via new or previously cleaned up with Reset.
+    /// </summary>
+    /// <param name="buffers">Buffers to be passed to MsQuic as QUIC_BUFFER*.</param>
+    public void Initialize(ReadOnlySequence<byte> buffers)
+    {
+        int count = 0;
+        foreach (ReadOnlyMemory<byte> _ in buffers)
+        {
+            ++count;
+        }
+
+        Reserve(count);
+        int i = 0;
+        foreach (ReadOnlyMemory<byte> buffer in buffers)
+        {
+            SetBuffer(i++, buffer);
+        }
+    }
+
+    /// <summary>
+    /// Initializes QUIC_BUFFER* with the provided buffers.
+    /// Note that the struct either needs to be freshly created via new or previously cleaned up with Reset.
+    /// </summary>
+    /// <param name="buffers">Buffers to be passed to MsQuic as QUIC_BUFFER*.</param>
+    public void Initialize(ReadOnlyMemory<ReadOnlyMemory<byte>> buffers)
+    {
+        int count = buffers.Length;
+        Reserve(count);
+
+        ReadOnlySpan<ReadOnlyMemory<byte>> span = buffers.Span;
+        for (int i = 0; i < span.Length; i++)
+        {
+            SetBuffer(i, span[i]);
         }
     }
 

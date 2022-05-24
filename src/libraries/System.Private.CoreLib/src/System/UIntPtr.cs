@@ -478,6 +478,9 @@ namespace System
         /// <inheritdoc cref="INumberBase{TSelf}.One" />
         static nuint INumberBase<nuint>.One => 1;
 
+        /// <inheritdoc cref="INumberBase{TSelf}.Radix" />
+        static int INumberBase<nuint>.Radix => 2;
+
         /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
         static nuint INumberBase<nuint>.Zero => 0;
 
@@ -702,11 +705,26 @@ namespace System
             }
         }
 
+        /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
+        static bool INumberBase<nuint>.IsCanonical(nuint value) => true;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsComplexNumber(TSelf)" />
+        static bool INumberBase<nuint>.IsComplexNumber(nuint value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsEvenInteger(TSelf)" />
+        public static bool IsEvenInteger(nuint value) => (value & 1) == 0;
+
         /// <inheritdoc cref="INumberBase{TSelf}.IsFinite(TSelf)" />
         static bool INumberBase<nuint>.IsFinite(nuint value) => true;
 
+        /// <inheritdoc cref="INumberBase{TSelf}.IsImaginaryNumber(TSelf)" />
+        static bool INumberBase<nuint>.IsImaginaryNumber(nuint value) => false;
+
         /// <inheritdoc cref="INumberBase{TSelf}.IsInfinity(TSelf)" />
         static bool INumberBase<nuint>.IsInfinity(nuint value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsInteger(TSelf)" />
+        static bool INumberBase<nuint>.IsInteger(nuint value) => true;
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsNaN(TSelf)" />
         static bool INumberBase<nuint>.IsNaN(nuint value) => false;
@@ -720,11 +738,23 @@ namespace System
         /// <inheritdoc cref="INumberBase{TSelf}.IsNormal(TSelf)" />
         static bool INumberBase<nuint>.IsNormal(nuint value) => value != 0;
 
+        /// <inheritdoc cref="INumberBase{TSelf}.IsOddInteger(TSelf)" />
+        public static bool IsOddInteger(nuint value) => (value & 1) != 0;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsPositive(TSelf)" />
+        static bool INumberBase<nuint>.IsPositive(nuint value) => true;
+
         /// <inheritdoc cref="INumberBase{TSelf}.IsPositiveInfinity(TSelf)" />
         static bool INumberBase<nuint>.IsPositiveInfinity(nuint value) => false;
 
+        /// <inheritdoc cref="INumberBase{TSelf}.IsRealNumber(TSelf)" />
+        static bool INumberBase<nuint>.IsRealNumber(nuint value) => true;
+
         /// <inheritdoc cref="INumberBase{TSelf}.IsSubnormal(TSelf)" />
         static bool INumberBase<nuint>.IsSubnormal(nuint value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsZero(TSelf)" />
+        static bool INumberBase<nuint>.IsZero(nuint value) => (value == 0);
 
         /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitude(TSelf, TSelf)" />
         static nuint INumberBase<nuint>.MaxMagnitude(nuint x, nuint y) => Max(x, y);

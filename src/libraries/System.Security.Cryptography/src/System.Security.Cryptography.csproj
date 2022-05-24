@@ -443,6 +443,7 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\X500DistinguishedNameBuilder.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X500DistinguishedNameFlags.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X501Attribute.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509AuthorityInformationAccessExtension.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509BasicConstraintsExtension.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Certificate.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Certificate2.cs" />

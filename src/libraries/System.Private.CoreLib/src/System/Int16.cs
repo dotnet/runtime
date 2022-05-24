@@ -568,6 +568,9 @@ namespace System
         /// <inheritdoc cref="INumberBase{TSelf}.One" />
         static short INumberBase<short>.One => One;
 
+        /// <inheritdoc cref="INumberBase{TSelf}.Radix" />
+        static int INumberBase<short>.Radix => 2;
+
         /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
         static short INumberBase<short>.Zero => Zero;
 
@@ -795,11 +798,26 @@ namespace System
             }
         }
 
+        /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
+        static bool INumberBase<short>.IsCanonical(short value) => true;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsComplexNumber(TSelf)" />
+        static bool INumberBase<short>.IsComplexNumber(short value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsEvenInteger(TSelf)" />
+        public static bool IsEvenInteger(short value) => (value & 1) == 0;
+
         /// <inheritdoc cref="INumberBase{TSelf}.IsFinite(TSelf)" />
         static bool INumberBase<short>.IsFinite(short value) => true;
 
+        /// <inheritdoc cref="INumberBase{TSelf}.IsImaginaryNumber(TSelf)" />
+        static bool INumberBase<short>.IsImaginaryNumber(short value) => false;
+
         /// <inheritdoc cref="INumberBase{TSelf}.IsInfinity(TSelf)" />
         static bool INumberBase<short>.IsInfinity(short value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsInteger(TSelf)" />
+        static bool INumberBase<short>.IsInteger(short value) => true;
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsNaN(TSelf)" />
         static bool INumberBase<short>.IsNaN(short value) => false;
@@ -813,11 +831,23 @@ namespace System
         /// <inheritdoc cref="INumberBase{TSelf}.IsNormal(TSelf)" />
         static bool INumberBase<short>.IsNormal(short value) => value != 0;
 
+        /// <inheritdoc cref="INumberBase{TSelf}.IsOddInteger(TSelf)" />
+        public static bool IsOddInteger(short value) => (value & 1) != 0;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsPositive(TSelf)" />
+        public static bool IsPositive(short value) => value >= 0;
+
         /// <inheritdoc cref="INumberBase{TSelf}.IsPositiveInfinity(TSelf)" />
         static bool INumberBase<short>.IsPositiveInfinity(short value) => false;
 
+        /// <inheritdoc cref="INumberBase{TSelf}.IsRealNumber(TSelf)" />
+        static bool INumberBase<short>.IsRealNumber(short value) => true;
+
         /// <inheritdoc cref="INumberBase{TSelf}.IsSubnormal(TSelf)" />
         static bool INumberBase<short>.IsSubnormal(short value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsZero(TSelf)" />
+        static bool INumberBase<short>.IsZero(short value) => (value == 0);
 
         /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitude(TSelf, TSelf)" />
         public static short MaxMagnitude(short x, short y)

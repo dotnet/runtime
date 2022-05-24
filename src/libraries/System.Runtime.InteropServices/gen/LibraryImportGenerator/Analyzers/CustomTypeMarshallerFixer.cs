@@ -18,7 +18,7 @@ using Microsoft.CodeAnalysis.Text;
 
 namespace Microsoft.Interop.Analyzers
 {
-    [ExportCodeFixProvider(LanguageNames.CSharp, LanguageNames.VisualBasic), Shared]
+    [ExportCodeFixProvider(LanguageNames.CSharp), Shared]
     public class CustomTypeMarshallerFixer : CodeFixProvider
     {
         private const string AddMissingCustomTypeMarshallerMembersKey = nameof(AddMissingCustomTypeMarshallerMembersKey);

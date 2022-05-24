@@ -8436,26 +8436,28 @@ void CodeGen::genCreateAndStoreGCInfoX64(unsigned codeSize, unsigned prologSize 
         // what we have to preserve is called the "frame header" (see comments in VM\eetwain.cpp)
         // which is:
         //  -return address
-        //  -saved off RBP
-        //  -saved 'this' pointer and bool for synchronized methods
+        //  -saved RBP
+        //  -saved bool for synchronized methods
 
-        // 4 slots for RBP + return address + RSI + RDI
-        int preservedAreaSize = 4 * REGSIZE_BYTES;
+        // slots for ret address + FP + EnC callee-saves
+        int preservedAreaSize = (2 + genCountBits(RBM_ENC_CALLEE_SAVED)) * REGSIZE_BYTES;
 
         if (compiler->info.compFlags & CORINFO_FLG_SYNCH)
         {
-            if (!(compiler->info.compFlags & CORINFO_FLG_STATIC))
-            {
-                preservedAreaSize += REGSIZE_BYTES;
-            }
+            // bool in synchronized methods that tracks whether the lock has been taken (takes a full pointer sized
+            // slot)
+            preservedAreaSize += TARGET_POINTER_SIZE;
 
-            // bool in synchronized methods that tracks whether the lock has been taken (takes 4 bytes on stack)
-            preservedAreaSize += 4;
+            // Verify that MonAcquired bool is at the bottom of the frame header
+            assert(compiler->lvaGetCallerSPRelativeOffset(compiler->lvaMonAcquired) == -preservedAreaSize);
         }
 
         // Used to signal both that the method is compiled for EnC, and also the size of the block at the top of the
         // frame
         gcInfoEncoder->SetSizeOfEditAndContinuePreservedArea(preservedAreaSize);
+
+        JITDUMP("EnC info:\n");
+        JITDUMP("  EnC preserved area size = %d\n", preservedAreaSize);
     }
 
     if (compiler->opts.IsReversePInvoke())

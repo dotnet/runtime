@@ -1434,7 +1434,6 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 }
 
 static guint16 vector64_vector128_t_methods [] = {
-	SN_Equals,
 	SN_get_AllBitsSet,
 	SN_get_Count,
 	SN_get_IsSupported,
@@ -1463,7 +1462,6 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	}
 
 	MonoClass *klass = cmethod->klass;
-	MonoType *type = m_class_get_byval_arg (klass);
 	MonoType *etype = mono_class_get_context (klass)->class_inst->type_argv [0];
 	int size = mono_class_value_size (klass, NULL);
 	int esize = mono_class_value_size (mono_class_from_mono_type_internal (etype), NULL);
@@ -1507,13 +1505,6 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	}
 	case SN_get_AllBitsSet: {
 		return emit_xones (cfg, klass);
-	}
-	case SN_Equals: {
-		if (fsig->param_count == 1 && fsig->ret->type == MONO_TYPE_BOOLEAN && mono_metadata_type_equal (fsig->params [0], type)) {
-			int sreg1 = load_simd_vreg (cfg, cmethod, args [0], NULL);
-			return emit_simd_ins (cfg, klass, OP_XEQUAL, sreg1, args [1]->dreg);
-		}
-		break;
 	}
 	case SN_op_Addition:
 	case SN_op_BitwiseAnd:
@@ -1563,7 +1554,6 @@ static guint16 vector2_methods[] = {
 	SN_Abs,
 	SN_CopyTo,
 	SN_Dot,
-	SN_Equals,
 	SN_GetElement,
 	SN_Max,
 	SN_Min,
@@ -1783,12 +1773,6 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		ins->inst_c1 = MONO_TYPE_R4;
 		return ins;
 	}
-	case SN_Equals: {
-		if (!(fsig->param_count == 1 && mono_metadata_type_equal (fsig->params [0], type)))
-			return NULL;
-		int sreg1 = load_simd_vreg (cfg, cmethod, args [0], NULL);
-		return emit_simd_ins (cfg, klass, OP_XEQUAL, sreg1, args [1]->dreg);
-	}
 	case SN_op_Equality:
 		if (!(fsig->param_count == 2 && mono_metadata_type_equal (fsig->params [0], type) && mono_metadata_type_equal (fsig->params [1], type)))
 			return NULL;
@@ -1894,7 +1878,6 @@ emit_sys_numerics_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSigna
 static guint16 vector_t_methods [] = {
 	SN_ctor,
 	SN_CopyTo,
-	SN_Equals,
 	SN_GreaterThan,
 	SN_GreaterThanOrEqual,
 	SN_LessThan,
@@ -2077,16 +2060,6 @@ emit_sys_numerics_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 			EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STOREX_MEMBASE, ldelema_ins->dreg, 0, val_vreg);
 			ins->klass = cmethod->klass;
 			return ins;
-		}
-		break;
-	case SN_Equals:
-		if (fsig->param_count == 1 && fsig->ret->type == MONO_TYPE_BOOLEAN && mono_metadata_type_equal (fsig->params [0], type)) {
-			int sreg1 = load_simd_vreg (cfg, cmethod, args [0], NULL);
-
-			return emit_simd_ins (cfg, klass, OP_XEQUAL, sreg1, args [1]->dreg);
-		} else if (fsig->param_count == 2 && mono_metadata_type_equal (fsig->ret, type) && mono_metadata_type_equal (fsig->params [0], type) && mono_metadata_type_equal (fsig->params [1], type)) {
-			/* Per element equality */
-			return emit_xcompare (cfg, klass, etype->type, args [0], args [1]);
 		}
 		break;
 	case SN_op_Equality:
