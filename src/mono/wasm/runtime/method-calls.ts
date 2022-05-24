@@ -44,7 +44,11 @@ export function _get_buffer_for_method_call(converter: Converter, token: BoundMe
     if (!converter)
         return VoidPtrNull;
 
-    const result = Module.stackAlloc(converter.size + 64);
+    // worst case length
+    const bufferSizeBytes = converter.size + ((converter.args_marshal || "").length * 4);
+    const result = Module.stackAlloc(bufferSizeBytes);
+    // debug fill pattern
+    Module.HEAPU8.fill(0xCA, <any>result, bufferSizeBytes);
     return result;
 }
 
