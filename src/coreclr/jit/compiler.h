@@ -7613,7 +7613,7 @@ public:
 
     // ICorJitInfo wrappers
 
-    void eeAllocMem(AllocMemArgs* args, UNATIVE_OFFSET hotSizeRequest, UNATIVE_OFFSET coldSizeRequest);
+    void eeAllocMem(AllocMemArgs* args);
 
     void eeReserveUnwindInfo(bool isFunclet, bool isColdCode, ULONG unwindSize);
 

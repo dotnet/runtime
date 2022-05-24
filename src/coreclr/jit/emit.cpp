@@ -6065,7 +6065,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     args.xcptnsCount  = xcptnsCount;
     args.flag         = allocMemFlag;
 
-    emitComp->eeAllocMem(&args, emitTotalHotCodeSize, emitTotalColdCodeSize);
+    emitComp->eeAllocMem(&args);
 
     codeBlock       = (BYTE*)args.hotCodeBlock;
     codeBlockRW     = (BYTE*)args.hotCodeBlockRW;
@@ -6083,7 +6083,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     args.xcptnsCount  = xcptnsCount;
     args.flag         = allocMemFlag;
 
-    emitComp->eeAllocMem(&args, emitTotalHotCodeSize, emitTotalColdCodeSize);
+    emitComp->eeAllocMem(&args);
 
     codeBlock       = (BYTE*)args.hotCodeBlock;
     codeBlockRW     = (BYTE*)args.hotCodeBlockRW;
