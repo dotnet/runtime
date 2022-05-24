@@ -589,22 +589,21 @@ namespace Microsoft.Diagnostics.NETCore.Client
                             throw new UnsupportedCommandException($"{operationName} failed - Invalid command argument.");
 
                         case (uint)DiagnosticsIpcError.NotSupported:
-                            throw new NotSupportedException($"{operationName} - Not supported by this runtime.");
-
-                        // Only this error code (E_FAIL) can have a error message
-                        case (uint)DiagnosticsIpcError.Fail:
-                            if (options.HasFlag(ValidateResponseOptions.ErrorMessageReturned))
-                            {
-                                message = IpcHelpers.ReadString(responseMessage.Payload, ref index);
-                            }
+                            message = $"{operationName} - Not supported by this runtime.";
                             break;
 
                         default:
                             break;
                     }
+                    // Check if the command can return an error message and if the payload is big enough to contain the
+                    // error code (uint) and the string length (uint).
+                    if (options.HasFlag(ValidateResponseOptions.ErrorMessageReturned) && responseMessage.Payload.Length >= (sizeof(uint) * 2))
+                    {
+                        message = IpcHelpers.ReadString(responseMessage.Payload, ref index);
+                    }
                     if (string.IsNullOrWhiteSpace(message))
                     {
-                        message = $"{operationName} - HRESULT: 0x{hr:X8}.";
+                        message = $"{operationName} failed - HRESULT: 0x{hr:X8}.";
                     }
                     throw new ServerErrorException(message);
 

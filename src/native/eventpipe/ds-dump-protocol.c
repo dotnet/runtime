@@ -8,6 +8,8 @@
 #include "ds-dump-protocol.h"
 #include "ds-rt.h"
 
+const ep_char16_t empty_string [1] = { 0 };
+
 /*
  * Forward declares of all static functions.
  */
@@ -154,10 +156,7 @@ dump_protocol_generate_core_dump_response_flatten (
 	*size -= sizeof (response->error);
 
 	// LPCWSTR error message - if there is no error_message (NULL) then write an empty string
-	success &= ds_ipc_message_try_write_string_utf16_t (
-		buffer,
-		size,
-		response->error_message != NULL ? response->error_message : (const ep_char16_t*)u"");
+	success &= ds_ipc_message_try_write_string_utf16_t (buffer, size, response->error_message != NULL ? response->error_message : empty_string);
 
 	// Assert we've used the whole buffer we were given
 	EP_ASSERT(*size == 0);
