@@ -12,6 +12,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [InlineData(-1L)]
         [InlineData(-42L)]
         [InlineData(int.MinValue)]
+        [InlineData(-9007199254740990L)]//MIN_SAFE_INTEGER+1
         [InlineData(-9007199254740991L)]//MIN_SAFE_INTEGER
         [InlineData(1L)]
         [InlineData(0L)]
@@ -21,23 +22,20 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [InlineData(9007199254740991L)]//MAX_SAFE_INTEGER 
         public static unsafe void Int52TestOK(long value)
         {
+            ulong uv = (ulong)value;
+            Console.WriteLine("Int52TestOK "+ value+ " U " + uv + " = H " + uv.ToString("X"));
             long expected = value;
             long actual2 = value;
             var bagFn = new Function("ptr", "ptr2", @"
                 const value=globalThis.App.MONO.getI52(ptr);
                 globalThis.App.MONO.setI52(ptr2, value);
-                return value;");
+                return ''+value;");
 
             uint ptr = (uint)Unsafe.AsPointer(ref expected);
             uint ptr2 = (uint)Unsafe.AsPointer(ref actual2);
 
-            object o = bagFn.Call(null, ptr, ptr2);
-            if (value < int.MaxValue && value > int.MinValue)
-            {
-                Assert.IsType<int>(o);
-                long actual = (int)o;
-                Assert.Equal(expected, actual);
-            }
+            object actual = (string)bagFn.Call(null, ptr, ptr2);
+            Assert.Equal(""+expected, actual);
             Assert.Equal(expected, actual2);
         }
 

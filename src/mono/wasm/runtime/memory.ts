@@ -175,8 +175,8 @@ export function getI52(offset: _MemOffset): number {
     const exp = hi & 0x7FE0_0000;
     if (sign) {
         mono_assert(exp === 0x7FE0_0000, "Overflow: value out of Number.isSafeInteger range");
-        const nhi = (hi & 0x000F_FFFF) ^ 0x000F_FFFF;
-        const nlo = lo ^ 0xFFFF_FFFF;
+        const nhi = (hi & 0x001F_FFFF) ^ 0x001F_FFFF;
+        const nlo = (lo ^ 0xFFFF_FFFF) >>> 0;
         return -1 - ((nhi * 0x1_0000_0000) + nlo);
     }
     else {
