@@ -13,7 +13,6 @@ typedef struct {
 	void *arg;
 } InterpFtnDesc;
 
-
 void*
 wasm_dl_lookup_pinvoke_table (const char *name);
 
@@ -25,7 +24,6 @@ wasm_dl_get_native_to_interp (const char *key, void *extra_arg);
 
 void
 mono_wasm_pinvoke_vararg_stub (void);
-
 
 typedef void* (*MonoWasmNativeToInterpCallback) (char * cookie);
 

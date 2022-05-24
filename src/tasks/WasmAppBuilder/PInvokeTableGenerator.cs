@@ -11,11 +11,11 @@ using System.Reflection;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
-public class PInvokeTableGenerator
+internal sealed class PInvokeTableGenerator
 {
-    private static char[] s_charsToReplace = new[] { '.', '-', '+' };
+    private static readonly char[] s_charsToReplace = new[] { '.', '-', '+' };
 
-    protected TaskLoggingHelper Log { get; set; }
+    private TaskLoggingHelper Log { get; set; }
 
     public PInvokeTableGenerator(TaskLoggingHelper log) => Log = log;
 
@@ -40,18 +40,23 @@ public class PInvokeTableGenerator
         }
 
         string tmpFileName = Path.GetTempFileName();
-        using (var w = File.CreateText(tmpFileName))
+        try
         {
-            EmitPInvokeTable(w, modules, pinvokes);
-            EmitNativeToInterp(w, callbacks);
+            using (var w = File.CreateText(tmpFileName))
+            {
+                EmitPInvokeTable(w, modules, pinvokes);
+                EmitNativeToInterp(w, callbacks);
+            }
+
+            if (Utils.CopyIfDifferent(tmpFileName, outputPath, useHash: false))
+                Log.LogMessage(MessageImportance.Low, $"Generating pinvoke table to '{outputPath}'.");
+            else
+                Log.LogMessage(MessageImportance.Low, $"PInvoke table in {outputPath} is unchanged.");
         }
-
-        if (Utils.CopyIfDifferent(tmpFileName, outputPath, useHash: false))
-            Log.LogMessage(MessageImportance.Low, $"Generating pinvoke table to '{outputPath}'.");
-        else
-            Log.LogMessage(MessageImportance.Low, $"PInvoke table in {outputPath} is unchanged.");
-
-        File.Delete(tmpFileName);
+        finally
+        {
+            File.Delete(tmpFileName);
+        }
 
         return signatures;
     }

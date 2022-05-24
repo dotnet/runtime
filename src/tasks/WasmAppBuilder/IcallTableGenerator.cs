@@ -14,15 +14,15 @@ using System.Reflection;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
-public class IcallTableGenerator
+internal sealed class IcallTableGenerator
 {
     public string[]? Cookies { get; private set; }
 
     private List<Icall> _icalls = new List<Icall> ();
-    private List<string> signatures = new List<string>();
+    private List<string> _signatures = new List<string>();
     private Dictionary<string, IcallClass> _runtimeIcalls = new Dictionary<string, IcallClass> ();
 
-    protected TaskLoggingHelper Log { get; set; }
+    private TaskLoggingHelper Log { get; set; }
 
     public IcallTableGenerator(TaskLoggingHelper log) => Log = log;
 
@@ -35,10 +35,10 @@ public class IcallTableGenerator
     public IEnumerable<string> GenIcallTable(string? runtimeIcallTableFile, string[] assemblies, string? outputPath)
     {
         _icalls.Clear();
-        signatures.Clear();
+        _signatures.Clear();
 
         if (runtimeIcallTableFile != null)
-            ReadTable (runtimeIcallTableFile);
+            ReadTable(runtimeIcallTableFile);
 
         var resolver = new PathAssemblyResolver(assemblies);
         using var mlc = new MetadataLoadContext(resolver, "System.Private.CoreLib");
@@ -52,18 +52,23 @@ public class IcallTableGenerator
         if (outputPath != null)
         {
             string tmpFileName = Path.GetTempFileName();
-            using (var w = File.CreateText(tmpFileName))
-                EmitTable(w);
+            try
+            {
+                using (var w = File.CreateText(tmpFileName))
+                    EmitTable(w);
 
-            if (Utils.CopyIfDifferent(tmpFileName, outputPath, useHash: false))
-                Log.LogMessage(MessageImportance.Low, $"Generating icall table to '{outputPath}'.");
-            else
-                Log.LogMessage(MessageImportance.Low, $"Icall table in {outputPath} is unchanged.");
-
-            File.Delete(tmpFileName);
+                if (Utils.CopyIfDifferent(tmpFileName, outputPath, useHash: false))
+                    Log.LogMessage(MessageImportance.Low, $"Generating icall table to '{outputPath}'.");
+                else
+                    Log.LogMessage(MessageImportance.Low, $"Icall table in {outputPath} is unchanged.");
+            }
+            finally
+            {
+                File.Delete(tmpFileName);
+            }
         }
 
-        return signatures;
+        return _signatures;
     }
 
     private void EmitTable (StreamWriter w)
@@ -163,7 +168,7 @@ public class IcallTableGenerator
             icall.TokenIndex = (int)method.MetadataToken & 0xffffff;
             icall.Assembly = method.DeclaringType.Module.Assembly.GetName().Name;
             _icalls.Add (icall);
-            signatures.Add(CookieHelper.BuildCookie(method));
+            _signatures.Add(CookieHelper.BuildCookie(method));
          }
 
         foreach (var nestedType in type.GetNestedTypes())

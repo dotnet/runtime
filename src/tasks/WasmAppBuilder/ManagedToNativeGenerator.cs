@@ -35,7 +35,7 @@ public class ManagedToNativeGenerator : Task
     public string? InterpToNativeOutputPath { get; set; }
 
     [Output]
-    public string FileWrites { get; private set; } = string.Empty;
+    public string[]? FileWrites { get; private set; }
 
     public override bool Execute()
     {
@@ -76,6 +76,8 @@ public class ManagedToNativeGenerator : Task
         var m2n = new InterpToNativeGenerator(Log);
         m2n.Generate(cookies, InterpToNativeOutputPath!);
 
-        FileWrites = $"{PInvokeOutputPath};{IcallOutputPath};{InterpToNativeOutputPath}";
+        FileWrites = IcallOutputPath != null
+            ? new string[] { PInvokeOutputPath, IcallOutputPath, InterpToNativeOutputPath }
+            : new string[] { PInvokeOutputPath, InterpToNativeOutputPath };
     }
 }

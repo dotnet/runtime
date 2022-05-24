@@ -18,9 +18,9 @@ using System.Diagnostics.CodeAnalysis;
 
 #nullable enable
 
-public class InterpToNativeGenerator
+internal sealed class InterpToNativeGenerator
 {
-    protected TaskLoggingHelper Log { get; set; }
+    private TaskLoggingHelper Log { get; set; }
 
     public InterpToNativeGenerator(TaskLoggingHelper log) => Log = log;
 
@@ -37,17 +37,22 @@ public class InterpToNativeGenerator
     public void Generate(IEnumerable<string> cookies, string outputPath)
     {
         string tmpFileName = Path.GetTempFileName();
-        using (var w = File.CreateText(tmpFileName))
+        try
         {
-            Emit(w, cookies);
+            using (var w = File.CreateText(tmpFileName))
+            {
+                Emit(w, cookies);
+            }
+
+            if (Utils.CopyIfDifferent(tmpFileName, outputPath, useHash: false))
+                Log.LogMessage(MessageImportance.Low, $"Generating managed2native table to '{outputPath}'.");
+            else
+                Log.LogMessage(MessageImportance.Low, $"Managed2native table in {outputPath} is unchanged.");
         }
-
-        if (Utils.CopyIfDifferent(tmpFileName, outputPath, useHash: false))
-            Log.LogMessage(MessageImportance.Low, $"Generating managed2native table to '{outputPath}'.");
-        else
-            Log.LogMessage(MessageImportance.Low, $"Managed2native table in {outputPath} is unchanged.");
-
-        File.Delete(tmpFileName);
+        finally
+        {
+            File.Delete(tmpFileName);
+        }
     }
 
     private static void Emit(StreamWriter w, IEnumerable<string> cookies)
@@ -108,7 +113,6 @@ public class InterpToNativeGenerator
         }
 
         Array.Sort(signatures);
-
 
         w.WriteLine("static void* interp_to_native_invokes[] = {");
         foreach (var sig in signatures)
