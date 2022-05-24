@@ -826,6 +826,13 @@ namespace System.Net.Http
                             // We don't actually store this value; we always send frames of the minimum size (16K).
                             break;
 
+                        case SettingId.EnableConnect:
+                            if (settingValue == 1)
+                            {
+                                IsWebsocketEnabled = true;
+                            }
+                            break;
+
                         default:
                             // All others are ignored because we don't care about them.
                             // Note, per RFC, unknown settings IDs should be ignored.
@@ -1888,8 +1895,11 @@ namespace System.Net.Http
             MaxConcurrentStreams = 0x3,
             InitialWindowSize = 0x4,
             MaxFrameSize = 0x5,
-            MaxHeaderListSize = 0x6
+            MaxHeaderListSize = 0x6,
+            EnableConnect = 0x7
         }
+
+        internal bool IsWebsocketEnabled { get; private set; } = false;
 
         // Note that this is safe to be called concurrently by multiple threads.
 

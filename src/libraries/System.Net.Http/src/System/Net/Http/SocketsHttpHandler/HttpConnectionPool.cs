@@ -998,6 +998,7 @@ namespace System.Net.Http
                     // Use HTTP/3 if possible.
                     if (IsHttp3Supported() && // guard to enable trimming HTTP/3 support
                         _http3Enabled &&
+                        !request.IsWebSocketRequest() &&
                         (request.Version.Major >= 3 || (request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher && IsSecure)))
                     {
                         Debug.Assert(async);
@@ -1019,7 +1020,7 @@ namespace System.Net.Http
                         {
                             Http2Connection? connection = await GetHttp2ConnectionAsync(request, async, cancellationToken).ConfigureAwait(false);
                             Debug.Assert(connection is not null || !_http2Enabled);
-                            if (connection is not null)
+                            if (connection is not null && (!request.IsWebSocketRequest() || connection.IsWebsocketEnabled))
                             {
                                 response = await connection.SendAsync(request, async, cancellationToken).ConfigureAwait(false);
                             }
