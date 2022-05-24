@@ -15,7 +15,6 @@
     <Compile Include="System\Runtime\InteropServices\CallingConventionTests.cs" />
     <Compile Include="System\Runtime\InteropServices\ClassInterfaceAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\NativeMemoryTests.cs" />
-    <Compile Include="System\Runtime\InteropServices\NFloatTests.cs" />
     <Compile Include="System\Runtime\InteropServices\CULongTests.cs" />
     <Compile Include="System\Runtime\InteropServices\CLongTests.cs" />
     <Compile Include="System\Runtime\InteropServices\CoClassAttributeTests.cs" />
@@ -193,9 +192,5 @@
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix' or '$(TargetPlatformIdentifier)' == 'Browser'">
     <Compile Include="System\Runtime\InteropServices\PosixSignalRegistrationTests.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs" Link="Common\Interop\Unix\Interop.Libraries.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="$(CommonTestPath)System\GenericMathHelpers.cs" Link="Common\System\GenericMathHelpers.cs" />
-    <Compile Include="System\Runtime\InteropServices\NFloatTests.GenericMath.cs" />
   </ItemGroup>
 </Project>
