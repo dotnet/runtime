@@ -1546,13 +1546,15 @@ namespace System
             else if (typeof(TOther) == typeof(decimal))
             {
                 decimal actualValue = (decimal)(object)value;
-                result = (char)actualValue;
+                result = (actualValue >= MaxValue) ? MaxValue :
+                         (actualValue <= MinValue) ? MinValue : (char)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(NFloat))
             {
                 NFloat actualValue = (NFloat)(object)value;
-                result = (char)actualValue;
+                result = (actualValue >= MaxValue) ? MaxValue :
+                         (actualValue <= MinValue) ? MinValue : (char)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(ushort))
