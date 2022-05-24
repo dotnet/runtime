@@ -337,7 +337,7 @@ namespace System.Security.Cryptography.X509Certificates
         public virtual byte[] GetCertHash(HashAlgorithmName hashAlgorithm)
         {
             ThrowIfInvalid();
-            return GetCertHash(hashAlgorithm, Pal!);
+            return GetCertHash(hashAlgorithm, Pal);
         }
 
         private static byte[] GetCertHash(HashAlgorithmName hashAlgorithm, ICertificatePalCore certPal)
@@ -576,7 +576,7 @@ namespace System.Security.Cryptography.X509Certificates
             throw new PlatformNotSupportedException(SR.NotSupported_ImmutableX509Certificate);
         }
 
-        internal ICertificatePalCore? Pal { get; private set; }
+        internal virtual ICertificatePalCore? Pal { get; private set; }
 
         internal DateTime GetNotAfter()
         {
