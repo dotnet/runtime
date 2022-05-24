@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Globalization;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Tests
@@ -672,7 +673,9 @@ namespace System.Tests
             Assert.Throws<OverflowException>(() => NumberBaseHelper<Int128>.CreateChecked<double>(double.MinValue));
 
             Assert.Throws<OverflowException>(() => NumberBaseHelper<Int128>.CreateChecked<double>(double.PositiveInfinity));
-            Assert.Throws<OverflowException>(() => NumberBaseHelper<Int128>.CreateChecked<double>(double.NegativeInfinity));
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<Int128>.CreateChecked<double>(double.NegativeInfinity));Assert.Throws<OverflowException>(() => NumberBaseHelper<byte>.CreateChecked<double>(double.NaN));
+
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<Int128>.CreateChecked<double>(double.NaN));
         }
 
         [Fact]
@@ -725,6 +728,16 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void CreateCheckedFromInt128Test()
+        {
+            Assert.Equal(Zero, NumberBaseHelper<Int128>.CreateChecked<Int128>(Int128.Zero));
+            Assert.Equal(One, NumberBaseHelper<Int128>.CreateChecked<Int128>(Int128.One));
+            Assert.Equal(MaxValue, NumberBaseHelper<Int128>.CreateChecked<Int128>(Int128.MaxValue));
+            Assert.Equal(MinValue, NumberBaseHelper<Int128>.CreateChecked<Int128>(Int128.MinValue));
+            Assert.Equal(NegativeOne, NumberBaseHelper<Int128>.CreateChecked<Int128>(Int128.NegativeOne));
+        }
+
+        [Fact]
         public static void CreateCheckedFromIntPtrTest()
         {
             if (Environment.Is64BitProcess)
@@ -743,6 +756,48 @@ namespace System.Tests
                 Assert.Equal(Int32MinValue, NumberBaseHelper<Int128>.CreateChecked<nint>(unchecked((nint)0x80000000)));
                 Assert.Equal(NegativeOne, NumberBaseHelper<Int128>.CreateChecked<nint>(unchecked((nint)0xFFFFFFFF)));
             }
+        }
+
+        [Fact]
+        public static void CreateCheckedFromNFloatTest()
+        {
+            Assert.Equal(Zero, NumberBaseHelper<Int128>.CreateChecked<NFloat>(+0.0f));
+            Assert.Equal(Zero, NumberBaseHelper<Int128>.CreateChecked<NFloat>(-0.0f));
+
+            Assert.Equal(Zero, NumberBaseHelper<Int128>.CreateChecked<NFloat>(+NFloat.Epsilon));
+            Assert.Equal(Zero, NumberBaseHelper<Int128>.CreateChecked<NFloat>(-NFloat.Epsilon));
+
+            Assert.Equal(One, NumberBaseHelper<Int128>.CreateChecked<NFloat>(+1.0f));
+            Assert.Equal(NegativeOne, NumberBaseHelper<Int128>.CreateChecked<NFloat>(-1.0f));
+
+            if (Environment.Is64BitProcess)
+            {
+                Assert.Equal(new Int128(0x7FFF_FFFF_FFFF_FC00, 0x0000_0000_0000_0000), NumberBaseHelper<Int128>.CreateChecked<NFloat>((NFloat)(+170141183460469212842221372237303250944.0)));
+                Assert.Equal(new Int128(0x8000_0000_0000_0400, 0x0000_0000_0000_0000), NumberBaseHelper<Int128>.CreateChecked<NFloat>((NFloat)(-170141183460469212842221372237303250944.0)));
+
+                Assert.Equal(MinValue, NumberBaseHelper<Int128>.CreateChecked<NFloat>((NFloat)(-170141183460469231731687303715884105728.0)));
+
+                Assert.Throws<OverflowException>(() => NumberBaseHelper<Int128>.CreateChecked<NFloat>((NFloat)(+170141183460469231731687303715884105728.0)));
+                Assert.Throws<OverflowException>(() => NumberBaseHelper<Int128>.CreateChecked<NFloat>((NFloat)(-170141183460469269510619166673045815296.0)));
+            }
+            else
+            {
+                Assert.Equal(new Int128(0x7FFF_FF80_0000_0000, 0x0000_0000_0000_0000), NumberBaseHelper<Int128>.CreateChecked<NFloat>(+170141173319264429905852091742258462720.0f));
+                Assert.Equal(new Int128(0x8000_0080_0000_0000, 0x0000_0000_0000_0000), NumberBaseHelper<Int128>.CreateChecked<NFloat>(-170141173319264429905852091742258462720.0f));
+
+                Assert.Equal(MinValue, NumberBaseHelper<Int128>.CreateChecked<NFloat>(-170141183460469231731687303715884105728.0f));
+
+                Assert.Throws<OverflowException>(() => NumberBaseHelper<Int128>.CreateChecked<NFloat>(+170141183460469231731687303715884105728.0f));
+                Assert.Throws<OverflowException>(() => NumberBaseHelper<Int128>.CreateChecked<NFloat>(-170141203742878835383357727663135391744.0f));
+            }
+
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<Int128>.CreateChecked<NFloat>(NFloat.MaxValue));
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<Int128>.CreateChecked<NFloat>(NFloat.MinValue));
+
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<Int128>.CreateChecked<NFloat>(NFloat.PositiveInfinity));
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<Int128>.CreateChecked<NFloat>(NFloat.NegativeInfinity)); Assert.Throws<OverflowException>(() => NumberBaseHelper<byte>.CreateChecked<NFloat>(NFloat.NaN));
+
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<Int128>.CreateChecked<NFloat>(NFloat.NaN));
         }
 
         [Fact]
@@ -810,6 +865,16 @@ namespace System.Tests
             Assert.Equal(Int64MaxValue, NumberBaseHelper<Int128>.CreateChecked<ulong>(0x7FFFFFFFFFFFFFFF));
             Assert.Equal(Int64MaxValuePlusOne, NumberBaseHelper<Int128>.CreateChecked<ulong>(0x8000000000000000));
             Assert.Equal(UInt64MaxValue, NumberBaseHelper<Int128>.CreateChecked<ulong>(0xFFFFFFFFFFFFFFFF));
+        }
+
+        [Fact]
+        public static void CreateCheckedFromUInt128Test()
+        {
+            Assert.Equal(Zero, NumberBaseHelper<Int128>.CreateChecked<UInt128>(UInt128.Zero));
+            Assert.Equal(One, NumberBaseHelper<Int128>.CreateChecked<UInt128>(UInt128.One));
+            Assert.Equal(MaxValue, NumberBaseHelper<Int128>.CreateChecked<UInt128>(UInt128Tests_GenericMath.Int128MaxValue));
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<Int128>.CreateChecked<UInt128>(UInt128Tests_GenericMath.Int128MaxValuePlusOne));
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<Int128>.CreateChecked<UInt128>(UInt128.MaxValue));
         }
 
         [Fact]

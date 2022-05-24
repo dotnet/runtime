@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Numerics.Tests
@@ -310,6 +311,69 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public static void CreateCheckedFromDecimalTest()
+        {
+            AssertBitwiseEqual(-79228162514264337593543950335.0, NumberBaseHelper<Complex>.CreateChecked<decimal>(decimal.MinValue));
+            AssertBitwiseEqual(-1.0, NumberBaseHelper<Complex>.CreateChecked<decimal>(-1.0m));
+            AssertBitwiseEqual(-0.0, NumberBaseHelper<Complex>.CreateChecked<decimal>(-0.0m));
+            AssertBitwiseEqual(+0.0, NumberBaseHelper<Complex>.CreateChecked<decimal>(+0.0m));
+            AssertBitwiseEqual(+1.0, NumberBaseHelper<Complex>.CreateChecked<decimal>(+1.0m));
+            AssertBitwiseEqual(+79228162514264337593543950335.0, NumberBaseHelper<Complex>.CreateChecked<decimal>(decimal.MaxValue));
+        }
+
+        [Fact]
+        public static void CreateCheckedFromDoubleTest()
+        {
+            AssertBitwiseEqual(double.NegativeInfinity, NumberBaseHelper<Complex>.CreateChecked<double>(double.NegativeInfinity));
+            AssertBitwiseEqual(double.MinValue, NumberBaseHelper<Complex>.CreateChecked<double>(double.MinValue));
+
+            AssertBitwiseEqual(-1.0, NumberBaseHelper<Complex>.CreateChecked<double>(-1.0));
+
+            AssertBitwiseEqual(-2.2250738585072014E-308, NumberBaseHelper<Complex>.CreateChecked<double>(-2.2250738585072014E-308));
+            AssertBitwiseEqual(-2.2250738585072009E-308, NumberBaseHelper<Complex>.CreateChecked<double>(-2.2250738585072009E-308));
+            AssertBitwiseEqual(-double.Epsilon, NumberBaseHelper<Complex>.CreateChecked<double>(-double.Epsilon));
+            AssertBitwiseEqual(-0.0, NumberBaseHelper<Complex>.CreateChecked<double>(-0.0));
+
+            AssertBitwiseEqual(+0.0, NumberBaseHelper<Complex>.CreateChecked<double>(+0.0));
+            AssertBitwiseEqual(+double.Epsilon, NumberBaseHelper<Complex>.CreateChecked<double>(double.Epsilon));
+            AssertBitwiseEqual(+2.2250738585072009E-308, NumberBaseHelper<Complex>.CreateChecked<double>(2.2250738585072009E-308));
+            AssertBitwiseEqual(+2.2250738585072014E-308, NumberBaseHelper<Complex>.CreateChecked<double>(2.2250738585072014E-308));
+
+            AssertBitwiseEqual(+1.0, NumberBaseHelper<Complex>.CreateChecked<double>(1.0));
+
+            AssertBitwiseEqual(double.MaxValue, NumberBaseHelper<Complex>.CreateChecked<double>(double.MaxValue));
+            AssertBitwiseEqual(double.PositiveInfinity, NumberBaseHelper<Complex>.CreateChecked<double>(double.PositiveInfinity));
+
+            AssertBitwiseEqual(double.NaN, NumberBaseHelper<Complex>.CreateChecked<double>(double.NaN));
+        }
+
+        [Fact]
+        public static void CreateCheckedFromHalfTest()
+        {
+            AssertBitwiseEqual(Half.NegativeInfinity, NumberBaseHelper<Complex>.CreateChecked<Half>(Half.NegativeInfinity));
+
+            AssertBitwiseEqual(-65504.0, NumberBaseHelper<Complex>.CreateChecked<Half>(Half.MinValue));
+            AssertBitwiseEqual(-1.0, NumberBaseHelper<Complex>.CreateChecked<Half>(Half.NegativeOne));
+
+            AssertBitwiseEqual(-6.103515625E-05, NumberBaseHelper<Complex>.CreateChecked<Half>(-BitConverter.UInt16BitsToHalf(0x0400)));
+            AssertBitwiseEqual(-6.097555160522461E-05, NumberBaseHelper<Complex>.CreateChecked<Half>(-BitConverter.UInt16BitsToHalf(0x03FF)));
+            AssertBitwiseEqual(-5.960464477539063E-08, NumberBaseHelper<Complex>.CreateChecked<Half>(-Half.Epsilon));
+            AssertBitwiseEqual(-0.0, NumberBaseHelper<Complex>.CreateChecked<Half>(Half.NegativeZero));
+
+            AssertBitwiseEqual(+0.0, NumberBaseHelper<Complex>.CreateChecked<Half>(Half.Zero));
+            AssertBitwiseEqual(+5.960464477539063E-08, NumberBaseHelper<Complex>.CreateChecked<Half>(Half.Epsilon));
+            AssertBitwiseEqual(+6.097555160522461E-05, NumberBaseHelper<Complex>.CreateChecked<Half>(BitConverter.UInt16BitsToHalf(0x03FF)));
+            AssertBitwiseEqual(+6.103515625E-05, NumberBaseHelper<Complex>.CreateChecked<Half>(BitConverter.UInt16BitsToHalf(0x0400)));
+
+            AssertBitwiseEqual(+1.0, NumberBaseHelper<Complex>.CreateChecked<Half>(Half.One));
+            AssertBitwiseEqual(+65504.0, NumberBaseHelper<Complex>.CreateChecked<Half>(Half.MaxValue));
+
+            AssertBitwiseEqual(Half.PositiveInfinity, NumberBaseHelper<Complex>.CreateChecked<Half>(Half.PositiveInfinity));
+
+            AssertBitwiseEqual(Half.NaN, NumberBaseHelper<Complex>.CreateChecked<Half>(Half.NaN));
+        }
+
+        [Fact]
         public static void CreateCheckedFromInt16Test()
         {
             AssertBitwiseEqual(0.0, NumberBaseHelper<Complex>.CreateChecked<short>(0x0000));
@@ -340,6 +404,16 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public static void CreateCheckedFromInt128Test()
+        {
+            AssertBitwiseEqual(0.0, NumberBaseHelper<Complex>.CreateChecked<Int128>(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0000)));
+            AssertBitwiseEqual(1.0, NumberBaseHelper<Complex>.CreateChecked<Int128>(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0001)));
+            AssertBitwiseEqual(170141183460469231731687303715884105727.0, NumberBaseHelper<Complex>.CreateChecked<Int128>(new Int128(0x7FFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)));
+            AssertBitwiseEqual(-170141183460469231731687303715884105728.0, NumberBaseHelper<Complex>.CreateChecked<Int128>(new Int128(0x8000_0000_0000_0000, 0x0000_0000_0000_0000)));
+            AssertBitwiseEqual(-1.0, NumberBaseHelper<Complex>.CreateChecked<Int128>(new Int128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)));
+        }
+
+        [Fact]
         public static void CreateCheckedFromIntPtrTest()
         {
             if (Environment.Is64BitProcess)
@@ -361,6 +435,49 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public static void CreateCheckedFromNFloatTest()
+        {
+            AssertBitwiseEqual(NFloat.NegativeInfinity, NumberBaseHelper<Complex>.CreateChecked<NFloat>(NFloat.NegativeInfinity));
+
+            AssertBitwiseEqual(-1.0, NumberBaseHelper<Complex>.CreateChecked<NFloat>(-1.0f));
+            AssertBitwiseEqual(-0.0, NumberBaseHelper<Complex>.CreateChecked<NFloat>(-0.0f));
+
+            AssertBitwiseEqual(+0.0, NumberBaseHelper<Complex>.CreateChecked<NFloat>(+0.0f));
+            AssertBitwiseEqual(+1.0, NumberBaseHelper<Complex>.CreateChecked<NFloat>(1.0f));
+
+            if (Environment.Is64BitProcess)
+            {
+                AssertBitwiseEqual(NFloat.MinValue, NumberBaseHelper<Complex>.CreateChecked<NFloat>(NFloat.MinValue));
+
+                AssertBitwiseEqual(-2.2250738585072014E-308, NumberBaseHelper<Complex>.CreateChecked<NFloat>((NFloat)(-2.2250738585072014E-308)));
+                AssertBitwiseEqual(-2.2250738585072009E-308, NumberBaseHelper<Complex>.CreateChecked<NFloat>((NFloat)(-2.2250738585072009E-308)));
+                AssertBitwiseEqual(-NFloat.Epsilon, NumberBaseHelper<Complex>.CreateChecked<NFloat>(-NFloat.Epsilon));
+
+                AssertBitwiseEqual(+NFloat.Epsilon, NumberBaseHelper<Complex>.CreateChecked<NFloat>(NFloat.Epsilon));
+                AssertBitwiseEqual(+2.2250738585072009E-308, NumberBaseHelper<Complex>.CreateChecked<NFloat>((NFloat)2.2250738585072009E-308));
+                AssertBitwiseEqual(+2.2250738585072014E-308, NumberBaseHelper<Complex>.CreateChecked<NFloat>((NFloat)2.2250738585072014E-308));
+
+                AssertBitwiseEqual(NFloat.MaxValue, NumberBaseHelper<Complex>.CreateChecked<NFloat>(NFloat.MaxValue));
+            }
+            else
+            {
+                AssertBitwiseEqual(-3.4028234663852886E+38, NumberBaseHelper<Complex>.CreateChecked<NFloat>(NFloat.MinValue));
+                AssertBitwiseEqual(-1.1754943508222875E-38, NumberBaseHelper<Complex>.CreateChecked<NFloat>(-1.17549435E-38f));
+                AssertBitwiseEqual(-1.1754942106924411E-38, NumberBaseHelper<Complex>.CreateChecked<NFloat>(-1.17549421E-38f));
+                AssertBitwiseEqual(-1.401298464324817E-45, NumberBaseHelper<Complex>.CreateChecked<NFloat>(-NFloat.Epsilon));
+
+                AssertBitwiseEqual(+1.401298464324817E-45, NumberBaseHelper<Complex>.CreateChecked<NFloat>(NFloat.Epsilon));
+                AssertBitwiseEqual(+1.1754942106924411E-38, NumberBaseHelper<Complex>.CreateChecked<NFloat>(1.17549421E-38f));
+                AssertBitwiseEqual(+1.1754943508222875E-38, NumberBaseHelper<Complex>.CreateChecked<NFloat>(1.17549435E-38f));
+                AssertBitwiseEqual(+3.4028234663852886E+38, NumberBaseHelper<Complex>.CreateChecked<NFloat>(NFloat.MaxValue));
+            }
+
+            AssertBitwiseEqual(NFloat.PositiveInfinity, NumberBaseHelper<Complex>.CreateChecked<NFloat>(NFloat.PositiveInfinity));
+
+            AssertBitwiseEqual(NFloat.NaN, NumberBaseHelper<Complex>.CreateChecked<NFloat>(NFloat.NaN));
+        }
+
+        [Fact]
         public static void CreateCheckedFromSByteTest()
         {
             AssertBitwiseEqual(0.0, NumberBaseHelper<Complex>.CreateChecked<sbyte>(0x00));
@@ -368,6 +485,32 @@ namespace System.Numerics.Tests
             AssertBitwiseEqual(127.0, NumberBaseHelper<Complex>.CreateChecked<sbyte>(0x7F));
             AssertBitwiseEqual(-128.0, NumberBaseHelper<Complex>.CreateChecked<sbyte>(unchecked((sbyte)0x80)));
             AssertBitwiseEqual(-1.0, NumberBaseHelper<Complex>.CreateChecked<sbyte>(unchecked((sbyte)0xFF)));
+        }
+
+        [Fact]
+        public static void CreateCheckedFromSingleTest()
+        {
+            AssertBitwiseEqual(float.NegativeInfinity, NumberBaseHelper<Complex>.CreateChecked<float>(float.NegativeInfinity));
+
+            AssertBitwiseEqual(-3.4028234663852886E+38, NumberBaseHelper<Complex>.CreateChecked<float>(float.MinValue));
+            AssertBitwiseEqual(-1.0, NumberBaseHelper<Complex>.CreateChecked<float>(-1.0f));
+
+            AssertBitwiseEqual(-1.1754943508222875E-38, NumberBaseHelper<Complex>.CreateChecked<float>(-1.17549435E-38f));
+            AssertBitwiseEqual(-1.1754942106924411E-38, NumberBaseHelper<Complex>.CreateChecked<float>(-1.17549421E-38f));
+            AssertBitwiseEqual(-1.401298464324817E-45, NumberBaseHelper<Complex>.CreateChecked<float>(-float.Epsilon));
+            AssertBitwiseEqual(-0.0, NumberBaseHelper<Complex>.CreateChecked<float>(-0.0f));
+
+            AssertBitwiseEqual(+0.0, NumberBaseHelper<Complex>.CreateChecked<float>(+0.0f));
+            AssertBitwiseEqual(+1.401298464324817E-45, NumberBaseHelper<Complex>.CreateChecked<float>(float.Epsilon));
+            AssertBitwiseEqual(+1.1754942106924411E-38, NumberBaseHelper<Complex>.CreateChecked<float>(1.17549421E-38f));
+            AssertBitwiseEqual(+1.1754943508222875E-38, NumberBaseHelper<Complex>.CreateChecked<float>(1.17549435E-38f));
+
+            AssertBitwiseEqual(+1.0, NumberBaseHelper<Complex>.CreateChecked<float>(1.0f));
+            AssertBitwiseEqual(+3.4028234663852886E+38, NumberBaseHelper<Complex>.CreateChecked<float>(float.MaxValue));
+
+            AssertBitwiseEqual(float.PositiveInfinity, NumberBaseHelper<Complex>.CreateChecked<float>(float.PositiveInfinity));
+
+            AssertBitwiseEqual(float.NaN, NumberBaseHelper<Complex>.CreateChecked<float>(float.NaN));
         }
 
         [Fact]
@@ -398,6 +541,16 @@ namespace System.Numerics.Tests
             AssertBitwiseEqual(9223372036854775807.0, NumberBaseHelper<Complex>.CreateChecked<ulong>(0x7FFFFFFFFFFFFFFF));
             AssertBitwiseEqual(9223372036854775808.0, NumberBaseHelper<Complex>.CreateChecked<ulong>(0x8000000000000000));
             AssertBitwiseEqual(18446744073709551615.0, NumberBaseHelper<Complex>.CreateChecked<ulong>(0xFFFFFFFFFFFFFFFF));
+        }
+
+        [Fact]
+        public static void CreateCheckedFromUInt128Test()
+        {
+            AssertBitwiseEqual(0.0, NumberBaseHelper<Complex>.CreateChecked<UInt128>(new UInt128(0x0000_0000_0000_0000, 0x0000_0000_0000_0000)));
+            AssertBitwiseEqual(1.0, NumberBaseHelper<Complex>.CreateChecked<UInt128>(new UInt128(0x0000_0000_0000_0000, 0x0000_0000_0000_0001)));
+            AssertBitwiseEqual(170141183460469231731687303715884105727.0, NumberBaseHelper<Complex>.CreateChecked<UInt128>(new UInt128(0x7FFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)));
+            AssertBitwiseEqual(170141183460469231731687303715884105728.0, NumberBaseHelper<Complex>.CreateChecked<UInt128>(new UInt128(0x8000_0000_0000_0000, 0x0000_0000_0000_0000)));
+            AssertBitwiseEqual(340282366920938463463374607431768211455.0, NumberBaseHelper<Complex>.CreateChecked<UInt128>(new UInt128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)));
         }
 
         [Fact]
