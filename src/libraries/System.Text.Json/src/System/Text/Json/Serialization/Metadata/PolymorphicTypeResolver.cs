@@ -41,15 +41,7 @@ namespace System.Text.Json.Serialization.Metadata
                     ThrowHelper.ThrowInvalidOperationException_DerivedTypeNotSupported(BaseType, derivedType);
                 }
 
-                if (typeDiscriminatorId is not null)
-                {
-                    if (typeDiscriminatorId is not (int or string))
-                    {
-                        throw new Exception("A type discriminator can either be of type string or int.");
-                    }
-
-                    UsesTypeDiscriminators = true;
-                }
+                Debug.Assert(typeDiscriminatorId is null or int or string);
 
                 var derivedJsonTypeInfo = new DerivedJsonTypeInfo(derivedType, typeDiscriminatorId);
 
@@ -64,6 +56,8 @@ namespace System.Text.Json.Serialization.Metadata
                     {
                         ThrowHelper.ThrowInvalidOperationException_TypeDicriminatorIdIsAlreadySpecified(BaseType, typeDiscriminatorId);
                     }
+
+                    UsesTypeDiscriminators = true;
                 }
 
                 containsDerivedTypes = true;
