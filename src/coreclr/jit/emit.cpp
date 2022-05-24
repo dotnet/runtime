@@ -4129,7 +4129,7 @@ void emitter::emitDispCommentForHandle(size_t handle, GenTreeFlags flag)
 // Assumptions:
 //    the jump list must be ordered by increasing igNum+insNo
 //
-bool emitter::emitRemoveJumpToNextInst()
+void emitter::emitRemoveJumpToNextInst()
 {
 #ifdef TARGET_XARCH
     JITDUMP("*************** In emitRemoveJumpToNextInst()\n");
@@ -4192,7 +4192,7 @@ bool emitter::emitRemoveJumpToNextInst()
                     dataPtr = nullptr;
                 }
                 assert(instructionDescriptor != nullptr);
-                if (!(instructionDescriptor->idIns() == jmp->idIns() && jmp == instructionDescriptor))
+                if (jmp != instructionDescriptor)
                 {
                     printf("about to assert, dumping context information\n");
                     printf("method: %s\n", emitComp->impInlineRoot()->info.compMethodName);
@@ -4205,7 +4205,7 @@ bool emitter::emitRemoveJumpToNextInst()
                     printf("target group:\n");
                     emitDispIG(targetGroup, nullptr, false);
                 }
-                assert(instructionDescriptor->idIns() == jmp->idIns() && jmp == instructionDescriptor);
+                assert(jmp == instructionDescriptor);
 #endif
 
                 JITDUMP("Removing unconditional jump IN%04x from the last instruction in "
@@ -4321,10 +4321,6 @@ bool emitter::emitRemoveJumpToNextInst()
 
 #endif
     JITDUMP("emitRemoveJumpToNextInst removed %d jumps and %3u bytes\n", totalRemovedCount, totalRemovedSize);
-
-    return totalRemovedCount > 0;
-#else
-    return 0;
 #endif // TARGET_XARCH
 }
 

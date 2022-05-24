@@ -2001,7 +2001,7 @@ private:
     instrDescJmp* emitJumpList;               // list of local jumps in method
     instrDescJmp* emitJumpLast;               // last of local jumps in method
     void          emitJumpDistBind();         // Bind all the local jumps in method
-    bool          emitRemoveJumpToNextInst(); // try to remove unconditional jumps to the next instruction
+    void          emitRemoveJumpToNextInst(); // try to remove unconditional jumps to the next instruction
 
 #if FEATURE_LOOP_ALIGN
     instrDescAlign* emitCurIGAlignList;   // list of align instructions in current IG
@@ -2132,6 +2132,10 @@ private:
     void emitDisableGC();
     void emitEnableGC();
 #endif // !defined(JIT32_GCENCODER)
+
+#if defined(TARGET_XARCH)
+    bool emitInstHasNoCode(instrDesc* id);
+#endif
 
     void emitGenIG(insGroup* ig);
     insGroup* emitSavIG(bool emitAdd = false);
