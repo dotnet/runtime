@@ -615,7 +615,7 @@
     <value>Specified type '{0}' does not support polymorphism. Polymorphic types cannot be structs, sealed types, generic types or System.Object.</value>
   </data>
   <data name="Polymorphism_DerivedTypeIsNotSupported" xml:space="preserve">
-    <value>Specified type '{0}' is not a supported derived type for the polymorphic type '{1}'. Derived types must be assignable to the base type, must not be generic and cannot be abstact classes or interfaces unless 'JsonUnknownDerivedTypeHandling.FallbackToNearestAncestor' is specified.</value>
+    <value>Specified type '{0}' is not a supported derived type for the polymorphic type '{1}'. Derived types must be assignable to the base type, must not be generic and cannot be abstact classes or interfaces unless 'JsonUnknownDerivedTypeHandling.FallBackToNearestAncestor' is specified.</value>
   </data>
   <data name="Polymorphism_DerivedTypeIsAlreadySpecified" xml:space="preserve">
     <value>The polymorphic type '{0}' has already specified derived type '{1}'.</value>
@@ -636,6 +636,6 @@
     <value>Runtime type '{0}' is not supported by polymorphic type '{1}'.</value>
   </data>
   <data name="Polymorphism_RuntimeTypeDiamondAmbiguity" xml:space="preserve">
-    <value>Runtime type '{0}' has a diamond ambiguity between derived types '{1}' and '{2}' of polymorphic type '{3}'. Consider either removing one of the derived types or removing the 'JsonUnknownDerivedTypeHandling.FallbackToNearestAncestor' setting.</value>
+    <value>Runtime type '{0}' has a diamond ambiguity between derived types '{1}' and '{2}' of polymorphic type '{3}'. Consider either removing one of the derived types or removing the 'JsonUnknownDerivedTypeHandling.FallBackToNearestAncestor' setting.</value>
   </data>
 </root>

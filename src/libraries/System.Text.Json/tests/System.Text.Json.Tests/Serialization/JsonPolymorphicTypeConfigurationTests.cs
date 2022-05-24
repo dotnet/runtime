@@ -33,10 +33,13 @@ namespace System.Text.Json.Tests.Serialization
         public static void SupportedDerivedTypeArgument_ShouldSucceed(Type baseType, Type derivedType)
         {
             var configuration = new JsonPolymorphicTypeConfiguration(baseType).WithDerivedType(derivedType);
-            Assert.Equal(new[] { (derivedType, (string)null) }, configuration);
+            Assert.Equal(new (Type, object?)[] { (derivedType, null) }, configuration);
 
             configuration = new JsonPolymorphicTypeConfiguration(baseType).WithDerivedType(derivedType, "typeDiscriminator");
-            Assert.Equal(new[] { (derivedType, "typeDiscriminator") }, configuration);
+            Assert.Equal(new (Type, object?)[] { (derivedType, "typeDiscriminator") }, configuration);
+
+            configuration = new JsonPolymorphicTypeConfiguration(baseType).WithDerivedType(derivedType, 42);
+            Assert.Equal(new (Type, object?)[] { (derivedType, 42) }, configuration);
         }
 
         [Fact]
@@ -46,13 +49,19 @@ namespace System.Text.Json.Tests.Serialization
                 new JsonPolymorphicTypeConfiguration(typeof(Class))
                     .WithDerivedType(typeof(Class));
 
-            Assert.Equal(new[] { (typeof(Class), (string)null) }, configuration);
+            Assert.Equal(new (Type, object?)[] { (typeof(Class), null) }, configuration);
 
             configuration =
                 new JsonPolymorphicTypeConfiguration(typeof(Class))
-                    .WithDerivedType(typeof(Class), "typeDiscriminatorId");
+                    .WithDerivedType(typeof(Class), "typeDiscriminator");
 
-            Assert.Equal(new[] { (typeof(Class), "typeDiscriminatorId") }, configuration);
+            Assert.Equal(new (Type, object?)[] { (typeof(Class), "typeDiscriminator") }, configuration);
+
+            configuration =
+                new JsonPolymorphicTypeConfiguration(typeof(Class))
+                    .WithDerivedType(typeof(Class), 42);
+
+            Assert.Equal(new (Type, object?)[] { (typeof(Class), 42) }, configuration);
         }
 
         [Fact]
@@ -60,11 +69,17 @@ namespace System.Text.Json.Tests.Serialization
         {
             var configuration =
                 new JsonPolymorphicTypeConfiguration(typeof(Class))
-                    .WithDerivedType(typeof(GenericClass<int>), "typeDiscriminator")
-                    .WithDerivedType(typeof(GenericClass<string>));
+                    .WithDerivedType(typeof(GenericClass<bool>))
+                    .WithDerivedType(typeof(GenericClass<int>), 42)
+                    .WithDerivedType(typeof(GenericClass<string>), "typeDiscriminator");
 
             Assert.Equal(
-                new[] { (typeof(GenericClass<int>), "typeDiscriminator"), (typeof(GenericClass<string>), (string)null) },
+                new (Type, object?)[]
+                {
+                    (typeof(GenericClass<bool>), null),
+                    (typeof(GenericClass<int>), 42),
+                    (typeof(GenericClass<string>), "typeDiscriminator"),
+                },
                 configuration);
         }
 
@@ -117,22 +132,37 @@ namespace System.Text.Json.Tests.Serialization
         {
             var configuration = new JsonPolymorphicTypeConfiguration(typeof(Class)).WithDerivedType(typeof(GenericClass<int>));
             Assert.Throws<ArgumentException>(() => configuration.WithDerivedType(typeof(GenericClass<int>)));
-            Assert.Equal(new[] { (typeof(GenericClass<int>), (string)null) }, configuration);
+            Assert.Equal(new (Type, object?)[] { (typeof(GenericClass<int>), null) }, configuration);
         }
 
         [Fact]
-        public static void DuplicateTypeDiscriminator_ThrowsArgumentException()
+        public static void DuplicateTypeDiscriminator_String_ThrowsArgumentException()
         {
             var configuration =
                 new JsonPolymorphicTypeConfiguration(typeof(Class))
                     .WithDerivedType(typeof(GenericClass<int>), "discriminator1")
                     .WithDerivedType(typeof(GenericClass<string>), "discriminator2");
 
-            Assert.Equal(new[] { (typeof(GenericClass<int>), "discriminator1"), (typeof(GenericClass<string>), "discriminator2") }, configuration);
+            Assert.Equal(new (Type, object?)[] { (typeof(GenericClass<int>), "discriminator1"), (typeof(GenericClass<string>), "discriminator2") }, configuration);
 
             Assert.Throws<ArgumentException>(() => configuration.WithDerivedType(typeof(GenericClass<bool>), "discriminator2"));
 
-            Assert.Equal(new[] { (typeof(GenericClass<int>), "discriminator1"), (typeof(GenericClass<string>), "discriminator2") }, configuration);
+            Assert.Equal(new (Type, object?)[] { (typeof(GenericClass<int>), "discriminator1"), (typeof(GenericClass<string>), "discriminator2") }, configuration);
+        }
+
+        [Fact]
+        public static void DuplicateTypeDiscriminator_Int_ThrowsArgumentException()
+        {
+            var configuration =
+                new JsonPolymorphicTypeConfiguration(typeof(Class))
+                    .WithDerivedType(typeof(GenericClass<int>), 0)
+                    .WithDerivedType(typeof(GenericClass<string>), 1);
+
+            Assert.Equal(new (Type, object?)[] { (typeof(GenericClass<int>), 0), (typeof(GenericClass<string>), 1) }, configuration);
+
+            Assert.Throws<ArgumentException>(() => configuration.WithDerivedType(typeof(GenericClass<bool>), 1));
+
+            Assert.Equal(new (Type, object?)[] { (typeof(GenericClass<int>), 0), (typeof(GenericClass<string>), 1) }, configuration);
         }
 
         [Fact]
@@ -144,8 +174,9 @@ namespace System.Text.Json.Tests.Serialization
             _ = new JsonSerializerOptions { PolymorphicTypeConfigurations = { config } };
 
             Assert.Throws<InvalidOperationException>(() => config.WithDerivedType(typeof(GenericClass<string>), "derived2"));
-            Assert.Throws<InvalidOperationException>(() => config.CustomTypeDiscriminatorPropertyName = "_case");
-            Assert.Throws<InvalidOperationException>(() => config.UnknownDerivedTypeHandling = JsonUnknownDerivedTypeHandling.FallbackToBaseType);
+            Assert.Throws<InvalidOperationException>(() => config.WithDerivedType(typeof(GenericClass<string>), 42));
+            Assert.Throws<InvalidOperationException>(() => config.TypeDiscriminatorPropertyName = "_case");
+            Assert.Throws<InvalidOperationException>(() => config.UnknownDerivedTypeHandling = JsonUnknownDerivedTypeHandling.FallBackToBaseType);
             Assert.Throws<InvalidOperationException>(() => config.IgnoreUnrecognizedTypeDiscriminators = true);
         }
 
