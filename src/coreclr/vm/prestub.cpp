@@ -255,7 +255,7 @@ PCODE MethodDesc::DoBackpatch(MethodTable * pMT, MethodTable *pDispatchingMT, BO
 // <TODO> FIX IN BETA 2
 //
 // g_pNotificationTable is only modified by the DAC and therefore the
-// optmizer can assume that it will always be its default value and has
+// optimizer can assume that it will always be its default value and has
 // been seen to (on IA64 free builds) eliminate the code in DACNotifyCompilationFinished
 // such that DAC notifications are no longer sent.
 //

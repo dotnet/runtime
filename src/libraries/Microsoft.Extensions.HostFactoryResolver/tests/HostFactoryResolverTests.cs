@@ -264,14 +264,14 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public void ApplicationNameSetFromAgrument()
+        public void ApplicationNameSetFromArgument()
         {
-            Assembly assembly = Assembly.Load("ApplicationNameSetFromAgrument");
+            Assembly assembly = Assembly.Load("ApplicationNameSetFromArgument");
             var factory = HostFactoryResolver.ResolveServiceProviderFactory(assembly, s_WaitTimeout);
             IServiceProvider? serviceProvider = factory(Array.Empty<string>());
 
             var configuration = (IConfiguration)serviceProvider.GetService(typeof(IConfiguration));
-            Assert.Contains("ApplicationNameSetFromAgrument", configuration["applicationName"]);
+            Assert.Contains("ApplicationNameSetFromArgument", configuration["applicationName"]);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]

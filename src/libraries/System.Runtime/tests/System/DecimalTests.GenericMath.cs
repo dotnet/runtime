@@ -542,6 +542,12 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void RadixTest()
+        {
+            Assert.Equal(10, NumberBaseHelper<decimal>.Radix);
+        }
+
+        [Fact]
         public static void ZeroTest()
         {
             Assert.Equal(0.0m, NumberBaseHelper<decimal>.Zero);
@@ -1025,6 +1031,83 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void IsCanonicalTest()
+        {
+            Assert.True(NumberBaseHelper<decimal>.IsCanonical(decimal.MinValue));
+            Assert.False(NumberBaseHelper<decimal>.IsCanonical(-1.0m));
+            Assert.False(NumberBaseHelper<decimal>.IsCanonical(-0.0m));
+            Assert.False(NumberBaseHelper<decimal>.IsCanonical(0.0m));
+            Assert.False(NumberBaseHelper<decimal>.IsCanonical(1.0m));
+            Assert.True(NumberBaseHelper<decimal>.IsCanonical(decimal.MaxValue));
+
+            Assert.True(NumberBaseHelper<decimal>.IsCanonical(-10m));
+            Assert.True(NumberBaseHelper<decimal>.IsCanonical(-1.2m));
+            Assert.True(NumberBaseHelper<decimal>.IsCanonical(-1m));
+            Assert.True(NumberBaseHelper<decimal>.IsCanonical(-0.1m));
+            Assert.True(NumberBaseHelper<decimal>.IsCanonical(-0m));
+            Assert.True(NumberBaseHelper<decimal>.IsCanonical(0m));
+            Assert.True(NumberBaseHelper<decimal>.IsCanonical(0.1m));
+            Assert.True(NumberBaseHelper<decimal>.IsCanonical(1m));
+            Assert.True(NumberBaseHelper<decimal>.IsCanonical(1.2m));
+            Assert.True(NumberBaseHelper<decimal>.IsCanonical(10m));
+
+            Assert.False(NumberBaseHelper<decimal>.IsCanonical(-10.0m));
+            Assert.False(NumberBaseHelper<decimal>.IsCanonical(-1.20m));
+            Assert.False(NumberBaseHelper<decimal>.IsCanonical(-0.10m));
+            Assert.False(NumberBaseHelper<decimal>.IsCanonical(0.10m));
+            Assert.False(NumberBaseHelper<decimal>.IsCanonical(1.20m));
+            Assert.False(NumberBaseHelper<decimal>.IsCanonical(10.0m));
+
+            Assert.False(NumberBaseHelper<decimal>.IsCanonical(0.0000000000000000000000000000m));
+            Assert.False(NumberBaseHelper<decimal>.IsCanonical(1.0000000000000000000000000000m));
+            Assert.False(NumberBaseHelper<decimal>.IsCanonical(10.000000000000000000000000000m));
+        }
+
+        [Fact]
+        public static void IsComplexNumberTest()
+        {
+            Assert.False(NumberBaseHelper<decimal>.IsComplexNumber(decimal.MinValue));
+            Assert.False(NumberBaseHelper<decimal>.IsComplexNumber(-1.0m));
+            Assert.False(NumberBaseHelper<decimal>.IsComplexNumber(-0.0m));
+            Assert.False(NumberBaseHelper<decimal>.IsComplexNumber(0.0m));
+            Assert.False(NumberBaseHelper<decimal>.IsComplexNumber(1.0m));
+            Assert.False(NumberBaseHelper<decimal>.IsComplexNumber(decimal.MaxValue));
+        }
+
+        [Fact]
+        public static void IsEvenIntegerTest()
+        {
+            Assert.False(NumberBaseHelper<decimal>.IsEvenInteger(decimal.MinValue));
+            Assert.False(NumberBaseHelper<decimal>.IsEvenInteger(-1.0m));
+            Assert.True(NumberBaseHelper<decimal>.IsEvenInteger(-0.0m));
+            Assert.True(NumberBaseHelper<decimal>.IsEvenInteger(0.0m));
+            Assert.False(NumberBaseHelper<decimal>.IsEvenInteger(1.0m));
+            Assert.False(NumberBaseHelper<decimal>.IsEvenInteger(decimal.MaxValue));
+
+            Assert.True(NumberBaseHelper<decimal>.IsEvenInteger(-10m));
+            Assert.False(NumberBaseHelper<decimal>.IsEvenInteger(-1.2m));
+            Assert.False(NumberBaseHelper<decimal>.IsEvenInteger(-1m));
+            Assert.False(NumberBaseHelper<decimal>.IsEvenInteger(-0.1m));
+            Assert.True(NumberBaseHelper<decimal>.IsEvenInteger(-0m));
+            Assert.True(NumberBaseHelper<decimal>.IsEvenInteger(0m));
+            Assert.False(NumberBaseHelper<decimal>.IsEvenInteger(0.1m));
+            Assert.False(NumberBaseHelper<decimal>.IsEvenInteger(1m));
+            Assert.False(NumberBaseHelper<decimal>.IsEvenInteger(1.2m));
+            Assert.True(NumberBaseHelper<decimal>.IsEvenInteger(10m));
+
+            Assert.True(NumberBaseHelper<decimal>.IsEvenInteger(-10.0m));
+            Assert.False(NumberBaseHelper<decimal>.IsEvenInteger(-1.20m));
+            Assert.False(NumberBaseHelper<decimal>.IsEvenInteger(-0.10m));
+            Assert.False(NumberBaseHelper<decimal>.IsEvenInteger(0.10m));
+            Assert.False(NumberBaseHelper<decimal>.IsEvenInteger(1.20m));
+            Assert.True(NumberBaseHelper<decimal>.IsEvenInteger(10.0m));
+
+            Assert.True(NumberBaseHelper<decimal>.IsEvenInteger(0.0000000000000000000000000000m));
+            Assert.False(NumberBaseHelper<decimal>.IsEvenInteger(1.0000000000000000000000000000m));
+            Assert.True(NumberBaseHelper<decimal>.IsEvenInteger(10.000000000000000000000000000m));
+        }
+
+        [Fact]
         public static void IsFiniteTest()
         {
             Assert.True(NumberBaseHelper<decimal>.IsFinite(decimal.MinValue));
@@ -1036,6 +1119,17 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void IsImaginaryNumberTest()
+        {
+            Assert.False(NumberBaseHelper<decimal>.IsImaginaryNumber(decimal.MinValue));
+            Assert.False(NumberBaseHelper<decimal>.IsImaginaryNumber(-1.0m));
+            Assert.False(NumberBaseHelper<decimal>.IsImaginaryNumber(-0.0m));
+            Assert.False(NumberBaseHelper<decimal>.IsImaginaryNumber(0.0m));
+            Assert.False(NumberBaseHelper<decimal>.IsImaginaryNumber(1.0m));
+            Assert.False(NumberBaseHelper<decimal>.IsImaginaryNumber(decimal.MaxValue));
+        }
+
+        [Fact]
         public static void IsInfinityTest()
         {
             Assert.False(NumberBaseHelper<decimal>.IsInfinity(decimal.MinValue));
@@ -1044,6 +1138,39 @@ namespace System.Tests
             Assert.False(NumberBaseHelper<decimal>.IsInfinity(0.0m));
             Assert.False(NumberBaseHelper<decimal>.IsInfinity(1.0m));
             Assert.False(NumberBaseHelper<decimal>.IsInfinity(decimal.MaxValue));
+        }
+
+        [Fact]
+        public static void IsIntegerTest()
+        {
+            Assert.True(NumberBaseHelper<decimal>.IsInteger(decimal.MinValue));
+            Assert.True(NumberBaseHelper<decimal>.IsInteger(-1.0m));
+            Assert.True(NumberBaseHelper<decimal>.IsInteger(-0.0m));
+            Assert.True(NumberBaseHelper<decimal>.IsInteger(0.0m));
+            Assert.True(NumberBaseHelper<decimal>.IsInteger(1.0m));
+            Assert.True(NumberBaseHelper<decimal>.IsInteger(decimal.MaxValue));
+
+            Assert.True(NumberBaseHelper<decimal>.IsInteger(-10m));
+            Assert.False(NumberBaseHelper<decimal>.IsInteger(-1.2m));
+            Assert.True(NumberBaseHelper<decimal>.IsInteger(-1m));
+            Assert.False(NumberBaseHelper<decimal>.IsInteger(-0.1m));
+            Assert.True(NumberBaseHelper<decimal>.IsInteger(-0m));
+            Assert.True(NumberBaseHelper<decimal>.IsInteger(0m));
+            Assert.False(NumberBaseHelper<decimal>.IsInteger(0.1m));
+            Assert.True(NumberBaseHelper<decimal>.IsInteger(1m));
+            Assert.False(NumberBaseHelper<decimal>.IsInteger(1.2m));
+            Assert.True(NumberBaseHelper<decimal>.IsInteger(10m));
+
+            Assert.True(NumberBaseHelper<decimal>.IsInteger(-10.0m));
+            Assert.False(NumberBaseHelper<decimal>.IsInteger(-1.20m));
+            Assert.False(NumberBaseHelper<decimal>.IsInteger(-0.10m));
+            Assert.False(NumberBaseHelper<decimal>.IsInteger(0.10m));
+            Assert.False(NumberBaseHelper<decimal>.IsInteger(1.20m));
+            Assert.True(NumberBaseHelper<decimal>.IsInteger(10.0m));
+
+            Assert.True(NumberBaseHelper<decimal>.IsInteger(0.0000000000000000000000000000m));
+            Assert.True(NumberBaseHelper<decimal>.IsInteger(1.0000000000000000000000000000m));
+            Assert.True(NumberBaseHelper<decimal>.IsInteger(10.000000000000000000000000000m));
         }
 
         [Fact]
@@ -1091,6 +1218,50 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void IsOddIntegerTest()
+        {
+            Assert.True(NumberBaseHelper<decimal>.IsOddInteger(decimal.MinValue));
+            Assert.True(NumberBaseHelper<decimal>.IsOddInteger(-1.0m));
+            Assert.False(NumberBaseHelper<decimal>.IsOddInteger(-0.0m));
+            Assert.False(NumberBaseHelper<decimal>.IsOddInteger(0.0m));
+            Assert.True(NumberBaseHelper<decimal>.IsOddInteger(1.0m));
+            Assert.True(NumberBaseHelper<decimal>.IsOddInteger(decimal.MaxValue));
+
+            Assert.False(NumberBaseHelper<decimal>.IsOddInteger(-10m));
+            Assert.False(NumberBaseHelper<decimal>.IsOddInteger(-1.2m));
+            Assert.True(NumberBaseHelper<decimal>.IsOddInteger(-1m));
+            Assert.False(NumberBaseHelper<decimal>.IsOddInteger(-0.1m));
+            Assert.False(NumberBaseHelper<decimal>.IsOddInteger(-0m));
+            Assert.False(NumberBaseHelper<decimal>.IsOddInteger(0m));
+            Assert.False(NumberBaseHelper<decimal>.IsOddInteger(0.1m));
+            Assert.True(NumberBaseHelper<decimal>.IsOddInteger(1m));
+            Assert.False(NumberBaseHelper<decimal>.IsOddInteger(1.2m));
+            Assert.False(NumberBaseHelper<decimal>.IsOddInteger(10m));
+
+            Assert.False(NumberBaseHelper<decimal>.IsOddInteger(-10.0m));
+            Assert.False(NumberBaseHelper<decimal>.IsOddInteger(-1.20m));
+            Assert.False(NumberBaseHelper<decimal>.IsOddInteger(-0.10m));
+            Assert.False(NumberBaseHelper<decimal>.IsOddInteger(0.10m));
+            Assert.False(NumberBaseHelper<decimal>.IsOddInteger(1.20m));
+            Assert.False(NumberBaseHelper<decimal>.IsOddInteger(10.0m));
+
+            Assert.False(NumberBaseHelper<decimal>.IsOddInteger(0.0000000000000000000000000000m));
+            Assert.True(NumberBaseHelper<decimal>.IsOddInteger(1.0000000000000000000000000000m));
+            Assert.False(NumberBaseHelper<decimal>.IsOddInteger(10.000000000000000000000000000m));
+        }
+
+        [Fact]
+        public static void IsPositiveTest()
+        {
+            Assert.False(NumberBaseHelper<decimal>.IsPositive(decimal.MinValue));
+            Assert.False(NumberBaseHelper<decimal>.IsPositive(-1.0m));
+            Assert.False(NumberBaseHelper<decimal>.IsPositive(-0.0m));
+            Assert.True(NumberBaseHelper<decimal>.IsPositive(0.0m));
+            Assert.True(NumberBaseHelper<decimal>.IsPositive(1.0m));
+            Assert.True(NumberBaseHelper<decimal>.IsPositive(decimal.MaxValue));
+        }
+
+        [Fact]
         public static void IsPositiveInfinityTest()
         {
             Assert.False(NumberBaseHelper<decimal>.IsPositiveInfinity(decimal.MinValue));
@@ -1102,6 +1273,17 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void IsRealNumberTest()
+        {
+            Assert.True(NumberBaseHelper<decimal>.IsRealNumber(decimal.MinValue));
+            Assert.True(NumberBaseHelper<decimal>.IsRealNumber(-1.0m));
+            Assert.True(NumberBaseHelper<decimal>.IsRealNumber(-0.0m));
+            Assert.True(NumberBaseHelper<decimal>.IsRealNumber(0.0m));
+            Assert.True(NumberBaseHelper<decimal>.IsRealNumber(1.0m));
+            Assert.True(NumberBaseHelper<decimal>.IsRealNumber(decimal.MaxValue));
+        }
+
+        [Fact]
         public static void IsSubnormalTest()
         {
             Assert.False(NumberBaseHelper<decimal>.IsSubnormal(decimal.MinValue));
@@ -1110,6 +1292,39 @@ namespace System.Tests
             Assert.False(NumberBaseHelper<decimal>.IsSubnormal(0.0m));
             Assert.False(NumberBaseHelper<decimal>.IsSubnormal(1.0m));
             Assert.False(NumberBaseHelper<decimal>.IsSubnormal(decimal.MaxValue));
+        }
+
+        [Fact]
+        public static void IsZeroTest()
+        {
+            Assert.False(NumberBaseHelper<decimal>.IsZero(decimal.MinValue));
+            Assert.False(NumberBaseHelper<decimal>.IsZero(-1.0m));
+            Assert.True(NumberBaseHelper<decimal>.IsZero(-0.0m));
+            Assert.True(NumberBaseHelper<decimal>.IsZero(0.0m));
+            Assert.False(NumberBaseHelper<decimal>.IsZero(1.0m));
+            Assert.False(NumberBaseHelper<decimal>.IsZero(decimal.MaxValue));
+
+            Assert.False(NumberBaseHelper<decimal>.IsZero(-10m));
+            Assert.False(NumberBaseHelper<decimal>.IsZero(-1.2m));
+            Assert.False(NumberBaseHelper<decimal>.IsZero(-1m));
+            Assert.False(NumberBaseHelper<decimal>.IsZero(-0.1m));
+            Assert.True(NumberBaseHelper<decimal>.IsZero(-0m));
+            Assert.True(NumberBaseHelper<decimal>.IsZero(0m));
+            Assert.False(NumberBaseHelper<decimal>.IsZero(0.1m));
+            Assert.False(NumberBaseHelper<decimal>.IsZero(1m));
+            Assert.False(NumberBaseHelper<decimal>.IsZero(1.2m));
+            Assert.False(NumberBaseHelper<decimal>.IsZero(10m));
+
+            Assert.False(NumberBaseHelper<decimal>.IsZero(-10.0m));
+            Assert.False(NumberBaseHelper<decimal>.IsZero(-1.20m));
+            Assert.False(NumberBaseHelper<decimal>.IsZero(-0.10m));
+            Assert.False(NumberBaseHelper<decimal>.IsZero(0.10m));
+            Assert.False(NumberBaseHelper<decimal>.IsZero(1.20m));
+            Assert.False(NumberBaseHelper<decimal>.IsZero(10.0m));
+
+            Assert.True(NumberBaseHelper<decimal>.IsZero(0.0000000000000000000000000000m));
+            Assert.False(NumberBaseHelper<decimal>.IsZero(1.0000000000000000000000000000m));
+            Assert.False(NumberBaseHelper<decimal>.IsZero(10.000000000000000000000000000m));
         }
 
         [Fact]

@@ -1265,6 +1265,9 @@ namespace System
         /// <inheritdoc cref="INumberBase{TSelf}.One" />
         public static Int128 One => new Int128(0, 1);
 
+        /// <inheritdoc cref="INumberBase{TSelf}.Radix" />
+        static int INumberBase<Int128>.Radix => 2;
+
         /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
         public static Int128 Zero => default;
 
@@ -1499,11 +1502,26 @@ namespace System
             }
         }
 
+        /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
+        static bool INumberBase<Int128>.IsCanonical(Int128 value) => true;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsComplexNumber(TSelf)" />
+        static bool INumberBase<Int128>.IsComplexNumber(Int128 value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsEvenInteger(TSelf)" />
+        public static bool IsEvenInteger(Int128 value) => (value._lower & 1) == 0;
+
         /// <inheritdoc cref="INumberBase{TSelf}.IsFinite(TSelf)" />
         static bool INumberBase<Int128>.IsFinite(Int128 value) => true;
 
+        /// <inheritdoc cref="INumberBase{TSelf}.IsImaginaryNumber(TSelf)" />
+        static bool INumberBase<Int128>.IsImaginaryNumber(Int128 value) => false;
+
         /// <inheritdoc cref="INumberBase{TSelf}.IsInfinity(TSelf)" />
         static bool INumberBase<Int128>.IsInfinity(Int128 value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsInteger(TSelf)" />
+        static bool INumberBase<Int128>.IsInteger(Int128 value) => true;
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsNaN(TSelf)" />
         static bool INumberBase<Int128>.IsNaN(Int128 value) => false;
@@ -1517,13 +1535,23 @@ namespace System
         /// <inheritdoc cref="INumberBase{TSelf}.IsNormal(TSelf)" />
         static bool INumberBase<Int128>.IsNormal(Int128 value) => value != 0;
 
-        internal static bool IsPositive(Int128 value) => (long)value._upper >= 0;
+        /// <inheritdoc cref="INumberBase{TSelf}.IsOddInteger(TSelf)" />
+        public static bool IsOddInteger(Int128 value) => (value._lower & 1) != 0;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsPositive(TSelf)" />
+        public static bool IsPositive(Int128 value) => (long)value._upper >= 0;
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsPositiveInfinity(TSelf)" />
         static bool INumberBase<Int128>.IsPositiveInfinity(Int128 value) => false;
 
+        /// <inheritdoc cref="INumberBase{TSelf}.IsRealNumber(TSelf)" />
+        static bool INumberBase<Int128>.IsRealNumber(Int128 value) => true;
+
         /// <inheritdoc cref="INumberBase{TSelf}.IsSubnormal(TSelf)" />
         static bool INumberBase<Int128>.IsSubnormal(Int128 value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsZero(TSelf)" />
+        static bool INumberBase<Int128>.IsZero(Int128 value) => (value == 0);
 
         /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitude(TSelf, TSelf)" />
         public static Int128 MaxMagnitude(Int128 x, Int128 y)

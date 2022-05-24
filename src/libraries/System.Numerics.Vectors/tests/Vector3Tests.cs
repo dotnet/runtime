@@ -1216,7 +1216,6 @@ namespace System.Numerics.Tests
 
         // A test for Vector3f comparison involving NaN values
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69424", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void Vector3EqualsNaNTest()
         {
             Vector3 a = new Vector3(float.NaN, 0, 0);

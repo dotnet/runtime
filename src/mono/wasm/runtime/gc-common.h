@@ -20,6 +20,8 @@ mono_threads_exit_gc_safe_region (gpointer cookie, gpointer *stackdata);
 
 MONO_API void
 mono_threads_assert_gc_safe_region (void);
+
+#ifndef DISABLE_THREADS
 #define MONO_ENTER_GC_UNSAFE	\
 	do {	\
 		gpointer __dummy;	\
@@ -37,6 +39,18 @@ mono_threads_assert_gc_safe_region (void);
 #define MONO_EXIT_GC_SAFE	\
 		mono_threads_exit_gc_safe_region (__gc_safe_cookie, &__dummy);	\
 	} while (0)
+
+#else /* DISABLE_THREADS */
+
+#define MONO_ENTER_GC_UNSAFE	do {
+
+#define MONO_EXIT_GC_UNSAFE	(void)0; } while (0)
+
+#define MONO_ENTER_GC_SAFE	do {
+
+#define MONO_EXIT_GC_SAFE	(void)0; } while (0)
+
+#endif /* DISABLE_THREADS */
 
 static void
 store_volatile (PPVOLATILE(MonoObject) destination, PVOLATILE(MonoObject) source) {

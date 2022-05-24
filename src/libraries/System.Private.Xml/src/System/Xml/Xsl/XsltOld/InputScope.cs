@@ -104,7 +104,7 @@ namespace System.Xml.Xsl.XsltOld
             _variables[variable.Name!] = variable;
         }
 
-        internal int GetVeriablesCount()
+        internal int GetVariablesCount()
         {
             if (_variables == null)
             {
