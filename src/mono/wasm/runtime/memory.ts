@@ -97,17 +97,18 @@ export function setI52(offset: _MemOffset, value: number): void {
     let hi: number;
     let lo: number;
     if (value < 0) {
-        value = -1 - value;
-        // set sign and mask the integer bits of the hi dword
-        hi = 0x8000_0000 + ((value >>> 32) ^ 0x001F_FFFF);
+        const nvalue = -1 - value;
+        // take hi dword (on double because >>>32 doesn't work) and negate it
+        hi = ((nvalue / 0x1_0000_0000) ^ 0xFFFF_FFFF) >>> 0;
+
         // mask lo dword and negate it
-        lo = (value & 0xFFFF_FFFF) ^ 0xFFFF_FFFF;
+        lo = ((nvalue >>> 0) ^ 0xFFFF_FFFF) >>> 0;
     }
     else {
-        hi = value >>> 32;
-        lo = value & 0xFFFF_FFFF;
+        hi = (value / 0x1_0000_0000) >>> 0;
+        lo = value >>> 0;
     }
-    Module.HEAPU32[1 + <any>offset >>> 2] = hi;
+    Module.HEAPU32[1 + (<any>offset >>> 2)] = hi;
     Module.HEAPU32[<any>offset >>> 2] = lo;
 }
 
@@ -119,9 +120,10 @@ export function setU52(offset: _MemOffset, value: number): void {
     mono_assert(!Number.isNaN(value), "Can't convert Number.Nan into UInt64");
     mono_assert(Number.isSafeInteger(value), "Overflow: value out of Number.isSafeInteger range");
     mono_assert(value >= 0, "Can't convert negative Number into UInt64");
-    const hi = value >>> 32;
-    const lo = value & 0xFFFF_FFFF;
-    Module.HEAPU32[1 + <any>offset >>> 2] = hi;
+    // take hi dword (on double because >>>32 doesn't work)
+    const hi = (value / 0x1_0000_0000) >>> 0;
+    const lo = value >>> 0;
+    Module.HEAPU32[1 + (<any>offset >>> 2)] = hi;
     Module.HEAPU32[<any>offset >>> 2] = lo;
 }
 
