@@ -28,4 +28,5 @@ public class ProxyOptions
     }
     public string? LogPath { get; set; }
     public bool AutoSetBreakpointOnEntryPoint { get; set; }
+    public bool RunningForBlazor { get; set; }
 }

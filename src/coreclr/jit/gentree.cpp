@@ -3703,7 +3703,7 @@ void Compiler::gtWalkOp(GenTree** op1WB, GenTree** op2WB, GenTree* base, bool co
  */
 GenTree* Compiler::gtWalkOpEffectiveVal(GenTree* op)
 {
-    for (;;)
+    while (true)
     {
         op = op->gtEffectiveVal();
 
@@ -12407,6 +12407,11 @@ GenTree* Compiler::gtFoldExpr(GenTree* tree)
 
 GenTree* Compiler::gtFoldExprCall(GenTreeCall* call)
 {
+    // This may discard the call and will thus discard arg setup nodes that may
+    // have arbitrary side effects, so we only support this being called before
+    // args have been morphed.
+    assert(!call->gtArgs.AreArgsComplete());
+
     // Can only fold calls to special intrinsics.
     if ((call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC) == 0)
     {
@@ -13242,7 +13247,7 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
                 op = op2->AsColon()->ElseNode();
             }
 
-            // Clear colon flags only if the qmark itself is not conditionaly executed
+            // Clear colon flags only if the qmark itself is not conditionally executed
             if ((tree->gtFlags & GTF_COLON_COND) == 0)
             {
                 fgWalkTreePre(&op, gtClearColonCond);
@@ -15680,7 +15685,7 @@ void dispNodeList(GenTree* list, bool verbose)
         return;
     }
 
-    for (;;)
+    while (true)
     {
         next = list->gtNext;
 

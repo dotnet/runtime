@@ -233,7 +233,7 @@ WCHAR* GetResultFileName(const WCHAR* folderPath, const WCHAR* fileName, const W
 #endif // !TARGET_UNIX
 
     WCHAR randomString[randomStringLength + 1];
-    swprintf_s(randomString, randomStringLength + 1, W("%08X"), randomNumber);
+    FormatInteger(randomString, randomStringLength + 1, "%08X", randomNumber);
     wcsncat_s(fullPath, fullPathLength + 1, randomString, randomStringLength);
 
     // Append extension

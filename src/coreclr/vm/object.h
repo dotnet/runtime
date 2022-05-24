@@ -1097,7 +1097,7 @@ public:
 //   m_object - a field that has a reference type in it. Used only for RuntimeMethodInfoStub to keep the real type alive.
 // This structure matches the structure up to the m_pMD for several different managed types.
 // (RuntimeConstructorInfo, RuntimeMethodInfo, and RuntimeMethodInfoStub). These types are unrelated in the type
-// system except that they all implement a particular interface. It is important that that interface is not attached to any
+// system except that they all implement a particular interface. It is important that such interface is not attached to any
 // type that does not sufficiently match this data structure.
 class ReflectMethodObject : public BaseObjectWithCachedData
 {
@@ -1141,7 +1141,7 @@ public:
 //   m_object - a field that has a reference type in it. Used only for RuntimeFieldInfoStub to keep the real type alive.
 // This structure matches the structure up to the m_pFD for several different managed types.
 // (RtFieldInfo and RuntimeFieldInfoStub). These types are unrelated in the type
-// system except that they all implement a particular interface. It is important that that interface is not attached to any
+// system except that they all implement a particular interface. It is important that such interface is not attached to any
 // type that does not sufficiently match this data structure.
 class ReflectFieldObject : public BaseObjectWithCachedData
 {
@@ -2614,7 +2614,6 @@ public:
     static OBJECTREF Box(void* src, MethodTable* nullable);
     static BOOL UnBox(void* dest, OBJECTREF boxedVal, MethodTable* destMT);
     static BOOL UnBoxNoGC(void* dest, OBJECTREF boxedVal, MethodTable* destMT);
-    static BOOL UnBoxIntoArgNoGC(ArgDestination *argDest, OBJECTREF boxedVal, MethodTable* destMT);
     static void UnBoxNoCheck(void* dest, OBJECTREF boxedVal, MethodTable* destMT);
     static OBJECTREF BoxedNullableNull(TypeHandle nullableType) { return 0; }
 

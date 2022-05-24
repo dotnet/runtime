@@ -1381,7 +1381,7 @@ namespace System.Xml.Schema
 
                 if (complexType.Particle != null || complexType.Attributes != null)
                 {
-                    // this is illigal
+                    // this is illegal
                 }
                 if (complexType.ContentModel is XmlSchemaSimpleContent)
                 {

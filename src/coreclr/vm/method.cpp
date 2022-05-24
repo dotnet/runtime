@@ -262,8 +262,6 @@ LPCUTF8 MethodDesc::GetName()
         SUPPORTS_DAC;
     }CONTRACTL_END;
 
-    g_IBCLogger.LogMethodDescAccess(this);
-
     if (IsArray())
     {
         // Array classes don't have metadata tokens
@@ -502,8 +500,6 @@ PCODE MethodDesc::GetMethodEntryPoint()
 
     // Keep implementations of MethodDesc::GetMethodEntryPoint and MethodDesc::GetAddrOfSlot in sync!
 
-    g_IBCLogger.LogMethodDescAccess(this);
-
     if (HasNonVtableSlot())
     {
         SIZE_T size = GetBaseSize();
@@ -637,8 +633,6 @@ DWORD MethodDesc::GetNumGenericMethodArgs()
         SUPPORTS_DAC;
     }
     CONTRACTL_END
-
-    g_IBCLogger.LogMethodDescAccess(this);
 
     if (GetClassification() == mcInstantiated)
     {
@@ -873,8 +867,6 @@ WORD MethodDesc::InterlockedUpdateFlags(WORD wMask, BOOL fSet)
 #pragma warning(pop)
 #endif
 
-    g_IBCLogger.LogMethodDescWriteAccess(this);
-
     if (fSet)
         FastInterlockOr(pdwFlags, dwMask);
     else
@@ -913,8 +905,6 @@ WORD MethodDesc::InterlockedUpdateFlags3(WORD wMask, BOOL fSet)
 #pragma warning(pop)
 #endif
 
-    g_IBCLogger.LogMethodDescWriteAccess(this);
-
     if (fSet)
         FastInterlockOr(pdwFlags, dwMask);
     else
@@ -938,8 +928,6 @@ PCODE MethodDesc::GetNativeCode()
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
     _ASSERTE(!IsDefaultInterfaceMethod() || HasNativeCodeSlot());
-
-    g_IBCLogger.LogMethodDescAccess(this);
 
     if (HasNativeCodeSlot())
     {
@@ -1377,7 +1365,6 @@ Module *MethodDesc::GetModule() const
     STATIC_CONTRACT_FORBID_FAULT;
     SUPPORTS_DAC;
 
-    g_IBCLogger.LogMethodDescAccess(this);
     Module *pModule = GetModule_NoLogging();
 
     return pModule;
@@ -2004,9 +1991,6 @@ PCODE MethodDesc::TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags
     }
     CONTRACTL_END
 
-    // Record this method desc if required
-    g_IBCLogger.LogMethodDescAccess(this);
-
     if (IsGenericMethodDefinition())
     {
         _ASSERTE(!"Cannot take the address of an uninstantiated generic method.");
@@ -2398,8 +2382,6 @@ void MethodDesc::CheckRestore(ClassLoadLevel level)
 
     if (!GetMethodTable()->IsFullyLoaded())
     {
-        g_IBCLogger.LogMethodDescAccess(this);
-
         if (GetClassification() == mcInstantiated)
         {
 #ifndef DACCESS_COMPILE
@@ -2408,8 +2390,6 @@ void MethodDesc::CheckRestore(ClassLoadLevel level)
             // First restore method table pointer in singleton chunk;
             // it might be out-of-module
             ClassLoader::EnsureLoaded(TypeHandle(GetMethodTable()), level);
-
-            g_IBCLogger.LogMethodDescWriteAccess(this);
 
             pIMD->m_wFlags2 = pIMD->m_wFlags2 & ~InstantiatedMethodDesc::Unrestored;
 
@@ -4039,9 +4019,6 @@ void ComPlusCallMethodDesc::InitRetThunk()
 #ifdef TARGET_X86
     if (m_pComPlusCallInfo->m_pRetThunk != NULL)
         return;
-
-    // Record the fact that we are writting into the ComPlusCallMethodDesc
-    g_IBCLogger.LogMethodDescAccess(this);
 
     UINT numStackBytes = CbStackPop();
 

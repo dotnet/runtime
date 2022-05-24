@@ -975,7 +975,7 @@ socket_transport_accept (int socket_fd)
 	conn_fd = accept (socket_fd, NULL, NULL);
 
 	if (conn_fd == -1) {
-		PRINT_ERROR_MSG ("debugger-agent: Unable to listen on %d\n", socket_fd);
+		PRINT_ERROR_MSG ("debugger-agent: Unable to listen on %d: %s.\n", socket_fd, strerror (get_last_sock_error()));
 	} else {
 		PRINT_DEBUG_MSG (1, "Accepted connection from client, connection fd=%d.\n", conn_fd);
 	}
