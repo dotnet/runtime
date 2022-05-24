@@ -44,9 +44,6 @@ namespace System.Numerics
         [System.CLSCompliantAttribute(false)]
         public int CompareTo(ulong other) { throw null; }
         public static System.Numerics.BigInteger CopySign(System.Numerics.BigInteger value, System.Numerics.BigInteger sign) { throw null; }
-        public static System.Numerics.BigInteger CreateChecked<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
-        public static System.Numerics.BigInteger CreateSaturating<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
-        public static System.Numerics.BigInteger CreateTruncating<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
         public static System.Numerics.BigInteger Divide(System.Numerics.BigInteger dividend, System.Numerics.BigInteger divisor) { throw null; }
         public static (System.Numerics.BigInteger Quotient, System.Numerics.BigInteger Remainder) DivRem(System.Numerics.BigInteger left, System.Numerics.BigInteger right) { throw null; }
         public static System.Numerics.BigInteger DivRem(System.Numerics.BigInteger dividend, System.Numerics.BigInteger divisor, out System.Numerics.BigInteger remainder) { throw null; }
@@ -224,7 +221,6 @@ namespace System.Numerics
         public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format) { throw null; }
         public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format, System.IFormatProvider? provider) { throw null; }
         public static System.Numerics.BigInteger TrailingZeroCount(System.Numerics.BigInteger value) { throw null; }
-        public static bool TryCreate<TOther>(TOther value, out System.Numerics.BigInteger result) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
         public bool TryFormat(System.Span<char> destination, out int charsWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> value, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Numerics.BigInteger result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out System.Numerics.BigInteger result) { throw null; }
@@ -263,9 +259,6 @@ namespace System.Numerics
         public static System.Numerics.Complex Conjugate(System.Numerics.Complex value) { throw null; }
         public static System.Numerics.Complex Cos(System.Numerics.Complex value) { throw null; }
         public static System.Numerics.Complex Cosh(System.Numerics.Complex value) { throw null; }
-        public static System.Numerics.Complex CreateChecked<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
-        public static System.Numerics.Complex CreateSaturating<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
-        public static System.Numerics.Complex CreateTruncating<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
         public static System.Numerics.Complex Divide(double dividend, System.Numerics.Complex divisor) { throw null; }
         public static System.Numerics.Complex Divide(System.Numerics.Complex dividend, double divisor) { throw null; }
         public static System.Numerics.Complex Divide(System.Numerics.Complex dividend, System.Numerics.Complex divisor) { throw null; }
@@ -363,7 +356,6 @@ namespace System.Numerics
         public string ToString(System.IFormatProvider? provider) { throw null; }
         public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format) { throw null; }
         public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format, System.IFormatProvider? provider) { throw null; }
-        public static bool TryCreate<TOther>(TOther value, out System.Numerics.Complex result) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
         public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Numerics.Complex result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out System.Numerics.Complex result) { throw null; }
