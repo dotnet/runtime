@@ -599,6 +599,69 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public static void CreateSaturatingFromDecimalTest()
+        {
+            AssertBitwiseEqual(-79228162514264337593543950335.0, NumberBaseHelper<Complex>.CreateSaturating<decimal>(decimal.MinValue));
+            AssertBitwiseEqual(-1.0, NumberBaseHelper<Complex>.CreateSaturating<decimal>(-1.0m));
+            AssertBitwiseEqual(-0.0, NumberBaseHelper<Complex>.CreateSaturating<decimal>(-0.0m));
+            AssertBitwiseEqual(+0.0, NumberBaseHelper<Complex>.CreateSaturating<decimal>(+0.0m));
+            AssertBitwiseEqual(+1.0, NumberBaseHelper<Complex>.CreateSaturating<decimal>(+1.0m));
+            AssertBitwiseEqual(+79228162514264337593543950335.0, NumberBaseHelper<Complex>.CreateSaturating<decimal>(decimal.MaxValue));
+        }
+
+        [Fact]
+        public static void CreateSaturatingFromDoubleTest()
+        {
+            AssertBitwiseEqual(double.NegativeInfinity, NumberBaseHelper<Complex>.CreateSaturating<double>(double.NegativeInfinity));
+            AssertBitwiseEqual(double.MinValue, NumberBaseHelper<Complex>.CreateSaturating<double>(double.MinValue));
+
+            AssertBitwiseEqual(-1.0, NumberBaseHelper<Complex>.CreateSaturating<double>(-1.0));
+
+            AssertBitwiseEqual(-2.2250738585072014E-308, NumberBaseHelper<Complex>.CreateSaturating<double>(-2.2250738585072014E-308));
+            AssertBitwiseEqual(-2.2250738585072009E-308, NumberBaseHelper<Complex>.CreateSaturating<double>(-2.2250738585072009E-308));
+            AssertBitwiseEqual(-double.Epsilon, NumberBaseHelper<Complex>.CreateSaturating<double>(-double.Epsilon));
+            AssertBitwiseEqual(-0.0, NumberBaseHelper<Complex>.CreateSaturating<double>(-0.0));
+
+            AssertBitwiseEqual(+0.0, NumberBaseHelper<Complex>.CreateSaturating<double>(+0.0));
+            AssertBitwiseEqual(+double.Epsilon, NumberBaseHelper<Complex>.CreateSaturating<double>(double.Epsilon));
+            AssertBitwiseEqual(+2.2250738585072009E-308, NumberBaseHelper<Complex>.CreateSaturating<double>(2.2250738585072009E-308));
+            AssertBitwiseEqual(+2.2250738585072014E-308, NumberBaseHelper<Complex>.CreateSaturating<double>(2.2250738585072014E-308));
+
+            AssertBitwiseEqual(+1.0, NumberBaseHelper<Complex>.CreateSaturating<double>(1.0));
+
+            AssertBitwiseEqual(double.MaxValue, NumberBaseHelper<Complex>.CreateSaturating<double>(double.MaxValue));
+            AssertBitwiseEqual(double.PositiveInfinity, NumberBaseHelper<Complex>.CreateSaturating<double>(double.PositiveInfinity));
+
+            AssertBitwiseEqual(double.NaN, NumberBaseHelper<Complex>.CreateSaturating<double>(double.NaN));
+        }
+
+        [Fact]
+        public static void CreateSaturatingFromHalfTest()
+        {
+            AssertBitwiseEqual(Half.NegativeInfinity, NumberBaseHelper<Complex>.CreateSaturating<Half>(Half.NegativeInfinity));
+
+            AssertBitwiseEqual(-65504.0, NumberBaseHelper<Complex>.CreateSaturating<Half>(Half.MinValue));
+            AssertBitwiseEqual(-1.0, NumberBaseHelper<Complex>.CreateSaturating<Half>(Half.NegativeOne));
+
+            AssertBitwiseEqual(-6.103515625E-05, NumberBaseHelper<Complex>.CreateSaturating<Half>(-BitConverter.UInt16BitsToHalf(0x0400)));
+            AssertBitwiseEqual(-6.097555160522461E-05, NumberBaseHelper<Complex>.CreateSaturating<Half>(-BitConverter.UInt16BitsToHalf(0x03FF)));
+            AssertBitwiseEqual(-5.960464477539063E-08, NumberBaseHelper<Complex>.CreateSaturating<Half>(-Half.Epsilon));
+            AssertBitwiseEqual(-0.0, NumberBaseHelper<Complex>.CreateSaturating<Half>(Half.NegativeZero));
+
+            AssertBitwiseEqual(+0.0, NumberBaseHelper<Complex>.CreateSaturating<Half>(Half.Zero));
+            AssertBitwiseEqual(+5.960464477539063E-08, NumberBaseHelper<Complex>.CreateSaturating<Half>(Half.Epsilon));
+            AssertBitwiseEqual(+6.097555160522461E-05, NumberBaseHelper<Complex>.CreateSaturating<Half>(BitConverter.UInt16BitsToHalf(0x03FF)));
+            AssertBitwiseEqual(+6.103515625E-05, NumberBaseHelper<Complex>.CreateSaturating<Half>(BitConverter.UInt16BitsToHalf(0x0400)));
+
+            AssertBitwiseEqual(+1.0, NumberBaseHelper<Complex>.CreateSaturating<Half>(Half.One));
+            AssertBitwiseEqual(+65504.0, NumberBaseHelper<Complex>.CreateSaturating<Half>(Half.MaxValue));
+
+            AssertBitwiseEqual(Half.PositiveInfinity, NumberBaseHelper<Complex>.CreateSaturating<Half>(Half.PositiveInfinity));
+
+            AssertBitwiseEqual(Half.NaN, NumberBaseHelper<Complex>.CreateSaturating<Half>(Half.NaN));
+        }
+
+        [Fact]
         public static void CreateSaturatingFromInt16Test()
         {
             AssertBitwiseEqual(0.0, NumberBaseHelper<Complex>.CreateSaturating<short>(0x0000));
@@ -629,6 +692,16 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public static void CreateSaturatingFromInt128Test()
+        {
+            AssertBitwiseEqual(0.0, NumberBaseHelper<Complex>.CreateSaturating<Int128>(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0000)));
+            AssertBitwiseEqual(1.0, NumberBaseHelper<Complex>.CreateSaturating<Int128>(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0001)));
+            AssertBitwiseEqual(170141183460469231731687303715884105727.0, NumberBaseHelper<Complex>.CreateSaturating<Int128>(new Int128(0x7FFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)));
+            AssertBitwiseEqual(-170141183460469231731687303715884105728.0, NumberBaseHelper<Complex>.CreateSaturating<Int128>(new Int128(0x8000_0000_0000_0000, 0x0000_0000_0000_0000)));
+            AssertBitwiseEqual(-1.0, NumberBaseHelper<Complex>.CreateSaturating<Int128>(new Int128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)));
+        }
+
+        [Fact]
         public static void CreateSaturatingFromIntPtrTest()
         {
             if (Environment.Is64BitProcess)
@@ -650,6 +723,49 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public static void CreateSaturatingFromNFloatTest()
+        {
+            AssertBitwiseEqual(NFloat.NegativeInfinity, NumberBaseHelper<Complex>.CreateSaturating<NFloat>(NFloat.NegativeInfinity));
+
+            AssertBitwiseEqual(-1.0, NumberBaseHelper<Complex>.CreateSaturating<NFloat>(-1.0f));
+            AssertBitwiseEqual(-0.0, NumberBaseHelper<Complex>.CreateSaturating<NFloat>(-0.0f));
+
+            AssertBitwiseEqual(+0.0, NumberBaseHelper<Complex>.CreateSaturating<NFloat>(+0.0f));
+            AssertBitwiseEqual(+1.0, NumberBaseHelper<Complex>.CreateSaturating<NFloat>(1.0f));
+
+            if (Environment.Is64BitProcess)
+            {
+                AssertBitwiseEqual(NFloat.MinValue, NumberBaseHelper<Complex>.CreateSaturating<NFloat>(NFloat.MinValue));
+
+                AssertBitwiseEqual(-2.2250738585072014E-308, NumberBaseHelper<Complex>.CreateSaturating<NFloat>((NFloat)(-2.2250738585072014E-308)));
+                AssertBitwiseEqual(-2.2250738585072009E-308, NumberBaseHelper<Complex>.CreateSaturating<NFloat>((NFloat)(-2.2250738585072009E-308)));
+                AssertBitwiseEqual(-NFloat.Epsilon, NumberBaseHelper<Complex>.CreateSaturating<NFloat>(-NFloat.Epsilon));
+
+                AssertBitwiseEqual(+NFloat.Epsilon, NumberBaseHelper<Complex>.CreateSaturating<NFloat>(NFloat.Epsilon));
+                AssertBitwiseEqual(+2.2250738585072009E-308, NumberBaseHelper<Complex>.CreateSaturating<NFloat>((NFloat)2.2250738585072009E-308));
+                AssertBitwiseEqual(+2.2250738585072014E-308, NumberBaseHelper<Complex>.CreateSaturating<NFloat>((NFloat)2.2250738585072014E-308));
+
+                AssertBitwiseEqual(NFloat.MaxValue, NumberBaseHelper<Complex>.CreateSaturating<NFloat>(NFloat.MaxValue));
+            }
+            else
+            {
+                AssertBitwiseEqual(-3.4028234663852886E+38, NumberBaseHelper<Complex>.CreateSaturating<NFloat>(NFloat.MinValue));
+                AssertBitwiseEqual(-1.1754943508222875E-38, NumberBaseHelper<Complex>.CreateSaturating<NFloat>(-1.17549435E-38f));
+                AssertBitwiseEqual(-1.1754942106924411E-38, NumberBaseHelper<Complex>.CreateSaturating<NFloat>(-1.17549421E-38f));
+                AssertBitwiseEqual(-1.401298464324817E-45, NumberBaseHelper<Complex>.CreateSaturating<NFloat>(-NFloat.Epsilon));
+
+                AssertBitwiseEqual(+1.401298464324817E-45, NumberBaseHelper<Complex>.CreateSaturating<NFloat>(NFloat.Epsilon));
+                AssertBitwiseEqual(+1.1754942106924411E-38, NumberBaseHelper<Complex>.CreateSaturating<NFloat>(1.17549421E-38f));
+                AssertBitwiseEqual(+1.1754943508222875E-38, NumberBaseHelper<Complex>.CreateSaturating<NFloat>(1.17549435E-38f));
+                AssertBitwiseEqual(+3.4028234663852886E+38, NumberBaseHelper<Complex>.CreateSaturating<NFloat>(NFloat.MaxValue));
+            }
+
+            AssertBitwiseEqual(NFloat.PositiveInfinity, NumberBaseHelper<Complex>.CreateSaturating<NFloat>(NFloat.PositiveInfinity));
+
+            AssertBitwiseEqual(NFloat.NaN, NumberBaseHelper<Complex>.CreateSaturating<NFloat>(NFloat.NaN));
+        }
+
+        [Fact]
         public static void CreateSaturatingFromSByteTest()
         {
             AssertBitwiseEqual(0.0, NumberBaseHelper<Complex>.CreateSaturating<sbyte>(0x00));
@@ -657,6 +773,32 @@ namespace System.Numerics.Tests
             AssertBitwiseEqual(127.0, NumberBaseHelper<Complex>.CreateSaturating<sbyte>(0x7F));
             AssertBitwiseEqual(-128.0, NumberBaseHelper<Complex>.CreateSaturating<sbyte>(unchecked((sbyte)0x80)));
             AssertBitwiseEqual(-1.0, NumberBaseHelper<Complex>.CreateSaturating<sbyte>(unchecked((sbyte)0xFF)));
+        }
+
+        [Fact]
+        public static void CreateSaturatingFromSingleTest()
+        {
+            AssertBitwiseEqual(float.NegativeInfinity, NumberBaseHelper<Complex>.CreateSaturating<float>(float.NegativeInfinity));
+
+            AssertBitwiseEqual(-3.4028234663852886E+38, NumberBaseHelper<Complex>.CreateSaturating<float>(float.MinValue));
+            AssertBitwiseEqual(-1.0, NumberBaseHelper<Complex>.CreateSaturating<float>(-1.0f));
+
+            AssertBitwiseEqual(-1.1754943508222875E-38, NumberBaseHelper<Complex>.CreateSaturating<float>(-1.17549435E-38f));
+            AssertBitwiseEqual(-1.1754942106924411E-38, NumberBaseHelper<Complex>.CreateSaturating<float>(-1.17549421E-38f));
+            AssertBitwiseEqual(-1.401298464324817E-45, NumberBaseHelper<Complex>.CreateSaturating<float>(-float.Epsilon));
+            AssertBitwiseEqual(-0.0, NumberBaseHelper<Complex>.CreateSaturating<float>(-0.0f));
+
+            AssertBitwiseEqual(+0.0, NumberBaseHelper<Complex>.CreateSaturating<float>(+0.0f));
+            AssertBitwiseEqual(+1.401298464324817E-45, NumberBaseHelper<Complex>.CreateSaturating<float>(float.Epsilon));
+            AssertBitwiseEqual(+1.1754942106924411E-38, NumberBaseHelper<Complex>.CreateSaturating<float>(1.17549421E-38f));
+            AssertBitwiseEqual(+1.1754943508222875E-38, NumberBaseHelper<Complex>.CreateSaturating<float>(1.17549435E-38f));
+
+            AssertBitwiseEqual(+1.0, NumberBaseHelper<Complex>.CreateSaturating<float>(1.0f));
+            AssertBitwiseEqual(+3.4028234663852886E+38, NumberBaseHelper<Complex>.CreateSaturating<float>(float.MaxValue));
+
+            AssertBitwiseEqual(float.PositiveInfinity, NumberBaseHelper<Complex>.CreateSaturating<float>(float.PositiveInfinity));
+
+            AssertBitwiseEqual(float.NaN, NumberBaseHelper<Complex>.CreateSaturating<float>(float.NaN));
         }
 
         [Fact]
@@ -687,6 +829,16 @@ namespace System.Numerics.Tests
             AssertBitwiseEqual(9223372036854775807.0, NumberBaseHelper<Complex>.CreateSaturating<ulong>(0x7FFFFFFFFFFFFFFF));
             AssertBitwiseEqual(9223372036854775808.0, NumberBaseHelper<Complex>.CreateSaturating<ulong>(0x8000000000000000));
             AssertBitwiseEqual(18446744073709551615.0, NumberBaseHelper<Complex>.CreateSaturating<ulong>(0xFFFFFFFFFFFFFFFF));
+        }
+
+        [Fact]
+        public static void CreateSaturatingFromUInt128Test()
+        {
+            AssertBitwiseEqual(0.0, NumberBaseHelper<Complex>.CreateSaturating<UInt128>(new UInt128(0x0000_0000_0000_0000, 0x0000_0000_0000_0000)));
+            AssertBitwiseEqual(1.0, NumberBaseHelper<Complex>.CreateSaturating<UInt128>(new UInt128(0x0000_0000_0000_0000, 0x0000_0000_0000_0001)));
+            AssertBitwiseEqual(170141183460469231731687303715884105727.0, NumberBaseHelper<Complex>.CreateSaturating<UInt128>(new UInt128(0x7FFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)));
+            AssertBitwiseEqual(170141183460469231731687303715884105728.0, NumberBaseHelper<Complex>.CreateSaturating<UInt128>(new UInt128(0x8000_0000_0000_0000, 0x0000_0000_0000_0000)));
+            AssertBitwiseEqual(340282366920938463463374607431768211455.0, NumberBaseHelper<Complex>.CreateSaturating<UInt128>(new UInt128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)));
         }
 
         [Fact]
