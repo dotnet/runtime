@@ -5155,6 +5155,9 @@ void Compiler::placeLoopAlignInstructions()
 
     if ((fgFirstBB != nullptr) && fgFirstBB->isLoopAlign())
     {
+        // Loop alignment is disabled for cold blocks
+        assert((fgFirstBB->bbFlags & BBF_COLD) == 0);
+
         // Adding align instruction in prolog is not supported
         // hence just remove that loop from our list.
         fgFirstBB->unmarkLoopAlign(this DEBUG_ARG("prolog block"));
@@ -5192,6 +5195,9 @@ void Compiler::placeLoopAlignInstructions()
 
         if ((block->bbNext != nullptr) && (block->bbNext->isLoopAlign()))
         {
+            // Loop alignment is disabled for cold blocks
+            assert((block->bbFlags & BBF_COLD) == 0);
+
             // If jmp was not found, then block before the loop start is where align instruction will be added.
             if (bbHavingAlign == nullptr)
             {
