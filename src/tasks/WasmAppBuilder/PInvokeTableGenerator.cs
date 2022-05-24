@@ -23,7 +23,7 @@ internal sealed class PInvokeTableGenerator
     {
         var modules = new Dictionary<string, string>();
         foreach (var module in pinvokeModules)
-            modules [module] = module;
+            modules[module] = module;
 
         var signatures = new List<string>();
 
@@ -63,7 +63,7 @@ internal sealed class PInvokeTableGenerator
 
     private void CollectPInvokes(List<PInvoke> pinvokes, List<PInvokeCallback> callbacks, List<string> signatures, Type type)
     {
-        foreach (var method in type.GetMethods(BindingFlags.DeclaredOnly|BindingFlags.Public|BindingFlags.NonPublic|BindingFlags.Static|BindingFlags.Instance))
+        foreach (var method in type.GetMethods(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance))
         {
             try
             {
@@ -84,7 +84,14 @@ internal sealed class PInvokeTableGenerator
                 var module = (string)dllimport.ConstructorArguments[0].Value!;
                 var entrypoint = (string)dllimport.NamedArguments.First(arg => arg.MemberName == "EntryPoint").TypedValue.Value!;
                 pinvokes.Add(new PInvoke(entrypoint, module, method));
-                signatures.Add(CookieHelper.BuildCookie(method));
+
+                string? signature = CookieHelper.BuildCookie(method);
+                if (signature == null)
+                {
+                    throw new LogAsErrorException($"Unsupported parameter type in method '{type.FullName}.{method.Name}'");
+                }
+
+                signatures.Add(signature);
             }
 
             foreach (CustomAttributeData cattr in CustomAttributeData.GetCustomAttributes(method))
@@ -154,11 +161,12 @@ internal sealed class PInvokeTableGenerator
                 Where(l => l.Module == module && !l.Skip).
                 OrderBy(l => l.EntryPoint).
                 GroupBy(d => d.EntryPoint).
-                Select (l => "{\"" + FixupSymbolName(l.Key) + "\", " + FixupSymbolName(l.Key) + "}, " +
-                                "// " + string.Join (", ", l.Select(c => c.Method.DeclaringType!.Module!.Assembly!.GetName ()!.Name!).Distinct().OrderBy(n => n)));
+                Select(l => "{\"" + FixupSymbolName(l.Key) + "\", " + FixupSymbolName(l.Key) + "}, " +
+                                "// " + string.Join(", ", l.Select(c => c.Method.DeclaringType!.Module!.Assembly!.GetName()!.Name!).Distinct().OrderBy(n => n)));
 
-            foreach (var pinvoke in assemblies_pinvokes) {
-                w.WriteLine (pinvoke);
+            foreach (var pinvoke in assemblies_pinvokes)
+            {
+                w.WriteLine(pinvoke);
             }
 
             w.WriteLine("{NULL, NULL}");
@@ -220,9 +228,9 @@ internal sealed class PInvokeTableGenerator
                 (b >= (byte)'A' && b <= (byte)'Z') ||
                 (b == (byte)'_'))
             {
-                sb.Append((char) b);
+                sb.Append((char)b);
             }
-            else if (s_charsToReplace.Contains((char) b))
+            else if (s_charsToReplace.Contains((char)b))
             {
                 sb.Append('_');
             }
@@ -282,7 +290,8 @@ internal sealed class PInvokeTableGenerator
     {
         var sb = new StringBuilder();
         var method = pinvoke.Method;
-        if (method.Name == "EnumCalendarInfo") {
+        if (method.Name == "EnumCalendarInfo")
+        {
             // FIXME: System.Reflection.MetadataLoadContext can't decode function pointer types
             // https://github.com/dotnet/runtime/issues/43791
             sb.Append($"int {FixupSymbolName(pinvoke.EntryPoint)} (int, int, int, int, int);");
@@ -300,7 +309,8 @@ internal sealed class PInvokeTableGenerator
         sb.Append($" {FixupSymbolName(pinvoke.EntryPoint)} (");
         int pindex = 0;
         var pars = method.GetParameters();
-        foreach (var p in pars) {
+        foreach (var p in pars)
+        {
             if (pindex > 0)
                 sb.Append(',');
             sb.Append(MapType(pars[pindex].ParameterType));
@@ -325,13 +335,15 @@ internal sealed class PInvokeTableGenerator
         // Arguments to interp entry functions in the runtime
         w.WriteLine("InterpFtnDesc wasm_native_to_interp_ftndescs[" + callbacks.Count + "];");
 
-        foreach (var cb in callbacks) {
+        foreach (var cb in callbacks)
+        {
             MethodInfo method = cb.Method;
             bool isVoid = method.ReturnType.FullName == "System.Void";
 
             if (!isVoid && !IsBlittable(method.ReturnType))
                 Error($"The return type '{method.ReturnType.FullName}' of pinvoke callback method '{method}' needs to be blittable.");
-            foreach (var p in method.GetParameters()) {
+            foreach (var p in method.GetParameters())
+            {
                 if (!IsBlittable(p.ParameterType))
                     Error("Parameter types of pinvoke callback method '" + method + "' needs to be blittable.");
             }
@@ -339,7 +351,8 @@ internal sealed class PInvokeTableGenerator
 
         var callbackNames = new HashSet<string>();
 
-        foreach (var cb in callbacks) {
+        foreach (var cb in callbacks)
+        {
             var sb = new StringBuilder();
             var method = cb.Method;
 
@@ -348,11 +361,13 @@ internal sealed class PInvokeTableGenerator
             sb.Append("typedef void ");
             sb.Append($" (*WasmInterpEntrySig_{cb_index}) (");
             int pindex = 0;
-            if (method.ReturnType.Name != "Void") {
+            if (method.ReturnType.Name != "Void")
+            {
                 sb.Append("int*");
                 pindex++;
             }
-            foreach (var p in method.GetParameters()) {
+            foreach (var p in method.GetParameters())
+            {
                 if (pindex > 0)
                     sb.Append(',');
                 sb.Append("int*");
@@ -371,16 +386,17 @@ internal sealed class PInvokeTableGenerator
             string class_name = method.DeclaringType.Name;
             string method_name = method.Name;
             string entry_name = $"wasm_native_to_interp_{module_symbol}_{class_name}_{method_name}";
-            if (callbackNames.Contains (entry_name))
+            if (callbackNames.Contains(entry_name))
             {
                 Error($"Two callbacks with the same name '{method_name}' are not supported.");
             }
-            callbackNames.Add (entry_name);
+            callbackNames.Add(entry_name);
             cb.EntryName = entry_name;
             sb.Append(MapType(method.ReturnType));
             sb.Append($" {entry_name} (");
             pindex = 0;
-            foreach (var p in method.GetParameters()) {
+            foreach (var p in method.GetParameters())
+            {
                 if (pindex > 0)
                     sb.Append(',');
                 sb.Append(MapType(method.GetParameters()[pindex].ParameterType));
@@ -392,12 +408,14 @@ internal sealed class PInvokeTableGenerator
                 sb.Append(MapType(method.ReturnType) + " res;\n");
             sb.Append($"((WasmInterpEntrySig_{cb_index})wasm_native_to_interp_ftndescs [{cb_index}].func) (");
             pindex = 0;
-            if (!is_void) {
+            if (!is_void)
+            {
                 sb.Append("&res");
                 pindex++;
             }
             int aindex = 0;
-            foreach (var p in method.GetParameters()) {
+            foreach (var p in method.GetParameters())
+            {
                 if (pindex > 0)
                     sb.Append(", ");
                 sb.Append($"&arg{aindex}");
@@ -416,27 +434,29 @@ internal sealed class PInvokeTableGenerator
         }
 
         // Array of function pointers
-        w.Write ("static void *wasm_native_to_interp_funcs[] = { ");
-        foreach (var cb in callbacks) {
-            w.Write (cb.EntryName + ",");
+        w.Write("static void *wasm_native_to_interp_funcs[] = { ");
+        foreach (var cb in callbacks)
+        {
+            w.Write(cb.EntryName + ",");
         }
-        w.WriteLine ("};");
+        w.WriteLine("};");
 
         // Lookup table from method->interp entry
         // The key is a string of the form <assembly name>_<method token>
         // FIXME: Use a better encoding
-        w.Write ("static const char *wasm_native_to_interp_map[] = { ");
-        foreach (var cb in callbacks) {
+        w.Write("static const char *wasm_native_to_interp_map[] = { ");
+        foreach (var cb in callbacks)
+        {
             var method = cb.Method;
             string module_symbol = method.DeclaringType!.Module!.Assembly!.GetName()!.Name!.Replace(".", "_");
             string class_name = method.DeclaringType.Name;
             string method_name = method.Name;
-            w.WriteLine ($"\"{module_symbol}_{class_name}_{method_name}\",");
+            w.WriteLine($"\"{module_symbol}_{class_name}_{method_name}\",");
         }
-        w.WriteLine ("};");
+        w.WriteLine("};");
     }
 
-    private static bool IsBlittable (Type type)
+    private static bool IsBlittable(Type type)
     {
         if (type.IsPrimitive || type.IsByRef || type.IsPointer || type.IsEnum)
             return true;
@@ -444,7 +464,7 @@ internal sealed class PInvokeTableGenerator
             return false;
     }
 
-    private static void Error (string msg) => throw new LogAsErrorException(msg);
+    private static void Error(string msg) => throw new LogAsErrorException(msg);
 }
 
 #pragma warning disable CA1067
