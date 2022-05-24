@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Globalization;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Tests
@@ -586,6 +587,64 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void CreateCheckedFromDecimalTest()
+        {
+            Assert.Equal((ulong)0x0000_0000_0000_0000, NumberBaseHelper<ulong>.CreateChecked<decimal>(-0.0m));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, NumberBaseHelper<ulong>.CreateChecked<decimal>(+0.0m));
+            Assert.Equal((ulong)0x0000_0000_0000_0001, NumberBaseHelper<ulong>.CreateChecked<decimal>(+1.0m));
+
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<ulong>.CreateChecked<decimal>(decimal.MinValue));
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<ulong>.CreateChecked<decimal>(decimal.MaxValue));
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<ulong>.CreateChecked<decimal>(decimal.MinusOne));
+        }
+
+        [Fact]
+        public static void CreateCheckedFromDoubleTest()
+        {
+            Assert.Equal((ulong)0x0000_0000_0000_0000, NumberBaseHelper<ulong>.CreateChecked<double>(+0.0));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, NumberBaseHelper<ulong>.CreateChecked<double>(-0.0));
+
+
+            Assert.Equal((ulong)0x0000_0000_0000_0000, NumberBaseHelper<ulong>.CreateChecked<double>(-double.Epsilon));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, NumberBaseHelper<ulong>.CreateChecked<double>(+double.Epsilon));
+
+            Assert.Equal((ulong)0x0000_0000_0000_0001, NumberBaseHelper<ulong>.CreateChecked<double>(+1.0));
+            Assert.Equal((ulong)0xFFFF_FFFF_FFFF_F800, NumberBaseHelper<ulong>.CreateChecked<double>(+18446744073709549568.0));
+
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<ulong>.CreateChecked<double>(-1.0));
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<ulong>.CreateChecked<double>(+18446744073709551616.0));
+
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<ulong>.CreateChecked<double>(double.PositiveInfinity));
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<ulong>.CreateChecked<double>(double.NegativeInfinity));
+
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<ulong>.CreateChecked<double>(double.MaxValue));
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<ulong>.CreateChecked<double>(double.MinValue));
+
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<ulong>.CreateChecked<double>(double.NaN));
+        }
+
+        [Fact]
+        public static void CreateCheckedFromHalfTest()
+        {
+            Assert.Equal((ulong)0x0000_0000_0000_0000, NumberBaseHelper<ulong>.CreateChecked<Half>(Half.Zero));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, NumberBaseHelper<ulong>.CreateChecked<Half>(Half.NegativeZero));
+
+            Assert.Equal((ulong)0x0000_0000_0000_0000, NumberBaseHelper<ulong>.CreateChecked<Half>(-Half.Epsilon));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, NumberBaseHelper<ulong>.CreateChecked<Half>(+Half.Epsilon));
+
+            Assert.Equal((ulong)0x0000_0000_0000_0001, NumberBaseHelper<ulong>.CreateChecked<Half>(Half.One));
+            Assert.Equal((ulong)0x0000_0000_0000_FFE0, NumberBaseHelper<ulong>.CreateChecked<Half>(Half.MaxValue));
+
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<ulong>.CreateChecked<Half>(Half.NegativeOne));
+
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<ulong>.CreateChecked<Half>(Half.PositiveInfinity));
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<ulong>.CreateChecked<Half>(Half.NegativeInfinity));
+
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<ulong>.CreateChecked<Half>(Half.MinValue));
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<ulong>.CreateChecked<Half>(Half.NaN));
+        }
+
+        [Fact]
         public static void CreateCheckedFromInt16Test()
         {
             Assert.Equal((ulong)0x0000000000000000, NumberBaseHelper<ulong>.CreateChecked<short>(0x0000));
@@ -616,6 +675,16 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void CreateCheckedFromInt128Test()
+        {
+            Assert.Equal((ulong)0x0000000000000000, NumberBaseHelper<ulong>.CreateChecked<Int128>(Int128.Zero));
+            Assert.Equal((ulong)0x0000000000000001, NumberBaseHelper<ulong>.CreateChecked<Int128>(Int128.One));
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<ulong>.CreateChecked<Int128>(Int128.MaxValue));
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<ulong>.CreateChecked<Int128>(Int128.MinValue));
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<ulong>.CreateChecked<Int128>(Int128.NegativeOne));
+        }
+
+        [Fact]
         public static void CreateCheckedFromIntPtrTest()
         {
             if (Environment.Is64BitProcess)
@@ -637,6 +706,41 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void CreateCheckedFromNFloatTest()
+        {
+            Assert.Equal((ulong)0x0000_0000_0000_0000, NumberBaseHelper<ulong>.CreateChecked<NFloat>(0.0f));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, NumberBaseHelper<ulong>.CreateChecked<NFloat>(NFloat.NegativeZero));
+
+            Assert.Equal((ulong)0x0000_0000_0000_0000, NumberBaseHelper<ulong>.CreateChecked<NFloat>(-NFloat.Epsilon));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, NumberBaseHelper<ulong>.CreateChecked<NFloat>(+NFloat.Epsilon));
+
+            if (Environment.Is64BitProcess)
+            {
+                Assert.Equal((ulong)0x0000_0000_0000_0001, NumberBaseHelper<ulong>.CreateChecked<NFloat>(1.0f));
+                Assert.Equal((ulong)0xFFFF_FFFF_FFFF_F800, NumberBaseHelper<ulong>.CreateChecked<NFloat>((NFloat)(18446744073709549568.0)));
+
+                Assert.Throws<OverflowException>(() => NumberBaseHelper<ulong>.CreateChecked<NFloat>(-1.0f));
+                Assert.Throws<OverflowException>(() => NumberBaseHelper<ulong>.CreateChecked<NFloat>(+18446744073709551616.0f));
+            }
+            else
+            {
+                Assert.Equal((ulong)0x0000_0000_0000_0001, NumberBaseHelper<ulong>.CreateChecked<NFloat>(1.0f));
+                Assert.Equal((ulong)0xFFFF_FF00_0000_0000, NumberBaseHelper<ulong>.CreateChecked<NFloat>(18446742974197923840.0f));
+
+                Assert.Throws<OverflowException>(() => NumberBaseHelper<ulong>.CreateChecked<NFloat>(-1.0f));
+                Assert.Throws<OverflowException>(() => NumberBaseHelper<ulong>.CreateChecked<NFloat>(+18446744073709551616.0f));
+            }
+
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<ulong>.CreateChecked<NFloat>(NFloat.PositiveInfinity));
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<ulong>.CreateChecked<NFloat>(NFloat.NegativeInfinity));
+
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<ulong>.CreateChecked<NFloat>(NFloat.MaxValue));
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<ulong>.CreateChecked<NFloat>(NFloat.MinValue));
+
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<ulong>.CreateChecked<NFloat>(NFloat.NaN));
+        }
+
+        [Fact]
         public static void CreateCheckedFromSByteTest()
         {
             Assert.Equal((ulong)0x0000000000000000, NumberBaseHelper<ulong>.CreateChecked<sbyte>(0x00));
@@ -644,6 +748,30 @@ namespace System.Tests
             Assert.Equal((ulong)0x000000000000007F, NumberBaseHelper<ulong>.CreateChecked<sbyte>(0x7F));
             Assert.Throws<OverflowException>(() => NumberBaseHelper<ulong>.CreateChecked<sbyte>(unchecked((sbyte)0x80)));
             Assert.Throws<OverflowException>(() => NumberBaseHelper<ulong>.CreateChecked<sbyte>(unchecked((sbyte)0xFF)));
+        }
+
+        [Fact]
+        public static void CreateCheckedFromSingleTest()
+        {
+            Assert.Equal((ulong)0x0000_0000_0000_0000, NumberBaseHelper<ulong>.CreateChecked<float>(+0.0f));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, NumberBaseHelper<ulong>.CreateChecked<float>(-0.0f));
+
+            Assert.Equal((ulong)0x0000_0000_0000_0000, NumberBaseHelper<ulong>.CreateChecked<float>(-float.Epsilon));
+            Assert.Equal((ulong)0x0000_0000_0000_0000, NumberBaseHelper<ulong>.CreateChecked<float>(-float.Epsilon));
+
+            Assert.Equal((ulong)0x0000_0000_0000_0001, NumberBaseHelper<ulong>.CreateChecked<float>(+1.0f));
+            Assert.Equal((ulong)0xFFFF_FF00_0000_0000, NumberBaseHelper<ulong>.CreateChecked<float>(+18446742974197923840.0f));
+
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<ulong>.CreateChecked<float>(-1.0f));
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<ulong>.CreateChecked<float>(+18446744073709551616.0f));
+
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<ulong>.CreateChecked<float>(float.PositiveInfinity));
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<ulong>.CreateChecked<float>(float.NegativeInfinity));
+
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<ulong>.CreateChecked<float>(float.MaxValue));
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<ulong>.CreateChecked<float>(float.MinValue));
+
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<ulong>.CreateChecked<float>(float.NaN));
         }
 
         [Fact]
@@ -674,6 +802,16 @@ namespace System.Tests
             Assert.Equal((ulong)0x7FFFFFFFFFFFFFFF, NumberBaseHelper<ulong>.CreateChecked<ulong>(0x7FFFFFFFFFFFFFFF));
             Assert.Equal((ulong)0x8000000000000000, NumberBaseHelper<ulong>.CreateChecked<ulong>(0x8000000000000000));
             Assert.Equal((ulong)0xFFFFFFFFFFFFFFFF, NumberBaseHelper<ulong>.CreateChecked<ulong>(0xFFFFFFFFFFFFFFFF));
+        }
+
+        [Fact]
+        public static void CreateCheckedFromUInt128Test()
+        {
+            Assert.Equal((ulong)0x0000000000000000, NumberBaseHelper<ulong>.CreateChecked<UInt128>(UInt128.Zero));
+            Assert.Equal((ulong)0x0000000000000001, NumberBaseHelper<ulong>.CreateChecked<UInt128>(UInt128.One));
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<ulong>.CreateChecked<UInt128>(UInt128Tests_GenericMath.Int128MaxValue));
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<ulong>.CreateChecked<UInt128>(UInt128Tests_GenericMath.Int128MaxValuePlusOne));
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<ulong>.CreateChecked<UInt128>(UInt128.MaxValue));
         }
 
         [Fact]

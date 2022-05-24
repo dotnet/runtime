@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Globalization;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Tests
@@ -585,6 +586,65 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void CreateCheckedFromDecimalTest()
+        {
+            Assert.Equal(decimal.MinValue, NumberBaseHelper<decimal>.CreateChecked<decimal>(decimal.MinValue));
+            Assert.Equal(-1.0m, NumberBaseHelper<decimal>.CreateChecked<decimal>(-1.0m));
+            Assert.Equal(-0.0m, NumberBaseHelper<decimal>.CreateChecked<decimal>(-0.0m));
+            Assert.Equal(+0.0m, NumberBaseHelper<decimal>.CreateChecked<decimal>(+0.0m));
+            Assert.Equal(+1.0m, NumberBaseHelper<decimal>.CreateChecked<decimal>(+1.0m));
+            Assert.Equal(decimal.MaxValue, NumberBaseHelper<decimal>.CreateChecked<decimal>(decimal.MaxValue));
+        }
+
+        [Fact]
+        public static void CreateCheckedFromDoubleTest()
+        {
+            Assert.Equal(0.0m, NumberBaseHelper<decimal>.CreateChecked<double>(+0.0));
+            Assert.Equal(0.0m, NumberBaseHelper<decimal>.CreateChecked<double>(-0.0));
+
+            Assert.Equal(0.0m, NumberBaseHelper<decimal>.CreateChecked<double>(+double.Epsilon));
+            Assert.Equal(0.0m, NumberBaseHelper<decimal>.CreateChecked<double>(-double.Epsilon));
+
+            Assert.Equal(+1.0m, NumberBaseHelper<decimal>.CreateChecked<double>(+1.0));
+            Assert.Equal(-1.0m, NumberBaseHelper<decimal>.CreateChecked<double>(-1.0));
+
+            Assert.Equal(+79228162514264300000000000000.0m, NumberBaseHelper<decimal>.CreateChecked<double>(+79228162514264333195497439231.0));
+            Assert.Equal(-79228162514264300000000000000.0m, NumberBaseHelper<decimal>.CreateChecked<double>(-79228162514264333195497439231.0));
+
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<decimal>.CreateChecked<double>(+79228162514264337593543950335.0));
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<decimal>.CreateChecked<double>(-79228162514264337593543950335.0));
+
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<decimal>.CreateChecked<double>(double.MaxValue));
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<decimal>.CreateChecked<double>(double.MinValue));
+
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<decimal>.CreateChecked<double>(double.PositiveInfinity));
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<decimal>.CreateChecked<double>(double.NegativeInfinity));
+
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<decimal>.CreateChecked<double>(double.NaN));
+        }
+
+        [Fact]
+        public static void CreateCheckedFromHalfTest()
+        {
+            Assert.Equal(0.0m, NumberBaseHelper<decimal>.CreateChecked<Half>(Half.Zero));
+            Assert.Equal(0.0m, NumberBaseHelper<decimal>.CreateChecked<Half>(Half.NegativeZero));
+
+            Assert.Equal(+0.00000005960464m, NumberBaseHelper<decimal>.CreateChecked<Half>(+Half.Epsilon));
+            Assert.Equal(-0.00000005960464m, NumberBaseHelper<decimal>.CreateChecked<Half>(-Half.Epsilon));
+
+            Assert.Equal(+1.0m, NumberBaseHelper<decimal>.CreateChecked<Half>(Half.One));
+            Assert.Equal(-1.0m, NumberBaseHelper<decimal>.CreateChecked<Half>(Half.NegativeOne));
+
+            Assert.Equal(+65504.0m, NumberBaseHelper<decimal>.CreateChecked<Half>(Half.MaxValue));
+            Assert.Equal(-65504.0m, NumberBaseHelper<decimal>.CreateChecked<Half>(Half.MinValue));
+
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<decimal>.CreateChecked<Half>(Half.PositiveInfinity));
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<decimal>.CreateChecked<Half>(Half.NegativeInfinity));
+
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<decimal>.CreateChecked<Half>(Half.NaN));
+        }
+
+        [Fact]
         public static void CreateCheckedFromInt16Test()
         {
             Assert.Equal(0.0m, NumberBaseHelper<decimal>.CreateChecked<short>(0x0000));
@@ -647,6 +707,27 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void CreateCheckedFromNFloatTest()
+        {
+            Assert.Equal(0.0m, NumberBaseHelper<decimal>.CreateChecked<NFloat>(0.0f));
+            Assert.Equal(0.0m, NumberBaseHelper<decimal>.CreateChecked<NFloat>(NFloat.NegativeZero));
+
+            Assert.Equal(0.0m, NumberBaseHelper<decimal>.CreateChecked<NFloat>(+NFloat.Epsilon));
+            Assert.Equal(0.0m, NumberBaseHelper<decimal>.CreateChecked<NFloat>(-NFloat.Epsilon));
+
+            Assert.Equal(+1.0m, NumberBaseHelper<decimal>.CreateChecked<NFloat>(+1.0f));
+            Assert.Equal(-1.0m, NumberBaseHelper<decimal>.CreateChecked<NFloat>(-1.0f));
+
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<decimal>.CreateChecked<NFloat>(NFloat.MaxValue));
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<decimal>.CreateChecked<NFloat>(NFloat.MinValue));
+
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<decimal>.CreateChecked<NFloat>(NFloat.PositiveInfinity));
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<decimal>.CreateChecked<NFloat>(NFloat.NegativeInfinity));
+
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<decimal>.CreateChecked<NFloat>(NFloat.NaN));
+        }
+
+        [Fact]
         public static void CreateCheckedFromSByteTest()
         {
             Assert.Equal(0.0m, NumberBaseHelper<decimal>.CreateChecked<sbyte>(0x00));
@@ -654,6 +735,33 @@ namespace System.Tests
             Assert.Equal(127.0m, NumberBaseHelper<decimal>.CreateChecked<sbyte>(0x7F));
             Assert.Equal(-128.0m, NumberBaseHelper<decimal>.CreateChecked<sbyte>(unchecked((sbyte)0x80)));
             Assert.Equal(-1.0m, NumberBaseHelper<decimal>.CreateChecked<sbyte>(unchecked((sbyte)0xFF)));
+        }
+
+        [Fact]
+        public static void CreateCheckedFromSingleTest()
+        {
+            Assert.Equal(0.0m, NumberBaseHelper<decimal>.CreateChecked<float>(+0.0f));
+            Assert.Equal(0.0m, NumberBaseHelper<decimal>.CreateChecked<float>(-0.0f));
+
+            Assert.Equal(0.0m, NumberBaseHelper<decimal>.CreateChecked<float>(+float.Epsilon));
+            Assert.Equal(0.0m, NumberBaseHelper<decimal>.CreateChecked<float>(-float.Epsilon));
+
+            Assert.Equal(+1.0m, NumberBaseHelper<decimal>.CreateChecked<float>(+1.0f));
+            Assert.Equal(-1.0m, NumberBaseHelper<decimal>.CreateChecked<float>(-1.0f));
+
+            Assert.Equal(+79228160000000000000000000000.0m, NumberBaseHelper<decimal>.CreateChecked<float>(+79228160000000000000000000000.0f));
+            Assert.Equal(-79228160000000000000000000000.0m, NumberBaseHelper<decimal>.CreateChecked<float>(-79228160000000000000000000000.0f));
+
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<decimal>.CreateChecked<float>(+79228162514264337593543950335.0f));
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<decimal>.CreateChecked<float>(-79228162514264337593543950335.0f));
+
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<decimal>.CreateChecked<float>(float.MaxValue));
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<decimal>.CreateChecked<float>(float.MinValue));
+
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<decimal>.CreateChecked<float>(float.PositiveInfinity));
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<decimal>.CreateChecked<float>(float.NegativeInfinity));
+
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<decimal>.CreateChecked<float>(float.NaN));
         }
 
         [Fact]
