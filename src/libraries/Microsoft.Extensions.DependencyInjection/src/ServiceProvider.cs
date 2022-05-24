@@ -132,7 +132,10 @@ namespace Microsoft.Extensions.DependencyInjection
 
         private void ValidateService(ServiceDescriptor descriptor)
         {
-            // Skip validation for generic service types
+            // Skip validation for generic service types during validation.
+            // Because we could end up with an incomplete set of call site caches for open generics during validation.
+            // It could also lead to incorrect slot ordering for the call sites generated upon a get service call.
+            // For more info, visit issue dotnet/runtime#65145.
             if (descriptor.ServiceType.IsGenericType)
             {
                 return;
