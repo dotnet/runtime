@@ -576,7 +576,7 @@ namespace System.Security.Cryptography.X509Certificates
             throw new PlatformNotSupportedException(SR.NotSupported_ImmutableX509Certificate);
         }
 
-        internal virtual ICertificatePalCore? Pal { get; private set; }
+        internal ICertificatePalCore? Pal { get; private set; }
 
         internal DateTime GetNotAfter()
         {
