@@ -11328,6 +11328,9 @@ mono_ldptr:
 			cil_method = cmethod = mini_get_method (cfg, method, n, NULL, generic_context);
 			CHECK_CFG_ERROR;
 
+			if (!dont_verify && !cfg->skip_visibility && !mono_method_can_access_method (method, cmethod))
+				emit_method_access_failure (cfg, method, cil_method);
+
 			if (constrained_class) {
 				if (m_method_is_static (cmethod) && mini_class_check_context_used (cfg, constrained_class)) {
 					gshared_static_virtual = TRUE;
@@ -11348,9 +11351,6 @@ mono_ldptr:
 			mono_class_init_internal (cmethod->klass);
 
 			context_used = mini_method_check_context_used (cfg, cmethod);
-
-			if (!dont_verify && !cfg->skip_visibility && !mono_method_can_access_method (method, cmethod))
-				emit_method_access_failure (cfg, method, cil_method);
 
 			const gboolean has_unmanaged_callers_only =
 				cmethod->wrapper_type == MONO_WRAPPER_NONE &&
