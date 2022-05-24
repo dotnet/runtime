@@ -26,6 +26,7 @@ namespace System.Diagnostics.Tracing
         private static class Messages
         {
             public const string WorkerThread = "ActiveWorkerThreadCount={0};\nRetiredWorkerThreadCount={1};\nClrInstanceID={2}";
+            public const string WorkerThreadMinMax = "WorkerThreads={0};\nIOCompletionThreads={1}";
             public const string WorkerThreadAdjustmentSample = "Throughput={0};\nClrInstanceID={1}";
             public const string WorkerThreadAdjustmentAdjustment = "AverageThroughput={0};\nNewWorkerThreadCount={1};\nReason={2};\nClrInstanceID={3}";
             public const string WorkerThreadAdjustmentStats = "Duration={0};\nThroughput={1};\nThreadWave={2};\nThroughputWave={3};\nThroughputErrorEstimate={4};\nAverageThroughputErrorEstimate={5};\nThroughputRatio={6};\nConfidence={7};\nNewControlSetting={8};\nNewThreadWaveMagnitude={9};\nClrInstanceID={10}";
@@ -37,6 +38,7 @@ namespace System.Diagnostics.Tracing
         // The task definitions for the ETW manifest
         public static class Tasks // this name and visibility is important for EventSource
         {
+            public const EventTask Thread = (EventTask)24;
             public const EventTask ThreadPoolWorkerThread = (EventTask)16;
             public const EventTask ThreadPoolWorkerThreadAdjustment = (EventTask)18;
             public const EventTask ThreadPool = (EventTask)23;
@@ -247,6 +249,46 @@ namespace System.Diagnostics.Tracing
             ushort ClrInstanceID = DefaultClrInstanceId)
         {
             LogThreadPoolIOPack(NativeOverlapped, Overlapped, ClrInstanceID);
+        }
+
+        [Event(75, Level = EventLevel.Informational, Message = Messages.WorkerThreadMinMax, Task = Tasks.Thread, Opcode = Opcodes.Sample, Version = 0, Keywords = Keywords.ThreadingKeyword)]
+        public unsafe void ThreadPoolWorkerSetMinThreads(
+            int WorkerThreads, 
+            int IOCompletionThreads,
+            ushort ClrInstanceID = DefaultClrInstanceId)
+        {
+            if (!IsEnabled(EventLevel.Informational, Keywords.ThreadingKeyword))
+            {
+                return;
+            }
+            EventData* data = stackalloc EventData[2];
+            data[0].DataPointer = (IntPtr)(&WorkerThreads);
+            data[0].Size = sizeof(int);
+            data[0].Reserved = 0;
+            data[1].DataPointer = (IntPtr)(&IOCompletionThreads);
+            data[1].Size = sizeof(int);
+            data[1].Reserved = 0;
+            WriteEventCore(76, 2, data);
+        }
+
+        [Event(76, Level = EventLevel.Informational, Message = Messages.WorkerThreadMinMax, Task = Tasks.Thread, Opcode = Opcodes.Sample, Version = 0, Keywords = Keywords.ThreadingKeyword)]
+        public unsafe void ThreadPoolWorkerSetMaxThreads(
+            int WorkerThreads,
+            int IOCompletionThreads,
+            ushort ClrInstanceID = DefaultClrInstanceId)
+        {
+            if (!IsEnabled(EventLevel.Informational, Keywords.ThreadingKeyword))
+            {
+                return;
+            }
+            EventData* data = stackalloc EventData[2];
+            data[0].DataPointer = (IntPtr)(&WorkerThreads);
+            data[0].Size = sizeof(int);
+            data[0].Reserved = 0;
+            data[1].DataPointer = (IntPtr)(&IOCompletionThreads);
+            data[1].Size = sizeof(int);
+            data[1].Reserved = 0;
+            WriteEventCore(76, 2, data);
         }
     }
 }

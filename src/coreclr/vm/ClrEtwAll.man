@@ -1579,6 +1579,20 @@
                         </UserData>
                     </template>
 
+                    <template tid="ThreadPoolSetMinMaxThreads">
+                        <data name="WorkerThreads" inType="win:Int32" />
+                        <data name="IOCompletionThreads" inType="win:Int32" />
+                        <data name="ClrInstanceID" inType="win:UInt16" />
+
+                        <UserData>
+                            <ThreadPoolSetMinMaxThreads xmlns="myNs">
+                                <WorkerThreads> %1 </WorkerThreads>
+                                <IOCompletionThreads> %2 </IOCompletionThreads>
+                                <ClrInstanceID> %3 </ClrInstanceID>
+                            </ThreadPoolSetMinMaxThreads>
+                        </UserData>
+                    </template>
+
                     <template tid="ThreadPoolWorkerThreadAdjustmentSample">
                         <data name="Throughput" inType="win:Double" />
                         <data name="ClrInstanceID" inType="win:UInt16" />
@@ -3531,6 +3545,20 @@
                            opcode="win:Stop"
                            symbol="TypeLoadStop"
                            message="$(string.RuntimePublisher.TypeLoadStopEventMessage)"/>
+
+                    <event value="75" version="0" level="win:Informational"  template="ThreadPoolSetMinMaxThreads"
+                           keywords="ThreadingKeyword"
+                           task="Thread"
+                           opcode="Sample"
+                           symbol="ThreadPoolSetMinThreads"
+                           message="$(string.RuntimePublisher.ThreadPoolSetMinMaxThreads)"/>
+
+                    <event value="76" version="0" level="win:Informational"  template="ThreadPoolSetMinMaxThreads"
+                           keywords="ThreadingKeyword"
+                           task="Thread"
+                           opcode="Sample"
+                           symbol="ThreadPoolSetMaxThreads"
+                           message="$(string.RuntimePublisher.ThreadPoolSetMinMaxThreads)"/>
 
                     <!-- CLR Exception events -->
                     <event value="80" version="0" level="win:Informational"
@@ -8271,6 +8299,7 @@
                 <string id="RuntimePublisher.WorkerThreadRetirementRetireThreadEventMessage" value="WorkerThreadCount=%1;%nRetiredWorkerThreads=%2" />
                 <string id="RuntimePublisher.WorkerThreadRetirementUnretireThreadEventMessage" value="WorkerThreadCount=%1;%nRetiredWorkerThreads=%2" />
                 <string id="RuntimePublisher.ThreadPoolWorkerThreadEventMessage" value="WorkerThreadCount=%1;%nRetiredWorkerThreadCount=%2;%nClrInstanceID=%3" />
+                <string id="RuntimePublisher.ThreadPoolSetMinMaxThreads" value="WorkerThreads=%1;%nIOCompletionThreads=%2" />
                 <string id="RuntimePublisher.YieldProcessorMeasurementEventMessage" value="ClrInstanceID=%1;%nNsPerYield=%2;%nEstablishedNsPerYield=%3" />
                 <string id="RuntimePublisher.ThreadPoolWorkerThreadAdjustmentSampleEventMessage" value="Throughput=%1;%nClrInstanceID=%2" />
                 <string id="RuntimePublisher.ThreadPoolWorkerThreadAdjustmentAdjustmentEventMessage" value="AverageThroughput=%1;%nNewWorkerThreadCount=%2;%nReason=%3;%nClrInstanceID=%4" />
