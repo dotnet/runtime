@@ -3824,6 +3824,7 @@ namespace System.Text.Json.Tests
                 Assert.True(reader.Read());
                 Assert.Equal(JsonTokenType.String, reader.TokenType);
                 Assert.True(reader.ValueIsEscaped);
+                Assert.Contains((byte)'\\', reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan.ToArray());
             }
         }
 
@@ -3848,6 +3849,7 @@ namespace System.Text.Json.Tests
                 Assert.True(reader.Read());
                 Assert.Equal(JsonTokenType.PropertyName, reader.TokenType);
                 Assert.True(reader.ValueIsEscaped);
+                Assert.Contains((byte)'\\', reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan.ToArray());
             }
         }
 
