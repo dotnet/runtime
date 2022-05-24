@@ -1137,94 +1137,6 @@ namespace System.Runtime.InteropServices
         /// <inheritdoc cref="INumberBase{TSelf}.Abs(TSelf)" />
         public static NFloat Abs(NFloat value) => new NFloat(NativeType.Abs(value._value));
 
-        /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static NFloat CreateChecked<TOther>(TOther value)
-            where TOther : INumberBase<TOther>
-        {
-            return CreateSaturating(value);
-        }
-
-        /// <inheritdoc cref="INumberBase{TSelf}.CreateSaturating{TOther}(TOther)" />
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static NFloat CreateSaturating<TOther>(TOther value)
-            where TOther : INumberBase<TOther>
-        {
-            if (typeof(TOther) == typeof(byte))
-            {
-                return (byte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(char))
-            {
-                return (char)(object)value;
-            }
-            else if (typeof(TOther) == typeof(decimal))
-            {
-                return (NFloat)(decimal)(object)value;
-            }
-            else if (typeof(TOther) == typeof(double))
-            {
-                return (NFloat)(double)(object)value;
-            }
-            else if (typeof(TOther) == typeof(short))
-            {
-                return (short)(object)value;
-            }
-            else if (typeof(TOther) == typeof(int))
-            {
-                return (int)(object)value;
-            }
-            else if (typeof(TOther) == typeof(long))
-            {
-                return (long)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nint))
-            {
-                return (nint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(sbyte))
-            {
-                return (sbyte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(float))
-            {
-                return (NFloat)(float)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ushort))
-            {
-                return (ushort)(object)value;
-            }
-            else if (typeof(TOther) == typeof(uint))
-            {
-                return (uint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ulong))
-            {
-                return (ulong)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nuint))
-            {
-                return (nuint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(NFloat))
-            {
-                return (NFloat)(object)value;
-            }
-            else
-            {
-                ThrowHelper.ThrowNotSupportedException();
-                return default;
-            }
-        }
-
-        /// <inheritdoc cref="INumberBase{TSelf}.CreateTruncating{TOther}(TOther)" />
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static NFloat CreateTruncating<TOther>(TOther value)
-            where TOther : INumberBase<TOther>
-        {
-            return CreateChecked(value);
-        }
-
         /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
         static bool INumberBase<NFloat>.IsCanonical(NFloat value) => true;
 
@@ -1263,15 +1175,6 @@ namespace System.Runtime.InteropServices
 
         /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
         public static NFloat MinMagnitudeNumber(NFloat x, NFloat y) => new NFloat(NativeType.MinMagnitudeNumber(x._value, y._value));
-
-        /// <inheritdoc cref="INumberBase{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool TryCreate<TOther>(TOther value, out NFloat result)
-            where TOther : INumberBase<TOther>
-        {
-            result = CreateSaturating(value);
-            return true;
-        }
 
         //
         // IParsable

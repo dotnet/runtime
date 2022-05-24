@@ -1195,98 +1195,6 @@ namespace System
         /// <inheritdoc cref="INumberBase{TSelf}.Abs(TSelf)" />
         public static Half Abs(Half value) => (Half)MathF.Abs((float)value);
 
-        /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Half CreateChecked<TOther>(TOther value)
-            where TOther : INumberBase<TOther>
-        {
-            return CreateSaturating(value);
-        }
-
-        /// <inheritdoc cref="INumberBase{TSelf}.CreateSaturating{TOther}(TOther)" />
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Half CreateSaturating<TOther>(TOther value)
-            where TOther : INumberBase<TOther>
-        {
-            if (typeof(TOther) == typeof(byte))
-            {
-                return (Half)(byte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(char))
-            {
-                return (Half)(char)(object)value;
-            }
-            else if (typeof(TOther) == typeof(decimal))
-            {
-                return (Half)(float)(decimal)(object)value;
-            }
-            else if (typeof(TOther) == typeof(double))
-            {
-                return (Half)(double)(object)value;
-            }
-            else if (typeof(TOther) == typeof(short))
-            {
-                return (Half)(short)(object)value;
-            }
-            else if (typeof(TOther) == typeof(int))
-            {
-                return (Half)(int)(object)value;
-            }
-            else if (typeof(TOther) == typeof(long))
-            {
-                return (Half)(long)(object)value;
-            }
-            else if (typeof(TOther) == typeof(Int128))
-            {
-                return (Half)(Int128)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nint))
-            {
-                return (Half)(long)(nint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(sbyte))
-            {
-                return (Half)(sbyte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(float))
-            {
-                return (Half)(float)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ushort))
-            {
-                return (Half)(ushort)(object)value;
-            }
-            else if (typeof(TOther) == typeof(uint))
-            {
-                return (Half)(uint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ulong))
-            {
-                return (Half)(ulong)(object)value;
-            }
-            else if (typeof(TOther) == typeof(UInt128))
-            {
-                return (Half)(UInt128)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nuint))
-            {
-                return (Half)(ulong)(nuint)(object)value;
-            }
-            else
-            {
-                ThrowHelper.ThrowNotSupportedException();
-                return default;
-            }
-        }
-
-        /// <inheritdoc cref="INumberBase{TSelf}.CreateTruncating{TOther}(TOther)" />
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Half CreateTruncating<TOther>(TOther value)
-            where TOther : INumberBase<TOther>
-        {
-            return CreateSaturating(value);
-        }
-
         /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
         static bool INumberBase<Half>.IsCanonical(Half value) => true;
 
@@ -1376,15 +1284,6 @@ namespace System
             }
 
             return y;
-        }
-
-        /// <inheritdoc cref="INumberBase{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool TryCreate<TOther>(TOther value, out Half result)
-            where TOther : INumberBase<TOther>
-        {
-            result = CreateSaturating(value);
-            return true;
         }
 
         //

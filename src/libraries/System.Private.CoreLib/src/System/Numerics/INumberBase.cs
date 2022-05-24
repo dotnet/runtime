@@ -215,15 +215,6 @@ namespace System.Numerics
         /// <exception cref="OverflowException"><paramref name="s" /> is not representable by <typeparamref name="TSelf" />.</exception>
         static abstract TSelf Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider);
 
-        /// <summary>Tries to create an instance of the current type from a value.</summary>
-        /// <typeparam name="TOther">The type of <paramref name="value" />.</typeparam>
-        /// <param name="value">The value which is used to create the instance of <typeparamref name="TSelf" />.</param>
-        /// <param name="result">On return, contains the result of succesfully creating an instance of <typeparamref name="TSelf" /> from <paramref name="value" /> or an undefined value on failure.</param>
-        /// <returns><c>true</c> if <paramref name="value" /> an instance of the current type was succesfully created from <paramref name="value" />; otherwise, <c>false</c>.</returns>
-        /// <exception cref="NotSupportedException"><typeparamref name="TOther" /> is not supported.</exception>
-        static abstract bool TryCreate<TOther>(TOther value, out TSelf result)
-            where TOther : INumberBase<TOther>;
-
         /// <summary>Tries to parses a string into a value.</summary>
         /// <param name="s">The string to parse.</param>
         /// <param name="style">A bitwise combination of number styles that can be present in <paramref name="s" />.</param>

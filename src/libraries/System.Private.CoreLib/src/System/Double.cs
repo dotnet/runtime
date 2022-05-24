@@ -1003,98 +1003,6 @@ namespace System
         /// <inheritdoc cref="INumberBase{TSelf}.Abs(TSelf)" />
         public static double Abs(double value) => Math.Abs(value);
 
-        /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static double CreateChecked<TOther>(TOther value)
-            where TOther : INumberBase<TOther>
-        {
-            return CreateSaturating(value);
-        }
-
-        /// <inheritdoc cref="INumberBase{TSelf}.CreateSaturating{TOther}(TOther)" />
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static double CreateSaturating<TOther>(TOther value)
-            where TOther : INumberBase<TOther>
-        {
-            if (typeof(TOther) == typeof(byte))
-            {
-                return (byte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(char))
-            {
-                return (char)(object)value;
-            }
-            else if (typeof(TOther) == typeof(decimal))
-            {
-                return (double)(decimal)(object)value;
-            }
-            else if (typeof(TOther) == typeof(double))
-            {
-                return (double)(object)value;
-            }
-            else if (typeof(TOther) == typeof(short))
-            {
-                return (short)(object)value;
-            }
-            else if (typeof(TOther) == typeof(int))
-            {
-                return (int)(object)value;
-            }
-            else if (typeof(TOther) == typeof(long))
-            {
-                return (long)(object)value;
-            }
-            else if (typeof(TOther) == typeof(Int128))
-            {
-                return (double)(Int128)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nint))
-            {
-                return (nint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(sbyte))
-            {
-                return (sbyte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(float))
-            {
-                return (float)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ushort))
-            {
-                return (ushort)(object)value;
-            }
-            else if (typeof(TOther) == typeof(uint))
-            {
-                return (uint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ulong))
-            {
-                return (ulong)(object)value;
-            }
-            else if (typeof(TOther) == typeof(UInt128))
-            {
-                return (double)(UInt128)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nuint))
-            {
-                return (nuint)(object)value;
-            }
-            else
-            {
-                ThrowHelper.ThrowNotSupportedException();
-                return default;
-            }
-        }
-
-        /// <inheritdoc cref="INumberBase{TSelf}.CreateTruncating{TOther}(TOther)" />
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static double CreateTruncating<TOther>(TOther value)
-            where TOther : INumberBase<TOther>
-        {
-            return CreateSaturating(value);
-        }
-
         /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
         static bool INumberBase<double>.IsCanonical(double value) => true;
 
@@ -1184,15 +1092,6 @@ namespace System
             }
 
             return y;
-        }
-
-        /// <inheritdoc cref="INumberBase{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool TryCreate<TOther>(TOther value, out double result)
-            where TOther : INumberBase<TOther>
-        {
-            result = CreateSaturating(value);
-            return true;
         }
 
         //
