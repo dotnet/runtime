@@ -150,14 +150,6 @@ void RuntimeInstance::EnumAllStaticGCRefs(void * pfnCallback, void * pvCallbackD
     }
 }
 
-void RuntimeInstance::SetLoopHijackFlags(uint32_t flag)
-{
-    for (TypeManagerList::Iterator iter = m_TypeManagerList.Begin(); iter != m_TypeManagerList.End(); iter++)
-    {
-        iter->m_pTypeManager->SetLoopHijackFlag(flag);
-    }
-}
-
 RuntimeInstance::OsModuleList* RuntimeInstance::GetOsModuleList()
 {
     return dac_cast<DPTR(OsModuleList)>(dac_cast<TADDR>(this) + offsetof(RuntimeInstance, m_OsModuleList));

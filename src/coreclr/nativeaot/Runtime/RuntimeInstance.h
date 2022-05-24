@@ -120,7 +120,6 @@ public:
 
     bool ShouldHijackCallsiteForGcStress(uintptr_t CallsiteIP);
     bool ShouldHijackLoopForGcStress(uintptr_t CallsiteIP);
-    void SetLoopHijackFlags(uint32_t flag);
 };
 typedef DPTR(RuntimeInstance) PTR_RuntimeInstance;
 
