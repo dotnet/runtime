@@ -1122,7 +1122,7 @@ public:
 public:
 
     // True iff it is possible to change the code this method will run using the CodeVersionManager. Note: EnC currently returns
-    // false here because it uses its own seperate scheme to manage versionability. We will likely want to converge them at some
+    // false here because it uses its own separate scheme to manage versionability. We will likely want to converge them at some
     // point.
     bool IsVersionable()
     {
@@ -2167,7 +2167,7 @@ class MethodDescChunk
 
     enum {
         enum_flag_TokenRangeMask                           = 0x07FF, // This must equal METHOD_TOKEN_RANGE_MASK calculated higher in this file
-                                                                     // These are seperate to allow the flags space available and used to be obvious here
+                                                                     // These are separate to allow the flags space available and used to be obvious here
                                                                      // and for the logic that splits the token to be algorithmically generated based on the
                                                                      // #define
         enum_flag_HasCompactEntrypoints                    = 0x4000, // Compact temporary entry points

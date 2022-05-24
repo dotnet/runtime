@@ -653,13 +653,15 @@ Edit and Continue (EnC) is a special flavor of un-optimized code. The debugger h
 
 In the current design, the JIT does not have access to the previous versions of the method and so it has to assume the worst case. EnC is designed for simplicity, not for performance of the generated code.
 
-EnC is currently enabled on x86 and x64 only, but the same principles would apply if it is ever enabled on other platforms.
+EnC is currently enabled on x86, x64 and ARM64 only, but the same principles would apply if it is ever enabled on other platforms.
 
 The following sections describe the various Edit and Continue code conventions that must be followed.
 
 ## EnC flag in GCInfo
 
-The JIT records the fact that it has followed conventions for EnC code in GC Info. On x64, this flag is implied by recording the size of the stack frame region preserved between EnC edits (`GcInfoEncoder::SetSizeOfEditAndContinuePreservedArea`). For normal methods on JIT64, the size of this region is 2 slots (saved `RBP` and return address). On RyuJIT/AMD64, the size of this region is increased to include `RSI` and `RDI`, so that `rep stos` can be used for block initialization and block moves.
+The JIT records the fact that it has followed conventions for EnC code in GC Info. On x64/ARM64, this flag is implied by recording the size of the stack frame region preserved between EnC edits (`GcInfoEncoder::SetSizeOfEditAndContinuePreservedArea`). For x64 the size of this region is increased to include `RSI` and `RDI`, so that `rep stos` can be used for block initialization and block moves. ARM64 saves only the FP and LR registers when EnC is enabled and does not use other callee saved registers.
+
+To successfully perform EnC transitions the runtime needs to know the size of the stack frames it is transitioning between. For x64 code the size can be extracted from unwind codes. This is not possible for arm64 code as the frames are set up in such a way that the unwind codes do not allow to retrieve this value. Therefore, on ARM64 the GC info contains also the size of the fixed stack frame to be used for EnC purposes.
 
 ## Allocating local variables backward
 
@@ -667,27 +669,30 @@ This is required to preserve addresses of the existing locals when an EnC edit a
 
 ## Fixed set of callee-saved registers
 
-This eliminates need to deal with the different sets in the VM, and makes preservation of local addresses easier. On x64, we choose to always save `RBP` only. There are plenty of volatile registers and so lack of non-volatile registers does not impact quality of non-optimized code.
+This eliminates need to deal with the different sets in the VM, and makes preservation of local addresses easier. There are plenty of volatile registers and so lack of non-volatile registers does not heavily impact quality of non-optimized code.
+x64 currently saves RBP, RSI and RDI while ARM64 saves just FP and LR.
 
 ## EnC is supported for methods with EH
 
 However, EnC remap is not supported inside funclets. The stack layout of funclets does not matter for EnC.
 
-## Initial RSP == RBP == PSPSym
+## Considerations with regards to PSPSym
 
-This invariant allows VM to compute new value of `RBP` and PSPSym after the edit without any additional information. Location of PSPSym is found via GC info.
+As explained previously in this document, on x64 we have Initial RSP == PSPSym. For EnC methods, as we disallow remappings after localloc (see below), we furthermore have RBP == PSPSym.
+For ARM64 we have Caller SP == PSPSym and the FP points to the previously saved FP/LR pair. For EnC the JIT always sets up the stack frame so that the FP/LR pair is at Caller SP - 16 and does not save any additional callee saves.
+These invariants allow the VM to compute new value of the frame pointer and PSPSym after the edit without any additional information. Note that the frame pointer and PSPSym do not change values or location on ARM64. However, EH may be added to a function in which case a new PSPSym needs to be materialized, even on ARM64. Location of PSPSym is found via GC info.
 
 ## Localloc
 
-Localloc is allowed in EnC code, but remap is disallowed after the method has executed a localloc instruction. VM uses the invariant above (`RSP == RBP`) to detect whether localloc was executed by the method.
+Localloc is allowed in EnC code, but remap is disallowed after the method has executed a localloc instruction. VM uses the invariants above (`RSP == RBP` on x64, `FP + 16 == SP + stack size` on ARM64) to detect whether localloc was executed by the method.
 
 ## Security object
 
-This does not require any special handling by the JIT on x64. (Different from x86). The security object is copied over by the VM during remap if necessary. Location of security object is found via GC info.
+This does not require any special handling by the JIT on x64/arm64. (Different from x86). The security object is copied over by the VM during remap if necessary. Location of security object is found via GC info.
 
 ## Synchronized methods
 
-The extra state created by the JIT for synchronized methods (original `this` and lock taken flag) must be preserved during remap. The JIT stores this state in the preserved region, and increases the size of the preserved region reported in GC info accordingly.
+The extra state created by the JIT for synchronized methods (lock taken flag) must be preserved during remap. The JIT stores this state in the preserved region, and increases the size of the preserved region reported in GC info accordingly.
 
 ## Generics
 

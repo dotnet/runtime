@@ -225,9 +225,15 @@ namespace Microsoft.DotNet.Cli.Build.Framework
             return this;
         }
 
-        public CommandResult WaitForExit(bool fExpectedToFail, int timeoutMilliseconds = Timeout.Infinite)
+        /// <summary>
+        /// Wait for the command to exit and dispose of the underlying process.
+        /// </summary>
+        /// <param name="expectedToFail">Whether or not the command is expected to fail (non-zero exit code)</param>
+        /// <param name="timeoutMilliseconds">Time in milliseconds to wait for the command to exit</param>
+        /// <returns>Result of the command</returns>
+        public CommandResult WaitForExit(bool expectedToFail, int timeoutMilliseconds = Timeout.Infinite)
         {
-            ReportExecWaitOnExit();
+           ReportExecWaitOnExit();
 
             int exitCode;
             if (!Process.WaitForExit(timeoutMilliseconds))
@@ -239,7 +245,9 @@ namespace Microsoft.DotNet.Cli.Build.Framework
                 exitCode = Process.ExitCode;
             }
 
-            ReportExecEnd(exitCode, fExpectedToFail);
+            ReportExecEnd(exitCode, expectedToFail);
+
+            Process.Dispose();
 
             return new CommandResult(
                 Process.StartInfo,
@@ -248,17 +256,22 @@ namespace Microsoft.DotNet.Cli.Build.Framework
                 _stdErrCapture?.GetStringBuilder()?.ToString());
         }
 
-        public CommandResult Execute(bool fExpectedToFail)
+        /// <summary>
+        /// Execute the command and wait for it to exit.
+        /// </summary>
+        /// <param name="expectedToFail">Whether or not the command is expected to fail (non-zero exit code)</param>
+        /// <returns>Result of the command</returns>
+        public CommandResult Execute(bool expectedToFail)
         {
             // Clear out any enabling of dump creation if failure is expected
-            if (fExpectedToFail)
+            if (expectedToFail)
             {
                 EnvironmentVariable("COMPlus_DbgEnableMiniDump", null);
                 EnvironmentVariable("DOTNET_DbgEnableMiniDump", null);
             }
 
             Start();
-            return WaitForExit(fExpectedToFail);
+            return WaitForExit(expectedToFail);
         }
 
         public Command WorkingDirectory(string projectDirectory)

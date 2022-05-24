@@ -151,6 +151,19 @@ namespace System
             return corElemType == CorElementType.ELEMENT_TYPE_BYREF;
         }
 
+        internal static bool TryGetByRefElementType(RuntimeType type, [NotNullWhen(true)] out RuntimeType? elementType)
+        {
+            CorElementType corElemType = GetCorElementType(type);
+            if (corElemType == CorElementType.ELEMENT_TYPE_BYREF)
+            {
+                elementType = GetElementType(type);
+                return true;
+            }
+
+            elementType = null;
+            return false;
+        }
+
         internal static bool IsPointer(RuntimeType type)
         {
             CorElementType corElemType = GetCorElementType(type);
@@ -1012,6 +1025,12 @@ namespace System
         [DebuggerHidden]
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern object? InvokeMethod(object? target, void** arguments, Signature sig, bool isConstructor);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern object? ReboxFromNullable(object? src);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern object ReboxToNullable(object? src, RuntimeType destNullableType);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeMethodHandle_GetMethodInstantiation")]
         private static partial void GetMethodInstantiation(RuntimeMethodHandleInternal method, ObjectHandleOnStack types, Interop.BOOL fAsRuntimeTypeArray);

@@ -1295,12 +1295,6 @@ namespace System
         // INumber
         //
 
-        /// <inheritdoc cref="INumber{TSelf}.Abs(TSelf)" />
-        public static decimal Abs(decimal value)
-        {
-            return new decimal(in value, value._flags & ~SignMask);
-        }
-
         /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
         public static decimal Clamp(decimal value, decimal min, decimal max) => Math.Clamp(value, min, max);
 
@@ -1310,10 +1304,50 @@ namespace System
             return new decimal(in value, (value._flags & ~SignMask) | (sign._flags & SignMask));
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.CreateChecked{TOther}(TOther)" />
+        /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
+        public static decimal Max(decimal x, decimal y)
+        {
+            return DecCalc.VarDecCmp(in x, in y) >= 0 ? x : y;
+        }
+
+        /// <inheritdoc cref="INumber{TSelf}.MaxNumber(TSelf, TSelf)" />
+        static decimal INumber<decimal>.MaxNumber(decimal x, decimal y) => Max(x, y);
+
+        /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
+        public static decimal Min(decimal x, decimal y)
+        {
+            return DecCalc.VarDecCmp(in x, in y) < 0 ? x : y;
+        }
+
+        /// <inheritdoc cref="INumber{TSelf}.MinNumber(TSelf, TSelf)" />
+        static decimal INumber<decimal>.MinNumber(decimal x, decimal y) => Min(x, y);
+
+        /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
+        public static int Sign(decimal d) => (d.Low64 | d.High) == 0 ? 0 : (d._flags >> 31) | 1;
+
+        //
+        // INumberBase
+        //
+
+        /// <inheritdoc cref="INumberBase{TSelf}.One" />
+        static decimal INumberBase<decimal>.One => One;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Radix" />
+        static int INumberBase<decimal>.Radix => 10;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
+        static decimal INumberBase<decimal>.Zero => Zero;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Abs(TSelf)" />
+        public static decimal Abs(decimal value)
+        {
+            return new decimal(in value, value._flags & ~SignMask);
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static decimal CreateChecked<TOther>(TOther value)
-            where TOther : INumber<TOther>
+            where TOther : INumberBase<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -1386,10 +1420,10 @@ namespace System
             }
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.CreateSaturating{TOther}(TOther)" />
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateSaturating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static decimal CreateSaturating<TOther>(TOther value)
-            where TOther : INumber<TOther>
+            where TOther : INumberBase<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -1465,10 +1499,10 @@ namespace System
             }
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.CreateTruncating{TOther}(TOther)" />
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateTruncating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static decimal CreateTruncating<TOther>(TOther value)
-            where TOther : INumber<TOther>
+            where TOther : INumberBase<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -1554,34 +1588,133 @@ namespace System
             }
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.IsNegative(TSelf)" />
+        /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
+        public static bool IsCanonical(decimal value)
+        {
+            uint scale = (byte)(value._flags >> ScaleShift);
+
+            if (scale == 0)
+            {
+                // We have an exact integer represented with no trailing zero
+                return true;
+            }
+
+            // We have some value where some fractional part is specified. So,
+            // if the least significant digit is 0, then we are not canonical
+
+            if (value._hi32 == 0)
+            {
+                return (value._lo64 % 10) != 0;
+            }
+
+            var significand = new UInt128(value._hi32, value._lo64);
+            return (significand % 10U) != 0U;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsComplexNumber(TSelf)" />
+        static bool INumberBase<decimal>.IsComplexNumber(decimal value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsEvenInteger(TSelf)" />
+        public static bool IsEvenInteger(decimal value)
+        {
+            decimal truncatedValue = Truncate(value);
+            return (value == truncatedValue) && ((truncatedValue._lo64 & 1) == 0);
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsFinite(TSelf)" />
+        static bool INumberBase<decimal>.IsFinite(decimal value) => true;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsImaginaryNumber(TSelf)" />
+        static bool INumberBase<decimal>.IsImaginaryNumber(decimal value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsInfinity(TSelf)" />
+        static bool INumberBase<decimal>.IsInfinity(decimal value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsInteger(TSelf)" />
+        public static bool IsInteger(decimal value) => value == Truncate(value);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNaN(TSelf)" />
+        static bool INumberBase<decimal>.IsNaN(decimal value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNegative(TSelf)" />
         public static bool IsNegative(decimal value) => value._flags < 0;
 
-        /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
-        public static decimal Max(decimal x, decimal y)
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNegativeInfinity(TSelf)" />
+        static bool INumberBase<decimal>.IsNegativeInfinity(decimal value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNormal(TSelf)" />
+        static bool INumberBase<decimal>.IsNormal(decimal value) => value != 0;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsOddInteger(TSelf)" />
+        public static bool IsOddInteger(decimal value)
         {
-            return DecCalc.VarDecCmp(in x, in y) >= 0 ? x : y;
+            decimal truncatedValue = Truncate(value);
+            return (value == truncatedValue) && ((truncatedValue._lo64 & 1) != 0);
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.MaxMagnitude(TSelf, TSelf)" />
-        public static decimal MaxMagnitude(decimal x, decimal y) => (Abs(x) >= Abs(y)) ? x : y;
+        /// <inheritdoc cref="INumberBase{TSelf}.IsPositive(TSelf)" />
+        public static bool IsPositive(decimal value) => value._flags >= 0;
 
-        /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
-        public static decimal Min(decimal x, decimal y)
+        /// <inheritdoc cref="INumberBase{TSelf}.IsPositiveInfinity(TSelf)" />
+        static bool INumberBase<decimal>.IsPositiveInfinity(decimal value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsRealNumber(TSelf)" />
+        static bool INumberBase<decimal>.IsRealNumber(decimal value) => true;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsSubnormal(TSelf)" />
+        static bool INumberBase<decimal>.IsSubnormal(decimal value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsZero(TSelf)" />
+        static bool INumberBase<decimal>.IsZero(decimal value) => (value == 0);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitude(TSelf, TSelf)" />
+        public static decimal MaxMagnitude(decimal x, decimal y)
         {
-            return DecCalc.VarDecCmp(in x, in y) < 0 ? x : y;
+            decimal ax = Abs(x);
+            decimal ay = Abs(y);
+
+            if (ax > ay)
+            {
+                return x;
+            }
+
+            if (ax == ay)
+            {
+                return IsNegative(x) ? y : x;
+            }
+
+            return y;
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.MinMagnitude(TSelf, TSelf)" />
-        public static decimal MinMagnitude(decimal x, decimal y) => (Abs(x) <= Abs(y)) ? x : y;
+        /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitudeNumber(TSelf, TSelf)" />
+        static decimal INumberBase<decimal>.MaxMagnitudeNumber(decimal x, decimal y) => MaxMagnitude(x, y);
 
-        /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
-        public static int Sign(decimal d) => (d.Low64 | d.High) == 0 ? 0 : (d._flags >> 31) | 1;
+        /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitude(TSelf, TSelf)" />
+        public static decimal MinMagnitude(decimal x, decimal y)
+        {
+            decimal ax = Abs(x);
+            decimal ay = Abs(y);
 
-        /// <inheritdoc cref="INumber{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
+            if (ax < ay)
+            {
+                return x;
+            }
+
+            if (ax == ay)
+            {
+                return IsNegative(x) ? x : y;
+            }
+
+            return y;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
+        static decimal INumberBase<decimal>.MinMagnitudeNumber(decimal x, decimal y) => MinMagnitude(x, y);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryCreate<TOther>(TOther value, out decimal result)
-            where TOther : INumber<TOther>
+            where TOther : INumberBase<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -1686,16 +1819,6 @@ namespace System
                 return false;
             }
         }
-
-        //
-        // INumberBase
-        //
-
-        /// <inheritdoc cref="INumberBase{TSelf}.One" />
-        static decimal INumberBase<decimal>.One => One;
-
-        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
-        static decimal INumberBase<decimal>.Zero => Zero;
 
         //
         // IParsable

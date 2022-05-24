@@ -11,7 +11,6 @@ using System.Runtime.Serialization;
 using System.Runtime.Versioning;
 
 #pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#pragma warning disable CA1066 // Implement IEquatable when overriding Object.Equals
 
 #if TARGET_64BIT
 using nint_t = System.Int64;
@@ -34,24 +33,24 @@ namespace System
           IMinMaxValue<nint>,
           ISignedNumber<nint>
     {
-        private readonly unsafe void* _value; // Do not rename (binary serialization)
+        private readonly nint _value;
 
         [Intrinsic]
-        public static readonly IntPtr Zero;
+        public static readonly nint Zero;
 
         [NonVersionable]
-        public unsafe IntPtr(int value)
+        public IntPtr(int value)
         {
-            _value = (void*)value;
+            _value = value;
         }
 
         [NonVersionable]
-        public unsafe IntPtr(long value)
+        public IntPtr(long value)
         {
 #if TARGET_64BIT
-            _value = (void*)value;
+            _value = (nint)value;
 #else
-            _value = (void*)checked((int)value);
+            _value = checked((nint)value);
 #endif
         }
 
@@ -59,111 +58,100 @@ namespace System
         [NonVersionable]
         public unsafe IntPtr(void* value)
         {
-            _value = value;
+            _value = (nint)value;
         }
 
-        private unsafe IntPtr(SerializationInfo info, StreamingContext context)
+        private IntPtr(SerializationInfo info, StreamingContext context)
         {
-            long l = info.GetInt64("value");
+            long value = info.GetInt64("value");
 
-            if (Size == 4 && (l > int.MaxValue || l < int.MinValue))
+#if TARGET_32BIT
+            if ((value > int.MaxValue) || (value < int.MinValue))
+            {
                 throw new ArgumentException(SR.Serialization_InvalidPtrValue);
+            }
+#endif
 
-            _value = (void*)l;
+            _value = (nint)value;
         }
 
-        unsafe void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
+        void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
             ArgumentNullException.ThrowIfNull(info);
 
-            info.AddValue("value", ToInt64());
+            long value = _value;
+            info.AddValue("value", value);
         }
 
-        public override unsafe bool Equals([NotNullWhen(true)] object? obj) =>
-            obj is IntPtr other &&
-            _value == other._value;
+        public override bool Equals([NotNullWhen(true)] object? obj) => (obj is nint other) && Equals(other);
 
-        public override unsafe int GetHashCode()
+        public override int GetHashCode()
         {
 #if TARGET_64BIT
-            long l = (long)_value;
-            return unchecked((int)l) ^ (int)(l >> 32);
-#else
-            return unchecked((int)_value);
-#endif
-        }
-
-        [NonVersionable]
-        public unsafe int ToInt32()
-        {
-#if TARGET_64BIT
-            long l = (long)_value;
-            return checked((int)l);
+            long value = _value;
+            return value.GetHashCode();
 #else
             return (int)_value;
 #endif
         }
 
         [NonVersionable]
-        public unsafe long ToInt64() =>
-            (nint)_value;
-
-        [NonVersionable]
-        public static unsafe explicit operator IntPtr(int value) =>
-            new IntPtr(value);
-
-        [NonVersionable]
-        public static unsafe explicit operator IntPtr(long value) =>
-            new IntPtr(value);
-
-        [CLSCompliant(false)]
-        [NonVersionable]
-        public static unsafe explicit operator IntPtr(void* value) =>
-            new IntPtr(value);
-
-        [CLSCompliant(false)]
-        [NonVersionable]
-        public static unsafe explicit operator void*(IntPtr value) =>
-            value._value;
-
-        [NonVersionable]
-        public static unsafe explicit operator int(IntPtr value)
+        public int ToInt32()
         {
 #if TARGET_64BIT
-            long l = (long)value._value;
-            return checked((int)l);
+            return checked((int)_value);
 #else
-            return (int)value._value;
+            return (int)_value;
 #endif
         }
 
         [NonVersionable]
-        public static unsafe explicit operator long(IntPtr value) =>
-            (nint)value._value;
+        public long ToInt64() => _value;
 
         [NonVersionable]
-        public static unsafe bool operator ==(IntPtr value1, IntPtr value2) =>
-            value1._value == value2._value;
+        public static explicit operator nint(int value) => value;
 
         [NonVersionable]
-        public static unsafe bool operator !=(IntPtr value1, IntPtr value2) =>
-            value1._value != value2._value;
+        public static explicit operator nint(long value) => checked((nint)value);
+
+        [CLSCompliant(false)]
+        [NonVersionable]
+        public static unsafe explicit operator nint(void* value) => (nint)value;
+
+        [CLSCompliant(false)]
+        [NonVersionable]
+        public static unsafe explicit operator void*(nint value) => (void*)value;
 
         [NonVersionable]
-        public static IntPtr Add(IntPtr pointer, int offset) =>
-            pointer + offset;
+        public static explicit operator int(nint value)
+        {
+#if TARGET_64BIT
+            return checked((int)value);
+#else
+            return (int)value;
+#endif
+        }
 
         [NonVersionable]
-        public static unsafe IntPtr operator +(IntPtr pointer, int offset) =>
-            (nint)pointer._value + offset;
+        public static explicit operator long(nint value) => value;
 
         [NonVersionable]
-        public static IntPtr Subtract(IntPtr pointer, int offset) =>
-            pointer - offset;
+        public static bool operator ==(nint value1, nint value2) => value1 == value2;
 
         [NonVersionable]
-        public static unsafe IntPtr operator -(IntPtr pointer, int offset) =>
-            (nint)pointer._value - offset;
+        public static bool operator !=(nint value1, nint value2) => value1 != value2;
+
+        [NonVersionable]
+        public static nint Add(nint pointer, int offset) => pointer + offset;
+
+        [NonVersionable]
+        public static nint operator +(nint pointer, int offset) => pointer + offset;
+
+        [NonVersionable]
+        public static nint Subtract(nint pointer, int offset) => pointer - offset;
+
+        [NonVersionable]
+        public static nint operator -(nint pointer, int offset) => pointer - offset;
 
         public static int Size
         {
@@ -173,93 +161,95 @@ namespace System
 
         [CLSCompliant(false)]
         [NonVersionable]
-        public unsafe void* ToPointer() => _value;
+        public unsafe void* ToPointer() => (void*)_value;
 
         /// <inheritdoc cref="IMinMaxValue{TSelf}.MaxValue" />
-        public static IntPtr MaxValue
+        public static nint MaxValue
         {
             [NonVersionable]
-            get => (IntPtr)nint_t.MaxValue;
+            get => unchecked((nint)nint_t.MaxValue);
         }
 
         /// <inheritdoc cref="IMinMaxValue{TSelf}.MinValue" />
-        public static IntPtr MinValue
+        public static nint MinValue
         {
             [NonVersionable]
-            get => (IntPtr)nint_t.MinValue;
+            get => unchecked((nint)nint_t.MinValue);
         }
 
-        // Don't just delegate to nint_t.CompareTo as it needs to throw when not IntPtr
-        public unsafe int CompareTo(object? value)
+        public int CompareTo(object? value)
         {
-            if (value is null)
+            if (value is nint other)
+            {
+                return CompareTo(other);
+            }
+            else if (value is null)
             {
                 return 1;
-            }
-            if (value is nint i)
-            {
-                if ((nint)_value < i) return -1;
-                if ((nint)_value > i) return 1;
-                return 0;
             }
 
             throw new ArgumentException(SR.Arg_MustBeIntPtr);
         }
 
-        public unsafe int CompareTo(IntPtr value) => ((nint_t)_value).CompareTo((nint_t)value);
+        public int CompareTo(nint value)
+        {
+            if (_value < value) return -1;
+            if (_value > value) return 1;
+            return 0;
+        }
 
         [NonVersionable]
-        public unsafe bool Equals(IntPtr other) => (nint_t)_value == (nint_t)other;
+        public bool Equals(nint other) => _value == other;
 
-        public unsafe override string ToString() => ((nint_t)_value).ToString();
-        public unsafe string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format) => ((nint_t)_value).ToString(format);
-        public unsafe string ToString(IFormatProvider? provider) => ((nint_t)_value).ToString(provider);
-        public unsafe string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? provider) => ((nint_t)_value).ToString(format, provider);
+        public override string ToString() => ((nint_t)_value).ToString();
+        public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format) => ((nint_t)_value).ToString(format);
+        public string ToString(IFormatProvider? provider) => ((nint_t)_value).ToString(provider);
+        public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? provider) => ((nint_t)_value).ToString(format, provider);
 
-        public unsafe bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null) =>
+        public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null) =>
             ((nint_t)_value).TryFormat(destination, out charsWritten, format, provider);
 
-        public static IntPtr Parse(string s) => (IntPtr)nint_t.Parse(s);
-        public static IntPtr Parse(string s, NumberStyles style) => (IntPtr)nint_t.Parse(s, style);
-        public static IntPtr Parse(string s, IFormatProvider? provider) => (IntPtr)nint_t.Parse(s, provider);
-        public static IntPtr Parse(string s, NumberStyles style, IFormatProvider? provider) => (IntPtr)nint_t.Parse(s, style, provider);
-        public static IntPtr Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => (IntPtr)nint_t.Parse(s, provider);
-        public static IntPtr Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Integer, IFormatProvider? provider = null) => (IntPtr)nint_t.Parse(s, style, provider);
+        public static nint Parse(string s) => (nint)nint_t.Parse(s);
+        public static nint Parse(string s, NumberStyles style) => (nint)nint_t.Parse(s, style);
+        public static nint Parse(string s, IFormatProvider? provider) => (nint)nint_t.Parse(s, provider);
+        public static nint Parse(string s, NumberStyles style, IFormatProvider? provider) => (nint)nint_t.Parse(s, style, provider);
+        public static nint Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => (nint)nint_t.Parse(s, provider);
+        public static nint Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Integer, IFormatProvider? provider = null) => (nint)nint_t.Parse(s, style, provider);
 
-        public static bool TryParse([NotNullWhen(true)] string? s, out IntPtr result)
+        public static bool TryParse([NotNullWhen(true)] string? s, out nint result)
         {
             Unsafe.SkipInit(out result);
-            return nint_t.TryParse(s, out Unsafe.As<IntPtr, nint_t>(ref result));
+            return nint_t.TryParse(s, out Unsafe.As<nint, nint_t>(ref result));
         }
 
-        public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out IntPtr result)
+        public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out nint result)
         {
             Unsafe.SkipInit(out result);
-            return nint_t.TryParse(s, provider, out Unsafe.As<IntPtr, nint_t>(ref result));
+            return nint_t.TryParse(s, provider, out Unsafe.As<nint, nint_t>(ref result));
         }
 
-        public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out IntPtr result)
+        public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out nint result)
         {
             Unsafe.SkipInit(out result);
-            return nint_t.TryParse(s, style, provider, out Unsafe.As<IntPtr, nint_t>(ref result));
+            return nint_t.TryParse(s, style, provider, out Unsafe.As<nint, nint_t>(ref result));
         }
 
-        public static bool TryParse(ReadOnlySpan<char> s, out IntPtr result)
+        public static bool TryParse(ReadOnlySpan<char> s, out nint result)
         {
             Unsafe.SkipInit(out result);
-            return nint_t.TryParse(s, out Unsafe.As<IntPtr, nint_t>(ref result));
+            return nint_t.TryParse(s, out Unsafe.As<nint, nint_t>(ref result));
         }
 
-        public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out IntPtr result)
+        public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out nint result)
         {
             Unsafe.SkipInit(out result);
-            return nint_t.TryParse(s, provider, out Unsafe.As<IntPtr, nint_t>(ref result));
+            return nint_t.TryParse(s, provider, out Unsafe.As<nint, nint_t>(ref result));
         }
 
-        public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out IntPtr result)
+        public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out nint result)
         {
             Unsafe.SkipInit(out result);
-            return nint_t.TryParse(s, style, provider, out Unsafe.As<IntPtr, nint_t>(ref result));
+            return nint_t.TryParse(s, style, provider, out Unsafe.As<nint, nint_t>(ref result));
         }
 
         //
@@ -302,13 +292,13 @@ namespace System
         public static nint TrailingZeroCount(nint value) => BitOperations.TrailingZeroCount(value);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.GetShortestBitLength()" />
-        unsafe int IBinaryInteger<nint>.GetShortestBitLength()
+        int IBinaryInteger<nint>.GetShortestBitLength()
         {
-            nint value = (nint)(_value);
+            nint value = _value;
 
             if (value >= 0)
             {
-                return (sizeof(nint_t) * 8) - BitOperations.LeadingZeroCount((nuint)(value));
+                return (sizeof(nint_t) * 8) - BitOperations.LeadingZeroCount((nuint)value);
             }
             else
             {
@@ -320,11 +310,16 @@ namespace System
         int IBinaryInteger<nint>.GetByteCount() => sizeof(nint_t);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TryWriteBigEndian(Span{byte}, out int)" />
-        unsafe bool IBinaryInteger<nint>.TryWriteBigEndian(Span<byte> destination, out int bytesWritten)
+        bool IBinaryInteger<nint>.TryWriteBigEndian(Span<byte> destination, out int bytesWritten)
         {
             if (destination.Length >= sizeof(nint_t))
             {
-                nint_t value = BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness((nint_t)(_value)) : (nint_t)(_value);
+                nint_t value = (nint_t)_value;
+
+                if (BitConverter.IsLittleEndian)
+                {
+                    value = BinaryPrimitives.ReverseEndianness(value);
+                }
                 Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), value);
 
                 bytesWritten = sizeof(nint_t);
@@ -338,11 +333,16 @@ namespace System
         }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TryWriteLittleEndian(Span{byte}, out int)" />
-        unsafe bool IBinaryInteger<nint>.TryWriteLittleEndian(Span<byte> destination, out int bytesWritten)
+        bool IBinaryInteger<nint>.TryWriteLittleEndian(Span<byte> destination, out int bytesWritten)
         {
             if (destination.Length >= sizeof(nint_t))
             {
-                nint_t value = BitConverter.IsLittleEndian ? (nint_t)(_value) : BinaryPrimitives.ReverseEndianness((nint_t)(_value));
+                nint_t value = (nint_t)_value;
+
+                if (!BitConverter.IsLittleEndian)
+                {
+                    value = BinaryPrimitives.ReverseEndianness(value);
+                }
                 Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), value);
 
                 bytesWritten = sizeof(nint_t);
@@ -472,9 +472,6 @@ namespace System
         // INumber
         //
 
-        /// <inheritdoc cref="INumber{TSelf}.Abs(TSelf)" />
-        public static nint Abs(nint value) => Math.Abs(value);
-
         /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
         public static nint Clamp(nint value, nint min, nint max) => Math.Clamp(value, min, max);
 
@@ -501,10 +498,41 @@ namespace System
             return -absValue;
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.CreateChecked{TOther}(TOther)" />
+        /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
+        public static nint Max(nint x, nint y) => Math.Max(x, y);
+
+        /// <inheritdoc cref="INumber{TSelf}.MaxNumber(TSelf, TSelf)" />
+        static nint INumber<nint>.MaxNumber(nint x, nint y) => Max(x, y);
+
+        /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
+        public static nint Min(nint x, nint y) => Math.Min(x, y);
+
+        /// <inheritdoc cref="INumber{TSelf}.MinNumber(TSelf, TSelf)" />
+        static nint INumber<nint>.MinNumber(nint x, nint y) => Min(x, y);
+
+        /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
+        public static int Sign(nint value) => Math.Sign(value);
+
+        //
+        // INumberBase
+        //
+
+        /// <inheritdoc cref="INumberBase{TSelf}.One" />
+        static nint INumberBase<nint>.One => 1;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Radix" />
+        static int INumberBase<nint>.Radix => 2;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
+        static nint INumberBase<nint>.Zero => 0;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Abs(TSelf)" />
+        public static nint Abs(nint value) => Math.Abs(value);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static nint CreateChecked<TOther>(TOther value)
-            where TOther : INumber<TOther>
+            where TOther : INumberBase<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -514,9 +542,9 @@ namespace System
             {
                 return (char)(object)value;
             }
-            else if (typeof(TOther) == typeof(decimal))
+            else if (typeof(TOther) == typeof(nint))
             {
-                return checked((nint)(decimal)(object)value);
+                return checked((nint)(nint)(object)value);
             }
             else if (typeof(TOther) == typeof(double))
             {
@@ -569,10 +597,10 @@ namespace System
             }
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.CreateSaturating{TOther}(TOther)" />
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateSaturating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static nint CreateSaturating<TOther>(TOther value)
-            where TOther : INumber<TOther>
+            where TOther : INumberBase<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -582,9 +610,9 @@ namespace System
             {
                 return (char)(object)value;
             }
-            else if (typeof(TOther) == typeof(decimal))
+            else if (typeof(TOther) == typeof(nint))
             {
-                var actualValue = (decimal)(object)value;
+                var actualValue = (nint)(object)value;
                 return (actualValue > nint.MaxValue) ? MaxValue :
                        (actualValue < nint.MinValue) ? MinValue : (nint)actualValue;
             }
@@ -648,10 +676,10 @@ namespace System
             }
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.CreateTruncating{TOther}(TOther)" />
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateTruncating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static nint CreateTruncating<TOther>(TOther value)
-            where TOther : INumber<TOther>
+            where TOther : INumberBase<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -661,9 +689,9 @@ namespace System
             {
                 return (char)(object)value;
             }
-            else if (typeof(TOther) == typeof(decimal))
+            else if (typeof(TOther) == typeof(nint))
             {
-                return (nint)(decimal)(object)value;
+                return (nint)(nint)(object)value;
             }
             else if (typeof(TOther) == typeof(double))
             {
@@ -716,13 +744,58 @@ namespace System
             }
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.IsNegative(TSelf)" />
+        /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
+        static bool INumberBase<nint>.IsCanonical(nint value) => true;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsComplexNumber(TSelf)" />
+        static bool INumberBase<nint>.IsComplexNumber(nint value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsEvenInteger(TSelf)" />
+        public static bool IsEvenInteger(nint value) => (value & 1) == 0;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsFinite(TSelf)" />
+        static bool INumberBase<nint>.IsFinite(nint value) => true;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsImaginaryNumber(TSelf)" />
+        static bool INumberBase<nint>.IsImaginaryNumber(nint value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsInfinity(TSelf)" />
+        static bool INumberBase<nint>.IsInfinity(nint value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsInteger(TSelf)" />
+        static bool INumberBase<nint>.IsInteger(nint value) => true;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNaN(TSelf)" />
+        static bool INumberBase<nint>.IsNaN(nint value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNegative(TSelf)" />
         public static bool IsNegative(nint value) => value < 0;
 
-        /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
-        public static nint Max(nint x, nint y) => Math.Max(x, y);
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNegativeInfinity(TSelf)" />
+        static bool INumberBase<nint>.IsNegativeInfinity(nint value) => false;
 
-        /// <inheritdoc cref="INumber{TSelf}.MaxMagnitude(TSelf, TSelf)" />
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNormal(TSelf)" />
+        static bool INumberBase<nint>.IsNormal(nint value) => value != 0;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsOddInteger(TSelf)" />
+        public static bool IsOddInteger(nint value) => (value & 1) != 0;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsPositive(TSelf)" />
+        public static bool IsPositive(nint value) => value >= 0;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsPositiveInfinity(TSelf)" />
+        static bool INumberBase<nint>.IsPositiveInfinity(nint value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsRealNumber(TSelf)" />
+        static bool INumberBase<nint>.IsRealNumber(nint value) => true;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsSubnormal(TSelf)" />
+        static bool INumberBase<nint>.IsSubnormal(nint value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsZero(TSelf)" />
+        static bool INumberBase<nint>.IsZero(nint value) => (value == 0);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitude(TSelf, TSelf)" />
         public static nint MaxMagnitude(nint x, nint y)
         {
             nint absX = x;
@@ -749,13 +822,23 @@ namespace System
                 }
             }
 
-            return (absX >= absY) ? x : y;
+            if (absX > absY)
+            {
+                return x;
+            }
+
+            if (absX == absY)
+            {
+                return IsNegative(x) ? y : x;
+            }
+
+            return y;
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
-        public static nint Min(nint x, nint y) => Math.Min(x, y);
+        /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitudeNumber(TSelf, TSelf)" />
+        static nint INumberBase<nint>.MaxMagnitudeNumber(nint x, nint y) => MaxMagnitude(x, y);
 
-        /// <inheritdoc cref="INumber{TSelf}.MinMagnitude(TSelf, TSelf)" />
+        /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitude(TSelf, TSelf)" />
         public static nint MinMagnitude(nint x, nint y)
         {
             nint absX = x;
@@ -782,16 +865,26 @@ namespace System
                 }
             }
 
-            return (absX <= absY) ? x : y;
+            if (absX < absY)
+            {
+                return x;
+            }
+
+            if (absX == absY)
+            {
+                return IsNegative(x) ? x : y;
+            }
+
+            return y;
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
-        public static int Sign(nint value) => Math.Sign(value);
+        /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
+        static nint INumberBase<nint>.MinMagnitudeNumber(nint x, nint y) => MinMagnitude(x, y);
 
-        /// <inheritdoc cref="INumber{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
+        /// <inheritdoc cref="INumberBase{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryCreate<TOther>(TOther value, out nint result)
-            where TOther : INumber<TOther>
+            where TOther : INumberBase<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -803,9 +896,9 @@ namespace System
                 result = (char)(object)value;
                 return true;
             }
-            else if (typeof(TOther) == typeof(decimal))
+            else if (typeof(TOther) == typeof(nint))
             {
-                var actualValue = (decimal)(object)value;
+                var actualValue = (nint)(object)value;
 
                 if ((actualValue < nint.MinValue) || (actualValue > nint.MaxValue))
                 {
@@ -926,16 +1019,6 @@ namespace System
                 return false;
             }
         }
-
-        //
-        // INumberBase
-        //
-
-        /// <inheritdoc cref="INumberBase{TSelf}.One" />
-        static nint INumberBase<nint>.One => 1;
-
-        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
-        static nint INumberBase<nint>.Zero => 0;
 
         //
         // IShiftOperators

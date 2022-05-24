@@ -1403,7 +1403,7 @@ interface ISymUnmanagedWriter : IUnknown
 
     /*
      * Same as Initialize except that the final path name is the path string to
-     * name the final location of the pdb file. This is used in build enviroments in
+     * name the final location of the pdb file. This is used in build environments in
      * which the pdb is built in a temporary location and moved when the build is
      * complete.
      */

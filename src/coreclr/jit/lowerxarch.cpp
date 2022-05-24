@@ -5693,7 +5693,7 @@ bool Lowering::TryGetContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode
                 case NI_AVX_InsertVector128:
                 case NI_AVX2_InsertVector128:
                 {
-                    // InsertVector128 is special in that that it returns a TYP_SIMD32 but takes a TYP_SIMD16
+                    // InsertVector128 is special in that it returns a TYP_SIMD32 but takes a TYP_SIMD16.
                     assert(!supportsSIMDScalarLoads);
 
                     const unsigned expectedSize = 16;

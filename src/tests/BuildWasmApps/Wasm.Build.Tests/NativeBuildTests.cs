@@ -101,7 +101,7 @@ namespace Wasm.Build.Tests
                                             + " It might fail if it was incorrectly compiled to a bitcode file, instead of wasm.");
         }
 
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+        [Theory]
         [InlineData("Debug")]
         [InlineData("Release")]
         public void BlazorWasm_CanRunMonoAOTCross_WithNoTrimming(string config)

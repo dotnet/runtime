@@ -6,13 +6,10 @@
 ** Source:  test1.c
 **
 ** Purpose:
-** Test to that wcscat correctly concatanates wide strings, including placing
+** Test to that wcscat correctly concatenates wide strings, including placing
 ** null pointers.
 **
-**
 **==========================================================================*/
-
-
 
 #include <palsuite.h>
 

@@ -3251,7 +3251,7 @@ struct DebuggerMethodInfoEntry
 };
 
 // class DebuggerMethodInfoTable:   Hash table to hold all the non-JIT related
-// info for each method we see.  The JIT infos live in a seperate table
+// info for each method we see.  The JIT infos live in a separate table
 // keyed by MethodDescs - there may be multiple
 // JITted realizations of each MethodDef, e.g. under different generic
 // assumptions.  Hangs off of the Debugger object.

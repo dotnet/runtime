@@ -22,6 +22,7 @@ parameters:
   # Handled as an opt-in parameter to avoid excessive yaml.
   passPlatforms: false
   container: ''
+  shouldContinueOnError: false
   jobParameters: {}
   variables: []
 
@@ -38,6 +39,7 @@ jobs:
       archType: arm
       targetRid: linux-arm
       platform: Linux_arm
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
         image: ubuntu-18.04-cross-arm-20220426130400-6e40d49
         registry: mcr
@@ -63,6 +65,7 @@ jobs:
       archType: armv6
       targetRid: linux-armv6
       platform: Linux_armv6
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
         image: ubuntu-20.04-cross-armv6-raspbian-10-20211208135931-e6e3ac4
         registry: mcr
@@ -89,6 +92,7 @@ jobs:
       archType: arm64
       targetRid: linux-arm64
       platform: Linux_arm64
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
         ${{ if eq(parameters.container, '') }}:
           image: ubuntu-18.04-cross-arm64-20220427171722-6e40d49
@@ -119,6 +123,7 @@ jobs:
       archType: x64
       targetRid: linux-musl-x64
       platform: Linux_musl_x64
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
         image: alpine-3.13-WithNode-20210910135845-c401c85
         registry: mcr
@@ -144,6 +149,7 @@ jobs:
       archType: arm
       targetRid: linux-musl-arm
       platform: Linux_musl_arm
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
         image: ubuntu-16.04-cross-arm-alpine-20210923140502-78f7860
         registry: mcr
@@ -171,6 +177,7 @@ jobs:
       archType: arm64
       targetRid: linux-musl-arm64
       platform: Linux_musl_arm64
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
         image: ubuntu-16.04-cross-arm64-alpine-20210923140502-78f7860
         registry: mcr
@@ -198,6 +205,7 @@ jobs:
       archType: arm64
       targetRid: linux-bionic-arm64
       platform: Linux_bionic_arm64
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
         image: ubuntu-18.04-android-20220131172314-3983b4e
         registry: mcr
@@ -226,6 +234,7 @@ jobs:
       archType: x64
       targetRid: linux-bionic-x64
       platform: Linux_bionic_x64
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
         image: ubuntu-18.04-android-20220131172314-3983b4e
         registry: mcr
@@ -250,6 +259,7 @@ jobs:
       archType: x64
       targetRid: linux-x64
       platform: Linux_x64
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
         ${{ if eq(parameters.container, '') }}:
           image: centos-7-20210714125435-9b5bbc2
@@ -277,6 +287,7 @@ jobs:
       archType: x86
       targetRid: linux-x86
       platform: Linux_x86
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
         image: ubuntu-18.04-cross-x86-linux-20211022152824-f853169
         registry: mcr
@@ -304,6 +315,7 @@ jobs:
       archType: x64
       targetRid: linux-x64
       platform: Linux_x64
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
         image: centos-7-source-build-20210714125450-5d87b80
         registry: mcr
@@ -329,6 +341,7 @@ jobs:
       archType: s390x
       targetRid: linux-s390x
       platform: Linux_s390x
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
         image: ubuntu-18.04-cross-s390x-20201102145728-d6e0352
         registry: mcr
@@ -355,6 +368,7 @@ jobs:
       archType: wasm
       targetRid: browser-wasm
       platform: Browser_wasm
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
         image: ubuntu-18.04-webassembly-20220317214646-1ad56e8
         registry: mcr
@@ -379,6 +393,7 @@ jobs:
       archType: wasm
       targetRid: browser-wasm
       platform: Browser_wasm_firefox
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
         image: ubuntu-18.04-webassembly-20220317214646-1ad56e8
         registry: mcr
@@ -403,6 +418,7 @@ jobs:
       archType: wasm
       targetRid: browser-wasm
       platform: Browser_wasm_win
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       jobParameters:
         hostedOs: windows
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
@@ -423,6 +439,7 @@ jobs:
       archType: x64
       targetRid: freebsd-x64
       platform: FreeBSD_x64
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
         image: ubuntu-18.04-cross-freebsd-12-20210917001307-f13d79e
         registry: mcr
@@ -448,6 +465,7 @@ jobs:
       archType: x64
       targetRid: android-x64
       platform: Android_x64
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
         image: ubuntu-18.04-android-20220131172314-3983b4e
         registry: mcr
@@ -472,6 +490,7 @@ jobs:
       archType: x86
       targetRid: android-x86
       platform: Android_x86
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
         image: ubuntu-18.04-android-20220131172314-3983b4e
         registry: mcr
@@ -496,6 +515,7 @@ jobs:
       archType: arm
       targetRid: android-arm
       platform: Android_arm
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
         image: ubuntu-18.04-android-20220131172314-3983b4e
         registry: mcr
@@ -520,6 +540,7 @@ jobs:
       archType: arm64
       targetRid: android-arm64
       platform: Android_arm64
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
         image: ubuntu-18.04-android-20220131172314-3983b4e
         registry: mcr
@@ -544,6 +565,7 @@ jobs:
       archType: x64
       targetRid: maccatalyst-x64
       platform: MacCatalyst_x64
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       jobParameters:
         runtimeFlavor: mono
         stagedBuild: ${{ parameters.stagedBuild }}
@@ -565,6 +587,7 @@ jobs:
       archType: arm64
       targetRid: maccatalyst-arm64
       platform: MacCatalyst_arm64
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       jobParameters:
         runtimeFlavor: mono
         stagedBuild: ${{ parameters.stagedBuild }}
@@ -586,6 +609,7 @@ jobs:
       archType: arm64
       targetRid: tvos-arm64
       platform: tvOS_arm64
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       jobParameters:
         runtimeFlavor: mono
         stagedBuild: ${{ parameters.stagedBuild }}
@@ -607,6 +631,7 @@ jobs:
       archType: x64
       targetRid: tvossimulator-x64
       platform: tvOSSimulator_x64
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       jobParameters:
         runtimeFlavor: mono
         stagedBuild: ${{ parameters.stagedBuild }}
@@ -628,6 +653,7 @@ jobs:
       archType: arm64
       targetRid: tvossimulator-arm64
       platform: tvOSSimulator_arm64
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       jobParameters:
         runtimeFlavor: mono
         stagedBuild: ${{ parameters.stagedBuild }}
@@ -649,6 +675,7 @@ jobs:
       archType: arm
       targetRid: ios-arm
       platform: iOS_arm
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       jobParameters:
         runtimeFlavor: mono
         stagedBuild: ${{ parameters.stagedBuild }}
@@ -670,6 +697,7 @@ jobs:
       archType: arm64
       targetRid: ios-arm64
       platform: iOS_arm64
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       jobParameters:
         runtimeFlavor: mono
         stagedBuild: ${{ parameters.stagedBuild }}
@@ -691,6 +719,7 @@ jobs:
       archType: x64
       targetRid: iossimulator-x64
       platform: iOSSimulator_x64
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       jobParameters:
         runtimeFlavor: mono
         stagedBuild: ${{ parameters.stagedBuild }}
@@ -712,6 +741,7 @@ jobs:
       archType: x86
       targetRid: iossimulator-x86
       platform: iOSsimulator_x86
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       jobParameters:
         runtimeFlavor: mono
         stagedBuild: ${{ parameters.stagedBuild }}
@@ -734,6 +764,7 @@ jobs:
       archType: arm64
       targetRid: iossimulator-arm64
       platform: iOSSimulator_arm64
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       jobParameters:
         runtimeFlavor: mono
         stagedBuild: ${{ parameters.stagedBuild }}
@@ -755,6 +786,7 @@ jobs:
       archType: arm64
       targetRid: osx-arm64
       platform: OSX_arm64
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
@@ -777,6 +809,7 @@ jobs:
       archType: x64
       targetRid: osx-x64
       platform: OSX_x64
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
@@ -798,6 +831,7 @@ jobs:
       archType: armel
       targetRid: tizen-armel
       platform: Tizen_armel
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
         image: ubuntu-18.04-cross-armel-tizen-20210719212651-8b02f56
         registry: mcr
@@ -825,6 +859,7 @@ jobs:
       archType: x64
       targetRid: win-x64
       platform: windows_x64
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
@@ -846,6 +881,7 @@ jobs:
       archType: x86
       targetRid: win-x86
       platform: windows_x86
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
@@ -866,6 +902,7 @@ jobs:
       archType: arm
       targetRid: win-arm
       platform: windows_arm
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
@@ -887,6 +924,7 @@ jobs:
       archType: arm64
       targetRid: win-arm64
       platform: windows_arm64
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}

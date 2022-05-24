@@ -2975,7 +2975,7 @@ void EfficientEdgeCountReconstructor::MarkInterestingSwitches(BasicBlock* block,
     // By default, we're guaranteed to see at least 30 calls to instrumented method, for dynamic PGO.
     // Hence we require at least 30 observed switch executions.
     //
-    // The profitabilty of peeling is related to the dominant fraction. The cost has a constant portion
+    // The profitability of peeling is related to the dominant fraction. The cost has a constant portion
     // (at a minimum the cost of a not-taken branch) and a variable portion, plus increased code size.
     // So we don't want to peel in cases where the dominant fraction is too small.
     //

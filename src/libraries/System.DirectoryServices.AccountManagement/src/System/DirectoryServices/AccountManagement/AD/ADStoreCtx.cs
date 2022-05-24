@@ -1390,7 +1390,7 @@ namespace System.DirectoryServices.AccountManagement
             // SID search
             //
             //
-            //  If we can read the defaultNamingContext and retrive the well known path for the foreignSecurityPrincipal container start there.
+            //  If we can read the defaultNamingContext and retrieve the well known path for the foreignSecurityPrincipal container start there.
             //  If we can only read the defaultNamingContext then start there
             //  Else just start at the base DN from the original context
             //
@@ -1436,7 +1436,7 @@ namespace System.DirectoryServices.AccountManagement
 
                         GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "GetGroupsMemberOf(ctx): Read DNC of {0}", this.DefaultNamingContext);
 
-                        fspWkDn = ADUtils.RetriveWkDn(dncContainer, this.DefaultNamingContext, this.UserSuppliedServerName, Constants.GUID_FOREIGNSECURITYPRINCIPALS_CONTAINER_BYTE);
+                        fspWkDn = ADUtils.RetrieveWkDn(dncContainer, this.DefaultNamingContext, this.UserSuppliedServerName, Constants.GUID_FOREIGNSECURITYPRINCIPALS_CONTAINER_BYTE);
 
                         if (null != fspWkDn)
                         {
@@ -1521,7 +1521,7 @@ namespace System.DirectoryServices.AccountManagement
                 }
                 else
                 {
-                    // We don't need to retrive the Primary group ID here because we have already established that this user is not from this domain
+                    // We don't need to retrieve the Primary group ID here because we have already established that this user is not from this domain
                     // and the users primary group must be from the same domain as the user.
                     Debug.Assert(foreignPrincipal.ContextType != ContextType.ApplicationDirectory);
 
