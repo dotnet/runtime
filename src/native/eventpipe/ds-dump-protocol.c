@@ -98,11 +98,12 @@ void
 dump_protocol_generate_core_dump_response_init(
 	DiagnosticsGenerateCoreDumpResponsePayload *payload,
 	ds_ipc_result_t error,
-	ep_char8_t *errorText)
+	const ep_char8_t *errorText)
 {
 	EP_ASSERT (payload != NULL);
 
 	payload->error = error;
+	// If this conversion failures it will set error_message to NULL which will send an empty message
 	payload->error_message = ep_rt_utf8_to_utf16_string (errorText, -1);
 }
 
@@ -147,13 +148,16 @@ dump_protocol_generate_core_dump_response_flatten (
 
 	bool success = true;
 
-	// int32_t error
+	// ds_ipc_result_t size error
 	memcpy (*buffer, &response->error, sizeof (response->error));
 	*buffer += sizeof (response->error);
 	*size -= sizeof (response->error);
 
-	// LPCWSTR error message
-	success &= ds_ipc_message_try_write_string_utf16_t (buffer, size, response->error_message);
+	// LPCWSTR error message - if there is no error_message (NULL) then write an empty string
+	success &= ds_ipc_message_try_write_string_utf16_t (
+		buffer,
+		size,
+		response->error_message != NULL ? response->error_message : reinterpret_cast<const ep_char16_t*>(u""));
 
 	// Assert we've used the whole buffer we were given
 	EP_ASSERT(*size == 0);
@@ -166,13 +170,13 @@ void
 dump_protocol_generate_core_dump_response (
 	DiagnosticsIpcStream *stream,
 	ds_ipc_result_t error,
-	ep_char8_t * errorText)
+	const ep_char8_t * errorText)
 {
 	DiagnosticsGenerateCoreDumpResponsePayload payload;
 	DiagnosticsIpcMessage message;
 	ds_ipc_message_init (&message);
 
- 	dump_protocol_generate_core_dump_response_init(&payload, error, errorText);
+	dump_protocol_generate_core_dump_response_init(&payload, error, errorText);
 
 	bool result = ds_ipc_message_initialize_buffer (
 		&message,

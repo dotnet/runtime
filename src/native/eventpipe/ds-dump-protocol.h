@@ -73,7 +73,7 @@ struct _DiagnosticsGenerateCoreDumpResponsePayload_Internal {
 	// uint = 4 little endian bytes
 	// string = (array<char> where the last char must = 0) or (length = 0)
 
-	int32_t error;
+	ds_ipc_result_t error;
 	ep_char16_t *error_message;
 };
 
