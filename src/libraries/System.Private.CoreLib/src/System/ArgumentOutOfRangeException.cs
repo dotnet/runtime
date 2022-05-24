@@ -11,6 +11,8 @@
 =============================================================================*/
 
 using System.Runtime.Serialization;
+using System.Numerics;
+using System.Runtime.CompilerServices;
 
 namespace System
 {
@@ -62,6 +64,47 @@ namespace System
             : base(info, context)
         {
             _actualValue = info.GetValue("ActualValue", typeof(object));
+        }
+
+        public static void ThrowIfNegative<T>(T value, [CallerArgumentExpression("value")] string? paramName = null)
+            where T : struct, INumberBase<T>, ISignedNumber<T>, IComparisonOperators<T, T>
+        {
+            if (value < T.Zero)
+                throw new ArgumentOutOfRangeException(paramName);
+        }
+
+        public static void ThrowIfGreaterThan<T>(T value, T other, [CallerArgumentExpression("value")] string? paramName = null)
+            where T : struct, IComparisonOperators<T, T>
+        {
+            if (value > other)
+                throw new ArgumentOutOfRangeException(paramName);
+        }
+
+        public static void ThrowIfLessThan<T>(T value, T other, [CallerArgumentExpression("value")] string? paramName = null)
+            where T : struct, IComparisonOperators<T, T>
+        {
+            if (value < other)
+                throw new ArgumentOutOfRangeException(paramName);
+        }
+
+        public static void ThrowIfNegativeOrZero<T>(T value, [CallerArgumentExpression("value")] string? paramName = null)
+            where T : struct, INumberBase<T>, ISignedNumber<T>, IComparisonOperators<T, T>
+        {
+            if (value <= T.Zero)
+                throw new ArgumentOutOfRangeException(paramName);
+        }
+
+        public static void ThrowIfNotBetween<T>(T value, T left, T right, [CallerArgumentExpression("value")] string? paramName = null)
+            where T : struct, IComparisonOperators<T, T>
+        {
+            if (value < left || value > right)
+                throw new ArgumentOutOfRangeException(paramName);
+        }
+
+        public static void ThrowIfNotBetween<T>(T value, T left, T right)
+            where T : struct, Enum
+        {
+            return;
         }
 
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
