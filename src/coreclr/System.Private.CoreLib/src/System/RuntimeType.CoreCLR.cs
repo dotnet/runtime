@@ -501,7 +501,7 @@ namespace System
 
                 private void MergeWithGlobalListInOrder(T[] list)
                 {
-                    T[]? cachedMembers = m_allMembers;
+                    T?[]? cachedMembers = m_allMembers;
 
                     if (cachedMembers == null)
                     {
@@ -509,7 +509,7 @@ namespace System
                         return;
                     }
 
-                    foreach (T cachedMemberInfo in cachedMembers)
+                    foreach (T? cachedMemberInfo in cachedMembers)
                     {
                         if (cachedMemberInfo == null)
                             break;

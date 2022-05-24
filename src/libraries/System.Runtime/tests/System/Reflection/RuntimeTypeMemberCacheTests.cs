@@ -150,7 +150,8 @@ namespace System.Reflection.Tests
             Assert.NotNull(method129);
             Assert.NotNull(method57);
 
-            for (int i = 150; i > 100; i--)
+            // A new chunk added around this range, add some methods in inverse order
+            for (int i = 110; i > 60; i--)
             {
                 MethodInfo m = t.GetMethod($"Method{i}");
             }

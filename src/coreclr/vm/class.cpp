@@ -2706,9 +2706,13 @@ void EEClass::AddChunk (MethodDescChunk* pNewChunk)
     MethodDescChunk* head =  GetChunks();
 
     if (head == NULL)
+    {
         SetChunks(pNewChunk);
+    }
     else
     {
+        // Current chunk needs to be added to the end of the list so that
+        // when all methods loaded they would come in declared order
         while (head->GetNextChunk() != NULL)
             head = head->GetNextChunk();
 
@@ -2727,25 +2731,20 @@ void EEClass::AddChunkIfItHasNotBeenAdded (MethodDescChunk* pNewChunk)
     if (pNewChunk->GetNextChunk() != NULL)
         return;
 
+    // even if pNewChunk->GetNextChunk() is NULL, this may still be the first chunk we added
+    // (last in the list) so find the end of the list and verify that
     MethodDescChunk *chunk = GetChunks();
-
-    if (chunk == NULL)
-        SetChunks(pNewChunk);
-    else
+    if (chunk != NULL)
     {
-        if (chunk == pNewChunk)
-            return;
-
         while (chunk->GetNextChunk() != NULL)
-        {
             chunk = chunk->GetNextChunk();
 
-            if (chunk == pNewChunk)
-                return;
-        } 
+        if (chunk == pNewChunk)
+            return;
+    }
 
-        chunk->SetNextChunk(pNewChunk);
-    }  
+    pNewChunk->SetNextChunk(GetChunks());
+    SetChunks(pNewChunk);
 }
 
 #endif // !DACCESS_COMPILE
