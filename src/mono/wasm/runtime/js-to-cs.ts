@@ -67,6 +67,9 @@ export function _js_to_mono_obj_unsafe(should_add_in_flight: boolean, js_obj: an
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function js_to_mono_obj_root(js_obj: any, result: WasmRoot<MonoObject>, should_add_in_flight: boolean): void {
+    if (is_nullish(result))
+        throw new Error("Expected (value, WasmRoot, boolean)");
+
     switch (true) {
         case js_obj === null:
         case typeof js_obj === "undefined":
