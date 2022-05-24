@@ -1115,7 +1115,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             var exception = Assert.Throws<InvalidOperationException>(
                 () => config.Bind(new TestOptions()));
             Assert.Equal(
-                SR.Format(SR.Error_MissingParameterlessConstructor, typeof(ClassWithoutPublicConstructor)),
+                SR.Format(SR.Error_MissingPublicInstanceConstructor, typeof(ClassWithoutPublicConstructor)),
                 exception.Message);
         }
 

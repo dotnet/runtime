@@ -430,7 +430,7 @@ namespace Microsoft.Extensions.Configuration
 
             if (!type.IsValueType && constructors.Length == 0)
             {
-                throw new InvalidOperationException(SR.Format(SR.Error_MissingParameterlessConstructor, type));
+                throw new InvalidOperationException(SR.Format(SR.Error_MissingPublicInstanceConstructor, type));
             }
 
             if (constructors.Length > 1 && !hasParameterlessConstructor)
