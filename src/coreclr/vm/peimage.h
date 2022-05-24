@@ -137,6 +137,14 @@ public:
     const SString& GetPath();
     const SString& GetPathToLoad();
     LPCWSTR GetPathForErrorMessages() { return GetPath(); }
+ #ifdef FEATURE_UNITY_ASSEMBLY_MEMORY_PATH
+    // Unity loads assemblies from memory, so we can modify them on disk while they are loaded when users
+    // change scripts. But we still want them to point to their location on disk when queried by Assembly.Location.
+
+    // But CoreCLR does not support assemblies loaded from memory with a custom path atm, so we need to add our own
+    // support. SA: https://github.com/dotnet/runtime/issues/12822
+    void SetPath(LPCSTR path);
+#endif
 
     BOOL IsFile();
     BOOL IsInBundle() const;

@@ -2075,7 +2075,9 @@ extern "C" EXPORT_API MonoImage* EXPORT_CC mono_image_open_from_data_with_name(c
 
     auto assembly = domainAssembly->GetAssembly();
 
-    assembly->GetDomainAssembly()->SetCustomPath(name);
+    auto peAssembly = assembly->GetPEAssembly();
+    auto peImage = peAssembly->GetPEImage();
+    peImage->SetPath(name);
 
     assembly->EnsureActive();
 

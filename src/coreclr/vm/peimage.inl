@@ -39,6 +39,16 @@ inline const SString& PEImage::GetPathToLoad()
     return IsInBundle() ? m_bundleFileLocation.Path() : m_path;
 }
 
+ #ifdef FEATURE_UNITY_ASSEMBLY_MEMORY_PATH
+inline void PEImage::SetPath(LPCSTR path)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    _ASSERTE(m_path.IsEmpty());
+    m_path.SetUTF8(path);
+}
+#endif
+
 inline INT64 PEImage::GetOffset() const
 {
     LIMITED_METHOD_CONTRACT;
