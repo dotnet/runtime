@@ -3,11 +3,7 @@
 
 // See regex_base.h for more information.
 //
-// This header creates some concrete instantiations of RegExBase for commonly used scenarios. In
-// particular, basic regular expression matching base on the regular expression language described in
-// clr::regex::ItemTraitsBase (found in regex_base.h) is instantiated for use with EString, ASCII and
-// UNICODE strings (clr::regex::EStringRegex, clr::regex::WSTRRegEx, and clr::regex::STRRegEx
-// respectively). Each type definition includes an example of its use.
+// This header creates some concrete instantiations of RegExBase for commonly used scenarios
 //
 
 //

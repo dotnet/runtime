@@ -81,8 +81,7 @@ namespace BINDER_SPACE
 
         {
             StackEString<EncodingUTF8> culture(amd.szLocale);
-            SString cultureUnicode;
-            culture.ConvertToUnicode(cultureUnicode);
+            SString cultureUnicode(culture.MoveToUnicode());
 
             SString::CIterator itr = cultureUnicode.Begin();
             if (cultureUnicode.Find(itr, L';'))
@@ -95,8 +94,7 @@ namespace BINDER_SPACE
 
         {
             StackEString<EncodingUTF8> assemblyName(pAssemblyName);
-            SString assemblyNameUnicode;
-            assemblyName.ConvertToUnicode(assemblyNameUnicode);
+            SString assemblyNameUnicode(assemblyName.MoveToUnicode());
 
             COUNT_T assemblyNameLength = assemblyName.GetCount();
             if (assemblyNameLength == 0 || assemblyNameLength >= MAX_PATH_FNAME)
@@ -352,7 +350,7 @@ namespace BINDER_SPACE
         return fEquals;
     }
 
-    void AssemblyName::GetDisplayName(SString &displayName,
+    void AssemblyName::GetDisplayName(PathString &displayName,
                                       DWORD       dwIncludeFlags)
     {
         DWORD dwUseIdentityFlags = m_dwIdentityFlags;

@@ -89,7 +89,7 @@ namespace BINDER_SPACE
     /* static */
     HRESULT TextualIdentityParser::ToString(AssemblyIdentity *pAssemblyIdentity,
                                             DWORD             dwIdentityFlags,
-                                            SString &textualIdentity)
+                                            SString          &textualIdentity)
     {
         HRESULT hr = S_OK;
 

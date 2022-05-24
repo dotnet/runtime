@@ -619,12 +619,12 @@ public:
 
     // This is a convenience typedef that allows a caller to easily declare a grouping container
     // to be passed to a call to Match. An example would be (see regex_util.h for a definition of
-    // EStringRegEx):
+    // STRRegEx):
     //
-    //      EString input(SL"Simmons");
-    //      EStringRegEx::GroupingContainer container;
-    //      if (EStringRegEx::Match(SL"(Sim+on)", input, container)) {
-    //          printf("%S", container[1].GetSString(input).GetUnicode());
+    //      LPCStr input = "Simmons";
+    //      STRRegEx::GroupingContainer container;
+    //      if (STRRegEx::Match("(Sim+on)", input, container)) {
+    //          printf("%s", container[1].Begin());
     //      }
     //
     typedef GroupContainer<InputIterator, Group<InputIterator> > GroupingContainer;

@@ -5,7 +5,7 @@
 //
 
 //
-// This file contains wrapper functions for Win32 API's that take EStrings
+// This file contains wrapper functions for Win32 API's that take SStrings
 // and use CLR-safe holders.
 //*****************************************************************************
 
@@ -16,7 +16,7 @@ Most of these are 'common-sense', plus a few arbitrary decisions thrown in for
 consistency's sake.
 
 - THROWING: Throw on oom, but return all other failure codes.
-    The rationale here is that EString operations already throw, so to make these APIs
+    The rationale here is that SString operations already throw, so to make these APIs
     non-throwing would require an extra EX_TRY/EX_CATCH. Most callees will want to throw
     on OOM anyways. So making these APIs non-throwing would mean an extra try/catch in
     the caller + an extra check at the callee. We can eliminate that overhead and just make
@@ -36,12 +36,12 @@ consistency's sake.
     - Preserve the return type + value. (except allow it to throw on oom). If the return value
         should be a holder, then use that as an out-parameter at the end of the argument list.
         We don't want to return holders because that will cause the dtors to be called.
-    - For input strings use 'const EString &' instead of 'LPCWSTR'.
-    - Change ('out' string, length) pairs to 'EString &' (this is the convention the rest of the CLR uses for EStrings)
+    - For input strings use 'const SString &' instead of 'LPCWSTR'.
+    - Change ('out' string, length) pairs to 'SString &' (this is the convention the rest of the CLR uses for SStrings)
     - Use Holders where appropriate.
     - Preserve other parameters.
 
-- USE SSTRINGS TO AVOID BUFFER OVERRUN ISSUES: Repeated here for emphasis. Use EStrings when
+- USE SSTRINGS TO AVOID BUFFER OVERRUN ISSUES: Repeated here for emphasis. Use SStrings when
     applicable to make it very easy to verify the code does not have buffer overruns.
     This will also simplify callsites from having to figure out the length of the output string.
 

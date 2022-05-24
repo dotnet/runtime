@@ -26,7 +26,7 @@ namespace BINDER_SPACE
     public:
         static HRESULT ToString(/* in */  AssemblyIdentity *pAssemblyIdentity,
                                 /* in */  DWORD             dwIdentityFlags,
-                                /* out */ SString &textualIdentity);
+                                /* out */ SString          &textualIdentity);
 
         static void BlobToHex(/* in */  SBuffer &publicKeyOrTokenBLOB,
                               /* out */ SString &publicKeyOrToken);

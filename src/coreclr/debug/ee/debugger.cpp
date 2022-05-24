@@ -14009,14 +14009,14 @@ Debugger::InsertToMethodInfoList( DebuggerMethodInfo *dmi )
 }
 
 //-----------------------------------------------------------------------------
-// Helper to get an EString through the IPC buffer.
-// We do this by putting the EString data into a LS_RS_buffer object,
+// Helper to get an SString through the IPC buffer.
+// We do this by putting the SString data into a LS_RS_buffer object,
 // and then the RS reads it out as soon as it's queued.
-// It's very very important that the EString's buffer is around while we send the event.
-// So we pass the EString by reference in case there's an implicit conversion (because
+// It's very very important that the SString's buffer is around while we send the event.
+// So we pass the SString by reference in case there's an implicit conversion (because
 // we don't want to do the conversion on a temporary object and then lose that object).
 //-----------------------------------------------------------------------------
-void SetLSBufferFromEString(Ls_Rs_StringBuffer * pBuffer, SString & str)
+void SetLSBufferFromSString(Ls_Rs_StringBuffer * pBuffer, SString & str)
 {
     // Copy string contents (+1 for null terminator) into a LS_RS_Buffer.
     // Then the RS can pull it out as a null-terminated string.
@@ -14033,7 +14033,7 @@ struct SendMDANotificationParams
 {
     Thread * m_pThread; // may be NULL. Lets us send on behalf of other threads.
 
-    // Pass EStrings by ptr in case to guarantee that they're shared (in case we internally modify their storage).
+    // Pass SStrings by ptr in case to guarantee that they're shared (in case we internally modify their storage).
     SString * m_szName;
     SString * m_szDescription;
     SString * m_szXML;
@@ -14077,9 +14077,9 @@ void Debugger::SendRawMDANotification(
                  pThread,
                  pAppDomain);
 
-    SetLSBufferFromEString(&ipce->MDANotification.szName, *(params->m_szName));
-    SetLSBufferFromEString(&ipce->MDANotification.szDescription, *(params->m_szDescription));
-    SetLSBufferFromEString(&ipce->MDANotification.szXml, *(params->m_szXML));
+    SetLSBufferFromSString(&ipce->MDANotification.szName, *(params->m_szName));
+    SetLSBufferFromSString(&ipce->MDANotification.szDescription, *(params->m_szDescription));
+    SetLSBufferFromSString(&ipce->MDANotification.szXml, *(params->m_szXML));
     ipce->MDANotification.dwOSThreadId = GetCurrentThreadId();
     ipce->MDANotification.flags = params->m_flags;
 
@@ -14315,7 +14315,7 @@ void Debugger::SendRawLogMessage(
 
     ipce->FirstLogMessage.iLevel = iLevel;
     ipce->FirstLogMessage.szCategory.SetString(*pCategory);
-    SetLSBufferFromEString(&ipce->FirstLogMessage.szContent, *pMessage);
+    SetLSBufferFromSString(&ipce->FirstLogMessage.szContent, *pMessage);
 
     m_pRCThread->SendIPCEvent();
 }

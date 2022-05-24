@@ -56,7 +56,7 @@ namespace BINDER_SPACE
     public:
         typedef SString& key_t;
 
-        // GetKey, Equals, and Hash can throw due to EString
+        // GetKey, Equals, and Hash can throw due to SString
         static const bool s_NoThrow = false;
 
         static key_t GetKey(element_t pFailureCacheEntry)

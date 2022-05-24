@@ -251,7 +251,7 @@ namespace BINDER_SPACE
     }
 
     /* static */
-    HRESULT AssemblyBinderCommon::BindToSystem(SString &systemDirectory,
+    HRESULT AssemblyBinderCommon::BindToSystem(SString   &systemDirectory,
                                                Assembly **ppSystemAssembly)
     {
         HRESULT hr = S_OK;
@@ -591,9 +591,9 @@ namespace BINDER_SPACE
     namespace
     {
         HRESULT BindSatelliteResourceFromBundle(
-            AssemblyName*              pRequestedAssemblyName,
-            SString &relativePath,
-            BindResult*                pBindResult)
+            AssemblyName*          pRequestedAssemblyName,
+            SString               &relativePath,
+            BindResult*            pBindResult)
         {
             HRESULT hr = S_OK;
 
@@ -637,9 +637,9 @@ namespace BINDER_SPACE
         }
 
         HRESULT BindSatelliteResourceByProbingPaths(
-            const StringArrayList *pResourceRoots,
+            const StringArrayList    *pResourceRoots,
             AssemblyName             *pRequestedAssemblyName,
-            SString&relativePath,
+            SString                  &relativePath,
             BindResult               *pBindResult,
             BinderTracing::PathSource pathSource)
         {
@@ -740,7 +740,7 @@ namespace BINDER_SPACE
         }
 
         HRESULT BindAssemblyByProbingPaths(
-            const StringArrayList *pBindingPaths,
+            const StringArrayList   *pBindingPaths,
             AssemblyName            *pRequestedAssemblyName,
             Assembly                **ppAssembly)
         {
@@ -994,7 +994,7 @@ namespace BINDER_SPACE
     }
 
     /* static */
-    HRESULT AssemblyBinderCommon::GetAssembly(SString &assemblyPath,
+    HRESULT AssemblyBinderCommon::GetAssembly(SString            &assemblyPath,
                                               BOOL               fIsInTPA,
                                               Assembly           **ppAssembly,
                                               BundleFileLocation bundleFileLocation)

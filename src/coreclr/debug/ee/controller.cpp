@@ -7398,7 +7398,7 @@ void DebuggerStepper::TriggerMethodEnter(Thread * thread,
             "See http://team/sites/clrdev/Devdocs/StubManagers.rtf for more information on StubManagers.\n"
             "Stepper this=0x%p, startMethod='%s::%s'\n"
             "---------------------------------\n"
-            "Stub manager log:\n%S"
+            "Stub manager log:\n%s"
             "\n"
             "The thread is now in managed method '%s::%s'.\n"
             "---------------------------------\n",

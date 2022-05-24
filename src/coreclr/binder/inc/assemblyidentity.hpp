@@ -73,9 +73,9 @@ namespace BINDER_SPACE
             m_dwIdentityFlags &= ~dwIdentityFlags;
         }
 
-        SString m_simpleName;
+        SString             m_simpleName;
         AssemblyVersion     m_version;
-        SString m_cultureOrLanguage;
+        SString             m_cultureOrLanguage;
         SBuffer             m_publicKeyOrTokenBLOB;
         PEKIND              m_kProcessorArchitecture;
         AssemblyContentType m_kContentType;

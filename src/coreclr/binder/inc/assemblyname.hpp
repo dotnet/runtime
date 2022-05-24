@@ -72,7 +72,7 @@ namespace BINDER_SPACE
         BOOL Equals(/* in */ AssemblyName *pAssemblyName,
                     /* in */ DWORD         dwIncludeFlags);
 
-        void GetDisplayName(/* out */ SString &displayName,
+        void GetDisplayName(/* out */ PathString &displayName,
                             /* in */  DWORD       dwIncludeFlags);
 
     private:
