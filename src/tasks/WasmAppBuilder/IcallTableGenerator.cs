@@ -122,12 +122,14 @@ internal sealed class IcallTableGenerator
             if (className == "")
                 // Dummy value
                 continue;
+
             var icallClass = new IcallClass(className);
             _runtimeIcalls[icallClass.Name] = icallClass;
             foreach (var icall_j in v.GetProperty("icalls").EnumerateArray())
             {
                 if (!icall_j.TryGetProperty("name", out var nameElem))
                     continue;
+
                 string name = nameElem.GetString()!;
                 string func = icall_j.GetProperty("func").GetString()!;
                 bool handles = icall_j.GetProperty("handles").GetBoolean();
@@ -143,6 +145,8 @@ internal sealed class IcallTableGenerator
         {
             if ((method.GetMethodImplementationFlags() & MethodImplAttributes.InternalCall) == 0)
                 continue;
+
+            AddSignature(type, method);
 
             var className = method.DeclaringType!.FullName!;
             if (!_runtimeIcalls.ContainsKey(className))
@@ -164,18 +168,11 @@ internal sealed class IcallTableGenerator
             if (icall == null)
                 // Registered at runtime
                 continue;
+
             icall.Method = method;
             icall.TokenIndex = (int)method.MetadataToken & 0xffffff;
             icall.Assembly = method.DeclaringType.Module.Assembly.GetName().Name;
             _icalls.Add(icall);
-
-            string? signature = CookieHelper.BuildCookie(method);
-            if (signature == null)
-            {
-                throw new LogAsErrorException($"Unsupported parameter type in method '{type.FullName}.{method.Name}'");
-            }
-
-            _signatures.Add(signature);
         }
 
         foreach (var nestedType in type.GetNestedTypes())
@@ -190,6 +187,7 @@ internal sealed class IcallTableGenerator
             {
                 if (pindex > 0)
                     sig.Append(',');
+
                 var t = par.ParameterType;
                 try
                 {
@@ -206,6 +204,18 @@ internal sealed class IcallTableGenerator
             sig.Append(')');
 
             return sig.ToString();
+        }
+
+        void AddSignature(Type type, MethodInfo method)
+        {
+            string? signature = CookieHelper.BuildCookie(method);
+            if (signature == null)
+            {
+                throw new LogAsErrorException($"Unsupported parameter type in method '{type.FullName}.{method.Name}'");
+            }
+
+            Log.LogMessage(MessageImportance.Normal, $"[icall] Adding signature {signature} for method '{type.FullName}.{method.Name}'");
+            _signatures.Add(signature);
         }
     }
 

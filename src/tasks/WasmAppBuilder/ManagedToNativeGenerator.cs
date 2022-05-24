@@ -70,7 +70,7 @@ public class ManagedToNativeGenerator : Task
 
         IEnumerable<string> cookies = Enumerable.Concat(
             pinvoke.GenPInvokeTable(PInvokeModules, Assemblies!, PInvokeOutputPath!),
-            icall.GenIcallTable(RuntimeIcallTableFile, Assemblies!, IcallOutputPath!)
+            icall.GenIcallTable(RuntimeIcallTableFile, Assemblies!, IcallOutputPath)
         );
 
         var m2n = new InterpToNativeGenerator(Log);

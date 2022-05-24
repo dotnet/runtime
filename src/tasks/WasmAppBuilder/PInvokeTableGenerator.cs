@@ -91,6 +91,7 @@ internal sealed class PInvokeTableGenerator
                     throw new LogAsErrorException($"Unsupported parameter type in method '{type.FullName}.{method.Name}'");
                 }
 
+                Log.LogMessage(MessageImportance.Normal, $"[pinvoke] Adding signature {signature} for method '{type.FullName}.{method.Name}'");
                 signatures.Add(signature);
             }
 
