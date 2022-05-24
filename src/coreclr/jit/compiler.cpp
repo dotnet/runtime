@@ -3193,8 +3193,11 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 #endif
 #endif // DEBUG
 
-    opts.compProcedureSplitting =
-        jitFlags->IsSet(JitFlags::JIT_FLAG_PROCSPLIT) || JitConfig.JitFakeProcedureSplitting();
+    opts.compProcedureSplitting = jitFlags->IsSet(JitFlags::JIT_FLAG_PROCSPLIT);
+
+#ifdef DEBUG
+    opts.compProcedureSplitting = opts.compProcedureSplitting || JitConfig.JitFakeProcedureSplitting();
+#endif
 
 #ifdef TARGET_ARM64
     // TODO-ARM64-NYI: enable hot/cold splitting
@@ -3236,13 +3239,13 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 #endif
     }
 
+#ifdef DEBUG
     // JitFakeProcedureSplitting overrides JitNoProcedureSplitting with a fake splitting implementation
     if (JitConfig.JitFakeProcedureSplitting())
     {
         opts.compProcedureSplitting = true;
     }
 
-#ifdef DEBUG
     // Now, set compMaxUncheckedOffsetForNullObject for STRESS_NULL_OBJECT_CHECK
     if (compStressCompile(STRESS_NULL_OBJECT_CHECK, 30))
     {

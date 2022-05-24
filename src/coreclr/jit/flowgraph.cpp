@@ -3414,8 +3414,12 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
     BasicBlock* block;
     BasicBlock* lblk;
 
+    bool forceSplit = false;
+
+#ifdef DEBUG
     // If stress-splitting, split right after the first block; don't handle functions with EH
-    const bool forceSplit = JitConfig.JitStressProcedureSplitting() && (compHndBBtabCount == 0);
+   forceSplit = JitConfig.JitStressProcedureSplitting() && (compHndBBtabCount == 0);
+#endif
 
     if (forceSplit)
     {

@@ -1124,6 +1124,7 @@ void Compiler::eeDispLineInfos()
 
 void Compiler::eeAllocMem(AllocMemArgs* args, UNATIVE_OFFSET hotSizeRequest, UNATIVE_OFFSET coldSizeRequest)
 {
+#ifdef DEBUG
     // Fake splitting implementation: hot section = hot code + 4K buffer + cold code
     const UNATIVE_OFFSET buffer = 4096;
     if (JitConfig.JitFakeProcedureSplitting() && (coldSizeRequest > 0))
@@ -1131,26 +1132,29 @@ void Compiler::eeAllocMem(AllocMemArgs* args, UNATIVE_OFFSET hotSizeRequest, UNA
         args->hotCodeSize  = hotSizeRequest + buffer + coldSizeRequest;
         args->coldCodeSize = 0;
     }
+#endif
 
     info.compCompHnd->allocMem(args);
 
+#ifdef DEBUG
     // Fix up hot/cold code pointers
     if (JitConfig.JitFakeProcedureSplitting() && (coldSizeRequest > 0))
     {
         args->coldCodeBlock   = ((BYTE*)args->hotCodeBlock) + hotSizeRequest + buffer;
         args->coldCodeBlockRW = ((BYTE*)args->hotCodeBlockRW) + hotSizeRequest + buffer;
     }
+#endif
 }
 
 void Compiler::eeReserveUnwindInfo(bool isFunclet, bool isColdCode, ULONG unwindSize)
 {
+#ifdef DEBUG
     // Fake splitting currently does not handle unwind info for cold code
     if (isColdCode && JitConfig.JitFakeProcedureSplitting())
     {
         return;
     }
 
-#ifdef DEBUG
     if (verbose)
     {
         printf("reserveUnwindInfo(isFunclet=%s, isColdCode=%s, unwindSize=0x%x)\n", isFunclet ? "true" : "false",
@@ -1172,13 +1176,13 @@ void Compiler::eeAllocUnwindInfo(BYTE*          pHotCode,
                                  BYTE*          pUnwindBlock,
                                  CorJitFuncKind funcKind)
 {
+#ifdef DEBUG
     // Fake splitting currently does not handle unwind info for cold code
     if (pColdCode && JitConfig.JitFakeProcedureSplitting())
     {
         return;
     }
 
-#ifdef DEBUG
     if (verbose)
     {
         printf("allocUnwindInfo(pHotCode=0x%p, pColdCode=0x%p, startOffset=0x%x, endOffset=0x%x, unwindSize=0x%x, "
