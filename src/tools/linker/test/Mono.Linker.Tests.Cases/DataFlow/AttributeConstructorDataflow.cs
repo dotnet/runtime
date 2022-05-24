@@ -18,6 +18,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[KeptAttributeAttribute (typeof (KeepsPublicMethodsAttribute))]
 		[KeepsPublicConstructor (typeof (ClassWithKeptPublicConstructor))]
 		[KeepsPublicMethods ("Mono.Linker.Tests.Cases.DataFlow.AttributeConstructorDataflow+ClassWithKeptPublicMethods")]
+		// Trimmer only for now - https://github.com/dotnet/linker/issues/2273
+		[ExpectedWarning ("IL2026", "--ClassWithKeptPublicMethods--", ProducedBy = ProducedBy.Trimmer)]
 		public static void Main ()
 		{
 			typeof (AttributeConstructorDataflow).GetMethod ("Main").GetCustomAttribute (typeof (KeepsPublicConstructorAttribute));
@@ -66,6 +68,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		class ClassWithKeptPublicMethods
 		{
 			[Kept]
+			[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+			[RequiresUnreferencedCode ("--ClassWithKeptPublicMethods--")]
 			public static void KeptMethod () { }
 			static void Method () { }
 		}
