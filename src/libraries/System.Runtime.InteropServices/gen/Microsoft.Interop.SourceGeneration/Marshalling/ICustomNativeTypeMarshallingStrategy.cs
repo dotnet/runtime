@@ -206,7 +206,8 @@ namespace Microsoft.Interop
         {
             var subContext = new CustomNativeTypeWithToFromNativeValueContext(context);
 
-            if (info.IsManagedReturnPosition || (info.IsByRef && info.RefKind != RefKind.In))
+            if (info.IsManagedReturnPosition || (info.IsByRef && info.RefKind != RefKind.In)
+                || (!info.IsByRef && info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out)))
             {
                 yield return GenerateFromNativeValueInvocation(info, context, subContext);
             }
@@ -526,7 +527,8 @@ namespace Microsoft.Interop
         {
             var subContext = new CustomNativeTypeWithToFromNativeValueContext(context);
 
-            if (info.IsManagedReturnPosition || (info.IsByRef && info.RefKind != RefKind.In))
+            if (info.IsManagedReturnPosition || (info.IsByRef && info.RefKind != RefKind.In)
+                || (!info.IsByRef && info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out)))
             {
                 // <marshalerIdentifier>.Value = <nativeIdentifier>;
                 yield return GenerateFromNativeValueInvocation(info, context, subContext);
