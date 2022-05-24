@@ -1144,10 +1144,10 @@ namespace System.Text.Json.SourceGeneration
                 return genericArguments[0] == _stringType && (genericArguments[1] == _objectType || genericArguments[1] == _jsonElementType);
             }
 
-            private Type GetCompatibleGenericBaseClass(Type type, Type baseType)
+            private static Type GetCompatibleGenericBaseClass(Type type, Type baseType)
                 => type.GetCompatibleGenericBaseClass(baseType);
 
-            private void CacheMember(
+            private static void CacheMember(
                 PropertyGenerationSpec propGenSpec,
                 ref List<PropertyGenerationSpec> propGenSpecList,
                 ref Dictionary<string, PropertyGenerationSpec> ignoredMembers)
@@ -1243,7 +1243,7 @@ namespace System.Text.Json.SourceGeneration
                 };
             }
 
-            private Type GetMemberClrType(MemberInfo memberInfo)
+            private static Type GetMemberClrType(MemberInfo memberInfo)
             {
                 if (memberInfo is PropertyInfo propertyInfo)
                 {

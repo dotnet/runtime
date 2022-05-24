@@ -32,7 +32,7 @@ namespace System.Text.Json
                 state.NewReferenceId = null;
             }
 
-            if (state.PolymorphicTypeDiscriminator is string typeDiscriminatorId)
+            if (state.PolymorphicTypeDiscriminator is object discriminator)
             {
                 Debug.Assert(state.Parent.JsonPropertyInfo!.JsonTypeInfo.PolymorphicTypeResolver != null);
 
@@ -41,7 +41,16 @@ namespace System.Text.Json
                     ? customPropertyName
                     : s_metadataType;
 
-                writer.WriteString(propertyName, typeDiscriminatorId);
+                if (discriminator is string stringId)
+                {
+                    writer.WriteString(propertyName, stringId);
+                }
+                else
+                {
+                    Debug.Assert(discriminator is int);
+                    writer.WriteNumber(propertyName, (int)discriminator);
+                }
+
                 writtenMetadata |= MetadataPropertyName.Type;
                 state.PolymorphicTypeDiscriminator = null;
             }

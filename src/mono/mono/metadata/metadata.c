@@ -4485,7 +4485,7 @@ mono_metadata_free_mh (MonoMethodHeader *mh)
  * \param code_size memory location for returning the code size
  * \param max_stack memory location for returning the max stack
  *
- * Method header accessor to retreive info about the IL code properties:
+ * Method header accessor to retrieve info about the IL code properties:
  * a pointer to the IL code itself, the size of the code and the max number
  * of stack slots used by the code.
  *
@@ -4507,7 +4507,7 @@ mono_method_header_get_code (MonoMethodHeader *header, guint32* code_size, guint
  * \param num_locals memory location for returning the number of local variables
  * \param init_locals memory location for returning the init_locals flag
  *
- * Method header accessor to retreive info about the local variables:
+ * Method header accessor to retrieve info about the local variables:
  * an array of local types, the number of locals and whether the locals
  * are supposed to be initialized to 0 on method entry
  *
@@ -4527,7 +4527,7 @@ mono_method_header_get_locals (MonoMethodHeader *header, guint32* num_locals, gb
  * mono_method_header_get_num_clauses:
  * @header: a MonoMethodHeader pointer
  *
- * Method header accessor to retreive the number of exception clauses.
+ * Method header accessor to retrieve the number of exception clauses.
  *
  * Returns: the number of exception clauses present
  */

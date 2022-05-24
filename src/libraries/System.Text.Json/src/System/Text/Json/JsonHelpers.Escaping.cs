@@ -89,7 +89,7 @@ namespace System.Text.Json
             propertySection[0] = JsonConstants.Quote;
             utf8Value.CopyTo(propertySection.AsSpan(1, length));
             propertySection[++length] = JsonConstants.Quote;
-            propertySection[++length] = JsonConstants.KeyValueSeperator;
+            propertySection[++length] = JsonConstants.KeyValueSeparator;
 
             return propertySection;
         }

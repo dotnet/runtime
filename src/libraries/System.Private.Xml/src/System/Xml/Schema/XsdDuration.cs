@@ -633,7 +633,7 @@ namespace System.Xml.Schema
             result = 0;
             numDigits = 0;
 
-            while (offset < offsetEnd && s[offset] >= '0' && s[offset] <= '9')
+            while (offset < offsetEnd && char.IsAsciiDigit(s[offset]))
             {
                 digit = s[offset] - '0';
 
@@ -647,7 +647,7 @@ namespace System.Xml.Schema
                     // Skip past any remaining digits
                     numDigits = offset - offsetStart;
 
-                    while (offset < offsetEnd && s[offset] >= '0' && s[offset] <= '9')
+                    while (offset < offsetEnd && char.IsAsciiDigit(s[offset]))
                     {
                         offset++;
                     }

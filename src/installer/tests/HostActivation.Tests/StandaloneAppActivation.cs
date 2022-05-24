@@ -92,7 +92,7 @@ namespace HostActivation.Tests
             int exitCode = Command.Create(appExe)
                 .CaptureStdErr()
                 .CaptureStdOut()
-                .Execute(fExpectedToFail: true)
+                .Execute(expectedToFail: true)
                 .ExitCode;
 
             if (OperatingSystem.IsWindows())
@@ -121,7 +121,7 @@ namespace HostActivation.Tests
             int exitCode = Command.Create(appExe)
                 .CaptureStdErr()
                 .CaptureStdOut()
-                .Execute(fExpectedToFail: true)
+                .Execute(expectedToFail: true)
                 .ExitCode;
 
             if (OperatingSystem.IsWindows())
@@ -222,7 +222,7 @@ namespace HostActivation.Tests
             Command.Create(appExe)
                 .EnableTracingAndCaptureOutputs()
                 .DotNetRoot(newOutDir)
-                .Execute(fExpectedToFail: true)
+                .Execute(expectedToFail: true)
                 .Should().Fail()
                 .And.HaveUsedDotNetRootInstallLocation(Path.GetFullPath(newOutDir), fixture.CurrentRid)
                 .And.HaveStdErrContaining($"The required library {RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostfxr")} could not be found.");

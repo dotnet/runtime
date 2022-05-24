@@ -9,7 +9,7 @@ using Microsoft.CodeAnalysis;
 
 namespace System.Text.Json.Reflection
 {
-    internal class ConstructorInfoWrapper : ConstructorInfo
+    internal sealed class ConstructorInfoWrapper : ConstructorInfo
     {
         private readonly IMethodSymbol _ctor;
         private readonly MetadataLoadContextInternal _metadataLoadContext;

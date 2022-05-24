@@ -1004,13 +1004,11 @@ public: 	// functions
 
 struct CPU_Group_Info
 {
-    WORD	nr_active;	// at most 64
-    WORD	reserved[1];
-    WORD	begin;
-    WORD	end;
-    DWORD_PTR	active_mask;
-    DWORD	groupWeight;
-    DWORD	activeThreadWeight;
+    DWORD_PTR   active_mask;
+    WORD        nr_active;  // at most 64
+    WORD        begin;
+    DWORD       groupWeight;
+    DWORD       activeThreadWeight;
 };
 
 class CPUGroupInfo
@@ -1026,7 +1024,6 @@ private:
     static CPU_Group_Info *m_CPUGroupInfoArray;
 
     static BOOL InitCPUGroupInfoArray();
-    static BOOL InitCPUGroupInfoRange();
     static void InitCPUGroupInfo();
     static BOOL IsInitialized();
 
