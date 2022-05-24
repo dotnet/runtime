@@ -157,7 +157,7 @@ dump_protocol_generate_core_dump_response_flatten (
 	success &= ds_ipc_message_try_write_string_utf16_t (
 		buffer,
 		size,
-		response->error_message != NULL ? response->error_message : reinterpret_cast<const ep_char16_t*>(u""));
+		response->error_message != NULL ? response->error_message : (const ep_char16_t*)u"");
 
 	// Assert we've used the whole buffer we were given
 	EP_ASSERT(*size == 0);
