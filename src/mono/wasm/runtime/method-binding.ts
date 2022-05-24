@@ -208,9 +208,6 @@ export function _compile_converter_for_marshal_string(args_marshal: string/*Args
     let body = [];
     let argumentNames = ["buffer", "rootBuffer", "method"];
 
-    // worst-case allocation size instead of allocating dynamically, plus padding
-    const bufferSizeBytes = converter.size + (args_marshal.length * 4) + 16;
-
     // ensure the indirect values are 8-byte aligned so that aligned loads and stores will work
     const indirectBaseOffset = ((((args_marshal.length * 4) + 7) / 8) | 0) * 8;
 
