@@ -77,11 +77,11 @@ ac_check_headers (
 ac_check_funcs (
   sigaction kill clock_nanosleep backtrace_symbols mkstemp mmap
   getrusage dladdr sysconf getrlimit prctl nl_langinfo
-  sched_getaffinity sched_setaffinity getpwuid_r chmod lstat getdtablesize ftruncate msync
+  sched_getaffinity sched_setaffinity chmod lstat getdtablesize ftruncate msync
   getpeername utime utimes openlog closelog atexit popen strerror_r inet_pton inet_aton
   poll getfsstat mremap posix_fadvise vsnprintf statfs statvfs setpgid system
   fork execv execve waitpid localtime_r mkdtemp getrandom execvp strlcpy stpcpy strtok_r rewinddir
-  vasprintf strndup getpwuid_r getprotobyname getprotobyname_r getaddrinfo mach_absolute_time
+  vasprintf strndup getprotobyname getprotobyname_r getaddrinfo mach_absolute_time
   gethrtime read_real_time gethostbyname gethostbyname2 getnameinfo getifaddrs
   access inet_ntop Qp2getifaddrs getpid mktemp)
 
@@ -245,7 +245,6 @@ if(HOST_WIN32)
   set(HAVE_EXECVP 0)
 elseif(HOST_IOS)
   set(HAVE_SYSTEM 0)
-  set(HAVE_GETPWUID_R 0)
   set(HAVE_SYS_USER_H 0)
   set(HAVE_GETENTROPY 0)
   if(HOST_TVOS)
@@ -273,7 +272,6 @@ elseif(HOST_WASI)
   set(HAVE_SYS_UN_H 0)
   set(HAVE_NETINET_TCP_H 0)
   set(HAVE_ARPA_INET_H 0)
-  set(HAVE_GETPWUID_R 0)
   set(HAVE_MKDTEMP 0)
   set(HAVE_EXECVE 0)
   set(HAVE_FORK 0)
