@@ -2702,8 +2702,18 @@ void EEClass::AddChunk (MethodDescChunk* pNewChunk)
     STATIC_CONTRACT_FORBID_FAULT;
 
     _ASSERTE(pNewChunk->GetNextChunk() == NULL);
-    pNewChunk->SetNextChunk(GetChunks());
-    SetChunks(pNewChunk);
+
+    MethodDescChunk* head =  GetChunks();
+
+    if (head == NULL)
+        SetChunks(pNewChunk);
+    else
+    {
+        while (head->GetNextChunk() != NULL)
+            head = head->GetNextChunk();
+
+        head->SetNextChunk(pNewChunk);
+    }
 }
 
 //*******************************************************************************
@@ -2717,20 +2727,25 @@ void EEClass::AddChunkIfItHasNotBeenAdded (MethodDescChunk* pNewChunk)
     if (pNewChunk->GetNextChunk() != NULL)
         return;
 
-    // even if pNewChunk->GetNextChunk() is NULL, this may still be the first chunk we added
-    // (last in the list) so find the end of the list and verify that
     MethodDescChunk *chunk = GetChunks();
-    if (chunk != NULL)
-    {
-        while (chunk->GetNextChunk() != NULL)
-            chunk = chunk->GetNextChunk();
 
+    if (chunk == NULL)
+        SetChunks(pNewChunk);
+    else
+    {
         if (chunk == pNewChunk)
             return;
-    }
 
-    pNewChunk->SetNextChunk(GetChunks());
-    SetChunks(pNewChunk);
+        while (chunk->GetNextChunk() != NULL)
+        {
+            chunk = chunk->GetNextChunk();
+
+            if (chunk == pNewChunk)
+                return;
+        } 
+
+        chunk->SetNextChunk(pNewChunk);
+    }  
 }
 
 #endif // !DACCESS_COMPILE

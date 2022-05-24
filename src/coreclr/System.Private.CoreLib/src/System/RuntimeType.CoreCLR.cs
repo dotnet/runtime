@@ -509,18 +509,8 @@ namespace System
                         return;
                     }
 
-                    int length = list.Length;
-                    T[] newCache = list;
-
-                    // When all members are requested there should be no element in cache that not found within all members list.
-                    // But somehow in very rare case such element found in cache and not appending that to the all members list
-                    // causing random test failure, must be related to the bug commented on row 597
-                    Array.Resize(ref newCache, length + 1);
-
                     foreach (T cachedMemberInfo in cachedMembers)
                     {
-                        bool foundInList = false;
-
                         if (cachedMemberInfo == null)
                             break;
 
@@ -530,20 +520,13 @@ namespace System
 
                             if (newMemberInfo.CacheEquals(cachedMemberInfo))
                             {
-                                newCache[i] = cachedMemberInfo;
                                 list[i] = cachedMemberInfo;
-                                foundInList = true;
                                 break;
                             }
                         }
-
-                        if (!foundInList)
-                        {
-                            newCache[length] = cachedMemberInfo;
-                        }
                     }
 
-                    m_allMembers = newCache;
+                    m_allMembers = list;
                 }
 
                 // Modifies the existing list.
