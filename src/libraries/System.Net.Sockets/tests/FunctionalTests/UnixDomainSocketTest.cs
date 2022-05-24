@@ -518,6 +518,43 @@ namespace System.Net.Sockets.Tests
             }).Dispose();
         }
 
+        [Fact]
+        public void AbstractPathEquality()
+        {
+            string abstractPath = '\0' + Guid.NewGuid().ToString();
+            UnixDomainSocketEndPoint endPoint1 = new(abstractPath);
+            UnixDomainSocketEndPoint endPoint2 = new(abstractPath);
+            UnixDomainSocketEndPoint endPoint3 = new('\0' + Guid.NewGuid().ToString());
+
+            Assert.Equal(endPoint1, endPoint2);
+            Assert.Equal(endPoint1.GetHashCode(), endPoint2.GetHashCode());
+
+            Assert.NotEqual(endPoint1, endPoint3);
+            Assert.NotEqual(endPoint2, endPoint3);
+            Assert.NotEqual(endPoint1.GetHashCode(), endPoint3.GetHashCode());
+            Assert.NotEqual(endPoint2.GetHashCode(), endPoint3.GetHashCode());
+        }
+
+        [Fact]
+        public void FilePathEquality()
+        {
+            string path1 = "filename";
+            string path2 = "." + Path.DirectorySeparatorChar + "filename";
+            string path3 = GetRandomNonExistingFilePath();
+
+            UnixDomainSocketEndPoint endPoint1 = new(path1);
+            UnixDomainSocketEndPoint endPoint2 = new(path2);
+            UnixDomainSocketEndPoint endPoint3 = new(path3);
+
+            Assert.Equal(endPoint1, endPoint2);
+            Assert.Equal(endPoint1.GetHashCode(), endPoint2.GetHashCode());
+
+            Assert.NotEqual(endPoint1, endPoint3);
+            Assert.NotEqual(endPoint2, endPoint3);
+            Assert.NotEqual(endPoint1.GetHashCode(), endPoint3.GetHashCode());
+            Assert.NotEqual(endPoint2.GetHashCode(), endPoint3.GetHashCode());
+        }
+
         private static string GetRandomNonExistingFilePath()
         {
             string result;

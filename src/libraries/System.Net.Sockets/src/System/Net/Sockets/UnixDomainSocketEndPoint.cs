@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.IO;
 
@@ -10,13 +11,24 @@ namespace System.Net.Sockets
     /// <summary>Represents a Unix Domain Socket endpoint as a path.</summary>
     public sealed partial class UnixDomainSocketEndPoint : EndPoint
     {
+        // taken from System.IO.PathInternal
+        private static readonly StringComparison s_filePathComparison = OperatingSystem.IsWindows() ||
+                                                    OperatingSystem.IsMacOS() ||
+                                                    OperatingSystem.IsIOS() ||
+                                                    OperatingSystem.IsTvOS() ||
+                                                    OperatingSystem.IsWatchOS()
+                                                    ? StringComparison.OrdinalIgnoreCase
+                                                    : StringComparison.Ordinal;
+
         private const AddressFamily EndPointAddressFamily = AddressFamily.Unix;
 
         private readonly string _path;
         private readonly byte[] _encodedPath;
+        private readonly bool _bounded;
+        private string? _fullPath;
 
         // Tracks the file Socket should delete on Dispose.
-        internal string? BoundFileName { get; }
+        internal string? BoundFileName => _bounded ? _fullPath : null;
 
         public UnixDomainSocketEndPoint(string path)
             : this(path, null)
@@ -26,7 +38,8 @@ namespace System.Net.Sockets
         {
             ArgumentNullException.ThrowIfNull(path);
 
-            BoundFileName = boundFileName;
+            _bounded = boundFileName is not null;
+            _fullPath = boundFileName;
 
             // Pathname socket addresses should be null-terminated.
             // Linux abstract socket addresses start with a zero byte, they must not be null-terminated.
@@ -124,21 +137,61 @@ namespace System.Net.Sockets
             }
         }
 
+        [MemberNotNull(nameof(_fullPath))]
+        private void EnsurePathNormalized()
+        {
+            Debug.Assert(!IsAbstract(_path));
+
+            _fullPath ??= Path.GetFullPath(_path);
+        }
+
+        public override bool Equals([NotNullWhen(true)] object? obj)
+        {
+            if (obj is not UnixDomainSocketEndPoint uds)
+                return false;
+
+            switch ((IsAbstract(_path), IsAbstract(uds._path)))
+            {
+                case (true, true):
+                    // abstract paths are case-sensitive on Windows and Unix-based systems
+                    return MemoryExtensions.Equals(_path.AsSpan(1), uds._path.AsSpan(1), StringComparison.Ordinal);
+                case (false, false):
+                    EnsurePathNormalized();
+                    uds.EnsurePathNormalized();
+                    return MemoryExtensions.Equals(_fullPath, uds._fullPath, s_filePathComparison);
+                default:
+                    return false;
+            }
+        }
+
+        public override int GetHashCode()
+        {
+            // abstract paths are case-sensitive on Windows and Unix-based systems
+            if (IsAbstract(_path))
+                return string.GetHashCode(_path.AsSpan(1), StringComparison.Ordinal);
+
+            EnsurePathNormalized();
+            return string.GetHashCode(_fullPath, s_filePathComparison);
+        }
+
         internal UnixDomainSocketEndPoint CreateBoundEndPoint()
         {
             if (IsAbstract(_path))
             {
                 return this;
             }
-            return new UnixDomainSocketEndPoint(_path, Path.GetFullPath(_path));
+
+            EnsurePathNormalized();
+            return new UnixDomainSocketEndPoint(_path, _fullPath);
         }
 
         internal UnixDomainSocketEndPoint CreateUnboundEndPoint()
         {
-            if (IsAbstract(_path) || BoundFileName is null)
+            if (IsAbstract(_path) || !_bounded)
             {
                 return this;
             }
+
             return new UnixDomainSocketEndPoint(_path, null);
         }
 
