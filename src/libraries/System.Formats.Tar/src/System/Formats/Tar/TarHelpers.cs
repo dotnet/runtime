@@ -151,22 +151,6 @@ namespace System.Formats.Tar
         // removing the trailing null or space chars.
         internal static string GetTrimmedUtf8String(ReadOnlySpan<byte> buffer) => GetTrimmedString(buffer, Encoding.UTF8);
 
-        // Reads the specified number of bytes and stores it in the byte buffer passed by reference.
-        // Throws if end of stream is reached.
-        internal static void ReadOrThrow(Stream archiveStream, Span<byte> buffer)
-        {
-            int totalRead = 0;
-            while (totalRead < buffer.Length)
-            {
-                int bytesRead = archiveStream.Read(buffer.Slice(totalRead));
-                if (bytesRead == 0)
-                {
-                    throw new EndOfStreamException();
-                }
-                totalRead += bytesRead;
-            }
-        }
-
         // Returns true if it successfully converts the specified string to a DateTimeOffset, false otherwise.
         internal static bool TryConvertToDateTimeOffset(string value, out DateTimeOffset timestamp)
         {

@@ -204,6 +204,21 @@ namespace System.Net.Http.Functional.Tests
     {
         public SocketsHttpHandler_HttpClientHandler_MaxConnectionsPerServer_Test(ITestOutputHelper output) : base(output) { }
 
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void AppContextSetData_SetDefaultMaxConnectionsPerServer(bool asInt)
+        {
+            RemoteExecutor.Invoke(static (asInt) =>
+            {
+                const int testValue = 123;
+                object data = asInt == Boolean.TrueString ? testValue : testValue.ToString();
+                AppContext.SetData("System.Net.SocketsHttpHandler.MaxConnectionsPerServer", data);
+                var handler = new HttpClientHandler();
+                Assert.Equal(testValue, handler.MaxConnectionsPerServer);
+            }, asInt.ToString()).Dispose();
+        }
+
         [OuterLoop("Incurs a small delay")]
         [Theory]
         [InlineData(0)]
@@ -2322,7 +2337,7 @@ namespace System.Net.Http.Functional.Tests
                 Assert.True(connection1.IsInvalid);
                 Assert.False(connection0.IsInvalid);
 
-                Http2LoopbackConnection connection2 = await PrepareConnection(server, client, MaxConcurrentStreams, readTimeout: 15, expectedWarmUpTasks:2).ConfigureAwait(false);
+                Http2LoopbackConnection connection2 = await PrepareConnection(server, client, MaxConcurrentStreams, readTimeout: 15, expectedWarmUpTasks: 2).ConfigureAwait(false);
 
                 AcquireAllStreamSlots(server, client, sendTasks, MaxConcurrentStreams);
 
@@ -2761,7 +2776,7 @@ namespace System.Net.Http.Functional.Tests
             await LoopbackServerFactory.CreateClientAndServerAsync(
                 async uri =>
                 {
-                    string[] parts = uri.Authority.Split(':',2);
+                    string[] parts = uri.Authority.Split(':', 2);
                     HttpClientHandler handler = CreateHttpClientHandler();
                     handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
                     var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
@@ -2776,7 +2791,7 @@ namespace System.Net.Http.Functional.Tests
                             options.TargetHost = parts[0];
                             if (context.InitialRequestMessage.Version.Major == 2 && PlatformDetection.SupportsAlpn)
                             {
-                              options.ApplicationProtocols = new List<SslApplicationProtocol>{ SslApplicationProtocol.Http2};
+                                options.ApplicationProtocols = new List<SslApplicationProtocol> { SslApplicationProtocol.Http2 };
                             }
                             var sslStream = new SslStream(client.GetStream());
                             await sslStream.AuthenticateAsClientAsync(options);
@@ -2800,7 +2815,7 @@ namespace System.Net.Http.Functional.Tests
                 async server =>
                 {
                     HttpRequestData requestData = await server.HandleRequestAsync();
-                }, options: new GenericLoopbackOptions{UseSsl = true});
+                }, options: new GenericLoopbackOptions { UseSsl = true });
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
@@ -2809,7 +2824,7 @@ namespace System.Net.Http.Functional.Tests
             await LoopbackServerFactory.CreateClientAndServerAsync(
                 async uri =>
                 {
-                    string[] parts = uri.Authority.Split(':',2);
+                    string[] parts = uri.Authority.Split(':', 2);
                     HttpClientHandler handler = CreateHttpClientHandler();
                     handler.ServerCertificateCustomValidationCallback = (a, b, c, d) => false;
                     var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
@@ -2823,7 +2838,7 @@ namespace System.Net.Http.Functional.Tests
                         options.TargetHost = parts[0];
                         if (context.InitialRequestMessage.Version.Major == 2 && PlatformDetection.SupportsAlpn)
                         {
-                            options.ApplicationProtocols = new List<SslApplicationProtocol>{ SslApplicationProtocol.Http2};
+                            options.ApplicationProtocols = new List<SslApplicationProtocol> { SslApplicationProtocol.Http2 };
                         }
 
                         MySsl myStream = new MySsl(client.GetStream());
@@ -2844,7 +2859,7 @@ namespace System.Net.Http.Functional.Tests
                 async server =>
                 {
                     HttpRequestData requestData = await server.HandleRequestAsync();
-                }, options: new GenericLoopbackOptions{UseSsl = true});
+                }, options: new GenericLoopbackOptions { UseSsl = true });
         }
 
         [Fact]
@@ -2854,7 +2869,7 @@ namespace System.Net.Http.Functional.Tests
             await LoopbackServer.CreateClientAndServerAsync(
                 async uri =>
                 {
-                    string[] parts = uri.Authority.Split(':',2);
+                    string[] parts = uri.Authority.Split(':', 2);
 
                     HttpClientHandler handler = CreateHttpClientHandler();
                     handler.ServerCertificateCustomValidationCallback = (a, b, c, d) => false;
@@ -2883,7 +2898,7 @@ namespace System.Net.Http.Functional.Tests
                 async server =>
                 {
                     HttpRequestData requestData = await server.HandleRequestAsync();
-                }, options: new LoopbackServer.Options{UseSsl = true});
+                }, options: new LoopbackServer.Options { UseSsl = true });
         }
 
         [Fact]
@@ -2982,7 +2997,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         private static bool PlatformSupportsUnixDomainSockets => Socket.OSSupportsUnixDomainSockets;
-   }
+    }
 
     [SkipOnPlatform(TestPlatforms.Browser, "Socket is not supported on Browser")]
     public sealed class SocketsHttpHandlerTest_ConnectCallback_Http11 : SocketsHttpHandlerTest_ConnectCallback

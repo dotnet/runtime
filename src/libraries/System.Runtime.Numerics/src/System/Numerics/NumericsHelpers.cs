@@ -127,7 +127,7 @@ namespace System.Numerics
             }
         }
 
-        public static ulong MakeUlong(uint uHi, uint uLo)
+        public static ulong MakeUInt64(uint uHi, uint uLo)
         {
             return ((ulong)uHi << kcbitUint) | uLo;
         }

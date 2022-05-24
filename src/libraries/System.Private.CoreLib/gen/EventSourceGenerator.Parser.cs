@@ -135,10 +135,12 @@ namespace Generators
             bytes.CopyTo(combinedBytes, namespaceBytes.Length);
             namespaceBytes.CopyTo(combinedBytes);
 
+#pragma warning disable CA5350 // Do Not Use Weak Cryptographic Algorithms
             using (SHA1 sha = SHA1.Create())
             {
                 bytes = sha.ComputeHash(combinedBytes);
             }
+#pragma warning restore CA5350 // Do Not Use Weak Cryptographic Algorithms
 
             Array.Resize(ref bytes, 16);
 

@@ -4336,15 +4336,45 @@ namespace System.Text.RegularExpressions.Generator
                 case RegexCharClass.NotSymbolClass:
                     negate ^= charClass == RegexCharClass.NotSymbolClass;
                     return $"{(negate ? "!" : "")}char.IsSymbol({chExpr})";
+
+                case RegexCharClass.AsciiLetterClass:
+                case RegexCharClass.NotAsciiLetterClass:
+                    negate ^= charClass == RegexCharClass.NotAsciiLetterClass;
+                    return $"{(negate ? "!" : "")}char.IsAsciiLetter({chExpr})";
+
+                case RegexCharClass.AsciiLetterOrDigitClass:
+                case RegexCharClass.NotAsciiLetterOrDigitClass:
+                    negate ^= charClass == RegexCharClass.NotAsciiLetterOrDigitClass;
+                    return $"{(negate ? "!" : "")}char.IsAsciiLetterOrDigit({chExpr})";
+
+                case RegexCharClass.HexDigitClass:
+                case RegexCharClass.NotHexDigitClass:
+                    negate ^= charClass == RegexCharClass.NotHexDigitClass;
+                    return $"{(negate ? "!" : "")}char.IsAsciiHexDigit({chExpr})";
+
+                case RegexCharClass.HexDigitLowerClass:
+                case RegexCharClass.NotHexDigitLowerClass:
+                    negate ^= charClass == RegexCharClass.NotHexDigitLowerClass;
+                    return $"{(negate ? "!" : "")}char.IsAsciiHexDigitLower({chExpr})";
+
+                case RegexCharClass.HexDigitUpperClass:
+                case RegexCharClass.NotHexDigitUpperClass:
+                    negate ^= charClass == RegexCharClass.NotHexDigitUpperClass;
+                    return $"{(negate ? "!" : "")}char.IsAsciiHexDigitUpper({chExpr})";
             }
 
             // Next, handle simple sets of one range, e.g. [A-Z], [0-9], etc.  This includes some built-in classes, like ECMADigitClass.
             if (RegexCharClass.TryGetSingleRange(charClass, out char lowInclusive, out char highInclusive))
             {
                 negate ^= RegexCharClass.IsNegated(charClass);
-                return lowInclusive == highInclusive ?
-                    $"({chExpr} {(negate ? "!=" : "==")} {Literal(lowInclusive)})" :
-                    $"(((uint){chExpr}) - {Literal(lowInclusive)} {(negate ? ">" : "<=")} (uint)({Literal(highInclusive)} - {Literal(lowInclusive)}))";
+                return (lowInclusive, highInclusive) switch
+                {
+                    ('0', '9') => $"{(negate ? "!" : "")}char.IsAsciiDigit({chExpr})",
+                    ('a', 'z') => $"{(negate ? "!" : "")}char.IsAsciiLetterLower({chExpr})",
+                    ('A', 'Z') => $"{(negate ? "!" : "")}char.IsAsciiLetterUpper({chExpr})",
+                    _ when lowInclusive == highInclusive => $"({chExpr} {(negate ? "!=" : "==")} {Literal(lowInclusive)})",
+                    _ => $"{(negate ? "!" : "")}char.IsBetween({chExpr}, {Literal(lowInclusive)}, {Literal(highInclusive)})",
+                };
             }
 
             // Next, if the character class contains nothing but Unicode categories, we can call char.GetUnicodeCategory and

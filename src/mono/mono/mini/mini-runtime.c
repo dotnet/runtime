@@ -5141,16 +5141,13 @@ mono_get_runtime_build_version (void)
 /**
  * mono_get_runtime_build_info:
  * The returned string is owned by the caller. The returned string
- * format is <code>VERSION (FULL_VERSION BUILD_DATE)</code> and build date is optional.
- * \returns the runtime version + build date in string format.
+ * format is <code>VERSION (FULL_VERSION)</code>.
+ * \returns the runtime version in string format.
  */
 char*
 mono_get_runtime_build_info (void)
 {
-	if (mono_build_date)
-		return g_strdup_printf ("%s (%s %s)", VERSION, FULL_VERSION, mono_build_date);
-	else
-		return g_strdup_printf ("%s (%s)", VERSION, FULL_VERSION);
+	return g_strdup_printf ("%s (%s)", VERSION, FULL_VERSION);
 }
 
 static void

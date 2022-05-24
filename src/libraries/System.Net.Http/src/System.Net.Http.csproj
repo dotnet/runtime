@@ -567,52 +567,8 @@
              Link="Common\System\Threading\Tasks\TaskToApm.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(TargetPlatformIdentifier)' != 'Browser' and '$(TargetPlatformIdentifier)' != 'OSX' and '$(TargetPlatformIdentifier)' != 'iOS' and '$(TargetPlatformIdentifier)' != 'tvOS'">
-    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.cs"
-             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.BIO.cs"
-             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.BIO.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.ERR.cs"
-             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.ERR.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.Crypto.cs"
-             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Crypto.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslVersion.cs"
-             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslVersion.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.Ssl.cs"
-             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Ssl.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.SslCtx.cs"
-             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.SslCtx.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.SslCtxOptions.cs"
-             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.SslCtxOptions.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.SetProtocolOptions.cs"
-             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.SetProtocolOptions.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.X509.cs"
-             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.X509.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.X509Name.cs"
-             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.X509Name.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.X509Ext.cs"
-             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.X509Ext.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.X509Stack.cs"
-             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.X509Stack.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.X509StoreCtx.cs"
-             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.X509StoreCtx.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.Initialization.cs"
-             Link="Common\Interop\Unix\System.Net.Security.Native\Interop.Initialization.cs" />
-    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeX509Handles.Unix.cs"
-             Link="Common\Microsoft\Win32\SafeHandles\SafeX509Handles.Unix.cs" />
-    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\X509ExtensionSafeHandles.Unix.cs"
-             Link="Common\Microsoft\Win32\SafeHandles\X509ExtensionSafeHandles.Unix.cs" />
-    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeInteriorHandle.cs"
-             Link="Common\Microsoft\Win32\SafeHandles\SafeInteriorHandle.cs" />
-    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeBioHandle.Unix.cs"
-             Link="Common\Microsoft\Win32\SafeHandles\SafeBioHandle.Unix.cs" />
-    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\Asn1SafeHandles.Unix.cs"
-             Link="Common\Microsoft\Win32\SafeHandles\Asn1SafeHandles.Unix.cs" />
-    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeHandleCache.cs"
-             Link="Common\Microsoft\Win32\SafeHandles\SafeHandleCache.cs" />
-    <Compile Include="$(CommonPath)System\Net\Security\CertificateValidation.Unix.cs"
-             Link="Common\System\Net\Security\CertificateValidation.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Browser'">
     <Compile Include="$(CommonPath)\System\StringExtensions.cs"

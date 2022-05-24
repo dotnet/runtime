@@ -202,6 +202,10 @@ namespace System.Runtime
         internal static unsafe partial void RhAllocateNewObject(IntPtr pEEType, uint flags, void* pResult);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhGetTotalPauseDuration")]
+        internal static extern long RhGetTotalPauseDuration();
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhCompareObjectContentsAndPadding")]
         internal static extern bool RhCompareObjectContentsAndPadding(object obj1, object obj2);
 

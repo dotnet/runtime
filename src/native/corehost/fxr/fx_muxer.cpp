@@ -234,7 +234,7 @@ void append_probe_realpath(const pal::string_t& path, std::vector<pal::string_t>
     else
     {
         // Check if we can extrapolate |arch|<DIR_SEPARATOR>|tfm| for probing stores
-        // Check for for both forward and back slashes
+        // Check for both forward and back slashes
         pal::string_t placeholder = _X("|arch|\\|tfm|");
         auto pos_placeholder = probe_path.find(placeholder);
         if (pos_placeholder == pal::string_t::npos)

@@ -912,7 +912,7 @@ It depends.
 
 If you initialize the crst as CRST_HOST_BREAKABLE, any attempt to acquire the lock can trigger an exception (intended to kill your thread to break the deadlock.) Otherwise, you are guaranteed not to get an exception or failure. Regardless of the flag setting, releasing a lock will never fail.
 
-You can only use a non host-breakable lock if you can guarantee that that lock will never participate in a deadlock. If you cannot guarantee this, you must use a host-breakable lock and handle the exception. Otherwise, a CLR host will not be able to break deadlocks cleanly.
+You can only use a non host-breakable lock if you can guarantee that the lock will never participate in a deadlock. If you cannot guarantee this, you must use a host-breakable lock and handle the exception. Otherwise, a CLR host will not be able to break deadlocks cleanly.
 
 There are several ways we enforce this.
 
