@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 #pragma once
+#include <rhbinder.h>
 
 #define ICODEMANAGER_INCLUDED
 
@@ -133,7 +134,7 @@ public:
 
     virtual bool UnwindStackFrame(MethodInfo *    pMethodInfo,
                                   REGDISPLAY *    pRegisterSet,                     // in/out
-                                  PTR_VOID *      ppPreviousTransitionFrame) = 0;   // out
+                                  PInvokeTransitionFrame**      ppPreviousTransitionFrame) = 0;   // out
 
     virtual uintptr_t GetConservativeUpperBoundForOutgoingArgs(MethodInfo *   pMethodInfo,
                                                                 REGDISPLAY *   pRegisterSet) = 0;

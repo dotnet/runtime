@@ -27,7 +27,7 @@ class Thread;
 # endif
 #endif // HOST_64BIT
 
-#define TOP_OF_STACK_MARKER ((PTR_VOID)(uintptr_t)(intptr_t)-1)
+static PInvokeTransitionFrame* const TOP_OF_STACK_MARKER = (PInvokeTransitionFrame*)ptrdiff_t(-1);
 
 #define DYNAMIC_TYPE_TLS_OFFSET_FLAG 0x80000000
 
@@ -55,23 +55,24 @@ struct ExInfo
     PTR_PAL_LIMITED_CONTEXT m_pExContext;
     PTR_Object              m_exception;  // actual object reference, specially reported by GcScanRootsWorker
     ExKind                  m_kind;
-    uint8_t                   m_passNumber;
-    uint32_t                  m_idxCurClause;
+    uint8_t                 m_passNumber;
+    uint32_t                m_idxCurClause;
     StackFrameIterator      m_frameIter;
     volatile void*          m_notifyDebuggerSP;
 };
 
 struct ThreadBuffer
 {
-    uint8_t                   m_rgbAllocContextBuffer[SIZEOF_ALLOC_CONTEXT];
-    uint32_t volatile         m_ThreadStateFlags;                     // see Thread::ThreadStateFlags enum
+    uint8_t                 m_rgbAllocContextBuffer[SIZEOF_ALLOC_CONTEXT];
+    uint32_t volatile       m_ThreadStateFlags;                     // see Thread::ThreadStateFlags enum
 #if DACCESS_COMPILE
-    PTR_VOID                m_pTransitionFrame;
+    volatile
+    PInvokeTransitionFrame* m_pTransitionFrame;
 #else
-    PTR_VOID volatile       m_pTransitionFrame;
+    PInvokeTransitionFrame* m_pTransitionFrame;
 #endif
-    PTR_VOID                m_pDeferredTransitionFrame;                   // see Thread::EnablePreemptiveMode
-    PTR_VOID                m_pCachedTransitionFrame;
+    PInvokeTransitionFrame* m_pDeferredTransitionFrame;             // see Thread::EnablePreemptiveMode
+    PInvokeTransitionFrame* m_pCachedTransitionFrame;
     PTR_Thread              m_pNext;                                // used by ThreadStore's SList<Thread>
     HANDLE                  m_hPalThread;                           // WARNING: this may legitimately be INVALID_HANDLE_VALUE
     void **                 m_ppvHijackedReturnAddressLocation;
@@ -86,12 +87,12 @@ struct ThreadBuffer
     PTR_VOID                m_pStackLow;
     PTR_VOID                m_pStackHigh;
     PTR_UInt8               m_pTEB;                                 // Pointer to OS TEB structure for this thread
-    uint64_t                  m_uPalThreadIdForLogging;               // @TODO: likely debug-only
+    uint64_t                m_uPalThreadIdForLogging;               // @TODO: likely debug-only
     EEThreadId              m_threadId;
     PTR_VOID                m_pThreadStressLog;                     // pointer to head of thread's StressLogChunks
     uint32_t                m_cantAlloc;
 #ifdef FEATURE_GC_STRESS
-    uint32_t                  m_uRand;                                // current per-thread random number
+    uint32_t                m_uRand;                                // current per-thread random number
 #endif // FEATURE_GC_STRESS
 
     // Thread Statics Storage for dynamic types
@@ -102,7 +103,7 @@ struct ThreadBuffer
 
 struct ReversePInvokeFrame
 {
-    void*   m_savedPInvokeTransitionFrame;
+    PInvokeTransitionFrame*   m_savedPInvokeTransitionFrame;
     Thread* m_savedThread;
 };
 
@@ -151,7 +152,7 @@ private:
     //
     // SyncState members
     //
-    PTR_VOID    GetTransitionFrame();
+    PInvokeTransitionFrame* GetTransitionFrame();
 
     void GcScanRootsWorker(void * pfnEnumCallback, void * pvCallbackData, StackFrameIterator & sfIter);
 
@@ -222,7 +223,7 @@ public:
 
     bool                IsCurrentThreadInCooperativeMode();
 
-    PTR_VOID            GetTransitionFrameForStackTrace();
+    PInvokeTransitionFrame* GetTransitionFrameForStackTrace();
     void *              GetCurrentThreadPInvokeReturnAddress();
 
     static bool         IsHijackTarget(void * address);
@@ -235,7 +236,7 @@ public:
 
     // Set the m_pDeferredTransitionFrame field for GC allocation helpers that setup transition frame
     // in assembly code. Do not use anywhere else.
-    void                SetCurrentThreadPInvokeTunnelForGcAlloc(void * pTransitionFrame);
+    void                SetDeferredTransitionFrame(PInvokeTransitionFrame* pTransitionFrame);
 
     // Setup the m_pDeferredTransitionFrame field for GC helpers entered via regular PInvoke.
     // Do not use anywhere else.
@@ -252,7 +253,7 @@ public:
     // Managed/unmanaged interop transitions support APIs
     //
     void WaitForSuspend();
-    void WaitForGC(void * pTransitionFrame);
+    void WaitForGC(PInvokeTransitionFrame* pTransitionFrame);
 
     void ReversePInvokeAttachOrTrapThread(ReversePInvokeFrame * pFrame);
 

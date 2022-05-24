@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #ifndef DACCESS_COMPILE
-inline void Thread::SetCurrentThreadPInvokeTunnelForGcAlloc(void * pTransitionFrame)
+inline void Thread::SetDeferredTransitionFrame(PInvokeTransitionFrame* pTransitionFrame)
 {
     ASSERT(ThreadStore::GetCurrentThread() == this);
     ASSERT(Thread::IsCurrentThreadInCooperativeMode());

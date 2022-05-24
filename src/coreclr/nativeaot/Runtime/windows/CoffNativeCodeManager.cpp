@@ -490,7 +490,7 @@ uintptr_t CoffNativeCodeManager::GetConservativeUpperBoundForOutgoingArgs(Method
 
 bool CoffNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
                                       REGDISPLAY *    pRegisterSet,                 // in/out
-                                      PTR_VOID *      ppPreviousTransitionFrame)    // out
+                                      PInvokeTransitionFrame**      ppPreviousTransitionFrame)    // out
 {
     CoffNativeMethodInfo * pNativeMethodInfo = (CoffNativeMethodInfo *)pMethodInfo;
 
@@ -526,7 +526,8 @@ bool CoffNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
         {
             basePointer = dac_cast<TADDR>(pRegisterSet->GetFP());
         }
-        *ppPreviousTransitionFrame = *(void**)(basePointer + slot);
+
+        *ppPreviousTransitionFrame = *(PInvokeTransitionFrame**)(basePointer + slot);
         return true;
     }
 

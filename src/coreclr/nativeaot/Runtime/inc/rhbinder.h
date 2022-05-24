@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#ifndef RHBINDER_H
+#define RHBINDER_H
+
 //
 // This header contains binder-generated data structures that the runtime consumes.
 //
@@ -645,3 +648,5 @@ struct ColdToHotMapping
     SubSectionDesc  subSection[/*subSectionCount*/1];
     //  UINT32   hotRVAofColdMethod[/*coldMethodCount*/];
 };
+
+#endif // RHBINDER_H

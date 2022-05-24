@@ -44,7 +44,7 @@ extern "C" void _ReadWriteBarrier(void);
 #endif // _MSC_VER
 #endif //!DACCESS_COMPILE
 
-PTR_VOID Thread::GetTransitionFrame()
+PInvokeTransitionFrame* Thread::GetTransitionFrame()
 {
     if (ThreadStore::GetSuspendingThread() == this)
     {
@@ -61,7 +61,7 @@ PTR_VOID Thread::GetTransitionFrame()
 
 #ifndef DACCESS_COMPILE
 
-PTR_VOID Thread::GetTransitionFrameForStackTrace()
+PInvokeTransitionFrame* Thread::GetTransitionFrameForStackTrace()
 {
     ASSERT_MSG(ThreadStore::GetSuspendingThread() == NULL, "Not allowed when suspended for GC.");
     ASSERT_MSG(this == ThreadStore::GetCurrentThread(), "Only supported for current thread.");
@@ -76,7 +76,7 @@ void Thread::WaitForSuspend()
     GetThreadStore()->WaitForSuspendComplete();
 }
 
-void Thread::WaitForGC(void * pTransitionFrame)
+void Thread::WaitForGC(PInvokeTransitionFrame* pTransitionFrame)
 {
     ASSERT(!IsDoNotTriggerGcSet());
 
@@ -111,7 +111,7 @@ bool Thread::CacheTransitionFrameForSuspend()
     if (m_pCachedTransitionFrame != NULL)
         return true;
 
-    PTR_VOID temp = m_pTransitionFrame;     // volatile read
+    PInvokeTransitionFrame* temp = m_pTransitionFrame;     // volatile read
     if (temp == NULL)
         return false;
 
@@ -430,10 +430,10 @@ bool Thread::GcScanRoots(GcScanRootsCallbackFunc * pfnEnumCallback, void * token
     //When debugging we might be trying to enumerate with or without a transition frame
     //on top of the stack. If there is one use it, otherwise the debugger provides a set of initial registers
     //to use.
-    PTR_VOID pTransitionFrame = GetTransitionFrame();
+    PInvokeTransitionFrame* pTransitionFrame = GetTransitionFrame();
     if(pTransitionFrame != NULL)
     {
-        StackFrameIterator  frameIterator(this, GetTransitionFrame());
+        StackFrameIterator  frameIterator(this, pTransitionFrame);
         GcScanRootsWorker(&GcScanRootsCallbackWrapper, &callbackDataWrapper, frameIterator);
     }
     else
@@ -480,7 +480,7 @@ void Thread::GcScanRootsWorker(void * pfnEnumCallback, void * pvCallbackData, St
             PTR_VOID pLowerBound = dac_cast<PTR_VOID>(frameIterator.GetRegisterSet()->GetSP());
 
             // Transition frame may contain callee saved registers that need to be reported as well
-            PTR_VOID pTransitionFrame = GetTransitionFrame();
+            PInvokeTransitionFrame* pTransitionFrame = GetTransitionFrame();
             ASSERT(pTransitionFrame != NULL);
             if (pTransitionFrame < pLowerBound)
                 pLowerBound = pTransitionFrame;

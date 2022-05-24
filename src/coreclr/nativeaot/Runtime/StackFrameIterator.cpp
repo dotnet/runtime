@@ -88,16 +88,11 @@ GVAL_IMPL_INIT(PTR_VOID, g_RhpRethrow2Addr, PointerToRhpRethrow2);
 #define FAILFAST_OR_DAC_FAIL_UNCONDITIONALLY(msg) { ASSERT_UNCONDITIONALLY(msg); RhFailFast(); }
 #endif
 
-PTR_PInvokeTransitionFrame GetPInvokeTransitionFrame(PTR_VOID pTransitionFrame)
-{
-    return static_cast<PTR_PInvokeTransitionFrame>(pTransitionFrame);
-}
-
-StackFrameIterator::StackFrameIterator(Thread * pThreadToWalk, PTR_VOID pInitialTransitionFrame)
+StackFrameIterator::StackFrameIterator(Thread * pThreadToWalk, PInvokeTransitionFrame* pInitialTransitionFrame)
 {
     STRESS_LOG0(LF_STACKWALK, LL_INFO10000, "----Init---- [ GC ]\n");
     ASSERT(!pThreadToWalk->DangerousCrossThreadIsHijacked());
-    InternalInit(pThreadToWalk, GetPInvokeTransitionFrame(pInitialTransitionFrame), GcStackWalkFlags);
+    InternalInit(pThreadToWalk, pInitialTransitionFrame, GcStackWalkFlags);
     PrepareToYieldFrame();
 }
 
@@ -140,7 +135,7 @@ void StackFrameIterator::EnterInitialInvalidState(Thread * pThreadToWalk)
 // NOTE: When the PC is in an assembly thunk, this function will unwind to the next managed
 // frame and may publish a conservative stack range (if and only if any of the unwound
 // thunks report a conservative range).
-void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PInvokeTransitionFrame pFrame, uint32_t dwFlags)
+void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PInvokeTransitionFrame* pFrame, uint32_t dwFlags)
 {
     // EH stackwalks are always required to unwind non-volatile floating point state.  This
     // state is never carried by PInvokeTransitionFrames, implying that they can never be used
@@ -349,8 +344,8 @@ void StackFrameIterator::InternalInitForStackTrace()
 {
     STRESS_LOG0(LF_STACKWALK, LL_INFO10000, "----Init---- [ StackTrace ]\n");
     Thread * pThreadToWalk = ThreadStore::GetCurrentThread();
-    PTR_VOID pFrame = pThreadToWalk->GetTransitionFrameForStackTrace();
-    InternalInit(pThreadToWalk, GetPInvokeTransitionFrame(pFrame), StackTraceStackWalkFlags);
+    PInvokeTransitionFrame* pFrame = pThreadToWalk->GetTransitionFrameForStackTrace();
+    InternalInit(pThreadToWalk, pFrame, StackTraceStackWalkFlags);
     PrepareToYieldFrame();
 }
 
@@ -1314,7 +1309,7 @@ UnwindOutOfCurrentManagedFrame:
     uintptr_t DEBUG_preUnwindSP = m_RegDisplay.GetSP();
 #endif
 
-    PTR_VOID pPreviousTransitionFrame;
+    PInvokeTransitionFrame* pPreviousTransitionFrame;
     FAILFAST_OR_DAC_FAIL(GetCodeManager()->UnwindStackFrame(&m_methodInfo, &m_RegDisplay, &pPreviousTransitionFrame));
 
     bool doingFuncletUnwind = GetCodeManager()->IsFunclet(&m_methodInfo);
@@ -1337,7 +1332,7 @@ UnwindOutOfCurrentManagedFrame:
             // will unwind through the thunk and back to the nearest managed frame, and therefore may
             // see a conservative range reported by one of the thunks encountered during this "nested"
             // unwind.
-            InternalInit(m_pThread, GetPInvokeTransitionFrame(pPreviousTransitionFrame), GcStackWalkFlags);
+            InternalInit(m_pThread, pPreviousTransitionFrame, GcStackWalkFlags);
             ASSERT(m_pInstance->FindCodeManagerByAddress(m_ControlPC));
         }
         m_dwFlags |= UnwoundReversePInvoke;

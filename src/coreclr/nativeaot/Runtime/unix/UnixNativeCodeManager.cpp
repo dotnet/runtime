@@ -234,7 +234,7 @@ uintptr_t UnixNativeCodeManager::GetConservativeUpperBoundForOutgoingArgs(Method
 
 bool UnixNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
                                              REGDISPLAY *    pRegisterSet,                 // in/out
-                                             PTR_VOID *      ppPreviousTransitionFrame)    // out
+                                             PInvokeTransitionFrame**      ppPreviousTransitionFrame)    // out
 {
     UnixNativeMethodInfo * pNativeMethodInfo = (UnixNativeMethodInfo *)pMethodInfo;
 
