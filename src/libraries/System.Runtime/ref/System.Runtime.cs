@@ -810,6 +810,12 @@ namespace System
         static byte System.Numerics.INumberBase<byte>.MaxMagnitudeNumber(byte x, byte y) { throw null; }
         static byte System.Numerics.INumberBase<byte>.MinMagnitude(byte x, byte y) { throw null; }
         static byte System.Numerics.INumberBase<byte>.MinMagnitudeNumber(byte x, byte y) { throw null; }
+        static bool System.Numerics.INumberBase<byte>.TryConvertFromChecked<TOther>(TOther value, out byte result) { throw null; }
+        static bool System.Numerics.INumberBase<byte>.TryConvertFromSaturating<TOther>(TOther value, out byte result) { throw null; }
+        static bool System.Numerics.INumberBase<byte>.TryConvertFromTruncating<TOther>(TOther value, out byte result) { throw null; }
+        static bool System.Numerics.INumberBase<byte>.TryConvertToChecked<TOther>(byte value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<byte>.TryConvertToSaturating<TOther>(byte value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<byte>.TryConvertToTruncating<TOther>(byte value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
         static byte System.Numerics.INumber<byte>.CopySign(byte value, byte sign) { throw null; }
         static byte System.Numerics.INumber<byte>.MaxNumber(byte x, byte y) { throw null; }
         static byte System.Numerics.INumber<byte>.MinNumber(byte x, byte y) { throw null; }
@@ -985,6 +991,12 @@ namespace System
         static char System.Numerics.INumberBase<char>.MinMagnitudeNumber(char x, char y) { throw null; }
         static char System.Numerics.INumberBase<char>.Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
         static char System.Numerics.INumberBase<char>.Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
+        static bool System.Numerics.INumberBase<char>.TryConvertFromChecked<TOther>(TOther value, out char result) { throw null; }
+        static bool System.Numerics.INumberBase<char>.TryConvertFromSaturating<TOther>(TOther value, out char result) { throw null; }
+        static bool System.Numerics.INumberBase<char>.TryConvertFromTruncating<TOther>(TOther value, out char result) { throw null; }
+        static bool System.Numerics.INumberBase<char>.TryConvertToChecked<TOther>(char value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<char>.TryConvertToSaturating<TOther>(char value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<char>.TryConvertToTruncating<TOther>(char value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
         static bool System.Numerics.INumberBase<char>.TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out char result) { throw null; }
         static bool System.Numerics.INumberBase<char>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out char result) { throw null; }
         static char System.Numerics.INumber<char>.Clamp(char value, char min, char max) { throw null; }
@@ -2001,6 +2013,12 @@ namespace System
         static bool System.Numerics.INumberBase<decimal>.IsZero(decimal value) { throw null; }
         static decimal System.Numerics.INumberBase<decimal>.MaxMagnitudeNumber(decimal x, decimal y) { throw null; }
         static decimal System.Numerics.INumberBase<decimal>.MinMagnitudeNumber(decimal x, decimal y) { throw null; }
+        static bool System.Numerics.INumberBase<decimal>.TryConvertFromChecked<TOther>(TOther value, out decimal result) { throw null; }
+        static bool System.Numerics.INumberBase<decimal>.TryConvertFromSaturating<TOther>(TOther value, out decimal result) { throw null; }
+        static bool System.Numerics.INumberBase<decimal>.TryConvertFromTruncating<TOther>(TOther value, out decimal result) { throw null; }
+        static bool System.Numerics.INumberBase<decimal>.TryConvertToChecked<TOther>(decimal value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<decimal>.TryConvertToSaturating<TOther>(decimal value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<decimal>.TryConvertToTruncating<TOther>(decimal value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
         static decimal System.Numerics.INumber<decimal>.MaxNumber(decimal x, decimal y) { throw null; }
         static decimal System.Numerics.INumber<decimal>.MinNumber(decimal x, decimal y) { throw null; }
         static decimal System.Numerics.ISubtractionOperators<decimal, decimal, decimal>.operator checked -(decimal left, decimal right) { throw null; }
@@ -2239,6 +2257,12 @@ namespace System
         static bool System.Numerics.INumberBase<double>.IsComplexNumber(double value) { throw null; }
         static bool System.Numerics.INumberBase<double>.IsImaginaryNumber(double value) { throw null; }
         static bool System.Numerics.INumberBase<double>.IsZero(double value) { throw null; }
+        static bool System.Numerics.INumberBase<double>.TryConvertFromChecked<TOther>(TOther value, out double result) { throw null; }
+        static bool System.Numerics.INumberBase<double>.TryConvertFromSaturating<TOther>(TOther value, out double result) { throw null; }
+        static bool System.Numerics.INumberBase<double>.TryConvertFromTruncating<TOther>(TOther value, out double result) { throw null; }
+        static bool System.Numerics.INumberBase<double>.TryConvertToChecked<TOther>(double value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<double>.TryConvertToSaturating<TOther>(double value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<double>.TryConvertToTruncating<TOther>(double value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
         static double System.Numerics.ISubtractionOperators<double, double, double>.operator checked -(double left, double right) { throw null; }
         static double System.Numerics.ISubtractionOperators<double, double, double>.operator -(double left, double right) { throw null; }
         static double System.Numerics.IUnaryNegationOperators<double, double>.operator checked -(double value) { throw null; }
@@ -2720,7 +2744,6 @@ namespace System
         public static System.Half PositiveInfinity { get { throw null; } }
         static System.Half System.Numerics.IAdditiveIdentity<System.Half,System.Half>.AdditiveIdentity { get { throw null; } }
         static int System.Numerics.INumberBase<System.Half>.Radix { get { throw null; } }
-        static System.Half System.Numerics.ISignedNumber<System.Half>.NegativeOne { get { throw null; } }
         public static System.Half Tau { get { throw null; } }
         public static System.Half Zero { get { throw null; } }
         public static System.Half Abs(System.Half value) { throw null; }
@@ -2784,15 +2807,72 @@ namespace System
         public static System.Half MinMagnitudeNumber(System.Half x, System.Half y) { throw null; }
         public static System.Half MinNumber(System.Half x, System.Half y) { throw null; }
         public static System.Half operator +(System.Half left, System.Half right) { throw null; }
+        public static explicit operator checked byte (System.Half value) { throw null; }
+        public static explicit operator checked char (System.Half value) { throw null; }
+        public static explicit operator checked short (System.Half value) { throw null; }
+        public static explicit operator checked int (System.Half value) { throw null; }
+        public static explicit operator checked long (System.Half value) { throw null; }
+        public static explicit operator checked System.Int128 (System.Half value) { throw null; }
+        public static explicit operator checked nint (System.Half value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator checked sbyte (System.Half value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator checked ushort (System.Half value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator checked uint (System.Half value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator checked ulong (System.Half value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator checked System.UInt128 (System.Half value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator checked nuint (System.Half value) { throw null; }
         public static System.Half operator --(System.Half value) { throw null; }
         public static System.Half operator /(System.Half left, System.Half right) { throw null; }
         public static bool operator ==(System.Half left, System.Half right) { throw null; }
+        public static explicit operator System.Half (char value) { throw null; }
+        public static explicit operator System.Half (decimal value) { throw null; }
         public static explicit operator System.Half (double value) { throw null; }
+        public static explicit operator byte (System.Half value) { throw null; }
+        public static explicit operator char (System.Half value) { throw null; }
+        public static explicit operator decimal (System.Half value) { throw null; }
         public static explicit operator double (System.Half value) { throw null; }
+        public static explicit operator System.Int128 (System.Half value) { throw null; }
+        public static explicit operator short (System.Half value) { throw null; }
+        public static explicit operator int (System.Half value) { throw null; }
+        public static explicit operator long (System.Half value) { throw null; }
+        public static explicit operator nint (System.Half value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator sbyte (System.Half value) { throw null; }
         public static explicit operator float (System.Half value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator System.UInt128 (System.Half value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator ushort (System.Half value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator uint (System.Half value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator ulong (System.Half value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator nuint (System.Half value) { throw null; }
+        public static explicit operator System.Half (short value) { throw null; }
+        public static explicit operator System.Half (int value) { throw null; }
+        public static explicit operator System.Half (long value) { throw null; }
+        public static explicit operator System.Half (nint value) { throw null; }
         public static explicit operator System.Half (float value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator System.Half (ushort value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator System.Half (uint value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator System.Half (ulong value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator System.Half (nuint value) { throw null; }
         public static bool operator >(System.Half left, System.Half right) { throw null; }
         public static bool operator >=(System.Half left, System.Half right) { throw null; }
+        public static implicit operator System.Half (byte value) { throw null; }
+        public static implicit operator System.Runtime.InteropServices.NFloat (System.Half value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static implicit operator System.Half (sbyte value) { throw null; }
         public static System.Half operator ++(System.Half value) { throw null; }
         public static bool operator !=(System.Half left, System.Half right) { throw null; }
         public static bool operator <(System.Half left, System.Half right) { throw null; }
@@ -2842,6 +2922,12 @@ namespace System
         static bool System.Numerics.INumberBase<System.Half>.IsComplexNumber(System.Half value) { throw null; }
         static bool System.Numerics.INumberBase<System.Half>.IsImaginaryNumber(System.Half value) { throw null; }
         static bool System.Numerics.INumberBase<System.Half>.IsZero(System.Half value) { throw null; }
+        static bool System.Numerics.INumberBase<System.Half>.TryConvertFromChecked<TOther>(TOther value, out System.Half result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Half>.TryConvertFromSaturating<TOther>(TOther value, out System.Half result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Half>.TryConvertFromTruncating<TOther>(TOther value, out System.Half result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Half>.TryConvertToChecked<TOther>(System.Half value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Half>.TryConvertToSaturating<TOther>(System.Half value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Half>.TryConvertToTruncating<TOther>(System.Half value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
         static System.Half System.Numerics.ISubtractionOperators<System.Half, System.Half, System.Half>.operator checked -(System.Half left, System.Half right) { throw null; }
         static System.Half System.Numerics.IUnaryNegationOperators<System.Half, System.Half>.operator checked -(System.Half value) { throw null; }
         public static System.Half Tan(System.Half x) { throw null; }
@@ -3024,7 +3110,6 @@ namespace System
         public static System.Int128 operator checked --(System.Int128 value) { throw null; }
         public static System.Int128 operator checked /(System.Int128 left, System.Int128 right) { throw null; }
         public static explicit operator checked System.Int128 (double value) { throw null; }
-        public static explicit operator checked System.Int128 (System.Half value) { throw null; }
         public static explicit operator checked byte (System.Int128 value) { throw null; }
         public static explicit operator checked char (System.Int128 value) { throw null; }
         public static explicit operator checked short (System.Int128 value) { throw null; }
@@ -3043,7 +3128,7 @@ namespace System
         public static explicit operator checked System.UInt128 (System.Int128 value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static explicit operator checked nuint (System.Int128 value) { throw null; }
-        public static explicit operator checked System.Int128 (float value) { throw null; }
+        public static explicit operator checked System.Int128(float value) { throw null; }
         public static System.Int128 operator checked ++(System.Int128 value) { throw null; }
         public static System.Int128 operator checked *(System.Int128 left, System.Int128 right) { throw null; }
         public static System.Int128 operator checked -(System.Int128 left, System.Int128 right) { throw null; }
@@ -3054,7 +3139,6 @@ namespace System
         public static System.Int128 operator ^(System.Int128 left, System.Int128 right) { throw null; }
         public static explicit operator System.Int128 (decimal value) { throw null; }
         public static explicit operator System.Int128 (double value) { throw null; }
-        public static explicit operator System.Int128 (System.Half value) { throw null; }
         public static explicit operator byte (System.Int128 value) { throw null; }
         public static explicit operator char (System.Int128 value) { throw null; }
         public static explicit operator decimal (System.Int128 value) { throw null; }
@@ -3064,6 +3148,7 @@ namespace System
         public static explicit operator int (System.Int128 value) { throw null; }
         public static explicit operator long (System.Int128 value) { throw null; }
         public static explicit operator nint (System.Int128 value) { throw null; }
+        public static explicit operator System.Runtime.InteropServices.NFloat (System.Int128 value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static explicit operator sbyte (System.Int128 value) { throw null; }
         public static explicit operator float (System.Int128 value) { throw null; }
@@ -3138,6 +3223,12 @@ namespace System
         static bool System.Numerics.INumberBase<System.Int128>.IsZero(System.Int128 value) { throw null; }
         static System.Int128 System.Numerics.INumberBase<System.Int128>.MaxMagnitudeNumber(System.Int128 x, System.Int128 y) { throw null; }
         static System.Int128 System.Numerics.INumberBase<System.Int128>.MinMagnitudeNumber(System.Int128 x, System.Int128 y) { throw null; }
+        static bool System.Numerics.INumberBase<System.Int128>.TryConvertFromChecked<TOther>(TOther value, out System.Int128 result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Int128>.TryConvertFromSaturating<TOther>(TOther value, out System.Int128 result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Int128>.TryConvertFromTruncating<TOther>(TOther value, out System.Int128 result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Int128>.TryConvertToChecked<TOther>(System.Int128 value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Int128>.TryConvertToSaturating<TOther>(System.Int128 value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Int128>.TryConvertToTruncating<TOther>(System.Int128 value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
         static System.Int128 System.Numerics.INumber<System.Int128>.MaxNumber(System.Int128 x, System.Int128 y) { throw null; }
         static System.Int128 System.Numerics.INumber<System.Int128>.MinNumber(System.Int128 x, System.Int128 y) { throw null; }
         public override string ToString() { throw null; }
@@ -3252,6 +3343,12 @@ namespace System
         static bool System.Numerics.INumberBase<short>.IsZero(short value) { throw null; }
         static short System.Numerics.INumberBase<short>.MaxMagnitudeNumber(short x, short y) { throw null; }
         static short System.Numerics.INumberBase<short>.MinMagnitudeNumber(short x, short y) { throw null; }
+        static bool System.Numerics.INumberBase<short>.TryConvertFromChecked<TOther>(TOther value, out short result) { throw null; }
+        static bool System.Numerics.INumberBase<short>.TryConvertFromSaturating<TOther>(TOther value, out short result) { throw null; }
+        static bool System.Numerics.INumberBase<short>.TryConvertFromTruncating<TOther>(TOther value, out short result) { throw null; }
+        static bool System.Numerics.INumberBase<short>.TryConvertToChecked<TOther>(short value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<short>.TryConvertToSaturating<TOther>(short value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<short>.TryConvertToTruncating<TOther>(short value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
         static short System.Numerics.INumber<short>.MaxNumber(short x, short y) { throw null; }
         static short System.Numerics.INumber<short>.MinNumber(short x, short y) { throw null; }
         static short System.Numerics.IShiftOperators<short, short>.operator <<(short value, int shiftAmount) { throw null; }
@@ -3374,6 +3471,12 @@ namespace System
         static bool System.Numerics.INumberBase<int>.IsZero(int value) { throw null; }
         static int System.Numerics.INumberBase<int>.MaxMagnitudeNumber(int x, int y) { throw null; }
         static int System.Numerics.INumberBase<int>.MinMagnitudeNumber(int x, int y) { throw null; }
+        static bool System.Numerics.INumberBase<int>.TryConvertFromChecked<TOther>(TOther value, out int result) { throw null; }
+        static bool System.Numerics.INumberBase<int>.TryConvertFromSaturating<TOther>(TOther value, out int result) { throw null; }
+        static bool System.Numerics.INumberBase<int>.TryConvertFromTruncating<TOther>(TOther value, out int result) { throw null; }
+        static bool System.Numerics.INumberBase<int>.TryConvertToChecked<TOther>(int value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<int>.TryConvertToSaturating<TOther>(int value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<int>.TryConvertToTruncating<TOther>(int value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
         static int System.Numerics.INumber<int>.MaxNumber(int x, int y) { throw null; }
         static int System.Numerics.INumber<int>.MinNumber(int x, int y) { throw null; }
         static int System.Numerics.IShiftOperators<int, int>.operator <<(int value, int shiftAmount) { throw null; }
@@ -3496,6 +3599,12 @@ namespace System
         static bool System.Numerics.INumberBase<long>.IsZero(long value) { throw null; }
         static long System.Numerics.INumberBase<long>.MaxMagnitudeNumber(long x, long y) { throw null; }
         static long System.Numerics.INumberBase<long>.MinMagnitudeNumber(long x, long y) { throw null; }
+        static bool System.Numerics.INumberBase<long>.TryConvertFromChecked<TOther>(TOther value, out long result) { throw null; }
+        static bool System.Numerics.INumberBase<long>.TryConvertFromSaturating<TOther>(TOther value, out long result) { throw null; }
+        static bool System.Numerics.INumberBase<long>.TryConvertFromTruncating<TOther>(TOther value, out long result) { throw null; }
+        static bool System.Numerics.INumberBase<long>.TryConvertToChecked<TOther>(long value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<long>.TryConvertToSaturating<TOther>(long value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<long>.TryConvertToTruncating<TOther>(long value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
         static long System.Numerics.INumber<long>.MaxNumber(long x, long y) { throw null; }
         static long System.Numerics.INumber<long>.MinNumber(long x, long y) { throw null; }
         static long System.Numerics.IShiftOperators<long, long>.operator <<(long value, int shiftAmount) { throw null; }
@@ -3620,6 +3729,12 @@ namespace System
         static bool System.Numerics.INumberBase<nint>.IsZero(nint value) { throw null; }
         static nint System.Numerics.INumberBase<nint>.MaxMagnitudeNumber(nint x, nint y) { throw null; }
         static nint System.Numerics.INumberBase<nint>.MinMagnitudeNumber(nint x, nint y) { throw null; }
+        static bool System.Numerics.INumberBase<nint>.TryConvertFromChecked<TOther>(TOther value, out nint result) { throw null; }
+        static bool System.Numerics.INumberBase<nint>.TryConvertFromSaturating<TOther>(TOther value, out nint result) { throw null; }
+        static bool System.Numerics.INumberBase<nint>.TryConvertFromTruncating<TOther>(TOther value, out nint result) { throw null; }
+        static bool System.Numerics.INumberBase<nint>.TryConvertToChecked<TOther>(nint value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<nint>.TryConvertToSaturating<TOther>(nint value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<nint>.TryConvertToTruncating<TOther>(nint value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
         static nint System.Numerics.INumber<nint>.MaxNumber(nint x, nint y) { throw null; }
         static nint System.Numerics.INumber<nint>.MinNumber(nint x, nint y) { throw null; }
         static nint System.Numerics.IShiftOperators<nint, nint>.operator <<(nint value, int shiftAmount) { throw null; }
@@ -4552,6 +4667,12 @@ namespace System
         static bool System.Numerics.INumberBase<sbyte>.IsZero(sbyte value) { throw null; }
         static sbyte System.Numerics.INumberBase<sbyte>.MaxMagnitudeNumber(sbyte x, sbyte y) { throw null; }
         static sbyte System.Numerics.INumberBase<sbyte>.MinMagnitudeNumber(sbyte x, sbyte y) { throw null; }
+        static bool System.Numerics.INumberBase<sbyte>.TryConvertFromChecked<TOther>(TOther value, out sbyte result) { throw null; }
+        static bool System.Numerics.INumberBase<sbyte>.TryConvertFromSaturating<TOther>(TOther value, out sbyte result) { throw null; }
+        static bool System.Numerics.INumberBase<sbyte>.TryConvertFromTruncating<TOther>(TOther value, out sbyte result) { throw null; }
+        static bool System.Numerics.INumberBase<sbyte>.TryConvertToChecked<TOther>(sbyte value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<sbyte>.TryConvertToSaturating<TOther>(sbyte value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<sbyte>.TryConvertToTruncating<TOther>(sbyte value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
         static sbyte System.Numerics.INumber<sbyte>.MaxNumber(sbyte x, sbyte y) { throw null; }
         static sbyte System.Numerics.INumber<sbyte>.MinNumber(sbyte x, sbyte y) { throw null; }
         static sbyte System.Numerics.IShiftOperators<sbyte, sbyte>.operator <<(sbyte value, int shiftAmount) { throw null; }
@@ -4737,6 +4858,12 @@ namespace System
         static bool System.Numerics.INumberBase<float>.IsComplexNumber(float value) { throw null; }
         static bool System.Numerics.INumberBase<float>.IsImaginaryNumber(float value) { throw null; }
         static bool System.Numerics.INumberBase<float>.IsZero(float value) { throw null; }
+        static bool System.Numerics.INumberBase<float>.TryConvertFromChecked<TOther>(TOther value, out float result) { throw null; }
+        static bool System.Numerics.INumberBase<float>.TryConvertFromSaturating<TOther>(TOther value, out float result) { throw null; }
+        static bool System.Numerics.INumberBase<float>.TryConvertFromTruncating<TOther>(TOther value, out float result) { throw null; }
+        static bool System.Numerics.INumberBase<float>.TryConvertToChecked<TOther>(float value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<float>.TryConvertToSaturating<TOther>(float value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<float>.TryConvertToTruncating<TOther>(float value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
         static float System.Numerics.ISubtractionOperators<float, float, float>.operator checked -(float left, float right) { throw null; }
         static float System.Numerics.ISubtractionOperators<float, float, float>.operator -(float left, float right) { throw null; }
         static float System.Numerics.IUnaryNegationOperators<float, float>.operator checked -(float value) { throw null; }
@@ -5958,7 +6085,6 @@ namespace System
         public static System.UInt128 operator checked --(System.UInt128 value) { throw null; }
         public static System.UInt128 operator checked /(System.UInt128 left, System.UInt128 right) { throw null; }
         public static explicit operator checked System.UInt128 (double value) { throw null; }
-        public static explicit operator checked System.UInt128 (System.Half value) { throw null; }
         public static explicit operator checked System.UInt128 (short value) { throw null; }
         public static explicit operator checked System.UInt128 (int value) { throw null; }
         public static explicit operator checked System.UInt128 (long value) { throw null; }
@@ -5994,7 +6120,6 @@ namespace System
         public static System.UInt128 operator ^(System.UInt128 left, System.UInt128 right) { throw null; }
         public static explicit operator System.UInt128 (decimal value) { throw null; }
         public static explicit operator System.UInt128 (double value) { throw null; }
-        public static explicit operator System.UInt128 (System.Half value) { throw null; }
         public static explicit operator System.UInt128 (short value) { throw null; }
         public static explicit operator System.UInt128 (int value) { throw null; }
         public static explicit operator System.UInt128 (long value) { throw null; }
@@ -6013,6 +6138,7 @@ namespace System
         public static explicit operator int (System.UInt128 value) { throw null; }
         public static explicit operator long (System.UInt128 value) { throw null; }
         public static explicit operator nint (System.UInt128 value) { throw null; }
+        public static explicit operator System.Runtime.InteropServices.NFloat (System.UInt128 value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static explicit operator sbyte (System.UInt128 value) { throw null; }
         public static explicit operator float (System.UInt128 value) { throw null; }
@@ -6083,6 +6209,12 @@ namespace System
         static System.UInt128 System.Numerics.INumberBase<System.UInt128>.MaxMagnitudeNumber(System.UInt128 x, System.UInt128 y) { throw null; }
         static System.UInt128 System.Numerics.INumberBase<System.UInt128>.MinMagnitude(System.UInt128 x, System.UInt128 y) { throw null; }
         static System.UInt128 System.Numerics.INumberBase<System.UInt128>.MinMagnitudeNumber(System.UInt128 x, System.UInt128 y) { throw null; }
+        static bool System.Numerics.INumberBase<System.UInt128>.TryConvertFromChecked<TOther>(TOther value, out System.UInt128 result) { throw null; }
+        static bool System.Numerics.INumberBase<System.UInt128>.TryConvertFromSaturating<TOther>(TOther value, out System.UInt128 result) { throw null; }
+        static bool System.Numerics.INumberBase<System.UInt128>.TryConvertFromTruncating<TOther>(TOther value, out System.UInt128 result) { throw null; }
+        static bool System.Numerics.INumberBase<System.UInt128>.TryConvertToChecked<TOther>(System.UInt128 value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<System.UInt128>.TryConvertToSaturating<TOther>(System.UInt128 value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<System.UInt128>.TryConvertToTruncating<TOther>(System.UInt128 value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
         static System.UInt128 System.Numerics.INumber<System.UInt128>.CopySign(System.UInt128 value, System.UInt128 sign) { throw null; }
         static System.UInt128 System.Numerics.INumber<System.UInt128>.MaxNumber(System.UInt128 x, System.UInt128 y) { throw null; }
         static System.UInt128 System.Numerics.INumber<System.UInt128>.MinNumber(System.UInt128 x, System.UInt128 y) { throw null; }
@@ -6197,6 +6329,12 @@ namespace System
         static ushort System.Numerics.INumberBase<ushort>.MaxMagnitudeNumber(ushort x, ushort y) { throw null; }
         static ushort System.Numerics.INumberBase<ushort>.MinMagnitude(ushort x, ushort y) { throw null; }
         static ushort System.Numerics.INumberBase<ushort>.MinMagnitudeNumber(ushort x, ushort y) { throw null; }
+        static bool System.Numerics.INumberBase<ushort>.TryConvertFromChecked<TOther>(TOther value, out ushort result) { throw null; }
+        static bool System.Numerics.INumberBase<ushort>.TryConvertFromSaturating<TOther>(TOther value, out ushort result) { throw null; }
+        static bool System.Numerics.INumberBase<ushort>.TryConvertFromTruncating<TOther>(TOther value, out ushort result) { throw null; }
+        static bool System.Numerics.INumberBase<ushort>.TryConvertToChecked<TOther>(ushort value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<ushort>.TryConvertToSaturating<TOther>(ushort value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<ushort>.TryConvertToTruncating<TOther>(ushort value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
         static ushort System.Numerics.INumber<ushort>.CopySign(ushort value, ushort sign) { throw null; }
         static ushort System.Numerics.INumber<ushort>.MaxNumber(ushort x, ushort y) { throw null; }
         static ushort System.Numerics.INumber<ushort>.MinNumber(ushort x, ushort y) { throw null; }
@@ -6319,6 +6457,12 @@ namespace System
         static uint System.Numerics.INumberBase<uint>.MaxMagnitudeNumber(uint x, uint y) { throw null; }
         static uint System.Numerics.INumberBase<uint>.MinMagnitude(uint x, uint y) { throw null; }
         static uint System.Numerics.INumberBase<uint>.MinMagnitudeNumber(uint x, uint y) { throw null; }
+        static bool System.Numerics.INumberBase<uint>.TryConvertFromChecked<TOther>(TOther value, out uint result) { throw null; }
+        static bool System.Numerics.INumberBase<uint>.TryConvertFromSaturating<TOther>(TOther value, out uint result) { throw null; }
+        static bool System.Numerics.INumberBase<uint>.TryConvertFromTruncating<TOther>(TOther value, out uint result) { throw null; }
+        static bool System.Numerics.INumberBase<uint>.TryConvertToChecked<TOther>(uint value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<uint>.TryConvertToSaturating<TOther>(uint value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<uint>.TryConvertToTruncating<TOther>(uint value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
         static uint System.Numerics.INumber<uint>.CopySign(uint value, uint sign) { throw null; }
         static uint System.Numerics.INumber<uint>.MaxNumber(uint x, uint y) { throw null; }
         static uint System.Numerics.INumber<uint>.MinNumber(uint x, uint y) { throw null; }
@@ -6441,6 +6585,12 @@ namespace System
         static ulong System.Numerics.INumberBase<ulong>.MaxMagnitudeNumber(ulong x, ulong y) { throw null; }
         static ulong System.Numerics.INumberBase<ulong>.MinMagnitude(ulong x, ulong y) { throw null; }
         static ulong System.Numerics.INumberBase<ulong>.MinMagnitudeNumber(ulong x, ulong y) { throw null; }
+        static bool System.Numerics.INumberBase<ulong>.TryConvertFromChecked<TOther>(TOther value, out ulong result) { throw null; }
+        static bool System.Numerics.INumberBase<ulong>.TryConvertFromSaturating<TOther>(TOther value, out ulong result) { throw null; }
+        static bool System.Numerics.INumberBase<ulong>.TryConvertFromTruncating<TOther>(TOther value, out ulong result) { throw null; }
+        static bool System.Numerics.INumberBase<ulong>.TryConvertToChecked<TOther>(ulong value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<ulong>.TryConvertToSaturating<TOther>(ulong value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<ulong>.TryConvertToTruncating<TOther>(ulong value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
         static ulong System.Numerics.INumber<ulong>.CopySign(ulong value, ulong sign) { throw null; }
         static ulong System.Numerics.INumber<ulong>.MaxNumber(ulong x, ulong y) { throw null; }
         static ulong System.Numerics.INumber<ulong>.MinNumber(ulong x, ulong y) { throw null; }
@@ -6562,6 +6712,12 @@ namespace System
         static nuint System.Numerics.INumberBase<nuint>.MaxMagnitudeNumber(nuint x, nuint y) { throw null; }
         static nuint System.Numerics.INumberBase<nuint>.MinMagnitude(nuint x, nuint y) { throw null; }
         static nuint System.Numerics.INumberBase<nuint>.MinMagnitudeNumber(nuint x, nuint y) { throw null; }
+        static bool System.Numerics.INumberBase<nuint>.TryConvertFromChecked<TOther>(TOther value, out nuint result) { throw null; }
+        static bool System.Numerics.INumberBase<nuint>.TryConvertFromSaturating<TOther>(TOther value, out nuint result) { throw null; }
+        static bool System.Numerics.INumberBase<nuint>.TryConvertFromTruncating<TOther>(TOther value, out nuint result) { throw null; }
+        static bool System.Numerics.INumberBase<nuint>.TryConvertToChecked<TOther>(nuint value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<nuint>.TryConvertToSaturating<TOther>(nuint value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<nuint>.TryConvertToTruncating<TOther>(nuint value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
         static nuint System.Numerics.INumber<nuint>.CopySign(nuint value, nuint sign) { throw null; }
         static nuint System.Numerics.INumber<nuint>.MaxNumber(nuint x, nuint y) { throw null; }
         static nuint System.Numerics.INumber<nuint>.MinNumber(nuint x, nuint y) { throw null; }
@@ -10347,9 +10503,9 @@ namespace System.Numerics
         static abstract int Radix { get; }
         static abstract TSelf Zero { get; }
         static abstract TSelf Abs(TSelf value);
-        static abstract TSelf CreateChecked<TOther>(TOther value) where TOther : INumberBase<TOther>;
-        static abstract TSelf CreateSaturating<TOther>(TOther value) where TOther : INumberBase<TOther>;
-        static abstract TSelf CreateTruncating<TOther>(TOther value) where TOther : INumberBase<TOther>;
+        static virtual TSelf CreateChecked<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
+        static virtual TSelf CreateSaturating<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
+        static virtual TSelf CreateTruncating<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
         static abstract bool IsCanonical(TSelf value);
         static abstract bool IsComplexNumber(TSelf value);
         static abstract bool IsEvenInteger(TSelf value);
@@ -10373,7 +10529,12 @@ namespace System.Numerics
         static abstract TSelf MinMagnitudeNumber(TSelf x, TSelf y);
         static abstract TSelf Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider);
         static abstract TSelf Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider);
-        static abstract bool TryCreate<TOther>(TOther value, out TSelf result) where TOther : INumberBase<TOther>;
+        protected static abstract bool TryConvertFromChecked<TOther>(TOther value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TSelf? result) where TOther : System.Numerics.INumberBase<TOther>;
+        protected static abstract bool TryConvertFromSaturating<TOther>(TOther value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TSelf? result) where TOther : System.Numerics.INumberBase<TOther>;
+        protected static abstract bool TryConvertFromTruncating<TOther>(TOther value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TSelf? result) where TOther : System.Numerics.INumberBase<TOther>;
+        protected static abstract bool TryConvertToChecked<TOther>(TSelf value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther? result) where TOther : System.Numerics.INumberBase<TOther>;
+        protected static abstract bool TryConvertToSaturating<TOther>(TSelf value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther? result) where TOther : System.Numerics.INumberBase<TOther>;
+        protected static abstract bool TryConvertToTruncating<TOther>(TSelf value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther? result) where TOther : System.Numerics.INumberBase<TOther>;
         static abstract bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out TSelf result);
         static abstract bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out TSelf result);
     }
@@ -12904,6 +13065,25 @@ namespace System.Runtime.InteropServices
         public static System.Runtime.InteropServices.NFloat MinMagnitudeNumber(System.Runtime.InteropServices.NFloat x, System.Runtime.InteropServices.NFloat y) { throw null; }
         public static System.Runtime.InteropServices.NFloat MinNumber(System.Runtime.InteropServices.NFloat x, System.Runtime.InteropServices.NFloat y) { throw null; }
         public static System.Runtime.InteropServices.NFloat operator +(System.Runtime.InteropServices.NFloat left, System.Runtime.InteropServices.NFloat right) { throw null; }
+        public static explicit operator checked byte (System.Runtime.InteropServices.NFloat value) { throw null; }
+        public static explicit operator checked char (System.Runtime.InteropServices.NFloat value) { throw null; }
+        public static explicit operator checked short (System.Runtime.InteropServices.NFloat value) { throw null; }
+        public static explicit operator checked int (System.Runtime.InteropServices.NFloat value) { throw null; }
+        public static explicit operator checked long (System.Runtime.InteropServices.NFloat value) { throw null; }
+        public static explicit operator checked System.Int128 (System.Runtime.InteropServices.NFloat value) { throw null; }
+        public static explicit operator checked nint (System.Runtime.InteropServices.NFloat value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator checked sbyte (System.Runtime.InteropServices.NFloat value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator checked ushort (System.Runtime.InteropServices.NFloat value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator checked uint (System.Runtime.InteropServices.NFloat value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator checked ulong (System.Runtime.InteropServices.NFloat value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator checked System.UInt128 (System.Runtime.InteropServices.NFloat value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator checked nuint (System.Runtime.InteropServices.NFloat value) { throw null; }
         public static System.Runtime.InteropServices.NFloat operator --(System.Runtime.InteropServices.NFloat value) { throw null; }
         public static System.Runtime.InteropServices.NFloat operator /(System.Runtime.InteropServices.NFloat left, System.Runtime.InteropServices.NFloat right) { throw null; }
         public static bool operator ==(System.Runtime.InteropServices.NFloat left, System.Runtime.InteropServices.NFloat right) { throw null; }
@@ -12912,6 +13092,8 @@ namespace System.Runtime.InteropServices
         public static explicit operator byte (System.Runtime.InteropServices.NFloat value) { throw null; }
         public static explicit operator char (System.Runtime.InteropServices.NFloat value) { throw null; }
         public static explicit operator decimal (System.Runtime.InteropServices.NFloat value) { throw null; }
+        public static explicit operator System.Half (System.Runtime.InteropServices.NFloat value) { throw null; }
+        public static explicit operator System.Int128 (System.Runtime.InteropServices.NFloat value) { throw null; }
         public static explicit operator short (System.Runtime.InteropServices.NFloat value) { throw null; }
         public static explicit operator int (System.Runtime.InteropServices.NFloat value) { throw null; }
         public static explicit operator long (System.Runtime.InteropServices.NFloat value) { throw null; }
@@ -12919,6 +13101,8 @@ namespace System.Runtime.InteropServices
         [System.CLSCompliantAttribute(false)]
         public static explicit operator sbyte (System.Runtime.InteropServices.NFloat value) { throw null; }
         public static explicit operator float (System.Runtime.InteropServices.NFloat value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator System.UInt128 (System.Runtime.InteropServices.NFloat value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static explicit operator ushort (System.Runtime.InteropServices.NFloat value) { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -12996,6 +13180,12 @@ namespace System.Runtime.InteropServices
         static bool System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>.IsComplexNumber(System.Runtime.InteropServices.NFloat value) { throw null; }
         static bool System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>.IsImaginaryNumber(System.Runtime.InteropServices.NFloat value) { throw null; }
         static bool System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>.IsZero(System.Runtime.InteropServices.NFloat value) { throw null; }
+        static bool System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>.TryConvertFromChecked<TOther>(TOther value, out System.Runtime.InteropServices.NFloat result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>.TryConvertFromSaturating<TOther>(TOther value, out System.Runtime.InteropServices.NFloat result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>.TryConvertFromTruncating<TOther>(TOther value, out System.Runtime.InteropServices.NFloat result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>.TryConvertToChecked<TOther>(System.Runtime.InteropServices.NFloat value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>.TryConvertToSaturating<TOther>(System.Runtime.InteropServices.NFloat value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>.TryConvertToTruncating<TOther>(System.Runtime.InteropServices.NFloat value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
         static System.Runtime.InteropServices.NFloat System.Numerics.ISubtractionOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>.operator checked -(System.Runtime.InteropServices.NFloat left, System.Runtime.InteropServices.NFloat right) { throw null; }
         static System.Runtime.InteropServices.NFloat System.Numerics.IUnaryNegationOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>.operator checked -(System.Runtime.InteropServices.NFloat value) { throw null; }
         public static System.Runtime.InteropServices.NFloat Tan(System.Runtime.InteropServices.NFloat x) { throw null; }
