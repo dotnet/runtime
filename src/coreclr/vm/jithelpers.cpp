@@ -5316,6 +5316,42 @@ static unsigned HandleHistogramProfileRand()
     return x;
 }
 
+template<typename T>
+static int CheckSample(T index)
+{
+    const unsigned S = ICorJitInfo::HandleHistogram32::SIZE;
+    const unsigned N = ICorJitInfo::HandleHistogram32::SAMPLE_INTERVAL;
+    static_assert_no_msg(N >= S);
+    static_assert_no_msg((std::is_same<T, uint32_t>::value || std::is_same<T, uint64_t>::value));
+
+    // If table is not yet full, just add entries in.
+    //
+    if (index < S)
+    {
+        return static_cast<int>(index);
+    }
+
+    unsigned x = HandleHistogramProfileRand();
+    // N is the sampling window size,
+    // it should be larger than the table size.
+    //
+    // If we let N == count then we are building an entire
+    // run sample -- probability of update decreases over time.
+    // Would be a good strategy for an AOT profiler.
+    //
+    // But for TieredPGO we would prefer something that is more
+    // weighted to recent observations.
+    //
+    // For S=4, N=128, we'll sample (on average) every 32nd call.
+    //
+    if ((x % N) >= S)
+    {
+        return -1;
+    }
+
+    return static_cast<int>(x % S);
+}
+
 HCIMPL2(void, JIT_ClassProfile32, Object *obj, ICorJitInfo::HandleHistogram32* classProfile)
 {
     FCALL_CONTRACT;
@@ -5325,10 +5361,13 @@ HCIMPL2(void, JIT_ClassProfile32, Object *obj, ICorJitInfo::HandleHistogram32* c
     VALIDATEOBJECTREF(objRef);
 
     volatile unsigned* pCount = (volatile unsigned*) &classProfile->Count;
-    const unsigned count = (*pCount)++;
-    const unsigned S = ICorJitInfo::HandleHistogram32::SIZE;
-    const unsigned N = ICorJitInfo::HandleHistogram32::SAMPLE_INTERVAL;
-    static_assert_no_msg(N >= S);
+    const unsigned callIndex = (*pCount)++;
+
+    int sampleIndex = CheckSample(callIndex);
+    if (sampleIndex == -1)
+    {
+        return;
+    }
 
     if (objRef == NULL)
     {
@@ -5351,34 +5390,7 @@ HCIMPL2(void, JIT_ClassProfile32, Object *obj, ICorJitInfo::HandleHistogram32* c
     PgoManager::VerifyAddress(classProfile + 1);
 #endif
 
-    // If table is not yet full, just add entries in.
-    //
-    if (count < S)
-    {
-        classProfile->HandleTable[count] = (CORINFO_CLASS_HANDLE)pMT;
-    }
-    else
-    {
-        unsigned x = HandleHistogramProfileRand();
-
-        // N is the sampling window size,
-        // it should be larger than the table size.
-        //
-        // If we let N == count then we are building an entire
-        // run sample -- probability of update decreases over time.
-        // Would be a good strategy for an AOT profiler.
-        //
-        // But for TieredPGO we would prefer something that is more
-        // weighted to recent observations.
-        //
-        // For S=4, N=128, we'll sample (on average) every 32nd call.
-        //
-        if ((x % N) < S)
-        {
-            unsigned i = x % S;
-            classProfile->HandleTable[i] = (CORINFO_CLASS_HANDLE)pMT;
-        }
-    }
+    classProfile->HandleTable[sampleIndex] = (CORINFO_CLASS_HANDLE)pMT;
 }
 HCIMPLEND
 
@@ -5392,10 +5404,13 @@ HCIMPL2(void, JIT_ClassProfile64, Object *obj, ICorJitInfo::HandleHistogram64* c
     VALIDATEOBJECTREF(objRef);
 
     volatile uint64_t* pCount = (volatile uint64_t*) &classProfile->Count;
-    const uint64_t count = (*pCount)++;
-    const unsigned S = ICorJitInfo::HandleHistogram32::SIZE;
-    const unsigned N = ICorJitInfo::HandleHistogram32::SAMPLE_INTERVAL;
-    static_assert_no_msg(N >= S);
+    const uint64_t callIndex = (*pCount)++;
+
+    int sampleIndex = CheckSample(callIndex);
+    if (sampleIndex == -1)
+    {
+        return;
+    }
 
     if (objRef == NULL)
     {
@@ -5414,20 +5429,7 @@ HCIMPL2(void, JIT_ClassProfile64, Object *obj, ICorJitInfo::HandleHistogram64* c
     PgoManager::VerifyAddress(classProfile + 1);
 #endif
 
-    if (count < S)
-    {
-        classProfile->HandleTable[count] = (CORINFO_CLASS_HANDLE)pMT;
-    }
-    else
-    {
-        unsigned x = HandleHistogramProfileRand();
-
-        if ((x % N) < S)
-        {
-            unsigned i = x % S;
-            classProfile->HandleTable[i] = (CORINFO_CLASS_HANDLE)pMT;
-        }
-    }
+    classProfile->HandleTable[sampleIndex] = (CORINFO_CLASS_HANDLE)pMT;
 }
 HCIMPLEND
 
@@ -5440,16 +5442,27 @@ HCIMPL4(void, JIT_MethodProfile32, Object *obj, CORINFO_METHOD_HANDLE baseMethod
     VALIDATEOBJECTREF(objRef);
 
     volatile unsigned* pMethodCount = (volatile unsigned*) &methodProfile->Count;
-    const unsigned methodCount = (*pMethodCount)++;
-    const unsigned S = ICorJitInfo::HandleHistogram32::SIZE;
-    const unsigned N = ICorJitInfo::HandleHistogram32::SAMPLE_INTERVAL;
-    static_assert_no_msg(N >= S);
+    const unsigned methodCallIndex = (*pMethodCount)++;
+    int methodSampleIndex = CheckSample(methodCallIndex);
 
-    unsigned typeCount = 0;
+    int typeSampleIndex = -1;
     if (typeProfile != nullptr)
     {
         volatile unsigned* pTypeCount = (volatile unsigned*) &typeProfile->Count;
-        typeCount = (*pTypeCount)++;
+        const unsigned typeCallIndex = (*pTypeCount)++;
+        typeSampleIndex = CheckSample(typeCallIndex);
+
+        if ((methodSampleIndex == -1) && (typeSampleIndex == -1))
+        {
+            return;
+        }
+    }
+    else
+    {
+        if (methodSampleIndex == -1)
+        {
+            return;
+        }
     }
 
     if (objRef == NULL)
@@ -5524,53 +5537,16 @@ HCIMPL4(void, JIT_MethodProfile32, Object *obj, CORINFO_METHOD_HANDLE baseMethod
 
     // If table is not yet full, just add entries in.
     //
-    if (methodCount < S)
-    {
-        methodProfile->HandleTable[methodCount] = (CORINFO_METHOD_HANDLE)pMD;
-    }
-    else
-    {
-        unsigned x = HandleHistogramProfileRand();
+    methodProfile->HandleTable[methodSampleIndex] = (CORINFO_METHOD_HANDLE)pMD;
 
-        // N is the sampling window size,
-        // it should be larger than the table size.
-        //
-        // If we let N == count then we are building an entire
-        // run sample -- probability of update decreases over time.
-        // Would be a good strategy for an AOT profiler.
-        //
-        // But for TieredPGO we would prefer something that is more
-        // weighted to recent observations.
-        //
-        // For S=4, N=128, we'll sample (on average) every 32nd call.
-        //
-        if ((x % N) < S)
-        {
-            unsigned i = x % S;
-            methodProfile->HandleTable[i] = (CORINFO_METHOD_HANDLE)pMD;
-        }
-    }
-
-    if (typeProfile != nullptr)
+    if (typeSampleIndex != -1)
     {
         if (pMT->GetLoaderAllocator()->IsCollectible())
         {
             pMT = (MethodTable*)DEFAULT_UNKNOWN_HANDLE;
         }
 
-        if (typeCount < S)
-        {
-            typeProfile->HandleTable[typeCount] = (CORINFO_CLASS_HANDLE)pMT;
-        }
-        else
-        {
-            unsigned x = HandleHistogramProfileRand();
-            if ((x % N) < S)
-            {
-                unsigned i = x % S;
-                typeProfile->HandleTable[i] = (CORINFO_CLASS_HANDLE)pMT;
-            }
-        }
+        typeProfile->HandleTable[typeSampleIndex] = (CORINFO_CLASS_HANDLE)pMT;
     }
 }
 HCIMPLEND
@@ -5585,16 +5561,27 @@ HCIMPL4(void, JIT_MethodProfile64, Object *obj, CORINFO_METHOD_HANDLE baseMethod
     VALIDATEOBJECTREF(objRef);
 
     volatile uint64_t* pMethodCount = (volatile uint64_t*) &methodProfile->Count;
-    const uint64_t methodCount = (*pMethodCount)++;
-    const unsigned S = ICorJitInfo::HandleHistogram32::SIZE;
-    const unsigned N = ICorJitInfo::HandleHistogram32::SAMPLE_INTERVAL;
-    static_assert_no_msg(N >= S);
+    const uint64_t methodCallIndex = (*pMethodCount)++;
+    int methodSampleIndex = CheckSample(methodCallIndex);
 
-    unsigned typeCount = 0;
+    int typeSampleIndex = -1;
     if (typeProfile != nullptr)
     {
-        volatile unsigned* pTypeCount = (volatile unsigned*) &typeProfile->Count;
-        typeCount = (*pTypeCount)++;
+        volatile uint64_t* pTypeCount = (volatile uint64_t*) &typeProfile->Count;
+        const uint64_t typeCallIndex = (*pTypeCount)++;
+        typeSampleIndex = CheckSample(typeCallIndex);
+
+        if ((methodSampleIndex == -1) && (typeSampleIndex == -1))
+        {
+            return;
+        }
+    }
+    else
+    {
+        if (methodSampleIndex == -1)
+        {
+            return;
+        }
     }
 
     if (objRef == NULL)
@@ -5667,55 +5654,16 @@ HCIMPL4(void, JIT_MethodProfile64, Object *obj, CORINFO_METHOD_HANDLE baseMethod
     PgoManager::VerifyAddress(methodProfile + 1);
 #endif
 
-    // If table is not yet full, just add entries in.
-    //
-    if (methodCount < S)
-    {
-        methodProfile->HandleTable[methodCount] = (CORINFO_METHOD_HANDLE)pMD;
-    }
-    else
-    {
-        unsigned x = HandleHistogramProfileRand();
+    methodProfile->HandleTable[methodSampleIndex] = (CORINFO_METHOD_HANDLE)pMD;
 
-        // N is the sampling window size,
-        // it should be larger than the table size.
-        //
-        // If we let N == count then we are building an entire
-        // run sample -- probability of update decreases over time.
-        // Would be a good strategy for an AOT profiler.
-        //
-        // But for TieredPGO we would prefer something that is more
-        // weighted to recent observations.
-        //
-        // For S=4, N=128, we'll sample (on average) every 32nd call.
-        //
-        if ((x % N) < S)
-        {
-            unsigned i = x % S;
-            methodProfile->HandleTable[i] = (CORINFO_METHOD_HANDLE)pMD;
-        }
-    }
-
-    if (typeProfile != nullptr)
+    if (typeSampleIndex != -1)
     {
         if (pMT->GetLoaderAllocator()->IsCollectible())
         {
             pMT = (MethodTable*)DEFAULT_UNKNOWN_HANDLE;
         }
 
-        if (typeCount < S)
-        {
-            typeProfile->HandleTable[typeCount] = (CORINFO_CLASS_HANDLE)pMT;
-        }
-        else
-        {
-            unsigned x = HandleHistogramProfileRand();
-            if ((x % N) < S)
-            {
-                unsigned i = x % S;
-                typeProfile->HandleTable[i] = (CORINFO_CLASS_HANDLE)pMT;
-            }
-        }
+        typeProfile->HandleTable[typeSampleIndex] = (CORINFO_CLASS_HANDLE)pMT;
     }
 }
 HCIMPLEND
