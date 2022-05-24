@@ -100,6 +100,35 @@ jobs:
     alwaysRun: ${{ variables.isRollingBuild }}
 
 #
+# Build the whole product using Mono
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    buildConfig: Release
+    runtimeFlavor: mono
+    platforms:
+    - FreeBSD_x64
+    variables:
+      # map dependencies variables to local variables
+      - name: librariesContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
+      - name: monoContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'] ]
+    jobParameters:
+      testScope: innerloop
+      nameSuffix: AllSubsets_Mono
+      buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:ArchiveTests=true /p:UseLiveBuiltDotNetHost=true
+      timeoutInMinutes: 120
+      condition: >-
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+          eq(variables['isRollingBuild'], true))
+
+#
 # Build the whole product using Mono and run libraries tests
 #
 - template: /eng/pipelines/common/platform-matrix.yml
