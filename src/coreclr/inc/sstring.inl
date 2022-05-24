@@ -255,7 +255,7 @@ ULONG EString<TEncoding>::Hash() const
     }
     SS_CONTRACT_END;
 
-    StackSString buffer;
+    StackEString<EncodingUnicode> buffer;
 
     ConvertToUnicode(buffer);
 
@@ -1176,12 +1176,12 @@ void EString<TEncoding>::VPrintf(const char_t* format, va_list args)
 
 
 template<>
-inline BOOL SString::FormatMessage(DWORD dwFlags, LPCVOID lpSource, DWORD dwMessageId, DWORD dwLanguageId,
-                            const SString &arg1, const SString &arg2,
-                            const SString &arg3, const SString &arg4,
-                            const SString &arg5, const SString &arg6,
-                            const SString &arg7, const SString &arg8,
-                            const SString &arg9, const SString &arg10)
+inline BOOL EString<EncodingUnicode>::FormatMessage(DWORD dwFlags, LPCVOID lpSource, DWORD dwMessageId, DWORD dwLanguageId,
+                            const EString<EncodingUnicode> &arg1, const EString<EncodingUnicode> &arg2,
+                            const EString<EncodingUnicode> &arg3, const EString<EncodingUnicode> &arg4,
+                            const EString<EncodingUnicode> &arg5, const EString<EncodingUnicode> &arg6,
+                            const EString<EncodingUnicode> &arg7, const EString<EncodingUnicode> &arg8,
+                            const EString<EncodingUnicode> &arg9, const EString<EncodingUnicode> &arg10)
 {
     CONTRACT(BOOL)
     {
@@ -1240,7 +1240,7 @@ inline BOOL SString::FormatMessage(DWORD dwFlags, LPCVOID lpSource, DWORD dwMess
 
 #ifdef DACCESS_COMPILE
 template<>
-inline const WCHAR * SString::DacGetRawUnicode() const
+inline const WCHAR * EString<EncodingUnicode>::DacGetRawUnicode() const
 {
     if (IsEmpty())
     {
@@ -1262,7 +1262,7 @@ void EString<TEncoding>::AppendVPrintf(const char_t* format, va_list args)
 }
 
 template<>
-inline COUNT_T EString<EncodingASCII>::ConvertToUnicode(SString &s) const
+inline COUNT_T EString<EncodingASCII>::ConvertToUnicode(EString<EncodingUnicode> &s) const
 {
     CONTRACT(COUNT_T)
     {
@@ -1324,31 +1324,31 @@ EString<EncodingUTF8> EString<TEncoding>::MoveToUTF8()
 template<typename TEncoding>
 EString<EncodingUnicode> EString<TEncoding>::MoveToUnicode()
 {
-    StackSString buff;
+    StackEString<EncodingUnicode> buff;
     ConvertToUnicode(buff);
     if (IsAllocated())
     {
         ClearAllocated();
-        SString result(GetRawBuffer(), SBuffer::GetAllocation(), /* isAllocated */ true);
+        EString<EncodingUnicode> result(GetRawBuffer(), SBuffer::GetAllocation(), /* isAllocated */ true);
         *this = {};
     }
     return std::move(buff);
 }
 
 template<>
-inline SString EString<EncodingASCII>::MoveToUnicode()
+inline EString<EncodingUnicode> EString<EncodingASCII>::MoveToUnicode()
 {
     // ASCII -> Unicode conversion supports in-place conversion if the buffer is large enough.
     if (IsAllocated() && SBuffer::GetAllocation() > GetCount() * sizeof(WCHAR))
     {
         ClearAllocated();
-        SString result(GetRawBuffer(), SBuffer::GetAllocation(), /* isAllocated */ true);
+        EString<EncodingUnicode> result(GetRawBuffer(), SBuffer::GetAllocation(), /* isAllocated */ true);
         ConvertToUnicode(result);
         *this = {};
         return result;
     }
 
-    StackSString buff;
+    StackEString<EncodingUnicode> buff;
     ConvertToUnicode(buff);
     return std::move(buff);
 }

@@ -836,6 +836,7 @@ template <COUNT_T MEMSIZE, typename TEncoding>
 class InlineEString : public EString<TEncoding>
 {
     using typename EString<TEncoding>::char_t;
+    using typename EString<TEncoding>::literal_tag_t;
 private:
     DAC_ALIGNAS(EString<TEncoding>)
     char_t m_inline[SBUFFER_PADDED_SIZE(MEMSIZE)];
