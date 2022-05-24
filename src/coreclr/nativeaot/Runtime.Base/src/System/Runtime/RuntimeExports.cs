@@ -21,7 +21,7 @@ namespace System.Runtime
         [RuntimeExport("RhNewObject")]
         public static unsafe object RhNewObject(MethodTable* pEEType)
         {
-            // This is structured in a funny way because at the present state of things in CoreRT, the Debug.Assert
+            // This is structured in a funny way because at the present state of things, the Debug.Assert
             // below will call into the assert defined in the class library (and not the MRT version of it). The one
             // in the class library is not low level enough to be callable when GC statics are not initialized yet.
             // Feel free to restructure once that's not a problem.
@@ -75,8 +75,8 @@ namespace System.Runtime
         {
             ref byte dataAdjustedForNullable = ref data;
 
-            // Can box value types only (which also implies no finalizers).
-            Debug.Assert(pEEType->IsValueType && !pEEType->IsFinalizable);
+            // Can box non-ByRefLike value types only (which also implies no finalizers).
+            Debug.Assert(pEEType->IsValueType && !pEEType->IsByRefLike && !pEEType->IsFinalizable);
 
             // If we're boxing a Nullable<T> then either box the underlying T or return null (if the
             // nullable's value is empty).

@@ -141,9 +141,9 @@ namespace System.Net.Mail
                     return false;
                 }
 
-                if (displayName.Length >= 2 && displayName[0] == '\"' && displayName[^1] == '\"')
+                if (displayName.Length >= 2 && displayName.StartsWith('\"') && displayName.EndsWith('\"'))
                 {
-                    // Peal bounding quotes, they'll get re-added later.
+                    // Peel bounding quotes, they'll get re-added later.
                     displayName = displayName.Substring(1, displayName.Length - 2);
                 }
             }

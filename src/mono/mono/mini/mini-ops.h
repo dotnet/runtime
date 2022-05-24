@@ -93,7 +93,7 @@ MINI_OP(OP_RETHROW,	"rethrow", NONE, IREG, NONE)
 /*
  * Vararg calls are implemented as follows:
  * - the caller emits a hidden argument just before the varargs argument. this
- *   'signature cookie' argument contains the signature describing the the call.
+ *   'signature cookie' argument contains the signature describing the call.
  * - all implicit arguments are passed in memory right after the signature cookie, i.e.
  *   the stack will look like this:
  *   <argn>

@@ -67,14 +67,14 @@ namespace System.Text.Json
         public string? ReferenceId;
 
         /// <summary>
-        /// Whether we can read without the need of saving state for stream and preserve references cases.
+        /// Holds the value of $type of the currently read object
         /// </summary>
-        public bool UseFastPath;
+        public string? PolymorphicTypeDiscriminator;
 
         /// <summary>
-        /// Global flag indicating whether the current deserializer supports metadata.
+        /// Global flag indicating whether we can read preserved references.
         /// </summary>
-        public bool CanContainMetadata;
+        public bool PreserveReferences;
 
         /// <summary>
         /// Ensures that the stack buffer has sufficient capacity to hold an additional frame.
@@ -103,14 +103,14 @@ namespace System.Text.Json
             if (options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.Preserve)
             {
                 ReferenceResolver = options.ReferenceHandler!.CreateResolver(writing: false);
-                CanContainMetadata = true;
+                PreserveReferences = true;
             }
 
             SupportContinuation = supportContinuation;
             Current.JsonTypeInfo = jsonTypeInfo;
             Current.JsonPropertyInfo = jsonTypeInfo.PropertyInfoForTypeInfo;
             Current.NumberHandling = Current.JsonPropertyInfo.EffectiveNumberHandling;
-            UseFastPath = !supportContinuation && !CanContainMetadata;
+            Current.CanContainMetadata = PreserveReferences || jsonTypeInfo.PolymorphicTypeResolver?.UsesTypeDiscriminators == true;
         }
 
         public void Push()
@@ -128,7 +128,6 @@ namespace System.Text.Json
                 {
                     JsonTypeInfo jsonTypeInfo = Current.JsonPropertyInfo?.JsonTypeInfo ?? Current.CtorArgumentState!.JsonParameterInfo!.JsonTypeInfo;
                     JsonNumberHandling? numberHandling = Current.NumberHandling;
-                    ConverterStrategy converterStrategy = Current.JsonTypeInfo.PropertyInfoForTypeInfo.ConverterStrategy;
 
                     EnsurePushCapacity();
                     _stack[_count - 1] = Current;
@@ -139,11 +138,13 @@ namespace System.Text.Json
                     Current.JsonPropertyInfo = jsonTypeInfo.PropertyInfoForTypeInfo;
                     // Allow number handling on property to win over handling on type.
                     Current.NumberHandling = numberHandling ?? Current.JsonPropertyInfo.EffectiveNumberHandling;
+                    Current.CanContainMetadata = PreserveReferences || jsonTypeInfo.PolymorphicTypeResolver?.UsesTypeDiscriminators == true;
                 }
             }
             else
             {
-                // We are re-entering a continuation, adjust indices accordingly
+                // We are re-entering a continuation, adjust indices accordingly.
+
                 if (_count++ > 0)
                 {
                     _stack[_count - 2] = Current;
@@ -167,6 +168,7 @@ namespace System.Text.Json
         public void Pop(bool success)
         {
             Debug.Assert(_count > 0);
+            Debug.Assert(JsonPath() is not null);
 
             if (!success)
             {
@@ -208,6 +210,53 @@ namespace System.Text.Json
             SetConstructorArgumentState();
         }
 
+        /// <summary>
+        /// Configures the current stack frame for a polymorphic converter.
+        /// </summary>
+        public JsonConverter InitializePolymorphicReEntry(JsonTypeInfo derivedJsonTypeInfo)
+        {
+            Debug.Assert(!IsContinuation);
+            Debug.Assert(Current.PolymorphicJsonTypeInfo == null);
+            Debug.Assert(Current.PolymorphicSerializationState == PolymorphicSerializationState.None);
+
+            Current.PolymorphicJsonTypeInfo = Current.JsonTypeInfo;
+            Current.JsonTypeInfo = derivedJsonTypeInfo.PropertyInfoForTypeInfo.JsonTypeInfo;
+            Current.JsonPropertyInfo = Current.JsonTypeInfo.PropertyInfoForTypeInfo;
+            Current.NumberHandling ??= Current.JsonPropertyInfo.NumberHandling;
+            Current.PolymorphicSerializationState = PolymorphicSerializationState.PolymorphicReEntryStarted;
+            SetConstructorArgumentState();
+
+            return derivedJsonTypeInfo.PropertyInfoForTypeInfo.ConverterBase;
+        }
+
+
+        /// <summary>
+        /// Configures the current frame for a continuation of a polymorphic converter.
+        /// </summary>
+        public JsonConverter ResumePolymorphicReEntry()
+        {
+            Debug.Assert(Current.PolymorphicJsonTypeInfo != null);
+            Debug.Assert(Current.PolymorphicSerializationState == PolymorphicSerializationState.PolymorphicReEntrySuspended);
+
+            // Swap out the two values as we resume the polymorphic converter
+            (Current.JsonTypeInfo, Current.PolymorphicJsonTypeInfo) = (Current.PolymorphicJsonTypeInfo, Current.JsonTypeInfo);
+            Current.PolymorphicSerializationState = PolymorphicSerializationState.PolymorphicReEntryStarted;
+            return Current.JsonTypeInfo.PropertyInfoForTypeInfo.ConverterBase;
+        }
+
+        /// <summary>
+        /// Updates frame state after a polymorphic converter has returned.
+        /// </summary>
+        public void ExitPolymorphicConverter(bool success)
+        {
+            Debug.Assert(Current.PolymorphicJsonTypeInfo != null);
+            Debug.Assert(Current.PolymorphicSerializationState == PolymorphicSerializationState.PolymorphicReEntryStarted);
+
+            // Swap out the two values as we exit the polymorphic converter
+            (Current.JsonTypeInfo, Current.PolymorphicJsonTypeInfo) = (Current.PolymorphicJsonTypeInfo, Current.JsonTypeInfo);
+            Current.PolymorphicSerializationState = success ? PolymorphicSerializationState.None : PolymorphicSerializationState.PolymorphicReEntrySuspended;
+        }
+
         // Return a JSONPath using simple dot-notation when possible. When special characters are present, bracket-notation is used:
         // $.x.y[0].z
         // $['PropertyName.With.Special.Chars']
@@ -217,7 +266,7 @@ namespace System.Text.Json
 
             (int frameCount, bool includeCurrentFrame) = _continuationCount switch
             {
-                0 => (_count - 1, true), // Not a countinuation, report previous frames and Current.
+                0 => (_count - 1, true), // Not a continuation, report previous frames and Current.
                 1 => (0, true), // Continuation of depth 1, just report Current frame.
                 int c => (c, false) // Continuation of depth > 1, report the entire stack.
             };

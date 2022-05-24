@@ -204,7 +204,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             };
 
             sharedState.CreateNativeHostCommand(args, sharedState.DotNetRoot)
-                .Execute()
+                .Execute(expectedToFail: true)
                 .Should().Fail()
                 .And.InitializeContextForApp(appProject.AppDll)
                 .And.ExecuteFunctionPointerWithException(entryPoint, 1);

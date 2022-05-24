@@ -12,8 +12,10 @@ namespace System.ComponentModel.Composition
 {
     internal static class MetadataViewProvider
     {
-        public static TMetadataView GetMetadataView<TMetadataView>(IDictionary<string, object?> metadata!!)
+        public static TMetadataView GetMetadataView<TMetadataView>(IDictionary<string, object?> metadata)
         {
+            ArgumentNullException.ThrowIfNull(metadata);
+
             Type metadataViewType = typeof(TMetadataView);
 
             // If the Metadata dictionary is cast compatible with the passed in type
@@ -121,8 +123,10 @@ namespace System.ComponentModel.Composition
             }
         }
 
-        public static bool IsViewTypeValid(Type metadataViewType!!)
+        public static bool IsViewTypeValid(Type metadataViewType)
         {
+            ArgumentNullException.ThrowIfNull(metadataViewType);
+
             // If the Metadata dictionary is cast compatible with the passed in type
             if (ExportServices.IsDefaultMetadataViewType(metadataViewType) ||
                 metadataViewType.IsInterface ||

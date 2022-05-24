@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
@@ -31,8 +31,10 @@ namespace Microsoft.Extensions.Configuration.Xml
 
         public List<XmlConfigurationElementAttributeValue>? Attributes { get; set; }
 
-        public XmlConfigurationElement(string elementName!!, string? name)
+        public XmlConfigurationElement(string elementName, string? name)
         {
+            ThrowHelper.ThrowIfNull(elementName);
+
             ElementName = elementName;
             Name = name;
             SiblingName = string.IsNullOrEmpty(Name) ? ElementName : ElementName + ":" + Name;

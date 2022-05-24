@@ -171,6 +171,10 @@ namespace System.Text.RegularExpressions
         public static int Count(System.ReadOnlySpan<char> input, [System.Diagnostics.CodeAnalysis.StringSyntax(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex, "options")] string pattern, System.Text.RegularExpressions.RegexOptions options) { throw null; }
         public static int Count(System.ReadOnlySpan<char> input, [System.Diagnostics.CodeAnalysis.StringSyntax(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex, "options")] string pattern, System.Text.RegularExpressions.RegexOptions options, System.TimeSpan matchTimeout) { throw null; }
         public static string Escape(string str) { throw null; }
+        public System.Text.RegularExpressions.Regex.ValueMatchEnumerator EnumerateMatches(System.ReadOnlySpan<char> input) { throw null; }
+        public static System.Text.RegularExpressions.Regex.ValueMatchEnumerator EnumerateMatches(System.ReadOnlySpan<char> input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Regex")] string pattern) { throw null; }
+        public static System.Text.RegularExpressions.Regex.ValueMatchEnumerator EnumerateMatches(System.ReadOnlySpan<char> input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Regex", new object[]{ "options"})] string pattern, System.Text.RegularExpressions.RegexOptions options) { throw null; }
+        public static System.Text.RegularExpressions.Regex.ValueMatchEnumerator EnumerateMatches(System.ReadOnlySpan<char> input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Regex", new object[]{ "options"})] string pattern, System.Text.RegularExpressions.RegexOptions options, System.TimeSpan matchTimeout) { throw null; }
         public string[] GetGroupNames() { throw null; }
         public int[] GetGroupNumbers() { throw null; }
         public string GroupNameFromNumber(int i) { throw null; }
@@ -220,6 +224,14 @@ namespace System.Text.RegularExpressions
         protected bool UseOptionC() { throw null; }
         protected internal bool UseOptionR() { throw null; }
         protected internal static void ValidateMatchTimeout(System.TimeSpan matchTimeout) { }
+        public ref partial struct ValueMatchEnumerator
+        {
+            private object _dummy;
+            private int _dummyPrimitive;
+            public readonly System.Text.RegularExpressions.ValueMatch Current { get { throw null; } }
+            public readonly System.Text.RegularExpressions.Regex.ValueMatchEnumerator GetEnumerator() { throw null; }
+            public bool MoveNext() { throw null; }
+        }
     }
     [System.ObsoleteAttribute("Regex.CompileToAssembly is obsolete and not supported. Use the RegexGeneratorAttribute with the regular expression source generator instead.", DiagnosticId = "SYSLIB0036", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public partial class RegexCompilationInfo
@@ -358,5 +370,11 @@ namespace System.Text.RegularExpressions
     {
         protected RegexRunnerFactory() { }
         protected internal abstract System.Text.RegularExpressions.RegexRunner CreateInstance();
+    }
+    public readonly ref partial struct ValueMatch
+    {
+        private readonly int _dummyPrimitive;
+        public int Index { get { throw null; } }
+        public int Length { get { throw null; } }
     }
 }

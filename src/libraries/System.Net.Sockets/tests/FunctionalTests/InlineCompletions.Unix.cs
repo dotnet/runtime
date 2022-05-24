@@ -13,7 +13,7 @@ namespace System.Net.Sockets.Tests
     public class InlineContinuations
     {
         [OuterLoop]
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [PlatformSpecific(TestPlatforms.AnyUnix)] // Inline Socket mode is specific to Unix Socket implementation.
         public void InlineSocketContinuations()
         {

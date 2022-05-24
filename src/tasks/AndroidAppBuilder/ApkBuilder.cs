@@ -210,6 +210,7 @@ public class ApkBuilder
 
         // tools:
         string dx = Path.Combine(buildToolsFolder, "dx");
+        string d8 = Path.Combine(buildToolsFolder, "d8");
         string aapt = Path.Combine(buildToolsFolder, "aapt");
         string zipalign = Path.Combine(buildToolsFolder, "zipalign");
         string apksigner = Path.Combine(buildToolsFolder, "apksigner");
@@ -291,9 +292,9 @@ public class ApkBuilder
                 nativeLibraries += $"    {componentLibToLink}{Environment.NewLine}";
             }
 
-            // There's a circular dependecy between static mono runtime lib and static component libraries.
+            // There's a circular dependency between static mono runtime lib and static component libraries.
             // Adding mono runtime lib before and after component libs will resolve issues with undefined symbols
-            // due to circular dependecy.
+            // due to circular dependency.
             nativeLibraries += $"    {monoRuntimeLib}{Environment.NewLine}";
         }
 
@@ -394,7 +395,20 @@ public class ApkBuilder
         string javaCompilerArgs = $"-d obj -classpath src -bootclasspath {androidJar} -source 1.8 -target 1.8 ";
         Utils.RunProcess(logger, javac, javaCompilerArgs + javaActivityPath, workingDir: OutputDir);
         Utils.RunProcess(logger, javac, javaCompilerArgs + monoRunnerPath, workingDir: OutputDir);
-        Utils.RunProcess(logger, dx, "--dex --output=classes.dex obj", workingDir: OutputDir);
+
+        if (File.Exists(d8))
+        {
+            string[] classFiles = Directory.GetFiles(Path.Combine(OutputDir, "obj"), "*.class", SearchOption.AllDirectories);
+
+            if (!classFiles.Any())
+                throw new InvalidOperationException("Didn't find any .class files");
+
+            Utils.RunProcess(logger, d8, $"--no-desugaring {string.Join(" ", classFiles)}", workingDir: OutputDir);
+        }
+        else
+        {
+            Utils.RunProcess(logger, dx, "--dex --output=classes.dex obj", workingDir: OutputDir);
+        }
 
         // 3. Generate APK
 

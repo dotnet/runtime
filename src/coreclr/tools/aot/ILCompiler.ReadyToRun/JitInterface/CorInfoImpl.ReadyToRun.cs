@@ -1528,7 +1528,7 @@ namespace Internal.JitInterface
                     // Either
                     //    1. no constraint resolution at compile time (!directMethod)
                     // OR 2. no code sharing lookup in call
-                    // OR 3. we have have resolved to an instantiating stub
+                    // OR 3. we have resolved to an instantiating stub
 
                     // This check for introducing an instantiation stub comes from the logic in
                     // MethodTable::TryResolveConstraintMethodApprox at
@@ -2439,16 +2439,6 @@ namespace Internal.JitInterface
         }
 
         private byte[] _bbCounts;
-        private ProfileDataNode _profileDataNode;
-
-        partial void PublishProfileData()
-        {
-            if (_profileDataNode != null)
-            {
-                MethodIL methodIL = _compilation.GetMethodIL(MethodBeingCompiled);
-                _profileDataNode.SetProfileData(methodIL.GetILBytes().Length, _bbCounts.Length / sizeof(BlockCounts), _bbCounts);
-            }
-        }
 
         partial void findKnownBBCountBlock(ref BlockType blockType, void* location, ref int offset)
         {
@@ -2516,10 +2506,6 @@ namespace Internal.JitInterface
                 blockCounts[iSchema].ILOffset = (uint)pSchema[iSchema].ILOffset;
             }
 
-            if (_profileDataNode == null)
-            {
-                _profileDataNode = _compilation.NodeFactory.ProfileData(_methodCodeNode);
-            }
             return 0;
         }
 

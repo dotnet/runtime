@@ -278,8 +278,12 @@ namespace System.Reflection
             if (val != null)
             {
                 RuntimeType fieldType = (RuntimeType)FieldType;
-                bool _ = false;
-                fieldType.CheckValue(ref val, ref _, binder, culture, invokeAttr);
+                ParameterCopyBackAction _ = default;
+
+                if (!ReferenceEquals(val.GetType(), fieldType))
+                {
+                    fieldType.CheckValue(ref val, ref _, binder, culture, invokeAttr);
+                }
             }
 
             Invoker.SetValue(obj, val);

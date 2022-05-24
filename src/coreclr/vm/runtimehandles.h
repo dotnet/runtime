@@ -224,6 +224,9 @@ public:
 
     static FCDECL4(Object*, InvokeMethod, Object *target, PVOID* args, SignatureNative* pSig, CLR_BOOL fConstructor);
 
+    static FCDECL2(Object*, ReboxToNullable, Object *pBoxedValUNSAFE, ReflectClassBaseObject *pDestUNSAFE);
+    static FCDECL1(Object*, ReboxFromNullable, Object *pBoxedValUNSAFE);
+
     struct StreamingContextData {
         Object * additionalContext;  // additionalContex was changed from OBJECTREF to Object to avoid having a
         INT32 contextStates;         // constructor in this struct. GCC doesn't allow structs with constructors to be
@@ -322,6 +325,7 @@ public:
     static FCDECL1(INT32, GetToken, ReflectFieldObject *pFieldUNSAFE);
     static FCDECL2(FieldDesc*, GetStaticFieldForGenericType, FieldDesc *pField, ReflectClassBaseObject *pDeclaringType);
     static FCDECL1(FC_BOOL_RET, AcquiresContextFromThis, FieldDesc *pField);
+    static FCDECL1(Object*, GetLoaderAllocator, FieldDesc *pField);
 };
 
 class ModuleHandle {

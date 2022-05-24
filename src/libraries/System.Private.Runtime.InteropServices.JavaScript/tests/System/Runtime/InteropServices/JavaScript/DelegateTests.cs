@@ -99,12 +99,13 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static void InvokeActionFloatIntToIntInt()
         {
             HelperMarshal._actionResultValue = 0;
-            Runtime.InvokeJS(@"
+            var ex = Assert.Throws<JSException>(()=>Runtime.InvokeJS(@"
                 var actionDelegate = App.call_test_method (""CreateActionDelegate"", [  ]);
                 actionDelegate(3.14,40);
-            ");
+            "));
 
-            Assert.Equal(43, HelperMarshal._actionResultValue);
+            Assert.Contains("Value is not integer but float", ex.Message);
+            Assert.Equal(0, HelperMarshal._actionResultValue);
         }
 
         [Fact]

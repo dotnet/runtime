@@ -2548,9 +2548,8 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
         (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_ISINSTANCEOFCLASS)) ||
         (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_ISINSTANCEOFANY)))
     {
-        fgArgInfo* const argInfo         = call->fgArgInfo;
-        GenTree*         objectNode      = argInfo->GetArgNode(1);
-        GenTree*         methodTableNode = argInfo->GetArgNode(0);
+        GenTree* objectNode      = call->gtArgs.GetArgByIndex(1)->GetNode();
+        GenTree* methodTableNode = call->gtArgs.GetArgByIndex(0)->GetNode();
 
         assert(objectNode->TypeGet() == TYP_REF);
         assert(methodTableNode->TypeGet() == TYP_I_IMPL);
@@ -2697,7 +2696,7 @@ void Compiler::optAssertionGen(GenTree* tree)
             if (call->NeedsNullCheck() || (call->IsVirtual() && !call->IsTailCall()))
             {
                 //  Retrieve the 'this' arg.
-                GenTree* thisArg = gtGetThisArg(call);
+                GenTree* thisArg = call->gtArgs.GetThisArg()->GetNode();
                 assert(thisArg != nullptr);
                 assertionInfo = optCreateAssertion(thisArg, nullptr, OAK_NOT_EQUAL);
             }
@@ -4485,7 +4484,7 @@ GenTree* Compiler::optNonNullAssertionProp_Call(ASSERT_VALARG_TP assertions, Gen
     {
         return nullptr;
     }
-    GenTree* op1 = gtGetThisArg(call);
+    GenTree* op1 = call->gtArgs.GetThisArg()->GetNode();
     noway_assert(op1 != nullptr);
     if (op1->gtOper != GT_LCL_VAR)
     {
@@ -4544,13 +4543,13 @@ GenTree* Compiler::optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCal
             call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_CHKCASTANY) ||
             call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_CHKCASTCLASS_SPECIAL))
         {
-            GenTree* arg1 = gtArgEntryByArgNum(call, 1)->GetNode();
+            GenTree* arg1 = call->gtArgs.GetArgByIndex(1)->GetNode();
             if (arg1->gtOper != GT_LCL_VAR)
             {
                 return nullptr;
             }
 
-            GenTree* arg2 = gtArgEntryByArgNum(call, 0)->GetNode();
+            GenTree* arg2 = call->gtArgs.GetArgByIndex(0)->GetNode();
 
             unsigned index = optAssertionIsSubtype(arg1, arg2, assertions);
             if (index != NO_ASSERTION_INDEX)

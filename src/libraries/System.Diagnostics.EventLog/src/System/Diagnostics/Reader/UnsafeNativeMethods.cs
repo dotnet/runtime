@@ -5,6 +5,9 @@ using Microsoft.Win32.SafeHandles;
 using System;
 using System.Diagnostics.Eventing.Reader;
 using System.Runtime.InteropServices;
+#if NET7_0_OR_GREATER
+using System.Runtime.InteropServices.Marshalling;
+#endif
 using System.Security;
 using System.Text;
 
@@ -104,7 +107,7 @@ namespace Microsoft.Win32
         }
 
         [StructLayout(LayoutKind.Explicit, CharSet = CharSet.Auto)]
-#pragma warning disable 618 // Ssytem.Core still uses SecurityRuleSet.Level1
+#pragma warning disable 618 // System.Core still uses SecurityRuleSet.Level1
         [SecurityCritical(SecurityCriticalScope.Everything)]
 #pragma warning restore 618
         internal struct EvtVariant

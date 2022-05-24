@@ -168,6 +168,8 @@ initDistroRidGlobal()
         if [ -z "${distroRid}" ]; then
             if [ "$targetOs" = "Linux" ]; then
                 distroRid="linux-$buildArch"
+            elif [ "$targetOs" = "linux-bionic" ]; then
+                distroRid="linux-bionic-$buildArch"
             elif [ "$targetOs" = "OSX" ]; then
                 distroRid="osx-$buildArch"
             elif [ "$targetOs" = "MacCatalyst" ]; then

@@ -1260,7 +1260,7 @@ mono_de_ss_start (SingleStepReq *ss_req, SingleStepArgs *ss_args)
 	SeqPoint *next_sp, *parent_sp = NULL;
 	SeqPoint local_sp, local_parent_sp;
 	gboolean found_sp;
-	MonoSeqPointInfo *parent_info;
+	MonoSeqPointInfo *parent_info = NULL;
 	MonoMethod *parent_sp_method = NULL;
 	gboolean enable_global = FALSE;
 

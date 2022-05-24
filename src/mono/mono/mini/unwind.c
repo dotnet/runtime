@@ -164,10 +164,12 @@ mono_hw_reg_to_dwarf_reg (int reg)
 	if (!hw_reg_to_dwarf_reg_inited)
 		init_hw_reg_map ();
 
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 	if (NUM_HW_REGS == 0) {
 		g_assert_not_reached ();
 		return -1;
 	}
+MONO_RESTORE_WARNING
 
 	return map_hw_reg_to_dwarf_reg [reg];
 }

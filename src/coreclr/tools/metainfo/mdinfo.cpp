@@ -360,7 +360,7 @@ void MDInfo::DisplayMD()
         // WriteLine("Unresolved MemberRefs");
         // DisplayMemberRefs(0x00000001, "\t");
 
-        VWrite("\n\nCoff symbol name overhead:  %d\n", g_cbCoffNames);
+        VWrite("\n\nCoff symbol name overhead:  %Iu\n", g_cbCoffNames);
     }
     WriteLine("===========================================================");
     if (m_DumpFilter & dumpUnsat)
@@ -1379,7 +1379,7 @@ LPCWSTR MDInfo::TypeDefName(mdTypeDef inTypeDef, _Out_writes_(bufLen) LPWSTR buf
         NULL);                  // [OUT] Put base class TypeDef/TypeRef here.
     if (FAILED(hr))
     {
-        swprintf_s(buffer, bufLen, W("[Invalid TypeDef]"));
+        wcscpy_s(buffer, bufLen, W("[Invalid TypeDef]"));
     }
 
     return buffer;
@@ -1451,7 +1451,7 @@ LPCWSTR MDInfo::TypeRefName(mdTypeRef tr, _Out_writes_(bufLen) LPWSTR buffer, UL
         NULL);              // Put actual size of name here.
     if (FAILED(hr))
     {
-        swprintf_s(buffer, bufLen, W("[Invalid TypeRef]"));
+        wcscpy_s(buffer, bufLen, W("[Invalid TypeRef]"));
     }
 
     return (buffer);
@@ -1939,7 +1939,7 @@ void MDInfo::DisplayCustomAttributeInfo(mdCustomAttribute inValue, const char *p
 
     VWrite("%s\tCustomAttributeName: %ls", preFix, rcName);
     if (pSig && pMethName)
-        VWrite(" :: %S", qSigName.Ptr());
+        VWrite(" :: %S", (LPWSTR)qSigName.Ptr());
 
     // Keep track of coff overhead.
     if (!wcscmp(W("__DecoratedName"), rcName))
@@ -2039,7 +2039,7 @@ void MDInfo::DisplayCustomAttributeInfo(mdCustomAttribute inValue, const char *p
                 case ELEMENT_TYPE_U8:
                     CA.GetU8(&u8);
                     uI64 = u8;
-                    VWrite("%#lx", uI64);
+                    VWrite("%#I64x", uI64);
                     break;
                 case ELEMENT_TYPE_R4:
                     dblVal = CA.GetR4();

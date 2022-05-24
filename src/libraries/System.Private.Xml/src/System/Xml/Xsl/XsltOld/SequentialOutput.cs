@@ -60,7 +60,7 @@ namespace System.Xml.Xsl.XsltOld
         private bool _firstLine = true;
         private bool _secondRoot;
 
-        // Cached Output propertes:
+        // Cached Output properties:
         private XsltOutput _output;
         private bool _isHtmlOutput;
         private bool _isXmlOutput;

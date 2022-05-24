@@ -193,7 +193,7 @@ NOINLINE static Object* GetClassHelper(OBJECTREF objRef)
     return OBJECTREFToObject(refType);
 }
 
-// This routine is called by the Object.GetType() routine.   It is a major way to get the Sytem.Type
+// This routine is called by the Object.GetType() routine.   It is a major way to get the System.Type
 FCIMPL1(Object*, ObjectNative::GetClass, Object* pThis)
 {
     CONTRACTL

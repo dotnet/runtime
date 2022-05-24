@@ -5,6 +5,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 
 namespace Microsoft.Interop
@@ -21,8 +22,7 @@ namespace Microsoft.Interop
             public const string InvalidLibraryImportAttributeUsage = Prefix + "1050";
             public const string TypeNotSupported = Prefix + "1051";
             public const string ConfigurationNotSupported = Prefix + "1052";
-            public const string TargetFrameworkNotSupported = Prefix + "1053";
-            public const string CannotForwardToDllImport = Prefix + "1054";
+            public const string CannotForwardToDllImport = Prefix + "1053";
         }
 
         private const string Category = "LibraryImportGenerator";
@@ -147,16 +147,6 @@ namespace Microsoft.Interop
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(SR.ConfigurationNotSupportedDescription)));
 
-        public static readonly DiagnosticDescriptor TargetFrameworkNotSupported =
-            new DiagnosticDescriptor(
-                Ids.TargetFrameworkNotSupported,
-                GetResourceString(nameof(SR.TargetFrameworkNotSupportedTitle)),
-                GetResourceString(nameof(SR.TargetFrameworkNotSupportedMessage)),
-                Category,
-                DiagnosticSeverity.Error,
-                isEnabledByDefault: true,
-                description: GetResourceString(nameof(SR.TargetFrameworkNotSupportedDescription)));
-
         public static readonly DiagnosticDescriptor CannotForwardToDllImport =
             new DiagnosticDescriptor(
                 Ids.CannotForwardToDllImport,
@@ -220,28 +210,28 @@ namespace Microsoft.Interop
         /// <summary>
         /// Report diagnostic for marshalling of a parameter/return that is not supported
         /// </summary>
-        /// <param name="method">Method with the parameter/return</param>
+        /// <param name="diagnosticLocations">Method with the parameter/return</param>
         /// <param name="info">Type info for the parameter/return</param>
         /// <param name="notSupportedDetails">[Optional] Specific reason for lack of support</param>
         public void ReportMarshallingNotSupported(
-            MethodDeclarationSyntax method,
+            MethodSignatureDiagnosticLocations diagnosticLocations,
             TypePositionInfo info,
-            string? notSupportedDetails)
+            string? notSupportedDetails,
+            ImmutableDictionary<string, string> diagnosticProperties)
         {
             Location diagnosticLocation = Location.None;
             string elementName = string.Empty;
 
             if (info.IsManagedReturnPosition)
             {
-                diagnosticLocation = Location.Create(method.SyntaxTree, method.Identifier.Span);
-                elementName = method.Identifier.ValueText;
+                diagnosticLocation = diagnosticLocations.FallbackLocation;
+                elementName = diagnosticLocations.MethodIdentifier;
             }
             else
             {
-                Debug.Assert(info.ManagedIndex <= method.ParameterList.Parameters.Count);
-                ParameterSyntax param = method.ParameterList.Parameters[info.ManagedIndex];
-                diagnosticLocation = Location.Create(param.SyntaxTree, param.Identifier.Span);
-                elementName = param.Identifier.ValueText;
+                Debug.Assert(info.ManagedIndex <= diagnosticLocations.ManagedParameterLocations.Length);
+                diagnosticLocation = diagnosticLocations.ManagedParameterLocations[info.ManagedIndex];
+                elementName = info.InstanceIdentifier;
             }
 
             if (!string.IsNullOrEmpty(notSupportedDetails))
@@ -252,6 +242,7 @@ namespace Microsoft.Interop
                     _diagnostics.Add(
                         diagnosticLocation.CreateDiagnostic(
                             GeneratorDiagnostics.ReturnTypeNotSupportedWithDetails,
+                            diagnosticProperties,
                             notSupportedDetails!,
                             elementName));
                 }
@@ -260,6 +251,7 @@ namespace Microsoft.Interop
                     _diagnostics.Add(
                         diagnosticLocation.CreateDiagnostic(
                             GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails,
+                            diagnosticProperties,
                             notSupportedDetails!,
                             elementName));
                 }
@@ -274,6 +266,7 @@ namespace Microsoft.Interop
                     _diagnostics.Add(
                         diagnosticLocation.CreateDiagnostic(
                             GeneratorDiagnostics.ReturnConfigurationNotSupported,
+                            diagnosticProperties,
                             nameof(System.Runtime.InteropServices.MarshalAsAttribute),
                             elementName));
                 }
@@ -282,6 +275,7 @@ namespace Microsoft.Interop
                     _diagnostics.Add(
                         diagnosticLocation.CreateDiagnostic(
                             GeneratorDiagnostics.ParameterConfigurationNotSupported,
+                            diagnosticProperties,
                             nameof(System.Runtime.InteropServices.MarshalAsAttribute),
                             elementName));
                 }
@@ -294,6 +288,7 @@ namespace Microsoft.Interop
                     _diagnostics.Add(
                         diagnosticLocation.CreateDiagnostic(
                             GeneratorDiagnostics.ReturnTypeNotSupported,
+                            diagnosticProperties,
                             info.ManagedType.DiagnosticFormattedName,
                             elementName));
                 }
@@ -302,6 +297,7 @@ namespace Microsoft.Interop
                     _diagnostics.Add(
                         diagnosticLocation.CreateDiagnostic(
                             GeneratorDiagnostics.ParameterTypeNotSupported,
+                            diagnosticProperties,
                             info.ManagedType.DiagnosticFormattedName,
                             elementName));
                 }
@@ -320,30 +316,17 @@ namespace Microsoft.Interop
         }
 
         /// <summary>
-        /// Report diagnostic for targeting a framework that is not supported
-        /// </summary>
-        /// <param name="minimumSupportedVersion">Minimum supported version of .NET</param>
-        public void ReportTargetFrameworkNotSupported(Version minimumSupportedVersion)
-        {
-            _diagnostics.Add(
-                Diagnostic.Create(
-                    TargetFrameworkNotSupported,
-                    Location.None,
-                    minimumSupportedVersion.ToString(2)));
-        }
-
-        /// <summary>
         /// Report diagnostic for configuration that cannot be forwarded to <see cref="DllImportAttribute" />
         /// </summary>
         /// <param name="method">Method with the configuration that cannot be forwarded</param>
         /// <param name="name">Configuration name</param>
         /// <param name="value">Configuration value</param>
-        public void ReportCannotForwardToDllImport(MethodDeclarationSyntax method, string name, string? value = null)
+        public void ReportCannotForwardToDllImport(MethodSignatureDiagnosticLocations method, string name, string? value = null)
         {
             _diagnostics.Add(
                 Diagnostic.Create(
                     CannotForwardToDllImport,
-                    Location.Create(method.SyntaxTree, method.Identifier.Span),
+                    method.FallbackLocation,
                     value is null ? name : $"{name}={value}"));
         }
 

@@ -15,7 +15,7 @@ namespace
     void log_duplicate_property_error(const pal::char_t *property_key)
     {
         trace::error(_X("Duplicate runtime property found: %s"), property_key);
-        trace::error(_X("It is invalid to specify values for properties populated by the hosting layer in the the application's .runtimeconfig.json"));
+        trace::error(_X("It is invalid to specify values for properties populated by the hosting layer in the application's .runtimeconfig.json"));
     }
 
     // bundle_probe:
@@ -36,7 +36,7 @@ namespace
         if (!pal::clr_palstring(path, &file_path))
         {
             trace::warning(_X("Failure probing contents of the application bundle."));
-            trace::warning(_X("Failed to convert path [%ls] to UTF8"), path);
+            trace::warning(_X("Failed to convert path [%hs] to UTF8"), path);
 
             return false;
         }
@@ -180,7 +180,7 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
 
     // If this is a self-contained single-file bundle,
     // System.Private.CoreLib.dll is expected to be within the bundle, unless it is explicitly excluded from the bundle.
-    // In all other cases, 
+    // In all other cases,
     // System.Private.CoreLib.dll is expected to be next to CoreCLR.dll - add its path to the TPA list.
     if (!bundle::info_t::is_single_file_bundle() ||
         bundle::runner_t::app()->probe(CORELIB_NAME) == nullptr)
@@ -289,7 +289,7 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
             startup_hooks.push_back(PATH_SEPARATOR);
             startup_hooks.append(config_startup_hooks);
         }
-        
+
         coreclr_properties.add(common_property::StartUpHooks, startup_hooks.c_str());
     }
 

@@ -157,7 +157,7 @@ extern "C" DLLEXPORT UINT32 WINAPI getLikelyClasses(LikelyClassRecord*          
             (schema[i].Count == 1))
         {
             INT_PTR result = *(INT_PTR*)(pInstrumentationData + schema[i].Offset);
-            if (ICorJitInfo::IsUnknownTypeHandle(result))
+            if (ICorJitInfo::IsUnknownHandle(result))
             {
                 return 0;
             }
@@ -168,11 +168,11 @@ extern "C" DLLEXPORT UINT32 WINAPI getLikelyClasses(LikelyClassRecord*          
         }
 
         const bool isHistogramCount =
-            (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramIntCount) ||
-            (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramLongCount);
+            (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::HandleHistogramIntCount) ||
+            (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::HandleHistogramLongCount);
 
         if (isHistogramCount && (schema[i].Count == 1) && ((i + 1) < countSchemaItems) &&
-            (schema[i + 1].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramTypeHandle))
+            (schema[i + 1].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::HandleHistogramTypes))
         {
             // Form a histogram
             //
@@ -191,7 +191,7 @@ extern "C" DLLEXPORT UINT32 WINAPI getLikelyClasses(LikelyClassRecord*          
                 {
                     LikelyClassHistogramEntry const hist0 = h.HistogramEntryAt(0);
                     // Fast path for monomorphic cases
-                    if (ICorJitInfo::IsUnknownTypeHandle(hist0.m_mt))
+                    if (ICorJitInfo::IsUnknownHandle(hist0.m_mt))
                     {
                         return 0;
                     }
@@ -205,12 +205,12 @@ extern "C" DLLEXPORT UINT32 WINAPI getLikelyClasses(LikelyClassRecord*          
                     LikelyClassHistogramEntry const hist0 = h.HistogramEntryAt(0);
                     LikelyClassHistogramEntry const hist1 = h.HistogramEntryAt(1);
                     // Fast path for two classes
-                    if ((hist0.m_count >= hist1.m_count) && !ICorJitInfo::IsUnknownTypeHandle(hist0.m_mt))
+                    if ((hist0.m_count >= hist1.m_count) && !ICorJitInfo::IsUnknownHandle(hist0.m_mt))
                     {
                         pLikelyClasses[0].likelihood = (100 * hist0.m_count) / h.m_totalCount;
                         pLikelyClasses[0].clsHandle  = (CORINFO_CLASS_HANDLE)hist0.m_mt;
 
-                        if ((maxLikelyClasses > 1) && !ICorJitInfo::IsUnknownTypeHandle(hist1.m_mt))
+                        if ((maxLikelyClasses > 1) && !ICorJitInfo::IsUnknownHandle(hist1.m_mt))
                         {
                             pLikelyClasses[1].likelihood = (100 * hist1.m_count) / h.m_totalCount;
                             pLikelyClasses[1].clsHandle  = (CORINFO_CLASS_HANDLE)hist1.m_mt;
@@ -219,12 +219,12 @@ extern "C" DLLEXPORT UINT32 WINAPI getLikelyClasses(LikelyClassRecord*          
                         return 1;
                     }
 
-                    if (!ICorJitInfo::IsUnknownTypeHandle(hist1.m_mt))
+                    if (!ICorJitInfo::IsUnknownHandle(hist1.m_mt))
                     {
                         pLikelyClasses[0].likelihood = (100 * hist1.m_count) / h.m_totalCount;
                         pLikelyClasses[0].clsHandle  = (CORINFO_CLASS_HANDLE)hist1.m_mt;
 
-                        if ((maxLikelyClasses > 1) && !ICorJitInfo::IsUnknownTypeHandle(hist0.m_mt))
+                        if ((maxLikelyClasses > 1) && !ICorJitInfo::IsUnknownHandle(hist0.m_mt))
                         {
                             pLikelyClasses[1].likelihood = (100 * hist0.m_count) / h.m_totalCount;
                             pLikelyClasses[1].clsHandle  = (CORINFO_CLASS_HANDLE)hist0.m_mt;
@@ -244,7 +244,7 @@ extern "C" DLLEXPORT UINT32 WINAPI getLikelyClasses(LikelyClassRecord*          
                     for (unsigned m = 0; m < h.countHistogramElements; m++)
                     {
                         LikelyClassHistogramEntry const hist = h.HistogramEntryAt(m);
-                        if (!ICorJitInfo::IsUnknownTypeHandle(hist.m_mt))
+                        if (!ICorJitInfo::IsUnknownHandle(hist.m_mt))
                         {
                             sortedEntries[knownHandles++] = hist;
                         }
@@ -311,7 +311,7 @@ CORINFO_CLASS_HANDLE Compiler::getRandomClass(ICorJitInfo::PgoInstrumentationSch
             (schema[i].Count == 1))
         {
             INT_PTR result = *(INT_PTR*)(pInstrumentationData + schema[i].Offset);
-            if (ICorJitInfo::IsUnknownTypeHandle(result))
+            if (ICorJitInfo::IsUnknownHandle(result))
             {
                 return NO_CLASS_HANDLE;
             }
@@ -322,11 +322,11 @@ CORINFO_CLASS_HANDLE Compiler::getRandomClass(ICorJitInfo::PgoInstrumentationSch
         }
 
         bool isHistogramCount =
-            (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramIntCount) ||
-            (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramLongCount);
+            (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::HandleHistogramIntCount) ||
+            (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::HandleHistogramLongCount);
 
         if (isHistogramCount && (schema[i].Count == 1) && ((i + 1) < countSchemaItems) &&
-            (schema[i + 1].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramTypeHandle))
+            (schema[i + 1].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::HandleHistogramTypes))
         {
             // Form a histogram
             //
@@ -342,7 +342,7 @@ CORINFO_CLASS_HANDLE Compiler::getRandomClass(ICorJitInfo::PgoInstrumentationSch
             unsigned                  randomEntryIndex = random->Next(0, h.countHistogramElements);
             LikelyClassHistogramEntry randomEntry      = h.HistogramEntryAt(randomEntryIndex);
 
-            if (ICorJitInfo::IsUnknownTypeHandle(randomEntry.m_mt))
+            if (ICorJitInfo::IsUnknownHandle(randomEntry.m_mt))
             {
                 return NO_CLASS_HANDLE;
             }

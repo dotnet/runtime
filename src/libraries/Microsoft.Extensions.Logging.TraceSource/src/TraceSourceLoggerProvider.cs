@@ -35,8 +35,10 @@ namespace Microsoft.Extensions.Logging.TraceSource
         /// </summary>
         /// <param name="rootSourceSwitch">The <see cref="SourceSwitch"/> to use.</param>
         /// <param name="rootTraceListener">The <see cref="TraceListener"/> to use.</param>
-        public TraceSourceLoggerProvider(SourceSwitch rootSourceSwitch!!, TraceListener? rootTraceListener)
+        public TraceSourceLoggerProvider(SourceSwitch rootSourceSwitch, TraceListener? rootTraceListener)
         {
+            ThrowHelper.ThrowIfNull(rootSourceSwitch);
+
             _rootSourceSwitch = rootSourceSwitch;
             _rootTraceListener = rootTraceListener;
         }

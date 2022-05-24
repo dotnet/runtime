@@ -932,7 +932,7 @@ CordbWin32EventThread * ShimProcess::GetWin32EventThread()
 
 
 // Trivial accessor to mark whether we're interop-debugging.
-// Retreived via code:ShimProcess::IsInteropDebugging
+// Retrieved via code:ShimProcess::IsInteropDebugging
 void ShimProcess::SetIsInteropDebugging(bool fIsInteropDebugging)
 {
     m_fIsInteropDebugging = fIsInteropDebugging;
@@ -1594,28 +1594,30 @@ void ShimProcess::PreDispatchEvent(bool fRealCreateProcessEvent /*= false*/)
 //    Throws on errors.
 //
 
-HMODULE ShimProcess::GetDacModule()
+HMODULE ShimProcess::GetDacModule(PathString& dacModulePath)
 {
-    HModuleHolder hDacDll;
-    PathString wszAccessDllPath;
+    HMODULE hDacDll;
+    PathString wszAccessDllPath(dacModulePath);
 
-    //
-    // Load the access DLL from the same directory as the the current CLR Debugging Services DLL.
-    //
-    if (GetClrModuleDirectory(wszAccessDllPath) != S_OK)
+    if (wszAccessDllPath.IsEmpty())
     {
-        ThrowLastError();
+        //
+        // Load the access DLL from the same directory as the current CLR Debugging Services DLL.
+        //
+        if (GetClrModuleDirectory(wszAccessDllPath) != S_OK)
+        {
+            ThrowLastError();
+        }
+
+        // Dac Dll is named:
+        //   mscordaccore.dll  <-- coreclr
+        //   mscordacwks.dll   <-- desktop
+        PCWSTR eeFlavor = MAKEDLLNAME_W(W("mscordaccore"));
+
+        wszAccessDllPath.Append(eeFlavor);
     }
-
-    // Dac Dll is named:
-    //   mscordaccore.dll  <-- coreclr
-    //   mscordacwks.dll   <-- desktop
-    PCWSTR eeFlavor = MAKEDLLNAME_W(W("mscordaccore"));
-
-    wszAccessDllPath.Append(eeFlavor);
-
-    hDacDll.Assign(WszLoadLibrary(wszAccessDllPath));
-    if (!hDacDll)
+    hDacDll = WszLoadLibrary(wszAccessDllPath);
+    if (hDacDll == NULL)
     {
         DWORD dwLastError = GetLastError();
         if (dwLastError == ERROR_MOD_NOT_FOUND)
@@ -1628,8 +1630,7 @@ HMODULE ShimProcess::GetDacModule()
             ThrowWin32(dwLastError);
         }
     }
-    hDacDll.SuppressRelease();
-    return (HMODULE) hDacDll;
+    return hDacDll;
 }
 
 MachineInfo ShimProcess::GetMachineInfo()

@@ -25,7 +25,7 @@ namespace Internal.JitInterface
 {
     unsafe partial class CorInfoImpl
     {
-        private const CORINFO_RUNTIME_ABI TargetABI = CORINFO_RUNTIME_ABI.CORINFO_CORERT_ABI;
+        private const CORINFO_RUNTIME_ABI TargetABI = CORINFO_RUNTIME_ABI.CORINFO_NATIVEAOT_ABI;
 
         private uint OffsetOfDelegateFirstTarget => (uint)(4 * PointerSize); // Delegate::m_functionPointer
         private int SizeOfReversePInvokeTransitionFrame => 2 * PointerSize;
@@ -1199,7 +1199,7 @@ namespace Internal.JitInterface
                     // Either
                     //    1. no constraint resolution at compile time (!directMethod)
                     // OR 2. no code sharing lookup in call
-                    // OR 3. we have have resolved to an instantiating stub
+                    // OR 3. we have resolved to an instantiating stub
 
                     methodAfterConstraintResolution = directMethod;
 
@@ -1593,7 +1593,7 @@ namespace Internal.JitInterface
                             _compilation.NodeFactory.ReadyToRunHelper(helperId, slotDefiningMethod));
                 }
 
-                // The current CoreRT ReadyToRun helpers do not handle null thisptr - ask the JIT to emit explicit null checks
+                // The current NativeAOT ReadyToRun helpers do not handle null thisptr - ask the JIT to emit explicit null checks
                 // TODO: Optimize this
                 pResult->nullInstanceCheck = true;
             }

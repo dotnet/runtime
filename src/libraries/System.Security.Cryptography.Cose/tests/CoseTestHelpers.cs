@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Formats.Cbor;
+using System.IO;
 using System.Linq;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
@@ -22,6 +23,9 @@ namespace System.Security.Cryptography.Cose.Tests
         internal const int KnownHeaderCounterSignature = 7;
         internal static readonly byte[] s_sampleContent = Encoding.UTF8.GetBytes("This is the content.");
         internal const string ContentTypeDummyValue = "application/cose; cose-type=\"cose-sign1\"";
+
+        internal const string NullCborHex = "F6";
+        internal const string SampleContentByteStringCborHex = "54546869732069732074686520636F6E74656E742E";
 
         public enum ECDsaAlgorithm
         {
@@ -107,7 +111,7 @@ namespace System.Security.Cryptography.Cose.Tests
             };
         }
 
-        internal static void AssertSign1Message(
+        internal static void AssertSign1MessageCore(
             ReadOnlySpan<byte> encodedMsg,
             ReadOnlySpan<byte> expectedContent,
             AsymmetricAlgorithm signingKey,
@@ -332,6 +336,38 @@ namespace System.Security.Cryptography.Cose.Tests
 
                 throw new InvalidOperationException($"Specified algorithm {algorithm} doesn't match the type {typeof(T)}");
             }
+        }
+
+        internal static Stream GetTestStream(byte[] content, StreamKind streamKind = StreamKind.Normal)
+        {
+            MemoryStream ms = streamKind switch
+            {
+                StreamKind.Normal => new MemoryStream(),
+                StreamKind.Unseekable => new UnseekableMemoryStream(),
+                StreamKind.Unreadable => new UnreadableMemoryStream(),
+                _ => throw new InvalidOperationException()
+            };
+
+            ms.Write(content, 0, content.Length);
+            ms.Position = 0;
+            return ms;
+        }
+
+        private class UnseekableMemoryStream : MemoryStream
+        {
+            public override bool CanSeek => false;
+        }
+
+        private class UnreadableMemoryStream : MemoryStream
+        {
+            public override bool CanRead => false;
+        }
+
+        internal enum StreamKind
+        {
+            Normal,
+            Unseekable,
+            Unreadable
         }
     }
 }

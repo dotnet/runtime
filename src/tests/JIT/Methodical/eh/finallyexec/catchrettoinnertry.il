@@ -19,9 +19,9 @@
  }
 .assembly extern xunit.core {}
 
-.namespace strswitch
+.namespace strswitch_catchrettoinnertry_il
 {
-   .class private auto ansi beforefieldinit Class1
+   .class public auto ansi beforefieldinit Class1
           extends [mscorlib]System.Object
    {
     .field private static class [eh_common]TestUtil.TestLog testLog
@@ -42,10 +42,10 @@
             callvirt   instance void [mscorlib]System.IO.TextWriter::WriteLine(string)
             ldloc.s    expectedOut
             newobj     instance void [eh_common]TestUtil.TestLog::.ctor(object)
-            stsfld     class [eh_common]TestUtil.TestLog strswitch.Class1::testLog
+            stsfld     class [eh_common]TestUtil.TestLog strswitch_catchrettoinnertry_il.Class1::testLog
             ret
     }
-     .method private hidebysig static int32
+     .method public hidebysig static int32
              Main() cil managed
      {
        .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -54,7 +54,7 @@
        .entrypoint
        .maxstack  2
 
-        ldsfld     class [eh_common]TestUtil.TestLog strswitch.Class1::testLog
+        ldsfld     class [eh_common]TestUtil.TestLog strswitch_catchrettoinnertry_il.Class1::testLog
         callvirt   instance void [eh_common]TestUtil.TestLog::StartRecording()
 
        .locals init (int32 V_0,
@@ -104,10 +104,10 @@
            endfinally
        }
        branch_003a:
-        ldsfld     class [eh_common]TestUtil.TestLog strswitch.Class1::testLog
+        ldsfld     class [eh_common]TestUtil.TestLog strswitch_catchrettoinnertry_il.Class1::testLog
         callvirt   instance void [eh_common]TestUtil.TestLog::StopRecording()
 
-        ldsfld     class [eh_common]TestUtil.TestLog strswitch.Class1::testLog
+        ldsfld     class [eh_common]TestUtil.TestLog strswitch_catchrettoinnertry_il.Class1::testLog
         callvirt   instance int32 [eh_common]TestUtil.TestLog::VerifyOutput()
 
          ret

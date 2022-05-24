@@ -338,6 +338,25 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal abstract object? GetValueAsObject(object obj);
 
+#if DEBUG
+        internal string GetDebugInfo(int indent = 0)
+        {
+            string ind = new string(' ', indent);
+            StringBuilder sb = new();
+
+            sb.AppendLine($"{ind}{{");
+            sb.AppendLine($"{ind}  Name: {Name},");
+            sb.AppendLine($"{ind}  NameAsUtf8.Length: {(NameAsUtf8Bytes?.Length ?? -1)},");
+            sb.AppendLine($"{ind}  IsConfigured: {_isConfigured},");
+            sb.AppendLine($"{ind}  IsIgnored: {IsIgnored},");
+            sb.AppendLine($"{ind}  ShouldSerialize: {ShouldSerialize},");
+            sb.AppendLine($"{ind}  ShouldDeserialize: {ShouldDeserialize},");
+            sb.AppendLine($"{ind}}}");
+
+            return sb.ToString();
+        }
+#endif
+
         internal bool HasGetter { get; set; }
         internal bool HasSetter { get; set; }
 
@@ -501,7 +520,8 @@ namespace System.Text.Json.Serialization.Metadata
             set
             {
                 // Used by JsonMetadataServices.
-                Debug.Assert(_jsonTypeInfo == null);
+                // This could potentially be double initialized
+                Debug.Assert(_jsonTypeInfo == null || _jsonTypeInfo == value);
                 _jsonTypeInfo = value;
             }
         }

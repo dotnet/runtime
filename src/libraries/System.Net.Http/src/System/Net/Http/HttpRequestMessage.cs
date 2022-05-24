@@ -120,8 +120,10 @@ namespace System.Net.Http
         {
         }
 
-        public HttpRequestMessage(HttpMethod method!!, Uri? requestUri)
+        public HttpRequestMessage(HttpMethod method, Uri? requestUri)
         {
+            ArgumentNullException.ThrowIfNull(method);
+
             // It's OK to have a 'null' request Uri. If HttpClient is used, the 'BaseAddress' will be added.
             // If there is no 'BaseAddress', sending this request message will throw.
             // Note that we also allow the string to be empty: null and empty are considered equivalent.

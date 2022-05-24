@@ -2499,6 +2499,7 @@ namespace System.Reflection.Metadata.Ecma335
         public System.Reflection.Metadata.BlobBuilder Builder { get { throw null; } }
         public void CustomAttributeSignature(System.Action<System.Reflection.Metadata.Ecma335.FixedArgumentsEncoder> fixedArguments, System.Action<System.Reflection.Metadata.Ecma335.CustomAttributeNamedArgumentsEncoder> namedArguments) { }
         public void CustomAttributeSignature(out System.Reflection.Metadata.Ecma335.FixedArgumentsEncoder fixedArguments, out System.Reflection.Metadata.Ecma335.CustomAttributeNamedArgumentsEncoder namedArguments) { throw null; }
+        public System.Reflection.Metadata.Ecma335.FieldTypeEncoder Field() { throw null; }
         public System.Reflection.Metadata.Ecma335.SignatureTypeEncoder FieldSignature() { throw null; }
         public System.Reflection.Metadata.Ecma335.LocalVariablesEncoder LocalVariableSignature(int variableCount) { throw null; }
         public System.Reflection.Metadata.Ecma335.MethodSignatureEncoder MethodSignature(System.Reflection.Metadata.SignatureCallingConvention convention = System.Reflection.Metadata.SignatureCallingConvention.Default, int genericParameterCount = 0, bool isInstanceMethod = false) { throw null; }
@@ -2619,6 +2620,16 @@ namespace System.Reflection.Metadata.Ecma335
     public static partial class ExportedTypeExtensions
     {
         public static int GetTypeDefinitionId(this System.Reflection.Metadata.ExportedType exportedType) { throw null; }
+    }
+    public readonly partial struct FieldTypeEncoder
+    {
+        private readonly object _dummy;
+        private readonly int _dummyPrimitive;
+        public FieldTypeEncoder(System.Reflection.Metadata.BlobBuilder builder) { throw null;  }
+        public System.Reflection.Metadata.BlobBuilder Builder { get { throw null; } }
+        public System.Reflection.Metadata.Ecma335.CustomModifiersEncoder CustomModifiers() { throw null; }
+        public System.Reflection.Metadata.Ecma335.SignatureTypeEncoder Type(bool isByRef = false) { throw null; }
+        public void TypedReference() { throw null; }
     }
     public readonly partial struct FixedArgumentsEncoder
     {

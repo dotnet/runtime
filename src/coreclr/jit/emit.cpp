@@ -853,6 +853,7 @@ insGroup* emitter::emitSavIG(bool emitAdd)
         {
             printf("        ; offs=%06XH, funclet=%02u, bbWeight=%s", ig->igOffs, ig->igFuncIdx,
                    refCntWtd2str(ig->igWeight));
+            emitDispIGflags(ig->igFlags);
         }
         else
         {
@@ -1072,9 +1073,10 @@ void emitter::emitBegFN(bool hasFramePtr
     emitJumpList = emitJumpLast = nullptr;
     emitCurIGjmpList            = nullptr;
 
-    emitFwdJumps   = false;
-    emitNoGCIG     = false;
-    emitForceNewIG = false;
+    emitFwdJumps         = false;
+    emitNoGCRequestCount = 0;
+    emitNoGCIG           = false;
+    emitForceNewIG       = false;
 
 #if FEATURE_LOOP_ALIGN
     /* We don't have any align instructions */
@@ -1633,8 +1635,9 @@ void emitter::emitBegProlog()
 
 #endif
 
-    emitNoGCIG     = true;
-    emitForceNewIG = false;
+    emitNoGCRequestCount = 1;
+    emitNoGCIG           = true;
+    emitForceNewIG       = false;
 
     /* Switch to the pre-allocated prolog IG */
 
@@ -1693,7 +1696,8 @@ void emitter::emitEndProlog()
 {
     assert(emitComp->compGeneratingProlog);
 
-    emitNoGCIG = false;
+    emitNoGCRequestCount = 0;
+    emitNoGCIG           = false;
 
     /* Save the prolog IG if non-empty or if only one block */
 
@@ -1866,7 +1870,8 @@ void emitter::emitCreatePlaceholderIG(insGroupPlaceholderType igType,
             // emitter::emitDisableGC() directly. This behavior is depended upon by the fast
             // tailcall implementation, which disables GC at the beginning of argument setup,
             // but assumes that after the epilog it will be re-enabled.
-            emitNoGCIG = false;
+            emitNoGCRequestCount = 0;
+            emitNoGCIG           = false;
         }
 
         emitNewIG();
@@ -2042,8 +2047,9 @@ void emitter::emitBegPrologEpilog(insGroup* igPh)
      */
 
     igPh->igFlags &= ~IGF_PLACEHOLDER;
-    emitNoGCIG     = true;
-    emitForceNewIG = false;
+    emitNoGCRequestCount = 1;
+    emitNoGCIG           = true;
+    emitForceNewIG       = false;
 
     /* Set up the GC info that we stored in the placeholder */
 
@@ -2088,7 +2094,8 @@ void emitter::emitBegPrologEpilog(insGroup* igPh)
 
 void emitter::emitEndPrologEpilog()
 {
-    emitNoGCIG = false;
+    emitNoGCRequestCount = 0;
+    emitNoGCIG           = false;
 
     /* Save the IG if non-empty */
 
@@ -3265,7 +3272,7 @@ emitter::instrDesc* emitter::emitNewInstrCallInd(int              argCnt,
         assert(id->idAddr()->iiaAddrMode.amDisp == disp);
 #endif // TARGET_XARCH
 
-        /* Save the the live GC registers in the unused register fields */
+        /* Save the live GC registers in the unused register fields */
         emitEncodeCallGCregs(gcrefRegs, id);
 
         return id;
@@ -3337,7 +3344,7 @@ emitter::instrDesc* emitter::emitNewInstrCallDir(int              argCnt,
         /* Make sure we didn't waste space unexpectedly */
         assert(!id->idIsLargeCns());
 
-        /* Save the the live GC registers in the unused register fields */
+        /* Save the live GC registers in the unused register fields */
         emitEncodeCallGCregs(gcrefRegs, id);
 
         return id;
@@ -5089,10 +5096,14 @@ unsigned emitter::getLoopSize(insGroup* igLoopHeader, unsigned maxLoopSize DEBUG
 {
     unsigned loopSize = 0;
 
+    JITDUMP("*************** In getLoopSize() for %s\n", emitLabelString(igLoopHeader));
+
     for (insGroup* igInLoop = igLoopHeader; igInLoop != nullptr; igInLoop = igInLoop->igNext)
     {
         loopSize += igInLoop->igSize;
-        if (igInLoop->endsWithAlignInstr())
+        JITDUMP("   %s has %u bytes.", emitLabelString(igInLoop), igInLoop->igSize);
+
+        if (igInLoop->endsWithAlignInstr() || igInLoop->hadAlignInstr())
         {
             // If IGF_HAS_ALIGN is present, igInLoop contains align instruction at the end,
             // for next IG or some future IG.
@@ -5172,16 +5183,31 @@ unsigned emitter::getLoopSize(insGroup* igLoopHeader, unsigned maxLoopSize DEBUG
             else
 #endif
             {
+                JITDUMP(" but ends with align instruction, taking off %u bytes.",
+                        emitComp->opts.compJitAlignPaddingLimit);
                 // The current loop size should exclude the align instruction size reserved for next loop.
                 loopSize -= emitComp->opts.compJitAlignPaddingLimit;
             }
         }
         if ((igInLoop->igLoopBackEdge == igLoopHeader) || (loopSize > maxLoopSize))
         {
+#ifdef DEBUG
+            if (igInLoop->igLoopBackEdge == igLoopHeader)
+            {
+                JITDUMP(" -- Found the back edge.");
+            }
+            else
+            {
+                JITDUMP(" -- loopSize exceeded the threshold of %u bytes.", maxLoopSize);
+            }
+            JITDUMP("\n");
             break;
+#endif
         }
+        JITDUMP("\n");
     }
 
+    JITDUMP("loopSize of %s = %u bytes.\n", emitLabelString(igLoopHeader), loopSize);
     return loopSize;
 }
 
@@ -5275,7 +5301,7 @@ void emitter::emitSetLoopBackEdge(BasicBlock* loopTopBlock)
                     alignInstr->removeAlignFlags();
 
                     markedCurrLoop = true;
-                    JITDUMP("** Skip alignment for current loop IG%02u ~ IG%02u because it encloses an aligned loop "
+                    JITDUMP(";; Skip alignment for current loop IG%02u ~ IG%02u because it encloses an aligned loop "
                             "IG%02u ~ IG%02u.\n",
                             currLoopStart, currLoopEnd, emitLastLoopStart, emitLastLoopEnd);
                 }
@@ -5285,13 +5311,13 @@ void emitter::emitSetLoopBackEdge(BasicBlock* loopTopBlock)
                 if (!alignLastLoop && (loopHeadIG != nullptr) && (loopHeadIG->igNum == emitLastLoopStart))
                 {
                     assert(!markedLastLoop);
-                    assert(alignInstr->idaIG->endsWithAlignInstr());
+                    assert(alignInstr->idaIG->endsWithAlignInstr() || alignInstr->idaIG->hadAlignInstr());
 
                     // This IG should no longer contain alignment instruction
                     alignInstr->removeAlignFlags();
 
                     markedLastLoop = true;
-                    JITDUMP("** Skip alignment for aligned loop IG%02u ~ IG%02u because it encloses the current loop "
+                    JITDUMP(";; Skip alignment for aligned loop IG%02u ~ IG%02u because it encloses the current loop "
                             "IG%02u ~ IG%02u.\n",
                             emitLastLoopStart, emitLastLoopEnd, currLoopStart, currLoopEnd);
                 }
@@ -9335,21 +9361,14 @@ regMaskTP emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
     regMaskTP result;
     switch (helper)
     {
+        case CORINFO_HELP_ASSIGN_REF:
+        case CORINFO_HELP_CHECKED_ASSIGN_REF:
+            result = RBM_CALLEE_GCTRASH_WRITEBARRIER;
+            break;
+
         case CORINFO_HELP_ASSIGN_BYREF:
-#if defined(TARGET_X86)
-            // This helper only trashes ECX.
-            result = RBM_ECX;
-            break;
-#elif defined(TARGET_AMD64)
-            // This uses and defs RDI and RSI.
-            result = RBM_CALLEE_TRASH_NOGC & ~(RBM_RDI | RBM_RSI);
-            break;
-#elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
             result = RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF;
             break;
-#else
-            assert(!"unknown arch");
-#endif
 
 #if !defined(TARGET_LOONGARCH64)
         case CORINFO_HELP_PROF_FCN_ENTER:
@@ -9369,13 +9388,6 @@ regMaskTP emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
             result = RBM_PROFILER_TAILCALL_TRASH;
             break;
 #endif // !defined(TARGET_LOONGARCH64)
-
-#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
-        case CORINFO_HELP_ASSIGN_REF:
-        case CORINFO_HELP_CHECKED_ASSIGN_REF:
-            result = RBM_CALLEE_GCTRASH_WRITEBARRIER;
-            break;
-#endif // defined(TARGET_ARMARCH)
 
 #if defined(TARGET_X86)
         case CORINFO_HELP_INIT_PINVOKE_FRAME:
@@ -9398,3 +9410,62 @@ regMaskTP emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
 
     return result;
 }
+
+#if !defined(JIT32_GCENCODER)
+// Start a new instruction group that is not interruptable
+void emitter::emitDisableGC()
+{
+    assert(emitNoGCRequestCount < 10); // We really shouldn't have many nested "no gc" requests.
+    ++emitNoGCRequestCount;
+
+    if (emitNoGCRequestCount == 1)
+    {
+        JITDUMP("Disable GC\n");
+        assert(!emitNoGCIG);
+
+        emitNoGCIG = true;
+
+        if (emitCurIGnonEmpty())
+        {
+            emitNxtIG(true);
+        }
+        else
+        {
+            emitCurIG->igFlags |= IGF_NOGCINTERRUPT;
+        }
+    }
+    else
+    {
+        JITDUMP("Disable GC: %u no-gc requests\n", emitNoGCRequestCount);
+        assert(emitNoGCIG);
+    }
+}
+
+// Start a new instruction group that is interruptable
+void emitter::emitEnableGC()
+{
+    assert(emitNoGCRequestCount > 0);
+    assert(emitNoGCIG);
+    --emitNoGCRequestCount;
+
+    if (emitNoGCRequestCount == 0)
+    {
+        JITDUMP("Enable GC\n");
+
+        emitNoGCIG = false;
+
+        // The next time an instruction needs to be generated, force a new instruction group.
+        // It will be an emitAdd group in that case. Note that the next thing we see might be
+        // a label, which will force a non-emitAdd group.
+        //
+        // Note that we can't just create a new instruction group here, because we don't know
+        // if there are going to be any instructions added to it, and we don't support empty
+        // instruction groups.
+        emitForceNewIG = true;
+    }
+    else
+    {
+        JITDUMP("Enable GC: still %u no-gc requests\n", emitNoGCRequestCount);
+    }
+}
+#endif // !defined(JIT32_GCENCODER)

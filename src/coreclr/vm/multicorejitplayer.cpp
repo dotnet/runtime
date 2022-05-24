@@ -104,6 +104,20 @@ void MulticoreJitCodeStorage::StoreMethodCode(MethodDesc * pMD, MulticoreJitCode
 }
 
 
+// Check if method is already compiled and stored
+bool MulticoreJitCodeStorage::LookupMethodCode(MethodDesc * pMethod)
+{
+    STANDARD_VM_CONTRACT;
+
+    MulticoreJitCodeInfo codeInfo;
+
+    {
+        CrstHolder holder(& m_crstCodeMap);
+        return m_nativeCodeMap.Lookup(pMethod, &codeInfo);
+    }
+}
+
+
 // Query from MakeJitWorker: Lookup stored JITted methods
 MulticoreJitCodeInfo MulticoreJitCodeStorage::QueryAndRemoveMethodCode(MethodDesc * pMethod)
 {
@@ -811,14 +825,10 @@ DomainAssembly * MulticoreJitProfilePlayer::LoadAssembly(SString & assemblyName)
 {
     STANDARD_VM_CONTRACT;
 
-    // Get the assembly name.
-    StackScratchBuffer scratch;
-    const ANSI* pAnsiAssemblyName = assemblyName.GetANSI(scratch);
-
     AssemblySpec spec;
 
     // Initialize the assembly spec.
-    HRESULT hr = spec.Init(pAnsiAssemblyName);
+    HRESULT hr = spec.InitNoThrow(assemblyName);
     if (FAILED(hr))
     {
         return NULL;
@@ -958,7 +968,7 @@ void MulticoreJitProfilePlayer::CompileMethodInfoRecord(Module *pModule, MethodD
             }
         }
 
-        if (pMethod->GetNativeCode() == NULL)
+        if (pMethod->GetNativeCode() == NULL && !GetAppDomain()->GetMulticoreJitManager().GetMulticoreJitCodeStorage().LookupMethodCode(pMethod))
         {
             if (CompileMethodDesc(pModule, pMethod))
             {
