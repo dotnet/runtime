@@ -48,29 +48,15 @@ HRESULT GetServerHeapData(CLRDATA_ADDRESS addr, DacpHeapSegmentData *pSegment)
     pSegment->next = (CLRDATA_ADDRESS)dac_cast<TADDR>(pHeapSegment->next);
     pSegment->gc_heap = (CLRDATA_ADDRESS)pHeapSegment->heap;
 
-    heapSegment->highAllocMark = heapSegment->allocated;
+    dac_gc_heap heap = LoadGcHeapData(pSegment->gc_heap);
 
-    if (pSegment->next == NULL)
+    if (pSegment->segmentAddr == heap.ephemeral_heap_segment.GetAddr())
     {
-        dac_gc_heap heap = LoadGcHeapData(pSegment->gc_heap);
-        if (IsRegionGCEnabled())
-        {
-            // regions case
-            CLRDATA_ADDRESS alloc_allocated = (CLRDATA_ADDRESS)heap.alloc_allocated;
-            if (pSegment->mem <= alloc_allocated && alloc_allocated <= pSegment->committed)
-            {
-                pSegment->highAllocMark = alloc_allocated;
-            }
-        }
-        else
-        {
-            // segments case
-            dac_generation generation_0 = ServerGenerationTableIndex(pSegment->gc_heap, 0);
-            if (addr == (CLRDATA_ADDRESS)dac_cast<TADDR>(generation_0.start_segment))
-            {
-                pSegment->highAllocMark = (CLRDATA_ADDRESS)heap.alloc_allocated;
-            }
-        }
+        pSegment->highAllocMark = (CLRDATA_ADDRESS)(ULONG_PTR)heap.alloc_allocated;
+    }
+    else
+    {
+        pSegment->highAllocMark = pSegment->allocated;
     }
 
     return S_OK;

@@ -2856,27 +2856,13 @@ ClrDataAccess::GetHeapSegmentData(CLRDATA_ADDRESS seg, struct DacpHeapSegmentDat
             heapSegment->gc_heap = NULL;
             heapSegment->background_allocated = (CLRDATA_ADDRESS)(ULONG_PTR)pSegment->background_allocated;
 
-            heapSegment->highAllocMark = heapSegment->allocated;
-
-            if (heapSegment->next == NULL)
+            if (seg == (CLRDATA_ADDRESS)*g_gcDacGlobals->ephemeral_heap_segment)
             {
-                if (IsRegionGCEnabled())
-                {
-                    // regions case
-                    CLRDATA_ADDRESS alloc_allocated = (CLRDATA_ADDRESS)*g_gcDacGlobals->alloc_allocated;
-                    if (heapSegment->mem <= alloc_allocated && alloc_allocated <= heapSegment->committed)
-                    {
-                        heapSegment->highAllocMark = alloc_allocated;
-                    }
-                }
-                else
-                {
-                    // segment case
-                    if (seg == (CLRDATA_ADDRESS)*g_gcDacGlobals->ephemeral_heap_segment)
-                    {
-                        heapSegment->highAllocMark = (CLRDATA_ADDRESS)*g_gcDacGlobals->alloc_allocated;
-                    }
-                }
+                heapSegment->highAllocMark = (CLRDATA_ADDRESS)*g_gcDacGlobals->alloc_allocated;
+            }
+            else
+            {
+                heapSegment->highAllocMark = heapSegment->allocated;
             }
         }
     }

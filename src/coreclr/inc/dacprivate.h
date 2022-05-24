@@ -794,7 +794,7 @@ struct MSLAYOUT DacpHeapSegmentData
         // if this is the start segment, and the Dac hasn't set highAllocMark, set it here.
         if (SUCCEEDED(hr) && this->highAllocMark == 0)
         {
-            if (this->segmentAddr == heap.generation_table[0].start_segment)
+            if (this->segmentAddr == heap.ephemeral_heap_segment)
                 highAllocMark = heap.alloc_allocated;
             else
                 highAllocMark = allocated;
