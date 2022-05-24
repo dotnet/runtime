@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { WasmRoot, WasmRootBuffer, mono_wasm_new_root } from "./roots";
+import { WasmRoot, WasmRootBuffer, mono_wasm_new_root, mono_wasm_new_external_root } from "./roots";
 import { MonoClass, MonoMethod, MonoObject, VoidPtrNull, MonoType, MarshalType, mono_assert } from "./types";
 import { BINDING, Module, runtimeHelpers } from "./imports";
 import { js_to_mono_enum, js_to_mono_obj_root, _js_to_mono_uri_root } from "./js-to-cs";
@@ -245,23 +245,24 @@ export function _compile_converter_for_marshal_string(args_marshal: string/*Args
 
         if (step.convert_root) {
             mono_assert(!step.indirect, "converter step cannot both be rooted and indirect");
-            // FIXME: Optimize this!!!
             if (!converter.scratchValueRoot) {
-                converter.scratchValueRoot = mono_wasm_new_root<MonoObject>();
+                // HACK: new_external_root rightly won't accept a null address
+                const dummyAddress = Module.stackSave();
+                converter.scratchValueRoot = mono_wasm_new_external_root<MonoObject>(dummyAddress);
                 closure.scratchValueRoot = converter.scratchValueRoot;
             }
 
             closure[closureKey] = step.convert_root;
-            // Convert the object and store the managed reference in our scratch root
+            // Update our scratch external root to point to the indirect slot where our
+            //  managed pointer is destined to live
+            body.push(`scratchValueRoot._set_address(${offsetText});`);
+            // Convert the object and store the managed reference through our scratch external root
             body.push(`${closureKey}(${argKey}, scratchValueRoot);`);
-            // Next, copy that managed reference into the arguments buffer on the stack.
-            // This is its new home and by being on the stack the reference is now pinned
-            body.push(`scratchValueRoot.copy_to_address(${offsetText});`);
             if (step.byref) {
                 // for T&& we pass the address of the pointer stored on the stack
                 body.push(`let ${valueKey} = ${offsetText};`);
             } else {
-                // It is safe to pass the pointer by value now since wee know it is pinned
+                // It is safe to pass the pointer by value now since we know it is pinned
                 body.push(`let ${valueKey} = scratchValueRoot.value;`);
             }
         } else if (step.convert) {
