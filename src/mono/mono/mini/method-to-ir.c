@@ -3777,7 +3777,7 @@ handle_constrained_gsharedvt_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMe
 	/*
 	 * Constrained calls need to behave differently at runtime dependending on whenever the receiver is instantiated as ref type or as a vtype.
 	 * This is hard to do with the current call code, since we would have to emit a branch and two different calls. So instead, we
-	 * pack the arguments into an array, and do the rest of the work in in an icall.
+	 * pack the arguments into an array, and do the rest of the work in an icall.
 	 */
 	supported = ((cmethod->klass == mono_defaults.object_class) || mono_class_is_interface (cmethod->klass) || (!m_class_is_valuetype (cmethod->klass) && m_class_get_image (cmethod->klass) != mono_defaults.corlib));
 	if (supported)
@@ -5540,7 +5540,7 @@ is_supported_tailcall (MonoCompile *cfg, const guint8 *ip, MonoMethod *method, M
 	if (!tailcall && !tailcall_calli)
 		goto exit;
 
-	// FIXME in calli, there is no type for for the this parameter,
+	// FIXME in calli, there is no type for the this parameter,
 	// so we assume it might be valuetype; in future we should issue a range
 	// check, so rule out pointing to frame (for other reference parameters also)
 

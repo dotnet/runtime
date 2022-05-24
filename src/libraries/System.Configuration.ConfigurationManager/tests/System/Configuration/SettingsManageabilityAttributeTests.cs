@@ -5,7 +5,7 @@ using Xunit;
 
 namespace System.Configuration
 {
-    public class SettingsManageabilityAtrributeTests
+    public class SettingsManageabilityAttributeTests
     {
         [Fact]
         public void GetValueIsExpected()

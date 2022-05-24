@@ -999,7 +999,7 @@ namespace System.Globalization
                             // Our existing names mostly look like:
                             // "English" + "United States" -> "English (United States)"
                             // "Azeri (Latin)" + "Azerbaijan" -> "Azeri (Latin, Azerbaijan)"
-                            if (EnglishLanguageName[^1] == ')')
+                            if (EnglishLanguageName.EndsWith(')'))
                             {
                                 // "Azeri (Latin)" + "Azerbaijan" -> "Azeri (Latin, Azerbaijan)"
                                 englishDisplayName = string.Concat(

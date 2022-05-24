@@ -1692,6 +1692,14 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
         saveRegsPlusPSPSize += MAX_REG_ARG * REGSIZE_BYTES;
     }
 
+    if (compiler->lvaMonAcquired != BAD_VAR_NUM && !compiler->opts.IsOSR())
+    {
+        // We furthermore allocate the "monitor acquired" bool between PSP and
+        // the saved registers because this is part of the EnC header.
+        // Note that OSR methods reuse the monitor bool created by tier 0.
+        saveRegsPlusPSPSize += compiler->lvaLclSize(compiler->lvaMonAcquired);
+    }
+
     unsigned const saveRegsPlusPSPSizeAligned = roundUp(saveRegsPlusPSPSize, STACK_ALIGN);
 
     assert(compiler->lvaOutgoingArgSpaceSize % REGSIZE_BYTES == 0);

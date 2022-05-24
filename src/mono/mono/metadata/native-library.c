@@ -803,7 +803,7 @@ netcore_check_alc_cache (MonoAssemblyLoadContext *alc, const char *scope)
 }
 
 static MonoDl*
-netcore_lookup_self_native_handle()
+netcore_lookup_self_native_handle (void)
 {
 	ERROR_DECL (load_error);
 	if (!internal_module)

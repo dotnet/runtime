@@ -82,7 +82,7 @@ export type MonoConfig = {
     aot_profiler_options?: AOTProfilerOptions, // dictionary-style Object. If omitted, aot profiler will not be initialized.
     coverage_profiler_options?: CoverageProfilerOptions, // dictionary-style Object. If omitted, coverage profiler will not be initialized.
     ignore_pdb_load_errors?: boolean,
-    wait_for_debugger ?: number
+    wait_for_debugger?: number
 };
 
 export type MonoConfigError = {
@@ -178,6 +178,13 @@ export type CoverageProfilerOptions = {
     send_to?: string // should be in the format <CLASS>::<METHODNAME>, default: 'WebAssembly.Runtime::DumpCoverageProfileData' (DumpCoverageProfileData stores the data into INTERNAL.coverage_profile_data.)
 }
 
+/// Options to configure the event pipe session
+export interface EventPipeSessionOptions {
+    /// Whether to collect additional details (such as method and type names) at EventPipeSession.stop() time (default: true)
+    /// This is required for some use cases, and may allow some tools to better understand the events.
+    collectRundownEvents?: boolean;
+}
+
 // how we extended emscripten Module
 export type DotnetModule = EmscriptenModule & DotnetModuleConfig;
 
@@ -213,12 +220,13 @@ export type DotnetModuleConfigImports = {
     url?: any;
 }
 
-export function assert(condition: unknown, messageFactory: string | (() => string)): asserts condition {
+// see src\mono\wasm\runtime\rollup.config.js 
+// inline this, because the lambda could allocate closure on hot path otherwise
+export function mono_assert(condition: unknown, messageFactory: string | (() => string)): asserts condition {
     if (!condition) {
         const message = typeof messageFactory === "string"
             ? messageFactory
             : messageFactory();
-        console.error(`Assert failed: ${message}`);
         throw new Error(`Assert failed: ${message}`);
     }
 }
@@ -269,6 +277,6 @@ export const enum MarshalError {
 
 // Evaluates whether a value is nullish (same definition used as the ?? operator,
 //  https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Nullish_coalescing_operator)
-export function is_nullish<T> (value: T | null | undefined): value is null | undefined {
+export function is_nullish<T>(value: T | null | undefined): value is null | undefined {
     return (value === undefined) || (value === null);
 }

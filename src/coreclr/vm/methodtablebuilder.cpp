@@ -8617,7 +8617,7 @@ MethodTableBuilder::HandleExplicitLayout(
         // we will put a catchall "break" here which will cause the typeload to abort (albeit with a probably misleading
         // error message.)
         break;
-    } // for(;;)
+    }
 
     // We only break out of the loop above if we detected an error.
     if (i < bmtMetaData->cFields || !explicitClassTrust.IsLegal())
@@ -9296,9 +9296,8 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
     {
         //#LoadExactInterfaceMap_Algorithm2
         // Exact interface instantiation loading TECHNIQUE 2 - The exact instantiation has caused some duplicates to
-        // appear in the interface map!  This may not be an error: if the duplicates
-        // were ones that arose because because of inheritance from
-        // a parent type then we accept that.  For example
+        // appear in the interface map!  This may not be an error: if the duplicates were ones that arose because of
+        // inheritance from a parent type then we accept that.  For example
         //     class C<T> : I<T>
         //     class D<T> : C<T>, I<string>
         // is acceptable even when loading D<string>.  Note that in such a case
@@ -9509,7 +9508,7 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
 
                     // Compare original and duplicate interface entries in the dispatch map if they contain
                     // different implementation for the same interface method
-                    for (;;)
+                    while (true)
                     {
                         if (!originalIt.IsValid() || !duplicateIt.IsValid())
                         {   // We reached end of one dispatch map iterator
@@ -9844,7 +9843,7 @@ void MethodTableBuilder::CheckForSystemTypes()
 
             if (strcmp(nameSpace, g_IntrinsicsNS) == 0)
             {
-                EEClassLayoutInfo * pLayout = pClass->GetLayoutInfo();
+                EEClassLayoutInfo* pLayout = pClass->GetLayoutInfo();
 
                 // The SIMD Hardware Intrinsic types correspond to fundamental data types in the underlying ABIs:
                 // * Vector64<T>:  __m64
@@ -9853,7 +9852,6 @@ void MethodTableBuilder::CheckForSystemTypes()
 
                 // These __m128 and __m256 types, among other requirements, are special in that they must always
                 // be aligned properly.
-
 
                 if (strcmp(name, g_Vector64Name) == 0)
                 {
@@ -9898,6 +9896,21 @@ void MethodTableBuilder::CheckForSystemTypes()
 
                 return;
             }
+#if defined(UNIX_AMD64_ABI) || defined(TARGET_ARM64)
+            else if (strcmp(nameSpace, g_SystemNS) == 0)
+            {
+                EEClassLayoutInfo* pLayout = pClass->GetLayoutInfo();
+
+                // These types correspond to fundamental data types in the underlying ABIs:
+                // * Int128:  __int128
+                // * UInt128: unsigned __int128
+
+                if ((strcmp(name, g_Int128Name) == 0) || (strcmp(name, g_UInt128Name) == 0))
+                {
+                    pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 16; // sizeof(__int128)
+                }
+            }
+#endif // UNIX_AMD64_ABI || TARGET_ARM64
         }
 
         if (g_pNullableClass != NULL)
