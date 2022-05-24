@@ -88,9 +88,18 @@ namespace System.Text
             // pmovmskb which we know are optimized, and (b) we can avoid downclocking the processor while
             // this method is running.
 
-            return (Sse2.IsSupported || (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian))
-                ? GetIndexOfFirstNonAsciiByte_Intrinsified(pBuffer, bufferLength)
-                : GetIndexOfFirstNonAsciiByte_Default(pBuffer, bufferLength);
+            if (Avx2.IsSupported)
+            {
+                return GetIndexOfFirstNonAsciiByte_Avx2(pBuffer, bufferLength);
+            }
+            else if (Sse2.IsSupported || (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian))
+            {
+                return GetIndexOfFirstNonAsciiByte_Intrinsified(pBuffer, bufferLength);
+            }
+            else
+            {
+                return GetIndexOfFirstNonAsciiByte_Default(pBuffer, bufferLength);
+            }
         }
 
         private static unsafe nuint GetIndexOfFirstNonAsciiByte_Default(byte* pBuffer, nuint bufferLength)
@@ -254,6 +263,307 @@ namespace System.Text
             Debug.Assert(advSimdIndex != uint.MaxValue);
             Debug.Assert(AdvSimd.IsSupported);
             return advSimdIndex < 16;
+        }
+
+        private static unsafe nuint GetIndexOfFirstNonAsciiByte_Avx2(byte* pBuffer, nuint bufferLength)
+        {
+            // JIT turns the below into constants
+
+            uint SizeOfVector256 = (uint)Unsafe.SizeOf<Vector256<byte>>();
+            nuint MaskOfAllBitsInVector256 = (nuint)(SizeOfVector256 - 1);
+
+            Debug.Assert(Avx2.IsSupported || AdvSimd.Arm64.IsSupported, "Avx2 required.");
+            Debug.Assert(BitConverter.IsLittleEndian, "This SSE2/Arm64 implementation assumes little-endian.");
+
+            uint currentAvxMask = uint.MaxValue, secondAvxMask = uint.MaxValue;
+            byte* pOriginalBuffer = pBuffer;
+
+            // This method is written such that control generally flows top-to-bottom, avoiding
+            // jumps as much as possible in the optimistic case of a large enough buffer and
+            // "all ASCII". If we see non-ASCII data, we jump out of the hot paths to targets
+            // after all the main logic.
+
+            if (bufferLength < SizeOfVector256)
+            {
+                goto InputBufferLessThanOneVectorInLength; // can't vectorize; drain primitives instead
+            }
+
+            // Read the first vector unaligned.
+
+            currentAvxMask = (uint)Avx2.MoveMask(Avx.LoadVector256(pBuffer)); // unaligned load
+            if (currentAvxMask != 0)
+            {
+                goto FoundNonAsciiDataInCurrentChunk;
+            }
+
+            // If we have less than 64 bytes to process, just go straight to the final unaligned
+            // read. There's no need to mess with the loop logic in the middle of this method.
+
+            if (bufferLength < 2 * SizeOfVector256)
+            {
+                goto IncrementCurrentOffsetBeforeFinalUnalignedVectorRead;
+            }
+
+            // Now adjust the read pointer so that future reads are aligned.
+
+            pBuffer = (byte*)(((nuint)pBuffer + SizeOfVector256) & ~(nuint)MaskOfAllBitsInVector256);
+
+#if DEBUG
+            long numBytesRead = pBuffer - pOriginalBuffer;
+            Debug.Assert(0 < numBytesRead && numBytesRead <= SizeOfVector256, "We should've made forward progress of at least one byte.");
+            Debug.Assert((nuint)numBytesRead <= bufferLength, "We shouldn't have read past the end of the input buffer.");
+#endif
+
+            // Adjust the remaining length to account for what we just read.
+
+            bufferLength += (nuint)pOriginalBuffer;
+            bufferLength -= (nuint)pBuffer;
+
+            // The buffer is now properly aligned.
+            // Read 2 vectors at a time if possible.
+
+            if (bufferLength >= 2 * SizeOfVector256)
+            {
+                byte* pFinalVectorReadPos = (byte*)((nuint)pBuffer + bufferLength - 2 * SizeOfVector256);
+
+                // After this point, we no longer need to update the bufferLength value.
+
+                do
+                {
+                    Vector256<byte> firstVector = Avx.LoadAlignedVector256(pBuffer);
+                    Vector256<byte> secondVector = Avx.LoadAlignedVector256(pBuffer + SizeOfVector256);
+
+                    currentAvxMask = (uint)Avx2.MoveMask(firstVector);
+                    secondAvxMask = (uint)Avx2.MoveMask(secondVector);
+                    if ((currentAvxMask | secondAvxMask) != 0)
+                    {
+                        goto FoundNonAsciiDataInInnerLoop;
+                    }
+
+                    pBuffer += 2 * SizeOfVector256;
+                } while (pBuffer <= pFinalVectorReadPos);
+            }
+
+            // We have somewhere between 0 and (2 * vector length) - 1 bytes remaining to read from.
+            // Since the above loop doesn't update bufferLength, we can't rely on its absolute value.
+            // But we _can_ rely on it to tell us how much remaining data must be drained by looking
+            // at what bits of it are set. This works because had we updated it within the loop above,
+            // we would've been adding 2 * SizeOfVector256 on each iteration, but we only care about
+            // bits which are less significant than those that the addition would've acted on.
+
+            // If there is fewer than one vector length remaining, skip the next aligned read.
+
+            if ((bufferLength & SizeOfVector256) == 0)
+            {
+                goto DoFinalUnalignedVectorRead;
+            }
+
+            // At least one full vector's worth of data remains, so we can safely read it.
+            // Remember, at this point pBuffer is still aligned.
+
+            currentAvxMask = (uint)Avx2.MoveMask(Avx2.LoadAlignedVector256(pBuffer));
+            if (currentAvxMask != 0)
+            {
+                goto FoundNonAsciiDataInCurrentChunk;
+            }
+
+        IncrementCurrentOffsetBeforeFinalUnalignedVectorRead:
+
+            pBuffer += SizeOfVector256;
+
+        DoFinalUnalignedVectorRead:
+
+            if (((byte)bufferLength & MaskOfAllBitsInVector256) != 0)
+            {
+                // Perform an unaligned read of the last vector.
+                // We need to adjust the pointer because we're re-reading data.
+
+                pBuffer += (bufferLength & MaskOfAllBitsInVector256) - SizeOfVector256;
+
+                currentAvxMask = (uint)Avx2.MoveMask(Avx2.LoadVector128(pBuffer)); // unaligned load
+                if (currentAvxMask != 0)
+                {
+                    goto FoundNonAsciiDataInCurrentChunk;
+                }
+
+                pBuffer += SizeOfVector256;
+            }
+
+        Finish:
+            return (nuint)pBuffer - (nuint)pOriginalBuffer; // and we're done!
+
+        FoundNonAsciiDataInInnerLoop:
+
+            // If the current (first) mask isn't the mask that contains non-ASCII data, then it must
+            // instead be the second mask. If so, skip the entire first mask and drain ASCII bytes
+            // from the second mask.
+
+            if (currentAvxMask != 0)
+            {
+                pBuffer += SizeOfVector256;
+                currentAvxMask = secondAvxMask;
+            }
+
+        FoundNonAsciiDataInCurrentChunk:
+
+
+            // The mask contains - from the LSB - a 0 for each ASCII byte we saw, and a 1 for each non-ASCII byte.
+            // Tzcnt is the correct operation to count the number of zero bits quickly. If this instruction isn't
+            // available, we'll fall back to a normal loop.
+            Debug.Assert(currentAvxMask != 0, "Shouldn't be here unless we see non-ASCII data.");
+            pBuffer += (uint)BitOperations.TrailingZeroCount(currentAvxMask);
+
+            goto Finish;
+
+        FoundNonAsciiDataInCurrentDWord:
+
+            uint currentDWord;
+            Debug.Assert(!AllBytesInUInt32AreAscii(currentDWord), "Shouldn't be here unless we see non-ASCII data.");
+            pBuffer += CountNumberOfLeadingAsciiBytesFromUInt32WithSomeNonAsciiData(currentDWord);
+
+            goto Finish;
+
+        InputBufferLessThanOneVectorInLength:
+
+            // These code paths get hit if the original input length was less than one vector in size.
+            // We can't perform vectorized reads at this point, so we'll fall back to reading primitives
+            // directly. Note that all of these reads are unaligned.
+
+            Debug.Assert(bufferLength < SizeOfVector256);
+
+            // QWORD drain
+            // TODO: Finish this
+
+            if ((bufferLength & 16) != 0)
+            {
+                if (UIntPtr.Size == sizeof(ulong))
+                {
+                    // If we can use 64-bit tzcnt to count the number of leading ASCII bytes, prefer it.
+
+                    ulong candidateUInt64 = Unsafe.ReadUnaligned<ulong>(pBuffer);
+                    if (!AllBytesInUInt64AreAscii(candidateUInt64))
+                    {
+                        // Clear everything but the high bit of each byte, then tzcnt.
+                        // Remember to divide by 8 at the end to convert bit count to byte count.
+
+                        candidateUInt64 &= UInt64HighBitsOnlyMask;
+                        pBuffer += (nuint)(BitOperations.TrailingZeroCount(candidateUInt64) >> 3);
+                        goto Finish;
+                    }
+                }
+                else
+                {
+                    // If we can't use 64-bit tzcnt, no worries. We'll just do 2x 32-bit reads instead.
+
+                    currentDWord = Unsafe.ReadUnaligned<uint>(pBuffer);
+                    uint nextDWord = Unsafe.ReadUnaligned<uint>(pBuffer + 4);
+
+                    if (!AllBytesInUInt32AreAscii(currentDWord | nextDWord))
+                    {
+                        // At least one of the values wasn't all-ASCII.
+                        // We need to figure out which one it was and stick it in the currentMask local.
+
+                        if (AllBytesInUInt32AreAscii(currentDWord))
+                        {
+                            currentDWord = nextDWord; // this one is the culprit
+                            pBuffer += 4;
+                        }
+
+                        goto FoundNonAsciiDataInCurrentDWord;
+                    }
+                }
+
+                pBuffer += 8; // successfully consumed 8 ASCII bytes
+            }
+
+            if ((bufferLength & 8) != 0)
+            {
+                if (UIntPtr.Size == sizeof(ulong))
+                {
+                    // If we can use 64-bit tzcnt to count the number of leading ASCII bytes, prefer it.
+
+                    ulong candidateUInt64 = Unsafe.ReadUnaligned<ulong>(pBuffer);
+                    if (!AllBytesInUInt64AreAscii(candidateUInt64))
+                    {
+                        // Clear everything but the high bit of each byte, then tzcnt.
+                        // Remember to divide by 8 at the end to convert bit count to byte count.
+
+                        candidateUInt64 &= UInt64HighBitsOnlyMask;
+                        pBuffer += (nuint)(BitOperations.TrailingZeroCount(candidateUInt64) >> 3);
+                        goto Finish;
+                    }
+                }
+                else
+                {
+                    // If we can't use 64-bit tzcnt, no worries. We'll just do 2x 32-bit reads instead.
+
+                    currentDWord = Unsafe.ReadUnaligned<uint>(pBuffer);
+                    uint nextDWord = Unsafe.ReadUnaligned<uint>(pBuffer + 4);
+
+                    if (!AllBytesInUInt32AreAscii(currentDWord | nextDWord))
+                    {
+                        // At least one of the values wasn't all-ASCII.
+                        // We need to figure out which one it was and stick it in the currentMask local.
+
+                        if (AllBytesInUInt32AreAscii(currentDWord))
+                        {
+                            currentDWord = nextDWord; // this one is the culprit
+                            pBuffer += 4;
+                        }
+
+                        goto FoundNonAsciiDataInCurrentDWord;
+                    }
+                }
+
+                pBuffer += 8; // successfully consumed 8 ASCII bytes
+            }
+
+            // DWORD drain
+
+            if ((bufferLength & 4) != 0)
+            {
+                currentDWord = Unsafe.ReadUnaligned<uint>(pBuffer);
+
+                if (!AllBytesInUInt32AreAscii(currentDWord))
+                {
+                    goto FoundNonAsciiDataInCurrentDWord;
+                }
+
+                pBuffer += 4; // successfully consumed 4 ASCII bytes
+            }
+
+            // WORD drain
+            // (We movzx to a DWORD for ease of manipulation.)
+
+            if ((bufferLength & 2) != 0)
+            {
+                currentDWord = Unsafe.ReadUnaligned<ushort>(pBuffer);
+
+                if (!AllBytesInUInt32AreAscii(currentDWord))
+                {
+                    // We only care about the 0x0080 bit of the value. If it's not set, then we
+                    // increment currentOffset by 1. If it's set, we don't increment it at all.
+
+                    pBuffer += (nuint)((nint)(sbyte)currentDWord >> 7) + 1;
+                    goto Finish;
+                }
+
+                pBuffer += 2; // successfully consumed 2 ASCII bytes
+            }
+
+            // BYTE drain
+
+            if ((bufferLength & 1) != 0)
+            {
+                // sbyte has non-negative value if byte is ASCII.
+
+                if (*(sbyte*)(pBuffer) >= 0)
+                {
+                    pBuffer++; // successfully consumed a single byte
+                }
+            }
+
+            goto Finish;
         }
 
         private static unsafe nuint GetIndexOfFirstNonAsciiByte_Intrinsified(byte* pBuffer, nuint bufferLength)
@@ -1625,7 +1935,7 @@ namespace System.Text
             // pmovmskb, ptest, vpminuw which we know are optimized, and (b) we can avoid downclocking the
             // processor while this method is running.
 
-            if (Avx2.IsSupported && elementCount >= 2 * (uint)Unsafe.SizeOf<Vector256<byte>>())
+            if (Avx2.IsSupported)
             {
                 Debug.Assert(BitConverter.IsLittleEndian, "Assume little endian if AVX2 is supported.");
 
@@ -1633,25 +1943,28 @@ namespace System.Text
                 // call into it after a quick probe to ensure the next immediate characters really are ASCII.
                 // If we see non-ASCII data, we'll jump immediately to the draining logic at the end of the method.
 
-                if (IntPtr.Size >= 8)
+                if (elementCount >= 2 * (uint)Unsafe.SizeOf<Vector256<byte>>())
                 {
-                    utf16Data64Bits = Unsafe.ReadUnaligned<ulong>(pUtf16Buffer);
-                    if (!AllCharsInUInt64AreAscii(utf16Data64Bits))
+                    if (IntPtr.Size >= 8)
                     {
-                        goto FoundNonAsciiDataIn64BitRead;
+                        utf16Data64Bits = Unsafe.ReadUnaligned<ulong>(pUtf16Buffer);
+                        if (!AllCharsInUInt64AreAscii(utf16Data64Bits))
+                        {
+                            goto FoundNonAsciiDataIn64BitRead;
+                        }
                     }
-                }
-                else
-                {
-                    utf16Data32BitsHigh = Unsafe.ReadUnaligned<uint>(pUtf16Buffer);
-                    utf16Data32BitsLow = Unsafe.ReadUnaligned<uint>(pUtf16Buffer + 4 / sizeof(char));
-                    if (!AllCharsInUInt32AreAscii(utf16Data32BitsHigh | utf16Data32BitsLow))
+                    else
                     {
-                        goto FoundNonAsciiDataIn64BitRead;
+                        utf16Data32BitsHigh = Unsafe.ReadUnaligned<uint>(pUtf16Buffer);
+                        utf16Data32BitsLow = Unsafe.ReadUnaligned<uint>(pUtf16Buffer + 4 / sizeof(char));
+                        if (!AllCharsInUInt32AreAscii(utf16Data32BitsHigh | utf16Data32BitsLow))
+                        {
+                            goto FoundNonAsciiDataIn64BitRead;
+                        }
                     }
-                }
 
-                currentOffset = NarrowUtf16ToAscii_Avx2(pUtf16Buffer, pAsciiBuffer, elementCount);
+                    currentOffset = NarrowUtf16ToAscii_Avx2(pUtf16Buffer, pAsciiBuffer, elementCount);
+                }
             }
             else if (Sse2.IsSupported)
             {
@@ -2234,9 +2547,12 @@ namespace System.Text
             // pmovmskb which we know are optimized, and (b) we can avoid downclocking the processor while
             // this method is running.
 
-            if (Avx2.IsSupported && elementCount >= 2 * (uint)Unsafe.SizeOf<Vector256<byte>>())
+            if (Avx2.IsSupported)
             {
-                currentOffset = WidenAsciiToUtf16_Avx2(pAsciiBuffer, pUtf16Buffer, elementCount);
+                if (elementCount >= 2 * (uint)Unsafe.SizeOf<Vector256<byte>>())
+                {
+                    currentOffset = WidenAsciiToUtf16_Avx2(pAsciiBuffer, pUtf16Buffer, elementCount);
+                }
             }
             else if (Sse2.IsSupported || (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian))
             {
