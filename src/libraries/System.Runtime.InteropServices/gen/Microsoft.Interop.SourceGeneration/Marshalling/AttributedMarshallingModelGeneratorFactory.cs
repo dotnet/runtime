@@ -346,6 +346,7 @@ namespace Microsoft.Interop
 
             IMarshallingGenerator marshallingGenerator = new CustomNativeTypeMarshallingGenerator(marshallingStrategy, enableByValueContentsMarshalling: false);
 
+            // Elements in the collection must be blittable to use the pinnable marshaller.
             if (collectionInfo.PinningFeatures.HasFlag(CustomTypeMarshallerPinning.ManagedType) && elementIsBlittable)
             {
                 return new PinnableManagedValueMarshaller(marshallingGenerator);
