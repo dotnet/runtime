@@ -48,6 +48,7 @@ namespace Microsoft.Interop
                     }
                     else
                     {
+                        // Assign out params to default
                         initializations.Add(ExpressionStatement(
                             AssignmentExpression(
                                 SyntaxKind.SimpleAssignmentExpression,
