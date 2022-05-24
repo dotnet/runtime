@@ -32,6 +32,8 @@ namespace Mono.Linker
 			return (typeName.Length > i + 1) && typeName[i + 1] == 'd';
 		}
 
+		internal static bool IsGeneratedType (string name) => IsStateMachineType (name) || IsLambdaDisplayClass (name);
+
 		internal static bool IsLambdaOrLocalFunction (string methodName) => IsLambdaMethod (methodName) || IsLocalFunction (methodName);
 
 		// Lambda methods have generated names like "<UserMethod>b__0_1" where "UserMethod" is the name

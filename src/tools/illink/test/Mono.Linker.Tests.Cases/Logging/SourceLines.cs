@@ -10,9 +10,8 @@ namespace Mono.Linker.Tests.Cases.Logging
 	[SetupCompileArgument ("/debug:full")]
 	[ExpectedNoWarnings]
 	[ExpectedWarning ("IL2074", FileName = "", SourceLine = 39, SourceColumn = 4)]
-	[ExpectedWarning ("IL2074", FileName = "", SourceLine = 40, SourceColumn = 4)]
-	[ExpectedWarning ("IL2091", FileName = "", SourceLine = 51, SourceColumn = 4)]
-	[ExpectedWarning ("IL2089", FileName = "", SourceLine = 55, SourceColumn = 36)]
+	[ExpectedWarning ("IL2074", FileName = "", SourceLine = 38, SourceColumn = 4)]
+	[ExpectedWarning ("IL2089", FileName = "", SourceLine = 50, SourceColumn = 36)]
 	public class SourceLines
 	{
 		public static void Main ()
@@ -44,11 +43,7 @@ namespace Mono.Linker.Tests.Cases.Logging
 		[ExpectedWarning ("IL2089", nameof (SourceLines) + "." + nameof (type), "TOuterMethod", ProducedBy = ProducedBy.Analyzer)]
 		static IEnumerable<int> GenericMethodIteratorWithRequirement<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TOuterMethod> ()
 		{
-			// Since this is iterator it will turn into a subclass with generic T
-			// but this T doesn't inherit the DAM annotation.
-			// So calling the LocationFunction which requires the DAM on T will generate a warning
-			// but that warning comes from compiler generated code - there's no user code doing that.
-			LocalFunction (); // IL2091 - The issue with attributes not propagating to the iterator generics
+			LocalFunction ();
 			yield return 1;
 
 			// The generator code for LocalFunction inherits the DAM on the T
