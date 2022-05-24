@@ -202,5 +202,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             RandomNumberGenerator.Fill(bytes);
             return bytes;
         }
+
+        internal static X509Certificate2 TamperSignature(X509Certificate2 input)
+        {
+            byte[] cert = input.RawData;
+            cert[cert.Length - 1] ^= 0xFF;
+            return new X509Certificate2(cert);
+        }
     }
 }

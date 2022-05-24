@@ -84,7 +84,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             {
                 if ((flags & X509ChainStatusFlags.NotSignatureValid) != 0)
                 {
-                    X509Certificate2 tampered = TamperSignature(input);
+                    X509Certificate2 tampered = TestDataGenerator.TamperSignature(input);
                     input.Dispose();
                     return tampered;
                 }
@@ -946,13 +946,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 bool result = chain.Build(endEntityCert);
                 body(result, chain);
             }
-        }
-
-        private static X509Certificate2 TamperSignature(X509Certificate2 input)
-        {
-            byte[] cert = input.RawData;
-            cert[cert.Length - 1] ^= 0xFF;
-            return new X509Certificate2(cert);
         }
 
         private static X509Extension BuildPolicyConstraints(

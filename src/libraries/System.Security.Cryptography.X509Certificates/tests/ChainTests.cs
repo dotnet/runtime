@@ -66,6 +66,72 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+        public enum BuildChainWithNotSignatureValidTest : int
+        {
+            TrustedRoot,
+            UntrustedRoot,
+            PartialChain
+        }
+
+        public static IEnumerable<object[]> BuildChainWithNotSignatureValidData()
+        {
+            yield return new object[] { true, X509ChainStatusFlags.NoError, BuildChainWithNotSignatureValidTest.TrustedRoot };
+            yield return new object[] { false, X509ChainStatusFlags.UntrustedRoot | X509ChainStatusFlags.NotSignatureValid, BuildChainWithNotSignatureValidTest.UntrustedRoot };
+            yield return new object[] { false, X509ChainStatusFlags.PartialChain, BuildChainWithNotSignatureValidTest.PartialChain };
+        }
+
+        [Theory]
+        [MemberData(nameof(BuildChainWithNotSignatureValidData))]
+        [PlatformSpecific(TestPlatforms.Linux)] // NotSignatureValid gets ignored on the root certificate.
+        public static void BuildChainWithNotSignatureValid(
+            bool chainBuildsSuccessfully,
+            X509ChainStatusFlags chainFlags,
+            BuildChainWithNotSignatureValidTest test)
+        {
+            TestDataGenerator.MakeTestChain3(
+                out X509Certificate2 endCert,
+                out X509Certificate2 intermediateCert,
+                out X509Certificate2 rootCert,
+                testName: test.ToString());
+
+            // Make root cert signature invalid.
+            X509Certificate2 tampered = TestDataGenerator.TamperSignature(rootCert);
+            rootCert.Dispose();
+            rootCert = tampered;
+
+            using (endCert)
+            using (intermediateCert)
+            using (rootCert)
+            using (ChainHolder chainHolder = new ChainHolder())
+            {
+                X509Chain chainTest = chainHolder.Chain;
+                chainTest.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                chainTest.ChainPolicy.VerificationTime = endCert.NotBefore.AddSeconds(1);
+                chainTest.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+                chainTest.ChainPolicy.ExtraStore.Add(endCert);
+
+                switch (test)
+                {
+                    case BuildChainWithNotSignatureValidTest.TrustedRoot:
+                        chainTest.ChainPolicy.ExtraStore.Add(intermediateCert);
+                        chainTest.ChainPolicy.CustomTrustStore.Add(rootCert);
+                        break;
+                    case BuildChainWithNotSignatureValidTest.PartialChain:
+                        chainTest.ChainPolicy.CustomTrustStore.Add(rootCert);
+                        break;
+                    case BuildChainWithNotSignatureValidTest.UntrustedRoot:
+                        chainTest.ChainPolicy.ExtraStore.Add(intermediateCert);
+                        chainTest.ChainPolicy.ExtraStore.Add(rootCert);
+                        break;
+                    default:
+                        throw new InvalidDataException();
+                }
+
+                Assert.Equal(chainBuildsSuccessfully, chainTest.Build(endCert));
+                Assert.Equal(chainFlags, chainTest.AllStatusFlags());
+            }
+        }
+
         [PlatformSpecific(TestPlatforms.Windows)]
         [Fact]
         public static void VerifyChainFromHandle()
