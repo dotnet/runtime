@@ -909,7 +909,7 @@ class StringObject : public Object
         LIMITED_METHOD_CONTRACT;
         return (UINT)(offsetof(StringObject, m_StringLength));
     }
-    VOID    GetEString(SString &result)
+    VOID    GetSString(SString &result)
     {
         WRAPPER_NO_CONTRACT;
         result.Set(GetBuffer(), GetStringLength());

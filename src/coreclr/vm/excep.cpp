@@ -246,7 +246,7 @@ void GetExceptionMessage(OBJECTREF throwable, SString &result)
 
     // If call returned NULL (not empty), oh well, no message.
     if (pString != NULL)
-        pString->GetEString(result);
+        pString->GetSString(result);
 } // void GetExceptionMessage()
 
 STRINGREF GetExceptionMessage(OBJECTREF throwable)

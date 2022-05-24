@@ -269,10 +269,10 @@ class EEMessageException : public EEException
     friend bool DebugIsEECxxExceptionPointer(void* pv);
 
  private:
-    HRESULT                               m_hr;
-    UINT                                  m_resID;
-    PathString   m_arg1;
-    PathString   m_arg2;
+    HRESULT             m_hr;
+    UINT                m_resID;
+    InlineSString<32>   m_arg1;
+    InlineSString<32>   m_arg2;
     SString             m_arg3;
     SString             m_arg4;
     SString             m_arg5;
@@ -350,7 +350,7 @@ class EEResourceException : public EEException
     friend bool DebugIsEECxxExceptionPointer(void* pv);
 
  private:
-    InlineEString<32, EncodingUnicode>        m_resourceName;
+    InlineSString<32>        m_resourceName;
 
  public:
     EEResourceException(RuntimeExceptionKind kind, const SString &resourceName);
@@ -448,7 +448,7 @@ class EEFieldException : public EEException
  private:
     FieldDesc   *m_pFD;
     MethodDesc  *m_pAccessingMD;
-    SString m_additionalContext;
+    SString      m_additionalContext;
     UINT         m_messageID;
 
  public:
@@ -562,8 +562,8 @@ class EEArgumentException : public EEException
     friend bool DebugIsEECxxExceptionPointer(void* pv);
 
  private:
-    InlineEString<32, EncodingUnicode>        m_argumentName;
-    InlineEString<32, EncodingUnicode>        m_resourceName;
+    InlineSString<32>        m_argumentName;
+    InlineSString<32>        m_resourceName;
 
  public:
     EEArgumentException(RuntimeExceptionKind reKind, LPCWSTR pArgName,
@@ -601,10 +601,10 @@ class EETypeLoadException : public EEException
     friend bool DebugIsEECxxExceptionPointer(void* pv);
 
   private:
-    InlineEString<64, EncodingUnicode> m_fullName;
-    SString m_pAssemblyName;
-    SString m_pMessageArg;
-    UINT                      m_resIDWhy;
+    InlineSString<64>   m_fullName;
+    SString             m_pAssemblyName;
+    SString             m_pMessageArg;
+    UINT                m_resIDWhy;
 
  public:
     EETypeLoadException(LPCUTF8 pszNameSpace, LPCUTF8 pTypeName,

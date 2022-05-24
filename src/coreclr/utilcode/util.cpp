@@ -190,7 +190,7 @@ namespace
             {
                 if (fIsDllPathPrefix)
                 {
-                    auto i = ssDllName.Begin();
+                    SString::Iterator i = ssDllName.Begin();
                     if (!ssDllName.Find(i, W('\\')))
                     {   // If the InprocServer32 is just a DLL name (not a fully qualified path), then
                         // prefix wszFilePath with wszDllPath.
@@ -2983,7 +2983,7 @@ namespace Reg
             {
                 // Can't count on the returned size being accurate - I've seen at least
                 // one string with an extra NULL at the end that will cause the resulting
-                // EString to count the extra NULL as part of the string. An extra
+                // SString to count the extra NULL as part of the string. An extra
                 // terminating NULL is not a legitimate scenario for REG_SZ - this must
                 // be done using REG_MULTI_SZ - however this was tolerated in the
                 // past and so it would be a breaking change to stop doing so.

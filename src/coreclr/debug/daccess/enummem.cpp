@@ -569,7 +569,7 @@ HRESULT ClrDataAccess::DumpManagedStackTraceStringObject(CLRDataEnumMemoryFlags 
 
     if (flags == CLRDATA_ENUM_MEM_TRIAGE)
     {
-        // StringObject::GetEString does not support DAC, use GetBuffer/GetStringLength
+        // StringObject::GetSString does not support DAC, use GetBuffer/GetStringLength
         SString stackTrace(dac_cast<PTR_WSTR>((TADDR)orefStackTrace->GetBuffer()), orefStackTrace->GetStringLength());
 
         StripFileInfoFromStackTrace(stackTrace);

@@ -404,7 +404,7 @@ void CLRException::GetMessage(SString &result)
         if (!message)
             result.Clear();
         else
-            message->GetEString(result);
+            message->GetSString(result);
 
         GCPROTECT_END ();
     }
@@ -1158,7 +1158,7 @@ BOOL EEResourceException::GetThrowableMessage(SString &result)
 
     if (message != NULL)
     {
-        message->GetEString(result);
+        message->GetSString(result);
         return TRUE;
     }
 

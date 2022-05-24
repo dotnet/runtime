@@ -637,7 +637,7 @@ namespace BINDER_SPACE
         }
 
         HRESULT BindSatelliteResourceByProbingPaths(
-            const StringArrayList<EncodingUnicode> *pResourceRoots,
+            const StringArrayList *pResourceRoots,
             AssemblyName             *pRequestedAssemblyName,
             SString&relativePath,
             BindResult               *pBindResult,
@@ -740,7 +740,7 @@ namespace BINDER_SPACE
         }
 
         HRESULT BindAssemblyByProbingPaths(
-            const StringArrayList<EncodingUnicode> *pBindingPaths,
+            const StringArrayList *pBindingPaths,
             AssemblyName            *pRequestedAssemblyName,
             Assembly                **ppAssembly)
         {

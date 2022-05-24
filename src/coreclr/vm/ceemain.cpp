@@ -218,7 +218,7 @@
 
 static int GetThreadUICultureId(_Out_ LocaleIDValue* pLocale);  // TODO: This shouldn't use the LCID.  We should rely on name instead
 
-static HRESULT GetThreadUICultureNames(StringArrayList<EncodingUnicode>* pCultureNames);
+static HRESULT GetThreadUICultureNames(__inout StringArrayList* pCultureNames);
 
 HRESULT EEStartup();
 
@@ -1900,7 +1900,7 @@ static void TerminateDebugger(void)
 // copy culture name into szBuffer and return length
 // ---------------------------------------------------------------------------
 extern BOOL g_fFatalErrorOccurredOnGCThread;
-static HRESULT GetThreadUICultureNames(StringArrayList<EncodingUnicode>* pCultureNames)
+static HRESULT GetThreadUICultureNames(__inout StringArrayList* pCultureNames)
 {
     CONTRACTL
     {
@@ -1915,8 +1915,8 @@ static HRESULT GetThreadUICultureNames(StringArrayList<EncodingUnicode>* pCultur
 
     EX_TRY
     {
-        InlineEString<LOCALE_NAME_MAX_LENGTH, EncodingUnicode> sCulture;
-        InlineEString<LOCALE_NAME_MAX_LENGTH, EncodingUnicode> sParentCulture;
+        InlineSString<LOCALE_NAME_MAX_LENGTH> sCulture;
+        InlineSString<LOCALE_NAME_MAX_LENGTH> sParentCulture;
 
 #if 0 // Enable and test if/once the unmanaged runtime is localized
         Thread * pThread = GetThreadNULLOk();
@@ -1991,11 +1991,11 @@ static HRESULT GetThreadUICultureNames(StringArrayList<EncodingUnicode>* pCultur
 #endif // !TARGET_UNIX
         }
         // (LPCWSTR) to restrict the size to null terminated size
-        pCultureNames->AppendIfNotThere(SString((LPCWSTR)sCulture));
+        pCultureNames->AppendIfNotThere((LPCWSTR)sCulture);
         // Disabling for Dev10 for consistency with managed resource lookup (see AppCompat bug notes in ResourceFallbackManager.cs)
         // Also, this is in the wrong order - put after the parent culture chain.
         //AddThreadPreferredUILanguages(pCultureNames);
-        pCultureNames->AppendIfNotThere(SString((LPCWSTR)sParentCulture));
+        pCultureNames->AppendIfNotThere((LPCWSTR)sParentCulture);
         pCultureNames->Append(SString::Empty());
     }
     EX_CATCH

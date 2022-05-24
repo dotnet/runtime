@@ -890,7 +890,7 @@ static const UINT64 SBUFFER_CANARY_VALUE = UI64(0xD00BED00BED00BAA);
 
 // Expose the quantity of padding needed when providing a prealloced
 // buffer. This is an unrolled version of the actualAllocation calculated
-// below for use as a constant value for InlineEString<X> to use. It is
+// below for use as a constant value for InlineEString<X, TEncoding> to use. It is
 // padded with one additional sizeof(SBUFFER_CANARY_VALUE) to account for
 // possible alignment problems issues (pre- and post-padding).
 #define SBUFFER_PADDED_SIZE(desiredUsefulSize) \

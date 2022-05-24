@@ -62,8 +62,7 @@
 #define LegacyCoreLibName_A "mscorlib"
 
 template<typename TEncoding>
-class StringArrayList;
-
+class EStringArrayList;
 struct EncodingUnicode;
 
 #if !defined(_DEBUG_IMPL) && defined(_DEBUG) && !defined(DACCESS_COMPILE)
@@ -566,7 +565,7 @@ typedef WCHAR LocaleIDValue[LOCALE_NAME_MAX_LENGTH];
 //     - The id is used as a key to map to a dll hinstance.
 
 // Callback to obtain both the culture name and the culture's parent culture name
-typedef HRESULT (*FPGETTHREADUICULTURENAMES)(StringArrayList<EncodingUnicode>* pCultureNames);
+typedef HRESULT (*FPGETTHREADUICULTURENAMES)(EStringArrayList<EncodingUnicode>* pCultureNames);
 const LPCWSTR UICULTUREID_DONTCARE = NULL;
 
 typedef int (*FPGETTHREADUICULTUREID)(LocaleIDValue*);
@@ -685,7 +684,7 @@ public:
  };
 
 #ifndef DACCESS_COMPILE
-void AddThreadPreferredUILanguages(StringArrayList<EncodingUnicode>* pArray);
+void AddThreadPreferredUILanguages(EStringArrayList<EncodingUnicode>* pArray);
 #endif
 //*****************************************************************************
 // CCompRC manages string Resource access for COM+. This includes loading

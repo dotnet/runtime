@@ -97,9 +97,9 @@ namespace BINDER_SPACE
         inline FailureCache *GetFailureCache();
         inline HRESULT AddToFailureCache(SString &assemblyNameOrPath,
                                          HRESULT  hrBindResult);
-        inline StringArrayList<EncodingUnicode> *GetAppPaths();
+        inline StringArrayList *GetAppPaths();
         inline SimpleNameToFileNameMap *GetTpaList();
-        inline StringArrayList<EncodingUnicode> *GetPlatformResourceRoots();
+        inline StringArrayList *GetPlatformResourceRoots();
 
         // Using a host-configured Trusted Platform Assembly list
         bool IsTpaListProvided();
@@ -114,8 +114,8 @@ namespace BINDER_SPACE
         FailureCache      *m_pFailureCache;
         CRITSEC_COOKIE     m_contextCS;
 
-        StringArrayList<EncodingUnicode> m_platformResourceRoots;
-        StringArrayList<EncodingUnicode> m_appPaths;
+        StringArrayList m_platformResourceRoots;
+        StringArrayList m_appPaths;
 
         SimpleNameToFileNameMap * m_pTrustedPlatformAssemblyMap;
     };

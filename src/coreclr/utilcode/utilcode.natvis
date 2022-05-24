@@ -7,15 +7,16 @@ The .NET Foundation licenses this file to you under the MIT license.
 
 
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
-    <Type Name="EString">
-        <DisplayString Condition="(m_flags &amp; REPRESENTATION_MASK) == REPRESENTATION_EMPTY">[Empty]</DisplayString>
-        <DisplayString Condition="(m_flags &amp; REPRESENTATION_MASK) == REPRESENTATION_UNICODE">[Unicode] {m_buffer,su}</DisplayString>
-        <DisplayString Condition="(m_flags &amp; REPRESENTATION_MASK) == REPRESENTATION_ASCII">[ASCII] {m_buffer,s}</DisplayString>
-        <DisplayString Condition="(m_flags &amp; REPRESENTATION_MASK) == REPRESENTATION_UTF8">[UTF8] {m_buffer,s8}</DisplayString>
-        <DisplayString Condition="(m_flags &amp; REPRESENTATION_MASK) == REPRESENTATION_ANSI">[ANSI] {m_buffer,s}</DisplayString>
-        <StringView Condition="(m_flags &amp; REPRESENTATION_MASK) == REPRESENTATION_UNICODE">m_buffer,su</StringView>
-        <StringView Condition="(m_flags &amp; REPRESENTATION_MASK) == REPRESENTATION_ASCII">m_buffer,s</StringView>
-        <StringView Condition="(m_flags &amp; REPRESENTATION_MASK) == REPRESENTATION_UTF8">m_buffer,s8</StringView>
-        <StringView Condition="(m_flags &amp; REPRESENTATION_MASK) == REPRESENTATION_ANSI">m_buffer,s</StringView>
+    <Type Name="EString&lt;EncodingUnicode&gt;">
+        <DisplayString>[Unicode] {m_buffer,su}</DisplayString>
+        <StringView>m_buffer,su</StringView>
+    </Type>
+    <Type Name="EString&lt;EncodingASCII&gt;">
+        <DisplayString>[ASCII] {m_buffer,s}</DisplayString>
+        <StringView>m_buffer,s</StringView>
+    </Type>
+    <Type Name="EString&lt;EncodingUTF8&gt;">
+        <DisplayString>[UTF8] {m_buffer,s8}</DisplayString>
+        <StringView>m_buffer,s8</StringView>
     </Type>
 </AutoVisualizer>

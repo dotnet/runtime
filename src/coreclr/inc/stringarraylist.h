@@ -6,12 +6,12 @@
 
 
 //
-// StringArrayList is a simple class which is used to contain a growable
+// EStringArrayList is a simple class which is used to contain a growable
 // list of Strings, stored in chunks.  Based on top of ArrayList
 #include "arraylist.h"
 
 template<typename TEncoding>
-class StringArrayList
+class EStringArrayList
 {
     ArrayList m_Elements;
 public:
@@ -22,9 +22,12 @@ public:
     void Append(const EString<TEncoding>& string);
     void AppendIfNotThere(const EString<TEncoding>& string);
 #endif
-    ~StringArrayList();
+    ~EStringArrayList();
 };
 
+struct EncodingUnicode;
+
+using StringArrayList = EStringArrayList<EncodingUnicode>;
 
 #include "stringarraylist.inl"
 #endif

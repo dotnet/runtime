@@ -2633,9 +2633,9 @@ private:
     GlobalLoaderAllocator m_GlobalAllocator;
 
 
-    InlineEString<100, EncodingUnicode>  m_BaseLibrary;
+    InlineSString<100>  m_BaseLibrary;
 
-    InlineEString<100, EncodingUnicode>  m_SystemDirectory;
+    InlineSString<100>  m_SystemDirectory;
 
     // <TODO>@TODO: CTS, we can keep the com modules in a single assembly or in different assemblies.
     // We are currently using different assemblies but this is potentitially to slow...</TODO>

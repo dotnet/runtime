@@ -621,7 +621,7 @@ void ReportExceptionStackHelper(OBJECTREF exObj, EventReporter& reporter, SmallS
     if (gc.remoteStackTraceString != NULL && gc.remoteStackTraceString->GetStringLength())
     {
         SString remoteStackTrace;
-        gc.remoteStackTraceString->GetEString(remoteStackTrace);
+        gc.remoteStackTraceString->GetSString(remoteStackTrace);
 
         // If source info is contained, trim it
         StripFileInfoFromStackTrace(remoteStackTrace);

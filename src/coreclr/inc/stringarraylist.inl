@@ -4,14 +4,14 @@
 #include "ex.h"
 
 template<typename TEncoding>
-inline EString<TEncoding>& StringArrayList<TEncoding>::operator[] (DWORD idx) const
+inline EString<TEncoding>& EStringArrayList<TEncoding>::operator[] (DWORD idx) const
 {
     WRAPPER_NO_CONTRACT;
     return Get(idx);
 }
 
 template<typename TEncoding>
-inline EString<TEncoding>& StringArrayList<TEncoding>::Get (DWORD idx) const
+inline EString<TEncoding>& EStringArrayList<TEncoding>::Get (DWORD idx) const
 {
     WRAPPER_NO_CONTRACT;
     PTR_EString<TEncoding> ppRet=(PTR_EString<TEncoding>)m_Elements.Get(idx);
@@ -19,7 +19,7 @@ inline EString<TEncoding>& StringArrayList<TEncoding>::Get (DWORD idx) const
 }
 
 template<typename TEncoding>
-inline DWORD StringArrayList<TEncoding>::GetCount() const
+inline DWORD EStringArrayList<TEncoding>::GetCount() const
 {
     WRAPPER_NO_CONTRACT;
     return m_Elements.GetCount();
@@ -27,7 +27,7 @@ inline DWORD StringArrayList<TEncoding>::GetCount() const
 
 #ifndef DACCESS_COMPILE
 template<typename TEncoding>
-inline void StringArrayList<TEncoding>::Append(const EString<TEncoding>& string)
+inline void EStringArrayList<TEncoding>::Append(const EString<TEncoding>& string)
 {
     CONTRACTL
     {
@@ -41,7 +41,7 @@ inline void StringArrayList<TEncoding>::Append(const EString<TEncoding>& string)
 }
 
 template<typename TEncoding>
-inline void StringArrayList<TEncoding>::AppendIfNotThere(const EString<TEncoding>& string)
+inline void EStringArrayList<TEncoding>::AppendIfNotThere(const EString<TEncoding>& string)
 {
     CONTRACTL
     {
@@ -61,7 +61,7 @@ inline void StringArrayList<TEncoding>::AppendIfNotThere(const EString<TEncoding
 
 
 template<typename TEncoding>
-inline StringArrayList<TEncoding>::~StringArrayList()
+inline EStringArrayList<TEncoding>::~EStringArrayList()
 {
     CONTRACTL
     {

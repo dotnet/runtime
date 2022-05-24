@@ -593,7 +593,7 @@ HRESULT CCompRC::LoadLibraryHelper(HRESOURCEDLL *pHInst,
 
     // Try and get both the culture fallback sequence
 
-    StringArrayList<EncodingUnicode> cultureNames;
+    StringArrayList cultureNames;
 
     if (m_fpGetThreadUICultureNames)
     {

@@ -48,7 +48,7 @@ HRESULT ApplicationContext::AddToFailureCache(SString &assemblyNameOrPath,
     return hr;
 }
 
-StringArrayList<EncodingUnicode> *ApplicationContext::GetAppPaths()
+StringArrayList *ApplicationContext::GetAppPaths()
 {
     return &m_appPaths;
 }
@@ -58,7 +58,7 @@ SimpleNameToFileNameMap * ApplicationContext::GetTpaList()
     return m_pTrustedPlatformAssemblyMap;
 }
 
-StringArrayList<EncodingUnicode> * ApplicationContext::GetPlatformResourceRoots()
+StringArrayList * ApplicationContext::GetPlatformResourceRoots()
 {
     return &m_platformResourceRoots;
 }

@@ -624,7 +624,7 @@ public:
     //      EString input(SL"Simmons");
     //      EStringRegEx::GroupingContainer container;
     //      if (EStringRegEx::Match(SL"(Sim+on)", input, container)) {
-    //          printf("%S", container[1].GetEString(input).GetUnicode());
+    //          printf("%S", container[1].GetSString(input).GetUnicode());
     //      }
     //
     typedef GroupContainer<InputIterator, Group<InputIterator> > GroupingContainer;

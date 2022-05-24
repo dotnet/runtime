@@ -42,7 +42,7 @@ extern "C" mdTypeRef QCALLTYPE ModuleBuilder_GetTypeRef(QCall::ModuleHandle pMod
         COMPlusThrow(kArgumentNullException, W("ArgumentNull_String"));
     }
 
-    InlineEString<128, EncodingUnicode> ssNameUnescaped;
+    InlineSString<128> ssNameUnescaped;
     LPCWSTR wszTemp = wszFullName;
 
     WCHAR c;

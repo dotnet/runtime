@@ -83,7 +83,7 @@ void AssemblyBinder::GetNameForDiagnosticsFromManagedALC(INT_PTR managedALC, /* 
     DECLARE_ARGHOLDER_ARRAY(args, 1);
     args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(*alc);
     CALL_MANAGED_METHOD_RETREF(gc.alcName, STRINGREF, args);
-    gc.alcName->GetEString(alcName);
+    gc.alcName->GetSString(alcName);
 
     GCPROTECT_END();
 }
