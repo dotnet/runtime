@@ -2522,15 +2522,11 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 			break;
 		}
 		case ArgVtypeInIRegs:
-			if (t->type == MONO_TYPE_GENERICINST) {
+			if ((t->type == MONO_TYPE_GENERICINST) && !cfg->full_aot) {
 				MonoClass *klass = mono_class_from_mono_type_internal (t);
-				if (!strcmp (m_class_get_name (klass), "Vector128`1")) {
-					MonoType *element_type = mono_class_get_context (klass)->class_inst->type_argv [0];;
-					if (MONO_TYPE_IS_VECTOR_PRIMITIVE(element_type))
-					{
-						lainfo->storage = LLVMArgVtypeInSIMDReg;
-						break;
-					}
+				if (m_class_is_simd_type (klass)) {
+					lainfo->storage = LLVMArgVtypeInSIMDReg;
+					break;
 				}
 			}
 

@@ -3567,17 +3567,6 @@ mono_method_is_generic_sharable_full (MonoMethod *method, gboolean allow_type_va
 			}
 		}
 
-		MonoMethodSignature *sig = mono_method_signature_internal (inflated->declaring);
-		for (int i = 0; i < sig->param_count; ++i) {
-			MonoType *t = sig->params [i];
-			if (t->type == MONO_TYPE_GENERICINST) {
-				MonoClass *klass = mono_class_from_mono_type_internal (t);
-				if (!strcmp (m_class_get_name (klass), "Vector128`1")) {
-					if (t->data.generic_class->context.class_inst->is_open)
-						return FALSE;
-				}
-			}
-		}
 	}
 
 	if (mono_class_is_ginst (method->klass)) {
