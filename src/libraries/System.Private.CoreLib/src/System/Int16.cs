@@ -805,8 +805,8 @@ namespace System
             else if (typeof(TOther) == typeof(Half))
             {
                 Half actualValue = (Half)(object)value;
-                result = (actualValue == Half.PositiveInfinity) ? MaxValue :
-                         (actualValue == Half.NegativeInfinity) ? MinValue : (short)actualValue;
+                result = (actualValue >= BitConverter.UInt16BitsToHalf(0x7800)) ? MaxValue :
+                         (actualValue <= BitConverter.UInt16BitsToHalf(0xF800)) ? MinValue : (short)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(int))

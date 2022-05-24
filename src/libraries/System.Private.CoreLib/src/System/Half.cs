@@ -1842,14 +1842,15 @@ namespace System
             else if (typeof(TOther) == typeof(char))
             {
                 char actualResult = (value == PositiveInfinity) ? char.MaxValue :
-                                    (value == NegativeInfinity) ? char.MinValue : (char)value;
+                                    (value <= Zero) ? char.MinValue : (char)value;
                 result = (TOther)(object)actualResult;
                 return true;
             }
             else if (typeof(TOther) == typeof(decimal))
             {
                 decimal actualResult = (value == PositiveInfinity) ? decimal.MaxValue :
-                                       (value == NegativeInfinity) ? decimal.MinValue : (decimal)value;
+                                       (value == NegativeInfinity) ? decimal.MinValue :
+                                       IsNaN(value) ? 0.0m : (decimal)value;
                 result = (TOther)(object)actualResult;
                 return true;
             }
@@ -1928,7 +1929,9 @@ namespace System
             }
             else if (typeof(TOther) == typeof(decimal))
             {
-                decimal actualResult = (decimal)value;
+                decimal actualResult = (value == PositiveInfinity) ? decimal.MaxValue :
+                                       (value == NegativeInfinity) ? decimal.MinValue :
+                                       IsNaN(value) ? 0.0m : (decimal)value;
                 result = (TOther)(object)actualResult;
                 return true;
             }

@@ -1563,8 +1563,9 @@ namespace System
             else if (typeof(TOther) == typeof(NFloat))
             {
                 NFloat actualValue = (NFloat)(object)value;
-                result = (actualValue >= NFloat.MaxValue) ? MaxValue :
-                         (actualValue <= NFloat.MinValue) ? MinValue : (decimal)actualValue;
+                result = (actualValue >= +79228162514264337593543950336.0f) ? MaxValue :
+                         (actualValue <= -79228162514264337593543950336.0f) ? MinValue :
+                         NFloat.IsNaN(actualValue) ? 0.0m : (decimal)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(ushort))
@@ -1632,7 +1633,9 @@ namespace System
             else if (typeof(TOther) == typeof(NFloat))
             {
                 NFloat actualValue = (NFloat)(object)value;
-                result = (decimal)actualValue;
+                result = (actualValue >= +79228162514264337593543950336.0f) ? MaxValue :
+                         (actualValue <= -79228162514264337593543950336.0f) ? MinValue :
+                         NFloat.IsNaN(actualValue) ? 0.0m : (decimal)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(ushort))
@@ -1769,8 +1772,8 @@ namespace System
             }
             else if (typeof(TOther) == typeof(Half))
             {
-                Half actualResult = (value >= +65520.0m) ? Half.MaxValue :
-                                    (value <= -65520.0m) ? Half.MinValue : (Half)value;
+                Half actualResult = (value >= +65520.0m) ? Half.PositiveInfinity :
+                                    (value <= -65520.0m) ? Half.NegativeInfinity : (Half)value;
                 result = (TOther)(object)actualResult;
                 return true;
             }
@@ -1803,7 +1806,7 @@ namespace System
             }
             else if (typeof(TOther) == typeof(nint))
             {
-                long actualResult = (value >= nint.MaxValue) ? nint.MaxValue :
+                nint actualResult = (value >= nint.MaxValue) ? nint.MaxValue :
                                     (value <= nint.MinValue) ? nint.MinValue : (nint)value;
                 result = (TOther)(object)actualResult;
                 return true;

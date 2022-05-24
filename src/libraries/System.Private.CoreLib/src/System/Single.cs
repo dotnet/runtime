@@ -1384,8 +1384,9 @@ namespace System
             }
             else if (typeof(TOther) == typeof(decimal))
             {
-                decimal actualResult = (value >= (float)decimal.MaxValue) ? decimal.MaxValue :
-                                       (value <= (float)decimal.MinValue) ? decimal.MinValue : (decimal)value;
+                decimal actualResult = (value >= +79228162514264337593543950336.0f) ? decimal.MaxValue :
+                                       (value <= -79228162514264337593543950336.0f) ? decimal.MinValue :
+                                       IsNaN(value) ? 0.0m : (decimal)value;
                 result = (TOther)(object)actualResult;
                 return true;
             }
@@ -1425,10 +1426,17 @@ namespace System
             }
             else if (typeof(TOther) == typeof(nuint))
             {
-                nuint actualResult = (value >= nuint.MaxValue) ? nuint.MaxValue :
-                                     (value <= nuint.MinValue) ? nuint.MinValue : (nuint)value;
+#if TARGET_64BIT
+                nuint actualResult = (value >= ulong.MaxValue) ? unchecked((nuint)ulong.MaxValue) :
+                                     (value <= ulong.MinValue) ? unchecked((nuint)ulong.MinValue) : (nuint)value;
                 result = (TOther)(object)actualResult;
                 return true;
+#else
+                nuint actualResult = (value >= uint.MaxValue) ? uint.MaxValue :
+                                     (value <= uint.MinValue) ? uint.MinValue : (nuint)value;
+                result = (TOther)(object)actualResult;
+                return true;
+#endif
             }
             else
             {
@@ -1464,7 +1472,9 @@ namespace System
             }
             else if (typeof(TOther) == typeof(decimal))
             {
-                decimal actualResult = (decimal)value;
+                decimal actualResult = (value >= +79228162514264337593543950336.0f) ? decimal.MaxValue :
+                                       (value <= -79228162514264337593543950336.0f) ? decimal.MinValue :
+                                       IsNaN(value) ? 0.0m : (decimal)value;
                 result = (TOther)(object)actualResult;
                 return true;
             }

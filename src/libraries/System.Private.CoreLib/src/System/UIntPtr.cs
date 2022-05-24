@@ -646,13 +646,15 @@ namespace System
             else if (typeof(TOther) == typeof(decimal))
             {
                 decimal actualValue = (decimal)(object)value;
-                result = (actualValue >= nuint_t.MaxValue) ? unchecked((nuint)nuint_t.MaxValue) : (nuint)actualValue;
+                result = (actualValue >= nuint_t.MaxValue) ? unchecked((nuint)nuint_t.MaxValue) :
+                         (actualValue <= nuint_t.MinValue) ? unchecked((nuint)nuint_t.MinValue) : (nuint)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(NFloat))
             {
                 NFloat actualValue = (NFloat)(object)value;
-                result = (actualValue >= nuint_t.MaxValue) ? unchecked((nuint)nuint_t.MaxValue) : (nuint)actualValue;
+                result = (actualValue >= nuint_t.MaxValue) ? unchecked((nuint)nuint_t.MaxValue) :
+                         (actualValue <= nuint_t.MinValue) ? unchecked((nuint)nuint_t.MinValue) : (nuint)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(ushort))
@@ -670,7 +672,7 @@ namespace System
             else if (typeof(TOther) == typeof(ulong))
             {
                 ulong actualValue = (ulong)(object)value;
-                result = (actualValue >= MaxValue) ? MaxValue : (nuint)actualValue;
+                result = (actualValue >= nuint_t.MaxValue) ? unchecked((nuint)nuint_t.MaxValue) : (nuint)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(UInt128))

@@ -4259,13 +4259,13 @@ namespace System.Numerics
             else if (typeof(TOther) == typeof(double))
             {
                 double actualValue = (double)(object)value;
-                result = (BigInteger)actualValue;
+                result = double.IsNaN(actualValue) ? Zero : (BigInteger)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(Half))
             {
                 Half actualValue = (Half)(object)value;
-                result = (BigInteger)actualValue;
+                result = Half.IsNaN(actualValue) ? Zero : (BigInteger)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(short))
@@ -4301,7 +4301,7 @@ namespace System.Numerics
             else if (typeof(TOther) == typeof(NFloat))
             {
                 NFloat actualValue = (NFloat)(object)value;
-                result = (BigInteger)actualValue;
+                result = NFloat.IsNaN(actualValue) ? Zero : (BigInteger)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(sbyte))
@@ -4313,7 +4313,7 @@ namespace System.Numerics
             else if (typeof(TOther) == typeof(float))
             {
                 float actualValue = (float)(object)value;
-                result = (BigInteger)actualValue;
+                result = float.IsNaN(actualValue) ? Zero : (BigInteger)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(ushort))

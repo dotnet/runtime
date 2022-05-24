@@ -750,15 +750,15 @@ namespace System
             if (typeof(TOther) == typeof(double))
             {
                 double actualValue = (double)(object)value;
-                result = (actualValue >= MaxValue) ? MaxValue :
-                         (actualValue <= MinValue) ? MinValue : (nint)actualValue;
+                result = (actualValue >= nint_t.MaxValue) ? unchecked((nint)nint_t.MaxValue) :
+                         (actualValue <= nint_t.MinValue) ? unchecked((nint)nint_t.MinValue) : (nint)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(Half))
             {
                 Half actualValue = (Half)(object)value;
-                result = (actualValue == Half.PositiveInfinity) ? MaxValue :
-                         (actualValue == Half.NegativeInfinity) ? MinValue : (nint)actualValue;
+                result = (actualValue == Half.PositiveInfinity) ? unchecked((nint)nint_t.MaxValue) :
+                         (actualValue == Half.NegativeInfinity) ? unchecked((nint)nint_t.MinValue) : (nint)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(short))
@@ -776,15 +776,15 @@ namespace System
             else if (typeof(TOther) == typeof(long))
             {
                 long actualValue = (long)(object)value;
-                result = (actualValue >= MaxValue) ? MaxValue :
-                         (actualValue <= MinValue) ? MinValue : (nint)actualValue;
+                result = (actualValue >= nint_t.MaxValue) ? unchecked((nint)nint_t.MaxValue) :
+                         (actualValue <= nint_t.MinValue) ? unchecked((nint)nint_t.MinValue) : (nint)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(Int128))
             {
                 Int128 actualValue = (Int128)(object)value;
-                result = (actualValue >= MaxValue) ? MaxValue :
-                         (actualValue <= MinValue) ? MinValue : (nint)actualValue;
+                result = (actualValue >= nint_t.MaxValue) ? unchecked((nint)nint_t.MaxValue) :
+                         (actualValue <= nint_t.MinValue) ? unchecked((nint)nint_t.MinValue) : (nint)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(sbyte))
@@ -796,8 +796,8 @@ namespace System
             else if (typeof(TOther) == typeof(float))
             {
                 float actualValue = (float)(object)value;
-                result = (actualValue >= MaxValue) ? MaxValue :
-                         (actualValue <= MinValue) ? MinValue : (nint)actualValue;
+                result = (actualValue >= nint_t.MaxValue) ? unchecked((nint)nint_t.MaxValue) :
+                         (actualValue <= nint_t.MinValue) ? unchecked((nint)nint_t.MinValue) : (nint)actualValue;
                 return true;
             }
             else
