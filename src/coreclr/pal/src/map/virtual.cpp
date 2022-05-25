@@ -1263,21 +1263,24 @@ Function:
   lpBeginAddress - Inclusive beginning of range
   lpEndAddress - Exclusive end of range
   dwSize - Number of bytes to allocate
+  fStoreAllocationInfo - TRUE to indicate that the allocation should be registered in the PAL allocation list
 --*/
 LPVOID
 PALAPI
 PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(
     IN LPCVOID lpBeginAddress,
     IN LPCVOID lpEndAddress,
-    IN SIZE_T dwSize)
+    IN SIZE_T dwSize,
+    IN BOOL fStoreAllocationInfo)
 {
 #ifdef HOST_64BIT
     PERF_ENTRY(PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange);
     ENTRY(
-        "PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(lpBeginAddress = %p, lpEndAddress = %p, dwSize = %Iu)\n",
+        "PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(lpBeginAddress = %p, lpEndAddress = %p, dwSize = %Iu, fStoreAllocationInfo = %d)\n",
         lpBeginAddress,
         lpEndAddress,
-        dwSize);
+        dwSize,
+        fStoreAllocationInfo);
 
     _ASSERTE(lpBeginAddress <= lpEndAddress);
 
@@ -1292,7 +1295,7 @@ PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(
     if (address != nullptr)
     {
         _ASSERTE(IS_ALIGNED(address, GetVirtualPageSize()));
-        if (!VIRTUALStoreAllocationInfo((UINT_PTR)address, reservationSize, MEM_RESERVE | MEM_RESERVE_EXECUTABLE, PAGE_NOACCESS))
+        if (fStoreAllocationInfo && !VIRTUALStoreAllocationInfo((UINT_PTR)address, reservationSize, MEM_RESERVE | MEM_RESERVE_EXECUTABLE, PAGE_NOACCESS))
         {
             ASSERT("Unable to store the structure in the list.\n");
             munmap(address, reservationSize);

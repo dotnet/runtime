@@ -277,6 +277,7 @@ SEHProcessException(PAL_SEHException* exception)
         if (CatchHardwareExceptionHolder::IsEnabled())
         {
             EnsureExceptionRecordsOnHeap(exception);
+            exception->IsExternal = true;
             PAL_ThrowExceptionFromContext(exception->GetContextRecord(), exception);
         }
     }

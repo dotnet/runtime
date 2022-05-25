@@ -252,10 +252,6 @@ struct alloc_context : gc_alloc_context
 
 class IGCHeapInternal : public IGCHeap {
 public:
-
-    virtual ~IGCHeapInternal() {}
-
-public:
     virtual int GetNumberOfHeaps () = 0;
     virtual int GetHomeHeapNumber () = 0;
     virtual size_t GetPromotedBytes(int heap_index) = 0;

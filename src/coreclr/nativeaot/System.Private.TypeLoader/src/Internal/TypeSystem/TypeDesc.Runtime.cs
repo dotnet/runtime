@@ -26,7 +26,7 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
-        ///  Setter for RuntimeTypeHandle. Seperate from normal property as all uses should be done with great care.
+        ///  Setter for RuntimeTypeHandle. Separate from normal property as all uses should be done with great care.
         ///  Must not be set with partially constructed type handles
         /// </summary>
         public void SetRuntimeTypeHandleUnsafe(RuntimeTypeHandle runtimeTypeHandle)

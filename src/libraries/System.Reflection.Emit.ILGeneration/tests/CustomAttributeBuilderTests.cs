@@ -1017,7 +1017,7 @@ namespace System.Reflection.Emit.Tests
         [Theory]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TestRuntimes.Mono)]
         [MemberData(nameof(NotSupportedPrimitives_TestData))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Coreclr fixed an issue where IntPtr/UIntPtr in propertValues causes a corrupt created binary.")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Coreclr fixed an issue where IntPtr/UIntPtr in propertyValues causes a corrupt created binary.")]
         public static void NotSupportedPrimitiveInPropertyValues_ThrowsArgumentException(object value)
         {
             ConstructorInfo con = typeof(TestAttribute).GetConstructor(new Type[0]);

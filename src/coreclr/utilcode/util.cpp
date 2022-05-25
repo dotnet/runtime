@@ -405,7 +405,7 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
     }
 
 #ifdef HOST_UNIX
-    pResult = (BYTE *)PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(pMinAddr, pMaxAddr, dwSize);
+    pResult = (BYTE *)PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(pMinAddr, pMaxAddr, dwSize, TRUE /* fStoreAllocationInfo */);
     if (pResult != nullptr)
     {
         return pResult;
