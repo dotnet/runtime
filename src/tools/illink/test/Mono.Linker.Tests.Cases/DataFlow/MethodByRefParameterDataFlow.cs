@@ -87,9 +87,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			typeWithMethods.RequiresPublicMethods ();
 		}
 
-		// https://github.com/dotnet/linker/issues/2632
-		// This test should generate a warning since there's mismatch on annotations
-		// [ExpectedWarning ("IL2062", nameof (DataFlowTypeExtensions.RequiresPublicFields))]
+		[ExpectedWarning ("IL2067", nameof (TryGetAnnotatedValue), "RequiresPublicFields")]
 		static void TestReadFromRefParameter_MismatchOnOutput ()
 		{
 			Type typeWithMethods = null;
@@ -97,9 +95,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			typeWithMethods.RequiresPublicFields ();
 		}
 
-		// https://github.com/dotnet/linker/issues/2632
-		// This test should generate a warning since there's mismatch on annotations
-		// [ExpectedWarning ("IL2062", nameof (DataFlowTypeExtensions.RequiresPublicFields))]
+		[ExpectedWarning ("IL2067", nameof (TryGetAnnotatedValue), "RequiresPublicFields")]
 		static void TestReadFromRefParameter_MismatchOnOutput_PassedTwice ()
 		{
 			Type typeWithMethods = null;
@@ -111,7 +107,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		// https://github.com/dotnet/linker/issues/2632
 		// This second warning should not be generated, the value of typeWithMethods should have PublicMethods
 		// after the call with out parameter.
-		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresPublicMethods))]
+		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresPublicMethods), ProducedBy = ProducedBy.Analyzer)]
 		static void TestReadFromRefParameter_MismatchOnInput ()
 		{
 			Type typeWithMethods = GetTypeWithFields ();
@@ -124,7 +120,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		// https://github.com/dotnet/linker/issues/2632
 		// This third warning should not be generated, the value of typeWithMethods should have PublicMethods
 		// after the call with ref parameter.
-		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresPublicMethods))]
+		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresPublicMethods), ProducedBy = ProducedBy.Analyzer)]
 		static void TestReadFromRefParameter_MismatchOnInput_PassedTwice ()
 		{
 			Type typeWithMethods = GetTypeWithFields ();
@@ -137,6 +133,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			TryGetAnnotatedValue (ref typeWithMethods);
 		}
 
+		[ExpectedWarning ("IL2067", "typeWithMethods", nameof (TryGetAnnotatedValue))]
 		[ExpectedWarning ("IL2067", "typeWithMethods", nameof (TryGetAnnotatedValue))]
 		static void TestPassingRefParameter_Mismatch ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] ref Type typeWithMethods)
 		{

@@ -405,5 +405,13 @@ namespace Mono.Linker
 			=> typeReference is ArrayType
 				? BCL.FindPredefinedType (WellKnownType.System_Array, context)
 				: context.TryResolve (typeReference);
+
+		public static bool IsByRefOrPointer (this TypeReference typeReference)
+		{
+			return typeReference.WithoutModifiers ().MetadataType switch {
+				MetadataType.Pointer or MetadataType.ByReference => true,
+				_ => false,
+			};
+		}
 	}
 }

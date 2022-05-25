@@ -108,21 +108,25 @@ namespace Mono.Linker.Dataflow
 
 		protected override MultiValue GetFieldValue (FieldDefinition field) => _annotations.GetFieldValue (field);
 
-		protected override void HandleStoreField (MethodDefinition method, FieldValue field, Instruction operation, MultiValue valueToStore)
+		private void HandleStoreValueWithDynamicallyAccessedMembers (ValueWithDynamicallyAccessedMembers targetValue, Instruction operation, MultiValue sourceValue)
 		{
-			if (field.DynamicallyAccessedMemberTypes != 0) {
+			if (targetValue.DynamicallyAccessedMemberTypes != 0) {
 				_origin = _origin.WithInstructionOffset (operation.Offset);
-				HandleAssignmentPattern (_origin, valueToStore, field);
+				HandleAssignmentPattern (_origin, sourceValue, targetValue);
 			}
 		}
 
+		protected override void HandleStoreField (MethodDefinition method, FieldValue field, Instruction operation, MultiValue valueToStore)
+			=> HandleStoreValueWithDynamicallyAccessedMembers (field, operation, valueToStore);
+
 		protected override void HandleStoreParameter (MethodDefinition method, MethodParameterValue parameter, Instruction operation, MultiValue valueToStore)
-		{
-			if (parameter.DynamicallyAccessedMemberTypes != 0) {
-				_origin = _origin.WithInstructionOffset (operation.Offset);
-				HandleAssignmentPattern (_origin, valueToStore, parameter);
-			}
-		}
+			=> HandleStoreValueWithDynamicallyAccessedMembers (parameter, operation, valueToStore);
+
+		protected override void HandleStoreMethodThisParameter (MethodDefinition method, MethodThisParameterValue thisParameter, Instruction operation, MultiValue valueToStore)
+			=> HandleStoreValueWithDynamicallyAccessedMembers (thisParameter, operation, valueToStore);
+
+		protected override void HandleStoreMethodReturnValue (MethodDefinition method, MethodReturnValue returnValue, Instruction operation, MultiValue valueToStore)
+			=> HandleStoreValueWithDynamicallyAccessedMembers (returnValue, operation, valueToStore);
 
 		public override bool HandleCall (MethodBody callingMethodBody, MethodReference calledMethod, Instruction operation, ValueNodeList methodParams, out MultiValue methodReturnValue)
 		{

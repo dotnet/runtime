@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using ILLink.Shared.TypeSystemProxy;
 using Mono.Cecil;
 
 namespace Mono.Linker
@@ -95,6 +96,31 @@ namespace Mono.Linker
 		public static bool HasParameterOfType (this MethodReference method, int parameterIndex, string fullTypeName)
 		{
 			return method.Parameters.Count > parameterIndex && method.Parameters[parameterIndex].ParameterType.IsTypeOf (fullTypeName);
+		}
+
+		public static bool HasImplicitThis (this MethodReference method)
+		{
+			return method.HasThis && !method.ExplicitThis;
+		}
+
+		/// <summary>
+		/// Returns the ReferenceKind of a parameter (in, out, ref, none) of a method. Uses the IL based index number (i.e. `this` is 0 if there is a `this`, then 1 is the first parameter)
+		/// </summary>
+		public static ReferenceKind ParameterReferenceKind (this MethodReference method, int index)
+		{
+			if (method.HasImplicitThis ()) {
+				if (index == 0)
+					return method.DeclaringType.IsValueType ? ReferenceKind.Ref : ReferenceKind.None;
+				index--;
+			}
+			var param = method.Parameters[index];
+			if (!param.ParameterType.IsByReference)
+				return ReferenceKind.None;
+			if (param.IsIn)
+				return ReferenceKind.In;
+			if (param.IsOut)
+				return ReferenceKind.Out;
+			return ReferenceKind.Ref;
 		}
 	}
 }
