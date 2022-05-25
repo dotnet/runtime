@@ -56,7 +56,11 @@ namespace Microsoft.Interop
         /// <summary>
         /// The address of the native identifier provided by <see cref="StubCodeContext.GetIdentifiers(TypePositionInfo)"/> should be passed by value.
         /// </summary>
-        AddressOfNativeIdentifier
+        AddressOfNativeIdentifier,
+        /// <summary>
+        /// The native identifier provided by <see cref="StubCodeContext.GetIdentifiers(TypePositionInfo)"/> should be cast to the native type.
+        /// </summary>
+        CastNativeIdentifier
     }
 
     /// <summary>
