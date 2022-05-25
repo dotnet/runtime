@@ -3288,7 +3288,7 @@ struct GenTreeVecCon : public GenTree
     };
 
 private:
-    unsigned char gtSimdBaseJitType;  // SIMD vector base JIT type
+    unsigned char gtSimdBaseJitType; // SIMD vector base JIT type
 
 public:
     CorInfoType GetSimdBaseJitType() const
@@ -3430,8 +3430,7 @@ public:
     }
 
     GenTreeVecCon(var_types type, CorInfoType simdBaseJitType)
-        : GenTree(GT_CNS_VEC, type)
-        , gtSimdBaseJitType((unsigned char)simdBaseJitType)
+        : GenTree(GT_CNS_VEC, type), gtSimdBaseJitType((unsigned char)simdBaseJitType)
     {
         assert(varTypeIsSIMD(type));
         assert(gtSimdBaseJitType == simdBaseJitType);

@@ -7018,7 +7018,8 @@ GenTree* Compiler::gtNewZeroConNode(var_types type, CorInfoType simdBaseJitType)
 
     GenTreeVecCon* vecCon = gtNewVconNode(type, simdBaseJitType);
     vecCon->gtSimd32Val   = {};
-    return vecCon;;
+    return vecCon;
+    ;
 }
 
 GenTree* Compiler::gtNewOneConNode(var_types type)
@@ -21174,7 +21175,7 @@ GenTree* Compiler::gtNewSimdNarrowNode(var_types   type,
                 // return Avx2.Permute4x64(tmp4.AsUInt64(), SHUFFLE_WYZX).As<T>();
 
                 CorInfoType          opBaseJitType = (simdBaseType == TYP_SHORT) ? CORINFO_TYPE_INT : CORINFO_TYPE_UINT;
-                CORINFO_CLASS_HANDLE clsHnd        = gtGetStructHandleForSimdOrHW(type, opBaseJitType, isSimdAsHWIntrinsic);
+                CORINFO_CLASS_HANDLE clsHnd = gtGetStructHandleForSimdOrHW(type, opBaseJitType, isSimdAsHWIntrinsic);
 
                 tmp1 = gtNewSimdHWIntrinsicNode(type, gtNewIconNode(0x0000FFFF), NI_Vector256_Create, opBaseJitType,
                                                 simdSize, isSimdAsHWIntrinsic);
@@ -21214,7 +21215,7 @@ GenTree* Compiler::gtNewSimdNarrowNode(var_types   type,
                 // return Avx2.Permute4x64(tmp3.AsUInt64(), SHUFFLE_WYZX).AsUInt32();
 
                 CorInfoType          opBaseJitType = (simdBaseType == TYP_INT) ? CORINFO_TYPE_LONG : CORINFO_TYPE_ULONG;
-                CORINFO_CLASS_HANDLE clsHnd        = gtGetStructHandleForSimdOrHW(type, opBaseJitType, isSimdAsHWIntrinsic);
+                CORINFO_CLASS_HANDLE clsHnd = gtGetStructHandleForSimdOrHW(type, opBaseJitType, isSimdAsHWIntrinsic);
 
                 GenTree* op1Dup;
                 op1 = impCloneExpr(op1, &op1Dup, clsHnd, (unsigned)CHECK_SPILL_ALL,
@@ -21312,7 +21313,7 @@ GenTree* Compiler::gtNewSimdNarrowNode(var_types   type,
                 // ...
 
                 CorInfoType          opBaseJitType = (simdBaseType == TYP_SHORT) ? CORINFO_TYPE_INT : CORINFO_TYPE_UINT;
-                CORINFO_CLASS_HANDLE clsHnd        = gtGetStructHandleForSimdOrHW(type, opBaseJitType, isSimdAsHWIntrinsic);
+                CORINFO_CLASS_HANDLE clsHnd = gtGetStructHandleForSimdOrHW(type, opBaseJitType, isSimdAsHWIntrinsic);
 
                 if (compOpportunisticallyDependsOn(InstructionSet_SSE41))
                 {
@@ -21406,7 +21407,7 @@ GenTree* Compiler::gtNewSimdNarrowNode(var_types   type,
                 // return Sse2.UnpackLow(tmp1, tmp2).As<T>();
 
                 CorInfoType          opBaseJitType = (simdBaseType == TYP_INT) ? CORINFO_TYPE_LONG : CORINFO_TYPE_ULONG;
-                CORINFO_CLASS_HANDLE clsHnd        = gtGetStructHandleForSimdOrHW(type, opBaseJitType, isSimdAsHWIntrinsic);
+                CORINFO_CLASS_HANDLE clsHnd = gtGetStructHandleForSimdOrHW(type, opBaseJitType, isSimdAsHWIntrinsic);
 
                 GenTree* op1Dup;
                 op1 = impCloneExpr(op1, &op1Dup, clsHnd, (unsigned)CHECK_SPILL_ALL,
