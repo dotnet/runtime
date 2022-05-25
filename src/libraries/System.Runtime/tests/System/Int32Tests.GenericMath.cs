@@ -727,10 +727,10 @@ namespace System.Tests
             }
             else
             {
-                Assert.Equal((int)0x7FFF_FF80, NumberBaseHelper<int>.CreateChecked<NFloat>(+2147483647.0f));
+                Assert.Equal((int)0x7FFF_FF80, NumberBaseHelper<int>.CreateChecked<NFloat>(+2147483520.0f));
                 Assert.Equal(unchecked((int)0x8000_0000), NumberBaseHelper<int>.CreateChecked<NFloat>(-2147483648.0f));
 
-                Assert.Throws<OverflowException>(() => NumberBaseHelper<int>.CreateChecked<NFloat>(+2147483520.0f));
+                Assert.Throws<OverflowException>(() => NumberBaseHelper<int>.CreateChecked<NFloat>(+2147483647.0f));
                 Assert.Throws<OverflowException>(() => NumberBaseHelper<int>.CreateChecked<NFloat>(-2147483904.0f));
             }
 
@@ -997,10 +997,10 @@ namespace System.Tests
             }
             else
             {
-                Assert.Equal((int)0x7FFF_FF80, NumberBaseHelper<int>.CreateSaturating<NFloat>(+2147483647.0f));
+                Assert.Equal((int)0x7FFF_FF80, NumberBaseHelper<int>.CreateSaturating<NFloat>(+2147483520.0f));
                 Assert.Equal(unchecked((int)0x8000_0000), NumberBaseHelper<int>.CreateSaturating<NFloat>(-2147483648.0f));
 
-                Assert.Equal(unchecked((int)0x7FFF_FFFF), NumberBaseHelper<int>.CreateSaturating<NFloat>(+2147483520.0f));
+                Assert.Equal(unchecked((int)0x7FFF_FF80), NumberBaseHelper<int>.CreateSaturating<NFloat>(+2147483520.0f));
                 Assert.Equal(unchecked((int)0x8000_0000), NumberBaseHelper<int>.CreateSaturating<NFloat>(-2147483904.0f));
             }
 
@@ -1267,10 +1267,10 @@ namespace System.Tests
             }
             else
             {
-                Assert.Equal((int)0x7FFF_FF80, NumberBaseHelper<int>.CreateTruncating<NFloat>(+2147483647.0f));
+                Assert.Equal((int)0x7FFF_FF80, NumberBaseHelper<int>.CreateTruncating<NFloat>(+2147483520.0f));
                 Assert.Equal(unchecked((int)0x8000_0000), NumberBaseHelper<int>.CreateTruncating<NFloat>(-2147483648.0f));
 
-                Assert.Equal(unchecked((int)0x7FFF_FFFF), NumberBaseHelper<int>.CreateTruncating<NFloat>(+2147483520.0f));
+                Assert.Equal(unchecked((int)0x7FFF_FFFF), NumberBaseHelper<int>.CreateTruncating<NFloat>(+2147483647.0f));
                 Assert.Equal(unchecked((int)0x8000_0000), NumberBaseHelper<int>.CreateTruncating<NFloat>(-2147483904.0f));
             }
 

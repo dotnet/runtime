@@ -768,6 +768,8 @@ namespace System.Tests
 
                 Assert.Throws<OverflowException>(() => NumberBaseHelper<UInt128>.CreateChecked<NFloat>((NFloat)(+340282366920938463463374607431768211456.0)));
                 Assert.Throws<OverflowException>(() => NumberBaseHelper<UInt128>.CreateChecked<NFloat>((NFloat)(-340282366920938425684442744474606501888.0)));
+
+                Assert.Throws<OverflowException>(() => NumberBaseHelper<UInt128>.CreateChecked<NFloat>(NFloat.MaxValue));
             }
             else
             {
@@ -778,7 +780,6 @@ namespace System.Tests
             Assert.Throws<OverflowException>(() => NumberBaseHelper<UInt128>.CreateChecked<NFloat>(-NFloat.Epsilon));
             Assert.Throws<OverflowException>(() => NumberBaseHelper<UInt128>.CreateChecked<NFloat>(-1.0f));
 
-            Assert.Throws<OverflowException>(() => NumberBaseHelper<UInt128>.CreateChecked<NFloat>(NFloat.MaxValue));
             Assert.Throws<OverflowException>(() => NumberBaseHelper<UInt128>.CreateChecked<NFloat>(NFloat.MinValue));
 
             Assert.Throws<OverflowException>(() => NumberBaseHelper<UInt128>.CreateChecked<NFloat>(NFloat.PositiveInfinity));
@@ -1028,6 +1029,8 @@ namespace System.Tests
 
                 Assert.Equal(MaxValue, NumberBaseHelper<UInt128>.CreateSaturating<NFloat>((NFloat)(+340282366920938463463374607431768211456.0)));
                 Assert.Equal(Zero, NumberBaseHelper<UInt128>.CreateSaturating<NFloat>((NFloat)(-340282366920938425684442744474606501888.0)));
+
+                Assert.Equal(MaxValue, NumberBaseHelper<UInt128>.CreateSaturating<NFloat>(NFloat.MaxValue));
             }
             else
             {
@@ -1038,7 +1041,6 @@ namespace System.Tests
             Assert.Equal(Zero, NumberBaseHelper<UInt128>.CreateSaturating<NFloat>(-NFloat.Epsilon));
             Assert.Equal(Zero, NumberBaseHelper<UInt128>.CreateSaturating<NFloat>(-1.0f));
 
-            Assert.Equal(MaxValue, NumberBaseHelper<UInt128>.CreateSaturating<NFloat>(NFloat.MaxValue));
             Assert.Equal(Zero, NumberBaseHelper<UInt128>.CreateSaturating<NFloat>(NFloat.MinValue));
 
             Assert.Equal(MaxValue, NumberBaseHelper<UInt128>.CreateSaturating<NFloat>(NFloat.PositiveInfinity));
@@ -1288,6 +1290,8 @@ namespace System.Tests
 
                 Assert.Equal(MaxValue, NumberBaseHelper<UInt128>.CreateTruncating<NFloat>((NFloat)(+340282366920938463463374607431768211456.0)));
                 Assert.Equal(Zero, NumberBaseHelper<UInt128>.CreateTruncating<NFloat>((NFloat)(-340282366920938425684442744474606501888.0)));
+
+                Assert.Equal(MaxValue, NumberBaseHelper<UInt128>.CreateTruncating<NFloat>(NFloat.MaxValue));
             }
             else
             {
@@ -1298,7 +1302,6 @@ namespace System.Tests
             Assert.Equal(Zero, NumberBaseHelper<UInt128>.CreateTruncating<NFloat>(-NFloat.Epsilon));
             Assert.Equal(Zero, NumberBaseHelper<UInt128>.CreateTruncating<NFloat>(-1.0f));
 
-            Assert.Equal(MaxValue, NumberBaseHelper<UInt128>.CreateTruncating<NFloat>(NFloat.MaxValue));
             Assert.Equal(Zero, NumberBaseHelper<UInt128>.CreateTruncating<NFloat>(NFloat.MinValue));
 
             Assert.Equal(MaxValue, NumberBaseHelper<UInt128>.CreateTruncating<NFloat>(NFloat.PositiveInfinity));
