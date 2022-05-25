@@ -25,14 +25,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		// This should warn, as assiging to the return ref Type will assign value to the annotated field
 		// but the annotation is not propagated
 		// https://github.com/dotnet/linker/issues/2158
-		// [ExpectedWarning("IL????")]
 		static ref Type ReturnAnnotatedTypeReferenceAsUnannotated () { return ref _annotatedField; }
 
 		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 		static ref Type ReturnAnnotatedTypeReferenceAsAnnotated () { return ref _annotatedField; }
 
-		// https://github.com/dotnet/linker/issues/2158
-		// [ExpectedWarning("IL2026", "Message for --TestType.Requires--")]
+		// Correct behavior in the linker, but needs to be added in analyzer
+		// Bug link: https://github.com/dotnet/linker/issues/2158
+		[ExpectedWarning ("IL2026", "Message for --TestType.Requires--", ProducedBy = ProducedBy.Trimmer)]
 		static void AssignToAnnotatedTypeReference ()
 		{
 			ref Type typeShouldHaveAllMethods = ref ReturnAnnotatedTypeReferenceAsAnnotated ();
