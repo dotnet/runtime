@@ -160,14 +160,15 @@ namespace DebuggerTests.GetPropertiesTests
         // cannot override field and cannot override with a field: skipping
 
         // for overriding with a property:
-        public virtual DateTime Base_VirtualPropertyNotOverriddenOrHidden => new DateTime(2134, 5, 7, 1, 9, 2);
-        public virtual DateTime Base_PropertyForOverridingWithProperty => new DateTime(2134, 5, 7, 1, 9, 2);
+        public virtual DateTime Base_PropertyForOverridingWithProperty => new (2134, 5, 7, 1, 9, 2);
         protected virtual DateTime Base_AutoPropertyForOverridingWithProperty { get; set; }
 
         // for overriding with a auto-property:
-        internal virtual DateTime Base_PropertyForOverridingWithAutoProperty => new DateTime(2134, 5, 7, 1, 9, 2);
+        internal virtual DateTime Base_PropertyForOverridingWithAutoProperty => new (2134, 5, 7, 1, 9, 2);
         protected virtual DateTime Base_AutoPropertyForOverridingWithAutoProperty { get; set; }
 
+        // for not being overridden nor hidden:
+        public virtual DateTime Base_VirtualPropertyNotOverriddenOrHidden => new (2134, 5, 7, 1, 9, 2);
         public virtual string FirstName => "BaseClass#FirstName";
         public virtual string LastName => "BaseClass#LastName";
 
@@ -177,8 +178,8 @@ namespace DebuggerTests.GetPropertiesTests
             BaseBase_FieldForHidingWithAutoProperty = "Base#BaseBase_FieldForHidingWithAutoProperty";
             BaseBase_PropertyForHidingWithAutoProperty = "Base#BaseBase_PropertyForHidingWithAutoProperty";
             BaseBase_AutoPropertyForHidingWithAutoProperty = "Base#BaseBase_AutoPropertyForHidingWithAutoProperty";
-            Base_AutoPropertyForOverridingWithProperty = new DateTime(2134, 5, 7, 1, 9, 2);
-            Base_AutoPropertyForOverridingWithAutoProperty = new DateTime(2134, 5, 7, 1, 9, 2);
+            Base_AutoPropertyForOverridingWithProperty = new (2134, 5, 7, 1, 9, 2);
+            Base_AutoPropertyForOverridingWithAutoProperty = new (2134, 5, 7, 1, 9, 2);
         }
     }
 
@@ -199,8 +200,8 @@ namespace DebuggerTests.GetPropertiesTests
 
         public DerivedClass2()
         {
-            Base_PropertyForOverridingWithAutoProperty = new DateTime(2020, 7, 6, 5, 4, 3);
-            Base_AutoPropertyForOverridingWithAutoProperty = new DateTime(2020, 7, 6, 5, 4, 3);
+            Base_PropertyForOverridingWithAutoProperty = new (2020, 7, 6, 5, 4, 3);
+            Base_AutoPropertyForOverridingWithAutoProperty = new (2020, 7, 6, 5, 4, 3);
             BaseBase_FieldForHidingWithAutoProperty = "Derived#BaseBase_FieldForHidingWithAutoProperty";
         }
 
