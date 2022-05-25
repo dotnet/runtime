@@ -15,6 +15,7 @@ import { VoidPtr, CharPtr } from "./types/emscripten";
 import { DotnetPublicAPI } from "./exports";
 import { mono_on_abort } from "./run";
 import { mono_wasm_new_root } from "./roots";
+import { init_crypto } from "./crypto-worker";
 
 export let runtime_is_initialized_resolve: Function;
 export let runtime_is_initialized_reject: Function;
@@ -118,6 +119,8 @@ async function mono_wasm_pre_init(): Promise<void> {
     if (ENVIRONMENT_IS_NODE && ENVIRONMENT_IS_ESM) {
         await requirePromise;
     }
+
+    init_crypto();
 
     if (moduleExt.configSrc) {
         try {
@@ -403,6 +406,7 @@ export function bindings_lazy_init(): void {
     runtimeHelpers._unbox_buffer_size = 65536;
     runtimeHelpers._box_buffer = Module._malloc(runtimeHelpers._box_buffer_size);
     runtimeHelpers._unbox_buffer = Module._malloc(runtimeHelpers._unbox_buffer_size);
+    runtimeHelpers._i52_error_scratch_buffer = <any>Module._malloc(4);
     runtimeHelpers._class_int32 = find_corlib_class("System", "Int32");
     runtimeHelpers._class_uint32 = find_corlib_class("System", "UInt32");
     runtimeHelpers._class_double = find_corlib_class("System", "Double");

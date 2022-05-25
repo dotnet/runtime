@@ -657,7 +657,7 @@ public:
         DWORD dwMethodDescLocalNum = (DWORD)-1;
 
         // Notify the profiler of call out of the runtime
-        if (!SF_IsReverseCOMStub(m_dwStubFlags) && !SF_IsStructMarshalStub(m_dwStubFlags) && CORProfilerTrackTransitions())
+        if (!SF_IsReverseCOMStub(m_dwStubFlags) && !SF_IsReverseDelegateStub(m_dwStubFlags) && !SF_IsStructMarshalStub(m_dwStubFlags) && CORProfilerTrackTransitions())
         {
             dwMethodDescLocalNum = m_slIL.EmitProfilerBeginTransitionCallback(pcsDispatch, m_dwStubFlags);
             _ASSERTE(dwMethodDescLocalNum != (DWORD)-1);
@@ -2251,18 +2251,8 @@ DWORD NDirectStubLinker::EmitProfilerBeginTransitionCallback(ILCodeStream* pcsEm
     // in StubHelpers::ProfilerEnterCallback().
     if (SF_IsDelegateStub(dwStubFlags))
     {
-        if (SF_IsForwardStub(dwStubFlags))
-        {
-            pcsEmit->EmitLoadThis();
-        }
-        else
-        {
-            EmitLoadStubContext(pcsEmit, dwStubFlags); // load UMEntryThunk*
-            pcsEmit->EmitLDC(offsetof(UMEntryThunk, m_pObjectHandle));
-            pcsEmit->EmitADD();
-            pcsEmit->EmitLDIND_I();      // get OBJECTHANDLE
-            pcsEmit->EmitLDIND_REF();    // get Delegate object
-        }
+        _ASSERTE(SF_IsForwardStub(dwStubFlags));
+        pcsEmit->EmitLoadThis();
     }
     else
     {
@@ -2282,15 +2272,8 @@ void NDirectStubLinker::EmitProfilerEndTransitionCallback(ILCodeStream* pcsEmit,
     STANDARD_VM_CONTRACT;
 
     pcsEmit->EmitLDLOC(dwMethodDescLocalNum);
-    if (SF_IsReverseStub(dwStubFlags))
-    {
-        // we use a null pThread to indicate reverse interop
-        pcsEmit->EmitLoadNullPtr();
-    }
-    else
-    {
-        pcsEmit->EmitLDLOC(GetThreadLocalNum());
-    }
+    _ASSERTE(SF_IsForwardStub(dwStubFlags));
+    pcsEmit->EmitLDLOC(GetThreadLocalNum());
     pcsEmit->EmitCALL(METHOD__STUBHELPERS__PROFILER_END_TRANSITION_CALLBACK, 2, 0);
 }
 #endif // PROFILING_SUPPPORTED

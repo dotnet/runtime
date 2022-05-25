@@ -60,7 +60,6 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/46837", TestPlatforms.OSX)]
         public async Task ConnectWithCertificateChain()
         {
             (X509Certificate2 certificate, X509Certificate2Collection chain) = System.Net.Security.Tests.TestHelper.GenerateCertificates("localhost", longChain: true);
@@ -107,7 +106,6 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/64944", TestPlatforms.Windows)]
         public async Task UntrustedClientCertificateFails()
         {
             var listenerOptions = new QuicListenerOptions();
@@ -338,9 +336,8 @@ namespace System.Net.Quic.Tests
 
         [Theory]
         [InlineData(true)]
-        // [InlineData(false)] [ActiveIssue("https://github.com/dotnet/runtime/issues/57308")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/64944", TestPlatforms.Windows)]
-        public async Task ConnectWithClientCertificate(bool sendCerttificate)
+        [InlineData(false)]
+        public async Task ConnectWithClientCertificate(bool sendCertificate)
         {
             bool clientCertificateOK = false;
 
@@ -350,7 +347,7 @@ namespace System.Net.Quic.Tests
             listenerOptions.ServerAuthenticationOptions.ClientCertificateRequired = true;
             listenerOptions.ServerAuthenticationOptions.RemoteCertificateValidationCallback = (sender, cert, chain, errors) =>
             {
-                if (sendCerttificate)
+                if (sendCertificate)
                 {
                     _output.WriteLine("client certificate {0}", cert);
                     Assert.NotNull(cert);
@@ -363,7 +360,7 @@ namespace System.Net.Quic.Tests
 
             using QuicListener listener = new QuicListener(QuicImplementationProviders.MsQuic, listenerOptions);
             QuicClientConnectionOptions clientOptions = CreateQuicClientOptions();
-            if (sendCerttificate)
+            if (sendCertificate)
             {
                 clientOptions.ClientAuthenticationOptions.ClientCertificates = new X509CertificateCollection() { ClientCertificate };
             }
@@ -373,7 +370,7 @@ namespace System.Net.Quic.Tests
             await PingPong(clientConnection, serverConnection);
             // check we completed the client certificate verification.
             Assert.True(clientCertificateOK);
-            Assert.Equal(ClientCertificate, serverConnection.RemoteCertificate);
+            Assert.Equal(sendCertificate ? ClientCertificate : null, serverConnection.RemoteCertificate);
 
             await serverConnection.CloseAsync(0);
             clientConnection.Dispose();
