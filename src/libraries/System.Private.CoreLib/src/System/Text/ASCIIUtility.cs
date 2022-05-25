@@ -1210,9 +1210,9 @@ namespace System.Text
             // pmovmskb, ptest, vpminuw which we know are optimized, and (b) we can avoid downclocking the
             // processor while this method is running.
 
-            if (Sse2.IsSupported)
+            if (Sse2.IsSupported || (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian))
             {
-                Debug.Assert(BitConverter.IsLittleEndian, "Assume little endian if SSE2 is supported.");
+                Debug.Assert(BitConverter.IsLittleEndian, "Assume little endian if SSE2/Arm64 is supported.");
 
                 if (elementCount >= 2 * (uint)Unsafe.SizeOf<Vector128<byte>>())
                 {
@@ -1238,7 +1238,9 @@ namespace System.Text
                         }
                     }
 
-                    currentOffset = NarrowUtf16ToAscii_Sse2(pUtf16Buffer, pAsciiBuffer, elementCount);
+                    currentOffset = Sse2.IsSupported ?
+                        NarrowUtf16ToAscii_Sse2(pUtf16Buffer, pAsciiBuffer, elementCount):
+                        NarrowUtf16ToAscii_AdvSimd(pUtf16Buffer, pAsciiBuffer, elementCount);
                 }
             }
             else if (Vector.IsHardwareAccelerated)
@@ -1592,6 +1594,101 @@ namespace System.Text
             currentOffsetInElements += SizeOfVector128 / 2;
 
             goto Finish;
+        }
+
+        private static unsafe nuint NarrowUtf16ToAscii_AdvSimd(char* pUtf16Buffer, byte* pAsciiBuffer, nuint elementCount)
+        {
+            // This meethod follows similar logic as the NarrowUtf16ToAscii_Sse2 method above.
+
+            uint SizeOfVector128 = (uint)Unsafe.SizeOf<Vector128<byte>>();
+            nuint MaskOfAllBitsInVector128 = (nuint)(SizeOfVector128 - 1);
+
+            Debug.Assert(AdvSimd.Arm64.IsSupported);
+            Debug.Assert(BitConverter.IsLittleEndian);
+            Debug.Assert(elementCount >= 2 * SizeOfVector128);
+
+            // Process the first chunk of 16 bytes
+
+            ref ushort utf16Buffer = ref *(ushort*)pUtf16Buffer;
+            ref byte asciiBuffer = ref *pAsciiBuffer;
+            Vector128<ushort> utf16VectorFirst = Vector128.LoadUnsafe(ref utf16Buffer);
+            Vector128<ushort> maxChars = AdvSimd.Arm64.MaxPairwise(utf16VectorFirst, utf16VectorFirst);
+
+            if ((maxChars.AsUInt64().ToScalar() & 0xFF80FF80FF80FF80) != 0)
+            {
+                return 0; // found non-ASCII char
+            }
+            Vector128<byte> tempRegV = AdvSimd.Arm64.UnzipEven(utf16VectorFirst.AsByte(), utf16VectorFirst.AsByte());
+            tempRegV.GetLower().StoreUnsafe(ref asciiBuffer);
+            nuint currentOffsetInElements = SizeOfVector128 / 2;
+
+            // We are going to prefer aligned writes and take a potential hit for unaligned reads.
+            // Write additional 8 bytes (by reading additional 16 bytes) to go past next the 16-byte aligned
+            // write address if necessary. Adjust the source address so that the main loop writes the chunks
+            // of 16 bytes (by narrowing 32 bytes) at 16-byte aligned address. Adjusting the source
+            // pointer may process upto 14 bytes in the first chunk twice.
+
+            if (((uint)pAsciiBuffer & (SizeOfVector128 / 2)) == 0)
+            {
+                utf16VectorFirst = Vector128.LoadUnsafe(ref utf16Buffer, currentOffsetInElements); // unaligned load
+                maxChars = AdvSimd.Arm64.MaxPairwise(utf16VectorFirst, utf16VectorFirst);
+                if ((maxChars.AsUInt64().ToScalar() & 0xFF80FF80FF80FF80) != 0)
+                {
+                    goto Finish; // found non-ASCII data
+                }
+                tempRegV = AdvSimd.Arm64.UnzipEven(utf16VectorFirst.AsByte(), utf16VectorFirst.AsByte());
+                tempRegV.GetLower().StoreUnsafe(ref asciiBuffer, currentOffsetInElements);
+            }
+            // Calculate how many elements we wrote in order to get pAsciiBuffer to its next alignment
+            // point, then use that as the base offset going forward.
+            currentOffsetInElements = SizeOfVector128 - ((nuint)pAsciiBuffer & MaskOfAllBitsInVector128);
+
+            Debug.Assert(0 < currentOffsetInElements && currentOffsetInElements <= SizeOfVector128, "We wrote at least 1 byte but no more than a whole vector.");
+            Debug.Assert(currentOffsetInElements <= elementCount, "Shouldn't have overrun the destination buffer.");
+            Debug.Assert(elementCount - currentOffsetInElements >= SizeOfVector128, "We should be able to run at least one whole vector.");
+
+            nuint finalOffsetWhereCanRunLoop = elementCount - SizeOfVector128;
+            do
+            {
+                // In a loop, perform two unaligned reads, narrow to a single vector, then write one aligned vector.
+
+                utf16VectorFirst = Vector128.LoadUnsafe(ref utf16Buffer, currentOffsetInElements); // unaligned load
+                Vector128<ushort> utf16VectorSecond = Vector128.LoadUnsafe(ref utf16Buffer, currentOffsetInElements + SizeOfVector128 / sizeof(short)); // unaligned load
+
+                // Reverse the order of chunks while calculating pairwise maximum ensures that the largest two chars
+                // from the first chunk are in the bottom 32 bits. This allows to check the first chunk for non-ASCII
+                // chars without additional mov instructions to prepare the mask.
+                maxChars = AdvSimd.Arm64.MaxPairwise(utf16VectorSecond, utf16VectorFirst);
+                maxChars = AdvSimd.Arm64.MaxPairwise(maxChars, maxChars);
+                if ((maxChars.AsUInt64().ToScalar() & 0xFF80FF80FF80FF80) != 0)
+                {
+                    // Non-ASCII found in the current chunks of 32 bytes. Narrow the first chunk of 16 bytes if it's ASCII.
+
+                    if ((maxChars.AsUInt32().ToScalar() & 0xFF80FF80) == 0)
+                    {
+                        Debug.Assert(((nuint)pAsciiBuffer + currentOffsetInElements) % sizeof(ulong) == 0, "Destination should be ulong-aligned.");
+
+                        tempRegV = AdvSimd.Arm64.UnzipEven(utf16VectorFirst.AsByte(), utf16VectorFirst.AsByte());
+                        tempRegV.GetLower().StoreUnsafe(ref asciiBuffer, currentOffsetInElements);
+
+                        currentOffsetInElements += SizeOfVector128 / 2;
+                    }
+                    goto Finish;
+                }
+
+                // Build up the ASCII vector and perform the store.
+
+                Debug.Assert(((nuint)pAsciiBuffer + currentOffsetInElements) % SizeOfVector128 == 0, "Write should be aligned.");
+
+                tempRegV = AdvSimd.Arm64.UnzipEven(utf16VectorFirst.AsByte(), utf16VectorSecond.AsByte());
+                tempRegV.StoreUnsafe(ref asciiBuffer, currentOffsetInElements);
+                currentOffsetInElements += SizeOfVector128;
+            } while (currentOffsetInElements <= finalOffsetWhereCanRunLoop);
+
+        Finish:
+
+            // Caller processes any left over ASCII data.
+            return currentOffsetInElements;
         }
 
         /// <summary>
