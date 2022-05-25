@@ -460,10 +460,12 @@ public:
 // space on 32-bit platforms
 //
 struct StressMsg {
+    static const size_t formatOffsetBits = 26;
     union {
         struct {
             uint32_t numberOfArgs  : 3;   // at most 7 arguments
-            uint32_t formatOffset  : 29;  // offset of string in mscorwks
+            uint32_t formatOffset  : formatOffsetBits;    // offset of string in mscorwks
+            uint32_t numberOfArgsX : 3;                   // extend number of args in a backward compat way
         };
         uint32_t fmtOffsCArgs;            // for optimized access
     };
@@ -471,8 +473,8 @@ struct StressMsg {
     unsigned __int64 timeStamp;         // time when mssg was logged
     void*     args[0];                  // size given by numberOfArgs
 
-    static const size_t maxArgCnt = 7;
-    static const size_t maxOffset = 0x20000000;
+    static const size_t maxArgCnt = 63;
+    static const size_t maxOffset = 1 << formatOffsetBits;
     static size_t maxMsgSize ()
     { return sizeof(StressMsg) + maxArgCnt*sizeof(void*); }
 
