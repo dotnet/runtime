@@ -264,7 +264,9 @@ set(interp_sources
     interp/interp-intrins.c
     interp/mintops.h
     interp/mintops.c
-    interp/transform.c)
+    interp/transform.c
+    interp/tiering.h
+    interp/tiering.c)
 set(interp_stub_sources
     interp-stubs.c)
 
