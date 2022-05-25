@@ -3358,10 +3358,11 @@ static void mono_marshal_set_signature_callconv_from_attribute(MonoMethodSignatu
 	g_assert (m_class_get_image (cmod_klass) == mono_defaults.corlib);
 	g_assert (!strcmp (m_class_get_name_space (cmod_klass), "System.Runtime.CompilerServices"));
 
+	int calling_convention_id_offset = strlen ("CallConv");
 	const char *name = m_class_get_name (cmod_klass);
-	g_assert (!strstr (name, "CallConv") != name);
-	name += strlen ("CallConv");
+	g_assert (!strncmp (name, "CallConv", calling_convention_id_offset));
 
+	name += calling_convention_id_offset;
 	if (!strcmp (name, "Cdecl"))
 		sig->call_convention = MONO_CALL_C;
 	else if (!strcmp (name, "Stdcall"))
@@ -3409,7 +3410,7 @@ mono_marshal_set_callconv_from_unmanaged_callers_only_attribute (MonoMethod *met
 		CattrNamedArg *named_arg_info = NULL;
 		int num_named_args = 0;
 		mono_reflection_create_custom_attr_data_args_noalloc (mono_defaults.corlib, attr->ctor, attr->data, attr->data_size, &typed_args, &named_args, &num_named_args, &named_arg_info, error);
-		for (int i = 0; i < num_named_args; ++i) {
+		for (i = 0; i < num_named_args; ++i) {
 			if (named_arg_info [i].field && !strcmp (named_arg_info [i].field->name, "CallConvs")) {
 				MonoCustomAttrValue* calling_conventions_attr =  (MonoCustomAttrValue*) named_args [i];
 				g_assertf(named_arg_info [i].field->type->type == MONO_TYPE_SZARRAY, "UnmanagedCallersOnlyAttribute parameter %s must be an array, specified for method %s", named_arg_info [i].field->name, method->name);
