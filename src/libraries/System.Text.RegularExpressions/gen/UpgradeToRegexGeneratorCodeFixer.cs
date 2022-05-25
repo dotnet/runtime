@@ -25,7 +25,7 @@ namespace System.Text.RegularExpressions.Generator
     /// source generation.
     /// </summary>
     [ExportCodeFixProvider(LanguageNames.CSharp)]
-    public class UpgradeToRegexGeneratorCodeFixer : CodeFixProvider
+    public sealed class UpgradeToRegexGeneratorCodeFixer : CodeFixProvider
     {
         private const string RegexTypeName = "System.Text.RegularExpressions.Regex";
         private const string RegexGeneratorTypeName = "System.Text.RegularExpressions.RegexGeneratorAttribute";
@@ -47,7 +47,6 @@ namespace System.Text.RegularExpressions.Generator
             }
 
             SyntaxNode nodeToFix = root.FindNode(context.Span, getInnermostNodeForTie: false);
-
             if (nodeToFix is null)
             {
                 return;

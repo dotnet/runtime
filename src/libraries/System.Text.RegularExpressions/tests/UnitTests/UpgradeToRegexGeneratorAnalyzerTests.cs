@@ -22,10 +22,9 @@ namespace System.Text.RegularExpressions.Unit.Tests
         public async Task NoDiagnosticsForEmpty()
             => await VerifyCS.VerifyAnalyzerAsync(source: string.Empty);
 
-        [Fact]
-        public async Task NoDiagnosticForConstructorWithTimeout()
+        public static IEnumerable<object[]> ConstructorWithTimeoutTestData()
         {
-            string test = @"using System;
+            yield return new object[] { @"using System;
 using System.Text.RegularExpressions;
 
 public class Program
@@ -34,9 +33,35 @@ public class Program
     {
         var regex = new Regex("""", RegexOptions.None, TimeSpan.FromSeconds(10));
     }
-}
-";
+}" };
 
+            yield return new object[] { @"using System;
+using System.Text.RegularExpressions;
+
+public class Program
+{
+    public static void Main(string[] args)
+    {
+        var regex = new Regex("""", timeout: TimeSpan.FromSeconds(10));
+    }
+}" };
+
+            yield return new object[] { @"using System;
+using System.Text.RegularExpressions;
+
+public class Program
+{
+    public static void Main(string[] args)
+    {
+        var regex = new Regex(timeout: TimeSpan.FromSeconds(10), pattern: """");
+    }
+}" };
+        }
+
+        [Theory]
+        [MemberData(nameof(ConstructorWithTimeoutTestData))]
+        public async Task NoDiagnosticForConstructorWithTimeout(string test)
+        {
             await VerifyCS.VerifyAnalyzerAsync(test);
         }
 
@@ -676,6 +701,36 @@ public partial class Program
 ";
 
             await VerifyCS.VerifyCodeFixAsync(test, expectedDiagnostics, fixedSource, 2);
+        }
+
+        [Fact]
+        public async Task CodeFixerSupportsNamedParameters()
+        {
+            string test = @"using System.Text.RegularExpressions;
+
+class Program
+{
+    static void Main(string[] args)
+    {
+        Regex r = {|#0:new Regex(options: RegexOptions.None, pattern: ""a|b"")|};
+    }
+}";
+            DiagnosticResult expectedDiagnostic = VerifyCS.Diagnostic(DiagnosticDescriptors.UseRegexSourceGeneration.Id).WithLocation(0);
+
+            string fixedSource = @"using System.Text.RegularExpressions;
+
+partial class Program
+{
+    static void Main(string[] args)
+    {
+        Regex r = MyRegex();
+    }
+
+    [RegexGenerator(""a|b"", RegexOptions.None)]
+    private static partial Regex MyRegex();
+}";
+
+            await VerifyCS.VerifyCodeFixAsync(test, expectedDiagnostic, fixedSource);
         }
 
         #region Test helpers
