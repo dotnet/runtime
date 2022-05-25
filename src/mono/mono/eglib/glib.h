@@ -322,8 +322,6 @@ gchar *          g_getenv(const gchar *variable);
 G_EXTERN_C // sdks/wasm/driver.c is C and uses this
 gboolean         g_setenv(const gchar *variable, const gchar *value, gboolean overwrite);
 
-gchar*           g_win32_getlocale(void);
-
 /*
  * Precondition macros
  */
@@ -932,11 +930,7 @@ gchar  *g_find_program_in_path (const gchar *program);
 gchar  *g_get_current_dir      (void);
 gboolean g_path_is_absolute    (const char *filename);
 
-const gchar *g_get_home_dir    (void);
 const gchar *g_get_tmp_dir     (void);
-const gchar *g_get_user_name   (void);
-gchar *g_get_prgname           (void);
-void  g_set_prgname            (const gchar *prgname);
 
 gboolean g_ensure_directory_exists (const gchar *filename);
 

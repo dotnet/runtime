@@ -108,14 +108,20 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { CodeSnippets.MarshalAsParametersAndModifiers<string>(UnmanagedType.LPTStr) };
             yield return new[] { CodeSnippets.MarshalAsParametersAndModifiers<string>(UnmanagedType.LPUTF8Str) };
             yield return new[] { CodeSnippets.MarshalAsParametersAndModifiers<string>(UnmanagedType.LPStr) };
+            yield return new[] { CodeSnippets.MarshalAsParametersAndModifiers<string>(UnmanagedType.BStr) };
             yield return new[] { CodeSnippets.MarshalAsArrayParameterWithNestedMarshalInfo<string>(UnmanagedType.LPWStr) };
             yield return new[] { CodeSnippets.MarshalAsArrayParameterWithNestedMarshalInfo<string>(UnmanagedType.LPUTF8Str) };
             yield return new[] { CodeSnippets.MarshalAsArrayParameterWithNestedMarshalInfo<string>(UnmanagedType.LPStr) };
+            yield return new[] { CodeSnippets.MarshalAsArrayParameterWithNestedMarshalInfo<string>(UnmanagedType.BStr) };
 
             // [In, Out] attributes
             // By value non-blittable array
-            yield return new[] { CodeSnippets.ByValueParameterWithModifier("S[]", "Out", CodeSnippets.DisableRuntimeMarshalling + CodeSnippets.BasicNonBlittableUserDefinedType()) };
-            yield return new[] { CodeSnippets.ByValueParameterWithModifier("S[]", "In, Out", CodeSnippets.DisableRuntimeMarshalling + CodeSnippets.BasicNonBlittableUserDefinedType()) };
+            yield return new [] { CodeSnippets.ByValueParameterWithModifier("S[]", "Out")
+                + CodeSnippets.CustomStructMarshalling.NonBlittableUserDefinedType()
+                + CodeSnippets.CustomStructMarshalling.NativeTypeRef };
+            yield return new [] { CodeSnippets.ByValueParameterWithModifier("S[]", "In, Out")
+                + CodeSnippets.CustomStructMarshalling.NonBlittableUserDefinedType()
+                + CodeSnippets.CustomStructMarshalling.NativeTypeRef };
 
             // Enums
             yield return new[] { CodeSnippets.EnumParameters };
@@ -163,14 +169,17 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { CodeSnippets.SafeHandleWithCustomDefaultConstructorAccessibility(privateCtor: true) };
 
             // Custom type marshalling
-            yield return new[] { CodeSnippets.CustomStructMarshallingParametersAndModifiers };
-            yield return new[] { CodeSnippets.CustomStructMarshallingStackallocParametersAndModifiersNoRef };
-            yield return new[] { CodeSnippets.CustomStructMarshallingStackallocValuePropertyParametersAndModifiersNoRef };
-            yield return new[] { CodeSnippets.CustomStructMarshallingOptionalStackallocParametersAndModifiers };
-            yield return new[] { CodeSnippets.CustomStructMarshallingValuePropertyParametersAndModifiers };
-            yield return new[] { CodeSnippets.CustomStructMarshallingPinnableParametersAndModifiers };
-            yield return new[] { CodeSnippets.CustomStructMarshallingNativeTypePinnable };
-            yield return new[] { CodeSnippets.CustomStructMarshallingMarshalUsingParametersAndModifiers };
+            yield return new[] { CodeSnippets.CustomStructMarshalling.ParametersAndModifiers };
+            yield return new[] { CodeSnippets.CustomStructMarshalling.StackallocParametersAndModifiersNoRef };
+            yield return new[] { CodeSnippets.CustomStructMarshalling.StackallocTwoStageParametersAndModifiersNoRef };
+            yield return new[] { CodeSnippets.CustomStructMarshalling.OptionalStackallocParametersAndModifiers };
+            yield return new[] { CodeSnippets.CustomStructMarshalling.TwoStageParametersAndModifiers };
+            yield return new[] { CodeSnippets.CustomStructMarshalling.PinnableParametersAndModifiers };
+            yield return new[] { CodeSnippets.CustomStructMarshalling.NativeTypePinnable("byte", "byte") };
+            yield return new[] { CodeSnippets.CustomStructMarshalling.NativeTypePinnable("byte", "int") };
+            yield return new[] { CodeSnippets.CustomStructMarshalling.MarshalUsingParametersAndModifiers };
+            yield return new[] { CodeSnippets.CustomStructMarshalling.NativeToManagedOnlyOutParameter };
+            yield return new[] { CodeSnippets.CustomStructMarshalling.NativeToManagedOnlyReturnValue };
             yield return new[] { CodeSnippets.ArrayMarshallingWithCustomStructElement };
             yield return new[] { CodeSnippets.ArrayMarshallingWithCustomStructElementWithValueProperty };
 

@@ -8,6 +8,7 @@
 
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-mmap.h>
+#include <mono/utils/mono-threads-api.h>
 #include <mono/utils/mono-threads-debug.h>
 
 #include <glib.h>
@@ -28,6 +29,7 @@ EMSCRIPTEN_KEEPALIVE
 static int
 wasm_get_stack_base (void)
 {
+	// wasm-mt: add MONO_ENTER_GC_UNSAFE / MONO_EXIT_GC_UNSAFE if this function becomes more complex
 	return emscripten_stack_get_end ();
 }
 
@@ -35,6 +37,7 @@ EMSCRIPTEN_KEEPALIVE
 static int
 wasm_get_stack_size (void)
 {
+	// wasm-mt: add MONO_ENTER_GC_UNSAFE / MONO_EXIT_GC_UNSAFE if this function becomes more complex
 	return (guint8*)emscripten_stack_get_base () - (guint8*)emscripten_stack_get_end ();
 }
 
@@ -355,6 +358,7 @@ G_EXTERN_C
 EMSCRIPTEN_KEEPALIVE void
 mono_background_exec (void)
 {
+	MONO_ENTER_GC_UNSAFE;
 #ifndef DISABLE_THREADS
 	g_assert (mono_threads_wasm_is_browser_thread ());
 #endif
@@ -366,6 +370,7 @@ mono_background_exec (void)
 		cb ();
 	}
 	g_slist_free (j);
+	MONO_EXIT_GC_UNSAFE;
 }
 
 gboolean

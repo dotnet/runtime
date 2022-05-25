@@ -99,17 +99,17 @@
       </trans-unit>
       <trans-unit id="MarshallingCharAsSpecifiedStringMarshallingNotSupported">
         <source>Marshalling char with 'StringMarshalling.{0}' is not supported. Instead, manually convert the char type to the desired byte representation and pass to the source-generated P/Invoke.</source>
-        <target state="new">Marshalling char with 'StringMarshalling.{0}' is not supported. Instead, manually convert the char type to the desired byte representation and pass to the source-generated P/Invoke.</target>
+        <target state="translated">Zařazování datového typu char se StringMarshalling.{0} se nepodporuje. Místo toho ručně převeďte datový typ char na požadovanou bajtovou reprezentaci a předejte do zdrojem generovaného volání P/Invoke.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallingCharAsStringMarshallingCustomNotSupported">
         <source>Marshalling char with 'StringMarshalling.Custom' is not supported. To use a custom type marshaller, specify 'MarshalUsingAttribute'.</source>
-        <target state="new">Marshalling char with 'StringMarshalling.Custom' is not supported. To use a custom type marshaller, specify 'MarshalUsingAttribute'.</target>
+        <target state="translated">Zařazování datového typu char se StringMarshalling.Custom se nepodporuje. Pokud chcete použít zařazování vlastního typu, zadejte MarshalUsingAttribute.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallingStringOrCharAsUndefinedNotSupported">
         <source>Marshalling string or char without explicit marshalling information is not supported. Specify 'LibraryImportAttribute.StringMarshalling', 'LibraryImportAttribute.StringMarshallingCustomType', 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</source>
-        <target state="new">Marshalling string or char without explicit marshalling information is not supported. Specify 'LibraryImportAttribute.StringMarshalling', 'LibraryImportAttribute.StringMarshallingCustomType', 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</target>
+        <target state="translated">Zařazování řetězce nebo znaku bez explicitních informací o zařazování se nepodporuje. Zadejte LibraryImportAttribute.StringMarshalling, LibraryImportAttribute.StringMarshallingCustomType, MarshalUsingAttribute nebo MarshalAsAttribute.</target>
         <note />
       </trans-unit>
       <trans-unit id="NativeGenericTypeMustBeClosedOrMatchArityMessage">
@@ -129,7 +129,7 @@
       </trans-unit>
       <trans-unit id="RuntimeMarshallingMustBeDisabled">
         <source>Runtime marshalling must be disabled in this project by applying the 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute' to the assembly to enable marshalling this type.</source>
-        <target state="new">Runtime marshalling must be disabled in this project by applying the 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute' to the assembly to enable marshalling this type.</target>
+        <target state="translated">Aby se povolilo zařazování tohoto typu, musí se v tomto projektu zakázat zařazování modulu runtime použitím atributu System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute u sestavení.</target>
         <note />
       </trans-unit>
       <trans-unit id="SafeHandleByRefMustBeConcrete">
@@ -144,7 +144,7 @@
       </trans-unit>
       <trans-unit id="ValueInCallerAllocatedBufferRequiresSpanConstructorMessage">
         <source>The type '{0}' specifies that it supports 'In' marshalling with the 'CallerAllocatedBuffer' feature for '{1}' but does not provide a one-parameter constructor that takes a '{1}' and 'Span' of an 'unmanaged' type as parameters</source>
-        <target state="new">The type '{0}' specifies that it supports 'In' marshalling with the 'CallerAllocatedBuffer' feature for '{1}' but does not provide a one-parameter constructor that takes a '{1}' and 'Span' of an 'unmanaged' type as parameters</target>
+        <target state="translated">Typ {0} určuje, že podporuje zařazování In s funkcí CallerAllocatedBuffer pro {1}, ale neposkytuje jednoparametrový konstruktor, který přebírá {1} a Span jako parametry.</target>
         <note />
       </trans-unit>
     </body>
