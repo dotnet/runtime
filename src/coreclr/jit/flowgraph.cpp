@@ -2951,7 +2951,7 @@ void Compiler::fgSimpleLowering()
                 // Transform: a - (a / cns) >> shift  =>  a % cns
                 //            where cns is a signed integer constant that is a power of 2.
                 // We do this transformation because Lowering has a specific optimization
-                // for 'a % cns' that is not easily reduced by other means.
+                // for 'a % cns' that is not easily reduced by other means. 
                 case GT_SUB:
                 {
                     GenTree* node = tree;
