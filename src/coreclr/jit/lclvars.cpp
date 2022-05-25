@@ -901,7 +901,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                 assert(varDsc->lvExactSize <= argSize);
 
                 floatNum              = 1;
-                canPassArgInRegisters = varDscInfo->canEnreg(argRegTypeInStruct1, 1);
+                canPassArgInRegisters = varDscInfo->canEnreg(TYP_DOUBLE, 1);
 
                 argRegTypeInStruct1 = (varDsc->lvExactSize == 8) ? TYP_DOUBLE : TYP_FLOAT;
             }
@@ -938,7 +938,6 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
             {
                 // On LoongArch64, if there aren't any remaining floating-point registers to pass the argument,
                 // integer registers (if any) are used instead.
-                varDscInfo->setAllRegArgUsed(TYP_DOUBLE);
                 canPassArgInRegisters = varDscInfo->canEnreg(argType, cSlotsToEnregister);
 
                 argRegTypeInStruct1 = TYP_UNKNOWN;

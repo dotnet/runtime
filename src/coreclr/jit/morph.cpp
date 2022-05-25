@@ -2594,6 +2594,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
                     if (!passUsingFloatRegs)
                     {
                         size            = structSize > 8 ? 2 : 1;
+                        structBaseType  = structSize <= 8 ? TYP_I_IMPL : TYP_STRUCT;
                         floatFieldFlags = 0;
                     }
                     else if (passUsingFloatRegs)

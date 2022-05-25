@@ -340,6 +340,7 @@ private:
     GenTree* LowerHWIntrinsic(GenTreeHWIntrinsic* node);
     void LowerHWIntrinsicCC(GenTreeHWIntrinsic* node, NamedIntrinsic newIntrinsicId, GenCondition condition);
     GenTree* LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp);
+    void LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node);
     GenTree* LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node);
     GenTree* LowerHWIntrinsicDot(GenTreeHWIntrinsic* node);
 #if defined(TARGET_XARCH)

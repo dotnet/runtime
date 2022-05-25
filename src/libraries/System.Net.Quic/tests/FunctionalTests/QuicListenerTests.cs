@@ -65,6 +65,7 @@ namespace System.Net.Quic.Tests
     }
 
     [ConditionalClass(typeof(QuicTestBase<MsQuicProviderFactory>), nameof(QuicTestBase<MsQuicProviderFactory>.IsSupported))]
+    [Collection(nameof(DisableParallelization))]
     public sealed class QuicListenerTests_MsQuicProvider : QuicListenerTests<MsQuicProviderFactory>
     {
         public QuicListenerTests_MsQuicProvider(ITestOutputHelper output) : base(output) { }
