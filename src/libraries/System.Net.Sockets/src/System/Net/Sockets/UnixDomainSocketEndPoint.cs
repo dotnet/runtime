@@ -24,11 +24,11 @@ namespace System.Net.Sockets
 
         private readonly string _path;
         private readonly byte[] _encodedPath;
-        private readonly bool isBound;
+        private readonly bool _isBound;
         private string? _fullPath;
 
         // Tracks the file Socket should delete on Dispose.
-        internal string? BoundFileName => isBound ? _fullPath : null;
+        internal string? BoundFileName => _isBound ? _fullPath : null;
 
         public UnixDomainSocketEndPoint(string path)
             : this(path, null)
@@ -38,7 +38,7 @@ namespace System.Net.Sockets
         {
             ArgumentNullException.ThrowIfNull(path);
 
-            isBound = boundFileName is not null;
+            _isBound = boundFileName is not null;
             _fullPath = boundFileName;
 
             // Pathname socket addresses should be null-terminated.
@@ -187,7 +187,7 @@ namespace System.Net.Sockets
 
         internal UnixDomainSocketEndPoint CreateUnboundEndPoint()
         {
-            if (IsAbstract(_path) || !isBound)
+            if (IsAbstract(_path) || !_isBound)
             {
                 return this;
             }
