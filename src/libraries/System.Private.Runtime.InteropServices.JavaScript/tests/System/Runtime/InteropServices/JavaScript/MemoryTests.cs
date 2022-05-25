@@ -12,6 +12,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [InlineData(-1L)]
         [InlineData(-42L)]
         [InlineData(int.MinValue)]
+        [InlineData(-9007199254740990L)]//MIN_SAFE_INTEGER+1
         [InlineData(-9007199254740991L)]//MIN_SAFE_INTEGER
         [InlineData(1L)]
         [InlineData(0L)]
@@ -22,53 +23,68 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static unsafe void Int52TestOK(long value)
         {
             long expected = value;
-            long actual2 = value;
+            long dummy = 0xA6A6A6A6L;
+            long actual2 = dummy;
             var bagFn = new Function("ptr", "ptr2", @"
                 const value=globalThis.App.MONO.getI52(ptr);
                 globalThis.App.MONO.setI52(ptr2, value);
-                return value;");
+                return ''+value;");
 
             uint ptr = (uint)Unsafe.AsPointer(ref expected);
             uint ptr2 = (uint)Unsafe.AsPointer(ref actual2);
 
-            object o = bagFn.Call(null, ptr, ptr2);
-            if (value < int.MaxValue && value > int.MinValue)
-            {
-                Assert.IsType<int>(o);
-                long actual = (int)o;
-                Assert.Equal(expected, actual);
-            }
-            Assert.Equal(expected, actual2);
+            object actual = (string)bagFn.Call(null, ptr, ptr2);
+            Assert.Equal(""+ value, actual);
+            Assert.Equal(value, actual2);
+            Assert.Equal(0xA6A6A6A6L, dummy);
         }
 
         [Theory]
         [InlineData(uint.MinValue)]
-        [InlineData(1L)]
-        [InlineData(0L)]
-        [InlineData(42L)]
+        [InlineData(1UL)]
+        [InlineData(0UL)]
+        [InlineData(42UL)]
         [InlineData(uint.MaxValue)]
-        [InlineData(0xF_FFFF_FFFFL)]
-        [InlineData(9007199254740991L)]//MAX_SAFE_INTEGER 
+        [InlineData(0xF_FFFF_FFFFUL)]
+        [InlineData(9007199254740991UL)]//MAX_SAFE_INTEGER 
         public static unsafe void UInt52TestOK(ulong value)
         {
             ulong expected = value;
-            ulong actual2 = value;
+            ulong dummy = 0xA6A6A6A6UL;
+            ulong actual2 = dummy;
             var bagFn = new Function("ptr", "ptr2", @"
                 const value=globalThis.App.MONO.getI52(ptr);
                 globalThis.App.MONO.setU52(ptr2, value);
-                return value;");
+                return ''+value;");
 
             uint ptr = (uint)Unsafe.AsPointer(ref expected);
             uint ptr2 = (uint)Unsafe.AsPointer(ref actual2);
 
-            object o = bagFn.Call(null, ptr, ptr2);
-            if (value < int.MaxValue)
+            string actual = (string)bagFn.Call(null, ptr, ptr2);
+            Assert.Equal(""+value, actual);
+            Assert.Equal(value, actual2);
+            Assert.Equal(0xA6A6A6A6UL, dummy);
+        }
+
+        [Fact]
+        public static unsafe void UInt52TestRandom()
+        {
+            for(int i = 0; i < 1000; i++)
             {
-                Assert.IsType<int>(o);
-                ulong actual = (ulong)(long)(int)o;
-                Assert.Equal(expected, actual);
+                var value = (ulong)Random.Shared.NextInt64();
+                value&= 0x1F_FFFF_FFFF_FFFFUL;// only safe range
+                UInt52TestOK(value);
             }
-            Assert.Equal(expected, actual2);
+        }
+
+        [Fact]
+        public static unsafe void Int52TestRandom()
+        {
+            for(int i = 0; i < 1000; i++)
+            {
+                var value = Random.Shared.NextInt64(-9007199254740991L, 9007199254740991L);
+                Int52TestOK(value);
+            }
         }
 
         [Theory]
