@@ -20,8 +20,10 @@ private:
 
 public:
     interceptor_ICJI(interceptor_ICJC* compiler, ICorJitInfo* original, MethodContext* mc)
-        : m_compiler(compiler), original_ICorJitInfo(original), mc(mc),
-          m_savedCollectionEarly(false)
+        : m_compiler(compiler)
+        , original_ICorJitInfo(original)
+        , mc(mc)
+        , m_savedCollectionEarly(false)
     {
     }
 

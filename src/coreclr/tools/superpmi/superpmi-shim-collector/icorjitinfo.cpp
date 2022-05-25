@@ -1949,7 +1949,6 @@ int interceptor_ICJI::doAssert(const char* szFile, int iLine, const char* szExpr
 void interceptor_ICJI::reportFatalError(CorJitResult result)
 {
     mc->cr->AddCall("reportFatalError");
-
     original_ICorJitInfo->reportFatalError(result);
     mc->cr->recReportFatalError(result);
 }
