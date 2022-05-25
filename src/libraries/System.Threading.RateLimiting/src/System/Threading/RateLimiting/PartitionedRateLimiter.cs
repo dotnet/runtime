@@ -130,14 +130,29 @@ namespace System.Threading.RateLimiting
                 return;
             }
 
+            List<Exception>? exceptions = null;
+
             // Safe to access _limiters outside the lock
             // The timer is no longer running and _disposed is set so anyone trying to access fields will be checking that first
             foreach (KeyValuePair<TKey, Lazy<RateLimiter>> limiter in _limiters)
             {
-                limiter.Value.Value.Dispose();
+                try
+                {
+                    limiter.Value.Value.Dispose();
+                }
+                catch (Exception ex)
+                {
+                    exceptions ??= new List<Exception>();
+                    exceptions.Add(ex);
+                }
             }
             _limiters.Clear();
             _disposeComplete.TrySetResult(null);
+
+            if (exceptions is not null)
+            {
+                throw new AggregateException(exceptions);
+            }
         }
 
         protected override async ValueTask DisposeAsyncCore()
@@ -153,12 +168,26 @@ namespace System.Threading.RateLimiting
                 return;
             }
 
+            List<Exception>? exceptions = null;
             foreach (KeyValuePair<TKey, Lazy<RateLimiter>> limiter in _limiters)
             {
-                await limiter.Value.Value.DisposeAsync().ConfigureAwait(false);
+                try
+                {
+                    await limiter.Value.Value.DisposeAsync().ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    exceptions ??= new List<Exception>();
+                    exceptions.Add(ex);
+                }
             }
             _limiters.Clear();
             _disposeComplete.TrySetResult(null);
+
+            if (exceptions is not null)
+            {
+                throw new AggregateException(exceptions);
+            }
         }
 
         // This handles the common state changes that Dispose and DisposeAsync need to do, the individual limiters still need to be Disposed after this call
@@ -197,11 +226,18 @@ namespace System.Threading.RateLimiting
                 if (_cacheInvalid)
                 {
                     _cachedLimiters.Clear();
-                    _cachedLimiters = _limiters.ToList();
+                    // let's try to lower the memory held onto by the list
+                    // for example if there were 1000 items at one point, but only 10 now we don't need to keep a 1000 length buffer
+                    if (_cachedLimiters.Capacity > _limiters.Count * 2)
+                    {
+                        _cachedLimiters.Capacity = _limiters.Count;
+                    }
+                    _cachedLimiters.AddRange(_limiters);
                 }
             }
 
             List<RateLimiter>? limitersToDispose = null;
+            List<Exception>? aggregateExceptions = null;
 
             // cachedLimiters is safe to use outside the lock because it is only updated by the Timer
             foreach (KeyValuePair<TKey, Lazy<RateLimiter>> rateLimiter in _cachedLimiters)
@@ -232,13 +268,20 @@ namespace System.Threading.RateLimiting
                 }
                 else if (rateLimiter.Value.Value is ReplenishingRateLimiter replenishingRateLimiter)
                 {
-                    replenishingRateLimiter.TryReplenish();
+                    try
+                    {
+                        replenishingRateLimiter.TryReplenish();
+                    }
+                    catch (Exception ex)
+                    {
+                        aggregateExceptions ??= new List<Exception>();
+                        aggregateExceptions.Add(ex);
+                    }
                 }
             }
 
             if (limitersToDispose is not null)
             {
-                List<Exception>? aggregateExceptions = null;
                 foreach (RateLimiter limiter in limitersToDispose)
                 {
                     try
@@ -251,10 +294,11 @@ namespace System.Threading.RateLimiting
                         aggregateExceptions.Add(ex);
                     }
                 }
-                if (aggregateExceptions is not null)
-                {
-                    throw new AggregateException(aggregateExceptions);
-                }
+            }
+
+            if (aggregateExceptions is not null)
+            {
+                throw new AggregateException(aggregateExceptions);
             }
         }
     }
