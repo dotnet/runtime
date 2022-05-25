@@ -154,23 +154,27 @@ internal sealed class InterpToNativeGenerator
 
         public string Emit(char c)
         {
+            int argIndex;
             switch (c)
             {
                 case 'I':
+                    argIndex = iarg;
                     iarg += 1;
                     break;
                 case 'L':
+                    argIndex = iarg;
                     iarg += 2;
                     break;
                 case 'F':
                 case 'D':
+                    argIndex = farg;
                     farg += 1;
                     break;
                 default:
                     throw new InvalidSignatureCharException(c);
             }
 
-            return $"mono_wasm_interp_method_args_get_{char.ToLower(c)}arg (margs, {iarg - 1})";
+            return $"mono_wasm_interp_method_args_get_{char.ToLower(c)}arg (margs, {argIndex})";
         }
     }
 }
