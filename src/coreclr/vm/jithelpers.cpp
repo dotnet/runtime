@@ -5485,32 +5485,23 @@ HCIMPL4(void, JIT_MethodProfile32, Object *obj, CORINFO_METHOD_HANDLE baseMethod
     MethodTable* pMT = objRef->GetMethodTable();
 
     // Resolve method
-    MethodDesc* pMD = NULL;
+    MethodDesc* pRecordedMD = (MethodDesc*)DEFAULT_UNKNOWN_HANDLE;
     if (pMT->IsDelegate() && (pBaseMD == ((DelegateEEClass*)pMT->GetClass())->GetInvokeMethod()))
     {
         // We handle only the common "direct" delegate as that is in any case
         // the only one we can reasonably do GDV for. For instance, open
         // delegates are filtered out here, and many cases with inner
-        // "complicated" logic as well (e.g. multicast, unmanaged functions).
+        // "complicated" logic as well (e.g. static functions, multicast,
+        // unmanaged functions).
         //
         DELEGATEREF del = (DELEGATEREF)objRef;
-        if (del->GetInvocationCount() == 0)
+        if ((del->GetInvocationCount() == 0) && (del->GetMethodPtrAux() == NULL))
         {
-            PCODE code = del->GetMethodPtrAux();
-            if (code != NULL)
+            MethodDesc* pMD = NonVirtualEntry2MethodDesc(del->GetMethodPtr());
+            if ((pMD != nullptr) && !pMD->GetLoaderAllocator()->IsCollectible())
             {
-                pMD = MethodTable::GetMethodDescForSlotAddress(code);
+                pRecordedMD = pMD;
             }
-            else
-            {
-                code = del->GetMethodPtr();
-                pMD = NonVirtualEntry2MethodDesc(code);
-            }
-        }
-
-        if (pMD == NULL)
-        {
-            return;
         }
     }
     else
@@ -5518,16 +5509,12 @@ HCIMPL4(void, JIT_MethodProfile32, Object *obj, CORINFO_METHOD_HANDLE baseMethod
         WORD slot = pBaseMD->GetSlot();
         _ASSERTE(slot < pBaseMD->GetMethodTable()->GetNumVirtuals());
 
-        pMD = pMT->GetMethodDescForSlot(slot);
-    }
+        MethodDesc* pMD = pMT->GetMethodDescForSlot(slot);
 
-    // If the object class is collectible, record an unknown handle.
-    // We do this instead of recording NULL so that we won't over-estimate
-    // the likelihood of known handles.
-    //
-    if (pMD->GetLoaderAllocator()->IsCollectible())
-    {
-        pMD = (MethodDesc*)DEFAULT_UNKNOWN_HANDLE;
+        if (!pMD->GetLoaderAllocator()->IsCollectible())
+        {
+            pRecordedMD = pMD;
+        }
     }
 
 #ifdef _DEBUG
@@ -5537,7 +5524,7 @@ HCIMPL4(void, JIT_MethodProfile32, Object *obj, CORINFO_METHOD_HANDLE baseMethod
 
     // If table is not yet full, just add entries in.
     //
-    methodProfile->HandleTable[methodSampleIndex] = (CORINFO_METHOD_HANDLE)pMD;
+    methodProfile->HandleTable[methodSampleIndex] = (CORINFO_METHOD_HANDLE)pRecordedMD;
 
     if (typeSampleIndex != -1)
     {
@@ -5604,32 +5591,23 @@ HCIMPL4(void, JIT_MethodProfile64, Object *obj, CORINFO_METHOD_HANDLE baseMethod
     MethodTable* pMT = objRef->GetMethodTable();
 
     // Resolve method
-    MethodDesc* pMD = NULL;
-    if (pMT->IsDelegate())
+    MethodDesc* pRecordedMD = (MethodDesc*)DEFAULT_UNKNOWN_HANDLE;
+    if (pMT->IsDelegate() && (pBaseMD == ((DelegateEEClass*)pMT->GetClass())->GetInvokeMethod()))
     {
         // We handle only the common "direct" delegate as that is in any case
         // the only one we can reasonably do GDV for. For instance, open
         // delegates are filtered out here, and many cases with inner
-        // "complicated" logic as well (e.g. multicast, unmanaged functions).
+        // "complicated" logic as well (e.g. static functions, multicast,
+        // unmanaged functions).
         //
         DELEGATEREF del = (DELEGATEREF)objRef;
-        if (del->GetInvocationCount() == 0)
+        if ((del->GetInvocationCount() == 0) && (del->GetMethodPtrAux() == NULL))
         {
-            PCODE code = del->GetMethodPtrAux();
-            if (code != NULL)
+            MethodDesc* pMD = NonVirtualEntry2MethodDesc(del->GetMethodPtr());
+            if ((pMD != nullptr) && !pMD->GetLoaderAllocator()->IsCollectible())
             {
-                pMD = MethodTable::GetMethodDescForSlotAddress(code);
+                pRecordedMD = pMD;
             }
-            else
-            {
-                code = del->GetMethodPtr();
-                pMD = NonVirtualEntry2MethodDesc(code);
-            }
-        }
-
-        if (pMD == NULL)
-        {
-            return;
         }
     }
     else
@@ -5637,16 +5615,12 @@ HCIMPL4(void, JIT_MethodProfile64, Object *obj, CORINFO_METHOD_HANDLE baseMethod
         WORD slot = pBaseMD->GetSlot();
         _ASSERTE(slot < pBaseMD->GetMethodTable()->GetNumVirtuals());
 
-        pMD = pMT->GetMethodDescForSlot(slot);
-    }
+        MethodDesc* pMD = pMT->GetMethodDescForSlot(slot);
 
-    // If the object class is collectible, record an unknown handle.
-    // We do this instead of recording NULL so that we won't over-estimate
-    // the likelihood of known handles.
-    //
-    if (pMD->GetLoaderAllocator()->IsCollectible())
-    {
-        pMD = (MethodDesc*)DEFAULT_UNKNOWN_HANDLE;
+        if (!pMD->GetLoaderAllocator()->IsCollectible())
+        {
+            pRecordedMD = pMD;
+        }
     }
 
 #ifdef _DEBUG
@@ -5654,7 +5628,7 @@ HCIMPL4(void, JIT_MethodProfile64, Object *obj, CORINFO_METHOD_HANDLE baseMethod
     PgoManager::VerifyAddress(methodProfile + 1);
 #endif
 
-    methodProfile->HandleTable[methodSampleIndex] = (CORINFO_METHOD_HANDLE)pMD;
+    methodProfile->HandleTable[methodSampleIndex] = (CORINFO_METHOD_HANDLE)pRecordedMD;
 
     if (typeSampleIndex != -1)
     {
