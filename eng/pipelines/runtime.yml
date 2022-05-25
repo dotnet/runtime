@@ -255,11 +255,11 @@ jobs:
     buildConfig: Release
     platforms:
     - windows_arm64
-    - windows_x64
+    - Linux_arm64
     jobParameters:
       testGroup: innerloop
       isSingleFile: true
-      nameSuffix: NativeAOT_LIBS_TEST
+      nameSuffix: NativeAOT
       buildArgs: -s clr.alljits+clr.tools+clr.nativeaotlibs+clr.nativeaotruntime+libs+libs.tests -c $(_BuildConfig) /p:TestNativeAot=true /p:ArchiveTests=true
       timeoutInMinutes: 120
       # extra steps, run tests
@@ -750,6 +750,7 @@ jobs:
 # Only do this on PR builds since we use the Release builds for these test runs in CI
 # and those are already built above
 #
+
 - ${{ if eq(variables['isRollingBuild'], false) }}:
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:

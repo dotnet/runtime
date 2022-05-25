@@ -55,22 +55,22 @@ public class SingleFileTestRunner : XunitTestFramework
         XunitFilters filters = new XunitFilters();
         // Quick hack wo much validation to get no traits passed
         Dictionary<string, List<string>> noTraits = new Dictionary<string, List<string>>();
-        for(int i = 0; i < args.Length; i++)
+        for (int i = 0; i < args.Length; i++)
         {
             if (args[i].Equals("-notrait", StringComparison.OrdinalIgnoreCase))
             {
-                var traitKeyValue=args[i+1].Split("=", StringSplitOptions.TrimEntries);
-                if (!noTraits.ContainsKey(traitKeyValue[0]))
+                var traitKeyValue=args[i + 1].Split("=", StringSplitOptions.TrimEntries);
+                if (!noTraits.TryGetValue(traitKeyValue[0], out List<string> values))
                 {
-                    noTraits.Add(traitKeyValue[0], new List<string>());
+                    noTraits.Add(traitKeyValue[0], values = new List<string>());
                 }
-                noTraits[traitKeyValue[0]].Add(traitKeyValue[1]);
+                values.Add(traitKeyValue[1]);
             }
         }
 
-        foreach(string traitKey in noTraits.Keys)
+        foreach (KeyValuePair<string, List<string>> kvp in noTraits)
         {
-            filters.ExcludedTraits.Add(traitKey, noTraits[traitKey]);
+            filters.ExcludedTraits.Add(kvp.Key, kvp.Value);
         }
 
         var filteredTestCases = discoverySink.TestCases.Where(filters.Filter).ToList();
