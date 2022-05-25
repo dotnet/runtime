@@ -7944,6 +7944,12 @@ exit: ;
     return result;
 }
 
+void CEEInfo::beginInlining(CORINFO_METHOD_HANDLE inlinerHnd,
+                            CORINFO_METHOD_HANDLE inlineeHnd)
+{
+    // do nothing
+}
+
 void CEEInfo::reportInliningDecision (CORINFO_METHOD_HANDLE inlinerHnd,
                                       CORINFO_METHOD_HANDLE inlineeHnd,
                                       CorInfoInline inlineResult,
@@ -7993,7 +7999,7 @@ void CEEInfo::reportInliningDecision (CORINFO_METHOD_HANDLE inlinerHnd,
                  currentMethodName.GetUnicode(), inlineeMethodName.GetUnicode(),
                  inlinerMethodName.GetUnicode(), reason));
         }
-        else
+        else if(inlineResult == INLINE_PASS)
         {
             LOG((LF_JIT, LL_INFO100000, "While compiling '%S', inline of '%S' into '%S' succeeded.\n",
                  currentMethodName.GetUnicode(), inlineeMethodName.GetUnicode(),
@@ -8046,7 +8052,7 @@ void CEEInfo::reportInliningDecision (CORINFO_METHOD_HANDLE inlinerHnd,
                                            strReason.GetUnicode(),
                                            GetClrInstanceId());
         }
-        else
+        else if(inlineResult == INLINE_PASS)
         {
             FireEtwMethodJitInliningSucceeded(methodBeingCompiledNames[0].GetUnicode(),
                                               methodBeingCompiledNames[1].GetUnicode(),

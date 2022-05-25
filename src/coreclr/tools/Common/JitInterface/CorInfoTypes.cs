@@ -479,6 +479,9 @@ namespace Internal.JitInterface
     public enum CorInfoInline
     {
         INLINE_PASS = 0,    // Inlining OK
+        INLINE_PREJIT_SUCCESS = 1,
+        INLINE_CHECK_CAN_INLINE_SUCCESS = 2,
+        INLINE_CHECK_CAN_INLINE_VMFAIL  = 3,
 
         // failures are negative
         INLINE_FAIL = -1,   // Inlining not OK for this case only
