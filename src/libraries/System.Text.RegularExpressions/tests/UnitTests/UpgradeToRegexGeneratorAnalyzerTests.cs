@@ -16,6 +16,7 @@ using VerifyCS = System.Text.RegularExpressions.Unit.Tests.CSharpCodeFixVerifier
 
 namespace System.Text.RegularExpressions.Unit.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/69823", TestRuntimes.Mono)]
     public class UpgradeToRegexGeneratorAnalyzerTests
     {
         [Fact]
