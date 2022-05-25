@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Microsoft.WebAssembly.Diagnostics;
 using Newtonsoft.Json.Linq;
 using Xunit;
+using Xunit.Sdk;
 
 namespace DebuggerTests
 {
@@ -15,6 +16,8 @@ namespace DebuggerTests
     {
         public static TheoryData<string, bool?, bool?, string[], Dictionary<string, (JObject, bool)>, bool> ClassGetPropertiesTestData(bool is_async)
         {
+            // FIXME: invoking getter on the hidden(base) properties - is that supported??
+            // FIXME: add case - v -> o -> n, v -> n -> o
             var data = new TheoryData<string, bool?, bool?, string[], Dictionary<string, (JObject, bool)>, bool>();
 
             var type_name = "DerivedClass2";
@@ -36,6 +39,7 @@ namespace DebuggerTests
 
                 // inherited from Base:
                 // public:
+                {"Base_VirtualPropertyNotOverriddenOrHidden",                (TGetter("Base_VirtualPropertyNotOverriddenOrHidden"), false)},
                 {"BaseBase_AutoPropertyForHidingWithField",                 (TNumber(115), false)},
                 {"BaseBase_PropertyForHidingWithProperty",                  (TGetter("BaseBase_PropertyForHidingWithProperty"), false)},
                 {"BaseBase_FieldForHidingWithAutoProperty (BaseClass2)",    (TString("Base#BaseBase_FieldForHidingWithAutoProperty"), false)},
@@ -99,6 +103,7 @@ namespace DebuggerTests
                 "BaseBase_PropertyForHidingWithField (BaseBaseClass2)",
                 "BaseBase_PropertyForHidingWithProperty (BaseBaseClass2)",
                 "BaseBase_PropertyForHidingWithAutoProperty (BaseBaseClass2)",
+                "Base_VirtualPropertyNotOverriddenOrHidden"
             };
 
             var only_own_accessors = new[]
@@ -190,6 +195,7 @@ namespace DebuggerTests
                 var this_obj = GetAndAssertObjectWithName(frame_locals, "this");
                 var this_props = await GetProperties(this_obj["value"]?["objectId"]?.Value<string>(), own_properties: own_properties, accessors_only: accessors_only);
 
+                AssertHasOnlyExpectedProperties(expected_names, this_props.Values<JObject>());
                 await CheckExpectedProperties(expected_names, name => GetAndAssertObjectWithName(this_props, name), all_props);
 
                 // indexer properties shouldn't show up here
@@ -405,13 +411,27 @@ namespace DebuggerTests
 
         private static void AssertHasOnlyExpectedProperties(string[] expected_names, IEnumerable<JObject> actual)
         {
+            bool fail = false;
             var exp = new HashSet<string>(expected_names);
 
             foreach (var obj in actual)
             {
                 if (!exp.Contains(obj["name"]?.Value<string>()))
+                {
                     Console.WriteLine($"Unexpected: {obj}");
+                    fail = true;
+                }
             }
+
+            var act = new HashSet<string>(actual.Select(a => a["name"].Value<string>()));
+            foreach (var obj in expected_names.Where(ename => !act.Contains(ename)))
+            {
+                Console.WriteLine($"Missing: {obj}");
+                fail = true;
+            }
+
+            if (fail)
+                throw new XunitException($"missing or unexpected members found");
         }
 
         public static TheoryData<Dictionary<string, JObject>, Dictionary<string, JObject>, Dictionary<string, JObject>, string> GetDataForProtectionLevels()
@@ -430,6 +450,7 @@ namespace DebuggerTests
                 {"BaseBase_FieldForHidingWithAutoProperty (BaseClass2)",    TString("Base#BaseBase_FieldForHidingWithAutoProperty")},
                 {"FirstName",                                               TGetter("FirstName")},
                 {"LastName",                                                TGetter("LastName")},
+                {"Base_VirtualPropertyNotOverriddenOrHidden",               TGetter("Base_VirtualPropertyNotOverriddenOrHidden")},
 
                 // inherited from BaseBase:
                 {"BaseBase_FieldForHidingWithField (BaseBaseClass2)",                TNumber(5)},

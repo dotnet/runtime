@@ -160,6 +160,7 @@ namespace DebuggerTests.GetPropertiesTests
         // cannot override field and cannot override with a field: skipping
 
         // for overriding with a property:
+        public virtual DateTime Base_VirtualPropertyNotOverriddenOrHidden => new DateTime(2134, 5, 7, 1, 9, 2);
         public virtual DateTime Base_PropertyForOverridingWithProperty => new DateTime(2134, 5, 7, 1, 9, 2);
         protected virtual DateTime Base_AutoPropertyForOverridingWithProperty { get; set; }
 
@@ -183,11 +184,11 @@ namespace DebuggerTests.GetPropertiesTests
 
     public class DerivedClass2 : BaseClass2
     {
-        // // overriding with a property:
-        public override DateTime Base_PropertyForOverridingWithProperty => new DateTime(2020, 7, 6, 5, 4, 3);
-        protected override DateTime Base_AutoPropertyForOverridingWithProperty => new DateTime(2020, 7, 6, 5, 4, 3);
+        // overriding with a property:
+        public override DateTime Base_PropertyForOverridingWithProperty => new(2020, 7, 6, 5, 4, 3);
+        protected override DateTime Base_AutoPropertyForOverridingWithProperty => new(2020, 7, 6, 5, 4, 3);
 
-        // // overriding with a auto-property:
+        // overriding with a auto-property:
         internal override DateTime Base_PropertyForOverridingWithAutoProperty { get; }
         protected override DateTime Base_AutoPropertyForOverridingWithAutoProperty { get; set; }
 

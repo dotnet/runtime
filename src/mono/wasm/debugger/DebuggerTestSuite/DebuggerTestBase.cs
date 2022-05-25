@@ -732,7 +732,7 @@ namespace DebuggerTests
             if (!skip_num_fields_check)
             {
                 num_fields = num_fields < 0 ? exp.Values<JToken>().Count() : num_fields;
-                var expected_str = string.Join(", ", 
+                var expected_str = string.Join(", ",
                     exp.Children()
                     .Select(e => e is JProperty jprop ? jprop.Name : e["name"]?.Value<string>())
                     .Where(e => !string.IsNullOrEmpty(e))

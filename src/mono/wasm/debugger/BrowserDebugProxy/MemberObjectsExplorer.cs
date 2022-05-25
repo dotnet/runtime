@@ -291,10 +291,10 @@ namespace BrowserDebugProxy
             }
         }
 
-        public static async Task<Dictionary<string, JObject>> GetNonAutomaticPropertyValues(
+        public static async Task<Dictionary<string, JObject>> ExpandPropertyValues(
             MonoSDBHelper sdbHelper,
             int typeId,
-            string containerTypeName,
+            string typeName,
             ArraySegment<byte> getterParamsBuffer,
             bool isAutoExpandable,
             DotnetObjectId objectId,
@@ -311,7 +311,7 @@ namespace BrowserDebugProxy
             var nProperties = retDebuggerCmdReader.ReadInt32();
             var typeInfo = await sdbHelper.GetTypeInfo(typeId, token);
             var typePropertiesBrowsableInfo = typeInfo?.Info?.DebuggerBrowsableProperties;
-            var parentSuffix = containerTypeName.Split('.')[^1];
+            var parentSuffix = typeName.Split('.')[^1];
 
             GetMembersResult ret = new();
             for (int i = 0; i < nProperties; i++)
@@ -327,77 +327,97 @@ namespace BrowserDebugProxy
                     continue;
 
                 MethodInfoWithDebugInformation getterInfo = await sdbHelper.GetMethodInfo(getMethodId, token);
-                MethodAttributes getterAttrs = getterInfo?.Info.Attributes ?? MethodAttributes.Public;
-                getterAttrs &= MethodAttributes.MemberAccessMask;
+                MethodAttributes getterAttrs = getterInfo.Info.Attributes;
+                MethodAttributes getterMemberAccessAttrs = getterAttrs & MethodAttributes.MemberAccessMask;
 
                 typePropertiesBrowsableInfo.TryGetValue(propName, out DebuggerBrowsableState? state);
 
                 // handle parents' members:
-                var propNameWithSufix = propName;
-                JObject existingMember;
-                if (allMembers.TryGetValue(propName, out existingMember))
+                if (!allMembers.TryGetValue(propName, out JObject existingMember))
                 {
-                    bool isBackingFieldBelongingToIth = existingMember["__processing_in_progress"]?.Value<bool>() == true;
-                    if (isBackingFieldBelongingToIth)
-                    {
-                        existingMember.Property("__processing_in_progress")?.Remove();
-                    }
-                    if (!isOwn)
-                    {
-                        bool isOverriding = (getterInfo?.Info.Attributes & MethodAttributes.VtableLayoutMask) == MethodAttributes.NewSlot;
-                        if (isOverriding)
-                        {
-                            if (!isBackingFieldBelongingToIth)
-                            {
-                                propNameWithSufix = $"{propName} ({parentSuffix})";
-                                allMembers.Remove(propNameWithSufix);
-                            }
-                            continue;
-                        }
-                        if (!isBackingFieldBelongingToIth)
-                        {
-                            propNameWithSufix = $"{propName} ({parentSuffix})";
-                            existingMember = allMembers.GetValueOrDefault(propNameWithSufix);
-                        }
-                    }
-                }
-
-                if (existingMember != null)
-                {
-                    if (existingMember["__isBackingField"]?.Value<bool>() == true)
-                    {
-                        // Update backingField's access with the one from the property getter
-                        existingMember["__section"] = getterAttrs switch
-                        {
-                            MethodAttributes.Private => "private",
-                            MethodAttributes.Public => "result",
-                            _ => "internal"
-                        };
-                        existingMember["__state"] = state?.ToString();
-
-                        if (state is not null)
-                        {
-                            string namePrefix = GetNamePrefixForValues(propNameWithSufix, containerTypeName, isOwn, state);
-
-                            string backingFieldTypeName = existingMember["value"]?["className"]?.Value<string>();
-                            var expanded = await GetExpandedMemberValues(
-                                sdbHelper, backingFieldTypeName, namePrefix, existingMember, state, includeStatic, token);
-                            existingMember.Remove();
-                            allMembers.Remove(propNameWithSufix);
-                            foreach (JObject evalue in expanded)
-                                allMembers[evalue["name"].Value<string>()] = evalue;
-                        }
-                    }
-                    existingMember.Property("__processing_in_progress")?.Remove();
-                    // derived type already had a member of this name
+                    // new member
+                    await AddProperty(getMethodId, state, propName, getterMemberAccessAttrs);
                     continue;
                 }
-                else
+
+                bool isExistingMemberABackingField = existingMember["__isBackingField"]?.Value<bool>() == true;
+                if (isOwn && !isExistingMemberABackingField)
                 {
-                    await AddProperty(getMethodId, state, propNameWithSufix, getterAttrs);
+                    // repeated propname on the same type! cannot happen
+                    throw new Exception($"Internal Error: should not happen. propName: {propName}. Existing all members: {string.Join(",", allMembers.Keys)}");
                 }
+
+                bool isExistingMemberABackingFieldOwnedByThisType = isExistingMemberABackingField && existingMember["__owner"]?.Value<string>() == typeName;
+                if (isExistingMemberABackingField && (isOwn || isExistingMemberABackingFieldOwnedByThisType))
+                {
+                    // this is the property corresponding to the backing field in *this* type
+                    // `isOwn` would mean that this is the first type that we are looking at
+                    await UpdateBackingFieldWithPropertyAttributes(existingMember, propName, getterMemberAccessAttrs, state);
+                    continue;
+                }
+
+                var overriddenOrHiddenPropName = $"{propName} ({parentSuffix})";
+                MethodAttributes vtableLayout = getterAttrs & MethodAttributes.VtableLayoutMask;
+                bool wasOverriddenByDerivedType = (vtableLayout & MethodAttributes.NewSlot) == MethodAttributes.NewSlot;
+                if (wasOverriddenByDerivedType)
+                {
+                    /*
+                     * property was overridden by a derived type member. We want to show
+                     * only the overridden members. So, remove the backing field
+                     * for this auto-property that was added, with the type name suffix
+                     *
+                     * Two cases:
+                     * 1. auto-prop in base, overridden by auto-prop in derived
+                     * 2. auto-prop in base, overridden by prop in derived
+                     *
+                     *    And in both cases we want to remove the backing field for the auto-prop for
+                     *      *this* base type
+                     */
+                    allMembers.Remove(overriddenOrHiddenPropName);
+                    continue;
+                }
+
+                /*
+                 * property was *hidden* by a derived type member. In this case, we
+                 * want to show *both* the members
+                 */
+
+                JObject backingFieldForHiddenProp = allMembers.GetValueOrDefault(overriddenOrHiddenPropName);
+                if (backingFieldForHiddenProp is null || backingFieldForHiddenProp["__isBackingField"]?.Value<bool>() != true)
+                {
+                    // hiding with a non-auto property, so nothing to adjust
+                    // add the new property
+                    await AddProperty(getMethodId, state, overriddenOrHiddenPropName, getterMemberAccessAttrs);
+                    continue;
+                }
+
+                await UpdateBackingFieldWithPropertyAttributes(backingFieldForHiddenProp, overriddenOrHiddenPropName, getterMemberAccessAttrs, state);
             }
+
             return allMembers;
+
+            async Task UpdateBackingFieldWithPropertyAttributes(JObject backingField, string autoPropName, MethodAttributes getterMemberAccessAttrs, DebuggerBrowsableState? state)
+            {
+                backingField["__section"] = getterMemberAccessAttrs switch
+                {
+                    MethodAttributes.Private => "private",
+                    MethodAttributes.Public => "result",
+                    _ => "internal"
+                };
+                backingField["__state"] = state?.ToString();
+
+                if (state is null)
+                    return;
+
+                string namePrefix = GetNamePrefixForValues(autoPropName, typeName, isOwn, state);
+                string backingPropTypeName = backingField["value"]?["className"]?.Value<string>();
+                var expanded = await GetExpandedMemberValues(
+                    sdbHelper, backingPropTypeName, namePrefix, backingField, state, includeStatic, token);
+                backingField.Remove();
+                allMembers.Remove(autoPropName);
+                foreach (JObject evalue in expanded)
+                    allMembers[evalue["name"].Value<string>()] = evalue;
+            }
 
             async Task AddProperty(int getMethodId, DebuggerBrowsableState? state, string propNameWithSufix, MethodAttributes getterAttrs)
             {
@@ -426,7 +446,7 @@ namespace BrowserDebugProxy
                 };
                 propRet["__state"] = state?.ToString();
 
-                string namePrefix = GetNamePrefixForValues(propNameWithSufix, containerTypeName, isOwn, state);
+                string namePrefix = GetNamePrefixForValues(propNameWithSufix, typeName, isOwn, state);
                 var expandedMembers = await GetExpandedMemberValues(
                     sdbHelper, returnTypeName, namePrefix, propRet, state, includeStatic, token);
                 foreach (var member in expandedMembers)
@@ -524,14 +544,14 @@ namespace BrowserDebugProxy
                         foreach (var f in allFields)
                             f["__hidden"] = true;
                     }
-                    AddOnlyNewValuesByNameTo(allFields, allMembers, typeName, isOwn);
+                    AddOnlyNewFieldValuesByNameTo(allFields, allMembers, typeName, isOwn);
                 }
 
                 // skip loading properties if not necessary
                 if (!getCommandType.HasFlag(GetObjectCommandOptions.WithProperties))
                     return GetMembersResult.FromValues(allMembers.Values, sortByAccessLevel);
 
-                allMembers = await GetNonAutomaticPropertyValues(
+                allMembers = await ExpandPropertyValues(
                     sdbHelper,
                     typeId,
                     typeName,
@@ -554,23 +574,29 @@ namespace BrowserDebugProxy
             }
             return GetMembersResult.FromValues(allMembers.Values, sortByAccessLevel);
 
-            static void AddOnlyNewValuesByNameTo(JArray namedValues, IDictionary<string, JObject> valuesDict, string typeName, bool isOwn)
+            static void AddOnlyNewFieldValuesByNameTo(JArray namedValues, IDictionary<string, JObject> valuesDict, string typeName, bool isOwn)
             {
                 foreach (var item in namedValues)
                 {
-                    if (item["__isBackingField"]?.Value<bool>() == true)
-                        item["__processing_in_progress"] = true;
-
-                    var key = item["name"]?.Value<string>();
-                    if (key == null
-                        || valuesDict.TryAdd(key, item as JObject)
-                        || isOwn)
+                    var name = item["name"]?.Value<string>();
+                    if (name == null)
                         continue;
 
-                    var parentSuffix = typeName.Split('.').LastOrDefault();
-                    var parentMemberName = $"{key} ({parentSuffix})";
-                    if (valuesDict.TryAdd(parentMemberName, item as JObject))
-                        item["name"] = parentMemberName;
+                    if (valuesDict.TryAdd(name, item as JObject))
+                    {
+                        // new member
+                        if (item["__isBackingField"]?.Value<bool>() == true)
+                            item["__owner"] = typeName;
+                        continue;
+                    }
+
+                    if (isOwn)
+                        throw new Exception($"Internal Error: found an existing member on own type. item: {item}, typeName: {typeName}");
+
+                    var parentSuffix = typeName.Split('.')[^1];
+                    var parentMemberName = $"{name} ({parentSuffix})";
+                    valuesDict.Add(parentMemberName, item as JObject);
+                    item["name"] = parentMemberName;
                 }
             }
         }
