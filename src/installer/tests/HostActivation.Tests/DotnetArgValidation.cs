@@ -73,7 +73,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         {
             string fileName = "NonExistent";
             sharedTestState.BuiltDotNet.Exec(fileName)
-                .WorkingDirectory(sharedTestState.BaseDirectory)
+                .WorkingDirectory(sharedTestState.BaseDirectory.Location)
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute(expectedToFail: true)
@@ -93,26 +93,23 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             public RepoDirectoriesProvider RepoDirectories { get; }
 
             public DotNetCli BuiltDotNet { get; }
-            public string BaseDirectory { get; }
+            public TestArtifact BaseDirectory { get; }
 
             public SharedTestState()
             {
                 RepoDirectories = new RepoDirectoriesProvider();
                 BuiltDotNet = new DotNetCli(RepoDirectories.BuiltDotnet);
 
-                BaseDirectory = SharedFramework.CalculateUniqueTestDirectory(Path.Combine(TestArtifact.TestArtifactsPath, "argValidation"));
+                BaseDirectory = new TestArtifact(SharedFramework.CalculateUniqueTestDirectory(Path.Combine(TestArtifact.TestArtifactsPath, "argValidation")));
 
                 // Create an empty global.json file
-                Directory.CreateDirectory(BaseDirectory);
-                File.WriteAllText(Path.Combine(BaseDirectory, "global.json"), "{}");
+                Directory.CreateDirectory(BaseDirectory.Location);
+                File.WriteAllText(Path.Combine(BaseDirectory.Location, "global.json"), "{}");
             }
 
             public void Dispose()
             {
-                if (!TestArtifact.PreserveTestRuns() && Directory.Exists(BaseDirectory))
-                {
-                    Directory.Delete(BaseDirectory, true);
-                }
+                BaseDirectory.Dispose();
             }
         }
     }
