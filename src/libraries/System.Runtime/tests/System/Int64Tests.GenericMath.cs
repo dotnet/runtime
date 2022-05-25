@@ -601,6 +601,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/69795")]
         public static void CreateCheckedFromDoubleTest()
         {
             Assert.Equal((long)0x0000_0000_0000_0000, NumberBaseHelper<long>.CreateChecked<double>(+0.0));
@@ -706,6 +707,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/69795")]
         public static void CreateCheckedFromNFloatTest()
         {
             Assert.Equal((long)0x0000_0000_0000_0000, NumberBaseHelper<long>.CreateChecked<NFloat>(+0.0f));
@@ -752,6 +754,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/69795")]
         public static void CreateCheckedFromSingleTest()
         {
             Assert.Equal((long)0x0000_0000_0000_0000, NumberBaseHelper<long>.CreateChecked<float>(+0.0f));
