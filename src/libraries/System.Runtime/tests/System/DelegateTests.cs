@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -434,6 +435,16 @@ namespace System.Tests
         {
             Assert.Equal(expected, actual);
         }
+
+        [Fact]
+        public static void SameMethodObtainedViaDelegateAndReflectionAreSame()
+        {
+            var m1 = ((MethodCallExpression)((Expression<Action>)(() => new C().M())).Body).Method;
+            var m2 = new Action(new C().M).Method;
+            Assert.True(m1.Equals(m2));
+        }
+
+        struct C { internal void M() { } }
 
         private delegate void IntIntDelegate(int expected, int actual);
         private delegate void IntIntDelegateWithDefault(int expected, int actual = 7);

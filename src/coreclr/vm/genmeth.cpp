@@ -1267,8 +1267,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
         // that keeps the reflection logic the same for value types
 
         // we need unboxing stubs for virtual methods on value types unless the method is generic
-        BOOL fNeedUnboxingStub = pMethod->IsUnboxingStub() ||
-            ( instType.IsValueType() && pMethod->IsVirtual() );
+        BOOL fNeedUnboxingStub = instType.IsValueType() && pMethod->IsVirtual();
 
         pInstMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
             pMethod,            /* the original MD          */
