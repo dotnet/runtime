@@ -114,6 +114,55 @@ inline SBuffer::SBuffer(const SBuffer &buffer)
     RETURN;
 }
 
+inline SBuffer::SBuffer(SBuffer&& buffer)
+  : m_size(0),
+    m_allocation(NULL),
+    m_flags(0),
+    m_buffer(NULL)
+{
+    CONTRACT_VOID
+    {
+        CONSTRUCTOR_CHECK;
+        PRECONDITION(buffer.Check());
+        POSTCONDITION(!buffer.IsAllocated());
+        THROWS;
+        GC_NOTRIGGER;
+    }
+    CONTRACT_END;
+
+    if (buffer.IsAllocated())
+    {
+        // If the buffer is allocated, steal it
+        m_buffer = buffer.m_buffer;
+        m_allocation = buffer.m_allocation;
+        m_size = buffer.m_size;
+        m_flags = buffer.m_flags;
+        buffer.ClearAllocated();
+        buffer.m_allocation = 0;
+        buffer.m_size = 0;
+        buffer.SetImmutable();
+    }
+    else if (buffer.IsImmutable())
+    {
+        // If the buffer is immutable, point to the same value.
+        m_buffer = buffer.m_buffer;
+        m_allocation = buffer.m_allocation;
+        m_size = buffer.m_size;
+        m_flags = buffer.m_flags;
+    }
+    else
+    {
+        // The buffer might be allocated on the stack as part of the object, so copy the data
+        Set(buffer);
+    }
+
+#ifdef _DEBUG
+    m_revision = 0;
+#endif
+
+    RETURN;
+}
+
 inline SBuffer::SBuffer(const BYTE *buffer, COUNT_T size)
   : m_size(0),
     m_allocation(0),
@@ -910,6 +959,23 @@ static const int SBUFFER_ALIGNMENT = ALIGN_ACCESS;
 static const int SBUFFER_ALIGNMENT = 4;
 #endif
 
+FORCEINLINE BYTE* SBuffer::GetRawBufferForMove() const
+{
+#ifdef SBUFFER_CANARY_CHECKS
+    return m_buffer - sizeof(SBUFFER_CANARY_VALUE);
+#else
+    return m_buffer;
+#endif
+}
+
+FORCEINLINE COUNT_T SBuffer::GetAllocationForMove() const
+{
+#ifdef SBUFFER_CANARY_CHECKS
+    return (COUNT_T)(m_allocation + sizeof(SBUFFER_CANARY_VALUE) * 2);
+#else
+    return m_allocation;
+#endif
+}
 //----------------------------------------------------------------------------
 // Allocate memory, use canaries.
 //----------------------------------------------------------------------------

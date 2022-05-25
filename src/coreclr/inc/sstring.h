@@ -231,7 +231,7 @@ public:
 };
 
 template<typename TEncoding>
-class EString : private SBuffer
+class EString : protected SBuffer
 {
 protected:
     using char_t = typename TEncoding::char_t;
@@ -271,7 +271,7 @@ public:
         Set(s);
     }
 
-    EString(EString&& s);
+    EString(EString&& s) = default;
 
     EString(const EString& s, const EString& s1)
         :EString()
@@ -456,7 +456,7 @@ public:
         CONTRACT_VOID
         {
             PRECONDITION(CountToSize(count) >= count);
-            POSTCONDITION(GetCount() == count);
+            POSTCONDITION(SizeToCount(GetSize()) == count);
             if (count == 0) NOTHROW; else THROWS;
             GC_NOTRIGGER;
             SUPPORTS_DAC_HOST_ONLY;
@@ -512,7 +512,6 @@ public:
         friend class Indexer<char_t, Iterator>;
 
       protected:
-        int               m_characterSizeShift;
 
         Index();
         Index(EString *string, SCOUNT_T index);
@@ -659,7 +658,7 @@ public:
         return copy;
     }
 
-    COUNT_T GetAllocation()
+    COUNT_T GetAllocation() const
     {
         CONTRACTL
         {
@@ -670,8 +669,8 @@ public:
         CONTRACTL_END;
 
         COUNT_T allocation = SBuffer::GetAllocation();
-        return ( (allocation > sizeof(WCHAR))
-            ? (allocation - sizeof(WCHAR)) / sizeof(WCHAR) : 0 );
+        return ( (allocation > sizeof(char_t))
+            ? (allocation - sizeof(char_t)) / sizeof(char_t) : 0 );
     }
 
     // Conversion/Move routines
@@ -716,7 +715,8 @@ public:
     // Open the raw buffer for writing countChars characters (not including the null).
     char_t *OpenBuffer(COUNT_T maxCharCount)
     {
-        return (char_t *)SBuffer::OpenRawBuffer(maxCharCount * sizeof(char_t));
+        Resize(maxCharCount);
+        return (char_t *)SBuffer::OpenRawBuffer(CountToSize(maxCharCount));
     }
 
     // Call after OpenBuffer().
@@ -726,7 +726,8 @@ public:
     // and that we have a null-terminator.
     void CloseBuffer(COUNT_T finalCount)
     {
-        SBuffer::CloseRawBuffer(finalCount * sizeof(char_t));
+        SBuffer::CloseRawBuffer(CountToSize(finalCount));
+        NullTerminate();
     }
 
     // Close the buffer. Assumes that we completely filled the buffer
@@ -735,11 +736,12 @@ public:
     void CloseBuffer()
     {
         SBuffer::CloseRawBuffer();
+        NullTerminate();
     }
     // Return the number of characters in the string (excluding the terminating NULL).
     COUNT_T GetCount() const
     {
-        return GetSize() / sizeof(char_t);
+        return SizeToCount(GetSize());
     }
 
 #ifdef DACCESS_COMPILE
@@ -792,9 +794,16 @@ private:
     CHECK CheckIteratorRange(const CIterator &i) const;
     CHECK CheckIteratorRange(const CIterator &i, COUNT_T length) const;
     void NullTerminate();
+    
+    // Minimum guess for Printf buffer size
+    const static COUNT_T MINIMUM_GUESS = 20;
+    
+    void EnsureWritable() const;
 
+    BOOL IsLiteral() const;
+    BOOL IsAllocated() const;
 
-
+protected:
     FORCEINLINE char_t* GetRawBuffer() const
     {
         return reinterpret_cast<char_t*>(m_buffer);
@@ -809,14 +818,6 @@ private:
     {
         return (count + 1) * sizeof(char_t);
     }
-    
-    // Minimum guess for Printf buffer size
-    const static COUNT_T MINIMUM_GUESS = 20;
-    
-    void EnsureWritable() const;
-
-    BOOL IsLiteral() const;
-    BOOL IsAllocated() const;
 };
 
 using SString = EString<EncodingUnicode>;
@@ -842,9 +843,10 @@ private:
     char_t m_inline[SBUFFER_PADDED_SIZE(MEMSIZE)];
 public:
     InlineEString()
-        :EString<TEncoding>(m_inline, MEMSIZE, /* isAllocated */ false)
+        :EString<TEncoding>(m_inline, SBUFFER_PADDED_SIZE(MEMSIZE), /* isAllocated */ false)
     {
-
+        SBuffer::TweakSize(sizeof(char_t));
+        GetRawBuffer()[0] = (char_t)0;
     }
 
     InlineEString(const char_t c)

@@ -150,15 +150,6 @@ inline EString<TEncoding>::EString(void* buffer, COUNT_T size, bool isAllocated)
 }
 
 template<typename TEncoding>
-inline EString<TEncoding>::EString(EString&& s)
-    : EString(s.GetRawBuffer(), s.GetSize(), s.IsAllocated())
-{
-    // We're stealing the buffer from the r-value EString, so clear its "is allocated" flag.
-    s.ClearAllocated();
-    s = {};
-}
-
-template<typename TEncoding>
 inline EString<TEncoding>::EString(const EString &s, const CIterator &i, COUNT_T count)
   : SBuffer(Immutable, StaticStringHelpers::s_EmptyBuffer, sizeof(StaticStringHelpers::s_EmptyBuffer))
 {
@@ -204,7 +195,7 @@ inline void EString<TEncoding>::Set(const EString &s, const CIterator &i, COUNT_
 
     // @todo: detect case where we can reuse literal?
     Resize(count);
-    SBuffer::Copy(SBuffer::Begin(), i.m_ptr, count<<i.m_characterSizeShift);
+    SBuffer::Copy(SBuffer::Begin(), i.m_ptr, count * sizeof(char_t));
     NullTerminate();
 
     SS_RETURN;
@@ -271,7 +262,7 @@ ULONG EString<TEncoding>::HashCaseInsensitive() const
     SS_CONTRACT(ULONG)
     {
         INSTANCE_CHECK;
-        THROWS;
+        NOTHROW;
         GC_NOTRIGGER;
     }
     SS_CONTRACT_END;
@@ -477,8 +468,8 @@ void EString<TEncoding>::Set(const char_t* string)
     else
     {
         COUNT_T count = static_cast<COUNT_T>(TEncoding::strlen(string));
-        Resize(CountToSize(count));
-        TEncoding::strncpy_s(GetRawBuffer(), GetSize() + 1, string, count);
+        Resize(count);
+        TEncoding::strncpy_s(GetRawBuffer(), GetSize() / sizeof(char_t), string, count + 1);
     }
 
     RETURN;
@@ -502,8 +493,9 @@ void EString<TEncoding>::Set(const char_t* string, COUNT_T count)
         Clear();
     else
     {
-        Resize(CountToSize(count));
-        TEncoding::strncpy_s(GetRawBuffer(), GetSize() + 1, string, count);
+        Resize(count);
+        TEncoding::strncpy_s(GetRawBuffer(), GetSize() / sizeof(char_t), string, count);
+        GetRawBuffer()[count] = static_cast<char_t>(0);
     }
 
     RETURN;
@@ -525,7 +517,7 @@ void EString<TEncoding>::Set(const char_t c)
         Clear();
     else
     {
-        Resize(CountToSize(1));
+        Resize(1);
         GetRawBuffer()[0] = c;
         GetRawBuffer()[1] = static_cast<char_t>(0);
     }
@@ -559,10 +551,10 @@ void EString<TEncoding>::SetLiteral(const char_t* string)
 {
     SS_CONTRACT_VOID
     {
-       INSTANCE_CHECK;
+        INSTANCE_CHECK;
         PRECONDITION(CheckPointer(string, NULL_OK));
         GC_NOTRIGGER;
-        NOTHROW;
+        THROWS;
         SUPPORTS_DAC_HOST_ONLY;
     }
     SS_CONTRACT_END;
@@ -612,8 +604,7 @@ inline BOOL EString<TEncoding>::IsEmpty() const
     }
     SS_CONTRACT_END;
 
-    // SS_RETURN (GetCount() == 0);
-    SS_RETURN TRUE;
+    SS_RETURN (SizeToCount(GetSize()) == 0);
 }
 
 //----------------------------------------------------------------------------
@@ -789,7 +780,7 @@ FORCEINLINE typename EString<TEncoding>::CIterator EString<TEncoding>::Begin() c
         GC_NOTRIGGER;
         PRECONDITION(CheckPointer(this));
         SS_POSTCONDITION(CheckValue(RETVAL));
-        THROWS;
+        NOTHROW;
     }
     SS_CONTRACT_END;
 
@@ -804,11 +795,11 @@ FORCEINLINE typename EString<TEncoding>::CIterator EString<TEncoding>::End() con
         GC_NOTRIGGER;
         PRECONDITION(CheckPointer(this));
         SS_POSTCONDITION(CheckValue(RETVAL));
-        THROWS;
+        NOTHROW;
     }
     SS_CONTRACT_END;
 
-    SS_RETURN CIterator(this, GetCount());
+    SS_RETURN CIterator(this, SizeToCount(GetSize()));
 }
 
 //-----------------------------------------------------------------------------
@@ -848,7 +839,7 @@ FORCEINLINE typename EString<TEncoding>::Iterator EString<TEncoding>::End()
 
     EnsureMutable();
 
-    SS_RETURN Iterator(this, GetCount());
+    SS_RETURN Iterator(this, SizeToCount(GetSize()));
 }
 
 //-----------------------------------------------------------------------------
@@ -863,7 +854,7 @@ inline EString<TEncoding>::Index::Index()
 
 template<typename TEncoding>
 inline EString<TEncoding>::Index::Index(EString *string, SCOUNT_T index)
-  : SBuffer::Index(string, SizeToCount(index))
+  : SBuffer::Index(string, index * sizeof(char_t))
 {
     SS_CONTRACT_VOID
     {
@@ -886,7 +877,7 @@ inline BYTE &EString<TEncoding>::Index::GetAt(SCOUNT_T delta) const
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    return m_ptr[CountToSize(delta)];
+    return m_ptr[delta * sizeof(char_t)];
 }
 
 template<typename TEncoding>
@@ -894,7 +885,7 @@ inline void EString<TEncoding>::Index::Skip(SCOUNT_T delta)
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    m_ptr += (CountToSize(delta));
+    m_ptr += delta * sizeof(char_t);
 }
 
 template<typename TEncoding>
@@ -902,7 +893,7 @@ inline SCOUNT_T EString<TEncoding>::Index::Subtract(const Index &i) const
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    return (SCOUNT_T) SizeToCount((COUNT_T)(m_ptr - i.m_ptr));
+    return (SCOUNT_T) ((m_ptr - i.m_ptr) / sizeof(char_t));
 }
 
 template<typename TEncoding>
@@ -912,6 +903,8 @@ inline CHECK EString<TEncoding>::Index::DoCheck(SCOUNT_T delta) const
 #if _DEBUG
     const EString *string = (const EString *) GetContainerDebug();
 
+    CHECK(m_ptr + (delta * sizeof(char_t)) >= string->m_buffer);
+    CHECK(m_ptr + (delta * sizeof(char_t)) < string->m_buffer + string->GetSize());
 #endif
     CHECK_OK;
 }
@@ -931,7 +924,7 @@ inline auto EString<TEncoding>::Index::operator*() const -> const char_t&
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
 
-    return *reinterpret_cast<const char_t*>(GetAt(0));
+    return *reinterpret_cast<const char_t*>(&GetAt(0));
 }
 
 template<typename TEncoding>
@@ -940,7 +933,7 @@ inline auto EString<TEncoding>::Index::operator*() -> char_t&
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
 
-    return *reinterpret_cast<char_t*>(GetAt(0));
+    return *reinterpret_cast<char_t*>(&GetAt(0));
 }
 
 template<typename TEncoding>
@@ -954,7 +947,7 @@ inline auto EString<TEncoding>::Index::operator[](int index) const -> char_t
 {
     WRAPPER_NO_CONTRACT;
 
-    return *reinterpret_cast<char_t*>(GetAt(index));
+    return *reinterpret_cast<char_t*>(&GetAt(index));
 }
 
 template<typename TEncoding>
@@ -1044,7 +1037,7 @@ void EString<TEncoding>::Truncate(const Iterator &i)
 
     COUNT_T size = i - Begin();
 
-    Resize(size * sizeof(char_t), PRESERVE);
+    Resize(size, PRESERVE);
 
     i.Resync(this, (BYTE *) (GetRawBuffer() + size));
 
@@ -1075,7 +1068,7 @@ void EString<TEncoding>::Clear()
     else
     {
         // Leave allocated buffer for future growth
-        SBuffer::TweakSize(sizeof(WCHAR));
+        SBuffer::TweakSize(sizeof(char_t));
         m_buffer[0] = 0;
     }
 
@@ -1315,8 +1308,11 @@ EString<EncodingUTF8> EString<TEncoding>::MoveToUTF8()
     if (IsAllocated())
     {
         ClearAllocated();
-        EString<EncodingUTF8> result(GetRawBuffer(), SBuffer::GetAllocation(), /* isAllocated */ true);
-        *this = {};
+        EString<EncodingUTF8> result(GetRawBufferForMove(), GetAllocationForMove(), /* isAllocated */ true);
+        SetImmutable(); // Set the existing value as immutable to get SBuffer to reuse the immutable buffer we're setting
+        SetImmutable(StaticStringHelpers::s_EmptyBuffer, sizeof(StaticStringHelpers::s_EmptyBuffer));
+        result.Set(buff);
+        return result;
     }
     return std::move(buff);
 }
@@ -1329,8 +1325,11 @@ EString<EncodingUnicode> EString<TEncoding>::MoveToUnicode()
     if (IsAllocated())
     {
         ClearAllocated();
-        EString<EncodingUnicode> result(GetRawBuffer(), SBuffer::GetAllocation(), /* isAllocated */ true);
-        *this = {};
+        EString<EncodingUnicode> result(GetRawBufferForMove(), GetAllocationForMove(), /* isAllocated */ true);
+        SetImmutable(); // Set the existing value as immutable to get SBuffer to reuse the immutable buffer we're setting
+        SetImmutable(StaticStringHelpers::s_EmptyBuffer, sizeof(StaticStringHelpers::s_EmptyBuffer));
+        result.Set(buff);
+        return result;
     }
     return std::move(buff);
 }
@@ -1342,9 +1341,10 @@ inline EString<EncodingUnicode> EString<EncodingASCII>::MoveToUnicode()
     if (IsAllocated() && SBuffer::GetAllocation() > GetCount() * sizeof(WCHAR))
     {
         ClearAllocated();
-        EString<EncodingUnicode> result(GetRawBuffer(), SBuffer::GetAllocation(), /* isAllocated */ true);
+        EString<EncodingUnicode> result(GetRawBufferForMove(), GetAllocationForMove(), /* isAllocated */ true);
         ConvertToUnicode(result);
-        *this = {};
+        SetImmutable(); // Set the existing value as immutable to get SBuffer to reuse the immutable buffer we're setting
+        SetImmutable(StaticStringHelpers::s_EmptyBuffer, sizeof(StaticStringHelpers::s_EmptyBuffer));
         return result;
     }
 
@@ -1410,8 +1410,8 @@ void EString<TEncoding>::Replace(const Iterator &i, COUNT_T length, const EStrin
     }
     CONTRACT_END;
 
-    COUNT_T deleteSize = CountToSize(length);
-    COUNT_T insertSize = CountToSize(s.GetCount());
+    COUNT_T deleteSize = length * sizeof(char_t);
+    COUNT_T insertSize = s.GetCount() * sizeof(char_t);
 
     SBuffer::Replace(i, deleteSize, insertSize);
     SBuffer::Copy(i, s.m_buffer, insertSize);

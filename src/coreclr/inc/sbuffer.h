@@ -97,6 +97,7 @@ class SBuffer
     SBuffer(COUNT_T size);
     SBuffer(const BYTE *buffer, COUNT_T size);
     explicit SBuffer(const SBuffer &buffer);
+    SBuffer(SBuffer&& buffer);
 
     // Immutable constructor should ONLY be used if buffer will
     // NEVER BE FREED OR MODIFIED. PERIOD. .
@@ -509,6 +510,10 @@ protected:
         BYTE     *m_buffer;
         WCHAR    *m_asStr;     // For debugging, view as a unicode string
     };
+
+    BYTE* GetRawBufferForMove() const;
+
+    COUNT_T GetAllocationForMove() const;
 
 #if _DEBUG
   protected:

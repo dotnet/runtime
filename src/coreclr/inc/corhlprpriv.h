@@ -229,6 +229,12 @@ public:
     // Convert UTF8 string to UNICODE string, optimized for speed
     HRESULT ConvertUtf8_UnicodeNoThrow(const char * utf8str)
     {
+        if (utf8str == nullptr)
+        {
+            WCHAR* buffer = (WCHAR*)AllocNoThrow(sizeof(WCHAR));
+            buffer[0] = W('\0');
+            return S_OK;
+        }
         bool allAscii;
         DWORD length;
 
@@ -254,9 +260,15 @@ public:
     // Convert UTF8 string to UNICODE string, optimized for speed
     void ConvertUtf8_Unicode(const char * utf8str)
     {
+        if (utf8str == nullptr)
+        {
+            WCHAR* buffer = (WCHAR*)AllocNoThrow(sizeof(WCHAR));
+            buffer[0] = W('\0');
+            return;
+        }
         bool allAscii;
         DWORD length;
-
+        
         HRESULT hr = FString::Utf8_Unicode_Length(utf8str, & allAscii, & length);
 
         if (SUCCEEDED(hr))
@@ -275,6 +287,12 @@ public:
     // Convert UNICODE string to UTF8 string, optimized for speed
     void ConvertUnicode_Utf8(const WCHAR * pString)
     {
+        if (pString == nullptr)
+        {
+            char* buffer = (char*)AllocNoThrow(sizeof(char));
+            buffer[0] = '\0';
+            return;
+        }
         bool allAscii;
         DWORD length;
 
