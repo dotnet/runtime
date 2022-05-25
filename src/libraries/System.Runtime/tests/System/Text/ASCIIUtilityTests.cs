@@ -74,6 +74,34 @@ namespace System.Text.Tests
         }
 
         [Fact]
+        public static void GetIndexOfFirstNonAsciiByte_Vector256InnerLoop()
+        {
+            // The purpose of this test is to make sure we're identifying the correct
+            // vector (of the two that we're reading simultaneously) when performing
+            // the final ASCII drain at the end of the method once we've broken out
+            // of the inner loop.
+
+            using (BoundedMemory<byte> mem = BoundedMemory.Allocate<byte>(1024))
+            {
+                Span<byte> bytes = mem.Span;
+
+                for (int i = 0; i < bytes.Length; i++)
+                {
+                    bytes[i] &= 0x7F; // make sure each byte (of the pre-populated random data) is ASCII
+                }
+
+                // Two vectors have offsets 0 .. 31. We'll go backward to avoid having to
+                // re-clear the vector every time.
+
+                for (int i = 2 * SizeOfVector256 - 1; i >= 0; i--)
+                {
+                    bytes[100 + i * 13] = 0x80; // 13 is relatively prime to 32, so it ensures all possible positions are hit
+                    Assert.Equal(100 + i * 13, CallGetIndexOfFirstNonAsciiByte(bytes));
+                }
+            }
+        }
+
+        [Fact]
         public static void GetIndexOfFirstNonAsciiByte_Boundaries()
         {
             // The purpose of this test is to make sure we're hitting all of the vectorized
