@@ -24,7 +24,21 @@ namespace System.Net.Sockets
 
         private readonly string _path;
         private readonly byte[] _encodedPath;
+
+        // The field is needed to distinguish the situation when
+        // _fullPath is not null but the object doesn't bound
+        // to the full path. _fullPath can be initialized by Equals/GetHashCode
+        // but it doesn't mean that the EndPoint is bound to the file system object.
         private readonly bool _isBound;
+
+        // The field can be initialized lazily in the following circumstances:
+        // 1. Inside of Equals method
+        // 2. Inside of GetHashCode method
+        // 3. Inside of CreateBoundEndPoint method
+        // In case of non-abstract path, we need to have full path to the file system object.
+        // Otherwise, two endpoints may not be equal even if they pointing to the same file.
+        // Lazily initialized field then can be reused by these methods to avoid further
+        // allocations.
         private string? _fullPath;
 
         // Tracks the file Socket should delete on Dispose.
