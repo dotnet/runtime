@@ -106,6 +106,7 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69792", typeof(PlatformDetection), nameof(PlatformDetection.IsWindows10Version20348OrGreater))]
         public async Task UntrustedClientCertificateFails()
         {
             var listenerOptions = new QuicListenerOptions();
@@ -337,6 +338,7 @@ namespace System.Net.Quic.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69792", typeof(PlatformDetection), nameof(PlatformDetection.IsWindows10Version20348OrGreater))]
         public async Task ConnectWithClientCertificate(bool sendCertificate)
         {
             bool clientCertificateOK = false;
