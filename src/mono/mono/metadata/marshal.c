@@ -3416,11 +3416,13 @@ mono_marshal_set_callconv_from_unmanaged_callers_only_attribute (MonoMethod *met
 				g_assertf(named_arg_info [i].field->type->type == MONO_TYPE_SZARRAY, "UnmanagedCallersOnlyAttribute parameter %s must be an array, specified for method %s", named_arg_info [i].field->name, method->name);
 				
 				MonoCustomAttrValueArray* calling_conventions = (MonoCustomAttrValueArray*) calling_conventions_attr->value.array;
-				g_assertf(calling_conventions->len == 1, "Only a single calling convention is supported for UnmanagedCallersOnlyAttribute parameter %s, specified for method %s", named_arg_info [i].field->name, method->name);
-				
-				MonoType* calling_convention = (MonoType*)calling_conventions->values[0].value.primitive;
-				mono_marshal_set_signature_callconv_from_attribute (csig, calling_convention, error);
-				
+				if (calling_conventions->len > 0) {
+					if (calling_conventions->len > 1)
+						g_warning ("Multiple calling conventions are not supported for UnmanagedCallersOnlyAttribute parameter %s, specified for method %s. Only the first calling convention will be taken into account", named_arg_info [i].field->name, method->name);
+					// TODO: Support multiple conventions?
+					MonoType* calling_convention = (MonoType*)calling_conventions->values[0].value.primitive;
+					mono_marshal_set_signature_callconv_from_attribute (csig, calling_convention, error);
+				}
 				g_free(calling_conventions);
 			}
 		}
