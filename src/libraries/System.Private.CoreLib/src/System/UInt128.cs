@@ -1572,7 +1572,8 @@ namespace System
             else if (typeof(TOther) == typeof(NFloat))
             {
                 NFloat actualValue = (NFloat)(object)value;
-                result = (UInt128)actualValue;
+                result = (actualValue >= 340282366920938463463374607431768211455.0) ? MaxValue :
+                         (actualValue <= 0.0) ? MinValue : (UInt128)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(ushort))

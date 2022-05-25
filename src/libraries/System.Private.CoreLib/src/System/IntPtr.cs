@@ -823,13 +823,15 @@ namespace System
             if (typeof(TOther) == typeof(double))
             {
                 double actualValue = (double)(object)value;
-                result = (nint)actualValue;
+                result = (actualValue >= nint_t.MaxValue) ? unchecked((nint)nint_t.MaxValue) :
+                         (actualValue <= nint_t.MinValue) ? unchecked((nint)nint_t.MinValue) : (nint)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(Half))
             {
                 Half actualValue = (Half)(object)value;
-                result = (nint)actualValue;
+                result = (actualValue == Half.PositiveInfinity) ? unchecked((nint)nint_t.MaxValue) :
+                         (actualValue == Half.NegativeInfinity) ? unchecked((nint)nint_t.MinValue) : (nint)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(short))
@@ -865,7 +867,8 @@ namespace System
             else if (typeof(TOther) == typeof(float))
             {
                 float actualValue = (float)(object)value;
-                result = (nint)actualValue;
+                result = (actualValue >= nint_t.MaxValue) ? unchecked((nint)nint_t.MaxValue) :
+                         (actualValue <= nint_t.MinValue) ? unchecked((nint)nint_t.MinValue) : (nint)actualValue;
                 return true;
             }
             else
