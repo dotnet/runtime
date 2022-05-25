@@ -8,7 +8,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
-internal static class CookieHelper
+internal static class SignatureMapper
 {
     private static char? TypeToChar(Type t)
     {
@@ -49,7 +49,7 @@ internal static class CookieHelper
         return c;
     }
 
-    public static string? BuildCookie(MethodInfo method)
+    public static string? MethodToSignature(MethodInfo method)
     {
         string? result = TypeToChar(method.ReturnType)?.ToString();
         if (result == null)
@@ -70,4 +70,23 @@ internal static class CookieHelper
 
         return result;
     }
+
+    public static string CharToNativeType(char c) => c switch
+    {
+        'V' => "void",
+        'I' => "int",
+        'L' => "int64_t",
+        'F' => "float",
+        'D' => "double",
+        _ => throw new InvalidSignatureCharException(c)
+    };
+
+    public static bool IsVoidSignature(string signature) => signature[0] == 'V';
+}
+
+internal sealed class InvalidSignatureCharException : Exception
+{
+    public char Char { get; private set; }
+
+    public InvalidSignatureCharException(char c) : base($"Can't handle signature '{c}'") => Char = c;
 }

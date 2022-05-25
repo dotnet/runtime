@@ -24,16 +24,6 @@ internal sealed class InterpToNativeGenerator
 
     public InterpToNativeGenerator(TaskLoggingHelper log) => Log = log;
 
-    private static string TypeToSigType(char c) => c switch
-    {
-        'V' => "void",
-        'I' => "int",
-        'L' => "int64_t",
-        'F' => "float",
-        'D' => "double",
-        _ => throw new Exception("Can't handle " + c)
-    };
-
     public void Generate(IEnumerable<string> cookies, string outputPath)
     {
         string tmpFileName = Path.GetTempFileName();
@@ -68,48 +58,56 @@ internal sealed class InterpToNativeGenerator
         """);
 
         var signatures = cookies.Distinct().ToArray();
-        foreach (var c in signatures)
+        foreach (var signature in signatures)
         {
-            w.WriteLine("static void");
-            w.WriteLine($"wasm_invoke_{c.ToLower(CultureInfo.InvariantCulture)} (void *target_func, MonoInterpMethodArguments *margs)");
-            w.WriteLine("{");
-
-            w.Write($"\ttypedef {TypeToSigType(c[0])} (*T)(");
-            for (int i = 1; i < c.Length; ++i)
+            try
             {
-                char p = c[i];
-                if (i > 1)
-                    w.Write(", ");
-                w.Write($"{TypeToSigType(p)} arg_{i - 1}");
+                w.WriteLine("static void");
+                w.WriteLine($"wasm_invoke_{signature.ToLower(CultureInfo.InvariantCulture)} (void *target_func, MonoInterpMethodArguments *margs)");
+                w.WriteLine("{");
+
+                w.Write($"\ttypedef {SignatureMapper.CharToNativeType(signature[0])} (*T)(");
+                for (int i = 1; i < signature.Length; ++i)
+                {
+                    char p = signature[i];
+                    if (i > 1)
+                        w.Write(", ");
+                    w.Write($"{SignatureMapper.CharToNativeType(p)} arg_{i - 1}");
+                }
+
+                if (signature.Length == 1)
+                    w.Write("void");
+
+                w.WriteLine(");\n\tT func = (T)target_func;");
+
+                var ctx = new EmitCtx();
+
+                w.Write("\t");
+                if (!SignatureMapper.IsVoidSignature(signature))
+                    w.Write($"{SignatureMapper.CharToNativeType(signature[0])} res = ");
+
+                w.Write("func (");
+                for (int i = 1; i < signature.Length; ++i)
+                {
+                    char p = signature[i];
+                    if (i > 1)
+                        w.Write(", ");
+                    w.Write(ctx.Emit(p));
+                }
+                w.WriteLine(");");
+
+                if (!SignatureMapper.IsVoidSignature(signature))
+                {
+                    w.WriteLine($"\tvoid *retval = mono_wasm_interp_method_args_get_retval (margs);");
+                    w.WriteLine($"\t*({SignatureMapper.CharToNativeType(signature[0])}*)retval = res;");
+                }
+
+                w.WriteLine("}\n");
             }
-            if (c.Length == 1)
-                w.Write("void");
-
-            w.WriteLine(");\n\tT func = (T)target_func;");
-
-            var ctx = new EmitCtx();
-
-            w.Write("\t");
-            if (c[0] != 'V')
-                w.Write($"{TypeToSigType(c[0])} res = ");
-
-            w.Write("func (");
-            for (int i = 1; i < c.Length; ++i)
+            catch (InvalidSignatureCharException e)
             {
-                char p = c[i];
-                if (i > 1)
-                    w.Write(", ");
-                w.Write(ctx.Emit(p));
+                throw new LogAsErrorException($"Element '{e.Char}' of signature '{signature}' can't be handled by managed2native generator");
             }
-            w.WriteLine(");");
-
-            if (c[0] != 'V')
-            {
-                w.WriteLine($"\tvoid *retval = mono_wasm_interp_method_args_get_retval (margs);");
-                w.WriteLine($"\t*({TypeToSigType(c[0])}*)retval = res;");
-            }
-
-            w.WriteLine("}\n");
         }
 
         Array.Sort(signatures);
@@ -123,13 +121,20 @@ internal sealed class InterpToNativeGenerator
         w.WriteLine("};");
 
         w.WriteLine("static const char* interp_to_native_signatures[] = {");
-        foreach (var sig in signatures)
-            w.WriteLine($"\"{sig}\",");
+
+        foreach (var signature in signatures)
+            w.WriteLine($"\t\"{signature}\",");
+
         w.WriteLine("};");
 
         w.WriteLine($"unsigned int interp_to_native_signatures_count = {signatures.Length};");
+        w.WriteLine();
         w.WriteLine("""
-        static int compare_icall_tramp (const void *key, const void *elem) { return strcmp (key, *(void**)elem); }
+        static int
+        compare_icall_tramp (const void *key, const void *elem)
+        {
+            return strcmp (key, *(void**)elem);
+        }
         
         static void* 
         mono_wasm_interp_to_native_callback (char* cookie)
@@ -162,7 +167,7 @@ internal sealed class InterpToNativeGenerator
                     farg += 1;
                     break;
                 default:
-                    throw new Exception("IDK how to handle " + c);
+                    throw new InvalidSignatureCharException(c);
             }
 
             return $"mono_wasm_interp_method_args_get_{char.ToLower(c)}arg (margs, {iarg - 1})";

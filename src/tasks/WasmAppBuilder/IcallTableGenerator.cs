@@ -208,7 +208,7 @@ internal sealed class IcallTableGenerator
 
         void AddSignature(Type type, MethodInfo method)
         {
-            string? signature = CookieHelper.BuildCookie(method);
+            string? signature = SignatureMapper.MethodToSignature(method);
             if (signature == null)
             {
                 throw new LogAsErrorException($"Unsupported parameter type in method '{type.FullName}.{method.Name}'");
