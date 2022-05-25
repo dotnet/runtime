@@ -358,8 +358,8 @@ namespace System.Text.RegularExpressions.Symbolic
 
             return true;
         }
-
-        public void ToString(StringBuilder sb)
+#if DEBUG
+        public void ToStringHelper(StringBuilder sb)
         {
             // This function is mutually recursive with the one in SymbolicRegexNode, which has stack overflow avoidance
             if (IsNothing)
@@ -379,29 +379,30 @@ namespace System.Text.RegularExpressions.Symbolic
                 if (!enumerator.MoveNext())
                 {
                     // The collection only has one element
-                    node.ToString(sb);
+                    node.ToStringHelper(sb);
                 }
                 else
                 {
                     // Union of two or more elements
                     sb.Append('(');
                     // Append the first two elements
-                    node.ToString(sb);
+                    node.ToStringHelper(sb);
                     // Using the operator & for intersection
                     char op = _kind == SymbolicRegexNodeKind.Or ? '|' : '&';
                     sb.Append(op);
-                    enumerator.Current.ToString(sb);
+                    enumerator.Current.ToStringHelper(sb);
                     while (enumerator.MoveNext())
                     {
                         // Append all the remaining elements
                         sb.Append(op);
-                        enumerator.Current.ToString(sb);
+                        enumerator.Current.ToStringHelper(sb);
                     }
                     sb.Append(')');
                 }
             }
         }
 
+#endif
         internal SymbolicRegexSet<TNewSet> Transform<TNewSet>(SymbolicRegexBuilder<TNewSet> builderT, Func<SymbolicRegexBuilder<TNewSet>, TSet, TNewSet> setTransformer)
             where TNewSet : IComparable<TNewSet>, IEquatable<TNewSet>
         {
