@@ -1808,16 +1808,20 @@ void CallArgs::SetNeedsTemp(CallArg* arg)
 }
 
 //------------------------------------------------------------------------------
-// fgIsCloneableInvariantOrLocal: If the node is an unaliased local or constant,
-//                                then it can be cloned.
+// fgIsSafeToClone: If the node is an unaliased local or constant,
+//                  then it is safe to clone.
 //
 // Arguments:
-//    tree - The node to check if it's cloneable.
+//    tree - The node to check if it is safe to clone.
 //
 // Return Value:
 //    True if the tree is cloneable. False if the tree is not cloneable.
 //
-bool Compiler::fgIsCloneableInvariantOrLocal(GenTree* tree)
+// Notes:
+//    This is conservative as this will return False if the local's address
+//    is exposed.
+//
+bool Compiler::fgIsSafeToClone(GenTree* tree)
 {
     if (tree->IsInvariant())
     {
@@ -1889,7 +1893,7 @@ GenTree* Compiler::fgMakeMultiUse(GenTree** pOp, CORINFO_CLASS_HANDLE structType
 {
     GenTree* const tree = *pOp;
 
-    if (fgIsCloneableInvariantOrLocal(tree))
+    if (fgIsSafeToClone(tree))
     {
         return gtClone(tree);
     }
@@ -13871,14 +13875,14 @@ GenTree* Compiler::fgMorphModToSubMulDiv(GenTreeOp* tree)
     TempInfo tempInfos[2]{};
     int tempInfoCount = 0;
 
-    if (!fgIsCloneableInvariantOrLocal(dividend))
+    if (!fgIsSafeToClone(dividend))
     {
         tempInfos[tempInfoCount] = fgMakeTemp(dividend);
         dividend                 = tempInfos[tempInfoCount].load;
         tempInfoCount++;
     }
 
-    if (!fgIsCloneableInvariantOrLocal(divisor))
+    if (!fgIsSafeToClone(divisor))
     {
         tempInfos[tempInfoCount] = fgMakeTemp(divisor);
         divisor                  = tempInfos[tempInfoCount].load;
