@@ -150,17 +150,17 @@ namespace System.Text.RegularExpressions.Tests
             }
 
             static bool TrySaveDGML(Regex regex, TextWriter writer, int maxLabelLength)
-        {
+            {
                 MethodInfo saveDgml = regex.GetType().GetMethod("SaveDGML", BindingFlags.NonPublic | BindingFlags.Instance);
                 if (saveDgml is not null)
-            {
+                {
                     saveDgml.Invoke(regex, new object[] { writer, maxLabelLength });
                     return true;
-        }
+                }
 
                 return false;
-                }
             }
+        }
 
         #region Random input generation tests
         public static IEnumerable<object[]> SampledMatchesMatchAsExpected_TestData()
@@ -169,16 +169,13 @@ namespace System.Text.RegularExpressions.Tests
             foreach (string pattern in patterns)
             {
                 Regex re = new Regex(pattern, RegexHelpers.RegexOptionNonBacktracking);
-                foreach (bool negative in new bool[] { false, true })
+                // Generate 3 inputs
+                List<string> inputs = new(SampleMatchesViaReflection(re, 3, pattern.GetHashCode()));
+                foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
                 {
-                    // Generate 3 positive and 3 negative inputs
-                    List<string> inputs = new(GenerateRandomMembersViaReflection(re, 3, 123, negative));
-                    foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
+                    foreach (string input in inputs)
                     {
-                        foreach (string input in inputs)
-                        {
-                            yield return new object[] { engine, pattern, input, !negative };
-                        }
+                        yield return new object[] { engine, pattern, input };
                     }
                 }
             }
@@ -187,18 +184,18 @@ namespace System.Text.RegularExpressions.Tests
         /// <summary>Test random input generation correctness</summary>
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
         [MemberData(nameof(SampledMatchesMatchAsExpected_TestData))]
-        public async Task SampledMatchesMatchAsExpected(RegexEngine engine, string pattern, string input, bool isMatch)
+        public async Task SampledMatchesMatchAsExpected(RegexEngine engine, string pattern, string input)
         {
             Regex regex = await RegexHelpers.GetRegexAsync(engine, pattern);
-            Assert.Equal(isMatch, regex.IsMatch(input));
+            Assert.True(regex.IsMatch(input));
         }
 
-        private static IEnumerable<string> SampleMatchesViaReflection(Regex regex, int how_many_inputs, int randomseed, bool negative)
+        private static IEnumerable<string> SampleMatchesViaReflection(Regex regex, int how_many_inputs, int randomseed)
         {
             MethodInfo? gen = regex.GetType().GetMethod("SampleMatches", BindingFlags.NonPublic | BindingFlags.Instance);
             if (gen is not null)
             {
-                return (IEnumerable<string>)gen.Invoke(regex, new object[] { how_many_inputs, randomseed, negative });
+                return (IEnumerable<string>)gen.Invoke(regex, new object[] { how_many_inputs, randomseed });
             }
             else
             {

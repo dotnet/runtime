@@ -40,17 +40,16 @@ namespace System.Text.RegularExpressions
         /// </summary>
         /// <param name="k">upper bound on the number of generated strings</param>
         /// <param name="randomseed">random seed for the generator, 0 means no random seed</param>
-        /// <param name="negative">if true then generate inputs that do not match</param>
         /// <returns></returns>
         [ExcludeFromCodeCoverage(Justification = "Debug only")]
-        internal IEnumerable<string> SampleMatches(int k, int randomseed, bool negative)
+        internal IEnumerable<string> SampleMatches(int k, int randomseed)
         {
             if (factory is not SymbolicRegexRunnerFactory srmFactory)
             {
                 throw new NotSupportedException();
             }
 
-            return srmFactory._matcher.SampleMatches(k, randomseed, negative);
+            return srmFactory._matcher.SampleMatches(k, randomseed);
         }
 
         /// <summary>

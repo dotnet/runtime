@@ -21,14 +21,14 @@ namespace System.Text.RegularExpressions.Symbolic
         /// Maximum length to try to sample input to.
         /// </summary>
         /// <remarks>
-        /// This is required for cases where the state space has a loop that is not detected as either a deadend or
-        /// a .*, which would otherwise cause the sampling to hang.
+        /// This is required for cases where the state space has a loop that is not detected as a deadend,
+        /// which would otherwise cause the sampling to hang.
         /// </remarks>
         private const int SampleMatchesMaxInputLength = 100;
 
-        /// <inheritdoc cref="Regex.SampleMatches(int, int, bool)"/>
+        /// <inheritdoc cref="Regex.SampleMatches(int, int)"/>
         [ExcludeFromCodeCoverage(Justification = "Currently only used for testing")]
-        public override IEnumerable<string> SampleMatches(int k, int randomseed, bool negative)
+        public override IEnumerable<string> SampleMatches(int k, int randomseed)
         {
             // Zero is treated as no seed, instead using a system provided one
             Random random = randomseed != 0 ? new Random(randomseed) : new Random();
@@ -77,40 +77,34 @@ namespace System.Text.RegularExpressions.Symbolic
                 {
                     Debug.Assert(states.NfaStateSet.Count > 0);
 
-                    // Gather the possible endings for either satisfying nullability for positive sampling, or
-                    // making sure the pattern isn't nullable for negative sampling.
+                    // Gather the possible endings for satisfying nullability
                     possibleEndings.Clear();
                     if (NfaStateHandler.CanBeNullable(ref statesWrapper))
                     {
                         // Unconditionally final state or end of the input due to \Z anchor for example
-                        if (negative ^ (NfaStateHandler.IsNullable(ref statesWrapper) ||
-                            NfaStateHandler.IsNullable(ref statesWrapper, CharKind.BeginningEnd)))
+                        if (NfaStateHandler.IsNullable(ref statesWrapper) ||
+                            NfaStateHandler.IsNullable(ref statesWrapper, CharKind.BeginningEnd))
                         {
                             possibleEndings.Add("");
                         }
 
                         // End of line due to end-of-line anchor
-                        if (negative ^ (NfaStateHandler.IsNullable(ref statesWrapper, CharKind.Newline)))
+                        if (NfaStateHandler.IsNullable(ref statesWrapper, CharKind.Newline))
                         {
                             possibleEndings.Add("\n");
                         }
 
                         // Related to wordborder due to \b or \B
-                        if (negative ^ (NfaStateHandler.IsNullable(ref statesWrapper, CharKind.WordLetter)))
+                        if (NfaStateHandler.IsNullable(ref statesWrapper, CharKind.WordLetter))
                         {
                             possibleEndings.Add(ChooseChar(random, asciiWordCharacters, ascii, charSetSolver).ToString());
                         }
 
                         // Related to wordborder due to \b or \B
-                        if (negative ^ (NfaStateHandler.IsNullable(ref statesWrapper, CharKind.General)))
+                        if (NfaStateHandler.IsNullable(ref statesWrapper, CharKind.General))
                         {
                             possibleEndings.Add(ChooseChar(random, asciiNonWordCharacters, ascii, charSetSolver).ToString());
                         }
-                    }
-                    else if (negative)
-                    {
-                        // If the state can't be nullable then appending nothing produces a negative sample
-                        possibleEndings.Add("");
                     }
 
                     // If we have a possible ending, then store a candidate input

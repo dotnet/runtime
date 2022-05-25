@@ -18,8 +18,8 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <inheritdoc cref="Regex.SaveDGML(TextWriter, int)"/>
         public abstract void SaveDGML(TextWriter writer, int maxLabelLength);
 
-        /// <inheritdoc cref="Regex.SampleMatches(int, int, bool)"/>
-        public abstract IEnumerable<string> SampleMatches(int k, int randomseed, bool negative);
+        /// <inheritdoc cref="Regex.SampleMatches(int, int)"/>
+        public abstract IEnumerable<string> SampleMatches(int k, int randomseed);
 
         /// <inheritdoc cref="Regex.Explore(bool, bool, bool, bool, bool)"/>
         public abstract void Explore(bool includeDotStarred, bool includeReverse, bool includeOriginal, bool exploreDfa, bool exploreNfa);
