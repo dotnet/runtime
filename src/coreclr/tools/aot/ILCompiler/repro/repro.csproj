@@ -27,7 +27,6 @@
       <ReproResponseLines Include="--initassembly:System.Private.StackTraceMetadata" />
       <ReproResponseLines Include="--initassembly:System.Private.TypeLoader" />
       <ReproResponseLines Include="--initassembly:System.Private.Reflection.Execution" />
-      <ReproResponseLines Include="--initassembly:System.Private.Interop" />
       <ReproResponseLines Include="--directpinvokelist:$(RuntimeBinDir)build\WindowsAPIs.txt" />
       <ReproResponseLines Include="--directpinvoke:System.Globalization.Native" />
       <ReproResponseLines Include="--stacktracedata" />
