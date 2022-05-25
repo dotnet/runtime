@@ -1119,7 +1119,7 @@ namespace System.Tests
             else
             {
                 Assert.Equal((nuint)0x0000_0001, NumberBaseHelper<nuint>.CreateChecked<double>(+1.0));
-                Assert.Equal((nuint)0xFFFF_FFF, NumberBaseHelper<nuint>.CreateChecked<double>(+4294967295.0));
+                Assert.Equal((nuint)0xFFFF_FFFF, NumberBaseHelper<nuint>.CreateChecked<double>(+4294967295.0));
 
                 Assert.Throws<OverflowException>(() => NumberBaseHelper<nuint>.CreateChecked<double>(-1.0));
                 Assert.Throws<OverflowException>(() => NumberBaseHelper<nuint>.CreateChecked<double>(+4294967296.0));
