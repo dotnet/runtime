@@ -129,6 +129,7 @@ namespace System.Net.Http.Functional.Tests
     }
 
     [SkipOnPlatform(TestPlatforms.Browser, "UseProxy not supported on Browser")]
+    [SkipOnPlatform(TestPlatforms.Android, "The sync Send method is not supported on mobile platforms")]
     public sealed class SocksProxyTest_Http1_Sync : SocksProxyTest
     {
         public SocksProxyTest_Http1_Sync(ITestOutputHelper helper) : base(helper) { }

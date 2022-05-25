@@ -1458,6 +1458,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [SkipOnPlatform(TestPlatforms.Android, "The Send method is not implemented on mobile platforms")]
         public void Send_NullRequest_ThrowsException()
         {
             using var client = new CustomHttpClient();
