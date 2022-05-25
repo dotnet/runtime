@@ -1288,7 +1288,7 @@ namespace System.Tests
             {
                 Assert.Equal(unchecked((nint)0xFFFF_FFFF), NumberBaseHelper<nint>.CreateChecked<NFloat>(-1.0f));
 
-                Assert.Equal((nint)0x7FFF_FFFF, NumberBaseHelper<nint>.CreateChecked<NFloat>(+2147483520.0f));
+                Assert.Equal((nint)0x7FFF_FF80, NumberBaseHelper<nint>.CreateChecked<NFloat>(+2147483520.0f));
                 Assert.Equal(unchecked((nint)0x8000_0000), NumberBaseHelper<nint>.CreateChecked<NFloat>(-2147483648.0f));
 
                 Assert.Throws<OverflowException>(() => NumberBaseHelper<nint>.CreateChecked<NFloat>(+2147483648.0f));
@@ -1649,7 +1649,7 @@ namespace System.Tests
             {
                 Assert.Equal(unchecked((nint)0xFFFF_FFFF), NumberBaseHelper<nint>.CreateSaturating<NFloat>(-1.0f));
 
-                Assert.Equal((nint)0x7FFF_FFFF, NumberBaseHelper<nint>.CreateSaturating<NFloat>(+2147483520.0f));
+                Assert.Equal((nint)0x7FFF_FF80, NumberBaseHelper<nint>.CreateSaturating<NFloat>(+2147483520.0f));
                 Assert.Equal(unchecked((nint)0x8000_0000), NumberBaseHelper<nint>.CreateSaturating<NFloat>(-2147483648.0f));
 
                 Assert.Equal(nint.MaxValue, NumberBaseHelper<nint>.CreateSaturating<NFloat>(+2147483648.0f));
@@ -2022,7 +2022,7 @@ namespace System.Tests
             {
                 Assert.Equal(unchecked((nint)0xFFFF_FFFF), NumberBaseHelper<nint>.CreateTruncating<NFloat>(-1.0f));
 
-                Assert.Equal((nint)0x7FFF_FFFF, NumberBaseHelper<nint>.CreateTruncating<NFloat>(+2147483520.0f));
+                Assert.Equal((nint)0x7FFF_FF80, NumberBaseHelper<nint>.CreateTruncating<NFloat>(+2147483520.0f));
                 Assert.Equal(unchecked((nint)0x8000_0000), NumberBaseHelper<nint>.CreateTruncating<NFloat>(-2147483648.0f));
 
                 Assert.Equal(nint.MaxValue, NumberBaseHelper<nint>.CreateTruncating<NFloat>(+2147483648.0f));
