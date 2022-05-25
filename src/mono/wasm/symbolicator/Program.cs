@@ -4,6 +4,8 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.WebAssembly.Internal;
 
+#pragma warning disable CA1852 // Type 'Program' can be sealed because it has no subtypes in its containing assembly and is not externally visible
+
 if (args.Length < 1)
 {
     ShowUsage();
