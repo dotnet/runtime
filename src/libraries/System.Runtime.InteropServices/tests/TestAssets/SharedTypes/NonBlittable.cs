@@ -252,14 +252,14 @@ namespace SharedTypes
             this._marshaller = new ListMarshaller<T>(sizeOfNativeElement);
         }
 
-        public WrappedListMarshaller(List<T> managed, int sizeOfNativeElement)
+        public WrappedListMarshaller(WrappedList<T> managed, int sizeOfNativeElement)
             : this(managed, Span<byte>.Empty, sizeOfNativeElement)
         {
         }
 
-        public WrappedListMarshaller(List<T> managed, Span<byte> stackSpace, int sizeOfNativeElement)
+        public WrappedListMarshaller(WrappedList<T> managed, Span<byte> stackSpace, int sizeOfNativeElement)
         {
-            this._marshaller = new ListMarshaller<T>(managed, stackSpace, sizeOfNativeElement);
+            this._marshaller = new ListMarshaller<T>(managed.Wrapped, stackSpace, sizeOfNativeElement);
         }
 
         public ReadOnlySpan<T> GetManagedValuesSource() => _marshaller.GetManagedValuesSource();
