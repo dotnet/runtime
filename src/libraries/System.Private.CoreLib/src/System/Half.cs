@@ -1917,13 +1917,15 @@ namespace System
 
             if (typeof(TOther) == typeof(byte))
             {
-                byte actualResult = (byte)value;
+                var actualResult = (value >= byte.MaxValue) ? byte.MaxValue :
+                                   (value <= byte.MinValue) ? byte.MinValue : (byte)value;
                 result = (TOther)(object)actualResult;
                 return true;
             }
             else if (typeof(TOther) == typeof(char))
             {
-                char actualResult = (char)value;
+                char actualResult = (value == PositiveInfinity) ? char.MaxValue :
+                                    (value <= Zero) ? char.MinValue : (char)value;
                 result = (TOther)(object)actualResult;
                 return true;
             }
@@ -1943,31 +1945,36 @@ namespace System
             }
             else if (typeof(TOther) == typeof(ushort))
             {
-                ushort actualResult = (ushort)value;
+                ushort actualResult = (value == PositiveInfinity) ? ushort.MaxValue :
+                                      (value <= Zero) ? ushort.MinValue : (ushort)value;
                 result = (TOther)(object)actualResult;
                 return true;
             }
             else if (typeof(TOther) == typeof(uint))
             {
-                uint actualResult = (uint)value;
+                uint actualResult = (value == PositiveInfinity) ? uint.MaxValue :
+                                    (value <= Zero) ? uint.MinValue : (uint)value;
                 result = (TOther)(object)actualResult;
                 return true;
             }
             else if (typeof(TOther) == typeof(ulong))
             {
-                ulong actualResult = (ulong)value;
+                ulong actualResult = (value == PositiveInfinity) ? ulong.MaxValue :
+                                     (value <= Zero) ? ulong.MinValue : (ulong)value;
                 result = (TOther)(object)actualResult;
                 return true;
             }
             else if (typeof(TOther) == typeof(UInt128))
             {
-                UInt128 actualResult = (UInt128)value;
+                UInt128 actualResult = (value == PositiveInfinity) ? UInt128.MaxValue :
+                                       (value <= Zero) ? UInt128.MinValue : (UInt128)value;
                 result = (TOther)(object)actualResult;
                 return true;
             }
             else if (typeof(TOther) == typeof(nuint))
             {
-                nuint actualResult = (nuint)value;
+                nuint actualResult = (value == PositiveInfinity) ? nuint.MaxValue :
+                                     (value <= Zero) ? nuint.MinValue : (nuint)value;
                 result = (TOther)(object)actualResult;
                 return true;
             }

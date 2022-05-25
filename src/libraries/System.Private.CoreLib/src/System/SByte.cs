@@ -881,13 +881,15 @@ namespace System
             if (typeof(TOther) == typeof(double))
             {
                 double actualValue = (double)(object)value;
-                result = (sbyte)actualValue;
+                result = (actualValue >= MaxValue) ? MaxValue :
+                         (actualValue <= MinValue) ? MinValue : (sbyte)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(Half))
             {
                 Half actualValue = (Half)(object)value;
-                result = (sbyte)actualValue;
+                result = (actualValue >= MaxValue) ? MaxValue :
+                         (actualValue <= MinValue) ? MinValue : (sbyte)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(short))
@@ -923,7 +925,8 @@ namespace System
             else if (typeof(TOther) == typeof(float))
             {
                 float actualValue = (float)(object)value;
-                result = (sbyte)actualValue;
+                result = (actualValue >= MaxValue) ? MaxValue :
+                         (actualValue <= MinValue) ? MinValue : (sbyte)actualValue;
                 return true;
             }
             else

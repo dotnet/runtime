@@ -755,13 +755,15 @@ namespace System
             else if (typeof(TOther) == typeof(decimal))
             {
                 decimal actualValue = (decimal)(object)value;
-                result = (ushort)actualValue;
+                result = (actualValue >= MaxValue) ? MaxValue :
+                         (actualValue <= MinValue) ? MinValue : (ushort)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(NFloat))
             {
                 NFloat actualValue = (NFloat)(object)value;
-                result = (ushort)actualValue;
+                result = (actualValue >= MaxValue) ? MaxValue :
+                         (actualValue <= MinValue) ? MinValue : (ushort)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(uint))
