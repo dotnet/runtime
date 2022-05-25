@@ -2870,6 +2870,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69801", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static void FijiTimeZoneTest()
         {
             TimeZoneInfo fijiTZ = TimeZoneInfo.FindSystemTimeZoneById(s_strFiji); // "Fiji Standard Time" - "Pacific/Fiji"

@@ -123,7 +123,7 @@ namespace System.Tests
             Assert.Equal(boolValue.GetType(), TypedReference.GetTargetType(reference));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported))]
         public static unsafe void PointerTypeTests()
         {
             void* pointerValue = (void*)0x123456;

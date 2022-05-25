@@ -39,6 +39,7 @@ namespace System.Reflection.Tests
         [Theory]
         [MemberData(nameof(RefReturnInvokeTestData))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/67457", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69755", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static void TestNullRefReturnInvoke<T>(T value)
         {
             TestClass<T> tc = new TestClass<T>(value);
@@ -62,6 +63,7 @@ namespace System.Reflection.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/67457", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69755", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static unsafe void TestNullRefReturnOfPointer()
         {
             TestClassIntPointer tc = new TestClassIntPointer(null);
