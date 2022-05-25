@@ -1967,19 +1967,22 @@ namespace System.Numerics
 
             if (typeof(TOther) == typeof(byte))
             {
-                byte actualResult = (byte)value.m_real;
+                byte actualResult = (value.m_real >= byte.MaxValue) ? byte.MaxValue :
+                                    (value.m_real <= byte.MinValue) ? byte.MinValue : (byte)value.m_real;
                 result = (TOther)(object)actualResult;
                 return true;
             }
             else if (typeof(TOther) == typeof(char))
             {
-                char actualResult = (char)value.m_real;
+                char actualResult = (value.m_real >= char.MaxValue) ? char.MaxValue :
+                                    (value.m_real <= char.MinValue) ? char.MinValue : (char)value.m_real;
                 result = (TOther)(object)actualResult;
                 return true;
             }
             else if (typeof(TOther) == typeof(decimal))
             {
-                decimal actualResult = (decimal)value.m_real;
+                decimal actualResult = (value.m_real >= (double)decimal.MaxValue) ? decimal.MaxValue :
+                                       (value.m_real <= (double)decimal.MinValue) ? decimal.MinValue : (decimal)value.m_real;
                 result = (TOther)(object)actualResult;
                 return true;
             }
@@ -1997,31 +2000,36 @@ namespace System.Numerics
             }
             else if (typeof(TOther) == typeof(short))
             {
-                short actualResult = (short)value.m_real;
+                short actualResult = (value.m_real >= short.MaxValue) ? short.MaxValue :
+                                     (value.m_real <= short.MinValue) ? short.MinValue : (short)value.m_real;
                 result = (TOther)(object)actualResult;
                 return true;
             }
             else if (typeof(TOther) == typeof(int))
             {
-                int actualResult = (int)value.m_real;
+                int actualResult = (value.m_real >= int.MaxValue) ? int.MaxValue :
+                                   (value.m_real <= int.MinValue) ? int.MinValue : (int)value.m_real;
                 result = (TOther)(object)actualResult;
                 return true;
             }
             else if (typeof(TOther) == typeof(long))
             {
-                long actualResult = (long)value.m_real;
+                long actualResult = (value.m_real >= long.MaxValue) ? long.MaxValue :
+                                    (value.m_real <= long.MinValue) ? long.MinValue : (long)value.m_real;
                 result = (TOther)(object)actualResult;
                 return true;
             }
             else if (typeof(TOther) == typeof(Int128))
             {
-                Int128 actualResult = (Int128)value.m_real;
+                Int128 actualResult = (value.m_real >= +170141183460469231731687303715884105727.0) ? Int128.MaxValue :
+                                      (value.m_real <= -170141183460469231731687303715884105728.0) ? Int128.MinValue : (Int128)value.m_real;
                 result = (TOther)(object)actualResult;
                 return true;
             }
             else if (typeof(TOther) == typeof(nint))
             {
-                nint actualResult = (nint)value.m_real;
+                nint actualResult = (value.m_real >= nint.MaxValue) ? nint.MaxValue :
+                                    (value.m_real <= nint.MinValue) ? nint.MinValue : (nint)value.m_real;
                 result = (TOther)(object)actualResult;
                 return true;
             }
@@ -2039,7 +2047,8 @@ namespace System.Numerics
             }
             else if (typeof(TOther) == typeof(sbyte))
             {
-                sbyte actualResult = (sbyte)value.m_real;
+                sbyte actualResult = (value.m_real >= sbyte.MaxValue) ? sbyte.MaxValue :
+                                     (value.m_real <= sbyte.MinValue) ? sbyte.MinValue : (sbyte)value.m_real;
                 result = (TOther)(object)actualResult;
                 return true;
             }
@@ -2051,31 +2060,36 @@ namespace System.Numerics
             }
             else if (typeof(TOther) == typeof(ushort))
             {
-                ushort actualResult = (ushort)value.m_real;
+                ushort actualResult = (value.m_real >= ushort.MaxValue) ? ushort.MaxValue :
+                                      (value.m_real <= ushort.MinValue) ? ushort.MinValue : (ushort)value.m_real;
                 result = (TOther)(object)actualResult;
                 return true;
             }
             else if (typeof(TOther) == typeof(uint))
             {
-                uint actualResult = (uint)value.m_real;
+                uint actualResult = (value.m_real >= uint.MaxValue) ? uint.MaxValue :
+                                    (value.m_real <= uint.MinValue) ? uint.MinValue : (uint)value.m_real;
                 result = (TOther)(object)actualResult;
                 return true;
             }
             else if (typeof(TOther) == typeof(ulong))
             {
-                ulong actualResult = (ulong)value.m_real;
+                ulong actualResult = (value.m_real >= ulong.MaxValue) ? ulong.MaxValue :
+                                     (value.m_real <= ulong.MinValue) ? ulong.MinValue : (ulong)value.m_real;
                 result = (TOther)(object)actualResult;
                 return true;
             }
             else if (typeof(TOther) == typeof(UInt128))
             {
-                UInt128 actualResult = (UInt128)value.m_real;
+                UInt128 actualResult = (value.m_real >= 340282366920938463463374607431768211455.0) ? UInt128.MaxValue :
+                                       (value.m_real <= 0.0) ? UInt128.MinValue : (UInt128)value.m_real;
                 result = (TOther)(object)actualResult;
                 return true;
             }
             else if (typeof(TOther) == typeof(nuint))
             {
-                nuint actualResult = (nuint)value.m_real;
+                nuint actualResult = (value.m_real >= nuint.MaxValue) ? nuint.MaxValue :
+                                     (value.m_real <= nuint.MinValue) ? nuint.MinValue : (nuint)value.m_real;
                 result = (TOther)(object)actualResult;
                 return true;
             }
