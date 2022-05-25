@@ -431,8 +431,13 @@ if (CLR_CMAKE_HOST_UNIX)
     add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-stringop-overflow>)
     add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-restrict>)
     add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-stringop-truncation>)
-    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-placement-new>)
-    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-mismatched-new-delete>)
+
+    if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 12.0)
+      # this warning is only reported by g++ 11 in debug mode when building
+      # src/coreclr/vm/stackingallocator.h. It is a false-positive, fixed in g++ 12.
+      # see: https://github.com/dotnet/runtime/pull/69188#issuecomment-1136764770
+      add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-placement-new>)
+    endif()
 
     if (CMAKE_CXX_COMPILER_ID)
       check_cxx_compiler_flag(-faligned-new COMPILER_SUPPORTS_F_ALIGNED_NEW)
