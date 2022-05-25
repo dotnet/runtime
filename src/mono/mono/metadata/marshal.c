@@ -3358,7 +3358,7 @@ static void mono_marshal_set_signature_callconv_from_attribute(MonoMethodSignatu
 	g_assert (m_class_get_image (cmod_klass) == mono_defaults.corlib);
 	g_assert (!strcmp (m_class_get_name_space (cmod_klass), "System.Runtime.CompilerServices"));
 
-	int calling_convention_id_offset = strlen ("CallConv");
+	size_t calling_convention_id_offset = strlen ("CallConv");
 	const char *name = m_class_get_name (cmod_klass);
 	g_assert (!strncmp (name, "CallConv", calling_convention_id_offset));
 
