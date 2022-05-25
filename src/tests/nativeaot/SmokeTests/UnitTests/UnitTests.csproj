@@ -4,7 +4,6 @@
     <CLRTestKind>BuildAndRun</CLRTestKind>
     <CLRTestPriority>0</CLRTestPriority>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <LangVersion>preview</LangVersion>
 
     <!-- There's just too many of these warnings -->
     <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
