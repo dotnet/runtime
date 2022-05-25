@@ -643,7 +643,8 @@ void InlineContext::DumpXml(FILE* file, unsigned indent)
 //   stmt          - statement containing the call (if known)
 //   description   - string describing the context of the decision
 
-InlineResult::InlineResult(Compiler* compiler, GenTreeCall* call, Statement* stmt, const char* description, bool doNotReport)
+InlineResult::InlineResult(
+    Compiler* compiler, GenTreeCall* call, Statement* stmt, const char* description, bool doNotReport)
     : m_RootCompiler(nullptr)
     , m_Policy(nullptr)
     , m_Call(call)
