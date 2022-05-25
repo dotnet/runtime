@@ -529,6 +529,76 @@ namespace System
         /// <inheritdoc cref="INumberBase{TSelf}.Abs(TSelf)" />
         public static nint Abs(nint value) => Math.Abs(value);
 
+        /// <summary>Creates an instance of the current type from a value, throwing an overflow exception for any values that fall outside the representable range of the current type.</summary>
+        /// <typeparam name="TOther">The type of <paramref name="value" />.</typeparam>
+        /// <param name="value">The value which is used to create the instance of <see cref="IntPtr" />.</param>
+        /// <returns>An instance of <see cref="IntPtr" /> created from <paramref name="value" />.</returns>
+        /// <exception cref="NotSupportedException"><typeparamref name="TOther" /> is not supported.</exception>
+        /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="IntPtr" />.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static nint CreateChecked<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            nint result;
+
+            if (typeof(TOther) == typeof(nint))
+            {
+                result = (nint)(object)value;
+            }
+            else if (!NumberBase<nint>.TryConvertFromChecked(value, out result) && !TOther.TryConvertToChecked(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <summary>Creates an instance of the current type from a value, saturating any values that fall outside the representable range of the current type.</summary>
+        /// <typeparam name="TOther">The type of <paramref name="value" />.</typeparam>
+        /// <param name="value">The value which is used to create the instance of <see cref="IntPtr" />.</param>
+        /// <returns>An instance of <see cref="IntPtr" /> created from <paramref name="value" />, saturating if <paramref name="value" /> falls outside the representable range of <see cref="IntPtr" />.</returns>
+        /// <exception cref="NotSupportedException"><typeparamref name="TOther" /> is not supported.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static nint CreateSaturating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            nint result;
+
+            if (typeof(TOther) == typeof(nint))
+            {
+                result = (nint)(object)value;
+            }
+            else if (!NumberBase<nint>.TryConvertFromSaturating(value, out result) && !TOther.TryConvertToSaturating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <summary>Creates an instance of the current type from a value, truncating any values that fall outside the representable range of the current type.</summary>
+        /// <typeparam name="TOther">The type of <paramref name="value" />.</typeparam>
+        /// <param name="value">The value which is used to create the instance of <see cref="IntPtr" />.</param>
+        /// <returns>An instance of <see cref="IntPtr" /> created from <paramref name="value" />, truncating if <paramref name="value" /> falls outside the representable range of <see cref="IntPtr" />.</returns>
+        /// <exception cref="NotSupportedException"><typeparamref name="TOther" /> is not supported.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static nint CreateTruncating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            nint result;
+
+            if (typeof(TOther) == typeof(nint))
+            {
+                result = (nint)(object)value;
+            }
+            else if (!NumberBase<nint>.TryConvertFromTruncating(value, out result) && !TOther.TryConvertToTruncating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
         /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
         static bool INumberBase<nint>.IsCanonical(nint value) => true;
 

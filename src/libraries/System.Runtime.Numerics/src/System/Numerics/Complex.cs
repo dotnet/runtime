@@ -1001,6 +1001,76 @@ namespace System.Numerics
         /// <inheritdoc cref="INumberBase{TSelf}.Abs(TSelf)" />
         static Complex INumberBase<Complex>.Abs(Complex value) => Abs(value);
 
+        /// <summary>Creates an instance of the current type from a value, throwing an overflow exception for any values that fall outside the representable range of the current type.</summary>
+        /// <typeparam name="TOther">The type of <paramref name="value" />.</typeparam>
+        /// <param name="value">The value which is used to create the instance of <see cref="Complex" />.</param>
+        /// <returns>An instance of <see cref="Complex" /> created from <paramref name="value" />.</returns>
+        /// <exception cref="NotSupportedException"><typeparamref name="TOther" /> is not supported.</exception>
+        /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="Complex" />.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Complex CreateChecked<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            Complex result;
+
+            if (typeof(TOther) == typeof(Complex))
+            {
+                result = (Complex)(object)value;
+            }
+            else if (!TryConvertFrom(value, out result) && !TOther.TryConvertToChecked(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <summary>Creates an instance of the current type from a value, saturating any values that fall outside the representable range of the current type.</summary>
+        /// <typeparam name="TOther">The type of <paramref name="value" />.</typeparam>
+        /// <param name="value">The value which is used to create the instance of <see cref="Complex" />.</param>
+        /// <returns>An instance of <see cref="Complex" /> created from <paramref name="value" />, saturating if <paramref name="value" /> falls outside the representable range of <see cref="Complex" />.</returns>
+        /// <exception cref="NotSupportedException"><typeparamref name="TOther" /> is not supported.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Complex CreateSaturating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            Complex result;
+
+            if (typeof(TOther) == typeof(Complex))
+            {
+                result = (Complex)(object)value;
+            }
+            else if (!TryConvertFrom(value, out result) && !TOther.TryConvertToSaturating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <summary>Creates an instance of the current type from a value, truncating any values that fall outside the representable range of the current type.</summary>
+        /// <typeparam name="TOther">The type of <paramref name="value" />.</typeparam>
+        /// <param name="value">The value which is used to create the instance of <see cref="Complex" />.</param>
+        /// <returns>An instance of <see cref="Complex" /> created from <paramref name="value" />, truncating if <paramref name="value" /> falls outside the representable range of <see cref="Complex" />.</returns>
+        /// <exception cref="NotSupportedException"><typeparamref name="TOther" /> is not supported.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Complex CreateTruncating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            Complex result;
+
+            if (typeof(TOther) == typeof(Complex))
+            {
+                result = (Complex)(object)value;
+            }
+            else if (!TryConvertFrom(value, out result) && !TOther.TryConvertToTruncating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
         /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
         static bool INumberBase<Complex>.IsCanonical(Complex value) => true;
 
