@@ -378,8 +378,6 @@ handle_enum:
 		break;
 
 	case MONO_TYPE_STRING: {
-		const char *start = p;
-
 		if (!bcheck_blob (p, 0, boundp, error))
 			return NULL;
 MONO_DISABLE_WARNING (4310) // cast truncates constant value
@@ -393,8 +391,6 @@ MONO_RESTORE_WARNING
 		if (slen > 0 && !bcheck_blob (p, slen - 1, boundp, error))
 			return NULL;
 		*end = p + slen;
-		if (!out_obj)
-			return (void*)start;
 		// https://bugzilla.xamarin.com/show_bug.cgi?id=60848
 		// Custom attribute strings are encoded as wtf-8 instead of utf-8.
 		// If we decode using utf-8 like the spec says, we will silently fail
@@ -410,14 +406,10 @@ MONO_RESTORE_WARNING
 	}
 	case MONO_TYPE_CLASS: {
 		MonoType *cattr_type  = load_cattr_type (image, t, TRUE, p, boundp, end, error, &slen);
-		if (out_obj) {
-			if (!cattr_type )
-				return NULL;
-			*out_obj = (MonoObject*)mono_type_get_object_checked (cattr_type , error);
+		if (!cattr_type )
 			return NULL;
-		} else {
-			return cattr_type;
-		}
+		*out_obj = (MonoObject*)mono_type_get_object_checked (cattr_type , error);
+		return NULL;
 	}
 	case MONO_TYPE_OBJECT: {
 		if (!bcheck_blob (p, 0, boundp, error))
@@ -429,14 +421,10 @@ MONO_RESTORE_WARNING
 
 		if (subt == CATTR_TYPE_SYSTEM_TYPE) {
 			MonoType *cattr_type = load_cattr_type (image, t, FALSE, p, boundp, end, error, &slen);
-			if (out_obj) {
-				if (!cattr_type)
-					return NULL;
-				*out_obj = (MonoObject*)mono_type_get_object_checked (cattr_type, error);
+			if (!cattr_type)
 				return NULL;
-			} else {
-				return cattr_type;
-			}
+			*out_obj = (MonoObject*)mono_type_get_object_checked (cattr_type, error);
+			return NULL;
 		} else if (subt == 0x0E) {
 			type = MONO_TYPE_STRING;
 			goto handle_enum;
