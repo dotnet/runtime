@@ -1,9 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
     <RestorePackages>true</RestorePackages>
     <!-- The test leaves a secondary thread running -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <CLRTestPriority>1</CLRTestPriority>
   </PropertyGroup>
   <PropertyGroup>

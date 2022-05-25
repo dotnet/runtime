@@ -52,6 +52,8 @@ static CORINFO_InstructionSet X64VersionOfIsa(CORINFO_InstructionSet isa)
             return InstructionSet_PCLMULQDQ_X64;
         case InstructionSet_POPCNT:
             return InstructionSet_POPCNT_X64;
+        case InstructionSet_X86Serialize:
+            return InstructionSet_X86Serialize_X64;
         default:
             return InstructionSet_NONE;
     }
@@ -158,6 +160,10 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
     else if (strcmp(className, "X86Base") == 0)
     {
         return InstructionSet_X86Base;
+    }
+    else if (strcmp(className, "X86Serialize") == 0)
+    {
+        return InstructionSet_X86Serialize;
     }
 
     return InstructionSet_ILLEGAL;
@@ -384,6 +390,8 @@ bool HWIntrinsicInfo::isFullyImplementedIsa(CORINFO_InstructionSet isa)
         case InstructionSet_Vector256:
         case InstructionSet_X86Base:
         case InstructionSet_X86Base_X64:
+        case InstructionSet_X86Serialize:
+        case InstructionSet_X86Serialize_X64:
         {
             return true;
         }
@@ -506,6 +514,11 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case InstructionSet_BMI2:
         case InstructionSet_BMI2_X64:
             return impBMI1OrBMI2Intrinsic(intrinsic, method, sig);
+
+        case InstructionSet_X86Serialize:
+        case InstructionSet_X86Serialize_X64:
+            return impSerializeIntrinsic(intrinsic, method, sig);
+
         default:
             return nullptr;
     }
@@ -1878,6 +1891,93 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector128_Shuffle:
+        case NI_Vector256_Shuffle:
+        {
+            assert((sig->numArgs == 2) || (sig->numArgs == 3));
+
+            GenTree* indices = impStackTop(0).val;
+
+            if (!indices->IsVectorConst())
+            {
+                // TODO-XARCH-CQ: Handling non-constant indices is a bit more complex
+                break;
+            }
+
+            size_t elementSize  = genTypeSize(simdBaseType);
+            size_t elementCount = simdSize / elementSize;
+
+            if (genTypeSize(indices->AsHWIntrinsic()->GetSimdBaseType()) != elementSize)
+            {
+                // TODO-XARCH-CQ: Handling reinterpreted vector constants is a bit more complex
+                break;
+            }
+
+            if (simdSize == 32)
+            {
+                if (!compExactlyDependsOn(InstructionSet_AVX2))
+                {
+                    // While we could accelerate some functions on hardware with only AVX support
+                    // it's likely not worth it overall given that IsHardwareAccelerated reports false
+                    break;
+                }
+                else if (varTypeIsSmallInt(simdBaseType))
+                {
+                    bool crossLane = false;
+
+                    for (size_t index = 0; index < elementCount; index++)
+                    {
+                        uint64_t value = indices->GetIntegralVectorConstElement(index);
+
+                        if (value >= elementCount)
+                        {
+                            continue;
+                        }
+
+                        if (index < (elementCount / 2))
+                        {
+                            if (value >= (elementCount / 2))
+                            {
+                                crossLane = true;
+                                break;
+                            }
+                        }
+                        else if (value < (elementCount / 2))
+                        {
+                            crossLane = true;
+                            break;
+                        }
+                    }
+
+                    if (crossLane)
+                    {
+                        // TODO-XARCH-CQ: We should emulate cross-lane shuffling for byte/sbyte and short/ushort
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                assert(simdSize == 16);
+
+                if (varTypeIsSmallInt(simdBaseType) && !compExactlyDependsOn(InstructionSet_SSSE3))
+                {
+                    // TYP_BYTE, TYP_UBYTE, TYP_SHORT, and TYP_USHORT need SSSE3 to be able to shuffle any operation
+                    break;
+                }
+            }
+
+            if (sig->numArgs == 2)
+            {
+                op2 = impSIMDPopStack(retType);
+                op1 = impSIMDPopStack(retType);
+
+                retNode = gtNewSimdShuffleNode(retType, op1, op2, simdBaseJitType, simdSize,
+                                               /* isSimdAsHWIntrinsic */ false);
+            }
+            break;
+        }
+
         case NI_Vector128_Sqrt:
         case NI_Vector256_Sqrt:
         {
@@ -2195,6 +2295,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         }
 
         case NI_X86Base_Pause:
+        case NI_X86Serialize_Serialize:
         {
             assert(sig->numArgs == 0);
             assert(JITtype2varType(sig->retType) == TYP_VOID);
@@ -2477,6 +2578,28 @@ GenTree* Compiler::impBMI1OrBMI2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METH
         default:
             return nullptr;
     }
+}
+
+GenTree* Compiler::impSerializeIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig)
+{
+    GenTree* retNode = nullptr;
+
+    switch (intrinsic)
+    {
+        case NI_X86Serialize_Serialize:
+        {
+            assert(sig->numArgs == 0);
+            assert(JITtype2varType(sig->retType) == TYP_VOID);
+
+            retNode = gtNewScalarHWIntrinsicNode(TYP_VOID, intrinsic);
+            break;
+        }
+
+        default:
+            return nullptr;
+    }
+
+    return retNode;
 }
 
 #endif // FEATURE_HW_INTRINSICS

@@ -40,8 +40,10 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        public int Add(ActiveDirectorySite site!!)
+        public int Add(ActiveDirectorySite site)
         {
+            ArgumentNullException.ThrowIfNull(site);
+
             if (!site.existing)
                 throw new InvalidOperationException(SR.Format(SR.SiteNotCommitted, site.Name));
 
@@ -51,21 +53,27 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentException(SR.Format(SR.AlreadyExistingInCollection, site), nameof(site));
         }
 
-        public void AddRange(ActiveDirectorySite[] sites!!)
+        public void AddRange(ActiveDirectorySite[] sites)
         {
+            ArgumentNullException.ThrowIfNull(sites);
+
             for (int i = 0; ((i) < (sites.Length)); i = ((i) + (1)))
                 this.Add(sites[i]);
         }
 
-        public void AddRange(ActiveDirectorySiteCollection sites!!)
+        public void AddRange(ActiveDirectorySiteCollection sites)
         {
+            ArgumentNullException.ThrowIfNull(sites);
+
             int count = sites.Count;
             for (int i = 0; i < count; i++)
                 this.Add(sites[i]);
         }
 
-        public bool Contains(ActiveDirectorySite site!!)
+        public bool Contains(ActiveDirectorySite site)
         {
+            ArgumentNullException.ThrowIfNull(site);
+
             if (!site.existing)
                 throw new InvalidOperationException(SR.Format(SR.SiteNotCommitted, site.Name));
 
@@ -89,8 +97,10 @@ namespace System.DirectoryServices.ActiveDirectory
             List.CopyTo(array, index);
         }
 
-        public int IndexOf(ActiveDirectorySite site!!)
+        public int IndexOf(ActiveDirectorySite site)
         {
+            ArgumentNullException.ThrowIfNull(site);
+
             if (!site.existing)
                 throw new InvalidOperationException(SR.Format(SR.SiteNotCommitted, site.Name));
 
@@ -109,8 +119,10 @@ namespace System.DirectoryServices.ActiveDirectory
             return -1;
         }
 
-        public void Insert(int index, ActiveDirectorySite site!!)
+        public void Insert(int index, ActiveDirectorySite site)
         {
+            ArgumentNullException.ThrowIfNull(site);
+
             if (!site.existing)
                 throw new InvalidOperationException(SR.Format(SR.SiteNotCommitted, site.Name));
 
@@ -120,8 +132,10 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentException(SR.Format(SR.AlreadyExistingInCollection, site), nameof(site));
         }
 
-        public void Remove(ActiveDirectorySite site!!)
+        public void Remove(ActiveDirectorySite site)
         {
+            ArgumentNullException.ThrowIfNull(site);
+
             if (!site.existing)
                 throw new InvalidOperationException(SR.Format(SR.SiteNotCommitted, site.Name));
 
@@ -211,8 +225,10 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        protected override void OnValidate(object value!!)
+        protected override void OnValidate(object value)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             if (!(value is ActiveDirectorySite))
                 throw new ArgumentException(null, nameof(value));
 

@@ -358,7 +358,7 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
         TypeHandle *pInstOrPerInstInfo = NULL;
         DictionaryLayout *pDL = NULL;
         DWORD infoSize = 0;
-        IBCLoggerAwareAllocMemTracker amt;
+        AllocMemTracker amt;
 
         if (!methodInst.IsEmpty())
         {
@@ -857,7 +857,6 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
             if (pResultMD != NULL)
             {
                 _ASSERTE(pResultMD->GetMethodTable()->IsFullyLoaded());
-                g_IBCLogger.LogMethodDescAccess(pResultMD);
                 RETURN(pResultMD);
             }
 
@@ -894,7 +893,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                                                    FALSE);
                 if (pResultMD == NULL)
                 {
-                    IBCLoggerAwareAllocMemTracker amt;
+                    AllocMemTracker amt;
 
                     pResultMD = CreateMethodDesc(pAllocator,
                                                  pRepMT,
@@ -972,7 +971,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                     _ASSERTE(!pNonUnboxingStub->RequiresInstArg());
                     _ASSERTE(!pNonUnboxingStub->IsUnboxingStub());
 
-                    IBCLoggerAwareAllocMemTracker amt;
+                    AllocMemTracker amt;
 
                     _ASSERTE(pDefMD->GetClassification() == mcInstantiated);
 
@@ -1052,11 +1051,8 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                      pResultMD == FindTightlyBoundWrappedMethodDesc_DEBUG(pMDescInCanonMT));
 
             if (pResultMD != NULL)
-                            {
+            {
                 _ASSERTE(pResultMD->GetMethodTable()->IsFullyLoaded());
-
-                g_IBCLogger.LogMethodDescAccess(pResultMD);
-
                 if (allowInstParam || !pResultMD->RequiresInstArg())
                 {
                     RETURN(pResultMD);

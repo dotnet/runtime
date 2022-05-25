@@ -12,7 +12,7 @@ namespace System.Runtime.InteropServices.JavaScript
     {
         private GCHandle? InFlight;
         private int InFlightCounter;
-        public int JSHandle => (int)handle;
+        public IntPtr JSHandle => handle;
         public bool IsDisposed { get; private set; }
 
         public JSObject() : base(true)
@@ -24,7 +24,7 @@ namespace System.Runtime.InteropServices.JavaScript
             SetHandle(jsHandle);
         }
 
-        protected JSObject(string typeName, object[] _params) : base(true)
+        public JSObject(string typeName, params object[] _params) : base(true)
         {
             InFlight = null;
             InFlightCounter = 0;
@@ -55,7 +55,7 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         // Note that we could not use SafeHandle.DangerousAddRef() and DangerousRelease()
-        // because we could get to zero InFlightCounter multiple times accross lifetime of the JSObject
+        // because we could get to zero InFlightCounter multiple times across lifetime of the JSObject
         // we only want JSObject to be disposed (from GC finalizer) once there is no in-flight reference and also no natural C# reference
         internal void ReleaseInFlight()
         {
@@ -100,7 +100,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public override bool Equals([NotNullWhen(true)] object? obj) => obj is JSObject other && JSHandle == other.JSHandle;
 
-        public override int GetHashCode() => JSHandle;
+        public override int GetHashCode() => (int)JSHandle;
 
         public override string ToString()
         {

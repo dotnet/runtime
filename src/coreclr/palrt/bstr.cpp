@@ -47,7 +47,7 @@ inline HRESULT CbSysStringSize(ULONG cchSize, BOOL isByteLen, ULONG *result)
     else
     {
         ULONG temp = 0; // should not use in-place addition in ULongAdd
-        if (SUCCEEDED(ULongMult(cchSize, sizeof(WCHAR), &temp)) &
+        if (SUCCEEDED(ULongMult(cchSize, sizeof(WCHAR), &temp)) &&
             SUCCEEDED(ULongAdd(temp, constant, result)))
         {
             *result = *result & ~WIN32_ALLOC_ALIGN;

@@ -16,12 +16,18 @@ namespace Microsoft.Extensions.DependencyModel
             Justification = "The annotation should be on the static constructor but is Compiler Generated, annotating the caller Default method instead")]
         private static readonly Lazy<DependencyContext?> _defaultContext = new(LoadDefault);
 
-        public DependencyContext(TargetInfo target!!,
-            CompilationOptions compilationOptions!!,
-            IEnumerable<CompilationLibrary> compileLibraries!!,
-            IEnumerable<RuntimeLibrary> runtimeLibraries!!,
-            IEnumerable<RuntimeFallbacks> runtimeGraph!!)
+        public DependencyContext(TargetInfo target,
+            CompilationOptions compilationOptions,
+            IEnumerable<CompilationLibrary> compileLibraries,
+            IEnumerable<RuntimeLibrary> runtimeLibraries,
+            IEnumerable<RuntimeFallbacks> runtimeGraph)
         {
+            ThrowHelper.ThrowIfNull(target);
+            ThrowHelper.ThrowIfNull(compilationOptions);
+            ThrowHelper.ThrowIfNull(compileLibraries);
+            ThrowHelper.ThrowIfNull(runtimeLibraries);
+            ThrowHelper.ThrowIfNull(runtimeGraph);
+
             Target = target;
             CompilationOptions = compilationOptions;
             CompileLibraries = compileLibraries.ToArray();
@@ -42,8 +48,10 @@ namespace Microsoft.Extensions.DependencyModel
 
         public IReadOnlyList<RuntimeFallbacks> RuntimeGraph { get; }
 
-        public DependencyContext Merge(DependencyContext other!!)
+        public DependencyContext Merge(DependencyContext other)
         {
+            ThrowHelper.ThrowIfNull(other);
+
             return new DependencyContext(
                 Target,
                 CompilationOptions,

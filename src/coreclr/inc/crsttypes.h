@@ -200,7 +200,7 @@ int g_rgCrstLevelMap[] =
     7,          // CrstISymUnmanagedReader
     11,         // CrstJit
     0,          // CrstJitGenericHandleCache
-    16,         // CrstJitInlineTrackingMap
+    13,         // CrstJitInlineTrackingMap
     4,          // CrstJitPatchpoint
     -1,         // CrstJitPerf
     6,          // CrstJumpStubCache
@@ -210,7 +210,7 @@ int g_rgCrstLevelMap[] =
     16,         // CrstLoaderAllocatorReferences
     3,          // CrstLoaderHeap
     3,          // CrstManagedObjectWrapperMap
-    14,         // CrstMethodDescBackpatchInfoTracker
+    10,         // CrstMethodDescBackpatchInfoTracker
     5,          // CrstModule
     15,         // CrstModuleFixup
     4,          // CrstModuleLookupTable
@@ -231,7 +231,7 @@ int g_rgCrstLevelMap[] =
     0,          // CrstRCWCleanupList
     10,         // CrstReadyToRunEntryPointToMethodDescMap
     8,          // CrstReflection
-    17,         // CrstReJITGlobalRequest
+    14,         // CrstReJITGlobalRequest
     4,          // CrstRetThunkCache
     3,          // CrstSavedExceptionInfo
     0,          // CrstSaveModuleProfileData

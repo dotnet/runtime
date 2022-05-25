@@ -126,6 +126,17 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             ProcessTestCase(testCase, dn);
         }
 
+        [Theory]
+        [InlineData("OID.STREET=abbeyroad")] // A real friendly name.
+        [InlineData("OID.AGHHHH=internet")] // Not a real friendly name.
+        [InlineData("OID.=internet")] // Blank OID.
+        [InlineData("OID.99.99=sun")] // Invalid OID, bad arc.
+        [InlineData("OID.99.a=sun")] // Invalid OID, not numeric.
+        public static void ParseWithInvalidObjectIdentifiers(string distinguishedName)
+        {
+            Assert.ThrowsAny<CryptographicException>(() => new X500DistinguishedName(distinguishedName));
+        }
+
         private static void ProcessTestCase(SimpleEncoderTestCase testCase, X500DistinguishedName dn)
         {
             // The simple encoding test is "does it output the expected text?", then

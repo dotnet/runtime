@@ -497,7 +497,7 @@ namespace System.Data.ProviderBase
                 }
                 catch
                 {
-                    // This should occure for all exceptions, even ADP.UnCatchableExceptions.
+                    // This should occur for all exceptions, even ADP.UnCatchableExceptions.
                     connectionFactory.SetInnerConnectionTo(outerConnection, this);
                     throw;
                 }

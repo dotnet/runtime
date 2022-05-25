@@ -9,17 +9,13 @@ parameters:
   platform: ''
   targetRid: ''
   jobParameters: {}
+  shouldContinueOnError: false
   variables: []
 
 jobs:
 - template: ${{ coalesce(parameters.helixQueuesTemplate, parameters.jobTemplate) }}
   parameters:
-    ${{ if eq(parameters.jobParameters.runtimeFlavor, 'coreclr') }}:
-      runtimeFlavorDisplayName: 'CoreCLR'
-    ${{ if eq(parameters.jobParameters.runtimeFlavor, 'mono') }}:
-      runtimeFlavorDisplayName: 'Mono'
-
-    shouldContinueOnError: ${{ and(endsWith(variables['Build.DefinitionName'], 'staging'), eq(variables['Build.Reason'], 'PullRequest')) }}
+    shouldContinueOnError: ${{ or(eq(parameters.shouldContinueOnError, true), and(endsWith(variables['Build.DefinitionName'], 'staging'), eq(variables['Build.Reason'], 'PullRequest'))) }}
 
     # keep in sync with /eng/pipelines/common/variables.yml
     dependOnEvaluatePaths: ${{ and(eq(variables['Build.Reason'], 'PullRequest'), in(variables['Build.DefinitionName'], 'runtime', 'runtime-staging', 'runtime-community', 'runtime-extra-platforms')) }}
@@ -50,6 +46,12 @@ jobs:
 
       - name: _runSmokeTestsOnlyArg
         value: '/p:RunSmokeTestsOnly=$(isRunSmokeTestsOnly)'
+
+      - name: _overrideTestScriptWindowsCmdParameter
+        ${{ if eq(parameters.jobParameters.runScriptWindowsCmd, true) }}:
+          value: '/p:RunScriptWindowsCmd=true'
+        ${{ if ne(parameters.jobParameters.runScriptWindowsCmd, true) }}:
+          value: ''
 
       - name: _hostedOs
         value: ${{ parameters.jobParameters.hostedOs }}
@@ -140,12 +142,12 @@ jobs:
         # Official Build Windows Pool
         ${{ if and(eq(parameters.osGroup, 'windows'), ne(variables['System.TeamProject'], 'public')) }}:
           name: NetCore1ESPool-Internal
-          demands: ImageOverride -equals Build.Windows.10.Amd64.VS2019
+          demands: ImageOverride -equals Build.Windows.Amd64.VS2022.Pre
 
         # Public Windows Build Pool
         ${{ if and(or(eq(parameters.osGroup, 'windows'), eq(parameters.jobParameters.hostedOs, 'windows')), eq(variables['System.TeamProject'], 'public')) }}:
           name: NetCore1ESPool-Public
-          demands: ImageOverride -equals Build.Windows.10.Amd64.VS2019.Open
+          demands: ImageOverride -equals Build.Windows.Amd64.VS2022.Pre.Open
 
 
     ${{ if eq(parameters.helixQueuesTemplate, '') }}:

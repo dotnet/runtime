@@ -4,6 +4,7 @@
 #include "trace.h"
 #include "info.h"
 #include "utils.h"
+#include <cinttypes>
 
 using namespace bundle;
 
@@ -48,8 +49,8 @@ StatusCode info_t::process_bundle(const pal::char_t* bundle_path, const pal::cha
     }
 
     trace::info(_X("Single-File bundle details:"));
-    trace::info(_X("DepsJson Offset:[%lx] Size[%lx]"), info.m_header.deps_json_location().offset, info.m_header.deps_json_location().size);
-    trace::info(_X("RuntimeConfigJson Offset:[%lx] Size[%lx]"), info.m_header.runtimeconfig_json_location().offset, info.m_header.runtimeconfig_json_location().size);
+    trace::info(_X("DepsJson Offset:[%" PRIx64 "] Size[%" PRIx64 "]"), info.m_header.deps_json_location().offset, info.m_header.deps_json_location().size);
+    trace::info(_X("RuntimeConfigJson Offset:[%" PRIx64 "] Size[%" PRIx64 "]"), info.m_header.runtimeconfig_json_location().offset, info.m_header.runtimeconfig_json_location().size);
     trace::info(_X(".net core 3 compatibility mode: [%s]"), info.m_header.is_netcoreapp3_compat_mode() ? _X("Yes") : _X("No"));
 
     the_app = &info;

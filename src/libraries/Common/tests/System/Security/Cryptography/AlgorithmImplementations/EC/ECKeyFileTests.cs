@@ -93,7 +93,7 @@ namespace System.Security.Cryptography.Tests
             // Check encrypted import with the wrong password.
             // It shouldn't do enough work to realize it was wrong.
             pwBytes = Array.Empty<byte>();
-            Assert.Throws<ObjectDisposedException>(() => key.ImportEncryptedPkcs8PrivateKey("", pkcs8EncryptedPrivate, out _));
+            Assert.Throws<ObjectDisposedException>(() => key.ImportEncryptedPkcs8PrivateKey((ReadOnlySpan<char>)"", pkcs8EncryptedPrivate, out _));
             Assert.Throws<ObjectDisposedException>(() => key.ImportEncryptedPkcs8PrivateKey(pwBytes, pkcs8EncryptedPrivate, out _));
         }
 
@@ -980,7 +980,7 @@ Tj/54rcY3i0gXT6da/r/o+qV");
             using (T key = CreateKey())
             {
                 Assert.ThrowsAny<CryptographicException>(
-                    () => key.ImportEncryptedPkcs8PrivateKey("test", high3DesIterationKey, out _));
+                    () => key.ImportEncryptedPkcs8PrivateKey((ReadOnlySpan<char>)"test", high3DesIterationKey, out _));
             }
         }
 
@@ -1081,7 +1081,7 @@ xoMaz20Yx+2TSN5dSm2FcD+0YFI=",
                         () => key.ImportEncryptedPkcs8PrivateKey(wrongPassword, encrypted, out _));
 
                     Assert.ThrowsAny<CryptographicException>(
-                        () => key.ImportEncryptedPkcs8PrivateKey("ThisBetterNotBeThePassword!", encrypted, out _));
+                        () => key.ImportEncryptedPkcs8PrivateKey((ReadOnlySpan<char>)"ThisBetterNotBeThePassword!", encrypted, out _));
 
                     int bytesRead = -1;
 

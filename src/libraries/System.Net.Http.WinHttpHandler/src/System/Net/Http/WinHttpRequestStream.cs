@@ -97,8 +97,13 @@ namespace System.Net.Http
                 Task.CompletedTask;
         }
 
-        public override Task WriteAsync(byte[] buffer!!, int offset, int count, CancellationToken token)
+        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken token)
         {
+            if (buffer is null)
+            {
+                throw new ArgumentNullException(nameof(buffer));
+            }
+
             if (offset < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(offset));

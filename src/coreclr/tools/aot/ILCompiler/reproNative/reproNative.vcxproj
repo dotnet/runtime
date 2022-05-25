@@ -27,20 +27,20 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Checked|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -81,7 +81,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(ArtifactsRoot)bin\repro\x64\Debug\repro.obj;$(Win32SDKLibs);%(AdditionalDependencies);$(ArtifactsRoot)bin\coreclr\windows.x64.Debug\aotsdk\Runtime.WorkstationGC.lib</AdditionalDependencies>
+      <AdditionalDependencies>$(ArtifactsRoot)bin\repro\x64\Debug\repro.obj;$(Win32SDKLibs);%(AdditionalDependencies);$(ArtifactsRoot)bin\coreclr\windows.x64.Debug\aotsdk\Runtime.WorkstationGC.lib;$(ArtifactsRoot)bin\coreclr\windows.x64.Debug\aotsdk\System.Globalization.Native.Aot.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Checked|x64'">
@@ -101,7 +101,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>$(ArtifactsRoot)bin\repro\x64\Checked\repro.obj;$(Win32SDKLibs);%(AdditionalDependencies);$(ArtifactsRoot)bin\coreclr\windows.x64.Checked\aotsdk\Runtime.WorkstationGC.lib</AdditionalDependencies>
+      <AdditionalDependencies>$(ArtifactsRoot)bin\repro\x64\Checked\repro.obj;$(Win32SDKLibs);%(AdditionalDependencies);$(ArtifactsRoot)bin\coreclr\windows.x64.Checked\aotsdk\Runtime.WorkstationGC.lib;$(ArtifactsRoot)bin\coreclr\windows.x64.Checked\aotsdk\System.Globalization.Native.Aot.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -121,7 +121,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>$(ArtifactsRoot)bin\repro\x64\Release\repro.obj;$(Win32SDKLibs);%(AdditionalDependencies);$(ArtifactsRoot)bin\coreclr\windows.x64.Release\aotsdk\Runtime.WorkstationGC.lib</AdditionalDependencies>
+      <AdditionalDependencies>$(ArtifactsRoot)bin\repro\x64\Release\repro.obj;$(Win32SDKLibs);%(AdditionalDependencies);$(ArtifactsRoot)bin\coreclr\windows.x64.Release\aotsdk\Runtime.WorkstationGC.lib$(ArtifactsRoot)bin\coreclr\windows.x64.Release\aotsdk\System.Globalization.Native.Aot.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -129,7 +129,7 @@
     <None Include="..\repro\Program.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Natvis Include="$(NativeAotSourceRoot)\BuildIntegration\CoreRTNatVis.natvis" />
+    <Natvis Include="$(NativeAotSourceRoot)\BuildIntegration\NativeAOT.natvis" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

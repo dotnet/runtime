@@ -22,11 +22,6 @@ namespace System.Runtime.InteropServices.JavaScript
             return Interop.Runtime.InvokeJS(str);
         }
 
-        public static Function? CompileFunction(string snippet)
-        {
-            return Interop.Runtime.CompileFunction(snippet);
-        }
-
         public static object GetGlobalObject(string? str = null)
         {
             return Interop.Runtime.GetGlobalObject(str);
@@ -37,7 +32,7 @@ namespace System.Runtime.InteropServices.JavaScript
             Interop.Runtime.DumpAotProfileData(ref buf, len, extraArg);
         }
 
-        public static bool IsSimpleArray(object a)
+        public static bool IsSimpleArrayRef(ref object a)
         {
             return a is System.Array arr && arr.Rank == 1 && arr.GetLowerBound(0) == 0;
         }
@@ -100,7 +95,7 @@ namespace System.Runtime.InteropServices.JavaScript
             FIRST = BUFFER_TOO_SMALL
         }
 
-        public static string GetCallSignature(IntPtr _methodHandle, object? objForRuntimeType)
+        public static string GetCallSignatureRef(IntPtr _methodHandle, in object? objForRuntimeType)
         {
             var methodHandle = GetMethodHandleFromIntPtr(_methodHandle);
 
@@ -159,12 +154,12 @@ namespace System.Runtime.InteropServices.JavaScript
 
             switch (typeCode)
             {
-                case TypeCode.Byte:
                 case TypeCode.SByte:
                 case TypeCode.Int16:
-                case TypeCode.UInt16:
                 case TypeCode.Int32:
                     return MarshalType.INT;
+                case TypeCode.Byte:
+                case TypeCode.UInt16:
                 case TypeCode.UInt32:
                     return MarshalType.UINT32;
                 case TypeCode.Boolean:
@@ -237,11 +232,14 @@ namespace System.Runtime.InteropServices.JavaScript
             switch (t)
             {
                 case MarshalType.BOOL:
-                case MarshalType.INT:
+                    return 'b';
                 case MarshalType.UINT32:
                 case MarshalType.POINTER:
+                    return 'I';
+                case MarshalType.INT:
                     return 'i';
                 case MarshalType.UINT64:
+                    return 'L';
                 case MarshalType.INT64:
                     return 'l';
                 case MarshalType.FP32:
@@ -255,9 +253,9 @@ namespace System.Runtime.InteropServices.JavaScript
                 case MarshalType.SAFEHANDLE:
                     return 'h';
                 case MarshalType.ENUM:
-                    return 'j';
+                    return 'j'; // this is wrong for uint enums
                 case MarshalType.ENUM64:
-                    return 'k';
+                    return 'k'; // this is wrong for ulong enums
                 case MarshalType.TASK:
                 case MarshalType.DELEGATE:
                 case MarshalType.OBJECT:
@@ -296,13 +294,15 @@ namespace System.Runtime.InteropServices.JavaScript
             return null;
         }
 
-        public static string ObjectToString(object o)
+        public static string ObjectToStringRef(ref object o)
         {
             return o.ToString() ?? string.Empty;
         }
 
-        public static double GetDateValue(object dtv!!)
+        public static double GetDateValueRef(ref object dtv)
         {
+            ArgumentNullException.ThrowIfNull(dtv);
+
             if (!(dtv is DateTime dt))
                 throw new InvalidCastException(SR.Format(SR.UnableCastObjectToType, dtv.GetType(), typeof(DateTime)));
             if (dt.Kind == DateTimeKind.Local)
@@ -312,27 +312,29 @@ namespace System.Runtime.InteropServices.JavaScript
             return new DateTimeOffset(dt).ToUnixTimeMilliseconds();
         }
 
-        public static DateTime CreateDateTime(double ticks)
+        // HACK: We need to implicitly box by using an 'object' out-param.
+        // Note that the return value would have been boxed on the C#->JS transition anyway.
+        public static void CreateDateTimeRef(double ticks, out object result)
         {
             DateTimeOffset unixTime = DateTimeOffset.FromUnixTimeMilliseconds((long)ticks);
-            return unixTime.DateTime;
+            result = unixTime.DateTime;
         }
 
-        public static Uri CreateUri(string uri)
+        public static void CreateUriRef(string uri, out Uri result)
         {
-            return new Uri(uri);
+            result = new Uri(uri);
         }
 
-        public static void CancelPromise(int promiseJSHandle)
+        public static void CancelPromise(IntPtr promiseJSHandle)
         {
-            var res = Interop.Runtime.CancelPromise(promiseJSHandle, out int exception);
+            Interop.Runtime.CancelPromiseRef(promiseJSHandle, out int exception, out string res);
             if (exception != 0)
                 throw new JSException(res);
         }
 
-        public static Task<object> WebSocketOpen(string uri, object[]? subProtocols, Delegate onClosed, out JSObject webSocket, out int promiseJSHandle)
+        public static Task<object> WebSocketOpen(string uri, object[]? subProtocols, Delegate onClosed, out JSObject webSocket, out IntPtr promiseJSHandle)
         {
-            var res = Interop.Runtime.WebSocketOpen(uri, subProtocols, onClosed, out int webSocketJSHandle, out promiseJSHandle, out int exception);
+            Interop.Runtime.WebSocketOpenRef(uri, subProtocols, onClosed, out IntPtr webSocketJSHandle, out promiseJSHandle, out int exception, out object res);
             if (exception != 0)
                 throw new JSException((string)res);
             webSocket = new JSObject((IntPtr)webSocketJSHandle);
@@ -340,11 +342,11 @@ namespace System.Runtime.InteropServices.JavaScript
             return (Task<object>)res;
         }
 
-        public static unsafe Task<object>? WebSocketSend(JSObject webSocket, ArraySegment<byte> buffer, int messageType, bool endOfMessage, out int promiseJSHandle)
+        public static unsafe Task<object>? WebSocketSend(JSObject webSocket, ArraySegment<byte> buffer, int messageType, bool endOfMessage, out IntPtr promiseJSHandle)
         {
             fixed (byte* messagePtr = buffer.Array)
             {
-                var res = Interop.Runtime.WebSocketSend(webSocket.JSHandle, (IntPtr)messagePtr, buffer.Offset, buffer.Count, messageType, endOfMessage, out promiseJSHandle, out int exception);
+                Interop.Runtime.WebSocketSend(webSocket.JSHandle, (IntPtr)messagePtr, buffer.Offset, buffer.Count, messageType, endOfMessage, out promiseJSHandle, out int exception, out object res);
                 if (exception != 0)
                     throw new JSException((string)res);
 
@@ -357,12 +359,12 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-        public static unsafe Task<object>? WebSocketReceive(JSObject webSocket, ArraySegment<byte> buffer, ReadOnlySpan<int> response, out int promiseJSHandle)
+        public static unsafe Task<object>? WebSocketReceive(JSObject webSocket, ArraySegment<byte> buffer, ReadOnlySpan<int> response, out IntPtr promiseJSHandle)
         {
             fixed (int* responsePtr = response)
             fixed (byte* bufferPtr = buffer.Array)
             {
-                var res = Interop.Runtime.WebSocketReceive(webSocket.JSHandle, (IntPtr)bufferPtr, buffer.Offset, buffer.Count, (IntPtr)responsePtr, out promiseJSHandle, out int exception);
+                Interop.Runtime.WebSocketReceive(webSocket.JSHandle, (IntPtr)bufferPtr, buffer.Offset, buffer.Count, (IntPtr)responsePtr, out promiseJSHandle, out int exception, out object res);
                 if (exception != 0)
                     throw new JSException((string)res);
                 if (res == null)
@@ -373,9 +375,9 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-        public static Task<object>? WebSocketClose(JSObject webSocket, int code, string? reason, bool waitForCloseReceived, out int promiseJSHandle)
+        public static Task<object>? WebSocketClose(JSObject webSocket, int code, string? reason, bool waitForCloseReceived, out IntPtr promiseJSHandle)
         {
-            var res = Interop.Runtime.WebSocketClose(webSocket.JSHandle, code, reason, waitForCloseReceived, out promiseJSHandle, out int exception);
+            Interop.Runtime.WebSocketCloseRef(webSocket.JSHandle, code, reason, waitForCloseReceived, out promiseJSHandle, out int exception, out object res);
             if (exception != 0)
                 throw new JSException((string)res);
 
@@ -388,7 +390,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static void WebSocketAbort(JSObject webSocket)
         {
-            var res = Interop.Runtime.WebSocketAbort(webSocket.JSHandle, out int exception);
+            Interop.Runtime.WebSocketAbort(webSocket.JSHandle, out int exception, out string res);
             if (exception != 0)
                 throw new JSException(res);
         }

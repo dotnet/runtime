@@ -123,7 +123,7 @@ enum failure_get_memory
     fgm_commit_table = 5
 };
 
-// A record of the last OOM that occured in the GC, with some
+// A record of the last OOM that occurred in the GC, with some
 // additional information as to what triggered the OOM.
 struct oom_history
 {

@@ -189,8 +189,10 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode(TrimSerializationWarning)]
-        public XmlSerializer(XmlTypeMapping xmlTypeMapping!!)
+        public XmlSerializer(XmlTypeMapping xmlTypeMapping)
         {
+            ArgumentNullException.ThrowIfNull(xmlTypeMapping);
+
             if (Mode != SerializationMode.ReflectionOnly)
             {
                 _tempAssembly = GenerateTempAssembly(xmlTypeMapping);
@@ -204,8 +206,10 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode(TrimSerializationWarning)]
-        public XmlSerializer(Type type!!, string? defaultNamespace)
+        public XmlSerializer(Type type, string? defaultNamespace)
         {
+            ArgumentNullException.ThrowIfNull(type);
+
             DefaultNamespace = defaultNamespace;
             _rootType = type;
 
@@ -263,8 +267,10 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode(TrimSerializationWarning)]
-        public XmlSerializer(Type type!!, XmlAttributeOverrides? overrides, Type[]? extraTypes, XmlRootAttribute? root, string? defaultNamespace, string? location)
+        public XmlSerializer(Type type, XmlAttributeOverrides? overrides, Type[]? extraTypes, XmlRootAttribute? root, string? defaultNamespace, string? location)
         {
+            ArgumentNullException.ThrowIfNull(type);
+
             DefaultNamespace = defaultNamespace;
             _rootType = type;
             _mapping = GenerateXmlTypeMapping(type, overrides, extraTypes, root, defaultNamespace);
@@ -300,8 +306,10 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("creates TempAssembly")]
-        internal static TempAssembly? GenerateTempAssembly(XmlMapping xmlMapping!!, Type? type, string? defaultNamespace, string? location)
+        internal static TempAssembly? GenerateTempAssembly(XmlMapping xmlMapping, Type? type, string? defaultNamespace, string? location)
         {
+            ArgumentNullException.ThrowIfNull(xmlMapping);
+
             xmlMapping.CheckShallow();
             if (xmlMapping.IsSoap)
             {
@@ -731,8 +739,10 @@ namespace System.Xml.Serialization
             return GetXmlSerializerAssemblyName(type, null);
         }
 
-        public static string GetXmlSerializerAssemblyName(Type type!!, string? defaultNamespace)
+        public static string GetXmlSerializerAssemblyName(Type type, string? defaultNamespace)
         {
+            ArgumentNullException.ThrowIfNull(type);
+
             return Compiler.GetTempAssemblyName(type.Assembly.GetName(), defaultNamespace);
         }
 

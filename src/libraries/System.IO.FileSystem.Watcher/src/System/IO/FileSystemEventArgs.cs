@@ -17,14 +17,28 @@ namespace System.IO
         /// </devdoc>
         public FileSystemEventArgs(WatcherChangeTypes changeType, string directory, string? name)
         {
+            ArgumentNullException.ThrowIfNull(directory);
+
             _changeType = changeType;
             _name = name;
-            _fullPath = Path.Join(Path.GetFullPath(directory), name);
+            _fullPath = Combine(directory, name);
+        }
 
-            if (string.IsNullOrWhiteSpace(name))
-            {
-                _fullPath = PathInternal.EnsureTrailingSeparator(_fullPath);
-            }
+        /// <summary>Combines a directory path and a relative file name into a single path.</summary>
+        /// <param name="directory">The directory path.</param>
+        /// <param name="name">The file name.</param>
+        /// <returns>The combined name.</returns>
+        /// <remarks>
+        /// This is like Path.Combine, except without argument validation,
+        /// and a separator is used even if the name argument is empty.
+        /// </remarks>
+        internal static string Combine(string directory, string? name)
+        {
+            bool hasSeparator = directory.Length != 0 && PathInternal.IsDirectorySeparator(directory[^1]);
+
+            return hasSeparator ?
+                directory + name :
+                directory + Path.DirectorySeparatorChar + name;
         }
 
         /// <devdoc>

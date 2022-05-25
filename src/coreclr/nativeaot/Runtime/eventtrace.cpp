@@ -4253,7 +4253,7 @@ void ETW::MethodLog::StubInitialized(ULONGLONG ullHelperStartAddress, LPCWSTR pH
 /**********************************************************/
 /* This is called by the runtime when helpers with stubs are initialized */
 /**********************************************************/
-void ETW::MethodLog::StubsInitialized(PVOID* pHelperStartAddresss, PVOID* pHelperNames, LONG lNoOfHelpers)
+void ETW::MethodLog::StubsInitialized(PVOID* pHelperStartAddress, PVOID* pHelperNames, LONG lNoOfHelpers)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -4263,9 +4263,9 @@ void ETW::MethodLog::StubsInitialized(PVOID* pHelperStartAddresss, PVOID* pHelpe
     {
         for (int i = 0; i < lNoOfHelpers; i++)
         {
-            if (pHelperStartAddresss[i])
+            if (pHelperStartAddress[i])
             {
-                StubInitialized((ULONGLONG)pHelperStartAddresss[i], (LPCWSTR)pHelperNames[i]);
+                StubInitialized((ULONGLONG)pHelperStartAddress[i], (LPCWSTR)pHelperNames[i]);
             }
         }
     }
@@ -6443,11 +6443,6 @@ void ETW::EnumerationLog::EnumerationHelper(Module* moduleFilter, BaseDomain* do
         THROWS;
         GC_TRIGGERS;
     } CONTRACTL_END;
-
-    // Disable IBC logging during ETW enumeration since we call a lot of functionality
-    // that does logging and causes problems in the shutdown path due to critical
-    // section access for IBC logging
-    IBCLoggingDisabler disableLogging;
 
     // See code:#TableLockHolder
     ReJitManager::TableLockHolder lkRejitMgrSharedDomain(SharedDomain::GetDomain()->GetReJitManager());

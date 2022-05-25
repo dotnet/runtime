@@ -14,7 +14,6 @@ namespace System.Xml.Serialization
     using System.Text.RegularExpressions;
     using System.Xml;
     using System.Xml.Schema;
-    using System.Xml.Extensions;
     using System.Diagnostics.CodeAnalysis;
 
     internal sealed partial class XmlSerializationReaderILGen : XmlSerializationILGen
@@ -2187,7 +2186,7 @@ namespace System.Xml.Serialization
                     }
                     else
                     {
-                        if (member.Source[member.Source.Length - 1] == '(' || member.Source[member.Source.Length - 1] == '{')
+                        if (member.Source.EndsWith('(') || member.Source.EndsWith('{'))
                         {
                             WriteCreateInstance(a, typeDesc.CannotNew, typeDesc.Type!);
                             WriteSourceBegin(member.Source);

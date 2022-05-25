@@ -61,26 +61,12 @@ namespace MonoTests.System.Drawing.Imaging
             }
         }
 
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.RecentGdiplusIsAvailable)]
-        public void Image16_PaletteEntries_Unix()
-        {
-            string sInFile = Helpers.GetTestBitmapPath("16x16_one_entry_4bit.ico");
-            using (Image image = Image.FromFile(sInFile))
-            {
-                // The values are inconsistent across Windows & Unix: GDI+ returns 0, libgdiplus returns 16.
-                Assert.Equal(16, image.Palette.Entries.Length);
-            }
-        }
-
-        [PlatformSpecific(TestPlatforms.Windows)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Image16_PaletteEntries_Windows()
+        public void Image16_PaletteEntries()
         {
             string sInFile = Helpers.GetTestBitmapPath("16x16_one_entry_4bit.ico");
             using (Image image = Image.FromFile(sInFile))
             {
-                // The values are inconsistent across Windows & Unix: GDI+ returns 0, libgdiplus returns 16.
                 Assert.Equal(0, image.Palette.Entries.Length);
             }
         }
@@ -119,43 +105,13 @@ namespace MonoTests.System.Drawing.Imaging
             }
         }
 
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Bitmap16Features_Palette_Entries_Unix()
-        {
-            string sInFile = Helpers.GetTestBitmapPath("48x48_multiple_entries_4bit.ico");
-            using (Bitmap bmp = new Bitmap(sInFile))
-            {
-                // These values are inconsistent across Windows & Unix: 0 on Windows, 16 on Unix
-                Assert.Equal(16, bmp.Palette.Entries.Length);
-                Assert.Equal(-16777216, bmp.Palette.Entries[0].ToArgb());
-                Assert.Equal(-16777216, bmp.Palette.Entries[1].ToArgb());
-                Assert.Equal(-16744448, bmp.Palette.Entries[2].ToArgb());
-                Assert.Equal(-8355840, bmp.Palette.Entries[3].ToArgb());
-                Assert.Equal(-16777088, bmp.Palette.Entries[4].ToArgb());
-                Assert.Equal(-8388480, bmp.Palette.Entries[5].ToArgb());
-                Assert.Equal(-16744320, bmp.Palette.Entries[6].ToArgb());
-                Assert.Equal(-4144960, bmp.Palette.Entries[7].ToArgb());
-                Assert.Equal(-8355712, bmp.Palette.Entries[8].ToArgb());
-                Assert.Equal(-65536, bmp.Palette.Entries[9].ToArgb());
-                Assert.Equal(-16711936, bmp.Palette.Entries[10].ToArgb());
-                Assert.Equal(-256, bmp.Palette.Entries[11].ToArgb());
-                Assert.Equal(-16776961, bmp.Palette.Entries[12].ToArgb());
-                Assert.Equal(-65281, bmp.Palette.Entries[13].ToArgb());
-                Assert.Equal(-16711681, bmp.Palette.Entries[14].ToArgb());
-                Assert.Equal(-1, bmp.Palette.Entries[15].ToArgb());
-            }
-        }
-
-        [PlatformSpecific(TestPlatforms.Windows)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Flaky - ArgumentException")]
-        public void Bitmap16Features_Palette_Entries_Windows()
+        public void Bitmap16Features_Palette_Entries()
         {
             string sInFile = Helpers.GetTestBitmapPath("48x48_multiple_entries_4bit.ico");
             using (Bitmap bmp = new Bitmap(sInFile))
             {
-                // These values are inconsistent across Windows & Unix: 0 on Windows, 16 on Unix
                 Assert.Equal(0, bmp.Palette.Entries.Length);
             }
         }
@@ -306,43 +262,12 @@ namespace MonoTests.System.Drawing.Imaging
             }
         }
 
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.RecentGdiplusIsAvailable)]
-        public void Bitmap32Features_PaletteEntries_Unix()
-        {
-            string sInFile = Helpers.GetTestBitmapPath("VisualPng.ico");
-            using (Bitmap bmp = new Bitmap(sInFile))
-            {
-                // These values areinconsistent across Windows & Unix: 0 on Windows, 16 on Unix
-                Assert.Equal(16, bmp.Palette.Entries.Length);
-
-                Assert.Equal(-16777216, bmp.Palette.Entries[0].ToArgb());
-                Assert.Equal(-8388608, bmp.Palette.Entries[1].ToArgb());
-                Assert.Equal(-16744448, bmp.Palette.Entries[2].ToArgb());
-                Assert.Equal(-8355840, bmp.Palette.Entries[3].ToArgb());
-                Assert.Equal(-16777088, bmp.Palette.Entries[4].ToArgb());
-                Assert.Equal(-8388480, bmp.Palette.Entries[5].ToArgb());
-                Assert.Equal(-16744320, bmp.Palette.Entries[6].ToArgb());
-                Assert.Equal(-4144960, bmp.Palette.Entries[7].ToArgb());
-                Assert.Equal(-8355712, bmp.Palette.Entries[8].ToArgb());
-                Assert.Equal(-65536, bmp.Palette.Entries[9].ToArgb());
-                Assert.Equal(-16711936, bmp.Palette.Entries[10].ToArgb());
-                Assert.Equal(-256, bmp.Palette.Entries[11].ToArgb());
-                Assert.Equal(-16776961, bmp.Palette.Entries[12].ToArgb());
-                Assert.Equal(-65281, bmp.Palette.Entries[13].ToArgb());
-                Assert.Equal(-16711681, bmp.Palette.Entries[14].ToArgb());
-                Assert.Equal(-1, bmp.Palette.Entries[15].ToArgb());
-            }
-        }
-
-        [PlatformSpecific(TestPlatforms.Windows)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Bitmap32Features_PaletteEntries_Windows()
+        public void Bitmap32Features_PaletteEntries()
         {
             string sInFile = Helpers.GetTestBitmapPath("VisualPng.ico");
             using (Bitmap bmp = new Bitmap(sInFile))
             {
-                // These values areinconsistent across Windows & Unix: 0 on Windows, 16 on Unix
                 Assert.Equal(0, bmp.Palette.Entries.Length);
             }
         }
@@ -550,28 +475,12 @@ namespace MonoTests.System.Drawing.Imaging
             }
         }
 
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.RecentGdiplusIsAvailable)]
-        public void Bitmap48Features_Palette_Entries_Unix()
-        {
-            string sInFile = Helpers.GetTestBitmapPath("48x48_one_entry_1bit.ico");
-            using (Bitmap bmp = new Bitmap(sInFile))
-            {
-                // These values are inconsistent across Windows & Unix: 0 on Windows, 16 on Unix
-                Assert.Equal(2, bmp.Palette.Entries.Length);
-                Assert.Equal(-16777216, bmp.Palette.Entries[0].ToArgb());
-                Assert.Equal(-1, bmp.Palette.Entries[1].ToArgb());
-            }
-        }
-
-        [PlatformSpecific(TestPlatforms.Windows)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Bitmap48Features_Palette_Entries_Windows()
+        public void Bitmap48Features_Palette_Entries()
         {
             string sInFile = Helpers.GetTestBitmapPath("48x48_one_entry_1bit.ico");
             using (Bitmap bmp = new Bitmap(sInFile))
             {
-                // These values are inconsistent across Windows & Unix: 0 on Windows, 16 on Unix
                 Assert.Equal(0, bmp.Palette.Entries.Length);
             }
         }
@@ -796,26 +705,12 @@ namespace MonoTests.System.Drawing.Imaging
             }
         }
 
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.RecentGdiplusIsAvailable)]
-        public void Bitmap64Features_Palette_Entries_Unix()
-        {
-            string sInFile = Helpers.GetTestBitmapPath("64x64_one_entry_8bit.ico");
-            using (Bitmap bmp = new Bitmap(sInFile))
-            {
-                // This value is inconsistent across Windows & Unix: 0 on Windows, 256 on Unix
-                Assert.Equal(256, bmp.Palette.Entries.Length);
-            }
-        }
-
-        [PlatformSpecific(TestPlatforms.Windows)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Bitmap64Features_Palette_Entries_Windows()
+        public void Bitmap64Features_Palette_Entries()
         {
             string sInFile = Helpers.GetTestBitmapPath("64x64_one_entry_8bit.ico");
             using (Bitmap bmp = new Bitmap(sInFile))
             {
-                // This value is inconsistent across Windows & Unix: 0 on Windows, 256 on Unix
                 Assert.Equal(0, bmp.Palette.Entries.Length);
             }
         }
@@ -1076,26 +971,12 @@ namespace MonoTests.System.Drawing.Imaging
             }
         }
 
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.RecentGdiplusIsAvailable)]
-        public void Bitmap96Features_Palette_Entries_Unix()
+        public void Bitmap96Features_Palette_Entries()
         {
             string sInFile = Helpers.GetTestBitmapPath("96x96_one_entry_8bit.ico");
             using (Bitmap bmp = new Bitmap(sInFile))
             {
-                // This value is inconsistent across Unix and Windows.
-                Assert.Equal(256, bmp.Palette.Entries.Length);
-            }
-        }
-
-        [PlatformSpecific(TestPlatforms.Windows)]
-        [ConditionalFact(Helpers.RecentGdiplusIsAvailable)]
-        public void Bitmap96Features_Palette_Entries_Windows()
-        {
-            string sInFile = Helpers.GetTestBitmapPath("96x96_one_entry_8bit.ico");
-            using (Bitmap bmp = new Bitmap(sInFile))
-            {
-                // This value is inconsistent across Unix and Windows.
                 Assert.Equal(0, bmp.Palette.Entries.Length);
             }
         }

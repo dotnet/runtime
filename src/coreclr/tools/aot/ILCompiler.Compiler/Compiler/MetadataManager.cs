@@ -184,16 +184,18 @@ namespace ILCompiler
             }
 
             IMethodNode methodNode = methodBodyNode;
+            if (methodNode != null)
+            {
+                if (AllMethodsCanBeReflectable)
+                    _reflectableMethods.Add(methodNode.Method);
+            }
+
             if (methodNode == null)
                 methodNode = obj as ShadowConcreteMethodNode;
 
             if (methodNode != null)
             {
                 _methodsGenerated.Add(methodNode.Method);
-
-                if (AllMethodsCanBeReflectable)
-                    _reflectableMethods.Add(methodNode.Method);
-
                 return;
             }
 

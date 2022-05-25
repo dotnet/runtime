@@ -236,6 +236,7 @@ static const Entry s_cryptoNative[] =
     DllImportEntry(CryptoNative_UpRefEvpPkey)
     DllImportEntry(CryptoNative_X509ChainBuildOcspRequest)
     DllImportEntry(CryptoNative_X509ChainGetCachedOcspStatus)
+    DllImportEntry(CryptoNative_X509ChainHasStapledOcsp)
     DllImportEntry(CryptoNative_X509ChainNew)
     DllImportEntry(CryptoNative_X509ChainVerifyOcsp)
     DllImportEntry(CryptoNative_X509CheckPurpose)

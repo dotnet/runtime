@@ -26,7 +26,7 @@ handle_arguments() {
 }
 
 # Set the various build properties here so that CMake and MSBuild can pick them up
-__BuildArch=x64
+__TargetArch=x64
 __TargetOS=Linux
 __BuildType=Debug
 __CMakeArgs=""
@@ -43,7 +43,7 @@ source "$__RepoRootDir"/eng/native/build-commons.sh
 
 # Set cross build
 
-if [[ "$__BuildArch" == wasm ]]; then
+if [[ "$__TargetArch" == wasm ]]; then
     if [[ -z "$EMSDK_PATH" ]]; then
         echo "Error: You need to set the EMSDK_PATH environment variable pointing to the emscripten SDK root."
         exit 1
@@ -64,67 +64,70 @@ else
     __CMakeArgs="-DFEATURE_DISTRO_AGNOSTIC_SSL=$__PortableBuild $__CMakeArgs"
     __CMakeArgs="-DCMAKE_STATIC_LIB_LINK=$__StaticLibLink $__CMakeArgs"
 
-    if [[ "$__BuildArch" != x86 && "$__BuildArch" != x64 && "$__BuildArch" != "$__HostArch" ]]; then
+    if [[ "$__TargetOS" != linux-bionic && "$__TargetArch" != x86 && "$__TargetArch" != x64 && "$__TargetArch" != "$__HostArch" ]]; then
         __CrossBuild=1
-        echo "Set CrossBuild for $__BuildArch build"
+        echo "Set CrossBuild for $__TargetArch build"
     fi
 fi
 
 if [[ "$__TargetOS" == Android && -z "$ROOTFS_DIR" ]]; then
     # Android SDK defaults to c++_static; we only need C support
     __CMakeArgs="-DANDROID_STL=none $__CMakeArgs"
+elif [[ "$__TargetOS" == linux-bionic && -z "$ROOTFS_DIR" ]]; then
+    # Android SDK defaults to c++_static; we only need C support
+    __CMakeArgs="-DFORCE_ANDROID_OPENSSL=1 -DANDROID_STL=none $__CMakeArgs"
 elif [[ "$__TargetOS" == iOSSimulator ]]; then
     # set default iOS simulator deployment target
     # keep in sync with src/mono/Directory.Build.props
     __CMakeArgs="-DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphonesimulator -DCMAKE_OSX_DEPLOYMENT_TARGET=10.0 $__CMakeArgs"
-    if [[ "$__BuildArch" == x64 ]]; then
+    if [[ "$__TargetArch" == x64 ]]; then
         __CMakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"x86_64\" $__CMakeArgs"
-    elif [[ "$__BuildArch" == x86 ]]; then
+    elif [[ "$__TargetArch" == x86 ]]; then
         __CMakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"i386\" $__CMakeArgs"
-    elif [[ "$__BuildArch" == arm64 ]]; then
+    elif [[ "$__TargetArch" == arm64 ]]; then
         __CMakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $__CMakeArgs"
     else
-        echo "Error: Unknown iOSSimulator architecture $__BuildArch."
+        echo "Error: Unknown iOSSimulator architecture $__TargetArch."
         exit 1
     fi
 elif [[ "$__TargetOS" == iOS ]]; then
     # set default iOS device deployment target
     # keep in sync with src/mono/Directory.Build.props
     __CMakeArgs="-DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphoneos -DCMAKE_OSX_DEPLOYMENT_TARGET=10.0 $__CMakeArgs"
-    if [[ "$__BuildArch" == arm64 ]]; then
+    if [[ "$__TargetArch" == arm64 ]]; then
         __CMakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $__CMakeArgs"
-    elif [[ "$__BuildArch" == arm ]]; then
+    elif [[ "$__TargetArch" == arm ]]; then
         __CMakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"armv7;armv7s\" $__CMakeArgs"
     else
-        echo "Error: Unknown iOS architecture $__BuildArch."
+        echo "Error: Unknown iOS architecture $__TargetArch."
         exit 1
     fi
 elif [[ "$__TargetOS" == tvOSSimulator ]]; then
     # set default tvOS simulator deployment target
     # keep in sync with src/mono/Directory.Build.props
     __CMakeArgs="-DCMAKE_SYSTEM_NAME=tvOS -DCMAKE_OSX_SYSROOT=appletvsimulator -DCMAKE_OSX_DEPLOYMENT_TARGET=10.0 $__CMakeArgs"
-    if [[ "$__BuildArch" == x64 ]]; then
+    if [[ "$__TargetArch" == x64 ]]; then
         __CMakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"x86_64\" $__CMakeArgs"
-    elif [[ "$__BuildArch" == arm64 ]]; then
+    elif [[ "$__TargetArch" == arm64 ]]; then
         __CMakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $__CMakeArgs"
     else
-        echo "Error: Unknown tvOSSimulator architecture $__BuildArch."
+        echo "Error: Unknown tvOSSimulator architecture $__TargetArch."
         exit 1
     fi
 elif [[ "$__TargetOS" == tvOS ]]; then
     # set default tvOS device deployment target
     # keep in sync with src/mono/Directory.Build.props
     __CMakeArgs="-DCMAKE_SYSTEM_NAME=tvOS -DCMAKE_OSX_SYSROOT=appletvos -DCMAKE_OSX_DEPLOYMENT_TARGET=10.0 $__CMakeArgs"
-    if [[ "$__BuildArch" == arm64 ]]; then
+    if [[ "$__TargetArch" == arm64 ]]; then
         __CMakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $__CMakeArgs"
     else
-        echo "Error: Unknown tvOS architecture $__BuildArch."
+        echo "Error: Unknown tvOS architecture $__TargetArch."
         exit 1
     fi
 fi
 
 # Set the remaining variables based upon the determined build configuration
-__outConfig="${__outConfig:-"$__TargetOS-$__BuildArch-$__BuildType"}"
+__outConfig="${__outConfig:-"$__TargetOS-$__TargetArch-$__BuildType"}"
 __IntermediatesDir="$__RootBinDir/obj/native/$__outConfig"
 __BinDir="$__RootBinDir/bin/native/$__outConfig"
 
@@ -140,4 +143,4 @@ setup_dirs
 check_prereqs
 
 # Build the corefx native components.
-build_native "$__TargetOS" "$__BuildArch" "$__nativeroot" "$__IntermediatesDir" "install" "$__CMakeArgs" "native libraries component"
+build_native "$__TargetOS" "$__TargetArch" "$__nativeroot" "$__IntermediatesDir" "install" "$__CMakeArgs" "native libraries component"

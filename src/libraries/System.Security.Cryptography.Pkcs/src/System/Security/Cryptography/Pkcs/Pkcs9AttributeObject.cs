@@ -56,8 +56,13 @@ namespace System.Security.Cryptography.Pkcs
             }
         }
 
-        public override void CopyFrom(AsnEncodedData asnEncodedData!!)
+        public override void CopyFrom(AsnEncodedData asnEncodedData)
         {
+            if (asnEncodedData is null)
+            {
+                throw new ArgumentNullException(nameof(asnEncodedData));
+            }
+
             if (!(asnEncodedData is Pkcs9AttributeObject))
                 throw new ArgumentException(SR.Cryptography_Pkcs9_AttributeMismatch);
 

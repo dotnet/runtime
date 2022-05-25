@@ -6,6 +6,9 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using Xunit;
+namespace Test_StructWithSingleFloat
+{
 public class TestClass
 {
     public struct S2
@@ -35,9 +38,11 @@ public class TestClass
             return;
         }
     }
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         new TestClass().Method0();
         return s_s2_16.float_2 == 1.5f ? 100 : 0;
     }
+}
 }

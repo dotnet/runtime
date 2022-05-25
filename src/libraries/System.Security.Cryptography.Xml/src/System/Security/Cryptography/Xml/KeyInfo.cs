@@ -58,8 +58,13 @@ namespace System.Security.Cryptography.Xml
             return keyInfoElement;
         }
 
-        public void LoadXml(XmlElement value!!)
+        public void LoadXml(XmlElement value)
         {
+            if (value is null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
             XmlElement keyInfoElement = value;
             _id = Utils.GetAttribute(keyInfoElement, "Id", SignedXml.XmlDsigNamespaceUrl);
             if (!Utils.VerifyAttributes(keyInfoElement, "Id"))

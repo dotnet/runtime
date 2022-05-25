@@ -60,6 +60,7 @@
       System.Drawing.Primitives;
       System.Dynamic.Runtime;
       System.Formats.Asn1;
+      System.Formats.Tar;
       System.Globalization;
       System.Globalization.Calendars;
       System.Globalization.Extensions;
@@ -182,6 +183,12 @@
       System.Private.Xml;
       System.Private.Xml.Linq;
     </NetCoreAppLibraryNoReference>
+    <!-- List .NETCoreApp shared framework generator project names below. -->
+    <NetCoreAppLibraryGenerator>
+      LibraryImportGenerator;
+      System.Text.Json.SourceGeneration.Roslyn4.0;
+      System.Text.RegularExpressions.Generator;
+    </NetCoreAppLibraryGenerator>
     <AspNetCoreAppLibrary>
       Microsoft.Extensions.Caching.Abstractions;
       Microsoft.Extensions.Caching.Memory;
@@ -244,6 +251,7 @@
     <NetFxReference Include="$(NetFxReference)" />
     <NetCoreAppLibrary Include="$(NetCoreAppLibrary)" />
     <NetCoreAppLibraryNoReference Include="$(NetCoreAppLibraryNoReference)" />
+    <NetCoreAppLibraryGenerator Include="$(NetCoreAppLibraryGenerator)" />
     <AspNetCoreAppLibrary Include="$(AspNetCoreAppLibrary)" />
     <WindowsDesktopCoreAppLibrary Include="$(WindowsDesktopCoreAppLibrary)" />
   </ItemGroup>

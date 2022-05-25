@@ -6,6 +6,7 @@
 #include "dir_utils.h"
 #include "pal.h"
 #include "utils.h"
+#include <cinttypes>
 
 #ifdef __sun
 #include <alloca.h>
@@ -178,7 +179,7 @@ void extractor_t::extract(const file_entry_t &entry, reader_t &reader)
 
     if (extracted_size != cast_size)
     {
-        trace::error(_X("Failure extracting contents of the application bundle. Expected size:%d Actual size:%d"), size, extracted_size);
+        trace::error(_X("Failure extracting contents of the application bundle. Expected size:%" PRId64 " Actual size:%zu"), size, extracted_size);
         trace::error(_X("I/O failure when writing extracted files."));
         throw StatusCode::BundleExtractionIOError;
     }

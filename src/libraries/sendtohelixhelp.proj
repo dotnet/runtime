@@ -4,9 +4,8 @@
        https://github.com/dotnet/arcade/tree/master/src/Microsoft.DotNet.Helix/Sdk,
        to send test jobs to Helix.
   -->
-
   <PropertyGroup>
-    <WindowsShell Condition="'$(TargetOS)' == 'windows' or '$(BrowserHost)' == 'windows'">true</WindowsShell>
+    <WindowsShell Condition="'$(TargetOS)' == 'windows' or '$(BrowserHost)' == 'windows' or ($(TargetRuntimeIdentifier.ToLowerInvariant().StartsWith('linux-bionic')) and $(HelixTargetQueue.ToLowerInvariant().Contains('windows')))">true</WindowsShell>
 
     <!-- Set Helix build to build number if available -->
     <HelixBuild Condition="'$(HelixBuild)' == ''">$(BUILD_BUILDNUMBER)</HelixBuild>
@@ -73,7 +72,8 @@
 
   <PropertyGroup Condition="'$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'MacCatalyst'">
     <IncludeXHarnessCli>true</IncludeXHarnessCli>
-    <EnableXHarnessTelemetry>true</EnableXHarnessTelemetry>
+    <!-- XHarness telemetry not supported with custom WASM workloads yet -->
+    <EnableXHarnessTelemetry Condition="'$(TargetOS)' == 'Browser'">false</EnableXHarnessTelemetry>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(MonoEnvOptions)' != ''">
@@ -138,14 +138,16 @@
     <HelixCommandPrefixItem Condition="'$(TestUsingWorkloads)' == 'true'" Include="TEST_USING_WORKLOADS=true" />
   </ItemGroup>
 
+  <PropertyGroup Condition="$(TargetRuntimeIdentifier.ToLowerInvariant().StartsWith('linux-bionic'))">
+    <IncludeXHarnessCli>true</IncludeXHarnessCli>
+    <UseDotNetCliVersionFromGlobalJson>true</UseDotNetCliVersionFromGlobalJson>
+    <NeedsDotNetSdk>true</NeedsDotNetSdk>
+    <EnableAzurePipelinesReporter>true</EnableAzurePipelinesReporter>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(NeedsDotNetSdk)' == 'true'">
     <IncludeDotNetCli>true</IncludeDotNetCli>
     <DotNetCliPackageType>sdk</DotNetCliPackageType>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(UseDotNetCliVersionFromGlobalJson)' == 'true'">
-    <GlobalJsonContent>$([System.IO.File]::ReadAllText('$(RepoRoot)global.json'))</GlobalJsonContent>
-    <DotNetCliVersion>$([System.Text.RegularExpressions.Regex]::Match($(GlobalJsonContent), '(%3F&lt;="dotnet": ").*(%3F=")'))</DotNetCliVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -155,6 +157,11 @@
 
   <!-- Ensure that all HelixPreCommand items are ready before this -->
   <Target Name="BuildHelixCommand">
+    <!-- setting DotNetCliVersion here to ensure that it is set to the intended value -->
+    <PropertyGroup Condition="'$(UseDotNetCliVersionFromGlobalJson)' == 'true'">
+      <GlobalJsonContent>$([System.IO.File]::ReadAllText('$(RepoRoot)global.json'))</GlobalJsonContent>
+      <DotNetCliVersion>$([System.Text.RegularExpressions.Regex]::Match($(GlobalJsonContent), '(%3F&lt;="dotnet": ").*(%3F=")'))</DotNetCliVersion>
+    </PropertyGroup>
 
     <PropertyGroup>
       <HelixPreCommands>@(HelixPreCommand)</HelixPreCommands>
@@ -233,6 +240,10 @@
       <HelixCorrelationPayload Include="$(SdkWithNoWorkloadForTestingPath)"   Destination="$(SdkForWorkloadTestingDirName)" Condition="'$(TestUsingWorkloads)' != 'true'" />
 
       <HelixCorrelationPayload Include="$(MicrosoftNetCoreAppRefPackDir)"     Destination="microsoft.netcore.app.ref" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <HelixCorrelationPayload Include="openssl" Uri="https://netcorenativeassets.blob.core.windows.net/resource-packages/external/android/openssl-1.1.1l-beta-1.zip" Destination="openssl" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(EnableDefaultBuildHelixWorkItems)' == 'true'">

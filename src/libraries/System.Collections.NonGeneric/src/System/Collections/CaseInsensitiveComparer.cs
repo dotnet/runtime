@@ -24,8 +24,10 @@ namespace System.Collections
             _compareInfo = CultureInfo.CurrentCulture.CompareInfo;
         }
 
-        public CaseInsensitiveComparer(CultureInfo culture!!)
+        public CaseInsensitiveComparer(CultureInfo culture)
         {
+            ArgumentNullException.ThrowIfNull(culture);
+
             _compareInfo = culture.CompareInfo;
         }
 

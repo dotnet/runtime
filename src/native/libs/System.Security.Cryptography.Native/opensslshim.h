@@ -195,6 +195,7 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     REQUIRED_FUNCTION(BN_num_bits) \
     REQUIRED_FUNCTION(BN_set_word) \
     LEGACY_FUNCTION(CRYPTO_add_lock) \
+    REQUIRED_FUNCTION(CRYPTO_get_ex_new_index) \
     LEGACY_FUNCTION(CRYPTO_num_locks) \
     LEGACY_FUNCTION(CRYPTO_set_locking_callback) \
     REQUIRED_FUNCTION(d2i_ASN1_BIT_STRING) \
@@ -548,6 +549,7 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     REQUIRED_FUNCTION(X509_get_default_cert_dir_env) \
     REQUIRED_FUNCTION(X509_get_default_cert_file) \
     REQUIRED_FUNCTION(X509_get_default_cert_file_env) \
+    REQUIRED_FUNCTION(X509_get_ex_data) \
     REQUIRED_FUNCTION(X509_get_ext) \
     REQUIRED_FUNCTION(X509_get_ext_by_NID) \
     REQUIRED_FUNCTION(X509_get_ext_count) \
@@ -575,6 +577,7 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     REQUIRED_FUNCTION(X509_new) \
     REQUIRED_FUNCTION(X509_PUBKEY_get) \
     FALLBACK_FUNCTION(X509_PUBKEY_get0_param) \
+    REQUIRED_FUNCTION(X509_set_ex_data) \
     REQUIRED_FUNCTION(X509_set_pubkey) \
     REQUIRED_FUNCTION(X509_sign) \
     REQUIRED_FUNCTION(X509_subject_name_hash) \
@@ -666,6 +669,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define BN_num_bits BN_num_bits_ptr
 #define BN_set_word BN_set_word_ptr
 #define CRYPTO_add_lock CRYPTO_add_lock_ptr
+#define CRYPTO_get_ex_new_index CRYPTO_get_ex_new_index_ptr
 #define CRYPTO_num_locks CRYPTO_num_locks_ptr
 #define CRYPTO_set_locking_callback CRYPTO_set_locking_callback_ptr
 #define d2i_ASN1_BIT_STRING d2i_ASN1_BIT_STRING_ptr
@@ -1028,6 +1032,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define X509_get_default_cert_dir_env X509_get_default_cert_dir_env_ptr
 #define X509_get_default_cert_file X509_get_default_cert_file_ptr
 #define X509_get_default_cert_file_env X509_get_default_cert_file_env_ptr
+#define X509_get_ex_data X509_get_ex_data_ptr
 #define X509_get_ext X509_get_ext_ptr
 #define X509_get_ext_by_NID X509_get_ext_by_NID_ptr
 #define X509_get_ext_count X509_get_ext_count_ptr
@@ -1049,6 +1054,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define X509_new X509_new_ptr
 #define X509_PUBKEY_get0_param X509_PUBKEY_get0_param_ptr
 #define X509_PUBKEY_get X509_PUBKEY_get_ptr
+#define X509_set_ex_data X509_set_ex_data_ptr
 #define X509_set_pubkey X509_set_pubkey_ptr
 #define X509_subject_name_hash X509_subject_name_hash_ptr
 #define X509_sign X509_sign_ptr

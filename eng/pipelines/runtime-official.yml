@@ -10,14 +10,11 @@ trigger:
     - '*'
     - docs/manpages/*
     exclude:
+    - /**/*.md
     - .github/*
     - docs/*
-    - CODE-OF-CONDUCT.md
-    - CONTRIBUTING.md
     - LICENSE.TXT
     - PATENTS.TXT
-    - README.md
-    - SECURITY.md
     - THIRD-PARTY-NOTICES.TXT
 
 # This is an official pipeline that should not be triggerable from a PR,
@@ -133,6 +130,8 @@ stages:
       - Linux_arm64
       - Linux_musl_x64
       - Browser_wasm
+      - Linux_bionic_arm64
+      - Linux_bionic_x64
       # - Linux_musl_arm
       # - Linux_musl_arm64
       - windows_x64
@@ -381,6 +380,8 @@ stages:
       - windows_x64
       - windows_x86
       - Linux_x64
+      - windows_arm64
+      - Linux_arm64
       jobParameters:
         isOfficialBuild: ${{ variables.isOfficialBuild }}
         signBinaries: false
@@ -402,6 +403,8 @@ stages:
       - windows_x64
       - windows_x86
       - Linux_x64
+      - windows_arm64
+      - Linux_arm64
 
   #
   # Build Workloads
@@ -432,6 +435,10 @@ stages:
         - Build_tvOSSimulator_arm64_release_AllSubsets_Mono
         - Build_tvOSSimulator_x64_release_AllSubsets_Mono
         - Build_Windows_x64_release_CrossAOT_Mono
+        - installer__coreclr__windows_x64_Release_
+        - installer__coreclr__windows_x86_Release_
+        - installer__coreclr__windows_arm_Release_
+        - installer__coreclr__windows_arm64_Release_
 
 - ${{ if eq(variables.isOfficialBuild, true) }}:
   - template: /eng/pipelines/official/stages/publish.yml

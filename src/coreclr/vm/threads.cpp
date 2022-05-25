@@ -1,12 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // THREADS.CPP
 //
-
-//
-//
-
 
 #include "common.h"
 
@@ -1122,23 +1119,18 @@ PCODE AdjustWriteBarrierIP(PCODE controlPc)
 
 #ifdef TARGET_X86
 extern "C" void *JIT_WriteBarrierEAX_Loc;
+#elif TARGET_AMD64
+extern "C" void *JIT_WriteBarrier_Loc;
 #else
 extern "C" void *JIT_WriteBarrier_Loc;
+void *JIT_WriteBarrier_Loc = 0;
 #endif
 
 #ifdef TARGET_ARM64
 extern "C" void (*JIT_WriteBarrier_Table)();
-
-extern "C" void *JIT_WriteBarrier_Loc;
-void *JIT_WriteBarrier_Loc = 0;
-
 extern "C" void *JIT_WriteBarrier_Table_Loc;
 void *JIT_WriteBarrier_Table_Loc = 0;
 #endif // TARGET_ARM64
-
-#ifdef TARGET_ARM
-extern "C" void *JIT_WriteBarrier_Loc = 0;
-#endif // TARGET_ARM
 
 #ifndef TARGET_UNIX
 // g_TlsIndex is only used by the DAC. Disable optimizations around it to prevent it from getting optimized out.
@@ -1579,8 +1571,6 @@ Thread::Thread()
 #endif
 
     m_pPendingTypeLoad = NULL;
-
-    m_pIBCInfo = NULL;
 
     m_dwAVInRuntimeImplOkayCount = 0;
 
@@ -2730,10 +2720,6 @@ Thread::~Thread()
 
     g_pThinLockThreadIdDispenser->DisposeId(GetThreadId());
 
-    if (m_pIBCInfo) {
-        delete m_pIBCInfo;
-    }
-
     m_tailCallTls.FreeArgBuffer();
 
 #ifdef FEATURE_EVENT_TRACE
@@ -3333,7 +3319,7 @@ DWORD MsgWaitHelper(int numWaiters, HANDLE* phEvent, BOOL bWaitAll, DWORD millis
         if (numWaiters == 1)
             bWaitAll = FALSE;
 
-        // The check that's supposed to prevent this condition from occuring, in WaitHandleNative::CorWaitMultipleNative,
+        // The check that's supposed to prevent this condition from occurring, in WaitHandleNative::CorWaitMultipleNative,
         // is unfortunately behind FEATURE_COMINTEROP instead of FEATURE_COMINTEROP_APARTMENT_SUPPORT.
         // So on CoreCLR (where FEATURE_COMINTEROP is not currently defined) we can actually reach this point.
         // We can't fix this, because it's a breaking change, so we just won't assert here.
@@ -6168,7 +6154,7 @@ size_t getStackHash(size_t* stackTrace, size_t* stackTop, size_t* stackStop, siz
 
     UINT_PTR uPrevControlPc = uControlPc;
 
-    for (;;)
+    while (true)
     {
         RtlLookupFunctionEntry(uControlPc,
                                ARM_ONLY((DWORD*))(&uImageBase),
@@ -6285,7 +6271,7 @@ BOOL Thread::UniqueStack(void* stackStart)
 #ifdef TARGET_X86
     // Find the stop point (most jitted function)
     Frame* pFrame = pThread->GetFrame();
-    for(;;)
+    while (true)
     {
         // skip GC frames
         if (pFrame == 0 || pFrame == (Frame*) -1)
@@ -8526,7 +8512,7 @@ Thread::EnumMemoryRegionsWorker(CLRDataEnumMemoryFlags flags)
 
         if (!IsAddressInStack(currentSP))
         {
-            _ASSERTE(!"Target stack has been corrupted, SP must in in the stack range.");
+            _ASSERTE(!"Target stack has been corrupted, SP must be in the stack range.");
             break;
         }
 

@@ -108,7 +108,6 @@
 #include "proftoeeinterfaceimpl.inl"
 #include "profilinghelper.h"
 #include "profilinghelper.inl"
-#include "eemessagebox.h"
 
 
 #ifdef FEATURE_PROFAPI_ATTACH_DETACH
@@ -116,10 +115,6 @@
 #endif // FEATURE_PROFAPI_ATTACH_DETACH
 
 #include "utilcode.h"
-
-#ifndef TARGET_UNIX
-#include "securitywrapper.h"
-#endif // !TARGET_UNIX
 
 // ----------------------------------------------------------------------------
 // CurrentProfilerStatus methods
@@ -669,7 +664,7 @@ HRESULT ProfilingAPIUtility::AttemptLoadProfilerForStartup()
 
     if ((wszProfilerDLL != NULL) && (wcslen(wszProfilerDLL) >= MAX_LONGPATH))
     {
-        LOG((LF_CORPROF, LL_INFO10, "**PROF: Profiling flag set, but COR_PROFILER_PATH was not set properly.\n"));
+        LOG((LF_CORPROF, LL_INFO10, "**PROF: Profiling flag set, but CORECLR_PROFILER_PATH was not set properly.\n"));
 
         LogProfError(IDS_E_PROF_BAD_PATH);
 
@@ -761,14 +756,6 @@ HRESULT ProfilingAPIUtility::AttemptLoadDelayedStartupProfilers()
 HRESULT ProfilingAPIUtility::AttemptLoadProfilerList()
 {
     HRESULT hr = S_OK;
-    DWORD dwEnabled = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_ENABLE_NOTIFICATION_PROFILERS);
-    if (dwEnabled == 0)
-    {
-        // Profiler list explicitly disabled, bail
-        LogProfInfo(IDS_E_PROF_NOTIFICATION_DISABLED);
-        return S_OK;
-    }
-
     NewArrayHolder<WCHAR> wszProfilerList(NULL);
 
 #if defined(TARGET_ARM64)
@@ -792,6 +779,14 @@ HRESULT ProfilingAPIUtility::AttemptLoadProfilerList()
                 return S_OK;
             }
         }
+    }
+
+    DWORD dwEnabled = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_ENABLE_NOTIFICATION_PROFILERS);
+    if (dwEnabled == 0)
+    {
+        // Profiler list explicitly disabled, bail
+        LogProfInfo(IDS_E_PROF_NOTIFICATION_DISABLED);
+        return S_OK;
     }
 
     WCHAR *pOuter = NULL;
@@ -987,7 +982,7 @@ HRESULT ProfilingAPIUtility::DoPreInitialization(
 #endif // FEATURE_PROFAPI_ATTACH_DETACH
 
     // Initialize internal state of our EEToProfInterfaceImpl.  This also loads the
-    // profiler itself, but does not yet call its Initalize() callback
+    // profiler itself, but does not yet call its Initialize() callback
     hr = pEEProf->Init(pProfEE, pClsid, wszClsid, wszProfilerDLL, (loadType == kAttachLoad), dwConcurrentGCWaitTimeoutInMs);
     if (FAILED(hr))
     {
@@ -1617,9 +1612,9 @@ void ProfilingAPIUtility::TerminateProfiling(ProfilerInfo *pProfilerInfo)
         pProfilerInfo->ResetPerSessionStatus();
 
         pProfilerInfo->curProfStatus.Set(kProfStatusNone);
-        
+
         g_profControlBlock.DeRegisterProfilerInfo(pProfilerInfo);
-        
+
         g_profControlBlock.UpdateGlobalEventMask();
     }
 }

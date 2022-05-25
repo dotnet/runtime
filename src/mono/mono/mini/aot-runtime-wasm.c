@@ -134,6 +134,10 @@ mono_wasm_get_native_to_interp_trampoline (MonoMethod *method, gpointer extra_ar
 
 #else /* TARGET_WASM */
 
-MONO_EMPTY_SOURCE_FILE (aot_runtime_wasm);
+void
+mono_wasm_install_get_native_to_interp_tramp (MonoWasmGetNativeToInterpTramp cb)
+{
+	g_assert_not_reached ();
+}
 
 #endif /* TARGET_WASM */

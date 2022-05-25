@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.GeneratedMarshalling;
+using System.Runtime.InteropServices.Marshalling;
 using System.Text;
 
 using Xunit;

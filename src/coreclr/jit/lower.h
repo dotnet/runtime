@@ -159,10 +159,10 @@ private:
     GenTree* LowerVirtualStubCall(GenTreeCall* call);
     void LowerArgsForCall(GenTreeCall* call);
     void ReplaceArgWithPutArgOrBitcast(GenTree** ppChild, GenTree* newNode);
-    GenTree* NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* info, var_types type);
-    void LowerArg(GenTreeCall* call, GenTree** ppTree);
-#ifdef TARGET_ARMARCH
-    GenTree* LowerFloatArg(GenTree** pArg, fgArgTabEntry* info);
+    GenTree* NewPutArg(GenTreeCall* call, GenTree* arg, CallArg* callArg, var_types type);
+    void LowerArg(GenTreeCall* call, CallArg* callArg, bool late);
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
+    GenTree* LowerFloatArg(GenTree** pArg, CallArg* callArg);
     GenTree* LowerFloatArgReg(GenTree* arg, regNumber regNum);
 #endif
 
@@ -339,6 +339,7 @@ private:
 #ifdef FEATURE_HW_INTRINSICS
     void LowerHWIntrinsic(GenTreeHWIntrinsic* node);
     void LowerHWIntrinsicCC(GenTreeHWIntrinsic* node, NamedIntrinsic newIntrinsicId, GenCondition condition);
+    void LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node);
     void LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp);
     void LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node);
     void LowerHWIntrinsicDot(GenTreeHWIntrinsic* node);
@@ -350,9 +351,12 @@ private:
     GenTree* TryLowerAndOpToResetLowestSetBit(GenTreeOp* andNode);
     GenTree* TryLowerAndOpToExtractLowestSetBit(GenTreeOp* andNode);
     GenTree* TryLowerAndOpToAndNot(GenTreeOp* andNode);
+    void LowerBswapOp(GenTreeOp* node);
 #elif defined(TARGET_ARM64)
     bool IsValidConstForMovImm(GenTreeHWIntrinsic* node);
     void LowerHWIntrinsicFusedMultiplyAddScalar(GenTreeHWIntrinsic* node);
+    GenTree* LowerModPow2(GenTree* node);
+    GenTree* LowerAddForPossibleContainment(GenTreeOp* node);
 #endif // !TARGET_XARCH && !TARGET_ARM64
 
     union VectorConstant {
@@ -569,6 +573,10 @@ public:
     {
         return m_lsra->isContainableMemoryOp(node);
     }
+
+#ifdef TARGET_ARM64
+    bool IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) const;
+#endif // TARGET_ARM64
 
 #ifdef FEATURE_HW_INTRINSICS
     // Tries to get a containable node for a given HWIntrinsic

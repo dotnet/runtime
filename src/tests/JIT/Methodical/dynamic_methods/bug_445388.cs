@@ -4,17 +4,21 @@
 using System;
 using System.Reflection;
 using System.Reflection.Emit;
+using Xunit;
 
+namespace Test_bug_445388_cs
+{
 internal class Host
 {
     private static string s_field = "somefield";
 }
 
-internal class Program
+public class Program
 {
     private delegate string Getter();
 
-    private static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         DynamicMethod method = new DynamicMethod("GetField",
             typeof(string), new Type[0], typeof(Host));
@@ -42,4 +46,5 @@ internal class Program
         Console.WriteLine("[assert failed] {0}", message);
         return 101;
     }
+}
 }

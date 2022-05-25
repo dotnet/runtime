@@ -47,7 +47,7 @@ namespace System.Text.RegularExpressions.Generator
             // - Diagnostic in the case of a failure that should end the compilation
             // - (RegexMethod regexMethod, string runnerFactoryImplementation, Dictionary<string, string[]> requiredHelpers) in the case of valid regex
             // - (RegexMethod regexMethod, string reason, Diagnostic diagnostic) in the case of a limited-support regex
-            IncrementalValueProvider<ImmutableArray<object?>> codeOrDiagnostics =
+            IncrementalValueProvider<ImmutableArray<object>> codeOrDiagnostics =
                 context.SyntaxProvider
 
                 // Find all MethodDeclarationSyntax nodes attributed with RegexGenerator and gather the required information.
@@ -65,7 +65,7 @@ namespace System.Text.RegularExpressions.Generator
 
                     // If we're unable to generate a full implementation for this regex, report a diagnostic.
                     // We'll still output a limited implementation that just caches a new Regex(...).
-                    if (!regexMethod.Tree.Root.SupportsCompilation(out string? reason))
+                    if (!SupportsCodeGeneration(regexMethod.Tree.Root, out string? reason))
                     {
                         return (regexMethod, reason, Diagnostic.Create(DiagnosticDescriptors.LimitedSourceGeneration, regexMethod.MethodSyntax.GetLocation()));
                     }
@@ -94,11 +94,11 @@ namespace System.Text.RegularExpressions.Generator
             // and raise all of the created diagnostics.
             context.RegisterSourceOutput(codeOrDiagnostics.Combine(compilationDataProvider), static (context, compilationDataAndResults) =>
             {
-                ImmutableArray<object?> results = compilationDataAndResults.Left;
+                ImmutableArray<object> results = compilationDataAndResults.Left;
 
                 // Report any top-level diagnostics.
                 bool allFailures = true;
-                foreach (object? result in results)
+                foreach (object result in results)
                 {
                     if (result is Diagnostic d)
                     {
@@ -138,7 +138,7 @@ namespace System.Text.RegularExpressions.Generator
                 // To minimize generated code in the event of duplicated regexes, we only emit one derived Regex type per unique
                 // expression/options/timeout.  A Dictionary<(expression, options, timeout), RegexMethod> is used to deduplicate, where the value of the
                 // pair is the implementation used for the key.
-                var emittedExpressions = new Dictionary<(string Pattern, RegexOptions Options, int Timeout), RegexMethod>();
+                var emittedExpressions = new Dictionary<(string Pattern, RegexOptions Options, int? Timeout), RegexMethod>();
 
                 // If we have any (RegexMethod regexMethod, string generatedName, string reason, Diagnostic diagnostic), these are regexes for which we have
                 // limited support and need to simply output boilerplate.  We need to emit their diagnostics.
@@ -244,16 +244,23 @@ namespace System.Text.RegularExpressions.Generator
                 if (requiredHelpers.Count != 0)
                 {
                     writer.Indent += 2;
+                    writer.WriteLine($"/// <summary>Helper methods used by generated <see cref=\"Regex\"/>-derived implementations.</summary>");
                     writer.WriteLine($"private static class {HelpersTypeName}");
                     writer.WriteLine($"{{");
                     writer.Indent++;
+                    bool sawFirst = false;
                     foreach (KeyValuePair<string, string[]> helper in requiredHelpers)
                     {
+                        if (sawFirst)
+                        {
+                            writer.WriteLine();
+                        }
+                        sawFirst = true;
+
                         foreach (string value in helper.Value)
                         {
                             writer.WriteLine(value);
                         }
-                        writer.WriteLine();
                     }
                     writer.Indent--;
                     writer.WriteLine($"}}");
@@ -266,6 +273,55 @@ namespace System.Text.RegularExpressions.Generator
                 // Save out the source
                 context.AddSource("RegexGenerator.g.cs", sw.ToString());
             });
+        }
+
+        // Determines whether the passed in node supports code generation strategy based on walking the tree.
+        // Also returns a human-readable string to explain the reason (it will be emitted by the source generator, hence
+        // there's no need to localize).
+        private static bool SupportsCodeGeneration(RegexNode node, [NotNullWhen(false)] out string? reason)
+        {
+            if (!node.SupportsCompilation(out reason))
+            {
+                // If the pattern doesn't support Compilation, then code generation won't be supported either.
+                return false;
+            }
+
+            if (HasCaseInsensitiveBackReferences(node))
+            {
+                // For case-insensitive patterns, we use our internal Regex case equivalence table when doing character comparisons.
+                // Most of the use of this table is done at Regex construction time by substituting all characters that are involved in
+                // case conversions into sets that contain all possible characters that could match. That said, there is still one case
+                // where you may need to do case-insensitive comparisons at match time which is the case for backreferences. For that reason,
+                // and given the Regex case equivalence table is internal and can't be called by the source generated emitted type, if
+                // the pattern contains case-insensitive backreferences, we won't try to create a source generated Regex-derived type.
+                reason = "the expression contains case-insensitive backreferences which are not supported by the source generator";
+                return false;
+            }
+
+            // If Compilation is supported and pattern doesn't have case insensitive backreferences, then code generation is supported.
+            reason = null;
+            return true;
+
+            static bool HasCaseInsensitiveBackReferences(RegexNode node)
+            {
+                if (node.Kind is RegexNodeKind.Backreference && (node.Options & RegexOptions.IgnoreCase) != 0)
+                {
+                    return true;
+                }
+
+                int childCount = node.ChildCount();
+                for (int i = 0; i < childCount; i++)
+                {
+                    // This recursion shouldn't hit issues with stack depth since this gets checked after
+                    // SupportCompilation has ensured that the max depth is not greater than 40.
+                    if (HasCaseInsensitiveBackReferences(node.Child(i)))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
         }
 
         /// <summary>Computes a hash of the string.</summary>

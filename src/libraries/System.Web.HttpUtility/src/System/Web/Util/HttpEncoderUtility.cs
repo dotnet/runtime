@@ -11,7 +11,7 @@ namespace System.Web.Util
         // Set of safe chars, from RFC 1738.4 minus '+'
         public static bool IsUrlSafeChar(char ch)
         {
-            if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9'))
+            if (char.IsAsciiLetterOrDigit(ch))
             {
                 return true;
             }

@@ -825,7 +825,7 @@ namespace System.Management
             if (strTemp.Length > 0)
             {
                 string strFirstChar = strTemp.Substring(0, 1).ToUpperInvariant();
-                strTemp = strFirstChar + strTemp.Substring(1, strTemp.Length - 1);
+                strTemp = strFirstChar + strTemp.Substring(1);
             }
 
             return strTemp;
@@ -1078,7 +1078,7 @@ namespace System.Management
 
         /// <summary>
         /// Function for generating the helper class "ManagementSystemProperties" which is
-        /// used for seperating the system properties from the other properties. This is used
+        /// used for separating the system properties from the other properties. This is used
         /// just to make the drop down list in the editor to look good.
         /// </summary>
         private CodeTypeDeclaration GenerateSystemPropertiesClass()
@@ -4716,7 +4716,7 @@ namespace System.Management
         }
 
         /// <summary>
-        /// Function to convert a given ValueMap or BitMap name to propert enum name
+        /// Function to convert a given ValueMap or BitMap name to property enum name
         /// </summary>
         private static string ConvertValuesToName(string str)
         {
@@ -7142,7 +7142,7 @@ namespace System.Management
                 else
                 {
                     string strTemp = OffsetMins.ToString();
-                    UtcString = "-" + strTemp.Substring(1, strTemp.Length-1).PadLeft(3,'0');
+                    UtcString = "-" + strTemp.Substring(1).PadLeft(3,'0');
                 }
             */
 

@@ -12,7 +12,6 @@ namespace System.Xml.Serialization
     using System.Globalization;
     using System.Threading;
     using System.Diagnostics;
-    using System.Xml.Extensions;
     using System.Xml;
     using System.Xml.Serialization;
     using System.Diagnostics.CodeAnalysis;
@@ -166,8 +165,10 @@ namespace System.Xml.Serialization
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
-        public XmlTypeMapping ImportTypeMapping(Type type!!, XmlRootAttribute? root, string? defaultNamespace)
+        public XmlTypeMapping ImportTypeMapping(Type type, XmlRootAttribute? root, string? defaultNamespace)
         {
+            ArgumentNullException.ThrowIfNull(type);
+
             XmlTypeMapping xmlMapping = new XmlTypeMapping(_typeScope, ImportElement(_modelScope.GetTypeModel(type), root, defaultNamespace, new RecursionLimiter()));
             xmlMapping.SetKeyInternal(XmlMapping.GenerateKey(type, root, defaultNamespace));
             xmlMapping.GenerateSerializer = true;

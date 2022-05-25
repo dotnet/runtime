@@ -38,11 +38,6 @@
     <type fullname="System.Threading.Timer">
       <property name="AllTimers" />
     </type>
-    <type fullname="System.Threading.ThreadPool">
-      <method name="GetQueuedWorkItemsForDebugger" />
-      <method name="GetGloballyQueuedWorkItemsForDebugger" />
-      <method name="GetLocallyQueuedWorkItemsForDebugger" />
-    </type>
     <type fullname="System.Threading.Tasks.TaskScheduler">
       <method name="GetScheduledTasksForDebugger" />
       <method name="GetTaskSchedulersForDebugger" />

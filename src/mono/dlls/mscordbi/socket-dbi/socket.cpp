@@ -30,8 +30,9 @@
 #endif
 #include <errno.h>
 #include <stdio.h>
+#define INVALID_SOCKET -1
+#define SOCKET_ERROR -1
 #endif
-
 
 Socket::~Socket()
 {
@@ -39,16 +40,16 @@ Socket::~Socket()
 }
 
 int Socket::OpenSocketAcceptConnection(const char *address, const char *port) {
-    socketId = -1;
+    socketId = INVALID_SOCKET;
 
 #ifdef WIN32
-	WSADATA wsadata;
-	int err;
+    WSADATA wsadata;
+    int err;
 
-	err = WSAStartup (2, &wsadata);
-	if (err) {
+    err = WSAStartup (2, &wsadata);
+    if (err) {
         return -1;
-	}
+    }
 #endif
 
     struct addrinfo *result = NULL, *ptr = NULL, hints;
@@ -71,7 +72,7 @@ int Socket::OpenSocketAcceptConnection(const char *address, const char *port) {
         // Create a SOCKET for connecting to server
         socketId = socket(ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol);
 
-        if (socketId == -1) {
+        if (socketId == INVALID_SOCKET) {
             return -1;
         }
 
@@ -80,17 +81,17 @@ int Socket::OpenSocketAcceptConnection(const char *address, const char *port) {
             continue;
 
         iResult = bind(socketId, ptr->ai_addr, (int)ptr->ai_addrlen);
-        if (iResult == -1)
+        if (iResult == SOCKET_ERROR)
             continue;
 
         iResult = listen(socketId, 16);
-        if (iResult == -1)
+        if (iResult == SOCKET_ERROR)
             continue;
 
         break;
     }
 
-    if (iResult != -1)
+    if (iResult != SOCKET_ERROR)
         socketId = accept(socketId, NULL, NULL);
 
     freeaddrinfo(result);

@@ -33,6 +33,8 @@
  * collection, not for debugging scans.
  */
 
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
+
 {
 #ifndef SCAN_OBJECT_NOVTABLE
 #if defined(SGEN_HEAVY_BINARY_PROTOCOL) && defined(SCAN_OBJECT_PROTOCOL)

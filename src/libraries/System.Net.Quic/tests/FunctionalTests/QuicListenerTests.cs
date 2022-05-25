@@ -26,6 +26,36 @@ namespace System.Net.Quic.Tests
                 await clientStreamTask;
             }).WaitAsync(TimeSpan.FromSeconds(6));
         }
+
+        [Fact]
+        public async Task Listener_Backlog_Success_IPv6()
+        {
+            await Task.Run(async () =>
+            {
+                using QuicListener listener = CreateQuicListener(new IPEndPoint(IPAddress.IPv6Loopback, 0));
+
+                using QuicConnection clientConnection = CreateQuicConnection(listener.ListenEndPoint);
+                var clientStreamTask = clientConnection.ConnectAsync();
+
+                using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
+                await clientStreamTask;
+            }).WaitAsync(TimeSpan.FromSeconds(6));
+        }
+
+        [ConditionalFact(nameof(IsMsQuicProvider))]
+        public async Task Listener_IPv6Any_Accepts_IPv4()
+        {
+            await Task.Run(async () =>
+            {
+                using QuicListener listener = CreateQuicListener(new IPEndPoint(IPAddress.IPv6Any, 0));
+
+                using QuicConnection clientConnection = CreateQuicConnection(new IPEndPoint(IPAddress.Loopback, listener.ListenEndPoint.Port));
+                var clientStreamTask = clientConnection.ConnectAsync();
+
+                using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
+                await clientStreamTask;
+            }).WaitAsync(TimeSpan.FromSeconds(6));
+        }
     }
 
     [ConditionalClass(typeof(QuicTestBase<MockProviderFactory>), nameof(QuicTestBase<MockProviderFactory>.IsSupported))]
@@ -35,6 +65,7 @@ namespace System.Net.Quic.Tests
     }
 
     [ConditionalClass(typeof(QuicTestBase<MsQuicProviderFactory>), nameof(QuicTestBase<MsQuicProviderFactory>.IsSupported))]
+    [Collection(nameof(DisableParallelization))]
     public sealed class QuicListenerTests_MsQuicProvider : QuicListenerTests<MsQuicProviderFactory>
     {
         public QuicListenerTests_MsQuicProvider(ITestOutputHelper output) : base(output) { }

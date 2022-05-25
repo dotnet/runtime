@@ -715,8 +715,7 @@ void BlockCountInstrumentor::InstrumentMethodEntry(Schema& schema, uint8_t* prof
     // the first time this method is called. So make the call conditional
     // on the entry block's profile count.
     //
-    GenTreeCall::Use* args = m_comp->gtNewCallArgs(arg);
-    GenTree*          call = m_comp->gtNewHelperCallNode(CORINFO_HELP_BBT_FCN_ENTER, TYP_VOID, args);
+    GenTreeCall* call = m_comp->gtNewHelperCallNode(CORINFO_HELP_BBT_FCN_ENTER, TYP_VOID, arg);
 
     var_types typ =
         entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount ? TYP_INT : TYP_LONG;
@@ -1306,7 +1305,7 @@ void EfficientEdgeCountInstrumentor::BuildSchemaElements(BasicBlock* block, Sche
         assert(probe->schemaIndex == -1);
         probe->schemaIndex = (int)schema.size();
 
-        // Normally we use the the offset of the block in the schema, but for certain
+        // Normally we use the offset of the block in the schema, but for certain
         // blocks we do not have any information we can use and need to use internal BB numbers.
         //
         int32_t sourceKey = EfficientEdgeCountBlockToKey(block);
@@ -1496,15 +1495,15 @@ public:
         }
 
         schemaElem.InstrumentationKind = JitConfig.JitCollect64BitCounts()
-                                             ? ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramLongCount
-                                             : ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramIntCount;
+                                             ? ICorJitInfo::PgoInstrumentationKind::HandleHistogramLongCount
+                                             : ICorJitInfo::PgoInstrumentationKind::HandleHistogramIntCount;
         schemaElem.ILOffset = (int32_t)call->gtClassProfileCandidateInfo->ilOffset;
         schemaElem.Offset   = 0;
 
         m_schema.push_back(schemaElem);
 
         // Re-using ILOffset and Other fields from schema item for TypeHandleHistogramCount
-        schemaElem.InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramTypeHandle;
+        schemaElem.InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::HandleHistogramTypes;
         schemaElem.Count               = ICorJitInfo::ClassProfile32::SIZE;
         m_schema.push_back(schemaElem);
 
@@ -1551,9 +1550,9 @@ public:
         //
         assert(m_schema[*m_currentSchemaIndex].ILOffset == (int32_t)call->gtClassProfileCandidateInfo->ilOffset);
         bool is32 = m_schema[*m_currentSchemaIndex].InstrumentationKind ==
-                    ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramIntCount;
+                    ICorJitInfo::PgoInstrumentationKind::HandleHistogramIntCount;
         bool is64 = m_schema[*m_currentSchemaIndex].InstrumentationKind ==
-                    ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramLongCount;
+                    ICorJitInfo::PgoInstrumentationKind::HandleHistogramLongCount;
         assert(is32 || is64);
 
         // Figure out where the table is located.
@@ -1561,19 +1560,19 @@ public:
         uint8_t* classProfile = m_schema[*m_currentSchemaIndex].Offset + m_profileMemory;
         *m_currentSchemaIndex += 2; // There are 2 schema entries per class probe
 
-        GenTreeCall::Use* objUse = nullptr;
+        assert(!call->gtArgs.AreArgsComplete());
+        CallArg* objUse = nullptr;
         if (compiler->impIsCastHelperEligibleForClassProbe(call))
         {
-            // Grab the second arg of cast/isinst helper call
-            objUse = call->gtCallArgs->GetNext();
+            // Second arg of cast/isinst helper call is the object instance
+            objUse = call->gtArgs.GetArgByIndex(1);
         }
         else
         {
-            // Grab 'this' arg
-            objUse = call->gtCallThisArg;
+            objUse = call->gtArgs.GetThisArg();
         }
 
-        assert(objUse->GetNode()->TypeIs(TYP_REF));
+        assert(objUse->GetEarlyNode()->TypeIs(TYP_REF));
 
         // Grab a temp to hold the 'this' object as it will be used three times
         //
@@ -1582,21 +1581,20 @@ public:
 
         // Generate the IR...
         //
-        GenTree* const          classProfileNode = compiler->gtNewIconNode((ssize_t)classProfile, TYP_I_IMPL);
-        GenTree* const          tmpNode          = compiler->gtNewLclvNode(tmpNum, TYP_REF);
-        GenTreeCall::Use* const args             = compiler->gtNewCallArgs(tmpNode, classProfileNode);
-        GenTree* const          helperCallNode =
+        GenTree* const     classProfileNode = compiler->gtNewIconNode((ssize_t)classProfile, TYP_I_IMPL);
+        GenTree* const     tmpNode          = compiler->gtNewLclvNode(tmpNum, TYP_REF);
+        GenTreeCall* const helperCallNode =
             compiler->gtNewHelperCallNode(is32 ? CORINFO_HELP_CLASSPROFILE32 : CORINFO_HELP_CLASSPROFILE64, TYP_VOID,
-                                          args);
+                                          tmpNode, classProfileNode);
         GenTree* const tmpNode2      = compiler->gtNewLclvNode(tmpNum, TYP_REF);
         GenTree* const callCommaNode = compiler->gtNewOperNode(GT_COMMA, TYP_REF, helperCallNode, tmpNode2);
         GenTree* const tmpNode3      = compiler->gtNewLclvNode(tmpNum, TYP_REF);
-        GenTree* const asgNode       = compiler->gtNewOperNode(GT_ASG, TYP_REF, tmpNode3, objUse->GetNode());
+        GenTree* const asgNode       = compiler->gtNewOperNode(GT_ASG, TYP_REF, tmpNode3, objUse->GetEarlyNode());
         GenTree* const asgCommaNode  = compiler->gtNewOperNode(GT_COMMA, TYP_REF, asgNode, callCommaNode);
 
         // Update the call
         //
-        objUse->SetNode(asgCommaNode);
+        objUse->SetEarlyNode(asgCommaNode);
 
         JITDUMP("Modified call is now\n");
         DISPTREE(call);
@@ -2050,11 +2048,31 @@ PhaseStatus Compiler::fgIncorporateProfileData()
                 fgPgoEdgeCounts++;
                 break;
 
-            case ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramIntCount:
-            case ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramLongCount:
             case ICorJitInfo::PgoInstrumentationKind::GetLikelyClass:
                 fgPgoClassProfiles++;
                 break;
+
+            case ICorJitInfo::PgoInstrumentationKind::HandleHistogramIntCount:
+            case ICorJitInfo::PgoInstrumentationKind::HandleHistogramLongCount:
+                if (iSchema + 1 < fgPgoSchemaCount)
+                {
+                    if (fgPgoSchema[iSchema + 1].InstrumentationKind ==
+                        ICorJitInfo::PgoInstrumentationKind::HandleHistogramTypes)
+                    {
+                        fgPgoClassProfiles++;
+                        iSchema++;
+                        break;
+                    }
+                    if (fgPgoSchema[iSchema + 1].InstrumentationKind ==
+                        ICorJitInfo::PgoInstrumentationKind::HandleHistogramMethods)
+                    {
+                        fgPgoMethodProfiles++;
+                        iSchema++;
+                        break;
+                    }
+                }
+
+                __fallthrough;
 
             default:
                 JITDUMP("Unknown PGO record type 0x%x in schema entry %u (offset 0x%x count 0x%x other 0x%x)\n",
@@ -2070,8 +2088,9 @@ PhaseStatus Compiler::fgIncorporateProfileData()
         fgNumProfileRuns = 1;
     }
 
-    JITDUMP("Profile summary: %d runs, %d block probes, %d edge probes, %d class profiles, %d other records\n",
-            fgNumProfileRuns, fgPgoBlockCounts, fgPgoEdgeCounts, fgPgoClassProfiles, otherRecords);
+    JITDUMP("Profile summary: %d runs, %d block probes, %d edge probes, %d class profiles, %d method profiles, %d "
+            "other records\n",
+            fgNumProfileRuns, fgPgoBlockCounts, fgPgoEdgeCounts, fgPgoClassProfiles, fgPgoMethodProfiles, otherRecords);
 
     const bool haveBlockCounts = fgPgoBlockCounts > 0;
     const bool haveEdgeCounts  = fgPgoEdgeCounts > 0;
@@ -2956,7 +2975,7 @@ void EfficientEdgeCountReconstructor::MarkInterestingSwitches(BasicBlock* block,
     // By default, we're guaranteed to see at least 30 calls to instrumented method, for dynamic PGO.
     // Hence we require at least 30 observed switch executions.
     //
-    // The profitabilty of peeling is related to the dominant fraction. The cost has a constant portion
+    // The profitability of peeling is related to the dominant fraction. The cost has a constant portion
     // (at a minimum the cost of a not-taken branch) and a variable portion, plus increased code size.
     // So we don't want to peel in cases where the dominant fraction is too small.
     //

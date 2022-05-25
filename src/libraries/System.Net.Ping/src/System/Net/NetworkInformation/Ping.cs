@@ -324,24 +324,6 @@ namespace System.Net.NetworkInformation
             return SendPingAsyncInternal(address, timeout, buffer, options);
         }
 
-        public Task<PingReply> SendPingAsync(IPAddress address, TimeSpan timeout, byte[]? buffer = null,
-            PingOptions? options = null, CancellationToken cancellationToken = default)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            Task<PingReply> task = SendPingAsync(address, ToTimeoutMilliseconds(timeout), buffer ?? DefaultSendBuffer, options);
-
-            return task.WaitAsync(cancellationToken);
-        }
-
-        public Task<PingReply> SendPingAsync(string hostNameOrAddress, TimeSpan timeout, byte[]? buffer = null,
-            PingOptions? options = null, CancellationToken cancellationToken = default)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            Task<PingReply> task = SendPingAsync(hostNameOrAddress, ToTimeoutMilliseconds(timeout), buffer ?? DefaultSendBuffer, options);
-
-            return task.WaitAsync(cancellationToken);
-        }
-
         private async Task<PingReply> SendPingAsyncInternal(IPAddress address, int timeout, byte[] buffer, PingOptions? options)
         {
             // Need to snapshot the address here, so we're sure that it's not changed between now
