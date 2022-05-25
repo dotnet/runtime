@@ -1807,11 +1807,21 @@ void CallArgs::SetNeedsTemp(CallArg* arg)
     m_needsTemps   = true;
 }
 
-bool Compiler::fgMustMakeTemp(GenTree* tree)
+//------------------------------------------------------------------------------
+// fgIsCloneableInvariantOrLocal: If the node is an unaliased local or constant,
+//                                then it can be cloned.
+//
+// Arguments:
+//    tree - The node to check if it's cloneable.
+//
+// Return Value:
+//    True if the tree is cloneable. False if the tree is not cloneable.
+//
+bool Compiler::fgIsCloneableInvariantOrLocal(GenTree* tree)
 {
     if (tree->IsInvariant())
     {
-        return false;
+        return true;
     }
     else if (tree->IsLocal())
     {
@@ -1819,13 +1829,23 @@ bool Compiler::fgMustMakeTemp(GenTree* tree)
         //
         if (!lvaGetDesc(tree->AsLclVarCommon())->IsAddressExposed())
         {
-            return false;
+            return true;
         }
     }
 
-    return true;
+    return false;
 }
 
+//------------------------------------------------------------------------------
+// fgMakeTemp: Make a temp variable with a right-hand side expression as the assignment.
+//
+// Arguments:
+//    rhs - The right-hand side expression.
+//
+// Return Value:
+//    'TempInfo' data that contains the GT_ASG and GT_LCL_VAR nodes for assignment
+//    and variable load respectively.
+//
 TempInfo Compiler::fgMakeTemp(GenTree* rhs, CORINFO_CLASS_HANDLE structType /*= nullptr*/)
 {
     unsigned lclNum = lvaGrabTemp(true DEBUGARG("fgMakeTemp is creating a new local variable"));
@@ -1836,9 +1856,6 @@ TempInfo Compiler::fgMakeTemp(GenTree* rhs, CORINFO_CLASS_HANDLE structType /*= 
         lvaSetStruct(lclNum, structType, false);
     }
 
-    // If subTree->TypeGet() == TYP_STRUCT, gtNewTempAssign() will create a GT_COPYBLK tree.
-    // The type of GT_COPYBLK is TYP_VOID.  Therefore, we should use subTree->TypeGet() for
-    // setting type of lcl vars created.
     GenTree* asg  = gtNewTempAssign(lclNum, rhs);
     GenTree* load = new (this, GT_LCL_VAR) GenTreeLclVar(GT_LCL_VAR, rhs->TypeGet(), lclNum);
 
@@ -1872,18 +1889,9 @@ GenTree* Compiler::fgMakeMultiUse(GenTree** pOp, CORINFO_CLASS_HANDLE structType
 {
     GenTree* const tree = *pOp;
 
-    if (tree->IsInvariant())
+    if (fgIsCloneableInvariantOrLocal(tree))
     {
         return gtClone(tree);
-    }
-    else if (tree->IsLocal())
-    {
-        // Can't rely on GTF_GLOB_REF here.
-        //
-        if (!lvaGetDesc(tree->AsLclVarCommon())->IsAddressExposed())
-        {
-            return gtClone(tree);
-        }
     }
 
     return fgInsertCommaFormTemp(pOp, structType);
@@ -1907,26 +1915,16 @@ GenTree* Compiler::fgInsertCommaFormTemp(GenTree** ppTree, CORINFO_CLASS_HANDLE 
 {
     GenTree* subTree = *ppTree;
 
-    unsigned lclNum = lvaGrabTemp(true DEBUGARG("fgInsertCommaFormTemp is creating a new local variable"));
-
-    if (varTypeIsStruct(subTree))
-    {
-        assert(structType != nullptr);
-        lvaSetStruct(lclNum, structType, false);
-    }
-
     // If subTree->TypeGet() == TYP_STRUCT, gtNewTempAssign() will create a GT_COPYBLK tree.
     // The type of GT_COPYBLK is TYP_VOID.  Therefore, we should use subTree->TypeGet() for
     // setting type of lcl vars created.
-    GenTree* asg = gtNewTempAssign(lclNum, subTree);
+    TempInfo tempInfo = fgMakeTemp(subTree, structType);
+    GenTree* asg      = tempInfo.asg;
+    GenTree* load     = tempInfo.load;
 
-    GenTree* load = new (this, GT_LCL_VAR) GenTreeLclVar(GT_LCL_VAR, subTree->TypeGet(), lclNum);
+    *ppTree = gtNewOperNode(GT_COMMA, subTree->TypeGet(), asg, load);
 
-    GenTree* comma = gtNewOperNode(GT_COMMA, subTree->TypeGet(), asg, load);
-
-    *ppTree = comma;
-
-    return new (this, GT_LCL_VAR) GenTreeLclVar(GT_LCL_VAR, subTree->TypeGet(), lclNum);
+    return gtClone(load);
 }
 
 //------------------------------------------------------------------------
@@ -10586,10 +10584,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
 #ifdef TARGET_ARM64
                 // ARM64 architecture manual suggests this transformation
                 // for the mod operator.
-                // However, we do skip this optimization for ARM64 if the second operand
-                // is an integral constant power of 2 because there is an even better
-                // optimization in lowering that is specific for ARM64.
-                else if (!(tree->OperIs(GT_MOD) && op2->IsIntegralConstPow2()))
+                else
 #else
                 // XARCH only applies this transformation if we know
                 // that magic division will be used - which is determined
@@ -13871,19 +13866,19 @@ GenTree* Compiler::fgMorphModToSubMulDiv(GenTreeOp* tree)
     GenTreeOp* const div = tree;
 
     GenTree* dividend = div->gtGetOp1();
-    GenTree* divisor = div->gtGetOp2();
+    GenTree* divisor  = div->gtGetOp2();
 
     TempInfo tempInfos[2]{};
     int tempInfoCount = 0;
 
-    if (fgMustMakeTemp(dividend))
+    if (!fgIsCloneableInvariantOrLocal(dividend))
     {
         tempInfos[tempInfoCount] = fgMakeTemp(dividend);
         dividend                 = tempInfos[tempInfoCount].load;
         tempInfoCount++;
     }
 
-    if (fgMustMakeTemp(divisor))
+    if (!fgIsCloneableInvariantOrLocal(divisor))
     {
         tempInfos[tempInfoCount] = fgMakeTemp(divisor);
         divisor                  = tempInfos[tempInfoCount].load;
@@ -13895,8 +13890,8 @@ GenTree* Compiler::fgMorphModToSubMulDiv(GenTreeOp* tree)
     div->gtOp1 = gtClone(dividend);
     div->gtOp2 = gtClone(divisor);
 
-    GenTree* const mul                    = gtNewOperNode(GT_MUL, type, div, divisor);
-    GenTree* const sub                    = gtNewOperNode(GT_SUB, type, dividend, mul);
+    GenTree* const mul = gtNewOperNode(GT_MUL, type, div, divisor);
+    GenTree* const sub = gtNewOperNode(GT_SUB, type, dividend, mul);
 
     GenTree* result = sub;
     for (int i = tempInfoCount - 1; i >= 0; i--)
