@@ -556,6 +556,76 @@ namespace System
         /// <inheritdoc cref="INumberBase{TSelf}.Abs(TSelf)" />
         public static long Abs(long value) => Math.Abs(value);
 
+        /// <summary>Creates an instance of the current type from a value, throwing an overflow exception for any values that fall outside the representable range of the current type.</summary>
+        /// <typeparam name="TOther">The type of <paramref name="value" />.</typeparam>
+        /// <param name="value">The value which is used to create the instance of <see cref="long" />.</param>
+        /// <returns>An instance of <see cref="long" /> created from <paramref name="value" />.</returns>
+        /// <exception cref="NotSupportedException"><typeparamref name="TOther" /> is not supported.</exception>
+        /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="long" />.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static long CreateChecked<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            long result;
+
+            if (typeof(TOther) == typeof(long))
+            {
+                result = (long)(object)value;
+            }
+            else if (!NumberBase<long>.TryConvertFromChecked(value, out result) && !TOther.TryConvertToChecked(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <summary>Creates an instance of the current type from a value, saturating any values that fall outside the representable range of the current type.</summary>
+        /// <typeparam name="TOther">The type of <paramref name="value" />.</typeparam>
+        /// <param name="value">The value which is used to create the instance of <see cref="long" />.</param>
+        /// <returns>An instance of <see cref="long" /> created from <paramref name="value" />, saturating if <paramref name="value" /> falls outside the representable range of <see cref="long" />.</returns>
+        /// <exception cref="NotSupportedException"><typeparamref name="TOther" /> is not supported.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static long CreateSaturating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            long result;
+
+            if (typeof(TOther) == typeof(long))
+            {
+                result = (long)(object)value;
+            }
+            else if (!NumberBase<long>.TryConvertFromSaturating(value, out result) && !TOther.TryConvertToSaturating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <summary>Creates an instance of the current type from a value, truncating any values that fall outside the representable range of the current type.</summary>
+        /// <typeparam name="TOther">The type of <paramref name="value" />.</typeparam>
+        /// <param name="value">The value which is used to create the instance of <see cref="long" />.</param>
+        /// <returns>An instance of <see cref="long" /> created from <paramref name="value" />, truncating if <paramref name="value" /> falls outside the representable range of <see cref="long" />.</returns>
+        /// <exception cref="NotSupportedException"><typeparamref name="TOther" /> is not supported.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static long CreateTruncating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            long result;
+
+            if (typeof(TOther) == typeof(long))
+            {
+                result = (long)(object)value;
+            }
+            else if (!NumberBase<long>.TryConvertFromTruncating(value, out result) && !TOther.TryConvertToTruncating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
         /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
         static bool INumberBase<long>.IsCanonical(long value) => true;
 

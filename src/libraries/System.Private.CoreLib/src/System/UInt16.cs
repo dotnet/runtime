@@ -526,6 +526,76 @@ namespace System
         /// <inheritdoc cref="INumberBase{TSelf}.Abs(TSelf)" />
         static ushort INumberBase<ushort>.Abs(ushort value) => value;
 
+        /// <summary>Creates an instance of the current type from a value, throwing an overflow exception for any values that fall outside the representable range of the current type.</summary>
+        /// <typeparam name="TOther">The type of <paramref name="value" />.</typeparam>
+        /// <param name="value">The value which is used to create the instance of <see cref="ushort" />.</param>
+        /// <returns>An instance of <see cref="ushort" /> created from <paramref name="value" />.</returns>
+        /// <exception cref="NotSupportedException"><typeparamref name="TOther" /> is not supported.</exception>
+        /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="ushort" />.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ushort CreateChecked<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            ushort result;
+
+            if (typeof(TOther) == typeof(ushort))
+            {
+                result = (ushort)(object)value;
+            }
+            else if (!NumberBase<ushort>.TryConvertFromChecked(value, out result) && !TOther.TryConvertToChecked(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <summary>Creates an instance of the current type from a value, saturating any values that fall outside the representable range of the current type.</summary>
+        /// <typeparam name="TOther">The type of <paramref name="value" />.</typeparam>
+        /// <param name="value">The value which is used to create the instance of <see cref="ushort" />.</param>
+        /// <returns>An instance of <see cref="ushort" /> created from <paramref name="value" />, saturating if <paramref name="value" /> falls outside the representable range of <see cref="ushort" />.</returns>
+        /// <exception cref="NotSupportedException"><typeparamref name="TOther" /> is not supported.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ushort CreateSaturating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            ushort result;
+
+            if (typeof(TOther) == typeof(ushort))
+            {
+                result = (ushort)(object)value;
+            }
+            else if (!NumberBase<ushort>.TryConvertFromSaturating(value, out result) && !TOther.TryConvertToSaturating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <summary>Creates an instance of the current type from a value, truncating any values that fall outside the representable range of the current type.</summary>
+        /// <typeparam name="TOther">The type of <paramref name="value" />.</typeparam>
+        /// <param name="value">The value which is used to create the instance of <see cref="ushort" />.</param>
+        /// <returns>An instance of <see cref="ushort" /> created from <paramref name="value" />, truncating if <paramref name="value" /> falls outside the representable range of <see cref="ushort" />.</returns>
+        /// <exception cref="NotSupportedException"><typeparamref name="TOther" /> is not supported.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ushort CreateTruncating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            ushort result;
+
+            if (typeof(TOther) == typeof(ushort))
+            {
+                result = (ushort)(object)value;
+            }
+            else if (!NumberBase<ushort>.TryConvertFromTruncating(value, out result) && !TOther.TryConvertToTruncating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
         /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
         static bool INumberBase<ushort>.IsCanonical(ushort value) => true;
 

@@ -1338,6 +1338,76 @@ namespace System
         /// <inheritdoc cref="INumberBase{TSelf}.Abs(TSelf)" />
         static UInt128 INumberBase<UInt128>.Abs(UInt128 value) => value;
 
+        /// <summary>Creates an instance of the current type from a value, throwing an overflow exception for any values that fall outside the representable range of the current type.</summary>
+        /// <typeparam name="TOther">The type of <paramref name="value" />.</typeparam>
+        /// <param name="value">The value which is used to create the instance of <see cref="UInt128" />.</param>
+        /// <returns>An instance of <see cref="UInt128" /> created from <paramref name="value" />.</returns>
+        /// <exception cref="NotSupportedException"><typeparamref name="TOther" /> is not supported.</exception>
+        /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="UInt128" />.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static UInt128 CreateChecked<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            UInt128 result;
+
+            if (typeof(TOther) == typeof(UInt128))
+            {
+                result = (UInt128)(object)value;
+            }
+            else if (!NumberBase<UInt128>.TryConvertFromChecked(value, out result) && !TOther.TryConvertToChecked(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <summary>Creates an instance of the current type from a value, saturating any values that fall outside the representable range of the current type.</summary>
+        /// <typeparam name="TOther">The type of <paramref name="value" />.</typeparam>
+        /// <param name="value">The value which is used to create the instance of <see cref="UInt128" />.</param>
+        /// <returns>An instance of <see cref="UInt128" /> created from <paramref name="value" />, saturating if <paramref name="value" /> falls outside the representable range of <see cref="UInt128" />.</returns>
+        /// <exception cref="NotSupportedException"><typeparamref name="TOther" /> is not supported.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static UInt128 CreateSaturating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            UInt128 result;
+
+            if (typeof(TOther) == typeof(UInt128))
+            {
+                result = (UInt128)(object)value;
+            }
+            else if (!NumberBase<UInt128>.TryConvertFromSaturating(value, out result) && !TOther.TryConvertToSaturating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <summary>Creates an instance of the current type from a value, truncating any values that fall outside the representable range of the current type.</summary>
+        /// <typeparam name="TOther">The type of <paramref name="value" />.</typeparam>
+        /// <param name="value">The value which is used to create the instance of <see cref="UInt128" />.</param>
+        /// <returns>An instance of <see cref="UInt128" /> created from <paramref name="value" />, truncating if <paramref name="value" /> falls outside the representable range of <see cref="UInt128" />.</returns>
+        /// <exception cref="NotSupportedException"><typeparamref name="TOther" /> is not supported.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static UInt128 CreateTruncating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            UInt128 result;
+
+            if (typeof(TOther) == typeof(UInt128))
+            {
+                result = (UInt128)(object)value;
+            }
+            else if (!NumberBase<UInt128>.TryConvertFromTruncating(value, out result) && !TOther.TryConvertToTruncating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
         /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
         static bool INumberBase<UInt128>.IsCanonical(UInt128 value) => true;
 
