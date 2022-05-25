@@ -44,20 +44,20 @@ bool IntegralRange::Contains(int64_t value) const
 /* static */ int64_t IntegralRange::SymbolicToRealValue(SymbolicIntegerValue value)
 {
     static const int64_t SymbolicToRealMap[]{
-        INT64_MIN,  // SymbolicIntegerValue::LongMin
-        INT32_MIN,  // SymbolicIntegerValue::IntMin
-        INT16_MIN,  // SymbolicIntegerValue::ShortMin
-        INT8_MIN,   // SymbolicIntegerValue::ByteMin
-        0,          // SymbolicIntegerValue::Zero
-        1,          // SymbolicIntegerValue::One
-        INT8_MAX,   // SymbolicIntegerValue::ByteMax
-        UINT8_MAX,  // SymbolicIntegerValue::UByteMax
-        INT16_MAX,  // SymbolicIntegerValue::ShortMax
-        UINT16_MAX, // SymbolicIntegerValue::UShortMax
-        ARRLEN_MAX, // SymbolicIntegerValue::ArrayLenMax
-        INT32_MAX,  // SymbolicIntegerValue::IntMax
-        UINT32_MAX, // SymbolicIntegerValue::UIntMax
-        INT64_MAX   // SymbolicIntegerValue::LongMax
+        INT64_MIN,               // SymbolicIntegerValue::LongMin
+        INT32_MIN,               // SymbolicIntegerValue::IntMin
+        INT16_MIN,               // SymbolicIntegerValue::ShortMin
+        INT8_MIN,                // SymbolicIntegerValue::ByteMin
+        0,                       // SymbolicIntegerValue::Zero
+        1,                       // SymbolicIntegerValue::One
+        INT8_MAX,                // SymbolicIntegerValue::ByteMax
+        UINT8_MAX,               // SymbolicIntegerValue::UByteMax
+        INT16_MAX,               // SymbolicIntegerValue::ShortMax
+        UINT16_MAX,              // SymbolicIntegerValue::UShortMax
+        CORINFO_Array_MaxLength, // SymbolicIntegerValue::ArrayLenMax
+        INT32_MAX,               // SymbolicIntegerValue::IntMax
+        UINT32_MAX,              // SymbolicIntegerValue::UIntMax
+        INT64_MAX                // SymbolicIntegerValue::LongMax
     };
 
     assert(sizeof(SymbolicIntegerValue) == sizeof(int32_t));

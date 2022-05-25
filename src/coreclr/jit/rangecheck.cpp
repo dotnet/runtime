@@ -1056,7 +1056,7 @@ Range RangeCheck::ComputeRangeForLocalDef(BasicBlock*          block,
     return range;
 }
 
-// Get the limit's maximum possible value, treating array length to be ARRLEN_MAX.
+// Get the limit's maximum possible value, treating array length to be CORINFO_Array_MaxLength.
 bool RangeCheck::GetLimitMax(Limit& limit, int* pMax)
 {
     int& max1 = *pMax;
@@ -1071,7 +1071,7 @@ bool RangeCheck::GetLimitMax(Limit& limit, int* pMax)
             int tmp = GetArrLength(limit.vn);
             if (tmp <= 0)
             {
-                tmp = ARRLEN_MAX;
+                tmp = CORINFO_Array_MaxLength;
             }
             if (IntAddOverflows(tmp, limit.GetConstant()))
             {
