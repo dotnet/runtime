@@ -5,7 +5,7 @@
 // Activator is an object that contains the Activation (CreateInstance/New)
 //  methods for late bound support.
 //
-
+ 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
