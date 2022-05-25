@@ -562,7 +562,7 @@ namespace ILCompiler
                 method = null;
             }
 
-            // Default implementation logic, which only kicks in for default implementations when lookin up on an exact interface target
+            // Default implementation logic, which only kicks in for default implementations when looking up on an exact interface target
             if (isStaticVirtualMethod && method == null && !genInterfaceMethod.IsAbstract && !constrainedType.IsCanonicalSubtype(CanonicalFormKind.Any))
             {
                 MethodDesc exactInterfaceMethod = genInterfaceMethod;
