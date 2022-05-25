@@ -628,15 +628,16 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     // These conditions can be checked earlier in the final version to save some throughput.
     // Perhaps allowing for bypass with jit stress.
     //
-    // If fwdSubNode is an address-exposed local, forwarding it may lose optimizations.
-    // (maybe similar for dner?)
+    // If fwdSubNode is an address-exposed local, forwarding it may lose optimizations due
+    // to GLOB_REF "poisoning" the tree. CQ analysis shows this to not be a problem with
+    // structs.
     //
     if (fwdSubNode->OperIs(GT_LCL_VAR))
     {
         unsigned const   fwdLclNum = fwdSubNode->AsLclVarCommon()->GetLclNum();
         LclVarDsc* const fwdVarDsc = lvaGetDesc(fwdLclNum);
 
-        if (fwdVarDsc->IsAddressExposed())
+        if (!varTypeIsStruct(fwdVarDsc) && fwdVarDsc->IsAddressExposed())
         {
             JITDUMP(" V%02u is address exposed\n", fwdLclNum);
             return false;
