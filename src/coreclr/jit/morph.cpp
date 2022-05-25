@@ -1807,6 +1807,48 @@ void CallArgs::SetNeedsTemp(CallArg* arg)
     m_needsTemps   = true;
 }
 
+bool Compiler::fgMustMakeTemp(GenTree* tree)
+{
+    if (tree->IsInvariant())
+    {
+        return false;
+    }
+    else if (tree->IsLocal())
+    {
+        // Can't rely on GTF_GLOB_REF here.
+        //
+        if (!lvaGetDesc(tree->AsLclVarCommon())->IsAddressExposed())
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+TempInfo Compiler::fgMakeTemp(GenTree* rhs, CORINFO_CLASS_HANDLE structType /*= nullptr*/)
+{
+    unsigned lclNum = lvaGrabTemp(true DEBUGARG("fgMakeTemp is creating a new local variable"));
+
+    if (varTypeIsStruct(rhs))
+    {
+        assert(structType != nullptr);
+        lvaSetStruct(lclNum, structType, false);
+    }
+
+    // If subTree->TypeGet() == TYP_STRUCT, gtNewTempAssign() will create a GT_COPYBLK tree.
+    // The type of GT_COPYBLK is TYP_VOID.  Therefore, we should use subTree->TypeGet() for
+    // setting type of lcl vars created.
+    GenTree* asg  = gtNewTempAssign(lclNum, rhs);
+    GenTree* load = new (this, GT_LCL_VAR) GenTreeLclVar(GT_LCL_VAR, rhs->TypeGet(), lclNum);
+
+    TempInfo tempInfo{};
+    tempInfo.asg  = asg;
+    tempInfo.load = load;
+
+    return tempInfo;
+}
+
 //------------------------------------------------------------------------------
 // fgMakeMultiUse : If the node is an unaliased local or constant clone it,
 //    otherwise insert a comma form temp
@@ -13826,24 +13868,49 @@ GenTree* Compiler::fgMorphModToSubMulDiv(GenTreeOp* tree)
         noway_assert(!"Illegal gtOper in fgMorphModToSubMulDiv");
     }
 
-    var_types type = tree->gtType;
+    GenTreeOp* const div = tree;
 
-    GenTree* const copyOfNumeratorValue   = fgMakeMultiUse(&tree->gtOp1);
-    GenTree* const copyOfDenominatorValue = fgMakeMultiUse(&tree->gtOp2);
-    GenTree* const mul                    = gtNewOperNode(GT_MUL, type, tree, copyOfDenominatorValue);
-    GenTree* const sub                    = gtNewOperNode(GT_SUB, type, copyOfNumeratorValue, mul);
+    GenTree* dividend = div->gtGetOp1();
+    GenTree* divisor = div->gtGetOp2();
 
-    // Ensure "sub" does not evaluate "copyOfNumeratorValue" before it is defined by "mul".
-    //
-    sub->gtFlags |= GTF_REVERSE_OPS;
+    TempInfo tempInfos[2]{};
+    int tempInfoCount = 0;
+
+    if (fgMustMakeTemp(dividend))
+    {
+        tempInfos[tempInfoCount] = fgMakeTemp(dividend);
+        dividend                 = tempInfos[tempInfoCount].load;
+        tempInfoCount++;
+    }
+
+    if (fgMustMakeTemp(divisor))
+    {
+        tempInfos[tempInfoCount] = fgMakeTemp(divisor);
+        divisor                  = tempInfos[tempInfoCount].load;
+        tempInfoCount++;
+    }
+
+    var_types type = div->gtType;
+
+    div->gtOp1 = gtClone(dividend);
+    div->gtOp2 = gtClone(divisor);
+
+    GenTree* const mul                    = gtNewOperNode(GT_MUL, type, div, divisor);
+    GenTree* const sub                    = gtNewOperNode(GT_SUB, type, dividend, mul);
+
+    GenTree* result = sub;
+    for (int i = tempInfoCount - 1; i >= 0; i--)
+    {
+        result = gtNewOperNode(GT_COMMA, type, tempInfos[i].asg, result);
+    }
 
 #ifdef DEBUG
-    sub->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
+    result->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
 #endif
 
-    tree->CheckDivideByConstOptimized(this);
+    div->CheckDivideByConstOptimized(this);
 
-    return sub;
+    return result;
 }
 
 //------------------------------------------------------------------------
