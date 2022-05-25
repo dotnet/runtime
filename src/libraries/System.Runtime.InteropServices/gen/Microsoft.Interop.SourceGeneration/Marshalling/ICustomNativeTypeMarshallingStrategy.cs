@@ -119,6 +119,9 @@ namespace Microsoft.Interop
             CurrentStage = parentContext.CurrentStage;
         }
 
+        public override (TargetFramework framework, Version version) GetTargetFramework()
+            => ParentContext!.GetTargetFramework();
+
         public override bool SingleFrameSpansNativeContext => ParentContext!.SingleFrameSpansNativeContext;
 
         public override bool AdditionalTemporaryStateLivesAcrossStages => ParentContext!.AdditionalTemporaryStateLivesAcrossStages;

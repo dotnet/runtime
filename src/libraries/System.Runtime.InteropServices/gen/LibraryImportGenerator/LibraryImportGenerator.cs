@@ -190,24 +190,6 @@ namespace Microsoft.Interop
                 .WithBody(stubCode);
         }
 
-        private static TargetFramework DetermineTargetFramework(Compilation compilation, out Version version)
-        {
-            IAssemblySymbol systemAssembly = compilation.GetSpecialType(SpecialType.System_Object).ContainingAssembly;
-            version = systemAssembly.Identity.Version;
-
-            return systemAssembly.Identity.Name switch
-            {
-                // .NET Framework
-                "mscorlib" => TargetFramework.Framework,
-                // .NET Standard
-                "netstandard" => TargetFramework.Standard,
-                // .NET Core (when version < 5.0) or .NET
-                "System.Runtime" or "System.Private.CoreLib" =>
-                    (version.Major < 5) ? TargetFramework.Core : TargetFramework.Net,
-                _ => TargetFramework.Unknown,
-            };
-        }
-
         private static LibraryImportData? ProcessLibraryImportAttribute(AttributeData attrData)
         {
             // Found the LibraryImport, but it has an error so report the error.
@@ -412,11 +394,11 @@ namespace Microsoft.Interop
 
             ImmutableArray<AttributeSyntax> forwardedAttributes = pinvokeStub.ForwardedAttributes;
 
-            const string innerPInvokeName = "__PInvoke__";
+            const string innerPInvokeName = "__PInvoke";
 
             BlockSyntax code = stubGenerator.GeneratePInvokeBody(innerPInvokeName);
 
-            LocalFunctionStatementSyntax dllImport = CreateTargetFunctionAsLocalStatement(
+            LocalFunctionStatementSyntax dllImport = CreateTargetDllImportAsLocalStatement(
                 stubGenerator,
                 options,
                 pinvokeStub.LibraryImportData,
@@ -428,10 +410,7 @@ namespace Microsoft.Interop
                 dllImport = dllImport.AddAttributeLists(AttributeList(SeparatedList(forwardedAttributes)));
             }
 
-            dllImport = dllImport.WithLeadingTrivia(
-                Comment("//"),
-                Comment("// Local P/Invoke"),
-                Comment("//"));
+            dllImport = dllImport.WithLeadingTrivia(Comment("// Local P/Invoke"));
             code = code.AddStatements(dllImport);
 
             return (pinvokeStub.ContainingSyntaxContext.WrapMemberInContainingSyntaxWithUnsafeModifier(PrintGeneratedSource(pinvokeStub.StubMethodSyntaxTemplate, pinvokeStub.SignatureContext, code)), pinvokeStub.Diagnostics.AddRange(diagnostics.Diagnostics));
@@ -472,14 +451,14 @@ namespace Microsoft.Interop
                 .AddAttributeLists(
                     AttributeList(
                         SingletonSeparatedList(
-                            CreateDllImportAttributeFromLibraryImportAttributeData(pinvokeData))));
+                            CreateForwarderDllImport(pinvokeData))));
 
             MemberDeclarationSyntax toPrint = stub.ContainingSyntaxContext.WrapMemberInContainingSyntaxWithUnsafeModifier(stubMethod);
 
             return toPrint;
         }
 
-        private static LocalFunctionStatementSyntax CreateTargetFunctionAsLocalStatement(
+        private static LocalFunctionStatementSyntax CreateTargetDllImportAsLocalStatement(
             PInvokeStubCodeGenerator stubGenerator,
             LibraryImportGeneratorOptions options,
             LibraryImportData libraryImportData,
@@ -491,8 +470,8 @@ namespace Microsoft.Interop
             (ParameterListSyntax parameterList, TypeSyntax returnType, AttributeListSyntax returnTypeAttributes) = stubGenerator.GenerateTargetMethodSignatureData();
             LocalFunctionStatementSyntax localDllImport = LocalFunctionStatement(returnType, stubTargetName)
                 .AddModifiers(
-                    Token(SyntaxKind.ExternKeyword),
                     Token(SyntaxKind.StaticKeyword),
+                    Token(SyntaxKind.ExternKeyword),
                     Token(SyntaxKind.UnsafeKeyword))
                 .WithSemicolonToken(Token(SyntaxKind.SemicolonToken))
                 .WithAttributeLists(
@@ -516,8 +495,7 @@ namespace Microsoft.Interop
                                             AttributeArgument(
                                                 NameEquals(nameof(DllImportAttribute.ExactSpelling)),
                                                 null,
-                                                LiteralExpression(
-                                                    libraryImportData.SetLastError ? SyntaxKind.TrueLiteralExpression : SyntaxKind.FalseLiteralExpression))
+                                                LiteralExpression(SyntaxKind.TrueLiteralExpression))
                                         }
                                         )))))))
                 .WithParameterList(parameterList);
@@ -528,7 +506,7 @@ namespace Microsoft.Interop
             return localDllImport;
         }
 
-        private static AttributeSyntax CreateDllImportAttributeFromLibraryImportAttributeData(LibraryImportData target)
+        private static AttributeSyntax CreateForwarderDllImport(LibraryImportData target)
         {
             var newAttributeArgs = new List<AttributeArgumentSyntax>
             {
@@ -542,7 +520,7 @@ namespace Microsoft.Interop
                 AttributeArgument(
                     NameEquals(nameof(DllImportAttribute.ExactSpelling)),
                     null,
-                    CreateBoolExpressionSyntax(true))
+                    LiteralExpression(SyntaxKind.TrueLiteralExpression))
             };
 
             if (target.IsUserDefined.HasFlag(InteropAttributeMember.StringMarshalling))
@@ -552,6 +530,7 @@ namespace Microsoft.Interop
                 ExpressionSyntax value = CreateEnumExpressionSyntax(CharSet.Unicode);
                 newAttributeArgs.Add(AttributeArgument(name, null, value));
             }
+
             if (target.IsUserDefined.HasFlag(InteropAttributeMember.SetLastError))
             {
                 NameEqualsSyntax name = NameEquals(nameof(DllImportAttribute.SetLastError));
