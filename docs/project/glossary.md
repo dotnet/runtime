@@ -49,7 +49,7 @@ terminology.
 | TFM | [Target Framework Moniker](https://docs.microsoft.com/dotnet/standard/frameworks) such as `net6.0` or `netstandard2.0`. |
 | TPA | Trusted Platform Assemblies used to be a special set of assemblies that comprised the platform assemblies, when it was originally designed. As of today, it is simply the set of assemblies known to constitute the application. |
 | URT | Universal Runtime. Ancient name for what ended up being .NET, is used in the WinError facility name FACILITY_URT. |
-| UTC | [Universal Tuple Compiler](https://blogs.msdn.microsoft.com/vcblog/2013/06/12/optimizing-c-code-overview/). The Microsoft C++ optimizer back-end that that starts by converting the information from the FrontEnd into tuples – a binary stream of instructions. |
+| UTC | [Universal Tuple Compiler](https://blogs.msdn.microsoft.com/vcblog/2013/06/12/optimizing-c-code-overview/). The Microsoft C++ optimizer back-end that starts by converting the information from the FrontEnd into tuples – a binary stream of instructions. |
 | UWP | [Universal Windows Platform (UWP)](https://docs.microsoft.com/en-us/windows/uwp/get-started/universal-application-platform-guide) is a platform-homogeneous application architecture available on every device that runs Windows 10. |
 | VSD | [Virtual Stub Dispatch](../design/coreclr/botr/virtual-stub-dispatch.md). Technique of using stubs for virtual method invocations instead of the traditional virtual method table. |
 | VM | Virtual machine. |

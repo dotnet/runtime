@@ -15,7 +15,7 @@ import { wrap_error_root } from "./method-calls";
 import { js_string_to_mono_string_root, js_string_to_mono_string_interned_root } from "./strings";
 import { isThenable } from "./cancelable-promise";
 import { has_backing_array_buffer } from "./buffers";
-import { JSHandle, MonoArray, MonoMethod, MonoObject, MonoObjectNull, wasm_type_symbol, MonoClass, MonoObjectRef } from "./types";
+import { JSHandle, MonoArray, MonoMethod, MonoObject, MonoObjectNull, wasm_type_symbol, MonoClass, MonoObjectRef, is_nullish } from "./types";
 import { setI32, setU32, setF64 } from "./memory";
 import { Int32Ptr, TypedArray } from "./types/emscripten";
 
@@ -67,6 +67,9 @@ export function _js_to_mono_obj_unsafe(should_add_in_flight: boolean, js_obj: an
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function js_to_mono_obj_root(js_obj: any, result: WasmRoot<MonoObject>, should_add_in_flight: boolean): void {
+    if (is_nullish(result))
+        throw new Error("Expected (value, WasmRoot, boolean)");
+
     switch (true) {
         case js_obj === null:
         case typeof js_obj === "undefined":
@@ -278,7 +281,7 @@ export function mono_wasm_typed_array_to_array_ref(js_handle: JSHandle, is_excep
     const resultRoot = mono_wasm_new_external_root<MonoObject>(result_address);
     try {
         const js_obj = mono_wasm_get_jsobj_from_js_handle(js_handle);
-        if (!js_obj) {
+        if (is_nullish(js_obj)) {
             wrap_error_root(is_exception, "ERR06: Invalid JS object handle '" + js_handle + "'", resultRoot);
             return;
         }

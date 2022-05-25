@@ -228,6 +228,9 @@
   #define CALLEE_SAVED_REG_MAXSZ   (CNT_CALLEE_SAVED*REGSIZE_BYTES)
   #define CALLEE_SAVED_FLOAT_MAXSZ (CNT_CALLEE_SAVED_FLOAT*16)
 
+  // callee-preserved registers we always save and allow use of for EnC code
+  #define RBM_ENC_CALLEE_SAVED     (RBM_RSI | RBM_RDI)
+
   // register to hold shift amount
   #define REG_SHIFT                REG_ECX
   #define RBM_SHIFT                RBM_ECX

@@ -20,47 +20,21 @@ namespace System.Text.Json.Serialization.Converters
                 ThrowHelper.ThrowInvalidOperationException_ExpectedString(reader.TokenType);
             }
 
-            bool isEscaped = reader._stringHasEscaping;
-            int maximumLength = isEscaped ? MaximumEscapedTimeSpanFormatLength : MaximumTimeSpanFormatLength;
+            if (!JsonHelpers.IsInRangeInclusive(reader.ValueLength, MinimumTimeSpanFormatLength, MaximumEscapedTimeSpanFormatLength))
+            {
+                ThrowHelper.ThrowFormatException(DataType.TimeSpan);
+            }
 
             ReadOnlySpan<byte> source = stackalloc byte[0];
-
-            if (reader.HasValueSequence)
+            if (!reader.HasValueSequence && !reader.ValueIsEscaped)
             {
-                ReadOnlySequence<byte> valueSequence = reader.ValueSequence;
-                long sequenceLength = valueSequence.Length;
-
-                if (!JsonHelpers.IsInRangeInclusive(sequenceLength, MinimumTimeSpanFormatLength, maximumLength))
-                {
-                    ThrowHelper.ThrowFormatException(DataType.TimeSpan);
-                }
-
-                Span<byte> stackSpan = stackalloc byte[isEscaped ? MaximumEscapedTimeSpanFormatLength : MaximumTimeSpanFormatLength];
-                valueSequence.CopyTo(stackSpan);
-                source = stackSpan.Slice(0, (int)sequenceLength);
+                source = reader.ValueSpan;
             }
             else
             {
-                source = reader.ValueSpan;
-
-                if (!JsonHelpers.IsInRangeInclusive(source.Length, MinimumTimeSpanFormatLength, maximumLength))
-                {
-                    ThrowHelper.ThrowFormatException(DataType.TimeSpan);
-                }
-            }
-
-            if (isEscaped)
-            {
-                int backslash = source.IndexOf(JsonConstants.BackSlash);
-                Debug.Assert(backslash != -1);
-
-                Span<byte> sourceUnescaped = stackalloc byte[MaximumEscapedTimeSpanFormatLength];
-
-                JsonReaderHelper.Unescape(source, sourceUnescaped, backslash, out int written);
-                Debug.Assert(written > 0);
-
-                source = sourceUnescaped.Slice(0, written);
-                Debug.Assert(!source.IsEmpty);
+                Span<byte> stackSpan = stackalloc byte[MaximumEscapedTimeSpanFormatLength];
+                int bytesWritten = reader.CopyString(stackSpan);
+                source = stackSpan.Slice(0, bytesWritten);
             }
 
             byte firstChar = source[0];

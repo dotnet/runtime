@@ -470,6 +470,11 @@ ovr_tag_from_mono_vector_class (MonoClass *klass) {
 	case MONO_TYPE_I2: case MONO_TYPE_U2: ret |= INTRIN_int16; break;
 	case MONO_TYPE_I4: case MONO_TYPE_U4: ret |= INTRIN_int32; break;
 	case MONO_TYPE_I8: case MONO_TYPE_U8: ret |= INTRIN_int64; break;
+#if TARGET_SIZEOF_VOID_P == 8
+	case MONO_TYPE_I: case MONO_TYPE_U: ret |= INTRIN_int64; break;
+#else
+	case MONO_TYPE_I: case MONO_TYPE_U: ret |= INTRIN_int32; break;
+#endif
 	case MONO_TYPE_R4: ret |= INTRIN_float32; break;
 	case MONO_TYPE_R8: ret |= INTRIN_float64; break;
 	}
@@ -7778,7 +7783,7 @@ MONO_RESTORE_WARNING
 					g_assert_not_reached ();
 				}
 #if defined(TARGET_ARM64)
-				if ((ins->inst_c1 == MONO_TYPE_U8) || (ins->inst_c1 == MONO_TYPE_I8)) {
+				if ((ins->inst_c1 == MONO_TYPE_U8) || (ins->inst_c1 == MONO_TYPE_I8) || (ins->inst_c1 == MONO_TYPE_I) || (ins->inst_c1 == MONO_TYPE_U)) {
 					LLVMValueRef cmp = LLVMBuildICmp (builder, op, l, r, "");
 					result = LLVMBuildSelect (builder, cmp, l, r, "");
 				} else {

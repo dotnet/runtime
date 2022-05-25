@@ -1,12 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 // File: RsMain.cpp
 //
-
-// Random RS utility stuff, plus root ICorCordbug implementation
+// Random RS utility stuff, plus root ICorDebug implementation
 //
 //*****************************************************************************
+
 #include "stdafx.h"
 #include "primitives.h"
 #include "safewrap.h"

@@ -420,7 +420,7 @@ namespace Internal.IL
                     // Either
                     //    1. no constraint resolution at compile time (!directMethod)
                     // OR 2. no code sharing lookup in call
-                    // OR 3. we have have resolved to an instantiating stub
+                    // OR 3. we have resolved to an instantiating stub
 
                     methodAfterConstraintResolution = directMethod;
 

@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
@@ -57,14 +57,10 @@
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs" Link="Common\Interop\Unix\System.Native\Interop.Errors.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.DeviceFiles.cs" Link="Common\Interop\Unix\System.Native\Interop.DeviceFiles.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.FChMod.cs" Link="Common\Interop\Unix\System.Native\Interop.FChMod.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GroupNameUserName.cs" Link="Common\Interop\Unix\System.Native\Interop.GroupNameUserName.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Link.cs" Link="Common\Interop\Unix\System.Native\Interop.Link.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MkFifo.cs" Link="Common\Interop\Unix\System.Native\Interop.MkFifo.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Permissions.cs" Link="Common\Interop\Unix\Interop.Permissions.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.cs" Link="Common\Interop\Unix\Interop.Stat.cs" />
-  </ItemGroup>
-  <!-- Unix and Browser specific files -->
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix' or '$(TargetPlatformIdentifier)' == 'Browser'">
     <Compile Include="$(CommonPath)System\IO\Archiving.Utils.Unix.cs" Link="Common\System\IO\Archiving.Utils.Unix.cs" />
   </ItemGroup>
   <ItemGroup>

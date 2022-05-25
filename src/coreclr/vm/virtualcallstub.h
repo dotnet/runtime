@@ -1,11 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // File: VirtualCallStub.h
-//
-
-
-
 //
 // See code:VirtualCallStubManager for details
 //
@@ -13,7 +10,6 @@
 
 #ifndef _VIRTUAL_CALL_STUB_H
 #define _VIRTUAL_CALL_STUB_H
-
 
 #define CHAIN_LOOKUP
 
@@ -984,7 +980,7 @@ because a stub/entry is not present in a table, e.g. has been removed, that does
 it is not in use.  It also implies that internal table structures, such as discarded hash table buckets,
 cannot be freely recycled since another concurrent thread may still be walking thru it.
 
-4. Occassionaly it is necessary to pick up the pieces that have been dropped on the floor
+4. Occassionally it is necessary to pick up the pieces that have been dropped on the floor
 so to speak, e.g. actually recycle hash buckets that aren't in use.  Since we have a natural
 sync point already in the GC, we use that to provide cleanup points.  We need to make sure that code that
 is walking our structures is not a GC safe point.  Hence if the GC calls back into us inside the GC

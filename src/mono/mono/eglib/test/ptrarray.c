@@ -301,7 +301,7 @@ ptrarray_remove_fast (void)
 		return FAILED ("First element wasn't replaced with last upon removal");
 
 	if (g_ptr_array_remove_fast (array, letters[0]))
-		return FAILED ("Succedeed removing a non-existing element");
+		return FAILED ("Succeeded removing a non-existing element");
 
 	if (!g_ptr_array_remove_fast (array, letters[3]) || array->len != 3)
 		return FAILED ("Failed removing \"D\"");

@@ -72,11 +72,6 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.ERR.cs" Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.ERR.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs" Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.Crypto.cs" Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Crypto.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslVersion.cs" Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslVersion.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.Ssl.cs" Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Ssl.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.SslCtx.cs" Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.SslCtx.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.SslCtxOptions.cs" Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.SslCtxOptions.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.SetProtocolOptions.cs" Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.SetProtocolOptions.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.X509.cs" Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.X509.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.X509Name.cs" Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.X509Name.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.X509Ext.cs" Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.X509Ext.cs" />

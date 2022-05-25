@@ -112,9 +112,9 @@ namespace System.Composition.UnitTests
         public void VerifyAssemblyNameCanBeUsedWithContainer()
         {
             var test = new ContainerConfiguration()
-                .WithAssembly(typeof(ClassWithDependecy).GetTypeInfo().Assembly)
+                .WithAssembly(typeof(ClassWithDependency).GetTypeInfo().Assembly)
                 .CreateContainer();
-            var b = test.GetExport<ClassWithDependecy>();
+            var b = test.GetExport<ClassWithDependency>();
             Assert.NotNull(b);
             Assert.NotNull(b._dep);
         }
@@ -123,9 +123,9 @@ namespace System.Composition.UnitTests
         public void VerifyAssemblyWithTwoBaseTypeWithOnlyOneExportedWorks()
         {
             var test = new ContainerConfiguration()
-                .WithAssembly(typeof(ClassWithDependecy).GetTypeInfo().Assembly)
+                .WithAssembly(typeof(ClassWithDependency).GetTypeInfo().Assembly)
                 .CreateContainer();
-            var b = test.GetExport<ClassWithDependecyAndSameBaseType>();
+            var b = test.GetExport<ClassWithDependencyAndSameBaseType>();
             Assert.NotNull(b);
             Assert.NotNull(b._dep);
             Assert.Equal(typeof(TestDependency), b._dep.GetType());

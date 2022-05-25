@@ -290,7 +290,7 @@ void MorphInitBlockHelper::PrepareSrc()
 
 //------------------------------------------------------------------------
 // TrySpecialCases: check special cases that require special transformations.
-//    We don't have any for for init block.
+//    We don't have any for init block.
 //
 void MorphInitBlockHelper::TrySpecialCases()
 {
@@ -470,6 +470,9 @@ GenTree* MorphInitBlockHelper::MorphCommaBlock(Compiler* comp, GenTreeOp* firstC
     {
         GenTree* comma = commas.Pop();
         comma->gtType  = TYP_BYREF;
+
+        // The "IND(COMMA)" => "COMMA(IND)" transform may have set NO_CSEs on these COMMAs, clear them.
+        comma->ClearDoNotCSE();
         comp->gtUpdateNodeSideEffects(comma);
     }
 

@@ -45,15 +45,7 @@ namespace System.Net.Http.Functional.Tests
                 using (requestStream)
                 {
                     Assert.False(settingsStream.CanWrite, "Expected unidirectional control stream.");
-
-                    long? streamType = await settingsStream.ReadIntegerAsync();
-                    Assert.Equal(Http3LoopbackStream.ControlStream, streamType);
-
-                    List<(long settingId, long settingValue)> settings = await settingsStream.ReadSettingsAsync();
-                    (long settingId, long settingValue) = Assert.Single(settings);
-
-                    Assert.Equal(Http3LoopbackStream.MaxHeaderListSize, settingId);
-                    Assert.Equal(headerSizeLimit * 1024L, settingValue);
+                    Assert.Equal(headerSizeLimit * 1024L, connection.MaxHeaderListSize);
 
                     await requestStream.ReadRequestDataAsync();
                     await requestStream.SendResponseAsync();
@@ -1438,9 +1430,7 @@ namespace System.Net.Http.Functional.Tests
             new TheoryData<string>
             {
                 { "https://cloudflare-quic.com/" }, // Cloudflare with content
-                // This endpoint is consistently failing.
-                // [ActiveIssue("https://github.com/dotnet/runtime/issues/63009")]
-                //{ "https://pgjones.dev/" }, // aioquic with content
+                { "https://quic.nginx.org/" }, // Nginx with content
             };
     }
 
