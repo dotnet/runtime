@@ -27,6 +27,9 @@ namespace DebuggerTests
                 // public:
                 {"BaseBase_PropertyForHidingWithField",             (TNumber(210), true)},
                 {"Base_PropertyForOverridingWithProperty",          (TGetter("Base_PropertyForOverridingWithProperty", TDateTime(new DateTime(2020, 7, 6, 5, 4, 3))), true)},
+                {"BaseBase_PropertyForVHO",                         (TGetter("BaseBase_PropertyForVHO", TString("Derived#BaseBase_PropertyForVHO")), true)},
+                {"BaseBase_PropertyForVOH",                         (TGetter("BaseBase_PropertyForVOH", TString("Derived#BaseBase_PropertyForVOH")), true)},
+                // {"BaseBase_PropertyForVOO",                         (TGetter("BaseBase_PropertyForVOO", TString("Derived#BaseBase_PropertyForVOO")), true)}, //FixMe: Issue #69788
 
                 // protected / internal:
                 {"BaseBase_AutoPropertyForHidingWithProperty",      (TGetter("BaseBase_AutoPropertyForHidingWithProperty", TString("Derived#BaseBase_AutoPropertyForHidingWithProperty")), true)},
@@ -45,6 +48,7 @@ namespace DebuggerTests
                 {"Base_VirtualPropertyNotOverriddenOrHidden",               (TGetter("Base_VirtualPropertyNotOverriddenOrHidden", TDateTime(new DateTime(2134, 5, 7, 1, 9, 2))), false)},
                 {"FirstName",                                               (TGetter("FirstName", TString("BaseClass#FirstName")), false)},
                 {"LastName",                                                (TGetter("LastName", TString("BaseClass#LastName")), false)},
+                {"BaseBase_PropertyForVOH (BaseClass2)",                    (TGetter("BaseBase_PropertyForVOH (BaseClass2)", TString("Base#BaseBase_PropertyForVOH")), false)},
 
                 // protected / internal:
                 {"BaseBase_PropertyForHidingWithField (BaseClass2)",        (TNumber(110), false)},
@@ -67,6 +71,7 @@ namespace DebuggerTests
                 {"BaseBase_FieldForHidingWithAutoProperty (BaseBaseClass2)",         (TString("BaseBase#BaseBase_FieldForHidingWithAutoProperty"), false)},
                 {"BaseBase_PropertyForHidingWithAutoProperty (BaseBaseClass2)",      (TGetter("BaseBase_PropertyForHidingWithAutoProperty (BaseBaseClass2)", TString("BaseBase#BaseBase_PropertyForHidingWithAutoProperty")), false)},
                 {"BaseBase_AutoPropertyForHidingWithAutoProperty (BaseBaseClass2)",  (TString("BaseBase#BaseBase_AutoPropertyForHidingWithAutoProperty"), false)},
+                // {"BaseBase_PropertyForVHO (BaseBaseClass2)",                         (TGetter("BaseBase_PropertyForVHO (BaseBaseClass2)", TString("BaseBase#BaseBase_PropertyForVHO")), false)}, // FixMe: Issue #69788
             };
 
             // default, all properties
@@ -93,17 +98,22 @@ namespace DebuggerTests
                 "Base_PropertyForOverridingWithProperty",
                 "BaseBase_AutoPropertyForHidingWithProperty",
                 "Base_AutoPropertyForOverridingWithProperty",
+                "BaseBase_PropertyForVHO",
+                "BaseBase_PropertyForVOH",
+                // "BaseBase_PropertyForVOO", // FixMe: Issue #69788
 
                 "BaseBase_PropertyForHidingWithProperty",
                 "FirstName",
                 "LastName",
                 "BaseBase_FieldForHidingWithProperty",
                 "BaseBase_AutoPropertyForHidingWithProperty (BaseClass2)",
+                "BaseBase_PropertyForVOH (BaseClass2)",
 
                 "BaseBase_PropertyForHidingWithField (BaseBaseClass2)",
                 "BaseBase_PropertyForHidingWithProperty (BaseBaseClass2)",
                 "BaseBase_PropertyForHidingWithAutoProperty (BaseBaseClass2)",
-                "Base_VirtualPropertyNotOverriddenOrHidden"
+                "Base_VirtualPropertyNotOverriddenOrHidden",
+                // "BaseBase_PropertyForVHO (BaseBaseClass2)" // FixMe: Issue #69788
             };
 
             var only_own_accessors = new[]
@@ -111,6 +121,9 @@ namespace DebuggerTests
                 "Base_PropertyForOverridingWithProperty",
                 "BaseBase_AutoPropertyForHidingWithProperty",
                 "Base_AutoPropertyForOverridingWithProperty",
+                "BaseBase_PropertyForVHO",
+                "BaseBase_PropertyForVOH",
+                // "BaseBase_PropertyForVOO", // FixMe: Issue #69788
             };
 
             // all own, only accessors
@@ -437,6 +450,9 @@ namespace DebuggerTests
                 // own:
                 {"BaseBase_PropertyForHidingWithField",             TNumber(210)},
                 {"Base_PropertyForOverridingWithProperty",          TGetter("Base_PropertyForOverridingWithProperty", TDateTime(new DateTime(2020, 7, 6, 5, 4, 3)))},
+                {"BaseBase_PropertyForVHO",                         TGetter("BaseBase_PropertyForVHO", TString("Derived#BaseBase_PropertyForVHO"))},
+                {"BaseBase_PropertyForVOH",                         TGetter("BaseBase_PropertyForVOH", TString("Derived#BaseBase_PropertyForVOH"))},
+                // {"BaseBase_PropertyForVOO",                         TGetter("BaseBase_PropertyForVOO", TString("Derived#BaseBase_PropertyForVOO"))}, //FixMe: Issue #69788
 
                 // inherited from Base:
                 {"BaseBase_AutoPropertyForHidingWithField",                 TNumber(115)},
@@ -445,6 +461,7 @@ namespace DebuggerTests
                 {"FirstName",                                               TGetter("FirstName", TString("BaseClass#FirstName"))},
                 {"LastName",                                                TGetter("LastName", TString("BaseClass#LastName"))},
                 {"Base_VirtualPropertyNotOverriddenOrHidden",               TGetter("Base_VirtualPropertyNotOverriddenOrHidden", TDateTime(new DateTime(2134, 5, 7, 1, 9, 2)))},
+                {"BaseBase_PropertyForVOH (BaseClass2)",                    TGetter("BaseBase_PropertyForVOH (BaseClass2)", TString("Base#BaseBase_PropertyForVOH"))},
 
                 // inherited from BaseBase:
                 {"BaseBase_FieldForHidingWithField (BaseBaseClass2)",                TNumber(5)},
@@ -455,7 +472,8 @@ namespace DebuggerTests
                 {"BaseBase_AutoPropertyForHidingWithProperty (BaseBaseClass2)",      TString("BaseBase#BaseBase_AutoPropertyForHidingWithProperty")},
                 {"BaseBase_FieldForHidingWithAutoProperty (BaseBaseClass2)",         TString("BaseBase#BaseBase_FieldForHidingWithAutoProperty")},
                 {"BaseBase_PropertyForHidingWithAutoProperty (BaseBaseClass2)",      TGetter("BaseBase_PropertyForHidingWithAutoProperty (BaseBaseClass2)", TString("BaseBase#BaseBase_PropertyForHidingWithAutoProperty"))},
-                {"BaseBase_AutoPropertyForHidingWithAutoProperty (BaseBaseClass2)",  TString("BaseBase#BaseBase_AutoPropertyForHidingWithAutoProperty")}
+                {"BaseBase_AutoPropertyForHidingWithAutoProperty (BaseBaseClass2)",  TString("BaseBase#BaseBase_AutoPropertyForHidingWithAutoProperty")},
+                // {"BaseBase_PropertyForVHO (BaseBaseClass2)",                         TGetter("BaseBase_PropertyForVHO (BaseBaseClass2)", TString("BaseBase#BaseBase_PropertyForVHO"))}, // FixMe: Issue #69788
             };
 
             var internal_protected_props = new Dictionary<string, JObject>(){
@@ -522,7 +540,7 @@ namespace DebuggerTests
                 AssertHasOnlyExpectedProperties(expectedPublic.Keys.ToArray(), pub.Values<JObject>());
                 AssertHasOnlyExpectedProperties(expectedProtInter.Keys.ToArray(), internalAndProtected.Values<JObject>());
                 AssertHasOnlyExpectedProperties(expectedPriv.Keys.ToArray(), priv.Values<JObject>());
-                
+
                 await CheckProps(pub, expectedPublic, "public");
                 await CheckProps(internalAndProtected, expectedProtInter, "internalAndProtected");
                 await CheckProps(priv, expectedPriv, "private");

@@ -132,6 +132,11 @@ namespace DebuggerTests.GetPropertiesTests
         public string BaseBase_PropertyForHidingWithAutoProperty => "BaseBase#BaseBase_PropertyForHidingWithAutoProperty";
         public string BaseBase_AutoPropertyForHidingWithAutoProperty { get; set; }
 
+        // for virtual->override->new-hidden (VOH), virtual->new-hidden->override (VHO) and virtual->override->override (VOO)
+        public virtual string BaseBase_PropertyForVOH => "BaseBase#BaseBase_PropertyForVOH";
+        public virtual string BaseBase_PropertyForVHO => "BaseBase#BaseBase_PropertyForVHO";
+        // public virtual string BaseBase_PropertyForVOO => "BaseBase#BaseBase_PropertyForVOO"; // FixMe: Issue #69788
+
         public BaseBaseClass2()
         {
             BaseBase_AutoPropertyForHidingWithField = 15;
@@ -172,9 +177,14 @@ namespace DebuggerTests.GetPropertiesTests
         public virtual string FirstName => "BaseClass#FirstName";
         public virtual string LastName => "BaseClass#LastName";
 
+        // for virtual->override->new-hidden (VOH), virtual->new-hidden->override (VHO) and virtual->override->override (VOO)
+        public override string BaseBase_PropertyForVOH => "Base#BaseBase_PropertyForVOH";
+        public new virtual string BaseBase_PropertyForVHO => "Base#BaseBase_PropertyForVHO";
+        // public override string BaseBase_PropertyForVOO => "BaseBase#BaseBase_PropertyForVOO"; // FixMe: Issue #69788
+
         public BaseClass2()
         {
-            BaseBase_PropertyForHidingWithField = BaseBase_FieldForHidingWithField + 5; // surpressing non-used variable warning
+            BaseBase_PropertyForHidingWithField = BaseBase_FieldForHidingWithField + 5; // suppressing non-used variable warning
             BaseBase_FieldForHidingWithAutoProperty = "Base#BaseBase_FieldForHidingWithAutoProperty";
             BaseBase_PropertyForHidingWithAutoProperty = "Base#BaseBase_PropertyForHidingWithAutoProperty";
             BaseBase_AutoPropertyForHidingWithAutoProperty = "Base#BaseBase_AutoPropertyForHidingWithAutoProperty";
@@ -197,6 +207,11 @@ namespace DebuggerTests.GetPropertiesTests
         public new int BaseBase_PropertyForHidingWithField = 210;
         protected new string BaseBase_AutoPropertyForHidingWithProperty => "Derived#BaseBase_AutoPropertyForHidingWithProperty";
         private new string BaseBase_FieldForHidingWithAutoProperty { get; set; }
+
+        // for virtual->override->new-hidden (VOH), virtual->new-hidden->override (VHO) and virtual->override->override (VOO)
+        public new string BaseBase_PropertyForVOH => "Derived#BaseBase_PropertyForVOH";
+        public override string BaseBase_PropertyForVHO => "Derived#BaseBase_PropertyForVHO";
+        // public override string BaseBase_PropertyForVOO => "Derived#BaseBase_PropertyForVOO"; // FixMe: Issue #69788
 
         public DerivedClass2()
         {
