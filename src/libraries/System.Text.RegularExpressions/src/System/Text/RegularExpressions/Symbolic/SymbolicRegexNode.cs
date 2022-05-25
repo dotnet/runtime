@@ -132,7 +132,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
                     case SymbolicRegexNodeKind.DisableBacktrackingSimulation:
                     case SymbolicRegexNodeKind.Effect:
-                    case SymbolicRegexNodeKind.OrderedOr:
+                    case SymbolicRegexNodeKind.Alternate:
                         Debug.Assert(node._left is not null);
                         //the left alternative must be high-priority-nullable
                         //nullability of the right alternative does not matter
@@ -174,12 +174,15 @@ namespace System.Text.RegularExpressions.Symbolic
         internal SymbolicRegexInfo _info;
 
 
-        /// <summary>Converts a Concat or OrderdOr into an array, returns anything else in a singleton array.</summary>
+        /// <summary>
+        /// Converts a list of a given kind, e.g. Concat or Alternate, into an array,
+        /// returns anything else in a singleton array.
+        /// </summary>
         /// <param name="list">a list to insert the elements into, or null to return results in a new list</param>
         /// <param name="listKind">kind of node to consider as the list builder</param>
         public List<SymbolicRegexNode<TSet>> ToList(List<SymbolicRegexNode<TSet>>? list = null, SymbolicRegexNodeKind listKind = SymbolicRegexNodeKind.Concat)
         {
-            Debug.Assert(listKind == SymbolicRegexNodeKind.Concat || listKind == SymbolicRegexNodeKind.OrderedOr);
+            Debug.Assert(listKind == SymbolicRegexNodeKind.Concat || listKind == SymbolicRegexNodeKind.Alternate);
             list ??= new List<SymbolicRegexNode<TSet>>();
             AppendToList(this, list, listKind);
             return list;
@@ -259,7 +262,7 @@ namespace System.Text.RegularExpressions.Symbolic
                         is_nullable = _left.IsNullableFor(context) && _right.IsNullableFor(context);
                         break;
 
-                    case SymbolicRegexNodeKind.OrderedOr:
+                    case SymbolicRegexNodeKind.Alternate:
                         Debug.Assert(_left is not null && _right is not null);
                         is_nullable = _left.IsNullableFor(context) || _right.IsNullableFor(context);
                         break;
@@ -509,8 +512,8 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         /// <summary>
-        /// Make an ordered or of given regexes, eliminate nothing regexes and treat .* as consuming element.
-        /// Keep the or flat, assuming both right and left are flat.
+        /// Make an alternation of given regexes, eliminate nothing regexes and treat .* as consuming element.
+        /// Keep the alternation flat, assuming both right and left are flat.
         /// Apply subsumption/combining optimizations, such that e.g. a?b|b will be simplified to a?b and b|a?b will be combined to a??b
         /// </summary>
         /// <remarks>
@@ -524,7 +527,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <param name="deduplicated">whether to skip deduplication</param>
         /// <param name="hintRightLikelySubsumes">if true then simplification rules succeeding when the right hand side subsumes the left hand side are tried first</param>
         /// <returns></returns>
-        internal static SymbolicRegexNode<TSet> OrderedOr(SymbolicRegexBuilder<TSet> builder, SymbolicRegexNode<TSet> left, SymbolicRegexNode<TSet> right, bool deduplicated = false, bool hintRightLikelySubsumes = false)
+        internal static SymbolicRegexNode<TSet> CreateAlternate(SymbolicRegexBuilder<TSet> builder, SymbolicRegexNode<TSet> left, SymbolicRegexNode<TSet> right, bool deduplicated = false, bool hintRightLikelySubsumes = false)
         {
             if (left.IsAnyStar || right == builder._nothing || left == right || (left.IsNullable && right.IsEpsilon))
                 return left;
@@ -533,33 +536,33 @@ namespace System.Text.RegularExpressions.Symbolic
 
             // Handle cases where right is an alternation or not uniformly. If right is R|S then the head is R and the
             // tail is S. If right is not an alternation then the head is right and the tail is nothing.
-            SymbolicRegexNode<TSet> head = right._kind == SymbolicRegexNodeKind.OrderedOr ? right._left! : right;
-            SymbolicRegexNode<TSet> tail = right._kind == SymbolicRegexNodeKind.OrderedOr ? right._right! : builder._nothing;
+            SymbolicRegexNode<TSet> head = right._kind == SymbolicRegexNodeKind.Alternate ? right._left! : right;
+            SymbolicRegexNode<TSet> tail = right._kind == SymbolicRegexNodeKind.Alternate ? right._right! : builder._nothing;
 
             // Simplify away right side if left side subsumes it. For example X?Y|Y|Z would simplify to just X?Y|Z.
             if (!hintRightLikelySubsumes && left.Subsumes(head))
-                return OrderedOr(builder, left, tail);
+                return CreateAlternate(builder, left, tail);
 
             // Simplify by folding right side into left side if right side subsumes the left side. For example Y|X?Y|Z
             // would simplify to X??Y|Z.
             if (head.Subsumes(left) && TryFoldAlternation(left, head, out SymbolicRegexNode<TSet>? result))
-                return OrderedOr(builder, result, tail);
+                return CreateAlternate(builder, result, tail);
 
             // This is a repeat of a rule above, but for the case when the hint tells us to try reverse subsumption first.
             if (hintRightLikelySubsumes && left.Subsumes(head))
-                return OrderedOr(builder, left, tail);
+                return CreateAlternate(builder, left, tail);
 
-            // If left is not an Or, try to avoid allocation by checking if deduplication is necessary
-            if (!deduplicated && left._kind != SymbolicRegexNodeKind.OrderedOr)
+            // If left is not an Alternate, try to avoid allocation by checking if deduplication is necessary
+            if (!deduplicated && left._kind != SymbolicRegexNodeKind.Alternate)
             {
                 SymbolicRegexNode<TSet> current = right;
                 // Initially assume there are no duplicates
                 deduplicated = true;
-                while (current._kind == SymbolicRegexNodeKind.OrderedOr)
+                while (current._kind == SymbolicRegexNodeKind.Alternate)
                 {
                     Debug.Assert(current._left is not null && current._right is not null);
-                    // All Ors are supposed to be in a right associative normal form
-                    Debug.Assert(current._left._kind != SymbolicRegexNodeKind.OrderedOr);
+                    // All Alternates are supposed to be in a right associative normal form
+                    Debug.Assert(current._left._kind != SymbolicRegexNodeKind.Alternate);
                     if (current._left == left)
                     {
                         // Duplicate found, mark that and exit early
@@ -573,12 +576,12 @@ namespace System.Text.RegularExpressions.Symbolic
                     deduplicated = (current != left);
             }
 
-            if (!deduplicated || left._kind == SymbolicRegexNodeKind.OrderedOr)
+            if (!deduplicated || left._kind == SymbolicRegexNodeKind.Alternate)
             {
                 // If the left side was an or, then it has to be flattened, gather the elements from both sides
-                List<SymbolicRegexNode<TSet>> elems = left.ToList(listKind: SymbolicRegexNodeKind.OrderedOr);
+                List<SymbolicRegexNode<TSet>> elems = left.ToList(listKind: SymbolicRegexNodeKind.Alternate);
                 int firstRightElem = elems.Count;
-                right.ToList(elems, listKind: SymbolicRegexNodeKind.OrderedOr);
+                right.ToList(elems, listKind: SymbolicRegexNodeKind.Alternate);
 
                 // Eliminate any duplicate elements, keeping the leftmost element
                 HashSet<SymbolicRegexNode<TSet>> seenElems = new();
@@ -604,7 +607,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     SymbolicRegexNode<TSet> or = builder._nothing;
                     for (int i = elems.Count - 1; i >= 0; i--)
                     {
-                        or = OrderedOr(builder, elems[i], or, deduplicated: true);
+                        or = CreateAlternate(builder, elems[i], or, deduplicated: true);
                     }
                     return or;
                 }
@@ -613,16 +616,16 @@ namespace System.Text.RegularExpressions.Symbolic
                     SymbolicRegexNode<TSet> or = right;
                     for (int i = firstRightElem - 1; i >= 0; i--)
                     {
-                        or = OrderedOr(builder, elems[i], or, deduplicated: true);
+                        or = CreateAlternate(builder, elems[i], or, deduplicated: true);
                     }
                     return or;
                 }
             }
 
-            Debug.Assert(left._kind != SymbolicRegexNodeKind.OrderedOr);
+            Debug.Assert(left._kind != SymbolicRegexNodeKind.Alternate);
             Debug.Assert(deduplicated);
 
-            return Create(builder, SymbolicRegexNodeKind.OrderedOr, left, right, -1, -1, default, SymbolicRegexInfo.Alternate(left._info, right._info));
+            return Create(builder, SymbolicRegexNodeKind.Alternate, left, right, -1, -1, default, SymbolicRegexInfo.Alternate(left._info, right._info));
         }
 
         /// <summary>
@@ -978,7 +981,7 @@ namespace System.Text.RegularExpressions.Symbolic
                         break;
                     }
 
-                case SymbolicRegexNodeKind.OrderedOr:
+                case SymbolicRegexNodeKind.Alternate:
                     {
                         Debug.Assert(_left is not null && _right is not null);
                         int length = _left.GetFixedLength();
@@ -1076,7 +1079,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
             switch (_kind)
             {
-                case SymbolicRegexNodeKind.OrderedOr:
+                case SymbolicRegexNodeKind.Alternate:
                     Debug.Assert(_left is not null && _right is not null);
                     // The left alternative, when nullable, has priority over the right alternative
                     // Otherwise the left alternative is still active and the right alternative is pruned
@@ -1084,7 +1087,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     // Thus, taking the higher-priority branch in backtracking that is known to lead to a match
                     // at which point the other branches become irrelevant and must no longer be used.
                     prunedNode = _left.IsNullableFor(context) ? _left.PruneLowerPriorityThanNullability(context) :
-                        OrderedOr(_builder, _left, _right.PruneLowerPriorityThanNullability(context), deduplicated: true);
+                        CreateAlternate(_builder, _left, _right.PruneLowerPriorityThanNullability(context), deduplicated: true);
                     break;
 
                 case SymbolicRegexNodeKind.Concat:
@@ -1097,10 +1100,10 @@ namespace System.Text.RegularExpressions.Symbolic
                     //---
                     //in a concatenation XZ where X is not an alternation, both X and Z are pruned
                     //e.g. a{0,5}?b{0,5}? reduces to ()
-                    prunedNode = _left._kind == SymbolicRegexNodeKind.OrderedOr ?
+                    prunedNode = _left._kind == SymbolicRegexNodeKind.Alternate ?
                         (_left._left!.IsNullableFor(context) ?
                             CreateConcat(_builder, _left._left, _right).PruneLowerPriorityThanNullability(context) :
-                            OrderedOr(_builder, CreateConcat(_builder, _left._left, _right), CreateConcat(_builder, _left._right!, _right).PruneLowerPriorityThanNullability(context))) :
+                            CreateAlternate(_builder, CreateConcat(_builder, _left._left, _right), CreateConcat(_builder, _left._right!, _right).PruneLowerPriorityThanNullability(context))) :
                         CreateConcat(_builder, _left.PruneLowerPriorityThanNullability(context), _right.PruneLowerPriorityThanNullability(context));
                     break;
 
@@ -1208,8 +1211,8 @@ namespace System.Text.RegularExpressions.Symbolic
                             // In the second case backtracking would try to continue to follow (ab)* after reading b
                             // This backtracking semantics is effectively being recorded into the order of the alternatives
                             derivative = _left.IsHighPriorityNullableFor(context) ?
-                                OrderedOr(_builder, rightDerivative, leftDerivative, hintRightLikelySubsumes: true) :
-                                OrderedOr(_builder, leftDerivative, rightDerivative);
+                                CreateAlternate(_builder, rightDerivative, leftDerivative, hintRightLikelySubsumes: true) :
+                                CreateAlternate(_builder, leftDerivative, rightDerivative);
                         }
                         break;
                     }
@@ -1238,10 +1241,10 @@ namespace System.Text.RegularExpressions.Symbolic
                         break;
                     }
 
-                case SymbolicRegexNodeKind.OrderedOr:
+                case SymbolicRegexNodeKind.Alternate:
                     {
                         Debug.Assert(_left is not null && _right is not null);
-                        derivative = OrderedOr(_builder, _left.CreateDerivative(elem, context), _right.CreateDerivative(elem, context));
+                        derivative = CreateAlternate(_builder, _left.CreateDerivative(elem, context), _right.CreateDerivative(elem, context));
                         break;
                     }
 
@@ -1290,14 +1293,14 @@ namespace System.Text.RegularExpressions.Symbolic
                     Debug.Assert(_left._info.ContainsEffect && !_right._info.ContainsEffect);
                     return _builder.CreateConcat(_left.StripEffects(), _right);
 
-                case SymbolicRegexNodeKind.OrderedOr:
+                case SymbolicRegexNodeKind.Alternate:
                     Debug.Assert(_left is not null && _right is not null);
                     // This iterative handling of nested alternations is important to avoid quadratic work in deduplicating
                     // the elements. We don't want to omit deduplication here, since he stripping may make nodes equal.
-                    List<SymbolicRegexNode<TSet>> elems = ToList(listKind: SymbolicRegexNodeKind.OrderedOr);
+                    List<SymbolicRegexNode<TSet>> elems = ToList(listKind: SymbolicRegexNodeKind.Alternate);
                     for (int i = 0; i < elems.Count; i++)
                         elems[i] = elems[i].StripEffects();
-                    return _builder.OrderedOr(elems);
+                    return _builder.Alternate(elems);
 
                 case SymbolicRegexNodeKind.DisableBacktrackingSimulation:
                     Debug.Assert(_left is not null);
@@ -1378,7 +1381,7 @@ namespace System.Text.RegularExpressions.Symbolic
                         break;
                     }
 
-                case SymbolicRegexNodeKind.OrderedOr:
+                case SymbolicRegexNodeKind.Alternate:
                     Debug.Assert(_left is not null && _right is not null);
                     _left.StripAndMapEffects(context, alternativesAndEffects, currentEffects);
                     _right.StripAndMapEffects(context, alternativesAndEffects, currentEffects);
@@ -1459,7 +1462,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     }
                     break;
 
-                case SymbolicRegexNodeKind.OrderedOr:
+                case SymbolicRegexNodeKind.Alternate:
                     Debug.Assert(_left is not null && _right is not null);
                     if (_left.IsNullableFor(context))
                     {
@@ -1544,7 +1547,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     sb.Append("\\a");
                     return;
 
-                case SymbolicRegexNodeKind.OrderedOr:
+                case SymbolicRegexNodeKind.Alternate:
                     Debug.Assert(_left is not null && _right is not null);
                     sb.Append('(');
                     _left.ToStringHelper(sb);
@@ -1749,7 +1752,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     _left.CollectSets(sets);
                     return;
 
-                case SymbolicRegexNodeKind.OrderedOr:
+                case SymbolicRegexNodeKind.Alternate:
                     Debug.Assert(_left is not null && _right is not null);
                     _left.CollectSets(sets);
                     _right.CollectSets(sets);
@@ -1825,9 +1828,9 @@ namespace System.Text.RegularExpressions.Symbolic
                         return rev;
                     }
 
-                case SymbolicRegexNodeKind.OrderedOr:
+                case SymbolicRegexNodeKind.Alternate:
                     Debug.Assert(_left is not null && _right is not null);
-                    return OrderedOr(_builder, _left.Reverse(), _right.Reverse());
+                    return CreateAlternate(_builder, _left.Reverse(), _right.Reverse());
 
                 case SymbolicRegexNodeKind.FixedLengthMarker:
                     // Fixed length markers are omitted in reverse
@@ -1886,7 +1889,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     Debug.Assert(_left is not null && _right is not null);
                     return _left.StartsWithLoop(upperBoundLowestValue) || (_left.IsNullable && _right.StartsWithLoop(upperBoundLowestValue));
 
-                case SymbolicRegexNodeKind.OrderedOr:
+                case SymbolicRegexNodeKind.Alternate:
                     Debug.Assert(_left is not null && _right is not null);
                     return _left.StartsWithLoop(upperBoundLowestValue) || _right.StartsWithLoop(upperBoundLowestValue);
 
@@ -1938,7 +1941,7 @@ namespace System.Text.RegularExpressions.Symbolic
                         return startSet;
                     }
 
-                case SymbolicRegexNodeKind.OrderedOr:
+                case SymbolicRegexNodeKind.Alternate:
                     {
                         Debug.Assert(_left is not null && _right is not null);
                         return _builder._solver.Or(_left._startSet, _right._startSet);
@@ -2022,7 +2025,7 @@ namespace System.Text.RegularExpressions.Symbolic
                             CreateConcat(_builder, left1, right1);
                     }
 
-                case SymbolicRegexNodeKind.OrderedOr:
+                case SymbolicRegexNodeKind.Alternate:
                     {
                         Debug.Assert(_left is not null && _right is not null);
                         SymbolicRegexNode<TSet> left1 = _left.PruneAnchors(prevKind, contWithWL, contWithNWL);
@@ -2031,7 +2034,7 @@ namespace System.Text.RegularExpressions.Symbolic
                         Debug.Assert(left1 is not null && right1 is not null);
                         return left1 == _left && right1 == _right ?
                             this :
-                            OrderedOr(_builder, left1, right1);
+                            CreateAlternate(_builder, left1, right1);
                     }
 
                 case SymbolicRegexNodeKind.Effect:
@@ -2075,7 +2078,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 case SymbolicRegexNodeKind.FixedLengthMarker:
                     return _lower;
 
-                case SymbolicRegexNodeKind.OrderedOr when IsNullable:
+                case SymbolicRegexNodeKind.Alternate when IsNullable:
                     Debug.Assert(_left is not null && _right is not null);
                     if (_left.IsNullable)
                         // Left is unconditionally nullable, so fixed length must be from left
@@ -2108,13 +2111,13 @@ namespace System.Text.RegularExpressions.Symbolic
                         yield return _builder.CreateDisableBacktrackingSimulation(element);
                     }
                     break;
-                case SymbolicRegexNodeKind.OrderedOr:
+                case SymbolicRegexNodeKind.Alternate:
                     // Loop through all the elements of an alternation
                     SymbolicRegexNode<TSet> current = this;
-                    while (current._kind is SymbolicRegexNodeKind.OrderedOr)
+                    while (current._kind is SymbolicRegexNodeKind.Alternate)
                     {
                         Debug.Assert(current._left is not null && current._right is not null);
-                        Debug.Assert(current._left._kind is not SymbolicRegexNodeKind.OrderedOr);
+                        Debug.Assert(current._left._kind is not SymbolicRegexNodeKind.Alternate);
                         // Alternations are in right associative form, so the left child is always an element of the alternation
                         yield return current._left;
                         current = current._right;

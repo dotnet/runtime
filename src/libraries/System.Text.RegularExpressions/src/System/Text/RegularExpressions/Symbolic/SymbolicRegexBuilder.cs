@@ -226,9 +226,9 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         /// <summary>
-        /// Make an ordered disjunction of given nodes, simplify by eliminating any regex that accepts no inputs
+        /// Make an alternation of given nodes, simplify by eliminating any regex that accepts no inputs
         /// </summary>
-        internal SymbolicRegexNode<TSet> OrderedOr(List<SymbolicRegexNode<TSet>> nodes)
+        internal SymbolicRegexNode<TSet> Alternate(List<SymbolicRegexNode<TSet>> nodes)
         {
             HashSet<SymbolicRegexNode<TSet>> seenElems = new();
 
@@ -242,7 +242,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 }
             }
 
-            // Iterate backwards to avoid quadratic rebuilding of the Or nodes, which are always simplified to
+            // Iterate backwards to avoid quadratic rebuilding of the Alternate nodes, which are always simplified to
             // right associative form. Concretely:
             // In (a|(b|c)) | d -> (a|(b|(c|d)) the first argument is not a subtree of the result.
             // In a | (b|(c|d)) -> (a|(b|(c|d)) the second argument is a subtree of the result.
@@ -250,7 +250,7 @@ namespace System.Text.RegularExpressions.Symbolic
             SymbolicRegexNode<TSet> or = _nothing;
             for (int i = nodes.Count - 1; i >= 0; --i)
             {
-                or = SymbolicRegexNode<TSet>.OrderedOr(this, nodes[i], or, deduplicated: true);
+                or = SymbolicRegexNode<TSet>.CreateAlternate(this, nodes[i], or, deduplicated: true);
             }
 
             return or;
@@ -441,9 +441,9 @@ namespace System.Text.RegularExpressions.Symbolic
                     Debug.Assert(node._left is not null);
                     return builder.CreateLoop(Transform(node._left, builder, setTransformer), node.IsLazy, node._lower, node._upper);
 
-                case SymbolicRegexNodeKind.OrderedOr:
+                case SymbolicRegexNodeKind.Alternate:
                     Debug.Assert(node._left is not null && node._right is not null);
-                    return SymbolicRegexNode<TNewSet>.OrderedOr(builder,
+                    return SymbolicRegexNode<TNewSet>.CreateAlternate(builder,
                         Transform(node._left, builder, setTransformer),
                         Transform(node._right, builder, setTransformer),
                         deduplicated: true);
@@ -543,7 +543,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </summary>
         public int CreateNfaState(SymbolicRegexNode<TSet> node, uint prevCharKind)
         {
-            Debug.Assert(node.Kind != SymbolicRegexNodeKind.OrderedOr);
+            Debug.Assert(node.Kind != SymbolicRegexNodeKind.Alternate);
 
             // First make the underlying core state
             DfaMatchingState<TSet> coreState = CreateState(node, prevCharKind);
@@ -641,11 +641,11 @@ namespace System.Text.RegularExpressions.Symbolic
 
                     SymbolicRegexNode<TSet> node = coreTarget.Node.Kind == SymbolicRegexNodeKind.DisableBacktrackingSimulation ?
                         coreTarget.Node._left! : coreTarget.Node;
-                    if (node.Kind == SymbolicRegexNodeKind.OrderedOr)
+                    if (node.Kind == SymbolicRegexNodeKind.Alternate)
                     {
                         // Create separate NFA states for all members of a disjunction
                         // Here duplicate NFA states cannot arise because there are no duplicate nodes in the disjunction
-                        List<SymbolicRegexNode<TSet>> alts = node.ToList(listKind: SymbolicRegexNodeKind.OrderedOr);
+                        List<SymbolicRegexNode<TSet>> alts = node.ToList(listKind: SymbolicRegexNodeKind.Alternate);
                         targets = new int[alts.Count];
                         int targetIndex = 0;
                         foreach (SymbolicRegexNode<TSet> q in alts)

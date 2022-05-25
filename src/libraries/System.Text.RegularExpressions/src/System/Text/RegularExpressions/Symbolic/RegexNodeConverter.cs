@@ -228,8 +228,9 @@ namespace System.Text.RegularExpressions.Symbolic
 
                         case RegexNodeKind.Alternate:
                             {
-                                // Alternations are created by creating an Or of all of its children.
-                                // This Or needs to be "ordered" to achieve the same semantics as the backtracking engines.
+                                // Alternations in SymbolicRegexNode are binary and always normalized to right associative
+                                // form, so here the list of children is built into a tree of alternations.
+                                // The order is kept to achieve the same semantics as the backtracking engines.
                                 SymbolicRegexNode<BDD> or = _builder._nothing;
 
                                 // Enumerate in reverse order through the child results
@@ -248,7 +249,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
                                     or = elem.IsAnyStar ?
                                         elem : // .* is the absorbing element
-                                        SymbolicRegexNode<BDD>.OrderedOr(_builder, elem, or);
+                                        SymbolicRegexNode<BDD>.CreateAlternate(_builder, elem, or);
                                 }
                                 result.AddLast(or);
                                 break;

@@ -15,7 +15,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>A node that matches a loop (e.g. <see cref="RegexNodeKind.Loop"/>, <see cref="RegexNodeKind.Lazyloop"/>, <see cref="RegexNodeKind.Setloop"/>, etc.).</summary>
         Loop,
         /// <summary>A node that matches if any of its nodes match and that matches them in a fixed order that mirrors how the backtracking engines operate (e.g. <see cref="RegexNodeKind.Alternate"/>).</summary>
-        OrderedOr,
+        Alternate,
 
         /// <summary>A node that represents a beginning anchor (i.e. <see cref="RegexNodeKind.Beginning"/>).</summary>
         BeginningAnchor,
