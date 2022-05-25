@@ -4637,7 +4637,8 @@ namespace System.Numerics
             }
             else if (typeof(TOther) == typeof(decimal))
             {
-                decimal actualResult = (decimal)value;
+                decimal actualResult = (value >= new Int128(0x0000_0000_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)) ? decimal.MaxValue :
+                                       (value <= new Int128(0xFFFF_FFFF_0000_0000, 0x0000_0000_0000_0001)) ? decimal.MinValue : (decimal)value;
                 result = (TOther)(object)actualResult;
                 return true;
             }
@@ -4847,40 +4848,8 @@ namespace System.Numerics
             }
             else if (typeof(TOther) == typeof(decimal))
             {
-                decimal actualResult;
-
-                if (value._bits is not null)
-                {
-                    ulong lowerBits = 0;
-                    ulong upperBits = 0;
-
-                    if (value._bits.Length >= 3)
-                    {
-                        upperBits = value._bits[2];
-                    }
-
-                    if (value._bits.Length >= 2)
-                    {
-                        lowerBits = value._bits[1];
-                        lowerBits <<= 32;
-                    }
-
-                    lowerBits |= value._bits[0];
-
-                    UInt128 bits = new UInt128(upperBits, lowerBits);
-
-                    if (IsNegative(value))
-                    {
-                        bits = ~bits + 1;
-                    }
-
-                    actualResult = (decimal)bits;
-                }
-                else
-                {
-                    actualResult = value._sign;
-                }
-
+                decimal actualResult = (value >= new Int128(0x0000_0000_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)) ? decimal.MaxValue :
+                                       (value <= new Int128(0xFFFF_FFFF_0000_0000, 0x0000_0000_0000_0001)) ? decimal.MinValue : (decimal)value;
                 result = (TOther)(object)actualResult;
                 return true;
             }
@@ -5163,7 +5132,7 @@ namespace System.Numerics
 
                     if (value._bits.Length >= 3)
                     {
-                        upperBits = value._bits[2];
+                        upperBits |= value._bits[2];
                     }
 
                     if (value._bits.Length >= 2)
