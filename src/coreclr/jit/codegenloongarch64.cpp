@@ -5297,6 +5297,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_OR:
         case GT_XOR:
         case GT_AND:
+        case GT_AND_NOT:
             assert(varTypeIsIntegralOrI(treeNode));
 
             FALLTHROUGH;
@@ -7116,17 +7117,12 @@ void CodeGen::genCall(GenTreeCall* call)
         // Deal with multi register passed struct args.
         if (argNode->OperGet() == GT_FIELD_LIST)
         {
-            regNumber argReg = abiInfo.GetRegNum();
             for (GenTreeFieldList::Use& use : argNode->AsFieldList()->Uses())
             {
                 GenTree* putArgRegNode = use.GetNode();
                 assert(putArgRegNode->gtOper == GT_PUTARG_REG);
 
                 genConsumeReg(putArgRegNode);
-                var_types dstType = emitter::isFloatReg(argReg) ? TYP_DOUBLE : TYP_I_IMPL;
-                inst_Mov(dstType, argReg, putArgRegNode->GetRegNum(), /* canSkip */ true);
-
-                argReg = genRegArgNext(argReg);
             }
         }
         else if (abiInfo.IsSplit())
@@ -7709,7 +7705,7 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
 
         case GenIntCastDesc::CHECK_INT_RANGE:
         {
-            const regNumber tempReg = cast->GetSingleTempReg();
+            const regNumber tempReg = rsGetRsvdReg();
             assert(tempReg != reg);
             GetEmitter()->emitIns_I_la(EA_8BYTE, tempReg, INT32_MAX);
             genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_blt, tempReg, nullptr, reg);

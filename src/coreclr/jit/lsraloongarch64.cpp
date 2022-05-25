@@ -871,14 +871,11 @@ int LinearScan::BuildCall(GenTreeCall* call)
         {
             assert(argNode->isContained());
 
-            // There could be up to 2-4 PUTARG_REGs in the list (3 or 4 can only occur for HFAs)
+            // There could be up to 2 PUTARG_REGs in the list.
             for (GenTreeFieldList::Use& use : argNode->AsFieldList()->Uses())
             {
 #ifdef DEBUG
                 assert(use.GetNode()->OperIs(GT_PUTARG_REG));
-                assert(use.GetNode()->GetRegNum() == argReg);
-                // Update argReg for the next putarg_reg (if any)
-                argReg = genRegArgNext(argReg);
 #endif
                 BuildUse(use.GetNode(), genRegMask(use.GetNode()->GetRegNum()));
                 srcCount++;
