@@ -19,7 +19,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [InlineData(42L)]
         [InlineData(int.MaxValue)]
         [InlineData(0xF_FFFF_FFFFL)]
-        [InlineData(9007199254740991L)]//MAX_SAFE_INTEGER 
+        [InlineData(9007199254740991L)]//MAX_SAFE_INTEGER
         public static unsafe void Int52TestOK(long value)
         {
             long expected = value;
@@ -46,7 +46,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [InlineData(42UL)]
         [InlineData(uint.MaxValue)]
         [InlineData(0xF_FFFF_FFFFUL)]
-        [InlineData(9007199254740991UL)]//MAX_SAFE_INTEGER 
+        [InlineData(9007199254740991UL)]//MAX_SAFE_INTEGER
         public static unsafe void UInt52TestOK(ulong value)
         {
             ulong expected = value;
@@ -101,14 +101,14 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             var bagFn = new Function("ptr", "value", @"
                 globalThis.App.MONO.setI52(ptr, value);");
             var ex=Assert.Throws<JSException>(() => bagFn.Call(null, ptr, value));
-            Assert.Contains("Overflow: value out of Number.isSafeInteger range", ex.Message);
+            Assert.Contains("Value is not a safe integer", ex.Message);
 
             double expectedD = value;
             uint ptrD = (uint)Unsafe.AsPointer(ref expectedD);
             var bagFnD = new Function("ptr", "value", @"
                 globalThis.App.MONO.getI52(ptr);");
             var exD = Assert.Throws<JSException>(() => bagFn.Call(null, ptr, value));
-            Assert.Contains("Overflow: value out of Number.isSafeInteger range", ex.Message);
+            Assert.Contains("Value is not a safe integer", ex.Message);
         }
 
         [Theory]
@@ -138,7 +138,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             var bagFn = new Function("ptr", "value", @"
                 globalThis.App.MONO.setI52(ptr, value);");
             var ex=Assert.Throws<JSException>(() => bagFn.Call(null, ptr, double.NaN));
-            Assert.Contains("Can't convert Number.Nan into Int64", ex.Message);
+            Assert.Contains("Value is not a safe integer: NaN (number)", ex.Message);
         }
     }
 }

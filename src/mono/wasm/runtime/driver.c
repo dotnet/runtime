@@ -6,6 +6,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <assert.h>
+#include <math.h>
 #include <dlfcn.h>
 #include <sys/stat.h>
 
@@ -1010,6 +1011,7 @@ static int
 _mono_wasm_try_unbox_primitive_and_get_type_ref_impl (PVOLATILE(MonoObject) obj, void *result, int result_capacity) {
 	void **resultP = result;
 	int *resultI = result;
+	uint32_t *resultU = result;
 	int64_t *resultL = result;
 	float *resultF = result;
 	double *resultD = result;
@@ -1053,22 +1055,21 @@ _mono_wasm_try_unbox_primitive_and_get_type_ref_impl (PVOLATILE(MonoObject) obj,
 			*resultI = *(signed char*)mono_object_unbox (obj);
 			break;
 		case MONO_TYPE_U1:
-			*resultI = *(unsigned char*)mono_object_unbox (obj);
+			*resultU = *(unsigned char*)mono_object_unbox (obj);
 			break;
 		case MONO_TYPE_I2:
 		case MONO_TYPE_CHAR:
 			*resultI = *(short*)mono_object_unbox (obj);
 			break;
 		case MONO_TYPE_U2:
-			*resultI = *(unsigned short*)mono_object_unbox (obj);
+			*resultU = *(unsigned short*)mono_object_unbox (obj);
 			break;
 		case MONO_TYPE_I4:
 		case MONO_TYPE_I:
 			*resultI = *(int*)mono_object_unbox (obj);
 			break;
 		case MONO_TYPE_U4:
-			// FIXME: Will this behave the way we want for large unsigned values?
-			*resultI = *(int*)mono_object_unbox (obj);
+			*resultU = *(uint32_t*)mono_object_unbox (obj);
 			break;
 		case MONO_TYPE_R4:
 			*resultF = *(float*)mono_object_unbox (obj);
@@ -1077,7 +1078,7 @@ _mono_wasm_try_unbox_primitive_and_get_type_ref_impl (PVOLATILE(MonoObject) obj,
 			*resultD = *(double*)mono_object_unbox (obj);
 			break;
 		case MONO_TYPE_PTR:
-			*resultL = (int64_t)(*(void**)mono_object_unbox (obj));
+			*resultU = (uint32_t)(*(void**)mono_object_unbox (obj));
 			break;
 		case MONO_TYPE_I8:
 		case MONO_TYPE_U8:
@@ -1354,4 +1355,56 @@ mono_wasm_init_finalizer_thread (void)
 #if 0
 	mono_gc_init_finalizer_thread ();
 #endif
+}
+
+#define I52_ERROR_NONE 0
+#define I52_ERROR_NON_INTEGRAL 1
+#define I52_ERROR_OUT_OF_RANGE 2
+
+#define U52_MAX_VALUE ((1ULL << 53) - 1)
+#define I52_MAX_VALUE ((1LL << 53) - 1)
+#define I52_MIN_VALUE -I52_MAX_VALUE
+
+EMSCRIPTEN_KEEPALIVE double mono_wasm_i52_to_f64 (int64_t *source, int *error) {
+	int64_t value = *source;
+
+	if ((value < I52_MIN_VALUE) || (value > I52_MAX_VALUE)) {
+		*error = I52_ERROR_OUT_OF_RANGE;
+		return NAN;
+	}
+
+	*error = I52_ERROR_NONE;
+	return (double)value;
+}
+
+EMSCRIPTEN_KEEPALIVE double mono_wasm_u52_to_f64 (uint64_t *source, int *error) {
+	uint64_t value = *source;
+
+	if (value > U52_MAX_VALUE) {
+		*error = I52_ERROR_OUT_OF_RANGE;
+		return NAN;
+	}
+
+	*error = I52_ERROR_NONE;
+	return (double)value;
+}
+
+EMSCRIPTEN_KEEPALIVE int mono_wasm_f64_to_u52 (uint64_t *destination, double value) {
+	if ((value < 0) || (value > U52_MAX_VALUE))
+		return I52_ERROR_OUT_OF_RANGE;
+	if (floor(value) != value)
+		return I52_ERROR_NON_INTEGRAL;
+
+	*destination = (uint64_t)value;
+	return I52_ERROR_NONE;
+}
+
+EMSCRIPTEN_KEEPALIVE int mono_wasm_f64_to_i52 (int64_t *destination, double value) {
+	if ((value < I52_MIN_VALUE) || (value > I52_MAX_VALUE))
+		return I52_ERROR_OUT_OF_RANGE;
+	if (floor(value) != value)
+		return I52_ERROR_NON_INTEGRAL;
+
+	*destination = (int64_t)value;
+	return I52_ERROR_NONE;
 }
