@@ -379,7 +379,7 @@ namespace System
             return path;
         }
 
-        // Seperate type so a .cctor is not created for Enviroment which then would be triggered during startup
+        // Separate type so a .cctor is not created for Environment which then would be triggered during startup
         private static class WindowsVersion
         {
             // Cache the value in static readonly that can be optimized out by the JIT

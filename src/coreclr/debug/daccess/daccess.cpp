@@ -33,7 +33,7 @@ extern "C" bool TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddre
 #include "dwbucketmanager.hpp"
 #include "gcinterface.dac.h"
 
-// To include definiton of IsThrowableThreadAbortException
+// To include definition of IsThrowableThreadAbortException
 // #include <exstatecommon.h>
 
 CRITICAL_SECTION g_dacCritSec;
@@ -269,7 +269,7 @@ SplitFullName(_In_z_ PCWSTR fullName,
 
         memberStart = memberEnd;
 
-        for (;;)
+        while (true)
         {
             while (memberStart >= fullName &&
                    *memberStart != W('.'))
@@ -547,7 +547,7 @@ MetaEnum::NextDomainToken(AppDomain** appDomain,
     // Splay tokens across all app domains.
     //
 
-    for (;;)
+    while (true)
     {
         if (m_lastToken == mdTokenNil)
         {
@@ -583,7 +583,7 @@ MetaEnum::NextTokenByName(_In_opt_ LPCUTF8 namespaceName,
     HRESULT status;
     LPCUTF8 tokNamespace, tokName;
 
-    for (;;)
+    while (true)
     {
         if ((status = NextToken(token, &tokNamespace, &tokName)) != S_OK)
         {
@@ -626,7 +626,7 @@ MetaEnum::NextDomainTokenByName(_In_opt_ LPCUTF8 namespaceName,
     // Splay tokens across all app domains.
     //
 
-    for (;;)
+    while (true)
     {
         if (m_lastToken == mdTokenNil)
         {
@@ -1370,7 +1370,7 @@ SplitName::CdNextDomainField(ClrDataAccess* dac,
     // Splay fields across all app domains.
     //
 
-    for (;;)
+    while (true)
     {
         if (!split->m_lastField)
         {
@@ -1994,7 +1994,7 @@ void DacInstanceManager::Flush(bool fSaveBlock)
     // forget all the internal pointers.
     //
 
-    for (;;)
+    while (true)
     {
         FreeAllBlocks(fSaveBlock);
 
@@ -5335,7 +5335,7 @@ ClrDataAccess::FollowStub2(
         Thread* thread = task ? ((ClrDataTask*)task)->GetThread() : NULL;
         ULONG32 loops = 4;
 
-        for (;;)
+        while (true)
         {
             if ((status = FollowStubStep(thread,
                                          inFlags,

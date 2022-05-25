@@ -11,7 +11,6 @@ using System.Runtime.InteropServices;
 
 namespace Microsoft.Interop
 {
-
     /// <summary>
     /// Type used to pass on default marshalling details.
     /// </summary>
@@ -72,7 +71,6 @@ namespace Microsoft.Interop
         Undefined,
         Utf8,
         Utf16,
-        Ansi,
         Custom
     }
 
@@ -761,7 +759,13 @@ namespace Microsoft.Interop
                 }
                 else
                 {
-                    marshallingInfo = CreateStringMarshallingInfo(type, _defaultInfo.CharEncoding);
+                    marshallingInfo = _defaultInfo.CharEncoding switch
+                    {
+                        CharEncoding.Utf16 => CreateStringMarshallingInfo(type, TypeNames.Utf16StringMarshaller),
+                        CharEncoding.Utf8 => CreateStringMarshallingInfo(type, TypeNames.Utf8StringMarshaller),
+                        _ => throw new InvalidOperationException()
+                    };
+
                     return true;
                 }
 
@@ -842,30 +846,25 @@ namespace Microsoft.Interop
             ITypeSymbol type,
             UnmanagedType unmanagedType)
         {
-            CharEncoding charEncoding = unmanagedType switch
+            string? marshallerName = unmanagedType switch
             {
-                UnmanagedType.LPStr => CharEncoding.Ansi,
-                UnmanagedType.LPTStr or UnmanagedType.LPWStr => CharEncoding.Utf16,
-                MarshalAsInfo.UnmanagedType_LPUTF8Str => CharEncoding.Utf8,
-                _ => CharEncoding.Undefined
+                UnmanagedType.BStr => TypeNames.BStrStringMarshaller,
+                UnmanagedType.LPStr => TypeNames.AnsiStringMarshaller,
+                UnmanagedType.LPTStr or UnmanagedType.LPWStr => TypeNames.Utf16StringMarshaller,
+                MarshalAsInfo.UnmanagedType_LPUTF8Str => TypeNames.Utf8StringMarshaller,
+                _ => null
             };
-            if (charEncoding == CharEncoding.Undefined)
+
+            if (marshallerName is null)
                 return new MarshalAsInfo(unmanagedType, _defaultInfo.CharEncoding);
 
-            return CreateStringMarshallingInfo(type, charEncoding);
+            return CreateStringMarshallingInfo(type, marshallerName);
         }
 
         private MarshallingInfo CreateStringMarshallingInfo(
             ITypeSymbol type,
-            CharEncoding charEncoding)
+            string marshallerName)
         {
-            string? marshallerName = charEncoding switch
-            {
-                CharEncoding.Ansi => TypeNames.AnsiStringMarshaller,
-                CharEncoding.Utf16 => TypeNames.Utf16StringMarshaller,
-                CharEncoding.Utf8 => TypeNames.Utf8StringMarshaller,
-                _ => throw new InvalidOperationException()
-            };
             INamedTypeSymbol? stringMarshaller = _compilation.GetTypeByMetadataName(marshallerName);
             if (stringMarshaller is null)
                 return new MissingSupportMarshallingInfo();
@@ -876,9 +875,9 @@ namespace Microsoft.Interop
             return CreateNativeMarshallingInfoForValue(
                 type,
                 stringMarshaller,
-                default,
+                null,
                 customTypeMarshallerData.Value,
-                allowPinningManagedType: charEncoding == CharEncoding.Utf16,
+                allowPinningManagedType: marshallerName is TypeNames.Utf16StringMarshaller,
                 useDefaultMarshalling: false);
         }
 

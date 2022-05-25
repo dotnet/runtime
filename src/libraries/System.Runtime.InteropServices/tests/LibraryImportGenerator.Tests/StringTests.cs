@@ -23,6 +23,7 @@ namespace LibraryImportGenerator.IntegrationTests
 
             private const string UShortSuffix = "_ushort";
             private const string ByteSuffix = "_byte";
+            private const string BStrSuffix = "_bstr";
 
             public class Byte
             {
@@ -40,6 +41,15 @@ namespace LibraryImportGenerator.IntegrationTests
                 public const string ReverseOut = EntryPoints.ReverseOut + UShortSuffix;
                 public const string ReverseInplace = EntryPoints.ReverseInplace + UShortSuffix;
                 public const string ReverseReplace = EntryPoints.ReverseReplace + UShortSuffix;
+            }
+
+            public class BStr
+            {
+                public const string ReturnLength = EntryPoints.ReturnLength + BStrSuffix;
+                public const string ReverseReturn = EntryPoints.ReverseReturn + BStrSuffix;
+                public const string ReverseOut = EntryPoints.ReverseOut + BStrSuffix;
+                public const string ReverseInplace = EntryPoints.ReverseInplace + BStrSuffix;
+                public const string ReverseReplace = EntryPoints.ReverseReplace + BStrSuffix;
             }
         }
 
@@ -183,6 +193,31 @@ namespace LibraryImportGenerator.IntegrationTests
 
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReverseReplace)]
             public static partial void Reverse_Replace_Ref([MarshalAs(UnmanagedType.LPStr)] ref string s);
+        }
+
+        public partial class BStr
+        {
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.BStr.ReturnLength)]
+            public static partial int ReturnLength([MarshalAs(UnmanagedType.BStr)] string s);
+
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.BStr.ReturnLength, StringMarshalling = StringMarshalling.Utf16)]
+            public static partial int ReturnLength_IgnoreStringMarshalling([MarshalAs(UnmanagedType.BStr)] string s);
+
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.BStr.ReverseReturn)]
+            [return: MarshalAs(UnmanagedType.BStr)]
+            public static partial string Reverse_Return([MarshalAs(UnmanagedType.BStr)] string s);
+
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.BStr.ReverseOut)]
+            public static partial void Reverse_Out([MarshalAs(UnmanagedType.BStr)] string s, [MarshalAs(UnmanagedType.BStr)] out string ret);
+
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.BStr.ReverseInplace)]
+            public static partial void Reverse_Ref([MarshalAs(UnmanagedType.BStr)] ref string s);
+
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.BStr.ReverseInplace)]
+            public static partial void Reverse_In([MarshalAs(UnmanagedType.BStr)] in string s);
+
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.BStr.ReverseReplace)]
+            public static partial void Reverse_Replace_Ref([MarshalAs(UnmanagedType.BStr)] ref string s);
         }
 
         public partial class StringMarshallingCustomType
@@ -415,6 +450,48 @@ namespace LibraryImportGenerator.IntegrationTests
 
             refValue = value;
             NativeExportsNE.LPStr.Reverse_Replace_Ref(ref refValue);
+            Assert.Equal(expected, refValue);
+        }
+
+        [Theory]
+        [MemberData(nameof(UnicodeStrings))]
+        public void BStrStringMarshalledAsExpected(string value)
+        {
+            int expectedLen = value != null ? value.Length : -1;
+
+            Assert.Equal(expectedLen, NativeExportsNE.BStr.ReturnLength(value));
+            Assert.Equal(expectedLen, NativeExportsNE.BStr.ReturnLength_IgnoreStringMarshalling(value));
+        }
+
+        [Theory]
+        [MemberData(nameof(UnicodeStrings))]
+        public void BStrStringReturn(string value)
+        {
+            string expected = ReverseChars(value);
+
+            Assert.Equal(expected, NativeExportsNE.BStr.Reverse_Return(value));
+
+            string ret;
+            NativeExportsNE.BStr.Reverse_Out(value, out ret);
+            Assert.Equal(expected, ret);
+        }
+
+        [Theory]
+        [MemberData(nameof(UnicodeStrings))]
+        public void BStrStringByRef(string value)
+        {
+            string refValue = value;
+            string expected = ReverseChars(value);
+
+            NativeExportsNE.BStr.Reverse_In(in refValue);
+            Assert.Equal(value, refValue); // Should not be updated when using 'in'
+
+            refValue = value;
+            NativeExportsNE.BStr.Reverse_Ref(ref refValue);
+            Assert.Equal(expected, refValue);
+
+            refValue = value;
+            NativeExportsNE.BStr.Reverse_Replace_Ref(ref refValue);
             Assert.Equal(expected, refValue);
         }
 

@@ -1243,7 +1243,7 @@ Thread::UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout)
     DWORD dwSwitchCount = 0;
 #endif // !defined(DISABLE_THREADSUSPEND)
 
-    for (;;)
+    while (true)
     {
         // Lock the thread store
         LOG((LF_SYNC, INFO3, "UserAbort obtain lock\n"));
@@ -1617,7 +1617,7 @@ LPrepareRetry:
         }
 #endif
 
-    } // for(;;)
+    } // while (true)
 
     if ((GetAbortEndTime() != MAXULONGLONG)  && IsAbortRequested())
     {
@@ -2121,7 +2121,7 @@ void Thread::RareDisablePreemptiveGC()
 
         DWORD dwSwitchCount = 0;
 
-        for (;;)
+        while (true)
         {
             EnablePreemptiveGC();
 
@@ -3728,7 +3728,7 @@ void EnableStressHeapHelper()
 
 // We're done with our GC.  Let all the threads run again.
 // By this point we've already unblocked most threads.  This just releases the ThreadStore lock.
-void ThreadSuspend::ResumeRuntime(BOOL bFinishedGC, BOOL SuspendSucceded)
+void ThreadSuspend::ResumeRuntime(BOOL bFinishedGC, BOOL SuspendSucceeded)
 {
     CONTRACTL {
         NOTHROW;
@@ -3744,7 +3744,7 @@ void ThreadSuspend::ResumeRuntime(BOOL bFinishedGC, BOOL SuspendSucceded)
     _ASSERTE(IsGCSpecialThread() || ThreadStore::HoldingThreadStore());
     _ASSERTE(!GCHeapUtilities::IsGCInProgress() );
 
-    STRESS_LOG2(LF_SYNC, LL_INFO1000, "Thread::ResumeRuntime(finishedGC=%d, SuspendSucceeded=%d) - Start\n", bFinishedGC, SuspendSucceded);
+    STRESS_LOG2(LF_SYNC, LL_INFO1000, "Thread::ResumeRuntime(finishedGC=%d, SuspendSucceeded=%d) - Start\n", bFinishedGC, SuspendSucceeded);
 
     //
     // Notify everyone who cares, that this suspension is over, and this thread is going to go do other things.
@@ -5525,7 +5525,7 @@ void Thread::UnmarkForSuspension(ULONG mask)
 
 //----------------------------------------------------------------------------
 
-void ThreadSuspend::RestartEE(BOOL bFinishedGC, BOOL SuspendSucceded)
+void ThreadSuspend::RestartEE(BOOL bFinishedGC, BOOL SuspendSucceeded)
 {
     ThreadSuspend::s_fSuspended = false;
 #ifdef TIME_SUSPEND
@@ -5578,7 +5578,7 @@ void ThreadSuspend::RestartEE(BOOL bFinishedGC, BOOL SuspendSucceded)
     Thread  *thread = NULL;
     while ((thread = ThreadStore::GetThreadList(thread)) != NULL)
     {
-        thread->PrepareForEERestart(SuspendSucceded);
+        thread->PrepareForEERestart(SuspendSucceeded);
     }
 
     //
@@ -5605,7 +5605,7 @@ void ThreadSuspend::RestartEE(BOOL bFinishedGC, BOOL SuspendSucceded)
     GCHeapUtilities::GetGCHeap()->SetWaitForGCEvent();
     _ASSERTE(IsGCSpecialThread() || ThreadStore::HoldingThreadStore());
 
-    ResumeRuntime(bFinishedGC, SuspendSucceded);
+    ResumeRuntime(bFinishedGC, SuspendSucceeded);
 
     FireEtwGCRestartEEEnd_V1(GetClrInstanceId());
 

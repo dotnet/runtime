@@ -13,7 +13,7 @@ namespace System.Runtime.InteropServices.Marshalling
         Features = CustomTypeMarshallerFeatures.UnmanagedResources | CustomTypeMarshallerFeatures.TwoStageMarshalling)]
     public unsafe ref struct Utf16StringMarshaller
     {
-        private ushort* _nativeValue;
+        private void* _nativeValue;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Utf16StringMarshaller"/>.
@@ -25,7 +25,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <param name="str">The string to marshal.</param>
         public Utf16StringMarshaller(string? str)
         {
-            _nativeValue = (ushort*)Marshal.StringToCoTaskMemUni(str);
+            _nativeValue = (void*)Marshal.StringToCoTaskMemUni(str);
         }
 
         /// <summary>
@@ -34,7 +34,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <remarks>
         /// <seealso cref="CustomTypeMarshallerFeatures.TwoStageMarshalling"/>
         /// </remarks>
-        public ushort* ToNativeValue() => _nativeValue;
+        public void* ToNativeValue() => _nativeValue;
 
         /// <summary>
         /// Sets the native value representing the string.
@@ -43,7 +43,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <remarks>
         /// <seealso cref="CustomTypeMarshallerFeatures.TwoStageMarshalling"/>
         /// </remarks>
-        public void FromNativeValue(ushort* value) => _nativeValue = value;
+        public void FromNativeValue(void* value) => _nativeValue = value;
 
         /// <summary>
         /// Returns the managed string.

@@ -22,7 +22,7 @@
 // In addition to classical numbering, this implementation also performs disambiguation of heap writes,
 // using memory SSA and the following aliasing model:
 //
-// 1. Arrays of different types do not alias - taking into account the array compatibilty rules, i. e.
+// 1. Arrays of different types do not alias - taking into account the array compatibility rules, i. e.
 //    "int[] <-> uint[]" and such being allowed.
 // 2. Different static fields do not alias (meaning mutable overlapping RVA statics are not supported).
 // 3. Different class fields do not alias. Struct fields are allowed to alias - this supports code that
