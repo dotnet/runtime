@@ -2600,6 +2600,7 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/69794")]
         public static void TryConvertToCheckedUIntPtrTest()
         {
             if (Environment.Is64BitProcess)
