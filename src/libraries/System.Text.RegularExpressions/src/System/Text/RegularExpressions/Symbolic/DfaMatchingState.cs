@@ -105,7 +105,7 @@ namespace System.Text.RegularExpressions.Symbolic
             uint context = CharKind.Context(PrevCharKind, nextCharKind);
 
             // Compute the derivative of the node for the given context
-            SymbolicRegexNode<TSet> derivative = Node.CreateDerivative(minterm, context);
+            SymbolicRegexNode<TSet> derivative = Node.CreateDerivativeWithoutEffects(minterm, context);
 
             // nextCharKind will be the PrevCharKind of the target state
             // use an existing state instead if one exists already
@@ -154,11 +154,11 @@ namespace System.Text.RegularExpressions.Symbolic
 
         public override int GetHashCode() => (PrevCharKind, Node).GetHashCode();
 
+#if DEBUG
         public override string ToString() =>
             PrevCharKind == 0 ? Node.ToString() :
              $"({CharKind.DescribePrev(PrevCharKind)},{Node})";
 
-#if DEBUG
         internal string DgmlView
         {
             get

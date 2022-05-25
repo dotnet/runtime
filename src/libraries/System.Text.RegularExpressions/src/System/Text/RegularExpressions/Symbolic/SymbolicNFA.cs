@@ -46,8 +46,8 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>If true then the state has no outgoing transitions</summary>
         public bool IsDeadend(int state) => _transitionFunction[state]._leaf == DeadendState;
 
-        /// <summary>If true then the state involves lazy loops or has no loops</summary>
-        public bool IsLazy(int state) => _nodes[state].IsLazy;
+        /// <summary>If true then backtracking terminates in this state</summary>
+        public bool IsBacktrackEnd(int state) => _nodes[state].IsHighPriorityNullable;
 
         /// <summary>Returns true if the state is nullable in the given context</summary>
         public bool IsFinal(int state, uint context) => _finalCondition[state].IsNullableFor(context);
