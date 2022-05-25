@@ -189,7 +189,7 @@ UnsynchronizedBlockAllocator::Allocate( size_t size )
     if (sizecheck.Value() > this->blockSize_)
     {
         NewArrayHolder<BYTE> buffer = new BYTE[this->blockSize_];
-        bufferPtr = buffer.GetValue();
+        bufferPtr = (BYTE*)buffer.GetValue();
         IfFailThrow(this->blockList_.Append( bufferPtr ));
         buffer.SuppressRelease();
         ++this->index_;
