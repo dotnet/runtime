@@ -562,11 +562,11 @@ namespace System.Security.Cryptography
         ///   <paramref name="data"/> exceeds the maximum possible encoded data length.
         /// </exception>
         /// <exception cref="ArgumentException">
-        /// The resulting PEM-encoded text is larger than <see cref="int.MaxValue"/>.
-        ///   <para>
-        ///       - or -
-        ///   </para>
-        /// <paramref name="label"/> contains invalid characters.
+        ///   The resulting PEM-encoded text is larger than <see cref="int.MaxValue"/>.
+        ///
+        ///   - or -
+        ///
+        ///   <paramref name="label"/> contains invalid characters.
         /// </exception>
         public static unsafe string WriteString(ReadOnlySpan<char> label, ReadOnlySpan<byte> data)
         {
