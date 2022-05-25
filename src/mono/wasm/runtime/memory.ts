@@ -1,6 +1,6 @@
-import { Module } from "./imports";
+import { Module, runtimeHelpers } from "./imports";
 import { mono_assert } from "./types";
-import { VoidPtr, NativePointer, ManagedPointer, Int32Ptr } from "./types/emscripten";
+import { VoidPtr, NativePointer, ManagedPointer } from "./types/emscripten";
 import * as cuint64 from "./cuint64";
 import cwraps, { I52Error } from "./cwraps";
 
@@ -178,17 +178,12 @@ export function getI32(offset: _MemOffset): number {
     return Module.HEAP32[<any>offset >>> 2];
 }
 
-let i52_error_scratch_buffer : Int32Ptr = <any>0;
-
 /**
  * Throws for Number.MIN_SAFE_INTEGER > value > Number.MAX_SAFE_INTEGER
  */
 export function getI52(offset: _MemOffset): number {
-    if (!i52_error_scratch_buffer)
-        i52_error_scratch_buffer = <any>Module._malloc(4);
-
-    const result = cwraps.mono_wasm_i52_to_f64(<any>offset, i52_error_scratch_buffer);
-    const error = getI32(i52_error_scratch_buffer);
+    const result = cwraps.mono_wasm_i52_to_f64(<any>offset, runtimeHelpers._i52_error_scratch_buffer);
+    const error = getI32(runtimeHelpers._i52_error_scratch_buffer);
     autoThrowI52(error);
     return result;
 }
@@ -197,11 +192,8 @@ export function getI52(offset: _MemOffset): number {
  * Throws for 0 > value > Number.MAX_SAFE_INTEGER
  */
 export function getU52(offset: _MemOffset): number {
-    if (!i52_error_scratch_buffer)
-        i52_error_scratch_buffer = <any>Module._malloc(4);
-
-    const result = cwraps.mono_wasm_u52_to_f64(<any>offset, i52_error_scratch_buffer);
-    const error = getI32(i52_error_scratch_buffer);
+    const result = cwraps.mono_wasm_u52_to_f64(<any>offset, runtimeHelpers._i52_error_scratch_buffer);
+    const error = getI32(runtimeHelpers._i52_error_scratch_buffer);
     autoThrowI52(error);
     return result;
 }
