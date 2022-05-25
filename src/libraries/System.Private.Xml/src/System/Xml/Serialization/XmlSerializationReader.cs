@@ -3940,12 +3940,12 @@ namespace System.Xml.Serialization
                     else
                     {
                         bool useReflection = typeDesc.UseReflection;
-                        if (member.Source[member.Source.Length - 1] == '(' || member.Source[member.Source.Length - 1] == '{')
+                        if (member.Source.EndsWith('(') || member.Source.EndsWith('{'))
                         {
                             WriteCreateInstance(typeDescFullName, a, useReflection, typeDesc.CannotNew);
                             Writer.Write(member.Source);
                             Writer.Write(a);
-                            if (member.Source[member.Source.Length - 1] == '{')
+                            if (member.Source.EndsWith('{'))
                                 Writer.WriteLine("});");
                             else
                                 Writer.WriteLine(");");
@@ -4511,7 +4511,7 @@ namespace System.Xml.Serialization
         private void WriteSourceBegin(string source)
         {
             Writer.Write(source);
-            if (source[source.Length - 1] != '(' && source[source.Length - 1] != '{')
+            if (!source.EndsWith('(') && !source.EndsWith('{'))
                 Writer.Write(" = ");
         }
 
@@ -4519,9 +4519,9 @@ namespace System.Xml.Serialization
         {
             // source could be of the form "var", "arrayVar[i]",
             // "collection.Add(" or "methodInfo.Invoke(collection, new object[] {"
-            if (source[source.Length - 1] == '(')
+            if (source.EndsWith('('))
                 Writer.Write(")");
-            else if (source[source.Length - 1] == '{')
+            else if (source.EndsWith('{'))
                 Writer.Write("})");
         }
 

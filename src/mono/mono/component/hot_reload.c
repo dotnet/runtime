@@ -217,7 +217,7 @@ typedef struct _delta_row_count {
 	guint32 inserted_rows;
 } delta_row_count;
 
-/* Additional informaiton for MonoImages representing deltas */
+/* Additional information for MonoImages representing deltas */
 struct _DeltaInfo {
 	uint32_t generation; /* global update ID that added this delta image */
 	MonoImage *delta_image; /* DeltaInfo doesn't own the image, the base MonoImage owns the reference */
@@ -240,7 +240,7 @@ struct _DeltaInfo {
 };
 
 
-/* Additional informaiton for baseline MonoImages */
+/* Additional information for baseline MonoImages */
 struct _BaselineInfo {
 	/* List of DeltaInfos of deltas*/
 	GList *delta_info;

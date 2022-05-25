@@ -309,7 +309,7 @@ CrashReportWriter::Indent(std::string& text)
 }
 
 void
-CrashReportWriter::WriteSeperator(std::string& text)
+CrashReportWriter::WriteSeparator(std::string& text)
 {
     if (m_comma)
     {
@@ -323,7 +323,7 @@ void
 CrashReportWriter::OpenValue(const char* key, char marker)
 {
     std::string text;
-    WriteSeperator(text);
+    WriteSeparator(text);
     if (key != nullptr)
     {
         text.append("\"");
@@ -354,7 +354,7 @@ void
 CrashReportWriter::WriteValue(const char* key, const char* value)
 {
     std::string text;
-    WriteSeperator(text);
+    WriteSeparator(text);
     text.append("\"");
     text.append(key);
     text.append("\" : \"");

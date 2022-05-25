@@ -38,6 +38,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     </ItemGroup>
 
     <ItemGroup>
+      <NetCoreAppNativeLibrary Include="System.Globalization.Native" />
       <NetCoreAppNativeLibrary Include="System.IO.Compression.Native" />
     </ItemGroup>
 

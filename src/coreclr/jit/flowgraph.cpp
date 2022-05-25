@@ -937,13 +937,17 @@ GenTreeCall* Compiler::fgGetSharedCCtor(CORINFO_CLASS_HANDLE cls)
 bool Compiler::fgAddrCouldBeNull(GenTree* addr)
 {
     addr = addr->gtEffectiveVal();
-    if ((addr->gtOper == GT_CNS_INT) && addr->IsIconHandle())
+    if (addr->IsIconHandle())
     {
         return false;
     }
     else if (addr->OperIs(GT_CNS_STR, GT_CLS_VAR_ADDR))
     {
         return false;
+    }
+    else if (addr->OperIs(GT_INDEX_ADDR))
+    {
+        return !addr->AsIndexAddr()->IsNotNull();
     }
     else if (addr->OperIs(GT_ARR_ADDR))
     {
@@ -1216,19 +1220,19 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
             if (ctorData.pArg3 != nullptr)
             {
                 GenTree* arg3 = gtNewIconHandleNode(size_t(ctorData.pArg3), GTF_ICON_FTN_ADDR);
-                lastArg       = call->gtArgs.PushBack(this, arg3);
+                lastArg       = call->gtArgs.PushBack(this, NewCallArg::Primitive(arg3));
             }
 
             if (ctorData.pArg4 != nullptr)
             {
                 GenTree* arg4 = gtNewIconHandleNode(size_t(ctorData.pArg4), GTF_ICON_FTN_ADDR);
-                lastArg       = call->gtArgs.InsertAfter(this, lastArg, arg4);
+                lastArg       = call->gtArgs.InsertAfter(this, lastArg, NewCallArg::Primitive(arg4));
             }
 
             if (ctorData.pArg5 != nullptr)
             {
                 GenTree* arg5 = gtNewIconHandleNode(size_t(ctorData.pArg5), GTF_ICON_FTN_ADDR);
-                lastArg       = call->gtArgs.InsertAfter(this, lastArg, arg5);
+                lastArg       = call->gtArgs.InsertAfter(this, lastArg, NewCallArg::Primitive(arg5));
             }
         }
         else
@@ -1779,8 +1783,9 @@ void Compiler::fgAddSyncMethodEnterExit()
     }
 
     // Create a 'monitor acquired' boolean (actually, an unsigned byte: 1 = acquired, 0 = not acquired).
-
-    var_types typeMonAcquired = TYP_UBYTE;
+    // For EnC this is part of the frame header. Furthermore, this is allocated above PSP on ARM64.
+    // To avoid complicated reasoning about alignment we always allocate a full pointer sized slot for this.
+    var_types typeMonAcquired = TYP_I_IMPL;
     this->lvaMonAcquired      = lvaGrabTemp(true DEBUGARG("Synchronized method monitor acquired boolean"));
 
     lvaTable[lvaMonAcquired].lvType = typeMonAcquired;
@@ -1806,10 +1811,12 @@ void Compiler::fgAddSyncMethodEnterExit()
 #endif
     }
 
-    // Make a copy of the 'this' pointer to be used in the handler so it does not inhibit enregistration
-    // of all uses of the variable.
-    unsigned lvaCopyThis = 0;
-    if (!info.compIsStatic)
+    // Make a copy of the 'this' pointer to be used in the handler so it does
+    // not inhibit enregistration of all uses of the variable. We cannot do
+    // this optimization in EnC code as we would need to take care to save the
+    // copy on EnC transitions, so guard this on optimizations being enabled.
+    unsigned lvaCopyThis = BAD_VAR_NUM;
+    if (opts.OptimizationEnabled() && !info.compIsStatic)
     {
         lvaCopyThis                  = lvaGrabTemp(true DEBUGARG("Synchronized method copy of this for handler"));
         lvaTable[lvaCopyThis].lvType = TYP_REF;
@@ -1829,7 +1836,8 @@ void Compiler::fgAddSyncMethodEnterExit()
     }
 
     // exceptional case
-    fgCreateMonitorTree(lvaMonAcquired, lvaCopyThis, faultBB, false /*exit*/);
+    fgCreateMonitorTree(lvaMonAcquired, lvaCopyThis != BAD_VAR_NUM ? lvaCopyThis : info.compThisArg, faultBB,
+                        false /*exit*/);
 
     // non-exceptional cases
     for (BasicBlock* const block : Blocks())
@@ -1853,10 +1861,9 @@ GenTree* Compiler::fgCreateMonitorTree(unsigned lvaMonAcquired, unsigned lvaThis
 {
     // Insert the expression "enter/exitCrit(this, &acquired)" or "enter/exitCrit(handle, &acquired)"
 
-    var_types typeMonAcquired = TYP_UBYTE;
-    GenTree*  varNode         = gtNewLclvNode(lvaMonAcquired, typeMonAcquired);
-    GenTree*  varAddrNode     = gtNewOperNode(GT_ADDR, TYP_BYREF, varNode);
-    GenTree*  tree;
+    GenTree* varNode     = gtNewLclvNode(lvaMonAcquired, lvaGetDesc(lvaMonAcquired)->TypeGet());
+    GenTree* varAddrNode = gtNewOperNode(GT_ADDR, TYP_BYREF, varNode);
+    GenTree* tree;
 
     if (info.compIsStatic)
     {
@@ -4185,42 +4192,4 @@ void Compiler::fgLclFldAssign(unsigned lclNum)
     {
         lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LocalField));
     }
-}
-
-//------------------------------------------------------------------------
-// fgCheckCallArgUpdate: check if we are replacing a call argument and add GT_PUTARG_TYPE if necessary.
-//
-// Arguments:
-//    parent   - the parent that could be a call;
-//    child    - the new child node;
-//    origType - the original child type;
-//
-// Returns:
-//   PUT_ARG_TYPE node if it is needed, nullptr otherwise.
-//
-GenTree* Compiler::fgCheckCallArgUpdate(GenTree* parent, GenTree* child, var_types origType)
-{
-    if ((parent == nullptr) || !parent->IsCall())
-    {
-        return nullptr;
-    }
-    const var_types newType = child->TypeGet();
-    if (newType == origType)
-    {
-        return nullptr;
-    }
-    if (varTypeIsStruct(origType) || (genTypeSize(origType) == genTypeSize(newType)))
-    {
-        assert(!varTypeIsStruct(newType));
-        return nullptr;
-    }
-    GenTree* putArgType = gtNewOperNode(GT_PUTARG_TYPE, origType, child);
-#if defined(DEBUG)
-    if (verbose)
-    {
-        printf("For call [%06d] the new argument's type [%06d]", dspTreeID(parent), dspTreeID(child));
-        printf(" does not match the original type size, add a GT_PUTARG_TYPE [%06d]\n", dspTreeID(parent));
-    }
-#endif
-    return putArgType;
 }

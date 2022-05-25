@@ -24,7 +24,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             sharedTestState.BuiltDotNet.Exec("exec", assemblyName)
                 .CaptureStdOut()
                 .CaptureStdErr()
-                .Execute(fExpectedToFail: true)
+                .Execute(expectedToFail: true)
                 .Should().Fail()
                 .And.HaveStdErrContaining($"The application to execute does not exist: '{assemblyName}'");
         }
@@ -36,7 +36,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             sharedTestState.BuiltDotNet.Exec("exec", assemblyName)
                 .CaptureStdOut()
                 .CaptureStdErr()
-                .Execute(fExpectedToFail: true)
+                .Execute(expectedToFail: true)
                 .Should().Fail()
                 .And.HaveStdErrContaining($"The application to execute does not exist: '{assemblyName}'");
         }
@@ -52,7 +52,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             sharedTestState.BuiltDotNet.Exec("exec", assemblyName)
                 .CaptureStdOut()
                 .CaptureStdErr()
-                .Execute(fExpectedToFail: true)
+                .Execute(expectedToFail: true)
                 .Should().Fail()
                 .And.HaveStdErrContaining($"dotnet exec needs a managed .dll or .exe extension. The application specified was '{assemblyName}'");
         }
@@ -63,7 +63,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             sharedTestState.BuiltDotNet.Exec("--fx-version")
                 .CaptureStdOut()
                 .CaptureStdErr()
-                .Execute(fExpectedToFail: true)
+                .Execute(expectedToFail: true)
                 .Should().Fail()
                 .And.HaveStdErrContaining($"Failed to parse supported options or their values:");
         }
@@ -76,7 +76,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .WorkingDirectory(sharedTestState.BaseDirectory)
                 .CaptureStdOut()
                 .CaptureStdErr()
-                .Execute(fExpectedToFail: true)
+                .Execute(expectedToFail: true)
                 .Should().Fail()
                 .And.HaveStdErrContaining($"The application '{fileName}' does not exist")
                 .And.FindAnySdk(false);

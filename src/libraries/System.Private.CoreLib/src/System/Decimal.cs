@@ -1150,15 +1150,39 @@ namespace System
         // IFloatingPoint
         //
 
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetExponentByteCount()" />
+        int IFloatingPoint<decimal>.GetExponentByteCount() => sizeof(sbyte);
+
         /// <inheritdoc cref="IFloatingPoint{TSelf}.GetExponentShortestBitLength()" />
-        long IFloatingPoint<decimal>.GetExponentShortestBitLength()
+        int IFloatingPoint<decimal>.GetExponentShortestBitLength()
         {
             sbyte exponent = Exponent;
             return (sizeof(sbyte) * 8) - sbyte.LeadingZeroCount(exponent);
         }
 
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetExponentByteCount()" />
-        int IFloatingPoint<decimal>.GetExponentByteCount() => sizeof(sbyte);
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandByteCount()" />
+        int IFloatingPoint<decimal>.GetSignificandByteCount() => sizeof(ulong) + sizeof(uint);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandBitLength()" />
+        int IFloatingPoint<decimal>.GetSignificandBitLength() => 96;
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteExponentBigEndian(Span{byte}, out int)" />
+        bool IFloatingPoint<decimal>.TryWriteExponentBigEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length >= sizeof(sbyte))
+            {
+                sbyte exponent = Exponent;
+                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), exponent);
+
+                bytesWritten = sizeof(sbyte);
+                return true;
+            }
+            else
+            {
+                bytesWritten = 0;
+                return false;
+            }
+        }
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteExponentLittleEndian(Span{byte}, out int)" />
         bool IFloatingPoint<decimal>.TryWriteExponentLittleEndian(Span<byte> destination, out int bytesWritten)
@@ -1178,19 +1202,42 @@ namespace System
             }
         }
 
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandBitLength()" />
-        long IFloatingPoint<decimal>.GetSignificandBitLength() => 96;
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteSignificandBigEndian(Span{byte}, out int)" />
+        bool IFloatingPoint<decimal>.TryWriteSignificandBigEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length >= (sizeof(uint) + sizeof(ulong)))
+            {
+                uint hi32 = _hi32;
+                ulong lo64 = _lo64;
 
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandByteCount()" />
-        int IFloatingPoint<decimal>.GetSignificandByteCount() => sizeof(ulong) + sizeof(uint);
+                if (BitConverter.IsLittleEndian)
+                {
+                    hi32 = BinaryPrimitives.ReverseEndianness(hi32);
+                    lo64 = BinaryPrimitives.ReverseEndianness(lo64);
+                }
+
+                ref byte address = ref MemoryMarshal.GetReference(destination);
+
+                Unsafe.WriteUnaligned(ref address, hi32);
+                Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref address, sizeof(uint)), lo64);
+
+                bytesWritten = sizeof(uint) + sizeof(ulong);
+                return true;
+            }
+            else
+            {
+                bytesWritten = 0;
+                return false;
+            }
+        }
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteSignificandLittleEndian(Span{byte}, out int)" />
         bool IFloatingPoint<decimal>.TryWriteSignificandLittleEndian(Span<byte> destination, out int bytesWritten)
         {
             if (destination.Length >= (sizeof(ulong) + sizeof(uint)))
             {
-                var lo64 = _lo64;
-                var hi32 = _hi32;
+                ulong lo64 = _lo64;
+                uint hi32 = _hi32;
 
                 if (!BitConverter.IsLittleEndian)
                 {
@@ -1248,12 +1295,6 @@ namespace System
         // INumber
         //
 
-        /// <inheritdoc cref="INumber{TSelf}.Abs(TSelf)" />
-        public static decimal Abs(decimal value)
-        {
-            return new decimal(in value, value._flags & ~SignMask);
-        }
-
         /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
         public static decimal Clamp(decimal value, decimal min, decimal max) => Math.Clamp(value, min, max);
 
@@ -1263,221 +1304,14 @@ namespace System
             return new decimal(in value, (value._flags & ~SignMask) | (sign._flags & SignMask));
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.CreateChecked{TOther}(TOther)" />
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static decimal CreateChecked<TOther>(TOther value)
-            where TOther : INumber<TOther>
-        {
-            if (typeof(TOther) == typeof(byte))
-            {
-                return (byte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(char))
-            {
-                return (char)(object)value;
-            }
-            else if (typeof(TOther) == typeof(decimal))
-            {
-                return (decimal)(object)value;
-            }
-            else if (typeof(TOther) == typeof(double))
-            {
-                return (decimal)(double)(object)value;
-            }
-            else if (typeof(TOther) == typeof(short))
-            {
-                return (short)(object)value;
-            }
-            else if (typeof(TOther) == typeof(int))
-            {
-                return (int)(object)value;
-            }
-            else if (typeof(TOther) == typeof(long))
-            {
-                return (long)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nint))
-            {
-                return (nint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(sbyte))
-            {
-                return (sbyte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(float))
-            {
-                return (decimal)(float)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ushort))
-            {
-                return (ushort)(object)value;
-            }
-            else if (typeof(TOther) == typeof(uint))
-            {
-                return (uint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ulong))
-            {
-                return (ulong)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nuint))
-            {
-                return (nuint)(object)value;
-            }
-            else
-            {
-                ThrowHelper.ThrowNotSupportedException();
-                return default;
-            }
-        }
-
-        /// <inheritdoc cref="INumber{TSelf}.CreateSaturating{TOther}(TOther)" />
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static decimal CreateSaturating<TOther>(TOther value)
-            where TOther : INumber<TOther>
-        {
-            if (typeof(TOther) == typeof(byte))
-            {
-                return (byte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(char))
-            {
-                return (char)(object)value;
-            }
-            else if (typeof(TOther) == typeof(decimal))
-            {
-                return (decimal)(object)value;
-            }
-            else if (typeof(TOther) == typeof(double))
-            {
-                return (decimal)(double)(object)value;
-            }
-            else if (typeof(TOther) == typeof(short))
-            {
-                return (short)(object)value;
-            }
-            else if (typeof(TOther) == typeof(int))
-            {
-                return (int)(object)value;
-            }
-            else if (typeof(TOther) == typeof(long))
-            {
-                return (long)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nint))
-            {
-                return (nint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(sbyte))
-            {
-                return (sbyte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(float))
-            {
-                return (decimal)(float)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ushort))
-            {
-                return (ushort)(object)value;
-            }
-            else if (typeof(TOther) == typeof(uint))
-            {
-                return (uint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ulong))
-            {
-                return (ulong)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nuint))
-            {
-                return (nuint)(object)value;
-            }
-            else
-            {
-                ThrowHelper.ThrowNotSupportedException();
-                return default;
-            }
-        }
-
-        /// <inheritdoc cref="INumber{TSelf}.CreateTruncating{TOther}(TOther)" />
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static decimal CreateTruncating<TOther>(TOther value)
-            where TOther : INumber<TOther>
-        {
-            if (typeof(TOther) == typeof(byte))
-            {
-                return (byte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(char))
-            {
-                return (char)(object)value;
-            }
-            else if (typeof(TOther) == typeof(decimal))
-            {
-                return (decimal)(object)value;
-            }
-            else if (typeof(TOther) == typeof(double))
-            {
-                return (decimal)(double)(object)value;
-            }
-            else if (typeof(TOther) == typeof(short))
-            {
-                return (short)(object)value;
-            }
-            else if (typeof(TOther) == typeof(int))
-            {
-                return (int)(object)value;
-            }
-            else if (typeof(TOther) == typeof(long))
-            {
-                return (long)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nint))
-            {
-                return (nint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(sbyte))
-            {
-                return (sbyte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(float))
-            {
-                return (decimal)(float)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ushort))
-            {
-                return (ushort)(object)value;
-            }
-            else if (typeof(TOther) == typeof(uint))
-            {
-                return (uint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ulong))
-            {
-                return (ulong)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nuint))
-            {
-                return (nuint)(object)value;
-            }
-            else
-            {
-                ThrowHelper.ThrowNotSupportedException();
-                return default;
-            }
-        }
-
-        /// <inheritdoc cref="INumber{TSelf}.IsNegative(TSelf)" />
-        public static bool IsNegative(decimal value) => value._flags < 0;
-
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
         public static decimal Max(decimal x, decimal y)
         {
             return DecCalc.VarDecCmp(in x, in y) >= 0 ? x : y;
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.MaxMagnitude(TSelf, TSelf)" />
-        public static decimal MaxMagnitude(decimal x, decimal y) => (Abs(x) >= Abs(y)) ? x : y;
+        /// <inheritdoc cref="INumber{TSelf}.MaxNumber(TSelf, TSelf)" />
+        static decimal INumber<decimal>.MaxNumber(decimal x, decimal y) => Max(x, y);
 
         /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
         public static decimal Min(decimal x, decimal y)
@@ -1485,16 +1319,402 @@ namespace System
             return DecCalc.VarDecCmp(in x, in y) < 0 ? x : y;
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.MinMagnitude(TSelf, TSelf)" />
-        public static decimal MinMagnitude(decimal x, decimal y) => (Abs(x) <= Abs(y)) ? x : y;
+        /// <inheritdoc cref="INumber{TSelf}.MinNumber(TSelf, TSelf)" />
+        static decimal INumber<decimal>.MinNumber(decimal x, decimal y) => Min(x, y);
 
         /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
         public static int Sign(decimal d) => (d.Low64 | d.High) == 0 ? 0 : (d._flags >> 31) | 1;
 
-        /// <inheritdoc cref="INumber{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
+        //
+        // INumberBase
+        //
+
+        /// <inheritdoc cref="INumberBase{TSelf}.One" />
+        static decimal INumberBase<decimal>.One => One;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Radix" />
+        static int INumberBase<decimal>.Radix => 10;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
+        static decimal INumberBase<decimal>.Zero => Zero;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Abs(TSelf)" />
+        public static decimal Abs(decimal value)
+        {
+            return new decimal(in value, value._flags & ~SignMask);
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static decimal CreateChecked<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            if (typeof(TOther) == typeof(byte))
+            {
+                return (byte)(object)value;
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                return (char)(object)value;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                return (decimal)(object)value;
+            }
+            else if (typeof(TOther) == typeof(double))
+            {
+                return (decimal)(double)(object)value;
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                return (short)(object)value;
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                return (int)(object)value;
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                return (long)(object)value;
+            }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                return (decimal)(Int128)(object)value;
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                return (nint)(object)value;
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                return (sbyte)(object)value;
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                return (decimal)(float)(object)value;
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                return (ushort)(object)value;
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                return (uint)(object)value;
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                return (ulong)(object)value;
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                return (decimal)(UInt128)(object)value;
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                return (nuint)(object)value;
+            }
+            else
+            {
+                ThrowHelper.ThrowNotSupportedException();
+                return default;
+            }
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateSaturating{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static decimal CreateSaturating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            if (typeof(TOther) == typeof(byte))
+            {
+                return (byte)(object)value;
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                return (char)(object)value;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                return (decimal)(object)value;
+            }
+            else if (typeof(TOther) == typeof(double))
+            {
+                return (decimal)(double)(object)value;
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                return (short)(object)value;
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                return (int)(object)value;
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                return (long)(object)value;
+            }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                var actualValue = (Int128)(object)value;
+                return (actualValue > new Int128(0x0000_0000_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)) ? MaxValue :
+                       (actualValue < new Int128(0xFFFF_FFFF_0000_0000, 0x0000_0000_0000_0001)) ? MinValue : (decimal)actualValue;
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                return (nint)(object)value;
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                return (sbyte)(object)value;
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                return (decimal)(float)(object)value;
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                return (ushort)(object)value;
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                return (uint)(object)value;
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                return (ulong)(object)value;
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                var actualValue = (UInt128)(object)value;
+                return (actualValue > new UInt128(0x0000_0000_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)) ? MaxValue : (decimal)actualValue;
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                return (nuint)(object)value;
+            }
+            else
+            {
+                ThrowHelper.ThrowNotSupportedException();
+                return default;
+            }
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateTruncating{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static decimal CreateTruncating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            if (typeof(TOther) == typeof(byte))
+            {
+                return (byte)(object)value;
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                return (char)(object)value;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                return (decimal)(object)value;
+            }
+            else if (typeof(TOther) == typeof(double))
+            {
+                return (decimal)(double)(object)value;
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                return (short)(object)value;
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                return (int)(object)value;
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                return (long)(object)value;
+            }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                var actualValue = (Int128)(object)value;
+
+                if (Int128.IsNegative(actualValue))
+                {
+                    actualValue = (-actualValue) & new Int128(0x0000_0000_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF);
+                    return -(decimal)actualValue;
+                }
+                else
+                {
+                    actualValue &= new Int128(0x0000_0000_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF);
+                    return (decimal)actualValue;
+                }
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                return (nint)(object)value;
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                return (sbyte)(object)value;
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                return (decimal)(float)(object)value;
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                return (ushort)(object)value;
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                return (uint)(object)value;
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                return (ulong)(object)value;
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                var actualValue = (UInt128)(object)value;
+                actualValue &= new UInt128(0x0000_0000_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF);
+                return (decimal)actualValue;
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                return (nuint)(object)value;
+            }
+            else
+            {
+                ThrowHelper.ThrowNotSupportedException();
+                return default;
+            }
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
+        public static bool IsCanonical(decimal value)
+        {
+            uint scale = (byte)(value._flags >> ScaleShift);
+
+            if (scale == 0)
+            {
+                // We have an exact integer represented with no trailing zero
+                return true;
+            }
+
+            // We have some value where some fractional part is specified. So,
+            // if the least significant digit is 0, then we are not canonical
+
+            if (value._hi32 == 0)
+            {
+                return (value._lo64 % 10) != 0;
+            }
+
+            var significand = new UInt128(value._hi32, value._lo64);
+            return (significand % 10U) != 0U;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsComplexNumber(TSelf)" />
+        static bool INumberBase<decimal>.IsComplexNumber(decimal value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsEvenInteger(TSelf)" />
+        public static bool IsEvenInteger(decimal value)
+        {
+            decimal truncatedValue = Truncate(value);
+            return (value == truncatedValue) && ((truncatedValue._lo64 & 1) == 0);
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsFinite(TSelf)" />
+        static bool INumberBase<decimal>.IsFinite(decimal value) => true;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsImaginaryNumber(TSelf)" />
+        static bool INumberBase<decimal>.IsImaginaryNumber(decimal value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsInfinity(TSelf)" />
+        static bool INumberBase<decimal>.IsInfinity(decimal value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsInteger(TSelf)" />
+        public static bool IsInteger(decimal value) => value == Truncate(value);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNaN(TSelf)" />
+        static bool INumberBase<decimal>.IsNaN(decimal value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNegative(TSelf)" />
+        public static bool IsNegative(decimal value) => value._flags < 0;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNegativeInfinity(TSelf)" />
+        static bool INumberBase<decimal>.IsNegativeInfinity(decimal value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNormal(TSelf)" />
+        static bool INumberBase<decimal>.IsNormal(decimal value) => value != 0;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsOddInteger(TSelf)" />
+        public static bool IsOddInteger(decimal value)
+        {
+            decimal truncatedValue = Truncate(value);
+            return (value == truncatedValue) && ((truncatedValue._lo64 & 1) != 0);
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsPositive(TSelf)" />
+        public static bool IsPositive(decimal value) => value._flags >= 0;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsPositiveInfinity(TSelf)" />
+        static bool INumberBase<decimal>.IsPositiveInfinity(decimal value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsRealNumber(TSelf)" />
+        static bool INumberBase<decimal>.IsRealNumber(decimal value) => true;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsSubnormal(TSelf)" />
+        static bool INumberBase<decimal>.IsSubnormal(decimal value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsZero(TSelf)" />
+        static bool INumberBase<decimal>.IsZero(decimal value) => (value == 0);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitude(TSelf, TSelf)" />
+        public static decimal MaxMagnitude(decimal x, decimal y)
+        {
+            decimal ax = Abs(x);
+            decimal ay = Abs(y);
+
+            if (ax > ay)
+            {
+                return x;
+            }
+
+            if (ax == ay)
+            {
+                return IsNegative(x) ? y : x;
+            }
+
+            return y;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitudeNumber(TSelf, TSelf)" />
+        static decimal INumberBase<decimal>.MaxMagnitudeNumber(decimal x, decimal y) => MaxMagnitude(x, y);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitude(TSelf, TSelf)" />
+        public static decimal MinMagnitude(decimal x, decimal y)
+        {
+            decimal ax = Abs(x);
+            decimal ay = Abs(y);
+
+            if (ax < ay)
+            {
+                return x;
+            }
+
+            if (ax == ay)
+            {
+                return IsNegative(x) ? x : y;
+            }
+
+            return y;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
+        static decimal INumberBase<decimal>.MinMagnitudeNumber(decimal x, decimal y) => MinMagnitude(x, y);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryCreate<TOther>(TOther value, out decimal result)
-            where TOther : INumber<TOther>
+            where TOther : INumberBase<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -1531,6 +1751,19 @@ namespace System
                 result = (long)(object)value;
                 return true;
             }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                var actualValue = (Int128)(object)value;
+
+                if ((actualValue > new Int128(0x0000_0000_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)) || (actualValue < new Int128(0xFFFF_FFFF_0000_0000, 0x0000_0000_0000_0001)))
+                {
+                    result = default;
+                    return false;
+                }
+
+                result = (decimal)actualValue;
+                return true;
+            }
             else if (typeof(TOther) == typeof(nint))
             {
                 result = (nint)(object)value;
@@ -1561,6 +1794,19 @@ namespace System
                 result = (ulong)(object)value;
                 return true;
             }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                var actualValue = (UInt128)(object)value;
+
+                if (actualValue > new UInt128(0x0000_0000_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF))
+                {
+                    result = default;
+                    return false;
+                }
+
+                result = (decimal)actualValue;
+                return true;
+            }
             else if (typeof(TOther) == typeof(nuint))
             {
                 result = (nuint)(object)value;
@@ -1573,16 +1819,6 @@ namespace System
                 return false;
             }
         }
-
-        //
-        // INumberBase
-        //
-
-        /// <inheritdoc cref="INumberBase{TSelf}.One" />
-        static decimal INumberBase<decimal>.One => One;
-
-        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
-        static decimal INumberBase<decimal>.Zero => Zero;
 
         //
         // IParsable

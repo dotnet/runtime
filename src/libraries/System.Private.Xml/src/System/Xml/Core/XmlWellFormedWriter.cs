@@ -1795,7 +1795,7 @@ namespace System.Xml
             {
                 throw new ArgumentException(SR.Format(SR.Xml_NamespaceDeclXmlXmlns, prefix));
             }
-            if (prefix.Length > 0 && prefix[0] == 'x')
+            if (prefix.StartsWith('x'))
             {
                 if (prefix == "xml")
                 {

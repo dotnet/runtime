@@ -647,11 +647,17 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
         MakeSrcContained(putArgStk, src);
     }
 #ifdef TARGET_X86
-    else if ((genTypeSize(src) == TARGET_POINTER_SIZE) && IsContainableMemoryOp(src) &&
-             IsSafeToContainMem(putArgStk, src))
+    else if ((genTypeSize(src) == TARGET_POINTER_SIZE) && IsSafeToContainMem(putArgStk, src))
     {
-        // Contain for "push [mem]".
-        MakeSrcContained(putArgStk, src);
+        // We can use "src" directly from memory with "push [mem]".
+        if (IsContainableMemoryOp(src))
+        {
+            MakeSrcContained(putArgStk, src);
+        }
+        else
+        {
+            src->SetRegOptional();
+        }
     }
 #endif // TARGET_X86
 }
@@ -4844,7 +4850,7 @@ void Lowering::ContainCheckShiftRotate(GenTreeOp* node)
         assert(source->OperGet() == GT_LONG);
         MakeSrcContained(node, source);
     }
-#endif // !TARGET_X86
+#endif
 
     GenTree* shiftBy = node->gtOp2;
     if (IsContainableImmed(node, shiftBy) && (shiftBy->AsIntConCommon()->IconValue() <= 255) &&
@@ -5687,7 +5693,7 @@ bool Lowering::TryGetContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode
                 case NI_AVX_InsertVector128:
                 case NI_AVX2_InsertVector128:
                 {
-                    // InsertVector128 is special in that that it returns a TYP_SIMD32 but takes a TYP_SIMD16
+                    // InsertVector128 is special in that it returns a TYP_SIMD32 but takes a TYP_SIMD16.
                     assert(!supportsSIMDScalarLoads);
 
                     const unsigned expectedSize = 16;

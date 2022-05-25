@@ -1152,8 +1152,12 @@ namespace DebuggerTests
         internal static JObject TNumber(uint value) =>
             JObject.FromObject(new { type = "number", value = @value.ToString(), description = value.ToString() });
 
-        internal static JObject TNumber(string value) =>
-            JObject.FromObject(new { type = "number", value = @value.ToString(), description = value });
+        // If is decimal, skip description due to culture-specific separators.
+        // They depend on user's settings and we are not able to detect them here
+        internal static JObject TNumber(string value, bool isDecimal = false) =>
+            isDecimal ?
+            JObject.FromObject(new { type = "number", value = @value.ToString() }) :
+            JObject.FromObject(new { type = "number", value = @value.ToString(), description = double.Parse(value, System.Globalization.CultureInfo.InvariantCulture).ToString() });
 
         internal static JObject TValueType(string className, string description = null, object members = null) =>
             JObject.FromObject(new { type = "object", isValueType = true, className = className, description = description ?? className });

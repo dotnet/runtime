@@ -1171,6 +1171,23 @@ unsigned CallArgABIInformation::GetStackByteSize() const
     return stackByteSize;
 }
 
+#ifdef DEBUG
+void NewCallArg::ValidateTypes()
+{
+    assert(Compiler::impCheckImplicitArgumentCoercion(SignatureType, Node->TypeGet()));
+
+    if (varTypeIsStruct(SignatureType))
+    {
+        assert(SignatureClsHnd != NO_CLASS_HANDLE);
+
+        Compiler*            comp   = JitTls::GetCompiler();
+        CORINFO_CLASS_HANDLE clsHnd = comp->gtGetStructHandleIfPresent(Node);
+        assert((clsHnd == nullptr) || (SignatureClsHnd == clsHnd) ||
+               (comp->info.compCompHnd->getClassSize(SignatureClsHnd) == comp->info.compCompHnd->getClassSize(clsHnd)));
+    }
+}
+#endif
+
 //---------------------------------------------------------------
 // IsArgAddedLate: Check if this is an argument that is added late, by
 //                 `DetermineArgABIInformation`.
@@ -1606,20 +1623,18 @@ bool CallArgs::IsNonStandard(Compiler* comp, GenTreeCall* call, CallArg* arg)
 //
 // Parameters:
 //   comp         - The compiler.
-//   node         - The IR node for the argument.
-//   wellKnownArg - The kind of argument, if special.
+//   arg          - The builder for the new arg.
 //
 // Returns:
 //   The created representative for the argument.
 //
-CallArg* CallArgs::PushFront(Compiler* comp, GenTree* node, WellKnownArg wellKnownArg)
+CallArg* CallArgs::PushFront(Compiler* comp, const NewCallArg& arg)
 {
-    CallArg* arg = new (comp, CMK_CallArgs) CallArg(wellKnownArg);
-    arg->SetEarlyNode(node);
-    arg->SetNext(m_head);
-    m_head = arg;
-    AddedWellKnownArg(wellKnownArg);
-    return arg;
+    CallArg* callArg = new (comp, CMK_CallArgs) CallArg(arg);
+    callArg->SetNext(m_head);
+    m_head = callArg;
+    AddedWellKnownArg(arg.WellKnownArg);
+    return callArg;
 }
 
 //---------------------------------------------------------------
@@ -1627,13 +1642,12 @@ CallArg* CallArgs::PushFront(Compiler* comp, GenTree* node, WellKnownArg wellKno
 //
 // Parameters:
 //   comp         - The compiler.
-//   node         - The IR node for the argument.
-//   wellKnownArg - The kind of argument, if special.
+//   arg          - The builder for the new arg.
 //
 // Returns:
 //   The created representative for the argument.
 //
-CallArg* CallArgs::PushBack(Compiler* comp, GenTree* node, WellKnownArg wellKnownArg)
+CallArg* CallArgs::PushBack(Compiler* comp, const NewCallArg& arg)
 {
     CallArg** slot = &m_head;
     while (*slot != nullptr)
@@ -1641,9 +1655,8 @@ CallArg* CallArgs::PushBack(Compiler* comp, GenTree* node, WellKnownArg wellKnow
         slot = &(*slot)->NextRef();
     }
 
-    *slot = new (comp, CMK_CallArgs) CallArg(wellKnownArg);
-    (*slot)->SetEarlyNode(node);
-    AddedWellKnownArg(wellKnownArg);
+    *slot = new (comp, CMK_CallArgs) CallArg(arg);
+    AddedWellKnownArg(arg.WellKnownArg);
     return *slot;
 }
 
@@ -1653,13 +1666,12 @@ CallArg* CallArgs::PushBack(Compiler* comp, GenTree* node, WellKnownArg wellKnow
 // Parameters:
 //   comp         - The compiler.
 //   after        - The existing argument to insert the new argument after.
-//   node         - The IR node for the argument.
-//   wellKnownArg - The kind of argument, if special.
+//   arg          - The builder for the new arg.
 //
 // Returns:
 //   The created representative for the argument.
 //
-CallArg* CallArgs::InsertAfter(Compiler* comp, CallArg* after, GenTree* node, WellKnownArg wellKnownArg)
+CallArg* CallArgs::InsertAfter(Compiler* comp, CallArg* after, const NewCallArg& arg)
 {
 #ifdef DEBUG
     bool found = false;
@@ -1675,7 +1687,7 @@ CallArg* CallArgs::InsertAfter(Compiler* comp, CallArg* after, GenTree* node, We
     assert(found && "Could not find arg to insert after in argument list");
 #endif
 
-    return InsertAfterUnchecked(comp, after, node, wellKnownArg);
+    return InsertAfterUnchecked(comp, after, arg);
 }
 
 //---------------------------------------------------------------
@@ -1684,19 +1696,17 @@ CallArg* CallArgs::InsertAfter(Compiler* comp, CallArg* after, GenTree* node, We
 // Parameters:
 //   comp         - The compiler.
 //   after        - The existing argument to insert the new argument after.
-//   node         - The IR node for the argument.
-//   wellKnownArg - The kind of argument, if special.
+//   arg          - The builder for the new arg.
 //
 // Returns:
 //   The created representative for the argument.
 //
-CallArg* CallArgs::InsertAfterUnchecked(Compiler* comp, CallArg* after, GenTree* node, WellKnownArg wellKnownArg)
+CallArg* CallArgs::InsertAfterUnchecked(Compiler* comp, CallArg* after, const NewCallArg& arg)
 {
-    CallArg* newArg = new (comp, CMK_CallArgs) CallArg(wellKnownArg);
-    newArg->SetEarlyNode(node);
+    CallArg* newArg = new (comp, CMK_CallArgs) CallArg(arg);
     newArg->SetNext(after->GetNext());
     after->SetNext(newArg);
-    AddedWellKnownArg(wellKnownArg);
+    AddedWellKnownArg(arg.WellKnownArg);
     return newArg;
 }
 
@@ -1718,21 +1728,23 @@ CallArg* CallArgs::InsertAfterUnchecked(Compiler* comp, CallArg* after, GenTree*
 //
 CallArg* CallArgs::InsertInstParam(Compiler* comp, GenTree* node)
 {
+    NewCallArg newArg = NewCallArg::Primitive(node).WellKnown(WellKnownArg::InstParam);
+
     if (Target::g_tgtArgOrder == Target::ARG_ORDER_R2L)
     {
         CallArg* retBufferArg = GetRetBufferArg();
         if (retBufferArg != nullptr)
         {
-            return InsertAfter(comp, retBufferArg, node, WellKnownArg::InstParam);
+            return InsertAfter(comp, retBufferArg, newArg);
         }
         else
         {
-            return InsertAfterThisOrFirst(comp, node, WellKnownArg::InstParam);
+            return InsertAfterThisOrFirst(comp, newArg);
         }
     }
     else
     {
-        return PushBack(comp, node, WellKnownArg::InstParam);
+        return PushBack(comp, newArg);
     }
 }
 
@@ -1742,22 +1754,21 @@ CallArg* CallArgs::InsertInstParam(Compiler* comp, GenTree* node)
 //
 // Parameters:
 //   comp         - The compiler.
-//   node         - The IR node for the argument.
-//   wellKnownArg - The kind of argument, if special.
+//   arg          - The builder for the new arg.
 //
 // Returns:
 //   The created representative for the argument.
 //
-CallArg* CallArgs::InsertAfterThisOrFirst(Compiler* comp, GenTree* node, WellKnownArg wellKnownArg)
+CallArg* CallArgs::InsertAfterThisOrFirst(Compiler* comp, const NewCallArg& arg)
 {
     CallArg* thisArg = GetThisArg();
     if (thisArg != nullptr)
     {
-        return InsertAfter(comp, thisArg, node, wellKnownArg);
+        return InsertAfter(comp, thisArg, arg);
     }
     else
     {
-        return PushFront(comp, node, wellKnownArg);
+        return PushFront(comp, arg);
     }
 }
 
@@ -3692,7 +3703,7 @@ void Compiler::gtWalkOp(GenTree** op1WB, GenTree** op2WB, GenTree* base, bool co
  */
 GenTree* Compiler::gtWalkOpEffectiveVal(GenTree* op)
 {
-    for (;;)
+    while (true)
     {
         op = op->gtEffectiveVal();
 
@@ -5876,7 +5887,6 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
         case GT_NULLCHECK:
         case GT_PUTARG_REG:
         case GT_PUTARG_STK:
-        case GT_PUTARG_TYPE:
         case GT_RETURNTRAP:
         case GT_NOP:
         case GT_RETURN:
@@ -6149,44 +6159,6 @@ GenTree* GenTree::gtGetParent(GenTree*** pUse)
     }
 
     return user;
-}
-
-//-------------------------------------------------------------------------
-// gtRetExprVal - walk back through GT_RET_EXPRs
-//
-// Arguments:
-//    pbbFlags - out-parameter that is set to the flags of the basic block
-//               containing the inlinee return value. The value is 0
-//               for unsuccessful inlines.
-//
-// Returns:
-//    tree representing return value from a successful inline,
-//    or original call for failed or yet to be determined inline.
-//
-// Notes:
-//    Multi-level inlines can form chains of GT_RET_EXPRs.
-//    This method walks back to the root of the chain.
-//
-GenTree* GenTree::gtRetExprVal(BasicBlockFlags* pbbFlags /* = nullptr */)
-{
-    GenTree*        retExprVal = this;
-    BasicBlockFlags bbFlags    = BBF_EMPTY;
-
-    assert(!retExprVal->OperIs(GT_PUTARG_TYPE));
-
-    while (retExprVal->OperIs(GT_RET_EXPR))
-    {
-        const GenTreeRetExpr* retExpr = retExprVal->AsRetExpr();
-        bbFlags                       = retExpr->bbFlags;
-        retExprVal                    = retExpr->gtInlineCandidate;
-    }
-
-    if (pbbFlags != nullptr)
-    {
-        *pbbFlags = bbFlags;
-    }
-
-    return retExprVal;
 }
 
 //------------------------------------------------------------------------------
@@ -7224,21 +7196,20 @@ GenTreeOp* Compiler::gtNewAssignNode(GenTree* dst, GenTree* src)
 }
 
 //------------------------------------------------------------------------
-// gtNewObjNode: Creates a new Obj node.
+// gtNewObjNode: Creates a new Obj node with the given layout.
 //
 // Arguments:
-//    structHnd - The class handle of the struct type.
-//    addr      - The address of the struct.
+//    layout - The struct layout
+//    addr   - The address of the struct
 //
 // Return Value:
 //    Returns a node representing the struct value at the given address.
 //
-GenTreeObj* Compiler::gtNewObjNode(CORINFO_CLASS_HANDLE structHnd, GenTree* addr)
+GenTreeObj* Compiler::gtNewObjNode(ClassLayout* layout, GenTree* addr)
 {
-    var_types nodeType = impNormStructType(structHnd);
-    assert(varTypeIsStruct(nodeType));
+    assert(layout != nullptr);
 
-    GenTreeObj* objNode = new (this, GT_OBJ) GenTreeObj(nodeType, addr, typGetObjLayout(structHnd));
+    GenTreeObj* objNode = new (this, GT_OBJ) GenTreeObj(layout->GetType(), addr, layout);
 
     // An Obj is not a global reference, if it is known to be a local struct.
     if ((addr->gtFlags & GTF_GLOB_REF) == 0)
@@ -7253,6 +7224,25 @@ GenTreeObj* Compiler::gtNewObjNode(CORINFO_CLASS_HANDLE structHnd, GenTree* addr
             }
         }
     }
+
+    return objNode;
+}
+
+//------------------------------------------------------------------------
+// gtNewObjNode: Creates a new Obj node with the layout for the given handle.
+//
+// Arguments:
+//    structHnd - The class handle of the struct type
+//    addr      - The address of the struct
+//
+// Return Value:
+//    Returns a node representing the struct value at the given address.
+//
+GenTreeObj* Compiler::gtNewObjNode(CORINFO_CLASS_HANDLE structHnd, GenTree* addr)
+{
+    ClassLayout* layout  = typGetObjLayout(structHnd);
+    GenTreeObj*  objNode = gtNewObjNode(layout, addr);
+
     return objNode;
 }
 
@@ -7261,7 +7251,7 @@ GenTreeObj* Compiler::gtNewObjNode(CORINFO_CLASS_HANDLE structHnd, GenTree* addr
 //
 // Arguments:
 //    objNode - The object node of interest
-
+//
 void Compiler::gtSetObjGcInfo(GenTreeObj* objNode)
 {
     assert(varTypeIsStruct(objNode->TypeGet()));
@@ -7277,28 +7267,31 @@ void Compiler::gtSetObjGcInfo(GenTreeObj* objNode)
 // gtNewStructVal: Return a node that represents a struct value
 //
 // Arguments:
-//    structHnd - The class for the struct
-//    addr      - The address of the struct
+//    layout - The struct's layout
+//    addr   - The address of the struct
 //
 // Return Value:
-//    A block, object or local node that represents the struct value pointed to by 'addr'.
-
-GenTree* Compiler::gtNewStructVal(CORINFO_CLASS_HANDLE structHnd, GenTree* addr)
+//    An "OBJ" node, or "LCL_VAR" node if "addr" points to a local with
+//    a layout compatible with "layout".
+//
+GenTree* Compiler::gtNewStructVal(ClassLayout* layout, GenTree* addr)
 {
-    if (addr->gtOper == GT_ADDR)
+    if (addr->OperIs(GT_ADDR))
     {
-        GenTree* val = addr->gtGetOp1();
-        if (val->OperGet() == GT_LCL_VAR)
+        GenTree* location = addr->gtGetOp1();
+        if (location->OperIs(GT_LCL_VAR))
         {
-            unsigned   lclNum = addr->gtGetOp1()->AsLclVarCommon()->GetLclNum();
-            LclVarDsc* varDsc = &(lvaTable[lclNum]);
-            if (varTypeIsStruct(varDsc) && (varDsc->GetStructHnd() == structHnd) && !lvaIsImplicitByRefLocal(lclNum))
+            unsigned   lclNum = location->AsLclVar()->GetLclNum();
+            LclVarDsc* varDsc = lvaGetDesc(lclNum);
+            if (!lvaIsImplicitByRefLocal(lclNum) && varTypeIsStruct(varDsc) &&
+                ClassLayout::AreCompatible(layout, varDsc->GetLayout()))
             {
-                return addr->gtGetOp1();
+                return location;
             }
         }
     }
-    return gtNewObjNode(structHnd, addr);
+
+    return gtNewObjNode(layout, addr);
 }
 
 //------------------------------------------------------------------------
@@ -7348,8 +7341,9 @@ GenTree* Compiler::gtNewBlockVal(GenTree* addr, unsigned size)
 
 GenTree* Compiler::gtNewCpObjNode(GenTree* dstAddr, GenTree* srcAddr, CORINFO_CLASS_HANDLE structHnd, bool isVolatile)
 {
-    GenTree* lhs = gtNewStructVal(structHnd, dstAddr);
-    GenTree* src = nullptr;
+    ClassLayout* layout = typGetObjLayout(structHnd);
+    GenTree*     lhs    = gtNewStructVal(layout, dstAddr);
+    GenTree*     src    = gtNewStructVal(layout, srcAddr);
 
     if (lhs->OperIs(GT_OBJ))
     {
@@ -7366,15 +7360,6 @@ GenTree* Compiler::gtNewCpObjNode(GenTree* dstAddr, GenTree* srcAddr, CORINFO_CL
         assert((layout->GetGCPtrCount() == 0) || (roundUp(size, REGSIZE_BYTES) == size));
 #endif
         gtSetObjGcInfo(lhsObj);
-    }
-
-    if (srcAddr->OperGet() == GT_ADDR)
-    {
-        src = srcAddr->AsOp()->gtOp1;
-    }
-    else
-    {
-        src = gtNewOperNode(GT_IND, lhs->TypeGet(), srcAddr);
     }
 
     GenTree* result = gtNewBlkOpNode(lhs, src, isVolatile, true);
@@ -7721,14 +7706,8 @@ void Compiler::gtBlockOpInit(GenTree* result, GenTree* dst, GenTree* srcOrFillVa
 GenTree* Compiler::gtNewBlkOpNode(GenTree* dst, GenTree* srcOrFillVal, bool isVolatile, bool isCopyBlock)
 {
     assert(dst->OperIsBlk() || dst->OperIsLocal());
-    if (isCopyBlock)
-    {
-        if (srcOrFillVal->OperIsIndir() && (srcOrFillVal->gtGetOp1()->gtOper == GT_ADDR))
-        {
-            srcOrFillVal = srcOrFillVal->gtGetOp1()->gtGetOp1();
-        }
-    }
-    else
+
+    if (!isCopyBlock)
     {
         // InitBlk
         assert(varTypeIsIntegral(srcOrFillVal));
@@ -8128,7 +8107,7 @@ GenTree* Compiler::gtCloneExpr(
                         new (this, GT_LCL_FLD) GenTreeLclFld(GT_LCL_FLD, tree->TypeGet(), tree->AsLclFld()->GetLclNum(),
                                                              tree->AsLclFld()->GetLclOffs());
                     copy->AsLclFld()->SetFieldSeq(tree->AsLclFld()->GetFieldSeq());
-                    copy->gtFlags = tree->gtFlags;
+                    copy->AsLclFld()->SetSsaNum(tree->AsLclFld()->GetSsaNum());
                 }
                 goto DONE;
 
@@ -8599,17 +8578,20 @@ void CallArgs::InternalCopyFrom(Compiler* comp, CallArgs* other, CopyNodeFunc co
     CallArg** tail = &m_head;
     for (CallArg& arg : other->Args())
     {
-        CallArg* carg     = new (comp, CMK_CallArgs) CallArg(arg.GetWellKnownArg());
-        carg->m_earlyNode = arg.m_earlyNode != nullptr ? copyNode(arg.m_earlyNode) : nullptr;
-        carg->m_lateNode  = arg.m_lateNode != nullptr ? copyNode(arg.m_lateNode) : nullptr;
-        carg->m_needTmp   = arg.m_needTmp;
-        carg->m_needPlace = arg.m_needPlace;
-        carg->m_isTmp     = arg.m_isTmp;
-        carg->m_processed = arg.m_processed;
-        carg->m_tmpNum    = arg.m_tmpNum;
-        carg->AbiInfo     = arg.AbiInfo;
-        *tail             = carg;
-        tail              = &carg->m_next;
+        CallArg* carg           = new (comp, CMK_CallArgs) CallArg();
+        carg->m_earlyNode       = arg.m_earlyNode != nullptr ? copyNode(arg.m_earlyNode) : nullptr;
+        carg->m_lateNode        = arg.m_lateNode != nullptr ? copyNode(arg.m_lateNode) : nullptr;
+        carg->m_signatureClsHnd = arg.m_signatureClsHnd;
+        carg->m_tmpNum          = arg.m_tmpNum;
+        carg->m_signatureType   = arg.m_signatureType;
+        carg->m_wellKnownArg    = arg.m_wellKnownArg;
+        carg->m_needTmp         = arg.m_needTmp;
+        carg->m_needPlace       = arg.m_needPlace;
+        carg->m_isTmp           = arg.m_isTmp;
+        carg->m_processed       = arg.m_processed;
+        carg->AbiInfo           = arg.AbiInfo;
+        *tail                   = carg;
+        tail                    = &carg->m_next;
     }
 
     // Now copy late pointers. Note that these may not come in order.
@@ -9101,7 +9083,6 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_NULLCHECK:
         case GT_PUTARG_REG:
         case GT_PUTARG_STK:
-        case GT_PUTARG_TYPE:
         case GT_BSWAP:
         case GT_BSWAP16:
         case GT_KEEPALIVE:
@@ -9716,7 +9697,7 @@ void Compiler::gtDispNodeName(GenTree* tree)
     char  buf[32];
     char* bufp = &buf[0];
 
-    if ((tree->gtOper == GT_CNS_INT) && tree->IsIconHandle())
+    if (tree->IsIconHandle())
     {
         sprintf_s(bufp, sizeof(buf), " %s(h)%c", name, 0);
     }
@@ -12426,6 +12407,11 @@ GenTree* Compiler::gtFoldExpr(GenTree* tree)
 
 GenTree* Compiler::gtFoldExprCall(GenTreeCall* call)
 {
+    // This may discard the call and will thus discard arg setup nodes that may
+    // have arbitrary side effects, so we only support this being called before
+    // args have been morphed.
+    assert(!call->gtArgs.AreArgsComplete());
+
     // Can only fold calls to special intrinsics.
     if ((call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC) == 0)
     {
@@ -13261,7 +13247,7 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
                 op = op2->AsColon()->ElseNode();
             }
 
-            // Clear colon flags only if the qmark itself is not conditionaly executed
+            // Clear colon flags only if the qmark itself is not conditionally executed
             if ((tree->gtFlags & GTF_COLON_COND) == 0)
             {
                 fgWalkTreePre(&op, gtClearColonCond);
@@ -13892,13 +13878,6 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
         return tree;
     }
 
-    // This condition exists to preserve previous behavior.
-    // TODO-CQ: enable folding for bounds checks nodes.
-    if (tree->OperIs(GT_BOUNDS_CHECK))
-    {
-        return tree;
-    }
-
 #ifdef FEATURE_SIMD
     if (tree->OperIs(GT_SIMD))
     {
@@ -14239,6 +14218,25 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
     if (tree->OperIs(GT_COMMA))
     {
         return op2;
+    }
+
+    if (tree->OperIs(GT_BOUNDS_CHECK))
+    {
+        ssize_t index  = op1->AsIntCon()->IconValue();
+        ssize_t length = op2->AsIntCon()->IconValue();
+
+        if ((0 <= index) && (index < length))
+        {
+            JITDUMP("\nFolding an in-range bounds check:\n");
+            DISPTREE(tree);
+
+            tree->gtBashToNOP();
+
+            JITDUMP("Bashed to NOP:\n");
+            DISPTREE(tree);
+        }
+
+        return tree;
     }
 
     switchType = op1->TypeGet();
@@ -15254,7 +15252,7 @@ GenTree* Compiler::gtNewRefCOMfield(GenTree*                objPtr,
 
     for (size_t i = 0; i < nArgs; i++)
     {
-        call->gtArgs.PushFront(this, args[i]);
+        call->gtArgs.PushFront(this, NewCallArg::Primitive(args[i]));
         call->gtFlags |= args[i]->gtFlags & GTF_ALL_EFFECT;
     }
 
@@ -15687,7 +15685,7 @@ void dispNodeList(GenTree* list, bool verbose)
         return;
     }
 
-    for (;;)
+    while (true)
     {
         next = list->gtNext;
 
@@ -16664,7 +16662,7 @@ unsigned GenTreeIndir::Size() const
 
 bool GenTreeIntConCommon::ImmedValNeedsReloc(Compiler* comp)
 {
-    return comp->opts.compReloc && (gtOper == GT_CNS_INT) && IsIconHandle();
+    return comp->opts.compReloc && IsIconHandle();
 }
 
 //------------------------------------------------------------------------
@@ -16807,7 +16805,7 @@ bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeqNode** pF
     {
         // If one operand has a field sequence, the other operand must not have one
         // as the order of fields in that case would not be well-defined.
-        if (AsOp()->gtOp1->IsCnsIntOrI() && AsOp()->gtOp1->IsIconHandle())
+        if (AsOp()->gtOp1->IsIconHandle())
         {
             assert(!AsOp()->gtOp2->IsCnsIntOrI() || !AsOp()->gtOp2->IsIconHandle());
             baseAddr = AsOp()->gtOp2;
@@ -16828,7 +16826,7 @@ bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeqNode** pF
 
         assert(!baseAddr->TypeIs(TYP_REF) || !comp->GetZeroOffsetFieldMap()->Lookup(baseAddr));
     }
-    else if (IsCnsIntOrI() && IsIconHandle(GTF_ICON_STATIC_HDL))
+    else if (IsIconHandle(GTF_ICON_STATIC_HDL))
     {
         assert(!comp->GetZeroOffsetFieldMap()->Lookup(this) && (AsIntCon()->gtFieldSeq != nullptr));
         baseAddr = this;

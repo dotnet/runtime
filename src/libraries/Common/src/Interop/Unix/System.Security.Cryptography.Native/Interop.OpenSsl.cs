@@ -22,6 +22,8 @@ internal static partial class Interop
     {
         private const string DisableTlsResumeCtxSwitch = "System.Net.Security.DisableTlsResume";
         private const string DisableTlsResumeEnvironmentVariable = "DOTNET_SYSTEM_NET_SECURITY_DISABLETLSRESUME";
+        private const string TlsCacheSizeCtxName = "System.Net.Security.TlsCacheSize";
+        private const string TlsCacheSizeEnvironmentVariable = "DOTNET_SYSTEM_NET_SECURITY_TLSCACHESIZE";
         private const SslProtocols FakeAlpnSslProtocol = (SslProtocols)1;   // used to distinguish server sessions with ALPN
         private static readonly IdnMapping s_idnMapping = new IdnMapping();
         private static readonly ConcurrentDictionary<SslProtocols, SafeSslContextHandle> s_clientSslContexts = new ConcurrentDictionary<SslProtocols, SafeSslContextHandle>();
@@ -50,6 +52,8 @@ internal static partial class Interop
             return bindingHandle;
         }
 
+        private static int s_cacheSize = GetCacheSize();
+
         private static volatile int s_disableTlsResume = -1;
 
         private static bool DisableTlsResume
@@ -77,6 +81,22 @@ internal static partial class Interop
 
                 return s_disableTlsResume != 0;
             }
+        }
+
+        private static int GetCacheSize()
+        {
+            int cacheSize = -1;
+            string? value = AppContext.GetData(TlsCacheSizeCtxName) as string ?? Environment.GetEnvironmentVariable(TlsCacheSizeEnvironmentVariable);
+            try
+            {
+                if (value != null)
+                {
+                    cacheSize = int.Parse(value);
+                }
+            }
+            catch { };
+
+            return cacheSize;
         }
 
         // This is helper function to adjust requested protocols based on CipherSuitePolicy and system capability.
@@ -186,18 +206,18 @@ internal static partial class Interop
                 {
                     if (sslAuthenticationOptions.IsServer)
                     {
-                        Ssl.SslCtxSetCaching(sslCtx, 1, null, null);
+                        Ssl.SslCtxSetCaching(sslCtx, 1, s_cacheSize, null, null);
                     }
                     else
                     {
-                        int result = Ssl.SslCtxSetCaching(sslCtx, 1, &NewSessionCallback, &RemoveSessionCallback);
+                        int result = Ssl.SslCtxSetCaching(sslCtx, 1, s_cacheSize, &NewSessionCallback, &RemoveSessionCallback);
                         Debug.Assert(result == 1);
                         sslCtx.EnableSessionCache();
                     }
                 }
                 else
                 {
-                    Ssl.SslCtxSetCaching(sslCtx, 0, null, null);
+                    Ssl.SslCtxSetCaching(sslCtx, 0, -1, null, null);
                 }
 
                 if (sslAuthenticationOptions.IsServer && sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0)

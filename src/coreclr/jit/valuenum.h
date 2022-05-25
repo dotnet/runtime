@@ -22,7 +22,7 @@
 // In addition to classical numbering, this implementation also performs disambiguation of heap writes,
 // using memory SSA and the following aliasing model:
 //
-// 1. Arrays of different types do not alias - taking into account the array compatibilty rules, i. e.
+// 1. Arrays of different types do not alias - taking into account the array compatibility rules, i. e.
 //    "int[] <-> uint[]" and such being allowed.
 // 2. Different static fields do not alias (meaning mutable overlapping RVA statics are not supported).
 // 3. Different class fields do not alias. Struct fields are allowed to alias - this supports code that
@@ -307,8 +307,9 @@ private:
     // Returns "true" iff "vnf" is a comparison (and thus binary) operator.
     static bool VNFuncIsComparison(VNFunc vnf);
 
-    // Returns "true" iff "vnf" can be evaluated for constant arguments.
-    static bool CanEvalForConstantArgs(VNFunc vnf);
+    bool VNEvalCanFoldBinaryFunc(var_types type, VNFunc func, ValueNum arg0VN, ValueNum arg1VN);
+
+    bool VNEvalCanFoldUnaryFunc(var_types type, VNFunc func, ValueNum arg0VN);
 
     // Returns "true" iff "vnf" should be folded by evaluating the func with constant arguments.
     bool VNEvalShouldFold(var_types typ, VNFunc func, ValueNum arg0VN, ValueNum arg1VN);
@@ -354,6 +355,7 @@ private:
     ValueNum EvalFuncForConstantArgs(var_types typ, VNFunc vnf, ValueNum vn0, ValueNum vn1);
     ValueNum EvalFuncForConstantFPArgs(var_types typ, VNFunc vnf, ValueNum vn0, ValueNum vn1);
     ValueNum EvalCastForConstantArgs(var_types typ, VNFunc vnf, ValueNum vn0, ValueNum vn1);
+    ValueNum EvalBitCastForConstantArgs(var_types dstType, ValueNum arg0VN);
 
     ValueNum EvalUsingMathIdentity(var_types typ, VNFunc vnf, ValueNum vn0, ValueNum vn1);
 
@@ -1130,9 +1132,17 @@ private:
             static_assert_no_msg(NumArgs == sizeof...(VNs));
         }
 
-        // operator== specialized for NumArgs=1..4 in .cpp as MSVC does not do
-        // a good job of unrolling the loop in a naive version.
-        bool operator==(const VNDefFuncApp& y) const;
+        bool operator==(const VNDefFuncApp& y) const
+        {
+            bool result = m_func == y.m_func;
+            // Intentionally written without early-out or MSVC cannot unroll this.
+            for (size_t i = 0; i < NumArgs; i++)
+            {
+                result = result && m_args[i] == y.m_args[i];
+            }
+
+            return result;
+        }
     };
 
     // We will allocate value numbers in "chunks".  Each chunk will have the same type and "constness".
@@ -1383,9 +1393,17 @@ private:
     template <size_t NumArgs>
     struct VNDefFuncAppKeyFuncs : public JitKeyFuncsDefEquals<VNDefFuncApp<NumArgs>>
     {
-        // GetHashCode specialized for NumArgs=1..4 in .cpp as MSVC does not do
-        // a good job of unrolling the loop in a naive version.
-        static unsigned GetHashCode(const VNDefFuncApp<NumArgs>& val);
+        static unsigned GetHashCode(const VNDefFuncApp<NumArgs>& val)
+        {
+            unsigned hashCode = val.m_func;
+            for (size_t i = 0; i < NumArgs; i++)
+            {
+                hashCode = (hashCode << 8) | (hashCode >> 24);
+                hashCode ^= val.m_args[i];
+            }
+
+            return hashCode;
+        }
     };
 
     typedef VNMap<VNFunc> VNFunc0ToValueNumMap;
