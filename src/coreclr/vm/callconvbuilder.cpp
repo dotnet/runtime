@@ -60,7 +60,7 @@ namespace
     {
 #define BASE_CALL_CONV(name, flag) { \
         MAKE_FULLY_QUALIFIED_CALLCONV_TYPE_NAME_PREFIX(name), \
-        STRING_LENGTH(MAKE_FULLY_QUALIFIED_CALLCONV_TYPE_NAME_PREFIX(name)), \
+        STRING_LENGTH(MAKE_FULLY_QUALIFIED_CALLCONV_TYPE_NAME_PREFIX(name)) - 1, \
         CorInfoCallConvExtension::flag, \
         BeginsWith },
 
@@ -73,7 +73,7 @@ namespace
     {
 #define BASE_CALL_CONV(name, flag) { \
         name, \
-        STRING_LENGTH(name), \
+        STRING_LENGTH(name) - 1, \
         CorInfoCallConvExtension::flag, \
         Equals },
 
@@ -86,7 +86,7 @@ namespace
     {
 #define CALL_CONV_MODIFIER(name, flag) { \
         MAKE_FULLY_QUALIFIED_CALLCONV_TYPE_NAME_PREFIX(name), \
-        STRING_LENGTH(MAKE_FULLY_QUALIFIED_CALLCONV_TYPE_NAME_PREFIX(name)), \
+        STRING_LENGTH(MAKE_FULLY_QUALIFIED_CALLCONV_TYPE_NAME_PREFIX(name)) - 1, \
         CallConvBuilder::flag, \
         BeginsWith },
 
@@ -99,7 +99,7 @@ namespace
     {
 #define CALL_CONV_MODIFIER(name, flag) { \
         name, \
-        STRING_LENGTH(name), \
+        STRING_LENGTH(name) - 1, \
         CallConvBuilder::flag, \
         Equals },
 
