@@ -437,14 +437,24 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void SameMethodObtainedViaDelegateAndReflectionAreSame()
+        public static void SameMethodObtainedViaDelegateAndReflectionAreSameForClass()
         {
-            var m1 = ((MethodCallExpression)((Expression<Action>)(() => new C().M())).Body).Method;
-            var m2 = new Action(new C().M).Method;
+            var m1 = ((MethodCallExpression)((Expression<Action>)(() => new Class().M())).Body).Method;
+            var m2 = new Action(new Class().M).Method;
             Assert.True(m1.Equals(m2));
         }
 
-        struct C { internal void M() { } }
+        [Fact]
+        public static void SameMethodObtainedViaDelegateAndReflectionAreSameForStruct()
+        {
+            var m1 = ((MethodCallExpression)((Expression<Action>)(() => new Struct().M())).Body).Method;
+            var m2 = new Action(new Struct().M).Method;
+            Assert.True(m1.Equals(m2));
+        }
+
+        class Class { internal void M() { } }
+
+        struct Struct { internal void M() { } }
 
         private delegate void IntIntDelegate(int expected, int actual);
         private delegate void IntIntDelegateWithDefault(int expected, int actual = 7);

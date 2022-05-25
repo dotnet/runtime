@@ -1263,9 +1263,6 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
         // - non generic method on a generic interface
         //
 
-        // we base the creation of an unboxing stub on whether the original method was one already
-        // that keeps the reflection logic the same for value types
-
         // we need unboxing stubs for virtual methods on value types unless the method is generic
         BOOL fNeedUnboxingStub = instType.IsValueType() && pMethod->IsVirtual();
 
