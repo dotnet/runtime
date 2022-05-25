@@ -11,9 +11,12 @@
 
 // According to ECMA-335, type name strings are UTF-8. Since we are
 // looking for type names that are equivalent in ASCII and UTF-8,
-// using a const char constant is acceptable. Type name strings are
-// in Fully Qualified form, so we include the ',' delimiter.
-#define MAKE_FULLY_QUALIFIED_CALLCONV_TYPE_NAME_PREFIX(callConvTypeName) CMOD_CALLCONV_NAMESPACE "." callConvTypeName ","
+// using a const char constant is acceptable.
+#define MAKE_FULLY_QUALIFIED_CALLCONV_TYPE_NAME(callConvTypeName) CMOD_CALLCONV_NAMESPACE "." callConvTypeName
+
+// We can include the ',' delimiter, when a type name is in Fully Qualified
+// form outside its declaring assembly - most common scenario.
+#define MAKE_FULLY_QUALIFIED_CALLCONV_TYPE_NAME_PREFIX(callConvTypeName) MAKE_FULLY_QUALIFIED_CALLCONV_TYPE_NAME(callConvTypeName) ","
 
 namespace
 {
@@ -31,7 +34,7 @@ namespace
     // Function to compute if a char string is equal to another char string.
     bool Equals(size_t s1Len, const char* s1, size_t s2Len, const char* s2)
     {
-        return (s1Len == s2Len) && (0 == strcmp(s1, s2));
+        return (s1Len == s2Len) && (0 == strncmp(s1, s2, s2Len));
     }
 
     // All base calling conventions and modifiers should be defined below.
@@ -67,6 +70,18 @@ namespace
         DECLARE_BASE_CALL_CONVS
 
 #undef BASE_CALL_CONV
+
+        // If the type is being used in the assembly it is defined, we can match
+        // the type name precisely. This is most common when SPCL uses an attribute.
+#define BASE_CALL_CONV(name, flag) { \
+        MAKE_FULLY_QUALIFIED_CALLCONV_TYPE_NAME(name), \
+        STRING_LENGTH(MAKE_FULLY_QUALIFIED_CALLCONV_TYPE_NAME(name)), \
+        CorInfoCallConvExtension::flag, \
+        Equals },
+
+        DECLARE_BASE_CALL_CONVS
+
+#undef BASE_CALL_CONV
     };
 
     const TypeWithFlag<CorInfoCallConvExtension> TypeBaseCallConvs[] =
@@ -89,6 +104,18 @@ namespace
         STRING_LENGTH(MAKE_FULLY_QUALIFIED_CALLCONV_TYPE_NAME_PREFIX(name)), \
         CallConvBuilder::flag, \
         BeginsWith },
+
+        DECLARE_MOD_CALL_CONVS
+
+#undef CALL_CONV_MODIFIER
+
+        // If the type is being used in the assembly it is defined, we can match
+        // the type name precisely. This is most common when SPCL uses an attribute.
+#define CALL_CONV_MODIFIER(name, flag) { \
+        MAKE_FULLY_QUALIFIED_CALLCONV_TYPE_NAME(name), \
+        STRING_LENGTH(MAKE_FULLY_QUALIFIED_CALLCONV_TYPE_NAME(name)), \
+        CallConvBuilder::flag, \
+        Equals },
 
         DECLARE_MOD_CALL_CONVS
 
