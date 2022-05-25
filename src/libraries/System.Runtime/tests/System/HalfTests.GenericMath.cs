@@ -1633,6 +1633,70 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void CreateTruncatingFromDecimalTest()
+        {
+
+            AssertBitwiseEqual(Half.NegativeInfinity, NumberBaseHelper<Half>.CreateTruncating<decimal>(decimal.MinValue));
+            AssertBitwiseEqual(Half.NegativeOne, NumberBaseHelper<Half>.CreateTruncating<decimal>(-1.0m));
+            AssertBitwiseEqual(Half.NegativeZero, NumberBaseHelper<Half>.CreateTruncating<decimal>(-0.0m));
+            AssertBitwiseEqual(Half.Zero, NumberBaseHelper<Half>.CreateTruncating<decimal>(+0.0m));
+            AssertBitwiseEqual(Half.One, NumberBaseHelper<Half>.CreateTruncating<decimal>(+1.0m));
+            AssertBitwiseEqual(Half.PositiveInfinity, NumberBaseHelper<Half>.CreateTruncating<decimal>(decimal.MaxValue));
+        }
+
+        [Fact]
+        public static void CreateTruncatingFromDoubleTest()
+        {
+            AssertBitwiseEqual(Half.NegativeInfinity, NumberBaseHelper<Half>.CreateTruncating<double>(double.NegativeInfinity));
+            AssertBitwiseEqual(Half.NegativeInfinity, NumberBaseHelper<Half>.CreateTruncating<double>(double.MinValue));
+
+            AssertBitwiseEqual(Half.NegativeOne, NumberBaseHelper<Half>.CreateTruncating<double>(-1.0));
+
+            AssertBitwiseEqual(NegativeZero, NumberBaseHelper<Half>.CreateTruncating<double>(-DoubleTests_GenericMath.MinNormal));
+            AssertBitwiseEqual(NegativeZero, NumberBaseHelper<Half>.CreateTruncating<double>(-DoubleTests_GenericMath.MaxSubnormal));
+            AssertBitwiseEqual(NegativeZero, NumberBaseHelper<Half>.CreateTruncating<double>(-double.Epsilon));
+            AssertBitwiseEqual(NegativeZero, NumberBaseHelper<Half>.CreateTruncating<double>(-0.0));
+
+            AssertBitwiseEqual(Zero, NumberBaseHelper<Half>.CreateTruncating<double>(+0.0));
+            AssertBitwiseEqual(Zero, NumberBaseHelper<Half>.CreateTruncating<double>(double.Epsilon));
+            AssertBitwiseEqual(Zero, NumberBaseHelper<Half>.CreateTruncating<double>(DoubleTests_GenericMath.MaxSubnormal));
+            AssertBitwiseEqual(Zero, NumberBaseHelper<Half>.CreateTruncating<double>(DoubleTests_GenericMath.MinNormal));
+
+            AssertBitwiseEqual(One, NumberBaseHelper<Half>.CreateTruncating<double>(1.0));
+
+            AssertBitwiseEqual(Half.PositiveInfinity, NumberBaseHelper<Half>.CreateTruncating<double>(double.MaxValue));
+            AssertBitwiseEqual(Half.PositiveInfinity, NumberBaseHelper<Half>.CreateTruncating<double>(double.PositiveInfinity));
+
+            AssertBitwiseEqual(Half.NaN, NumberBaseHelper<Half>.CreateTruncating<double>(double.NaN));
+        }
+
+        [Fact]
+        public static void CreateTruncatingFromHalfTest()
+        {
+            AssertBitwiseEqual(Half.NegativeInfinity, NumberBaseHelper<Half>.CreateTruncating<Half>(Half.NegativeInfinity));
+            AssertBitwiseEqual(Half.MinValue, NumberBaseHelper<Half>.CreateTruncating<Half>(Half.MinValue));
+
+            AssertBitwiseEqual(Half.NegativeOne, NumberBaseHelper<Half>.CreateTruncating<Half>(Half.NegativeOne));
+
+            AssertBitwiseEqual(-MinNormal, NumberBaseHelper<Half>.CreateTruncating<Half>(-MinNormal));
+            AssertBitwiseEqual(-MaxSubnormal, NumberBaseHelper<Half>.CreateTruncating<Half>(-MaxSubnormal));
+            AssertBitwiseEqual(-Half.Epsilon, NumberBaseHelper<Half>.CreateTruncating<Half>(-Half.Epsilon));
+            AssertBitwiseEqual(Half.NegativeZero, NumberBaseHelper<Half>.CreateTruncating<Half>(Half.NegativeZero));
+
+            AssertBitwiseEqual(Half.Zero, NumberBaseHelper<Half>.CreateTruncating<Half>(Half.Zero));
+            AssertBitwiseEqual(Half.Epsilon, NumberBaseHelper<Half>.CreateTruncating<Half>(Half.Epsilon));
+            AssertBitwiseEqual(MaxSubnormal, NumberBaseHelper<Half>.CreateTruncating<Half>(MaxSubnormal));
+            AssertBitwiseEqual(MinNormal, NumberBaseHelper<Half>.CreateTruncating<Half>(MinNormal));
+
+            AssertBitwiseEqual(One, NumberBaseHelper<Half>.CreateTruncating<Half>(Half.One));
+
+            AssertBitwiseEqual(Half.MaxValue, NumberBaseHelper<Half>.CreateTruncating<Half>(Half.MaxValue));
+            AssertBitwiseEqual(Half.PositiveInfinity, NumberBaseHelper<Half>.CreateTruncating<Half>(Half.PositiveInfinity));
+
+            AssertBitwiseEqual(Half.NaN, NumberBaseHelper<Half>.CreateTruncating<Half>(Half.NaN));
+        }
+
+        [Fact]
         public static void CreateTruncatingFromInt16Test()
         {
             AssertBitwiseEqual(Zero, NumberBaseHelper<Half>.CreateTruncating<short>(0x0000));
@@ -1694,6 +1758,47 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void CreateTruncatingFromNFloatTest()
+        {
+            AssertBitwiseEqual(Half.NegativeInfinity, NumberBaseHelper<Half>.CreateTruncating<NFloat>(NFloat.NegativeInfinity));
+            AssertBitwiseEqual(Half.NegativeInfinity, NumberBaseHelper<Half>.CreateTruncating<NFloat>(NFloat.MinValue));
+
+            AssertBitwiseEqual(Half.NegativeOne, NumberBaseHelper<Half>.CreateTruncating<NFloat>(-1.0f));
+
+            if (Environment.Is64BitProcess)
+            {
+                AssertBitwiseEqual(NegativeZero, NumberBaseHelper<Half>.CreateTruncating<NFloat>((NFloat)(-DoubleTests_GenericMath.MinNormal)));
+                AssertBitwiseEqual(NegativeZero, NumberBaseHelper<Half>.CreateTruncating<NFloat>((NFloat)(-DoubleTests_GenericMath.MaxSubnormal)));
+                AssertBitwiseEqual(NegativeZero, NumberBaseHelper<Half>.CreateTruncating<NFloat>(-NFloat.Epsilon));
+                AssertBitwiseEqual(NegativeZero, NumberBaseHelper<Half>.CreateTruncating<NFloat>(-0.0f));
+
+                AssertBitwiseEqual(Zero, NumberBaseHelper<Half>.CreateTruncating<NFloat>(+0.0f));
+                AssertBitwiseEqual(Zero, NumberBaseHelper<Half>.CreateTruncating<NFloat>(NFloat.Epsilon));
+                AssertBitwiseEqual(Zero, NumberBaseHelper<Half>.CreateTruncating<NFloat>((NFloat)DoubleTests_GenericMath.MaxSubnormal));
+                AssertBitwiseEqual(Zero, NumberBaseHelper<Half>.CreateTruncating<NFloat>((NFloat)DoubleTests_GenericMath.MinNormal));
+            }
+            else
+            {
+                AssertBitwiseEqual(NegativeZero, NumberBaseHelper<Half>.CreateTruncating<NFloat>(-SingleTests_GenericMath.MinNormal));
+                AssertBitwiseEqual(NegativeZero, NumberBaseHelper<Half>.CreateTruncating<NFloat>(-SingleTests_GenericMath.MaxSubnormal));
+                AssertBitwiseEqual(NegativeZero, NumberBaseHelper<Half>.CreateTruncating<NFloat>(-NFloat.Epsilon));
+                AssertBitwiseEqual(NegativeZero, NumberBaseHelper<Half>.CreateTruncating<NFloat>(-0.0f));
+
+                AssertBitwiseEqual(Zero, NumberBaseHelper<Half>.CreateTruncating<NFloat>(+0.0f));
+                AssertBitwiseEqual(Zero, NumberBaseHelper<Half>.CreateTruncating<NFloat>(NFloat.Epsilon));
+                AssertBitwiseEqual(Zero, NumberBaseHelper<Half>.CreateTruncating<NFloat>(SingleTests_GenericMath.MaxSubnormal));
+                AssertBitwiseEqual(Zero, NumberBaseHelper<Half>.CreateTruncating<NFloat>(SingleTests_GenericMath.MinNormal));
+            }
+
+            AssertBitwiseEqual(One, NumberBaseHelper<Half>.CreateTruncating<NFloat>(1.0f));
+
+            AssertBitwiseEqual(Half.PositiveInfinity, NumberBaseHelper<Half>.CreateTruncating<NFloat>(NFloat.MaxValue));
+            AssertBitwiseEqual(Half.PositiveInfinity, NumberBaseHelper<Half>.CreateTruncating<NFloat>(NFloat.PositiveInfinity));
+
+            AssertBitwiseEqual(Half.NaN, NumberBaseHelper<Half>.CreateTruncating<NFloat>(NFloat.NaN));
+        }
+
+        [Fact]
         public static void CreateTruncatingFromSByteTest()
         {
             AssertBitwiseEqual(Zero, NumberBaseHelper<Half>.CreateTruncating<sbyte>(0x00));
@@ -1701,6 +1806,32 @@ namespace System.Tests
             AssertBitwiseEqual((Half)127.0f, NumberBaseHelper<Half>.CreateTruncating<sbyte>(0x7F));
             AssertBitwiseEqual((Half)(-128.0f), NumberBaseHelper<Half>.CreateTruncating<sbyte>(unchecked((sbyte)0x80)));
             AssertBitwiseEqual(NegativeOne, NumberBaseHelper<Half>.CreateTruncating<sbyte>(unchecked((sbyte)0xFF)));
+        }
+
+        [Fact]
+        public static void CreateTruncatingFromSingleTest()
+        {
+            AssertBitwiseEqual(Half.NegativeInfinity, NumberBaseHelper<Half>.CreateTruncating<float>(float.NegativeInfinity));
+            AssertBitwiseEqual(Half.NegativeInfinity, NumberBaseHelper<Half>.CreateTruncating<float>(float.MinValue));
+
+            AssertBitwiseEqual(Half.NegativeOne, NumberBaseHelper<Half>.CreateTruncating<float>(-1.0f));
+
+            AssertBitwiseEqual(NegativeZero, NumberBaseHelper<Half>.CreateTruncating<float>(-SingleTests_GenericMath.MinNormal));
+            AssertBitwiseEqual(NegativeZero, NumberBaseHelper<Half>.CreateTruncating<float>(-SingleTests_GenericMath.MaxSubnormal));
+            AssertBitwiseEqual(NegativeZero, NumberBaseHelper<Half>.CreateTruncating<float>(-float.Epsilon));
+            AssertBitwiseEqual(NegativeZero, NumberBaseHelper<Half>.CreateTruncating<float>(-0.0f));
+
+            AssertBitwiseEqual(Zero, NumberBaseHelper<Half>.CreateTruncating<float>(+0.0f));
+            AssertBitwiseEqual(Zero, NumberBaseHelper<Half>.CreateTruncating<float>(float.Epsilon));
+            AssertBitwiseEqual(Zero, NumberBaseHelper<Half>.CreateTruncating<float>(SingleTests_GenericMath.MaxSubnormal));
+            AssertBitwiseEqual(Zero, NumberBaseHelper<Half>.CreateTruncating<float>(SingleTests_GenericMath.MinNormal));
+
+            AssertBitwiseEqual(One, NumberBaseHelper<Half>.CreateTruncating<float>(1.0f));
+
+            AssertBitwiseEqual(Half.PositiveInfinity, NumberBaseHelper<Half>.CreateTruncating<float>(float.MaxValue));
+            AssertBitwiseEqual(Half.PositiveInfinity, NumberBaseHelper<Half>.CreateTruncating<float>(float.PositiveInfinity));
+
+            AssertBitwiseEqual(Half.NaN, NumberBaseHelper<Half>.CreateTruncating<float>(float.NaN));
         }
 
         [Fact]

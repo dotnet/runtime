@@ -806,8 +806,8 @@ namespace System.Tests
         {
             Assert.Equal((short)0x0000, NumberBaseHelper<short>.CreateChecked<UInt128>(UInt128.Zero));
             Assert.Equal((short)0x0001, NumberBaseHelper<short>.CreateChecked<UInt128>(UInt128.One));
-            Assert.Throws<OverflowException>(() => NumberBaseHelper<short>.CreateChecked<UInt128>(UInt128Tests_GenericMath.Int64MaxValue));
-            Assert.Throws<OverflowException>(() => NumberBaseHelper<short>.CreateChecked<UInt128>(UInt128Tests_GenericMath.Int64MaxValuePlusOne));
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<short>.CreateChecked<UInt128>(UInt128Tests_GenericMath.Int128MaxValue));
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<short>.CreateChecked<UInt128>(UInt128Tests_GenericMath.Int128MaxValuePlusOne));
             Assert.Throws<OverflowException>(() => NumberBaseHelper<short>.CreateChecked<UInt128>(UInt128.MaxValue));
         }
 
@@ -1071,8 +1071,8 @@ namespace System.Tests
         {
             Assert.Equal((short)0x0000, NumberBaseHelper<short>.CreateSaturating<UInt128>(UInt128.Zero));
             Assert.Equal((short)0x0001, NumberBaseHelper<short>.CreateSaturating<UInt128>(UInt128.One));
-            Assert.Equal(unchecked((short)0x7FFF), NumberBaseHelper<short>.CreateSaturating<UInt128>(UInt128Tests_GenericMath.Int64MaxValue));
-            Assert.Equal(unchecked((short)0x7FFF), NumberBaseHelper<short>.CreateSaturating<UInt128>(UInt128Tests_GenericMath.Int64MaxValuePlusOne));
+            Assert.Equal(unchecked((short)0x7FFF), NumberBaseHelper<short>.CreateSaturating<UInt128>(UInt128Tests_GenericMath.Int128MaxValue));
+            Assert.Equal(unchecked((short)0x7FFF), NumberBaseHelper<short>.CreateSaturating<UInt128>(UInt128Tests_GenericMath.Int128MaxValuePlusOne));
             Assert.Equal(unchecked((short)0x7FFF), NumberBaseHelper<short>.CreateSaturating<UInt128>(UInt128.MaxValue));
         }
 
@@ -1118,6 +1118,69 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void CreateTruncatingFromDecimalTest()
+        {
+            Assert.Equal((short)0x0000, NumberBaseHelper<short>.CreateTruncating<decimal>(-0.0m));
+            Assert.Equal((short)0x0000, NumberBaseHelper<short>.CreateTruncating<decimal>(+0.0m));
+            Assert.Equal((short)0x0001, NumberBaseHelper<short>.CreateTruncating<decimal>(+1.0m));
+
+            Assert.Equal(unchecked((short)0xFFFF), NumberBaseHelper<short>.CreateTruncating<decimal>(-1.0m));
+
+            Assert.Equal(unchecked((short)0x8000), NumberBaseHelper<short>.CreateTruncating<decimal>(decimal.MinValue));
+            Assert.Equal(unchecked((short)0x7FFF), NumberBaseHelper<short>.CreateTruncating<decimal>(decimal.MaxValue));
+        }
+
+        [Fact]
+        public static void CreateTruncatingFromDoubleTest()
+        {
+            Assert.Equal((short)0x0000, NumberBaseHelper<short>.CreateTruncating<double>(+0.0));
+            Assert.Equal((short)0x0000, NumberBaseHelper<short>.CreateTruncating<double>(-0.0));
+
+            Assert.Equal((short)0x0000, NumberBaseHelper<short>.CreateTruncating<double>(+double.Epsilon));
+            Assert.Equal((short)0x0000, NumberBaseHelper<short>.CreateTruncating<double>(-double.Epsilon));
+
+            Assert.Equal((short)0x0001, NumberBaseHelper<short>.CreateTruncating<double>(+1.0));
+            Assert.Equal(unchecked((short)0xFFFF), NumberBaseHelper<short>.CreateTruncating<double>(-1.0));
+
+            Assert.Equal((short)0x7FFF, NumberBaseHelper<short>.CreateTruncating<double>(+32767.0));
+            Assert.Equal(unchecked((short)0x8000), NumberBaseHelper<short>.CreateTruncating<double>(-32768.0));
+
+            Assert.Equal(unchecked((short)0x7FFF), NumberBaseHelper<short>.CreateTruncating<double>(+32768.0));
+            Assert.Equal(unchecked((short)0x8000), NumberBaseHelper<short>.CreateTruncating<double>(-32769.0));
+
+            Assert.Equal(unchecked((short)0x7FFF), NumberBaseHelper<short>.CreateTruncating<double>(double.MaxValue));
+            Assert.Equal(unchecked((short)0x8000), NumberBaseHelper<short>.CreateTruncating<double>(double.MinValue));
+
+            Assert.Equal(unchecked((short)0x7FFF), NumberBaseHelper<short>.CreateTruncating<double>(double.PositiveInfinity));
+            Assert.Equal(unchecked((short)0x8000), NumberBaseHelper<short>.CreateTruncating<double>(double.NegativeInfinity));
+        }
+
+        [Fact]
+        public static void CreateTruncatingFromHalfTest()
+        {
+            Assert.Equal((short)0x0000, NumberBaseHelper<short>.CreateTruncating<Half>(Half.Zero));
+            Assert.Equal((short)0x0000, NumberBaseHelper<short>.CreateTruncating<Half>(Half.NegativeZero));
+
+            Assert.Equal((short)0x0000, NumberBaseHelper<short>.CreateTruncating<Half>(+Half.Epsilon));
+            Assert.Equal((short)0x0000, NumberBaseHelper<short>.CreateTruncating<Half>(-Half.Epsilon));
+
+            Assert.Equal((short)0x0001, NumberBaseHelper<short>.CreateTruncating<Half>(Half.One));
+            Assert.Equal(unchecked((short)0xFFFF), NumberBaseHelper<short>.CreateTruncating<Half>(Half.NegativeOne));
+
+            Assert.Equal((short)0x7FF0, NumberBaseHelper<short>.CreateTruncating<Half>((Half)32752.0f));
+            Assert.Equal(unchecked((short)0x8000), NumberBaseHelper<short>.CreateTruncating<Half>((Half)(-32768.0f)));
+
+            Assert.Equal(unchecked((short)0x7FFF), NumberBaseHelper<short>.CreateTruncating<Half>((Half)32768.0f));
+            Assert.Equal(unchecked((short)0x8000), NumberBaseHelper<short>.CreateTruncating<Half>((Half)(-32800.0f)));
+
+            Assert.Equal(unchecked((short)0x7FFF), NumberBaseHelper<short>.CreateTruncating<Half>(Half.MaxValue));
+            Assert.Equal(unchecked((short)0x8000), NumberBaseHelper<short>.CreateTruncating<Half>(Half.MinValue));
+
+            Assert.Equal(unchecked((short)0x7FFF), NumberBaseHelper<short>.CreateTruncating<Half>(Half.PositiveInfinity));
+            Assert.Equal(unchecked((short)0x8000), NumberBaseHelper<short>.CreateTruncating<Half>(Half.NegativeInfinity));
+        }
+
+        [Fact]
         public static void CreateTruncatingFromInt16Test()
         {
             Assert.Equal((short)0x0000, NumberBaseHelper<short>.CreateTruncating<short>(0x0000));
@@ -1148,6 +1211,16 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void CreateTruncatingFromInt128Test()
+        {
+            Assert.Equal((short)0x0000, NumberBaseHelper<short>.CreateTruncating<Int128>(Int128.Zero));
+            Assert.Equal((short)0x0001, NumberBaseHelper<short>.CreateTruncating<Int128>(Int128.One));
+            Assert.Equal(unchecked((short)0xFFFF), NumberBaseHelper<short>.CreateTruncating<Int128>(Int128.MaxValue));
+            Assert.Equal(unchecked((short)0x0000), NumberBaseHelper<short>.CreateTruncating<Int128>(Int128.MinValue));
+            Assert.Equal(unchecked((short)0xFFFF), NumberBaseHelper<short>.CreateTruncating<Int128>(Int128.NegativeOne));
+        }
+
+        [Fact]
         public static void CreateTruncatingFromIntPtrTest()
         {
             if (Environment.Is64BitProcess)
@@ -1169,6 +1242,31 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void CreateTruncatingFromNFloatTest()
+        {
+            Assert.Equal((short)0x0000, NumberBaseHelper<short>.CreateTruncating<NFloat>(+0.0f));
+            Assert.Equal((short)0x0000, NumberBaseHelper<short>.CreateTruncating<NFloat>(-0.0f));
+
+            Assert.Equal((short)0x0000, NumberBaseHelper<short>.CreateTruncating<NFloat>(+NFloat.Epsilon));
+            Assert.Equal((short)0x0000, NumberBaseHelper<short>.CreateTruncating<NFloat>(-NFloat.Epsilon));
+
+            Assert.Equal((short)0x0001, NumberBaseHelper<short>.CreateTruncating<NFloat>(+1.0f));
+            Assert.Equal(unchecked((short)0xFFFF), NumberBaseHelper<short>.CreateTruncating<NFloat>(-1.0f));
+
+            Assert.Equal((short)0x7FFF, NumberBaseHelper<short>.CreateTruncating<NFloat>(+32767.0f));
+            Assert.Equal(unchecked((short)0x8000), NumberBaseHelper<short>.CreateTruncating<NFloat>(-32768.0f));
+
+            Assert.Equal(unchecked((short)0x7FFF), NumberBaseHelper<short>.CreateTruncating<NFloat>(+32768.0f));
+            Assert.Equal(unchecked((short)0x8000), NumberBaseHelper<short>.CreateTruncating<NFloat>(-32769.0f));
+
+            Assert.Equal(unchecked((short)0x7FFF), NumberBaseHelper<short>.CreateTruncating<NFloat>(NFloat.MaxValue));
+            Assert.Equal(unchecked((short)0x8000), NumberBaseHelper<short>.CreateTruncating<NFloat>(NFloat.MinValue));
+
+            Assert.Equal(unchecked((short)0x7FFF), NumberBaseHelper<short>.CreateTruncating<NFloat>(NFloat.PositiveInfinity));
+            Assert.Equal(unchecked((short)0x8000), NumberBaseHelper<short>.CreateTruncating<NFloat>(NFloat.NegativeInfinity));
+        }
+
+        [Fact]
         public static void CreateTruncatingFromSByteTest()
         {
             Assert.Equal((short)0x0000, NumberBaseHelper<short>.CreateTruncating<sbyte>(0x00));
@@ -1176,6 +1274,31 @@ namespace System.Tests
             Assert.Equal((short)0x007F, NumberBaseHelper<short>.CreateTruncating<sbyte>(0x7F));
             Assert.Equal(unchecked((short)0xFF80), NumberBaseHelper<short>.CreateTruncating<sbyte>(unchecked((sbyte)0x80)));
             Assert.Equal(unchecked((short)0xFFFF), NumberBaseHelper<short>.CreateTruncating<sbyte>(unchecked((sbyte)0xFF)));
+        }
+
+        [Fact]
+        public static void CreateTruncatingFromSingleTest()
+        {
+            Assert.Equal((short)0x0000, NumberBaseHelper<short>.CreateTruncating<float>(+0.0f));
+            Assert.Equal((short)0x0000, NumberBaseHelper<short>.CreateTruncating<float>(-0.0f));
+
+            Assert.Equal((short)0x0000, NumberBaseHelper<short>.CreateTruncating<float>(+float.Epsilon));
+            Assert.Equal((short)0x0000, NumberBaseHelper<short>.CreateTruncating<float>(-float.Epsilon));
+
+            Assert.Equal((short)0x0001, NumberBaseHelper<short>.CreateTruncating<float>(+1.0f));
+            Assert.Equal(unchecked((short)0xFFFF), NumberBaseHelper<short>.CreateTruncating<float>(-1.0f));
+
+            Assert.Equal((short)0x7FFF, NumberBaseHelper<short>.CreateTruncating<float>(+32767.0f));
+            Assert.Equal(unchecked((short)0x8000), NumberBaseHelper<short>.CreateTruncating<float>(-32768.0f));
+
+            Assert.Equal(unchecked((short)0x7FFF), NumberBaseHelper<short>.CreateTruncating<float>(+32768.0f));
+            Assert.Equal(unchecked((short)0x8000), NumberBaseHelper<short>.CreateTruncating<float>(-32769.0f));
+
+            Assert.Equal(unchecked((short)0x7FFF), NumberBaseHelper<short>.CreateTruncating<float>(float.MaxValue));
+            Assert.Equal(unchecked((short)0x8000), NumberBaseHelper<short>.CreateTruncating<float>(float.MinValue));
+
+            Assert.Equal(unchecked((short)0x7FFF), NumberBaseHelper<short>.CreateTruncating<float>(float.PositiveInfinity));
+            Assert.Equal(unchecked((short)0x8000), NumberBaseHelper<short>.CreateTruncating<float>(float.NegativeInfinity));
         }
 
         [Fact]
@@ -1206,6 +1329,16 @@ namespace System.Tests
             Assert.Equal(unchecked((short)0xFFFF), NumberBaseHelper<short>.CreateTruncating<ulong>(0x7FFFFFFFFFFFFFFF));
             Assert.Equal((short)0x0000, NumberBaseHelper<short>.CreateTruncating<ulong>(0x8000000000000000));
             Assert.Equal(unchecked((short)0xFFFF), NumberBaseHelper<short>.CreateTruncating<ulong>(0xFFFFFFFFFFFFFFFF));
+        }
+
+        [Fact]
+        public static void CreateTruncatingFromUInt128Test()
+        {
+            Assert.Equal((short)0x0000, NumberBaseHelper<short>.CreateTruncating<UInt128>(UInt128.Zero));
+            Assert.Equal((short)0x0001, NumberBaseHelper<short>.CreateTruncating<UInt128>(UInt128.One));
+            Assert.Equal(unchecked((short)0xFFFF), NumberBaseHelper<short>.CreateTruncating<UInt128>(UInt128Tests_GenericMath.Int128MaxValue));
+            Assert.Equal(unchecked((short)0x0000), NumberBaseHelper<short>.CreateTruncating<UInt128>(UInt128Tests_GenericMath.Int128MaxValuePlusOne));
+            Assert.Equal(unchecked((short)0xFFFF), NumberBaseHelper<short>.CreateTruncating<UInt128>(UInt128.MaxValue));
         }
 
         [Fact]
