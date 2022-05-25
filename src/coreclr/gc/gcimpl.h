@@ -66,7 +66,6 @@ public:
 
 public:
     GCHeap(){};
-    ~GCHeap(){};
 
     /* BaseGCHeap Methods*/
     PER_HEAP_ISOLATED   HRESULT StaticShutdown ();
