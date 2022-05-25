@@ -1110,6 +1110,65 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void CreateTruncatingFromDecimalTest()
+        {
+            Assert.Equal(decimal.MinValue, NumberBaseHelper<decimal>.CreateTruncating<decimal>(decimal.MinValue));
+            Assert.Equal(-1.0m, NumberBaseHelper<decimal>.CreateTruncating<decimal>(-1.0m));
+            Assert.Equal(-0.0m, NumberBaseHelper<decimal>.CreateTruncating<decimal>(-0.0m));
+            Assert.Equal(+0.0m, NumberBaseHelper<decimal>.CreateTruncating<decimal>(+0.0m));
+            Assert.Equal(+1.0m, NumberBaseHelper<decimal>.CreateTruncating<decimal>(+1.0m));
+            Assert.Equal(decimal.MaxValue, NumberBaseHelper<decimal>.CreateTruncating<decimal>(decimal.MaxValue));
+        }
+
+        [Fact]
+        public static void CreateTruncatingFromDoubleTest()
+        {
+            Assert.Equal(0.0m, NumberBaseHelper<decimal>.CreateTruncating<double>(+0.0));
+            Assert.Equal(0.0m, NumberBaseHelper<decimal>.CreateTruncating<double>(-0.0));
+
+            Assert.Equal(0.0m, NumberBaseHelper<decimal>.CreateTruncating<double>(+double.Epsilon));
+            Assert.Equal(0.0m, NumberBaseHelper<decimal>.CreateTruncating<double>(-double.Epsilon));
+
+            Assert.Equal(+1.0m, NumberBaseHelper<decimal>.CreateTruncating<double>(+1.0));
+            Assert.Equal(-1.0m, NumberBaseHelper<decimal>.CreateTruncating<double>(-1.0));
+
+            Assert.Equal(+79228162514264300000000000000.0m, NumberBaseHelper<decimal>.CreateTruncating<double>(+79228162514264333195497439231.0));
+            Assert.Equal(-79228162514264300000000000000.0m, NumberBaseHelper<decimal>.CreateTruncating<double>(-79228162514264333195497439231.0));
+
+            Assert.Equal(decimal.MaxValue, NumberBaseHelper<decimal>.CreateTruncating<double>(+79228162514264337593543950335.0));
+            Assert.Equal(decimal.MinValue, NumberBaseHelper<decimal>.CreateTruncating<double>(-79228162514264337593543950335.0));
+
+            Assert.Equal(decimal.MaxValue, NumberBaseHelper<decimal>.CreateTruncating<double>(double.MaxValue));
+            Assert.Equal(decimal.MinValue, NumberBaseHelper<decimal>.CreateTruncating<double>(double.MinValue));
+
+            Assert.Equal(decimal.MaxValue, NumberBaseHelper<decimal>.CreateTruncating<double>(double.PositiveInfinity));
+            Assert.Equal(decimal.MinValue, NumberBaseHelper<decimal>.CreateTruncating<double>(double.NegativeInfinity));
+
+            Assert.Equal(decimal.Zero, NumberBaseHelper<decimal>.CreateTruncating<double>(double.NaN));
+        }
+
+        [Fact]
+        public static void CreateTruncatingFromHalfTest()
+        {
+            Assert.Equal(0.0m, NumberBaseHelper<decimal>.CreateTruncating<Half>(Half.Zero));
+            Assert.Equal(0.0m, NumberBaseHelper<decimal>.CreateTruncating<Half>(Half.NegativeZero));
+
+            Assert.Equal(+0.00000005960464m, NumberBaseHelper<decimal>.CreateTruncating<Half>(+Half.Epsilon));
+            Assert.Equal(-0.00000005960464m, NumberBaseHelper<decimal>.CreateTruncating<Half>(-Half.Epsilon));
+
+            Assert.Equal(+1.0m, NumberBaseHelper<decimal>.CreateTruncating<Half>(Half.One));
+            Assert.Equal(-1.0m, NumberBaseHelper<decimal>.CreateTruncating<Half>(Half.NegativeOne));
+
+            Assert.Equal(+65504.0m, NumberBaseHelper<decimal>.CreateTruncating<Half>(Half.MaxValue));
+            Assert.Equal(-65504.0m, NumberBaseHelper<decimal>.CreateTruncating<Half>(Half.MinValue));
+
+            Assert.Equal(decimal.MaxValue, NumberBaseHelper<decimal>.CreateTruncating<Half>(Half.PositiveInfinity));
+            Assert.Equal(decimal.MinValue, NumberBaseHelper<decimal>.CreateTruncating<Half>(Half.NegativeInfinity));
+
+            Assert.Equal(decimal.Zero, NumberBaseHelper<decimal>.CreateTruncating<Half>(Half.NaN));
+        }
+
+        [Fact]
         public static void CreateTruncatingFromInt16Test()
         {
             Assert.Equal(0.0m, NumberBaseHelper<decimal>.CreateTruncating<short>(0x0000));
@@ -1173,6 +1232,27 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void CreateTruncatingFromNFloatTest()
+        {
+            Assert.Equal(0.0m, NumberBaseHelper<decimal>.CreateTruncating<NFloat>(0.0f));
+            Assert.Equal(0.0m, NumberBaseHelper<decimal>.CreateTruncating<NFloat>(NFloat.NegativeZero));
+
+            Assert.Equal(0.0m, NumberBaseHelper<decimal>.CreateTruncating<NFloat>(+NFloat.Epsilon));
+            Assert.Equal(0.0m, NumberBaseHelper<decimal>.CreateTruncating<NFloat>(-NFloat.Epsilon));
+
+            Assert.Equal(+1.0m, NumberBaseHelper<decimal>.CreateTruncating<NFloat>(+1.0f));
+            Assert.Equal(-1.0m, NumberBaseHelper<decimal>.CreateTruncating<NFloat>(-1.0f));
+
+            Assert.Equal(decimal.MaxValue, NumberBaseHelper<decimal>.CreateTruncating<NFloat>(NFloat.MaxValue));
+            Assert.Equal(decimal.MinValue, NumberBaseHelper<decimal>.CreateTruncating<NFloat>(NFloat.MinValue));
+
+            Assert.Equal(decimal.MaxValue, NumberBaseHelper<decimal>.CreateTruncating<NFloat>(NFloat.PositiveInfinity));
+            Assert.Equal(decimal.MinValue, NumberBaseHelper<decimal>.CreateTruncating<NFloat>(NFloat.NegativeInfinity));
+
+            Assert.Equal(decimal.Zero, NumberBaseHelper<decimal>.CreateTruncating<NFloat>(NFloat.NaN));
+        }
+
+        [Fact]
         public static void CreateTruncatingFromSByteTest()
         {
             Assert.Equal(0.0m, NumberBaseHelper<decimal>.CreateTruncating<sbyte>(0x00));
@@ -1180,6 +1260,33 @@ namespace System.Tests
             Assert.Equal(127.0m, NumberBaseHelper<decimal>.CreateTruncating<sbyte>(0x7F));
             Assert.Equal(-128.0m, NumberBaseHelper<decimal>.CreateTruncating<sbyte>(unchecked((sbyte)0x80)));
             Assert.Equal(-1.0m, NumberBaseHelper<decimal>.CreateTruncating<sbyte>(unchecked((sbyte)0xFF)));
+        }
+
+        [Fact]
+        public static void CreateTruncatingFromSingleTest()
+        {
+            Assert.Equal(0.0m, NumberBaseHelper<decimal>.CreateTruncating<float>(+0.0f));
+            Assert.Equal(0.0m, NumberBaseHelper<decimal>.CreateTruncating<float>(-0.0f));
+
+            Assert.Equal(0.0m, NumberBaseHelper<decimal>.CreateTruncating<float>(+float.Epsilon));
+            Assert.Equal(0.0m, NumberBaseHelper<decimal>.CreateTruncating<float>(-float.Epsilon));
+
+            Assert.Equal(+1.0m, NumberBaseHelper<decimal>.CreateTruncating<float>(+1.0f));
+            Assert.Equal(-1.0m, NumberBaseHelper<decimal>.CreateTruncating<float>(-1.0f));
+
+            Assert.Equal(+79228160000000000000000000000.0m, NumberBaseHelper<decimal>.CreateTruncating<float>(+79228160000000000000000000000.0f));
+            Assert.Equal(-79228160000000000000000000000.0m, NumberBaseHelper<decimal>.CreateTruncating<float>(-79228160000000000000000000000.0f));
+
+            Assert.Equal(decimal.MaxValue, NumberBaseHelper<decimal>.CreateTruncating<float>(+79228162514264337593543950335.0f));
+            Assert.Equal(decimal.MinValue, NumberBaseHelper<decimal>.CreateTruncating<float>(-79228162514264337593543950335.0f));
+
+            Assert.Equal(decimal.MaxValue, NumberBaseHelper<decimal>.CreateTruncating<float>(float.MaxValue));
+            Assert.Equal(decimal.MinValue, NumberBaseHelper<decimal>.CreateTruncating<float>(float.MinValue));
+
+            Assert.Equal(decimal.MaxValue, NumberBaseHelper<decimal>.CreateTruncating<float>(float.PositiveInfinity));
+            Assert.Equal(decimal.MinValue, NumberBaseHelper<decimal>.CreateTruncating<float>(float.NegativeInfinity));
+
+            Assert.Equal(decimal.Zero, NumberBaseHelper<decimal>.CreateTruncating<float>(float.NaN));
         }
 
         [Fact]
