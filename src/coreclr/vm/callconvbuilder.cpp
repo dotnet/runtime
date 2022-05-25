@@ -14,21 +14,30 @@
 // using a const char constant is acceptable.
 #define MAKE_FULLY_QUALIFIED_CALLCONV_TYPE_NAME(callConvTypeName) CMOD_CALLCONV_NAMESPACE "." callConvTypeName
 
-// We can include the ',' delimiter, when a type name is in Fully Qualified
-// form outside its declaring assembly - most common scenario.
-#define MAKE_FULLY_QUALIFIED_CALLCONV_TYPE_NAME_PREFIX(callConvTypeName) MAKE_FULLY_QUALIFIED_CALLCONV_TYPE_NAME(callConvTypeName) ","
-
 namespace
 {
-    // Function to compute if a char string begins with another char string.
-    bool BeginsWith(size_t s1Len, const char* s1, size_t s2Len, const char* s2)
+    // Function to compute if a Type name string matches another
+    bool BeginsWithTypeName(size_t strLen, const char* str, size_t typeNameLen, const char* typeName)
     {
         WRAPPER_NO_CONTRACT;
 
-        if (s1Len < s2Len)
+        // If the string is less than the type name it can't.
+        if (strLen < typeNameLen)
             return false;
 
-        return (0 == strncmp(s1, s2, s2Len));
+        // The string is not less than the type name so check for a match.
+        if (0 != strncmp(str, typeName, typeNameLen))
+            return false;
+
+        // If the type is being used in the assembly it is defined, we can match
+        // the type name precisely. This is most common when SPCL uses an attribute.
+        if (strLen == typeNameLen)
+            return true;
+
+        // The string length is more than the type name, so we also check for
+        // the trailing ',' delimiter. This happens when a type name is in Fully Qualified
+        // form outside its declaring assembly - most common scenario.
+        return str[typeNameLen] == ',';
     }
 
     // Function to compute if a char string is equal to another char string.
@@ -62,22 +71,10 @@ namespace
     const TypeWithFlag<CorInfoCallConvExtension> FullyQualifiedTypeBaseCallConvs[] =
     {
 #define BASE_CALL_CONV(name, flag) { \
-        MAKE_FULLY_QUALIFIED_CALLCONV_TYPE_NAME_PREFIX(name), \
-        STRING_LENGTH(MAKE_FULLY_QUALIFIED_CALLCONV_TYPE_NAME_PREFIX(name)), \
-        CorInfoCallConvExtension::flag, \
-        BeginsWith },
-
-        DECLARE_BASE_CALL_CONVS
-
-#undef BASE_CALL_CONV
-
-        // If the type is being used in the assembly it is defined, we can match
-        // the type name precisely. This is most common when SPCL uses an attribute.
-#define BASE_CALL_CONV(name, flag) { \
         MAKE_FULLY_QUALIFIED_CALLCONV_TYPE_NAME(name), \
         STRING_LENGTH(MAKE_FULLY_QUALIFIED_CALLCONV_TYPE_NAME(name)), \
         CorInfoCallConvExtension::flag, \
-        Equals },
+        BeginsWithTypeName },
 
         DECLARE_BASE_CALL_CONVS
 
@@ -100,22 +97,10 @@ namespace
     const TypeWithFlag<CallConvBuilder::CallConvModifiers> FullyQualifiedTypeModCallConvs[] =
     {
 #define CALL_CONV_MODIFIER(name, flag) { \
-        MAKE_FULLY_QUALIFIED_CALLCONV_TYPE_NAME_PREFIX(name), \
-        STRING_LENGTH(MAKE_FULLY_QUALIFIED_CALLCONV_TYPE_NAME_PREFIX(name)), \
-        CallConvBuilder::flag, \
-        BeginsWith },
-
-        DECLARE_MOD_CALL_CONVS
-
-#undef CALL_CONV_MODIFIER
-
-        // If the type is being used in the assembly it is defined, we can match
-        // the type name precisely. This is most common when SPCL uses an attribute.
-#define CALL_CONV_MODIFIER(name, flag) { \
         MAKE_FULLY_QUALIFIED_CALLCONV_TYPE_NAME(name), \
         STRING_LENGTH(MAKE_FULLY_QUALIFIED_CALLCONV_TYPE_NAME(name)), \
         CallConvBuilder::flag, \
-        Equals },
+        BeginsWithTypeName },
 
         DECLARE_MOD_CALL_CONVS
 
