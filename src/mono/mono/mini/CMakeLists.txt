@@ -220,7 +220,6 @@ set(wasm_sources
     mini-wasm.c
     tramp-wasm.c
     exceptions-wasm.c
-    wasm_m2n_invoke.g.h
     cpu-wasm.h)
 
 if(TARGET_AMD64)
