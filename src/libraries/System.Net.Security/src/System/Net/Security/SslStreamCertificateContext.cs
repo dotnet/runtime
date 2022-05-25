@@ -26,6 +26,8 @@ namespace System.Net.Security
             }
 
             X509Certificate2[] intermediates = Array.Empty<X509Certificate2>();
+            X509Certificate2? root = null;
+
             using (X509Chain chain = new X509Chain())
             {
                 if (additionalCertificates != null)
@@ -56,12 +58,15 @@ namespace System.Net.Security
                     if (TrimRootCertificate)
                     {
                         count--;
+                        root = chain.ChainElements[chain.ChainElements.Count - 1].Certificate;
+
                         foreach (X509ChainStatus status in chain.ChainStatus)
                         {
                             if (status.Status.HasFlag(X509ChainStatusFlags.PartialChain))
                             {
                                 // The last cert isn't a root cert
                                 count++;
+                                root = null;
                                 break;
                             }
                         }
@@ -89,8 +94,18 @@ namespace System.Net.Security
                 }
             }
 
-            return new SslStreamCertificateContext(target, intermediates, trust);
+            SslStreamCertificateContext ctx = new SslStreamCertificateContext(target, intermediates, trust);
+
+            // On Linux, AddRootCertificate will start a background download of an OCSP response,
+            // unless this context was built "offline".
+            ctx.SetOfflineStatus(offline);
+            ctx.AddRootCertificate(root);
+
+            return ctx;
         }
+
+        partial void AddRootCertificate(X509Certificate2? rootCertificate);
+        partial void SetOfflineStatus(bool offline);
 
         internal SslStreamCertificateContext Duplicate()
         {

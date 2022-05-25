@@ -33,6 +33,8 @@
              Link="Common\System\HexConverter.cs" />
     <Compile Include="$(CommonPath)System\Memory\PointerMemoryManager.cs"
              Link="Common\System\Memory\PointerMemoryManager.cs" />
+    <Compile Include="$(CommonPath)System\Net\Http\X509ResourceClient.cs"
+             Link="Common\System\Net\Http\X509ResourceClient.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs"
              Link="Common\System\Obsoletions.cs" />
     <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\AlgorithmIdentifierAsn.xml">
@@ -641,6 +643,8 @@
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.LookupFriendlyNameByOid.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.OCSP.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.OCSP.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.OCSP.Chain.cs"
+             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.OCSP.Chain.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslVersion.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslVersion.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.Pkcs7.cs"
@@ -701,8 +705,6 @@
              Link="Common\System\Security\Cryptography\ECOpenSsl.ImportExport.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\RSAOpenSsl.cs"
              Link="Common\System\Security\Cryptography\RSAOpenSsl.cs" />
-    <Compile Include="$(CommonPath)System\Text\ValueUtf8Converter.cs"
-             Link="Common\System\Text\ValueUtf8Converter.cs" />
     <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\DigestInfoAsn.xml">
       <Link>Common\System\Security\Cryptography\Asn1\DigestInfoAsn.xml</Link>
     </AsnXml>
@@ -763,6 +765,10 @@
       <Link>Common\System\Security\Cryptography\Asn1\Pkcs7\EncryptedDataAsn.xml.cs</Link>
       <DependentUpon>Common\System\Security\Cryptography\Asn1\Pkcs7\EncryptedDataAsn.xml</DependentUpon>
     </Compile>
+    <Compile Include="$(CommonPath)System\Text\Base64UrlEncoding.cs"
+             Link="Common\System\Text\Base64UrlEncoding.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueUtf8Converter.cs"
+             Link="Common\System\Text\ValueUtf8Converter.cs" />
     <Compile Include="System\Security\Cryptography\AesImplementation.OpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\AsnFormatter.OpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\CapiHelper.DSA.Shared.cs" />

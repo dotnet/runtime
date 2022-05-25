@@ -297,8 +297,12 @@
     <Compile Include="System\Net\Security\SslConnectionInfo.Linux.cs" />
     <Compile Include="System\Net\Security\SslStreamCertificateContext.Linux.cs" />
     <Compile Include="System\Net\Security\StreamSizes.Unix.cs" />
+    <Compile Include="$(CommonPath)System\Net\Http\X509ResourceClient.cs"
+             Link="Common\System\Net\Http\X509ResourceClient.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\CertificateValidation.Unix.cs"
              Link="Common\System\Net\Security\CertificateValidation.Unix.cs" />
+    <Compile Include="$(CommonPath)System\Text\Base64UrlEncoding.cs"
+             Link="Common\System\Text\Base64UrlEncoding.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.BIO.cs"
@@ -309,6 +313,8 @@
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.Crypto.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Crypto.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.OCSP.cs"
+             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.OCSP.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSsl.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSsl.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslVersion.cs"

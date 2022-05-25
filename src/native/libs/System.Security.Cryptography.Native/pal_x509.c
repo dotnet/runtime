@@ -881,12 +881,13 @@ static time_t GetIssuanceWindowStart()
     return t;
 }
 
-static X509VerifyStatusCode CheckOcsp(OCSP_REQUEST* req,
-                                      OCSP_RESPONSE* resp,
-                                      X509* subject,
-                                      X509* issuer,
-                                      X509_STORE_CTX* storeCtx,
-                                      int* canCache)
+static X509VerifyStatusCode CheckOcspGetExpiry(OCSP_REQUEST* req,
+                                               OCSP_RESPONSE* resp,
+                                               X509* subject,
+                                               X509* issuer,
+                                               X509_STORE_CTX* storeCtx,
+                                               int* canCache,
+                                               time_t* expiry)
 {
     assert(resp != NULL);
     assert(subject != NULL);
@@ -979,6 +980,23 @@ static X509VerifyStatusCode CheckOcsp(OCSP_REQUEST* req,
                     if (X509_cmp_time(thisupd, &oldest) > 0)
                     {
                         *canCache = 1;
+
+                        if (expiry != NULL)
+                        {
+                            struct tm updTm = { 0 };
+
+                            if (nextupd != NULL && ASN1_TIME_to_tm(nextupd, &updTm) == 1)
+                            {
+                               *expiry = timegm(&updTm);
+                            }
+                            else if (ASN1_TIME_to_tm(thisupd, &updTm) == 1)
+                            {
+                                // If we're doing server side OCSP stapling and the response
+                                // has no nextUpd, treat it as a 24-hour expiration for refresh
+                                // purposes.
+                                *expiry = timegm(&updTm) + (24 * 60 * 60);
+                            }
+                        }
                     }
                 }
             }
@@ -993,6 +1011,16 @@ static X509VerifyStatusCode CheckOcsp(OCSP_REQUEST* req,
 
     OCSP_CERTID_free(certId);
     return ret;
+}
+
+static X509VerifyStatusCode CheckOcsp(OCSP_REQUEST* req,
+                                      OCSP_RESPONSE* resp,
+                                      X509* subject,
+                                      X509* issuer,
+                                      X509_STORE_CTX* storeCtx,
+                                      int* canCache)
+{
+    return CheckOcspGetExpiry(req, resp, subject, issuer, storeCtx, canCache, NULL);
 }
 
 static int Get0CertAndIssuer(X509_STORE_CTX* storeCtx, int chainDepth, X509** subject, X509** issuer)
@@ -1104,23 +1132,8 @@ int32_t CryptoNative_X509ChainGetCachedOcspStatus(X509_STORE_CTX* storeCtx, char
     return (int32_t)ret;
 }
 
-OCSP_REQUEST* CryptoNative_X509ChainBuildOcspRequest(X509_STORE_CTX* storeCtx, int chainDepth)
+static OCSP_REQUEST* BuildOcspRequest(X509* subject, X509* issuer)
 {
-    if (storeCtx == NULL)
-    {
-        return NULL;
-    }
-
-    ERR_clear_error();
-
-    X509* subject;
-    X509* issuer;
-
-    if (!Get0CertAndIssuer(storeCtx, chainDepth, &subject, &issuer))
-    {
-        return NULL;
-    }
-
     OCSP_CERTID* certId = MakeCertId(subject, issuer);
 
     if (certId == NULL)
@@ -1149,6 +1162,35 @@ OCSP_REQUEST* CryptoNative_X509ChainBuildOcspRequest(X509_STORE_CTX* storeCtx, i
     // Add a random nonce.
     OCSP_request_add1_nonce(req, NULL, -1);
     return req;
+}
+
+OCSP_REQUEST* CryptoNative_X509BuildOcspRequest(X509* subject, X509* issuer)
+{
+    assert(subject != NULL);
+    assert(issuer != NULL);
+
+    ERR_clear_error();
+    return BuildOcspRequest(subject, issuer);
+}
+
+OCSP_REQUEST* CryptoNative_X509ChainBuildOcspRequest(X509_STORE_CTX* storeCtx, int chainDepth)
+{
+    if (storeCtx == NULL)
+    {
+        return NULL;
+    }
+
+    ERR_clear_error();
+
+    X509* subject;
+    X509* issuer;
+
+    if (!Get0CertAndIssuer(storeCtx, chainDepth, &subject, &issuer))
+    {
+        return NULL;
+    }
+
+    return BuildOcspRequest(subject, issuer);
 }
 
 static int32_t X509ChainVerifyOcsp(X509_STORE_CTX* storeCtx, X509* subject, X509* issuer, OCSP_REQUEST* req, OCSP_RESPONSE* resp, char* cachePath)
@@ -1236,4 +1278,71 @@ CryptoNative_X509ChainVerifyOcsp(X509_STORE_CTX* storeCtx, OCSP_REQUEST* req, OC
     }
 
     return X509ChainVerifyOcsp(storeCtx, subject, issuer, req, resp, cachePath);
+}
+
+int32_t CryptoNative_X509DecodeOcspToExpiration(const uint8_t* buf, int32_t len, OCSP_REQUEST* req, X509* subject, X509* issuer, int64_t* expiration)
+{
+    ERR_clear_error();
+
+    if (buf == NULL || len == 0)
+    {
+        return 0;
+    }
+
+    OCSP_RESPONSE* resp = d2i_OCSP_RESPONSE(NULL, &buf, len);
+
+    if (resp == NULL)
+    {
+        return 0;
+    }
+
+    X509_STORE* store = X509_STORE_new();
+    X509_STORE_CTX* ctx = NULL;
+    X509Stack* bag = NULL;
+
+    if (store != NULL)
+    {
+        bag = sk_X509_new_null();
+    }
+
+    if (bag != NULL)
+    {
+        if (X509_STORE_add_cert(store, issuer) && sk_X509_push(bag, issuer))
+        {
+            ctx = X509_STORE_CTX_new();
+        }
+    }
+
+    int ret = 0;
+
+    if (ctx != NULL)
+    {
+        if (X509_STORE_CTX_init(ctx, store, subject, bag) != 0)
+        {
+            int canCache = 0;
+            X509VerifyStatusCode code = CheckOcspGetExpiry(req, resp, subject, issuer, ctx, &canCache, expiration);
+
+            if (code == PAL_X509_V_OK || code == PAL_X509_V_ERR_CERT_REVOKED)
+            {
+                ret = 1;
+            }
+        }
+
+        X509_STORE_CTX_free(ctx);
+    }
+
+    if (bag != NULL)
+    {
+        // Just free, not pop_free.
+        // We don't want to downref the issuer cert.
+        sk_X509_free(bag);
+    }
+
+    if (store != NULL)
+    {
+        X509_STORE_free(store);
+    }
+
+    OCSP_RESPONSE_free(resp);
+    return ret;
 }
