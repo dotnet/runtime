@@ -137,7 +137,9 @@ inline void FATAL_GC_ERROR()
 #define MAX_LONGPATH 1024
 #endif // MAX_LONGPATH
 
+#ifdef HOST_64BIT
 #define TRACE_GC
+#endif // HOST_64BIT
 //#define SIMPLE_DPRINTF
 
 //#define JOIN_STATS         //amount of time spent in the join
@@ -257,12 +259,11 @@ const int policy_expand  = 2;
 void GCLog (const char *fmt, ... );
 #define dprintf(l,x) {if ((l == 1) || (l == GTC_LOG)) {GCLog x;}}
 #else //SIMPLE_DPRINTF
-// Nobody used the logging mechanism that used to be here. If we find ourselves
-// wanting to inspect GC logs on unmodified builds, we can use this define here
-// to do so.
-//#define dprintf(l, x)
+#ifdef HOST_64BIT
 #define dprintf(l,x) STRESS_LOG_VA(l,x);
-
+#else
+#error Logging dprintf to stress log on 32 bits platforms is not supported.
+#endif
 #endif //SIMPLE_DPRINTF
 
 #else //TRACE_GC
