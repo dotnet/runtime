@@ -1799,7 +1799,6 @@ GenTree* Compiler::impNormStructVal(GenTree*             structVal,
         case GT_CNS_VEC:
         {
             assert(varTypeIsSIMD(structVal) && (structVal->gtType == structType));
-            makeTemp = true;
             break;
         }
 

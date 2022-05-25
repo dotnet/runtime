@@ -541,7 +541,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 case NI_VectorT128_get_AllBitsSet:
                 case NI_VectorT256_get_AllBitsSet:
                 {
-                    return gtNewAllBitsSetConNode(retType);
+                    return gtNewAllBitsSetConNode(retType, simdBaseJitType);
                 }
 
                 case NI_VectorT128_get_Count:
@@ -558,7 +558,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 case NI_VectorT128_get_One:
                 case NI_VectorT256_get_One:
                 {
-                    GenTreeVecCon* vecCon     = gtNewVconNode(retType);
+                    GenTreeVecCon* vecCon     = gtNewVconNode(retType, simdBaseJitType);
                     uint32_t       simdLength = getSIMDVectorLength(simdSize, simdBaseType);
 
                     switch (simdBaseType)
@@ -636,12 +636,12 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 case NI_VectorT128_get_Zero:
                 case NI_VectorT256_get_Zero:
                 {
-                    return gtNewZeroConNode(retType);
+                    return gtNewZeroConNode(retType, simdBaseJitType);
                 }
 #elif defined(TARGET_ARM64)
                 case NI_VectorT128_get_AllBitsSet:
                 {
-                    return gtNewAllBitsSetConNode(retType);
+                    return gtNewAllBitsSetConNode(retType, simdBaseJitType);
                 }
 
                 case NI_VectorT128_get_Count:
@@ -656,7 +656,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 case NI_Vector4_get_One:
                 case NI_VectorT128_get_One:
                 {
-                    GenTreeVecCon* vecCon     = gtNewVconNode(retType);
+                    GenTreeVecCon* vecCon     = gtNewVconNode(retType, simdBaseJitType);
                     uint32_t       simdLength = getSIMDVectorLength(simdSize, simdBaseType);
 
                     switch (simdBaseType)
@@ -733,7 +733,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 case NI_Vector4_get_Zero:
                 case NI_VectorT128_get_Zero:
                 {
-                    return gtNewZeroConNode(retType);
+                    return gtNewZeroConNode(retType, simdBaseJitType);
                 }
 #else
 #error Unsupported platform

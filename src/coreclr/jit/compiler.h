@@ -2284,11 +2284,13 @@ public:
 
     GenTree* gtNewSconNode(int CPX, CORINFO_MODULE_HANDLE scpHandle);
 
-    GenTreeVecCon* gtNewVconNode(var_types type);
+    GenTreeVecCon* gtNewVconNode(var_types type, CorInfoType simdBaseJitType);
 
     GenTree* gtNewAllBitsSetConNode(var_types type);
+    GenTree* gtNewAllBitsSetConNode(var_types type, CorInfoType simdBaseJitType);
 
     GenTree* gtNewZeroConNode(var_types type);
+    GenTree* gtNewZeroConNode(var_types type, CorInfoType simdBaseJitType);
 
     GenTree* gtNewOneConNode(var_types type);
 
@@ -8271,7 +8273,6 @@ private:
             clsHnd = gtGetStructHandleForHWSIMD(simdType, simdBaseJitType);
         }
 
-        assert(clsHnd != NO_CLASS_HANDLE);
         return clsHnd;
     }
 #endif // FEATURE_HW_INTRINSICS

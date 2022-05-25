@@ -947,7 +947,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                 // We do this as it simplifies the logic and allows certain code paths to
                 // have better codegen, such as for 0, AllBitsSet, or certain small constants
 
-                GenTreeVecCon* vecCon = gtNewVconNode(retType);
+                GenTreeVecCon* vecCon = gtNewVconNode(retType, simdBaseJitType);
 
                 switch (simdBaseType)
                 {
@@ -1384,7 +1384,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector256_get_AllBitsSet:
         {
             assert(sig->numArgs == 0);
-            retNode = gtNewAllBitsSetConNode(retType);
+            retNode = gtNewAllBitsSetConNode(retType, simdBaseJitType);
             break;
         }
 
@@ -1403,7 +1403,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector256_get_Zero:
         {
             assert(sig->numArgs == 0);
-            retNode = gtNewZeroConNode(retType);
+            retNode = gtNewZeroConNode(retType, simdBaseJitType);
             break;
         }
 

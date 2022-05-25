@@ -413,9 +413,16 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
                 var_types simdType = location->TypeGet();
                 GenTree*  initVal  = assignment->AsOp()->gtOp2;
 
+                CorInfoType simdBaseJitType = comp->getBaseJitTypeOfSIMDLocal(location);
+                if (simdBaseJitType == CORINFO_TYPE_UNDEF)
+                {
+                    // Lie about the type if we don't know/have it.
+                    simdBaseJitType = CORINFO_TYPE_FLOAT;
+                }
+
                 if (initVal->IsIntegralConst(0))
                 {
-                    GenTree* zeroCon = comp->gtNewZeroConNode(simdType);
+                    GenTree* zeroCon = comp->gtNewZeroConNode(simdType, simdBaseJitType);
 
                     assignment->gtOp2 = zeroCon;
                     value             = zeroCon;
@@ -425,12 +432,6 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
                 }
                 else
                 {
-                    CorInfoType simdBaseJitType = comp->getBaseJitTypeOfSIMDLocal(location);
-                    if (simdBaseJitType == CORINFO_TYPE_UNDEF)
-                    {
-                        // Lie about the type if we don't know/have it.
-                        simdBaseJitType = CORINFO_TYPE_FLOAT;
-                    }
                     GenTreeSIMD* simdTree = comp->gtNewSIMDNode(simdType, initVal, SIMDIntrinsicInit, simdBaseJitType,
                                                                 genTypeSize(simdType));
                     assignment->gtOp2 = simdTree;

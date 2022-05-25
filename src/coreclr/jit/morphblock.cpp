@@ -353,7 +353,7 @@ void MorphInitBlockHelper::MorphStructCases()
         if (varTypeIsSIMD(m_asg) && (m_dst == m_dstLclNode) && m_src->IsIntegralConst(0))
         {
             assert(m_dstVarDsc != nullptr);
-            m_src                   = m_comp->gtNewZeroConNode(m_asg->TypeGet());
+            m_src                   = m_comp->gtNewZeroConNode(m_asg->TypeGet(), CORINFO_TYPE_FLOAT);
             m_result->AsOp()->gtOp2 = m_src;
         }
 #endif // FEATURE_SIMD

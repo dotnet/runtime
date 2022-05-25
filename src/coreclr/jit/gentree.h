@@ -534,7 +534,7 @@ enum GenTreeFlags : unsigned int
     GTF_IND_FLAGS = GTF_IND_VOLATILE | GTF_IND_NONFAULTING | GTF_IND_TLS_REF | GTF_IND_UNALIGNED | GTF_IND_INVARIANT |
                     GTF_IND_NONNULL | GTF_IND_TGT_NOT_HEAP | GTF_IND_TGT_HEAP
 #if defined(TARGET_XARCH)
-                     | GTF_IND_DONT_EXTEND 
+                     | GTF_IND_DONT_EXTEND
 #endif // TARGET_XARCH
                     ,
 
@@ -3287,6 +3287,23 @@ struct GenTreeVecCon : public GenTree
         simd32_t gtSimd32Val;
     };
 
+private:
+    unsigned char gtSimdBaseJitType;  // SIMD vector base JIT type
+
+public:
+    CorInfoType GetSimdBaseJitType() const
+    {
+        return (CorInfoType)gtSimdBaseJitType;
+    }
+
+    void SetSimdBaseJitType(CorInfoType simdBaseJitType)
+    {
+        gtSimdBaseJitType = (unsigned char)simdBaseJitType;
+        assert(gtSimdBaseJitType == simdBaseJitType);
+    }
+
+    var_types GetSimdBaseType() const;
+
 #if defined(FEATURE_HW_INTRINSICS)
     static bool IsHWIntrinsicCreateConstant(GenTreeHWIntrinsic* node, simd32_t& simd32Val);
 
@@ -3412,9 +3429,12 @@ struct GenTreeVecCon : public GenTree
         }
     }
 
-    GenTreeVecCon(var_types type) : GenTree(GT_CNS_VEC, type)
+    GenTreeVecCon(var_types type, CorInfoType simdBaseJitType)
+        : GenTree(GT_CNS_VEC, type)
+        , gtSimdBaseJitType((unsigned char)simdBaseJitType)
     {
         assert(varTypeIsSIMD(type));
+        assert(gtSimdBaseJitType == simdBaseJitType);
     }
 
 #if DEBUGGABLE_GENTREE
