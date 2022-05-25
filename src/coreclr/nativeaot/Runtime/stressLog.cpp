@@ -345,7 +345,8 @@ void ThreadStressLog::LogMsg ( uint32_t facility, int cArgs, const char* format,
     msg->timeStamp = getTimeStamp();
     msg->facility = facility;
     msg->formatOffset = offs;
-    msg->numberOfArgs = cArgs;
+    msg->numberOfArgs = cArgs & 0x7;
+    msg->numberOfArgsX = cArgs >> 3;
 
     for ( int i = 0; i < cArgs; ++i )
     {
