@@ -29,7 +29,12 @@ namespace System.Text.RegularExpressions.Symbolic
         internal bool IsDeadend => Node.IsNothing;
 
         /// <summary>The node must be nullable here</summary>
-        internal int FixedLength => Node.ResolveFixedLength();
+        internal int FixedLength(uint nextCharKind)
+        {
+            Debug.Assert(nextCharKind is 0 or CharKind.BeginningEnd or CharKind.Newline or CharKind.WordLetter or CharKind.NewLineS);
+            uint context = CharKind.Context(PrevCharKind, nextCharKind);
+            return Node.ResolveFixedLength(context);
+        }
 
         /// <summary>If true then the state is a dead-end, rejects all inputs.</summary>
         internal bool IsNothing => Node.IsNothing;

@@ -261,8 +261,8 @@ namespace System.Text.RegularExpressions.Symbolic
         /// intermediate epsilons, if tryCreateFixedLengthMarker and length is fixed, add a fixed length
         /// marker at the end.
         /// </summary>
-        internal SymbolicRegexNode<TSet> CreateConcat(List<SymbolicRegexNode<TSet>> nodes, bool tryCreateFixedLengthMarker = false) =>
-            CreateConcatAlreadyReversed(EnumerateNodesInReverse(nodes), tryCreateFixedLengthMarker);
+        internal SymbolicRegexNode<TSet> CreateConcat(List<SymbolicRegexNode<TSet>> nodes) =>
+            CreateConcatAlreadyReversed(EnumerateNodesInReverse(nodes));
 
         private static IEnumerable<SymbolicRegexNode<TSet>> EnumerateNodesInReverse(List<SymbolicRegexNode<TSet>> nodes)
         {
@@ -274,21 +274,10 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <remarks>
         /// If any regex is nothing, then return nothing.
         /// Eliminate intermediate epsilons.
-        /// If tryCreateFixedLengthMarker and length is fixed, add a fixed length marker at the end.
         /// </remarks>
-        internal SymbolicRegexNode<TSet> CreateConcatAlreadyReversed(IEnumerable<SymbolicRegexNode<TSet>> nodes, bool tryCreateFixedLengthMarker)
+        internal SymbolicRegexNode<TSet> CreateConcatAlreadyReversed(IEnumerable<SymbolicRegexNode<TSet>> nodes)
         {
             SymbolicRegexNode<TSet> result = Epsilon;
-
-            if (tryCreateFixedLengthMarker)
-            {
-                int length = CalculateFixedLength(nodes);
-                if (length >= 0)
-                {
-                    result = CreateFixedLengthMarker(length);
-                }
-            }
-
             // Iterate through all the nodes concatenating them together in reverse order.
             // Here the nodes enumeration is already reversed, so reversing it back to the original concatenation order.
             foreach (SymbolicRegexNode<TSet> node in nodes)
@@ -306,23 +295,6 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         internal SymbolicRegexNode<TSet> CreateConcat(SymbolicRegexNode<TSet> left, SymbolicRegexNode<TSet> right) => SymbolicRegexNode<TSet>.CreateConcat(this, left, right);
-
-        private static int CalculateFixedLength(IEnumerable<SymbolicRegexNode<TSet>> nodes)
-        {
-            int length = 0;
-            foreach (SymbolicRegexNode<TSet> node in nodes)
-            {
-                int k = node.GetFixedLength();
-                if (k < 0)
-                {
-                    return -1;
-                }
-
-                length += k;
-            }
-
-            return length;
-        }
 
         /// <summary>
         /// Make loop regex
@@ -462,7 +434,7 @@ namespace System.Text.RegularExpressions.Symbolic
                         {
                             reverseTransformed[i] = Transform(concatElements[^(i + 1)], builder, setTransformer);
                         }
-                        return builder.CreateConcatAlreadyReversed(reverseTransformed, tryCreateFixedLengthMarker: false);
+                        return builder.CreateConcatAlreadyReversed(reverseTransformed);
                     }
 
                 case SymbolicRegexNodeKind.DisableBacktrackingSimulation:

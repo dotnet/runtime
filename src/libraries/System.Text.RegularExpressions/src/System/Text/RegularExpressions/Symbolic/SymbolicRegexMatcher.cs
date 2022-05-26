@@ -525,7 +525,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     {
                         // Check whether there's a fixed-length marker for the current state.  If there is, we can
                         // use that length to optimize subsequent matching phases.
-                        matchLength = TStateHandler.FixedLength(ref state);
+                        matchLength = TStateHandler.FixedLength(ref state, GetCharKind(input, pos));
                         endPos = pos;
 
                         // A match is known to exist.  If that's all we need to know, we're done.
@@ -975,7 +975,7 @@ namespace System.Text.RegularExpressions.Symbolic
             public static abstract bool StartsWithLineAnchor(ref CurrentState state);
             public static abstract bool IsNullable(ref CurrentState state, uint nextCharKind);
             public static abstract bool IsDeadend(ref CurrentState state);
-            public static abstract int FixedLength(ref CurrentState state);
+            public static abstract int FixedLength(ref CurrentState state, uint nextCharKind);
             public static abstract bool IsInitialState(ref CurrentState state);
             public static abstract bool TakeTransition(SymbolicRegexBuilder<TSet> builder, ref CurrentState state, int mintermId);
         }
@@ -995,7 +995,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
             /// <summary>Gets the length of any fixed-length marker that exists for this state, or -1 if there is none.</summary>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static int FixedLength(ref CurrentState state) => state.DfaState!.FixedLength;
+            public static int FixedLength(ref CurrentState state, uint nextCharKind) => state.DfaState!.FixedLength(nextCharKind);
 
             /// <summary>Gets whether this is an initial state.</summary>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1068,7 +1068,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
             /// <summary>Gets the length of any fixed-length marker that exists for this state, or -1 if there is none.</summary>
             /// <summary>In NFA mode, there are no fixed-length markers.</summary>
-            public static int FixedLength(ref CurrentState state) => -1;
+            public static int FixedLength(ref CurrentState state, uint nextCharKind) => -1;
 
             /// <summary>Gets whether this is an initial state.</summary>
             /// <summary>In NFA mode, no set of states qualifies as an initial state.</summary>

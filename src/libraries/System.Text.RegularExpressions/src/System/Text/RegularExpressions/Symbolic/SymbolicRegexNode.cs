@@ -1005,6 +1005,60 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         /// <summary>
+        /// Insert <see cref="SymbolicRegexNodeKind.FixedLengthMarker"/> nodes to mark paths in the regex that correspond
+        /// to matches of fixed length. For example, for abar|bar two markers would be added abar(4)|bar(3).
+        /// </summary>
+        /// <remarks>
+        /// This function will rebuild concatenations because it pushes the FixedLengthMarker into the rightmost element.
+        /// Due to this this function should not be called on every character.
+        /// </remarks>
+        /// <param name="lengthSoFar">accumulater used in the recursion for lengths of paths</param>
+        /// <returns>the node with fixed length markers added</returns>
+        public SymbolicRegexNode<TSet> AddFixedLengthMarkers(int lengthSoFar = 0)
+        {
+            if (!StackHelper.TryEnsureSufficientExecutionStack())
+            {
+                return StackHelper.CallOnEmptyStack(AddFixedLengthMarkers, lengthSoFar);
+            }
+
+            switch (_kind)
+            {
+                case SymbolicRegexNodeKind.Alternate:
+                    Debug.Assert(_left is not null && _right is not null);
+                    // For an Alternate attempt to add markers separately for each element
+                    return CreateAlternate(_builder,
+                        _left.AddFixedLengthMarkers(lengthSoFar),
+                        _right.AddFixedLengthMarkers(lengthSoFar), deduplicated: true);
+
+                case SymbolicRegexNodeKind.Concat:
+                    Debug.Assert(_left is not null && _right is not null);
+                    // For a concat if the left side has a fixed length then accumulate that to the right side
+                    int leftLength = _left.GetFixedLength();
+                    if (leftLength >= 0)
+                    {
+                        return CreateConcat(_builder, _left, _right.AddFixedLengthMarkers(lengthSoFar + leftLength));
+                    }
+                    // If the right side is always zero length, then just recurse to the left side
+                    int rightLength = _right.GetFixedLength();
+                    if (rightLength == 0)
+                    {
+                        return CreateConcat(_builder, _left.AddFixedLengthMarkers(lengthSoFar), _right);
+                    }
+                    break;
+
+                case SymbolicRegexNodeKind.FixedLengthMarker:
+                    Debug.Assert(_lower == lengthSoFar);
+                    return this;
+            }
+
+            // For all other nodes defer to GetFixedLength to figure out if there is a fixed length and add the marker
+            // if there is one.
+            int thisLength = GetFixedLength();
+            return thisLength < 0 ? this :
+                CreateConcat(_builder, this, CreateFixedLengthMarker(_builder, lengthSoFar + thisLength));
+        }
+
+        /// <summary>
         /// Create a derivative (<see cref="CreateDerivative(TSet, uint)"/> and <see cref="CreateDerivativeWrapper"/>) and then strip
         /// effects with <see cref="StripEffects"/>.
         /// This derivative simulates backtracking, i.e. it only considers paths that backtracking would
@@ -1528,7 +1582,12 @@ namespace System.Text.RegularExpressions.Symbolic
                     return;
 
                 case SymbolicRegexNodeKind.Epsilon:
+                    sb.Append('\u03B5');
+                    return;
+
                 case SymbolicRegexNodeKind.FixedLengthMarker:
+                    sb.Append('\u02FF');
+                    AppendNumberSubscript(sb, _lower);
                     return;
 
                 case SymbolicRegexNodeKind.BoundaryAnchor:
@@ -1647,33 +1706,13 @@ namespace System.Text.RegularExpressions.Symbolic
                     sb.Append('\u230A'); // Left floor
                     // Include group number as a subscript
                     Debug.Assert(_lower >= 0);
-                    foreach (char c in _lower.ToString())
-                    {
-                        sb.Append((char)('\u2080' + (c - '0')));
-                    }
+                    AppendNumberSubscript(sb, _lower);
                     return;
 
                 case SymbolicRegexNodeKind.CaptureEnd:
                     // Include group number as a superscript
                     Debug.Assert(_lower >= 0);
-                    foreach (char c in _lower.ToString())
-                    {
-                        switch (c)
-                        {
-                            case '1':
-                                sb.Append('\u00B9');
-                                break;
-                            case '2':
-                                sb.Append('\u00B2');
-                                break;
-                            case '3':
-                                sb.Append('\u00B3');
-                                break;
-                            default:
-                                sb.Append((char)('\u2070' + (c - '0')));
-                                break;
-                        }
-                    }
+                    AppendNumberSuperscript(sb, _lower);
                     sb.Append('\u2309'); // Right ceiling
                     return;
 
@@ -1701,6 +1740,36 @@ namespace System.Text.RegularExpressions.Symbolic
                         sb.Append(')');
                         break;
 
+                }
+            }
+
+            static void AppendNumberSubscript(StringBuilder sb, int value)
+            {
+                foreach (char c in value.ToString())
+                {
+                    sb.Append((char)('\u2080' + (c - '0')));
+                }
+            }
+
+            static void AppendNumberSuperscript(StringBuilder sb, int value)
+            {
+                foreach (char c in value.ToString())
+                {
+                    switch (c)
+                    {
+                        case '1':
+                            sb.Append('\u00B9');
+                            break;
+                        case '2':
+                            sb.Append('\u00B2');
+                            break;
+                        case '3':
+                            sb.Append('\u00B3');
+                            break;
+                        default:
+                            sb.Append((char)('\u2070' + (c - '0')));
+                            break;
+                    }
                 }
             }
         }
@@ -2059,18 +2128,20 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         /// <summary>
-        /// Resolve the preferred fixed length when accepting a match for this node. This function is an underapproximation,
-        /// since it does not take anchors into account. For example, a pattern .*?(dada(4)|ada(3)) after "dada" would be
-        /// in a state (4)|(3)|... and this function would return 4. However, for .*?(dada$(4)|ada(3)) the right answer would
-        /// depend on whether the match is at the end of input or not.
+        /// Resolve the preferred fixed length when accepting a match for this node. For example, a pattern .*?(dada$(4)|ada(3))
+        /// after "dada" would be in a state $(4)|(3)|... and this function would return 4 if the match is at the end of input
+        /// 3 otherwise.
         /// </summary>
+        /// <param name="context">the context for deciding nullability</param>
         /// <returns>the fixed length of any match ending in this state, if any, or -1 otherwise</returns>
-        internal int ResolveFixedLength()
+        internal int ResolveFixedLength(uint context)
         {
+            Debug.Assert(IsNullableFor(context));
+
             // Guard against stack overflow due to deep recursion
             if (!StackHelper.TryEnsureSufficientExecutionStack())
             {
-                return StackHelper.CallOnEmptyStack(ResolveFixedLength);
+                return StackHelper.CallOnEmptyStack(ResolveFixedLength, context);
             }
 
             switch (_kind)
@@ -2078,15 +2149,24 @@ namespace System.Text.RegularExpressions.Symbolic
                 case SymbolicRegexNodeKind.FixedLengthMarker:
                     return _lower;
 
-                case SymbolicRegexNodeKind.Alternate when IsNullable:
+                case SymbolicRegexNodeKind.Alternate:
                     Debug.Assert(_left is not null && _right is not null);
-                    if (_left.IsNullable)
-                        // Left is unconditionally nullable, so fixed length must be from left
-                        return _left.ResolveFixedLength();
-                    else if (!_left.CanBeNullable && _right.IsNullable)
-                        // Left can't be nullable, then if right is unconditionally nullable then fixed length must be from right
-                        return _right.ResolveFixedLength();
-                    break;
+                    if (_left.IsNullableFor(context))
+                    {
+                        // Left is nullable, so the match is from the left
+                        return _left.ResolveFixedLength(context);
+                    }
+                    else
+                    {
+                        // Otherwise right must be nullable and thus the relevant match
+                        Debug.Assert(_right.IsNullableFor(context));
+                        return _right.ResolveFixedLength(context);
+                    }
+
+                case SymbolicRegexNodeKind.Concat:
+                    Debug.Assert(_left is not null && _right is not null);
+                    int leftLength = _left.ResolveFixedLength(context);
+                    return leftLength >= 0 ? leftLength : _right.ResolveFixedLength(context);
             }
             return -1;
         }
