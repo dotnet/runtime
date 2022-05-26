@@ -3871,9 +3871,18 @@ void emitter::emitDispJumpList()
 {
     printf("Emitter Jump List:\n");
     unsigned int jmpCount = 0;
-    for (instrDescJmp* jmp = emitJumpList; jmp; jmp = jmp->idjNext)
+    for (instrDescJmp* jmp = emitJumpList; jmp != nullptr; jmp = jmp->idjNext)
     {
-        emitDispIns(jmp, false, false, false, 0, nullptr, 0, jmp->idjIG);
+        printf("IG%02u IN%04x %3s[size:%u] -> IG%02u L_M%03u_" FMT_BB "%s\n", jmp->idjIG->igNum,
+               jmp->idDebugOnlyInfo()->idNum, codeGen->genInsDisplayName(jmp), jmp->idCodeSize(),
+               ((insGroup*)emitCodeGetCookie(jmp->idAddr()->iiaBBlabel))->igNum, emitComp->compMethodID,
+               jmp->idAddr()->iiaBBlabel->bbNum,
+#if defined(TARGET_XARCH)
+               jmp->idjIsJmpAlways ? " ; BBJ_ALWAYS" : ""
+#else
+               ""
+#endif
+               );
         jmpCount += 1;
     }
     printf("  total jump count: %u\n", jmpCount);
@@ -4119,12 +4128,9 @@ void emitter::emitDispCommentForHandle(size_t handle, GenTreeFlags flag)
 
 //****************************************************************************
 // emitRemoveJumpToNextInst:  Checks all jumps in the jump list to see if they are
-//   unconditional jumps generated at the end of BB_ALWAYS basic blocks and whether
-//   they are now a jump to the next instruction, this can happen when the following
-//   basic block emitted no instructions
-//
-// Returns:
-//   true if any jumps have been removed, otherwise returns false
+//   unconditional jumps generated at the end of BBJ_ALWAYS basic blocks and whether
+//   they are now a jump to the next instruction. This can happen when the following
+//   basic block emitted no instructions.
 //
 // Assumptions:
 //    the jump list must be ordered by increasing igNum+insNo
@@ -4143,7 +4149,7 @@ void emitter::emitRemoveJumpToNextInst()
     {
         emitDispJumpList();
     }
-#endif
+#endif // DEBUG
 
     int            totalRemovedCount      = 0;
     UNATIVE_OFFSET totalRemovedSize       = 0;
@@ -4153,7 +4159,7 @@ void emitter::emitRemoveJumpToNextInst()
 #if DEBUG
     UNATIVE_OFFSET previousJumpIgNum  = (UNATIVE_OFFSET)-1;
     unsigned int   previousJumpInsNum = -1;
-#endif
+#endif // DEBUG
 
     while (jmp)
     {
@@ -4163,15 +4169,15 @@ void emitter::emitRemoveJumpToNextInst()
             insGroup* jmpGroup = jmp->idjIG;
 #if DEBUG
             assert((jmpGroup->igFlags & IGF_HAS_ALIGN) == 0);
-            assert(jmpGroup->igNum > previousJumpIgNum || previousJumpIgNum == (UNATIVE_OFFSET)-1 ||
-                   (jmpGroup->igNum == previousJumpIgNum && jmp->idDebugOnlyInfo()->idNum > previousJumpInsNum));
+            assert((jmpGroup->igNum > previousJumpIgNum) || (previousJumpIgNum == (UNATIVE_OFFSET)-1) ||
+                   ((jmpGroup->igNum == previousJumpIgNum) && (jmp->idDebugOnlyInfo()->idNum > previousJumpInsNum)));
             previousJumpIgNum  = jmpGroup->igNum;
             previousJumpInsNum = jmp->idDebugOnlyInfo()->idNum;
-#endif
+#endif // DEBUG
             // target group is not bound yet so use the cookie to fetch it
             insGroup* targetGroup = (insGroup*)emitCodeGetCookie(jmp->idAddr()->iiaBBlabel);
 
-            if (targetGroup != nullptr && jmpGroup->igNext == targetGroup)
+            if ((targetGroup != nullptr) && (jmpGroup->igNext == targetGroup))
             {
                 // the last instruction in the group is the jmp we're looking for
                 // and it jumps to the next instruction group so we don't need it
@@ -4180,33 +4186,32 @@ void emitter::emitRemoveJumpToNextInst()
 #ifdef DEBUG
                 unsigned instructionCount = jmpGroup->igInsCnt;
                 assert(instructionCount > 0);
-                instrDesc* instructionDescriptor = nullptr;
+                instrDesc* id = nullptr;
                 {
                     BYTE* dataPtr = jmpGroup->igData;
                     while (instructionCount > 0)
                     {
-                        instructionDescriptor = (instrDesc*)dataPtr;
-                        dataPtr += emitSizeOfInsDsc(instructionDescriptor);
+                        id = (instrDesc*)dataPtr;
+                        dataPtr += emitSizeOfInsDsc(id);
                         instructionCount -= 1;
-                    };
-                    dataPtr = nullptr;
+                    }
                 }
-                assert(instructionDescriptor != nullptr);
-                if (jmp != instructionDescriptor)
+                assert(id != nullptr);
+                if (jmp != id)
                 {
                     printf("about to assert, dumping context information\n");
                     printf("method: %s\n", emitComp->impInlineRoot()->info.compMethodName);
                     printf("  jmp: %x3: ", jmp->idDebugOnlyInfo()->idNum);
                     emitDispIns(jmp, false, true, false, 0, nullptr, 0, jmpGroup);
-                    printf("  instructionDescriptor: %x3: ", instructionDescriptor->idDebugOnlyInfo()->idNum);
-                    emitDispIns(instructionDescriptor, false, true, false, 0, nullptr, 0, jmpGroup);
+                    printf("  instructionDescriptor: %x3: ", id->idDebugOnlyInfo()->idNum);
+                    emitDispIns(id, false, true, false, 0, nullptr, 0, jmpGroup);
                     printf("jump group:\n");
                     emitDispIG(jmpGroup, nullptr, true);
                     printf("target group:\n");
                     emitDispIG(targetGroup, nullptr, false);
                 }
-                assert(jmp == instructionDescriptor);
-#endif
+                assert(jmp == id);
+#endif // DEBUG
 
                 JITDUMP("Removing unconditional jump IN%04x from the last instruction in "
                         "IG%02u to the next IG IG%02u label %s\n",
@@ -4286,7 +4291,7 @@ void emitter::emitRemoveJumpToNextInst()
                             jmp->idDebugOnlyInfo()->idNum, jmpGroup->igNum);
                 }
             }
-#endif
+#endif // DEBUG
         }
 
         previousJmp = jmp;
@@ -4308,19 +4313,25 @@ void emitter::emitRemoveJumpToNextInst()
         }
     }
 
+    if (totalRemovedCount > 0)
+    {
 #ifdef DEBUG
-    if (EMIT_INSTLIST_VERBOSE)
-    {
-        printf("\nInstruction group list after unconditional jump to next instruction removal:\n\n");
-        emitDispIGlist(false);
+        if (EMIT_INSTLIST_VERBOSE)
+        {
+            printf("\nInstruction group list after unconditional jump to next instruction removal:\n\n");
+            emitDispIGlist(false);
+        }
+        if (EMITVERBOSE)
+        {
+            emitDispJumpList();
+        }
+#endif // DEBUG
+        JITDUMP("emitRemoveJumpToNextInst removed %d jumps and %3u bytes\n", totalRemovedCount, totalRemovedSize);
     }
-    if (EMITVERBOSE)
+    else
     {
-        emitDispJumpList();
+        JITDUMP("emitRemoveJumpToNextInst no unconditional jumps removed\n");
     }
-
-#endif
-    JITDUMP("emitRemoveJumpToNextInst removed %d jumps and %3u bytes\n", totalRemovedCount, totalRemovedSize);
 #endif // TARGET_XARCH
 }
 

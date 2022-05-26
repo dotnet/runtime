@@ -1534,15 +1534,20 @@ protected:
             BYTE* idjAddr; // address of jump ins (for patching)
         } idjTemp;
 
-        unsigned idjOffs : 29;    // Before jump emission, this is the byte offset within IG of the jump instruction.
-                                  // After emission, for forward jumps, this is the target offset -- in bytes from the
-                                  // beginning of the function -- of the target instruction of the jump, used to
-                                  // determine if this jump needs to be patched.
-        unsigned idjShort : 1;    // is the jump known to be a short  one?
-        unsigned idjKeepLong : 1; // should the jump be kept long? (used for
-                                  // hot to cold and cold to hot jumps)
-        unsigned idjIsJmpAlways : 1; // indicates that the jump was added at the end of a BB_ALWAYS basic block
-                                     // in case the next block was not the next target
+        // Before jump emission, this is the byte offset within IG of the jump instruction.
+        // After emission, for forward jumps, this is the target offset -- in bytes from the
+        // beginning of the function -- of the target instruction of the jump, used to
+        // determine if this jump needs to be patched.
+        unsigned idjOffs :
+#if defined(TARGET_XARCH)
+            29;
+
+        unsigned idjIsJmpAlways : 1; // indicates that the jump was added at the end of a BBJ_ALWAYS basic block
+#else
+            30;
+#endif
+        unsigned idjShort : 1;    // is the jump known to be a short one?
+        unsigned idjKeepLong : 1; // should the jump be kept long? (used for hot to cold and cold to hot jumps)
     };
 
 #if FEATURE_LOOP_ALIGN

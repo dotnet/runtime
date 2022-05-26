@@ -2071,7 +2071,7 @@ inline bool emitter::emitInstHasNoCode(instrDesc* id)
         return true;
     }
 
-    if (id->idCodeSize() == 0 && emitIsUncondJump((instrDescJmp*)id) && (((instrDescJmp*)id)->idjIsJmpAlways))
+    if ((id->idCodeSize() == 0) && emitIsUncondJump(id) && (((instrDescJmp*)id)->idjIsJmpAlways))
     {
         return true;
     }
@@ -9925,10 +9925,6 @@ void emitter::emitDispIns(
                 printf("L_M%03u_" FMT_BB, emitComp->compMethodID, id->idAddr()->iiaBBlabel->bbNum);
             }
 
-            if (((instrDescJmp*)id)->idjIsJmpAlways)
-            {
-                printf(" ; BB_ALWAYS");
-            }
             break;
 
         case IF_METHOD:
@@ -13259,11 +13255,6 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
             break;
     }
 
-    if (jmp && id->idjIsJmpAlways && id->idCodeSize() == 0)
-    {
-        return dst;
-    }
-
     // Figure out the distance to the target
     srcOffs = emitCurCodeOffs(dst);
     srcAddr = emitOffsetToPtr(srcOffs);
@@ -13689,8 +13680,15 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             assert(id->idIsBound() || emitInstHasNoCode(id));
 
             // TODO-XArch-Cleanup: handle IF_RWR_LABEL in emitOutputLJ() or change it to emitOutputAM()?
-            dst = emitOutputLJ(ig, dst, id);
-            sz  = (id->idInsFmt() == IF_SWR_LABEL ? sizeof(instrDescLbl) : sizeof(instrDescJmp));
+            if (id->idCodeSize() != 0)
+            {
+                dst = emitOutputLJ(ig, dst, id);
+            }
+            else
+            {
+                assert(((instrDescJmp*)id)->idjIsJmpAlways);
+            }
+            sz = (id->idInsFmt() == IF_SWR_LABEL ? sizeof(instrDescLbl) : sizeof(instrDescJmp));
             break;
 
         case IF_METHOD:

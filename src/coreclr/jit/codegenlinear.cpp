@@ -753,11 +753,18 @@ void CodeGen::genCodeForBBlist()
                 break;
 
             case BBJ_ALWAYS:
-                inst_JMP(EJ_jmp, block->bbJumpDest,
+                inst_JMP(EJ_jmp, block->bbJumpDest
 #ifdef TARGET_AMD64
+                         // AMD64 and ARM64 require an instruction after a call instruction for unwinding
+                         // so if the last instruction generated was a call instruction do not allow
+                         // this jump to be marked for possible later removal.
+                         //
+                         // If a block has alignment the jump before the alignment can prevent the need
+                         // to decode the instructions used for alignment so we want to keep the jump
+                         // and it should not be marked for posible later removal.
+
+                         ,
                          /* isJmpAlways */ !GetEmitter()->emitIsLastInsCall() && !block->hasAlign()
-#else
-                         /* isJmpAlways */ false
 #endif
                              );
                 FALLTHROUGH;
