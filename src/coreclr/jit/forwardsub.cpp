@@ -735,7 +735,7 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     {
         if (!fwdSubNode->OperIs(GT_LCL_VAR))
         {
-            JITDUMP(" parent is return, fwd sub node is not lcl var\n");
+            JITDUMP(" parent is multi-reg return, fwd sub node is not lcl var\n");
             return false;
         }
 
@@ -748,8 +748,17 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
 #endif // defined(TARGET_X86) || defined(TARGET_ARM)
 
         GenTreeLclVar* const fwdSubNodeLocal = fwdSubNode->AsLclVar();
+        unsigned const       fwdLclNum       = fwdSubNodeLocal->GetLclNum();
 
-        unsigned const   fwdLclNum = fwdSubNodeLocal->GetLclNum();
+        // These may later turn into indirections and the backend does not support
+        // those as sources of multi-reg returns.
+        //
+        if (lvaIsImplicitByRefLocal(fwdLclNum))
+        {
+            JITDUMP(" parent is multi-reg return; fwd sub node is implicit byref\n");
+            return false;
+        }
+
         LclVarDsc* const fwdVarDsc = lvaGetDesc(fwdLclNum);
 
         JITDUMP(" [marking V%02u as multi-reg-ret]", fwdLclNum);
