@@ -72,7 +72,6 @@ namespace System.Xml.Xsl.XsltOld
 
         // Uri Escaping:
         private byte[]? _byteBuffer;
-        private Encoding? _utf8Encoding;
 
         [MemberNotNull(nameof(_output))]
         private void CacheOuptutProps(XsltOutput output)
@@ -607,12 +606,8 @@ namespace System.Xml.Xsl.XsltOld
                     default:
                         if (127 < ch)
                         {
-                            if (_utf8Encoding == null)
-                            {
-                                _utf8Encoding = Encoding.UTF8;
-                                _byteBuffer = new byte[_utf8Encoding.GetMaxByteCount(1)];
-                            }
-                            int bytes = _utf8Encoding.GetBytes(value, i - 1, 1, _byteBuffer!, 0);
+                            _byteBuffer = new byte[Encoding.UTF8.GetMaxByteCount(1)];
+                            int bytes = Encoding.UTF8.GetBytes(value, i - 1, 1, _byteBuffer!, 0);
                             for (int j = 0; j < bytes; j++)
                             {
                                 Write("%");
