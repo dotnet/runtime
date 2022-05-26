@@ -27,7 +27,7 @@ namespace System.Security.Cryptography.Xml.Tests
             {
                 if (checkSignatureThrows)
                 {
-                    Assert.Throws<CryptographicException>(() => signedXml.CheckSignature());
+                    Assert.ThrowsAny<CryptographicException>(() => signedXml.CheckSignature());
                 }
                 else
                 {
