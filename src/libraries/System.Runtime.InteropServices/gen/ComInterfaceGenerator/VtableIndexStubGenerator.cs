@@ -281,7 +281,6 @@ namespace Microsoft.Interop
 
             if (virtualMethodIndexData is null)
             {
-                generatorDiagnostics.ReportConfigurationNotSupported(virtualMethodIndexAttr!, "Invalid syntax");
                 virtualMethodIndexData = new VirtualMethodIndexData(-1);
             }
 
