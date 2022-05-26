@@ -33,9 +33,9 @@ namespace DebuggerTests
 
                 // protected / internal:
                 {"BaseBase_AutoPropertyForHidingWithProperty",      (TGetter("BaseBase_AutoPropertyForHidingWithProperty", TString("Derived#BaseBase_AutoPropertyForHidingWithProperty")), true)},
-                {"Base_PropertyForOverridingWithAutoProperty",      (TDateTime(new DateTime(2020, 7, 6, 5, 4, 3)), true)},
-                {"Base_AutoPropertyForOverridingWithAutoProperty",  (TDateTime(new DateTime(2020, 7, 6, 5, 4, 3)), true)},
-                {"Base_AutoPropertyForOverridingWithProperty",      (TGetter("Base_AutoPropertyForOverridingWithProperty", TDateTime(new DateTime(2020, 7, 6, 5, 4, 3))), true)},
+                {"Base_PropertyForOverridingWithAutoProperty",      (TDateTime(new DateTime(2022, 7, 6, 5, 4, 3)), true)},
+                {"Base_AutoPropertyForOverridingWithAutoProperty",  (TDateTime(new DateTime(2023, 7, 6, 5, 4, 3)), true)},
+                {"Base_AutoPropertyForOverridingWithProperty",      (TGetter("Base_AutoPropertyForOverridingWithProperty", TDateTime(new DateTime(2021, 7, 6, 5, 4, 3))), true)},
 
                 // private:
                 {"BaseBase_FieldForHidingWithAutoProperty",         (TString("Derived#BaseBase_FieldForHidingWithAutoProperty"), true)},
@@ -45,7 +45,7 @@ namespace DebuggerTests
                 {"BaseBase_AutoPropertyForHidingWithField",                 (TNumber(115), false)},
                 {"BaseBase_PropertyForHidingWithProperty",                  (TGetter("BaseBase_PropertyForHidingWithProperty", TString("Base#BaseBase_PropertyForHidingWithProperty")), false)},
                 {"BaseBase_FieldForHidingWithAutoProperty (BaseClass2)",    (TString("Base#BaseBase_FieldForHidingWithAutoProperty"), false)},
-                {"Base_VirtualPropertyNotOverriddenOrHidden",               (TGetter("Base_VirtualPropertyNotOverriddenOrHidden", TDateTime(new DateTime(2134, 5, 7, 1, 9, 2))), false)},
+                {"Base_VirtualPropertyNotOverriddenOrHidden",               (TGetter("Base_VirtualPropertyNotOverriddenOrHidden", TDateTime(new DateTime(2124, 5, 7, 1, 9, 2))), false)},
                 {"FirstName",                                               (TGetter("FirstName", TString("BaseClass#FirstName")), false)},
                 {"LastName",                                                (TGetter("LastName", TString("BaseClass#LastName")), false)},
                 {"BaseBase_PropertyForVOH (BaseClass2)",                    (TGetter("BaseBase_PropertyForVOH (BaseClass2)", TString("Base#BaseBase_PropertyForVOH")), false)},
@@ -460,7 +460,7 @@ namespace DebuggerTests
                 {"BaseBase_FieldForHidingWithAutoProperty (BaseClass2)",    TString("Base#BaseBase_FieldForHidingWithAutoProperty")},
                 {"FirstName",                                               TGetter("FirstName", TString("BaseClass#FirstName"))},
                 {"LastName",                                                TGetter("LastName", TString("BaseClass#LastName"))},
-                {"Base_VirtualPropertyNotOverriddenOrHidden",               TGetter("Base_VirtualPropertyNotOverriddenOrHidden", TDateTime(new DateTime(2134, 5, 7, 1, 9, 2)))},
+                {"Base_VirtualPropertyNotOverriddenOrHidden",               TGetter("Base_VirtualPropertyNotOverriddenOrHidden", TDateTime(new DateTime(2124, 5, 7, 1, 9, 2)))},
                 {"BaseBase_PropertyForVOH (BaseClass2)",                    TGetter("BaseBase_PropertyForVOH (BaseClass2)", TString("Base#BaseBase_PropertyForVOH"))},
 
                 // inherited from BaseBase:
@@ -480,9 +480,9 @@ namespace DebuggerTests
 
                 // own:
                 {"BaseBase_AutoPropertyForHidingWithProperty",          TGetter("BaseBase_AutoPropertyForHidingWithProperty", TString("Derived#BaseBase_AutoPropertyForHidingWithProperty"))},
-                {"Base_PropertyForOverridingWithAutoProperty",          TDateTime(new DateTime(2020, 7, 6, 5, 4, 3))},
-                {"Base_AutoPropertyForOverridingWithAutoProperty",      TDateTime(new DateTime(2020, 7, 6, 5, 4, 3))},
-                {"Base_AutoPropertyForOverridingWithProperty",          TGetter("Base_AutoPropertyForOverridingWithProperty", TDateTime(new DateTime(2020, 7, 6, 5, 4, 3)))},
+                {"Base_PropertyForOverridingWithAutoProperty",          TDateTime(new DateTime(2022, 7, 6, 5, 4, 3))},
+                {"Base_AutoPropertyForOverridingWithAutoProperty",      TDateTime(new DateTime(2023, 7, 6, 5, 4, 3))},
+                {"Base_AutoPropertyForOverridingWithProperty",          TGetter("Base_AutoPropertyForOverridingWithProperty", TDateTime(new DateTime(2021, 7, 6, 5, 4, 3)))},
                 // inherited from Base:
                 {"BaseBase_PropertyForHidingWithField (BaseClass2)",    TNumber(110)},
                 {"BaseBase_FieldForHidingWithProperty",                 TGetter("BaseBase_FieldForHidingWithProperty", TString("Base#BaseBase_FieldForHidingWithProperty"))},
