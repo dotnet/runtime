@@ -60,6 +60,8 @@ namespace System.Text.RegularExpressions
         /// <remarks>
         /// This may result in a different automaton being explored than matching would produce, since if the limit for
         /// the number of DFA states is reached then the order in which states and transitions are explored is significant.
+        /// During matching that order is driven by the input, while this function may use any order (currently it is
+        /// breadth-first).
         /// </remarks>
         /// <param name="includeDotStarred">whether to explore the .*? prefixed version of the pattern</param>
         /// <param name="includeReverse">whether to explore the reversed pattern</param>

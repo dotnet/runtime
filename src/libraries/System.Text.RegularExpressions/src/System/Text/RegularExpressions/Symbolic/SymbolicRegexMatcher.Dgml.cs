@@ -19,7 +19,7 @@ namespace System.Text.RegularExpressions.Symbolic
             if (maxLabelLength < 0)
                 maxLabelLength = int.MaxValue;
 
-            Dictionary<(int, int), (TSet, List<int>)> transitions = GatherTransitions(_builder);
+            Dictionary<(int Source, int Target), (TSet Rule, List<int> NfaTargets)> transitions = GatherTransitions(_builder);
 
             writer.WriteLine("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
             writer.WriteLine("<DirectedGraph xmlns=\"http://schemas.microsoft.com/vs/2009/dgml\" ZoomLevel=\"1.5\" GraphDirection=\"TopToBottom\" >");
@@ -49,10 +49,9 @@ namespace System.Text.RegularExpressions.Symbolic
             }
             writer.WriteLine("        <Link Source=\"dfa\" Target=\"dfainfo\" Label=\"\" Category=\"Contains\" />");
 
-            foreach (KeyValuePair<(int, int), (TSet, List<int>)> transition in transitions)
+            foreach (KeyValuePair<(int Source, int Target), (TSet Rule, List<int> NfaTargets)> transition in transitions)
             {
-                var (labelSet, nfaTargets) = transition.Value;
-                string label = DescribeLabel(labelSet, _builder);
+                string label = DescribeLabel(transition.Value.Rule, _builder);
                 string info = "";
                 if (label.Length > maxLabelLength)
                 {
@@ -60,12 +59,12 @@ namespace System.Text.RegularExpressions.Symbolic
                     label = string.Concat(label.AsSpan(0, maxLabelLength), "..");
                 }
 
-                writer.WriteLine($"        <Link Source=\"{transition.Key.Item1}\" Target=\"{transition.Key.Item2}\" Label=\"{label}\" Category=\"NonEpsilonTransition\" {info}/>");
+                writer.WriteLine($"        <Link Source=\"{transition.Key.Source}\" Target=\"{transition.Key.Target}\" Label=\"{label}\" Category=\"NonEpsilonTransition\" {info}/>");
                 // Render NFA transitions as labelless "epsilon" transitions (i.e. ones that don't consume a character)
                 // from the target of the DFA transition.
-                foreach (int nfaTarget in nfaTargets)
+                foreach (int nfaTarget in transition.Value.NfaTargets)
                 {
-                    writer.WriteLine($"        <Link Source=\"{transition.Key.Item2}\" Target=\"{nfaTarget}\" Category=\"EpsilonTransition\"/>");
+                    writer.WriteLine($"        <Link Source=\"{transition.Key.Target}\" Target=\"{nfaTarget}\" Category=\"EpsilonTransition\"/>");
                 }
             }
 
@@ -135,13 +134,12 @@ namespace System.Text.RegularExpressions.Symbolic
             writer.WriteLine("    </Styles>");
             writer.WriteLine("</DirectedGraph>");
 
-            // This function gathers all transitions in the given builder and groups them by (source,destination) state ID.
-            // It also counts the number of transitions found.
-            static Dictionary<(int, int), (TSet, List<int>)> GatherTransitions(SymbolicRegexBuilder<TSet> builder)
+            // This function gathers all transitions in the given builder and groups them by (source,destination) state ID
+            static Dictionary<(int Source, int Target), (TSet Rule, List<int> NfaTargets)> GatherTransitions(SymbolicRegexBuilder<TSet> builder)
             {
                 Debug.Assert(builder._delta is not null);
                 Debug.Assert(builder._minterms is not null);
-                Dictionary<(int, int), (TSet, List<int>)> result = new();
+                Dictionary<(int Source, int Target), (TSet Rule, List<int> NfaTargets)> result = new();
                 foreach (DfaMatchingState<TSet> source in builder._stateCache)
                 {
                     // Get the span of entries in delta that gives the transitions for the different minterms
@@ -154,8 +152,8 @@ namespace System.Text.RegularExpressions.Symbolic
                         if (deltas[i] is DfaMatchingState<TSet> target)
                         {
                             // Get or create the data for this (source,destination) state ID pair
-                            (int SourceState, int TargetState) p = (source.Id, target.Id);
-                            if (!result.TryGetValue(p, out (TSet rule, List<int> nfaTargets) entry))
+                            (int Source, int Target) key = (source.Id, target.Id);
+                            if (!result.TryGetValue(key, out (TSet Rule, List<int> NfaTargets) entry))
                             {
                                 entry = (builder._solver.Empty, new List<int>());
                             }
@@ -163,13 +161,13 @@ namespace System.Text.RegularExpressions.Symbolic
                             // those with the transition.
                             if (nfaDeltas.Length > 0 && nfaDeltas[i] is int[] nfaTargets)
                             {
-                                foreach (var nfaTarget in nfaTargets)
+                                foreach (int nfaTarget in nfaTargets)
                                 {
-                                    entry.nfaTargets.Add(builder._nfaStateArray[nfaTarget]);
+                                    entry.NfaTargets.Add(builder._nfaStateArray[nfaTarget]);
                                 }
                             }
                             // Expand the rule for this minterm
-                            result[p] = (builder._solver.Or(entry.rule, builder._minterms[i]), entry.nfaTargets);
+                            result[key] = (builder._solver.Or(entry.Rule, builder._minterms[i]), entry.NfaTargets);
                         }
                     }
                 }

@@ -1018,7 +1018,7 @@ namespace System.Text.RegularExpressions.Symbolic
         {
             if (!StackHelper.TryEnsureSufficientExecutionStack())
             {
-                return StackHelper.CallOnEmptyStack(AddFixedLengthMarkers, lengthSoFar);
+                return this;
             }
 
             switch (_kind)
@@ -2177,7 +2177,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// and the resulting elements re-wrapped to maintain the metadata.
         /// </summary>
         /// <returns>an enumeration of the elements of the alternation, or just the node itself if there is no alternation</returns>
-        internal IEnumerable<SymbolicRegexNode<TSet>> BreakUpAlternation()
+        internal IEnumerable<SymbolicRegexNode<TSet>> EnumerateAlternationBranches()
         {
             switch (_kind)
             {
@@ -2185,7 +2185,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     Debug.Assert(_left is not null);
                     // This call should never recurse more than one level
                     Debug.Assert(_left._kind is not SymbolicRegexNodeKind.DisableBacktrackingSimulation);
-                    foreach (SymbolicRegexNode<TSet> element in _left.BreakUpAlternation())
+                    foreach (SymbolicRegexNode<TSet> element in _left.EnumerateAlternationBranches())
                     {
                         // Re-wrap the element nodes in DisableBacktrackingSimulation if the top level node was too
                         yield return _builder.CreateDisableBacktrackingSimulation(element);
@@ -2198,7 +2198,8 @@ namespace System.Text.RegularExpressions.Symbolic
                     {
                         Debug.Assert(current._left is not null && current._right is not null);
                         Debug.Assert(current._left._kind is not SymbolicRegexNodeKind.Alternate);
-                        // Alternations are in right associative form, so the left child is always an element of the alternation
+                        // Alternations are in right associative form, so the left child is never an alternation and
+                        // thus an element to be yielded here.
                         yield return current._left;
                         current = current._right;
                     }

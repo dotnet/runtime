@@ -936,7 +936,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
                 // If the DFA state is a union of multiple DFA states, loop through all of them
                 // adding an NFA state for each.
-                foreach (SymbolicRegexNode<TSet> element in dfaMatchingState.Node.BreakUpAlternation())
+                foreach (SymbolicRegexNode<TSet> element in dfaMatchingState.Node.EnumerateAlternationBranches())
                 {
                     // Create (possibly new) NFA states for all the members.
                     // Add their IDs to the current set of NFA states and into the list.

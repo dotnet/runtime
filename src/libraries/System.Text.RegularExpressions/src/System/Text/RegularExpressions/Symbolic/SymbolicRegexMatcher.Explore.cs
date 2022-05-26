@@ -63,7 +63,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     // Remove state from seen so that it can be added back in if necessary
                     seen.Remove(dfaState);
                     // Enqueue all elements of a top level alternation or the state itself
-                    foreach (var element in dfaState.Node.BreakUpAlternation())
+                    foreach (var element in dfaState.Node.EnumerateAlternationBranches())
                     {
                         int nfaState = _builder.CreateNfaState(element, dfaState.PrevCharKind);
                         EnqueueIfUnseen(_builder.GetCoreState(nfaState), seen, toExplore);
