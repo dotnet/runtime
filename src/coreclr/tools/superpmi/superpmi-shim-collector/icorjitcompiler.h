@@ -6,6 +6,8 @@
 
 #include "runtimedetails.h"
 
+class MethodContext;
+
 class interceptor_ICJC : public ICorJitCompiler
 {
 
