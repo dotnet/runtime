@@ -55,9 +55,8 @@ UnixNativeCodeManager::~UnixNativeCodeManager()
 bool UnixNativeCodeManager::FindMethodInfo(PTR_VOID        ControlPC,
                                            MethodInfo *    pMethodInfoOut)
 {
-    // Stackwalker may call this with ControlPC that does not belong to this code manager
-    if (dac_cast<TADDR>(ControlPC) < dac_cast<TADDR>(m_pvManagedCodeStartRange) ||
-        dac_cast<TADDR>(m_pvManagedCodeStartRange) + m_cbManagedCodeRange <= dac_cast<TADDR>(ControlPC))
+    // Stackwalker may call this with ControlPC that is not in managed code
+    if (!IsManaged())
     {
         return false;
     }
@@ -94,6 +93,11 @@ bool UnixNativeCodeManager::FindMethodInfo(PTR_VOID        ControlPC,
     pMethodInfo->executionAborted = false;
 
     return true;
+}
+
+bool UnixNativeCodeManager::IsManaged(PTR_VOID pvAddress)
+{
+     return (dac_cast<TADDR>(pvAddress) - dac_cast<TADDR>(m_pvManagedCodeStartRange) < m_cbManagedCodeRange);
 }
 
 bool UnixNativeCodeManager::IsFunclet(MethodInfo * pMethodInfo)
@@ -445,7 +449,6 @@ PTR_VOID UnixNativeCodeManager::GetAssociatedData(PTR_VOID ControlPC)
 }
 
 extern "C" bool RegisterCodeManager(ICodeManager * pCodeManager, PTR_VOID pvStartRange, uint32_t cbRange);
-extern "C" void UnregisterCodeManager(ICodeManager * pCodeManager);
 extern "C" bool RegisterUnboxingStubs(PTR_VOID pvStartRange, uint32_t cbRange);
 
 extern "C"
@@ -466,7 +469,6 @@ bool RhRegisterOSModule(void * pModule,
 
     if (!RegisterUnboxingStubs(pvUnboxingStubsStartRange, cbUnboxingStubsRange))
     {
-        UnregisterCodeManager(pUnixNativeCodeManager);
         return false;
     }
 

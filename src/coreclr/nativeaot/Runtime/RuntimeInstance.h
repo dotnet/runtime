@@ -100,7 +100,6 @@ public:
     bool IsConservativeStackReportingEnabled() { return m_conservativeStackReportingEnabled; }
 
     bool RegisterCodeManager(ICodeManager * pCodeManager, PTR_VOID pvStartRange, uint32_t cbRange);
-    void UnregisterCodeManager(ICodeManager * pCodeManager);
 
     ICodeManager * FindCodeManagerByAddress(PTR_VOID ControlPC);
     PTR_VOID GetClasslibFunctionFromCodeAddress(PTR_VOID address, ClasslibFunctionId functionId);

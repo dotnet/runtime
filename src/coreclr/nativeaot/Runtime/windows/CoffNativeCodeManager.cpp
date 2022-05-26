@@ -246,9 +246,8 @@ static_assert(sizeof(CoffNativeMethodInfo) <= sizeof(MethodInfo), "CoffNativeMet
 bool CoffNativeCodeManager::FindMethodInfo(PTR_VOID        ControlPC,
                                            MethodInfo *    pMethodInfoOut)
 {
-    // Stackwalker may call this with ControlPC that does not belong to this code manager
-    if (dac_cast<TADDR>(ControlPC) < dac_cast<TADDR>(m_pvManagedCodeStartRange) ||
-        dac_cast<TADDR>(m_pvManagedCodeStartRange) + m_cbManagedCodeRange <= dac_cast<TADDR>(ControlPC))
+    // Stackwalker may call this with ControlPC that does not managed
+    if (!IsManaged(ControlPC))
     {
         return false;
     }
@@ -285,6 +284,11 @@ bool CoffNativeCodeManager::FindMethodInfo(PTR_VOID        ControlPC,
     pMethodInfo->executionAborted = false;
 
     return true;
+}
+
+bool CoffNativeCodeManager::IsManaged(PTR_VOID pvAddress)
+{
+     return (dac_cast<TADDR>(pvAddress) - dac_cast<TADDR>(m_pvManagedCodeStartRange) < m_cbManagedCodeRange);
 }
 
 bool CoffNativeCodeManager::IsFunclet(MethodInfo * pMethInfo)
@@ -872,7 +876,6 @@ PTR_VOID CoffNativeCodeManager::GetAssociatedData(PTR_VOID ControlPC)
 }
 
 extern "C" bool __stdcall RegisterCodeManager(ICodeManager * pCodeManager, PTR_VOID pvStartRange, uint32_t cbRange);
-extern "C" void __stdcall UnregisterCodeManager(ICodeManager * pCodeManager);
 extern "C" bool __stdcall RegisterUnboxingStubs(PTR_VOID pvStartRange, uint32_t cbRange);
 
 extern "C"
@@ -900,7 +903,6 @@ bool RhRegisterOSModule(void * pModule,
 
     if (!RegisterUnboxingStubs(pvUnboxingStubsStartRange, cbUnboxingStubsRange))
     {
-        UnregisterCodeManager(pCoffNativeCodeManager);
         return false;
     }
 

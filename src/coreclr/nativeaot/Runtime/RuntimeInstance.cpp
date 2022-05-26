@@ -207,37 +207,9 @@ bool RuntimeInstance::RegisterCodeManager(ICodeManager * pCodeManager, PTR_VOID 
     return true;
 }
 
-void RuntimeInstance::UnregisterCodeManager(ICodeManager * pCodeManager)
-{
-    CodeManagerEntry * pEntry = NULL;
-
-    {
-        ReaderWriterLock::WriteHolder write(&m_ModuleListLock);
-
-        for (CodeManagerList::Iterator i = m_CodeManagerList.Begin(), end = m_CodeManagerList.End(); i != end; i++)
-        {
-            if (i->m_pCodeManager == pCodeManager)
-            {
-                pEntry = *i;
-
-                m_CodeManagerList.Remove(i);
-                break;
-            }
-        }
-    }
-
-    ASSERT(pEntry != NULL);
-    delete pEntry;
-}
-
 extern "C" bool __stdcall RegisterCodeManager(ICodeManager * pCodeManager, PTR_VOID pvStartRange, uint32_t cbRange)
 {
     return GetRuntimeInstance()->RegisterCodeManager(pCodeManager, pvStartRange, cbRange);
-}
-
-extern "C" void __stdcall UnregisterCodeManager(ICodeManager * pCodeManager)
-{
-    return GetRuntimeInstance()->UnregisterCodeManager(pCodeManager);
 }
 
 bool RuntimeInstance::RegisterUnboxingStubs(PTR_VOID pvStartRange, uint32_t cbRange)
