@@ -637,38 +637,25 @@ bool Thread::Hijack()
     uint32_t result = PalHijack(m_hPalThread, HijackCallback, this);
     pCurrentThread->LeaveCantAllocRegion();
     return result == 0;
-
 }
 
 UInt32_BOOL Thread::HijackCallback(HANDLE /*hThread*/, PAL_LIMITED_CONTEXT* pThreadContext, void* pCallbackContext)
 {
     Thread* pThread = (Thread*) pCallbackContext;
-
-    //
-    // WARNING: The hijack operation will take a read lock on the RuntimeInstance's module list.
-    // (This is done to find a Module based on an IP.)  Therefore, if the thread we've just
-    // suspended owns the write lock on the module list, we'll deadlock with it when we try to
-    // take the read lock below.  So we must attempt a non-blocking acquire of the read lock
-    // early and fail the hijack if we can't get it.  This will cause us to simply retry later.
-    //
-    if (GetRuntimeInstance()->m_ModuleListLock.DangerousTryPulseReadLock())
+    if (pThread->CacheTransitionFrameForSuspend())
     {
-        if (pThread->CacheTransitionFrameForSuspend())
-        {
-            // IMPORTANT: GetThreadContext should not be trusted arbitrarily.  We are careful here to recheck
-            // the thread's state flag that indicates whether or not it has made it to unmanaged code.  If
-            // it has reached unmanaged code (even our own wait helper routines), then we cannot trust the
-            // context returned by it.  This is due to various races that occur updating the reported context
-            // during syscalls.
-            return TRUE;
-        }
-        else
-        {
-            return pThread->InternalHijack(pThreadContext, NormalHijackTargets) ? TRUE : FALSE;
-        }
+        // This thread has already made it to preemptive (posted a transition frame)
+        // we do not need to hijack it
+        return TRUE;
     }
 
-    return FALSE;
+    // WARNING: The hijack operation assumes that the module list cannot change past
+    //          the initialization and thus noone holds the writer lock
+    // TODO: perhaps we can remove the lock and the codemanager list
+    //       it looks like we only can have one code manager loaded in InitializeRuntime
+    _ASSERTE (GetRuntimeInstance()->m_ModuleListLock.DangerousTryPulseReadLock());
+
+    return pThread->InternalHijack(pThreadContext, NormalHijackTargets);
 }
 
 #ifdef FEATURE_GC_STRESS

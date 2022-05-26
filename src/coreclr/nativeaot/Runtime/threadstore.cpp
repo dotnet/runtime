@@ -229,8 +229,7 @@ void ThreadStore::SuspendAllThreads(bool waitForGCEvent)
 
             if (!pTargetThread->CacheTransitionFrameForSuspend())
             {
-                // We drive all threads to preemptive mode by hijacking them with both a
-                // return-address hijack and loop hijacks.
+                // We drive all threads to preemptive mode by hijacking them with return-address hijack.
                 keepWaiting = true;
                 pTargetThread->Hijack();
             }
