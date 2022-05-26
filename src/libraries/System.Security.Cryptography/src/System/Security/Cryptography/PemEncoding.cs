@@ -435,6 +435,7 @@ namespace System.Security.Cryptography
             }
 
             charsWritten = WriteCore(label, data, destination);
+            Debug.Assert(encodedSize == charsWritten);
             return true;
         }
 
