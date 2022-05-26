@@ -36,14 +36,14 @@ typedef DPTR(struct CORCOMPILE_EXTERNAL_METHOD_DATA_ENTRY)
 typedef DPTR(struct READYTORUN_IMPORT_SECTION)
     PTR_READYTORUN_IMPORT_SECTION;
 
-constexpr ReadyToRunImportSectionFlags operator |( const ReadyToRunImportSectionFlags left, const ReadyToRunImportSectionFlags right)
+inline ReadyToRunImportSectionFlags operator |( const ReadyToRunImportSectionFlags left, const ReadyToRunImportSectionFlags right)
 {
-    return (ReadyToRunImportSectionFlags)(uint16_t(left) | uint16_t(right));
+    return static_cast<ReadyToRunImportSectionFlags>(static_cast<uint16_t>(left) | static_cast<uint16_t>(right));
 }
 
-constexpr ReadyToRunImportSectionFlags operator &( const ReadyToRunImportSectionFlags left, const ReadyToRunImportSectionFlags right)
+inline ReadyToRunImportSectionFlags operator &( const ReadyToRunImportSectionFlags left, const ReadyToRunImportSectionFlags right)
 {
-    return (ReadyToRunImportSectionFlags)(uint16_t(left) & uint16_t(right));
+    return static_cast<ReadyToRunImportSectionFlags>(static_cast<uint16_t>(left) & static_cast<uint16_t>(right));
 }
 
 #ifdef TARGET_X86
