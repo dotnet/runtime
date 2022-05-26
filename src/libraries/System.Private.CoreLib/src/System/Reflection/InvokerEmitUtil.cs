@@ -29,7 +29,8 @@ namespace System.Reflection
                 InvokeStubPrefix + declaringTypeName + method.Name,
                 returnType: typeof(object),
                 delegateParameters,
-                restrictedSkipVisibility: true);
+                typeof(object).Module, // Use system module to identify our DynamicMethods.
+                skipVisibility: true);
 
             ILGenerator il = dm.GetILGenerator();
 
@@ -64,6 +65,11 @@ namespace System.Reflection
             }
 
             // Invoke the method.
+#if !MONO
+            il.Emit(OpCodes.Call, Methods.NextCallReturnAddress()); // For CallStack reasons, don't inline target method.
+            il.Emit(OpCodes.Pop);
+#endif
+
             if (emitNew)
             {
                 il.Emit(OpCodes.Newobj, (ConstructorInfo)method);
@@ -182,6 +188,13 @@ namespace System.Reflection
             public static MethodInfo Type_GetTypeFromHandle() =>
                                       s_Type_GetTypeFromHandle ??
                                      (s_Type_GetTypeFromHandle = typeof(Type).GetMethod(nameof(Type.GetTypeFromHandle), new[] { typeof(RuntimeTypeHandle) })!);
+
+#if !MONO
+            private static MethodInfo? s_NextCallReturnAddress;
+            public static MethodInfo NextCallReturnAddress() =>
+                                      s_NextCallReturnAddress ??
+                                     (s_NextCallReturnAddress = typeof(System.StubHelpers.StubHelpers).GetMethod(nameof(System.StubHelpers.StubHelpers.NextCallReturnAddress), BindingFlags.NonPublic | BindingFlags.Static)!);
+#endif
         }
     }
 }

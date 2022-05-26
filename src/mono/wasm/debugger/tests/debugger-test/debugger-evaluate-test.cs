@@ -1371,6 +1371,36 @@ namespace DebuggerTests
             var test = new TestClass();
         }
     }
+    
+    public static class PrimitiveTypeMethods
+    {
+        public class TestClass
+        {
+            public int propInt = 12;
+            public uint propUint = 12;
+            public long propLong = 12;
+            public ulong propUlong = 12;
+            public float propFloat = 1.2345678f;
+            public double propDouble = 1.2345678910111213;
+            public bool propBool = true;
+            public char propChar = 'X';
+            public string propString = "s_t_r";
+        }
+
+        public static void Evaluate()
+        {
+            var test = new TestClass();
+            int localInt = 2;
+            uint localUint = 2;
+            long localLong = 2;
+            ulong localUlong = 2;
+            float localFloat = 0.2345678f;
+            double localDouble = 0.2345678910111213;
+            bool localBool = false;
+            char localChar = 'Y';
+            string localString = "S*T*R";
+        }
+    }
 }
 
 namespace DebuggerTestsV2

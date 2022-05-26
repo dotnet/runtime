@@ -69,10 +69,7 @@ namespace System.Security.Cryptography
                         }
                         else if (padding.Mode == RSAEncryptionPaddingMode.Oaep)
                         {
-                            RsaPaddingProcessor processor =
-                                RsaPaddingProcessor.OpenProcessor(padding.OaepHashAlgorithm);
-
-                            processor.PadOaep(data, paddedMessage);
+                            RsaPaddingProcessor.PadOaep(padding.OaepHashAlgorithm, data, paddedMessage);
                         }
                         else
                         {
@@ -154,10 +151,7 @@ namespace System.Security.Cryptography
                         }
                         else if (padding.Mode == RSAEncryptionPaddingMode.Oaep)
                         {
-                            RsaPaddingProcessor processor =
-                                RsaPaddingProcessor.OpenProcessor(padding.OaepHashAlgorithm);
-
-                            processor.PadOaep(data, paddedMessage);
+                            RsaPaddingProcessor.PadOaep(padding.OaepHashAlgorithm, data, paddedMessage);
                         }
                         else
                         {

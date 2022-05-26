@@ -392,7 +392,7 @@ namespace System.Xml.Schema
             {
                 if (schemaInfo.SchemaType != SchemaType.XDR)
                 {
-                    throw new XmlException(SR.Xml_MultipleValidaitonTypes, string.Empty, this.PositionInfo.LineNumber, this.PositionInfo.LinePosition);
+                    throw new XmlException(SR.Xml_MultipleValidationTypes, string.Empty, this.PositionInfo.LineNumber, this.PositionInfo.LinePosition);
                 }
 
                 this.schemaInfo.Add(schemaInfo, EventHandler);

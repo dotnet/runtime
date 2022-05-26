@@ -937,13 +937,17 @@ GenTreeCall* Compiler::fgGetSharedCCtor(CORINFO_CLASS_HANDLE cls)
 bool Compiler::fgAddrCouldBeNull(GenTree* addr)
 {
     addr = addr->gtEffectiveVal();
-    if ((addr->gtOper == GT_CNS_INT) && addr->IsIconHandle())
+    if (addr->IsIconHandle())
     {
         return false;
     }
     else if (addr->OperIs(GT_CNS_STR, GT_CLS_VAR_ADDR))
     {
         return false;
+    }
+    else if (addr->OperIs(GT_INDEX_ADDR))
+    {
+        return !addr->AsIndexAddr()->IsNotNull();
     }
     else if (addr->OperIs(GT_ARR_ADDR))
     {
@@ -1779,8 +1783,9 @@ void Compiler::fgAddSyncMethodEnterExit()
     }
 
     // Create a 'monitor acquired' boolean (actually, an unsigned byte: 1 = acquired, 0 = not acquired).
-
-    var_types typeMonAcquired = TYP_UBYTE;
+    // For EnC this is part of the frame header. Furthermore, this is allocated above PSP on ARM64.
+    // To avoid complicated reasoning about alignment we always allocate a full pointer sized slot for this.
+    var_types typeMonAcquired = TYP_I_IMPL;
     this->lvaMonAcquired      = lvaGrabTemp(true DEBUGARG("Synchronized method monitor acquired boolean"));
 
     lvaTable[lvaMonAcquired].lvType = typeMonAcquired;
@@ -1806,10 +1811,12 @@ void Compiler::fgAddSyncMethodEnterExit()
 #endif
     }
 
-    // Make a copy of the 'this' pointer to be used in the handler so it does not inhibit enregistration
-    // of all uses of the variable.
-    unsigned lvaCopyThis = 0;
-    if (!info.compIsStatic)
+    // Make a copy of the 'this' pointer to be used in the handler so it does
+    // not inhibit enregistration of all uses of the variable. We cannot do
+    // this optimization in EnC code as we would need to take care to save the
+    // copy on EnC transitions, so guard this on optimizations being enabled.
+    unsigned lvaCopyThis = BAD_VAR_NUM;
+    if (opts.OptimizationEnabled() && !info.compIsStatic)
     {
         lvaCopyThis                  = lvaGrabTemp(true DEBUGARG("Synchronized method copy of this for handler"));
         lvaTable[lvaCopyThis].lvType = TYP_REF;
@@ -1829,7 +1836,8 @@ void Compiler::fgAddSyncMethodEnterExit()
     }
 
     // exceptional case
-    fgCreateMonitorTree(lvaMonAcquired, lvaCopyThis, faultBB, false /*exit*/);
+    fgCreateMonitorTree(lvaMonAcquired, lvaCopyThis != BAD_VAR_NUM ? lvaCopyThis : info.compThisArg, faultBB,
+                        false /*exit*/);
 
     // non-exceptional cases
     for (BasicBlock* const block : Blocks())
@@ -1853,10 +1861,9 @@ GenTree* Compiler::fgCreateMonitorTree(unsigned lvaMonAcquired, unsigned lvaThis
 {
     // Insert the expression "enter/exitCrit(this, &acquired)" or "enter/exitCrit(handle, &acquired)"
 
-    var_types typeMonAcquired = TYP_UBYTE;
-    GenTree*  varNode         = gtNewLclvNode(lvaMonAcquired, typeMonAcquired);
-    GenTree*  varAddrNode     = gtNewOperNode(GT_ADDR, TYP_BYREF, varNode);
-    GenTree*  tree;
+    GenTree* varNode     = gtNewLclvNode(lvaMonAcquired, lvaGetDesc(lvaMonAcquired)->TypeGet());
+    GenTree* varAddrNode = gtNewOperNode(GT_ADDR, TYP_BYREF, varNode);
+    GenTree* tree;
 
     if (info.compIsStatic)
     {

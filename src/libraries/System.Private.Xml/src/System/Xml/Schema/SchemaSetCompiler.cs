@@ -599,7 +599,7 @@ namespace System.Xml.Schema
             {
                 CompileAttributeGroup(baseAttributeGroup);
                 CompileAttributeGroup(attributeGroup);
-                CheckAtrributeGroupRestriction(baseAttributeGroup, attributeGroup);
+                CheckAttributeGroupRestriction(baseAttributeGroup, attributeGroup);
             }
         }
 
@@ -2327,7 +2327,7 @@ namespace System.Xml.Schema
             }
         }
 
-        private void CheckAtrributeGroupRestriction(XmlSchemaAttributeGroup baseAttributeGroup, XmlSchemaAttributeGroup derivedAttributeGroup)
+        private void CheckAttributeGroupRestriction(XmlSchemaAttributeGroup baseAttributeGroup, XmlSchemaAttributeGroup derivedAttributeGroup)
         {
             XmlSchemaAnyAttribute? baseAnyAtt = baseAttributeGroup.AttributeWildcard;
             XmlSchemaAnyAttribute? derivedAnyAtt = derivedAttributeGroup.AttributeWildcard;

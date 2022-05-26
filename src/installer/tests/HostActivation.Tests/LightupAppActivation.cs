@@ -62,7 +62,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             }
         }
 
-        // Attempt to run the app with lightup deps.json specified but lightup library missing in the expected 
+        // Attempt to run the app with lightup deps.json specified but lightup library missing in the expected
         // probe locations.
         [Fact]
         public void Muxer_activation_of_LightupApp_NoLightupLib_Fails()
@@ -80,7 +80,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             dotnet.Exec("exec", "--additional-deps", libDepsJson, appDll)
                 .CaptureStdErr()
                 .CaptureStdOut()
-                .Execute(fExpectedToFail: true)
+                .Execute(expectedToFail: true)
                 .Should().Fail()
                 .And.HaveStdErrContaining(
                     "Error:" + Environment.NewLine +
@@ -196,9 +196,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             //                  8889.0.0
             // Expected: 8888.0.4
             dotnet.Exec("exec", "--additional-deps", baseDir, appDll)
-                .EnvironmentVariable("COREHOST_TRACE", "1")
-                .CaptureStdErr()
-                .CaptureStdOut()
+                .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello LightupClient")
@@ -256,9 +254,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             //                  8888.0.5
             // Expected: 8888.0.4
             dotnet.Exec("exec", "--additional-deps", baseDir, appDll)
-                .EnvironmentVariable("COREHOST_TRACE", "1")
-                .CaptureStdErr()
-                .CaptureStdOut()
+                .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello LightupClient")
@@ -308,15 +304,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             //                  8889.0.0
             // Expected: fail since we only roll backward on patch, not minor
             dotnet.Exec("exec", "--additional-deps", baseDir, appDll)
-                .EnvironmentVariable("COREHOST_TRACE", "1")
-                .CaptureStdErr()
-                .CaptureStdOut()
-                .Execute(fExpectedToFail: true)
+                .EnableTracingAndCaptureOutputs()
+                .Execute(expectedToFail: true)
                 .Should().Fail()
                 .And.HaveStdErrContaining($"No additional deps directory less than or equal to [8888.0.1] found with same major and minor version.");
         }
 
-        // Attempt to run the app without lightup deps.json specified but lightup library present in the expected 
+        // Attempt to run the app without lightup deps.json specified but lightup library present in the expected
         // probe location (of being app-local).
         [Fact]
         public void Muxer_activation_of_LightupApp_WithLightupLib_NoLightupDepsJson_Fails()
@@ -339,7 +333,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             dotnet.Exec("exec", appDll)
                 .CaptureStdErr()
                 .CaptureStdOut()
-                .Execute(fExpectedToFail: true)
+                .Execute(expectedToFail: true)
                 .Should().Fail()
                 .And.HaveStdOutContaining("Exception: Failed to load the lightup assembly!");
         }
@@ -375,10 +369,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             // Expected: a parsing error since the json file is bad.
             dotnet.Exec("exec", "--additional-deps", additionalDepsRootPath, appDll)
-                .EnvironmentVariable("COREHOST_TRACE", "1")
-                .CaptureStdOut()
-                .CaptureStdErr()
-                .Execute(fExpectedToFail: true)
+                .EnableTracingAndCaptureOutputs()
+                .Execute(expectedToFail: true)
                 .Should().Fail()
                 .And.HaveStdErrContaining($"Error initializing the dependency resolver: An error occurred while parsing: {additionalDepsPath}");
         }
@@ -426,9 +418,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             // Expected: the uber framework's version of System.Collections.Immutable is used instead of the additional-deps
             string uberAssembly = Path.Combine(_uberFxBaseDir, "7777.0.0", "System.Collections.Immutable.dll");
             dotnet.Exec("exec", "--additional-deps", additionalDepsPath, appDll)
-                .EnvironmentVariable("COREHOST_TRACE", "1")
-                .CaptureStdOut()
-                .CaptureStdErr()
+                .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdErrContaining($"Using specified additional deps.json: '{additionalDepsPath}'")
@@ -485,9 +475,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             // Expected: the additional dep's version of System.Collections.Immutable is used instead of the uber's assembly
             string uberAssembly = Path.Combine(_uberFxBaseDir, "7777.0.0", "System.Collections.Immutable.dll");
             dotnet.Exec("exec", "--additional-deps", additionalDepsPath, appDll)
-                .EnvironmentVariable("COREHOST_TRACE", "1")
-                .CaptureStdOut()
-                .CaptureStdErr()
+                .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdErrContaining($"Using specified additional deps.json: '{additionalDepsPath}'")

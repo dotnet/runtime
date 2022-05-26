@@ -19,19 +19,23 @@ namespace Microsoft.WebAssembly.Diagnostics
     internal class MonoProxy : DevToolsProxy
     {
         private IList<string> urlSymbolServerList;
-        private static HttpClient client = new HttpClient();
         private HashSet<SessionId> sessions = new HashSet<SessionId>();
         protected Dictionary<SessionId, ExecutionContext> contexts = new Dictionary<SessionId, ExecutionContext>();
         private const string sPauseOnUncaught = "pause_on_uncaught";
         private const string sPauseOnCaught = "pause_on_caught";
+
+        public static HttpClient HttpClient => new HttpClient();
+
         // index of the runtime in a same JS page/process
         public int RuntimeId { get; private init; }
         public bool JustMyCode { get; private set; }
+        protected readonly ProxyOptions _options;
 
-        public MonoProxy(ILoggerFactory loggerFactory, IList<string> urlSymbolServerList, int runtimeId = 0, string loggerId = "") : base(loggerFactory, loggerId)
+        public MonoProxy(ILogger logger, IList<string> urlSymbolServerList, int runtimeId = 0, string loggerId = "", ProxyOptions options = null) : base(logger, loggerId)
         {
             this.urlSymbolServerList = urlSymbolServerList ?? new List<string>();
             RuntimeId = runtimeId;
+            _options = options;
         }
 
         internal ExecutionContext GetContext(SessionId sessionId)
@@ -711,7 +715,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 byte[] newBytes = Convert.FromBase64String(res.Value?["result"]?["value"]?["value"]?.Value<string>());
                 var retDebuggerCmdReader = new MonoBinaryReader(newBytes);
                 retDebuggerCmdReader.ReadByte(); //number of objects returned.
-                var obj = await context.SdbAgent.CreateJObjectForVariableValue(retDebuggerCmdReader, "ret", token);
+                var obj = await context.SdbAgent.ValueCreator.ReadAsVariableValue(retDebuggerCmdReader, "ret", token);
                 /*JTokenType? res_value_type = res.Value?["result"]?["value"]?.Type;*/
                 res = Result.OkFromObject(new { result = obj["value"]});
                 SendResponse(id, res, token);
@@ -821,7 +825,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 var resolver = new MemberReferenceResolver(this, context, sessionId, mono_frame.Id, logger);
                 JObject retValue = await resolver.Resolve(condition, token);
                 if (retValue == null)
-                    retValue = await EvaluateExpression.CompileAndRunTheExpression(condition, resolver, token);
+                    retValue = await ExpressionEvaluator.CompileAndRunTheExpression(condition, resolver, logger, token);
                 if (retValue?["value"]?.Type == JTokenType.Boolean ||
                     retValue?["value"]?.Type == JTokenType.Integer ||
                     retValue?["value"]?.Type == JTokenType.Float) {
@@ -983,8 +987,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                     continue;
                 }
 
-                Log("debug", $"frame il offset: {il_pos} method token: {method.Info.Token} assembly name: {method.Info.Assembly.Name}");
-                Log("debug", $"\tmethod {method.Name} location: {location}");
+                // logger.LogTrace($"frame il offset: {il_pos} method token: {method.Info.Token} assembly name: {method.Info.Assembly.Name}");
+                // logger.LogTrace($"\tmethod {method.Name} location: {location}");
                 frames.Add(new Frame(method, location, frame_id));
 
                 callFrames.Add(new
@@ -1153,7 +1157,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 try
                 {
-                    using HttpResponseMessage response = await client.GetAsync(downloadURL, token);
+                    using HttpResponseMessage response = await HttpClient.GetAsync(downloadURL, token);
                     if (!response.IsSuccessStatusCode)
                     {
                         Log("info", $"Unable to download symbols on demand url:{downloadURL} assembly: {asm.Name}");
@@ -1314,7 +1318,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 JObject retValue = await resolver.Resolve(expression, token);
                 if (retValue == null)
                 {
-                    retValue = await EvaluateExpression.CompileAndRunTheExpression(expression, resolver, token);
+                    retValue = await ExpressionEvaluator.CompileAndRunTheExpression(expression, resolver, logger, token);
                 }
 
                 if (retValue != null)
@@ -1441,10 +1445,36 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         await OnSourceFileAdded(sessionId, source, context, token);
                     }
+
+                    if (_options?.AutoSetBreakpointOnEntryPoint == true)
+                    {
+                        MethodInfo entryPoint = context.store.FindEntryPoint(_options!.EntrypointAssembly);
+                        if (entryPoint is not null)
+                        {
+                            var sourceFile = entryPoint.Assembly.Sources.Single(sf => sf.SourceId == entryPoint.SourceId);
+                            string bpId = $"auto:{entryPoint.StartLocation.Line}:{entryPoint.StartLocation.Column}:{sourceFile.DotNetUrl}";
+                            BreakpointRequest request = new(bpId, JObject.FromObject(new
+                            {
+                                lineNumber = entryPoint.StartLocation.Line,
+                                columnNumber = entryPoint.StartLocation.Column,
+                                url = sourceFile.Url
+                            }));
+                            logger.LogInformation($"Adding bp req {request}");
+                            context.BreakpointRequests[bpId] = request;
+                            request.TryResolve(sourceFile);
+                            if (request.TryResolve(sourceFile))
+                                await SetBreakpoint(sessionId, context.store, request, true, true, token);
+                        }
+                        else
+                        {
+                            logger.LogWarning($"No entrypoint found for setting automatic breakpoint");
+                        }
+                    }
                 }
             }
             catch (Exception e)
             {
+                logger.LogError($"failed: {e}");
                 context.Source.SetException(e);
             }
 
@@ -1490,6 +1520,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             DebugStore store = await LoadStore(sessionId, token);
             context.ready.SetResult(store);
             await SendEvent(sessionId, "Mono.runtimeReady", new JObject(), token);
+            await SendMonoCommand(sessionId, MonoCommands.SetDebuggerAttached(RuntimeId), token);
             context.SdbAgent.ResetStore(store);
             return store;
         }

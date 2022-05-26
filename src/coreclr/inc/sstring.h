@@ -653,10 +653,7 @@ private:
     void VPrintf(const CHAR *format, va_list args);
 
     void Printf(const WCHAR *format, ...);
-    void PPrintf(const WCHAR *format, ...);
     void VPrintf(const WCHAR *format, va_list args);
-
-    void PVPrintf(const WCHAR *format, va_list args);
 
     void AppendPrintf(const CHAR *format, ...);
     void AppendVPrintf(const CHAR *format, va_list args);

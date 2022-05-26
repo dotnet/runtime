@@ -339,6 +339,7 @@ private:
 #ifdef FEATURE_HW_INTRINSICS
     void LowerHWIntrinsic(GenTreeHWIntrinsic* node);
     void LowerHWIntrinsicCC(GenTreeHWIntrinsic* node, NamedIntrinsic newIntrinsicId, GenCondition condition);
+    void LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node);
     void LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp);
     void LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node);
     void LowerHWIntrinsicDot(GenTreeHWIntrinsic* node);
@@ -355,6 +356,7 @@ private:
     bool IsValidConstForMovImm(GenTreeHWIntrinsic* node);
     void LowerHWIntrinsicFusedMultiplyAddScalar(GenTreeHWIntrinsic* node);
     GenTree* LowerModPow2(GenTree* node);
+    GenTree* LowerAddForPossibleContainment(GenTreeOp* node);
 #endif // !TARGET_XARCH && !TARGET_ARM64
 
     union VectorConstant {
@@ -571,6 +573,10 @@ public:
     {
         return m_lsra->isContainableMemoryOp(node);
     }
+
+#ifdef TARGET_ARM64
+    bool IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) const;
+#endif // TARGET_ARM64
 
 #ifdef FEATURE_HW_INTRINSICS
     // Tries to get a containable node for a given HWIntrinsic

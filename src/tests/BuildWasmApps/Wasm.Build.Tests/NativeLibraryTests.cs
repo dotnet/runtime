@@ -17,7 +17,7 @@ namespace Wasm.Build.Tests
         {
         }
 
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+        [Theory]
         [BuildAndRun(aot: false)]
         [BuildAndRun(aot: true)]
         public void ProjectWithNativeReference(BuildArgs buildArgs, RunHost host, string id)
@@ -48,7 +48,7 @@ namespace Wasm.Build.Tests
             Assert.Contains("from pinvoke: 142", output);
         }
 
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+        [Theory]
         [BuildAndRun(aot: false)]
         [BuildAndRun(aot: true)]
         public void ProjectUsingSkiaSharp(BuildArgs buildArgs, RunHost host, string id)
@@ -92,6 +92,59 @@ public class Test
                                 args: "mono.png");
 
             Assert.Contains("Size: 26462 Height: 599, Width: 499", output);
+        }
+
+        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+        [BuildAndRun(aot: false)]
+        [BuildAndRun(aot: true)]
+        public void ProjectUsingBrowserNativeCrypto(BuildArgs buildArgs, RunHost host, string id)
+        {
+            string projectName = $"AppUsingBrowserNativeCrypto";
+            buildArgs = buildArgs with { ProjectName = projectName };
+            buildArgs = ExpandBuildArgs(buildArgs);
+
+            string programText = @"
+using System;
+using System.Security.Cryptography;
+
+public class Test
+{
+    public static int Main()
+    {
+        using (SHA256 mySHA256 = SHA256.Create())
+        {
+            byte[] data = { (byte)'H', (byte)'e', (byte)'l', (byte)'l', (byte)'o' };
+            byte[] hashed = mySHA256.ComputeHash(data);
+            string asStr = string.Join(' ', hashed);
+            Console.WriteLine(""Hashed: "" + asStr);
+            return 0;
+        }
+    }
+}";
+
+            BuildProject(buildArgs,
+                            id: id,
+                            new BuildProjectOptions(
+                                InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
+                                DotnetWasmFromRuntimePack: !buildArgs.AOT && buildArgs.Config != "Release"));
+
+            string output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 0,
+                                test: output => {},
+                                host: host, id: id);
+
+            Assert.Contains(
+                "Hashed: 24 95 141 179 34 113 254 37 245 97 166 252 147 139 46 38 67 6 236 48 78 218 81 128 7 209 118 72 38 56 25 105",
+                output);
+
+            string cryptoInitMsg = "MONO_WASM: Initializing Crypto WebWorker";
+            if (host == RunHost.V8 || host == RunHost.NodeJS)
+            {
+                Assert.DoesNotContain(cryptoInitMsg, output);
+            }
+            else
+            {
+                Assert.Contains(cryptoInitMsg, output);
+            }
         }
     }
 }

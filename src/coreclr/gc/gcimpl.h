@@ -66,7 +66,6 @@ public:
 
 public:
     GCHeap(){};
-    ~GCHeap(){};
 
     /* BaseGCHeap Methods*/
     PER_HEAP_ISOLATED   HRESULT StaticShutdown ();
@@ -180,7 +179,9 @@ public:
                        bool* isConcurrent,
                        uint64_t* genInfoRaw,
                        uint64_t* pauseInfoRaw,
-                       int kind);;
+                       int kind);
+
+    int64_t GetTotalPauseDuration();
 
     uint32_t GetMemoryLoad();
 
