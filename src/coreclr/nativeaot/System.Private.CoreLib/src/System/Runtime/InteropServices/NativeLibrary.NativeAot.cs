@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Text;
+
 using LibraryNameVariation = System.Runtime.Loader.LibraryNameVariation;
 
 namespace System.Runtime.InteropServices
@@ -126,30 +126,19 @@ namespace System.Runtime.InteropServices
             }
 
             int lastError = Marshal.GetLastWin32Error();
-            if (lastError != LoadLibErrorTracker.ERROR_INVALID_PARAMETER)
+            if (lastError != Interop.Errors.ERROR_INVALID_PARAMETER)
             {
                 errorTracker.TrackErrorCode(lastError);
             }
 
             return ret;
 #else
-            IntPtr ret = IntPtr.Zero;
-            if (libraryName == null)
+            // TODO: FileDosToUnixPathA
+            IntPtr ret = Interop.Sys.LoadLibrary(libraryName);
+            if (ret == IntPtr.Zero)
             {
-                errorTracker.TrackErrorCode(LoadLibErrorTracker.ERROR_MOD_NOT_FOUND);
-            }
-            else if (libraryName == string.Empty)
-            {
-                errorTracker.TrackErrorCode(LoadLibErrorTracker.ERROR_INVALID_PARAMETER);
-            }
-            else
-            {
-                // TODO: FileDosToUnixPathA
-                ret = Interop.Sys.LoadLibrary(libraryName);
-                if (ret == IntPtr.Zero)
-                {
-                    errorTracker.TrackErrorCode(LoadLibErrorTracker.ERROR_MOD_NOT_FOUND);
-                }
+                string? message = Marshal.PtrToStringAnsi(Interop.Sys.GetLoadLibraryError());
+                errorTracker.TrackErrorMessage(message);
             }
 
             return ret;
@@ -188,30 +177,80 @@ namespace System.Runtime.InteropServices
             return ret;
         }
 
-        // TODO: copy the nice error logic from CoreCLR's LoadLibErrorTracker
-        // to get fine-grained error messages that take into account access denied, etc.
+        // Preserving good error info from DllImport-driven LoadLibrary is tricky because we keep loading from different places
+        // if earlier loads fail and those later loads obliterate error codes.
+        //
+        // This tracker object will keep track of the error code in accordance to priority:
+        //
+        //   low-priority:      unknown error code (should never happen)
+        //   medium-priority:   dll not found
+        //   high-priority:     dll found but error during loading
+        //
+        // We will overwrite the previous load's error code only if the new error code is higher priority.
         internal struct LoadLibErrorTracker
         {
-            internal const int ERROR_INVALID_PARAMETER = 0x57;
-            internal const int ERROR_MOD_NOT_FOUND = 126;
-            internal const int ERROR_BAD_EXE_FORMAT = 193;
-
+#if TARGET_WINDOWS
             private int _errorCode;
+            private int _priority;
+
+            private const int PriorityNotFound = 10;
+            private const int PriorityAccessDenied = 20;
+            private const int PriorityCouldNotLoad = 99999;
 
             public void Throw(string libraryName)
             {
-                if (_errorCode == ERROR_BAD_EXE_FORMAT)
+                if (_errorCode == Interop.Errors.ERROR_BAD_EXE_FORMAT)
                 {
                     throw new BadImageFormatException();
                 }
 
-                throw new DllNotFoundException(SR.Format(SR.Arg_DllNotFoundExceptionParameterized, libraryName));
+                string message = Interop.Kernel32.GetMessage(_errorCode);
+                throw new DllNotFoundException(SR.Format(SR.DllNotFound_Windows, libraryName, message));
             }
 
             public void TrackErrorCode(int errorCode)
             {
-                _errorCode = errorCode;
+                int priority = errorCode switch
+                {
+                    Interop.Errors.ERROR_FILE_NOT_FOUND or
+                    Interop.Errors.ERROR_PATH_NOT_FOUND or
+                    Interop.Errors.ERROR_MOD_NOT_FOUND or
+                    Interop.Errors.ERROR_DLL_NOT_FOUND => PriorityNotFound,
+
+                    // If we can't access a location, we can't know if the dll's there or if it's good.
+                    // Still, this is probably more unusual (and thus of more interest) than a dll-not-found
+                    // so give it an intermediate priority.
+                    Interop.Errors.ERROR_ACCESS_DENIED => PriorityAccessDenied,
+
+                    // Assume all others are "dll found but couldn't load."
+                    _ => PriorityCouldNotLoad,
+                };
+
+                if (priority > _priority)
+                {
+                    _errorCode = errorCode;
+                    _priority = priority;
+                }
             }
+#else
+            // On Unix systems we don't have detailed programatic information on why load failed
+            // so there's no priorities.
+            private string? _errorMessage;
+
+            public void Throw(string libraryName)
+            {
+#if TARGET_OSX
+                throw new DllNotFoundException(SR.Format(SR.DllNotFound_Mac, libraryName, _errorMessage));
+#else
+                throw new DllNotFoundException(SR.Format(SR.DllNotFound_Linux, libraryName, _errorMessage));
+#endif
+            }
+
+            public void TrackErrorMessage(string? message)
+            {
+                _errorMessage = message;
+            }
+#endif
         }
     }
 }
