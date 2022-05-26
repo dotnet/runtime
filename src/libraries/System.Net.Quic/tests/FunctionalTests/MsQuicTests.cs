@@ -342,6 +342,7 @@ namespace System.Net.Quic.Tests
         [ConditionalTheory]
         [InlineData(true)]
         [InlineData(false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/64944", TestPlatforms.Windows)]
         public async Task ConnectWithClientCertificate(bool sendCertificate)
         {
             if (PlatformDetection.IsWindows10Version20348OrLower)
