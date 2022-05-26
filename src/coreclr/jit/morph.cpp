@@ -13876,7 +13876,7 @@ GenTree* Compiler::fgMorphModToSubMulDiv(GenTreeOp* tree)
     GenTree* divisor  = div->gtGetOp2();
 
     TempInfo tempInfos[2]{};
-    int tempInfoCount = 0;
+    int      tempInfoCount = 0;
 
     if (!fgIsSafeToClone(dividend))
     {
