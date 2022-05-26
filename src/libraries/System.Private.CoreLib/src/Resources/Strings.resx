@@ -3919,4 +3919,10 @@
   <data name="ArgumentOutOfRange_NotGreaterThanBufferLength" xml:space="preserve">
     <value>Must not be greater than the length of the buffer.</value>
   </data>
+  <data name="StructMarshalling_MissingInteropData" xml:space="preserve">
+    <value>{0} is missing structure marshalling data. To enable structure marshalling data, add a MarshalStructure directive to the application rd.xml file. For more information, please visit http://go.microsoft.com/fwlink/?LinkID=393965</value>
+  </data>
+  <data name="DelegateMarshalling_MissingInteropData" xml:space="preserve">
+    <value>{0} is missing delegate marshalling data. To enable delegate marshalling data, add a MarshalDelegate directive to the application rd.xml file. For more information, please visit http://go.microsoft.com/fwlink/?LinkID=393965</value>
+  </data>
 </root>

@@ -20383,27 +20383,9 @@ GenTree* Compiler::gtNewSimdCndSelNode(var_types   type,
     NamedIntrinsic intrinsic = NI_Illegal;
 
 #if defined(TARGET_XARCH)
-    // TODO-XARCH-CQ: It's likely beneficial to have a dedicated CndSel node so we
-    // can special case when the condition is the result of various compare operations.
-    //
-    // When it is, the condition is AllBitsSet or Zero on a per-element basis and we
-    // could change this to be a Blend operation in lowering as an optimization.
-
     assert((simdSize != 32) || compIsaSupportedDebugOnly(InstructionSet_AVX));
-    CORINFO_CLASS_HANDLE clsHnd = gtGetStructHandleForSIMD(type, simdBaseJitType);
-
-    GenTree* op1Dup;
-    op1 = impCloneExpr(op1, &op1Dup, clsHnd, (unsigned)CHECK_SPILL_ALL,
-                       nullptr DEBUGARG("Clone op1 for vector conditional select"));
-
-    // op2 = op2 & op1
-    op2 = gtNewSimdBinOpNode(GT_AND, type, op2, op1, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
-
-    // op3 = op3 & ~op1Dup
-    op3 = gtNewSimdBinOpNode(GT_AND_NOT, type, op3, op1Dup, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
-
-    // result = op2 | op3
-    return gtNewSimdBinOpNode(GT_OR, type, op2, op3, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+    intrinsic = (simdSize == 32) ? NI_Vector256_ConditionalSelect : NI_Vector128_ConditionalSelect;
+    return gtNewSimdHWIntrinsicNode(type, op1, op2, op3, intrinsic, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
 #elif defined(TARGET_ARM64)
     return gtNewSimdHWIntrinsicNode(type, op1, op2, op3, NI_AdvSimd_BitwiseSelect, simdBaseJitType, simdSize,
                                     isSimdAsHWIntrinsic);

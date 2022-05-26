@@ -921,12 +921,16 @@ public:
     // Enables or disables the given keyword or level on the private event provider.
     virtual void ControlPrivateEvents(GCEventKeyword keyword, GCEventLevel level) = 0;
 
+    // Get the segment/region associated with an address together with its generation for the profiler.
     virtual unsigned int GetGenerationWithRange(Object* object, uint8_t** ppStart, uint8_t** ppAllocated, uint8_t** ppReserved) = 0;
 
     IGCHeap() {}
-    virtual ~IGCHeap() {}
 
-    // Get the total paused duration
+    // The virtual destructors for the IGCHeap class hierarchy is intentionally omitted.
+    // This is to ensure we have a stable virtual function table for this interface for
+    // version resilience purposes.
+
+    // Get the total paused duration.
     virtual int64_t GetTotalPauseDuration() = 0;
 };
 
