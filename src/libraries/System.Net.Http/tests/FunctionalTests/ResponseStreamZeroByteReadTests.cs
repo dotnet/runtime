@@ -33,6 +33,7 @@ namespace System.Net.Http.Functional.Tests
         protected override async Task WriteAsync(Stream stream, byte[] data) => await stream.WriteAsync(data);
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
     public sealed class Http1ContentLengthResponseStreamZeroByteReadTest : Http1ResponseStreamZeroByteReadTestBase
     {
         protected override string GetResponseHeaders() => "HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\n";
@@ -82,6 +83,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Theory]
         [MemberData(nameof(ZeroByteRead_IssuesZeroByteReadOnUnderlyingStream_MemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task ZeroByteRead_IssuesZeroByteReadOnUnderlyingStream(StreamConformanceTests.ReadWriteMode readMode, bool useSsl)
         {
             (Stream httpConnection, Stream server) = ConnectedStreams.CreateBidirectional(4096, int.MaxValue);
@@ -237,6 +239,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task ZeroByteRead_BlocksUntilDataIsAvailable(bool async)
         {
             var zeroByteReadIssued = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
