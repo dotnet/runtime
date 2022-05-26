@@ -1120,11 +1120,6 @@ check_symbol_exists(
     grp.h
     HAVE_GETGRGID_R)
 
-check_symbol_exists(
-    getpwuid_r
-    pwd.h
-    HAVE_GETPWUID_R)
-
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/Common/pal_config.h.in
     ${CMAKE_CURRENT_BINARY_DIR}/Common/pal_config.h)

@@ -21,7 +21,7 @@
 #define USE_GROUPLIST_LOCK
 #endif
 
-#if defined(USE_GROUPLIST_LOCK) || !HAVE_GETGRGID_R || !HAVE_GETPWUID_R
+#if defined(USE_GROUPLIST_LOCK) || !HAVE_GETGRGID_R
 #include <pthread.h>
 #endif
 
@@ -284,11 +284,11 @@ char* SystemNative_GetGroupName(uint32_t gid)
     }
 #else
     // Platforms like Android API level < 24 do not have getgrgid_r available
-	pthread_mutex_lock(&s_getgrgid_lock);
+    pthread_mutex_lock(&s_getgrgid_lock);
     struct group* result = getgrgid(gid);
     if (result == NULL)
     {
-	    pthread_mutex_unlock(&s_getgrgid_lock);
+        pthread_mutex_unlock(&s_getgrgid_lock);
         return NULL;
     }
     char* name = strdup(result->gr_name);
@@ -297,14 +297,8 @@ char* SystemNative_GetGroupName(uint32_t gid)
 #endif
 }
 
-#if !HAVE_GETPWUID_R
-// Need to call getpwuid which is not thread-safe, and protect it with a mutex
-static pthread_mutex_t s_getpwuid_lock = PTHREAD_MUTEX_INITIALIZER;
-#endif
-
 char* SystemNative_GetUserName(uint32_t uid)
 {
-#if HAVE_GETPWUID_R
     size_t bufferLength = 512;
     while (1)
     {
@@ -340,16 +334,4 @@ char* SystemNative_GetUserName(uint32_t uid)
         }
         bufferLength = tmpBufferLength;
     }
-#else
-	pthread_mutex_lock(&s_getpwuid_lock);
-    struct passwd* result = getpwuid(uid);
-    if (result == NULL)
-    {
-		pthread_mutex_unlock(&s_getpwuid_lock);
-        return NULL;
-    }
-    char* name = strdup(result->pw_name); 
-    pthread_mutex_unlock(&s_getpwuid_lock);
-    return name;
-#endif
 }
