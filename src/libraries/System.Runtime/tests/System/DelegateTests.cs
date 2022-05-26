@@ -452,9 +452,33 @@ namespace System.Tests
             Assert.True(m1.Equals(m2));
         }
 
+        [Fact]
+        public static void SameGenericMethodObtainedViaDelegateAndReflectionAreSameForClass()
+        {
+            var m1 = ((MethodCallExpression)((Expression<Action>)(() => new ClassG().M<string, object>())).Body).Method;
+            var m2 = new Action(new ClassG().M<string, object>).Method;
+            Assert.True(m1.Equals(m2));
+            Assert.True(m1.GetHashCode().Equals(m2.GetHashCode()));
+            Assert.Equal(m1.MethodHandle.Value, m2.MethodHandle.Value);
+        }
+
+        [Fact]
+        public static void SameGenericMethodObtainedViaDelegateAndReflectionAreSameForStruct()
+        {
+            var m1 = ((MethodCallExpression)((Expression<Action>)(() => new StructG().M<string, object>())).Body).Method;
+            var m2 = new Action(new StructG().M<string, object>).Method;
+            Assert.True(m1.Equals(m2));
+            Assert.True(m1.GetHashCode().Equals(m2.GetHashCode()));
+            Assert.Equal(m1.MethodHandle.Value, m2.MethodHandle.Value);
+        }
+
         class Class { internal void M() { } }
 
         struct Struct { internal void M() { } }
+
+        class ClassG { internal void M<Key, Value>() { } }
+
+        struct StructG { internal void M<Key, Value>() { } }
 
         private delegate void IntIntDelegate(int expected, int actual);
         private delegate void IntIntDelegateWithDefault(int expected, int actual = 7);
