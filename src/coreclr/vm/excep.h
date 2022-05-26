@@ -208,7 +208,7 @@ enum
 void InitializeCrashDump();
 void CreateCrashDumpIfEnabled(bool stackoverflow = false);
 #endif
-bool GenerateDump(LPCWSTR dumpName, INT dumpType, ULONG32 flags);
+bool GenerateDump(LPCWSTR dumpName, INT dumpType, ULONG32 flags, LPSTR errorMessageBuffer, INT cbErrorMessageBuffer);
 
 // Generates crash dumps if enabled for both Windows and Linux
 void CrashDumpAndTerminateProcess(UINT exitCode);
