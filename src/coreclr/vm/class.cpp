@@ -2703,7 +2703,7 @@ void EEClass::AddChunk (MethodDescChunk* pNewChunk)
 
     _ASSERTE(pNewChunk->GetNextChunk() == NULL);
 
-    MethodDescChunk* head =  GetChunks();
+    MethodDescChunk* head = GetChunks();
 
     if (head == NULL)
     {
