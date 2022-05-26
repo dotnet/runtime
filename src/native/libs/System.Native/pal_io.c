@@ -1480,7 +1480,13 @@ uint32_t SystemNative_GetFileSystemType(intptr_t fd)
     // for our needs (get file system type) statfs is always enough and there is no need to use statfs64
     // which got deprecated in macOS 10.6, in favor of statfs
     while ((statfsRes = fstatfs(ToFileDescriptor(fd), &statfsArgs)) == -1 && errno == EINTR) ;
-    return statfsRes == -1 ? 0 : (uint32_t)statfsArgs.f_type; // disregard the upper bytes #61175
+    if (statfsRes == -1) return 0;
+
+    // On Linux, f_type is signed. This causes some filesystem types to be represented as
+    // negative numbers on 32-bit platforms. We cast to uint32_t to make them positive.
+    uint32_t result = (uint32_t)statfsArgs.f_type;
+    assert(result == statfsArgs.f_type);
+    return result;
 #elif !HAVE_NON_LEGACY_STATFS
     int statfsRes;
     struct statvfs statfsArgs;
