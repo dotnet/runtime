@@ -587,7 +587,7 @@ namespace System.Security.Cryptography
 
                         if (charsWritten != destination.Length)
                         {
-                            Debug.Fail("TryWriteCore failed with a pre-sized buffer");
+                            Debug.Fail("WriteCore wrote the wrong amount of data");
                             throw new CryptographicException();
                         }
                     });

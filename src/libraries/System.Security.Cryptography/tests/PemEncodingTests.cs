@@ -215,8 +215,8 @@ namespace System.Security.Cryptography.Tests
             Assert.Equal(expected, resultString);
 
             // Buffer-writing
-            char[] buffer = new char[expected.Length];
-            Assert.True(PemEncoding.TryWrite(label, data, buffer, out int written), "PemEncoding.TryWrite");
+            resultArray.AsSpan().Clear();
+            Assert.True(PemEncoding.TryWrite(label, data, resultArray, out int written), "PemEncoding.TryWrite");
             Assert.Equal(expected.Length, written);
             Assert.Equal(expected, new string(buffer));
         }
