@@ -1827,6 +1827,13 @@ NOINLINE static FC_BOOL_RET CanCompareBitsHelper(MethodTable* mt, OBJECTREF objR
     FC_RETURN_BOOL(ret);
 }
 
+FCIMPL1(UINT32, ValueTypeHelper::GetObjectSize, Object* obj)
+{
+    FCALL_CONTRACT;
+    return obj->GetTypeHandle().GetSize();
+}
+FCIMPLEND
+
 // Return true if the valuetype does not contain pointer, is tightly packed,
 // does not have floating point number field and does not override Equals method.
 FCIMPL1(FC_BOOL_RET, ValueTypeHelper::CanCompareBits, Object* obj)

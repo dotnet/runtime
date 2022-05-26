@@ -44,7 +44,9 @@ namespace System
             // if there are no GC references in this object we can avoid reflection
             // and do a fast memcmp
             if (CanCompareBits(this))
-                return FastEqualsCheck(thisObj, obj);
+            {
+                return SpanHelpers.SequenceEqual(ref RuntimeHelpers.GetRawData(this), ref RuntimeHelpers.GetRawData(obj), GetObjectSize(this));
+            }
 
             FieldInfo[] thisFields = thisType.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
@@ -71,17 +73,8 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern bool CanCompareBits(object obj);
 
-        private static unsafe bool FastEqualsCheck(object a, object b)
-        {
-            MethodTable* pMT = RuntimeHelpers.GetMethodTable(a);
-            Debug.Assert(!pMT->ContainsGCPointers);
-            Debug.Assert(!pMT->HasComponentSize);
-
-            // See RuntimeHelpers.GetRawObjectDataSize
-            // Omitting component size for value type
-            nuint rawSize = pMT->BaseSize - (nuint)(2 * sizeof(IntPtr));
-            return SpanHelpers.SequenceEqual(ref RuntimeHelpers.GetRawData(a), ref RuntimeHelpers.GetRawData(b), rawSize);
-        }
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern uint GetObjectSize(object obj);
 
         /*=================================GetHashCode==================================
         **Action: Our algorithm for returning the hashcode is a little bit complex.  We look
