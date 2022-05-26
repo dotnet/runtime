@@ -45,9 +45,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             // Baseline (no changes)
             Command.Create(appExe)
-                .EnvironmentVariable("COREHOST_TRACE", "1")
-                .CaptureStdErr()
-                .CaptureStdOut()
+                .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
@@ -59,9 +57,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             //  2) Newer runtime uninstalled (installer preserves newer apphost)
             File.Copy(sharedTestState.FixtureLatest.TestProject.AppExe, fixture.TestProject.AppExe, true);
             Command.Create(appExe)
-                .EnvironmentVariable("COREHOST_TRACE", "1")
-                .CaptureStdErr()
-                .CaptureStdOut()
+                .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
@@ -73,9 +69,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             //  2) A roll-forward to the newer runtime did not occur
             File.Copy(sharedTestState.FixtureLatest.TestProject.HostFxrDll, fixture.TestProject.HostFxrDll, true);
             Command.Create(appExe)
-                .EnvironmentVariable("COREHOST_TRACE", "1")
-                .CaptureStdErr()
-                .CaptureStdOut()
+                .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
@@ -109,9 +103,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             // Baseline (no changes)
             Command.Create(appExe)
-                .EnvironmentVariable("COREHOST_TRACE", "1")
-                .CaptureStdErr()
-                .CaptureStdOut()
+                .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
@@ -125,9 +117,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             File.Copy(previousVersionFixture.TestProject.AppExe, fixture.TestProject.AppExe, true);
             File.Copy(previousVersionFixture.TestProject.HostFxrDll, fixture.TestProject.HostFxrDll, true);
             Command.Create(appExe)
-                .EnvironmentVariable("COREHOST_TRACE", "1")
-                .CaptureStdErr()
-                .CaptureStdOut()
+                .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
