@@ -68,7 +68,7 @@ namespace System.Formats.Tar
             entry._header._uid = (int)status.Uid;
             if (!_userIdentifiers.TryGetValue(status.Uid, out string? uName))
             {
-                uName = Interop.Sys.GetUserName(status.Uid);
+                uName = Interop.Sys.GetUserNameFromPasswd();
                 _userIdentifiers.Add(status.Uid, uName);
             }
             entry._header._uName = uName;

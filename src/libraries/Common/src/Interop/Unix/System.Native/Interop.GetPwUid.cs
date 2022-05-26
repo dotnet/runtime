@@ -24,6 +24,10 @@ internal static partial class Interop
             internal byte* Shell;
         }
 
+        /// <summary>
+        /// Gets the user name associated to the current user's UID.
+        /// </summary>
+        /// <returns>On success, return a string with the user name. On failure, returns an empty string.</returns>
         internal static unsafe string GetUserNameFromPasswd()
         {
             // First try with a buffer that should suffice for 99% of cases.
