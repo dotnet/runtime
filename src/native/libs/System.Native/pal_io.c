@@ -1485,7 +1485,6 @@ uint32_t SystemNative_GetFileSystemType(intptr_t fd)
     // On Linux, f_type is signed. This causes some filesystem types to be represented as
     // negative numbers on 32-bit platforms. We cast to uint32_t to make them positive.
     uint32_t result = (uint32_t)statfsArgs.f_type;
-    assert(result == statfsArgs.f_type);
     return result;
 #elif !HAVE_NON_LEGACY_STATFS
     int statfsRes;
