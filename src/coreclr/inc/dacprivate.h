@@ -725,7 +725,7 @@ struct MSLAYOUT DacpGenerationAllocData
 
 struct MSLAYOUT DacpGcHeapDetails
 {
-    CLRDATA_ADDRESS heapAddr = 0; // Only filled in in server mode, otherwise NULL
+    CLRDATA_ADDRESS heapAddr = 0; // Only filled in server mode, otherwise NULL
     CLRDATA_ADDRESS alloc_allocated = 0;
 
     CLRDATA_ADDRESS mark_array = 0;
@@ -780,7 +780,7 @@ struct MSLAYOUT DacpHeapSegmentData
     CLRDATA_ADDRESS mem = 0;
     // pass this to request if non-null to get the next segments.
     CLRDATA_ADDRESS next = 0;
-    CLRDATA_ADDRESS gc_heap = 0; // only filled in in server mode, otherwise NULL
+    CLRDATA_ADDRESS gc_heap = 0; // only filled in server mode, otherwise NULL
     // computed field: if this is the ephemeral segment highMark includes the ephemeral generation
     CLRDATA_ADDRESS highAllocMark = 0;
 
@@ -881,7 +881,7 @@ struct MSLAYOUT DacpGCInterestingInfoData
 
 struct MSLAYOUT DacpGcHeapAnalyzeData
 {
-    CLRDATA_ADDRESS heapAddr = 0; // Only filled in in server mode, otherwise NULL
+    CLRDATA_ADDRESS heapAddr = 0; // Only filled in server mode, otherwise NULL
 
     CLRDATA_ADDRESS internal_root_array = 0;
     ULONG64         internal_root_array_index = 0;

@@ -133,7 +133,7 @@ elseif (CLR_CMAKE_HOST_UNIX)
         message("Address Sanitizer (asan) enabled")
       endif ()
       if (${__UBSAN_POS} GREATER -1)
-        # all sanitizier flags are enabled except alignment (due to heavy use of __unaligned modifier)
+        # all sanitizer flags are enabled except alignment (due to heavy use of __unaligned modifier)
         list(APPEND CLR_CXX_SANITIZERS
           "bool"
           bounds

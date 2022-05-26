@@ -12,7 +12,6 @@ namespace System.Net.Http
     internal static partial class HttpHandlerDefaults
     {
         public const int DefaultMaxAutomaticRedirections = 50;
-        public const int DefaultMaxConnectionsPerServer = int.MaxValue;
         public const int DefaultMaxResponseDrainSize = 1024 * 1024;
         public static readonly TimeSpan DefaultResponseDrainTimeout = TimeSpan.FromSeconds(2);
         public const int DefaultMaxResponseHeadersLength = 64; // Units in K (1024) bytes.

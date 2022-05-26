@@ -12,10 +12,11 @@
   <Import Project="..\..\Directory.Build.targets" />
 
   <PropertyGroup>
+    <UseDefaultTestHost Condition="'$(UseDefaultTestHost)' == ''">false</UseDefaultTestHost>
     <NetCoreAppCurrentBuildSettings>$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)</NetCoreAppCurrentBuildSettings>
     <NativeBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'native', '$(NetCoreAppCurrentBuildSettings)'))</NativeBinDir>
-    <NetCoreAppCurrentTestHostPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'testhost', '$(NetCoreAppCurrentBuildSettings)'))</NetCoreAppCurrentTestHostPath>
-    <NetCoreAppCurrentTestHostSharedFrameworkPath>$([MSBuild]::NormalizeDirectory('$(NetCoreAppCurrentTestHostPath)', 'shared', '$(MicrosoftNetCoreAppFrameworkName)', '$(ProductVersion)'))</NetCoreAppCurrentTestHostSharedFrameworkPath>
+    <NetCoreAppCurrentTestHostPath Condition="'$(UseDefaultTestHost)' != 'true'">$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'testhost', '$(NetCoreAppCurrentBuildSettings)'))</NetCoreAppCurrentTestHostPath>
+    <NetCoreAppCurrentTestHostSharedFrameworkPath Condition="'$(UseDefaultTestHost)' != 'true'">$([MSBuild]::NormalizeDirectory('$(NetCoreAppCurrentTestHostPath)', 'shared', '$(MicrosoftNetCoreAppFrameworkName)', '$(ProductVersion)'))</NetCoreAppCurrentTestHostSharedFrameworkPath>
     <NETStandard21RefPath>$([MSBuild]::NormalizeDirectory('$(NuGetPackageRoot)', 'netstandard.library.ref', '$(NETStandardLibraryRefVersion)', 'ref', 'netstandard2.1'))</NETStandard21RefPath>
 
     <NoWarn Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">$(NoWarn);nullable</NoWarn>

@@ -1419,7 +1419,7 @@ mono_method_get_param_names (MonoMethod *method, const char **names)
 		method = ((MonoMethodInflated *) method)->declaring;
 
 	signature = mono_method_signature_internal (method);
-	/*FIXME this check is somewhat redundant since the caller usally will have to get the signature to figure out the
+	/*FIXME this check is somewhat redundant since the caller usually will have to get the signature to figure out the
 	  number of arguments and allocate a properly sized array. */
 	if (signature == NULL)
 		return;

@@ -2646,7 +2646,7 @@ void CordbModule::SetLoadEventContinueMarker()
 //   The comparison is done via continue counters. The counter of the load
 //   event is cached via code:CordbModule::SetLoadEventContinueMarker.
 //
-//   This state is currently stored on the RS. Alternatively, it could likely be retreived from the LS state as
+//   This state is currently stored on the RS. Alternatively, it could likely be retrieved from the LS state as
 //   well. One disadvantage of the current model is that if we detach during the load-module callback and
 //   then reattach, the RS state is flushed and we lose the fact that we can toggle the jit flags.
 HRESULT CordbModule::EnsureModuleIsInLoadCallback()
@@ -3529,7 +3529,7 @@ HRESULT CordbReJitILCode::Init(DacSharedReJitInfo* pSharedReJitInfo)
             m_pClauses[i].TryLength = pClauses[i].TryLength;
             m_pClauses[i].HandlerOffset = pClauses[i].HandlerOffset;
             m_pClauses[i].HandlerLength = pClauses[i].HandlerLength;
-            // these two fields are a union in the image, but are seperate in the struct ICorDebug returns
+            // these two fields are a union in the image, but are separate in the struct ICorDebug returns
             m_pClauses[i].ClassToken = isFilter ? 0 : pClauses[i].ClassToken;
             m_pClauses[i].FilterOffset = isFilter ? pClauses[i].FilterOffset : 0;
         }
@@ -3564,7 +3564,7 @@ HRESULT CordbReJitILCode::Init(DacSharedReJitInfo* pSharedReJitInfo)
             m_pClauses[i].TryLength = pClauses[i].TryLength;
             m_pClauses[i].HandlerOffset = pClauses[i].HandlerOffset;
             m_pClauses[i].HandlerLength = pClauses[i].HandlerLength;
-            // these two fields are a union in the image, but are seperate in the struct ICorDebug returns
+            // these two fields are a union in the image, but are separate in the struct ICorDebug returns
             m_pClauses[i].ClassToken = isFilter ? 0 : pClauses[i].ClassToken;
             m_pClauses[i].FilterOffset = isFilter ? pClauses[i].FilterOffset : 0;
         }

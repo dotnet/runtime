@@ -288,6 +288,8 @@ namespace System.Net.Quic.Tests
     }
 
     [ConditionalClass(typeof(QuicTestBase<MsQuicProviderFactory>), nameof(QuicTestBase<MsQuicProviderFactory>.IsSupported))]
+    [Collection(nameof(DisableParallelization))]
+
     public sealed class QuicConnectionTests_MsQuicProvider : QuicConnectionTests<MsQuicProviderFactory>
     {
         public QuicConnectionTests_MsQuicProvider(ITestOutputHelper output) : base(output) { }

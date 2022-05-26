@@ -936,7 +936,7 @@ mono_decompose_long_opts (MonoCompile *cfg)
 				if (tree->inst_c1 == 32) {
 
 					/* The original code had this comment: */
-					/* special case that gives a nice speedup and happens to workaorund a ppc jit but (for the release)
+					/* special case that gives a nice speedup and happens to workaround a ppc jit but (for the release)
 					 * later apply the speedup to the left shift as well
 					 * See BUG# 57957.
 					 */

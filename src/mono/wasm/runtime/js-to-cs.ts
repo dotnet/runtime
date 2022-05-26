@@ -16,7 +16,7 @@ import { js_string_to_mono_string_root, js_string_to_mono_string_interned_root }
 import { isThenable } from "./cancelable-promise";
 import { has_backing_array_buffer } from "./buffers";
 import { JSHandle, MonoArray, MonoMethod, MonoObject, MonoObjectNull, wasm_type_symbol, MonoClass, MonoObjectRef, is_nullish } from "./types";
-import { setI32, setU32, setF64 } from "./memory";
+import { setF64, setI32_unchecked, setU32_unchecked, setB32 } from "./memory";
 import { Int32Ptr, TypedArray } from "./types/emscripten";
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
@@ -67,6 +67,9 @@ export function _js_to_mono_obj_unsafe(should_add_in_flight: boolean, js_obj: an
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function js_to_mono_obj_root(js_obj: any, result: WasmRoot<MonoObject>, should_add_in_flight: boolean): void {
+    if (is_nullish(result))
+        throw new Error("Expected (value, WasmRoot, boolean)");
+
     switch (true) {
         case js_obj === null:
         case typeof js_obj === "undefined":
@@ -75,10 +78,10 @@ export function js_to_mono_obj_root(js_obj: any, result: WasmRoot<MonoObject>, s
         case typeof js_obj === "number": {
             let box_class : MonoClass;
             if ((js_obj | 0) === js_obj) {
-                setI32(runtimeHelpers._box_buffer, js_obj);
+                setI32_unchecked(runtimeHelpers._box_buffer, js_obj);
                 box_class = runtimeHelpers._class_int32;
             } else if ((js_obj >>> 0) === js_obj) {
-                setU32(runtimeHelpers._box_buffer, js_obj);
+                setU32_unchecked(runtimeHelpers._box_buffer, js_obj);
                 box_class = runtimeHelpers._class_uint32;
             } else {
                 setF64(runtimeHelpers._box_buffer, js_obj);
@@ -95,7 +98,7 @@ export function js_to_mono_obj_root(js_obj: any, result: WasmRoot<MonoObject>, s
             js_string_to_mono_string_interned_root(js_obj, <any>result);
             return;
         case typeof js_obj === "boolean":
-            setI32(runtimeHelpers._box_buffer, js_obj ? 1 : 0);
+            setB32(runtimeHelpers._box_buffer, js_obj);
             cwraps.mono_wasm_box_primitive_ref(runtimeHelpers._class_boolean, runtimeHelpers._box_buffer, 4, result.address);
             return;
         case isThenable(js_obj) === true: {

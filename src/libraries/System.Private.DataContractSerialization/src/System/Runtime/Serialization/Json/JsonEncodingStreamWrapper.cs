@@ -419,16 +419,9 @@ namespace System.Runtime.Serialization.Json
             Debug.Assert(_bytes != null);
 
             count -= _byteCount;
-            while (count > 0)
+            if (count > 0)
             {
-                int read = _stream.Read(_bytes, _byteOffset + _byteCount, count);
-                if (read == 0)
-                {
-                    break;
-                }
-
-                _byteCount += read;
-                count -= read;
+                _byteCount += _stream.ReadAtLeast(_bytes.AsSpan(_byteOffset + _byteCount, count), count, throwOnEndOfStream: false);
             }
         }
 

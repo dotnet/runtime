@@ -8067,7 +8067,7 @@ MethodTable::ResolveVirtualStaticMethod(MethodTable* pInterfaceType, MethodDesc*
             }
         }
 
-        // Default implementation logic, which only kicks in for default implementations when lookin up on an exact interface target
+        // Default implementation logic, which only kicks in for default implementations when looking up on an exact interface target
         if (!pInterfaceMD->IsAbstract() && !(this == g_pCanonMethodTableClass) && !IsSharedByGenericInstantiations())
         {
             return pInterfaceMD->FindOrCreateAssociatedMethodDesc(pInterfaceMD, pInterfaceType, FALSE, pInterfaceMD->GetMethodInstantiation(), FALSE);

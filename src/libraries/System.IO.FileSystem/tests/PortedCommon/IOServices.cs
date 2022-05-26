@@ -109,7 +109,7 @@ internal class IOServices
 
         while (path.Length < characterCount)
         {
-            // Add directory seperator after each dir but not at the end of the path
+            // Add directory separator after each dir but not at the end of the path
             path.Append(Path.DirectorySeparatorChar);
 
             // Continue adding unique path segments until the character count is hit

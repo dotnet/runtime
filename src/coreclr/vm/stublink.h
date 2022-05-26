@@ -887,13 +887,13 @@ class Stub
 //
 //
 //   UINT RRT.GetSizeOfData(refsize, variationCode)
-//     Returns the total size of the seperate data area (if any) that the
+//     Returns the total size of the separate data area (if any) that the
 //     instruction needs in bytes for a given refsize. For this example
 //     on the SH3
 //          if (refsize==k32) return 4; else return 0;
 //
 //   The default implem of this returns 0, so CPUs that don't have need
-//   for a seperate constant area don't have to worry about it.
+//   for a separate constant area don't have to worry about it.
 //
 //
 //   BOOL CanReach(refsize, variationcode, fExternal, offset)

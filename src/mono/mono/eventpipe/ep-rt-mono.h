@@ -2187,6 +2187,29 @@ ep_rt_volatile_store_ptr_without_barrier (
 bool
 ep_rt_mono_write_event_ee_startup_start (void);
 
+typedef struct _BulkTypeEventLogger BulkTypeEventLogger;
+
+void
+ep_rt_mono_fire_bulk_type_event (BulkTypeEventLogger *p_type_logger);
+
+int
+ep_rt_mono_log_single_type (
+	BulkTypeEventLogger *p_type_logger,
+	MonoType *mono_type);
+
+void
+ep_rt_mono_log_type_and_parameters (
+	BulkTypeEventLogger *p_type_logger,
+	MonoType *mono_type);
+
+void
+ep_rt_mono_log_type_and_parameters_if_necessary (
+	BulkTypeEventLogger *p_type_logger,
+	MonoType *mono_type);
+
+void
+ep_rt_mono_send_method_details_event (MonoMethod *method);
+
 bool
 ep_rt_mono_write_event_jit_start (MonoMethod *method);
 
