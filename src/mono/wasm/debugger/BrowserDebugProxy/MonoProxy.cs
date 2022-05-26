@@ -252,7 +252,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                                 return true;
                             }
                         }
-                        Console.WriteLine($"proxying Debugger.scriptParsed ({sessionId.sessionId}) {url} {args}");
+                        logger.LogTrace($"proxying Debugger.scriptParsed ({sessionId.sessionId}) {url} {args}");
                         break;
                     }
 
