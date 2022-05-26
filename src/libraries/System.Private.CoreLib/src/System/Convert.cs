@@ -127,7 +127,13 @@ namespace System
                                                         't', 'u', 'v', 'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7',
                                                         '8', '9', '+', '/', '=' };
 
-        private const int base64LineBreakPosition = 76;
+        // Initialized on demand. Takes 16 KiB.
+        private static int[]? base64PairsTable;
+
+        private static readonly int crlf = BitConverter.IsLittleEndian ? 0x000a000d : 0x000d000a;   // "\r\n"
+        private const int doublePad = 0x003d003d;                                                   // "=="
+
+        private const int base64LineBreakPosition = 76;                                             // must be multiple of 4
 
 #if DEBUG
         static Convert()
@@ -2356,7 +2362,7 @@ namespace System
                 fixed (byte* bytesPtr = &MemoryMarshal.GetReference(bytes))
                 fixed (char* charsPtr = result)
                 {
-                    int charsWritten = ConvertToBase64Array(charsPtr, bytesPtr, 0, bytes.Length, insertLineBreaks);
+                    int charsWritten = ConvertToBase64Array(charsPtr, bytesPtr, bytes.Length, insertLineBreaks);
                     Debug.Assert(result.Length == charsWritten, $"Expected {result.Length} == {charsWritten}");
                 }
             }
@@ -2414,7 +2420,7 @@ namespace System
             {
                 fixed (byte* inData = &inArray[0])
                 {
-                    retVal = ConvertToBase64Array(outChars, inData, offsetIn, length, insertLineBreaks);
+                    retVal = ConvertToBase64Array(outChars, inData + offsetIn, length, insertLineBreaks);
                 }
             }
 
@@ -2446,71 +2452,91 @@ namespace System
             fixed (char* outChars = &MemoryMarshal.GetReference(chars))
             fixed (byte* inData = &MemoryMarshal.GetReference(bytes))
             {
-                charsWritten = ConvertToBase64Array(outChars, inData, 0, bytes.Length, insertLineBreaks);
+                charsWritten = ConvertToBase64Array(outChars, inData, bytes.Length, insertLineBreaks);
                 return true;
             }
         }
 
-        private static unsafe int ConvertToBase64Array(char* outChars, byte* inData, int offset, int length, bool insertLineBreaks)
+        private static int[] CreateBas64PairsTable()
         {
-            int lengthmod3 = length % 3;
-            int calcLength = offset + (length - lengthmod3);
-            int j = 0;
-            int charcount = 0;
-            // Convert three bytes at a time to base64 notation.  This will consume 4 chars.
-            int i;
-
-            // get a pointer to the base64Table to avoid unnecessary range checking
-            fixed (char* base64 = &base64Table[0])
+            var table = new int[64 * 64];
+            for (int i = table.Length; i-- > 0;)
             {
-                for (i = offset; i < calcLength; i += 3)
+                var firstChar = base64Table[i >> 6];
+                var secondChar = base64Table[i & 0x3f];
+                table[i] = BitConverter.IsLittleEndian
+                        ? firstChar | (secondChar << 16)
+                        : secondChar | (firstChar << 16);
+            }
+            return table;
+        }
+
+        private static unsafe int ConvertToBase64Array(char* outChars, byte* inData, int length, bool insertLineBreaks)
+        {
+            int* outPairs = (int*)outChars;
+            int lengthmod3 = length % 3;
+            int calcLength = length - lengthmod3;
+            byte a, b, c;
+
+            base64PairsTable ??= CreateBas64PairsTable();
+
+            // get a pointer to the base64PairsTable to avoid unnecessary range checking
+            fixed (int* base64Pairs = &base64PairsTable[0])
+            {
+                while (calcLength > 0)
                 {
-                    if (insertLineBreaks)
+                    var rounds = insertLineBreaks
+                        ? Math.Min(calcLength, base64LineBreakPosition / 4 * 3)
+                        : calcLength;
+
+                    calcLength -= rounds;
+                    // Convert three bytes at a time to base64 notation.  This will consume 4 chars.
+                    for (; rounds > 0; rounds -= 3)
                     {
-                        if (charcount == base64LineBreakPosition)
-                        {
-                            outChars[j++] = '\r';
-                            outChars[j++] = '\n';
-                            charcount = 0;
-                        }
-                        charcount += 4;
+                        a = *inData++;
+                        b = *inData++;
+                        c = *inData++;
+                        *outPairs++ = base64Pairs[(a << 4) | (b >> 4)];
+                        *outPairs++ = base64Pairs[((b << 8) | c) & 0xfff];
                     }
-                    outChars[j] = base64[(inData[i] & 0xfc) >> 2];
-                    outChars[j + 1] = base64[((inData[i] & 0x03) << 4) | ((inData[i + 1] & 0xf0) >> 4)];
-                    outChars[j + 2] = base64[((inData[i + 1] & 0x0f) << 2) | ((inData[i + 2] & 0xc0) >> 6)];
-                    outChars[j + 3] = base64[inData[i + 2] & 0x3f];
-                    j += 4;
+
+                    if (insertLineBreaks
+                        && calcLength > 0
+                        && ((char*)outPairs - outChars) % (base64LineBreakPosition + 2) == base64LineBreakPosition)
+                    {
+                        *outPairs++ = crlf;
+                    }
                 }
-
-                // Where we left off before
-                i = calcLength;
-
-                if (insertLineBreaks && (lengthmod3 != 0) && (charcount == base64LineBreakPosition))
+                if (insertLineBreaks
+                    && lengthmod3 != 0
+                    && ((char*)outPairs - outChars) % (base64LineBreakPosition + 2) == base64LineBreakPosition)
                 {
-                    outChars[j++] = '\r';
-                    outChars[j++] = '\n';
+                    *outPairs++ = crlf;
                 }
 
+                char* outPtr;
                 switch (lengthmod3)
                 {
                     case 2: // One character padding needed
-                        outChars[j] = base64[(inData[i] & 0xfc) >> 2];
-                        outChars[j + 1] = base64[((inData[i] & 0x03) << 4) | ((inData[i + 1] & 0xf0) >> 4)];
-                        outChars[j + 2] = base64[(inData[i + 1] & 0x0f) << 2];
-                        outChars[j + 3] = base64[64]; // Pad
-                        j += 4;
+                        a = *inData++;
+                        b = *inData++;
+                        *outPairs++ = base64Pairs[(a << 4) | (b >> 4)];
+                        outPtr = (char*)outPairs;
+                        *outPtr++ = base64Table[(b & 0x0f) << 2];
+                        *outPtr++ = '='; // Pad
                         break;
                     case 1: // Two character padding needed
-                        outChars[j] = base64[(inData[i] & 0xfc) >> 2];
-                        outChars[j + 1] = base64[(inData[i] & 0x03) << 4];
-                        outChars[j + 2] = base64[64]; // Pad
-                        outChars[j + 3] = base64[64]; // Pad
-                        j += 4;
+                        a = *inData++;
+                        *outPairs++ = base64Pairs[a << 4];
+                        *outPairs++ = doublePad;
+                        outPtr = (char*)outPairs;
+                        break;
+                    default:
+                        outPtr = (char*)outPairs;
                         break;
                 }
+                return (int)(outPtr - outChars);
             }
-
-            return j;
         }
 
         private static int ToBase64_CalculateAndValidateOutputLength(int inputLength, bool insertLineBreaks)
