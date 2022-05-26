@@ -50,7 +50,6 @@
 #include "mono/metadata/w32handle.h"
 #include "mono/metadata/callspec.h"
 #include "mono/metadata/custom-attrs-internals.h"
-#include "mono/metadata/custom-attrs-types.h"
 #include <mono/utils/w32subset.h>
 
 #include <mono/metadata/components.h>

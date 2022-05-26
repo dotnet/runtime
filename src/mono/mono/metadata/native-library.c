@@ -12,7 +12,6 @@
 #include "mono/utils/mono-path.h"
 #include "mono/metadata/native-library.h"
 #include "mono/metadata/custom-attrs-internals.h"
-#include "mono/metadata/custom-attrs-types.h"
 
 static int pinvoke_search_directories_count;
 static char **pinvoke_search_directories;

@@ -8,7 +8,6 @@
 #include "metadata/marshal-shared.h"
 #include "metadata/method-builder-ilgen.h"
 #include "metadata/custom-attrs-internals.h"
-#include "metadata/custom-attrs-types.h"
 #include "metadata/class-init.h"
 #include "mono/metadata/class-internals.h"
 #include "metadata/reflection-internals.h"

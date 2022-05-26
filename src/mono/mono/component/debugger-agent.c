@@ -91,7 +91,6 @@
 #include "debugger-engine.h"
 #include <mono/metadata/debug-mono-ppdb.h>
 #include <mono/metadata/custom-attrs-internals.h>
-#include <mono/metadata/custom-attrs-types.h>
 #include <mono/metadata/components.h>
 #include <mono/mini/debugger-agent-external.h>
 

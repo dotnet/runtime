@@ -56,7 +56,6 @@ MONO_PRAGMA_WARNING_POP()
 #include "mono/metadata/handle.h"
 #include "mono/metadata/object-internals.h"
 #include "mono/metadata/custom-attrs-internals.h"
-#include "mono/metadata/custom-attrs-types.h"
 #include "mono/metadata/abi-details.h"
 #include "mono/metadata/custom-attrs-internals.h"
 #include "mono/metadata/loader-internals.h"

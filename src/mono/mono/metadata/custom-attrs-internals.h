@@ -9,6 +9,20 @@
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/reflection.h>
 
+typedef struct _MonoCustomAttrValueArray MonoCustomAttrValueArray;
+
+typedef struct _MonoCustomAttrValue {
+	union {
+		gpointer primitive; /* int/enum/MonoType/string */
+		MonoCustomAttrValueArray *array;
+	} value;
+} MonoCustomAttrValue;
+
+struct _MonoCustomAttrValueArray {
+	int len;
+	MonoCustomAttrValue values[MONO_ZERO_LEN_ARRAY];
+};
+
 MonoCustomAttrInfo*
 mono_custom_attrs_from_builders (MonoImage *alloc_img, MonoImage *image, MonoArray *cattrs);
 

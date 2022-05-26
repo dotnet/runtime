@@ -51,7 +51,6 @@
 #include <mono/metadata/mono-endian.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/custom-attrs-internals.h>
-#include <mono/metadata/custom-attrs-types.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-time.h>
