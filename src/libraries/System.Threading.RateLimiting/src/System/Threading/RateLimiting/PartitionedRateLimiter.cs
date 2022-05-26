@@ -46,6 +46,7 @@ namespace System.Threading.RateLimiting
         // And we cache the list to amortize the allocation cost to as close to 0 as we can get
         private List<KeyValuePair<TKey, Lazy<RateLimiter>>> _cachedLimiters = new();
         private bool _cacheInvalid;
+        private List<RateLimiter> _limitersToDispose = new();
         private TimerAwaitable _timer;
         private Task _timerTask;
 
@@ -226,17 +227,10 @@ namespace System.Threading.RateLimiting
                 if (_cacheInvalid)
                 {
                     _cachedLimiters.Clear();
-                    // let's try to lower the memory held onto by the list
-                    // for example if there were 1000 items at one point, but only 10 now we don't need to keep a 1000 length buffer
-                    if (_cachedLimiters.Capacity > _limiters.Count * 2)
-                    {
-                        _cachedLimiters.Capacity = _limiters.Count;
-                    }
                     _cachedLimiters.AddRange(_limiters);
                 }
             }
 
-            List<RateLimiter>? limitersToDispose = null;
             List<Exception>? aggregateExceptions = null;
 
             // cachedLimiters is safe to use outside the lock because it is only updated by the Timer
@@ -261,8 +255,7 @@ namespace System.Threading.RateLimiting
                             _limiters.Remove(rateLimiter.Key);
 
                             // We don't want to dispose inside the lock so we need to defer it
-                            limitersToDispose ??= new List<RateLimiter>();
-                            limitersToDispose.Add(rateLimiter.Value.Value);
+                            _limitersToDispose.Add(rateLimiter.Value.Value);
                         }
                     }
                 }
@@ -280,21 +273,19 @@ namespace System.Threading.RateLimiting
                 }
             }
 
-            if (limitersToDispose is not null)
+            foreach (RateLimiter limiter in _limitersToDispose)
             {
-                foreach (RateLimiter limiter in limitersToDispose)
+                try
                 {
-                    try
-                    {
-                        await limiter.DisposeAsync().ConfigureAwait(false);
-                    }
-                    catch (Exception ex)
-                    {
-                        aggregateExceptions ??= new List<Exception>();
-                        aggregateExceptions.Add(ex);
-                    }
+                    await limiter.DisposeAsync().ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    aggregateExceptions ??= new List<Exception>();
+                    aggregateExceptions.Add(ex);
                 }
             }
+            _limitersToDispose.Clear();
 
             if (aggregateExceptions is not null)
             {
