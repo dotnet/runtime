@@ -846,7 +846,7 @@ public:
         :EString<TEncoding>(m_inline, SBUFFER_PADDED_SIZE(MEMSIZE), /* isAllocated */ false)
     {
         SBuffer::TweakSize(sizeof(char_t));
-        GetRawBuffer()[0] = (char_t)0;
+        this->GetRawBuffer()[0] = (char_t)0;
     }
 
     InlineEString(const char_t c)
