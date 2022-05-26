@@ -12305,24 +12305,32 @@ void gc_heap::distribute_free_regions()
         for (int i = 0; i < n_heaps; i++)
         {
             gc_heap* hp = g_heaps[i];
+#else //MULTIPLE_HEAPS
+        {
+            gc_heap* hp = pGenGCHeap;
+#endif //MULTIPLE_HEAPS
+            for (int kind = basic_free_region; kind < count_free_region_kinds; kind++)
+            {
+                global_regions_to_decommit[kind].transfer_regions (&hp->free_regions[kind]);
+            }
+        }
+        while (decommit_step())
+        {
+        }
+#ifdef MULTIPLE_HEAPS
+        for (int i = 0; i < n_heaps; i++)
+        {
+            gc_heap* hp = g_heaps[i];
             int hn = i;
 #else //MULTIPLE_HEAPS
         {
             gc_heap* hp = pGenGCHeap;
             int hn  = 0;
 #endif //MULTIPLE_HEAPS
-            for (int kind = basic_free_region; kind < count_free_region_kinds; kind++)
-            {
-                global_regions_to_decommit[kind].transfer_regions (&hp->free_regions[kind]);
-            }
-            while (hp->decommit_step())
-            {
-            }
             for (int i = 0; i < total_generation_count; i++)
             {
-                generation* generation = hp->generation_of(i);
-                heap_segment* region = generation_start_segment (generation);
-                region = heap_segment_rw (region);
+                generation* generation = hp->generation_of (i);
+                heap_segment* region = heap_segment_rw (generation_start_segment (generation));
                 while (region != nullptr)
                 {
                     uint8_t* aligned_allocated = align_on_page (heap_segment_allocated (region));
@@ -25083,7 +25091,6 @@ size_t gc_heap::committed_size()
 
     total_committed += committed_in_free;
 #endif //USE_REGIONS
-
     return total_committed;
 }
 
@@ -40259,11 +40266,18 @@ BOOL gc_heap::decide_on_compacting (int condemned_gen_number,
         get_gc_data_per_heap()->set_mechanism (gc_heap_compact, compact_last_gc);
     }
 
-    if (settings.reason == reason_induced_compacting || settings.reason == reason_induced_aggressive)
+    if (settings.reason == reason_induced_compacting)
     {
         dprintf (2, ("induced compacting GC"));
         should_compact = TRUE;
         get_gc_data_per_heap()->set_mechanism (gc_heap_compact, compact_induced_compacting);
+    }
+
+    if (settings.reason == reason_induced_aggressive)
+    {
+        dprintf (2, ("aggressive compacting GC"));
+        should_compact = TRUE;
+        get_gc_data_per_heap()->set_mechanism (gc_heap_compact, compact_aggressive_compacting);
     }
 
     if (settings.reason == reason_pm_full_gc)

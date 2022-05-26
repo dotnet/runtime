@@ -214,9 +214,18 @@ namespace System
             else if (mode == GCCollectionMode.Aggressive)
             {
                 iInternalModes |= (int)InternalGCCollectionMode.Aggressive;
-                // TODO, andrewau, someone intentionally set these flags to false should cause an exception?
-                blocking = true;
-                compacting = true;
+                if (generation != MaxGeneration)
+                {
+                    throw new ArgumentException(SR.Argument_AggressiveGCRequiresMaxGeneration, nameof(generation));
+                }
+                if (!blocking)
+                {
+                    throw new ArgumentException(SR.Argument_AggressiveGCRequiresBlocking, nameof(blocking));
+                }
+                if (!compacting)
+                {
+                    throw new ArgumentException(SR.Argument_AggressiveGCRequiresCompacting, nameof(compacting));
+                }
             }
 
             if (compacting)

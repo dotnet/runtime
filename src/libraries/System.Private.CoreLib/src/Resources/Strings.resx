@@ -3529,6 +3529,15 @@
   <data name="Arg_NullArgumentNullRef" xml:space="preserve">
     <value>The method was called with a null array argument.</value>
   </data>
+  <data name="Argument_AggressiveGCRequiresMaxGeneration" xml:space="preserve">
+    <value>AggressiveGC requires setting the generation parameter to MaxGeneration</value>
+  </data>
+  <data name="Argument_AggressiveGCRequiresBlocking" xml:space="preserve">
+    <value>AggressiveGC requires setting the blocking parameter to true.</value>
+  </data>
+  <data name="Argument_AggressiveGCRequiresCompacting" xml:space="preserve">
+    <value>AggressiveGC requires setting the compacting parameter to true.</value>
+  </data>
   <data name="Argument_CannotPrepareAbstract" xml:space="preserve">
     <value>Abstract methods cannot be prepared.</value>
   </data>
