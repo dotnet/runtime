@@ -218,7 +218,7 @@ namespace System.Security.Cryptography.Tests
             resultArray.AsSpan().Clear();
             Assert.True(PemEncoding.TryWrite(label, data, resultArray, out int written), "PemEncoding.TryWrite");
             Assert.Equal(expected.Length, written);
-            Assert.Equal(expected, new string(buffer));
+            Assert.Equal(expected, new string(resultArray));
         }
     }
 }
