@@ -339,7 +339,7 @@ namespace Microsoft.Interop
             {
                 return new ArrayMarshaller(
                     new CustomNativeTypeMarshallingGenerator(marshallingStrategy, enableByValueContentsMarshalling: true),
-                    collectionInfo.ElementType.Syntax,
+                    elementInfo,
                     enableArrayPinning);
             }
 
