@@ -99,7 +99,6 @@ namespace System.Numerics
         public static explicit operator int (System.Numerics.BigInteger value) { throw null; }
         public static explicit operator long (System.Numerics.BigInteger value) { throw null; }
         public static explicit operator System.IntPtr (System.Numerics.BigInteger value) { throw null; }
-        public static explicit operator System.Runtime.InteropServices.NFloat (System.Numerics.BigInteger value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static explicit operator sbyte (System.Numerics.BigInteger value) { throw null; }
         public static explicit operator float (System.Numerics.BigInteger value) { throw null; }
@@ -114,7 +113,6 @@ namespace System.Numerics
         [System.CLSCompliantAttribute(false)]
         public static explicit operator System.UIntPtr (System.Numerics.BigInteger value) { throw null; }
         public static explicit operator System.Numerics.BigInteger (System.Numerics.Complex value) { throw null; }
-        public static explicit operator System.Numerics.BigInteger (System.Runtime.InteropServices.NFloat value) { throw null; }
         public static explicit operator System.Numerics.BigInteger (float value) { throw null; }
         public static bool operator >(long left, System.Numerics.BigInteger right) { throw null; }
         public static bool operator >(System.Numerics.BigInteger left, long right) { throw null; }
@@ -325,7 +323,6 @@ namespace System.Numerics
         public static implicit operator System.Numerics.Complex (int value) { throw null; }
         public static implicit operator System.Numerics.Complex (long value) { throw null; }
         public static implicit operator System.Numerics.Complex (System.IntPtr value) { throw null; }
-        public static implicit operator System.Numerics.Complex (System.Runtime.InteropServices.NFloat value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static implicit operator System.Numerics.Complex (sbyte value) { throw null; }
         public static implicit operator System.Numerics.Complex (float value) { throw null; }

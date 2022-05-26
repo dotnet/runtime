@@ -582,8 +582,8 @@ namespace System
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
             // `ConvertTo` handle the opposite sign. However, since there is an uneven split
-            // between signed and unsigned types, the the one that handles unsigned will also
-            // handle `Decimal` and `NFloat`.
+            // between signed and unsigned types, the one that handles unsigned will also
+            // handle `Decimal`.
             //
             // That is, `ConvertFrom` for `uint` will handle the other unsigned types and
             // `ConvertTo` will handle the signed types
@@ -603,12 +603,6 @@ namespace System
             else if (typeof(TOther) == typeof(decimal))
             {
                 decimal actualValue = (decimal)(object)value;
-                result = checked((uint)actualValue);
-                return true;
-            }
-            else if (typeof(TOther) == typeof(NFloat))
-            {
-                NFloat actualValue = (NFloat)(object)value;
                 result = checked((uint)actualValue);
                 return true;
             }
@@ -650,8 +644,8 @@ namespace System
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
             // `ConvertTo` handle the opposite sign. However, since there is an uneven split
-            // between signed and unsigned types, the the one that handles unsigned will also
-            // handle `Decimal` and `NFloat`.
+            // between signed and unsigned types, the one that handles unsigned will also
+            // handle `Decimal`.
             //
             // That is, `ConvertFrom` for `uint` will handle the other unsigned types and
             // `ConvertTo` will handle the signed types
@@ -671,13 +665,6 @@ namespace System
             else if (typeof(TOther) == typeof(decimal))
             {
                 decimal actualValue = (decimal)(object)value;
-                result = (actualValue >= MaxValue) ? MaxValue :
-                         (actualValue <= MinValue) ? MinValue : (uint)actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(NFloat))
-            {
-                NFloat actualValue = (NFloat)(object)value;
                 result = (actualValue >= MaxValue) ? MaxValue :
                          (actualValue <= MinValue) ? MinValue : (uint)actualValue;
                 return true;
@@ -720,8 +707,8 @@ namespace System
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
             // `ConvertTo` handle the opposite sign. However, since there is an uneven split
-            // between signed and unsigned types, the the one that handles unsigned will also
-            // handle `Decimal` and `NFloat`.
+            // between signed and unsigned types, the one that handles unsigned will also
+            // handle `Decimal`.
             //
             // That is, `ConvertFrom` for `uint` will handle the other unsigned types and
             // `ConvertTo` will handle the signed types
@@ -741,13 +728,6 @@ namespace System
             else if (typeof(TOther) == typeof(decimal))
             {
                 decimal actualValue = (decimal)(object)value;
-                result = (actualValue >= MaxValue) ? MaxValue :
-                         (actualValue <= MinValue) ? MinValue : (uint)actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(NFloat))
-            {
-                NFloat actualValue = (NFloat)(object)value;
                 result = (actualValue >= MaxValue) ? MaxValue :
                          (actualValue <= MinValue) ? MinValue : (uint)actualValue;
                 return true;
@@ -790,8 +770,8 @@ namespace System
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
             // `ConvertTo` handle the opposite sign. However, since there is an uneven split
-            // between signed and unsigned types, the the one that handles unsigned will also
-            // handle `Decimal` and `NFloat`.
+            // between signed and unsigned types, the one that handles unsigned will also
+            // handle `Decimal`.
             //
             // That is, `ConvertFrom` for `uint` will handle the other unsigned types and
             // `ConvertTo` will handle the signed types
@@ -864,8 +844,8 @@ namespace System
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
             // `ConvertTo` handle the opposite sign. However, since there is an uneven split
-            // between signed and unsigned types, the the one that handles unsigned will also
-            // handle `Decimal` and `NFloat`.
+            // between signed and unsigned types, the one that handles unsigned will also
+            // handle `Decimal`.
             //
             // That is, `ConvertFrom` for `uint` will handle the other unsigned types and
             // `ConvertTo` will handle the signed types
@@ -944,8 +924,8 @@ namespace System
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
             // `ConvertTo` handle the opposite sign. However, since there is an uneven split
-            // between signed and unsigned types, the the one that handles unsigned will also
-            // handle `Decimal` and `NFloat`.
+            // between signed and unsigned types, the one that handles unsigned will also
+            // handle `Decimal`.
             //
             // That is, `ConvertFrom` for `uint` will handle the other unsigned types and
             // `ConvertTo` will handle the signed types

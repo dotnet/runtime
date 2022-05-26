@@ -1474,8 +1474,8 @@ namespace System
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
             // `ConvertTo` handle the opposite sign. However, since there is an uneven split
-            // between signed and unsigned types, the the one that handles unsigned will also
-            // handle `Decimal` and `NFloat`.
+            // between signed and unsigned types, the one that handles unsigned will also
+            // handle `Decimal`.
             //
             // That is, `ConvertFrom` for `decimal` will handle the other unsigned types and
             // `ConvertTo` will handle the signed types
@@ -1490,12 +1490,6 @@ namespace System
             {
                 char actualValue = (char)(object)value;
                 result = actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(NFloat))
-            {
-                NFloat actualValue = (NFloat)(object)value;
-                result = checked((decimal)actualValue);
                 return true;
             }
             else if (typeof(TOther) == typeof(ushort))
@@ -1539,11 +1533,24 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool INumberBase<decimal>.TryConvertFromSaturating<TOther>(TOther value, out decimal result)
         {
+            return TryConvertFrom<TOther>(value, out result);
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromTruncating{TOther}(TOther, out TSelf)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<decimal>.TryConvertFromTruncating<TOther>(TOther value, out decimal result)
+        {
+            return TryConvertFrom<TOther>(value, out result);
+        }
+
+        private static bool TryConvertFrom<TOther>(TOther value, out decimal result)
+            where TOther : INumberBase<TOther>
+        {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
             // `ConvertTo` handle the opposite sign. However, since there is an uneven split
-            // between signed and unsigned types, the the one that handles unsigned will also
-            // handle `Decimal` and `NFloat`.
+            // between signed and unsigned types, the one that handles unsigned will also
+            // handle `Decimal`.
             //
             // That is, `ConvertFrom` for `decimal` will handle the other unsigned types and
             // `ConvertTo` will handle the signed types
@@ -1558,14 +1565,6 @@ namespace System
             {
                 char actualValue = (char)(object)value;
                 result = actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(NFloat))
-            {
-                NFloat actualValue = (NFloat)(object)value;
-                result = (actualValue >= +79228162514264337593543950336.0f) ? MaxValue :
-                         (actualValue <= -79228162514264337593543950336.0f) ? MinValue :
-                         NFloat.IsNaN(actualValue) ? 0.0m : (decimal)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(ushort))
@@ -1605,78 +1604,6 @@ namespace System
             }
         }
 
-        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromTruncating{TOther}(TOther, out TSelf)" />
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<decimal>.TryConvertFromTruncating<TOther>(TOther value, out decimal result)
-        {
-            // In order to reduce overall code duplication and improve the inlinabilty of these
-            // methods for the corelib types we have `ConvertFrom` handle the same sign and
-            // `ConvertTo` handle the opposite sign. However, since there is an uneven split
-            // between signed and unsigned types, the the one that handles unsigned will also
-            // handle `Decimal` and `NFloat`.
-            //
-            // That is, `ConvertFrom` for `decimal` will handle the other unsigned types and
-            // `ConvertTo` will handle the signed types
-
-            if (typeof(TOther) == typeof(byte))
-            {
-                byte actualValue = (byte)(object)value;
-                result = actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(char))
-            {
-                char actualValue = (char)(object)value;
-                result = actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(NFloat))
-            {
-                NFloat actualValue = (NFloat)(object)value;
-                result = (actualValue >= +79228162514264337593543950336.0f) ? MaxValue :
-                         (actualValue <= -79228162514264337593543950336.0f) ? MinValue :
-                         NFloat.IsNaN(actualValue) ? 0.0m : (decimal)actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(ushort))
-            {
-                ushort actualValue = (ushort)(object)value;
-                result = actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(uint))
-            {
-                uint actualValue = (uint)(object)value;
-                result = actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(ulong))
-            {
-                ulong actualValue = (ulong)(object)value;
-                result = actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(UInt128))
-            {
-                UInt128 actualValue = (UInt128)(object)value;
-                actualValue &= new UInt128(0x0000_0000_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF);
-
-                result = (decimal)actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(nuint))
-            {
-                nuint actualValue = (nuint)(object)value;
-                result = actualValue;
-                return true;
-            }
-            else
-            {
-                result = default;
-                return false;
-            }
-        }
-
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToChecked{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool INumberBase<decimal>.TryConvertToChecked<TOther>(decimal value, [NotNullWhen(true)] out TOther result)
@@ -1684,8 +1611,8 @@ namespace System
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
             // `ConvertTo` handle the opposite sign. However, since there is an uneven split
-            // between signed and unsigned types, the the one that handles unsigned will also
-            // handle `Decimal` and `NFloat`.
+            // between signed and unsigned types, the one that handles unsigned will also
+            // handle `Decimal`.
             //
             // That is, `ConvertFrom` for `decimal` will handle the other unsigned types and
             // `ConvertTo` will handle the signed types
@@ -1755,91 +1682,24 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool INumberBase<decimal>.TryConvertToSaturating<TOther>(decimal value, [NotNullWhen(true)] out TOther result)
         {
-            // In order to reduce overall code duplication and improve the inlinabilty of these
-            // methods for the corelib types we have `ConvertFrom` handle the same sign and
-            // `ConvertTo` handle the opposite sign. However, since there is an uneven split
-            // between signed and unsigned types, the the one that handles unsigned will also
-            // handle `Decimal` and `NFloat`.
-            //
-            // That is, `ConvertFrom` for `decimal` will handle the other unsigned types and
-            // `ConvertTo` will handle the signed types
-
-            if (typeof(TOther) == typeof(double))
-            {
-                double actualResult = (double)value;
-                result = (TOther)(object)actualResult;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(Half))
-            {
-                Half actualResult = (value >= +65520.0m) ? Half.PositiveInfinity :
-                                    (value <= -65520.0m) ? Half.NegativeInfinity : (Half)value;
-                result = (TOther)(object)actualResult;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(short))
-            {
-                short actualResult = (value >= short.MaxValue) ? short.MaxValue :
-                                     (value <= short.MinValue) ? short.MinValue : (short)value;
-                result = (TOther)(object)actualResult;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(int))
-            {
-                int actualResult = (value >= int.MaxValue) ? int.MaxValue :
-                                   (value <= int.MinValue) ? int.MinValue : (int)value;
-                result = (TOther)(object)actualResult;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(long))
-            {
-                long actualResult = (value >= long.MaxValue) ? long.MaxValue :
-                                    (value <= long.MinValue) ? long.MinValue : (long)value;
-                result = (TOther)(object)actualResult;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(Int128))
-            {
-                Int128 actualResult = (Int128)value;
-                result = (TOther)(object)actualResult;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(nint))
-            {
-                nint actualResult = (value >= nint.MaxValue) ? nint.MaxValue :
-                                    (value <= nint.MinValue) ? nint.MinValue : (nint)value;
-                result = (TOther)(object)actualResult;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(sbyte))
-            {
-                sbyte actualResult = (value >= sbyte.MaxValue) ? sbyte.MaxValue :
-                                     (value <= sbyte.MinValue) ? sbyte.MinValue : (sbyte)value;
-                result = (TOther)(object)actualResult;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(float))
-            {
-                float actualResult = (float)value;
-                result = (TOther)(object)actualResult;
-                return true;
-            }
-            else
-            {
-                result = default!;
-                return false;
-            }
+            return TryConvertTo<TOther>(value, out result);
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToTruncating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool INumberBase<decimal>.TryConvertToTruncating<TOther>(decimal value, [NotNullWhen(true)] out TOther result)
         {
+            return TryConvertTo<TOther>(value, out result);
+        }
+
+        private static bool TryConvertTo<TOther>(decimal value, [NotNullWhen(true)] out TOther result)
+            where TOther : INumberBase<TOther>
+        {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
             // `ConvertTo` handle the opposite sign. However, since there is an uneven split
-            // between signed and unsigned types, the the one that handles unsigned will also
-            // handle `Decimal` and `NFloat`.
+            // between signed and unsigned types, the one that handles unsigned will also
+            // handle `Decimal`.
             //
             // That is, `ConvertFrom` for `decimal` will handle the other unsigned types and
             // `ConvertTo` will handle the signed types

@@ -884,14 +884,6 @@ namespace System.Numerics
             return new Complex(value, 0.0);
         }
 
-        /// <summary>Implicitly converts a <see cref="NFloat" /> value to a double-precision complex number.</summary>
-        /// <param name="value">The value to convert.</param>
-        /// <returns><paramref name="value" /> converted to a double-precision complex number.</returns>
-        public static implicit operator Complex(NFloat value)
-        {
-            return new Complex(value, 0.0);
-        }
-
         [CLSCompliant(false)]
         public static implicit operator Complex(sbyte value)
         {
@@ -1548,12 +1540,6 @@ namespace System.Numerics
                 result = actualValue;
                 return true;
             }
-            else if (typeof(TOther) == typeof(NFloat))
-            {
-                NFloat actualValue = (NFloat)(object)value;
-                result = actualValue;
-                return true;
-            }
             else if (typeof(TOther) == typeof(sbyte))
             {
                 sbyte actualValue = (sbyte)(object)value;
@@ -1720,12 +1706,6 @@ namespace System.Numerics
                 }
 
                 BigInteger actualResult = checked((BigInteger)value.m_real);
-                result = (TOther)(object)actualResult;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(NFloat))
-            {
-                NFloat actualResult = (value.m_imaginary != 0) ? NFloat.NaN : (NFloat)value.m_real;
                 result = (TOther)(object)actualResult;
                 return true;
             }
@@ -1897,12 +1877,6 @@ namespace System.Numerics
                 result = (TOther)(object)actualResult;
                 return true;
             }
-            else if (typeof(TOther) == typeof(NFloat))
-            {
-                NFloat actualResult = (NFloat)value.m_real;
-                result = (TOther)(object)actualResult;
-                return true;
-            }
             else if (typeof(TOther) == typeof(sbyte))
             {
                 sbyte actualResult = (value.m_real >= sbyte.MaxValue) ? sbyte.MaxValue :
@@ -2036,12 +2010,6 @@ namespace System.Numerics
             else if (typeof(TOther) == typeof(BigInteger))
             {
                 BigInteger actualResult = (BigInteger)value.m_real;
-                result = (TOther)(object)actualResult;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(NFloat))
-            {
-                NFloat actualResult = (NFloat)value.m_real;
                 result = (TOther)(object)actualResult;
                 return true;
             }

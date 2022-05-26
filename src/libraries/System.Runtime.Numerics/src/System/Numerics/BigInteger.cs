@@ -1949,14 +1949,6 @@ namespace System.Numerics
             }
         }
 
-        /// <summary>Explicitly converts a big integer to a <see cref="NFloat" /> value.</summary>
-        /// <param name="value">The value to convert.</param>
-        /// <returns><paramref name="value" /> converted to <see cref="NFloat" /> value.</returns>
-        public static explicit operator NFloat(BigInteger value)
-        {
-            return (NFloat)(double)value;
-        }
-
         [CLSCompliant(false)]
         public static explicit operator sbyte(BigInteger value)
         {
@@ -2096,14 +2088,6 @@ namespace System.Numerics
                 ThrowHelper.ThrowOverflowException();
             }
             return (BigInteger)value.Real;
-        }
-
-        /// <summary>Explicitly converts a <see cref="NFloat" /> value to a big integer.</summary>
-        /// <param name="value">The value to convert.</param>
-        /// <returns><paramref name="value" /> converted to a big integer.</returns>
-        public static explicit operator BigInteger(NFloat value)
-        {
-            return new BigInteger(value);
         }
 
         public static explicit operator BigInteger(float value)
@@ -4179,12 +4163,6 @@ namespace System.Numerics
                 result = actualValue;
                 return true;
             }
-            else if (typeof(TOther) == typeof(NFloat))
-            {
-                NFloat actualValue = (NFloat)(object)value;
-                result = checked((BigInteger)actualValue);
-                return true;
-            }
             else if (typeof(TOther) == typeof(sbyte))
             {
                 sbyte actualValue = (sbyte)(object)value;
@@ -4298,12 +4276,6 @@ namespace System.Numerics
                 result = actualValue;
                 return true;
             }
-            else if (typeof(TOther) == typeof(NFloat))
-            {
-                NFloat actualValue = (NFloat)(object)value;
-                result = NFloat.IsNaN(actualValue) ? Zero : (BigInteger)actualValue;
-                return true;
-            }
             else if (typeof(TOther) == typeof(sbyte))
             {
                 sbyte actualValue = (sbyte)(object)value;
@@ -4415,12 +4387,6 @@ namespace System.Numerics
             {
                 nint actualValue = (nint)(object)value;
                 result = actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(NFloat))
-            {
-                NFloat actualValue = (NFloat)(object)value;
-                result = NFloat.IsNaN(actualValue) ? Zero : (BigInteger)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(sbyte))
@@ -4539,12 +4505,6 @@ namespace System.Numerics
             else if (typeof(TOther) == typeof(Complex))
             {
                 Complex actualResult = (Complex)value;
-                result = (TOther)(object)actualResult;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(NFloat))
-            {
-                NFloat actualResult = (NFloat)value;
                 result = (TOther)(object)actualResult;
                 return true;
             }
@@ -4712,12 +4672,6 @@ namespace System.Numerics
             else if (typeof(TOther) == typeof(Complex))
             {
                 Complex actualResult = (Complex)value;
-                result = (TOther)(object)actualResult;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(NFloat))
-            {
-                NFloat actualResult = (NFloat)value;
                 result = (TOther)(object)actualResult;
                 return true;
             }
@@ -5007,12 +4961,6 @@ namespace System.Numerics
             else if (typeof(TOther) == typeof(Complex))
             {
                 Complex actualResult = (Complex)value;
-                result = (TOther)(object)actualResult;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(NFloat))
-            {
-                NFloat actualResult = (NFloat)value;
                 result = (TOther)(object)actualResult;
                 return true;
             }

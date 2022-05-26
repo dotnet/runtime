@@ -462,6 +462,12 @@ namespace System.Runtime.InteropServices
         [NonVersionable]
         public static implicit operator NFloat(char value) => new NFloat((NativeType)value);
 
+        /// <summary>Implicitly converts a <see cref="Half" /> value to its nearest representable native-sized floating-point value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable native-sized floating-point value.</returns>
+        [NonVersionable]
+        public static implicit operator NFloat(Half value) => (NFloat)(float)value;
+
         /// <summary>Implicitly converts a <see cref="short" /> value to its nearest representable native-sized floating-point value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable native-sized floating-point value.</returns>
@@ -479,6 +485,20 @@ namespace System.Runtime.InteropServices
         /// <returns><paramref name="value" /> converted to its nearest representable native-sized floating-point value.</returns>
         [NonVersionable]
         public static implicit operator NFloat(long value) => new NFloat((NativeType)value);
+
+        /// <summary>Explicitly converts a <see cref="Int128" /> to its nearest representable native-sized floating-point value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable native-sized floating-point value.</returns>
+        [NonVersionable]
+        public static explicit operator NFloat(Int128 value)
+        {
+            if (Int128.IsNegative(value))
+            {
+                value = -value;
+                return -(NFloat)(UInt128)(value);
+            }
+            return (NFloat)(UInt128)(value);
+        }
 
         /// <summary>Implicitly converts a <see cref="System.IntPtr" /> value to its nearest representable native-sized floating-point value.</summary>
         /// <param name="value">The value to convert.</param>
@@ -519,6 +539,13 @@ namespace System.Runtime.InteropServices
         [NonVersionable]
         [CLSCompliant(false)]
         public static implicit operator NFloat(ulong value) => new NFloat((NativeType)value);
+
+        /// <summary>Explicitly converts <see cref="UInt128"/> to its nearest representable native-sized floating-point value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable native-sized floating-point value.</returns>
+        [NonVersionable]
+        [CLSCompliant(false)]
+        public static explicit operator NFloat(UInt128 value) => (NFloat)(double)(value);
 
         /// <summary>Implicitly converts a <see cref="System.UIntPtr" /> value to its nearest representable native-sized floating-point value.</summary>
         /// <param name="value">The value to convert.</param>
@@ -1296,151 +1323,26 @@ namespace System.Runtime.InteropServices
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool INumberBase<NFloat>.TryConvertFromChecked<TOther>(TOther value, out NFloat result)
         {
-            // In order to reduce overall code duplication and improve the inlinabilty of these
-            // methods for the corelib types we have `ConvertFrom` handle the same sign and
-            // `ConvertTo` handle the opposite sign. However, since there is an uneven split
-            // between signed and unsigned types, the the one that handles unsigned will also
-            // handle `Decimal` and `NFloat`.
-            //
-            // That is, `ConvertFrom` for `NFloat` will handle the other unsigned types and
-            // `ConvertTo` will handle the signed types
-
-            if (typeof(TOther) == typeof(byte))
-            {
-                byte actualValue = (byte)(object)value;
-                result = actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(char))
-            {
-                char actualValue = (char)(object)value;
-                result = actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(decimal))
-            {
-                decimal actualValue = (decimal)(object)value;
-                result = (NFloat)actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(ushort))
-            {
-                ushort actualValue = (ushort)(object)value;
-                result = actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(uint))
-            {
-                uint actualValue = (uint)(object)value;
-                result = actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(ulong))
-            {
-                ulong actualValue = (ulong)(object)value;
-                result = actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(UInt128))
-            {
-                UInt128 actualValue = (UInt128)(object)value;
-                result = (NFloat)actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(nuint))
-            {
-                nuint actualValue = (nuint)(object)value;
-                result = actualValue;
-                return true;
-            }
-            else
-            {
-                result = default!;
-                return false;
-            }
+            return TryConvertFrom<TOther>(value, out result);
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromSaturating{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool INumberBase<NFloat>.TryConvertFromSaturating<TOther>(TOther value, out NFloat result)
         {
-            // In order to reduce overall code duplication and improve the inlinabilty of these
-            // methods for the corelib types we have `ConvertFrom` handle the same sign and
-            // `ConvertTo` handle the opposite sign. However, since there is an uneven split
-            // between signed and unsigned types, the the one that handles unsigned will also
-            // handle `Decimal` and `NFloat`.
-            //
-            // That is, `ConvertFrom` for `NFloat` will handle the other unsigned types and
-            // `ConvertTo` will handle the signed types
-
-            if (typeof(TOther) == typeof(byte))
-            {
-                byte actualValue = (byte)(object)value;
-                result = actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(char))
-            {
-                char actualValue = (char)(object)value;
-                result = actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(decimal))
-            {
-                decimal actualValue = (decimal)(object)value;
-                result = (NFloat)actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(ushort))
-            {
-                ushort actualValue = (ushort)(object)value;
-                result = actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(uint))
-            {
-                uint actualValue = (uint)(object)value;
-                result = actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(ulong))
-            {
-                ulong actualValue = (ulong)(object)value;
-                result = actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(UInt128))
-            {
-                UInt128 actualValue = (UInt128)(object)value;
-                result = (NFloat)actualValue;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(nuint))
-            {
-                nuint actualValue = (nuint)(object)value;
-                result = actualValue;
-                return true;
-            }
-            else
-            {
-                result = default!;
-                return false;
-            }
+            return TryConvertFrom<TOther>(value, out result);
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromTruncating{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool INumberBase<NFloat>.TryConvertFromTruncating<TOther>(TOther value, out NFloat result)
         {
-            // In order to reduce overall code duplication and improve the inlinabilty of these
-            // methods for the corelib types we have `ConvertFrom` handle the same sign and
-            // `ConvertTo` handle the opposite sign. However, since there is an uneven split
-            // between signed and unsigned types, the the one that handles unsigned will also
-            // handle `Decimal` and `NFloat`.
-            //
-            // That is, `ConvertFrom` for `NFloat` will handle the other unsigned types and
-            // `ConvertTo` will handle the signed types
+            return TryConvertFrom<TOther>(value, out result);
+        }
 
+        private static bool TryConvertFrom<TOther>(TOther value, out NFloat result)
+            where TOther : INumberBase<TOther>
+        {
             if (typeof(TOther) == typeof(byte))
             {
                 byte actualValue = (byte)(object)value;
@@ -1457,6 +1359,60 @@ namespace System.Runtime.InteropServices
             {
                 decimal actualValue = (decimal)(object)value;
                 result = (NFloat)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(double))
+            {
+                double actualValue = (double)(object)value;
+                result = (NFloat)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Half))
+            {
+                Half actualValue = (Half)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                short actualValue = (short)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                int actualValue = (int)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                long actualValue = (long)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                Int128 actualValue = (Int128)(object)value;
+                result = (NFloat)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                nint actualValue = (nint)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                sbyte actualValue = (sbyte)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                float actualValue = (float)(object)value;
+                result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(ushort))
@@ -1500,16 +1456,25 @@ namespace System.Runtime.InteropServices
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool INumberBase<NFloat>.TryConvertToChecked<TOther>(NFloat value, [NotNullWhen(true)] out TOther result)
         {
-            // In order to reduce overall code duplication and improve the inlinabilty of these
-            // methods for the corelib types we have `ConvertFrom` handle the same sign and
-            // `ConvertTo` handle the opposite sign. However, since there is an uneven split
-            // between signed and unsigned types, the the one that handles unsigned will also
-            // handle `Decimal` and `NFloat`.
-            //
-            // That is, `ConvertFrom` for `NFloat` will handle the other unsigned types and
-            // `ConvertTo` will handle the signed types.
-
-            if (typeof(TOther) == typeof(double))
+            if (typeof(TOther) == typeof(byte))
+            {
+                byte actualResult = checked((byte)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                char actualResult = checked((char)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                decimal actualResult = checked((decimal)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(double))
             {
                 double actualResult = value;
                 result = (TOther)(object)actualResult;
@@ -1563,6 +1528,36 @@ namespace System.Runtime.InteropServices
                 result = (TOther)(object)actualResult;
                 return true;
             }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                ushort actualResult = checked((ushort)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                uint actualResult = checked((uint)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                ulong actualResult = checked((ulong)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                UInt128 actualResult = checked((UInt128)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                nuint actualResult = checked((nuint)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
             else
             {
                 result = default!;
@@ -1574,96 +1569,42 @@ namespace System.Runtime.InteropServices
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool INumberBase<NFloat>.TryConvertToSaturating<TOther>(NFloat value, [NotNullWhen(true)] out TOther result)
         {
-            // In order to reduce overall code duplication and improve the inlinabilty of these
-            // methods for the corelib types we have `ConvertFrom` handle the same sign and
-            // `ConvertTo` handle the opposite sign. However, since there is an uneven split
-            // between signed and unsigned types, the the one that handles unsigned will also
-            // handle `Decimal` and `NFloat`.
-            //
-            // That is, `ConvertFrom` for `NFloat` will handle the other unsigned types and
-            // `ConvertTo` will handle the signed types.
-
-            if (typeof(TOther) == typeof(double))
-            {
-                double actualResult = value;
-                result = (TOther)(object)actualResult;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(Half))
-            {
-                Half actualResult = (Half)value;
-                result = (TOther)(object)actualResult;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(short))
-            {
-                short actualResult = (value >= short.MaxValue) ? short.MaxValue :
-                                     (value <= short.MinValue) ? short.MinValue : (short)value;
-                result = (TOther)(object)actualResult;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(int))
-            {
-                int actualResult = (value >= int.MaxValue) ? int.MaxValue :
-                                   (value <= int.MinValue) ? int.MinValue : (int)value;
-                result = (TOther)(object)actualResult;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(long))
-            {
-                long actualResult = (value >= long.MaxValue) ? long.MaxValue :
-                                    (value <= long.MinValue) ? long.MinValue : (long)value;
-                result = (TOther)(object)actualResult;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(Int128))
-            {
-                Int128 actualResult = (value >= +170141183460469231731687303715884105727.0) ? Int128.MaxValue :
-                                      (value <= -170141183460469231731687303715884105728.0) ? Int128.MinValue : (Int128)value;
-                result = (TOther)(object)actualResult;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(nint))
-            {
-                nint actualResult = (value >= nint.MaxValue) ? nint.MaxValue :
-                                    (value <= nint.MinValue) ? nint.MinValue : (nint)value;
-                result = (TOther)(object)actualResult;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(sbyte))
-            {
-                sbyte actualResult = (value >= sbyte.MaxValue) ? sbyte.MaxValue :
-                                     (value <= sbyte.MinValue) ? sbyte.MinValue : (sbyte)value;
-                result = (TOther)(object)actualResult;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(float))
-            {
-                float actualResult = (float)value;
-                result = (TOther)(object)actualResult;
-                return true;
-            }
-            else
-            {
-                result = default!;
-                return false;
-            }
+            return TryConvertTo<TOther>(value, out result);
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToTruncating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool INumberBase<NFloat>.TryConvertToTruncating<TOther>(NFloat value, [NotNullWhen(true)] out TOther result)
         {
-            // In order to reduce overall code duplication and improve the inlinabilty of these
-            // methods for the corelib types we have `ConvertFrom` handle the same sign and
-            // `ConvertTo` handle the opposite sign. However, since there is an uneven split
-            // between signed and unsigned types, the the one that handles unsigned will also
-            // handle `Decimal` and `NFloat`.
-            //
-            // That is, `ConvertFrom` for `NFloat` will handle the other unsigned types and
-            // `ConvertTo` will handle the signed types
+            return TryConvertTo<TOther>(value, out result);
+        }
 
-            if (typeof(TOther) == typeof(double))
+        private static bool TryConvertTo<TOther>(NFloat value, [NotNullWhen(true)] out TOther result)
+            where TOther : INumberBase<TOther>
+        {
+            if (typeof(TOther) == typeof(byte))
+            {
+                byte actualResult = (value >= byte.MaxValue) ? byte.MaxValue :
+                                    (value <= byte.MinValue) ? byte.MinValue : (byte)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                char actualResult = (value >= char.MaxValue) ? char.MaxValue :
+                                    (value <= char.MinValue) ? char.MinValue : (char)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                decimal actualResult = (value >= +79228162514264337593543950336.0f) ? decimal.MaxValue :
+                                       (value <= -79228162514264337593543950336.0f) ? decimal.MinValue :
+                                       IsNaN(value) ? 0.0m : (decimal)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(double))
             {
                 double actualResult = value;
                 result = (TOther)(object)actualResult;
@@ -1722,6 +1663,48 @@ namespace System.Runtime.InteropServices
                 float actualResult = (float)value;
                 result = (TOther)(object)actualResult;
                 return true;
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                ushort actualResult = (value >= ushort.MaxValue) ? ushort.MaxValue :
+                                      (value <= ushort.MinValue) ? ushort.MinValue : (ushort)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                uint actualResult = (value >= uint.MaxValue) ? uint.MaxValue :
+                                    (value <= uint.MinValue) ? uint.MinValue : (uint)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                ulong actualResult = (value >= ulong.MaxValue) ? ulong.MaxValue :
+                                     (value <= ulong.MinValue) ? ulong.MinValue : (ulong)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                UInt128 actualResult = (value >= 340282366920938463463374607431768211455.0) ? UInt128.MaxValue :
+                                       (value <= 0.0) ? UInt128.MinValue : (UInt128)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+#if TARGET_32BIT
+                nuint actualResult = (value >= uint.MaxValue) ? unchecked((nuint)uint.MaxValue) :
+                                     (value <= uint.MinValue) ? unchecked((nuint)uint.MinValue) : (nuint)value;
+                result = (TOther)(object)actualResult;
+                return true;
+#else
+                nuint actualResult = (value >= ulong.MaxValue) ? unchecked((nuint)ulong.MaxValue) :
+                                     (value <= ulong.MinValue) ? unchecked((nuint)ulong.MinValue) : (nuint)value;
+                result = (TOther)(object)actualResult;
+                return true;
+#endif
             }
             else
             {

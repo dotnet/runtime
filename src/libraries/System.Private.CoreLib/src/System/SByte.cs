@@ -728,8 +728,8 @@ namespace System
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
             // `ConvertTo` handle the opposite sign. However, since there is an uneven split
-            // between signed and unsigned types, the the one that handles unsigned will also
-            // handle `Decimal` and `NFloat`.
+            // between signed and unsigned types, the one that handles unsigned will also
+            // handle `Decimal`.
             //
             // That is, `ConvertFrom` for `sbyte` will handle the other signed types and
             // `ConvertTo` will handle the unsigned types
@@ -796,8 +796,8 @@ namespace System
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
             // `ConvertTo` handle the opposite sign. However, since there is an uneven split
-            // between signed and unsigned types, the the one that handles unsigned will also
-            // handle `Decimal` and `NFloat`.
+            // between signed and unsigned types, the one that handles unsigned will also
+            // handle `Decimal`.
             //
             // That is, `ConvertFrom` for `sbyte` will handle the other signed types and
             // `ConvertTo` will handle the unsigned types
@@ -872,8 +872,8 @@ namespace System
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
             // `ConvertTo` handle the opposite sign. However, since there is an uneven split
-            // between signed and unsigned types, the the one that handles unsigned will also
-            // handle `Decimal` and `NFloat`.
+            // between signed and unsigned types, the one that handles unsigned will also
+            // handle `Decimal`.
             //
             // That is, `ConvertFrom` for `sbyte` will handle the other signed types and
             // `ConvertTo` will handle the unsigned types
@@ -943,8 +943,8 @@ namespace System
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
             // `ConvertTo` handle the opposite sign. However, since there is an uneven split
-            // between signed and unsigned types, the the one that handles unsigned will also
-            // handle `Decimal` and `NFloat`.
+            // between signed and unsigned types, the one that handles unsigned will also
+            // handle `Decimal`.
             //
             // That is, `ConvertFrom` for `sbyte` will handle the other signed types and
             // `ConvertTo` will handle the unsigned types
@@ -964,12 +964,6 @@ namespace System
             else if (typeof(TOther) == typeof(decimal))
             {
                 decimal actualResult = value;
-                result = (TOther)(object)actualResult;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(NFloat))
-            {
-                NFloat actualResult = value;
                 result = (TOther)(object)actualResult;
                 return true;
             }
@@ -1017,8 +1011,8 @@ namespace System
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
             // `ConvertTo` handle the opposite sign. However, since there is an uneven split
-            // between signed and unsigned types, the the one that handles unsigned will also
-            // handle `Decimal` and `NFloat`.
+            // between signed and unsigned types, the one that handles unsigned will also
+            // handle `Decimal`.
             //
             // That is, `ConvertFrom` for `sbyte` will handle the other signed types and
             // `ConvertTo` will handle the unsigned types
@@ -1038,12 +1032,6 @@ namespace System
             else if (typeof(TOther) == typeof(decimal))
             {
                 decimal actualResult = value;
-                result = (TOther)(object)actualResult;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(NFloat))
-            {
-                NFloat actualResult = value;
                 result = (TOther)(object)actualResult;
                 return true;
             }
@@ -1091,8 +1079,8 @@ namespace System
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
             // `ConvertTo` handle the opposite sign. However, since there is an uneven split
-            // between signed and unsigned types, the the one that handles unsigned will also
-            // handle `Decimal` and `NFloat`.
+            // between signed and unsigned types, the one that handles unsigned will also
+            // handle `Decimal`.
             //
             // That is, `ConvertFrom` for `sbyte` will handle the other signed types and
             // `ConvertTo` will handle the unsigned types
@@ -1112,12 +1100,6 @@ namespace System
             else if (typeof(TOther) == typeof(decimal))
             {
                 decimal actualResult = value;
-                result = (TOther)(object)actualResult;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(NFloat))
-            {
-                NFloat actualResult = value;
                 result = (TOther)(object)actualResult;
                 return true;
             }
