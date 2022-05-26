@@ -68,16 +68,11 @@ PTR_UInt8 RuntimeInstance::FindMethodStartAddress(PTR_VOID ControlPC)
 
 ICodeManager * RuntimeInstance::FindCodeManagerByAddress(PTR_VOID pvAddress)
 {
-    ReaderWriterLock::ReadHolder read(&m_ModuleListLock);
-
-    // TODO: ICodeManager support in DAC
-#ifndef DACCESS_COMPILE
-    for (CodeManagerEntry * pEntry = m_CodeManagerList.GetHead(); pEntry != NULL; pEntry = pEntry->m_pNext)
+    ICodeManager* cm = m_CodeManager;
+    if (cm->IsManaged(pvAddress))
     {
-        if (dac_cast<TADDR>(pvAddress) - dac_cast<TADDR>(pEntry->m_pvStartRange) < pEntry->m_cbRange)
-            return pEntry->m_pCodeManager;
+        return cm;
     }
-#endif
 
     return NULL;
 }
@@ -164,6 +159,7 @@ ReaderWriterLock& RuntimeInstance::GetTypeManagerLock()
 
 RuntimeInstance::RuntimeInstance() :
     m_pThreadStore(NULL),
+    m_CodeManager(NULL),
     m_conservativeStackReportingEnabled(false),
     m_pUnboxingStubsRegion(NULL)
 {
@@ -188,28 +184,18 @@ void RuntimeInstance::EnableConservativeStackReporting()
     m_conservativeStackReportingEnabled = true;
 }
 
-bool RuntimeInstance::RegisterCodeManager(ICodeManager * pCodeManager, PTR_VOID pvStartRange, uint32_t cbRange)
+void RuntimeInstance::RegisterCodeManager(ICodeManager * pCodeManager)
 {
-    CodeManagerEntry * pEntry = new (nothrow) CodeManagerEntry();
-    if (NULL == pEntry)
-        return false;
+    _ASSERTE(m_CodeManager == NULL);
+    _ASSERTE(pCodeManager != NULL);
 
-    pEntry->m_pvStartRange = pvStartRange;
-    pEntry->m_cbRange = cbRange;
-    pEntry->m_pCodeManager = pCodeManager;
 
-    {
-        ReaderWriterLock::WriteHolder write(&m_ModuleListLock);
-
-        m_CodeManagerList.PushHead(pEntry);
-    }
-
-    return true;
+    m_CodeManager = pCodeManager;
 }
 
-extern "C" bool __stdcall RegisterCodeManager(ICodeManager * pCodeManager, PTR_VOID pvStartRange, uint32_t cbRange)
+extern "C" void __stdcall RegisterCodeManager(ICodeManager * pCodeManager)
 {
-    return GetRuntimeInstance()->RegisterCodeManager(pCodeManager, pvStartRange, cbRange);
+    GetRuntimeInstance()->RegisterCodeManager(pCodeManager);
 }
 
 bool RuntimeInstance::RegisterUnboxingStubs(PTR_VOID pvStartRange, uint32_t cbRange)

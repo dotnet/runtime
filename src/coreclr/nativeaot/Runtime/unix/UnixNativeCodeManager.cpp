@@ -448,7 +448,7 @@ PTR_VOID UnixNativeCodeManager::GetAssociatedData(PTR_VOID ControlPC)
     return dac_cast<PTR_VOID>(p + *dac_cast<PTR_Int32>(p));
 }
 
-extern "C" bool RegisterCodeManager(ICodeManager * pCodeManager, PTR_VOID pvStartRange, uint32_t cbRange);
+extern "C" void RegisterCodeManager(ICodeManager * pCodeManager);
 extern "C" bool RegisterUnboxingStubs(PTR_VOID pvStartRange, uint32_t cbRange);
 
 extern "C"
@@ -464,8 +464,7 @@ bool RhRegisterOSModule(void * pModule,
     if (pUnixNativeCodeManager == nullptr)
         return false;
 
-    if (!RegisterCodeManager(pUnixNativeCodeManager, pvManagedCodeStartRange, cbManagedCodeRange))
-        return false;
+    RegisterCodeManager(pUnixNativeCodeManager);
 
     if (!RegisterUnboxingStubs(pvUnboxingStubsStartRange, cbUnboxingStubsRange))
     {

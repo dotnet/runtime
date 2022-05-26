@@ -875,7 +875,7 @@ PTR_VOID CoffNativeCodeManager::GetAssociatedData(PTR_VOID ControlPC)
     return dac_cast<PTR_VOID>(m_moduleBase + dataRVA);
 }
 
-extern "C" bool __stdcall RegisterCodeManager(ICodeManager * pCodeManager, PTR_VOID pvStartRange, uint32_t cbRange);
+extern "C" void __stdcall RegisterCodeManager(ICodeManager * pCodeManager);
 extern "C" bool __stdcall RegisterUnboxingStubs(PTR_VOID pvStartRange, uint32_t cbRange);
 
 extern "C"
@@ -898,8 +898,7 @@ bool RhRegisterOSModule(void * pModule,
     if (pCoffNativeCodeManager == nullptr)
         return false;
 
-    if (!RegisterCodeManager(pCoffNativeCodeManager, pvManagedCodeStartRange, cbManagedCodeRange))
-        return false;
+    RegisterCodeManager(pCoffNativeCodeManager);
 
     if (!RegisterUnboxingStubs(pvUnboxingStubsStartRange, cbUnboxingStubsRange))
     {
