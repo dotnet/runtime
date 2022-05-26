@@ -20,4 +20,4 @@ Steps:
 - You will see c# files and c files available to add breakpoint.
 
 Hint:
-- If you are running a Blazor app that has .c file(s) and you added <WasmNativeBuild>true</WasmNativeBuild> in the .csproj file, also add ``<_WasmDevel>true</_WasmDevel>`` to disable optimizations and have a better native debugging experience.
+- If you are running a Blazor app that has .c file(s) and you added <WasmBuildNative>true</WasmBuildNative> in the .csproj file, also add ``<_WasmDevel>true</_WasmDevel>`` to disable optimizations and have a better native debugging experience.
