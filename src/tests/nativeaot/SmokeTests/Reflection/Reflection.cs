@@ -1215,7 +1215,8 @@ internal class ReflectionTest
 
             PropertyInfo p = typeof(TestClassIntPointer).GetProperty(nameof(TestClassIntPointer.NullRefReturningProp));
             Assert.NotNull(p);
-            Assert.Throws<NullReferenceException>(() => p.GetValue(tc));
+            Assert.Throws<TargetInvocationException>(() => p.GetValue(tc));
+            Assert.IsType<NullReferenceException>(ex.InnerException);
         }
 
         public static unsafe void TestByRefLikeRefReturn()
