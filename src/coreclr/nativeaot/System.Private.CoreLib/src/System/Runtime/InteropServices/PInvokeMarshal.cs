@@ -175,7 +175,7 @@ namespace System.Runtime.InteropServices
             //
             bool openStaticDelegate = del.GetRawFunctionPointerForOpenStaticDelegate() != IntPtr.Zero;
 
-            IntPtr pTarget = RuntimeAugments.InteropCallbacks.GetDelegateMarshallingStub(del.GetTypeHandle(), openStaticDelegate);
+            IntPtr pTarget = RuntimeInteropData.GetDelegateMarshallingStub(del.GetTypeHandle(), openStaticDelegate);
             Debug.Assert(pTarget != IntPtr.Zero);
 
             RuntimeAugments.SetThunkData(s_thunkPoolHeap, delegateThunk.Thunk, delegateThunk.ContextData, pTarget);
@@ -225,7 +225,7 @@ namespace System.Runtime.InteropServices
             // We need to create the delegate that points to the invoke method of a
             // NativeFunctionPointerWrapper derived class
             //
-            IntPtr pDelegateCreationStub = RuntimeAugments.InteropCallbacks.GetForwardDelegateCreationStub(delegateType);
+            IntPtr pDelegateCreationStub = RuntimeInteropData.GetForwardDelegateCreationStub(delegateType);
             Debug.Assert(pDelegateCreationStub != IntPtr.Zero);
 
             return ((delegate*<IntPtr, Delegate>)pDelegateCreationStub)(ptr);

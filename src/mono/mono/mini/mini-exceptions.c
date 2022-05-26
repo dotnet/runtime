@@ -2011,7 +2011,7 @@ handle_exception_first_pass (MonoContext *ctx, MonoObject *obj, gint32 *out_filt
 					if (frame.type == FRAME_TYPE_IL_STATE) {
 						if (mono_trace_is_enabled () && mono_trace_eval (method))
 							g_print ("EXCEPTION: filter clause found in AOTed code, running it with the interpreter.\n");
-						gboolean res = mini_get_interp_callbacks ()->run_clause_with_il_state (frame.il_state, i, ei->data.filter, NULL, ex_obj, &filtered, MONO_EXCEPTION_CLAUSE_FILTER);
+						gboolean res = mini_get_interp_callbacks ()->run_clause_with_il_state (frame.il_state, i, ex_obj, &filtered);
 						// FIXME:
 						g_assert (!res);
 					} else if (ji->is_interp) {
@@ -2574,7 +2574,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 						if (frame.type == FRAME_TYPE_IL_STATE) {
 							if (mono_trace_is_enabled () && mono_trace_eval (method))
 								g_print ("EXCEPTION: finally/fault clause found in AOTed code, running it with the interpreter.\n");
-							mini_get_interp_callbacks ()->run_clause_with_il_state (frame.il_state, i, ei->handler_start, ei->data.handler_end, NULL, NULL, MONO_EXCEPTION_CLAUSE_FINALLY);
+							mini_get_interp_callbacks ()->run_clause_with_il_state (frame.il_state, i, NULL, NULL);
 						} else if (in_interp) {
 							gboolean has_ex = mini_get_interp_callbacks ()->run_finally (&frame, i, ei->handler_start, ei->data.handler_end);
 							if (has_ex) {
@@ -3583,10 +3583,8 @@ mini_llvmonly_resume_exception_il_state (MonoLMF *lmf, gpointer info)
 	/* Pop the LMF frame so the caller doesn't have to do it */
 	mono_set_lmf ((MonoLMF *)(((gsize)lmf->previous_lmf) & ~3));
 
-	MonoJitInfo *ji = jit_tls->resume_state.ji;
 	int clause_index = jit_tls->resume_state.clause_index;
-	MonoJitExceptionInfo *ei = &ji->clauses [clause_index];
-	gboolean r = mini_get_interp_callbacks ()->run_clause_with_il_state (il_state, clause_index, ei->handler_start, NULL, ex_obj, NULL, MONO_EXCEPTION_CLAUSE_NONE);
+	gboolean r = mini_get_interp_callbacks ()->run_clause_with_il_state (il_state, clause_index, ex_obj, NULL);
 	if (r)
 		/* Another exception thrown, continue unwinding */
 		mono_llvm_cpp_throw_exception ();

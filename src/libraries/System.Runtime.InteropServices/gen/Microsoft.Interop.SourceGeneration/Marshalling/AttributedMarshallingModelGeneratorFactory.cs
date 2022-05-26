@@ -305,8 +305,6 @@ namespace Microsoft.Interop
             IMarshallingGenerator elementMarshaller = _elementMarshallingGenerator.Create(
                 elementInfo,
                 new LinearCollectionElementMarshallingCodeContext(StubCodeContext.Stage.Setup, string.Empty, string.Empty, context));
-            TypeSyntax elementType = elementMarshaller.AsNativeType(elementInfo);
-
 
             ExpressionSyntax numElementsExpression = LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(0));
             if (info.IsManagedReturnPosition || (info.IsByRef && info.RefKind != RefKind.In))
@@ -315,9 +313,9 @@ namespace Microsoft.Interop
                 numElementsExpression = GetNumElementsExpressionFromMarshallingInfo(info, collectionInfo.ElementCountInfo, context);
             }
 
-            bool isBlittable = elementMarshaller is BlittableMarshaller;
-
-            if (isBlittable)
+            bool enableArrayPinning = elementMarshaller is BlittableMarshaller;
+            bool treatAsBlittable = enableArrayPinning || elementMarshaller is Utf16CharMarshaller;
+            if (treatAsBlittable)
             {
                 marshallingStrategy = new LinearCollectionWithBlittableElementsMarshalling(marshallingStrategy, collectionInfo.ElementType.Syntax, numElementsExpression);
             }
@@ -332,16 +330,17 @@ namespace Microsoft.Interop
                 marshallingStrategy = DecorateWithTwoStageMarshallingStrategy(collectionInfo, marshallingStrategy);
             }
 
+            TypeSyntax nativeElementType = elementMarshaller.AsNativeType(elementInfo);
             marshallingStrategy = new SizeOfElementMarshalling(
                 marshallingStrategy,
-                SizeOfExpression(elementType));
+                SizeOfExpression(nativeElementType));
 
             if (collectionInfo.UseDefaultMarshalling && info.ManagedType is SzArrayType)
             {
                 return new ArrayMarshaller(
                     new CustomNativeTypeMarshallingGenerator(marshallingStrategy, enableByValueContentsMarshalling: true),
-                    elementType,
-                    isBlittable);
+                    collectionInfo.ElementType.Syntax,
+                    enableArrayPinning);
             }
 
             IMarshallingGenerator marshallingGenerator = new CustomNativeTypeMarshallingGenerator(marshallingStrategy, enableByValueContentsMarshalling: false);
