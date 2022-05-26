@@ -441,7 +441,7 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.True(xel.InnerXml.StartsWith("<ObjectListTag"), "GetIdElement");
         }
 
-        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
+        [Fact]
         public void GetPublicKey()
         {
             XmlDocument doc = new XmlDocument();

@@ -69,7 +69,7 @@ namespace System.Security.Cryptography.Xml.Tests
             info.SignatureMethod = "http://www.w3.org/2000/09/xmldsig#dsa-sha1";
         }
 
-        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
+        [Fact]
         public void Load()
         {
             string xml = "<SignedInfo xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><CanonicalizationMethod Algorithm=\"http://www.w3.org/TR/2001/REC-xml-c14n-20010315\" /><SignatureMethod Algorithm=\"http://www.w3.org/2000/09/xmldsig#rsa-sha1\" /><Reference URI=\"#MyObjectId\"><DigestMethod Algorithm=\"http://www.w3.org/2000/09/xmldsig#sha1\" /><DigestValue>/Vvq6sXEVbtZC8GwNtLQnGOy/VI=</DigestValue></Reference></SignedInfo>";
@@ -138,7 +138,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/20429")]
-        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
+        [Fact]
         public void GetXmlWithSetProperty()
         {
             XmlDocument doc = new XmlDocument();
@@ -150,7 +150,7 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.True(doc != el.OwnerDocument, "#GetXmlWithSetProperty.document");
         }
 
-        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
+        [Fact]
         public void EmptyReferenceWithSetProperty()
         {
             XmlDocument doc = new XmlDocument();
@@ -164,7 +164,7 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Throws<CryptographicException>(() => sig.GetXml());
         }
 
-        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
+        [Fact]
         public void SignatureLength()
         {
             // we can set the length before the algorithm
