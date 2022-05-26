@@ -329,11 +329,11 @@ declare function getI8(offset: _MemOffset): number;
 declare function getI16(offset: _MemOffset): number;
 declare function getI32(offset: _MemOffset): number;
 /**
- * Throws for  Number.MIN_SAFE_INTEGER > value > Number.MAX_SAFE_INTEGER
+ * Throws for Number.MIN_SAFE_INTEGER > value > Number.MAX_SAFE_INTEGER
  */
 declare function getI52(offset: _MemOffset): number;
 /**
- * Throws for  Number.MIN_SAFE_INTEGER > value > Number.MAX_SAFE_INTEGER
+ * Throws for 0 > value > Number.MAX_SAFE_INTEGER
  */
 declare function getU52(offset: _MemOffset): number;
 declare function getI64Big(offset: _MemOffset): bigint;

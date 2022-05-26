@@ -43719,7 +43719,6 @@ HRESULT GCHeap::StaticShutdown()
 
     for (int i = 0; i < gc_heap::n_heaps; i ++)
     {
-        delete gc_heap::g_heaps[i]->vm_heap;
         //destroy pure GC stuff
         gc_heap::destroy_gc_heap (gc_heap::g_heaps[i]);
     }

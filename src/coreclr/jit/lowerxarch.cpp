@@ -931,6 +931,13 @@ void Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 
     switch (intrinsicId)
     {
+        case NI_Vector128_ConditionalSelect:
+        case NI_Vector256_ConditionalSelect:
+        {
+            LowerHWIntrinsicCndSel(node);
+            break;
+        }
+
         case NI_Vector128_Create:
         case NI_Vector256_Create:
         {
@@ -1451,6 +1458,145 @@ void Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp)
     node->ClearUnusedValue();
 
     LowerNode(node);
+}
+
+//----------------------------------------------------------------------------------------------
+// Lowering::LowerHWIntrinsicCndSel: Lowers a Vector128 or Vector256 Conditional Select call
+//
+//  Arguments:
+//     node - The hardware intrinsic node.
+//
+void Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node)
+{
+    var_types   simdType            = node->gtType;
+    CorInfoType simdBaseJitType     = node->GetSimdBaseJitType();
+    var_types   simdBaseType        = node->GetSimdBaseType();
+    unsigned    simdSize            = node->GetSimdSize();
+    bool        isSimdAsHWIntrinsic = node->IsSimdAsHWIntrinsic();
+
+    assert(varTypeIsSIMD(simdType));
+    assert(varTypeIsArithmetic(simdBaseType));
+    assert(simdSize != 0);
+
+    // Get the three arguments to ConditionalSelect we stored in node
+    // op1: the condition vector
+    // op2: the left vector
+    // op3: the right vector
+    GenTree* op1 = node->Op(1);
+    GenTree* op2 = node->Op(2);
+    GenTree* op3 = node->Op(3);
+
+    // If the condition vector comes from a hardware intrinsic that
+    // returns a per-element mask (marked with HW_Flag_ReturnsPerElementMask),
+    // we can optimize the entire conditional select to
+    // a single BlendVariable instruction (if supported by the architecture)
+
+    // First, determine if the condition is a per-element mask
+    if (op1->OperIsHWIntrinsic() && HWIntrinsicInfo::ReturnsPerElementMask(op1->AsHWIntrinsic()->GetHWIntrinsicId()))
+    {
+        // Next, determine if the target architecture supports BlendVariable
+        NamedIntrinsic blendVariableId = NI_Illegal;
+
+        // For Vector256 (simdSize == 32), BlendVariable for floats/doubles is available on AVX, whereas other types
+        // require AVX2
+        if (simdSize == 32)
+        {
+            if (varTypeIsFloating(simdBaseType))
+            {
+                // This should have already been confirmed
+                assert(comp->compIsaSupportedDebugOnly(InstructionSet_AVX));
+                blendVariableId = NI_AVX_BlendVariable;
+            }
+            else if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX2))
+            {
+                blendVariableId = NI_AVX2_BlendVariable;
+            }
+        }
+        // For Vector128, BlendVariable is available on SSE41
+        else if (comp->compOpportunisticallyDependsOn(InstructionSet_SSE41))
+        {
+            blendVariableId = NI_SSE41_BlendVariable;
+        }
+
+        // If blendVariableId has been set, the architecture supports BlendVariable, so we can optimize
+        if (blendVariableId != NI_Illegal)
+        {
+            // result = BlendVariable op3 (right) op2 (left) op1 (mask)
+            node->ResetHWIntrinsicId(blendVariableId, comp, op3, op2, op1);
+            return;
+        }
+    }
+
+    // We cannot optimize, so produce unoptimized instructions
+
+    // We will be constructing the following parts:
+    //          /--*  op1 simd16
+    //          *  STORE_LCL_VAR simd16
+    //   op1  =    LCL_VAR       simd16
+    //   tmp1 =    LCL_VAR       simd16
+    //   ...
+
+    GenTree* tmp1;
+    GenTree* tmp2;
+    GenTree* tmp3;
+
+    LIR::Use op1Use(BlockRange(), &node->Op(1), node);
+    ReplaceWithLclVar(op1Use);
+    op1 = node->Op(1);
+
+    tmp1 = comp->gtClone(op1);
+    BlockRange().InsertAfter(op1, tmp1);
+
+    // ...
+    // tmp2 = op1 & op2
+    // ...
+    tmp2 = comp->gtNewSimdBinOpNode(GT_AND, simdType, op1, op2, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+    BlockRange().InsertAfter(op2, tmp2);
+    LowerNode(tmp2);
+
+    // ...
+    // tmp3 = op3 & ~tmp1
+    // ...
+    tmp3 = comp->gtNewSimdBinOpNode(GT_AND_NOT, simdType, op3, tmp1, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+    BlockRange().InsertAfter(op3, tmp3);
+    LowerNode(tmp3);
+
+    // determine which Or intrinsic to use, depending on target architecture
+    NamedIntrinsic orIntrinsic = NI_Illegal;
+
+    if (simdSize == 32)
+    {
+        assert(comp->compIsaSupportedDebugOnly(InstructionSet_AVX));
+
+        if (varTypeIsFloating(simdBaseType))
+        {
+            orIntrinsic = NI_AVX_Or;
+        }
+        else if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX2))
+        {
+            orIntrinsic = NI_AVX2_Or;
+        }
+        else
+        {
+            // Since this is a bitwise operation, we can still support it by lying
+            // about the type and doing the operation using a supported instruction
+            orIntrinsic     = NI_AVX_Or;
+            simdBaseJitType = CORINFO_TYPE_FLOAT;
+        }
+    }
+    else if (simdBaseType == TYP_FLOAT)
+    {
+        orIntrinsic = NI_SSE_Or;
+    }
+    else
+    {
+        orIntrinsic = NI_SSE2_Or;
+    }
+
+    // ...
+    // result = tmp2 | tmp3
+    node->ResetHWIntrinsicId(orIntrinsic, tmp2, tmp3);
+    node->SetSimdBaseJitType(simdBaseJitType);
 }
 
 //----------------------------------------------------------------------------------------------

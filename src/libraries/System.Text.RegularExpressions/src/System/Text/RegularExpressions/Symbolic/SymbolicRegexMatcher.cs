@@ -945,24 +945,24 @@ namespace System.Text.RegularExpressions.Symbolic
 
                 // If the DFA state is a union of multiple DFA states, loop through all of them
                 // adding an NFA state for each.
-                if (dfaMatchingState.Node.Kind is SymbolicRegexNodeKind.Or)
+                SymbolicRegexNode<TSet> node = dfaMatchingState.Node.Kind == SymbolicRegexNodeKind.DisableBacktrackingSimulation ?
+                    dfaMatchingState.Node._left! : dfaMatchingState.Node;
+                while (node.Kind is SymbolicRegexNodeKind.OrderedOr)
                 {
-                    Debug.Assert(dfaMatchingState.Node._alts is not null);
-                    foreach (SymbolicRegexNode<TSet> node in dfaMatchingState.Node._alts)
-                    {
-                        // Create (possibly new) NFA states for all the members.
-                        // Add their IDs to the current set of NFA states and into the list.
-                        int nfaState = Builder.CreateNfaState(node, dfaMatchingState.PrevCharKind);
-                        NfaStateSet.Add(nfaState, out _);
-                    }
+                    Debug.Assert(node._left is not null && node._right is not null);
+
+                    // Re-wrap the element nodes in DisableBacktrackingSimulation if the top level node was too
+                    SymbolicRegexNode<TSet> element = dfaMatchingState.Node.Kind == SymbolicRegexNodeKind.DisableBacktrackingSimulation ?
+                        Builder.CreateDisableBacktrackingSimulation(node._left) : node._left;
+
+                    // Create (possibly new) NFA states for all the members.
+                    // Add their IDs to the current set of NFA states and into the list.
+                    NfaStateSet.Add(Builder.CreateNfaState(element, dfaMatchingState.PrevCharKind), out _);
+                    node = node._right;
                 }
-                else
-                {
-                    // Otherwise, just add an NFA state for the singular DFA state.
-                    SymbolicRegexNode<TSet> node = dfaMatchingState.Node;
-                    int nfaState = Builder.CreateNfaState(node, dfaMatchingState.PrevCharKind);
-                    NfaStateSet.Add(nfaState, out _);
-                }
+
+                // Finally, just add an NFA state for the singular DFA state or last element of a union.
+                NfaStateSet.Add(Builder.CreateNfaState(node, dfaMatchingState.PrevCharKind), out _);
             }
         }
 

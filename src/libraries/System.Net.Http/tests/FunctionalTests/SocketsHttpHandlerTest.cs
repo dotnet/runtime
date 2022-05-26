@@ -725,6 +725,70 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
+        [InlineData(1024, 1023)]
+        [InlineData(1024, 1024)]
+        [InlineData(1024, 1025)]
+        [InlineData(1024 * 1024, 1024 * 1024)]
+        [InlineData(1024 * 1024, 1024 * 1024 + 1)]
+        public async Task GetAsync_TrailingHeadersLimitExceeded_Throws(int maxResponseHeadersLength, int responseHeadersLength)
+        {
+            Assert.Equal(0, maxResponseHeadersLength % 1024);
+
+            var sb = new StringBuilder()
+                .Append("HTTP/1.1 200 OK\r\n")
+                .Append("Connection: close\r\n")
+                .Append("Transfer-Encoding: chunked\r\n\r\n");
+
+            // Both regular and trailing response headers count against the same length limit
+            int headerBytesRemaining = responseHeadersLength - sb.Length;
+
+            sb.Append("0\r\n"); // chunked content
+
+            const string HeaderLine = "Test: value";
+
+            while (headerBytesRemaining > HeaderLine.Length * 2)
+            {
+                sb.Append(HeaderLine).Append("\r\n");
+                headerBytesRemaining -= (HeaderLine.Length + 2);
+            }
+
+            sb.Append("Test: ");
+            sb.Append('a', headerBytesRemaining - "Test: \r\n\r\n".Length);
+            sb.Append("\r\n");
+
+            sb.Append("\r\n");
+
+            string response = sb.ToString();
+
+            await LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using HttpClientHandler handler = CreateHttpClientHandler();
+                    using HttpClient client = CreateHttpClient(handler);
+
+                    handler.MaxResponseHeadersLength = maxResponseHeadersLength / 1024;
+
+                    if (responseHeadersLength > maxResponseHeadersLength)
+                    {
+                        HttpRequestException exception = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(uri));
+                        Assert.Contains("exceeded", exception.Message);
+                    }
+                    else
+                    {
+                        (await client.GetAsync(uri)).Dispose();
+                    }
+                },
+                async server =>
+                {
+                    try
+                    {
+                        await server.AcceptConnectionSendCustomResponseAndCloseAsync(response);
+                    }
+                    catch { }
+                });
+        }
+
+        [Theory]
         [InlineData("Age", "1")]
         // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Unit test dummy authorisation header.")]
         [InlineData("Authorization", "Basic YWxhZGRpbjpvcGVuc2VzYW1l")]
