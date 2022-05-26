@@ -960,7 +960,8 @@ HRESULT PEImage::TryOpenFile(bool takeLock)
         return S_OK;
 
     ErrorModeHolder mode(SEM_NOOPENFILEERRORBOX | SEM_FAILCRITICALERRORS);
-    m_hFile=WszCreateFile((LPCWSTR)GetPathToLoad(),
+    SString pathToLoad = GetPathToLoad();
+    m_hFile=WszCreateFile((LPCWSTR)pathToLoad,
                           GENERIC_READ
 #if TARGET_WINDOWS
                           // the file may have native code sections, make sure we are allowed to execute the file
