@@ -426,7 +426,7 @@ namespace Microsoft.Extensions.Configuration
             ConstructorInfo[] constructors = type.GetConstructors(BindingFlags.Public | BindingFlags.Instance);
 
             bool hasParameterlessConstructor =
-                constructors.Any(ctor => ctor.GetParameters().Length == 0 || type.IsValueType);
+                type.IsValueType || constructors.Any(ctor => ctor.GetParameters().Length == 0);
 
             if (!type.IsValueType && constructors.Length == 0)
             {
