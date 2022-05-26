@@ -14471,6 +14471,30 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
     }
 DONE:
 
+    if (tree->OperIsBinary() && !optValnumCSE_phase &&
+        tree->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_DIV, GT_UDIV, GT_MOD, GT_UMOD, GT_OR, GT_AND, GT_COMMA) &&
+        tree->gtGetOp1()->OperIs(GT_COMMA) && !tree->IsReverseOp())
+    {
+        GenTree* comma = tree->gtGetOp1();
+        if (comma->gtGetOp1()->OperIs(GT_ASG) && comma->gtGetOp2()->OperIs(GT_LCL_VAR))
+        {
+            GenTree*       asg = comma->gtGetOp1();
+            GenTreeLclVar* lcl = comma->gtGetOp2()->AsLclVar();
+
+            if (asg->gtGetOp1()->OperIs(GT_LCL_VAR))
+            {
+                GenTreeLclVar* lcl2 = asg->gtGetOp1()->AsLclVar();
+                if (lcl->GetLclNum() == lcl2->GetLclNum())
+                {
+                    tree->AsOp()->gtOp1  = lcl;
+                    comma->AsOp()->gtOp2 = tree;
+                    comma->ChangeType(tree->TypeGet());
+                    tree = comma;
+                }
+            }
+        }
+    }
+
     fgMorphTreeDone(tree, oldTree DEBUGARG(thisMorphNum));
 
     return tree;
