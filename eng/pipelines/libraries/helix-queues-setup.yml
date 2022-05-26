@@ -133,7 +133,7 @@ jobs:
           - ${{ if or(ne(parameters.jobParameters.isExtraPlatforms, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
             - Windows.81.Amd64.Open
             - Windows.10.Amd64.Server2022.ES.Open
-            - Windows.11.Amd64.ClientPre.Open
+            - Windows.11.Amd64.Client.Open
             - ${{ if eq(parameters.jobParameters.testScope, 'outerloop') }}:
               - (Windows.10.Amd64.ServerRS5.Open)windows.10.amd64.serverrs5.open@mcr.microsoft.com/dotnet-buildtools/prereqs:windowsservercore-ltsc2019-helix-amd64-20220502135740-56c6673
             - ${{ if ne(parameters.jobParameters.runtimeFlavor, 'mono') }}:
@@ -141,7 +141,7 @@ jobs:
 
       # .NETFramework
       - ${{ if eq(parameters.jobParameters.framework, 'net48') }}:
-        - Windows.11.Amd64.ClientPre.Open
+        - Windows.11.Amd64.Client.Open
 
 
     # windows x86
@@ -151,11 +151,11 @@ jobs:
         # mono outerloop
         - ${{ if and(eq(parameters.jobParameters.testScope, 'outerloop'), eq(parameters.jobParameters.runtimeFlavor, 'mono')) }}:
           - Windows.7.Amd64.Open
-          - Windows.11.Amd64.ClientPre.Open
+          - Windows.11.Amd64.Client.Open
         # libraries on coreclr (outerloop and innerloop), or libraries on mono innerloop
         - ${{ if or(ne(parameters.jobParameters.testScope, 'outerloop'), ne(parameters.jobParameters.runtimeFlavor, 'mono')) }}:
           - ${{ if or(eq(parameters.jobParameters.isExtraPlatforms, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
-            - Windows.11.Amd64.ClientPre.Open
+            - Windows.11.Amd64.Client.Open
             - Windows.Amd64.Server2022.Open
           - ${{ if or(ne(parameters.jobParameters.isExtraPlatforms, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
             - Windows.10.Amd64.Server2022.ES.Open
