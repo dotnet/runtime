@@ -2369,6 +2369,10 @@ private:
                     //
                     newNext->bbStmtList = stmtList1;
                     block->bbStmtList   = nullptr;
+
+                    // Update newNext's block flags
+                    //
+                    newNext->bbFlags |= (block->bbFlags & BBF_COMPACT_UPD);
                 }
             }
         }
