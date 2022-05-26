@@ -6,18 +6,10 @@ using Internal.Runtime.Augments;
 
 namespace Internal.Runtime.TypeLoader
 {
-    public struct ExternalReferencesTable
+    public partial struct ExternalReferencesTable
     {
-        private IntPtr _elements;
-        private uint _elementsCount;
-        private TypeManagerHandle _moduleHandle;
-
-        public bool IsInitialized() { return !_moduleHandle.IsNull; }
-
         private unsafe bool Initialize(NativeFormatModuleInfo module, ReflectionMapBlob blobId)
         {
-            _moduleHandle = module.Handle;
-
             byte* pBlob;
             uint cbBlob;
             if (!module.TryFindBlob(blobId, out pBlob, out cbBlob))
@@ -68,41 +60,6 @@ namespace Internal.Runtime.TypeLoader
             // The usage of this API will need to go away since this is not fully portable
             // and we'll not be able to support this for CppCodegen.
             throw new PlatformNotSupportedException();
-        }
-
-        public unsafe IntPtr GetIntPtrFromIndex(uint index)
-        {
-            return GetAddressFromIndex(index);
-        }
-
-        public unsafe IntPtr GetFunctionPointerFromIndex(uint index)
-        {
-            return GetAddressFromIndex(index);
-        }
-
-        public RuntimeTypeHandle GetRuntimeTypeHandleFromIndex(uint index)
-        {
-            return RuntimeAugments.CreateRuntimeTypeHandle(GetIntPtrFromIndex(index));
-        }
-
-        public IntPtr GetGenericDictionaryFromIndex(uint index)
-        {
-            return GetIntPtrFromIndex(index);
-        }
-
-        public unsafe IntPtr GetAddressFromIndex(uint index)
-        {
-            if (index >= _elementsCount)
-                throw new BadImageFormatException();
-
-            // TODO: indirection through IAT
-            if (MethodTable.SupportsRelativePointers)
-            {
-                int* pRelPtr32 = &((int*)_elements)[index];
-                return (IntPtr)((byte*)pRelPtr32 + *pRelPtr32);
-            }
-
-            return (IntPtr)(((void**)_elements)[index]);
         }
     }
 }

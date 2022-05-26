@@ -8,9 +8,10 @@ import { js_to_mono_enum, js_to_mono_obj_root, _js_to_mono_uri_root } from "./js
 import { js_string_to_mono_string_root, js_string_to_mono_string_interned_root } from "./strings";
 import { _unbox_mono_obj_root_with_known_nonprimitive_type } from "./cs-to-js";
 import {
-    _create_temp_frame,
+    _create_temp_frame, _zero_region,
     getI32, getU32, getF32, getF64,
-    setI32, setU32, setF32, setF64, setI52, setU52, setB32, getB32
+    setI32, setU32, setF32, setF64, setI52, setU52,
+    setB32, getB32, setI32_unchecked, setU32_unchecked
 } from "./memory";
 import {
     _handle_exception_for_call, _teardown_after_call
@@ -216,7 +217,11 @@ export function _compile_converter_for_marshal_string(args_marshal: string/*Args
         setU52,
         setI52,
         setB32,
-        scratchValueRoot: converter.scratchValueRoot
+        setI32_unchecked,
+        setU32_unchecked,
+        scratchValueRoot: converter.scratchValueRoot,
+        stackAlloc: Module.stackAlloc,
+        _zero_region
     };
     let indirectLocalOffset = 0;
 
@@ -229,7 +234,8 @@ export function _compile_converter_for_marshal_string(args_marshal: string/*Args
 
     body.push(
         "if (!method) throw new Error('no method provided');",
-        `const buffer = Module.stackAlloc(${bufferSizeBytes});`,
+        `const buffer = stackAlloc(${bufferSizeBytes});`,
+        `_zero_region(buffer, ${bufferSizeBytes});`,
         `const indirectStart = buffer + ${indirectBaseOffset};`,
         ""
     );
@@ -304,10 +310,10 @@ export function _compile_converter_for_marshal_string(args_marshal: string/*Args
                     throw new Error("Unimplemented indirect type: " + step.indirect);
             }
 
-            body.push(`setU32(buffer + (${i} * 4), ${offsetText});`);
+            body.push(`setU32_unchecked(buffer + (${i} * 4), ${offsetText});`);
             indirectLocalOffset += step.size!;
         } else {
-            body.push(`setU32(buffer + (${i} * 4), ${valueKey});`);
+            body.push(`setU32_unchecked(buffer + (${i} * 4), ${valueKey});`);
             indirectLocalOffset += 4;
         }
         body.push("");

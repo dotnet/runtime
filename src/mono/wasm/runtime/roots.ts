@@ -5,6 +5,7 @@ import cwraps from "./cwraps";
 import { Module } from "./imports";
 import { VoidPtr, ManagedPointer, NativePointer } from "./types/emscripten";
 import { MonoObjectRef, MonoObjectRefNull, MonoObject, is_nullish } from "./types";
+import { _zero_region } from "./memory";
 
 const maxScratchRoots = 8192;
 let _scratch_root_buffer: WasmRootBuffer | null = null;
@@ -143,13 +144,6 @@ export function mono_wasm_release_roots(...args: WasmRoot<any>[]): void {
 
         args[i].release();
     }
-}
-
-function _zero_region(byteOffset: VoidPtr, sizeBytes: number) {
-    if (((<any>byteOffset % 4) === 0) && ((sizeBytes % 4) === 0))
-        Module.HEAP32.fill(0, <any>byteOffset >>> 2, sizeBytes >>> 2);
-    else
-        Module.HEAP8.fill(0, <any>byteOffset, sizeBytes);
 }
 
 function _mono_wasm_release_scratch_index(index: number) {

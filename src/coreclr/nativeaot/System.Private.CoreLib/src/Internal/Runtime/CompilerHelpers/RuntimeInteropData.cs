@@ -1,18 +1,84 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+
 using System;
+using System.Runtime;
 using Internal.Runtime.Augments;
-using Internal.NativeFormat;
 using Internal.Runtime.TypeLoader;
-using Internal.Reflection.Execution;
+using Internal.NativeFormat;
 using System.Runtime.InteropServices;
 
 namespace Internal.Runtime.CompilerHelpers
 {
-    internal partial class RuntimeInteropData
+    internal static class RuntimeInteropData
     {
-        public override IntPtr GetForwardDelegateCreationStub(RuntimeTypeHandle delegateTypeHandle)
+        public static uint GetStructFieldOffset(RuntimeTypeHandle structureTypeHandle, string fieldName)
+        {
+            if (TryGetStructFieldOffset(structureTypeHandle, fieldName, out bool structExists, out uint offset))
+            {
+                return offset;
+            }
+
+            // if we can find the struct but couldn't find its field, throw Argument Exception
+            if (structExists)
+            {
+                throw new ArgumentException(SR.Format(SR.Argument_OffsetOfFieldNotFound, RuntimeAugments.GetLastResortString(structureTypeHandle)), nameof(fieldName));
+            }
+
+            throw new MissingInteropDataException(SR.StructMarshalling_MissingInteropData, Type.GetTypeFromHandle(structureTypeHandle));
+        }
+
+        public static int GetStructUnsafeStructSize(RuntimeTypeHandle structureTypeHandle)
+        {
+            if (TryGetStructUnsafeStructSize(structureTypeHandle, out int size))
+            {
+                return size;
+            }
+
+            // IsBlittable() checks whether the type contains GC references. It is approximate check with false positives.
+            // This fallback path will return incorrect answer for types that do not contain GC references, but that are
+            // not actually blittable; e.g. for types with bool fields.
+            if (structureTypeHandle.IsBlittable() && structureTypeHandle.IsValueType())
+            {
+                return structureTypeHandle.GetValueTypeSize();
+            }
+
+            throw new MissingInteropDataException(SR.StructMarshalling_MissingInteropData, Type.GetTypeFromHandle(structureTypeHandle));
+        }
+
+        public static IntPtr GetStructUnmarshalStub(RuntimeTypeHandle structureTypeHandle)
+        {
+            if (TryGetStructUnmarshalStub(structureTypeHandle, out IntPtr stub))
+            {
+                return stub;
+            }
+
+            throw new MissingInteropDataException(SR.StructMarshalling_MissingInteropData, Type.GetTypeFromHandle(structureTypeHandle));
+        }
+
+        public static IntPtr GetStructMarshalStub(RuntimeTypeHandle structureTypeHandle)
+        {
+            if (TryGetStructMarshalStub(structureTypeHandle, out IntPtr stub))
+            {
+                return stub;
+            }
+
+            throw new MissingInteropDataException(SR.StructMarshalling_MissingInteropData, Type.GetTypeFromHandle(structureTypeHandle));
+        }
+
+        public static IntPtr GetDestroyStructureStub(RuntimeTypeHandle structureTypeHandle, out bool hasInvalidLayout)
+        {
+            if (TryGetDestroyStructureStub(structureTypeHandle, out IntPtr stub, out hasInvalidLayout))
+            {
+                return stub;
+            }
+
+            throw new MissingInteropDataException(SR.StructMarshalling_MissingInteropData, Type.GetTypeFromHandle(structureTypeHandle));
+        }
+
+
+        public static IntPtr GetForwardDelegateCreationStub(RuntimeTypeHandle delegateTypeHandle)
         {
             GetMarshallersForDelegate(delegateTypeHandle, out _, out _, out IntPtr delegateCreationStub);
             if (delegateCreationStub == IntPtr.Zero)
@@ -20,7 +86,7 @@ namespace Internal.Runtime.CompilerHelpers
             return delegateCreationStub;
         }
 
-        public override IntPtr GetDelegateMarshallingStub(RuntimeTypeHandle delegateTypeHandle, bool openStaticDelegate)
+        public static IntPtr GetDelegateMarshallingStub(RuntimeTypeHandle delegateTypeHandle, bool openStaticDelegate)
         {
             GetMarshallersForDelegate(delegateTypeHandle, out IntPtr openStub, out IntPtr closedStub, out _);
             IntPtr pStub = openStaticDelegate ? openStub : closedStub;
@@ -30,19 +96,19 @@ namespace Internal.Runtime.CompilerHelpers
         }
 
         #region "Struct Data"
-        public override bool TryGetStructUnmarshalStub(RuntimeTypeHandle structureTypeHandle, out IntPtr unmarshalStub)
+        public static bool TryGetStructUnmarshalStub(RuntimeTypeHandle structureTypeHandle, out IntPtr unmarshalStub)
             => TryGetMarshallersForStruct(structureTypeHandle, out _, out unmarshalStub, out _, out _, out _);
 
-        public override bool TryGetStructMarshalStub(RuntimeTypeHandle structureTypeHandle, out IntPtr marshalStub)
+        public static bool TryGetStructMarshalStub(RuntimeTypeHandle structureTypeHandle, out IntPtr marshalStub)
             => TryGetMarshallersForStruct(structureTypeHandle, out marshalStub, out _, out _, out _, out _);
 
-        public override bool TryGetDestroyStructureStub(RuntimeTypeHandle structureTypeHandle, out IntPtr destroyStub, out bool hasInvalidLayout)
+        public static bool TryGetDestroyStructureStub(RuntimeTypeHandle structureTypeHandle, out IntPtr destroyStub, out bool hasInvalidLayout)
             => TryGetMarshallersForStruct(structureTypeHandle, out _, out _, out destroyStub, out hasInvalidLayout, out _);
 
-        public override bool TryGetStructUnsafeStructSize(RuntimeTypeHandle structureTypeHandle, out int size)
+        public static bool TryGetStructUnsafeStructSize(RuntimeTypeHandle structureTypeHandle, out int size)
             => TryGetMarshallersForStruct(structureTypeHandle, out _, out _, out _, out _, out size);
 
-        public override bool TryGetStructFieldOffset(RuntimeTypeHandle structureTypeHandle, string fieldName, out bool structExists, out uint offset)
+        public static bool TryGetStructFieldOffset(RuntimeTypeHandle structureTypeHandle, string fieldName, out bool structExists, out uint offset)
         {
             NativeParser entryParser;
             structExists = false;
@@ -76,12 +142,12 @@ namespace Internal.Runtime.CompilerHelpers
         }
         #endregion
 
-        private static unsafe bool TryGetNativeReaderForBlob(NativeFormatModuleInfo module, ReflectionMapBlob blob, out NativeReader reader)
+        private static unsafe bool TryGetNativeReaderForBlob(TypeManagerHandle module, ReflectionMapBlob blob, out NativeReader reader)
         {
             byte* pBlob;
             uint cbBlob;
 
-            if (module.TryFindBlob((int)blob, out pBlob, out cbBlob))
+            if (RuntimeImports.RhFindBlob(module, (uint)blob, &pBlob, &cbBlob))
             {
                 reader = new NativeReader(pBlob, cbBlob);
                 return true;
@@ -98,7 +164,7 @@ namespace Internal.Runtime.CompilerHelpers
             closedStub = IntPtr.Zero;
             delegateCreationStub = IntPtr.Zero;
 
-            foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
+            foreach (TypeManagerHandle module in RuntimeAugments.GetLoadedModules())
             {
                 NativeReader delegateMapReader;
                 if (TryGetNativeReaderForBlob(module, ReflectionMapBlob.DelegateMarshallingStubMap, out delegateMapReader))
@@ -132,7 +198,7 @@ namespace Internal.Runtime.CompilerHelpers
             int structHashcode = structTypeHandle.GetHashCode();
             externalReferences = default(ExternalReferencesTable);
             entryParser = default(NativeParser);
-            foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
+            foreach (TypeManagerHandle module in RuntimeAugments.GetLoadedModules())
             {
                 NativeReader structMapReader;
                 if (TryGetNativeReaderForBlob(module, ReflectionMapBlob.StructMarshallingStubMap, out structMapReader))

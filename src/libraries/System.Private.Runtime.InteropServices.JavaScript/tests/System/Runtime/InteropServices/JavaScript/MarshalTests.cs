@@ -458,7 +458,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 var invoke_int = INTERNAL.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeInt"");
                 invoke_int ();
             "));
-            Assert.Contains("Value is not integer but undefined", ex.Message);
+            Assert.Contains("Value is not an integer: undefined (undefined)", ex.Message);
             Assert.Equal(1, HelperMarshal._intValue);
         }
 
@@ -495,7 +495,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 var invoke_int = INTERNAL.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeInt"");
                 invoke_int (3.14);
             "));
-            Assert.Contains("Value is not integer but float", ex.Message);
+            Assert.Contains("Value is not an integer: 3.14 (number)", ex.Message);
             Assert.Equal(0, HelperMarshal._intValue);
         }
 
@@ -508,7 +508,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 var invoke_int = INTERNAL.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeInt"");
                 invoke_int (""200"");
             "));
-            Assert.Contains("Value is not integer but string", ex.Message);
+            Assert.Contains("Value is not an integer: 200 (string)", ex.Message);
             Assert.Equal(0, HelperMarshal._intValue);
         }
 
