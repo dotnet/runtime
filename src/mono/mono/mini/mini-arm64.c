@@ -2522,7 +2522,7 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 			break;
 		}
 		case ArgVtypeInIRegs:
-			if ((t->type == MONO_TYPE_GENERICINST) && !cfg->full_aot) {
+			if ((t->type == MONO_TYPE_GENERICINST) && !cfg->full_aot && !sig->pinvoke) {
 				MonoClass *klass = mono_class_from_mono_type_internal (t);
 				if (m_class_is_simd_type (klass)) {
 					lainfo->storage = LLVMArgVtypeInSIMDReg;

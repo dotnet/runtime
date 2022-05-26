@@ -3566,7 +3566,6 @@ mono_method_is_generic_sharable_full (MonoMethod *method, gboolean allow_type_va
 				}
 			}
 		}
-
 	}
 
 	if (mono_class_is_ginst (method->klass)) {

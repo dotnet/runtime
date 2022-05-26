@@ -1740,7 +1740,7 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 			break;
 		case LLVMArgVtypeInSIMDReg: {
 			MonoClass *klass = mono_class_from_mono_type_internal (sig->params [i]);
-			param_types [pindex ++] = simd_class_to_llvm_type (ctx, klass);;
+			param_types [pindex ++] = simd_class_to_llvm_type (ctx, klass);
 			break;
 		}
 		case LLVMArgVtypeByVal:
@@ -3931,7 +3931,7 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 			LLVMValueRef arg = LLVMGetParam (ctx->lmethod, pindex);
 
 			ctx->addresses [reg] = build_alloca_address (ctx, ainfo->type);
-			LLVMBuildStore (builder, arg, convert (ctx, ctx->addresses [reg]->value, LLVMPointerType (LLVMTypeOf (arg), 0)));
+			LLVMBuildStore (builder, arg, build_ptr_cast (builder, ctx->addresses [reg]->value,  pointer_type(LLVMTypeOf (arg))));
 			break;
 		}
 		case LLVMArgVtypeByVal: {
