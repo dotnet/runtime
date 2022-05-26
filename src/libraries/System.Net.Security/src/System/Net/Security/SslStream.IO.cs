@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.ExceptionServices;
@@ -24,8 +23,8 @@ namespace System.Net.Security
         private object _handshakeLock => _sslAuthenticationOptions;
         private volatile TaskCompletionSource<bool>? _handshakeWaiter;
 
-        //private const int HandshakeTypeOffsetSsl2 = 2;                       // Offset of HelloType in Sslv2 and Unified frames
-        //private const int HandshakeTypeOffsetTls = 5;                        // Offset of HelloType in Sslv3 and TLS frames
+        private const int HandshakeTypeOffsetSsl2 = 2;                       // Offset of HelloType in Sslv2 and Unified frames
+        private const int HandshakeTypeOffsetTls = 5;                        // Offset of HelloType in Sslv3 and TLS frames
 
         private bool _receivedEOF;
 
@@ -379,8 +378,10 @@ namespace System.Net.Security
                     }
                     break;
                 case TlsContentType.Handshake:
-                    if (!_isRenego && _buffer.EncryptedReadOnlySpan[TlsFrameHelper.HeaderSize] == (byte)TlsHandshakeType.ClientHello &&
+#pragma warning disable CS0618
+                    if (!_isRenego && _buffer.EncryptedReadOnlySpan[_lastFrame.Header.Version == SslProtocols.Ssl2 ? HandshakeTypeOffsetSsl2 : HandshakeTypeOffsetTls] == (byte)TlsHandshakeType.ClientHello &&
                         _sslAuthenticationOptions!.IsServer) // guard against malicious endpoints. We should not see ClientHello on client.
+#pragma warning restore CS0618
                     {
                         TlsFrameHelper.ProcessingOptions options = NetEventSource.Log.IsEnabled() ?
                                                                     TlsFrameHelper.ProcessingOptions.All :
@@ -448,7 +449,7 @@ namespace System.Net.Security
                     break;
                 }
 
-                frameSize = nextHeader.Length + TlsFrameHelper.HeaderSize;
+                frameSize = nextHeader.Length;
 
                 // Can process more handshake frames in single step or during TLS1.3 post-handshake auth, but we should
                 // avoid processing too much so as to preserve API boundary between handshake and I/O.
@@ -977,9 +978,7 @@ namespace System.Net.Security
                 throw new AuthenticationException(SR.net_frame_read_size);
             }
 
-            Console.WriteLine("GetFrameSize = {0} on {1}", _lastFrame.Header.Length + TlsFrameHelper.HeaderSize, this.GetHashCode());
-
-            return _lastFrame.Header.Length + TlsFrameHelper.HeaderSize;
+            return _lastFrame.Header.Length;
         }
     }
 }

@@ -90,11 +90,6 @@ namespace System.Net.Security
         public int Length;
 
         public override string ToString() => $"{Version}:{Type}[{Length}]";
-
-        public int GetFrameSize()
-        {
-            return Length + TlsFrameHelper.HeaderSize;
-        }
     }
 
     internal static class TlsFrameHelper
@@ -184,7 +179,7 @@ namespace System.Net.Security
             // SSLv3, TLS or later
             if (frame[1] == 3)
             {
-                header.Length = ((frame[3] << 8) | frame[4]);
+                header.Length = ((frame[3] << 8) | frame[4]) + HeaderSize;
                 header.Version = TlsMinorVersionToProtocol(frame[2]);
             }
             else if (frame[2] == (byte)TlsHandshakeType.ClientHello &&
@@ -202,9 +197,6 @@ namespace System.Net.Security
                     length = (((frame[0] & 0x3f) << 8) | frame[1]) + 3;
                 }
 
-Console.WriteLine("GET Header len = {0}", length);
-
-
 
                 // max frame for SSLv2 is 32767.
                 // However, we expect something reasonable for initial HELLO
@@ -213,25 +205,17 @@ Console.WriteLine("GET Header len = {0}", length);
 #pragma warning disable CS0618 // Ssl2 and Ssl3 are obsolete
                 header.Version = SslProtocols.Ssl2;
 #pragma warning restore CS0618
-                header.Length = length - HeaderSize;
+                header.Length = length;
                 header.Type = TlsContentType.Handshake;
+            }
+            else
+            {
+                header.Length = -1;
             }
 
             return true;
         }
 
-/*
-        // Returns frame size e.g. header + content
-        public static int GetFrameSize(ReadOnlySpan<byte> frame)
-        {
-            if (frame.Length < 5 || frame[1] < 3)
-            {
-                return -1;
-            }
-
-            return ((frame[3] << 8) | frame[4]) + HeaderSize;
-        }
-*/
         // This function will try to parse TLS hello frame and fill details in provided info structure.
         // If frame was fully processed without any error, function returns true.
         // Otherwise it returns false and info may have partial data.
@@ -285,7 +269,7 @@ Console.WriteLine("GET Header len = {0}", length);
 #pragma warning restore CS0618
 
             // Check if we have full frame.
-            bool isComplete = frame.Length >= HeaderSize + info.Header.Length;
+            bool isComplete = frame.Length >= info.Header.Length;
 
 #pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
             if (((int)info.Header.Version >= (int)SslProtocols.Tls) &&

@@ -46,7 +46,7 @@ namespace System.Net.Security.Tests
             Assert.True(TlsFrameHelper.TryGetFrameInfo(s_validClientHello, ref info));
 
             Assert.Equal(SslProtocols.Tls12, info.Header.Version);
-            Assert.Equal(203, info.Header.Length);
+            Assert.Equal(208, info.Header.Length);
             Assert.Equal(SslProtocols.Tls12, info.SupportedVersions);
             Assert.Equal(TlsFrameHelper.ApplicationProtocolInfo.None, info.ApplicationProtocols);
         }
