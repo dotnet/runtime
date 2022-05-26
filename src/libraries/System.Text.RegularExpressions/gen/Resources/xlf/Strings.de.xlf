@@ -272,6 +272,16 @@
         <target state="translated">Nicht abgeschlossener (?#...)-Kommentar.</target>
         <note />
       </trans-unit>
+      <trans-unit id="UseRegexSourceGeneratorMessage">
+        <source>Use 'RegexGeneratorAttribute' to generate the regular expression implementation at compile-time.</source>
+        <target state="new">Use 'RegexGeneratorAttribute' to generate the regular expression implementation at compile-time.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UseRegexSourceGeneratorTitle">
+        <source>Convert to 'RegexGenerator'.</source>
+        <target state="new">Convert to 'RegexGenerator'.</target>
+        <note />
+      </trans-unit>
     </body>
   </file>
 </xliff>

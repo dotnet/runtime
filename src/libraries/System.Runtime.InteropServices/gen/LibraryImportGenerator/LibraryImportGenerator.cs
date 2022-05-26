@@ -274,7 +274,6 @@ namespace Microsoft.Interop
 
             if (libraryImportData is null)
             {
-                generatorDiagnostics.ReportConfigurationNotSupported(generatedDllImportAttr!, "Invalid syntax");
                 libraryImportData = new LibraryImportData("INVALID_CSHARP_SYNTAX");
             }
 
