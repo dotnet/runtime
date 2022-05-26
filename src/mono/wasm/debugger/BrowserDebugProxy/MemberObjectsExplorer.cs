@@ -431,11 +431,13 @@ namespace BrowserDebugProxy
                     }
                     catch (Exception)
                     {
-                        return;
+                        propRet = GetNotAutoExpandableObject(getMethodId, propNameWithSufix);
                     }
                 }
                 else
+                {
                     propRet = GetNotAutoExpandableObject(getMethodId, propNameWithSufix);
+                }
 
                 propRet["isOwn"] = isOwn;
                 propRet["__section"] = getterAttrs switch
