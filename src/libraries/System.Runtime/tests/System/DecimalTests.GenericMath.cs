@@ -1207,7 +1207,7 @@ namespace System.Tests
             Assert.Equal(-1.0m, NumberBaseHelper<decimal>.CreateTruncating<Int128>(new Int128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)));
 
             Assert.Equal(decimal.MaxValue, NumberBaseHelper<decimal>.CreateTruncating<Int128>(new Int128(0x7FFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)));
-            Assert.Equal(0.0m, NumberBaseHelper<decimal>.CreateTruncating<Int128>(new Int128(0x8000_0000_0000_0000, 0x0000_0000_0000_0000)));
+            Assert.Equal(decimal.MinValue, NumberBaseHelper<decimal>.CreateTruncating<Int128>(new Int128(0x8000_0000_0000_0000, 0x0000_0000_0000_0000)));
         }
 
         [Fact]
@@ -1328,7 +1328,7 @@ namespace System.Tests
             Assert.Equal(decimal.MaxValue, NumberBaseHelper<decimal>.CreateTruncating<UInt128>(new UInt128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)));
 
             Assert.Equal(decimal.MaxValue, NumberBaseHelper<decimal>.CreateTruncating<UInt128>(new UInt128(0x7FFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)));
-            Assert.Equal(0.0m, NumberBaseHelper<decimal>.CreateTruncating<UInt128>(new UInt128(0x8000_0000_0000_0000, 0x0000_0000_0000_0000)));
+            Assert.Equal(decimal.MaxValue, NumberBaseHelper<decimal>.CreateTruncating<UInt128>(new UInt128(0x8000_0000_0000_0000, 0x0000_0000_0000_0000)));
         }
 
         [Fact]
