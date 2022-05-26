@@ -750,7 +750,6 @@ jobs:
 # Only do this on PR builds since we use the Release builds for these test runs in CI
 # and those are already built above
 #
-
 - ${{ if eq(variables['isRollingBuild'], false) }}:
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
