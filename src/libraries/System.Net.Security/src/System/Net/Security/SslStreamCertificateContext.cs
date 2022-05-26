@@ -20,6 +20,16 @@ namespace System.Net.Security
 
         public static SslStreamCertificateContext Create(X509Certificate2 target, X509Certificate2Collection? additionalCertificates, bool offline = false, SslCertificateTrust? trust = null)
         {
+            return Create(target, additionalCertificates, offline, trust, noOcspFetch: false);
+        }
+
+        internal static SslStreamCertificateContext Create(
+            X509Certificate2 target,
+            X509Certificate2Collection? additionalCertificates,
+            bool offline,
+            SslCertificateTrust? trust,
+            bool noOcspFetch)
+        {
             if (!target.HasPrivateKey)
             {
                 throw new NotSupportedException(SR.net_ssl_io_no_server_cert);
@@ -97,15 +107,15 @@ namespace System.Net.Security
             SslStreamCertificateContext ctx = new SslStreamCertificateContext(target, intermediates, trust);
 
             // On Linux, AddRootCertificate will start a background download of an OCSP response,
-            // unless this context was built "offline".
-            ctx.SetOfflineStatus(offline);
+            // unless this context was built "offline", or this came from the internal Create(X509Certificate2)
+            ctx.SetNoOcspFetch(offline || noOcspFetch);
             ctx.AddRootCertificate(root);
 
             return ctx;
         }
 
         partial void AddRootCertificate(X509Certificate2? rootCertificate);
-        partial void SetOfflineStatus(bool offline);
+        partial void SetNoOcspFetch(bool noOcspFetch);
 
         internal SslStreamCertificateContext Duplicate()
         {

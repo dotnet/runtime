@@ -114,9 +114,25 @@ namespace System.Net.Security.Tests
             return ConnectWithRevocation_WithCallback_Core(X509RevocationMode.Offline, offlineContext);
         }
 
-        private async Task ConnectWithRevocation_WithCallback_Core(X509RevocationMode revocationMode, bool offlineContext = false)
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public Task ConnectWithRevocation_ServerCertWithoutContext_NoStapledOcsp()
         {
-            string serverName = $"{revocationMode.ToString().ToLower()}.{offlineContext.ToString().ToLower()}.server.example";
+            // Offline will only work if
+            // a) the revocation has been checked recently enough that it is cached, or
+            // b) the server stapled the response
+            //
+            // At high load, the server's background fetch might not have completed before
+            // this test runs.
+            return ConnectWithRevocation_WithCallback_Core(X509RevocationMode.Offline, offlineContext: null);
+        }
+
+        private async Task ConnectWithRevocation_WithCallback_Core(
+            X509RevocationMode revocationMode,
+            bool? offlineContext = false)
+        {
+            string offlinePart = offlineContext.HasValue ? offlineContext.GetValueOrDefault().ToString().ToLower() : "null";
+            string serverName = $"{revocationMode.ToString().ToLower()}.{offlinePart}.server.example";
 
             (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
 
@@ -150,19 +166,30 @@ namespace System.Net.Security.Tests
             using (intermediateAuthority)
             using (serverCert)
             using (X509Certificate2 issuerCert = intermediateAuthority.CloneIssuerCert())
-            using (X509Certificate2 rootCert = rootAuthority.CloneIssuerCert())
             await using (SslStream tlsClient = new SslStream(clientStream))
             await using (SslStream tlsServer = new SslStream(serverStream))
             {
                 intermediateAuthority.Revoke(serverCert, serverCert.NotBefore);
 
-                SslServerAuthenticationOptions serverOpts = new SslServerAuthenticationOptions
+                SslServerAuthenticationOptions serverOpts = new SslServerAuthenticationOptions();
+
+                if (offlineContext.HasValue)
                 {
-                    ServerCertificateContext = SslStreamCertificateContext.Create(
+                    serverOpts.ServerCertificateContext = SslStreamCertificateContext.Create(
                         serverCert,
                         new X509Certificate2Collection(issuerCert),
-                        trust: SslCertificateTrust.CreateForX509Collection(new X509Certificate2Collection(rootCert))),
-                };
+                        offlineContext.GetValueOrDefault());
+
+                    if (revocationMode == X509RevocationMode.Offline)
+                    {
+                        // Give the OCSP response a better chance to finish.
+                        await Task.Delay(200);
+                    }
+                }
+                else
+                {
+                    serverOpts.ServerCertificate = serverCert;
+                }
 
                 Task serverTask = tlsServer.AuthenticateAsServerAsync(serverOpts);
                 Task clientTask = tlsClient.AuthenticateAsClientAsync(clientOpts);
@@ -207,7 +234,7 @@ namespace System.Net.Security.Tests
                     // The call didn't request revocation, so the chain should have been trusted.
                     Assert.Equal(SslPolicyErrors.None, sslPolicyErrors);
                 }
-                else if (certificate.Subject.Contains(".true.server.") &&
+                else if ((certificate.Subject.Contains(".true.server.") || certificate.Subject.Contains(".null.server.")) &&
                     chain.ChainPolicy.RevocationMode == X509RevocationMode.Offline)
                 {
                     // In an Offline chain with an offline context the revocation still shouldn't

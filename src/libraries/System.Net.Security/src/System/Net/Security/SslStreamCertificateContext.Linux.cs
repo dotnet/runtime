@@ -34,13 +34,14 @@ namespace System.Net.Security
             SslContexts = new ConcurrentDictionary<SslProtocols, SafeSslContextHandle>();
         }
 
-        internal static SslStreamCertificateContext Create(X509Certificate2 target) => Create(target, null);
+        internal static SslStreamCertificateContext Create(X509Certificate2 target) =>
+            Create(target, null, offline: false, trust: null, noOcspFetch: true);
 
         internal bool OcspStaplingAvailable => _ocspUrls is not null;
 
-        partial void SetOfflineStatus(bool offline)
+        partial void SetNoOcspFetch(bool noOcspFetch)
         {
-            _staplingForbidden = offline;
+            _staplingForbidden = noOcspFetch;
         }
 
         partial void AddRootCertificate(X509Certificate2? rootCertificate)
