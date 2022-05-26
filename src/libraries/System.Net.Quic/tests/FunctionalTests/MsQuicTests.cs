@@ -105,9 +105,14 @@ namespace System.Net.Quic.Tests
             clientConnection.Dispose();
         }
 
-        [Fact]
+        [ConditionalFact]
         public async Task UntrustedClientCertificateFails()
         {
+            if (PlatformDetection.IsWindows10Version20348OrLower)
+            {
+                throw new SkipTestException("Client certificates are not supported on Windows Server 2022.");
+            }
+
             var listenerOptions = new QuicListenerOptions();
             listenerOptions.ListenEndPoint = new IPEndPoint(IPAddress.Loopback, 0);
             listenerOptions.ServerAuthenticationOptions = GetSslServerAuthenticationOptions();
@@ -334,11 +339,16 @@ namespace System.Net.Quic.Tests
             (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(clientOptions, listenerOptions);
         }
 
-        [Theory]
+        [ConditionalTheory]
         [InlineData(true)]
         [InlineData(false)]
         public async Task ConnectWithClientCertificate(bool sendCertificate)
         {
+            if (PlatformDetection.IsWindows10Version20348OrLower)
+            {
+                throw new SkipTestException("Client certificates are not supported on Windows Server 2022.");
+            }
+
             bool clientCertificateOK = false;
 
             var listenerOptions = new QuicListenerOptions();
