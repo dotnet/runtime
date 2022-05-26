@@ -424,7 +424,8 @@ namespace Internal.IL
 
                     methodAfterConstraintResolution = directMethod;
 
-                    Debug.Assert(!methodAfterConstraintResolution.OwningType.IsInterface);
+                    Debug.Assert(!methodAfterConstraintResolution.OwningType.IsInterface
+                        || methodAfterConstraintResolution.Signature.IsStatic);
                     resolvedConstraint = true;
 
                     exactType = constrained;

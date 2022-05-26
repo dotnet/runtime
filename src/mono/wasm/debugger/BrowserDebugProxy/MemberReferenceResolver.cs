@@ -12,11 +12,13 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Collections.Generic;
 using System.Net.WebSockets;
 using BrowserDebugProxy;
+using System.Globalization;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
     internal sealed class MemberReferenceResolver
     {
+        private static int evaluationResultObjectId;
         private SessionId sessionId;
         private int scopeId;
         private MonoProxy proxy;
@@ -542,6 +544,89 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 return 0;
             }
+        }
+
+        private static readonly HashSet<Type> NumericTypes = new HashSet<Type>
+        {
+            typeof(decimal), typeof(byte), typeof(sbyte),
+            typeof(short), typeof(ushort),
+            typeof(int), typeof(uint),
+            typeof(float), typeof(double)
+        };
+
+        public object ConvertCSharpToJSType(object v, Type type)
+        {
+            if (v == null)
+                return new { type = "object", subtype = "null", className = type?.ToString(), description = type?.ToString() };
+            if (v is string s)
+                return new { type = "string", value = s, description = s };
+            if (v is char c)
+                return new { type = "symbol", value = c, description = $"{(int)c} '{c}'" };
+            if (NumericTypes.Contains(v.GetType()))
+                return new { type = "number", value = v, description = Convert.ToDouble(v).ToString(CultureInfo.InvariantCulture) };
+            if (v is bool)
+                return new { type = "boolean", value = v, description = v.ToString().ToLowerInvariant(), className = type.ToString() };
+            if (v is JObject)
+                return v;
+            if (v is Array arr)
+            {
+                return CacheEvaluationResult(
+                    JObject.FromObject(
+                        new
+                        {
+                            type = "object",
+                            subtype = "array",
+                            value = new JArray(arr.Cast<object>().Select((val, idx) => JObject.FromObject(
+                                new
+                                {
+                                    value = ConvertCSharpToJSType(val, val.GetType()),
+                                    name = $"{idx}"
+                                }))),
+                            description = v.ToString(),
+                            className = type.ToString()
+                        }));
+            }
+            return new { type = "object", value = v, description = v.ToString(), className = type.ToString() };
+        }
+
+        private JObject CacheEvaluationResult(JObject value)
+        {
+            if (IsDuplicated(value, out JObject duplicate))
+                return value;
+
+            var evalResultId = Interlocked.Increment(ref evaluationResultObjectId);
+            string id = $"dotnet:evaluationResult:{evalResultId}";
+            if (!value.TryAdd("objectId", id))
+            {
+                logger.LogWarning($"EvaluationResult cache request passed with ID: {value["objectId"].Value<string>()}. Overwritting it with a automatically assigned ID: {id}.");
+                value["objectId"] = id;
+            }
+            scopeCache.EvaluationResults.Add(id, value);
+            return value;
+
+            bool IsDuplicated(JObject er, out JObject duplicate)
+            {
+                var type = er["type"].Value<string>();
+                var subtype = er["subtype"].Value<string>();
+                var value = er["value"];
+                var description = er["description"].Value<string>();
+                var className = er["className"].Value<string>();
+                duplicate = scopeCache.EvaluationResults.FirstOrDefault(
+                    pair => pair.Value["type"].Value<string>() == type
+                    && pair.Value["subtype"].Value<string>() == subtype
+                    && pair.Value["description"].Value<string>() == description
+                    && pair.Value["className"].Value<string>() == className
+                    && JToken.DeepEquals(pair.Value["value"], value)).Value;
+                return duplicate != null;
+            }
+        }
+
+        public JObject TryGetEvaluationResult(string id)
+        {
+            JObject val;
+            if (!scopeCache.EvaluationResults.TryGetValue(id, out val))
+                logger.LogError($"EvaluationResult of ID: {id} does not exist in the cache.");
+            return val;
         }
     }
 }
