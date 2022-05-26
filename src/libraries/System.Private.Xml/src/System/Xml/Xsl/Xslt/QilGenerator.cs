@@ -348,7 +348,7 @@ namespace System.Xml.Xsl.Xslt
         // 3. In context of global variable
         // We treating this methods differentely when they are called to create implicit arguments.
         // Implicite argument (position, last) are rare and lead to uneficiant code. So we treating them
-        // specialy to be able eliminate them later, wen we compiled everithing and can detect was they used or not.
+        // specially to be able eliminate them later, wen we compiled everithing and can detect was they used or not.
 
         // Returns context node
         private QilNode GetCurrentNode()
@@ -2562,7 +2562,7 @@ namespace System.Xml.Xsl.Xslt
 
         // Fills invokeArgs with values from actualArgs in order given by formalArgs
         // Returns true if formalArgs maps 1:1 with actual args.
-        // Formaly this is n*n algorithm. We can optimize it by calculationg "signature"
+        // Formally this is n*n algorithm. We can optimize it by calculationg "signature"
         // of the function as sum of all hashes of its args names.
         private static bool FillupInvokeArgs(IList<QilNode> formalArgs, IList<XslNode> actualArgs, QilList invokeArgs)
         {

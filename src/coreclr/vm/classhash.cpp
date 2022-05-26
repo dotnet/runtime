@@ -478,11 +478,6 @@ EEClassHashEntry_t *EEClassHashTable::FindItem(LPCUTF8 pszNamespace, LPCUTF8 psz
             // If (pSearch->pEncloser), we've found a nested class
             if ((IsNested != FALSE) == (pSearch->GetEncloser() != NULL))
             {
-                if (m_bCaseInsensitive)
-                    g_IBCLogger.LogClassHashTableAccess(dac_cast<PTR_EEClassHashEntry>(pSearch->GetData()));
-                else
-                    g_IBCLogger.LogClassHashTableAccess(pSearch);
-
                 return pSearch;
             }
         }

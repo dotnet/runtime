@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+#include <config.h>
 #include <glib.h>
 #include <mono/metadata/components.h>
 #include "debugger-agent-external.h"

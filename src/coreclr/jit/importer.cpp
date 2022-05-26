@@ -8261,7 +8261,7 @@ bool Compiler::impCanPInvokeInlineCallSite(BasicBlock* block)
 //   Sets GTF_CALL_M_PINVOKE on the call for pinvokes.
 //
 //   Also sets GTF_CALL_UNMANAGED on call for inline pinvokes if the
-//   call passes a combination of legality and profitabilty checks.
+//   call passes a combination of legality and profitability checks.
 //
 //   If GTF_CALL_UNMANAGED is set, increments info.compUnmanagedCallCountWithGCTransition
 
@@ -10557,7 +10557,7 @@ DONE_CALL:
                     (origCall->gtClassProfileCandidateInfo == nullptr))
                 {
                     JITDUMP("\nSaving context %p for call [%06u]\n", exactContextHnd, dspTreeID(origCall));
-                    origCall->gtCallMoreFlags |= GTF_CALL_M_LATE_DEVIRT;
+                    origCall->gtCallMoreFlags |= GTF_CALL_M_HAS_LATE_DEVIRT_INFO;
                     LateDevirtualizationInfo* const info = new (this, CMK_Inlining) LateDevirtualizationInfo;
                     info->exactContextHnd                = exactContextHnd;
                     origCall->gtLateDevirtualizationInfo = info;
@@ -17203,7 +17203,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 if (eeIsValueClass(resolvedToken.hClass))
                 {
-                    op1 = gtNewStructVal(resolvedToken.hClass, op1);
+                    op1 = gtNewStructVal(typGetObjLayout(resolvedToken.hClass), op1);
                     if (op1->OperIs(GT_OBJ))
                     {
                         gtSetObjGcInfo(op1->AsObj());
@@ -20097,7 +20097,7 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
     inlCurArgInfo->arg = arg;
     GenTree* curArgVal = arg->GetNode();
 
-    curArgVal = curArgVal->gtRetExprVal();
+    assert(!curArgVal->OperIs(GT_RET_EXPR));
 
     if (curArgVal->gtOper == GT_MKREFANY)
     {
@@ -20693,7 +20693,8 @@ GenTree* Compiler::impInlineFetchArg(unsigned lclNum, InlArgInfo* inlArgInfo, In
     const var_types      lclTyp           = lclInfo.lclTypeInfo;
     GenTree*             op1              = nullptr;
 
-    GenTree* argNode = argInfo.arg->GetNode()->gtRetExprVal();
+    GenTree* argNode = argInfo.arg->GetNode();
+    assert(!argNode->OperIs(GT_RET_EXPR));
 
     if (argInfo.argIsInvariant && !argCanBeModified)
     {
@@ -21824,6 +21825,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     // it's a union field used for other things by virtual
     // stubs)
     call->gtInlineCandidateInfo = nullptr;
+    call->gtCallMoreFlags &= ~GTF_CALL_M_HAS_LATE_DEVIRT_INFO;
 
 #if defined(DEBUG)
     if (verbose)

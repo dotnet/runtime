@@ -769,6 +769,7 @@ namespace System.Net.Http.Functional.Tests
     }
 
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMsQuicSupported))]
+    [Collection(nameof(DisableParallelization))]
     public sealed class TelemetryTest_Http30_MsQuic : TelemetryTest
     {
         protected override Version UseVersion => HttpVersion.Version30;

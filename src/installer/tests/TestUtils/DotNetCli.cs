@@ -60,11 +60,6 @@ namespace Microsoft.DotNet.Cli.Build
             var newArgs = args.ToList();
             newArgs.Insert(0, command);
 
-            if (EnvVars.Verbose)
-            {
-                newArgs.Insert(0, "-v");
-            }
-
             return Command.Create(DotnetExecutablePath, newArgs)
                 .EnvironmentVariable("DOTNET_SKIP_FIRST_TIME_EXPERIENCE", "1")
                 .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0"); // Avoid looking at machine state by default

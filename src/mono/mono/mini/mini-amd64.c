@@ -2089,10 +2089,9 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 	ArgInfo *ainfo;
 	int j;
 	LLVMCallInfo *linfo;
-	MonoType *t, *sig_ret;
+	MonoType *t;
 
 	n = sig->param_count + sig->hasthis;
-	sig_ret = mini_get_underlying_type (sig->ret);
 
 	cinfo = get_call_info (cfg->mempool, sig);
 
