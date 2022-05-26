@@ -2,7 +2,7 @@
 
 ## Native debugging
 
-It's possible to debug native code and managed code using BrowserDebugProxy.
+It's possible to debug native code and managed code using the `BrowserDebugProxy` project.
 
 Steps:
 - Install C/C++ DevTools Support (DWARF) extension on chrome.
