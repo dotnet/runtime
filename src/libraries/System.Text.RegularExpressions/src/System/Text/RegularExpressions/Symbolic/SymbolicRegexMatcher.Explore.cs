@@ -52,6 +52,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     toExplore.Dequeue();
                 }
             }
+
         DfaLimitReached:
             if (exploreNfa && toExplore.Count > 0)
             {
@@ -69,6 +70,7 @@ namespace System.Text.RegularExpressions.Symbolic
                         EnqueueIfUnseen(_builder.GetCoreState(nfaState), seen, toExplore);
                     }
                 }
+
                 while (toExplore.Count > 0)
                 {
                     // NFA transitions can't fail, so its safe to dequeue here
@@ -79,7 +81,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     for (int mintermId = 0; mintermId <= maxMinterm; ++mintermId)
                     {
                         int nfaOffset = (_builder._nfaStateArrayInverse[state.Id] << _builder._mintermsLog) | mintermId;
-                        var nextNfaStates = _builder.CreateNewNfaTransition(_builder._nfaStateArrayInverse[state.Id], mintermId, nfaOffset);
+                        int[] nextNfaStates = _builder.CreateNewNfaTransition(_builder._nfaStateArrayInverse[state.Id], mintermId, nfaOffset);
                         foreach (int nextNfaState in nextNfaStates)
                         {
                             EnqueueIfUnseen(_builder.GetCoreState(nextNfaState), seen, toExplore);

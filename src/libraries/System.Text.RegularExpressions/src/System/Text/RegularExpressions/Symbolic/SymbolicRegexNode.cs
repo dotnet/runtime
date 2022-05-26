@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -1745,7 +1746,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
             static void AppendNumberSubscript(StringBuilder sb, int value)
             {
-                foreach (char c in value.ToString())
+                foreach (char c in value.ToString(CultureInfo.InvariantCulture))
                 {
                     sb.Append((char)('\u2080' + (c - '0')));
                 }
@@ -1753,7 +1754,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
             static void AppendNumberSuperscript(StringBuilder sb, int value)
             {
-                foreach (char c in value.ToString())
+                foreach (char c in value.ToString(CultureInfo.InvariantCulture))
                 {
                     switch (c)
                     {

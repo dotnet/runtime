@@ -208,7 +208,7 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         /// <summary>Returns the span from <see cref="_delta"/> that may contain transitions for the given state</summary>
-        internal Span<DfaMatchingState<TSet>?> GetDeltasSpanFor(DfaMatchingState<TSet> state)
+        internal Span<DfaMatchingState<TSet>?> GetDeltasFor(DfaMatchingState<TSet> state)
         {
             if (_delta is null || _minterms is null)
                 return Span<DfaMatchingState<TSet>?>.Empty;
@@ -217,7 +217,7 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         /// <summary>Returns the span from <see cref="_nfaDelta"/> that may contain transitions for the given state</summary>
-        internal Span<int[]?> GetNfaDeltasSpanFor(DfaMatchingState<TSet> state)
+        internal Span<int[]?> GetNfaDeltasFor(DfaMatchingState<TSet> state)
         {
             if (_nfaDelta is null || _minterms is null || !_nfaStateArrayInverse.TryGetValue(state.Id, out int nfaState))
                 return Span<int[]?>.Empty;
