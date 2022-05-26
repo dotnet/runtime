@@ -713,16 +713,25 @@ bool Compiler::fgRemoveDeadBlocks()
         }
     }
 
+    // Track if there is any unreachable block. Even if it is marked with
+    // BBF_DONT_REMOVE, fgRemoveUnreachableBlocks() still removes the code
+    // inside the block. So this variable tracks if we ever found such blocks
+    // or not.
+    bool hasUnreachableBlock = false;
+
     // A block is unreachable if no path was found from
     // any of the fgFirstBB, handler, filter or BBJ_ALWAYS (Arm) blocks.
-    auto isBlockRemovable = [&](BasicBlock* block) -> bool {
-        return !BlockSetOps::IsMember(this, visitedBlocks, block->bbNum);
+    auto isBlockRemovable = [&](BasicBlock* block) -> bool
+    {
+        bool isVisited = BlockSetOps::IsMember(this, visitedBlocks, block->bbNum);
+        hasUnreachableBlock |= !isVisited;
+        return !isVisited;
     };
 
-    bool changed = fgRemoveUnreachableBlocks(isBlockRemovable);
+    fgRemoveUnreachableBlocks(isBlockRemovable);
 
 #ifdef DEBUG
-    if (verbose && changed)
+    if (verbose && hasUnreachableBlock)
     {
         printf("\nAfter dead block removal:\n");
         fgDispBasicBlocks(verboseTrees);
@@ -732,7 +741,7 @@ bool Compiler::fgRemoveDeadBlocks()
     fgVerifyHandlerTab();
     fgDebugCheckBBlist(false);
 #endif // DEBUG
-    return changed;
+    return hasUnreachableBlock;
 }
 
 //-------------------------------------------------------------
