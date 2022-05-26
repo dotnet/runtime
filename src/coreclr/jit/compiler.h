@@ -5497,7 +5497,6 @@ private:
     GenTree* fgInsertCommaFormTemp(GenTree** ppTree, CORINFO_CLASS_HANDLE structType = nullptr);
     GenTree* fgMakeMultiUse(GenTree** ppTree, CORINFO_CLASS_HANDLE structType = nullptr);
 
-private:
     //                  Recognize a bitwise rotation pattern and convert into a GT_ROL or a GT_ROR node.
     GenTree* fgRecognizeAndMorphBitwiseRotation(GenTree* tree);
     bool fgOperIsBitwiseRotationRoot(genTreeOps oper);
@@ -5509,8 +5508,11 @@ private:
 #endif
 
     //-------- Determine the order in which the trees will be evaluated -------
-    GenTree* fgSetTreeSeq(GenTree* tree, bool isLIR = false);
+public:
     void fgSetStmtSeq(Statement* stmt);
+
+private:
+    GenTree* fgSetTreeSeq(GenTree* tree, bool isLIR = false);
     void fgSetBlockOrder(BasicBlock* block);
 
     //------------------------- Morphing --------------------------------------
