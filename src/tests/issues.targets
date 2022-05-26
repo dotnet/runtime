@@ -3288,6 +3288,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/tailcall/**">
             <Issue>https://github.com/dotnet/runtime/issues/69517</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/IL/Tailcall/ExplicitTailCallNoSO.ilproj">
+            <Issue>https://github.com/dotnet/runtime/issues/69517</Issue>
+        </ExcludeList>
 
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Intrinsics/TypeIntrinsics_r/**">
             <Issue>https://github.com/dotnet/runtime/issues/54867</Issue>
