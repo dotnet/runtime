@@ -323,7 +323,6 @@ namespace Microsoft.Interop
 
         private static MarshallingGeneratorFactoryKey<(TargetFramework, Version, LibraryImportGeneratorOptions)> CreateGeneratorFactory(StubEnvironment env, LibraryImportGeneratorOptions options)
         {
-            InteropGenerationOptions interopGenerationOptions = new(options.UseMarshalType);
             IMarshallingGeneratorFactory generatorFactory;
 
             if (options.GenerateForwarders)
@@ -343,7 +342,6 @@ namespace Microsoft.Interop
                     generatorFactory = new UnsupportedMarshallingFactory();
                 }
 
-                generatorFactory = new MarshalAsMarshallingGeneratorFactory(interopGenerationOptions, generatorFactory);
 
                 // The presence of System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute is tied to TFM,
                 // so we use TFM in the generator factory key instead of the Compilation as the compilation changes on every keystroke.
@@ -351,6 +349,9 @@ namespace Microsoft.Interop
                 ITypeSymbol? disabledRuntimeMarshallingAttributeType = coreLibraryAssembly.GetTypeByMetadataName(TypeNames.System_Runtime_CompilerServices_DisableRuntimeMarshallingAttribute);
                 bool runtimeMarshallingDisabled = disabledRuntimeMarshallingAttributeType is not null
                     && env.Compilation.Assembly.GetAttributes().Any(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, disabledRuntimeMarshallingAttributeType));
+
+                InteropGenerationOptions interopGenerationOptions = new(options.UseMarshalType, runtimeMarshallingDisabled);
+                generatorFactory = new MarshalAsMarshallingGeneratorFactory(interopGenerationOptions, generatorFactory);
 
                 IMarshallingGeneratorFactory elementFactory = new AttributedMarshallingModelGeneratorFactory(generatorFactory, new AttributedMarshallingModelOptions(runtimeMarshallingDisabled));
                 // We don't need to include the later generator factories for collection elements

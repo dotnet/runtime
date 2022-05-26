@@ -7,5 +7,5 @@ using System.Text;
 
 namespace Microsoft.Interop
 {
-    public readonly record struct InteropGenerationOptions(bool UseMarshalType);
+    public readonly record struct InteropGenerationOptions(bool UseMarshalType, bool RuntimeMarshallingDisabled);
 }
