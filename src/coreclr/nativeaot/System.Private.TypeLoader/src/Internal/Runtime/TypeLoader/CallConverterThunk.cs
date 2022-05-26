@@ -1119,11 +1119,13 @@ namespace Internal.Runtime.TypeLoader
                         RuntimeTypeHandle returnTypeRuntimeTypeHandle = thRetType.GetRuntimeTypeHandle();
 
                         // Need to box value type before returning it
-                        object returnValue = null;
+                        object returnValue;
                         if (returnType == CorElementType.ELEMENT_TYPE_BYREF && returnValueToCopy == null)
                         {
                             // This is a byref return and dereferencing it would result in a NullReferenceException.
                             CompilerHelpers.ThrowHelpers.ThrowInvokeNullRefReturned();
+                            // Unreachable
+                            returnValue = null;
                         }
                         else if (RuntimeAugments.IsUnmanagedPointerType(returnTypeRuntimeTypeHandle))
                         {
