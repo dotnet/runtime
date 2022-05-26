@@ -1157,35 +1157,6 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
-        public static void CreateCheckedFromNFloatTest()
-        {
-            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateChecked<NFloat>(+0.0f));
-            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateChecked<NFloat>(-0.0f));
-
-            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateChecked<NFloat>(+NFloat.Epsilon));
-            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateChecked<NFloat>(-NFloat.Epsilon));
-
-            Assert.Equal(One, NumberBaseHelper<BigInteger>.CreateChecked<NFloat>(+1.0f));
-            Assert.Equal(NegativeOne, NumberBaseHelper<BigInteger>.CreateChecked<NFloat>(-1.0f));
-
-            if (Environment.Is64BitProcess)
-            {
-                Assert.Equal((BigInteger)(new Int128(0x7FFF_FFFF_FFFF_FC00, 0x0000_0000_0000_0000)), NumberBaseHelper<BigInteger>.CreateChecked<NFloat>((NFloat)(+170141183460469212842221372237303250944.0)));
-                Assert.Equal((BigInteger)(new Int128(0x8000_0000_0000_0400, 0x0000_0000_0000_0000)), NumberBaseHelper<BigInteger>.CreateChecked<NFloat>((NFloat)(-170141183460469212842221372237303250944.0)));
-            }
-            else
-            {
-                Assert.Equal((BigInteger)(new Int128(0x7FFF_FF80_0000_0000, 0x0000_0000_0000_0000)), NumberBaseHelper<BigInteger>.CreateChecked<NFloat>(+170141173319264429905852091742258462720.0f));
-                Assert.Equal((BigInteger)(new Int128(0x8000_0080_0000_0000, 0x0000_0000_0000_0000)), NumberBaseHelper<BigInteger>.CreateChecked<NFloat>(-170141173319264429905852091742258462720.0f));
-            }
-
-            Assert.Throws<OverflowException>(() => NumberBaseHelper<BigInteger>.CreateChecked<NFloat>(NFloat.PositiveInfinity));
-            Assert.Throws<OverflowException>(() => NumberBaseHelper<BigInteger>.CreateChecked<NFloat>(NFloat.NegativeInfinity));
-
-            Assert.Throws<OverflowException>(() => NumberBaseHelper<BigInteger>.CreateChecked<NFloat>(NFloat.NaN));
-        }
-
-        [Fact]
         public static void CreateCheckedFromSByteTest()
         {
             Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateChecked<sbyte>(0x00));
@@ -1413,35 +1384,6 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
-        public static void CreateSaturatingFromNFloatTest()
-        {
-            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateSaturating<NFloat>(+0.0f));
-            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateSaturating<NFloat>(-0.0f));
-
-            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateSaturating<NFloat>(+NFloat.Epsilon));
-            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateSaturating<NFloat>(-NFloat.Epsilon));
-
-            Assert.Equal(One, NumberBaseHelper<BigInteger>.CreateSaturating<NFloat>(+1.0f));
-            Assert.Equal(NegativeOne, NumberBaseHelper<BigInteger>.CreateSaturating<NFloat>(-1.0f));
-
-            if (Environment.Is64BitProcess)
-            {
-                Assert.Equal((BigInteger)(new Int128(0x7FFF_FFFF_FFFF_FC00, 0x0000_0000_0000_0000)), NumberBaseHelper<BigInteger>.CreateSaturating<NFloat>((NFloat)(+170141183460469212842221372237303250944.0)));
-                Assert.Equal((BigInteger)(new Int128(0x8000_0000_0000_0400, 0x0000_0000_0000_0000)), NumberBaseHelper<BigInteger>.CreateSaturating<NFloat>((NFloat)(-170141183460469212842221372237303250944.0)));
-            }
-            else
-            {
-                Assert.Equal((BigInteger)(new Int128(0x7FFF_FF80_0000_0000, 0x0000_0000_0000_0000)), NumberBaseHelper<BigInteger>.CreateSaturating<NFloat>(+170141173319264429905852091742258462720.0f));
-                Assert.Equal((BigInteger)(new Int128(0x8000_0080_0000_0000, 0x0000_0000_0000_0000)), NumberBaseHelper<BigInteger>.CreateSaturating<NFloat>(-170141173319264429905852091742258462720.0f));
-            }
-
-            Assert.Throws<OverflowException>(() => NumberBaseHelper<BigInteger>.CreateSaturating<NFloat>(NFloat.PositiveInfinity));
-            Assert.Throws<OverflowException>(() => NumberBaseHelper<BigInteger>.CreateSaturating<NFloat>(NFloat.NegativeInfinity));
-
-            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateSaturating<NFloat>(NFloat.NaN));
-        }
-
-        [Fact]
         public static void CreateSaturatingFromSByteTest()
         {
             Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateSaturating<sbyte>(0x00));
@@ -1666,35 +1608,6 @@ namespace System.Numerics.Tests
                 Assert.Equal(Int32MinValue, NumberBaseHelper<BigInteger>.CreateTruncating<nint>(unchecked((nint)0x80000000)));
                 Assert.Equal(NegativeOne, NumberBaseHelper<BigInteger>.CreateTruncating<nint>(unchecked((nint)0xFFFFFFFF)));
             }
-        }
-
-        [Fact]
-        public static void CreateTruncatingFromNFloatTest()
-        {
-            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateTruncating<NFloat>(+0.0f));
-            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateTruncating<NFloat>(-0.0f));
-
-            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateTruncating<NFloat>(+NFloat.Epsilon));
-            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateTruncating<NFloat>(-NFloat.Epsilon));
-
-            Assert.Equal(One, NumberBaseHelper<BigInteger>.CreateTruncating<NFloat>(+1.0f));
-            Assert.Equal(NegativeOne, NumberBaseHelper<BigInteger>.CreateTruncating<NFloat>(-1.0f));
-
-            if (Environment.Is64BitProcess)
-            {
-                Assert.Equal((BigInteger)(new Int128(0x7FFF_FFFF_FFFF_FC00, 0x0000_0000_0000_0000)), NumberBaseHelper<BigInteger>.CreateTruncating<NFloat>((NFloat)(+170141183460469212842221372237303250944.0)));
-                Assert.Equal((BigInteger)(new Int128(0x8000_0000_0000_0400, 0x0000_0000_0000_0000)), NumberBaseHelper<BigInteger>.CreateTruncating<NFloat>((NFloat)(-170141183460469212842221372237303250944.0)));
-            }
-            else
-            {
-                Assert.Equal((BigInteger)(new Int128(0x7FFF_FF80_0000_0000, 0x0000_0000_0000_0000)), NumberBaseHelper<BigInteger>.CreateTruncating<NFloat>(+170141173319264429905852091742258462720.0f));
-                Assert.Equal((BigInteger)(new Int128(0x8000_0080_0000_0000, 0x0000_0000_0000_0000)), NumberBaseHelper<BigInteger>.CreateTruncating<NFloat>(-170141173319264429905852091742258462720.0f));
-            }
-
-            Assert.Throws<OverflowException>(() => NumberBaseHelper<BigInteger>.CreateTruncating<NFloat>(NFloat.PositiveInfinity));
-            Assert.Throws<OverflowException>(() => NumberBaseHelper<BigInteger>.CreateTruncating<NFloat>(NFloat.NegativeInfinity));
-
-            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateTruncating<NFloat>(NFloat.NaN));
         }
 
         [Fact]
@@ -2205,26 +2118,6 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
-        public static void TryConvertToCheckedNFloatTest()
-        {
-            Assert.Equal(+0.0f, NumberBaseHelper<NFloat>.CreateChecked<BigInteger>(Zero));
-
-            Assert.Equal(+1.0f, NumberBaseHelper<NFloat>.CreateChecked<BigInteger>(One));
-            Assert.Equal(-1.0f, NumberBaseHelper<NFloat>.CreateChecked<BigInteger>(NegativeOne));
-
-            if (Environment.Is64BitProcess)
-            {
-                Assert.Equal((NFloat)(+170141183460469212842221372237303250944.0), NumberBaseHelper<NFloat>.CreateChecked<BigInteger>((BigInteger)(new Int128(0x7FFF_FFFF_FFFF_FC00, 0x0000_0000_0000_0000))));
-                Assert.Equal((NFloat)(-170141183460469212842221372237303250944.0), NumberBaseHelper<NFloat>.CreateChecked<BigInteger>((BigInteger)(new Int128(0x8000_0000_0000_0400, 0x0000_0000_0000_0000))));
-            }
-            else
-            {
-                Assert.Equal(+170141173319264429905852091742258462720.0f, NumberBaseHelper<NFloat>.CreateChecked<BigInteger>((BigInteger)(new Int128(0x7FFF_FF80_0000_0000, 0x0000_0000_0000_0000))));
-                Assert.Equal(-170141173319264429905852091742258462720.0f, NumberBaseHelper<NFloat>.CreateChecked<BigInteger>((BigInteger)(new Int128(0x8000_0080_0000_0000, 0x0000_0000_0000_0000))));
-            }
-        }
-
-        [Fact]
         public static void TryConvertToCheckedSByteTest()
         {
             Assert.Equal(0x00, NumberBaseHelper<sbyte>.CreateChecked<BigInteger>(Zero));
@@ -2425,26 +2318,6 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
-        public static void TryConvertToSaturatingNFloatTest()
-        {
-            Assert.Equal(+0.0f, NumberBaseHelper<NFloat>.CreateSaturating<BigInteger>(Zero));
-
-            Assert.Equal(+1.0f, NumberBaseHelper<NFloat>.CreateSaturating<BigInteger>(One));
-            Assert.Equal(-1.0f, NumberBaseHelper<NFloat>.CreateSaturating<BigInteger>(NegativeOne));
-
-            if (Environment.Is64BitProcess)
-            {
-                Assert.Equal((NFloat)(+170141183460469212842221372237303250944.0), NumberBaseHelper<NFloat>.CreateSaturating<BigInteger>((BigInteger)(new Int128(0x7FFF_FFFF_FFFF_FC00, 0x0000_0000_0000_0000))));
-                Assert.Equal((NFloat)(-170141183460469212842221372237303250944.0), NumberBaseHelper<NFloat>.CreateSaturating<BigInteger>((BigInteger)(new Int128(0x8000_0000_0000_0400, 0x0000_0000_0000_0000))));
-            }
-            else
-            {
-                Assert.Equal(+170141173319264429905852091742258462720.0f, NumberBaseHelper<NFloat>.CreateSaturating<BigInteger>((BigInteger)(new Int128(0x7FFF_FF80_0000_0000, 0x0000_0000_0000_0000))));
-                Assert.Equal(-170141173319264429905852091742258462720.0f, NumberBaseHelper<NFloat>.CreateSaturating<BigInteger>((BigInteger)(new Int128(0x8000_0080_0000_0000, 0x0000_0000_0000_0000))));
-            }
-        }
-
-        [Fact]
         public static void TryConvertToSaturatingSByteTest()
         {
             Assert.Equal(0x00, NumberBaseHelper<sbyte>.CreateSaturating<BigInteger>(Zero));
@@ -2641,26 +2514,6 @@ namespace System.Numerics.Tests
                 Assert.Equal((nint)0x7FFF_FFFF, NumberBaseHelper<nint>.CreateTruncating<BigInteger>(Int32MaxValue));
                 Assert.Equal(unchecked((nint)0x8000_0000), NumberBaseHelper<nint>.CreateTruncating<BigInteger>(Int32MinValue));
                 Assert.Equal(unchecked((nint)0xFFFF_FFFF), NumberBaseHelper<nint>.CreateTruncating<BigInteger>(NegativeOne));
-            }
-        }
-
-        [Fact]
-        public static void TryConvertToTruncatingNFloatTest()
-        {
-            Assert.Equal(+0.0f, NumberBaseHelper<NFloat>.CreateTruncating<BigInteger>(Zero));
-
-            Assert.Equal(+1.0f, NumberBaseHelper<NFloat>.CreateTruncating<BigInteger>(One));
-            Assert.Equal(-1.0f, NumberBaseHelper<NFloat>.CreateTruncating<BigInteger>(NegativeOne));
-
-            if (Environment.Is64BitProcess)
-            {
-                Assert.Equal((NFloat)(+170141183460469212842221372237303250944.0), NumberBaseHelper<NFloat>.CreateTruncating<BigInteger>((BigInteger)(new Int128(0x7FFF_FFFF_FFFF_FC00, 0x0000_0000_0000_0000))));
-                Assert.Equal((NFloat)(-170141183460469212842221372237303250944.0), NumberBaseHelper<NFloat>.CreateTruncating<BigInteger>((BigInteger)(new Int128(0x8000_0000_0000_0400, 0x0000_0000_0000_0000))));
-            }
-            else
-            {
-                Assert.Equal(+170141173319264429905852091742258462720.0f, NumberBaseHelper<NFloat>.CreateTruncating<BigInteger>((BigInteger)(new Int128(0x7FFF_FF80_0000_0000, 0x0000_0000_0000_0000))));
-                Assert.Equal(-170141173319264429905852091742258462720.0f, NumberBaseHelper<NFloat>.CreateTruncating<BigInteger>((BigInteger)(new Int128(0x8000_0080_0000_0000, 0x0000_0000_0000_0000))));
             }
         }
 

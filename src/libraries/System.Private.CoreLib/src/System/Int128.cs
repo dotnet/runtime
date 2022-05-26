@@ -362,19 +362,6 @@ namespace System
             return checked((nint)value._lower);
         }
 
-        /// <summary>Explicitly converts a 128-bit signed integer to a <see cref="NFloat" /> value.</summary>
-        /// <param name="value">The value to convert.</param>
-        /// <returns><paramref name="value" /> converted to a <see cref="NFloat" />.</returns>
-        public static explicit operator NFloat(Int128 value)
-        {
-            if (IsNegative(value))
-            {
-                value = -value;
-                return -(NFloat)(UInt128)(value);
-            }
-            return (NFloat)(UInt128)(value);
-        }
-
         /// <summary>Explicitly converts a 128-bit signed integer to a <see cref="sbyte" /> value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to a <see cref="sbyte" />.</returns>
@@ -1432,8 +1419,8 @@ namespace System
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
             // `ConvertTo` handle the opposite sign. However, since there is an uneven split
-            // between signed and unsigned types, the the one that handles unsigned will also
-            // handle `Decimal` and `NFloat`.
+            // between signed and unsigned types, the one that handles unsigned will also
+            // handle `Decimal`.
             //
             // That is, `ConvertFrom` for `Int128` will handle the other signed types and
             // `ConvertTo` will handle the unsigned types
@@ -1500,8 +1487,8 @@ namespace System
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
             // `ConvertTo` handle the opposite sign. However, since there is an uneven split
-            // between signed and unsigned types, the the one that handles unsigned will also
-            // handle `Decimal` and `NFloat`.
+            // between signed and unsigned types, the one that handles unsigned will also
+            // handle `Decimal`.
             //
             // That is, `ConvertFrom` for `Int128` will handle the other signed types and
             // `ConvertTo` will handle the unsigned types
@@ -1571,8 +1558,8 @@ namespace System
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
             // `ConvertTo` handle the opposite sign. However, since there is an uneven split
-            // between signed and unsigned types, the the one that handles unsigned will also
-            // handle `Decimal` and `NFloat`.
+            // between signed and unsigned types, the one that handles unsigned will also
+            // handle `Decimal`.
             //
             // That is, `ConvertFrom` for `Int128` will handle the other signed types and
             // `ConvertTo` will handle the unsigned types
@@ -1642,8 +1629,8 @@ namespace System
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
             // `ConvertTo` handle the opposite sign. However, since there is an uneven split
-            // between signed and unsigned types, the the one that handles unsigned will also
-            // handle `Decimal` and `NFloat`.
+            // between signed and unsigned types, the one that handles unsigned will also
+            // handle `Decimal`.
             //
             // That is, `ConvertFrom` for `Int128` will handle the other signed types and
             // `ConvertTo` will handle the unsigned types
@@ -1663,12 +1650,6 @@ namespace System
             else if (typeof(TOther) == typeof(decimal))
             {
                 decimal actualResult = checked((decimal)value);
-                result = (TOther)(object)actualResult;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(NFloat))
-            {
-                NFloat actualResult = (NFloat)value;
                 result = (TOther)(object)actualResult;
                 return true;
             }
@@ -1716,8 +1697,8 @@ namespace System
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
             // `ConvertTo` handle the opposite sign. However, since there is an uneven split
-            // between signed and unsigned types, the the one that handles unsigned will also
-            // handle `Decimal` and `NFloat`.
+            // between signed and unsigned types, the one that handles unsigned will also
+            // handle `Decimal`.
             //
             // That is, `ConvertFrom` for `Int128` will handle the other signed types and
             // `ConvertTo` will handle the unsigned types
@@ -1740,12 +1721,6 @@ namespace System
             {
                 decimal actualResult = (value >= new Int128(0x0000_0000_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)) ? decimal.MaxValue :
                                        (value <= new Int128(0xFFFF_FFFF_0000_0000, 0x0000_0000_0000_0001)) ? decimal.MinValue : (decimal)value;
-                result = (TOther)(object)actualResult;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(NFloat))
-            {
-                NFloat actualResult = (NFloat)value;
                 result = (TOther)(object)actualResult;
                 return true;
             }
@@ -1796,8 +1771,8 @@ namespace System
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
             // `ConvertTo` handle the opposite sign. However, since there is an uneven split
-            // between signed and unsigned types, the the one that handles unsigned will also
-            // handle `Decimal` and `NFloat`.
+            // between signed and unsigned types, the one that handles unsigned will also
+            // handle `Decimal`.
             //
             // That is, `ConvertFrom` for `Int128` will handle the other signed types and
             // `ConvertTo` will handle the unsigned types
@@ -1829,12 +1804,6 @@ namespace System
                     actualResult = (decimal)value;
                 }
 
-                result = (TOther)(object)actualResult;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(NFloat))
-            {
-                NFloat actualResult = (NFloat)value;
                 result = (TOther)(object)actualResult;
                 return true;
             }
