@@ -2174,8 +2174,7 @@ namespace System.Text.RegularExpressions.Generator
                 }
 
                 // Save off pos.  We'll need to reset this upon successful completion of the lookaround.
-                bool rtl = (node.Options & RegexOptions.RightToLeft) != 0;
-                string startingPos = ReserveName(rtl ? "positivelookbehind_starting_pos" : "positivelookahead_starting_pos");
+                string startingPos = ReserveName((node.Options & RegexOptions.RightToLeft) != 0 ? "positivelookbehind_starting_pos" : "positivelookahead_starting_pos");
                 writer.WriteLine($"int {startingPos} = pos;");
                 writer.WriteLine();
                 int startingSliceStaticPos = sliceStaticPos;
@@ -2225,8 +2224,7 @@ namespace System.Text.RegularExpressions.Generator
                 string originalDoneLabel = doneLabel;
 
                 // Save off pos.  We'll need to reset this upon successful completion of the lookaround.
-                bool rtl = (node.Options & RegexOptions.RightToLeft) != 0;
-                string startingPos = ReserveName(rtl ? "negativelookbehind_starting_pos" : "negativelookahead_starting_pos");
+                string startingPos = ReserveName((node.Options & RegexOptions.RightToLeft) != 0 ? "negativelookbehind_starting_pos" : "negativelookahead_starting_pos");
                 writer.WriteLine($"int {startingPos} = pos;");
                 int startingSliceStaticPos = sliceStaticPos;
 
@@ -4635,7 +4633,7 @@ namespace System.Text.RegularExpressions.Generator
         private static string DescribeNode(RegexNode node, RegexMethod rm)
         {
             bool rtl = (node.Options & RegexOptions.RightToLeft) != 0;
-            string direction = rtl ? " backwards" : "";
+            string direction = rtl ? " right-to-left" : "";
             return node.Kind switch
             {
                 RegexNodeKind.Alternate => $"Match with {node.ChildCount()} alternative expressions{(rm.Analysis.IsAtomicByAncestor(node) ? ", atomically" : "")}.",
