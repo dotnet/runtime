@@ -191,7 +191,6 @@ namespace Internal.JitInterface
         CORINFO_LOOKUP_THISOBJ,
         CORINFO_LOOKUP_METHODPARAM,
         CORINFO_LOOKUP_CLASSPARAM,
-        CORINFO_LOOKUP_VIRTUALSTATIC,
         CORINFO_LOOKUP_NOT_SUPPORTED, // Returned for attempts to inline dictionary lookups
     }
 

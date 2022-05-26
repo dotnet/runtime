@@ -673,14 +673,14 @@
 
 } // end of class GI1`1
 
-.class private auto ansi beforefieldinit ResolutionAtRuntime
+.class private auto ansi beforefieldinit ResolutionAtRuntimeBase
        implements class IResolutionAtRuntime`1<object>,
                   class IResolutionAtRuntime`1<string>
 {
   .method private hidebysig static int32 FuncObject(int32 arg) cil managed
   {
     .override  method int32 class IResolutionAtRuntime`1<object>::Func(int32)
-              ldstr      "At ResolutionAtRuntime.FuncObject"
+              ldstr      "At ResolutionAtRuntimeBase.FuncObject"
               call       void [mscorlib]System.Console::WriteLine(string)
               nop
               ldarg.0
@@ -692,7 +692,7 @@
   .method private hidebysig static int32 FuncString(int32 arg) cil managed
   {
     .override  method int32 class IResolutionAtRuntime`1<string>::Func(int32)
-              ldstr      "At ResolutionAtRuntime.FuncString"
+              ldstr      "At ResolutionAtRuntimeBase.FuncString"
               call       void [mscorlib]System.Console::WriteLine(string)
               nop
               ldarg.0
@@ -700,10 +700,54 @@
               add
               ret
   }
+}
 
+.class private auto ansi beforefieldinit ResolutionAtRuntimeThisObj`2<(class IResolutionAtRuntime`1<!V>) T, V>
+       extends [mscorlib]System.Object
+{
+  .method public hidebysig specialname rtspecialname 
+            instance void .ctor() il managed
+  {
+              ldarg.0
+              call       instance void [mscorlib]System.Object::.ctor()
+              ret
+  } // end of method 'Test::.ctor'
+    
+
+  .method public hidebysig instance int32 RuntimeResolvedFunc(int32 arg)
+  {
+              ldstr      "At ResolutionAtRuntimeThisObj::RuntimeResolvedFunc"
+              call       void [mscorlib]System.Console::WriteLine(string)
+              nop
+              ldarg.1
+              constrained. !T
+              call       int32 class [svm_diamondshape]IResolutionAtRuntime`1<!V>::Func(int32)
+              ret
+  }
+
+} // end of class ResolutionAtRuntimeThisObj
+
+
+.class private auto ansi beforefieldinit ResolutionAtRuntimeClassParam`2<(class IResolutionAtRuntime`1<!V>) T, V>
+{
+  .method public hidebysig static int32 RuntimeResolvedFunc(int32 arg)
+  {
+              ldstr      "At ResolutionAtRuntimeClassParam::RuntimeResolvedFunc"
+              call       void [mscorlib]System.Console::WriteLine(string)
+              nop
+              ldarg.0
+              constrained. !T
+              call       int32 class [svm_diamondshape]IResolutionAtRuntime`1<!V>::Func(int32)
+              ret
+  }
+
+} // end of class ResolutionAtRuntimeClassParam
+
+.class private auto ansi beforefieldinit ResolutionAtRuntimeMethodParam
+{
   .method public hidebysig static int32 RuntimeResolvedFunc`2<(class IResolutionAtRuntime`1<!!V>) T, V>(int32 arg)
   {
-              ldstr      "At RuntimeResolvedFunc"
+              ldstr      "At ResolutionAtRuntimeMethodParam::RuntimeResolvedFunc"
               call       void [mscorlib]System.Console::WriteLine(string)
               nop
               ldarg.0
@@ -712,7 +756,7 @@
               ret
   }
 
-} // end of class ResolutionAtRuntime
+} // end of class ResolutionAtRuntimeMethodParam
 
 .class private auto ansi beforefieldinit Program
        extends [mscorlib]System.Object
@@ -1171,7 +1215,6 @@
     // Code size       189 (0xbd)
     .maxstack  10
     .locals init (class [mscorlib]System.Type[] V_4)
-/*
     IL_0000:  nop
     IL_0001:  ldstr      "Calling I1.Func on I4Class - expecting I4.Func"
     IL_0006:  call       void [mscorlib]System.Console::WriteLine(string)
@@ -1410,26 +1453,69 @@
               ldstr      "S must be string"
               call       void Test::Assert(bool, string)
               nop
-*/
 
-              ldstr      "Calling ResolutionAtRuntime::RuntimeResolvedFunc<ResolutionAtRuntime, object> - expecting ResolutionAtRuntime.FuncObject"
+              ldstr      "Calling ResolutionAtRuntimeThisObj<ResolutionAtRuntimeBase, object>::RuntimeResolvedFunc - expecting ResolutionAtRuntimeBase.FuncObject"
               call       void [mscorlib]System.Console::WriteLine(string)
               nop
-              ldc.i4.s   100
-              call       int32 class [svm_diamondshape]ResolutionAtRuntime::RuntimeResolvedFunc`2<class [svm_diamondshape]ResolutionAtRuntime, object>(int32)
-              ldc.i4.s   119
+              newobj     instance void class ResolutionAtRuntimeThisObj`2<class ResolutionAtRuntimeBase, object>::.ctor()
+              ldc.i4.s   200
+              call       instance int32 class ResolutionAtRuntimeThisObj`2<class ResolutionAtRuntimeBase, object>::RuntimeResolvedFunc(int32)
+              ldc.i4.s   219
               ceq
-              ldstr      "Expecting ResolutionAtRuntime::RuntimeResolvedFunc<ResolutionAtRuntime, object> to land on RuntimeResolvedFunc.FuncObject"
+              ldstr      "Expecting ResolutionAtRuntimeThisObj<ResolutionAtRuntimeBase, object>::RuntimeResolvedFunc to land on ResolutionAtRuntimeBase.FuncObject"
               call       void Test::Assert(bool, string)
 
-              ldstr      "Calling ResolutionAtRuntime::RuntimeResolvedFunc<ResolutionAtRuntime, string> - expecting ResolutionAtRuntime.FuncString"
+              ldstr      "Calling ResolutionAtRuntimeThisObj<ResolutionAtRuntimeBase, string>::RuntimeResolvedFunc - expecting ResolutionAtRuntimeBase.FuncString"
+              call       void [mscorlib]System.Console::WriteLine(string)
+              nop
+              newobj     instance void class ResolutionAtRuntimeThisObj`2<class ResolutionAtRuntimeBase, string>::.ctor()
+              ldc.i4.s   200
+              call       instance int32 class ResolutionAtRuntimeThisObj`2<class ResolutionAtRuntimeBase, string>::RuntimeResolvedFunc(int32)
+              ldc.i4.s   223
+              ceq
+              ldstr      "Expecting ResolutionAtRuntimeThisObj<ResolutionAtRuntimeBase, string>::RuntimeResolvedFunc to land on ResolutionAtRuntimeBase.FuncString"
+              call       void Test::Assert(bool, string)
+
+
+              ldstr      "Calling ResolutionAtRuntimeClassParam<ResolutionAtRuntimeBase, object>::RuntimeResolvedFunc - expecting ResolutionAtRuntimeBase.FuncObject"
+              call       void [mscorlib]System.Console::WriteLine(string)
+              nop
+              ldc.i4.s   200
+              call       int32 class ResolutionAtRuntimeClassParam`2<class ResolutionAtRuntimeBase, object>::RuntimeResolvedFunc(int32)
+              ldc.i4.s   219
+              ceq
+              ldstr      "Expecting ResolutionAtRuntimeClassParam<ResolutionAtRuntimeBase, object>::RuntimeResolvedFunc to land on ResolutionAtRuntimeBase.FuncObject"
+              call       void Test::Assert(bool, string)
+
+              ldstr      "Calling ResolutionAtRuntimeClassParam<ResolutionAtRuntimeBase, string>::RuntimeResolvedFunc - expecting ResolutionAtRuntimeBase.FuncString"
+              call       void [mscorlib]System.Console::WriteLine(string)
+              nop
+              ldc.i4.s   200
+              call       int32 class ResolutionAtRuntimeClassParam`2<class ResolutionAtRuntimeBase, string>::RuntimeResolvedFunc(int32)
+              ldc.i4.s   223
+              ceq
+              ldstr      "Expecting ResolutionAtRuntimeClassParam<ResolutionAtRuntimeBase, string>::RuntimeResolvedFunc to land on ResolutionAtRuntimeBase.FuncString"
+              call       void Test::Assert(bool, string)
+
+
+              ldstr      "Calling ResolutionAtRuntimeMethodParam::RuntimeResolvedFunc<ResolutionAtRuntimeBase, object> - expecting ResolutionAtRuntimeBase.FuncObject"
               call       void [mscorlib]System.Console::WriteLine(string)
               nop
               ldc.i4.s   100
-              call       int32 class [svm_diamondshape]ResolutionAtRuntime::RuntimeResolvedFunc`2<class [svm_diamondshape]ResolutionAtRuntime, string>(int32)
+              call       int32 class ResolutionAtRuntimeMethodParam::RuntimeResolvedFunc`2<class ResolutionAtRuntimeBase, object>(int32)
+              ldc.i4.s   119
+              ceq
+              ldstr      "Expecting ResolutionAtRuntimeMethodParam::RuntimeResolvedFunc<ResolutionAtRuntimeBase, object> to land on ResolutionAtRuntimeBase.FuncObject"
+              call       void Test::Assert(bool, string)
+
+              ldstr      "Calling ResolutionAtRuntimeMethodParam::RuntimeResolvedFunc<ResolutionAtRuntimeBase, string> - expecting ResolutionAtRuntimeBase.FuncString"
+              call       void [mscorlib]System.Console::WriteLine(string)
+              nop
+              ldc.i4.s   100
+              call       int32 class ResolutionAtRuntimeMethodParam::RuntimeResolvedFunc`2<class ResolutionAtRuntimeBase, string>(int32)
               ldc.i4.s   123
               ceq
-              ldstr      "Expecting ResolutionAtRuntime::RuntimeResolvedFunc<ResolutionAtRuntime, string> to land on RuntimeResolvedFunc.FuncString"
+              ldstr      "Expecting ResolutionAtRuntimeMethodParam::RuntimeResolvedFunc<ResolutionAtRuntimeBase, string> to land on ResolutionAtRuntimeBase.FuncString"
               call       void Test::Assert(bool, string)
 
     IL_00bc:  ret
@@ -1445,8 +1531,8 @@
     .maxstack  1
     .locals init (int32 V_0)
     IL_0000:  nop
-//    IL_0001:  call       void Program::Negative()
-//    IL_0006:  nop
+    IL_0001:  call       void Program::Negative()
+    IL_0006:  nop
     IL_0007:  call       void Program::Positive()
     IL_000c:  nop
     IL_000d:  call       int32 Test::Ret()

@@ -7532,10 +7532,9 @@ GenTree* Compiler::getRuntimeLookupTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
         // The long-term solution is to introduce a new node representing a runtime lookup, create instances
         // of that node both in the importer and here, and expand the node in lower (introducing control flow if
         // necessary).
-        GenTree* argNode = gtNewIconEmbHndNode(pRuntimeLookup->signature, nullptr, GTF_ICON_GLOBAL_PTR, compileTimeHandle);
         return gtNewRuntimeLookupHelperCallNode(pRuntimeLookup,
                                                 getRuntimeContextTree(pLookup->lookupKind.runtimeLookupKind),
-                                                argNode);
+                                                compileTimeHandle);
     }
 
     GenTree* result = getRuntimeContextTree(pLookup->lookupKind.runtimeLookupKind);

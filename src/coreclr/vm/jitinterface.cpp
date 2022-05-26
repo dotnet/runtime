@@ -2875,18 +2875,6 @@ static bool IsTypeSpecForTypicalInstantiation(SigPointer sigptr)
     return IsSignatureForTypicalInstantiation(sigptr, ELEMENT_TYPE_VAR, ntypars);
 }
 
-static void EncodeStaticVirtualRuntimeLookup(CORINFO_LOOKUP *pResultLookup, CORINFO_METHOD_HANDLE methodHandle)
-{
-    pResultLookup->lookupKind.runtimeLookupKind = CORINFO_LOOKUP_VIRTUALSTATIC;
-
-    CORINFO_RUNTIME_LOOKUP *pResult = &pResultLookup->runtimeLookup;
-    pResult->signature = (void*)methodHandle;
-    pResult->helper = CORINFO_HELP_VIRTUAL_STATIC;
-    pResult->indirections = CORINFO_USEHELPER;
-    pResult->testForNull = 0;
-    pResult->testForFixup = 0;
-}
-
 void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entryKind,
                                                         CORINFO_RESOLVED_TOKEN * pResolvedToken,
                                                         CORINFO_RESOLVED_TOKEN * pConstrainedResolvedToken,
@@ -2920,25 +2908,13 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
         return;
     }
 
-    MethodDesc* pTargetMD = (MethodDesc*)pResolvedToken->hMethod;
     MethodDesc* pContextMD = GetMethodFromContext(pResolvedToken->tokenContext);
     MethodTable* pContextMT = pContextMD->GetMethodTable();
-    bool targetIsStaticVirtual = (pTargetMD != nullptr && pTargetMD->IsStatic() && pConstrainedResolvedToken != nullptr);
-
-    if (targetIsStaticVirtual)
-    {
-        EncodeStaticVirtualRuntimeLookup(pResultLookup, pResolvedToken->hMethod);
-        if (!pContextMD->IsSharedByGenericInstantiations())
-        {
-            return;
-        }
-    }
+    bool isStaticVirtual = (pConstrainedResolvedToken != nullptr && pContextMD != nullptr && pContextMD->IsStatic());
 
     // There is a pathological case where invalid IL refereces __Canon type directly, but there is no dictionary availabled to store the lookup.
     if (!pContextMD->IsSharedByGenericInstantiations())
-    {
         COMPlusThrow(kInvalidProgramException);
-    }
 
     BOOL fInstrument = FALSE;
 
@@ -2952,13 +2928,6 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
             pResultLookup->lookupKind.runtimeLookupKind = CORINFO_LOOKUP_CLASSPARAM;
         else
             pResultLookup->lookupKind.runtimeLookupKind = CORINFO_LOOKUP_THISOBJ;
-    }
-
-    if (targetIsStaticVirtual)
-    {
-        // For SVM lookup, we just need to fill in the generic context lookup kind, the runtime helper
-        // will take care of resolving the actual target method.
-        return;
     }
 
     // If we've got a  method type parameter of any kind then we must look in the method desc arg
@@ -5205,17 +5174,17 @@ void CEEInfo::getCallInfo(
         pResult->kind = CORINFO_VIRTUALCALL_STUB;
         if (fIsStaticVirtualMethod)
         {
-            pResult->kind = CORINFO_VIRTUALSTATICCALL_STUB;
+            pResult->kind = CORINFO_VIRTUALSTATICCALL;
         }
 
         // We can't make stub calls when we need exact information
         // for interface calls from shared code.
 
-        if (pResult->exactContextNeedsRuntimeLookup || fIsStaticVirtualMethod)
+        if (pResult->exactContextNeedsRuntimeLookup)
         {
             _ASSERTE(!m_pMethodBeingCompiled->IsDynamicMethod());
 
-            ComputeRuntimeLookupForSharedGenericToken(DispatchStubAddrSlot,
+            ComputeRuntimeLookupForSharedGenericToken(fIsStaticVirtualMethod ? ConstrainedMethodEntrySlot : DispatchStubAddrSlot,
                                                         pResolvedToken,
                                                         pConstrainedResolvedToken,
                                                         pMD,
@@ -5442,6 +5411,30 @@ void CEEInfo::getCallInfo(
         signatureKind = SK_CALLSITE;
     }
     getMethodSigInternal(pResult->hMethod, &pResult->sig, (pResult->hMethod == pResolvedToken->hMethod) ? pResolvedToken->hClass : NULL, signatureKind);
+    if (fIsStaticVirtualMethod)
+    {
+        if (fResolvedConstraint)
+        {
+            // Runtime lookup for static virtual methods always returns exact call addresses not requiring the instantiation argument
+            pResult->sig.callConv = (CorInfoCallConv)(pResult->sig.callConv & ~CORINFO_CALLCONV_PARAMTYPE);
+        }
+        else
+        {
+            // Unresolved static virtual method in the absence of shared generics means
+            // that the runtime needs to throw when reaching the call. SVM resolution within
+            // shared generics is covered by the ConstrainedMethodEntrySlot dictionary entry.
+            pResult->kind = CORINFO_CALL;
+            pResult->accessAllowed = CORINFO_ACCESS_ILLEGAL;
+            pResult->callsiteCalloutHelper.helperNum = CORINFO_HELP_STATIC_VIRTUAL_AMBIGUOUS_RESOLUTION;
+            pResult->callsiteCalloutHelper.numArgs = 3;
+            pResult->callsiteCalloutHelper.args[0].methodHandle = (CORINFO_METHOD_HANDLE)pMD;
+            pResult->callsiteCalloutHelper.args[0].argType = CORINFO_HELPER_ARG_TYPE_Method;
+            pResult->callsiteCalloutHelper.args[1].classHandle = (CORINFO_CLASS_HANDLE)th.AsMethodTable();
+            pResult->callsiteCalloutHelper.args[1].argType = CORINFO_HELPER_ARG_TYPE_Class;
+            pResult->callsiteCalloutHelper.args[2].classHandle = (CORINFO_CLASS_HANDLE)constrainedType.AsMethodTable();
+            pResult->callsiteCalloutHelper.args[2].argType = CORINFO_HELPER_ARG_TYPE_Class;
+        }
+    }
 
     if (flags & CORINFO_CALLINFO_VERIFICATION)
     {

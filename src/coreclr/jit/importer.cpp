@@ -2027,7 +2027,7 @@ GenTree* Compiler::impLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 
     // Need to use dictionary-based access which depends on the typeContext
     // which is only available at runtime, not at compile-time.
-    return impRuntimeLookupToTree(pResolvedToken, nullptr, pLookup, compileTimeHandle);
+    return impRuntimeLookupToTree(pResolvedToken, pLookup, compileTimeHandle);
 }
 
 #ifdef FEATURE_READYTORUN
@@ -2202,16 +2202,13 @@ GenTree* Compiler::getRuntimeContextTree(CORINFO_RUNTIME_LOOKUP_KIND kind)
         // context is the method table pointer of the this object
         ctxTree = gtNewMethodTableLookup(ctxTree);
     }
-    else if (kind == CORINFO_LOOKUP_METHODPARAM || kind == CORINFO_LOOKUP_CLASSPARAM)
+    else
     {
+        assert(kind == CORINFO_LOOKUP_METHODPARAM || kind == CORINFO_LOOKUP_CLASSPARAM);
+
         // Exact method descriptor as passed in
         ctxTree = gtNewLclvNode(pRoot->info.compTypeCtxtArg, TYP_I_IMPL);
         ctxTree->gtFlags |= GTF_VAR_CONTEXT;
-    }
-    else
-    {
-        assert(kind == CORINFO_LOOKUP_VIRTUALSTATIC);
-        ctxTree = gtNewNull();
     }
     return ctxTree;
 }
@@ -2235,11 +2232,11 @@ GenTree* Compiler::getRuntimeContextTree(CORINFO_RUNTIME_LOOKUP_KIND kind)
  */
 
 GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                          CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
                                           CORINFO_LOOKUP*         pLookup,
                                           void*                   compileTimeHandle)
 {
     GenTree* ctxTree = getRuntimeContextTree(pLookup->lookupKind.runtimeLookupKind);
+
     CORINFO_RUNTIME_LOOKUP* pRuntimeLookup = &pLookup->runtimeLookup;
     // It's available only via the run-time helper function
     if (pRuntimeLookup->indirections == CORINFO_USEHELPER)
@@ -2251,24 +2248,7 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
                                              &pLookup->lookupKind, ctxTree);
         }
 #endif
-        GenTree* argNode;
-        if (pConstrainedResolvedToken != nullptr)
-        {
-            // SVM call: use generic lookup to resolve the exact type and method
-            argNode = gtNewHelperCallNode(
-                CORINFO_HELP_RUNTIMEHANDLE_CLASS,
-                TYP_I_IMPL,
-                gtNewIconEmbHndNode(pConstrainedResolvedToken->hClass, nullptr, GTF_ICON_GLOBAL_PTR, pConstrainedResolvedToken->hClass));
-            ctxTree = gtNewHelperCallNode(
-                CORINFO_HELP_RUNTIMEHANDLE_METHOD,
-                TYP_I_IMPL,
-                gtNewIconEmbHndNode(pResolvedToken->hMethod, nullptr, GTF_ICON_GLOBAL_PTR, pResolvedToken->hMethod));
-        }
-        else
-        {
-            argNode = gtNewIconEmbHndNode(pRuntimeLookup->signature, nullptr, GTF_ICON_GLOBAL_PTR, compileTimeHandle);
-        }
-        return gtNewRuntimeLookupHelperCallNode(pRuntimeLookup, ctxTree, argNode);
+        return gtNewRuntimeLookupHelperCallNode(pRuntimeLookup, ctxTree, compileTimeHandle);
     }
 
     // Slot pointer
@@ -4044,7 +4024,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 CORINFO_GENERICHANDLE_RESULT embedInfo;
                 info.compCompHnd->expandRawHandleIntrinsic(&resolvedToken, &embedInfo);
 
-                GenTree* rawHandle = impLookupToTree(&resolvedToken, nullptr, &embedInfo.lookup, gtTokenToIconFlags(memberRef),
+                GenTree* rawHandle = impLookupToTree(&resolvedToken, &embedInfo.lookup, gtTokenToIconFlags(memberRef),
                                                      embedInfo.compileTimeHandle);
                 if (rawHandle == nullptr)
                 {
@@ -7393,7 +7373,7 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
     if ((pCallInfo->sig.sigInst.methInstCount != 0) && IsTargetAbi(CORINFO_NATIVEAOT_ABI))
     {
         GenTree* runtimeMethodHandle =
-            impLookupToTree(pResolvedToken, nullptr, &pCallInfo->codePointerLookup, GTF_ICON_METHOD_HDL, pCallInfo->hMethod);
+            impLookupToTree(pResolvedToken, &pCallInfo->codePointerLookup, GTF_ICON_METHOD_HDL, pCallInfo->hMethod);
         return gtNewHelperCallNode(CORINFO_HELP_GVMLOOKUP_FOR_SLOT, TYP_I_IMPL, thisPtr, runtimeMethodHandle);
     }
 
@@ -9475,46 +9455,42 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
         switch (callInfo->kind)
         {
-            case CORINFO_VIRTUALSTATICCALL_STUB:
+            case CORINFO_VIRTUALSTATICCALL:
             {
-                assert(mflags & CORINFO_FLG_STATIC);
-                if (callInfo->stubLookup.lookupKind.needsRuntimeLookup)
-                {
-                    GenTree* stubAddr = impRuntimeLookupToTree(pResolvedToken, pConstrainedResolvedToken, &callInfo->stubLookup, methHnd);
-                    assert(stubAddr != nullptr);
+                assert((mflags & CORINFO_FLG_STATIC));
+                assert(!(clsFlags & CORINFO_FLG_VALUECLASS));
+                assert(callInfo->stubLookup.lookupKind.needsRuntimeLookup);
 
-                    // The stubAddr may be a
-                    // complex expression. As it is evaluated after the args,
-                    // it may cause registered args to be spilled. Simply spill it.
+                GenTree* targetAddrPtr = impRuntimeLookupToTree(pResolvedToken, &callInfo->stubLookup, methHnd);
+                assert(!compDonotInline());
 
-                    unsigned lclNum = lvaGrabTemp(true DEBUGARG("VirtualCall with runtime lookup"));
-                    impAssignTempGen(lclNum, stubAddr, (unsigned)CHECK_SPILL_NONE);
-                    stubAddr = gtNewLclvNode(lclNum, TYP_I_IMPL);
+                // This is the rough code to set up an indirect stub call
+                assert(targetAddrPtr != nullptr);
 
-                    call = gtNewIndCallNode(stubAddr, callRetTyp);
+                // The targetAddrPtr may be a
+                // complex expression. As it is evaluated after the args,
+                // it may cause registered args to be spilled. Simply spill it.
 
-                    call->gtFlags |= GTF_EXCEPT | (stubAddr->gtFlags & GTF_GLOB_EFFECT);
-                    call->gtFlags |= GTF_CALL_VIRT_STUB;
+                unsigned lclNum = lvaGrabTemp(true DEBUGARG("VirtualStaticCall with runtime lookup"));
+                impAssignTempGen(lclNum, targetAddrPtr, (unsigned)CHECK_SPILL_NONE);
+                targetAddrPtr = gtNewLclvNode(lclNum, TYP_I_IMPL);
+
+                // Create the actual call node
+
+                assert((sig->callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_VARARG &&
+                       (sig->callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_NATIVEVARARG);
+
+                call = gtNewIndCallNode(targetAddrPtr, callRetTyp);
+
+                call->gtFlags |= GTF_EXCEPT | (targetAddrPtr->gtFlags & GTF_GLOB_EFFECT);
+                call->gtFlags |= GTF_CALL_NONVIRT;
 
 #ifdef TARGET_X86
-                    // No tailcalls allowed for these yet...
-                    canTailCall             = false;
-                    szCanTailCallFailReason = "VirtualStaticCall with runtime lookup";
+                // No tailcalls allowed for these yet...
+                canTailCall             = false;
+                szCanTailCallFailReason = "VirtualStaticCall with runtime lookup";
 #endif
-                }
-                else
-                {
-                    // The stub address is known at compile time
-                    call                               = gtNewCallNode(CT_USER_FUNC, callInfo->hMethod, callRetTyp, di);
-                    call->AsCall()->gtStubCallStubAddr = callInfo->stubLookup.constLookup.addr;
-                    call->gtFlags |= GTF_CALL_VIRT_STUB;
-                    assert(callInfo->stubLookup.constLookup.accessType != IAT_PPVALUE &&
-                           callInfo->stubLookup.constLookup.accessType != IAT_RELPVALUE);
-                    if (callInfo->stubLookup.constLookup.accessType == IAT_PVALUE)
-                    {
-                        call->AsCall()->gtCallMoreFlags |= GTF_CALL_M_VIRTSTUB_REL_INDIRECT;
-                    }
-                }
+
                 break;
             }
 
@@ -9532,7 +9508,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                         return TYP_UNDEF;
                     }
 
-                    GenTree* stubAddr = impRuntimeLookupToTree(pResolvedToken, nullptr, &callInfo->stubLookup, methHnd);
+                    GenTree* stubAddr = impRuntimeLookupToTree(pResolvedToken, &callInfo->stubLookup, methHnd);
                     assert(!compDonotInline());
 
                     // This is the rough code to set up an indirect stub call
@@ -9703,7 +9679,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 assert((sig->callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_NATIVEVARARG);
 
                 GenTree* fptr =
-                    impLookupToTree(pResolvedToken, nullptr, &callInfo->codePointerLookup, GTF_ICON_FTN_ADDR, callInfo->hMethod);
+                    impLookupToTree(pResolvedToken, &callInfo->codePointerLookup, GTF_ICON_FTN_ADDR, callInfo->hMethod);
 
                 if (compDonotInline())
                 {
@@ -9988,7 +9964,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
     if (sig->callConv & CORINFO_CALLCONV_PARAMTYPE)
     {
-        assert(call->AsCall()->gtCallType == CT_USER_FUNC || call->AsCall()->gtCallType == CT_INDIRECT);
+        assert(call->AsCall()->gtCallType == CT_USER_FUNC);
         if (clsHnd == nullptr)
         {
             NO_WAY("CALLI on parameterized type");
@@ -15192,7 +15168,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 impHandleAccessAllowed(callInfo.accessAllowed, &callInfo.callsiteCalloutHelper);
 
             DO_LDFTN:
-                op1 = impMethodPointer(&resolvedToken, &constrainedResolvedToken, &callInfo);
+                op1 = impMethodPointer(&resolvedToken, &callInfo);
 
                 if (compDonotInline())
                 {

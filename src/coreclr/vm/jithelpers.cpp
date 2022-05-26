@@ -3375,34 +3375,31 @@ NOINLINE HCIMPL3(CORINFO_MethodPtr, JIT_VirtualFunctionPointer_Framed, Object * 
 }
 HCIMPLEND
 
-HCIMPL2(void*, JIT_DispatchVirtualStatic, MethodDesc *interfaceMethod, MethodTable *constrainedType)
+HCIMPL3(void, JIT_StaticVirtualAmbiguousResolution, 
+    MethodDesc *method,
+    MethodTable *interfaceType,
+    MethodTable *targetType)
 {
     FCALL_CONTRACT;
 
-    BOOL uniqueResolution = FALSE;
-    MethodDesc *methodDesc = nullptr;
+    SString strMethodName;
+    SString strInterfaceName;
+    SString strTargetClassName;
 
-    HELPER_METHOD_FRAME_BEGIN_0();
+    HELPER_METHOD_FRAME_BEGIN_0();    // Set up a frame
 
-    methodDesc = constrainedType->ResolveVirtualStaticMethod(
-        interfaceMethod->GetMethodTable(),
-        interfaceMethod,
-        /* allowNullResult */ TRUE,
-        /* verifyImplemented */ FALSE,
-        /* allowVariantMatches */ TRUE,
-        /* uniqueResolution */ &uniqueResolution);
+    TypeString::AppendMethod(strMethodName, method, method->GetMethodInstantiation());
+    TypeString::AppendType(strInterfaceName, TypeHandle(interfaceType));
+    TypeString::AppendType(strTargetClassName, targetType);
 
-    HELPER_METHOD_FRAME_END();
+    HELPER_METHOD_FRAME_END();    // Set up a frame
 
-    if (!uniqueResolution)
-    {
-        FCThrow(kAmbiguousImplementationException);
-    }
-    else if (methodDesc == nullptr)
-    {
-        FCThrow(kTypeLoadException);
-    }
-    return methodDesc;
+    FCThrowExVoid(
+        kAmbiguousImplementationException,
+        IDS_CLASSLOAD_AMBIGUOUS_OVERRIDE,
+        strMethodName,
+        strInterfaceName,
+        strTargetClassName);
 }
 HCIMPLEND
 

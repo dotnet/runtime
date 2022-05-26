@@ -646,7 +646,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_VALIDATE_INDIRECT_CALL,    // CFG: Validate function pointer
     CORINFO_HELP_DISPATCH_INDIRECT_CALL,    // CFG: Validate and dispatch to pointer
 
-    CORINFO_HELP_VIRTUAL_STATIC,            // Resolve virtual static method address based on method handle and type constraint
+    CORINFO_HELP_STATIC_VIRTUAL_AMBIGUOUS_RESOLUTION, // Throw AmbiguousResolutionException for failed static virtual method resolution
 
     CORINFO_HELP_COUNT,
 };
@@ -1210,7 +1210,6 @@ enum CORINFO_RUNTIME_LOOKUP_KIND
     CORINFO_LOOKUP_THISOBJ,
     CORINFO_LOOKUP_METHODPARAM,
     CORINFO_LOOKUP_CLASSPARAM,
-    CORINFO_LOOKUP_VIRTUALSTATIC,
     CORINFO_LOOKUP_NOT_SUPPORTED, // Returned for attempts to inline dictionary lookups
 };
 
@@ -1463,7 +1462,7 @@ enum CORINFO_CALL_KIND
     CORINFO_VIRTUALCALL_STUB,
     CORINFO_VIRTUALCALL_LDVIRTFTN,
     CORINFO_VIRTUALCALL_VTABLE,
-    CORINFO_VIRTUALSTATICCALL_STUB,
+    CORINFO_VIRTUALSTATICCALL,
 };
 
 // Indicates that the CORINFO_VIRTUALCALL_VTABLE lookup needn't do a chunk indirection
