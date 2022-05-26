@@ -1791,19 +1791,8 @@ namespace System
             }
             else if (typeof(TOther) == typeof(decimal))
             {
-                decimal actualResult;
-
-                if (IsNegative(value))
-                {
-                    value = (-value) & new Int128(0x0000_0000_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF);
-                    actualResult = -(decimal)value;
-                }
-                else
-                {
-                    value &= new Int128(0x0000_0000_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF);
-                    actualResult = (decimal)value;
-                }
-
+                decimal actualResult = (value >= new Int128(0x0000_0000_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)) ? decimal.MaxValue :
+                                       (value <= new Int128(0xFFFF_FFFF_0000_0000, 0x0000_0000_0000_0001)) ? decimal.MinValue : (decimal)value;
                 result = (TOther)(object)actualResult;
                 return true;
             }
