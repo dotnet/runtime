@@ -527,9 +527,16 @@ enum GenTreeFlags : unsigned int
                                               //             alignment of 1 byte)
     GTF_IND_INVARIANT           = 0x01000000, // GT_IND   -- the target is invariant (a prejit indirection)
     GTF_IND_NONNULL             = 0x00400000, // GT_IND   -- the indirection never returns null (zero)
+#if defined(TARGET_XARCH)
+    GTF_IND_DONT_EXTEND         = 0x00200000, // GT_IND   -- the indirection does not need to extend for small types
+#endif // TARGET_XARCH
 
     GTF_IND_FLAGS = GTF_IND_VOLATILE | GTF_IND_NONFAULTING | GTF_IND_TLS_REF | GTF_IND_UNALIGNED | GTF_IND_INVARIANT |
-                    GTF_IND_NONNULL | GTF_IND_TGT_NOT_HEAP | GTF_IND_TGT_HEAP,
+                    GTF_IND_NONNULL | GTF_IND_TGT_NOT_HEAP | GTF_IND_TGT_HEAP
+#if defined(TARGET_XARCH)
+                     | GTF_IND_DONT_EXTEND 
+#endif // TARGET_XARCH
+                    ,
 
     GTF_ADDRMODE_NO_CSE         = 0x80000000, // GT_ADD/GT_MUL/GT_LSH -- Do not CSE this node only, forms complex
                                               //                         addressing mode
@@ -2201,7 +2208,7 @@ public:
     //     });
     //
     // This function is generally more efficient that the operand iterator and should be preferred over that API for
-    // hot code, as it affords better opportunities for inlining and acheives shorter dynamic path lengths when
+    // hot code, as it affords better opportunities for inlining and achieves shorter dynamic path lengths when
     // deciding how operands need to be accessed.
     //
     // Note that this function does not respect `GTF_REVERSE_OPS`. This is always safe in LIR, but may be dangerous
@@ -3280,6 +3287,12 @@ public:
         SetLclNum(lclNum);
     }
 
+    GenTree*& Data()
+    {
+        assert(OperIsLocalStore());
+        return gtOp1;
+    }
+
     unsigned GetLclNum() const
     {
         return _gtLclNum;
@@ -3564,7 +3577,7 @@ public:
 //     -> FP" cases. For all other unchecked casts, "IsUnsigned" is meaningless.
 //  4) For unchecked casts, signedness of the target type is only meaningful if
 //     the cast is to an FP or small type. In the latter case (and everywhere
-//     else in IR) it decided whether the value will be sign- or zero-extended.
+//     else in IR) it decides whether the value will be sign- or zero-extended.
 //
 // For additional context on "GT_CAST"'s semantics, see "IntegralRange::ForCast"
 // methods and "GenIntCastDesc"'s constructor.
@@ -6602,6 +6615,12 @@ struct GenTreeIndir : public GenTreeOp
         gtOp1 = addr;
     }
 
+    GenTree*& Data()
+    {
+        assert(OperIs(GT_STOREIND) || OperIsStoreBlk());
+        return gtOp2;
+    }
+
     // these methods provide an interface to the indirection node which
     bool     HasBase();
     bool     HasIndex();
@@ -6627,6 +6646,23 @@ struct GenTreeIndir : public GenTreeOp
     {
         return (gtFlags & GTF_IND_UNALIGNED) != 0;
     }
+
+#if defined(TARGET_XARCH)
+    void SetDontExtend()
+    {
+        gtFlags |= GTF_IND_DONT_EXTEND;
+    }
+
+    void ClearDontExtend()
+    {
+        gtFlags &= ~GTF_IND_DONT_EXTEND;
+    }
+
+    bool DontExtend() const
+    {
+        return (gtFlags & GTF_IND_DONT_EXTEND) != 0;
+    }
+#endif // TARGET_XARCH
 
 #if DEBUGGABLE_GENTREE
     // Used only for GenTree::GetVtableForOper()
@@ -8505,7 +8541,7 @@ inline GenTree* GenTree::gtGetOp2IfPresent() const
 inline GenTree* GenTree::gtEffectiveVal(bool commaOnly /* = false */)
 {
     GenTree* effectiveVal = this;
-    for (;;)
+    while (true)
     {
         if (effectiveVal->gtOper == GT_COMMA)
         {

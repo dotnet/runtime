@@ -2024,25 +2024,6 @@ void SString::Printf(const WCHAR *format, ...)
     va_end(args);
 }
 
-void SString::PPrintf(const WCHAR *format, ...)
-{
-    CONTRACT_VOID
-    {
-        INSTANCE_CHECK;
-        PRECONDITION(CheckPointer(format));
-        THROWS;
-        GC_NOTRIGGER;
-    }
-    CONTRACT_END;
-
-    va_list argItr;
-    va_start(argItr, format);
-    PVPrintf(format, argItr);
-    va_end(argItr);
-
-    RETURN;
-}
-
 void SString::VPrintf(const WCHAR *format, va_list args)
 {
     CONTRACT_VOID
@@ -2088,80 +2069,6 @@ void SString::VPrintf(const WCHAR *format, va_list args)
         // Double the previous guess - eventually we will get enough space
         guess *= 2;
         Resize(guess, REPRESENTATION_UNICODE);
-
-        // Clear errno to avoid false alarms
-        errno = 0;
-
-        va_copy(ap, args);
-        int result = _vsnwprintf_s(GetRawUnicode(), GetRawCount()+1, _TRUNCATE, format, ap);
-        va_end(ap);
-
-        if (result >= 0)
-        {
-            Resize(result, REPRESENTATION_UNICODE, PRESERVE);
-            SString sss(format);
-            INDEBUG(CheckForFormatStringGlobalizationIssues(sss, *this));
-            RETURN;
-        }
-
-        if (errno==ENOMEM)
-        {
-            ThrowOutOfMemory();
-        }
-        else
-        if (errno!=0 && errno!=EBADF && errno!=ERANGE)
-        {
-            CONSISTENCY_CHECK_MSG(FALSE, "_vsnwprintf_s failed. Potential globalization bug.");
-            ThrowHR(HRESULT_FROM_WIN32(ERROR_NO_UNICODE_TRANSLATION));
-        }
-    }
-    RETURN;
-}
-
-void SString::PVPrintf(const WCHAR *format, va_list args)
-{
-    CONTRACT_VOID
-    {
-        INSTANCE_CHECK;
-        PRECONDITION(CheckPointer(format));
-        THROWS;
-        GC_NOTRIGGER;
-    }
-    CONTRACT_END;
-
-    va_list ap;
-    // sprintf gives us no means to know how many characters are written
-    // other than guessing and trying
-
-    if (GetRawCount() > 0)
-    {
-        // First, try to use the existing buffer
-        va_copy(ap, args);
-        int result = _vsnwprintf_s(GetRawUnicode(), GetRawCount()+1, _TRUNCATE, format, ap);
-        va_end(ap);
-        if (result >= 0)
-        {
-            // succeeded
-            Resize(result, REPRESENTATION_UNICODE, PRESERVE);
-            SString sss(format);
-            INDEBUG(CheckForFormatStringGlobalizationIssues(sss, *this));
-            RETURN;
-        }
-    }
-
-    // Make a guess how long the result will be (note this will be doubled)
-
-    COUNT_T guess = (COUNT_T) wcslen(format)+1;
-    if (guess < GetRawCount())
-        guess = GetRawCount();
-    if (guess < MINIMUM_GUESS)
-        guess = MINIMUM_GUESS;
-
-    while (TRUE)
-    {
-        // Double the previous guess - eventually we will get enough space
-        guess *= 2;
-        Resize(guess, REPRESENTATION_UNICODE, DONT_PRESERVE);
 
         // Clear errno to avoid false alarms
         errno = 0;

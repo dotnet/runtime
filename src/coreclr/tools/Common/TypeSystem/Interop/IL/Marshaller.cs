@@ -19,7 +19,7 @@ namespace Internal.TypeSystem.Interop
 
     // Each type of marshaller knows how to generate the marshalling code for the argument it marshals.
     // Marshallers contain method related marshalling information (which is common to all the Marshallers)
-    // and also argument specific marshalling informaiton
+    // and also argument specific marshalling information.
     abstract partial class Marshaller
     {
         #region Instance state information
@@ -1491,12 +1491,8 @@ namespace Internal.TypeSystem.Interop
 
         internal override void EmitElementCleanup(ILCodeStream codeStream, ILEmitter emitter)
         {
-#if READYTORUN
-            throw new NotSupportedException();
-#else
             codeStream.Emit(ILOpcode.call, emitter.NewToken(
-                                Context.GetHelperEntryPoint("InteropHelpers", "CoTaskMemFree")));
-#endif
+                                InteropTypes.GetMarshal(Context).GetKnownMethod("FreeCoTaskMem", null)));
         }
 
         protected override void TransformManagedToNative(ILCodeStream codeStream)
@@ -1613,12 +1609,8 @@ namespace Internal.TypeSystem.Interop
 
         internal override void EmitElementCleanup(ILCodeStream codeStream, ILEmitter emitter)
         {
-#if READYTORUN
-            throw new NotSupportedException();
-#else
             codeStream.Emit(ILOpcode.call, emitter.NewToken(
-                                Context.GetHelperEntryPoint("InteropHelpers", "CoTaskMemFree")));
-#endif
+                                InteropTypes.GetMarshal(Context).GetKnownMethod("FreeCoTaskMem", null)));
         }
 
         protected override void TransformManagedToNative(ILCodeStream codeStream)
@@ -1765,69 +1757,117 @@ namespace Internal.TypeSystem.Interop
 
             LoadNativeValue(codeStream);
             codeStream.Emit(ILOpcode.call, emitter.NewToken(
-                                Context.GetHelperEntryPoint("InteropHelpers", "CoTaskMemFree")));
+                                InteropTypes.GetMarshal(Context).GetKnownMethod("FreeCoTaskMem", null)));
 
             codeStream.EmitLabel(lNullCheck);
 #endif
         }
     }
 
-#if !READYTORUN
     class UTF8StringMarshaller : Marshaller
     {
-        internal override bool CleanupRequired
-        {
-            get
-            {
-                return true;
-            }
-        }
+        private const int LocalBufferLength = 0x100;
+
+        private ILLocalVariable? _marshallerInstance = null;
+
+        private TypeDesc Marshaller => Context.SystemModule.GetKnownType("System.Runtime.InteropServices.Marshalling", "Utf8StringMarshaller");
+
+        internal override bool CleanupRequired => true;
 
         internal override void EmitElementCleanup(ILCodeStream codeStream, ILEmitter emitter)
         {
+            Debug.Assert(_marshallerInstance is null);
+
             codeStream.Emit(ILOpcode.call, emitter.NewToken(
-                                Context.GetHelperEntryPoint("InteropHelpers", "CoTaskMemFree")));
+                                InteropTypes.GetMarshal(Context).GetKnownMethod("FreeCoTaskMem", null)));
         }
 
         protected override void TransformManagedToNative(ILCodeStream codeStream)
         {
             ILEmitter emitter = _ilCodeStreams.Emitter;
+            TypeDesc marshaller = Marshaller;
 
-            //
-            // UTF8 marshalling. Allocate a byte array, copy characters
-            //
-            var stringToAnsi = Context.GetHelperEntryPoint("InteropHelpers", "StringToUTF8String");
-            LoadManagedValue(codeStream);
-            codeStream.Emit(ILOpcode.call, emitter.NewToken(stringToAnsi));
+            if (_marshallerInstance == null)
+                _marshallerInstance = emitter.NewLocal(marshaller);
+
+            if (In && !Out && !IsManagedByRef)
+            {
+                var vBuffer = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.IntPtr));
+                codeStream.EmitLdc(LocalBufferLength);
+                codeStream.Emit(ILOpcode.localloc);
+                codeStream.EmitStLoc(vBuffer);
+
+                LoadManagedValue(codeStream);
+
+                // Create ReadOnlySpan<byte> from the stack-allocated buffer
+                codeStream.EmitLdLoc(vBuffer);
+                codeStream.EmitLdc(LocalBufferLength);
+
+                var spanOfByte = Context.SystemModule.GetKnownType("System", "Span`1").MakeInstantiatedType(
+                    new TypeDesc[] { Context.GetWellKnownType(WellKnownType.Byte) });
+
+                codeStream.Emit(ILOpcode.newobj, emitter.NewToken(spanOfByte.GetKnownMethod(".ctor",
+                    new MethodSignature(0, 0, Context.GetWellKnownType(WellKnownType.Void),
+                            new TypeDesc[] { Context.GetWellKnownType(WellKnownType.Void).MakePointerType(), Context.GetWellKnownType(WellKnownType.Int32) }))));
+
+                codeStream.Emit(ILOpcode.newobj, emitter.NewToken(marshaller.GetKnownMethod(".ctor",
+                    new MethodSignature(0, 0, Context.GetWellKnownType(WellKnownType.Void),
+                            new TypeDesc[] { Context.GetWellKnownType(WellKnownType.String), spanOfByte }))));
+                codeStream.EmitStLoc(_marshallerInstance.Value);
+            }
+            else
+            {
+                LoadManagedValue(codeStream);
+                codeStream.Emit(ILOpcode.newobj, emitter.NewToken(marshaller.GetKnownMethod(".ctor",
+                    new MethodSignature(0, 0, Context.GetWellKnownType(WellKnownType.Void),
+                            new TypeDesc[] { Context.GetWellKnownType(WellKnownType.String) }))));
+                codeStream.EmitStLoc(_marshallerInstance.Value);
+            }
+
+            codeStream.EmitLdLoca(_marshallerInstance.Value);
+            codeStream.Emit(ILOpcode.call, emitter.NewToken(marshaller.GetKnownMethod("ToNativeValue", null)));
             StoreNativeValue(codeStream);
         }
 
         protected override void TransformNativeToManaged(ILCodeStream codeStream)
         {
             ILEmitter emitter = _ilCodeStreams.Emitter;
-            var ansiToString = Context.GetHelperEntryPoint("InteropHelpers", "UTF8StringToString");
+            TypeDesc marshaller = Marshaller;
+
+            if (_marshallerInstance == null)
+                _marshallerInstance = emitter.NewLocal(marshaller);
+
+            codeStream.EmitLdLoca(_marshallerInstance.Value);
             LoadNativeValue(codeStream);
-            codeStream.Emit(ILOpcode.call, emitter.NewToken(ansiToString));
+            codeStream.Emit(ILOpcode.call, emitter.NewToken(marshaller.GetKnownMethod("FromNativeValue", null)));
+
+            codeStream.EmitLdLoca(_marshallerInstance.Value);
+            codeStream.Emit(ILOpcode.call, emitter.NewToken(marshaller.GetKnownMethod("ToManaged", null)));
             StoreManagedValue(codeStream);
         }
 
         protected override void EmitCleanupManaged(ILCodeStream codeStream)
         {
-            var emitter = _ilCodeStreams.Emitter;
-            var lNullCheck = emitter.NewCodeLabel();
+            ILEmitter emitter = _ilCodeStreams.Emitter;
 
-            // Check for null array
-            LoadManagedValue(codeStream);
-            codeStream.Emit(ILOpcode.brfalse, lNullCheck);
+            if (In && !Out && !IsManagedByRef)
+            {
+                Debug.Assert(_marshallerInstance != null);
 
-            LoadNativeValue(codeStream);
-            codeStream.Emit(ILOpcode.call, emitter.NewToken(
-                                Context.GetHelperEntryPoint("InteropHelpers", "CoTaskMemFree")));
-
-            codeStream.EmitLabel(lNullCheck);
+                codeStream.EmitLdLoca(_marshallerInstance.Value);
+                codeStream.Emit(ILOpcode.call, emitter.NewToken(
+                                    Marshaller.GetKnownMethod("FreeNative", null)));
+            }
+            else
+            {
+                // The marshaller instance is not guaranteed to be initialized with the latest native value.
+                // Free  the native value directly.
+                LoadNativeValue(codeStream);
+                codeStream.Emit(ILOpcode.call, emitter.NewToken(
+                                    InteropTypes.GetMarshal(Context).GetKnownMethod("FreeCoTaskMem", null)));
+            }
         }
     }
-#endif
 
     class SafeHandleMarshaller : Marshaller
     {

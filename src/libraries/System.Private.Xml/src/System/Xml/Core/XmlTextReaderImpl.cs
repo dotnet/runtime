@@ -2950,13 +2950,13 @@ namespace System.Xml
 
             // make sure we have at least 4 bytes to detect the encoding (no preamble of System.Text supported encoding is longer than 4 bytes)
             _ps.bytePos = 0;
-            while (_ps.bytesUsed < 4 && _ps.bytes.Length - _ps.bytesUsed > 0)
+            if (_ps.bytesUsed < 4 && _ps.bytes.Length - _ps.bytesUsed > 0)
             {
-                int read = stream.Read(_ps.bytes, _ps.bytesUsed, _ps.bytes.Length - _ps.bytesUsed);
-                if (read == 0)
+                int bytesToRead = Math.Min(4, _ps.bytes.Length - _ps.bytesUsed);
+                int read = stream.ReadAtLeast(_ps.bytes.AsSpan(_ps.bytesUsed), bytesToRead, throwOnEndOfStream: false);
+                if (read < bytesToRead)
                 {
                     _ps.isStreamEof = true;
-                    break;
                 }
                 _ps.bytesUsed += read;
             }
@@ -3679,7 +3679,7 @@ namespace System.Xml
 
             _ps.charPos += 5;
 
-            // parsing of text declarations cannot change global stringBuidler or curNode as we may be in the middle of a text node
+            // parsing of text declarations cannot change global stringBuilder or curNode as we may be in the middle of a text node
             Debug.Assert(_stringBuilder.Length == 0 || isTextDecl);
             StringBuilder sb = isTextDecl ? new StringBuilder() : _stringBuilder;
 
@@ -7330,7 +7330,7 @@ namespace System.Xml
                 {
                     digitPos = pos;
                     badDigitExceptionString = SR.Xml_BadDecimalEntity;
-                    while (chars[pos] >= '0' && chars[pos] <= '9')
+                    while (char.IsAsciiDigit(chars[pos]))
                     {
                         val = checked(val * 10 + chars[pos] - '0');
                         pos++;

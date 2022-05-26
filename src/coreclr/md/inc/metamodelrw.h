@@ -201,7 +201,6 @@ typedef CMetaDataHashBase CLookUpHash;
 
 class MDTOKENMAP;
 class MDInternalRW;
-class CorProfileData;
 class UTSemReadWrite;
 
 template <class MiniMd> class CLiteWeightStgdb;
@@ -247,14 +246,13 @@ public:
         CorSaveSize               fSave,
         UINT32                   *pcbSize,
         DWORD                    *pbCompressed,
-        MetaDataReorderingOptions reorderingOptions = NoReordering,
-        CorProfileData           *pProfileData = NULL);
+        MetaDataReorderingOptions reorderingOptions = NoReordering);
     int IsPoolEmpty(int iPool);
     __checkReturn
     HRESULT GetPoolSaveSize(int iPool, UINT32 *pcbSize);
 
     __checkReturn
-    HRESULT SaveTablesToStream(IStream *pIStream, MetaDataReorderingOptions reorderingOptions, CorProfileData *pProfileData);
+    HRESULT SaveTablesToStream(IStream *pIStream, MetaDataReorderingOptions reorderingOptions);
     __checkReturn
     HRESULT SavePoolToStream(int iPool, IStream *pIStream);
     __checkReturn
@@ -1012,7 +1010,7 @@ public:
     FORCEINLINE int IsPreSaveDone() { return m_bPreSaveDone; }
 
 protected:
-    __checkReturn HRESULT PreSave(MetaDataReorderingOptions reorderingOptions=NoReordering, CorProfileData *pProfileData=NULL);
+    __checkReturn HRESULT PreSave(MetaDataReorderingOptions reorderingOptions=NoReordering);
     __checkReturn HRESULT PostSave();
 
     __checkReturn HRESULT PreSaveFull();
@@ -1029,18 +1027,16 @@ protected:
         CorSaveSize               fSave,
         UINT32                   *pcbSize,
         DWORD                    *pbCompressed,
-        MetaDataReorderingOptions reorderingOptions = NoReordering,
-        CorProfileData           *pProfileData = NULL);
+        MetaDataReorderingOptions reorderingOptions = NoReordering);
     __checkReturn
     HRESULT GetENCSaveSize(UINT32 *pcbSize);
     __checkReturn
     HRESULT GetHotPoolsSaveSize(
         UINT32                   *pcbSize,
-        MetaDataReorderingOptions reorderingOptions,
-        CorProfileData           *pProfileData);
+        MetaDataReorderingOptions reorderingOptions);
 
     __checkReturn
-    HRESULT SaveFullTablesToStream(IStream *pIStream, MetaDataReorderingOptions reorderingOptions=NoReordering, CorProfileData *pProfileData = NULL );
+    HRESULT SaveFullTablesToStream(IStream *pIStream, MetaDataReorderingOptions reorderingOptions=NoReordering);
     __checkReturn
     HRESULT SaveENCTablesToStream(IStream *pIStream);
 

@@ -1521,17 +1521,20 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
     }
     CONTRACTL_END;
 
-    // Check for dynamically generated Invoke methods.
-    if (pMeth->IsDynamicMethod())
-    {
-        if (strncmp(pMeth->GetName(), "InvokeStub_", ARRAY_SIZE("InvokeStub_") - 1) == 0)
-            return true;
-    }
-
-    // All other reflection invocation methods are defined in CoreLib.
     MethodTable* pCaller = pMeth->GetMethodTable();
+
+    // All reflection invocation methods are defined in CoreLib.
     if (!pCaller->GetModule()->IsSystem())
         return false;
+
+    // Check for dynamically generated Invoke methods.
+    if (pMeth->IsLCGMethod())
+    {
+        // Even if a user-created DynamicMethod uses the same naming convention, it will likely not
+        // get here since since DynamicMethods by default are created in a special (non-system) module.
+        // If this is not sufficient for conflict prevention, we can create a new private module.
+        return (strncmp(pMeth->GetName(), "InvokeStub_", ARRAY_SIZE("InvokeStub_") - 1) == 0);
+    }
 
     /* List of types that should be skipped to identify true caller */
     static const BinderClassID reflectionInvocationTypes[] = {
@@ -1756,8 +1759,6 @@ StackWalkAction SystemDomain::CallersMethodCallbackWithStackMark(CrawlFrame* pCf
     // constructors, properties or events. This leaves being invoked via
     // MethodInfo, Type or Delegate (and depending on which invoke overload is
     // being used, several different reflection classes may be involved).
-
-    g_IBCLogger.LogMethodDescAccess(pFunc);
 
     if (SystemDomain::IsReflectionInvocationMethod(pFunc))
         return SWA_CONTINUE;
@@ -2481,10 +2482,6 @@ void FileLoadLock::HolderLeave(FileLoadLock *pThis)
 }
 
 
-
-
-
-
 //
 // Assembly loading:
 //
@@ -2502,7 +2499,7 @@ void FileLoadLock::HolderLeave(FileLoadLock *pThis)
 // this constraint is expected and can be dealt with.
 //
 // Note that there is one case where this still doesn't handle recursion, and that is the
-// security subsytem. The security system runs managed code, and thus must typically fully
+// security subsystem. The security system runs managed code, and thus must typically fully
 // initialize assemblies of permission sets it is trying to use. (And of course, these may be used
 // while those assemblies are initializing.)  This is dealt with in the historical manner - namely
 // the security system passes in a special flag which says that it will deal with null return values

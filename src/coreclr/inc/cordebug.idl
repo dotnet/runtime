@@ -997,7 +997,7 @@ interface ICorDebugManagedCallback : IUnknown
 {
     /*
      * All callbacks are called with the process in the synchronized state
-     * All callbacks are serialized, and are called in in the same thread.
+     * All callbacks are serialized, and are called in the same thread.
      * Each callback implementor must call Continue in a callback to
      *      resume execution.
      * If Continue is not called before returning, the process will
@@ -6276,7 +6276,7 @@ interface ICorDebugEval2 : IUnknown
                         [in, size_is(nTypeArgs)] ICorDebugType *ppTypeArgs[]);
 
     /*
-     * NewParamaterizedArray allocates a new array whose elements may be instances
+     * NewParameterizedArray allocates a new array whose elements may be instances
      * of a generic type.  The array is always created in the AppDomain the thread is
      * currently in.
      */
@@ -7358,7 +7358,7 @@ interface ICorDebugType : IUnknown
      * GetClass and the relevant metadata, but it is relatively painful: you would
      * have to lookup the class, then the metadata of that class
      * to find the "generic" base type, then instantiate this generic base type by
-     * looking up the type paramaters to the initial type,
+     * looking up the type parameters to the initial type,
      * and then perform the appropriate instantiation in the case where the class
      * happens to be either a generic class or a normal class with a constructed type
      * as its parent.  Looking up the base types is useful to implement common

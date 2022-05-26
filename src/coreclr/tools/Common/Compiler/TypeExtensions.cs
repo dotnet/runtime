@@ -682,6 +682,28 @@ namespace ILCompiler
                 if (c.ContainsSignatureVariables())
                     return null;
 
+                // If there's unimplemented static abstract methods, this is not a suitable instantiation.
+                // We shortcut to look for any static virtuals. It matches what Roslyn does for error CS8920.
+                // Once TypeSystemConstraintsHelpers is updated to check constraints around static virtuals,
+                // we could dispatch there instead.
+                if (c.IsInterface)
+                {
+                    if (HasStaticVirtualMethods(c))
+                        return null;
+
+                    foreach (DefType intface in c.RuntimeInterfaces)
+                        if (HasStaticVirtualMethods(intface))
+                            return null;
+
+                    static bool HasStaticVirtualMethods(TypeDesc type)
+                    {
+                        foreach (MethodDesc method in type.GetVirtualMethods())
+                            if (method.Signature.IsStatic)
+                                return true;
+                        return false;
+                    }
+                }
+
                 constrainedType = c;
             }
 

@@ -229,11 +229,11 @@ PAL_fwprintf(
 Function:
   Internal_ScanfExtractFormatW
 
-Paramaters:
+Parameters:
   Fmt
     - format string to parse
     - first character must be a '%'
-    - paramater gets updated to point to the character after
+    - parameter gets updated to point to the character after
       the %<foo> format string
   Out
     - buffer will contain the %<foo> format string

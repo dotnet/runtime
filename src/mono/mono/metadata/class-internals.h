@@ -1226,7 +1226,7 @@ mono_class_get_fields_lazy (MonoClass* klass, gpointer *iter);
 gboolean
 mono_class_check_vtable_constraints (MonoClass *klass, GList *in_setup);
 
-gboolean
+MONO_COMPONENT_API gboolean
 mono_class_has_finalizer (MonoClass *klass);
 
 void

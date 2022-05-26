@@ -874,7 +874,7 @@ namespace System
             }
         }
 
-        // Allocate new multidimensional array of given dimensions. Assumes that that pLengths is immutable.
+        // Allocate new multidimensional array of given dimensions. Assumes that pLengths is immutable.
         internal static unsafe Array NewMultiDimArray(EETypePtr eeType, int* pLengths, int rank)
         {
             Debug.Assert(eeType.IsArray && !eeType.IsSzArray);

@@ -605,6 +605,11 @@ INST3(pdep,             "pdep",             IUM_WR, BAD_CODE,     BAD_CODE,     
 INST3(pext,             "pext",             IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xF5),                             INS_Flags_IsDstDstSrcAVXInstruction)                               // Parallel Bits Extract
 INST3(bzhi,             "bzhi",             IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xF5),                             Resets_OF      | Writes_SF     | Writes_ZF     | Undefined_AF  | Undefined_PF  | Writes_CF     | INS_Flags_IsDstDstSrcAVXInstruction)    // Zero High Bits Starting with Specified Bit Position
 INST3(mulx,             "mulx",             IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xF6),                             INS_Flags_IsDstDstSrcAVXInstruction)                               // Unsigned Multiply Without Affecting Flags
+#ifdef TARGET_AMD64
+INST3(shlx,             "shlx",             IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xF7),                             INS_Flags_IsDstDstSrcAVXInstruction)   //  Shift Logical Left Without Affecting Flags
+INST3(sarx,             "sarx",             IUM_WR, BAD_CODE,     BAD_CODE,     PACK4(0xF3, 0x0F, 0x38, 0xF7),           INS_Flags_IsDstDstSrcAVXInstruction)   //  Shift Arithmetic Right Without Affecting Flags
+INST3(shrx,             "shrx",             IUM_WR, BAD_CODE,     BAD_CODE,     PACK4(0xF2, 0x0F, 0x38, 0xF7),           INS_Flags_IsDstDstSrcAVXInstruction)   //  Shift Logical Right Without Affecting Flags
+#endif
 
 INST3(LAST_BMI_INSTRUCTION, "LAST_BMI_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, INS_FLAGS_None)
 

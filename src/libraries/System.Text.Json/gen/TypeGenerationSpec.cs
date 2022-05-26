@@ -12,7 +12,7 @@ using Microsoft.CodeAnalysis;
 namespace System.Text.Json.SourceGeneration
 {
     [DebuggerDisplay("Type={Type}, ClassType={ClassType}")]
-    internal class TypeGenerationSpec
+    internal sealed class TypeGenerationSpec
     {
         /// <summary>
         /// Fully qualified assembly name, prefixed with "global::", e.g. global::System.Numerics.BigInteger.

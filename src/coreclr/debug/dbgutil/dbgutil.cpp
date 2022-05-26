@@ -481,9 +481,10 @@ TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, const char* 
             // Allocate a buffer for the memory that we'll read out of the target image.
             // We can allocate as much space as the target symbol name as we gracefully handle reading
             // inaccessable memory.
-            std::unique_ptr<char[]> namePointer(new char[symbolNameLength]);
+            std::unique_ptr<char[]> namePointer(new char[symbolNameLength + 1]);
             // If we fail to read the memory or the name doesn't match, then we don't have the right export.
-            if (SUCCEEDED(ReadFromDataTarget(dataTarget, baseAddress + namePointerRVA, (BYTE*)namePointer.get(), (UINT32)symbolNameLength + 1)) && strcmp(namePointer.get(), symbolName) == 0)
+            if (SUCCEEDED(ReadFromDataTarget(dataTarget, baseAddress + namePointerRVA, (BYTE*)namePointer.get(), (UINT32)symbolNameLength + 1))
+                && strncmp(namePointer.get(), symbolName, symbolNameLength + 1) == 0)
             {
                 // If the name matches, we should be able to get the ordinal
                 uint16_t ordinalForNamedExport = 0;

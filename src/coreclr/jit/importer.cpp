@@ -8261,7 +8261,7 @@ bool Compiler::impCanPInvokeInlineCallSite(BasicBlock* block)
 //   Sets GTF_CALL_M_PINVOKE on the call for pinvokes.
 //
 //   Also sets GTF_CALL_UNMANAGED on call for inline pinvokes if the
-//   call passes a combination of legality and profitabilty checks.
+//   call passes a combination of legality and profitability checks.
 //
 //   If GTF_CALL_UNMANAGED is set, increments info.compUnmanagedCallCountWithGCTransition
 
@@ -17203,7 +17203,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 if (eeIsValueClass(resolvedToken.hClass))
                 {
-                    op1 = gtNewStructVal(resolvedToken.hClass, op1);
+                    op1 = gtNewStructVal(typGetObjLayout(resolvedToken.hClass), op1);
                     if (op1->OperIs(GT_OBJ))
                     {
                         gtSetObjGcInfo(op1->AsObj());

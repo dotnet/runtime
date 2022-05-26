@@ -12,7 +12,6 @@
       <DisabledProjects Include="$(TestRoot)FunctionalTests\**\*.csproj" /> <!-- They need to be isolated from the existing setup -->
       <DisabledProjects Include="$(TestRoot)BuildWasmApps\**\*.csproj" /> <!-- built and run with libraries -->
       <DisabledProjects Include="$(TestRoot)GC\Performance\Framework\GCPerfTestFramework.csproj" />
-      <DisabledProjects Include="$(TestRoot)Loader\classloader\generics\GenericMethods\VSW491668.csproj" /> <!-- issue 5501 -->
       <DisabledProjects Include="$(TestRoot)Loader\classloader\StaticVirtualMethods\**\generatetest.csproj" /> <!-- test generators -->
       <DisabledProjects Include="$(TestRoot)Performance\Scenario\JitBench\unofficial_dotnet\JitBench.csproj" /> <!-- no official build support for SDK-style netcoreapp2.0 projects -->
       <DisabledProjects Include="$(TestRoot)TestWrappers*\**\*.csproj" />

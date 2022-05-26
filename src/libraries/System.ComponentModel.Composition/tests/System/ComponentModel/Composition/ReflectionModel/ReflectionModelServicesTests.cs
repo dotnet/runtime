@@ -715,7 +715,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         }
 
         [Fact]
-        public void CreateImportDefinition_Parameter_NullAsParamater_ShouldThrowArgumentNull()
+        public void CreateImportDefinition_Parameter_NullAsParameter_ShouldThrowArgumentNull()
         {
             ParameterInfo parameter = typeof(TestPart).GetConstructor(new Type[] { typeof(int) }).GetParameters()[0];
             Lazy<ParameterInfo> expectedLazyParameter = parameter.AsLazy();

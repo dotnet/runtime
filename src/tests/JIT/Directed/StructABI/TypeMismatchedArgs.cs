@@ -9,6 +9,7 @@ public unsafe class TypeMismatchedArgs
 {
     private static readonly HfaUnion s_hfaDblFlt = new HfaUnion { DblHfa = { FirstDblValue = 1.0, SecondDblValue = 2.0 } };
     private static readonly HfaDblLngUnion s_dblLngHfa = new HfaDblLngUnion { DblLng = { FirstLngValue = 10, SecondLngValue = 20 } };
+    private static readonly FourDblLngUnion s_fourDblLngHfa = new FourDblLngUnion { Lngs = { LongOne = 30 } };
 
     public static int Main()
     {
@@ -20,6 +21,16 @@ public unsafe class TypeMismatchedArgs
         if (ProblemWithHfaIntMismatch(s_dblLngHfa.DblLng))
         {
             return 102;
+        }
+
+        if (ProblemWithSplitStructBlkMismatch())
+        {
+            return 103;
+        }
+
+        if (ProblemWithSplitStructHfaMismatch(s_fourDblLngHfa.Hfa))
+        {
+            return 104;
         }
 
         return 100;
@@ -42,7 +53,28 @@ public unsafe class TypeMismatchedArgs
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool ProblemWithSplitStructBlkMismatch()
+    {
+        var blk = stackalloc byte[sizeof(StructWithFourLongs)];
+        var result = CallForSplitStructWithFourLongs(1, 1, *(StructWithFourLongs*)blk);
+
+        // The stackalloc should have been zeroed-out.
+        return result != 0;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool ProblemWithSplitStructHfaMismatch(FourDoublesHfaStruct fourDblHfa)
+    {
+        var result = CallForSplitStructWithFourLongs(1, 1, *(StructWithFourLongs*)&fourDblHfa);
+
+        return result != s_fourDblLngHfa.Lngs.LongOne;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private static double CallForHfaDblStruct(HfaDblStruct value) => value.FirstDblValue;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static long CallForSplitStructWithFourLongs(int arg0, int arg1, StructWithFourLongs splitArg) => splitArg.LongOne;
 }
 
 [StructLayout(LayoutKind.Explicit)]
@@ -63,6 +95,15 @@ struct HfaUnion
     public HfaFltStruct FltHfa;
 }
 
+[StructLayout(LayoutKind.Explicit)]
+struct FourDblLngUnion
+{
+    [FieldOffset(0)]
+    public FourDoublesHfaStruct Hfa;
+    [FieldOffset(0)]
+    public StructWithFourLongs Lngs;
+}
+
 struct DblLngStruct
 {
     public long FirstLngValue;
@@ -81,4 +122,20 @@ struct HfaFltStruct
     public float SecondFltValue;
     public float ThirdFltValue;
     public float FourthFltValue;
+}
+
+struct StructWithFourLongs
+{
+    public long LongOne;
+    public long LongTwo;
+    public long LongThree;
+    public long LongFour;
+}
+
+struct FourDoublesHfaStruct
+{
+    public double FirstDblValue;
+    public double SecondDblValue;
+    public double ThirdDblValue;
+    public double FourthDblValue;
 }
