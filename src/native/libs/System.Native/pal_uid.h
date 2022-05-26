@@ -91,10 +91,3 @@ PALEXPORT int32_t SystemNative_GetGroups(int32_t ngroups, uint32_t* groups);
 */
 PALEXPORT char* SystemNative_GetGroupName(uint32_t gid);
 
-/**
-* Gets the user name associated with the specified user ID and stores it in the buffer.
-* On failure, returns a null char pointer and sets errno.
-* On success, returns a valid char pointer containing the user name.
-* Note that this method returns new memory. Consumers can rely on the marshalling behaviour to free the returned string.
-*/
-PALEXPORT char* SystemNative_GetUserName(uint32_t uid);
