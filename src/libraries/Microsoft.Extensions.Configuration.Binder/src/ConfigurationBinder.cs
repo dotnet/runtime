@@ -448,11 +448,19 @@ namespace Microsoft.Extensions.Configuration
                     throw new InvalidOperationException(SR.Format(SR.Error_CannotBindToConstructorParameter, type, nameOfInvalidParameter));
                 }
 
+
+                var properties = GetAllProperties(type);
+
+                if (!DoAllParametersHaveEquivalentProperties(parameters, properties, out string nameOfInvalidParameters))
+                {
+                    throw new InvalidOperationException(SR.Format(SR.Error_ConstructorParametersDoNotMatchProperties, type, nameOfInvalidParameters));
+                }
+
                 object?[] parameterValues = new object?[parameters.Length];
 
                 for (int index = 0; index < parameters.Length; index++)
                 {
-                    parameterValues[index] = BindParameter(parameters[index], config, options);
+                    parameterValues[index] = BindParameter(parameters[index], type, config, options);
                 }
 
                 return constructor.Invoke(parameterValues);
@@ -469,6 +477,18 @@ namespace Microsoft.Extensions.Configuration
             }
 
             return instance ?? throw new InvalidOperationException(SR.Format(SR.Error_FailedToActivate, type));
+        }
+
+        private static bool DoAllParametersHaveEquivalentProperties(ParameterInfo[] parameters, List<PropertyInfo> properties, out string s)
+        {
+            var parameterNames = parameters.Select(param => param.Name).ToList();
+            var propertyNames = properties.Select(prop => prop.Name).ToList();
+
+            var missingProperties = parameterNames.Where(pn => !propertyNames.Contains(pn!, StringComparer.OrdinalIgnoreCase));
+
+            s = string.Join(",", missingProperties);
+
+            return s.Length == 0;
         }
 
         private static bool CanBindToTheseConstructorParameters(ParameterInfo[] constructorParameters, out string nameOfInvalidParameter)
@@ -735,11 +755,24 @@ namespace Microsoft.Extensions.Configuration
         }
 
         [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
-        private static object? BindParameter(ParameterInfo parameter, IConfiguration config, BinderOptions options)
+        private static object? BindParameter(ParameterInfo parameter, Type type, IConfiguration config,
+            BinderOptions options)
         {
             string parameterName = parameter.Name!;
 
             var propertyBindingPoint = new BindingPoint(initialValue: config.GetSection(parameterName).Value, isReadOnly: false);
+
+            if (propertyBindingPoint.Value is null)
+            {
+                if (parameter.HasDefaultValue)
+                {
+                    propertyBindingPoint.SetValue(parameter.DefaultValue);
+                }
+                else
+                {
+                    throw new InvalidOperationException(SR.Format(SR.Error_ParameterHasNoMatchingConfig, type, parameterName));
+                }
+            }
 
             BindInstance(
                 parameter.ParameterType,

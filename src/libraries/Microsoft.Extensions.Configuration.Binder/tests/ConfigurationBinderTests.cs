@@ -112,10 +112,40 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             public IConfigurationSection DerivedSection { get; set; }
         }
 
-        public record RecordTypeOptions(string Color, int Length);
-
         public record struct RecordStructTypeOptions(string Color, int Length);
 
+        public class ClassWhereParametersDoNotMatchProperties
+        {
+            public string Name { get; }
+            public string Address { get; }
+
+            public ClassWhereParametersDoNotMatchProperties(string name, string address, int age)
+            {
+                Name = name;
+                Address = address;
+            }
+        }
+
+        public record RecordWhereParametersHaveDefaultValue(string Name, string Address, int Age = 42);
+
+        public record ClassWhereParametersHaveDefaultValue
+        {
+            public string? Name { get; }
+            public string Address { get; }
+            public int Age { get; }
+
+            public ClassWhereParametersHaveDefaultValue(string? name, string address, int age = 42)
+            {
+                Name = name;
+                Address = address;
+                Age = age;
+            }
+        }
+        
+
+        public record RecordTypeOptions(string Color, int Length);
+
+        public record Line(string Color, int Length, int Thickness);
 
         public class ClassWithMatchingParametersAndProperties
         {
@@ -1120,6 +1150,110 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         }
 
         [Fact]
+        public void ExceptionWhenTryingToBindClassWherePropertiesDoMatchConstructorParameters()
+        {
+            var input = new Dictionary<string, string>
+            {
+                {"ClassWhereParametersDoNotMatchPropertiesProperty:Name", "John"},
+                {"ClassWhereParametersDoNotMatchPropertiesProperty:Address", "123, Abc St."},
+                {"ClassWhereParametersDoNotMatchPropertiesProperty:Age", "42"}
+            };
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(input);
+            var config = configurationBuilder.Build();
+
+            var exception = Assert.Throws<InvalidOperationException>(
+                () => config.Bind(new TestOptions()));
+            Assert.Equal(
+                SR.Format(SR.Error_ConstructorParametersDoNotMatchProperties, typeof(ClassWhereParametersDoNotMatchProperties), "age"),
+                exception.Message);
+        }
+
+        [Fact]
+        public void ExceptionWhenTryingToBindToConstructorWithMissingConfig()
+        {
+            var input = new Dictionary<string, string>
+            {
+                {"LineProperty:Color", "Red"},
+                {"LineProperty:Length", "22"}
+            };
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(input);
+            var config = configurationBuilder.Build();
+
+            var exception = Assert.Throws<InvalidOperationException>(
+                () => config.Bind(new TestOptions()));
+            Assert.Equal(
+                SR.Format(SR.Error_ParameterHasNoMatchingConfig, typeof(Line), nameof(Line.Thickness)),
+                exception.Message);
+        }
+
+        [Fact]
+        public void ExceptionWhenTryingToBindConfigToClassWhereNoMatchingParameterIsFoundInConstructor()
+        {
+            var input = new Dictionary<string, string>
+            {
+                {"ClassWhereParametersDoNotMatchPropertiesProperty:Name", "John"},
+                {"ClassWhereParametersDoNotMatchPropertiesProperty:Address", "123, Abc St."},
+                {"ClassWhereParametersDoNotMatchPropertiesProperty:Age", "42"}
+            };
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(input);
+            var config = configurationBuilder.Build();
+
+            var exception = Assert.Throws<InvalidOperationException>(
+                () => config.Bind(new TestOptions()));
+            Assert.Equal(
+                SR.Format(SR.Error_ConstructorParametersDoNotMatchProperties, typeof(ClassWhereParametersDoNotMatchProperties), "age"),
+                exception.Message);
+        }
+
+        [Fact]
+        public void BindsToClassConstructorParametersWithDefaultValues()
+        {
+            var input = new Dictionary<string, string>
+            {
+                {"ClassWhereParametersHaveDefaultValueProperty:Name", "John"},
+                {"ClassWhereParametersHaveDefaultValueProperty:Address", "123, Abc St."}
+            };
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(input);
+            var config = configurationBuilder.Build();
+
+            TestOptions testOptions = new TestOptions();
+
+            config.Bind(testOptions);
+            Assert.Equal("John", testOptions.ClassWhereParametersHaveDefaultValueProperty.Name);
+            Assert.Equal("123, Abc St.", testOptions.ClassWhereParametersHaveDefaultValueProperty.Address);
+            Assert.Equal(42, testOptions.ClassWhereParametersHaveDefaultValueProperty.Age);
+        }
+
+        [Fact]
+        public void BindsToRecordPrimaryConstructorParametersWithDefaultValues()
+        {
+            var input = new Dictionary<string, string>
+            {
+                {"RecordWhereParametersHaveDefaultValueProperty:Name", "John"},
+                {"RecordWhereParametersHaveDefaultValueProperty:Address", "123, Abc St."}
+            };
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(input);
+            var config = configurationBuilder.Build();
+
+            TestOptions testOptions = new TestOptions();
+
+            config.Bind(testOptions);
+            Assert.Equal("John", testOptions.RecordWhereParametersHaveDefaultValueProperty.Name);
+            Assert.Equal("123, Abc St.", testOptions.RecordWhereParametersHaveDefaultValueProperty.Address);
+            Assert.Equal(42, testOptions.RecordWhereParametersHaveDefaultValueProperty.Age);
+        }
+
+        [Fact]
         public void ExceptionWhenTryingToBindToTypeThrowsWhenActivated()
         {
             var input = new Dictionary<string, string>
@@ -1608,6 +1742,10 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             public ISomeInterface ISomeInterfaceProperty { get; set; }
 
             public ClassWithoutPublicConstructor ClassWithoutPublicConstructorProperty { get; set; }
+            public ClassWhereParametersDoNotMatchProperties ClassWhereParametersDoNotMatchPropertiesProperty { get; set; }
+            public Line LineProperty { get; set; }
+            public ClassWhereParametersHaveDefaultValue ClassWhereParametersHaveDefaultValueProperty { get; set; }
+            public RecordWhereParametersHaveDefaultValue RecordWhereParametersHaveDefaultValueProperty { get; set; }
 
             public int IntProperty { get; set; }
 
