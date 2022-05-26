@@ -434,10 +434,11 @@ namespace System.Security.Cryptography
                 return false;
             }
 
-            return TryWriteCore(label, data, destination, out charsWritten);
+            charsWritten = WriteCore(label, data, destination);
+            return true;
         }
 
-        private static bool TryWriteCore(ReadOnlySpan<char> label, ReadOnlySpan<byte> data, Span<char> destination, out int charsWritten)
+        private static int WriteCore(ReadOnlySpan<char> label, ReadOnlySpan<byte> data, Span<char> destination)
         {
             static int Write(ReadOnlySpan<char> str, Span<char> dest, int offset)
             {
@@ -461,7 +462,7 @@ namespace System.Security.Cryptography
             const string NewLine = "\n";
             const int BytesPerLine = 48;
 
-            charsWritten = 0;
+            int charsWritten = 0;
             charsWritten += Write(PreEBPrefix, destination, charsWritten);
             charsWritten += Write(label, destination, charsWritten);
             charsWritten += Write(Ending, destination, charsWritten);
@@ -487,7 +488,7 @@ namespace System.Security.Cryptography
             charsWritten += Write(label, destination, charsWritten);
             charsWritten += Write(Ending, destination, charsWritten);
 
-            return true;
+            return charsWritten;
         }
 
         /// <summary>
@@ -528,12 +529,7 @@ namespace System.Security.Cryptography
             int encodedSize = GetEncodedSize(label.Length, data.Length);
             char[] buffer = new char[encodedSize];
 
-            if (!TryWriteCore(label, data, buffer, out int charsWritten))
-            {
-                Debug.Fail("TryWriteCore failed with a pre-sized buffer");
-                throw new ArgumentException(null, nameof(data));
-            }
-
+            int charsWritten = WriteCore(label, data, buffer);
             Debug.Assert(charsWritten == encodedSize);
             return buffer;
         }
@@ -586,7 +582,9 @@ namespace System.Security.Cryptography
                         ReadOnlySpan<byte> data = new ReadOnlySpan<byte>(state.DataPointer.ToPointer(), state.DataLength);
                         ReadOnlySpan<char> label = new ReadOnlySpan<char>(state.LabelPointer.ToPointer(), state.LabelLength);
 
-                        if (!TryWriteCore(label, data, destination, out int charsWritten) || charsWritten != destination.Length)
+                        int charsWritten = WriteCore(label, data, destination);
+
+                        if (charsWritten != destination.Length)
                         {
                             Debug.Fail("TryWriteCore failed with a pre-sized buffer");
                             throw new CryptographicException();
