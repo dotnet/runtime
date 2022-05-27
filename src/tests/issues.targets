@@ -3288,7 +3288,7 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/tailcall/**">
             <Issue>https://github.com/dotnet/runtime/issues/69517</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/IL/Tailcall/ExplicitTailCallNoSO*">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/IL/Tailcall/ExplicitTailCallNoSO/*">
             <Issue>https://github.com/dotnet/runtime/issues/69517</Issue>
         </ExcludeList>
 
