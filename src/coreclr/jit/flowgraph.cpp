@@ -3410,49 +3410,64 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
     BasicBlock* block;
     BasicBlock* lblk;
 
-    for (lblk = nullptr, block = fgFirstBB; block != nullptr; lblk = block, block = block->bbNext)
+    bool forceSplit = false;
+
+#ifdef DEBUG
+    // If stress-splitting, split right after the first block; don't handle functions with EH
+    forceSplit = JitConfig.JitStressProcedureSplitting() && (compHndBBtabCount == 0);
+#endif
+
+    if (forceSplit)
     {
-        bool blockMustBeInHotSection = false;
+        firstColdBlock       = fgFirstBB->bbNext;
+        prevToFirstColdBlock = fgFirstBB;
+    }
+    else
+    {
+        for (lblk = nullptr, block = fgFirstBB; block != nullptr; lblk = block, block = block->bbNext)
+        {
+            bool blockMustBeInHotSection = false;
 
 #if HANDLER_ENTRY_MUST_BE_IN_HOT_SECTION
-        if (bbIsHandlerBeg(block))
-        {
-            blockMustBeInHotSection = true;
-        }
+            if (bbIsHandlerBeg(block))
+            {
+                blockMustBeInHotSection = true;
+            }
 #endif // HANDLER_ENTRY_MUST_BE_IN_HOT_SECTION
 
-        // Do we have a candidate for the first cold block?
-        if (firstColdBlock != nullptr)
-        {
-            // We have a candidate for first cold block
-
-            // Is this a hot block?
-            if (blockMustBeInHotSection || (block->isRunRarely() == false))
+            // Do we have a candidate for the first cold block?
+            if (firstColdBlock != nullptr)
             {
-                // We have to restart the search for the first cold block
-                firstColdBlock       = nullptr;
-                prevToFirstColdBlock = nullptr;
-            }
-        }
-        else // (firstColdBlock == NULL)
-        {
-            // We don't have a candidate for first cold block
+                // We have a candidate for first cold block
 
-            // Is this a cold block?
-            if (!blockMustBeInHotSection && (block->isRunRarely() == true))
-            {
-                //
-                // If the last block that was hot was a BBJ_COND
-                // then we will have to add an unconditional jump
-                // so the code size for block needs be large
-                // enough to make it worth our while
-                //
-                if ((lblk == nullptr) || (lblk->bbJumpKind != BBJ_COND) || (fgGetCodeEstimate(block) >= 8))
+                // Is this a hot block?
+                if (blockMustBeInHotSection || (block->isRunRarely() == false))
                 {
-                    // This block is now a candidate for first cold block
-                    // Also remember the predecessor to this block
-                    firstColdBlock       = block;
-                    prevToFirstColdBlock = lblk;
+                    // We have to restart the search for the first cold block
+                    firstColdBlock       = nullptr;
+                    prevToFirstColdBlock = nullptr;
+                }
+            }
+            else // (firstColdBlock == NULL)
+            {
+                // We don't have a candidate for first cold block
+
+                // Is this a cold block?
+                if (!blockMustBeInHotSection && (block->isRunRarely() == true))
+                {
+                    //
+                    // If the last block that was hot was a BBJ_COND
+                    // then we will have to add an unconditional jump
+                    // so the code size for block needs be large
+                    // enough to make it worth our while
+                    //
+                    if ((lblk == nullptr) || (lblk->bbJumpKind != BBJ_COND) || (fgGetCodeEstimate(block) >= 8))
+                    {
+                        // This block is now a candidate for first cold block
+                        // Also remember the predecessor to this block
+                        firstColdBlock       = block;
+                        prevToFirstColdBlock = lblk;
+                    }
                 }
             }
         }
@@ -3479,8 +3494,9 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
         // then it may not be worth it to move it
         // into the Cold section as a jump to the
         // Cold section is 5 bytes in size.
+        // Ignore if stress-splitting.
         //
-        if (firstColdBlock->bbNext == nullptr)
+        if (!forceSplit && firstColdBlock->bbNext == nullptr)
         {
             // If the size of the cold block is 7 or less
             // then we will keep it in the Hot section.
@@ -3553,6 +3569,7 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
     for (block = firstColdBlock; block != nullptr; block = block->bbNext)
     {
         block->bbFlags |= BBF_COLD;
+        block->unmarkLoopAlign(this DEBUG_ARG("Loop alignment disabled for cold blocks"));
     }
 
 EXIT:;

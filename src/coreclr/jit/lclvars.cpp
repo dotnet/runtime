@@ -2075,7 +2075,7 @@ bool Compiler::StructPromotionHelper::CanPromoteStructVar(unsigned lclNum)
         {
             canPromote = false;
         }
-#if defined(TARGET_ARMARCH)
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
         else
         {
             for (unsigned i = 0; canPromote && (i < fieldCnt); i++)
@@ -2208,6 +2208,17 @@ bool Compiler::StructPromotionHelper::ShouldPromoteStructVar(unsigned lclNum)
                 lclNum, structPromotionInfo.fieldCnt);
         shouldPromote = false;
     }
+#if defined(TARGET_LOONGARCH64)
+    else if ((structPromotionInfo.fieldCnt == 2) && (varTypeIsFloating(structPromotionInfo.fields[0].fldType) ||
+                                                     varTypeIsFloating(structPromotionInfo.fields[1].fldType)))
+    {
+        // TODO-LoongArch64 - struct passed by float registers.
+        JITDUMP("Not promoting promotable struct local V%02u: #fields = %d because it is a struct with "
+                "float field(s).\n",
+                lclNum, structPromotionInfo.fieldCnt);
+        shouldPromote = false;
+    }
+#endif
 #endif // TARGET_AMD64 || TARGET_ARM64 || TARGET_ARM || TARGET_LOONGARCH64
     else if (varDsc->lvIsParam && !compiler->lvaIsImplicitByRefLocal(lclNum) && !varDsc->lvIsHfa())
     {
