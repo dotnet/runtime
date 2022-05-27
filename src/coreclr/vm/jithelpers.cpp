@@ -595,13 +595,9 @@ HCIMPL1_V(UINT64, JIT_Dbl2ULng, double val)
     if (val < two63) {
         ret = FastDbl2Lng(val);
     }
-    else if (!_isnan(val)) {
+    else {
         // subtract 0x8000000000000000, do the convert then add it back again
         ret = FastDbl2Lng(val - two63) + I64(0x8000000000000000);
-    }
-    else {
-        // specially handle NaN otherwise we return (Int64.MaxValue + 1)
-        ret = 0;
     }
     return ret;
 }
