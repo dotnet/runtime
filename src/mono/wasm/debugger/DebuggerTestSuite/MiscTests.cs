@@ -870,7 +870,7 @@ namespace DebuggerTests
                 await CheckProps(t_props, new
                     {
                         Status = TGetter("Status")
-                    }, "t_props", num_fields: 53);
+                    }, "t_props", num_fields: 54);
             });
 
 
