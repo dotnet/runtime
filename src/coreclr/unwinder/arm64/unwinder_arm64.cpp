@@ -1666,8 +1666,8 @@ RtlVirtualUnwind(
     {
         if ((rfe.UnwindData & 4) == 0)
         {
-            Rfe.BeginAddress = MEMORY_READ_DWORD(NULL, ImageBase + (Rfe.UnwindData - 3));
-            Rfe.UnwindData = MEMORY_READ_DWORD(NULL, ImageBase + (Rfe.UnwindData - 3) + sizeof(DWORD));
+            rfe.BeginAddress = MEMORY_READ_DWORD(NULL, ImageBase + (rfe.UnwindData - 3));
+            rfe.UnwindData = MEMORY_READ_DWORD(NULL, ImageBase + (rfe.UnwindData - 3) + sizeof(DWORD));
 
             // A long branch should never be described by another long branch
             ASSERT_AND_CHECK((rfe.UnwindData & 3) != 3);
