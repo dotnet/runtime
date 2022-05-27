@@ -9,7 +9,7 @@ inline void Thread::SetDeferredTransitionFrame(PInvokeTransitionFrame* pTransiti
     m_pDeferredTransitionFrame = pTransitionFrame;
 }
 
-inline void Thread::SetupHackPInvokeTunnel()
+inline void Thread::DeferTransitionFrame()
 {
     ASSERT(ThreadStore::GetCurrentThread() == this);
     ASSERT(!Thread::IsCurrentThreadInCooperativeMode());

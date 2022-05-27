@@ -240,7 +240,7 @@ public:
 
     // Setup the m_pDeferredTransitionFrame field for GC helpers entered via regular PInvoke.
     // Do not use anywhere else.
-    void                SetupHackPInvokeTunnel();
+    void                DeferTransitionFrame();
 
     //
     // GC support APIs - do not use except from GC itself

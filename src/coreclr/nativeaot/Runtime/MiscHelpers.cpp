@@ -393,7 +393,7 @@ EXTERN_C NATIVEAOT_API int32_t __cdecl RhpGetCurrentThreadStackTrace(void* pOutp
 {
     // This must be called via p/invoke rather than RuntimeImport to make the stack crawlable.
 
-    ThreadStore::GetCurrentThread()->SetupHackPInvokeTunnel();
+    ThreadStore::GetCurrentThread()->DeferTransitionFrame();
 
     return RhpCalculateStackTraceWorker(pOutputBuffer, outputBufferLength, pAddressInCurrentFrame);
 }
