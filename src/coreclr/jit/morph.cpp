@@ -1860,6 +1860,9 @@ TempInfo Compiler::fgMakeTemp(GenTree* rhs, CORINFO_CLASS_HANDLE structType /*= 
         lvaSetStruct(lclNum, structType, false);
     }
 
+    // If rhs->TypeGet() == TYP_STRUCT, gtNewTempAssign() will create a GT_COPYBLK tree.
+    // The type of GT_COPYBLK is TYP_VOID.  Therefore, we should use rhs->TypeGet() for
+    // setting type of lcl vars created.
     GenTree* asg  = gtNewTempAssign(lclNum, rhs);
     GenTree* load = new (this, GT_LCL_VAR) GenTreeLclVar(GT_LCL_VAR, rhs->TypeGet(), lclNum);
 
@@ -1919,9 +1922,6 @@ GenTree* Compiler::fgInsertCommaFormTemp(GenTree** ppTree, CORINFO_CLASS_HANDLE 
 {
     GenTree* subTree = *ppTree;
 
-    // If subTree->TypeGet() == TYP_STRUCT, gtNewTempAssign() will create a GT_COPYBLK tree.
-    // The type of GT_COPYBLK is TYP_VOID.  Therefore, we should use subTree->TypeGet() for
-    // setting type of lcl vars created.
     TempInfo tempInfo = fgMakeTemp(subTree, structType);
     GenTree* asg      = tempInfo.asg;
     GenTree* load     = tempInfo.load;
@@ -13853,6 +13853,28 @@ GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
 //    division will be used, in that case this transform allows CSE to
 //    eliminate the redundant div from code like "x = a / 3; y = a % 3;".
 //
+//    Before:
+//        *  RETURN    int   
+//        \--*  MOD       int   
+//           +--*  MUL       int   
+//           |  +--*  LCL_VAR   int    V00 arg0         
+//           |  \--*  LCL_VAR   int    V00 arg0         
+//           \--*  LCL_VAR   int    V01 arg1
+//    After:
+//        *  RETURN    int   
+//        \--*  COMMA     int   
+//           +--*  ASG       int   
+//           |  +--*  LCL_VAR   int    V03 tmp1         
+//           |  \--*  MUL       int   
+//           |     +--*  LCL_VAR   int    V00 arg0         
+//           |     \--*  LCL_VAR   int    V00 arg0         
+//           \--*  SUB       int   
+//              +--*  LCL_VAR   int    V03 tmp1         
+//              \--*  MUL       int   
+//                 +--*  DIV       int   
+//                 |  +--*  LCL_VAR   int    V03 tmp1         
+//                 |  \--*  LCL_VAR   int    V01 arg1         
+//                 \--*  LCL_VAR   int    V01 arg1 
 GenTree* Compiler::fgMorphModToSubMulDiv(GenTreeOp* tree)
 {
     JITDUMP("\nMorphing MOD/UMOD [%06u] to Sub/Mul/Div\n", dspTreeID(tree));
@@ -13901,6 +13923,8 @@ GenTree* Compiler::fgMorphModToSubMulDiv(GenTreeOp* tree)
     GenTree* const sub = gtNewOperNode(GT_SUB, type, dividend, mul);
 
     GenTree* result = sub;
+    // We loop backwards as it is easier to create new commas
+    // within one another for their sequence order.
     for (int i = tempInfoCount - 1; i >= 0; i--)
     {
         result = gtNewOperNode(GT_COMMA, type, tempInfos[i].asg, result);
