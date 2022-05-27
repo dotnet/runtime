@@ -624,6 +624,7 @@ load_cattr_value_noalloc (MonoImage *image, MonoType *t, const char *p, const ch
 			g_error ("Unhandled type of generic instance in load_cattr_value_noalloc: %s", m_class_get_name (cc));
 		}
 	}
+	result->type = type;
 
 handle_enum:
 	switch (type) {
