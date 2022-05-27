@@ -27,7 +27,7 @@ class Thread;
 # endif
 #endif // HOST_64BIT
 
-static PInvokeTransitionFrame* const TOP_OF_STACK_MARKER = (PInvokeTransitionFrame*)ptrdiff_t(-1);
+#define TOP_OF_STACK_MARKER ((PInvokeTransitionFrame*)(ptrdiff_t)-1)
 
 #define DYNAMIC_TYPE_TLS_OFFSET_FLAG 0x80000000
 

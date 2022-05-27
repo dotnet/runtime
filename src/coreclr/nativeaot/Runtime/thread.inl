@@ -64,18 +64,3 @@ inline bool Thread::IsInForbidBlockingRegion()
     return false;
 #endif
 }
-
-struct ForbidBlockingHolder
-{
-    Thread* m_pThread;
-    ForbidBlockingHolder(Thread* pThread)
-    {
-        m_pThread = pThread;
-        m_pThread->EnterForbidBlockingRegion();
-    }
-
-    ~ForbidBlockingHolder()
-    {
-        m_pThread->LeaveForbidBlockingRegion();
-    }
-};

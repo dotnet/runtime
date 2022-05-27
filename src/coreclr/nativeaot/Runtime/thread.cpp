@@ -643,24 +643,26 @@ UInt32_BOOL Thread::HijackCallback(HANDLE /*hThread*/, PAL_LIMITED_CONTEXT* pThr
 
     // we have a thread stopped, and we do not know where exactly.
     // it could be in a system call or in our own runtime holding locks
-    // current thread should not block or allocate while we determine whether location is in managed code.
+    // current thread should not block or allocate while we determine whether the location is in managed code.
+    pThread->EnterForbidBlockingRegion();
+    if (pThread->CacheTransitionFrameForSuspend())
     {
-        ForbidBlockingHolder cantAlloc(pThread);
-
-        if (pThread->CacheTransitionFrameForSuspend())
-        {
-            // This thread has already made it to preemptive (posted a transition frame)
-            // we do not need to hijack it
-            return true;
-        }
-
-        if (!GetRuntimeInstance()->IsManaged((PTR_VOID)pThreadContext->IP))
-        {
-            // Running in cooperative mode, but not managed.
-            // We cannot continue.
-            return false;
-        }
+        // This thread has already made it to preemptive (posted a transition frame)
+        // we do not need to hijack it
+        pThread->LeaveForbidBlockingRegion();
+        return true;
     }
+
+    if (!GetRuntimeInstance()->IsManaged((PTR_VOID)pThreadContext->IP))
+    {
+        // Running in cooperative mode, but not managed.
+        // We cannot continue.
+        pThread->LeaveForbidBlockingRegion();
+        return false;
+    }
+
+    // the thread is stopped in managed code, it does not hold system/runtime locks
+    pThread->LeaveForbidBlockingRegion();
 
     // TODO: attempt to redirect 
 
