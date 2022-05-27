@@ -25,6 +25,14 @@ namespace System.Diagnostics.Tracing
         internal static extern void LogThreadPoolWorkerThreadWait(uint ActiveWorkerThreadCount, uint RetiredWorkerThreadCount, ushort ClrInstanceID);
 
         [NonEvent]
+        [LibraryImport(RuntimeHelpers.QCall)]
+        internal static partial void LogThreadPoolMinWorkerThreads(int WorkerThreads, ushort ClrInstanceID);
+
+        [NonEvent]
+        [LibraryImport(RuntimeHelpers.QCall)]
+        internal static partial void LogThreadPoolMaxWorkerThreads(int WorkerThreads, ushort ClrInstanceID);
+
+        [NonEvent]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern void LogThreadPoolWorkerThreadAdjustmentSample(double Throughput, ushort ClrInstanceID);
 

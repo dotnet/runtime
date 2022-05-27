@@ -29,7 +29,7 @@ namespace System.Diagnostics.Tracing
         private static class Messages
         {
             public const string WorkerThread = "ActiveWorkerThreadCount={0};\nRetiredWorkerThreadCount={1};\nClrInstanceID={2}";
-            public const string WorkerThreadMinMax = "WorkerThreads={0};\nIOCompletionThreads={1}";
+            public const string WorkerThreadMinMax = "WorkerThreads={0};\nClrInstanceID={1}";
             public const string WorkerThreadAdjustmentSample = "Throughput={0};\nClrInstanceID={1}";
             public const string WorkerThreadAdjustmentAdjustment = "AverageThroughput={0};\nNewWorkerThreadCount={1};\nReason={2};\nClrInstanceID={3}";
             public const string WorkerThreadAdjustmentStats = "Duration={0};\nThroughput={1};\nThreadWave={2};\nThroughputWave={3};\nThroughputErrorEstimate={4};\nAverageThroughputErrorEstimate={5};\nThroughputRatio={6};\nConfidence={7};\nNewControlSetting={8};\nNewThreadWaveMagnitude={9};\nClrInstanceID={10}";
@@ -41,11 +41,11 @@ namespace System.Diagnostics.Tracing
         // The task definitions for the ETW manifest
         public static class Tasks // this name and visibility is important for EventSource
         {
-            public const EventTask Thread = (EventTask)24;
             public const EventTask ThreadPoolWorkerThread = (EventTask)16;
             public const EventTask ThreadPoolWorkerThreadAdjustment = (EventTask)18;
             public const EventTask ThreadPool = (EventTask)23;
             public const EventTask ThreadPoolWorkingThreadCount = (EventTask)22;
+            public const EventTask ThreadPoolMinMaxWorkerThreads = (EventTask)38;
         }
 
         public static class Opcodes // this name and visibility is important for EventSource
@@ -54,6 +54,7 @@ namespace System.Diagnostics.Tracing
             public const EventOpcode IODequeue = (EventOpcode)14;
             public const EventOpcode IOPack = (EventOpcode)15;
             public const EventOpcode Wait = (EventOpcode)90;
+            public const EventOpcode Update = (EventOpcode)91;
             public const EventOpcode Sample = (EventOpcode)100;
             public const EventOpcode Adjustment = (EventOpcode)101;
             public const EventOpcode Stats = (EventOpcode)102;
@@ -401,50 +402,48 @@ namespace System.Diagnostics.Tracing
             WriteEventCore(65, 3, data);
         }
 
-        [Event(75, Level = EventLevel.Informational, Message = Messages.WorkerThreadMinMax, Task = Tasks.Thread, Opcode = Opcodes.Sample, Version = 0, Keywords = Keywords.ThreadingKeyword)]
-        public unsafe void ThreadPoolWorkerSetMinThreads(
-            int WorkerThreads, 
-            int IOCompletionThreads,
-            ushort ClrInstanceID = DefaultClrInstanceId)
+#if !ES_BUILD_STANDALONE
+        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+                   Justification = EventSourceSuppressMessage)]
+#endif
+        [NonEvent]
+        private unsafe void WriteMinMaxThreadEvent(
+            int eventId,
+            int WorkerThreads)
         {
-            if (!IsEnabled(EventLevel.Informational, Keywords.ThreadingKeyword))
-            {
-                return;
-            }
-            EventData* data = stackalloc EventData[3];
-            data[0].DataPointer = (IntPtr)(&WorkerThreads);
-            data[0].Size = sizeof(int);
-            data[0].Reserved = 0;
-            data[1].DataPointer = (IntPtr)(&IOCompletionThreads);
-            data[1].Size = sizeof(int);
-            data[1].Reserved = 0;
-            data[2].DataPointer = (IntPtr)(&ClrInstanceID);
-            data[2].Size = sizeof(ushort);
-            data[2].Reserved = 0;
-            WriteEventCore(76, 3, data);
-        }
+            ushort clrInstanceId = DefaultClrInstanceId;
 
-        [Event(76, Level = EventLevel.Informational, Message = Messages.WorkerThreadMinMax, Task = Tasks.Thread, Opcode = Opcodes.Sample, Version = 0, Keywords = Keywords.ThreadingKeyword)]
-        public unsafe void ThreadPoolWorkerSetMaxThreads(
-            int WorkerThreads,
-            int IOCompletionThreads,
-            ushort ClrInstanceID = DefaultClrInstanceId)
-        {
-            if (!IsEnabled(EventLevel.Informational, Keywords.ThreadingKeyword))
-            {
-                return;
-            }
             EventData* data = stackalloc EventData[2];
             data[0].DataPointer = (IntPtr)(&WorkerThreads);
             data[0].Size = sizeof(int);
             data[0].Reserved = 0;
-            data[1].DataPointer = (IntPtr)(&IOCompletionThreads);
-            data[1].Size = sizeof(int);
+            data[1].DataPointer = (IntPtr)(&clrInstanceId);
+            data[1].Size = sizeof(ushort);
             data[1].Reserved = 0;
-            data[2].DataPointer = (IntPtr)(&ClrInstanceID);
-            data[2].Size = sizeof(ushort);
-            data[2].Reserved = 0;
-            WriteEventCore(76, 2, data);
+            WriteEventCore(eventId, 2, data);
+        }
+
+
+        [Event(75, Level = EventLevel.Informational, Message = Messages.WorkerThreadMinMax, Task = Tasks.ThreadPoolMinMaxWorkerThreads, Opcode = Opcodes.Update, Version = 0, Keywords = Keywords.ThreadingKeyword)]
+        public unsafe void ThreadPoolMinWorkerThreads(
+            int WorkerThreads,
+            ushort ClrInstanceID = DefaultClrInstanceId)
+        {
+            if (IsEnabled(EventLevel.Informational, Keywords.ThreadingKeyword))
+            {
+                WriteMinMaxThreadEvent(75, WorkerThreads);
+            }
+        }
+
+        [Event(76, Level = EventLevel.Informational, Message = Messages.WorkerThreadMinMax, Task = Tasks.ThreadPoolMinMaxWorkerThreads, Opcode = Opcodes.Update, Version = 0, Keywords = Keywords.ThreadingKeyword)]
+        public unsafe void ThreadPoolMaxWorkerThreads(
+            int WorkerThreads,
+            ushort ClrInstanceID = DefaultClrInstanceId)
+        {
+            if (IsEnabled(EventLevel.Informational, Keywords.ThreadingKeyword))
+            {
+                WriteMinMaxThreadEvent(76, WorkerThreads);
+            }
         }
     }
 }
