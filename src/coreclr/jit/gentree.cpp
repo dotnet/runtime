@@ -2852,7 +2852,10 @@ AGAIN:
                     }
 
                     case TYP_SIMD8:
+                    case TYP_DOUBLE:
+                    case TYP_LONG:
                     {
+                        // TYP_SIMD8 may get retyped to TYP_LONG or TYP_DOUBLE in lowering or morph
                         add = genTreeHashAdd(ulo32(add), vecCon->gtSimd8Val.u32[1]);
                         add = genTreeHashAdd(ulo32(add), vecCon->gtSimd8Val.u32[0]);
                         break;
@@ -11142,8 +11145,11 @@ void Compiler::gtDispConst(GenTree* tree)
             switch (vecCon->TypeGet())
             {
 #if defined(FEATURE_SIMD)
+                case TYP_LONG:
+                case TYP_DOUBLE:
                 case TYP_SIMD8:
                 {
+                    // TYP_SIMD8 may get retyped to TYP_LONG or TYP_DOUBLE in lowering or morph
                     simd8_t simdVal = vecCon->gtSimd8Val;
                     printf("<0x%08x, 0x%08x>", simdVal.u32[0], simdVal.u32[1]);
                     break;

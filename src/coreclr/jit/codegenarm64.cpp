@@ -2324,9 +2324,12 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             switch (tree->TypeGet())
             {
 #if defined(FEATURE_SIMD)
-                case TYP_LONG: // TYP_SIMD8 may get retyped to TYP_LONG after lowering
+                case TYP_LONG:
+                case TYP_DOUBLE:
                 case TYP_SIMD8:
                 {
+                    // TYP_SIMD8 may get retyped to TYP_LONG or TYP_DOUBLE in lowering or morph
+
                     if (vecCon->IsAllBitsSet())
                     {
                         emit->emitIns_R_I(INS_mvni, attr, targetReg, 0, INS_OPTS_2S);

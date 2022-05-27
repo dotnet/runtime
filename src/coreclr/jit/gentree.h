@@ -3315,9 +3315,11 @@ public:
         switch (gtType)
         {
 #if defined(FEATURE_SIMD)
-            case TYP_LONG: // TYP_SIMD8 may get retyped to TYP_LONG after lowering
+            case TYP_LONG:
+            case TYP_DOUBLE:
             case TYP_SIMD8:
             {
+                // TYP_SIMD8 may get retyped to TYP_LONG or TYP_DOUBLE in lowering or morph
                 return (gtSimd8Val.u64[0] == 0xFFFFFFFFFFFFFFFF);
             }
 
@@ -3358,9 +3360,11 @@ public:
         switch (gtType)
         {
 #if defined(FEATURE_SIMD)
-            case TYP_LONG: // TYP_SIMD8 may get retyped to TYP_LONG after lowering
+            case TYP_LONG:
+            case TYP_DOUBLE:
             case TYP_SIMD8:
             {
+                // TYP_SIMD8 may get retyped to TYP_LONG or TYP_DOUBLE in lowering or morph
                 return (left->gtSimd8Val.u64[0] == right->gtSimd8Val.u64[0]);
             }
 
@@ -3398,9 +3402,11 @@ public:
         switch (gtType)
         {
 #if defined(FEATURE_SIMD)
-            case TYP_LONG: // TYP_SIMD8 may get retyped to TYP_LONG after lowering
+            case TYP_LONG:
+            case TYP_DOUBLE:
             case TYP_SIMD8:
             {
+                // TYP_SIMD8 may get retyped to TYP_LONG or TYP_DOUBLE in lowering or morph
                 return (gtSimd8Val.u64[0] == 0x0000000000000000);
             }
 

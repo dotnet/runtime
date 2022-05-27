@@ -537,9 +537,12 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             switch (tree->TypeGet())
             {
 #if defined(FEATURE_SIMD)
-                case TYP_LONG: // TYP_SIMD8 may get retyped to TYP_LONG after lowering
+                case TYP_LONG:
+                case TYP_DOUBLE:
                 case TYP_SIMD8:
                 {
+                    // TYP_SIMD8 may get retyped to TYP_LONG or TYP_DOUBLE in lowering or morph
+
                     simd8_t              constValue = vecCon->gtSimd8Val;
                     CORINFO_FIELD_HANDLE hnd        = emit->emitSimd8Const(constValue);
 

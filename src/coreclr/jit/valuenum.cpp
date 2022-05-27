@@ -8101,11 +8101,28 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
 #endif // FEATURE_SIMD
 
         case TYP_FLOAT:
+        {
             tree->gtVNPair.SetBoth(vnStore->VNForFloatCon((float)tree->AsDblCon()->gtDconVal));
             break;
+        }
+
         case TYP_DOUBLE:
-            tree->gtVNPair.SetBoth(vnStore->VNForDoubleCon(tree->AsDblCon()->gtDconVal));
+        {
+#ifdef FEATURE_SIMD
+            if (tree->IsCnsVec())
+            {
+                // TYP_SIMD8 is sometimes retyped to be TYP_DOUBLE
+                simd8_t simd8Val = tree->AsVecCon()->gtSimd8Val;
+                tree->gtVNPair.SetBoth(vnStore->VNForSimd8Con(simd8Val));
+            }
+            else
+#endif // FEATURE_SIMD
+            {
+                tree->gtVNPair.SetBoth(vnStore->VNForDoubleCon(tree->AsDblCon()->gtDconVal));
+            }
             break;
+        }
+
         case TYP_REF:
             if (tree->AsIntConCommon()->IconValue() == 0)
             {
