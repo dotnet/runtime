@@ -14498,6 +14498,7 @@ GenTree* Compiler::fgRootCommas(GenTree* tree)
         case GT_AND:
         case GT_RSH:
         case GT_LSH:
+        case GT_ASG:
         {
             canRoot = true;
             break;
