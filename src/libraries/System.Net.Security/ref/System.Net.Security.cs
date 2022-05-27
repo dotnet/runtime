@@ -139,6 +139,7 @@ namespace System.Net.Security
         public bool AllowRenegotiation { get { throw null; } set { } }
         public System.Collections.Generic.List<System.Net.Security.SslApplicationProtocol>? ApplicationProtocols { get { throw null; } set { } }
         public System.Security.Cryptography.X509Certificates.X509RevocationMode CertificateRevocationCheckMode { get { throw null; } set { } }
+        public System.Security.Cryptography.X509Certificates.X509ChainPolicy? ChainPolicy { get { throw null; } set { } }
         public System.Net.Security.CipherSuitesPolicy? CipherSuitesPolicy { get { throw null; } set { } }
         public System.Security.Cryptography.X509Certificates.X509CertificateCollection? ClientCertificates { get { throw null; } set { } }
         public System.Security.Authentication.SslProtocols EnabledSslProtocols { get { throw null; } set { } }
@@ -160,6 +161,7 @@ namespace System.Net.Security
         public bool AllowRenegotiation { get { throw null; } set { } }
         public System.Collections.Generic.List<System.Net.Security.SslApplicationProtocol>? ApplicationProtocols { get { throw null; } set { } }
         public System.Security.Cryptography.X509Certificates.X509RevocationMode CertificateRevocationCheckMode { get { throw null; } set { } }
+        public System.Security.Cryptography.X509Certificates.X509ChainPolicy? ChainPolicy { get { throw null; } set { } }
         public System.Net.Security.CipherSuitesPolicy? CipherSuitesPolicy { get { throw null; } set { } }
         public bool ClientCertificateRequired { get { throw null; } set { } }
         public System.Security.Authentication.SslProtocols EnabledSslProtocols { get { throw null; } set { } }

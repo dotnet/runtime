@@ -55,6 +55,11 @@ namespace System.Net.Security
             CertificateRevocationCheckMode = sslClientAuthenticationOptions.CertificateRevocationCheckMode;
             ClientCertificates = sslClientAuthenticationOptions.ClientCertificates;
             CipherSuitesPolicy = sslClientAuthenticationOptions.CipherSuitesPolicy;
+
+            if (sslClientAuthenticationOptions.ChainPolicy != null)
+            {
+                ChainPolicy = (X509ChainPolicy)sslClientAuthenticationOptions.ChainPolicy.Duplicate();
+            }
         }
 
         internal void UpdateOptions(ServerOptionsSelectionCallback optionCallback, object? state)
@@ -106,6 +111,12 @@ namespace System.Net.Security
             if (sslServerAuthenticationOptions.ServerCertificateContext != null)
             {
                 CertificateContext = sslServerAuthenticationOptions.ServerCertificateContext;
+
+                if (CertificateContext.Trust != null && sslServerAuthenticationOptions.ChainPolicy != null &&
+                    sslServerAuthenticationOptions.ChainPolicy.TrustMode != X509ChainTrustMode.CustomRootTrust)
+                {
+                    throw new InvalidOperationException("Unable to use custom trust without custom root"); ;
+                }
             }
             else if (sslServerAuthenticationOptions.ServerCertificate != null)
             {
@@ -169,5 +180,6 @@ namespace System.Net.Security
         internal CipherSuitesPolicy? CipherSuitesPolicy { get; set; }
         internal object? UserState { get; set; }
         internal ServerOptionsSelectionCallback? ServerOptionDelegate { get; set; }
+        internal X509ChainPolicy? ChainPolicy { get; set; }
     }
 }

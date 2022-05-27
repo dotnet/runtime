@@ -345,9 +345,15 @@ namespace System.Net.Security
                                 NetEventSource.Info(this, $"Root cert: {certificateEx}");
 
                             chain = new X509Chain();
-
-                            chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
-                            chain.ChainPolicy.VerificationFlags = X509VerificationFlags.IgnoreInvalidName;
+                            if (_sslAuthenticationOptions.ChainPolicy != null)
+                            {
+                                chain.ChainPolicy = _sslAuthenticationOptions.ChainPolicy;
+                            }
+                            else
+                            {
+                                chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                                chain.ChainPolicy.VerificationFlags = X509VerificationFlags.IgnoreInvalidName;
+                            }
                             chain.Build(certificateEx);
                             bool found = false;
 
@@ -929,7 +935,7 @@ namespace System.Net.Security
 
             try
             {
-                X509Certificate2? certificate = CertificateValidationPal.GetRemoteCertificate(_securityContext!, ref chain);
+                X509Certificate2? certificate = CertificateValidationPal.GetRemoteCertificate(_securityContext!, ref chain, _sslAuthenticationOptions.ChainPolicy);
                 if (_remoteCertificate != null && certificate != null &&
                     certificate.RawDataMemory.Span.SequenceEqual(_remoteCertificate.RawDataMemory.Span))
                 {
@@ -950,24 +956,35 @@ namespace System.Net.Security
                     if (chain == null)
                     {
                         chain = new X509Chain();
+                        if (_sslAuthenticationOptions.ChainPolicy != null)
+                        {
+                            chain.ChainPolicy = _sslAuthenticationOptions.ChainPolicy;
+                        }
                     }
 
-                    chain.ChainPolicy.RevocationMode = _sslAuthenticationOptions.CertificateRevocationCheckMode;
-                    chain.ChainPolicy.RevocationFlag = X509RevocationFlag.ExcludeRoot;
-
-                    // Authenticate the remote party: (e.g. when operating in server mode, authenticate the client).
-                    chain.ChainPolicy.ApplicationPolicy.Add(_sslAuthenticationOptions.IsServer ? s_clientAuthOid : s_serverAuthOid);
-
-                    if (trust != null)
+                    // Set ApplicationPolicy if not specified by user.
+                    if (chain.ChainPolicy.ApplicationPolicy.Count == 0)
                     {
-                        chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
-                        if (trust._store != null)
+                        // Authenticate the remote party: (e.g. when operating in server mode, authenticate the client).
+                        chain.ChainPolicy.ApplicationPolicy.Add(_sslAuthenticationOptions.IsServer ? s_clientAuthOid : s_serverAuthOid);
+                    }
+
+                    if (_sslAuthenticationOptions.ChainPolicy == null)
+                    {
+                        chain.ChainPolicy.RevocationMode = _sslAuthenticationOptions.CertificateRevocationCheckMode;
+                        chain.ChainPolicy.RevocationFlag = X509RevocationFlag.ExcludeRoot;
+
+                        if (trust != null)
                         {
-                            chain.ChainPolicy.CustomTrustStore.AddRange(trust._store.Certificates);
-                        }
-                        if (trust._trustList != null)
-                        {
-                            chain.ChainPolicy.CustomTrustStore.AddRange(trust._trustList);
+                            chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+                            if (trust._store != null)
+                            {
+                                chain.ChainPolicy.CustomTrustStore.AddRange(trust._store.Certificates);
+                            }
+                            if (trust._trustList != null)
+                            {
+                                chain.ChainPolicy.CustomTrustStore.AddRange(trust._trustList);
+                            }
                         }
                     }
 

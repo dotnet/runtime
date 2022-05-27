@@ -74,5 +74,10 @@ namespace System.Net.Security
         /// Use extreme caution when changing this setting.
         /// </summary>
         public CipherSuitesPolicy? CipherSuitesPolicy { get; set; }
+
+        /// <summary>
+        /// Sepcifies specific policy for verifying remote cretrificate.
+        /// </summary>
+        public X509ChainPolicy? ChainPolicy { get; set; }
     }
 }

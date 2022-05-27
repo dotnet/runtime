@@ -2908,6 +2908,7 @@ namespace System.Security.Cryptography.X509Certificates
         public System.TimeSpan UrlRetrievalTimeout { get { throw null; } set { } }
         public System.Security.Cryptography.X509Certificates.X509VerificationFlags VerificationFlags { get { throw null; } set { } }
         public System.DateTime VerificationTime { get { throw null; } set { } }
+        public System.Security.Cryptography.X509Certificates.X509ChainPolicy Duplicate() { throw null; }
         public void Reset() { }
     }
     public partial struct X509ChainStatus

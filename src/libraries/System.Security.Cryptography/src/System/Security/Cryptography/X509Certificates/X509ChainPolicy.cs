@@ -9,6 +9,7 @@ namespace System.Security.Cryptography.X509Certificates
         private X509RevocationFlag _revocationFlag;
         private X509VerificationFlags _verificationFlags;
         private X509ChainTrustMode _trustMode;
+        private DateTime _verificationTime;
         internal OidCollection? _applicationPolicy;
         internal OidCollection? _certificatePolicy;
         internal X509Certificate2Collection? _extraStore;
@@ -94,9 +95,31 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        public DateTime VerificationTime { get; set; }
+        public DateTime VerificationTime
+        {
+            get
+            {
+                return _verificationTime.Equals(default(DateTime)) ? DateTime.Now : _verificationTime;
+            }
+            set
+            {
+                _verificationTime = value;
+            }
+        }
 
         public TimeSpan UrlRetrievalTimeout { get; set; }
+
+        public X509ChainPolicy Duplicate()
+        {
+            var dup = (X509ChainPolicy)this.MemberwiseClone();
+            if (_extraStore?.Count > 0)
+            {
+                // copy collection as TLS handshake may modify content.
+                dup._extraStore = new X509Certificate2Collection(_extraStore);
+            }
+
+            return dup;
+        }
 
         public void Reset()
         {
@@ -109,7 +132,7 @@ namespace System.Security.Cryptography.X509Certificates
             _revocationFlag = X509RevocationFlag.ExcludeRoot;
             _verificationFlags = X509VerificationFlags.NoFlag;
             _trustMode = X509ChainTrustMode.System;
-            VerificationTime = DateTime.Now;
+            _verificationTime = default;
             UrlRetrievalTimeout = TimeSpan.Zero; // default timeout
         }
     }
