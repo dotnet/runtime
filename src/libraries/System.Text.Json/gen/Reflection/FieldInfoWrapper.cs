@@ -18,7 +18,7 @@ namespace System.Text.Json.Reflection
             _field = parameter;
             _metadataLoadContext = metadataLoadContext;
 
-            NeedsAtSign = SyntaxFacts.GetKeywordKind(_field.Name) != SyntaxKind.None;
+            NeedsAtSign = SyntaxFacts.GetKeywordKind(_field.Name) != SyntaxKind.None || SyntaxFacts.GetContextualKeywordKind(_field.Name) != SyntaxKind.None;
         }
 
         private FieldAttributes? _attributes;

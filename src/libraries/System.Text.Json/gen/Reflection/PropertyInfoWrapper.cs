@@ -19,7 +19,7 @@ namespace System.Text.Json.Reflection
             _property = property;
             _metadataLoadContext = metadataLoadContext;
 
-            NeedsAtSign = SyntaxFacts.GetKeywordKind(_property.Name) != SyntaxKind.None;
+            NeedsAtSign = SyntaxFacts.GetKeywordKind(_property.Name) != SyntaxKind.None || SyntaxFacts.GetContextualKeywordKind(_property.Name) != SyntaxKind.None;
         }
 
         public override PropertyAttributes Attributes => throw new NotImplementedException();
