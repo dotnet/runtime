@@ -1320,7 +1320,17 @@ int32_t CryptoNative_X509DecodeOcspToExpiration(const uint8_t* buf, int32_t len,
         if (X509_STORE_CTX_init(ctx, store, subject, bag) != 0)
         {
             int canCache = 0;
-            X509VerifyStatusCode code = CheckOcspGetExpiry(req, resp, subject, issuer, ctx, &canCache, expiration);
+            time_t expiration_t = 0;
+            X509VerifyStatusCode code = CheckOcspGetExpiry(req, resp, subject, issuer, ctx, &canCache, &expiration_t);
+
+            if (sizeof(time_t) == sizeof(int64_t))
+            {
+                *expiration = (int64_t)expiration_t;
+            }
+            else if (sizeof(time_t) == sizeof(int32_t))
+            {
+                *expiration = (int32_t)expiration_t;
+            }
 
             if (code == PAL_X509_V_OK || code == PAL_X509_V_ERR_CERT_REVOKED)
             {
