@@ -14479,13 +14479,14 @@ DONE:
 
 GenTree* Compiler::fgRootCommas(GenTree* tree)
 {
-    bool canRoot = tree->OperIsBinary();
-
-    if (!canRoot)
+    if (tree->IsReverseOp())
         return tree;
 
     switch (tree->OperGet())
     {
+        // Unary
+        case GT_NEG:
+        // Binary
         case GT_ADD:
         case GT_SUB:
         case GT_MUL:
@@ -14499,20 +14500,11 @@ GenTree* Compiler::fgRootCommas(GenTree* tree)
         case GT_RSH:
         case GT_LSH:
         case GT_ASG:
-        {
-            canRoot = true;
             break;
-        }
 
         default:
-            canRoot = false;
+            return tree;
     }
-
-    if (!canRoot)
-        return tree;
-
-    if (tree->IsReverseOp())
-        return tree;
 
     GenTree* commas[2]{};
     int      commaCount = 0;
@@ -14520,6 +14512,13 @@ GenTree* Compiler::fgRootCommas(GenTree* tree)
     if (tree->gtGetOp1()->OperIs(GT_COMMA))
     {
         GenTree* comma = tree->gtGetOp1();
+
+        //commas[commaCount] = comma;
+        //commaCount++;
+
+        //tree->AsOp()->gtOp1 = comma->gtGetOp2();
+        //tree->gtFlags &= ~GTF_ALL_EFFECT;
+        //gtUpdateNodeSideEffects(tree);
         if (comma->gtGetOp1()->OperIs(GT_ASG) && comma->gtGetOp2()->OperIs(GT_LCL_VAR))
         {
             GenTree*       asg = comma->gtGetOp1();
@@ -14534,47 +14533,63 @@ GenTree* Compiler::fgRootCommas(GenTree* tree)
                     commaCount++;
 
                     tree->AsOp()->gtOp1 = lcl;
-                    tree->gtFlags       = tree->gtFlags & ~GTF_ALL_EFFECT;
+                    tree->gtFlags &= ~GTF_ALL_EFFECT;
                     gtUpdateNodeSideEffects(tree);
                 }
             }
         }
     }
 
-    if (tree->gtGetOp1()->IsLocal() && tree->gtGetOp2()->OperIs(GT_COMMA))
-    {
-        GenTree* comma = tree->gtGetOp2();
-        if (comma->gtGetOp1()->OperIs(GT_ASG) && comma->gtGetOp2()->OperIs(GT_LCL_VAR))
-        {
-            GenTree*       asg = comma->gtGetOp1();
-            GenTreeLclVar* lcl = comma->gtGetOp2()->AsLclVar();
+    //if (tree->gtGetOp1()->OperIs(GT_LCL_VAR) && tree->OperIsBinary() && tree->gtGetOp2()->OperIs(GT_COMMA))
+    //{
+    //    GenTree* comma = tree->gtGetOp2();
+    //    if (comma->gtGetOp1()->OperIs(GT_ASG) && comma->gtGetOp2()->OperIs(GT_LCL_VAR))
+    //    {
+    //        GenTree*       asg = comma->gtGetOp1();
+    //        GenTreeLclVar* lcl = comma->gtGetOp2()->AsLclVar();
 
-            if (asg->gtGetOp1()->OperIs(GT_LCL_VAR))
-            {
-                GenTreeLclVar* lcl2 = asg->gtGetOp1()->AsLclVar();
-                if (lcl->GetLclNum() == lcl2->GetLclNum())
-                {
-                    commas[commaCount] = comma;
-                    commaCount++;
+    //        if (asg->gtGetOp1()->OperIs(GT_LCL_VAR))
+    //        {
+    //            GenTreeLclVar* lcl2 = asg->gtGetOp1()->AsLclVar();
+    //            if (lcl->GetLclNum() == lcl2->GetLclNum())
+    //            {
+    //                commas[commaCount] = comma;
+    //                commaCount++;
 
-                    tree->AsOp()->gtOp2 = lcl;
-                    tree->gtFlags       = tree->gtFlags & ~GTF_ALL_EFFECT;
-                    gtUpdateNodeSideEffects(tree);
-                }
-            }
-        }
-    }
+    //                tree->AsOp()->gtOp2 = lcl;
+    //                tree->gtFlags &= ~GTF_ALL_EFFECT;
+    //                gtUpdateNodeSideEffects(tree);
+    //            }
+    //        }
+    //    }
+    //}
 
     if (commaCount > 0)
     {
         JITDUMP("\nRooting Commas\n");
-        for (int i = commaCount - 1; i >= 0; i--)
+        //if (tree->IsReverseOp())
+        //{
+        //    JITDUMP("\nRemoving Rerverse Ops flag\n");
+        //    tree->gtFlags &= ~GTF_REVERSE_OPS;
+        //    for (int i = 0; i < commaCount; i++)
+        //    {
+        //        GenTree* comma       = commas[i];
+        //        comma->AsOp()->gtOp2 = tree;
+        //        comma->ChangeType(tree->TypeGet());
+        //        tree = comma;
+        //        gtUpdateNodeSideEffects(tree);
+        //    }
+        //}
+        //else
         {
-            GenTree* comma       = commas[i];
-            comma->AsOp()->gtOp2 = tree;
-            comma->ChangeType(tree->TypeGet());
-            tree = comma;
-            gtUpdateNodeSideEffects(tree);
+            for (int i = commaCount - 1; i >= 0; i--)
+            {
+                GenTree* comma       = commas[i];
+                comma->AsOp()->gtOp2 = tree;
+                comma->ChangeType(tree->TypeGet());
+                tree = comma;
+                gtUpdateNodeSideEffects(tree);
+            }
         }
     }
 
