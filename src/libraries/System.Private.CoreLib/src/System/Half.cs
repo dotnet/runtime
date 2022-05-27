@@ -1757,7 +1757,8 @@ namespace System
             else if (typeof(TOther) == typeof(ulong))
             {
                 ulong actualResult = (value == PositiveInfinity) ? ulong.MaxValue :
-                                     (value <= Zero) ? ulong.MinValue : (ulong)value;
+                                     (value <= Zero) ? ulong.MinValue :
+                                     IsNaN(value) ? 0 : (ulong)value;
                 result = (TOther)(object)actualResult;
                 return true;
             }
