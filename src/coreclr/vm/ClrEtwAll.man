@@ -447,7 +447,7 @@
                         </opcodes>
                     </task>
                     <task name="ThreadPoolMinMaxWorkerThreads" symbol="CLR_THREADPOOLMINMAXWORKERTHREADS_TASK"
-                          value="38" eventGUID="{}"
+                          value="38" eventGUID="{D909059F-A2A6-44AB-AB6A-610773F4675F}"
                           message="$(string.RuntimePublisher.ThreadPoolMinMaxWorkerThreadsTaskMessage)">
                         <opcodes>
                             <opcode name="Update" message="$(string.RuntimePublisher.UpdateOpcodeMessage)" symbol="CLR_UPDATE_OPCODE" value="91"> </opcode>
