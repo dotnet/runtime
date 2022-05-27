@@ -1681,7 +1681,8 @@ namespace System.Runtime.InteropServices
             else if (typeof(TOther) == typeof(ulong))
             {
                 ulong actualResult = (value >= ulong.MaxValue) ? ulong.MaxValue :
-                                     (value <= ulong.MinValue) ? ulong.MinValue : (ulong)value;
+                                     (value <= ulong.MinValue) ? ulong.MinValue :
+                                     IsNaN(value) ? 0 : (ulong)value;
                 result = (TOther)(object)actualResult;
                 return true;
             }
