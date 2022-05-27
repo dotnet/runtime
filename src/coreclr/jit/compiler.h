@@ -7607,6 +7607,8 @@ public:
 
     // ICorJitInfo wrappers
 
+    void eeAllocMem(AllocMemArgs* args);
+
     void eeReserveUnwindInfo(bool isFunclet, bool isColdCode, ULONG unwindSize);
 
     void eeAllocUnwindInfo(BYTE*          pHotCode,
