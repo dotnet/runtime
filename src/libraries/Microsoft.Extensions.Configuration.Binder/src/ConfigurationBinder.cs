@@ -762,7 +762,7 @@ namespace Microsoft.Extensions.Configuration
 
             if (parameterName is null)
             {
-                throw new InvalidOperationException(SR.Format(SR.Error_ParameterBeingBoundToHasNullName, type));
+                throw new InvalidOperationException(SR.Format(SR.Error_ParameterBeingBoundToIsUnnamed, type));
             }
 
             var propertyBindingPoint = new BindingPoint(initialValue: config.GetSection(parameterName).Value, isReadOnly: false);
