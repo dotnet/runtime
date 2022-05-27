@@ -1072,7 +1072,7 @@ bool RangeCheck::GetLimitMax(Limit& limit, int* pMax)
             if (tmp <= 0)
             {
                 // If we can't figure out the array length, use the maximum array length,
-                // CORINFO_Array_MaxLength (0x7FFFFFC7). However, we get here also when 
+                // CORINFO_Array_MaxLength (0x7FFFFFC7). However, we get here also when
                 // we can't find a Span/ReadOnlySpan bounds check length, and these have
                 // a maximum length of INT_MAX (0x7FFFFFFF). If limit.vn refers to a
                 // GT_ARR_LENGTH node, then it's an array length, otherwise use the INT_MAX value.
@@ -1084,7 +1084,7 @@ bool RangeCheck::GetLimitMax(Limit& limit, int* pMax)
                 else
                 {
                     const int MaxSpanLength = 0x7FFFFFFF;
-                    tmp = MaxSpanLength;
+                    tmp                     = MaxSpanLength;
                 }
             }
             if (IntAddOverflows(tmp, limit.GetConstant()))
