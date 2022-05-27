@@ -2149,12 +2149,14 @@ namespace Microsoft.WebAssembly.Diagnostics
         public async Task<byte[][]> GetBytesFromAssemblyAndPdb(string assemblyName, CancellationToken token)
         {
             using var commandParamsWriter = new MonoBinaryWriter();
+            byte[] assembly_buf = null;
+            byte[] pdb_buf = null;
             commandParamsWriter.Write(assemblyName);
             var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdVM.GetAssemblyAndPdbBytes, commandParamsWriter, token);
             int assembly_size = retDebuggerCmdReader.ReadInt32();
-            byte[] assembly_buf = retDebuggerCmdReader.ReadBytes(assembly_size);
+            if (assembly_size > 0)
+             assembly_buf = retDebuggerCmdReader.ReadBytes(assembly_size);
             int pdb_size = retDebuggerCmdReader.ReadInt32();
-            byte[] pdb_buf = null;
             if (pdb_size > 0)
                 pdb_buf = retDebuggerCmdReader.ReadBytes(pdb_size);
             byte[][] ret = new byte[2][];

@@ -1444,7 +1444,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     if (MajorVersion == 2 && MinorVersion >= 61)
                         useDebuggerProtocol = true;
 
-                    await foreach (SourceFile source in context.store.Load(sessionId, loaded_files, useDebuggerProtocol ? context.SdbAgent : null, token).WithCancellation(token))
+                    await foreach (SourceFile source in context.store.Load(sessionId, loaded_files, context, useDebuggerProtocol, token))
                     {
                         await OnSourceFileAdded(sessionId, source, context, token);
                     }

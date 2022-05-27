@@ -1279,12 +1279,12 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        public async IAsyncEnumerable<SourceFile> Load(SessionId id, string[] loaded_files, MonoSDBHelper sdbAgent, [EnumeratorCancellation] CancellationToken token)
+        public async IAsyncEnumerable<SourceFile> Load(SessionId id, string[] loaded_files, ExecutionContext context, bool useDebuggerProtocol, [EnumeratorCancellation] CancellationToken token)
         {
             var asm_files = new List<string>();
             List<DebugItem> steps = new List<DebugItem>();
 
-            if (sdbAgent is null)
+            if (!useDebuggerProtocol)
             {
                 var pdb_files = new List<string>();
                 foreach (string file_name in loaded_files)
@@ -1325,7 +1325,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             new DebugItem
                             {
                                 Url = file_name,
-                                Data = sdbAgent.GetBytesFromAssemblyAndPdb(System.IO.Path.GetFileName(file_name), token)
+                                Data = context.SdbAgent.GetBytesFromAssemblyAndPdb(System.IO.Path.GetFileName(file_name), token)
                             });
                     }
                 }
