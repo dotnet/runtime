@@ -133,7 +133,7 @@
                   IFoo,
                   IFooExReabstract
 {
-} // end of class FooClass
+} // end of class FooClassReabstract
 
 .class private auto ansi sealed beforefieldinit FooStruct
        extends [mscorlib]System.ValueType
@@ -254,7 +254,7 @@
     IL_0006:  call       void [mscorlib]System.Console::WriteLine(string)
     IL_000b:  nop
     IL_000c:  ldarg.0
-    IL_000d:  ldc.i4.7
+    IL_000d:  ldc.i4.s   17
     IL_000e:  add
     IL_000f:  stloc.0
     IL_0010:  br.s       IL_0012
@@ -806,7 +806,7 @@
 
     }  // end handler
 
-    IL_004aa: ldstr      "resolving delegate IFoo.Foo on FooClass - expecting exception."
+    IL_004aa: ldstr      "Resolving delegate IFoo.Foo on FooClass - expecting exception."
               call       void [mscorlib]System.Console::WriteLine(string)
               nop
     .try
@@ -845,11 +845,11 @@
     {
                 nop
                 ldc.i4.s   10
-                constrained. valuetype [svm_diamondshape]FooStruct
+                constrained. class [svm_diamondshape]FooClassReabstract
                 call         int32 IFoo::Foo(int32)
                 pop
                 ldc.i4.0
-                ldstr      "Expecting exception on FooStruct"
+                ldstr      "Expecting exception on FooClassReabstract"
                 call       void Test::Assert(bool,
                                              string)
                 nop
@@ -974,18 +974,18 @@
 
     }  // end handler
 
-    IL_0093a: ldstr      "Resolving delegate I1.Func on I47Struct - expecting exception"
+    IL_0093a: ldstr      "Resolving delegate I1.Func on I47Class - expecting exception"
               call       void [mscorlib]System.Console::WriteLine(string)
               nop
     .try
     {
                 nop
                 ldc.i4.s   10
-                constrained. valuetype [svm_diamondshape]I47Struct
+                constrained. class [svm_diamondshape]I47Class
                 ldftn        int32 I1::Func(int32)
                 pop
                 ldc.i4.0
-                ldstr      "Expecting exception on I47Struct"
+                ldstr      "Expecting exception on I47Class"
                 call       void Test::Assert(bool, string)
                 nop
                 nop
@@ -1105,14 +1105,14 @@
 
     }  // end handler
 
-    IL_00e0a: ldstr      "Resolving delegate GI1<T>.Func on GI23Struct<S> - expecting exception"
+    IL_00e0a: ldstr      "Resolving delegate GI1<T>.Func on GI23Class<S> - expecting exception"
               call       void [mscorlib]System.Console::WriteLine(string)
               nop
     .try
     {
                 nop
                 ldloca.s   V_8
-                constrained. valuetype [svm_diamondshape]GI23Struct`1<object>
+                constrained. class [svm_diamondshape]GI23Class`1<object>
                 ldftn        int32 class GI1`1<object>::Func<string>(class [mscorlib]System.Type[]&)
                 pop
                 ldc.i4.0
@@ -1234,7 +1234,7 @@
               ldc.i4.s   10
               constrained. class I4ReimplementClass
               call       int32 I1::Func(int32)
-              ldc.i4.s   17
+              ldc.i4.s   27
               ceq
               ldstr      "Expecting I1.Func to land on I4Reimplement.Func"
               call       void Test::Assert(bool, string)
