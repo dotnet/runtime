@@ -152,12 +152,6 @@ if ($dotnet31Source -ne $null) {
     AddPackageSource -Sources $sources -SourceName "dotnet3.1-internal-transport" -SourceEndPoint "https://pkgs.dev.azure.com/dnceng/_packaging/dotnet3.1-internal-transport/nuget/v2" -Creds $creds -Username $userName -Password $Password
 }
 
-$dotnet5Source = $sources.SelectSingleNode("add[@key='dotnet5']")
-if ($dotnet5Source -ne $null) {
-    AddPackageSource -Sources $sources -SourceName "dotnet5-internal" -SourceEndPoint "https://pkgs.dev.azure.com/dnceng/internal/_packaging/dotnet5-internal/nuget/v2" -Creds $creds -Username $userName -Password $Password
-    AddPackageSource -Sources $sources -SourceName "dotnet5-internal-transport" -SourceEndPoint "https://pkgs.dev.azure.com/dnceng/internal/_packaging/dotnet5-internal-transport/nuget/v2" -Creds $creds -Username $userName -Password $Password
-}
-
 $dotnet6Source = $sources.SelectSingleNode("add[@key='dotnet6']")
 if ($dotnet6Source -ne $null) {
     AddPackageSource -Sources $sources -SourceName "dotnet6-internal" -SourceEndPoint "https://pkgs.dev.azure.com/dnceng/internal/_packaging/dotnet6-internal/nuget/v2" -Creds $creds -Username $userName -Password $Password
