@@ -105,30 +105,6 @@ if [ "$?" == "0" ]; then
     PackageSources+=('dotnet3.1-internal-transport')
 fi
 
-# Ensure dotnet5-internal and dotnet5-internal-transport are in the packageSources if the public dotnet5 feeds are present
-grep -i "<add key=\"dotnet5\"" $ConfigFile
-if [ "$?" == "0" ]; then
-    grep -i "<add key=\"dotnet5-internal\"" $ConfigFile
-    if [ "$?" != "0" ]; then
-        echo "Adding dotnet5-internal to the packageSources."
-        PackageSourcesNodeFooter="</packageSources>"
-        PackageSourceTemplate="${TB}<add key=\"dotnet5-internal\" value=\"https://pkgs.dev.azure.com/dnceng/internal/_packaging/dotnet5-internal/nuget/v2\" />"
-
-        sed -i.bak "s|$PackageSourcesNodeFooter|$PackageSourceTemplate${NL}$PackageSourcesNodeFooter|" $ConfigFile
-    fi
-    PackageSources+=('dotnet5-internal')
-
-    grep -i "<add key=\"dotnet5-internal-transport\">" $ConfigFile
-    if [ "$?" != "0" ]; then
-        echo "Adding dotnet5-internal-transport to the packageSources."
-        PackageSourcesNodeFooter="</packageSources>"
-        PackageSourceTemplate="${TB}<add key=\"dotnet5-internal-transport\" value=\"https://pkgs.dev.azure.com/dnceng/internal/_packaging/dotnet5-internal-transport/nuget/v2\" />"
-
-        sed -i.bak "s|$PackageSourcesNodeFooter|$PackageSourceTemplate${NL}$PackageSourcesNodeFooter|" $ConfigFile
-    fi
-    PackageSources+=('dotnet5-internal-transport')
-fi
-
 # Ensure dotnet6-internal and dotnet6-internal-transport are in the packageSources if the public dotnet6 feeds are present
 grep -i "<add key=\"dotnet6\"" $ConfigFile
 if [ "$?" == "0" ]; then
