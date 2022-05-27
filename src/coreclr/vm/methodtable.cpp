@@ -7767,7 +7767,6 @@ BOOL MethodTable::ContainsGenericMethodVariables()
     Instantiation inst = GetInstantiation();
     for (DWORD i = 0; i < inst.GetNumArgs(); i++)
     {
-        CONSISTENCY_CHECK(!inst[i].IsEncodedFixup());
         if (inst[i].ContainsGenericVariables(TRUE))
             return TRUE;
     }
@@ -7793,13 +7792,9 @@ Module *MethodTable::GetDefiningModuleForOpenType()
         Instantiation inst = GetInstantiation();
         for (DWORD i = 0; i < inst.GetNumArgs(); i++)
         {
-            // Encoded fixups are never open types
-            if (!inst[i].IsEncodedFixup())
-            {
-                Module *pModule = inst[i].GetDefiningModuleForOpenType();
-                if (pModule != NULL)
-                    RETURN pModule;
-            }
+            Module *pModule = inst[i].GetDefiningModuleForOpenType();
+            if (pModule != NULL)
+                RETURN pModule;
         }
     }
 

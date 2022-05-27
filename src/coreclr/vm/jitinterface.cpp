@@ -13364,7 +13364,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             {
                 CrstHolder ch(pInfoModule->GetFixupCrst());
 
-                if (!CORCOMPILE_IS_POINTER_TAGGED(*entry) && (*entry != NULL))
+                if (*entry != NULL)
                 {
                     // We lost the race, just return
                     return TRUE;
@@ -13463,19 +13463,6 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
         MethodEntry:
             result = pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY);
-
-        #ifndef TARGET_ARM
-            if (CORCOMPILE_IS_PCODE_TAGGED(result))
-            {
-                // There is a rare case where the function entrypoint may not be aligned. This could happen only for FCalls,
-                // only on x86 and only if we failed to hardbind the fcall (e.g. ngen image for CoreLib does not exist
-                // and /nodependencies flag for ngen was used). The function entrypoints should be aligned in all other cases.
-                //
-                // We will wrap the unaligned method entrypoint by funcptr stub with aligned entrypoint.
-                _ASSERTE(pMD->IsFCall());
-                result = pMD->GetLoaderAllocator()->GetFuncPtrStubs()->GetFuncPtrStub(pMD);
-            }
-        #endif
         }
         break;
 
