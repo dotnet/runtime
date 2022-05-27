@@ -2097,14 +2097,14 @@ bool GenTreeCall::TreatAsShouldHaveRetBufArg(Compiler* compiler) const
         return true;
     }
 
-    // If we see a Jit helper call that returns a TYP_STRUCT we will
+    // If we see a Jit helper call that returns a TYP_STRUCT we may
     // transform it as if it has a Return Buffer Argument
     //
     if (IsHelperCall() && (gtReturnType == TYP_STRUCT))
     {
-        // There are two possible helper calls that use this path:
-        //  CORINFO_HELP_GETFIELDSTRUCT and CORINFO_HELP_UNBOX_NULLABLE
-        //
+        // There are three possible helper calls that use this path:
+        //  CORINFO_HELP_GETFIELDSTRUCT,  CORINFO_HELP_UNBOX_NULLABLE
+        //  CORINFO_HELP_PINVOKE_CALLI
         CorInfoHelpFunc helpFunc = compiler->eeGetHelperNum(gtCallMethHnd);
 
         if (helpFunc == CORINFO_HELP_GETFIELDSTRUCT)
@@ -2114,6 +2114,10 @@ bool GenTreeCall::TreatAsShouldHaveRetBufArg(Compiler* compiler) const
         else if (helpFunc == CORINFO_HELP_UNBOX_NULLABLE)
         {
             return true;
+        }
+        else if (helpFunc == CORINFO_HELP_PINVOKE_CALLI)
+        {
+            return false;
         }
         else
         {
