@@ -37,7 +37,7 @@ namespace DebuggerTests
                        ownProperties = false
                    }), token);
                    if (is_js)
-                      await CheckProps(obj_accessors.Value["result"], new { __proto__ = TIgnore() }, "obj_accessors");
+                       await CheckProps(obj_accessors.Value["result"], new { __proto__ = TIgnore() }, "obj_accessors");
                    else
                        AssertEqual(0, obj_accessors.Value["result"]?.Count(), "obj_accessors-count");
 
@@ -98,7 +98,7 @@ namespace DebuggerTests
                     }), token);
 
                     if (is_js)
-                        await CheckProps(obj_accessors.Value["result"], new { __proto__ = TIgnore() }, "obj_accessors");
+                       await CheckProps(obj_accessors.Value["result"], new { __proto__ = TIgnore() }, "obj_accessors");
                     else
                         AssertEqual(0, obj_accessors.Value["result"]?.Count(), "obj_accessors-count");
 
