@@ -1,5 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+//
+// In this issue, we were not removing all the unreachable blocks and that led us to expect that
+// there should be an IG label for one of the unreachable block, but we were not creating it leading
+// to an assert failure.
 public class _65659_2
 {
     public static bool[][,] s_2;
