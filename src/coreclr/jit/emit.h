@@ -2006,6 +2006,7 @@ private:
     instrDescJmp* emitJumpList;               // list of local jumps in method
     instrDescJmp* emitJumpLast;               // last of local jumps in method
     void          emitJumpDistBind();         // Bind all the local jumps in method
+    bool          emitContainsCandidateJumpsToNextInst;
     void          emitRemoveJumpToNextInst(); // try to remove unconditional jumps to the next instruction
 
 #if FEATURE_LOOP_ALIGN

@@ -1077,6 +1077,7 @@ void emitter::emitBegFN(bool hasFramePtr
     emitNoGCRequestCount = 0;
     emitNoGCIG           = false;
     emitForceNewIG       = false;
+    emitContainsCandidateJumpsToNextInst = false;
 
 #if FEATURE_LOOP_ALIGN
     /* We don't have any align instructions */
@@ -3873,7 +3874,7 @@ void emitter::emitDispJumpList()
     unsigned int jmpCount = 0;
     for (instrDescJmp* jmp = emitJumpList; jmp != nullptr; jmp = jmp->idjNext)
     {
-        printf("IG%02u IN%04x %3s[size:%u] -> IG%02u L_M%03u_" FMT_BB "%s\n", jmp->idjIG->igNum,
+        printf("IG%02u IN%04x %3s[%u] -> IG%02u L_M%03u_" FMT_BB "%s\n", jmp->idjIG->igNum,
                jmp->idDebugOnlyInfo()->idNum, codeGen->genInsDisplayName(jmp), jmp->idCodeSize(),
                ((insGroup*)emitCodeGetCookie(jmp->idAddr()->iiaBBlabel))->igNum, emitComp->compMethodID,
                jmp->idAddr()->iiaBBlabel->bbNum,
@@ -4138,6 +4139,11 @@ void emitter::emitDispCommentForHandle(size_t handle, GenTreeFlags flag)
 void emitter::emitRemoveJumpToNextInst()
 {
 #ifdef TARGET_XARCH
+    if (!emitContainsCandidateJumpsToNextInst)
+    {
+        return;
+    }
+
     JITDUMP("*************** In emitRemoveJumpToNextInst()\n");
 #ifdef DEBUG
     if (EMIT_INSTLIST_VERBOSE)
@@ -4155,7 +4161,6 @@ void emitter::emitRemoveJumpToNextInst()
     UNATIVE_OFFSET totalRemovedSize       = 0;
     instrDescJmp*  jmp                    = emitJumpList;
     instrDescJmp*  previousJmp            = nullptr;
-    insGroup*      previousTruncatedGroup = nullptr;
 #if DEBUG
     UNATIVE_OFFSET previousJumpIgNum  = (UNATIVE_OFFSET)-1;
     unsigned int   previousJumpInsNum = -1;
@@ -4163,10 +4168,12 @@ void emitter::emitRemoveJumpToNextInst()
 
     while (jmp)
     {
+        insGroup*     jmpGroup = jmp->idjIG;
+        instrDescJmp* nextJmp  = jmp->idjNext;
+
         // if the jump is unconditional then it is a candidate
         if (jmp->idInsFmt() == IF_LABEL && emitIsUncondJump(jmp) && jmp->idjIsJmpAlways)
         {
-            insGroup* jmpGroup = jmp->idjIG;
 #if DEBUG
             assert((jmpGroup->igFlags & IGF_HAS_ALIGN) == 0);
             assert((jmpGroup->igNum > previousJumpIgNum) || (previousJumpIgNum == (UNATIVE_OFFSET)-1) ||
@@ -4174,6 +4181,7 @@ void emitter::emitRemoveJumpToNextInst()
             previousJumpIgNum  = jmpGroup->igNum;
             previousJumpInsNum = jmp->idDebugOnlyInfo()->idNum;
 #endif // DEBUG
+
             // target group is not bound yet so use the cookie to fetch it
             insGroup* targetGroup = (insGroup*)emitCodeGetCookie(jmp->idAddr()->iiaBBlabel);
 
@@ -4199,11 +4207,11 @@ void emitter::emitRemoveJumpToNextInst()
                 assert(id != nullptr);
                 if (jmp != id)
                 {
-                    printf("about to assert, dumping context information\n");
+                    printf("jmp != id, dumping context information\n");
                     printf("method: %s\n", emitComp->impInlineRoot()->info.compMethodName);
                     printf("  jmp: %x3: ", jmp->idDebugOnlyInfo()->idNum);
                     emitDispIns(jmp, false, true, false, 0, nullptr, 0, jmpGroup);
-                    printf("  instructionDescriptor: %x3: ", id->idDebugOnlyInfo()->idNum);
+                    printf("  id: %x3: ", id->idDebugOnlyInfo()->idNum);
                     emitDispIns(id, false, true, false, 0, nullptr, 0, jmpGroup);
                     printf("jump group:\n");
                     emitDispIG(jmpGroup, nullptr, true);
@@ -4213,27 +4221,11 @@ void emitter::emitRemoveJumpToNextInst()
                 assert(jmp == id);
 #endif // DEBUG
 
-                JITDUMP("Removing unconditional jump IN%04x from the last instruction in "
-                        "IG%02u to the next IG IG%02u label %s\n",
-                        jmp->idDebugOnlyInfo()->idNum, jmpGroup->igNum, targetGroup->igNum,
+                JITDUMP("IG%02u IN%04x is the last instruction in the group and jumps to the next instruction group IG%02u %s, removing.\n",
+                        jmpGroup->igNum, jmp->idDebugOnlyInfo()->idNum, targetGroup->igNum,
                         emitLabelString(targetGroup));
 
-                // if a previous group was truncated iterate from the previous group to the
-                // current group and adjust the offsets by the total removed byte count so far
-                if (previousTruncatedGroup)
-                {
-                    for (insGroup* offsetGroup = previousTruncatedGroup->igNext; offsetGroup != jmpGroup->igNext;
-                         offsetGroup           = offsetGroup->igNext)
-                    {
-                        JITDUMP("Adjusted offset of " FMT_BB " from %04X to %04X\n", offsetGroup->igNum,
-                                offsetGroup->igOffs, offsetGroup->igOffs - totalRemovedSize);
-
-                        offsetGroup->igOffs -= totalRemovedSize;
-                        assert(IsCodeAligned(offsetGroup->igOffs));
-                    }
-                }
-
-                // unlink the jump
+                // Unlink the jump from emitJumpList while keeping the previousJmp the same.
                 if (previousJmp != nullptr)
                 {
                     previousJmp->idjNext = jmp->idjNext;
@@ -4251,71 +4243,63 @@ void emitter::emitRemoveJumpToNextInst()
                 UNATIVE_OFFSET codeSize = jmp->idCodeSize();
                 jmp->idCodeSize(0);
 
-                // setup the next iteration
-                {
-                    instrDescJmp* nextJmp = jmp->idjNext;
-                    jmp->idjNext          = nullptr;
-                    jmp                   = nextJmp;
-                }
-
-                // do not use jmp after this point because it is now the next jmp
-
-                previousTruncatedGroup = jmpGroup;
-
                 jmpGroup->igSize -= (unsigned short)codeSize;
                 jmpGroup->igFlags |= IGF_UPD_ISZ;
 
                 emitTotalCodeSize -= codeSize;
                 totalRemovedSize += codeSize;
                 totalRemovedCount += 1;
-
-                // go to the loop condition, we have setup the next jmp while editing the list
-                continue;
             }
-#if DEBUG
             else
             {
+                // Update the previousJmp
+                previousJmp = jmp;
+#if DEBUG
                 if (targetGroup == nullptr)
                 {
-                    JITDUMP("IN%04x from the last instruction in IG%02u jump target is not set!, keeping.\n",
-                            jmp->idDebugOnlyInfo()->idNum, jmpGroup->igNum);
+                    JITDUMP("IG%02u IN%04x jump target is not set!, keeping.\n",
+                            jmpGroup->igNum,jmp->idDebugOnlyInfo()->idNum );
                 }
                 else if ((jmpGroup->igFlags & IGF_HAS_ALIGN) != 0)
                 {
-                    JITDUMP("IN%04x from the last instruction in IG%02u contains alignment, keeping.\n",
-                            jmp->idDebugOnlyInfo()->idNum, jmpGroup->igNum);
+                    JITDUMP("IG%02u IN%04x containing instruction group has alignment, keeping.\n",
+                            jmpGroup->igNum,jmp->idDebugOnlyInfo()->idNum);
                 }
                 else if (jmpGroup->igNext != targetGroup)
                 {
-                    JITDUMP("IN%04x from the last instruction in IG%02u to does not jump to the next group, keeping.\n",
-                            jmp->idDebugOnlyInfo()->idNum, jmpGroup->igNum);
+                    JITDUMP("IG%02u IN%04x does not jump to the next instruction group, keeping.\n",
+                            jmpGroup->igNum,jmp->idDebugOnlyInfo()->idNum);
                 }
-            }
 #endif // DEBUG
+            }
         }
-
-        previousJmp = jmp;
-        jmp         = jmp->idjNext;
-    }
-
-    jmp = nullptr;
-
-    // make sure that any instruction groups following the last truncated group have their offset adjusted
-    if (previousTruncatedGroup != nullptr)
-    {
-        for (insGroup* offsetGroup = previousTruncatedGroup->igNext; offsetGroup != nullptr;
-             offsetGroup           = offsetGroup->igNext)
+        else
         {
-            JITDUMP("Adjusted offset of " FMT_BB " from %04X to %04X\n", offsetGroup->igNum, offsetGroup->igOffs,
-                    offsetGroup->igOffs - totalRemovedSize);
-            offsetGroup->igOffs -= totalRemovedSize;
-            assert(IsCodeAligned(offsetGroup->igOffs));
+            // Update the previousJmp
+            previousJmp = jmp;
         }
+
+        if (totalRemovedCount>0)
+        {
+            insGroup* adjOffIG     = jmpGroup->igNext;
+            insGroup* adjOffUptoIG = nextJmp != nullptr ? nextJmp->idjIG : emitIGlast;
+            while ((adjOffIG != nullptr) && (adjOffIG->igNum <= adjOffUptoIG->igNum))
+            {
+                JITDUMP("Adjusted offset of IG%02u from %04X to %04X\n", adjOffIG->igNum, adjOffIG->igOffs,
+                        (adjOffIG->igOffs - totalRemovedSize));
+                adjOffIG->igOffs -= totalRemovedSize;
+                adjOffIG = adjOffIG->igNext;
+            }
+        }
+
+        jmp = nextJmp;
     }
 
     if (totalRemovedCount > 0)
     {
 #ifdef DEBUG
+        emitCheckIGoffsets();
+
         if (EMIT_INSTLIST_VERBOSE)
         {
             printf("\nInstruction group list after unconditional jump to next instruction removal:\n\n");
@@ -4326,7 +4310,7 @@ void emitter::emitRemoveJumpToNextInst()
             emitDispJumpList();
         }
 #endif // DEBUG
-        JITDUMP("emitRemoveJumpToNextInst removed %d jumps and %3u bytes\n", totalRemovedCount, totalRemovedSize);
+        JITDUMP("emitRemoveJumpToNextInst removed %d jumps and %u bytes\n", totalRemovedCount, totalRemovedSize);
     }
     else
     {

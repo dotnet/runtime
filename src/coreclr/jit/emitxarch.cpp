@@ -7498,6 +7498,7 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount /* = 0 
     }
 #endif // DEBUG
 
+    emitContainsCandidateJumpsToNextInst |= isJmpAlways;
     id->idjIsJmpAlways = isJmpAlways ? 1 : 0;
     id->idjShort       = 0;
     if (dst != nullptr)
