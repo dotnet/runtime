@@ -314,8 +314,8 @@ namespace Microsoft.Interop
             }
 
             bool enableArrayPinning = elementMarshaller is BlittableMarshaller;
-            bool treatAsBlittable = enableArrayPinning || elementMarshaller is Utf16CharMarshaller;
-            if (treatAsBlittable)
+            bool treatElementAsBlittable = enableArrayPinning || elementMarshaller is Utf16CharMarshaller;
+            if (treatElementAsBlittable)
             {
                 marshallingStrategy = new LinearCollectionWithBlittableElementsMarshalling(marshallingStrategy, collectionInfo.ElementType.Syntax, numElementsExpression);
             }
@@ -345,7 +345,8 @@ namespace Microsoft.Interop
 
             IMarshallingGenerator marshallingGenerator = new CustomNativeTypeMarshallingGenerator(marshallingStrategy, enableByValueContentsMarshalling: false);
 
-            if (collectionInfo.PinningFeatures.HasFlag(CustomTypeMarshallerPinning.ManagedType))
+            // Elements in the collection must be blittable to use the pinnable marshaller.
+            if (collectionInfo.PinningFeatures.HasFlag(CustomTypeMarshallerPinning.ManagedType) && treatElementAsBlittable)
             {
                 return new PinnableManagedValueMarshaller(marshallingGenerator);
             }
