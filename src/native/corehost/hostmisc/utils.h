@@ -26,6 +26,9 @@
 // This message is defined here for consistency between errors on the command line and GUI (Windows apphost).
 #define INSTALL_OR_UPDATE_NET_ERROR_MESSAGE _X("You must install or update .NET to run this application.")
 
+#define INSTALL_NET_ERROR_MESSAGE _X("You must install .NET to run this application.")
+#define INSTALL_NET_DESKTOP_ERROR_MESSAGE _X("You must install .NET Desktop Runtime to run this application.")
+
 #define RUNTIME_STORE_DIRECTORY_NAME _X("store")
 
 bool ends_with(const pal::string_t& value, const pal::string_t& suffix, bool match_case);

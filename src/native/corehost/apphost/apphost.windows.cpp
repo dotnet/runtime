@@ -70,6 +70,16 @@ namespace
         return false;
     }
 
+    pal::string_t get_runtime_not_found_message()
+    {
+        pal::string_t msg = INSTALL_NET_DESKTOP_ERROR_MESSAGE _X("\n\n")
+            _X("Architecture: ");
+        msg.append(get_arch());
+        msg.append(_X("\n")
+            _X("App host version: ") _STRINGIFY(COMMON_HOST_PKG_VER) _X("\n\n"));
+        return msg;
+    }
+
     void show_error_dialog(const pal::char_t *executable_name, int error_code)
     {
         pal::string_t gui_errors_disabled;
@@ -80,7 +90,7 @@ namespace
         pal::string_t url;
         if (error_code == StatusCode::CoreHostLibMissingFailure)
         {
-            dialogMsg = pal::string_t(_X("To run this application, you must install .NET Desktop Runtime ")) + _STRINGIFY(COMMON_HOST_PKG_VER) + _X(" (") + get_arch() + _X(").\n\n");
+            dialogMsg = get_runtime_not_found_message();
             pal::string_t line;
             pal::stringstream_t ss(g_buffered_errors);
             while (std::getline(ss, line, _X('\n')))
@@ -130,7 +140,7 @@ namespace
             {
                 if (utils::starts_with(line, _X("Bundle header version compatibility check failed."), true))
                 {
-                    dialogMsg = pal::string_t(_X("To run this application, you must install .NET Desktop Runtime ")) + _STRINGIFY(COMMON_HOST_PKG_VER) + _X(" (") + get_arch() + _X(").\n\n");
+                    dialogMsg = get_runtime_not_found_message();
                     url = get_download_url();
                     url.append(_X("&apphost_version="));
                     url.append(_STRINGIFY(COMMON_HOST_PKG_VER));
@@ -147,8 +157,9 @@ namespace
 
         dialogMsg.append(
             _X("Would you like to download it now?\n\n")
-            _X("Learn about framework resolution:\n")
-            DOTNET_APP_LAUNCH_FAILED_URL);
+            _X("Learn about "));
+        dialogMsg.append(error_code == StatusCode::FrameworkMissingFailure ? _X("framework resolution:") : _X("runtime installation:"));
+        dialogMsg.append(_X("\n") DOTNET_APP_LAUNCH_FAILED_URL);
 
         assert(url.length() > 0);
         assert(is_gui_application());
