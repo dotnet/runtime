@@ -24,7 +24,7 @@ Debugging CoreCLR on Windows
 7. Set Working Directory=`$(SolutionDir)\..\..\..\..\bin\coreclr\windows.$(Platform).$(Configuration)`
     1. This points to the folder containing CoreCLR binaries.
 8. Set Environment=`CORE_LIBRARIES=$(SolutionDir)\..\..\..\..\bin\runtime\<current tfm>-windows-$(Configuration)-$(Platform)`,
-    where '\<current tfm\>' is the target framework of current branch, for example `netcoreapp3.1` `net5.0`.
+    where '\<current tfm\>' is the target framework of current branch, for example `netcoreapp3.1` `net6.0`.
     1. This points to the folder containing core libraries except `System.Private.CoreLib`.
     2. This step can be skipped if you are debugging CLR tests that references only `System.Private.CoreLib`.
     Otherwise, it's required to debug a realworld application that references anything else, including `System.Runtime`.
@@ -33,7 +33,7 @@ Debugging CoreCLR on Windows
 10. Press F11 to start debugging at wmain in corerun (or set a breakpoint in source and press F5 to run to it)
     1. As an example, set a breakpoint for the EEStartup function in ceemain.cpp to break into CoreCLR startup.
 
-Steps 1-9 only need to be done once as long as there's been no changes to the CMake files in the repository. Afterwards, step 10 can be repeated whenever you want to start debugging. The above can be done with Visual Studio 2019 as writing.
+Steps 1-9 only need to be done once as long as there's been no changes to the CMake files in the repository. Afterwards, step 10 can be repeated whenever you want to start debugging. The above can be done with Visual Studio 2022 as writing.
 Keeping with latest version of Visual Studio is recommended.
 
 ### Using SOS with windbg or cdb on Windows ###
