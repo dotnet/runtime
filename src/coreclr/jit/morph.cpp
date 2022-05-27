@@ -14498,14 +14498,6 @@ GenTree* Compiler::fgRootCommas(GenTree* tree)
         case GT_AND:
         case GT_RSH:
         case GT_LSH:
-      //  case GT_COMMA:
-      //  case GT_ASG:
-        //case GT_EQ:
-        //case GT_NE:
-        //case GT_LT:
-        //case GT_LE:
-        //case GT_GT:
-        //case GT_GE:
         {
             canRoot = true;
             break;
@@ -14523,36 +14515,6 @@ GenTree* Compiler::fgRootCommas(GenTree* tree)
 
     GenTree* commas[2]{};
     int      commaCount = 0;
-
-    /*if (tree->gtGetOp1()->OperIs(GT_COMMA))
-    {
-        GenTree* comma = tree->gtGetOp1();
-
-        if (comma->gtGetOp2()->IsLocal())
-        {
-            commas[commaCount] = comma;
-            commaCount++;
-
-            tree->AsOp()->gtOp1 = comma->gtGetOp2();
-            tree->gtFlags       = tree->gtFlags & ~GTF_ALL_EFFECT;
-            gtUpdateNodeSideEffects(tree);
-        }
-    }
-
-    if (tree->gtGetOp2()->OperIs(GT_COMMA))
-    {
-        GenTree* comma = tree->gtGetOp2();
-
-        if (comma->gtGetOp2()->IsLocal())
-        {
-            commas[commaCount] = comma;
-            commaCount++;
-
-            tree->AsOp()->gtOp2 = comma->gtGetOp2();
-            tree->gtFlags       = tree->gtFlags & ~GTF_ALL_EFFECT;
-            gtUpdateNodeSideEffects(tree);
-        }
-    }*/
 
     if (tree->gtGetOp1()->OperIs(GT_COMMA))
     {
@@ -15443,6 +15405,15 @@ void Compiler::fgMorphStmts(BasicBlock* block)
         if (ehBlockHasExnFlowDsc(block))
         {
             continue;
+        }
+
+        while (stmt->GetRootNode()->OperIs(GT_COMMA))
+        {
+            GenTree*   comma = stmt->GetRootNode();
+            Statement* newStmt  = gtNewStmt(comma->gtGetOp1());
+            stmt->SetRootNode(comma->gtGetOp2());
+            fgInsertStmtBefore(block, stmt, newStmt);
+            DEBUG_DESTROY_NODE(comma);
         }
     }
 
