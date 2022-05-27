@@ -301,12 +301,12 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PInvokeTransitionF
 
     if (category == InManagedCode)
     {
-        ASSERT(m_pInstance->FindCodeManagerByAddress(m_ControlPC));
+        ASSERT(m_pInstance->IsManaged(m_ControlPC));
     }
     else if (IsNonEHThunk(category))
     {
         UnwindNonEHThunkSequence();
-        ASSERT(m_pInstance->FindCodeManagerByAddress(m_ControlPC));
+        ASSERT(m_pInstance->IsManaged(m_ControlPC));
     }
     else
     {
@@ -369,7 +369,7 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PAL_LIMITED_CO
 
     // This codepath is used by the hijack stackwalk and we can get arbitrary ControlPCs from there.  If this
     // context has a non-managed control PC, then we're done.
-    if (!m_pInstance->FindCodeManagerByAddress(dac_cast<PTR_VOID>(pCtx->GetIp())))
+    if (!m_pInstance->IsManaged(dac_cast<PTR_VOID>(pCtx->GetIp())))
         return;
 
     //
@@ -873,7 +873,7 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
 
     // We expect to be called by the runtime's C# EH implementation, and since this function's notion of how
     // to unwind through the stub is brittle relative to the stub itself, we want to check as soon as we can.
-    ASSERT(m_pInstance->FindCodeManagerByAddress(m_ControlPC) && "unwind from funclet invoke stub failed");
+    ASSERT(m_pInstance->IsManaged(m_ControlPC) && "unwind from funclet invoke stub failed");
 #endif // defined(USE_PORTABLE_HELPERS)
 }
 
@@ -1271,7 +1271,7 @@ void StackFrameIterator::UnwindThrowSiteThunk()
 
     // We expect the throw site to be in managed code, and since this function's notion of how to unwind
     // through the stub is brittle relative to the stub itself, we want to check as soon as we can.
-    ASSERT(m_pInstance->FindCodeManagerByAddress(m_ControlPC) && "unwind from throw site stub failed");
+    ASSERT(m_pInstance->IsManaged(m_ControlPC) && "unwind from throw site stub failed");
 #endif // defined(USE_PORTABLE_HELPERS)
 }
 
@@ -1333,7 +1333,7 @@ UnwindOutOfCurrentManagedFrame:
             // see a conservative range reported by one of the thunks encountered during this "nested"
             // unwind.
             InternalInit(m_pThread, pPreviousTransitionFrame, GcStackWalkFlags);
-            ASSERT(m_pInstance->FindCodeManagerByAddress(m_ControlPC));
+            ASSERT(m_pInstance->IsManaged(m_ControlPC));
         }
         m_dwFlags |= UnwoundReversePInvoke;
     }
@@ -1460,7 +1460,7 @@ UnwindOutOfCurrentManagedFrame:
         // from the iterator with the one and only exception being cases where a managed frame must
         // be skipped due to funclet collapsing.
 
-        ASSERT(m_pInstance->FindCodeManagerByAddress(m_ControlPC));
+        ASSERT(m_pInstance->IsManaged(m_ControlPC));
 
         if (collapsingTargetFrame != NULL)
         {
@@ -1569,7 +1569,7 @@ void StackFrameIterator::PrepareToYieldFrame()
     if (!IsValid())
         return;
 
-    ASSERT(m_pInstance->FindCodeManagerByAddress(m_ControlPC));
+    ASSERT(m_pInstance->IsManaged(m_ControlPC));
 
     if (m_dwFlags & ApplyReturnAddressAdjustment)
     {
@@ -1654,7 +1654,7 @@ void StackFrameIterator::CalculateCurrentMethodState()
     // Assume that the caller is likely to be in the same module
     if (m_pCodeManager == NULL || !m_pCodeManager->FindMethodInfo(m_ControlPC, &m_methodInfo))
     {
-        m_pCodeManager = dac_cast<PTR_ICodeManager>(m_pInstance->FindCodeManagerByAddress(m_ControlPC));
+        m_pCodeManager = dac_cast<PTR_ICodeManager>(m_pInstance->GetCodeManagerForAddress(m_ControlPC));
         FAILFAST_OR_DAC_FAIL(m_pCodeManager);
 
         FAILFAST_OR_DAC_FAIL(m_pCodeManager->FindMethodInfo(m_ControlPC, &m_methodInfo));
@@ -1712,7 +1712,7 @@ bool StackFrameIterator::IsValidReturnAddress(PTR_VOID pvAddress)
     if (category == InThrowSiteThunk)
         return true;
 
-    return (NULL != GetRuntimeInstance()->FindCodeManagerByAddress(pvAddress));
+    return GetRuntimeInstance()->IsManaged(pvAddress);
 }
 
 // Support for conservatively reporting GC references in a stack range. This is used when managed methods with

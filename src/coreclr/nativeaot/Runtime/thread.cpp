@@ -633,27 +633,36 @@ bool Thread::Hijack()
     // requires THREAD_SUSPEND_RESUME / THREAD_GET_CONTEXT / THREAD_SET_CONTEXT permissions
 
     Thread* pCurrentThread = ThreadStore::GetCurrentThread();
-    pCurrentThread->EnterCantAllocRegion();
     uint32_t result = PalHijack(m_hPalThread, HijackCallback, this);
-    pCurrentThread->LeaveCantAllocRegion();
     return result == 0;
 }
 
 UInt32_BOOL Thread::HijackCallback(HANDLE /*hThread*/, PAL_LIMITED_CONTEXT* pThreadContext, void* pCallbackContext)
 {
     Thread* pThread = (Thread*) pCallbackContext;
-    if (pThread->CacheTransitionFrameForSuspend())
+
+    // we have a thread stopped, and we do not know where exactly.
+    // it could be in a system call holding locks, such as allocator lock
+    // current thread should not allocate while we determine whether location is in managed code.
     {
-        // This thread has already made it to preemptive (posted a transition frame)
-        // we do not need to hijack it
-        return TRUE;
+        CantAllocHolder cantAlloc(pThread);
+
+        if (pThread->CacheTransitionFrameForSuspend())
+        {
+            // This thread has already made it to preemptive (posted a transition frame)
+            // we do not need to hijack it
+            return true;
+        }
+
+        if (!GetRuntimeInstance()->IsManaged((PTR_VOID)pThreadContext->IP))
+        {
+            // Running in cooperative mode, but not managed.
+            // We cannot continue.
+            return false;
+        }
     }
 
-    // WARNING: The hijack operation assumes that the module list cannot change past
-    //          the initialization and thus noone holds the writer lock
-    // TODO: perhaps we can remove the lock and the codemanager list
-    //       it looks like we only can have one code manager loaded in InitializeRuntime
-    _ASSERTE (GetRuntimeInstance()->m_ModuleListLock.DangerousTryPulseReadLock());
+    // TODO: attempt to redirect 
 
     return pThread->InternalHijack(pThreadContext, NormalHijackTargets);
 }
@@ -864,7 +873,7 @@ void * Thread::GetUnhijackedReturnAddress(void ** ppvReturnAddressLocation)
     else
         pvReturnAddress = *ppvReturnAddressLocation;
 
-    ASSERT(NULL != GetRuntimeInstance()->FindCodeManagerByAddress(pvReturnAddress));
+    ASSERT(GetRuntimeInstance()->IsManaged(pvReturnAddress));
     return pvReturnAddress;
 }
 

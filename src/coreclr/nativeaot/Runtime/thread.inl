@@ -56,3 +56,18 @@ inline bool Thread::IsInCantAllocStressLogRegion()
 {
     return m_cantAlloc != 0;
 }
+
+struct CantAllocHolder
+{
+    Thread* m_pThread;
+    CantAllocHolder(Thread* pThread)
+    {
+        m_pThread = pThread;
+        m_pThread->EnterCantAllocRegion();
+    }
+
+    ~CantAllocHolder()
+    {
+        m_pThread->LeaveCantAllocRegion();
+    }
+};

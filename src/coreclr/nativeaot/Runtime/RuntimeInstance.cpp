@@ -56,7 +56,7 @@ COOP_PINVOKE_HELPER(uint8_t *, RhFindMethodStartAddress, (void * codeAddr))
 
 PTR_UInt8 RuntimeInstance::FindMethodStartAddress(PTR_VOID ControlPC)
 {
-    ICodeManager * pCodeManager = FindCodeManagerByAddress(ControlPC);
+    ICodeManager * pCodeManager = GetCodeManagerForAddress(ControlPC);
     MethodInfo methodInfo;
     if (pCodeManager != NULL && pCodeManager->FindMethodInfo(ControlPC, &methodInfo))
     {
@@ -66,7 +66,12 @@ PTR_UInt8 RuntimeInstance::FindMethodStartAddress(PTR_VOID ControlPC)
     return NULL;
 }
 
-ICodeManager * RuntimeInstance::FindCodeManagerByAddress(PTR_VOID pvAddress)
+bool RuntimeInstance::IsManaged(PTR_VOID pvAddress)
+{
+    return m_CodeManager->IsManaged(pvAddress);
+}
+
+ICodeManager * RuntimeInstance::GetCodeManagerForAddress(PTR_VOID pvAddress)
 {
     ICodeManager* cm = m_CodeManager;
     if (cm->IsManaged(pvAddress))
@@ -85,7 +90,7 @@ ICodeManager * RuntimeInstance::FindCodeManagerByAddress(PTR_VOID pvAddress)
 ICodeManager * RuntimeInstance::FindCodeManagerForClasslibFunction(PTR_VOID address)
 {
     // Try looking up the code manager assuming the address is for code first. This is expected to be most common.
-    ICodeManager * pCodeManager = FindCodeManagerByAddress(address);
+    ICodeManager * pCodeManager = GetCodeManagerForAddress(address);
     if (pCodeManager != NULL)
         return pCodeManager;
 
@@ -114,7 +119,7 @@ void * RuntimeInstance::GetClasslibFunctionFromCodeAddress(PTR_VOID address, Cla
 
 PTR_UInt8 RuntimeInstance::GetTargetOfUnboxingAndInstantiatingStub(PTR_VOID ControlPC)
 {
-    ICodeManager * pCodeManager = FindCodeManagerByAddress(ControlPC);
+    ICodeManager * pCodeManager = GetCodeManagerForAddress(ControlPC);
     if (pCodeManager != NULL)
     {
         PTR_UInt8 pData = (PTR_UInt8)pCodeManager->GetAssociatedData(ControlPC);
@@ -152,7 +157,7 @@ RuntimeInstance::OsModuleList* RuntimeInstance::GetOsModuleList()
 
 ReaderWriterLock& RuntimeInstance::GetTypeManagerLock()
 {
-    return m_ModuleListLock;
+    return m_TypeManagerLock;
 }
 
 #ifndef DACCESS_COMPILE
@@ -188,7 +193,6 @@ void RuntimeInstance::RegisterCodeManager(ICodeManager * pCodeManager)
 {
     _ASSERTE(m_CodeManager == NULL);
     _ASSERTE(pCodeManager != NULL);
-
 
     m_CodeManager = pCodeManager;
 }
@@ -247,7 +251,7 @@ bool RuntimeInstance::RegisterTypeManager(TypeManager * pTypeManager)
     pEntry->m_pTypeManager = pTypeManager;
 
     {
-        ReaderWriterLock::WriteHolder write(&m_ModuleListLock);
+        ReaderWriterLock::WriteHolder write(&m_TypeManagerLock);
 
         m_TypeManagerList.PushHead(pEntry);
     }

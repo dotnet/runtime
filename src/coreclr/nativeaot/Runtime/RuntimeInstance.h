@@ -25,7 +25,7 @@ class RuntimeInstance
 
     PTR_ThreadStore             m_pThreadStore;
     HANDLE                      m_hPalInstance; // this is the HANDLE passed into DllMain
-    ReaderWriterLock            m_ModuleListLock;
+    ReaderWriterLock            m_TypeManagerLock;
 
 public:
     struct OsModuleEntry;
@@ -89,7 +89,7 @@ public:
 
     void RegisterCodeManager(ICodeManager * pCodeManager);
 
-    ICodeManager * FindCodeManagerByAddress(PTR_VOID ControlPC);
+    ICodeManager * GetCodeManagerForAddress(PTR_VOID ControlPC);
     PTR_VOID GetClasslibFunctionFromCodeAddress(PTR_VOID address, ClasslibFunctionId functionId);
 
     bool RegisterTypeManager(TypeManager * pTypeManager);
@@ -99,6 +99,8 @@ public:
 
     bool RegisterUnboxingStubs(PTR_VOID pvStartRange, uint32_t cbRange);
     bool IsUnboxingStub(uint8_t* pCode);
+
+    bool IsManaged(PTR_VOID pvAddress);
 
     static bool Initialize(HANDLE hPalInstance);
     void Destroy();
