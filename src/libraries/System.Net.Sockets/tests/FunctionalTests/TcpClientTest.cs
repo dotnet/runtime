@@ -271,18 +271,6 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop]
-        [Fact]
-        public void ExclusiveAddressUse_NullClient()
-        {
-            using (TcpClient client = new TcpClient())
-            {
-                client.Client = null;
-
-                Assert.False(client.ExclusiveAddressUse);
-            }
-        }
-
         [Fact]
         public void Roundtrip_ExclusiveAddressUse_GetEqualsSet_True()
         {

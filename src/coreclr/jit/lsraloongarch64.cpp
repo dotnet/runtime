@@ -26,7 +26,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "lower.h"
 
 //------------------------------------------------------------------------
-// BuildNode: Build the RefPositions for for a node
+// BuildNode: Build the RefPositions for a node
 //
 // Arguments:
 //    treeNode - the node of interest
@@ -871,14 +871,11 @@ int LinearScan::BuildCall(GenTreeCall* call)
         {
             assert(argNode->isContained());
 
-            // There could be up to 2-4 PUTARG_REGs in the list (3 or 4 can only occur for HFAs)
+            // There could be up to 2 PUTARG_REGs in the list.
             for (GenTreeFieldList::Use& use : argNode->AsFieldList()->Uses())
             {
 #ifdef DEBUG
                 assert(use.GetNode()->OperIs(GT_PUTARG_REG));
-                assert(use.GetNode()->GetRegNum() == argReg);
-                // Update argReg for the next putarg_reg (if any)
-                argReg = genRegArgNext(argReg);
 #endif
                 BuildUse(use.GetNode(), genRegMask(use.GetNode()->GetRegNum()));
                 srcCount++;
@@ -921,7 +918,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
         GenTree* argNode = arg.GetEarlyNode();
 
         // Skip arguments that have been moved to the Late Arg list
-        if ((argNode->gtFlags & GTF_LATE_ARG) == 0)
+        if (arg.GetLateNode() == nullptr)
         {
 #if FEATURE_ARG_SPLIT
             // PUTARG_SPLIT nodes must be in the gtCallLateArgs list, since they

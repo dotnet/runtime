@@ -629,7 +629,7 @@ namespace System
                     for (int i = startExclusive + 1; i < endExclusive; i++)
                     {
                         byte b = source[i];
-                        if (IsDigit(b))
+                        if (char.IsAsciiDigit((char)b))
                         {
                             try
                             {
@@ -674,9 +674,6 @@ namespace System
         {
             throw new PlatformNotSupportedException();
         }
-
-        /// <summary>Gets whether the specified character is a digit 0-9.</summary>
-        private static bool IsDigit(byte c) => c >= '0' && c <= '9';
 
         /// <summary>
         /// Gets whether the specified file descriptor was redirected.

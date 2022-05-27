@@ -28,7 +28,7 @@ static volatile TerminalInvalidationCallback g_terminalInvalidationCallback = NU
 static volatile SigChldCallback g_sigChldCallback = NULL;
 static volatile bool g_sigChldConsoleConfigurationDelayed;
 static void (*g_sigChldConsoleConfigurationCallback)(void);
-// Callback invoked for for SIGTTOU while terminal settings are changed.
+// Callback invoked for SIGTTOU while terminal settings are changed.
 static volatile ConsoleSigTtouHandler g_consoleTtouHandler;
 
 // Callback invoked for PosixSignal handling.
@@ -228,7 +228,7 @@ static void SignalHandler(int sig, siginfo_t* siginfo, void* context)
                 assert(origHandler->sa_handler);
                 origHandler->sa_handler(sig);
             }
-            
+
         }
     }
 

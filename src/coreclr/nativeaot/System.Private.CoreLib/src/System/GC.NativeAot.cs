@@ -759,5 +759,10 @@ namespace System
 
             return array;
         }
+
+        public static TimeSpan GetTotalPauseDuration()
+        {
+            return new TimeSpan(RuntimeImports.RhGetTotalPauseDuration());
+        }
     }
 }

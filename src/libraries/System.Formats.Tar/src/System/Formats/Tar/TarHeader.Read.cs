@@ -26,7 +26,7 @@ namespace System.Formats.Tar
             Span<byte> buffer = rented.AsSpan(0, TarHelpers.RecordSize); // minimumLength means the array could've been larger
             buffer.Clear(); // Rented arrays aren't clean
 
-            TarHelpers.ReadOrThrow(archiveStream, buffer);
+            archiveStream.ReadExactly(buffer);
 
             try
             {
@@ -486,10 +486,7 @@ namespace System.Formats.Tar
             }
 
             byte[] buffer = new byte[(int)_size];
-            if (archiveStream.Read(buffer.AsSpan()) != _size)
-            {
-                throw new EndOfStreamException();
-            }
+            archiveStream.ReadExactly(buffer);
 
             string dataAsString = TarHelpers.GetTrimmedUtf8String(buffer);
 
@@ -520,11 +517,7 @@ namespace System.Formats.Tar
             }
 
             byte[] buffer = new byte[(int)_size];
-
-            if (archiveStream.Read(buffer.AsSpan()) != _size)
-            {
-                throw new EndOfStreamException();
-            }
+            archiveStream.ReadExactly(buffer);
 
             string longPath = TarHelpers.GetTrimmedUtf8String(buffer);
 

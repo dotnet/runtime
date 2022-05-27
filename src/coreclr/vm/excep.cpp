@@ -4101,7 +4101,10 @@ LaunchCreateDump(LPCWSTR lpCommandLine)
         if (WszCreateProcess(NULL, lpCommandLine, NULL, NULL, TRUE, 0, NULL, NULL, &StartupInfo, &processInformation))
         {
             WaitForSingleObject(processInformation.hProcess, INFINITE);
-            fSuccess = true;
+
+            DWORD exitCode = 0;
+            GetExitCodeProcess(processInformation.hProcess, &exitCode);
+            fSuccess = exitCode == 0;
         }
     }
     EX_CATCH
@@ -4176,7 +4179,9 @@ InitializeCrashDump()
 bool GenerateDump(
     LPCWSTR dumpName,
     INT dumpType,
-    ULONG32 flags)
+    ULONG32 flags,
+    LPSTR errorMessageBuffer,
+    INT cbErrorMessageBuffer)
 {
 #ifdef TARGET_UNIX
     MAKE_UTF8PTR_FROMWIDE_NOTHROW (dumpNameUtf8, dumpName);
@@ -4186,7 +4191,7 @@ bool GenerateDump(
     }
     else
     {
-        return PAL_GenerateCoreDump(dumpNameUtf8, dumpType, flags);
+        return PAL_GenerateCoreDump(dumpNameUtf8, dumpType, flags, errorMessageBuffer, cbErrorMessageBuffer);
     }
 #else // TARGET_UNIX
     return GenerateCrashDump(dumpName, dumpType, flags & GenerateDumpFlagsLoggingEnabled);
@@ -12084,7 +12089,6 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(EXCEPINFO *pExcepInfo)
 // Throw an InvalidCastException
 //==========================================================================
 
-
 VOID GetAssemblyDetailInfo(SString    &sType,
                            SString    &sAssemblyDisplayName,
                            PEAssembly *pPEAssembly,
@@ -12092,8 +12096,10 @@ VOID GetAssemblyDetailInfo(SString    &sType,
 {
     WRAPPER_NO_CONTRACT;
 
-    InlineSString<MAX_LONGPATH> sFormat;
-    const WCHAR *pwzLoadContext = W("Default");
+    StackSString sFormat;
+    StackSString sAlcName;
+
+    pPEAssembly->GetAssemblyBinder()->GetNameForDiagnostics(sAlcName);
 
     if (pPEAssembly->GetPath().IsEmpty())
     {
@@ -12102,7 +12108,7 @@ VOID GetAssemblyDetailInfo(SString    &sType,
         sAssemblyDetailInfo.Printf(sFormat.GetUnicode(),
                                    sType.GetUnicode(),
                                    sAssemblyDisplayName.GetUnicode(),
-                                   pwzLoadContext);
+                                   sAlcName.GetUnicode());
     }
     else
     {
@@ -12111,7 +12117,7 @@ VOID GetAssemblyDetailInfo(SString    &sType,
         sAssemblyDetailInfo.Printf(sFormat.GetUnicode(),
                                    sType.GetUnicode(),
                                    sAssemblyDisplayName.GetUnicode(),
-                                   pwzLoadContext,
+                                   sAlcName.GetUnicode(),
                                    pPEAssembly->GetPath().GetUnicode());
     }
 }
@@ -12142,17 +12148,17 @@ VOID CheckAndThrowSameTypeAndAssemblyInvalidCastException(TypeHandle thCastFrom,
          _ASSERTE(pPEAssemblyTypeFrom != NULL);
          _ASSERTE(pPEAssemblyTypeTo != NULL);
 
-         InlineSString<MAX_LONGPATH> sAssemblyFromDisplayName;
-         InlineSString<MAX_LONGPATH> sAssemblyToDisplayName;
+         StackSString sAssemblyFromDisplayName;
+         StackSString sAssemblyToDisplayName;
 
          pPEAssemblyTypeFrom->GetDisplayName(sAssemblyFromDisplayName);
          pPEAssemblyTypeTo->GetDisplayName(sAssemblyToDisplayName);
 
          // Found the culprit case. Now format the new exception text.
-         InlineSString<MAX_CLASSNAME_LENGTH + 1> strCastFromName;
-         InlineSString<MAX_CLASSNAME_LENGTH + 1> strCastToName;
-         InlineSString<MAX_LONGPATH> sAssemblyDetailInfoFrom;
-         InlineSString<MAX_LONGPATH> sAssemblyDetailInfoTo;
+         StackSString strCastFromName;
+         StackSString strCastToName;
+         StackSString sAssemblyDetailInfoFrom;
+         StackSString sAssemblyDetailInfoTo;
 
          thCastFrom.GetName(strCastFromName);
          thCastTo.GetName(strCastToName);

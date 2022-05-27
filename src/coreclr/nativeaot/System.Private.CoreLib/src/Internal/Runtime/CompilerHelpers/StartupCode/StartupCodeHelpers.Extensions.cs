@@ -13,6 +13,12 @@ namespace Internal.Runtime.CompilerHelpers
 {
     public partial class StartupCodeHelpers
     {
+        /// <summary>
+        /// Return the registered logical modules; optionally copy them into an array.
+        /// </summary>
+        internal static ReadOnlySpan<TypeManagerHandle> GetLoadedModules()
+            => s_modules.AsSpan(0, s_moduleCount);
+
         internal static unsafe void InitializeCommandLineArgsW(int argc, char** argv)
         {
             string[] args = new string[argc];

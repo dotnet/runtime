@@ -597,4 +597,7 @@
   <data name="PlatformNotSupported_NetHttp" xml:space="preserve">
     <value>System.Net.Http is not supported on this platform.</value>
   </data>
+  <data name="net_http_chunk_too_large" xml:space="preserve">
+    <value>The HTTP/1.1 response chunk was too large.</value>
+  </data>
 </root>

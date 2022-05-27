@@ -344,8 +344,6 @@ GARY_DECL(TypeHandle, g_pPredefinedArrayTypes, ELEMENT_TYPE_MAX);
 
 extern "C" Volatile<int32_t>   g_TrapReturningThreads;
 
-EXTERN IBCLogger            g_IBCLogger;
-
 #ifdef _DEBUG
 // next two variables are used to enforce an ASSERT in Thread::DbgFindThread
 // that does not allow g_TrapReturningThreads to creep up unchecked.

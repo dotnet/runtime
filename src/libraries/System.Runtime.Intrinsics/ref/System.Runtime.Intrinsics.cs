@@ -4794,4 +4794,18 @@ namespace System.Runtime.Intrinsics.X86
             public static bool IsSupported { get { throw null; } }
         }
     }
+
+    [System.CLSCompliantAttribute(false)]
+    public abstract partial class X86Serialize : System.Runtime.Intrinsics.X86.X86Base
+    {
+        internal X86Serialize() { }
+        public static new bool IsSupported { get { throw null; } }
+
+        public static void Serialize() { throw null; }
+        public new abstract partial class X64 : System.Runtime.Intrinsics.X86.X86Base.X64
+        {
+            internal X64() { }
+            public static new bool IsSupported { get { throw null; } }
+        }
+    }
 }

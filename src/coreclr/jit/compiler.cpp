@@ -4977,9 +4977,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     fgDebugCheckLinks(compStressCompile(STRESS_REMORPH_TREES, 50));
 #endif
 
-    // Remove dead blocks
-    DoPhase(this, PHASE_REMOVE_DEAD_BLOCKS, &Compiler::fgRemoveDeadBlocks);
-
     // Dominator and reachability sets are no longer valid.
     fgDomsComputed = false;
 
@@ -5142,7 +5139,6 @@ void Compiler::placeLoopAlignInstructions()
         return;
     }
 
-    int loopsToProcess = loopAlignCandidates;
     JITDUMP("Inside placeLoopAlignInstructions for %d loops.\n", loopAlignCandidates);
 
     // Add align only if there were any loops that needed alignment
@@ -5154,8 +5150,10 @@ void Compiler::placeLoopAlignInstructions()
     {
         // Adding align instruction in prolog is not supported
         // hence just remove that loop from our list.
-        loopsToProcess--;
+        fgFirstBB->unmarkLoopAlign(this DEBUG_ARG("prolog block"));
     }
+
+    int loopsToProcess = loopAlignCandidates;
 
     for (BasicBlock* const block : Blocks())
     {

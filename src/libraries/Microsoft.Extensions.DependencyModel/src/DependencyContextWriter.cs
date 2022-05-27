@@ -73,7 +73,7 @@ namespace Microsoft.Extensions.DependencyModel
 
         private static void WriteCompilationOptions(CompilationOptions compilationOptions, Utf8JsonWriter jsonWriter)
         {
-            jsonWriter.WriteStartObject(DependencyContextStrings.CompilationOptionsPropertName);
+            jsonWriter.WriteStartObject(DependencyContextStrings.CompilationOptionsPropertyName);
             if (compilationOptions.Defines?.Any() == true)
             {
                 jsonWriter.WriteStartArray(DependencyContextStrings.DefinesPropertyName);

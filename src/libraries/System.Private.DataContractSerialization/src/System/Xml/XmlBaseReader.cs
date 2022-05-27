@@ -2994,7 +2994,7 @@ namespace System.Xml
                 if (length == 1)
                 {
                     char ch = s[0];
-                    if (ch >= 'a' && ch <= 'z')
+                    if (char.IsAsciiLetterLower(ch))
                     {
                         shortPrefix = PrefixHandle.GetAlphaPrefix(ch - 'a');
                         return true;
