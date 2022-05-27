@@ -42,32 +42,40 @@ inline PTR_VOID Thread::GetThreadStressLog() const
     return m_pThreadStressLog;
 }
 
-inline void Thread::EnterCantAllocRegion()
+inline void Thread::EnterForbidBlockingRegion()
 {
-    m_cantAlloc++;
+#ifdef _DEBUG
+    m_forbidBlocking++;
+#endif
 }
 
-inline void Thread::LeaveCantAllocRegion()
+inline void Thread::LeaveForbidBlockingRegion()
 {
-    m_cantAlloc--;
+#ifdef _DEBUG
+    m_forbidBlocking--;
+#endif
 }
 
-inline bool Thread::IsInCantAllocStressLogRegion()
+inline bool Thread::IsInForbidBlockingRegion()
 {
-    return m_cantAlloc != 0;
+#ifdef _DEBUG
+    return m_forbidBlocking != 0;
+#else
+    return false;
+#endif
 }
 
-struct CantAllocHolder
+struct ForbidBlockingHolder
 {
     Thread* m_pThread;
-    CantAllocHolder(Thread* pThread)
+    ForbidBlockingHolder(Thread* pThread)
     {
         m_pThread = pThread;
-        m_pThread->EnterCantAllocRegion();
+        m_pThread->EnterForbidBlockingRegion();
     }
 
-    ~CantAllocHolder()
+    ~ForbidBlockingHolder()
     {
-        m_pThread->LeaveCantAllocRegion();
+        m_pThread->LeaveForbidBlockingRegion();
     }
 };

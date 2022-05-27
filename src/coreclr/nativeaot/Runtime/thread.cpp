@@ -642,10 +642,10 @@ UInt32_BOOL Thread::HijackCallback(HANDLE /*hThread*/, PAL_LIMITED_CONTEXT* pThr
     Thread* pThread = (Thread*) pCallbackContext;
 
     // we have a thread stopped, and we do not know where exactly.
-    // it could be in a system call holding locks, such as allocator lock
-    // current thread should not allocate while we determine whether location is in managed code.
+    // it could be in a system call or in our own runtime holding locks
+    // current thread should not block or allocate while we determine whether location is in managed code.
     {
-        CantAllocHolder cantAlloc(pThread);
+        ForbidBlockingHolder cantAlloc(pThread);
 
         if (pThread->CacheTransitionFrameForSuspend())
         {

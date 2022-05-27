@@ -90,7 +90,9 @@ struct ThreadBuffer
     uint64_t                m_uPalThreadIdForLogging;               // @TODO: likely debug-only
     EEThreadId              m_threadId;
     PTR_VOID                m_pThreadStressLog;                     // pointer to head of thread's StressLogChunks
-    uint32_t                m_cantAlloc;
+#ifdef _DEBUG
+    uint32_t                m_forbidBlocking;                       // current thread can't do any blocking calls, includding allocations
+#endif
 #ifdef FEATURE_GC_STRESS
     uint32_t                m_uRand;                                // current per-thread random number
 #endif // FEATURE_GC_STRESS
@@ -211,9 +213,9 @@ public:
 #ifndef DACCESS_COMPILE
     void                SetThreadStressLog(void * ptsl);
 #endif // DACCESS_COMPILE
-    void                EnterCantAllocRegion();
-    void                LeaveCantAllocRegion();
-    bool                IsInCantAllocStressLogRegion();
+    void                EnterForbidBlockingRegion();
+    void                LeaveForbidBlockingRegion();
+    bool                IsInForbidBlockingRegion();
 #ifdef FEATURE_GC_STRESS
     void                SetRandomSeed(uint32_t seed);
     uint32_t              NextRand();
