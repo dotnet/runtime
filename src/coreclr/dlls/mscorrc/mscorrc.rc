@@ -297,8 +297,6 @@ BEGIN
     IDS_EE_NATIVE_COM_WEAKREF_BAD_TYPE               "The object resolved by a native IWeakReference has an incompatible type for its managed WeakReference instance.\r\nExpected WeakReference target type: '%1'\r\nNative IWeakReference returned type: '%2'"
 #endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
 
-    IDS_EE_INTEROP_CODE_SIZE_COMMENT        "Code size"
-
     IDS_CLASSLOAD_TYPEWRONGNUMGENERICARGS      "The generic type '%1' was used with the wrong number of generic arguments in assembly '%2'."
     IDS_CLASSLOAD_INVALIDINSTANTIATION    "The generic type '%1' was used with an invalid instantiation in assembly '%2'."
     IDS_CLASSLOAD_VARIANCE_IN_METHOD_ARG    "Could not load type '%1' from assembly '%2' because a covariant or contravariant type parameter was used illegally in the signature for an argument in method '%3'."

@@ -1365,7 +1365,7 @@ public:
     // must be called at a point where the CCW is guaranteed to be alive. LogRefCount is static because
     // we generally don't know the new refcount (the one we want to log) until the CCW is at risk of
     // having been destroyed by other threads.
-    void BuildRefCountLogMessage(LPCWSTR wszOperation, StackSString &ssMessage, ULONG dwEstimatedRefCount);
+    void BuildRefCountLogMessage(LPCSTR szOperation, StackSString &ssMessage, ULONG dwEstimatedRefCount);
     static void LogRefCount(ComCallWrapper *pWrap, StackSString &ssMessage, ULONG dwRefCountToLog);
 
     NOINLINE HRESULT LogCCWAddRef(ULONG newRefCount)
@@ -1381,8 +1381,8 @@ public:
         SetupForComCallHR();
 
         // we can safely assume that the CCW is still alive since this is an AddRef
-        StackSString ssMessage;
-        BuildRefCountLogMessage(W("AddRef"), ssMessage, newRefCount);
+        StackSString ssMessage(SString::Utf8);
+        BuildRefCountLogMessage("AddRef", ssMessage, newRefCount);
         LogRefCount(GetMainWrapper(), ssMessage, newRefCount);
 
         return S_OK;
