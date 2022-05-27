@@ -758,7 +758,12 @@ namespace Microsoft.Extensions.Configuration
         private static object? BindParameter(ParameterInfo parameter, Type type, IConfiguration config,
             BinderOptions options)
         {
-            string parameterName = parameter.Name!;
+            string? parameterName = parameter.Name;
+
+            if (parameterName is null)
+            {
+                throw new InvalidOperationException(SR.Format(SR.Error_ParameterBeingBoundToHasNullName, type));
+            }
 
             var propertyBindingPoint = new BindingPoint(initialValue: config.GetSection(parameterName).Value, isReadOnly: false);
 
