@@ -562,6 +562,16 @@ namespace ILCompiler
                 method = null;
             }
 
+            // Default implementation logic, which only kicks in for default implementations when looking up on an exact interface target
+            if (isStaticVirtualMethod && method == null && !genInterfaceMethod.IsAbstract && !constrainedType.IsCanonicalSubtype(CanonicalFormKind.Any))
+            {
+                MethodDesc exactInterfaceMethod = genInterfaceMethod;
+                if (genInterfaceMethod.OwningType != interfaceType)
+                    exactInterfaceMethod = context.GetMethodForInstantiatedType(
+                        genInterfaceMethod.GetTypicalMethodDefinition(), (InstantiatedType)interfaceType);
+                method = exactInterfaceMethod;
+            }
+
             if (method == null)
             {
                 // Fall back to VSD

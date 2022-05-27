@@ -1916,23 +1916,13 @@ public:
     // is not the same size as the type of the GT_LCL_VAR.
     bool IsPartialLclFld(Compiler* comp);
 
-    // Returns "true" iff "this" defines a local variable.  Requires "comp" to be the
-    // current compilation.  If returns "true", sets "*pLclVarTree" to the
-    // tree for the local that is defined, and, if "pIsEntire" is non-null, sets "*pIsEntire" to
-    // true or false, depending on whether the assignment writes to the entirety of the local
-    // variable, or just a portion of it.
     bool DefinesLocal(Compiler*             comp,
                       GenTreeLclVarCommon** pLclVarTree,
                       bool*                 pIsEntire = nullptr,
                       ssize_t*              pOffset   = nullptr);
 
-    bool IsLocalAddrExpr(Compiler*             comp,
-                         GenTreeLclVarCommon** pLclVarTree,
-                         FieldSeqNode**        pFldSeq,
-                         ssize_t*              pOffset = nullptr);
+    bool DefinesLocalAddr(GenTreeLclVarCommon** pLclVarTree, ssize_t* pOffset = nullptr);
 
-    // Simpler variant of the above which just returns the local node if this is an expression that
-    // yields an address into a local
     const GenTreeLclVarCommon* IsLocalAddrExpr() const;
     GenTreeLclVarCommon*       IsLocalAddrExpr()
     {
@@ -1942,10 +1932,6 @@ public:
     // Determine if this tree represents the value of an entire implicit byref parameter,
     // and if so return the tree for the parameter.
     GenTreeLclVar* IsImplicitByrefParameterValue(Compiler* compiler);
-
-    // Determine if this is a LclVarCommon node and return some additional info about it in the
-    // two out parameters.
-    bool IsLocalExpr(Compiler* comp, GenTreeLclVarCommon** pLclVarTree, FieldSeqNode** pFldSeq);
 
     // Determine whether this is an assignment tree of the form X = X (op) Y,
     // where Y is an arbitrary tree, and X is a lclVar.
@@ -1957,14 +1943,6 @@ public:
     bool IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeqNode** pFldSeq, ssize_t* pOffset);
 
     bool IsArrayAddr(GenTreeArrAddr** pArrAddr);
-
-    // Assumes that "this" occurs in a context where it is being dereferenced as the LHS of an assignment-like
-    // statement (assignment, initblk, or copyblk).  The "width" should be the number of bytes copied by the
-    // operation.  Returns "true" if "this" is an address of (or within)
-    // a local variable; sets "*pLclVarTree" to that local variable instance; and, if "pIsEntire" is non-null,
-    // sets "*pIsEntire" to true if this assignment writes the full width of the local.
-    bool DefinesLocalAddr(
-        Compiler* comp, unsigned width, GenTreeLclVarCommon** pLclVarTree, bool* pIsEntire, ssize_t* pOffset = nullptr);
 
     // These are only used for dumping.
     // The GetRegNum() is only valid in LIR, but the dumping methods are not easily
@@ -3511,12 +3489,12 @@ public:
 struct GenTreeLclFld : public GenTreeLclVarCommon
 {
 private:
-    uint16_t      m_lclOffs;  // offset into the variable to access
-    FieldSeqNode* m_fieldSeq; // This LclFld node represents some sequences of accesses.
+    uint16_t     m_lclOffs; // offset into the variable to access
+    ClassLayout* m_layout;  // The struct layout for this local field.
 
 public:
-    GenTreeLclFld(genTreeOps oper, var_types type, unsigned lclNum, unsigned lclOffs)
-        : GenTreeLclVarCommon(oper, type, lclNum), m_lclOffs(static_cast<uint16_t>(lclOffs)), m_fieldSeq(nullptr)
+    GenTreeLclFld(genTreeOps oper, var_types type, unsigned lclNum, unsigned lclOffs, ClassLayout* layout = nullptr)
+        : GenTreeLclVarCommon(oper, type, lclNum), m_lclOffs(static_cast<uint16_t>(lclOffs)), m_layout(layout)
     {
         assert(lclOffs <= UINT16_MAX);
     }
@@ -3532,14 +3510,14 @@ public:
         m_lclOffs = static_cast<uint16_t>(lclOffs);
     }
 
-    FieldSeqNode* GetFieldSeq() const
+    ClassLayout* GetLayout() const
     {
-        return m_fieldSeq;
+        return m_layout;
     }
 
-    void SetFieldSeq(FieldSeqNode* fieldSeq)
+    void SetLayout(ClassLayout* layout)
     {
-        m_fieldSeq = fieldSeq;
+        m_layout = layout;
     }
 
     unsigned GetSize() const;
