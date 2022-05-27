@@ -22428,31 +22428,31 @@ void Compiler::pickGDV(GenTreeCall*           call,
     }
 
 #ifdef DEBUG
-    if (numberOfClasses > 0)
+    if (verbose && (numberOfClasses > 0))
     {
         bool                 isExact;
         bool                 isNonNull;
         CallArg*             thisArg            = call->gtArgs.GetThisArg();
         CORINFO_CLASS_HANDLE declaredThisClsHnd = gtGetClassHandle(thisArg->GetNode(), &isExact, &isNonNull);
-        JITDUMP("Likely classes for call [%06u]", dspTreeID(call));
+        printf("Likely classes for call [%06u]", dspTreeID(call));
         if (declaredThisClsHnd != NO_CLASS_HANDLE)
         {
-            JITDUMP(" on class %p (%s)", declaredThisClsHnd, eeGetClassName(declaredThisClsHnd));
+            printf(" on class %p (%s)", declaredThisClsHnd, eeGetClassName(declaredThisClsHnd));
         }
-        JITDUMP("\n");
+        printf("\n");
 
         for (UINT32 i = 0; i < numberOfClasses; i++)
         {
-            JITDUMP("  %u) %p (%s) [likelihood:%u%%]\n", i + 1, likelyClasses[i].handle,
-                    eeGetClassName((CORINFO_CLASS_HANDLE)likelyClasses[i].handle), likelyClasses[i].likelihood);
+            printf("  %u) %p (%s) [likelihood:%u%%]\n", i + 1, likelyClasses[i].handle,
+                   eeGetClassName((CORINFO_CLASS_HANDLE)likelyClasses[i].handle), likelyClasses[i].likelihood);
         }
     }
 
-    if (numberOfMethods > 0)
+    if (verbose && (numberOfMethods > 0))
     {
         assert(call->gtCallType == CT_USER_FUNC);
-        JITDUMP("Likely methods for call [%06u] to method %s\n", dspTreeID(call),
-                eeGetMethodFullName(call->gtCallMethHnd));
+        printf("Likely methods for call [%06u] to method %s\n", dspTreeID(call),
+               eeGetMethodFullName(call->gtCallMethHnd));
 
         for (UINT32 i = 0; i < numberOfMethods; i++)
         {
@@ -22464,19 +22464,19 @@ void Compiler::pickGDV(GenTreeCall*           call,
             switch (lookup.accessType)
             {
                 case IAT_VALUE:
-                    JITDUMP("  %u) %p (%s) [likelihood:%u%%]\n", i + 1, lookup.addr, methName,
-                            likelyMethods[i].likelihood);
+                    printf("  %u) %p (%s) [likelihood:%u%%]\n", i + 1, lookup.addr, methName,
+                           likelyMethods[i].likelihood);
                     break;
                 case IAT_PVALUE:
-                    JITDUMP("  %u) [%p] (%s) [likelihood:%u%%]\n", i + 1, lookup.addr, methName,
-                            likelyMethods[i].likelihood);
+                    printf("  %u) [%p] (%s) [likelihood:%u%%]\n", i + 1, lookup.addr, methName,
+                           likelyMethods[i].likelihood);
                     break;
                 case IAT_PPVALUE:
-                    JITDUMP("  %u) [[%p]] (%s) [likelihood:%u%%]\n", i + 1, lookup.addr, methName,
-                            likelyMethods[i].likelihood);
+                    printf("  %u) [[%p]] (%s) [likelihood:%u%%]\n", i + 1, lookup.addr, methName,
+                           likelyMethods[i].likelihood);
                     break;
                 default:
-                    JITDUMP("  %u) %s [likelihood:%u%%]\n", i + 1, methName, likelyMethods[i].likelihood);
+                    printf("  %u) %s [likelihood:%u%%]\n", i + 1, methName, likelyMethods[i].likelihood);
                     break;
             }
         }
