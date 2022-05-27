@@ -25,16 +25,17 @@ internal static partial class Interop
         }
 
         /// <summary>
-        /// Gets the user name associated to the current user's UID.
+        /// Gets the user name associated to the specified UID.
         /// </summary>
-        /// <returns>On success, return a string with the user name. On failure, returns an empty string.</returns>
-        internal static unsafe string GetUserNameFromPasswd()
+        /// <param name="uid">The user ID.</param>
+        /// <returns>On success, return a string with the user name associated to the specified UID. On failure, returns an empty string.</returns>
+        internal static unsafe string GetUserNameFromPasswd(uint uid)
         {
             // First try with a buffer that should suffice for 99% of cases.
             string? username;
             const int BufLen = Interop.Sys.Passwd.InitialBufferSize;
             byte* stackBuf = stackalloc byte[BufLen];
-            if (TryGetUserNameFromPasswd(stackBuf, BufLen, out username))
+            if (TryGetUserNameFromPasswd(uid, stackBuf, BufLen, out username))
             {
                 return username ?? string.Empty;
             }
@@ -48,7 +49,7 @@ internal static partial class Interop
                 byte[] heapBuf = new byte[lastBufLen];
                 fixed (byte* buf = &heapBuf[0])
                 {
-                    if (TryGetUserNameFromPasswd(buf, heapBuf.Length, out username))
+                    if (TryGetUserNameFromPasswd(uid, buf, heapBuf.Length, out username))
                     {
                         return username ?? string.Empty;
                     }
@@ -56,11 +57,11 @@ internal static partial class Interop
             }
         }
 
-        private static unsafe bool TryGetUserNameFromPasswd(byte* buf, int bufLen, out string? username)
+        private static unsafe bool TryGetUserNameFromPasswd(uint uid, byte* buf, int bufLen, out string? username)
         {
             // Call getpwuid_r to get the passwd struct
             Interop.Sys.Passwd passwd;
-            int error = Interop.Sys.GetPwUidR(Interop.Sys.GetEUid(), out passwd, buf, bufLen);
+            int error = Interop.Sys.GetPwUidR(uid, out passwd, buf, bufLen);
 
             // If the call succeeds, give back the user name retrieved
             if (error == 0)
