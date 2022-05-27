@@ -6042,13 +6042,14 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     AllocMemArgs args;
     memset(&args, 0, sizeof(args));
 
-#ifdef TARGET_ARM64
-    // For arm64, we want to allocate JIT data always adjacent to code similar to what native compiler does.
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+    // For arm64/LoongArch64, we want to allocate JIT data always adjacent to code similar to what native compiler does.
     // This way allows us to use a single `ldr` to access such data like float constant/jmp table.
+    // For LoongArch64 using `pcaddi + ld` to access such data.
     if (emitTotalColdCodeSize > 0)
     {
         // JIT data might be far away from the cold code.
-        NYI_ARM64("Need to handle fix-up to data from cold code.");
+        NYI("Need to handle fix-up to data from cold code.");
     }
 
     UNATIVE_OFFSET roDataAlignmentDelta = 0;
