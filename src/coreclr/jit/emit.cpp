@@ -1073,10 +1073,10 @@ void emitter::emitBegFN(bool hasFramePtr
     emitJumpList = emitJumpLast = nullptr;
     emitCurIGjmpList            = nullptr;
 
-    emitFwdJumps         = false;
-    emitNoGCRequestCount = 0;
-    emitNoGCIG           = false;
-    emitForceNewIG       = false;
+    emitFwdJumps                         = false;
+    emitNoGCRequestCount                 = 0;
+    emitNoGCIG                           = false;
+    emitForceNewIG                       = false;
     emitContainsCandidateJumpsToNextInst = false;
 
 #if FEATURE_LOOP_ALIGN
@@ -4157,11 +4157,11 @@ void emitter::emitRemoveJumpToNextInst()
     }
 #endif // DEBUG
 
-    int            totalRemovedCount      = 0;
-    UNATIVE_OFFSET totalRemovedSize       = 0;
-    instrDescJmp*  jmp                    = emitJumpList;
-    instrDescJmp*  previousJmp            = nullptr;
+    UNATIVE_OFFSET totalRemovedSize = 0;
+    instrDescJmp*  jmp              = emitJumpList;
+    instrDescJmp*  previousJmp      = nullptr;
 #if DEBUG
+    int            totalRemovedCount  = 0;
     UNATIVE_OFFSET previousJumpIgNum  = (UNATIVE_OFFSET)-1;
     unsigned int   previousJumpInsNum = -1;
 #endif // DEBUG
@@ -4221,7 +4221,8 @@ void emitter::emitRemoveJumpToNextInst()
                 assert(jmp == id);
 #endif // DEBUG
 
-                JITDUMP("IG%02u IN%04x is the last instruction in the group and jumps to the next instruction group IG%02u %s, removing.\n",
+                JITDUMP("IG%02u IN%04x is the last instruction in the group and jumps to the next instruction group "
+                        "IG%02u %s, removing.\n",
                         jmpGroup->igNum, jmp->idDebugOnlyInfo()->idNum, targetGroup->igNum,
                         emitLabelString(targetGroup));
 
@@ -4248,7 +4249,9 @@ void emitter::emitRemoveJumpToNextInst()
 
                 emitTotalCodeSize -= codeSize;
                 totalRemovedSize += codeSize;
+#if DEBUG
                 totalRemovedCount += 1;
+#endif // DEBUG
             }
             else
             {
@@ -4257,18 +4260,18 @@ void emitter::emitRemoveJumpToNextInst()
 #if DEBUG
                 if (targetGroup == nullptr)
                 {
-                    JITDUMP("IG%02u IN%04x jump target is not set!, keeping.\n",
-                            jmpGroup->igNum,jmp->idDebugOnlyInfo()->idNum );
+                    JITDUMP("IG%02u IN%04x jump target is not set!, keeping.\n", jmpGroup->igNum,
+                            jmp->idDebugOnlyInfo()->idNum);
                 }
                 else if ((jmpGroup->igFlags & IGF_HAS_ALIGN) != 0)
                 {
-                    JITDUMP("IG%02u IN%04x containing instruction group has alignment, keeping.\n",
-                            jmpGroup->igNum,jmp->idDebugOnlyInfo()->idNum);
+                    JITDUMP("IG%02u IN%04x containing instruction group has alignment, keeping.\n", jmpGroup->igNum,
+                            jmp->idDebugOnlyInfo()->idNum);
                 }
                 else if (jmpGroup->igNext != targetGroup)
                 {
-                    JITDUMP("IG%02u IN%04x does not jump to the next instruction group, keeping.\n",
-                            jmpGroup->igNum,jmp->idDebugOnlyInfo()->idNum);
+                    JITDUMP("IG%02u IN%04x does not jump to the next instruction group, keeping.\n", jmpGroup->igNum,
+                            jmp->idDebugOnlyInfo()->idNum);
                 }
 #endif // DEBUG
             }
@@ -4279,7 +4282,7 @@ void emitter::emitRemoveJumpToNextInst()
             previousJmp = jmp;
         }
 
-        if (totalRemovedCount>0)
+        if (totalRemovedSize > 0)
         {
             insGroup* adjOffIG     = jmpGroup->igNext;
             insGroup* adjOffUptoIG = nextJmp != nullptr ? nextJmp->idjIG : emitIGlast;
@@ -4295,7 +4298,7 @@ void emitter::emitRemoveJumpToNextInst()
         jmp = nextJmp;
     }
 
-    if (totalRemovedCount > 0)
+    if (totalRemovedSize > 0)
     {
 #ifdef DEBUG
         emitCheckIGoffsets();
