@@ -650,4 +650,7 @@ private:
     // The number of nodes for which range is computed throughout the current method.
     // When this limit is zero, we have exhausted all the budget to walk the ud-chain.
     int m_nVisitBudget;
+
+    // Set to "true" whenever we remove a check and need to re-thread the statement.
+    bool m_updateStmt;
 };
