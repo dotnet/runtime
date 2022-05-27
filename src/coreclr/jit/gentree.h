@@ -607,6 +607,8 @@ enum GenTreeFlags : unsigned int
     GTF_SIMDASHW_OP             = 0x80000000, // GT_HWINTRINSIC -- Indicates that the structHandle should be gotten from gtGetStructHandleForSIMD
                                               //                   rather than from gtGetStructHandleForHWSIMD.
 
+    GTF_CAN_HOIST_COMMA         = 0x80000000, // GT_COMMA -- Indicates that the comma should be hoisted out of an expression; creating a new statement instead.
+
     // Flag used by assertion prop to indicate that a type is a TYP_LONG
 #ifdef TARGET_64BIT
     GTF_ASSERTION_PROP_LONG     = 0x00000001,
