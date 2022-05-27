@@ -102,7 +102,6 @@ The .NET Foundation licenses this file to you under the MIT license.
     <AutoInitializedAssemblies Include="System.Private.TypeLoader" />
     <AutoInitializedAssemblies Include="System.Private.Reflection.Execution" Condition="$(IlcDisableReflection) != 'true'" />
     <AutoInitializedAssemblies Include="System.Private.DisabledReflection" Condition="$(IlcDisableReflection) == 'true'" />
-    <AutoInitializedAssemblies Include="System.Private.Interop" />
   </ItemGroup>
 
   <ItemGroup>

@@ -990,7 +990,7 @@ AdjustContextForVirtualStub(
 
     if (sk == VirtualCallStubManager::SK_DISPATCH)
     {
-        if (*PTR_DWORD(f_IP) != DISPATCH_STUB_FIRST_DWORD)
+        if (*PTR_DWORD(f_IP - 4) != DISPATCH_STUB_FIRST_DWORD)
         {
             _ASSERTE(!"AV in DispatchStub at unknown instruction");
             return FALSE;
