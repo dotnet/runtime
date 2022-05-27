@@ -46,15 +46,15 @@ static int MessageBoxImpl(
 {
     CONTRACTL
     {
-        // May pump messages.  Callers should be GC_TRIGGERS and MODE_PREEMPTIVE,
-        // but we can't include EE contracts here.
-        THROWS;
         INJECT_FAULT(return IDCANCEL;);
 
         // Assert if none of MB_ICON is set
         PRECONDITION((uType & MB_ICONMASK) != 0);
     }
     CONTRACTL_END;
+
+    STATIC_CONTRACT_NOTHROW;
+    STATIC_CONTRACT_MODE_PREEMPTIVE; // we're in umanaged code.
 
 #ifndef HOST_UNIX
     // User32 should exist on all systems where displaying a message box makes sense.

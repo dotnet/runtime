@@ -278,8 +278,7 @@ namespace BinderTracing
                     result = Result::IncompatibleVersion;
 
                     {
-                        SString errorMsgUtf8(SString::Utf8);
-                        errorMsgUtf8.SetUTF8("Requested version");
+                        SString errorMsgUtf8(SString::Utf8, "Requested version");
                         if (m_assemblyNameObject != nullptr)
                         {
                             const auto &reqVersion = m_assemblyNameObject->GetVersion();
@@ -308,9 +307,11 @@ namespace BinderTracing
                     result = Result::MismatchedAssemblyName;
                     errorMsg.Printf(W("Requested assembly name '%s' does not match found assembly name"), m_assemblyName.GetUnicode());
                     if (resultAssembly != nullptr)
+                    {
                         errorMsg.Append(W(" '"));
                         errorMsg.Append(resultAssemblyName.GetUnicode());
                         errorMsg.Append(W("'"));
+                    }
 
                     break;
 

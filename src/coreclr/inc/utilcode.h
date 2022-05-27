@@ -420,7 +420,7 @@ inline WCHAR* FormatInteger(WCHAR* str, size_t strCount, const char* fmt, I v)
 template<typename T>
 class GuidString
 {
-    T _buffer[ARRAY_SIZE("{xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}")];
+    T _buffer[ARRAY_SIZE("{12345678-1234-1234-1234-123456789abc}")];
 public:
     static void Create(const GUID& g, GuidString& ret);
 
@@ -460,7 +460,6 @@ inline void GuidString<WCHAR>::Create(const GUID& g, GuidString& ret)
 }
 
 using GuidStringUtf8 = GuidString<char>;
-using GuidStringUtf16 = GuidString<WCHAR>;
 
 inline
 LPWSTR DuplicateString(

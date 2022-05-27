@@ -1381,7 +1381,7 @@ public:
         SetupForComCallHR();
 
         // we can safely assume that the CCW is still alive since this is an AddRef
-        StackSString ssMessage(SString::Utf8);
+        StackSString ssMessage(SString::Utf8, "");
         BuildRefCountLogMessage("AddRef", ssMessage, newRefCount);
         LogRefCount(GetMainWrapper(), ssMessage, newRefCount);
 

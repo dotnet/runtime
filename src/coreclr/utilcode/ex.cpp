@@ -1185,7 +1185,7 @@ void GetHRMsg(HRESULT hr, SString &result, BOOL bNoGeekStuff/* = FALSE*/)
 
     if (!bNoGeekStuff)
     {
-        SString geekStuffUtf8(SString::Utf8);
+        SString geekStuffUtf8(SString::Utf8, "");
         if (fHaveDescr)
         {
             geekStuffUtf8.AppendUTF8(" (");
@@ -1204,8 +1204,7 @@ void GetHRMsg(HRESULT hr, SString &result, BOOL bNoGeekStuff/* = FALSE*/)
             geekStuffUtf8.AppendUTF8(")");
         }
 
-        MAKE_WIDEPTR_FROMUTF8(geekStuff, geekStuffUtf8.GetUTF8NoConvert());
-        result.Append(geekStuff);
+        result.Append(geekStuffUtf8);
     }
 }
 

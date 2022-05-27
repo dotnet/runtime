@@ -296,9 +296,7 @@ void PlayerModuleInfo::Dump(const CHAR * prefix, int index)
     DEBUG_ONLY_FUNCTION;
 #endif
 
-    StackSString ssBuff(SString::Utf8);
-
-    ssBuff.AppendUTF8(prefix);
+    StackSString ssBuff(SString::Utf8, prefix);
     ssBuff.AppendPrintf("[%2d]: ", index);
 
     const ModuleVersion & ver = m_pRecord->version;
