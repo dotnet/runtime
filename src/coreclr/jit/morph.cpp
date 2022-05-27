@@ -9817,6 +9817,13 @@ GenTree* Compiler::getSIMDStructFromField(GenTree*     tree,
                 *simdBaseJitTypeOut          = simdNode->GetSimdBaseJitType();
             }
 #endif // FEATURE_HW_INTRINSICS
+            else if (obj->IsCnsVec())
+            {
+                ret                   = obj;
+                GenTreeVecCon* vecCon = obj->AsVecCon();
+                *simdSizeOut          = vecCon->GetSimdSize();
+                *simdBaseJitTypeOut   = vecCon->GetSimdBaseJitType();
+            }
         }
     }
     if (ret != nullptr)

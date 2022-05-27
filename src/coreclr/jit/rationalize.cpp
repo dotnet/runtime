@@ -782,6 +782,23 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
         }
 #endif // FEATURE_HW_INTRINSICS
 
+#if defined(FEATURE_SIMD)
+        case GT_CNS_VEC:
+        {
+            GenTreeVecCon* vecCon = node->AsVecCon();
+
+            // TODO-1stClassStructs: This should be handled more generally for enregistered or promoted
+            // structs that are passed or returned in a different register type than their enregistered
+            // type(s).
+            if ((vecCon->TypeIs(TYP_I_IMPL)) && (vecCon->GetSimdSize() == TARGET_POINTER_SIZE))
+            {
+                assert(genTypeSize(vecCon->GetSimdBaseType()) == 4);
+                vecCon->gtType = TYP_SIMD8;
+            }
+            break;
+        }
+#endif // FEATURE_SIMD
+
         default:
             // Check that we don't have nodes not allowed in HIR here.
             assert((node->DebugOperKind() & DBK_NOTHIR) == 0);

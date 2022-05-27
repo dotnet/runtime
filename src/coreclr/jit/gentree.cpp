@@ -2867,6 +2867,9 @@ AGAIN:
                         unreached();
                     }
                 }
+
+                add = genTreeHashAdd(ulo32(add), vecCon->GetSimdBaseType());
+                add = genTreeHashAdd(ulo32(add), vecCon->GetSimdSize());
                 break;
             }
 
@@ -6934,7 +6937,7 @@ GenTree* Compiler::gtNewSconNode(int CPX, CORINFO_MODULE_HANDLE scpHandle)
 
 GenTreeVecCon* Compiler::gtNewVconNode(var_types type, CorInfoType simdBaseJitType)
 {
-    GenTreeVecCon* vecCon = new (this, GT_CNS_VEC) GenTreeVecCon(type, simdBaseJitType);
+    GenTreeVecCon* vecCon = new (this, GT_CNS_VEC) GenTreeVecCon(type, simdBaseJitType, genTypeSize(type));
     return vecCon;
 }
 
