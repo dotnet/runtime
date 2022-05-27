@@ -1563,9 +1563,31 @@ BOOL OOPStackUnwinderArm64::Unwind(T_CONTEXT * pContext)
     if (FAILED(GetFunctionEntry(pContext->Pc, &Rfe, sizeof(Rfe))))
         return FALSE;
 
+    DWORD64 ControlPcRva = pContext->Pc - ImageBase;
+
+    //  Long branch pdata
+    if ((Rfe.UnwindData & 3) == 3)
+    {
+        if ((Rfe.UnwindData & 4) == 0)
+        {
+            Rfe.BeginAddress = MEMORY_READ_DWORD(NULL, ImageBase + (Rfe.UnwindData - 3));
+            Rfe.UnwindData = MEMORY_READ_DWORD(NULL, ImageBase + (Rfe.UnwindData - 3) + sizeof(DWORD));
+
+            // A long branch should never be described by another long branch
+            ASSERT_AND_CHECK((Rfe.UnwindData & 3) != 3);
+
+            ControlPcRva = Rfe.BeginAddress;
+
+        } else
+        {
+            return FALSE;
+        }
+    }
+
     if ((Rfe.UnwindData & 3) != 0)
     {
-        hr = RtlpUnwindFunctionCompact(pContext->Pc - ImageBase,
+
+        hr = RtlpUnwindFunctionCompact(ControlPcRva,
                                         &Rfe,
                                         pContext,
                                         &DummyEstablisherFrame,
@@ -1576,7 +1598,7 @@ BOOL OOPStackUnwinderArm64::Unwind(T_CONTEXT * pContext)
     }
     else
     {
-        hr = RtlpUnwindFunctionFull(pContext->Pc - ImageBase,
+        hr = RtlpUnwindFunctionFull(ControlPcRva,
                                     ImageBase,
                                     &Rfe,
                                     pContext,
@@ -1637,9 +1659,30 @@ RtlVirtualUnwind(
     ARM64_UNWIND_PARAMS unwindParams;
     unwindParams.ContextPointers = ContextPointers;
 
+    DWORD64 ControlPcRva = ControlPc - ImageBase;
+
+    //  Long branch pdata
+    if ((rfe.UnwindData & 3) == 3)
+    {
+        if ((rfe.UnwindData & 4) == 0)
+        {
+            Rfe.BeginAddress = MEMORY_READ_DWORD(NULL, ImageBase + (Rfe.UnwindData - 3));
+            Rfe.UnwindData = MEMORY_READ_DWORD(NULL, ImageBase + (Rfe.UnwindData - 3) + sizeof(DWORD));
+
+            // A long branch should never be described by another long branch
+            ASSERT_AND_CHECK((rfe.UnwindData & 3) != 3);
+
+            ControlPcRva = rfe.BeginAddress;
+
+        } else
+        {
+            return FALSE;
+        }
+    }
+
     if ((rfe.UnwindData & 3) != 0)
     {
-        hr = RtlpUnwindFunctionCompact(ControlPc - ImageBase,
+        hr = RtlpUnwindFunctionCompact(ControlPcRva,
                                         &rfe,
                                         ContextRecord,
                                         EstablisherFrame,
@@ -1650,7 +1693,7 @@ RtlVirtualUnwind(
     }
     else
     {
-        hr = RtlpUnwindFunctionFull(ControlPc - ImageBase,
+        hr = RtlpUnwindFunctionFull(ControlPcRva,
                                     ImageBase,
                                     &rfe,
                                     ContextRecord,
