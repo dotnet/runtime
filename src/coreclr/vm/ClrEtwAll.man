@@ -446,7 +446,14 @@
                         <opcodes>
                         </opcodes>
                     </task>
-                <!--Next available ID is 38-->
+                    <task name="ThreadPoolMinMaxWorkerThreads" symbol="CLR_THREADPOOLMINMAXWORKERTHREADS_TASK"
+                          value="38" eventGUID="{}"
+                          message="$(string.RuntimePublisher.ThreadPoolMinMaxWorkerThreadsTaskMessage)">
+                        <opcodes>
+                            <opcode name="Update" message="$(string.RuntimePublisher.UpdateOpcodeMessage)" symbol="CLR_UPDATE_OPCODE" value="91"> </opcode>
+                        </opcodes>
+                    </task>
+                <!--Next available ID is 39-->
                 </tasks>
                 <!--Maps-->
                 <maps>
@@ -1579,17 +1586,15 @@
                         </UserData>
                     </template>
 
-                    <template tid="ThreadPoolSetMinMaxThreads">
+                    <template tid="ThreadPoolMinMaxWorkerThreads">
                         <data name="WorkerThreads" inType="win:Int32" />
-                        <data name="IOCompletionThreads" inType="win:Int32" />
                         <data name="ClrInstanceID" inType="win:UInt16" />
 
                         <UserData>
-                            <ThreadPoolSetMinMaxThreads xmlns="myNs">
+                            <ThreadPoolMinMaxWorkerThreads xmlns="myNs">
                                 <WorkerThreads> %1 </WorkerThreads>
-                                <IOCompletionThreads> %2 </IOCompletionThreads>
-                                <ClrInstanceID> %3 </ClrInstanceID>
-                            </ThreadPoolSetMinMaxThreads>
+                                <ClrInstanceID> %2 </ClrInstanceID>
+                            </ThreadPoolMinMaxWorkerThreads>
                         </UserData>
                     </template>
 
@@ -3546,19 +3551,19 @@
                            symbol="TypeLoadStop"
                            message="$(string.RuntimePublisher.TypeLoadStopEventMessage)"/>
 
-                    <event value="75" version="0" level="win:Informational"  template="ThreadPoolSetMinMaxThreads"
+                    <event value="75" version="0" level="win:Informational"  template="ThreadPoolMinMaxWorkerThreads"
                            keywords="ThreadingKeyword"
-                           task="ThreadPoolWorkerThreadAdjustment"
-                           opcode="Sample"
-                           symbol="ThreadPoolSetMinThreads"
-                           message="$(string.RuntimePublisher.ThreadPoolSetMinMaxThreads)"/>
+                           task="ThreadPoolMinMaxWorkerThreads"
+                           opcode="Update"
+                           symbol="ThreadPoolMinWorkerThreads"
+                           message="$(string.RuntimePublisher.ThreadPoolMinMaxWorkerThreads)"/>
 
-                    <event value="76" version="0" level="win:Informational"  template="ThreadPoolSetMinMaxThreads"
+                    <event value="76" version="0" level="win:Informational"  template="ThreadPoolMinMaxWorkerThreads"
                            keywords="ThreadingKeyword"
-                           task="ThreadPoolWorkerThreadAdjustment"
-                           opcode="Sample"
-                           symbol="ThreadPoolSetMaxThreads"
-                           message="$(string.RuntimePublisher.ThreadPoolSetMinMaxThreads)"/>
+                           task="ThreadPoolMinMaxWorkerThreads"
+                           opcode="Update"
+                           symbol="ThreadPoolMaxWorkerThreads"
+                           message="$(string.RuntimePublisher.ThreadPoolMinMaxWorkerThreads)"/>
 
                     <!-- CLR Exception events -->
                     <event value="80" version="0" level="win:Informational"
@@ -8299,7 +8304,7 @@
                 <string id="RuntimePublisher.WorkerThreadRetirementRetireThreadEventMessage" value="WorkerThreadCount=%1;%nRetiredWorkerThreads=%2" />
                 <string id="RuntimePublisher.WorkerThreadRetirementUnretireThreadEventMessage" value="WorkerThreadCount=%1;%nRetiredWorkerThreads=%2" />
                 <string id="RuntimePublisher.ThreadPoolWorkerThreadEventMessage" value="WorkerThreadCount=%1;%nRetiredWorkerThreadCount=%2;%nClrInstanceID=%3" />
-                <string id="RuntimePublisher.ThreadPoolSetMinMaxThreads" value="WorkerThreads=%1;%nIOCompletionThreads=%2" />
+                <string id="RuntimePublisher.ThreadPoolMinMaxWorkerThreads" value="WorkerThreads=%1;%nClrInstanceID=%2" />
                 <string id="RuntimePublisher.YieldProcessorMeasurementEventMessage" value="ClrInstanceID=%1;%nNsPerYield=%2;%nEstablishedNsPerYield=%3" />
                 <string id="RuntimePublisher.ThreadPoolWorkerThreadAdjustmentSampleEventMessage" value="Throughput=%1;%nClrInstanceID=%2" />
                 <string id="RuntimePublisher.ThreadPoolWorkerThreadAdjustmentAdjustmentEventMessage" value="AverageThroughput=%1;%nNewWorkerThreadCount=%2;%nReason=%3;%nClrInstanceID=%4" />
@@ -8558,6 +8563,7 @@
                 <string id="RuntimePublisher.IOThreadRetirementTaskMessage" value="IOThreadRetirement" />
                 <string id="RuntimePublisher.ThreadpoolSuspensionTaskMessage" value="ThreadpoolSuspensionV2" />
                 <string id="RuntimePublisher.ThreadPoolWorkerThreadTaskMessage" value="ThreadPoolWorkerThread" />
+                <string id="RuntimePublisher.ThreadPoolMinMaxWorkerThreadsTaskMessage" value="ThreadPoolMinMaxWorkerThreads" />
                 <string id="RuntimePublisher.ThreadPoolWorkerThreadRetirementTaskMessage" value="ThreadPoolWorkerThreadRetirement" />
                 <string id="RuntimePublisher.ThreadPoolWorkerThreadAdjustmentTaskMessage" value="ThreadPoolWorkerThreadAdjustment" />
                 <string id="RuntimePublisher.ExceptionTaskMessage" value="Exception" />
@@ -9034,6 +9040,7 @@
                 <string id="RuntimePublisher.ILStubGeneratedOpcodeMessage" value="StubGenerated" />
                 <string id="RuntimePublisher.ILStubCacheHitOpcodeMessage" value="StubCacheHit" />
                 <string id="RuntimePublisher.WaitOpcodeMessage" value="Wait" />
+                <string id="RuntimePublisher.UpdateOpcodeMessage" value="Update" />
                 <string id="RuntimePublisher.SampleOpcodeMessage" value="Sample" />
                 <string id="RuntimePublisher.AdjustmentOpcodeMessage" value="Adjustment" />
                 <string id="RuntimePublisher.StatsOpcodeMessage" value="Stats" />
