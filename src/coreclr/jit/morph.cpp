@@ -15285,7 +15285,7 @@ void Compiler::fgMorphStmts(BasicBlock* block)
         }
 
         // Hoist commas into statements.
-        while (morphedTree->OperIs(GT_COMMA) && (morphedTree->gtFlags & GTF_HOIST_COMMA) != 0)
+        while (morphedTree->OperIs(GT_COMMA) && (morphedTree->gtFlags & GTF_CAN_HOIST_COMMA) != 0)
         {
             GenTree* comma = morphedTree;
 
