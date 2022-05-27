@@ -5498,7 +5498,7 @@ HCIMPL4(void, JIT_MethodProfile32, Object *obj, CORINFO_METHOD_HANDLE baseMethod
         if ((del->GetInvocationCount() == 0) && (del->GetMethodPtrAux() == NULL))
         {
             MethodDesc* pMD = NonVirtualEntry2MethodDesc(del->GetMethodPtr());
-            if ((pMD != nullptr) && !pMD->GetLoaderAllocator()->IsCollectible())
+            if ((pMD != nullptr) && !pMD->GetLoaderAllocator()->IsCollectible() && !pMD->IsDynamicMethod())
             {
                 pRecordedMD = pMD;
             }
@@ -5511,7 +5511,7 @@ HCIMPL4(void, JIT_MethodProfile32, Object *obj, CORINFO_METHOD_HANDLE baseMethod
 
         MethodDesc* pMD = pMT->GetMethodDescForSlot(slot);
 
-        if (!pMD->GetLoaderAllocator()->IsCollectible())
+        if (!pMD->GetLoaderAllocator()->IsCollectible() && !pMD->IsDynamicMethod())
         {
             pRecordedMD = pMD;
         }
@@ -5604,7 +5604,7 @@ HCIMPL4(void, JIT_MethodProfile64, Object *obj, CORINFO_METHOD_HANDLE baseMethod
         if ((del->GetInvocationCount() == 0) && (del->GetMethodPtrAux() == NULL))
         {
             MethodDesc* pMD = NonVirtualEntry2MethodDesc(del->GetMethodPtr());
-            if ((pMD != nullptr) && !pMD->GetLoaderAllocator()->IsCollectible())
+            if ((pMD != nullptr) && !pMD->GetLoaderAllocator()->IsCollectible() && !pMD->IsDynamicMethod())
             {
                 pRecordedMD = pMD;
             }
@@ -5617,7 +5617,7 @@ HCIMPL4(void, JIT_MethodProfile64, Object *obj, CORINFO_METHOD_HANDLE baseMethod
 
         MethodDesc* pMD = pMT->GetMethodDescForSlot(slot);
 
-        if (!pMD->GetLoaderAllocator()->IsCollectible())
+        if (!pMD->GetLoaderAllocator()->IsCollectible() && !pMD->IsDynamicMethod())
         {
             pRecordedMD = pMD;
         }
