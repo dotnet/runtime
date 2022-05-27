@@ -2,11 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 using System.Xml.Schema;
-using System.Collections;
-using System.Collections.Generic;
 
 namespace System.Xml
 {
@@ -27,14 +28,18 @@ namespace System.Xml
             _impl.OuterReader = this;
         }
 
-        public XmlValidatingReader(string xmlFragment!!, XmlNodeType fragType, XmlParserContext context)
+        public XmlValidatingReader([StringSyntax(StringSyntaxAttribute.Xml)] string xmlFragment, XmlNodeType fragType, XmlParserContext context)
         {
+            ArgumentNullException.ThrowIfNull(xmlFragment);
+
             _impl = new XmlValidatingReaderImpl(xmlFragment, fragType, context);
             _impl.OuterReader = this;
         }
 
-        public XmlValidatingReader(Stream xmlFragment!!, XmlNodeType fragType, XmlParserContext context)
+        public XmlValidatingReader(Stream xmlFragment, XmlNodeType fragType, XmlParserContext context)
         {
+            ArgumentNullException.ThrowIfNull(xmlFragment);
+
             _impl = new XmlValidatingReaderImpl(xmlFragment, fragType, context);
             _impl.OuterReader = this;
         }

@@ -9,6 +9,8 @@
     <Compile Include="RegisteredWaitTests.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="$(CommonTestPath)System\IO\TempFile.cs"
+             Link="CommonTest\System\IO\TempFile.cs" />
     <Compile Include="$(CommonTestPath)System\Threading\ThreadTestHelpers.cs"
              Link="CommonTest\System\Threading\ThreadTestHelpers.cs" />
   </ItemGroup>

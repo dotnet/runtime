@@ -46,6 +46,30 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
+        public async Task CreateFromDirectory_IncludeBaseDirectoryAsync()
+        {
+            string folderName = zfolder("normal");
+            string withBaseDir = GetTestFilePath();
+            ZipFile.CreateFromDirectory(folderName, withBaseDir, CompressionLevel.Optimal, true);
+
+            IEnumerable<string> expected = Directory.EnumerateFiles(zfolder("normal"), "*", SearchOption.AllDirectories);
+            using (ZipArchive actual_withbasedir = ZipFile.Open(withBaseDir, ZipArchiveMode.Read))
+            {
+                foreach (ZipArchiveEntry actualEntry in actual_withbasedir.Entries)
+                {
+                    string expectedFile = expected.Single(i => Path.GetFileName(i).Equals(actualEntry.Name));
+                    Assert.StartsWith("normal", actualEntry.FullName);
+                    Assert.Equal(new FileInfo(expectedFile).Length, actualEntry.Length);
+                    using (Stream expectedStream = File.OpenRead(expectedFile))
+                    using (Stream actualStream = actualEntry.Open())
+                    {
+                        await StreamsEqualAsync(expectedStream, actualStream);
+                    }
+                }
+            }
+        }
+
+        [Fact]
         public void CreateFromDirectoryUnicode()
         {
             string folderName = zfolder("unicode");
@@ -288,7 +312,6 @@ namespace System.IO.Compression.Tests
                 FileInfo fileWithBadDate = new FileInfo(GetTestFilePath());
                 fileWithBadDate.Create().Dispose();
                 fileWithBadDate.LastWriteTimeUtc = new DateTime(1970, 1, 1, 1, 1, 1);
-
                 string archivePath = GetTestFilePath();
                 using (FileStream output = File.Open(archivePath, FileMode.Create))
                 using (ZipArchive archive = new ZipArchive(output, ZipArchiveMode.Create))
@@ -342,19 +365,6 @@ namespace System.IO.Compression.Tests
                     }
                 }
             }
-        }
-
-        /// <summary>
-        /// This test ensures that a zipfile with path names that are invalid to this OS will throw errors
-        /// when an attempt is made to extract them.
-        /// </summary>
-        [Theory]
-        [InlineData("NullCharFileName_FromWindows")]
-        [InlineData("NullCharFileName_FromUnix")]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Checks Unix-specific invalid file path
-        public void Unix_ZipWithInvalidFileNames_ThrowsArgumentException(string zipName)
-        {
-            Assert.Throws<ArgumentException>(() => ZipFile.ExtractToDirectory(compat(zipName) + ".zip", GetTestFilePath()));
         }
 
         [Fact]
@@ -413,24 +423,6 @@ namespace System.IO.Compression.Tests
                 }
                 await IsZipSameAsDirAsync(testArchive.Path, zmodified("addFile"), ZipArchiveMode.Read);
             }
-        }
-
-        /// <summary>
-        /// This test ensures that a zipfile with path names that are invalid to this OS will throw errors
-        /// when an attempt is made to extract them.
-        /// </summary>
-        [Theory]
-        [InlineData("WindowsInvalid_FromUnix", null)]
-        [InlineData("WindowsInvalid_FromWindows", null)]
-        [InlineData("NullCharFileName_FromWindows", "path")]
-        [InlineData("NullCharFileName_FromUnix", "path")]
-        [PlatformSpecific(TestPlatforms.Windows)]  // Checks Windows-specific invalid file path
-        public void Windows_ZipWithInvalidFileNames_ThrowsException(string zipName, string paramName)
-        {
-            if (paramName == null)
-                Assert.Throws<IOException>(() => ZipFile.ExtractToDirectory(compat(zipName) + ".zip", GetTestFilePath()));
-            else
-                AssertExtensions.Throws<ArgumentException>(paramName, null, () => ZipFile.ExtractToDirectory(compat(zipName) + ".zip", GetTestFilePath()));
         }
 
         private static async Task UpdateArchive(ZipArchive archive, string installFile, string entryName)

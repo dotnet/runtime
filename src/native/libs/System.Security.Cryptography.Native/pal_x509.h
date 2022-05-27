@@ -5,6 +5,8 @@
 #include "pal_compiler.h"
 #include "pal_crypto_types.h"
 
+extern int g_x509_ocsp_index;
+
 /*
 These values should be kept in sync with System.Security.Cryptography.X509Certificates.X509RevocationFlag.
 */
@@ -380,6 +382,11 @@ Build an OCSP request appropriate for the end-entity certificate using the issue
 determined by the chain in storeCtx.
 */
 PALEXPORT OCSP_REQUEST* CryptoNative_X509ChainBuildOcspRequest(X509_STORE_CTX* storeCtx, int chainDepth);
+
+/*
+Checks if the target certificate has an appropriate stapled OCSP response.
+*/
+PALEXPORT int32_t CryptoNative_X509ChainHasStapledOcsp(X509_STORE_CTX* storeCtx);
 
 /*
 Determine if the OCSP response is acceptable, and if acceptable report the status and

@@ -2,12 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-namespace JitTest
+namespace JitTest_isinst_call_cs
 {
-    internal class BaseClass { }
+    public class BaseClass { }
 
-    internal class TestClass : BaseClass
+    public class TestClass : BaseClass
     {
         private static object Method_To_Call(int cookie)
         {
@@ -48,7 +49,8 @@ namespace JitTest
             }
         }
 
-        private static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             if (!Test_CALL(0, true))
             {

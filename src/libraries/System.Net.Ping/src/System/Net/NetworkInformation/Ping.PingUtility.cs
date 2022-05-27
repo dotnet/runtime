@@ -108,7 +108,7 @@ namespace System.Net.NetworkInformation
             // Throw timeout for known failure return codes from ping functions.
             if (exitCode == 1 || exitCode == 2)
             {
-                // TTL exceeded may have occured
+                // TTL exceeded may have occurred
                 if (TryParseTtlExceeded(stdout, out PingReply? reply))
                 {
                     return reply!;

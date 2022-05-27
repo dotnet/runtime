@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 namespace Microsoft.Interop
 {
-    public abstract class StubCodeContext
+    public abstract record StubCodeContext
     {
         /// <summary>
         /// Code generation stage
@@ -64,7 +64,16 @@ namespace Microsoft.Interop
             GuaranteedUnmarshal
         }
 
-        public Stage CurrentStage { get; set; } = Stage.Invalid;
+        /// <summary>
+        /// The current stage being generated.
+        /// </summary>
+        public Stage CurrentStage { get; init; } = Stage.Invalid;
+
+        /// <summary>
+        /// Gets the currently targeted framework and version for stub code generation.
+        /// </summary>
+        /// <returns>A framework value and version.</returns>
+        public abstract (TargetFramework framework, Version version) GetTargetFramework();
 
         /// <summary>
         /// The stub emits code that runs in a single stack frame and the frame spans over the native context.
@@ -89,9 +98,12 @@ namespace Microsoft.Interop
         /// <summary>
         /// If this context is a nested context, return the parent context. Otherwise, return <c>null</c>.
         /// </summary>
-        public StubCodeContext? ParentContext { get; protected set; }
+        public StubCodeContext? ParentContext { get; protected init; }
 
-        public const string GeneratedNativeIdentifierSuffix = "_gen_native";
+        /// <summary>
+        /// Suffix for all generated native identifiers.
+        /// </summary>
+        public const string GeneratedNativeIdentifierSuffix = "_native";
 
         /// <summary>
         /// Get managed and native instance identifiers for the <paramref name="info"/>
@@ -103,6 +115,12 @@ namespace Microsoft.Interop
             return (info.InstanceIdentifier, $"__{info.InstanceIdentifier.TrimStart('@')}{GeneratedNativeIdentifierSuffix}");
         }
 
+        /// <summary>
+        /// Compute identifiers that are unique for this generator
+        /// </summary>
+        /// <param name="info">TypePositionInfo the new identifier is used in service of.</param>
+        /// <param name="name">Name of variable.</param>
+        /// <returns>New identifier name for use.</returns>
         public virtual string GetAdditionalIdentifier(TypePositionInfo info, string name)
         {
             return $"{GetIdentifiers(info).native}__{name}";

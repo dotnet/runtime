@@ -262,7 +262,7 @@ ep_fast_serializer_write_tag (
 	const uint8_t *payload,
 	uint32_t payload_len)
 {
-	uint8_t tag_as_byte = tag;
+	uint8_t tag_as_byte = (uint8_t)tag;
 	ep_fast_serializer_write_buffer (fast_serializer, &tag_as_byte, sizeof (tag_as_byte));
 	if (payload != NULL) {
 		EP_ASSERT (payload_len > 0);
@@ -679,7 +679,7 @@ ep_stream_writer_write (
 #endif /* !defined(EP_INCLUDE_SOURCE_FILES) || defined(EP_FORCE_INCLUDE_SOURCE_FILES) */
 #endif /* ENABLE_PERFTRACING */
 
-#ifndef EP_INCLUDE_SOURCE_FILES
+#if !defined(ENABLE_PERFTRACING) || (defined(EP_INCLUDE_SOURCE_FILES) && !defined(EP_FORCE_INCLUDE_SOURCE_FILES))
 extern const char quiet_linker_empty_file_warning_eventpipe_stream;
 const char quiet_linker_empty_file_warning_eventpipe_stream = 0;
 #endif

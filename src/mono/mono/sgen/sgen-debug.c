@@ -177,9 +177,9 @@ static void
 check_consistency_callback (GCObject *obj, size_t size, void *dummy)
 {
 	char *start = (char*)obj;
-	GCVTable vt = LOAD_VTABLE (obj);
-	SgenDescriptor desc = sgen_vtable_get_descriptor (vt);
-	SGEN_LOG (8, "Scanning object %p, vtable: %p (%s)", start, vt, sgen_client_vtable_get_name (vt));
+	GCVTable vtable = LOAD_VTABLE (obj);
+	SgenDescriptor desc = sgen_vtable_get_descriptor (vtable);
+	SGEN_LOG (8, "Scanning object %p, vtable: %p (%s)", start, vtable, sgen_client_vtable_get_name (vtable));
 
 #include "sgen-scan-object.h"
 }
@@ -238,10 +238,10 @@ check_mod_union_callback (GCObject *obj, size_t size, void *dummy)
 {
 	char *start = (char*)obj;
 	gboolean in_los = (gboolean) (size_t) dummy;
-	GCVTable vt = LOAD_VTABLE (obj);
-	SgenDescriptor desc = sgen_vtable_get_descriptor (vt);
+	GCVTable vtable = LOAD_VTABLE (obj);
+	SgenDescriptor desc = sgen_vtable_get_descriptor (vtable);
 	guint8 *cards;
-	SGEN_LOG (8, "Scanning object %p, vtable: %p (%s)", obj, vt, sgen_client_vtable_get_name (vt));
+	SGEN_LOG (8, "Scanning object %p, vtable: %p (%s)", obj, vtable, sgen_client_vtable_get_name (vtable));
 
 	if (!is_major_or_los_object_marked (obj))
 		return;
@@ -1002,9 +1002,9 @@ static void
 scan_object_for_xdomain_refs (GCObject *obj, mword size, void *data)
 {
 	char *start = (char*)obj;
-	MonoVTable *vt = SGEN_LOAD_VTABLE (obj);
-	MonoDomain *domain = vt->domain;
-	SgenDescriptor desc = sgen_vtable_get_descriptor (vt);
+	MonoVTable *vtable = SGEN_LOAD_VTABLE (obj);
+	MonoDomain *domain = vtable->domain;
+	SgenDescriptor desc = sgen_vtable_get_descriptor (vtable);
 
 	#include "sgen-scan-object.h"
 }

@@ -13,8 +13,10 @@ namespace System.Threading
         {
         }
 
-        public static ThreadPoolBoundHandle BindHandle(SafeHandle handle!!)
+        public static ThreadPoolBoundHandle BindHandle(SafeHandle handle)
         {
+            ArgumentNullException.ThrowIfNull(handle);
+
             if (handle.IsClosed || handle.IsInvalid)
                 throw new ArgumentException(SR.Argument_InvalidHandle, nameof(handle));
 
@@ -22,8 +24,10 @@ namespace System.Threading
         }
 
         [CLSCompliant(false)]
-        public unsafe NativeOverlapped* AllocateNativeOverlapped(IOCompletionCallback callback!!, object? state, object? pinData)
+        public unsafe NativeOverlapped* AllocateNativeOverlapped(IOCompletionCallback callback, object? state, object? pinData)
         {
+            ArgumentNullException.ThrowIfNull(callback);
+
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_OverlappedIO);
         }
 
@@ -34,21 +38,24 @@ namespace System.Threading
         [CLSCompliant(false)]
         public unsafe NativeOverlapped* AllocateNativeOverlapped(PreAllocatedOverlapped preAllocated)
         {
-            if (preAllocated == null)
-                throw new ArgumentNullException(nameof(preAllocated));
+            ArgumentNullException.ThrowIfNull(preAllocated);
 
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_OverlappedIO);
         }
 
         [CLSCompliant(false)]
-        public unsafe void FreeNativeOverlapped(NativeOverlapped* overlapped!!)
+        public unsafe void FreeNativeOverlapped(NativeOverlapped* overlapped)
         {
+            ArgumentNullException.ThrowIfNull(overlapped);
+
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_OverlappedIO);
         }
 
         [CLSCompliant(false)]
-        public static unsafe object? GetNativeOverlappedState(NativeOverlapped* overlapped!!)
+        public static unsafe object? GetNativeOverlappedState(NativeOverlapped* overlapped)
         {
+            ArgumentNullException.ThrowIfNull(overlapped);
+
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_OverlappedIO);
         }
 

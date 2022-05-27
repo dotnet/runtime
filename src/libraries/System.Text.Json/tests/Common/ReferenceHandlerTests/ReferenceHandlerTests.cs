@@ -739,26 +739,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public async Task PreserveReferenceOfTypeObjectAsync()
-        {
-            if (StreamingSerializer is null)
-            {
-                return;
-            }
-
-            var root = new ClassWithObjectProperty();
-            root.Child = new ClassWithObjectProperty();
-            root.Sibling = root.Child;
-
-            Assert.Same(root.Child, root.Sibling);
-
-            string json = await StreamingSerializer.SerializeWrapper(root, s_serializerOptionsPreserve);
-
-            ClassWithObjectProperty rootCopy = await StreamingSerializer.DeserializeWrapper<ClassWithObjectProperty>(json, s_serializerOptionsPreserve);
-            Assert.Same(rootCopy.Child, rootCopy.Sibling);
-        }
-
-        [Fact]
         public async Task PreserveReferenceOfTypeOfObjectOnCollection()
         {
             var root = new ClassWithListOfObjectProperty();

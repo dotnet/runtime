@@ -22,8 +22,10 @@ namespace System.Net.Sockets
             : this(path, null)
         { }
 
-        private UnixDomainSocketEndPoint(string path!!, string? boundFileName)
+        private UnixDomainSocketEndPoint(string path, string? boundFileName)
         {
+            ArgumentNullException.ThrowIfNull(path);
+
             BoundFileName = boundFileName;
 
             // Pathname socket addresses should be null-terminated.
@@ -56,8 +58,10 @@ namespace System.Net.Sockets
 
         internal static int MaxAddressSize => s_nativeAddressSize;
 
-        internal UnixDomainSocketEndPoint(SocketAddress socketAddress!!)
+        internal UnixDomainSocketEndPoint(SocketAddress socketAddress)
         {
+            ArgumentNullException.ThrowIfNull(socketAddress);
+
             if (socketAddress.Family != EndPointAddressFamily ||
                 socketAddress.Size > s_nativeAddressSize)
             {

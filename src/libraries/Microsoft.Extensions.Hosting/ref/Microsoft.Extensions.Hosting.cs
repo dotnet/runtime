@@ -15,8 +15,8 @@ namespace Microsoft.Extensions.Hosting
 {
     public enum BackgroundServiceExceptionBehavior
     {
-        StopHost,
-        Ignore
+        StopHost = 0,
+        Ignore = 1,
     }
     public partial class ConsoleLifetimeOptions
     {
@@ -26,31 +26,31 @@ namespace Microsoft.Extensions.Hosting
     public static partial class Host
     {
         public static Microsoft.Extensions.Hosting.HostApplicationBuilder CreateApplicationBuilder() { throw null; }
-        public static Microsoft.Extensions.Hosting.HostApplicationBuilder CreateApplicationBuilder(string[] args) { throw null; }
+        public static Microsoft.Extensions.Hosting.HostApplicationBuilder CreateApplicationBuilder(string[]? args) { throw null; }
         public static Microsoft.Extensions.Hosting.IHostBuilder CreateDefaultBuilder() { throw null; }
-        public static Microsoft.Extensions.Hosting.IHostBuilder CreateDefaultBuilder(string[] args) { throw null; }
+        public static Microsoft.Extensions.Hosting.IHostBuilder CreateDefaultBuilder(string[]? args) { throw null; }
     }
     public sealed partial class HostApplicationBuilder
     {
         public HostApplicationBuilder() { }
-        public HostApplicationBuilder(Microsoft.Extensions.Hosting.HostApplicationBuilderSettings settings) { }
-        public HostApplicationBuilder(string[] args) { }
+        public HostApplicationBuilder(Microsoft.Extensions.Hosting.HostApplicationBuilderSettings? settings) { }
+        public HostApplicationBuilder(string[]? args) { }
         public Microsoft.Extensions.Configuration.ConfigurationManager Configuration { get { throw null; } }
         public Microsoft.Extensions.Hosting.IHostEnvironment Environment { get { throw null; } }
         public Microsoft.Extensions.Logging.ILoggingBuilder Logging { get { throw null; } }
         public Microsoft.Extensions.DependencyInjection.IServiceCollection Services { get { throw null; } }
         public Microsoft.Extensions.Hosting.IHost Build() { throw null; }
-        public void ConfigureContainer<TContainerBuilder>(Microsoft.Extensions.DependencyInjection.IServiceProviderFactory<TContainerBuilder> factory, System.Action<TContainerBuilder> configure = null) where TContainerBuilder : notnull { }
+        public void ConfigureContainer<TContainerBuilder>(Microsoft.Extensions.DependencyInjection.IServiceProviderFactory<TContainerBuilder> factory, System.Action<TContainerBuilder>? configure = null) where TContainerBuilder : notnull { }
     }
     public sealed partial class HostApplicationBuilderSettings
     {
         public HostApplicationBuilderSettings() { }
-        public string ApplicationName { get { throw null; } set { } }
-        public string[] Args { get { throw null; } set { } }
-        public Microsoft.Extensions.Configuration.ConfigurationManager Configuration { get { throw null; } set { } }
-        public string ContentRootPath { get { throw null; } set { } }
+        public string? ApplicationName { get { throw null; } set { } }
+        public string[]? Args { get { throw null; } set { } }
+        public Microsoft.Extensions.Configuration.ConfigurationManager? Configuration { get { throw null; } set { } }
+        public string? ContentRootPath { get { throw null; } set { } }
         public bool DisableDefaults { get { throw null; } set { } }
-        public string EnvironmentName { get { throw null; } set { } }
+        public string? EnvironmentName { get { throw null; } set { } }
     }
     public partial class HostBuilder : Microsoft.Extensions.Hosting.IHostBuilder
     {
@@ -61,14 +61,14 @@ namespace Microsoft.Extensions.Hosting
         public Microsoft.Extensions.Hosting.IHostBuilder ConfigureContainer<TContainerBuilder>(System.Action<Microsoft.Extensions.Hosting.HostBuilderContext, TContainerBuilder> configureDelegate) { throw null; }
         public Microsoft.Extensions.Hosting.IHostBuilder ConfigureHostConfiguration(System.Action<Microsoft.Extensions.Configuration.IConfigurationBuilder> configureDelegate) { throw null; }
         public Microsoft.Extensions.Hosting.IHostBuilder ConfigureServices(System.Action<Microsoft.Extensions.Hosting.HostBuilderContext, Microsoft.Extensions.DependencyInjection.IServiceCollection> configureDelegate) { throw null; }
-        public Microsoft.Extensions.Hosting.IHostBuilder UseServiceProviderFactory<TContainerBuilder>(Microsoft.Extensions.DependencyInjection.IServiceProviderFactory<TContainerBuilder> factory) { throw null; }
-        public Microsoft.Extensions.Hosting.IHostBuilder UseServiceProviderFactory<TContainerBuilder>(System.Func<Microsoft.Extensions.Hosting.HostBuilderContext, Microsoft.Extensions.DependencyInjection.IServiceProviderFactory<TContainerBuilder>> factory) { throw null; }
+        public Microsoft.Extensions.Hosting.IHostBuilder UseServiceProviderFactory<TContainerBuilder>(Microsoft.Extensions.DependencyInjection.IServiceProviderFactory<TContainerBuilder> factory) where TContainerBuilder : notnull { throw null; }
+        public Microsoft.Extensions.Hosting.IHostBuilder UseServiceProviderFactory<TContainerBuilder>(System.Func<Microsoft.Extensions.Hosting.HostBuilderContext, Microsoft.Extensions.DependencyInjection.IServiceProviderFactory<TContainerBuilder>> factory) where TContainerBuilder : notnull { throw null; }
     }
     public static partial class HostingHostBuilderExtensions
     {
         public static Microsoft.Extensions.Hosting.IHostBuilder ConfigureAppConfiguration(this Microsoft.Extensions.Hosting.IHostBuilder hostBuilder, System.Action<Microsoft.Extensions.Configuration.IConfigurationBuilder> configureDelegate) { throw null; }
         public static Microsoft.Extensions.Hosting.IHostBuilder ConfigureContainer<TContainerBuilder>(this Microsoft.Extensions.Hosting.IHostBuilder hostBuilder, System.Action<TContainerBuilder> configureDelegate) { throw null; }
-        public static Microsoft.Extensions.Hosting.IHostBuilder ConfigureDefaults(this Microsoft.Extensions.Hosting.IHostBuilder builder, string[] args) { throw null; }
+        public static Microsoft.Extensions.Hosting.IHostBuilder ConfigureDefaults(this Microsoft.Extensions.Hosting.IHostBuilder builder, string[]? args) { throw null; }
         public static Microsoft.Extensions.Hosting.IHostBuilder ConfigureHostOptions(this Microsoft.Extensions.Hosting.IHostBuilder hostBuilder, System.Action<Microsoft.Extensions.Hosting.HostBuilderContext, Microsoft.Extensions.Hosting.HostOptions> configureOptions) { throw null; }
         public static Microsoft.Extensions.Hosting.IHostBuilder ConfigureHostOptions(this Microsoft.Extensions.Hosting.IHostBuilder hostBuilder, System.Action<Microsoft.Extensions.Hosting.HostOptions> configureOptions) { throw null; }
         public static Microsoft.Extensions.Hosting.IHostBuilder ConfigureLogging(this Microsoft.Extensions.Hosting.IHostBuilder hostBuilder, System.Action<Microsoft.Extensions.Hosting.HostBuilderContext, Microsoft.Extensions.Logging.ILoggingBuilder> configureLogging) { throw null; }
@@ -102,8 +102,8 @@ namespace Microsoft.Extensions.Hosting
     public partial class HostOptions
     {
         public HostOptions() { }
-        public System.TimeSpan ShutdownTimeout { get { throw null; } set { } }
         public Microsoft.Extensions.Hosting.BackgroundServiceExceptionBehavior BackgroundServiceExceptionBehavior { get { throw null; } set { } }
+        public System.TimeSpan ShutdownTimeout { get { throw null; } set { } }
     }
 }
 namespace Microsoft.Extensions.Hosting.Internal
@@ -133,7 +133,7 @@ namespace Microsoft.Extensions.Hosting.Internal
     public partial class HostingEnvironment : Microsoft.Extensions.Hosting.IHostEnvironment, Microsoft.Extensions.Hosting.IHostingEnvironment
     {
         public HostingEnvironment() { }
-        public string ApplicationName { get { throw null; } set { } }
+        public string? ApplicationName { get { throw null; } set { } }
         public Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider { get { throw null; } set { } }
         public string ContentRootPath { get { throw null; } set { } }
         public string EnvironmentName { get { throw null; } set { } }

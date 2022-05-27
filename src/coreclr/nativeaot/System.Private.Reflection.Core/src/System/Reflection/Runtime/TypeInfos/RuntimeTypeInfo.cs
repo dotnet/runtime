@@ -610,7 +610,7 @@ namespace System.Reflection.Runtime.TypeInfos
 
         protected sealed override bool IsCOMObjectImpl()
         {
-            return ReflectionCoreExecution.ExecutionEnvironment.IsCOMObject(this);
+            return false;
         }
 
         protected sealed override bool IsPrimitiveImpl()

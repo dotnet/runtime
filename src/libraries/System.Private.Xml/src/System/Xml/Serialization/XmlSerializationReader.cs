@@ -974,8 +974,7 @@ namespace System.Xml.Serialization
                 throw new ArgumentException(SR.Format(SR.XmlEmptyArrayType, CurrentTag()), nameof(value));
             }
 
-            char[] chars = value.ToCharArray();
-            int charsLength = chars.Length;
+            int charsLength = value.Length;
 
             SoapArrayInfo soapArrayInfo = default;
 
@@ -983,16 +982,16 @@ namespace System.Xml.Serialization
             int pos = charsLength - 1;
 
             // Must end with ]
-            if (chars[pos] != ']')
+            if (value[pos] != ']')
             {
                 throw new ArgumentException(SR.XmlInvalidArraySyntax, nameof(value));
             }
             pos--;
 
             // Find [
-            while (pos != -1 && chars[pos] != '[')
+            while (pos != -1 && value[pos] != '[')
             {
-                if (chars[pos] == ',')
+                if (value[pos] == ',')
                     throw new ArgumentException(SR.Format(SR.XmlInvalidArrayDimentions, CurrentTag()), nameof(value));
                 pos--;
             }
@@ -1004,19 +1003,9 @@ namespace System.Xml.Serialization
             int len = charsLength - pos - 2;
             if (len > 0)
             {
-                string lengthString = new string(chars, pos + 1, len);
-                try
-                {
-                    soapArrayInfo.length = int.Parse(lengthString, CultureInfo.InvariantCulture);
-                }
-                catch (Exception e)
-                {
-                    if (e is OutOfMemoryException)
-                    {
-                        throw;
-                    }
-                    throw new ArgumentException(SR.Format(SR.XmlInvalidArrayLength, lengthString), nameof(value));
-                }
+                ReadOnlySpan<char> lengthStringSpan = value.AsSpan(pos + 1, len);
+                if (!int.TryParse(lengthStringSpan, CultureInfo.InvariantCulture, out soapArrayInfo.length))
+                    throw new ArgumentException(SR.Format(SR.XmlInvalidArrayLength, new string(lengthStringSpan)), nameof(value));
             }
             else
             {
@@ -1026,14 +1015,14 @@ namespace System.Xml.Serialization
             pos--;
 
             soapArrayInfo.jaggedDimensions = 0;
-            while (pos != -1 && chars[pos] == ']')
+            while (pos != -1 && value[pos] == ']')
             {
                 pos--;
                 if (pos < 0)
                     throw new ArgumentException(SR.XmlMismatchedArrayBrackets, nameof(value));
-                if (chars[pos] == ',')
+                if (value[pos] == ',')
                     throw new ArgumentException(SR.Format(SR.XmlInvalidArrayDimentions, CurrentTag()), nameof(value));
-                else if (chars[pos] != '[')
+                else if (value[pos] != '[')
                     throw new ArgumentException(SR.XmlInvalidArraySyntax, nameof(value));
                 pos--;
                 soapArrayInfo.jaggedDimensions++;
@@ -1042,7 +1031,7 @@ namespace System.Xml.Serialization
             soapArrayInfo.dimensions = 1;
 
             // everything else is qname - validation of qnames?
-            soapArrayInfo.qname = new string(chars, 0, pos + 1);
+            soapArrayInfo.qname = new string(value.AsSpan(0, pos + 1));
             return soapArrayInfo;
         }
 
@@ -3951,12 +3940,12 @@ namespace System.Xml.Serialization
                     else
                     {
                         bool useReflection = typeDesc.UseReflection;
-                        if (member.Source[member.Source.Length - 1] == '(' || member.Source[member.Source.Length - 1] == '{')
+                        if (member.Source.EndsWith('(') || member.Source.EndsWith('{'))
                         {
                             WriteCreateInstance(typeDescFullName, a, useReflection, typeDesc.CannotNew);
                             Writer.Write(member.Source);
                             Writer.Write(a);
-                            if (member.Source[member.Source.Length - 1] == '{')
+                            if (member.Source.EndsWith('{'))
                                 Writer.WriteLine("});");
                             else
                                 Writer.WriteLine(");");
@@ -4522,7 +4511,7 @@ namespace System.Xml.Serialization
         private void WriteSourceBegin(string source)
         {
             Writer.Write(source);
-            if (source[source.Length - 1] != '(' && source[source.Length - 1] != '{')
+            if (!source.EndsWith('(') && !source.EndsWith('{'))
                 Writer.Write(" = ");
         }
 
@@ -4530,9 +4519,9 @@ namespace System.Xml.Serialization
         {
             // source could be of the form "var", "arrayVar[i]",
             // "collection.Add(" or "methodInfo.Invoke(collection, new object[] {"
-            if (source[source.Length - 1] == '(')
+            if (source.EndsWith('('))
                 Writer.Write(")");
-            else if (source[source.Length - 1] == '{')
+            else if (source.EndsWith('{'))
                 Writer.Write("})");
         }
 

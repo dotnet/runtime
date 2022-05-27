@@ -316,7 +316,7 @@ public:
     virtual bool logMsg(unsigned level, const char* fmt, va_list args) = 0;
 
     // do an assert.  will return true if the code should retry (DebugBreak)
-    // returns false, if the assert should be igored.
+    // returns false, if the assert should be ignored.
     virtual int doAssert(const char* szFile, int iLine, const char* szExpr) = 0;
 
     virtual void reportFatalError(CorJitResult result) = 0;
@@ -338,13 +338,14 @@ public:
     //
     // SAMPLE_INTERVAL must be >= SIZE. SAMPLE_INTERVAL / SIZE
     // gives the average number of calls between table updates.
-    // 
+    //
     struct ClassProfile32
     {
-        enum { 
-            SIZE = 8, 
-            SAMPLE_INTERVAL = 32, 
-            CLASS_FLAG     = 0x80000000, 
+        enum
+        {
+            SIZE = 8,
+            SAMPLE_INTERVAL = 32,
+            CLASS_FLAG     = 0x80000000,
             INTERFACE_FLAG = 0x40000000,
             OFFSET_MASK    = 0x3FFFFFFF
         };
@@ -368,6 +369,7 @@ public:
         FourByte = 1,
         EightByte = 2,
         TypeHandle = 3,
+        MethodHandle = 4,
 
         // Mask of all schema data types
         MarshalMask = 0xF,
@@ -385,9 +387,10 @@ public:
         Done = None, // All instrumentation schemas must end with a record which is "Done"
         BasicBlockIntCount = (DescriptorMin * 1) | FourByte, // basic block counter using unsigned 4 byte int
         BasicBlockLongCount = (DescriptorMin * 1) | EightByte, // basic block counter using unsigned 8 byte int
-        TypeHandleHistogramIntCount = (DescriptorMin * 2) | FourByte | AlignPointer, // 4 byte counter that is part of a type histogram. Aligned to match ClassProfile32's alignment.
-        TypeHandleHistogramLongCount = (DescriptorMin * 2) | EightByte, // 8 byte counter that is part of a type histogram
-        TypeHandleHistogramTypeHandle = (DescriptorMin * 3) | TypeHandle, // TypeHandle that is part of a type histogram
+        HandleHistogramIntCount = (DescriptorMin * 2) | FourByte | AlignPointer, // 4 byte counter that is part of a type histogram. Aligned to match ClassProfile32's alignment.
+        HandleHistogramLongCount = (DescriptorMin * 2) | EightByte, // 8 byte counter that is part of a type histogram
+        HandleHistogramTypes = (DescriptorMin * 3) | TypeHandle, // Histogram of type handles
+        HandleHistogramMethods = (DescriptorMin * 3) | MethodHandle, // Histogram of method handles
         Version = (DescriptorMin * 4) | None, // Version is encoded in the Other field of the schema
         NumRuns = (DescriptorMin * 5) | None, // Number of runs is encoded in the Other field of the schema
         EdgeIntCount = (DescriptorMin * 6) | FourByte, // edge counter using unsigned 4 byte int
@@ -416,12 +419,12 @@ public:
     };
 
 #define DEFAULT_UNKNOWN_TYPEHANDLE 1
-#define UNKNOWN_TYPEHANDLE_MIN 1
-#define UNKNOWN_TYPEHANDLE_MAX 33
+#define UNKNOWN_HANDLE_MIN 1
+#define UNKNOWN_HANDLE_MAX 33
 
-    static inline bool IsUnknownTypeHandle(intptr_t typeHandle)
+    static inline bool IsUnknownHandle(intptr_t handle)
     {
-        return ((typeHandle >= UNKNOWN_TYPEHANDLE_MIN) && (typeHandle <= UNKNOWN_TYPEHANDLE_MAX));
+        return ((handle >= UNKNOWN_HANDLE_MIN) && (handle <= UNKNOWN_HANDLE_MAX));
     }
 
     // get profile information to be used for optimizing a current method.  The format
@@ -445,7 +448,7 @@ public:
     //  3. The JIT may mark a schema item with an alignment flag. This may be used to increase the alignment of a field.
     //  4. Each data entry shall be laid out without extra padding.
     //
-    //  The intention here is that it becomes possible to describe a C data structure with the alignment for ease of use with 
+    //  The intention here is that it becomes possible to describe a C data structure with the alignment for ease of use with
     //  instrumentation helper functions
     virtual JITINTERFACE_HRESULT allocPgoInstrumentationBySchema(
             CORINFO_METHOD_HANDLE     ftnHnd,

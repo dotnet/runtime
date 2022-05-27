@@ -30,30 +30,39 @@ namespace System.Diagnostics
 
         public DebuggerVisualizerAttribute(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] string visualizerTypeName,
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type visualizerObjectSource!!)
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type visualizerObjectSource)
         {
+            ArgumentNullException.ThrowIfNull(visualizerObjectSource);
+
             VisualizerTypeName = visualizerTypeName;
             VisualizerObjectSourceTypeName = visualizerObjectSource.AssemblyQualifiedName;
         }
 
         public DebuggerVisualizerAttribute(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type visualizer!!)
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type visualizer)
         {
+            ArgumentNullException.ThrowIfNull(visualizer);
+
             VisualizerTypeName = visualizer.AssemblyQualifiedName!;
         }
 
         public DebuggerVisualizerAttribute(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type visualizer!!,
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type visualizerObjectSource!!)
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type visualizer,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type visualizerObjectSource)
         {
+            ArgumentNullException.ThrowIfNull(visualizer);
+            ArgumentNullException.ThrowIfNull(visualizerObjectSource);
+
             VisualizerTypeName = visualizer.AssemblyQualifiedName!;
             VisualizerObjectSourceTypeName = visualizerObjectSource.AssemblyQualifiedName;
         }
 
         public DebuggerVisualizerAttribute(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type visualizer!!,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type visualizer,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] string? visualizerObjectSourceTypeName)
         {
+            ArgumentNullException.ThrowIfNull(visualizer);
+
             VisualizerTypeName = visualizer.AssemblyQualifiedName!;
             VisualizerObjectSourceTypeName = visualizerObjectSourceTypeName;
         }

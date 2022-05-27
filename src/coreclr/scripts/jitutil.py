@@ -37,18 +37,21 @@ class TempDir:
         directory and its contents (if skip_cleanup is False).
     """
 
-    def __init__(self, path=None, skip_cleanup=False):
+    def __init__(self, path=None, skip_cleanup=False, change_dir=True):
         self.mydir = tempfile.mkdtemp() if path is None else path
         self.cwd = None
+        self.change_dir = change_dir
         self._skip_cleanup = skip_cleanup
 
     def __enter__(self):
         self.cwd = os.getcwd()
-        os.chdir(self.mydir)
+        if self.change_dir:
+            os.chdir(self.mydir)
         return self.mydir
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        os.chdir(self.cwd)
+        if self.change_dir:
+            os.chdir(self.cwd)
         if not self._skip_cleanup:
             try:
                 shutil.rmtree(self.mydir)
@@ -605,7 +608,7 @@ def download_with_progress_urlretrieve(uri, target_location, fail_if_not_found=T
             if try_num == num_tries - 1:
                 raise ex
 
-            if ex is urllib.error.HTTPError and ex == 404:
+            if isinstance(ex, urllib.error.HTTPError) and ex.code == 404:
                 if fail_if_not_found:
                     logging.error("HTTP 404 error")
                     raise ex

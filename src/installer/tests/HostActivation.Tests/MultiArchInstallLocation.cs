@@ -132,22 +132,22 @@ namespace HostActivation.Tests
             using (TestOnlyProductBehavior.Enable(appExe))
             {
                 Command.Create(appExe)
-                .EnableTracingAndCaptureOutputs()
-                .DotNetRoot(projDir)
-                .MultilevelLookup(false)
-                .EnvironmentVariable(
-                    Constants.TestOnlyEnvironmentVariables.GloballyRegisteredPath,
-                    sharedTestState.InstallLocation)
-                .Execute()
-                .Should().Fail()
-                .And.HaveUsedDotNetRootInstallLocation(projDir, fixture.CurrentRid)
-                // If DOTNET_ROOT points to a folder that exists we assume that there's a dotnet installation in it
-                .And.HaveStdErrContaining($"A fatal error occurred. The required library {RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform ("hostfxr")} could not be found.");
+                    .EnableTracingAndCaptureOutputs()
+                    .DotNetRoot(projDir)
+                    .MultilevelLookup(false)
+                    .EnvironmentVariable(
+                        Constants.TestOnlyEnvironmentVariables.GloballyRegisteredPath,
+                        sharedTestState.InstallLocation)
+                    .Execute()
+                    .Should().Fail()
+                    .And.HaveUsedDotNetRootInstallLocation(projDir, fixture.CurrentRid)
+                    // If DOTNET_ROOT points to a folder that exists we assume that there's a dotnet installation in it
+                    .And.HaveStdErrContaining($"The required library {RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostfxr")} could not be found.");
             }
         }
 
         [Fact]
-        public void InstallLocationFile_ArchSpecificLocationIsPickedFirst()
+        public void RegisteredInstallLocation_ArchSpecificLocationIsPickedFirst()
         {
             var fixture = sharedTestState.PortableAppFixture
                 .Copy();
@@ -178,7 +178,9 @@ namespace HostActivation.Tests
                         .HaveLookedForArchitectureSpecificInstallLocation(registeredInstallLocationOverride.PathValueOverride, arch2);
                 }
 
-                result.Should().HaveUsedGlobalInstallLocation(path2);
+                result.Should()
+                    .HaveUsedRegisteredInstallLocation(path2)
+                    .And.HaveUsedGlobalInstallLocation(path2);
             }
         }
 
@@ -204,7 +206,7 @@ namespace HostActivation.Tests
                     .DotNetRoot(null)
                     .Execute()
                     .Should().HaveLookedForDefaultInstallLocation(registeredInstallLocationOverride.PathValueOverride)
-                    .And.HaveUsedConfigFileInstallLocation(reallyLongPath);
+                    .And.HaveUsedRegisteredInstallLocation(reallyLongPath);
             }
         }
 

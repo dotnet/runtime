@@ -53,6 +53,22 @@ internal static partial class Interop
             return response;
         }
 
+        [LibraryImport(Libraries.CryptoNative)]
+        private static partial int CryptoNative_X509ChainHasStapledOcsp(SafeX509StoreCtxHandle storeCtx);
+
+        internal static bool X509ChainHasStapledOcsp(SafeX509StoreCtxHandle storeCtx)
+        {
+            int resp = CryptoNative_X509ChainHasStapledOcsp(storeCtx);
+
+            if (resp == 1)
+            {
+                return true;
+            }
+
+            Debug.Assert(resp == 0, $"Unexpected response from X509ChainHasStapledOcsp: {resp}");
+            return false;
+        }
+
         [LibraryImport(Libraries.CryptoNative, StringMarshalling = StringMarshalling.Utf8)]
         private static partial int CryptoNative_X509ChainVerifyOcsp(
             SafeX509StoreCtxHandle ctx,

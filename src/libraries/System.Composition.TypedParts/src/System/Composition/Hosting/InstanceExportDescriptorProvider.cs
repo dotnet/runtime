@@ -6,7 +6,7 @@ using System.Composition.Hosting.Core;
 
 namespace System.Composition.Hosting
 {
-    internal class InstanceExportDescriptorProvider : SinglePartExportDescriptorProvider
+    internal sealed class InstanceExportDescriptorProvider : SinglePartExportDescriptorProvider
     {
         private readonly object _exportedInstance;
 

@@ -1,5 +1,4 @@
 # Add targets to the crosscomponents subcomponent build
-
 if (CLR_CMAKE_HOST_OS STREQUAL CLR_CMAKE_TARGET_OS)
     install_clr (TARGETS
         jitinterface_${ARCH_HOST_NAME}

@@ -13,9 +13,11 @@ namespace System.Xml.Serialization
 
         public static bool TryConvertTo(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
-            this Type targetType!!,
+            this Type targetType,
             object? data, out object? returnValue)
         {
+            ArgumentNullException.ThrowIfNull(targetType);
+
             returnValue = null;
 
             if (data == null)

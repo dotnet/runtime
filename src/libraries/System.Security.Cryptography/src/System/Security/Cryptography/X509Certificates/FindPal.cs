@@ -89,11 +89,10 @@ namespace System.Security.Cryptography.X509Certificates
                             // it compares against both interpretations and treats a match
                             // of either as a successful find.
 
-                            // string is big-endian, BigInteger constructor requires little-endian.
+                            // string is big-endian
                             byte[] hexBytes = decimalOrHexString.LaxDecodeHexString();
-                            Array.Reverse(hexBytes);
 
-                            BigInteger hexValue = PositiveBigIntegerFromByteArray(hexBytes);
+                            BigInteger hexValue = new BigInteger(hexBytes, isUnsigned: true, isBigEndian: true);
                             BigInteger decimalValue = LaxParseDecimalBigInteger(decimalOrHexString);
                             findPal.FindBySerialNumber(hexValue, decimalValue);
                             break;
@@ -214,8 +213,10 @@ namespace System.Security.Cryptography.X509Certificates
         // Enforce that no dot starts or ends the Oid, and disallow double dots.
         // Enforce there is at least one dot separator.
         //
-        internal static void ValidateOidValue(string keyValue!!)
+        internal static void ValidateOidValue(string keyValue)
         {
+            ArgumentNullException.ThrowIfNull(keyValue);
+
             int len = keyValue.Length;
             if (len < 2)
                 throw new ArgumentException(SR.Argument_InvalidOidValue);
@@ -239,30 +240,6 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        internal static BigInteger PositiveBigIntegerFromByteArray(byte[] bytes)
-        {
-            // To prevent the big integer from misinterpreted as a negative number,
-            // add a "leading 0" to the byte array if it would considered negative.
-            //
-            // Since BigInteger(bytes[]) requires a little-endian byte array,
-            // the "leading 0" actually goes at the end of the array.
-
-            // An empty array is 0 (non-negative), so no over-allocation is required.
-            //
-            // If the last indexed value doesn't have the sign bit set (0x00-0x7F) then
-            // the number would be positive anyways, so no over-allocation is required.
-            if (bytes.Length == 0 || bytes[bytes.Length - 1] < 0x80)
-            {
-                return new BigInteger(bytes);
-            }
-
-            // Since the sign bit is set, put a new 0x00 on the end to move that bit from
-            // the sign bit to a data bit.
-            byte[] newBytes = new byte[bytes.Length + 1];
-            Buffer.BlockCopy(bytes, 0, newBytes, 0, bytes.Length);
-            return new BigInteger(newBytes);
-        }
-
         private static BigInteger LaxParseDecimalBigInteger(string decimalString)
         {
             BigInteger ten = new BigInteger(10);
@@ -270,7 +247,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             foreach (char c in decimalString)
             {
-                if (c >= '0' && c <= '9')
+                if (char.IsAsciiDigit(c))
                 {
                     accum = BigInteger.Multiply(accum, ten);
                     accum = BigInteger.Add(accum, c - '0');

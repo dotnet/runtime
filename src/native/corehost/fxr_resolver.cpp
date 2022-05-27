@@ -101,19 +101,33 @@ bool fxr_resolver::try_get_path(const pal::string_t& root_path, pal::string_t* o
         }
 
         pal::string_t self_registered_config_location = pal::get_dotnet_self_registered_config_location();
-        pal::string_t self_registered_message = _X(" or register the runtime location in [") + self_registered_config_location + _X("]");
-
-        trace::error(_X("A fatal error occurred. The required library %s could not be found.\n"
-            "If this is a self-contained application, that library should exist in [%s].\n"
-            "If this is a framework-dependent application, install the runtime in the global location [%s] or use the %s environment variable to specify the runtime location%s."),
+        trace::verbose(_X("The required library %s could not be found. Searched with root path [%s], environment variable [%s], default install location [%s], self-registered config location [%s]"),
             LIBFXR_NAME,
             root_path.c_str(),
-            default_install_location.c_str(),
             dotnet_root_env_var_name.c_str(),
-            self_registered_message.c_str());
-        trace::error(_X(""));
-        trace::error(_X("Download the .NET runtime:"));
-        trace::error(_X("%s&apphost_version=%s"), get_download_url().c_str(), _STRINGIFY(COMMON_HOST_PKG_VER));
+            default_install_location.c_str(),
+            self_registered_config_location.c_str());
+
+        pal::string_t host_path;
+        pal::get_own_executable_path(&host_path);
+        trace::error(
+            INSTALL_NET_ERROR_MESSAGE
+            _X("\n\n")
+            _X("App: %s\n")
+            _X("Architecture: %s\n")
+            _X("App host version: %s\n")
+            _X(".NET location: Not found\n")
+            _X("\n")
+            _X("Learn about runtime installation:\n")
+            DOTNET_APP_LAUNCH_FAILED_URL
+            _X("\n\n")
+            _X("Download the .NET runtime:\n")
+            _X("%s&apphost_version=%s"),
+            host_path.c_str(),
+            get_arch(),
+            _STRINGIFY(COMMON_HOST_PKG_VER),
+            get_download_url().c_str(),
+            _STRINGIFY(COMMON_HOST_PKG_VER));
         return false;
     }
 

@@ -434,14 +434,15 @@ bool interceptor_ICJI::isValidStringRef(CORINFO_MODULE_HANDLE module, /* IN  */
     return temp;
 }
 
-const char16_t* interceptor_ICJI::getStringLiteral(CORINFO_MODULE_HANDLE module,  /* IN  */
-                                           unsigned              metaTOK, /* IN  */
-                                           int*                  length   /* OUT */
-                                           )
+int interceptor_ICJI::getStringLiteral(CORINFO_MODULE_HANDLE module,    /* IN  */
+                                       unsigned              metaTOK,   /* IN  */
+                                       char16_t*             buffer,    /* OUT */
+                                       int                   bufferSize /* IN  */
+                                       )
 {
     mc->cr->AddCall("getStringLiteral");
-    const char16_t* temp = original_ICorJitInfo->getStringLiteral(module, metaTOK, length);
-    mc->recGetStringLiteral(module, metaTOK, *length, temp);
+    int temp = original_ICorJitInfo->getStringLiteral(module, metaTOK, buffer, bufferSize);
+    mc->recGetStringLiteral(module, metaTOK, buffer, bufferSize, temp);
     return temp;
 }
 
@@ -500,7 +501,7 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getTypeInstantiationArgument(CORINFO_CLAS
 // was truncated when copied to the buffer.
 //
 // Operation:
-// 
+//
 // On entry, `*pnBufLen` specifies the size of the buffer pointed to by `*ppBuf` as a count of characters.
 // There are two cases:
 // 1. If the size is zero, the function computes the length of the representation and returns that.
@@ -1932,10 +1933,16 @@ bool interceptor_ICJI::logMsg(unsigned level, const char* fmt, va_list args)
 }
 
 // do an assert.  will return true if the code should retry (DebugBreak)
-// returns false, if the assert should be igored.
+// returns false, if the assert should be ignored.
 int interceptor_ICJI::doAssert(const char* szFile, int iLine, const char* szExpr)
 {
     mc->cr->AddCall("doAssert");
+
+    m_compiler->finalizeAndCommitCollection(mc, CORJIT_INTERNALERROR, nullptr, 0);
+    // The following assert may not always fail fast, so make sure we do not
+    // save the collection twice if it throws an unwindable exception.
+    m_savedCollectionEarly = true;
+
     return original_ICorJitInfo->doAssert(szFile, iLine, szExpr);
 }
 

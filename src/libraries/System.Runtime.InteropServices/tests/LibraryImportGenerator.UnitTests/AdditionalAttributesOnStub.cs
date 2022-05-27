@@ -19,6 +19,7 @@ namespace LibraryImportGenerator.UnitTests
             string source = @"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 [assembly:DisableRuntimeMarshalling]
 partial class C
 {
@@ -71,6 +72,7 @@ partial class C
             string source = @"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 [assembly:DisableRuntimeMarshalling]
 partial class C
 {
@@ -129,6 +131,7 @@ partial class C
 
         [Theory]
         [MemberData(nameof(GetDownlevelTargetFrameworks))]
+        [OuterLoop("Uses the network for downlevel ref packs")]
         public async Task SkipLocalsInitOnDownlevelTargetFrameworks(TestTargetFramework targetFramework, bool expectSkipLocalsInit)
         {
             string source = $@"
@@ -161,6 +164,7 @@ partial class C
         {
             string source = @"
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Runtime.CompilerServices;
 [module:SkipLocalsInit]
 partial class C
@@ -194,6 +198,7 @@ struct Native
         {
             string source = @"
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Runtime.CompilerServices;
 [SkipLocalsInit]
 partial class C
@@ -227,6 +232,7 @@ struct Native
         {
             string source = @"
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Runtime.CompilerServices;
 partial class C
 {
