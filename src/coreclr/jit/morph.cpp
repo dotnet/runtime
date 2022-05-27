@@ -15408,6 +15408,7 @@ void Compiler::fgMorphStmts(BasicBlock* block)
             continue;
         }
 
+        // Remove commas
         while (stmt->GetRootNode()->OperIs(GT_COMMA))
         {
             GenTree*   comma = stmt->GetRootNode();
