@@ -7804,10 +7804,6 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
     {
         printf(" pinned");
     }
-    if (varDsc->lvStackByref)
-    {
-        printf(" stack-byref");
-    }
     if (varDsc->lvClassHnd != NO_CLASS_HANDLE)
     {
         printf(" class-hnd");
