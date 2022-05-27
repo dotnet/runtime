@@ -5411,9 +5411,9 @@ void CEEInfo::getCallInfo(
         signatureKind = SK_CALLSITE;
     }
     getMethodSigInternal(pResult->hMethod, &pResult->sig, (pResult->hMethod == pResolvedToken->hMethod) ? pResolvedToken->hClass : NULL, signatureKind);
-    if (fIsStaticVirtualMethod)
+    if (fIsStaticVirtualMethod && !fResolvedConstraint)
     {
-        if (fResolvedConstraint)
+        if (pResult->exactContextNeedsRuntimeLookup)
         {
             // Runtime lookup for static virtual methods always returns exact call addresses not requiring the instantiation argument
             pResult->sig.callConv = (CorInfoCallConv)(pResult->sig.callConv & ~CORINFO_CALLCONV_PARAMTYPE);
