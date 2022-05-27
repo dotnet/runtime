@@ -6393,10 +6393,6 @@ MethodTableBuilder::PlaceMethodImpls()
                 }
             }
         }
-        else
-        {
-            
-        }
 
         iEntry++;
 
