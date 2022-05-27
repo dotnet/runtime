@@ -41,13 +41,6 @@ namespace System.Text.Json.Reflection
             return type.IsAssignableFrom(from);
         }
 
-        /// <summary>
-        /// Returns <see langword="true" /> when the name is verbatim (beings with '@').
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsVerbatimName(this MemberInfo memberInfo) =>
-            memberInfo.Name.Length > 0 && memberInfo.Name[0] == '@';
-
         private static bool HasJsonConstructorAttribute(ConstructorInfo constructorInfo)
             => constructorInfo.GetCustomAttribute<JsonConstructorAttribute>() != null;
     }
