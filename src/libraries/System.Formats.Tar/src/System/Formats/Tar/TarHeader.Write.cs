@@ -33,6 +33,7 @@ namespace System.Formats.Tar
         internal static void WriteGlobalExtendedAttributesHeader(Stream archiveStream, Span<byte> buffer, IEnumerable<KeyValuePair<string, string>> globalExtendedAttributes)
         {
             TarHeader geaHeader = default;
+            geaHeader._format = TarFormat.Pax;
             geaHeader._name = GenerateGlobalExtendedAttributeName();
             geaHeader._mode = (int)TarHelpers.DefaultMode;
             geaHeader._typeFlag = TarEntryType.GlobalExtendedAttributes;
@@ -88,6 +89,7 @@ namespace System.Formats.Tar
         {
             // First, we write the preceding extended attributes header
             TarHeader extendedAttributesHeader = default;
+            extendedAttributesHeader._format = TarFormat.Pax;
             // Fill the current header's dict
             CollectExtendedAttributesFromStandardFieldsIfNeeded();
             // And pass them to the extended attributes header for writing
@@ -129,6 +131,7 @@ namespace System.Formats.Tar
                          (entryType is TarEntryType.LongLink && longText.Length > FieldLengths.LinkName));
 
             TarHeader longMetadataHeader = default;
+            longMetadataHeader._format = TarFormat.Gnu;
 
             longMetadataHeader._name = GnuLongMetadataName; // Same name for both longpath or longlink
             longMetadataHeader._mode = (int)TarHelpers.DefaultMode;

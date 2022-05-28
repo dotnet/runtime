@@ -36,6 +36,7 @@ namespace System.Formats.Tar
             _readerOfOrigin = null;
 
             _header = default;
+            _header._format = format;
 
             _header._extendedAttributes = new Dictionary<string, string>();
 
@@ -63,6 +64,10 @@ namespace System.Formats.Tar
         /// </summary>
         public TarEntryType EntryType => _header._typeFlag;
 
+        /// <summary>
+        /// The format of the entry.
+        /// </summary>
+        public TarFormat Format => _header._format;
         /// <summary>
         /// The ID of the group that owns the file represented by this entry.
         /// </summary>

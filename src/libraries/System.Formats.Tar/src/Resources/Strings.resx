@@ -189,9 +189,6 @@
   <data name="TarDuplicateExtendedAttribute" xml:space="preserve">
     <value>The entry '{0}' has a duplicate extended attribute.</value>
   </data>
-  <data name="TarEntriesInDifferentFormats" xml:space="preserve">
-    <value>An entry in '{0}' format was found in an archive where other entries of format '{1}' have been found.</value>
-  </data>
   <data name="TarEntryBlockOrCharacterExpected" xml:space="preserve">
     <value>Cannot set the 'DeviceMajor' or 'DeviceMinor' fields on an entry that does not represent a block or character device.</value>
   </data>
