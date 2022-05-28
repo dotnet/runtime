@@ -223,6 +223,45 @@ namespace System
             // GC.KeepAlive(array) not required. pMT kept alive via `ptr`
         }
 
+        public unsafe object? GetValue(int index)
+        {
+            MethodTable* pMethodTable = RuntimeHelpers.GetMethodTable(this);
+
+            int rank = pMethodTable->MultiDimensionalArrayRank;
+
+            // The array rank is 0 for SZ arrays, 1 for 1D arrays, throw if neither of those
+            if (rank > 1)
+            {
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_Need1DArray);
+            }
+
+            // Validate the length for all cases
+            if ((uint)index >= NativeLength)
+            {
+                ThrowHelper.ThrowIndexOutOfRangeException();
+            }
+
+            // If the current array is an SZ array, and if the element type is a reference type, we know
+            // that reading a value as an object is always valid. This path can be optimized without a
+            // call into the native runtime, by just getting a reference to the start of the array data,
+            // then reinterpreting to a ref object and manually indexing at the right offset.
+            if (rank == 0 && !pMethodTable->IsValueType)
+            {
+                ref byte arrayDataRef = ref Unsafe.As<RawArrayData>(this).Data;
+                ref object elementRef = ref Unsafe.As<byte, object>(ref arrayDataRef);
+
+                // We have validated the index already, so uncheck-cast to uint to skip the sign extension
+                return Unsafe.Add(ref elementRef, (uint)index);
+            }
+
+            GC.KeepAlive(this); // Keep the method table alive
+
+            // Slow path if the element type is a value type. Since the current instance is a SZ array and
+            // the length has been validated as well, at least we can skip the extra checks from
+            // GetFlattenedArray, and just forward the index directly to InternalGetValue.
+            return InternalGetValue(GetFlattenedIndex(index));
+        }
+
         private unsafe nint GetFlattenedIndex(ReadOnlySpan<int> indices)
         {
             // Checked by the caller

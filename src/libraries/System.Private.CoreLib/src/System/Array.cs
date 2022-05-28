@@ -239,43 +239,15 @@ namespace System
             return InternalGetValue(GetFlattenedIndex(new ReadOnlySpan<int>(indices)));
         }
 
-        public unsafe object? GetValue(int index)
+#if !CORECLR
+        public object? GetValue(int index)
         {
-            MethodTable* pMethodTable = RuntimeHelpers.GetMethodTable(this);
-
-            // The array rank is 0 for SZ arrays, throw if that's not the case
-            if (pMethodTable->MultiDimensionalArrayRank != 0)
-            {
+            if (Rank != 1)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_Need1DArray);
-            }
 
-            // Validate the length for all cases
-            if ((uint)index >= NativeLength)
-            {
-                ThrowHelper.ThrowIndexOutOfRangeException();
-            }
-
-            // If the element type is a reference type, we know that reading a value as an object
-            // is always valid. This path can be optimized without a call into the native runtime,
-            // by just getting a reference to the start of the array data (we have validated that
-            // the current instance is an SZ array already), then reinterpreting to a ref object
-            // and manually indexing at the right offset.
-            if (!pMethodTable->IsValueType)
-            {
-                ref byte arrayDataRef = ref Unsafe.As<RawArrayData>(this).Data;
-                ref object elementRef = ref Unsafe.As<byte, object>(ref arrayDataRef);
-
-                // We have validated the index already, so uncheck-cast to uint to skip the sign extension
-                return Unsafe.Add(ref elementRef, (uint)index);
-            }
-
-            GC.KeepAlive(this); // Keep the method table alive
-
-            // Slow path if the element type is a value type. Since the current instance is a SZ array and
-            // the length has been validated as well, at least we can skip the extra checks from
-            // GetFlattenedArray, and just forward the index directly to InternalGetValue.
-            return InternalGetValue(index);
+            return InternalGetValue(GetFlattenedIndex(new ReadOnlySpan<int>(in index)));
         }
+#endif
 
         public object? GetValue(int index1, int index2)
         {
