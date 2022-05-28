@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 
@@ -253,9 +254,17 @@ namespace System.Formats.Tar
             using TarReader reader = new TarReader(source, leaveOpen);
 
             TarEntry? entry;
+            IReadOnlyDictionary<string, string>? currentGlobalExtendedAttributes = null;
             while ((entry = reader.GetNextEntry()) != null)
             {
-                entry.ExtractRelativeToDirectory(destinationDirectoryPath, overwriteFiles);
+                if (entry.EntryType is TarEntryType.GlobalExtendedAttributes)
+                {
+                    currentGlobalExtendedAttributes = entry._header._extendedAttributes ?? new Dictionary<string, string>();
+                }
+                else
+                {
+                    entry.ExtractRelativeToDirectory(destinationDirectoryPath, overwriteFiles, currentGlobalExtendedAttributes);
+                }
             }
         }
     }

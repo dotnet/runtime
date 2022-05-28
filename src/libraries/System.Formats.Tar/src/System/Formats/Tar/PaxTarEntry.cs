@@ -18,7 +18,6 @@ namespace System.Formats.Tar
         internal PaxTarEntry(TarHeader header, TarReader readerOfOrigin)
             : base(header, readerOfOrigin)
         {
-            _header._extendedAttributes ??= new Dictionary<string, string>();
             _readOnlyExtendedAttributes = null;
         }
 
@@ -52,6 +51,7 @@ namespace System.Formats.Tar
         public PaxTarEntry(TarEntryType entryType, string entryName)
             : base(entryType, entryName, TarFormat.Pax)
         {
+            _readOnlyExtendedAttributes = null;
         }
 
         /// <summary>
@@ -87,7 +87,7 @@ namespace System.Formats.Tar
             : base(entryType, entryName, TarFormat.Pax)
         {
             ArgumentNullException.ThrowIfNull(extendedAttributes);
-            _header.ReplaceNormalAttributesWithExtended(extendedAttributes);
+            _header._extendedAttributes = new Dictionary<string, string>(extendedAttributes);
         }
 
         /// <summary>
@@ -112,7 +112,7 @@ namespace System.Formats.Tar
         {
             get
             {
-                Debug.Assert(_header._extendedAttributes != null);
+                _header._extendedAttributes ??= new Dictionary<string, string>();
                 return _readOnlyExtendedAttributes ??= _header._extendedAttributes.AsReadOnly();
             }
         }

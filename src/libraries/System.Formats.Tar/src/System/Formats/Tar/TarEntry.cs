@@ -16,7 +16,7 @@ namespace System.Formats.Tar
     {
         internal TarHeader _header;
         // Used to access the data section of this entry in an unseekable file
-        private TarReader? _readerOfOrigin;
+        internal TarReader? _readerOfOrigin;
 
         // Constructor used when reading an existing archive.
         internal TarEntry(TarHeader header, TarReader readerOfOrigin)
@@ -29,7 +29,6 @@ namespace System.Formats.Tar
         internal TarEntry(TarEntryType entryType, string entryName, TarFormat format)
         {
             ArgumentException.ThrowIfNullOrEmpty(entryName);
-
             // Throws if format is unknown or out of range
             TarHelpers.VerifyEntryTypeIsSupported(entryType, format, forWriting: false);
 
@@ -37,8 +36,6 @@ namespace System.Formats.Tar
 
             _header = default;
             _header._format = format;
-
-            _header._extendedAttributes = new Dictionary<string, string>();
 
             _header._name = entryName;
             _header._linkName = string.Empty;
@@ -179,11 +176,11 @@ namespace System.Formats.Tar
         /// <exception cref="UnauthorizedAccessException">Operation not permitted due to insufficient permissions.</exception>
         public void ExtractToFile(string destinationFileName, bool overwrite)
         {
-            if (EntryType is TarEntryType.SymbolicLink or TarEntryType.HardLink)
+            if (EntryType is TarEntryType.SymbolicLink or TarEntryType.HardLink or TarEntryType.GlobalExtendedAttributes)
             {
                 throw new InvalidOperationException(string.Format(SR.TarEntryTypeNotSupportedForExtracting, EntryType));
             }
-            ExtractToFileInternal(destinationFileName, linkTargetPath: null, overwrite);
+            ExtractToFileInternal(destinationFileName, linkTargetPath: null, overwrite, currentGlobalExtendedAttributes: null);
         }
 
         // /// <summary>
@@ -261,7 +258,7 @@ namespace System.Formats.Tar
         internal abstract bool IsDataStreamSetterSupported();
 
         // Extracts the current entry to a location relative to the specified directory.
-        internal void ExtractRelativeToDirectory(string destinationDirectoryPath, bool overwrite)
+        internal void ExtractRelativeToDirectory(string destinationDirectoryPath, bool overwrite, IReadOnlyDictionary<string, string>? currentGlobalExtendedAttributes)
         {
             Debug.Assert(!string.IsNullOrEmpty(destinationDirectoryPath));
             Debug.Assert(Path.IsPathFullyQualified(destinationDirectoryPath));
@@ -281,7 +278,7 @@ namespace System.Formats.Tar
                 linkTargetPath = GetSanitizedFullPath(destinationDirectoryFullPath, LinkName, SR.TarExtractingResultsLinkOutside);
             }
 
-            if (EntryType == TarEntryType.Directory)
+            if (EntryType is TarEntryType.Directory)
             {
                 Directory.CreateDirectory(fileDestinationPath);
             }
@@ -289,7 +286,7 @@ namespace System.Formats.Tar
             {
                 // If it is a file, create containing directory.
                 Directory.CreateDirectory(Path.GetDirectoryName(fileDestinationPath)!);
-                ExtractToFileInternal(fileDestinationPath, linkTargetPath, overwrite);
+                ExtractToFileInternal(fileDestinationPath, linkTargetPath, overwrite, currentGlobalExtendedAttributes);
             }
 
             // If the path can be extracted in the specified destination directory, returns the full path with sanitized file name. Otherwise, throws.
@@ -314,7 +311,7 @@ namespace System.Formats.Tar
         }
 
         // Extracts the current entry into the filesystem, regardless of the entry type.
-        private void ExtractToFileInternal(string filePath, string? linkTargetPath, bool overwrite)
+        private void ExtractToFileInternal(string filePath, string? linkTargetPath, bool overwrite, IReadOnlyDictionary<string, string>? currentGlobalExtendedAttributes)
         {
             ArgumentException.ThrowIfNullOrEmpty(filePath);
 
@@ -370,6 +367,12 @@ namespace System.Formats.Tar
                 default:
                     throw new InvalidOperationException(string.Format(SR.TarEntryTypeNotSupportedForExtracting, EntryType));
             }
+
+            if (currentGlobalExtendedAttributes != null)
+            {
+                // TODO: pass it to the ExtractAs* methods or find any filesystem-related entries in the dictionary that should be applied on the extracted file if the extended attributes were not set
+            }
+
         }
 
         // Verifies if the specified paths make sense for the current type of entry.

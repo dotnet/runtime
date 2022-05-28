@@ -237,9 +237,6 @@
   <data name="TarSymbolicLinkTargetNotExists" xml:space="preserve">
     <value>Cannot create the symbolic link '{0}' because the specified target '{1}' does not exist.</value>
   </data>
-  <data name="TarTooManyGlobalExtendedAttributesEntries" xml:space="preserve">
-    <value>The archive has more than one global extended attributes entry.</value>
-  </data>
   <data name="TarUnexpectedMetadataEntry" xml:space="preserve">
     <value>A metadata entry of type '{0}' was unexpectedly found after a metadata entry of type '{1}'.</value>
   </data>
