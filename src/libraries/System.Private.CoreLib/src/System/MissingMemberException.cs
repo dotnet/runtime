@@ -70,6 +70,6 @@ namespace System
         // format depending on the language environment.
         protected string? ClassName;
         protected string? MemberName;
-        protected byte[]? Signature; // Unused in coreclr
+        protected byte[]? Signature; // Unused
     }
 }
