@@ -218,8 +218,12 @@ extern "C" void QCALLTYPE Interlocked_MemoryBarrierProcessWide();
 class ValueTypeHelper {
 public:
     static FCDECL1(FC_BOOL_RET, CanCompareBits, Object* obj);
-    static FCDECL1(UINT32, GetNumInstanceFieldBytes, MethodTable* mt);
     static FCDECL1(INT32, GetHashCode, Object* objRef);
+};
+
+class MethodTableNative {
+public:
+    static FCDECL1(UINT32, GetNumInstanceFieldBytes, MethodTable* mt);
 };
 
 class StreamNative {

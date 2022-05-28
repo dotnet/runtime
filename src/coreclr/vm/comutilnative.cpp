@@ -1827,13 +1827,6 @@ NOINLINE static FC_BOOL_RET CanCompareBitsHelper(MethodTable* mt, OBJECTREF objR
     FC_RETURN_BOOL(ret);
 }
 
-FCIMPL1(UINT32, ValueTypeHelper::GetNumInstanceFieldBytes, MethodTable* mt)
-{
-    FCALL_CONTRACT;
-    return mt->GetNumInstanceFieldBytes();
-}
-FCIMPLEND
-
 // Return true if the valuetype does not contain pointer, is tightly packed,
 // does not have floating point number field and does not override Equals method.
 FCIMPL1(FC_BOOL_RET, ValueTypeHelper::CanCompareBits, Object* obj)
@@ -2033,6 +2026,13 @@ FCIMPL1(INT32, ValueTypeHelper::GetHashCode, Object* objUNSAFE)
     }
 
     return hashCode;
+}
+FCIMPLEND
+
+FCIMPL1(UINT32, MethodTableNative::GetNumInstanceFieldBytes, MethodTable* mt)
+{
+    FCALL_CONTRACT;
+    return mt->GetNumInstanceFieldBytes();
 }
 FCIMPLEND
 
