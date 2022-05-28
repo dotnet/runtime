@@ -1137,16 +1137,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// </remarks>
         public string ExportCertificatePem()
         {
-            int pemSize = PemEncoding.GetEncodedSize(PemLabels.X509Certificate.Length, RawDataMemory.Length);
-
-            return string.Create(pemSize, this, static (destination, cert) => {
-                if (!cert.TryExportCertificatePem(destination, out int charsWritten) ||
-                    charsWritten != destination.Length)
-                {
-                    Debug.Fail("Pre-allocated buffer was not the correct size.");
-                    throw new CryptographicException();
-                }
-            });
+            return PemEncoding.WriteString(PemLabels.X509Certificate, RawDataMemory.Span);
         }
 
         /// <summary>
