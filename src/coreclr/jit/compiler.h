@@ -2610,8 +2610,9 @@ public:
 
     GenTreeArrLen* gtNewArrLen(var_types typ, GenTree* arrayOp, int lenOffset, BasicBlock* block);
 
-    GenTreeMDArrLen* gtNewMDArrLen(
-        var_types typ, GenTree* arrayOp, int dim, int rank, int lenOffset, BasicBlock* block);
+    GenTreeMDArrLen* gtNewMDArrLen(var_types typ, GenTree* arrayOp, int dim, int rank, BasicBlock* block);
+
+    GenTreeMDArrLowerBound* gtNewMDArrLowerBound(var_types typ, GenTree* arrayOp, int dim, int rank, BasicBlock* block);
 
     GenTreeIndir* gtNewIndir(var_types typ, GenTree* addr);
 
@@ -10730,6 +10731,7 @@ public:
             case GT_RELOAD:
             case GT_ARR_LENGTH:
             case GT_MDARR_LENGTH:
+            case GT_MDARR_LOWER_BOUND:
             case GT_CAST:
             case GT_BITCAST:
             case GT_CKFINITE:

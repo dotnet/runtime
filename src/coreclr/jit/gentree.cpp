@@ -32,6 +32,15 @@ const GenTreeDebugOperKind GenTree::gtDebugOperKindTable[] = {
 };
 #endif // DEBUG
 
+/*****************************************************************************/
+
+GenTreeMDArrLen::GenTreeMDArrLen(var_types type, GenTree* arrRef, int dim, int rank)
+    : GenTreeArrLen(GT_MDARR_LENGTH, type, arrRef, Compiler::eeGetMDArrayLengthOffset(rank, dim))
+    , gtDim(dim)
+    , gtRank(rank)
+{
+}
+
 /*****************************************************************************
  *
  *  The types of different GenTree nodes
@@ -2475,6 +2484,13 @@ AGAIN:
                         return false;
                     }
                     break;
+                case GT_MDARR_LOWER_BOUND:
+                    if ((op1->AsMDArrLowerBound()->Dim() != op2->AsMDArrLowerBound()->Dim()) ||
+                        (op1->AsMDArrLowerBound()->Rank() != op2->AsMDArrLowerBound()->Rank()))
+                    {
+                        return false;
+                    }
+                    break;
                 case GT_CAST:
                     if (op1->AsCast()->gtCastType != op2->AsCast()->gtCastType)
                     {
@@ -2957,6 +2973,10 @@ AGAIN:
                     hash += tree->AsMDArrLen()->ArrLenOffset();
                     hash += tree->AsMDArrLen()->Dim();
                     hash += tree->AsMDArrLen()->Rank();
+                    break;
+                case GT_MDARR_LOWER_BOUND:
+                    hash += tree->AsMDArrLowerBound()->Dim();
+                    hash += tree->AsMDArrLowerBound()->Rank();
                     break;
                 case GT_CAST:
                     hash ^= tree->AsCast()->gtCastType;
@@ -4949,9 +4969,10 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
                 case GT_ARR_LENGTH:
                 case GT_MDARR_LENGTH:
+                case GT_MDARR_LOWER_BOUND:
                     level++;
 
-                    /* Array Len should be the same as an indirections, which have a costEx of IND_COST_EX */
+                    // Array meta-data access should be the same as an indirection, which has a costEx of IND_COST_EX.
                     costEx = IND_COST_EX - 1;
                     costSz = 2;
                     break;
@@ -5958,6 +5979,7 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
         case GT_RELOAD:
         case GT_ARR_LENGTH:
         case GT_MDARR_LENGTH:
+        case GT_MDARR_LOWER_BOUND:
         case GT_CAST:
         case GT_BITCAST:
         case GT_CKFINITE:
@@ -6460,6 +6482,10 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
             }
 
             return ExceptionSetFlags::None;
+
+        case GT_MDARR_LOWER_BOUND:
+            return (((this->gtFlags & GTF_IND_NONFAULTING) == 0) &&
+                    comp->fgAddrCouldBeNull(this->AsMDArrLowerBound()->ArrRef()));
 
         case GT_ARR_ELEM:
             if (comp->fgAddrCouldBeNull(this->AsArrElem()->gtArrObj))
@@ -8449,7 +8475,13 @@ GenTree* Compiler::gtCloneExpr(
 
             case GT_MDARR_LENGTH:
                 copy = gtNewMDArrLen(tree->TypeGet(), tree->AsMDArrLen()->ArrRef(), tree->AsMDArrLen()->Dim(),
-                                     tree->AsMDArrLen()->Rank(), tree->AsMDArrLen()->ArrLenOffset(), nullptr);
+                                     tree->AsMDArrLen()->Rank(), nullptr);
+                break;
+
+            case GT_MDARR_LOWER_BOUND:
+                copy =
+                    gtNewMDArrLowerBound(tree->TypeGet(), tree->AsMDArrLowerBound()->ArrRef(),
+                                         tree->AsMDArrLowerBound()->Dim(), tree->AsMDArrLowerBound()->Rank(), nullptr);
                 break;
 
             case GT_ARR_INDEX:
@@ -8995,7 +9027,7 @@ void Compiler::gtUpdateNodeOperSideEffects(GenTree* tree)
     else
     {
         tree->gtFlags &= ~GTF_EXCEPT;
-        if (tree->OperIsIndirOrArrLength())
+        if (tree->OperIsIndirOrArrMetaData())
         {
             tree->SetIndirExceptionFlags(this);
         }
@@ -9107,10 +9139,10 @@ Compiler::fgWalkResult Compiler::fgUpdateSideEffectsPost(GenTree** pTree, fgWalk
     // Update the node's side effects first.
     fgWalkPost->compiler->gtUpdateNodeOperSideEffectsPost(tree);
 
-    // If this node is an indir or array length, and it doesn't have the GTF_EXCEPT bit set, we
+    // If this node is an indir or array meta-data load, and it doesn't have the GTF_EXCEPT bit set, we
     // set the GTF_IND_NONFAULTING bit. This needs to be done after all children, and this node, have
     // been processed.
-    if (tree->OperIsIndirOrArrLength() && ((tree->gtFlags & GTF_EXCEPT) == 0))
+    if (tree->OperIsIndirOrArrMetaData() && ((tree->gtFlags & GTF_EXCEPT) == 0))
     {
         tree->gtFlags |= GTF_IND_NONFAULTING;
     }
@@ -9176,6 +9208,7 @@ bool GenTree::gtRequestSetFlags()
         case GT_IND:
         case GT_ARR_LENGTH:
         case GT_MDARR_LENGTH:
+        case GT_MDARR_LOWER_BOUND:
             // These will turn into simple load from memory instructions
             // and we can't force the setting of the flags on load from memory
             break;
@@ -9264,6 +9297,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_RELOAD:
         case GT_ARR_LENGTH:
         case GT_MDARR_LENGTH:
+        case GT_MDARR_LOWER_BOUND:
         case GT_CAST:
         case GT_BITCAST:
         case GT_CKFINITE:
@@ -9799,7 +9833,7 @@ bool GenTree::Precedes(GenTree* other)
 //
 void GenTree::SetIndirExceptionFlags(Compiler* comp)
 {
-    assert(OperIsIndirOrArrLength());
+    assert(OperIsIndirOrArrMetaData());
 
     if (OperMayThrow(comp))
     {
@@ -9807,7 +9841,7 @@ void GenTree::SetIndirExceptionFlags(Compiler* comp)
         return;
     }
 
-    GenTree* addr = GetIndirOrArrLengthAddr();
+    GenTree* addr = GetIndirOrArrMetaDataAddr();
 
     gtFlags |= GTF_IND_NONFAULTING;
     gtFlags &= ~GTF_EXCEPT;

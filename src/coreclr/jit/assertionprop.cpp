@@ -2696,6 +2696,11 @@ void Compiler::optAssertionGen(GenTree* tree)
             assertionInfo = optCreateAssertion(tree->GetArrLengthArrRef(), nullptr, OAK_NOT_EQUAL);
             break;
 
+        case GT_MDARR_LOWER_BOUND:
+            // An array lower bound is an (always R-value) indirection (but doesn't derive from GenTreeIndir).
+            assertionInfo = optCreateAssertion(tree->AsMDArrLowerBound()->ArrRef(), nullptr, OAK_NOT_EQUAL);
+            break;
+
         case GT_NULLCHECK:
             // Explicit null checks always create non-null assertions.
             assertionInfo = optCreateAssertion(tree->AsIndir()->Addr(), nullptr, OAK_NOT_EQUAL);

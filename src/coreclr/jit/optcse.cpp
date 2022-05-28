@@ -3582,6 +3582,7 @@ bool Compiler::optIsCSEcandidate(GenTree* tree)
         case GT_ARR_ELEM:
         case GT_ARR_LENGTH:
         case GT_MDARR_LENGTH:
+        case GT_MDARR_LOWER_BOUND:
             return true;
 
         case GT_LCL_VAR:

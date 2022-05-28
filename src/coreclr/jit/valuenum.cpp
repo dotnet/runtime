@@ -2895,8 +2895,10 @@ ValueNum ValueNumStore::EvalFuncForConstantArgs(var_types typ, VNFunc func, Valu
             assert(!VNHasExc(arg0VN));
             // Otherwise...
             assert(arg0VN == VNForNull()); // Only other REF constant.
-            assert((func == VNFunc(GT_ARR_LENGTH)) ||
-                   (func == VNFunc(GT_MDARR_LENGTH))); // Only functions we can apply to a REF constant!
+
+            // Only functions we can apply to a REF constant!
+            assert((func == VNFunc(GT_ARR_LENGTH)) || (func == VNFunc(GT_MDARR_LENGTH)) ||
+                   (func == VNFunc(GT_MDARR_LOWER_BOUND)));
             return VNWithExc(VNForVoid(), VNExcSetSingleton(VNForFunc(TYP_REF, VNF_NullPtrExc, VNForNull())));
         }
         default:
@@ -10759,6 +10761,10 @@ void Compiler::fgValueNumberAddExceptionSet(GenTree* tree)
             case GT_ARR_LENGTH:
             case GT_MDARR_LENGTH:
                 fgValueNumberAddExceptionSetForIndirection(tree, tree->AsArrLen()->ArrRef());
+                break;
+
+            case GT_MDARR_LOWER_BOUND:
+                fgValueNumberAddExceptionSetForIndirection(tree, tree->AsMDArrLowerBound()->ArrRef());
                 break;
 
             case GT_ARR_ELEM:

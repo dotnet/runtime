@@ -1231,20 +1231,45 @@ inline GenTreeArrLen* Compiler::gtNewArrLen(var_types typ, GenTree* arrayOp, int
 // Arguments:
 //    typ       - Type of the node
 //    arrayOp   - Array node
-//    dim       - Offset of the length field
-//    rank      - Offset of the length field
-//    lenOffset - Offset of the length field
+//    dim       - MD array dimension of interest
+//    rank      - MD array rank
 //    block     - Basic block that will contain the result
 //
 // Return Value:
 //    New GT_MDARR_LENGTH node
 //
-inline GenTreeMDArrLen* Compiler::gtNewMDArrLen(
-    var_types typ, GenTree* arrayOp, int dim, int rank, int lenOffset, BasicBlock* block)
+inline GenTreeMDArrLen* Compiler::gtNewMDArrLen(var_types typ, GenTree* arrayOp, int dim, int rank, BasicBlock* block)
 {
-    GenTreeMDArrLen* arrLen = new (this, GT_MDARR_LENGTH) GenTreeMDArrLen(typ, arrayOp, dim, rank, lenOffset);
+    GenTreeMDArrLen* arrLen = new (this, GT_MDARR_LENGTH) GenTreeMDArrLen(typ, arrayOp, dim, rank);
     gtAnnotateNewArrLen(arrLen, block);
     return arrLen;
+}
+
+//------------------------------------------------------------------------------
+// gtNewMDArrLowerBound : Helper to create an MD array lower bound node.
+//
+// Arguments:
+//    typ       - Type of the node
+//    arrayOp   - Array node
+//    dim       - MD array dimension of interest
+//    rank      - MD array rank
+//    block     - Basic block that will contain the result
+//
+// Return Value:
+//    New GT_MDARR_LOWER_BOUND node
+//
+inline GenTreeMDArrLowerBound* Compiler::gtNewMDArrLowerBound(
+    var_types typ, GenTree* arrayOp, int dim, int rank, BasicBlock* block)
+{
+    GenTreeMDArrLowerBound* arrOp = new (this, GT_MDARR_LOWER_BOUND) GenTreeMDArrLowerBound(typ, arrayOp, dim, rank);
+
+    static_assert_no_msg(GTF_MDARRLOWERBOUND_NONFAULTING == GTF_IND_NONFAULTING);
+    arrOp->SetIndirExceptionFlags(this);
+
+    // TODO: implement early prop of MD array lower bound. E.g., add OMF_HAS_ARRAYLOWERBOUND,
+    // and a corresponding BBF_HAS_MD_LOWER_BOUND.
+
+    return arrOp;
 }
 
 //------------------------------------------------------------------------------
@@ -1495,7 +1520,7 @@ inline void GenTree::ChangeOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
     assert(!OperIsConst(oper)); // use BashToConst() instead
 
     GenTreeFlags mask = GTF_COMMON_MASK;
-    if (this->OperIsIndirOrArrLength() && OperIsIndirOrArrLength(oper))
+    if (this->OperIsIndirOrArrMetaData() && OperIsIndirOrArrMetaData(oper))
     {
         mask |= GTF_IND_NONFAULTING;
     }
@@ -1506,7 +1531,7 @@ inline void GenTree::ChangeOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
 inline void GenTree::ChangeOperUnchecked(genTreeOps oper)
 {
     GenTreeFlags mask = GTF_COMMON_MASK;
-    if (this->OperIsIndirOrArrLength() && OperIsIndirOrArrLength(oper))
+    if (this->OperIsIndirOrArrMetaData() && OperIsIndirOrArrMetaData(oper))
     {
         mask |= GTF_IND_NONFAULTING;
     }

@@ -87,7 +87,7 @@ void Compiler::optCheckFlagsAreSet(unsigned    methodFlag,
 //    Null check folding tries to find GT_INDIR(obj + const) that GT_NULLCHECK(obj) can be folded into
 //    and removed. Currently, the algorithm only matches GT_INDIR and GT_NULLCHECK in the same basic block.
 //
-//    TODO: support GT_MDARR_LENGTH
+//    TODO: support GT_MDARR_LENGTH, GT_MDARRAY_LOWER_BOUND
 //
 PhaseStatus Compiler::optEarlyProp()
 {
@@ -172,7 +172,7 @@ GenTree* Compiler::optEarlyPropRewriteTree(GenTree* tree, LocalNumberToNullCheck
     optPropKind propKind     = optPropKind::OPK_INVALID;
     bool        folded       = false;
 
-    if (tree->OperIsIndirOrArrLength())
+    if (tree->OperIsIndirOrArrMetaData())
     {
         // optFoldNullCheck takes care of updating statement info if a null check is removed.
         folded = optFoldNullCheck(tree, nullCheckMap);
@@ -501,15 +501,15 @@ bool Compiler::optFoldNullCheck(GenTree* tree, LocalNumberToNullCheckTreeMap* nu
 //       or
 //       indir(add(x, const2))
 //
-//       (indir is any node for which OperIsIndirOrArrLength() is true.)
+//       (indir is any node for which OperIsIndirOrArrMetaData() is true.)
 //
 //     2.  const1 + const2 if sufficiently small.
 
 GenTree* Compiler::optFindNullCheckToFold(GenTree* tree, LocalNumberToNullCheckTreeMap* nullCheckMap)
 {
-    assert(tree->OperIsIndirOrArrLength());
+    assert(tree->OperIsIndirOrArrMetaData());
 
-    GenTree* addr = tree->GetIndirOrArrLengthAddr();
+    GenTree* addr = tree->GetIndirOrArrMetaDataAddr();
 
     ssize_t offsetValue = 0;
 

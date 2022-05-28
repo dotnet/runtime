@@ -9834,7 +9834,7 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
 #endif
         if (tree->gtFlags & GTF_IND_NONFAULTING)
         {
-            if (tree->OperIsIndirOrArrLength())
+            if (tree->OperIsIndirOrArrMetaData())
             {
                 chars += printf("[IND_NONFAULTING]");
             }

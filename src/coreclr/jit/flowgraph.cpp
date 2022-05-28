@@ -2922,7 +2922,7 @@ PhaseStatus Compiler::fgFindOperOrder()
 // and computing lvaOutgoingArgSpaceSize.
 //
 // Notes:
-//    Lowers GT_ARR_LENGTH, GT_MDARR_LENGTH, GT_BOUNDS_CHECK.
+//    Lowers GT_ARR_LENGTH, GT_MDARR_LENGTH, GT_MDARR_LOWER_BOUND, GT_BOUNDS_CHECK.
 //
 //    For target ABIs with fixed out args area, computes upper bound on
 //    the size of this area from the calls in the IR.
@@ -2949,22 +2949,40 @@ void Compiler::fgSimpleLowering()
             {
                 case GT_ARR_LENGTH:
                 case GT_MDARR_LENGTH:
+                case GT_MDARR_LOWER_BOUND:
                 {
-                    GenTreeArrLen* arrLen    = tree->AsArrLen();
-                    GenTree*       arr       = arrLen->ArrRef();
-                    int            lenOffset = arrLen->ArrLenOffset();
+                    GenTree* arr       = nullptr;
+                    int      lenOffset = 0;
 
                     switch (tree->OperGet())
                     {
                         case GT_ARR_LENGTH:
+                        {
+                            GenTreeArrLen* arrLen = tree->AsArrLen();
+                            arr                   = arrLen->ArrRef();
+                            lenOffset             = arrLen->ArrLenOffset();
                             noway_assert(lenOffset == OFFSETOF__CORINFO_Array__length ||
                                          lenOffset == OFFSETOF__CORINFO_String__stringLen);
                             break;
+                        }
 
                         case GT_MDARR_LENGTH:
-                            noway_assert(lenOffset == (int)eeGetMDArrayLengthOffset(arrLen->AsMDArrLen()->Rank(),
-                                                                                    arrLen->AsMDArrLen()->Dim()));
+                        {
+                            GenTreeMDArrLen* arrOp = tree->AsMDArrLen();
+                            arr                    = arrOp->ArrRef();
+                            lenOffset =
+                                (int)eeGetMDArrayLengthOffset(arrOp->AsMDArrLen()->Rank(), arrOp->AsMDArrLen()->Dim());
                             break;
+                        }
+
+                        case GT_MDARR_LOWER_BOUND:
+                        {
+                            GenTreeMDArrLowerBound* arrOp = tree->AsMDArrLowerBound();
+                            arr                           = arrOp->ArrRef();
+                            lenOffset = (int)eeGetMDArrayLowerBoundOffset(arrOp->AsMDArrLowerBound()->Rank(),
+                                                                          arrOp->AsMDArrLowerBound()->Dim());
+                            break;
+                        }
 
                         default:
                             unreached();

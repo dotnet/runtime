@@ -642,6 +642,8 @@ enum GenTreeFlags : unsigned int
 
     GTF_MDARRLEN_NONFAULTING    = 0x20000000, // GT_MDARR_LENGTH -- An MD array length operation that cannot fault. Same as GT_IND_NONFAULTING.
 
+    GTF_MDARRLOWERBOUND_NONFAULTING = 0x20000000, // GT_MDARR_LOWER_BOUND -- An MD array lower bound operation that cannot fault. Same as GT_IND_NONFAULTING.
+
     GTF_SIMDASHW_OP             = 0x80000000, // GT_HWINTRINSIC -- Indicates that the structHandle should be gotten from gtGetStructHandleForSIMD
                                               //                   rather than from gtGetStructHandleForHWSIMD.
 };
@@ -1589,9 +1591,20 @@ public:
         return (gtOper == GT_ARR_LENGTH) || (gtOper == GT_MDARR_LENGTH);
     }
 
-    static bool OperIsIndirOrArrLength(genTreeOps gtOper)
+    static bool OperIsMDArr(genTreeOps gtOper)
     {
-        return OperIsIndir(gtOper) || OperIsArrLength(gtOper);
+        return (gtOper == GT_MDARR_LENGTH) || (gtOper == GT_MDARR_LOWER_BOUND);
+    }
+
+    // Is this an access of an SZ array length, MD array length, or MD array lower bounds?
+    static bool OperIsArrMetaData(genTreeOps gtOper)
+    {
+        return (gtOper == GT_ARR_LENGTH) || (gtOper == GT_MDARR_LENGTH) || (gtOper == GT_MDARR_LOWER_BOUND);
+    }
+
+    static bool OperIsIndirOrArrMetaData(genTreeOps gtOper)
+    {
+        return OperIsIndir(gtOper) || OperIsArrMetaData(gtOper);
     }
 
     bool OperIsIndir() const
@@ -1604,16 +1617,21 @@ public:
         return OperIsArrLength(gtOper);
     }
 
-    bool OperIsIndirOrArrLength() const
+    bool OperIsMDArr() const
     {
-        return OperIsIndirOrArrLength(gtOper);
+        return OperIsMDArr(gtOper);
+    }
+
+    bool OperIsIndirOrArrMetaData() const
+    {
+        return OperIsIndirOrArrMetaData(gtOper);
     }
 
     // Helper function to return the array reference of an array length node.
     GenTree* GetArrLengthArrRef();
 
-    // Helper function to return the address of an indir or array length node.
-    GenTree* GetIndirOrArrLengthAddr();
+    // Helper function to return the address of an indir or array meta-data node.
+    GenTree* GetIndirOrArrMetaDataAddr();
 
     bool OperIsImplicitIndir() const;
 
@@ -6477,7 +6495,8 @@ public:
 #endif
 };
 
-// GenTreeMDArrLen (GT_MDARR_LENGTH) -- multi-dimension (MD) array length. Used for `array.GetLength(n)`.
+// GenTreeMDArrLen (GT_MDARR_LENGTH) -- multi-dimension (MD) array length for a dimension.
+// Used for `array.GetLength(n)`.
 //
 struct GenTreeMDArrLen : public GenTreeArrLen
 {
@@ -6496,13 +6515,47 @@ public:
         return gtRank;
     }
 
-    GenTreeMDArrLen(var_types type, GenTree* arrRef, int dim, int rank, int lenOffset)
-        : GenTreeArrLen(GT_MDARR_LENGTH, type, arrRef, lenOffset), gtDim(dim), gtRank(rank)
+    GenTreeMDArrLen(var_types type, GenTree* arrRef, int dim, int rank);
+
+#if DEBUGGABLE_GENTREE
+    GenTreeMDArrLen() : GenTreeArrLen()
+    {
+    }
+#endif
+};
+
+// GenTreeMDArrLowerBound (GT_MDARR_LOWER_BOUND) -- multi-dimension (MD) array lower bound for a dimension.
+// Used for `array.GetLowerBound(n)`.
+//
+struct GenTreeMDArrLowerBound : public GenTreeUnOp
+{
+private:
+    int gtDim;  // array dimension of this array lower bound
+    int gtRank; // array rank of the array
+
+public:
+    GenTree*& ArrRef() // the array address node
+    {
+        return gtOp1;
+    }
+
+    int Dim() const
+    {
+        return gtDim;
+    }
+
+    int Rank() const
+    {
+        return gtRank;
+    }
+
+    GenTreeMDArrLowerBound(var_types type, GenTree* arrRef, int dim, int rank)
+        : GenTreeUnOp(GT_MDARR_LOWER_BOUND, type, arrRef), gtDim(dim), gtRank(rank)
     {
     }
 
 #if DEBUGGABLE_GENTREE
-    GenTreeMDArrLen() : GenTreeArrLen()
+    GenTreeMDArrLowerBound() : GenTreeUnOp()
     {
     }
 #endif
@@ -9242,10 +9295,10 @@ inline GenTree* GenTree::GetArrLengthArrRef()
     return AsArrLen()->ArrRef();
 }
 
-// Helper function to return the address of an indir or array length node.
-inline GenTree* GenTree::GetIndirOrArrLengthAddr()
+// Helper function to return the address of an indir or array meta-data node.
+inline GenTree* GenTree::GetIndirOrArrMetaDataAddr()
 {
-    assert(OperIsIndirOrArrLength());
+    assert(OperIsIndirOrArrMetaData());
 
     if (OperIsIndir())
     {
@@ -9253,7 +9306,8 @@ inline GenTree* GenTree::GetIndirOrArrLengthAddr()
     }
     else
     {
-        return GetArrLengthArrRef();
+        // GenTreeArrLen, GenTreeMDArrLen, GenTreeMDArrLowerBound all store the array ref as gtOp1.
+        return AsUnOp()->gtOp1;
     }
 }
 
