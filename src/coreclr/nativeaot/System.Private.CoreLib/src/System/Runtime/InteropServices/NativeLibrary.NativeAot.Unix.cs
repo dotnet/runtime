@@ -7,6 +7,8 @@ namespace System.Runtime.InteropServices
 {
     public static partial class NativeLibrary
     {
+        private const int LoadWithAlteredSearchPathFlag = 0;
+
         private static IntPtr LoadLibraryHelper(string libraryName, int flags, ref LoadLibErrorTracker errorTracker)
         {
             // do the Dos/Unix conversion

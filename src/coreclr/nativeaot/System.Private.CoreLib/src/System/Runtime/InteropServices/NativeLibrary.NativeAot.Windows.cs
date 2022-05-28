@@ -2,27 +2,40 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Text;
 
 namespace System.Runtime.InteropServices
 {
     public static partial class NativeLibrary
     {
+        private const int LoadWithAlteredSearchPathFlag = 0x8; /* LOAD_WITH_ALTERED_SEARCH_PATH */
+
         private static IntPtr LoadLibraryHelper(string libraryName, int flags, ref LoadLibErrorTracker errorTracker)
         {
-            IntPtr ret = Interop.Kernel32.LoadLibraryEx(libraryName, IntPtr.Zero, flags);
-            if (ret != IntPtr.Zero)
+            IntPtr hmod;
+
+            if (((uint)flags & 0xFFFFFF00) != 0)
             {
-                return ret;
+                hmod = Interop.Kernel32.LoadLibraryEx(libraryName, IntPtr.Zero, (int)((uint)flags & 0xFFFFFF00));
+                if (hmod != IntPtr.Zero)
+                {
+                    return hmod;
+                }
+
+                int lastError = Marshal.GetLastWin32Error();
+                if (lastError != Interop.Errors.ERROR_INVALID_PARAMETER)
+                {
+                    errorTracker.TrackErrorCode(lastError);
+                    return hmod;
+                }
             }
 
-            int lastError = Marshal.GetLastWin32Error();
-            if (lastError != Interop.Errors.ERROR_INVALID_PARAMETER)
+            hmod = Interop.Kernel32.LoadLibraryEx(libraryName, IntPtr.Zero, flags & 0xFF);
+            if (hmod == IntPtr.Zero)
             {
-                errorTracker.TrackErrorCode(lastError);
+                errorTracker.TrackErrorCode(Marshal.GetLastWin32Error());
             }
 
-            return ret;
+            return hmod;
         }
 
         private static void FreeLib(IntPtr handle)
@@ -36,12 +49,7 @@ namespace System.Runtime.InteropServices
 
         private static unsafe IntPtr GetSymbolOrNull(IntPtr handle, string symbolName)
         {
-            var symbolBytes = new byte[Encoding.UTF8.GetByteCount(symbolName) + 1];
-            Encoding.UTF8.GetBytes(symbolName, symbolBytes);
-            fixed (byte* pSymbolBytes = symbolBytes)
-            {
-                return Interop.Kernel32.GetProcAddress(handle, pSymbolBytes);
-            }
+            return Interop.Kernel32.GetProcAddress(handle, symbolName);
         }
 
         // Preserving good error info from DllImport-driven LoadLibrary is tricky because we keep loading from different places

@@ -58,7 +58,7 @@ namespace System.Runtime.InteropServices
         {
             IntPtr ret;
 
-            int loadWithAlteredPathFlags = 0;
+            int loadWithAlteredPathFlags = LoadWithAlteredSearchPathFlag;
             bool libNameIsRelativePath = !Path.IsPathFullyQualified(libraryName);
 
             // P/Invokes are often declared with variations on the actual library name.
@@ -105,7 +105,7 @@ namespace System.Runtime.InteropServices
         private static IntPtr LoadFromPath(string libraryName, bool throwOnError)
         {
             LoadLibErrorTracker errorTracker = default;
-            IntPtr ret = LoadLibraryHelper(libraryName, 0, ref errorTracker);
+            IntPtr ret = LoadLibraryHelper(libraryName, LoadWithAlteredSearchPathFlag, ref errorTracker);
             if (throwOnError && ret == IntPtr.Zero)
             {
                 errorTracker.Throw(libraryName);
