@@ -86,6 +86,7 @@ namespace System.Dynamic.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69944", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void GenericMethod()
         {
             dynamic d = new TestDerivedClass();
@@ -377,6 +378,7 @@ namespace System.Dynamic.Tests
 
         [Theory]
         [MemberData(nameof(SameNameObjectPairs))]
+        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void OperationOnTwoObjectsDifferentTypesOfSameName(object x, object y)
         {
             dynamic dX = x;

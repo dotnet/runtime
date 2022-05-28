@@ -75,6 +75,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory, MemberData(nameof(SizesAndTypes))]
+        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void Reduce(int size, Type type)
         {
             CallSiteBinder binder = Binder.GetMember(
