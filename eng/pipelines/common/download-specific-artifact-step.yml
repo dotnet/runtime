@@ -4,6 +4,10 @@ parameters:
   artifactFileName: ''
   artifactName: ''
   displayName: ''
+  buildId: ''
+  branchName: ''
+  pipeline: ''
+  project: 'public' # 'internal' or 'public'
 
 steps:
   # Download artifact
@@ -11,11 +15,11 @@ steps:
     displayName: 'Download specific ${{ parameters.displayName }}'
     inputs:
       buildType: specific
-      project:  'public' # 'internal' or 'public'
-      pipeline: 'Antigen'
+      project: ${{ parameters.project }}
+      pipeline: ${{ parameters.pipeline }}
       buildVersionToDownload: specific
-      branchName: 'refs/pull/59376/head'
-      buildId: '1387378'
+      branchName: ${{ parameters.branchName }}
+      buildId: ${{ parameters.buildId }}
       downloadType: single
       downloadPath: '$(Build.SourcesDirectory)/__download__'
       artifactName: '${{ parameters.artifactName }}'
