@@ -262,6 +262,30 @@ namespace System
             return InternalGetValue(GetFlattenedIndex(index));
         }
 
+        private unsafe nint GetFlattenedIndex(int rawIndex)
+        {
+            // Checked by the caller
+            Debug.Assert(Rank == 1);
+
+            if (RuntimeHelpers.GetMethodTable(this)->IsMultiDimensionalArray)
+            {
+                ref int bounds = ref RuntimeHelpers.GetMultiDimensionalArrayBounds(this);
+                int index = rawIndex - Unsafe.Add(ref bounds, 1);
+                int length = bounds;
+                if ((uint)index >= (uint)length)
+                    ThrowHelper.ThrowIndexOutOfRangeException();
+
+                Debug.Assert((uint)index < (nuint)LongLength);
+                return index;
+            }
+            else
+            {
+                if ((uint)rawIndex >= (uint)LongLength)
+                    ThrowHelper.ThrowIndexOutOfRangeException();
+                return rawIndex;
+            }
+        }
+
         private unsafe nint GetFlattenedIndex(ReadOnlySpan<int> indices)
         {
             // Checked by the caller
