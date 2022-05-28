@@ -30,16 +30,11 @@ namespace System
             {
                 return false;
             }
-            Type thisType = this.GetType();
-            Type thatType = obj.GetType();
 
-            if (thatType != thisType)
+            if (GetType() != obj.GetType())
             {
                 return false;
             }
-
-            object thisObj = (object)this;
-            object? thisResult, thatResult;
 
             // if there are no GC references in this object we can avoid reflection
             // and do a fast memcmp
@@ -48,12 +43,12 @@ namespace System
                 return SpanHelpers.SequenceEqual(ref RuntimeHelpers.GetRawData(this), ref RuntimeHelpers.GetRawData(obj), GetObjectSize(this));
             }
 
-            FieldInfo[] thisFields = thisType.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            FieldInfo[] thisFields = GetType().GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
             for (int i = 0; i < thisFields.Length; i++)
             {
-                thisResult = thisFields[i].GetValue(thisObj);
-                thatResult = thisFields[i].GetValue(obj);
+                object? thisResult = thisFields[i].GetValue(this);
+                object? thatResult = thisFields[i].GetValue(obj);
 
                 if (thisResult == null)
                 {
