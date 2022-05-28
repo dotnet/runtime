@@ -3,6 +3,8 @@
 
 using System.Diagnostics;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Formats.Tar
@@ -226,29 +228,33 @@ namespace System.Formats.Tar
             ExtractToFileInternal(destinationFileName, linkTargetPath: null, overwrite);
         }
 
-        // /// <summary>
-        // /// Asynchronously extracts the current entry to the filesystem.
-        // /// </summary>
-        // /// <param name="destinationFileName">The path to the destination file.</param>
-        // /// <param name="overwrite"><see langword="true"/> if this method should overwrite any existing filesystem object located in the <paramref name="destinationFileName"/> path; <see langword="false"/> to prevent overwriting.</param>
-        // /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.</param>
-        // /// <returns>A task that represents the asynchronous extraction operation.</returns>
-        // /// <remarks><para>Files of type <see cref="TarEntryType.BlockDevice"/>, <see cref="TarEntryType.CharacterDevice"/> or <see cref="TarEntryType.Fifo"/> can only be extracted in Unix platforms.</para>
-        // /// <para>Elevation is required to extract a <see cref="TarEntryType.BlockDevice"/> or <see cref="TarEntryType.CharacterDevice"/> to disk.</para></remarks>
-        // /// <exception cref="ArgumentException"><paramref name="destinationFileName"/> is <see langword="null"/> or empty.</exception>
-        // /// <exception cref="IOException"><para>The parent directory of <paramref name="destinationFileName"/> does not exist.</para>
-        // /// <para>-or-</para>
-        // /// <para><paramref name="overwrite"/> is <see langword="false"/> and a file already exists in <paramref name="destinationFileName"/>.</para>
-        // /// <para>-or-</para>
-        // /// <para>A directory exists with the same name as <paramref name="destinationFileName"/>.</para>
-        // /// <para>-or-</para>
-        // /// <para>An I/O problem occurred.</para></exception>
-        // /// <exception cref="InvalidOperationException">Attempted to extract an unsupported entry type.</exception>
-        // /// <exception cref="UnauthorizedAccessException">Operation not permitted due to insufficient permissions.</exception>
-        // public Task ExtractToFileAsync(string destinationFileName, bool overwrite, CancellationToken cancellationToken = default)
-        // {
-        //     throw new NotImplementedException();
-        // }
+        /// <summary>
+        /// Asynchronously extracts the current entry to the filesystem.
+        /// </summary>
+        /// <param name="destinationFileName">The path to the destination file.</param>
+        /// <param name="overwrite"><see langword="true"/> if this method should overwrite any existing filesystem object located in the <paramref name="destinationFileName"/> path; <see langword="false"/> to prevent overwriting.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.</param>
+        /// <returns>A task that represents the asynchronous extraction operation.</returns>
+        /// <remarks><para>Files of type <see cref="TarEntryType.BlockDevice"/>, <see cref="TarEntryType.CharacterDevice"/> or <see cref="TarEntryType.Fifo"/> can only be extracted in Unix platforms.</para>
+        /// <para>Elevation is required to extract a <see cref="TarEntryType.BlockDevice"/> or <see cref="TarEntryType.CharacterDevice"/> to disk.</para></remarks>
+        /// <exception cref="ArgumentException"><paramref name="destinationFileName"/> is <see langword="null"/> or empty.</exception>
+        /// <exception cref="IOException"><para>The parent directory of <paramref name="destinationFileName"/> does not exist.</para>
+        /// <para>-or-</para>
+        /// <para><paramref name="overwrite"/> is <see langword="false"/> and a file already exists in <paramref name="destinationFileName"/>.</para>
+        /// <para>-or-</para>
+        /// <para>A directory exists with the same name as <paramref name="destinationFileName"/>.</para>
+        /// <para>-or-</para>
+        /// <para>An I/O problem occurred.</para></exception>
+        /// <exception cref="InvalidOperationException">Attempted to extract an unsupported entry type.</exception>
+        /// <exception cref="UnauthorizedAccessException">Operation not permitted due to insufficient permissions.</exception>
+        public Task ExtractToFileAsync(string destinationFileName, bool overwrite, CancellationToken cancellationToken = default)
+        {
+            if (EntryType is TarEntryType.SymbolicLink or TarEntryType.HardLink)
+            {
+                throw new InvalidOperationException(string.Format(SR.TarEntryTypeNotSupportedForExtracting, EntryType));
+            }
+            return ExtractToFileInternalAsync(destinationFileName, linkTargetPath: null, overwrite, cancellationToken);
+        }
 
         /// <summary>
         /// The data section of this entry. If the <see cref="EntryType"/> does not support containing data, then returns <see langword="null"/>.
@@ -357,17 +363,40 @@ namespace System.Formats.Tar
 
             VerifyPathsForEntryType(filePath, linkTargetPath, overwrite);
 
+            if (EntryType is TarEntryType.RegularFile or TarEntryType.V7RegularFile or TarEntryType.ContiguousFile)
+            {
+                ExtractAsRegularFile(filePath);
+            }
+            else
+            {
+                CreateNonRegularFile(filePath, linkTargetPath);
+            }
+        }
+
+        // Asynchronously extracts the current entry into the filesystem, regardless of the entry type.
+        private Task ExtractToFileInternalAsync(string filePath, string? linkTargetPath, bool overwrite, CancellationToken cancellationToken)
+        {
+            ArgumentException.ThrowIfNullOrEmpty(filePath);
+
+            VerifyPathsForEntryType(filePath, linkTargetPath, overwrite);
+
+            if (EntryType is TarEntryType.RegularFile or TarEntryType.V7RegularFile or TarEntryType.ContiguousFile)
+            {
+                return ExtractAsRegularFileAsync(filePath, cancellationToken);
+            }
+            CreateNonRegularFile(filePath, linkTargetPath);
+            return Task.CompletedTask;
+        }
+
+        private void CreateNonRegularFile(string filePath, string? linkTargetPath)
+        {
+            Debug.Assert(EntryType is not TarEntryType.RegularFile or TarEntryType.V7RegularFile or TarEntryType.ContiguousFile);
+
             switch (EntryType)
             {
                 case TarEntryType.Directory:
                 case TarEntryType.DirectoryList:
                     Directory.CreateDirectory(filePath);
-                    break;
-
-                case TarEntryType.RegularFile:
-                case TarEntryType.V7RegularFile:
-                case TarEntryType.ContiguousFile:
-                    ExtractAsRegularFile(filePath);
                     break;
 
                 case TarEntryType.SymbolicLink:
@@ -487,6 +516,34 @@ namespace System.Formats.Tar
                 {
                     // Important: The DataStream will be written from its current position
                     DataStream.CopyTo(fs);
+                }
+                SetModeOnFile(fs.SafeFileHandle, destinationFileName);
+            }
+
+            ArchivingUtils.AttemptSetLastWriteTime(destinationFileName, ModificationTime);
+        }
+
+        // Asynchronously extracts the current entry as a regular file into the specified destination.
+        // The assumption is that at this point there is no preexisting file or directory in that destination.
+        private async Task ExtractAsRegularFileAsync(string destinationFileName, CancellationToken cancellationToken)
+        {
+            Debug.Assert(!Path.Exists(destinationFileName));
+
+            FileStreamOptions fileStreamOptions = new FileStreamOptions()
+            {
+                Access = FileAccess.Write,
+                Mode = FileMode.CreateNew,
+                Share = FileShare.None,
+                Options = FileOptions.Asynchronous,
+                PreallocationSize = Length,
+            };
+            // Rely on FileStream's ctor for further checking destinationFileName parameter
+            using (FileStream fs = new FileStream(destinationFileName, fileStreamOptions))
+            {
+                if (DataStream != null)
+                {
+                    // Important: The DataStream will be written from its current position
+                    await DataStream.CopyToAsync(fs, cancellationToken).ConfigureAwait(false);
                 }
                 SetModeOnFile(fs.SafeFileHandle, destinationFileName);
             }
