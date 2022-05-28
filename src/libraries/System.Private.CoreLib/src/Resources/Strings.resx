@@ -3910,8 +3910,14 @@
   <data name="Arg_EntryPointNotFoundExceptionParameterizedNoLibrary" xml:space="preserve">
     <value>Unable to find an entry point named '{0}' in native library.</value>
   </data>
-  <data name="Arg_DllNotFoundExceptionParameterized" xml:space="preserve">
-    <value>Unable to load native library '{0}' or one of its dependencies.</value>
+  <data name="DllNotFound_Windows" xml:space="preserve">
+    <value>Unable to load DLL '{0}' or one of its dependencies: {1}</value>
+  </data>
+  <data name="DllNotFound_Linux" xml:space="preserve">
+    <value>Unable to load shared library '{0}' or one of its dependencies. In order to help diagnose loading problems, consider using a tool like strace. If you're using glibc, consider setting the LD_DEBUG environment variable: {1}</value>
+  </data>
+  <data name="DllNotFound_Mac" xml:space="preserve">
+    <value>Unable to load shared library '{0}' or one of its dependencies. In order to help diagnose loading problems, consider setting the DYLD_PRINT_LIBRARIES environment variable: {1}</value>
   </data>
   <data name="InvalidOperation_ComInteropRequireComWrapperInstance" xml:space="preserve">
     <value>COM Interop requires ComWrapper instance registered for marshalling.</value>
