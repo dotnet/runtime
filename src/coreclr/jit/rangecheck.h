@@ -581,8 +581,8 @@ public:
     // Inspect the assertions about the current ValueNum to refine pRange
     void MergeEdgeAssertions(ValueNum num, ASSERT_VALARG_TP assertions, Range* pRange);
 
-    // The maximum possible value of the given "limit." If such a value could not be determined
-    // return "false." For example: ARRLEN_MAX for array length.
+    // The maximum possible value of the given "limit". If such a value could not be determined
+    // return "false". For example: CORINFO_Array_MaxLength for array length.
     bool GetLimitMax(Limit& limit, int* pMax);
 
     // Does the addition of the two limits overflow?
