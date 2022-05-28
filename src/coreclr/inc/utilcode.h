@@ -417,49 +417,32 @@ inline WCHAR* FormatInteger(WCHAR* str, size_t strCount, const char* fmt, I v)
     return str;
 }
 
-template<typename T>
-class GuidString
+class GuidString final
 {
-    T _buffer[ARRAY_SIZE("{12345678-1234-1234-1234-123456789abc}")];
+    char _buffer[ARRAY_SIZE("{12345678-1234-1234-1234-123456789abc}")];
 public:
-    static void Create(const GUID& g, GuidString& ret);
+    static void Create(const GUID& g, GuidString& ret)
+    {
+        // Ensure we always have a null
+        ret._buffer[ARRAY_SIZE(ret._buffer) - 1] = '\0';
+        sprintf_s(ret._buffer, ARRAY_SIZE(ret._buffer), "{%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x}",
+            g.Data1, g.Data2, g.Data3,
+            g.Data4[0], g.Data4[1],
+            g.Data4[2], g.Data4[3],
+            g.Data4[4], g.Data4[5],
+            g.Data4[6], g.Data4[7]);
+    }
 
-    const T* AsString() const
+    const char* AsString() const
     {
         return _buffer;
     }
 
-    operator const T*() const
+    operator const char*() const
     {
         return _buffer;
     }
 };
-
-template<>
-inline void GuidString<char>::Create(const GUID& g, GuidString& ret)
-{
-    // Ensure we always have a null
-    ret._buffer[ARRAY_SIZE(ret._buffer) - 1] = '\0';
-    sprintf_s(ret._buffer, ARRAY_SIZE(ret._buffer), "{%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x}",
-        g.Data1, g.Data2, g.Data3,
-        g.Data4[0], g.Data4[1],
-        g.Data4[2], g.Data4[3],
-        g.Data4[4], g.Data4[5],
-        g.Data4[6], g.Data4[7]);
-}
-
-template<>
-inline void GuidString<WCHAR>::Create(const GUID& g, GuidString& ret)
-{
-    GuidString<char> tmp;
-    GuidString<char>::Create(g, tmp);
-    const char* str = tmp;
-
-    for (size_t i = 0; i < ARRAY_SIZE(ret._buffer); ++i)
-        ret._buffer[i] = (WCHAR)str[i];
-}
-
-using GuidStringUtf8 = GuidString<char>;
 
 inline
 LPWSTR DuplicateString(

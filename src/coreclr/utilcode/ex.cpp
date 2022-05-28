@@ -1185,7 +1185,7 @@ void GetHRMsg(HRESULT hr, SString &result, BOOL bNoGeekStuff/* = FALSE*/)
 
     if (!bNoGeekStuff)
     {
-        SString geekStuffUtf8(SString::Utf8, "");
+        SString geekStuffUtf8;
         if (fHaveDescr)
         {
             geekStuffUtf8.AppendUTF8(" (");

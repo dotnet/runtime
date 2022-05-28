@@ -983,7 +983,7 @@ public:
         //
         // Native Signature
         //
-        SString strNativeSignature(SString::Utf8, "");
+        SString strNativeSignature;
         if (m_dwStubFlags & NDIRECTSTUB_FL_REVERSE_INTEROP)
         {
             // Reverse interop. Use StubSignature
@@ -1005,7 +1005,7 @@ public:
         //
         // Dump IL stub code
         //
-        SString strILStubCode(SString::Utf8, "");
+        SString strILStubCode;
         strILStubCode.Preallocate(4096);    // Preallocate 4K bytes to avoid unnecessary growth
 
         strILStubCode.AppendPrintf("// Code size\t%d (0x%04x)\n", cbCode, cbCode);

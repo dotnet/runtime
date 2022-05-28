@@ -656,11 +656,6 @@ private:
 
     void Printf(const WCHAR *format, ...);
 
-private:
-    void VPrintf(const WCHAR *format, va_list args);
-    void AppendPrintf(const WCHAR *format, ...);
-    void AppendVPrintf(const WCHAR *format, va_list args);
-
 public:
     BOOL LoadResource(CCompRC::ResourceCategory eCategory, int resourceID);
     HRESULT LoadResourceAndReturnHR(CCompRC::ResourceCategory eCategory, int resourceID);

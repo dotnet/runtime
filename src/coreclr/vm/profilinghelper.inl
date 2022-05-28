@@ -110,8 +110,8 @@ inline void ProfilingAPIUtility::LogNoInterfaceError(REFIID iidRequested, LPCSTR
     }
     CONTRACTL_END;
 
-    GuidStringUtf8 iidUtf8;
-    GuidStringUtf8::Create(iidRequested, iidUtf8);
+    GuidString iidUtf8;
+    GuidString::Create(iidRequested, iidUtf8);
     ProfilingAPIUtility::LogProfError(IDS_E_PROF_NO_CALLBACK_IFACE, szCLSID, (LPCSTR)iidUtf8);
 }
 
@@ -176,8 +176,8 @@ inline HRESULT ProfilingAPIUtility::LoadProfilerForAttach(
     CONTRACTL_END;
 
     // Inform user we're about to try attaching the profiler
-    GuidStringUtf8 clsidUtf8;
-    GuidStringUtf8::Create(*pClsid, clsidUtf8);
+    GuidString clsidUtf8;
+    GuidString::Create(*pClsid, clsidUtf8);
     ProfilingAPIUtility::LogProfInfo(IDS_PROF_ATTACH_REQUEST_RECEIVED, (LPCSTR)clsidUtf8);
 
     return LoadProfiler(

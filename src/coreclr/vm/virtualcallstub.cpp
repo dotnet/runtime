@@ -136,7 +136,7 @@ void VirtualCallStubManager::StartupLogging()
     EX_TRY
     {
         FAULT_NOT_FATAL(); // We handle filecreation problems locally
-        SString str(SString::Utf8, "");
+        SString str;
         str.Printf("StubLog_%d.log", GetCurrentProcessId());
         g_hStubLogFile = WszCreateFile (str.GetUnicode(),
                                         GENERIC_WRITE,

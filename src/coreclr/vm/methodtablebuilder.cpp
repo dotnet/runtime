@@ -1892,7 +1892,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
             {
                 {
                     MethodDesc *pMD = methIt->GetUnboxedMethodDesc();
-                    StackSString name(SString::Utf8, "");
+                    StackSString name;
                     TypeString::AppendMethodDebug(name, pMD);
                     StackScratchBuffer buff;
                     const char* pDebugNameUTF8 = name.GetUTF8(buff);
@@ -1907,7 +1907,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
                 {
                     MethodDesc *pMD = methIt->GetMethodDesc();
 
-                    StackSString name(SString::Utf8, "");
+                    StackSString name;
                     TypeString::AppendMethodDebug(name, pMD);
                     StackScratchBuffer buff;
                     const char* pDebugNameUTF8 = name.GetUTF8(buff);

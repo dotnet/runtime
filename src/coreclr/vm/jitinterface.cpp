@@ -12928,7 +12928,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
                 ftn->GetModule()->GetDomainAssembly()->GetPEAssembly()->GetPathOrCodeBase(moduleName);
                 MAKE_UTF8PTR_FROMWIDE(moduleNameUtf8, moduleName.GetUnicode());
 
-                SString codeBase(SString::Utf8, "");
+                SString codeBase;
                 codeBase.AppendPrintf("%s,0x%x,%d,%d\n",
                                  moduleNameUtf8, //module name
                                  ftn->GetMemberDef(), //method token

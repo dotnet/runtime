@@ -2210,7 +2210,7 @@ void MethodTable::DebugRecursivelyDumpInstanceFields(LPCUTF8 pszClassName, BOOL 
 
     EX_TRY
     {
-        StackSString ssBuff(SString::Utf8, "");
+        StackSString ssBuff;
 
         DWORD cParentInstanceFields;
         DWORD i;
@@ -2282,7 +2282,7 @@ void MethodTable::DebugDumpFieldLayout(LPCUTF8 pszClassName, BOOL debug)
 
     EX_TRY
     {
-        StackSString ssBuff(SString::Utf8, "");
+        StackSString ssBuff;
 
         DWORD i;
         DWORD cParentInstanceFields;
@@ -2399,7 +2399,7 @@ MethodTable::DebugDumpGCDesc(
 
     EX_TRY
     {
-        StackSString ssBuff(SString::Utf8, "");
+        StackSString ssBuff;
 
         if (fDebug)
         {

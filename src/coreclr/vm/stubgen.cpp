@@ -464,7 +464,7 @@ ILStubLinker::LogILInstruction(
     //
     // format label
     //
-    SString strLabel(SString::Utf8, "");
+    SString strLabel;
 
     if (isLabeled)
     {
@@ -489,11 +489,11 @@ ILStubLinker::LogILInstruction(
     //
 
     static const size_t c_cchPreallocateArgument = 512;
-    SString strArgument(SString::Utf8, "");
+    SString strArgument;
     strArgument.Preallocate(c_cchPreallocateArgument);
 
     static const size_t c_cchPreallocateTokenName = 1024;
-    SString strTokenName(SString::Utf8, "");
+    SString strTokenName;
     strTokenName.Preallocate(c_cchPreallocateTokenName);
 
     if (ILCodeStream::IsBranchInstruction(instr))

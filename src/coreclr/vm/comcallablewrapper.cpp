@@ -749,7 +749,7 @@ LONGLONG SimpleComCallWrapper::ReleaseImplWithLogging(LONGLONG * pRefCount)
 
     LONGLONG newRefCount;
 
-    StackSString ssMessage(SString::Utf8, "");
+    StackSString ssMessage;
     ComCallWrapper *pWrap = GetMainWrapper();
     BuildRefCountLogMessage("Release", ssMessage, GET_EXT_COM_REF(READ_REF(*pRefCount)-1));
 
@@ -849,7 +849,7 @@ VOID SimpleComCallWrapper::Neuter()
     //   do this for each of the CCWs
     m_pWrap->Neuter();
 
-    StackSString ssMessage(SString::Utf8, "");
+    StackSString ssMessage;
     ComCallWrapper *pWrap = m_pWrap;
     if (g_pConfig->LogCCWRefCountChangeEnabled())
     {
