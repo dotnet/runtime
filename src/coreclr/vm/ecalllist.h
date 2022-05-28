@@ -83,7 +83,6 @@ FCFuncEnd()
 
 FCFuncStart(gValueTypeFuncs)
     FCFuncElement("CanCompareBits", ValueTypeHelper::CanCompareBits)
-    FCFuncElement("GetObjectSize", ValueTypeHelper::GetObjectSize)
     FCFuncElement("GetHashCode", ValueTypeHelper::GetHashCode)
 FCFuncEnd()
 
@@ -606,6 +605,10 @@ FCFuncStart(gRuntimeHelpers)
     FCFuncElement("UnregisterForGCReporting", GCReporting::Unregister)
 FCFuncEnd()
 
+FCFuncStart(gMethodTableFuncs)
+    FCFuncElement("GetNumInstanceFieldBytes", ValueTypeHelper::GetNumInstanceFieldBytes)
+FCFuncEnd()
+
 FCFuncStart(gMngdFixedArrayMarshalerFuncs)
     FCFuncElement("CreateMarshaler", MngdFixedArrayMarshaler::CreateMarshaler)
     FCFuncElement("ConvertSpaceToNative", MngdFixedArrayMarshaler::ConvertSpaceToNative)
@@ -811,6 +814,7 @@ FCClassElement("RuntimeMethodHandle", "System", gRuntimeMethodHandle)
 FCClassElement("RuntimeModule", "System.Reflection", gCOMModuleFuncs)
 FCClassElement("RuntimeType", "System", gSystem_RuntimeType)
 FCClassElement("RuntimeTypeHandle", "System", gCOMTypeHandleFuncs)
+FCClassElement("MethodTable", "System.Runtime.CompilerServices", gMethodTableFuncs)
 
 FCClassElement("Signature", "System", gSignatureNative)
 FCClassElement("StackTrace", "System.Diagnostics", gDiagnosticsStackTrace)

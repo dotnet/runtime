@@ -1827,10 +1827,10 @@ NOINLINE static FC_BOOL_RET CanCompareBitsHelper(MethodTable* mt, OBJECTREF objR
     FC_RETURN_BOOL(ret);
 }
 
-FCIMPL1(UINT32, ValueTypeHelper::GetObjectSize, Object* obj)
+FCIMPL1(UINT32, ValueTypeHelper::GetNumInstanceFieldBytes, MethodTable* mt)
 {
     FCALL_CONTRACT;
-    return obj->GetTypeHandle().GetSize();
+    return mt->GetNumInstanceFieldBytes();
 }
 FCIMPLEND
 

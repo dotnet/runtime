@@ -24,7 +24,7 @@ namespace System
     {
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
             Justification = "Trimmed fields don't make a difference for equality")]
-        public override bool Equals([NotNullWhen(true)] object? obj)
+        public unsafe override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (null == obj)
             {
@@ -40,7 +40,10 @@ namespace System
             // and do a fast memcmp
             if (CanCompareBits(this))
             {
-                return SpanHelpers.SequenceEqual(ref RuntimeHelpers.GetRawData(this), ref RuntimeHelpers.GetRawData(obj), GetObjectSize(this));
+                return SpanHelpers.SequenceEqual(
+                    ref RuntimeHelpers.GetRawData(this),
+                    ref RuntimeHelpers.GetRawData(obj),
+                    RuntimeHelpers.GetMethodTable(this)->GetNumInstanceFieldBytes());
             }
 
             FieldInfo[] thisFields = GetType().GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
@@ -67,9 +70,6 @@ namespace System
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern bool CanCompareBits(object obj);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern uint GetObjectSize(object obj);
 
         /*=================================GetHashCode==================================
         **Action: Our algorithm for returning the hashcode is a little bit complex.  We look
