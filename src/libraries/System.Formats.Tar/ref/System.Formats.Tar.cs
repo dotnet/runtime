@@ -12,6 +12,11 @@ namespace System.Formats.Tar
         public System.DateTimeOffset AccessTime { get { throw null; } set { } }
         public System.DateTimeOffset ChangeTime { get { throw null; } set { } }
     }
+    public sealed partial class PaxGlobalExtendedAttributesTarEntry : System.Formats.Tar.PosixTarEntry
+    {
+        public PaxGlobalExtendedAttributesTarEntry(System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>> globalExtendedAttributes) { }
+        public System.Collections.Generic.IReadOnlyDictionary<string, string> GlobalExtendedAttributes { get { throw null; } }
+    }
     public sealed partial class PaxTarEntry : System.Formats.Tar.PosixTarEntry
     {
         public PaxTarEntry(System.Formats.Tar.TarEntryType entryType, string entryName) { }
@@ -99,13 +104,12 @@ namespace System.Formats.Tar
     public sealed partial class TarReader : System.IDisposable
     {
         public TarReader(System.IO.Stream archiveStream, bool leaveOpen = false) { }
-        public System.Collections.Generic.IReadOnlyDictionary<string, string>? GlobalExtendedAttributes { get { throw null; } }
         public void Dispose() { }
         public System.Formats.Tar.TarEntry? GetNextEntry(bool copyData = false) { throw null; }
     }
     public sealed partial class TarWriter : System.IDisposable
     {
-        public TarWriter(System.IO.Stream archiveStream, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>? globalExtendedAttributes = null, bool leaveOpen = false) { }
+        public TarWriter(System.IO.Stream archiveStream, bool leaveOpen = false) { }
         public TarWriter(System.IO.Stream archiveStream, System.Formats.Tar.TarFormat archiveFormat, bool leaveOpen = false) { }
         public System.Formats.Tar.TarFormat Format { get { throw null; } }
         public void Dispose() { }
