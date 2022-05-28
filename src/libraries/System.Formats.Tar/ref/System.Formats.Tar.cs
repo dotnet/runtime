@@ -32,6 +32,7 @@ namespace System.Formats.Tar
         public int Checksum { get { throw null; } }
         public System.IO.Stream? DataStream { get { throw null; } set { } }
         public System.Formats.Tar.TarEntryType EntryType { get { throw null; } }
+        public System.Formats.Tar.TarFormat Format { get { throw null; } }
         public int Gid { get { throw null; } set { } }
         public long Length { get { throw null; } }
         public string LinkName { get { throw null; } set { } }
@@ -98,7 +99,6 @@ namespace System.Formats.Tar
     public sealed partial class TarReader : System.IDisposable
     {
         public TarReader(System.IO.Stream archiveStream, bool leaveOpen = false) { }
-        public System.Formats.Tar.TarFormat Format { get { throw null; } }
         public System.Collections.Generic.IReadOnlyDictionary<string, string>? GlobalExtendedAttributes { get { throw null; } }
         public void Dispose() { }
         public System.Formats.Tar.TarEntry? GetNextEntry(bool copyData = false) { throw null; }
