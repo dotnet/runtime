@@ -239,7 +239,6 @@ namespace System
             return InternalGetValue(GetFlattenedIndex(new ReadOnlySpan<int>(indices)));
         }
 
-#if !CORECLR
         public object? GetValue(int index)
         {
             if (Rank != 1)
@@ -247,7 +246,6 @@ namespace System
 
             return InternalGetValue(GetFlattenedIndex(index));
         }
-#endif
 
         public object? GetValue(int index1, int index2)
         {
