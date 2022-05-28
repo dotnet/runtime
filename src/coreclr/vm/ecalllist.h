@@ -539,10 +539,6 @@ FCFuncStart(gInteropMarshalFuncs)
 #endif // FEATURE_COMINTEROP
 FCFuncEnd()
 
-FCFuncStart(gMissingMemberExceptionFuncs)
-    FCFuncElement("FormatSignature", MissingMemberException_FormatSignature)
-FCFuncEnd()
-
 FCFuncStart(gInterlockedFuncs)
     FCFuncElementSig("Exchange", &gsig_SM_RefInt_Int_RetInt, COMInterlocked::Exchange)
     FCFuncElementSig("Exchange", &gsig_SM_RefLong_Long_RetLong, COMInterlocked::Exchange64)
@@ -787,7 +783,6 @@ FCClassElement("Marshal", "System.Runtime.InteropServices", gInteropMarshalFuncs
 FCClassElement("Math", "System", gMathFuncs)
 FCClassElement("MathF", "System", gMathFFuncs)
 FCClassElement("MetadataImport", "System.Reflection", gMetaDataImport)
-FCClassElement("MissingMemberException", "System",  gMissingMemberExceptionFuncs)
 FCClassElement("MngdFixedArrayMarshaler", "System.StubHelpers", gMngdFixedArrayMarshalerFuncs)
 FCClassElement("MngdNativeArrayMarshaler", "System.StubHelpers", gMngdNativeArrayMarshalerFuncs)
 FCClassElement("MngdRefCustomMarshaler", "System.StubHelpers", gMngdRefCustomMarshalerFuncs)

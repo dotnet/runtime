@@ -181,7 +181,6 @@
     <Compile Include="System\Helpers.cs" />
     <Compile Include="System\Math.NativeAot.cs" />
     <Compile Include="System\MathF.NativeAot.cs" />
-    <Compile Include="System\MissingMemberException.NativeAot.cs" />
     <Compile Include="System\MulticastDelegate.cs" />
     <Compile Include="System\Object.NativeAot.cs" />
     <Compile Include="System\Reflection\MissingMetadataException.cs" />

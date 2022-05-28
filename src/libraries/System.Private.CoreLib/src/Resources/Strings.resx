@@ -2738,7 +2738,7 @@
     <value>Field not found.</value>
   </data>
   <data name="MissingField_Name" xml:space="preserve">
-    <value>Field '{0}' not found.</value>
+    <value>Field '{0}.{1}' not found.</value>
   </data>
   <data name="MissingManifestResource_MultipleBlobs" xml:space="preserve">
     <value>A case-insensitive lookup for resource file "{0}" in assembly "{1}" found multiple entries. Remove the duplicates or specify the exact case.</value>
@@ -2753,7 +2753,7 @@
     <value>Member not found.</value>
   </data>
   <data name="MissingMember_Name" xml:space="preserve">
-    <value>Member '{0}' not found.</value>
+    <value>Member '{0}.{1}' not found.</value>
   </data>
   <data name="MissingMemberNestErr" xml:space="preserve">
     <value>TypedReference can only be made on nested value Types.</value>
@@ -2762,7 +2762,7 @@
     <value>FieldInfo does not match the target Type.</value>
   </data>
   <data name="MissingMethod_Name" xml:space="preserve">
-    <value>Method '{0}' not found.</value>
+    <value>Method '{0}.{1}' not found.</value>
   </data>
   <data name="MissingSatelliteAssembly_Culture_Name" xml:space="preserve">
     <value>The satellite assembly named "{1}" for fallback culture "{0}" either could not be found or could not be loaded. This is generally a setup problem. Please consider reinstalling or repairing the application.</value>
