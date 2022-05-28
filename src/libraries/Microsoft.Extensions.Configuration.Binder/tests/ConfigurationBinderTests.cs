@@ -114,6 +114,8 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
 
         public record struct RecordStructTypeOptions(string Color, int Length);
 
+        // Here, the constructor has three parameters, but not all of those match
+        // match to a property or field
         public class ClassWhereParametersDoNotMatchProperties
         {
             public string Name { get; }
@@ -124,6 +126,25 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
                 Name = name;
                 Address = address;
             }
+        }
+
+        // Here, the constructor has three parameters, and two of them match properties
+        // and one of them match a field.
+        public class ClassWhereParametersMatchPropertiesAndFields
+        {
+            private int Age;
+
+            public string Name { get; }
+            public string Address { get; }
+
+            public ClassWhereParametersMatchPropertiesAndFields(string name, string address, int age)
+            {
+                Name = name;
+                Address = address;
+                Age = age;
+            }
+
+            public int GetAge() => Age;
         }
 
         public record RecordWhereParametersHaveDefaultValue(string Name, string Address, int Age = 42);
@@ -1166,7 +1187,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             var exception = Assert.Throws<InvalidOperationException>(
                 () => config.Bind(new TestOptions()));
             Assert.Equal(
-                SR.Format(SR.Error_ConstructorParametersDoNotMatchProperties, typeof(ClassWhereParametersDoNotMatchProperties), "age"),
+                SR.Format(SR.Error_ConstructorParametersDoNotMatchPropertiesOrFields, typeof(ClassWhereParametersDoNotMatchProperties), "age"),
                 exception.Message);
         }
 
@@ -1207,7 +1228,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             var exception = Assert.Throws<InvalidOperationException>(
                 () => config.Bind(new TestOptions()));
             Assert.Equal(
-                SR.Format(SR.Error_ConstructorParametersDoNotMatchProperties, typeof(ClassWhereParametersDoNotMatchProperties), "age"),
+                SR.Format(SR.Error_ConstructorParametersDoNotMatchPropertiesOrFields, typeof(ClassWhereParametersDoNotMatchProperties), "age"),
                 exception.Message);
         }
 
@@ -1230,6 +1251,28 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal("John", testOptions.ClassWhereParametersHaveDefaultValueProperty.Name);
             Assert.Equal("123, Abc St.", testOptions.ClassWhereParametersHaveDefaultValueProperty.Address);
             Assert.Equal(42, testOptions.ClassWhereParametersHaveDefaultValueProperty.Age);
+        }
+
+        [Fact]
+        public void BindsToClassConstructorParametersWhereTheyMatchPropertiesAndFields()
+        {
+            var input = new Dictionary<string, string>
+            {
+                {"ClassWhereParametersMatchPropertiesAndFieldsProperty:Name", "John"},
+                {"ClassWhereParametersMatchPropertiesAndFieldsProperty:Address", "123, Abc St."},
+                {"ClassWhereParametersMatchPropertiesAndFieldsProperty:Age", "42"}
+            };
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(input);
+            var config = configurationBuilder.Build();
+
+            TestOptions testOptions = new TestOptions();
+
+            config.Bind(testOptions);
+            Assert.Equal("John", testOptions.ClassWhereParametersMatchPropertiesAndFieldsProperty.Name);
+            Assert.Equal("123, Abc St.", testOptions.ClassWhereParametersMatchPropertiesAndFieldsProperty.Address);
+            Assert.Equal(42, testOptions.ClassWhereParametersMatchPropertiesAndFieldsProperty.GetAge());
         }
 
         [Fact]
@@ -1745,6 +1788,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             public ClassWhereParametersDoNotMatchProperties ClassWhereParametersDoNotMatchPropertiesProperty { get; set; }
             public Line LineProperty { get; set; }
             public ClassWhereParametersHaveDefaultValue ClassWhereParametersHaveDefaultValueProperty { get; set; }
+            public ClassWhereParametersMatchPropertiesAndFields ClassWhereParametersMatchPropertiesAndFieldsProperty { get; set; }
             public RecordWhereParametersHaveDefaultValue RecordWhereParametersHaveDefaultValueProperty { get; set; }
 
             public int IntProperty { get; set; }

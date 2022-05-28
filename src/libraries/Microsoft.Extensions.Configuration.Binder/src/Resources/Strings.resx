@@ -123,8 +123,8 @@
   <data name="Error_CannotBindToConstructorParameter" xml:space="preserve">
     <value>Cannot create instance of type '{0}' because one or more parameters cannot be bound to. Constructor parameters cannot be declared as in, out, or ref. Invalid parameters are: '{1}'</value>
   </data>
-  <data name="Error_ConstructorParametersDoNotMatchProperties" xml:space="preserve">
-    <value>Cannot create instance of type '{0}' because one or more parameters cannot be bound to. Constructor parameters must have corresponding properties.  Missing properties are: '{1}'</value>
+  <data name="Error_ConstructorParametersDoNotMatchPropertiesOrFields" xml:space="preserve">
+    <value>Cannot create instance of type '{0}' because one or more parameters cannot be bound to. Constructor parameters must have corresponding properties or fields.  Missing properties are: '{1}'</value>
   </data>
   <data name="Error_FailedBinding" xml:space="preserve">
     <value>Failed to convert configuration value at '{0}' to type '{1}'.</value>

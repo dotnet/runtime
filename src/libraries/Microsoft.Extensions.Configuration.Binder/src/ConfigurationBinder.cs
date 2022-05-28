@@ -449,11 +449,12 @@ namespace Microsoft.Extensions.Configuration
                 }
 
 
-                var properties = GetAllProperties(type);
+                List<PropertyInfo> properties = GetAllProperties(type);
+                List<FieldInfo> fields = GetAllFields(type);
 
-                if (!DoAllParametersHaveEquivalentProperties(parameters, properties, out string nameOfInvalidParameters))
+                if (!DoAllParametersHaveEquivalentPropertiesOrFields(parameters, properties, fields, out string nameOfInvalidParameters))
                 {
-                    throw new InvalidOperationException(SR.Format(SR.Error_ConstructorParametersDoNotMatchProperties, type, nameOfInvalidParameters));
+                    throw new InvalidOperationException(SR.Format(SR.Error_ConstructorParametersDoNotMatchPropertiesOrFields, type, nameOfInvalidParameters));
                 }
 
                 object?[] parameterValues = new object?[parameters.Length];
@@ -479,12 +480,13 @@ namespace Microsoft.Extensions.Configuration
             return instance ?? throw new InvalidOperationException(SR.Format(SR.Error_FailedToActivate, type));
         }
 
-        private static bool DoAllParametersHaveEquivalentProperties(ParameterInfo[] parameters, List<PropertyInfo> properties, out string s)
+        private static bool DoAllParametersHaveEquivalentPropertiesOrFields(ParameterInfo[] parameters,
+            List<PropertyInfo> properties, List<FieldInfo> fieldInfos, out string s)
         {
             var parameterNames = parameters.Select(param => param.Name).ToList();
-            var propertyNames = properties.Select(prop => prop.Name).ToList();
+            var propertyAndFieldNames = properties.Select(prop => prop.Name).Concat(fieldInfos.Select(fi => fi.Name)).ToList();
 
-            var missingProperties = parameterNames.Where(pn => !propertyNames.Contains(pn!, StringComparer.OrdinalIgnoreCase));
+            var missingProperties = parameterNames.Where(pn => !propertyAndFieldNames.Contains(pn!, StringComparer.OrdinalIgnoreCase));
 
             s = string.Join(",", missingProperties);
 
@@ -752,6 +754,23 @@ namespace Microsoft.Extensions.Configuration
             while (baseType != typeof(object));
 
             return allProperties;
+        }
+
+        private static List<FieldInfo> GetAllFields(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+            Type type)
+        {
+            var allFields = new List<FieldInfo>();
+
+            Type? baseType = type;
+            do
+            {
+                allFields.AddRange(baseType!.GetFields(DeclaredOnlyLookup));
+                baseType = baseType.BaseType;
+            }
+            while (baseType != typeof(object));
+
+            return allFields;
         }
 
         [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
