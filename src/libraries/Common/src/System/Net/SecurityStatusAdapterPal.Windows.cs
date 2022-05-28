@@ -62,7 +62,8 @@ namespace System.Net
             { Interop.SECURITY_STATUS.Unsupported, SecurityStatusPalErrorCode.Unsupported },
             { Interop.SECURITY_STATUS.UntrustedRoot, SecurityStatusPalErrorCode.UntrustedRoot },
             { Interop.SECURITY_STATUS.WrongPrincipal, SecurityStatusPalErrorCode.WrongPrincipal },
-            { Interop.SECURITY_STATUS.NoRenegotiation, SecurityStatusPalErrorCode.NoRenegotiation }
+            { Interop.SECURITY_STATUS.NoRenegotiation, SecurityStatusPalErrorCode.NoRenegotiation },
+            { Interop.SECURITY_STATUS.KeysetDoesNotExist, SecurityStatusPalErrorCode.KeysetDoesNotExist }
         };
 
         internal static SecurityStatusPal GetSecurityStatusPalFromNativeInt(int win32SecurityStatus)
