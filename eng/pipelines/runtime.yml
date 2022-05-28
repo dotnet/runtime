@@ -607,7 +607,7 @@ jobs:
     jobParameters:
       runtimeVariant: crossaot
       dependsOn:
-      - mono_android_offsets
+      #- mono_android_offsets
       - mono_browser_offsets
       monoCrossAOTTargetOS:
       - Android
@@ -628,7 +628,7 @@ jobs:
     jobParameters:
       runtimeVariant: crossaot
       dependsOn:
-      - mono_android_offsets
+      #- mono_android_offsets
       - mono_browser_offsets
       - mono_tvos_offsets
       - mono_ios_offsets
