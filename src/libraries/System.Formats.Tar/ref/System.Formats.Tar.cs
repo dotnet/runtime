@@ -48,6 +48,7 @@ namespace System.Formats.Tar
         public string Name { get { throw null; } set { } }
         public int Uid { get { throw null; } set { } }
         public void ExtractToFile(string destinationFileName, bool overwrite) { }
+        public System.Threading.Tasks.Task ExtractToFileAsync(string destinationFileName, bool overwrite, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public override string ToString() { throw null; }
     }
     public enum TarEntryFormat
