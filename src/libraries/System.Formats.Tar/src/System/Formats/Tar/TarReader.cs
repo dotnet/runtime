@@ -41,16 +41,10 @@ namespace System.Formats.Tar
 
             _previouslyReadEntry = null;
             GlobalExtendedAttributes = null;
-            Format = TarFormat.Unknown;
             _isDisposed = false;
             _readFirstEntry = false;
             _reachedEndMarkers = false;
         }
-
-        /// <summary>
-        /// The format of the archive. It is initially <see cref="TarFormat.Unknown"/>. The archive format is detected after the first call to <see cref="GetNextEntry(bool)"/>.
-        /// </summary>
-        public TarFormat Format { get; private set; }
 
         /// <summary>
         /// <para>If the archive format is <see cref="TarFormat.Pax"/>, returns a read-only dictionary containing the string key-value pairs of the Global Extended Attributes in the first entry of the archive.</para>
@@ -115,16 +109,10 @@ namespace System.Formats.Tar
             {
                 if (!_readFirstEntry)
                 {
-                    Debug.Assert(Format == TarFormat.Unknown);
-                    Format = header._format;
                     _readFirstEntry = true;
                 }
-                else if (header._format != Format)
-                {
-                    throw new FormatException(string.Format(SR.TarEntriesInDifferentFormats, header._format, Format));
-                }
 
-                TarEntry entry = Format switch
+                TarEntry entry = header._format switch
                 {
                     TarFormat.Pax => new PaxTarEntry(header, this),
                     TarFormat.Gnu => new GnuTarEntry(header, this),
@@ -227,11 +215,7 @@ namespace System.Formats.Tar
             Debug.Assert(!_reachedEndMarkers);
 
             header = default;
-
-            // Set the initial format that is expected to be retrieved when calling TarHeader.TryReadAttributes.
-            // If the archive format is set to unknown here, it means this is the first entry we read and the value will be changed as fields get discovered.
-            // If the archive format is initially detected as pax, then any subsequent entries detected as ustar will be assumed to be pax.
-            header._format = Format;
+            header._format = TarFormat.Unknown;
 
             if (!header.TryGetNextHeader(_archiveStream, copyData))
             {
@@ -261,7 +245,6 @@ namespace System.Formats.Tar
                 catch (EndOfStreamException)
                 {
                     // Edge case: The only entry in the archive was a Global Extended Attributes entry
-                    Format = TarFormat.Pax;
                     return false;
                 }
                 if (header._typeFlag == TarEntryType.GlobalExtendedAttributes)
@@ -344,6 +327,7 @@ namespace System.Formats.Tar
         private bool TryProcessGnuMetadataHeader(TarHeader header, bool copyData, out TarHeader finalHeader)
         {
             finalHeader = default;
+            finalHeader._format = TarFormat.Gnu;
 
             TarHeader secondHeader = default;
             secondHeader._format = TarFormat.Gnu;
