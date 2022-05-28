@@ -33,7 +33,6 @@ namespace System.Formats.Tar.Tests
 
             // The user should not be creating these entries manually in pax
             Assert.Throws<InvalidOperationException>(() => new PaxTarEntry(TarEntryType.ExtendedAttributes, InitialEntryName));
-            Assert.Throws<InvalidOperationException>(() => new PaxTarEntry(TarEntryType.GlobalExtendedAttributes, InitialEntryName));
         }
 
         [Fact]

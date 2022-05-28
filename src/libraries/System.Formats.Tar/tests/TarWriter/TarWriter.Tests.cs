@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.IO;
 using Xunit;
 
@@ -50,11 +49,8 @@ namespace System.Formats.Tar.Tests
             using TarWriter writerGnu = new TarWriter(archiveStream, TarFormat.Gnu, leaveOpen: true);
             Assert.Equal(TarFormat.Gnu, writerGnu.Format);
 
-            using TarWriter writerNullGeaDefaultPax = new TarWriter(archiveStream, leaveOpen: true, globalExtendedAttributes: null);
+            using TarWriter writerNullGeaDefaultPax = new TarWriter(archiveStream, leaveOpen: true);
             Assert.Equal(TarFormat.Pax, writerNullGeaDefaultPax.Format);
-
-            using TarWriter writerValidGeaDefaultPax = new TarWriter(archiveStream, leaveOpen: true, globalExtendedAttributes: new Dictionary<string, string>());
-            Assert.Equal(TarFormat.Pax, writerValidGeaDefaultPax.Format);
 
             Assert.Throws<ArgumentOutOfRangeException>(() => new TarWriter(archiveStream, TarFormat.Unknown));
             Assert.Throws<ArgumentOutOfRangeException>(() => new TarWriter(archiveStream, (TarFormat)int.MinValue));

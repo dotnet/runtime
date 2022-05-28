@@ -215,32 +215,35 @@ namespace System.Formats.Tar.Tests
         {
             using MemoryStream archive = new MemoryStream();
 
-            Dictionary<string, string> globalExtendedAttributes = new Dictionary<string, string>();
+            Dictionary<string, string> attrs = new Dictionary<string, string>();
 
             if (withAttributes)
             {
-                globalExtendedAttributes.Add("hello", "world");
+                attrs.Add("hello", "world");
             }
 
-            using (TarWriter writer = new TarWriter(archive, globalExtendedAttributes, leaveOpen: true))
+            using (TarWriter writer = new TarWriter(archive, leaveOpen: true))
             {
-            } // Dispose with no entries
+                PaxGlobalExtendedAttributesTarEntry gea = new PaxGlobalExtendedAttributesTarEntry(attrs);
+                writer.WriteEntry(gea);
+            }
 
             archive.Seek(0, SeekOrigin.Begin);
             using (TarReader reader = new TarReader(archive))
             {
-                Assert.Null(reader.GlobalExtendedAttributes);
-
-                Assert.Null(reader.GetNextEntry());
-
-                Assert.NotNull(reader.GlobalExtendedAttributes);
+                TarEntry entry = reader.GetNextEntry();
+                Assert.Equal(TarFormat.Pax, entry.Format);
+                Assert.Equal(TarEntryType.GlobalExtendedAttributes, entry.EntryType);
+                PaxGlobalExtendedAttributesTarEntry gea = entry as PaxGlobalExtendedAttributesTarEntry;
+                Assert.NotNull(gea);
+                Assert.Equal(TarFormat.Pax, gea.Format);
 
                 int expectedCount = withAttributes ? 1 : 0;
-                Assert.Equal(expectedCount, reader.GlobalExtendedAttributes.Count);
+                Assert.Equal(expectedCount, gea.GlobalExtendedAttributes.Count);
 
                 if (expectedCount > 0)
                 {
-                    Assert.Equal("world", reader.GlobalExtendedAttributes["hello"]);
+                    Assert.Equal("world", gea.GlobalExtendedAttributes["hello"]);
                 }
             }
         }
