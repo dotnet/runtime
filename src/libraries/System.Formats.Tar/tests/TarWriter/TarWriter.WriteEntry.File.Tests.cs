@@ -91,10 +91,9 @@ namespace System.Formats.Tar.Tests
             archive.Seek(0, SeekOrigin.Begin);
             using (TarReader reader = new TarReader(archive))
             {
-                Assert.Equal(TarFormat.Unknown, reader.Format);
                 TarEntry entry = reader.GetNextEntry();
                 Assert.NotNull(entry);
-                Assert.Equal(format, reader.Format);
+                Assert.Equal(format, entry.Format);
                 Assert.Equal(fileName, entry.Name);
                 TarEntryType expectedEntryType = format is TarFormat.V7 ? TarEntryType.V7RegularFile : TarEntryType.RegularFile;
                 Assert.Equal(expectedEntryType, entry.EntryType);
@@ -145,9 +144,8 @@ namespace System.Formats.Tar.Tests
             archive.Seek(0, SeekOrigin.Begin);
             using (TarReader reader = new TarReader(archive))
             {
-                Assert.Equal(TarFormat.Unknown, reader.Format);
                 TarEntry entry = reader.GetNextEntry();
-                Assert.Equal(format, reader.Format);
+                Assert.Equal(format, entry.Format);
 
                 Assert.NotNull(entry);
                 Assert.Equal(dirName, entry.Name);
@@ -194,9 +192,8 @@ namespace System.Formats.Tar.Tests
             archive.Seek(0, SeekOrigin.Begin);
             using (TarReader reader = new TarReader(archive))
             {
-                Assert.Equal(TarFormat.Unknown, reader.Format);
                 TarEntry entry = reader.GetNextEntry();
-                Assert.Equal(format, reader.Format);
+                Assert.Equal(format, entry.Format);
 
                 Assert.NotNull(entry);
                 Assert.Equal(linkName, entry.Name);
@@ -231,13 +228,10 @@ namespace System.Formats.Tar.Tests
             archive.Seek(0, SeekOrigin.Begin);
             using (TarReader reader = new TarReader(archive))
             {
-                // Unknown until reading first entry
-                Assert.Equal(TarFormat.Unknown, reader.Format);
                 Assert.Null(reader.GlobalExtendedAttributes);
 
                 Assert.Null(reader.GetNextEntry());
 
-                Assert.Equal(TarFormat.Pax, reader.Format);
                 Assert.NotNull(reader.GlobalExtendedAttributes);
 
                 int expectedCount = withAttributes ? 1 : 0;

@@ -31,11 +31,8 @@ namespace System.Formats.Tar.Tests
                 Assert.Null(reader.GlobalExtendedAttributes);
             }
 
-            // Format is determined after reading the first entry, not on the constructor
-            Assert.Equal(TarFormat.Unknown, reader.Format);
             TarEntry file = reader.GetNextEntry();
 
-            Assert.Equal(format, reader.Format);
             if (testFormat == TestTarFormat.pax_gea)
             {
                 Assert.NotNull(reader.GlobalExtendedAttributes);
@@ -68,11 +65,8 @@ namespace System.Formats.Tar.Tests
                 // The GEA are collected after reading the first entry, not on the constructor
                 Assert.Null(reader.GlobalExtendedAttributes);
             }
-            // Format is determined after reading the first entry, not on the constructor
-            Assert.Equal(TarFormat.Unknown, reader.Format);
             TarEntry file = reader.GetNextEntry();
 
-            Assert.Equal(format, reader.Format);
             if (testFormat == TestTarFormat.pax_gea)
             {
                 Assert.NotNull(reader.GlobalExtendedAttributes);
@@ -110,11 +104,8 @@ namespace System.Formats.Tar.Tests
                 Assert.Null(reader.GlobalExtendedAttributes);
             }
 
-            // Format is determined after reading the first entry, not on the constructor
-            Assert.Equal(TarFormat.Unknown, reader.Format);
             TarEntry file = reader.GetNextEntry();
 
-            Assert.Equal(format, reader.Format);
             if (testFormat == TestTarFormat.pax_gea)
             {
                 Assert.NotNull(reader.GlobalExtendedAttributes);
@@ -127,7 +118,7 @@ namespace System.Formats.Tar.Tests
             Verify_Archive_RegularFile(file, format, reader.GlobalExtendedAttributes, "file.txt", $"Hello {testCaseName}");
 
             TarEntry symbolicLink = reader.GetNextEntry();
-            Verify_Archive_SymbolicLink(symbolicLink, reader.GlobalExtendedAttributes, "link.txt", "file.txt");
+            Verify_Archive_SymbolicLink(symbolicLink, format, reader.GlobalExtendedAttributes, "link.txt", "file.txt");
 
             Assert.Null(reader.GetNextEntry());
         }
@@ -152,11 +143,8 @@ namespace System.Formats.Tar.Tests
                 Assert.Null(reader.GlobalExtendedAttributes);
             }
 
-            // Format is determined after reading the first entry, not on the constructor
-            Assert.Equal(TarFormat.Unknown, reader.Format);
             TarEntry directory = reader.GetNextEntry();
 
-            Assert.Equal(format, reader.Format);
             if (testFormat == TestTarFormat.pax_gea)
             {
                 Assert.NotNull(reader.GlobalExtendedAttributes);
@@ -165,7 +153,7 @@ namespace System.Formats.Tar.Tests
                 Assert.Equal(AssetPaxGeaValue, reader.GlobalExtendedAttributes[AssetPaxGeaKey]);
             }
 
-            Verify_Archive_Directory(directory, reader.GlobalExtendedAttributes, "folder/");
+            Verify_Archive_Directory(directory, format, reader.GlobalExtendedAttributes, "folder/");
 
             TarEntry file = reader.GetNextEntry();
             Verify_Archive_RegularFile(file, format, reader.GlobalExtendedAttributes, "folder/file.txt", $"Hello {testCaseName}");
@@ -192,11 +180,8 @@ namespace System.Formats.Tar.Tests
                 Assert.Null(reader.GlobalExtendedAttributes);
             }
 
-            // Format is determined after reading the first entry, not on the constructor
-            Assert.Equal(TarFormat.Unknown, reader.Format);
             TarEntry directory = reader.GetNextEntry();
 
-            Assert.Equal(format, reader.Format);
             if (testFormat == TestTarFormat.pax_gea)
             {
                 Assert.NotNull(reader.GlobalExtendedAttributes);
@@ -205,7 +190,7 @@ namespace System.Formats.Tar.Tests
                 Assert.Equal(AssetPaxGeaValue, reader.GlobalExtendedAttributes[AssetPaxGeaKey]);
             }
 
-            Verify_Archive_Directory(directory, reader.GlobalExtendedAttributes, "földër/");
+            Verify_Archive_Directory(directory, format, reader.GlobalExtendedAttributes, "földër/");
 
             TarEntry file = reader.GetNextEntry();
             Verify_Archive_RegularFile(file, format, reader.GlobalExtendedAttributes, "földër/áöñ.txt", $"Hello {testCaseName}");
@@ -232,11 +217,8 @@ namespace System.Formats.Tar.Tests
                 Assert.Null(reader.GlobalExtendedAttributes);
             }
 
-            // Format is determined after reading the first entry, not on the constructor
-            Assert.Equal(TarFormat.Unknown, reader.Format);
             TarEntry parent = reader.GetNextEntry();
 
-            Assert.Equal(format, reader.Format);
             if (testFormat == TestTarFormat.pax_gea)
             {
                 Assert.NotNull(reader.GlobalExtendedAttributes);
@@ -245,10 +227,10 @@ namespace System.Formats.Tar.Tests
                 Assert.Equal(AssetPaxGeaValue, reader.GlobalExtendedAttributes[AssetPaxGeaKey]);
             }
 
-            Verify_Archive_Directory(parent, reader.GlobalExtendedAttributes, "parent/");
+            Verify_Archive_Directory(parent, format, reader.GlobalExtendedAttributes, "parent/");
 
             TarEntry child = reader.GetNextEntry();
-            Verify_Archive_Directory(child, reader.GlobalExtendedAttributes, "parent/child/");
+            Verify_Archive_Directory(child, format, reader.GlobalExtendedAttributes, "parent/child/");
 
             TarEntry file = reader.GetNextEntry();
             Verify_Archive_RegularFile(file, format, reader.GlobalExtendedAttributes, "parent/child/file.txt", $"Hello {testCaseName}");
@@ -275,11 +257,8 @@ namespace System.Formats.Tar.Tests
                 Assert.Null(reader.GlobalExtendedAttributes);
             }
 
-            // Format is determined after reading the first entry, not on the constructor
-            Assert.Equal(TarFormat.Unknown, reader.Format);
             TarEntry childlink = reader.GetNextEntry();
 
-            Assert.Equal(format, reader.Format);
             if (testFormat == TestTarFormat.pax_gea)
             {
                 Assert.NotNull(reader.GlobalExtendedAttributes);
@@ -288,13 +267,13 @@ namespace System.Formats.Tar.Tests
                 Assert.Equal(AssetPaxGeaValue, reader.GlobalExtendedAttributes[AssetPaxGeaKey]);
             }
 
-            Verify_Archive_SymbolicLink(childlink, reader.GlobalExtendedAttributes, "childlink", "parent/child");
+            Verify_Archive_SymbolicLink(childlink, format, reader.GlobalExtendedAttributes, "childlink", "parent/child");
 
             TarEntry parent = reader.GetNextEntry();
-            Verify_Archive_Directory(parent, reader.GlobalExtendedAttributes, "parent/");
+            Verify_Archive_Directory(parent, format, reader.GlobalExtendedAttributes, "parent/");
 
             TarEntry child = reader.GetNextEntry();
-            Verify_Archive_Directory(child, reader.GlobalExtendedAttributes, "parent/child/");
+            Verify_Archive_Directory(child, format, reader.GlobalExtendedAttributes, "parent/child/");
 
             TarEntry file = reader.GetNextEntry();
             Verify_Archive_RegularFile(file, format, reader.GlobalExtendedAttributes, "parent/child/file.txt", $"Hello {testCaseName}");
@@ -321,17 +300,14 @@ namespace System.Formats.Tar.Tests
                 Assert.Null(reader.GlobalExtendedAttributes);
             }
 
-            // Format is determined after reading the first entry, not on the constructor
-            Assert.Equal(TarFormat.Unknown, reader.Format);
-
             List<TarEntry> entries = new List<TarEntry>();
             TarEntry entry;
             bool isFirstEntry = true;
             while ((entry = reader.GetNextEntry()) != null)
             {
+                Assert.Equal(format, entry.Format);
                 if (isFirstEntry)
                 {
-                    Assert.Equal(format, reader.Format);
                     if (testFormat == TestTarFormat.pax_gea)
                     {
                         Assert.NotNull(reader.GlobalExtendedAttributes);
@@ -375,11 +351,8 @@ namespace System.Formats.Tar.Tests
                 Assert.Null(reader.GlobalExtendedAttributes);
             }
 
-            // Format is determined after reading the first entry, not on the constructor
-            Assert.Equal(TarFormat.Unknown, reader.Format);
             TarEntry directory = reader.GetNextEntry();
 
-            Assert.Equal(format, reader.Format);
             if (testFormat == TestTarFormat.pax_gea)
             {
                 Assert.NotNull(reader.GlobalExtendedAttributes);
@@ -388,7 +361,7 @@ namespace System.Formats.Tar.Tests
                 Assert.Equal(AssetPaxGeaValue, reader.GlobalExtendedAttributes[AssetPaxGeaKey]);
             }
 
-            Verify_Archive_Directory(directory, reader.GlobalExtendedAttributes, "00000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999/");
+            Verify_Archive_Directory(directory, format, reader.GlobalExtendedAttributes, "00000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999/");
 
             TarEntry file = reader.GetNextEntry();
             Verify_Archive_RegularFile(file, format, reader.GlobalExtendedAttributes, $"00000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999/00000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999.txt", $"Hello {testCaseName}");
@@ -415,11 +388,8 @@ namespace System.Formats.Tar.Tests
                 Assert.Null(reader.GlobalExtendedAttributes);
             }
 
-            // Format is determined after reading the first entry, not on the constructor
-            Assert.Equal(TarFormat.Unknown, reader.Format);
             PosixTarEntry blockDevice = reader.GetNextEntry() as PosixTarEntry;
 
-            Assert.Equal(format, reader.Format);
             if (testFormat == TestTarFormat.pax_gea)
             {
                 Assert.NotNull(reader.GlobalExtendedAttributes);
@@ -428,13 +398,13 @@ namespace System.Formats.Tar.Tests
                 Assert.Equal(AssetPaxGeaValue, reader.GlobalExtendedAttributes[AssetPaxGeaKey]);
             }
 
-            Verify_Archive_BlockDevice(blockDevice, reader.GlobalExtendedAttributes, AssetBlockDeviceFileName);
+            Verify_Archive_BlockDevice(blockDevice, format, reader.GlobalExtendedAttributes, AssetBlockDeviceFileName);
 
             PosixTarEntry characterDevice = reader.GetNextEntry() as PosixTarEntry;
-            Verify_Archive_CharacterDevice(characterDevice, reader.GlobalExtendedAttributes, AssetCharacterDeviceFileName);
+            Verify_Archive_CharacterDevice(characterDevice, format, reader.GlobalExtendedAttributes, AssetCharacterDeviceFileName);
 
             PosixTarEntry fifo = reader.GetNextEntry() as PosixTarEntry;
-            Verify_Archive_Fifo(fifo, reader.GlobalExtendedAttributes, "fifofile");
+            Verify_Archive_Fifo(fifo, format, reader.GlobalExtendedAttributes, "fifofile");
 
             Assert.Null(reader.GetNextEntry());
         }
@@ -457,11 +427,8 @@ namespace System.Formats.Tar.Tests
                 Assert.Null(reader.GlobalExtendedAttributes);
             }
 
-            // Format is determined after reading the first entry, not on the constructor
-            Assert.Equal(TarFormat.Unknown, reader.Format);
             TarEntry directory = reader.GetNextEntry();
 
-            Assert.Equal(format, reader.Format);
             if (testFormat == TestTarFormat.pax_gea)
             {
                 Assert.NotNull(reader.GlobalExtendedAttributes);
@@ -470,13 +437,13 @@ namespace System.Formats.Tar.Tests
                 Assert.Equal(AssetPaxGeaValue, reader.GlobalExtendedAttributes[AssetPaxGeaKey]);
             }
 
-            Verify_Archive_Directory(directory, reader.GlobalExtendedAttributes, "000000000011111111112222222222333333333344444444445555555555666666666677777777778888888888999999999900000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999990000000000111111111122222222223333333333444444444455555/");
+            Verify_Archive_Directory(directory, format, reader.GlobalExtendedAttributes, "000000000011111111112222222222333333333344444444445555555555666666666677777777778888888888999999999900000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999990000000000111111111122222222223333333333444444444455555/");
 
             TarEntry file = reader.GetNextEntry();
             Verify_Archive_RegularFile(file, format, reader.GlobalExtendedAttributes, "000000000011111111112222222222333333333344444444445555555555666666666677777777778888888888999999999900000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999990000000000111111111122222222223333333333444444444455555/00000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999990000000000111111111122222222223333333333444444444455555555556666666666777777777788888888889999999999000000000011111111112222222222333333333344444444445.txt", $"Hello {testCaseName}");
 
             TarEntry symbolicLink = reader.GetNextEntry();
-            Verify_Archive_SymbolicLink(symbolicLink, reader.GlobalExtendedAttributes, "link.txt", "000000000011111111112222222222333333333344444444445555555555666666666677777777778888888888999999999900000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999990000000000111111111122222222223333333333444444444455555/00000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999990000000000111111111122222222223333333333444444444455555555556666666666777777777788888888889999999999000000000011111111112222222222333333333344444444445.txt");
+            Verify_Archive_SymbolicLink(symbolicLink, format, reader.GlobalExtendedAttributes, "link.txt", "000000000011111111112222222222333333333344444444445555555555666666666677777777778888888888999999999900000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999990000000000111111111122222222223333333333444444444455555/00000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999990000000000111111111122222222223333333333444444444455555555556666666666777777777788888888889999999999000000000011111111112222222222333333333344444444445.txt");
 
             Assert.Null(reader.GetNextEntry());
         }
@@ -499,11 +466,8 @@ namespace System.Formats.Tar.Tests
                 Assert.Null(reader.GlobalExtendedAttributes);
             }
 
-            // Format is determined after reading the first entry, not on the constructor
-            Assert.Equal(TarFormat.Unknown, reader.Format);
             TarEntry file = reader.GetNextEntry();
 
-            Assert.Equal(format, reader.Format);
             if (testFormat == TestTarFormat.pax_gea)
             {
                 Assert.NotNull(reader.GlobalExtendedAttributes);
@@ -535,11 +499,8 @@ namespace System.Formats.Tar.Tests
                 Assert.Null(reader.GlobalExtendedAttributes);
             }
 
-            // Format is determined after reading the first entry, not on the constructor
-            Assert.Equal(TarFormat.Unknown, reader.Format);
             TarEntry directory = reader.GetNextEntry();
 
-            Assert.Equal(format, reader.Format);
             if (testFormat == TestTarFormat.pax_gea)
             {
                 Assert.NotNull(reader.GlobalExtendedAttributes);
@@ -548,7 +509,7 @@ namespace System.Formats.Tar.Tests
                 Assert.Equal(AssetPaxGeaValue, reader.GlobalExtendedAttributes[AssetPaxGeaKey]);
             }
 
-            Verify_Archive_Directory(directory, reader.GlobalExtendedAttributes, "000000000011111111112222222222333333333344444444445555555555666666666677777777778888888888999999999900000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999990000000000111111111122222222223333333333444444444455555/");
+            Verify_Archive_Directory(directory, format, reader.GlobalExtendedAttributes, "000000000011111111112222222222333333333344444444445555555555666666666677777777778888888888999999999900000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999990000000000111111111122222222223333333333444444444455555/");
 
             TarEntry file = reader.GetNextEntry();
             Verify_Archive_RegularFile(file, format, reader.GlobalExtendedAttributes, "000000000011111111112222222222333333333344444444445555555555666666666677777777778888888888999999999900000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999990000000000111111111122222222223333333333444444444455555/00000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999990000000000111111111122222222223333333333444444444455555555556666666666777777777788888888889999999999000000000011111111112222222222333333333344444444445.txt", $"Hello {testCaseName}");
@@ -559,6 +520,7 @@ namespace System.Formats.Tar.Tests
         private void Verify_Archive_RegularFile(TarEntry file, TarFormat format, IReadOnlyDictionary<string, string> gea, string expectedFileName, string expectedContents)
         {
             Assert.NotNull(file);
+            Assert.Equal(format, file.Format);
 
             Assert.True(file.Checksum > 0);
             Assert.NotNull(file.DataStream);
@@ -626,9 +588,10 @@ namespace System.Formats.Tar.Tests
             Assert.True(ctimeSecondsSinceEpoch > 0);
         }
 
-        private void Verify_Archive_SymbolicLink(TarEntry symbolicLink, IReadOnlyDictionary<string, string> gea, string expectedFileName, string expectedTargetName)
+        private void Verify_Archive_SymbolicLink(TarEntry symbolicLink, TarFormat format, IReadOnlyDictionary<string, string> gea, string expectedFileName, string expectedTargetName)
         {
             Assert.NotNull(symbolicLink);
+            Assert.Equal(format, symbolicLink.Format);
 
             Assert.True(symbolicLink.Checksum > 0);
             Assert.Null(symbolicLink.DataStream);
@@ -662,9 +625,10 @@ namespace System.Formats.Tar.Tests
             }
         }
 
-        private void Verify_Archive_Directory(TarEntry directory, IReadOnlyDictionary<string, string> gea, string expectedFileName)
+        private void Verify_Archive_Directory(TarEntry directory, TarFormat format, IReadOnlyDictionary<string, string> gea, string expectedFileName)
         {
             Assert.NotNull(directory);
+            Assert.Equal(format, directory.Format);
 
             Assert.True(directory.Checksum > 0);
             Assert.Null(directory.DataStream);
@@ -698,10 +662,11 @@ namespace System.Formats.Tar.Tests
             }
         }
 
-        private void Verify_Archive_BlockDevice(PosixTarEntry blockDevice, IReadOnlyDictionary<string, string> gea, string expectedFileName)
+        private void Verify_Archive_BlockDevice(PosixTarEntry blockDevice, TarFormat format, IReadOnlyDictionary<string, string> gea, string expectedFileName)
         {
             Assert.NotNull(blockDevice);
             Assert.Equal(TarEntryType.BlockDevice, blockDevice.EntryType);
+            Assert.Equal(format, blockDevice.Format);
 
             Assert.True(blockDevice.Checksum > 0);
             Assert.Null(blockDevice.DataStream);
@@ -734,10 +699,11 @@ namespace System.Formats.Tar.Tests
             }
         }
 
-        private void Verify_Archive_CharacterDevice(PosixTarEntry characterDevice, IReadOnlyDictionary<string, string> gea, string expectedFileName)
+        private void Verify_Archive_CharacterDevice(PosixTarEntry characterDevice, TarFormat format, IReadOnlyDictionary<string, string> gea, string expectedFileName)
         {
             Assert.NotNull(characterDevice);
             Assert.Equal(TarEntryType.CharacterDevice, characterDevice.EntryType);
+            Assert.Equal(format, characterDevice.Format);
 
             Assert.True(characterDevice.Checksum > 0);
             Assert.Null(characterDevice.DataStream);
@@ -770,9 +736,10 @@ namespace System.Formats.Tar.Tests
             }
         }
 
-        private void Verify_Archive_Fifo(PosixTarEntry fifo, IReadOnlyDictionary<string, string> gea, string expectedFileName)
+        private void Verify_Archive_Fifo(PosixTarEntry fifo, TarFormat format, IReadOnlyDictionary<string, string> gea, string expectedFileName)
         {
             Assert.NotNull(fifo);
+            Assert.Equal(format, fifo.Format);
 
             Assert.True(fifo.Checksum > 0);
             Assert.Null(fifo.DataStream);
