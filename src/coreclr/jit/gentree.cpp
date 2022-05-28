@@ -13516,31 +13516,25 @@ GenTree* Compiler::gtFoldBoxNullable(GenTree* tree)
         return tree;
     }
 
-    JITDUMP("\nAttempting to optimize BOX_NULLABLE(&x) %s null [%06u]\n", GenTree::OpName(oper), dspTreeID(tree));
+    JITDUMP("\nReplacing BOX_NULLABLE(&x) %s null [%06u] with x.hasValue\n", GenTree::OpName(oper), dspTreeID(tree));
 
-    // Get the address of the struct being boxed
-    GenTree* const arg = call->gtArgs.GetArgByIndex(1)->GetNode();
+    GenTree*             nullableHndNode  = call->gtArgs.GetArgByIndex(0)->GetNode();
+    CORINFO_CLASS_HANDLE nullableClassHnd = gtGetHelperArgClassHandle(nullableHndNode);
+    CORINFO_FIELD_HANDLE hasValueFieldHnd = info.compCompHnd->getFieldInClass(nullableClassHnd, 0);
 
-    if (arg->OperIs(GT_ADDR))
+    GenTree* srcAddr   = call->gtArgs.GetArgByIndex(1)->GetNode();
+    GenTree* fieldNode = gtNewFieldRef(TYP_BOOL, hasValueFieldHnd, srcAddr, OFFSETOF__CORINFO_NullableOfT__hasValue);
+
+    if (op == op1)
     {
-        CORINFO_CLASS_HANDLE nullableHnd = gtGetStructHandle(arg->AsOp()->gtOp1);
-        CORINFO_FIELD_HANDLE fieldHnd    = info.compCompHnd->getFieldInClass(nullableHnd, 0);
-
-        // Replace the box with an access of the nullable 'hasValue' field.
-        JITDUMP("\nSuccess: replacing BOX_NULLABLE(&x) [%06u] with x.hasValue\n", dspTreeID(op));
-        GenTree* newOp = gtNewFieldRef(TYP_BOOL, fieldHnd, arg, 0);
-
-        if (op == op1)
-        {
-            tree->AsOp()->gtOp1 = newOp;
-        }
-        else
-        {
-            tree->AsOp()->gtOp2 = newOp;
-        }
-
-        cons->gtType = TYP_INT;
+        tree->AsOp()->gtOp1 = fieldNode;
     }
+    else
+    {
+        tree->AsOp()->gtOp2 = fieldNode;
+    }
+
+    cons->gtType = TYP_INT;
 
     return tree;
 }
