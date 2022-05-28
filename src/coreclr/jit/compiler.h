@@ -1179,6 +1179,7 @@ enum class SymbolicIntegerValue : int32_t
     UByteMax,
     ShortMax,
     UShortMax,
+    ArrayLenMax,
     IntMax,
     UIntMax,
     LongMax,
