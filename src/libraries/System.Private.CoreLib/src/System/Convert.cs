@@ -2457,7 +2457,7 @@ namespace System
             }
         }
 
-        private static int[] CreateBas64PairsTable()
+        private static int[] CreateBase64PairsTable()
         {
             var table = new int[64 * 64];
             for (int i = table.Length; i-- > 0;)
