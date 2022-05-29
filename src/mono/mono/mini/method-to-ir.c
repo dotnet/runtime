@@ -6588,13 +6588,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 		// FIXME: Optimize this ?
 		args [0] = mono_get_mrgctx_var (cfg);
-		if (cfg->compile_aot) {
+		if (cfg->compile_aot)
 			args [1] = mini_emit_runtime_constant (cfg, MONO_PATCH_INFO_GSHARED_METHOD_INFO, info);
-			cfg->init_method_rgctx_ins_arg = args [1];
-		} else {
+		else
 			EMIT_NEW_PCONST (cfg, args [1], info);
-		}
 
+		cfg->init_method_rgctx_ins_arg = args [1];
 		cfg->init_method_rgctx_ins = mono_emit_jit_icall (cfg, mini_init_method_rgctx, args);
 	}
 
