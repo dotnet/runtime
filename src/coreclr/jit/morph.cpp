@@ -7049,12 +7049,12 @@ void Compiler::fgValidateIRForTailCall(GenTreeCall* call)
             {
             }
             // No-op casts may appear due to normalization during inlining. Example:
-            //  ▌  RETURN    int
-            //  └──▌  CAST      int <- bool <- int
-            //     └──▌  CALL      int    Attribute.IsDefined (with gtReturnType = TYP_BOOL)
-            //        ├──▌  LCL_VAR   ref    V00 arg0
-            //        ├──▌  LCL_VAR   ref    V01 arg1
-            //        └──▌  CNS_INT   int    1
+            //  *  RETURN    int
+            //  \--*  CAST      int <- bool <- int
+            //     \--*  CALL      int    Attribute.IsDefined (with gtReturnType = TYP_BOOL)
+            //        +--*  LCL_VAR   ref    V00 arg0
+            //        +--*  LCL_VAR   ref    V01 arg1
+            //        \--*  CNS_INT   int    1
             else if (tree->OperIs(GT_CAST))
             {
                 assert(ValidateUse(tree->AsCast()->CastOp()) && "Expected cast op to be from result of tailcall");
@@ -7065,16 +7065,16 @@ void Compiler::fgValidateIRForTailCall(GenTreeCall* call)
             // We might see arbitrary chains of assignments that trivially
             // propagate the result. Example:
             //
-            //    ▌  ASG       ref
-            //    ├──▌  LCL_VAR   ref    V05 tmp5
-            //    └──▌  CALL      ref    CultureInfo.InitializeUserDefaultUICulture
+            //    *  ASG       ref
+            //    +--*  LCL_VAR   ref    V05 tmp5
+            //    \--*  CALL      ref    CultureInfo.InitializeUserDefaultUICulture
             // (in a new statement/BB)
-            //    ▌  ASG       ref
-            //    ├──▌  LCL_VAR   ref    V02 tmp2
-            //    └──▌  LCL_VAR   ref    V05 tmp5
+            //    *  ASG       ref
+            //    +--*  LCL_VAR   ref    V02 tmp2
+            //    \--*  LCL_VAR   ref    V05 tmp5
             // (in a new statement/BB)
-            //    ▌  RETURN    ref
-            //    └──▌  LCL_VAR   ref    V02 tmp2
+            //    *  RETURN    ref
+            //    \--*  LCL_VAR   ref    V02 tmp2
             //
             else if (tree->OperIs(GT_ASG))
             {
