@@ -861,20 +861,6 @@ void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
             // Morph trees that aren't already OBJs or MKREFANY to be OBJs
             assert(ti.IsType(TI_STRUCT));
 
-            // The argument and parameter types can be different for legitimate
-            // reasons, but we expect them to be compatible in those cases. One
-            // example where this happens is when inlining shared code into a
-            // non-generic function, in which case we might see the __Canon in
-            // the parameter type but exact types in the signature type.
-            //
-            // TODO-ARGS: Remove this quirk; we should be able to use the
-            // signature type that is different in the rare case above. It will
-            // cause positive diffs, but that is probably an indication that we
-            // have downstream phases that should be using
-            // `ClassLayout::AreCompatible` instead.
-            //
-            classHnd = ti.GetClassHandleForValueClass();
-
             bool forceNormalization = false;
             if (varTypeIsSIMD(argNode))
             {
