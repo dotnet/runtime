@@ -945,12 +945,10 @@ FCIMPL3(void, ArrayNative::SetValue, ArrayBase* refThisUNSAFE, Object* objUNSAFE
 
     TypeHandle arrayElementType = refThis->GetArrayElementTypeHandle();
 
-    // Legacy behavior
+    // Legacy behavior (this handles pointers and function pointers)
     if (arrayElementType.IsTypeDesc())
     {
-        CorElementType elemtype = arrayElementType.AsTypeDesc()->GetInternalCorElementType();
-        if (elemtype == ELEMENT_TYPE_PTR || elemtype == ELEMENT_TYPE_FNPTR)
-            FCThrowResVoid(kNotSupportedException, W("NotSupported_Type"));
+        FCThrowResVoid(kNotSupportedException, W("NotSupported_Type"));
     }
 
     _ASSERTE((SIZE_T)flattenedIndex < refThis->GetNumComponents());
