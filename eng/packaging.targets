@@ -31,7 +31,7 @@
 
   <PropertyGroup Condition="'$(PreReleaseVersionLabel)' == 'servicing'">
     <!-- If no servicing version is set we need to default to 0 in order for dependency versions to
-    be calculated propertly, if we don't set it to 0, we would get the dependency version using the
+    be calculated properly, if we don't set it to 0, we would get the dependency version using the
     product Patch Version -->
     <ServicingVersion Condition="'$(ServicingVersion)' == ''">0</ServicingVersion>
 
@@ -260,13 +260,13 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="ValidateAssemblyVersionsInRefPack" 
+  <Target Name="ValidateAssemblyVersionsInRefPack"
           Condition="'$(SkipValidateAssemblyVersion)' != 'true' and '$(_AssemblyInTargetingPack)' == 'true' and '$(PreReleaseVersionLabel)' == 'servicing'"
           AfterTargets="CoreCompile" >
     <Error Condition="'$(AssemblyVersion)' != '$(LastReleasedStableAssemblyVersion)'" Text="AssemblyVersion should match last released assembly version $(LastReleasedStableAssemblyVersion)" />
   </Target>
 
-  <Target Name="ValidateServicingVersionIsPropertlySet"
+  <Target Name="ValidateServicingVersionIsProperlySet"
           Condition="'$(PreReleaseVersionLabel)' == 'servicing' and '$(DotNetBuildFromSource)' != 'true'"
           AfterTargets="GenerateNuspec">
     <Error Condition="'$(ServicingVersion)' == '0'" Text="ServicingVersion is set to 0 and it should be an increment of the patch version from the last released package." />

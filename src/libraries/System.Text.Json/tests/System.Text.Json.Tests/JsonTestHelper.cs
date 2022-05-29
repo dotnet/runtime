@@ -140,6 +140,20 @@ namespace System.Text.Json
             return ReaderLoop(data.Length, out length, ref reader);
         }
 
+        public delegate void Utf8JsonReaderAction(ref Utf8JsonReader reader);
+
+        public static void AssertWithSingleAndMultiSegmentReader(string json, Utf8JsonReaderAction action, JsonReaderOptions options = default)
+        {
+            byte[] utf8 = Encoding.UTF8.GetBytes(json);
+
+            var singleSegmentReader = new Utf8JsonReader(utf8, options);
+            action(ref singleSegmentReader);
+
+            ReadOnlySequence<byte> sequence = GetSequence(utf8, segmentSize: 1);
+            var multiSegmentReader = new Utf8JsonReader(sequence, options);
+            action(ref multiSegmentReader);
+        }
+
         public static ReadOnlySequence<byte> CreateSegments(byte[] data)
         {
             ReadOnlyMemory<byte> dataMemory = data;
@@ -743,16 +757,16 @@ namespace System.Text.Json
             Assert.NotEqual(expectedValue.NormalizeToJsonNetFormat(skipSpecialRules), value.NormalizeToJsonNetFormat(skipSpecialRules));
         }
 
-        public delegate void AssertThrowsActionUtf8JsonReader(Utf8JsonReader json);
+        public delegate void AssertThrowsActionUtf8JsonReader(ref Utf8JsonReader json);
 
         // Cannot use standard Assert.Throws() when testing Utf8JsonReader - ref structs and closures don't get along.
-        public static void AssertThrows<E>(Utf8JsonReader json, AssertThrowsActionUtf8JsonReader action) where E : Exception
+        public static TException AssertThrows<TException>(ref Utf8JsonReader json, AssertThrowsActionUtf8JsonReader action) where TException : Exception
         {
             Exception ex;
 
             try
             {
-                action(json);
+                action(ref json);
                 ex = null;
             }
             catch (Exception e)
@@ -760,45 +774,12 @@ namespace System.Text.Json
                 ex = e;
             }
 
-            if (ex == null)
+            if (ex is TException matchingEx)
             {
-                throw new ThrowsException(typeof(E));
+                return matchingEx;
             }
 
-            if (!(ex is E))
-            {
-                throw new ThrowsException(typeof(E), ex);
-            }
-        }
-
-        public delegate void AssertThrowsActionUtf8JsonWriter(ref Utf8JsonWriter writer);
-
-        public static void AssertThrows<E>(
-            ref Utf8JsonWriter writer,
-            AssertThrowsActionUtf8JsonWriter action)
-            where E : Exception
-        {
-            Exception ex;
-
-            try
-            {
-                action(ref writer);
-                ex = null;
-            }
-            catch (Exception e)
-            {
-                ex = e;
-            }
-
-            if (ex == null)
-            {
-                throw new ThrowsException(typeof(E));
-            }
-
-            if (ex.GetType() != typeof(E))
-            {
-                throw new ThrowsException(typeof(E), ex);
-            }
+            throw ex is null ? new ThrowsException(typeof(TException)) : new ThrowsException(typeof(TException), ex);
         }
 
 #if NETCOREAPP

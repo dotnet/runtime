@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
@@ -17,16 +19,18 @@ namespace Microsoft.WebAssembly.Diagnostics;
 
 public static class DebugProxyHost
 {
-    public static Task RunDebugProxyAsync(ProxyOptions options, string[] args, ILoggerFactory loggerFactory, CancellationToken token)
+    public static async Task RunDebugProxyAsync(ProxyOptions options, string[] args, ILoggerFactory loggerFactory, CancellationToken token)
     {
-        return Task.WhenAny(
-            RunFirefoxServerLoopAsync(options, args, loggerFactory, token),
+        List<Task> tasks = new(capacity: 2)
+        {
             RunDevToolsProxyAsync(options, args, loggerFactory, token)
-        )
-        .ContinueWith(t => Console.WriteLine($"Debug proxy server failed with {t.Exception}"),
-                            token,
-                            TaskContinuationOptions.OnlyOnFaulted,
-                            TaskScheduler.Default);
+        };
+        if (!options.RunningForBlazor)
+            tasks.Add(RunFirefoxServerLoopAsync(options, args, loggerFactory, token));
+
+        Task completedTask = await Task.WhenAny(tasks);
+        if (completedTask.IsFaulted)
+            ExceptionDispatchInfo.Capture(completedTask.Exception!).Throw();
     }
 
     public static Task RunFirefoxServerLoopAsync(ProxyOptions options, string[] args, ILoggerFactory loggerFactory, CancellationToken token)
@@ -35,7 +39,7 @@ public static class DebugProxyHost
                                                    loggerFactory,
                                                    loggerFactory.CreateLogger("FirefoxMonoProxy"),
                                                    token,
-                                                   autoSetBreakpointOnEntryPoint: options.AutoSetBreakpointOnEntryPoint);
+                                                   options);
 
     public static async Task RunDevToolsProxyAsync(ProxyOptions options, string[] args, ILoggerFactory loggerFactory, CancellationToken token)
     {
@@ -59,7 +63,9 @@ public static class DebugProxyHost
             .UseUrls(proxyUrl)
             .Build();
 
-        token.Register(async () => { Console.WriteLine($"-- token got cancelled, stopping host"); await host.StopAsync(); });
+        if (token.CanBeCanceled)
+            token.Register(async () => await host.StopAsync());
+
         await host.RunAsync(token);
     }
 }

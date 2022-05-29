@@ -160,7 +160,7 @@ pal::string_t get_directory(const pal::string_t& path)
     return ret.substr(0, static_cast<size_t>(pos) + 1) + DIR_SEPARATOR;
 }
 
-void remove_trailing_dir_seperator(pal::string_t* dir)
+void remove_trailing_dir_separator(pal::string_t* dir)
 {
     if (dir->back() == DIR_SEPARATOR)
     {
@@ -308,7 +308,7 @@ void get_framework_and_sdk_locations(const pal::string_t& dotnet_dir, const bool
     {
         // own_dir contains DIR_SEPARATOR appended that we need to remove.
         dotnet_dir_temp = dotnet_dir;
-        remove_trailing_dir_seperator(&dotnet_dir_temp);
+        remove_trailing_dir_separator(&dotnet_dir_temp);
 
         locations->push_back(dotnet_dir_temp);
     }

@@ -4,7 +4,8 @@
 import cwraps from "./cwraps";
 import { Module } from "./imports";
 import { VoidPtr, ManagedPointer, NativePointer } from "./types/emscripten";
-import { MonoObjectRef, MonoObjectRefNull, MonoObject } from "./types";
+import { MonoObjectRef, MonoObjectRefNull, MonoObject, is_nullish } from "./types";
+import { _zero_region } from "./memory";
 
 const maxScratchRoots = 8192;
 let _scratch_root_buffer: WasmRootBuffer | null = null;
@@ -138,18 +139,11 @@ export function mono_wasm_new_roots<T extends MonoObject>(count_or_values: numbe
  */
 export function mono_wasm_release_roots(...args: WasmRoot<any>[]): void {
     for (let i = 0; i < args.length; i++) {
-        if (!args[i])
+        if (is_nullish(args[i]))
             continue;
 
         args[i].release();
     }
-}
-
-function _zero_region(byteOffset: VoidPtr, sizeBytes: number) {
-    if (((<any>byteOffset % 4) === 0) && ((sizeBytes % 4) === 0))
-        Module.HEAP32.fill(0, <any>byteOffset >>> 2, sizeBytes >>> 2);
-    else
-        Module.HEAP8.fill(0, <any>byteOffset, sizeBytes);
 }
 
 function _mono_wasm_release_scratch_index(index: number) {
@@ -162,7 +156,7 @@ function _mono_wasm_release_scratch_index(index: number) {
 }
 
 function _mono_wasm_claim_scratch_index() {
-    if (!_scratch_root_buffer || !_scratch_root_free_indices) {
+    if (is_nullish(_scratch_root_buffer) || !_scratch_root_free_indices) {
         _scratch_root_buffer = mono_wasm_new_root_buffer(maxScratchRoots, "js roots");
 
         _scratch_root_free_indices = new Int32Array(maxScratchRoots);

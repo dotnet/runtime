@@ -101,7 +101,6 @@ PTR_Module ClassLoader::ComputeLoaderModuleWorker(
     for (DWORD i = 0; i < classInst.GetNumArgs(); i++)
     {
         TypeHandle classArg = classInst[i];
-        _ASSERTE(!classArg.IsEncodedFixup());
         Module* pModule = classArg.GetLoaderModule();
         if (pModule->IsCollectible())
             goto ComputeCollectibleLoaderModule;
@@ -112,7 +111,6 @@ PTR_Module ClassLoader::ComputeLoaderModuleWorker(
     for (DWORD i = 0; i < methodInst.GetNumArgs(); i++)
     {
         TypeHandle methodArg = methodInst[i];
-        _ASSERTE(!methodArg.IsEncodedFixup());
         Module *pModule = methodArg.GetLoaderModule();
         if (pModule->IsCollectible())
             goto ComputeCollectibleLoaderModule;
@@ -957,8 +955,6 @@ TypeHandle ClassLoader::LoadConstructedTypeThrowing(TypeKey *pKey,
         if (!typeHnd.IsNull())
         {
             existingLoadLevel = typeHnd.GetLoadLevel();
-            if (existingLoadLevel >= level)
-                g_IBCLogger.LogTypeHashTableAccess(&typeHnd);
         }
     }
 
@@ -2842,7 +2838,7 @@ TypeHandle ClassLoader::DoIncrementalLoad(TypeKey *pTypeKey, TypeHandle typeHnd,
         // or at least level CLASS_LOAD_APPROXPARENTS (if creating type for the first time)
         case CLASS_LOAD_BEGIN :
             {
-                IBCLoggerAwareAllocMemTracker amTracker;
+                AllocMemTracker amTracker;
                 typeHnd = CreateTypeHandleForTypeKey(pTypeKey, &amTracker);
                 CONSISTENCY_CHECK(!typeHnd.IsNull());
                 TypeHandle published = PublishType(pTypeKey, typeHnd);
@@ -3133,8 +3129,6 @@ void ClassLoader::Notify(TypeHandle typeHnd)
         END_PROFILER_CALLBACK();
     }
 #endif //PROFILING_SUPPORTED
-
-    g_IBCLogger.LogMethodTableAccess(pMT);
 
     if (pMT->IsTypicalTypeDefinition())
     {

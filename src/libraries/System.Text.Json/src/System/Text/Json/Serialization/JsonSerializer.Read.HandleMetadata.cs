@@ -183,13 +183,21 @@ namespace System.Text.Json
                         break;
 
                     case MetadataPropertyName.Type:
-                        if (reader.TokenType != JsonTokenType.String)
+                        Debug.Assert(state.PolymorphicTypeDiscriminator == null);
+
+                        switch (reader.TokenType)
                         {
-                            ThrowHelper.ThrowJsonException_MetadataValueWasNotString(reader.TokenType);
+                            case JsonTokenType.String:
+                                state.PolymorphicTypeDiscriminator = reader.GetString();
+                                break;
+                            case JsonTokenType.Number:
+                                state.PolymorphicTypeDiscriminator = reader.GetInt32();
+                                break;
+                            default:
+                                ThrowHelper.ThrowJsonException_MetadataValueWasNotString(reader.TokenType);
+                                break;
                         }
 
-                        Debug.Assert(state.PolymorphicTypeDiscriminator == null);
-                        state.PolymorphicTypeDiscriminator = reader.GetString();
                         break;
 
                     case MetadataPropertyName.Values:

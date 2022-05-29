@@ -3,8 +3,6 @@
 
 /*++
 
-
-
 Module Name:
 
     context.c
@@ -13,8 +11,6 @@ Abstract:
 
     Implementation of GetThreadContext/SetThreadContext/DebugBreak.
     There are a lot of architecture specifics here.
-
-
 
 --*/
 
@@ -332,7 +328,7 @@ CONTEXT_GetThreadContext(
     }
 
     /* How to consider the case when self is different from the current
-       thread of its owner process. Machine registers values could be retreived
+       thread of its owner process. Machine registers values could be retrieved
        by a ptrace(pid, ...) call or from the "/proc/%pid/reg" file content.
        Unfortunately, these two methods only depend on process ID, not on
        thread ID. */
@@ -405,7 +401,7 @@ CONTEXT_SetThreadContext(
     }
 
     /* How to consider the case when self is different from the current
-       thread of its owner process. Machine registers values could be retreived
+       thread of its owner process. Machine registers values could be retrieved
        by a ptrace(pid, ...) call or from the "/proc/%pid/reg" file content.
        Unfortunately, these two methods only depend on process ID, not on
        thread ID. */
@@ -625,7 +621,7 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
         ASSIGN_CONTROL_REGS
 #if defined(HOST_ARM)
         // WinContext assumes that the least bit of Pc is always 1 (denoting thumb)
-        // although the pc value retrived from native context might not have set the least bit.
+        // although the pc value retrieved from native context might not have set the least bit.
         // This becomes especially problematic if the context is on the JIT_WRITEBARRIER.
         lpContext->Pc |= 0x1;
 #endif
@@ -1096,7 +1092,7 @@ CONTEXT_GetThreadContextFromPort(
         CONTEXT_GetThreadContextFromThreadState(StateFlavor, (thread_state_t)&State, lpContext);
     }
 
-    if (lpContext->ContextFlags & CONTEXT_ALL_FLOATING & CONTEXT_AREA_MASK) 
+    if (lpContext->ContextFlags & CONTEXT_ALL_FLOATING & CONTEXT_AREA_MASK)
     {
 #if defined(HOST_AMD64)
         // The thread_get_state for floating point state can fail for some flavors when the processor is not

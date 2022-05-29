@@ -67,7 +67,7 @@ bool Disassembler::IsAvailable()
 }
 
 #if _DEBUG
-#define DISPLAYERROR(FMT, ...) wprintf(FMT, __VA_ARGS__)
+#define DISPLAYERROR(FMT, ...) printf(FMT, __VA_ARGS__)
 #else
 #define DISPLAYERROR(FMT, ...) (void)0
 #endif
@@ -105,10 +105,7 @@ void Disassembler::StaticInitialize()
         reinterpret_cast<decltype(External_InitDisasm)>(GetProcAddress(libraryHandle, "InitDisasm"));
     if (External_InitDisasm == nullptr)
     {
-        DISPLAYERROR(
-            W("GetProcAddress failed for library '%s', function 'InitDisasm': error %u\n"),
-            libPath.GetUnicode(),
-            GetLastError());
+        DISPLAYERROR("GetProcAddress failed for coredistools function 'InitDisasm': error %u\n", GetLastError());
         return;
     }
 
@@ -116,10 +113,7 @@ void Disassembler::StaticInitialize()
         reinterpret_cast<decltype(External_DisasmInstruction)>(GetProcAddress(libraryHandle, "DisasmInstruction"));
     if (External_DisasmInstruction == nullptr)
     {
-        DISPLAYERROR(
-            W("GetProcAddress failed for library '%s', function 'DisasmInstruction': error %u\n"),
-            libPath.GetUnicode(),
-            GetLastError());
+        DISPLAYERROR("GetProcAddress failed for coredistools function 'DisasmInstruction': error %u\n", GetLastError());
         return;
     }
 
@@ -127,10 +121,7 @@ void Disassembler::StaticInitialize()
         reinterpret_cast<decltype(External_FinishDisasm)>(GetProcAddress(libraryHandle, "FinishDisasm"));
     if (External_FinishDisasm == nullptr)
     {
-        DISPLAYERROR(
-            W("GetProcAddress failed for library '%s', function 'FinishDisasm': error %u\n"),
-            libPath.GetUnicode(),
-            GetLastError());
+        DISPLAYERROR("GetProcAddress failed for coredistools function 'FinishDisasm': error %u\n", GetLastError());
         return;
     }
 

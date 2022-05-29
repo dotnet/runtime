@@ -628,14 +628,18 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
 #ifdef DEBUG
     switch (ins)
     {
+        case INS_st_d:
+        case INS_stx_d:
+        case INS_st_w:
+        case INS_stx_w:
+        case INS_fst_s:
+        case INS_fst_d:
+        case INS_fstx_s:
+        case INS_fstx_d:
         case INS_st_b:
         case INS_st_h:
-
-        case INS_st_w:
-        case INS_fst_s:
-
-        case INS_st_d:
-        case INS_fst_d:
+        case INS_stx_b:
+        case INS_stx_h:
             break;
 
         default:
@@ -652,8 +656,8 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
     base = emitComp->lvaFrameAddress(varx, &FPbased);
     imm  = offs < 0 ? -offs - 8 : base + offs;
 
-    regNumber reg2 = FPbased ? REG_FPBASE : REG_SPBASE;
-    reg2           = offs < 0 ? REG_R21 : reg2;
+    regNumber reg3 = FPbased ? REG_FPBASE : REG_SPBASE;
+    regNumber reg2 = offs < 0 ? REG_R21 : reg3;
     offs           = offs < 0 ? -offs - 8 : offs;
 
     if ((-2048 <= imm) && (imm < 2048))
@@ -686,7 +690,15 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
     code_t code = emitInsCode(ins);
     code |= (code_t)(reg1 & 0x1f);
     code |= (code_t)reg2 << 5;
-    code |= (code_t)(imm & 0xfff) << 10;
+    if ((ins == INS_stx_d) || (ins == INS_stx_w) || (ins == INS_stx_h) || (ins == INS_stx_b) || (ins == INS_fstx_d) ||
+        (ins == INS_fstx_s))
+    {
+        code |= (code_t)reg3 << 10;
+    }
+    else
+    {
+        code |= (code_t)(imm & 0xfff) << 10;
+    }
 
     id->idAddr()->iiaSetInstrEncode(code);
     id->idAddr()->iiaLclVar.initLclVarAddr(varx, offs);
@@ -6633,7 +6645,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                 else
                 {
                     tempReg1 = REG_RA;
-                    tempReg2 = dst->GetSingleTempReg();
+                    tempReg2 = codeGen->rsGetRsvdReg();
                     assert(tempReg1 != tempReg2);
                     assert(tempReg1 != saveOperReg1);
                     assert(tempReg2 != saveOperReg2);

@@ -1190,12 +1190,12 @@ namespace System.Diagnostics
                     if (0 <= dotIdx)
                         idIdx = dotIdx + 1;
 
-                    string propertName = transformSpec.Substring(idIdx, endIdx - idIdx);
-                    _fetches = new PropertySpec(propertName, _fetches);
+                    string propertyName = transformSpec.Substring(idIdx, endIdx - idIdx);
+                    _fetches = new PropertySpec(propertyName, _fetches);
 
                     // If the user did not explicitly set a name, it is the last one (first to be processed from the end).
                     if (_outputName == null)
-                        _outputName = propertName;
+                        _outputName = propertyName;
 
                     endIdx = dotIdx;    // This works even when LastIndexOf return -1.
                 }

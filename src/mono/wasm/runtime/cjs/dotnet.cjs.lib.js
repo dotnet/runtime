@@ -10,11 +10,12 @@ const DotnetSupportLib = {
     // we replace implementation of readAsync and fetch
     // replacement of require is there for consistency with ES6 code
     $DOTNET__postset: `
-let __dotnet_replacements = {readAsync, fetch: globalThis.fetch, require};
+let __dotnet_replacements = {readAsync, fetch: globalThis.fetch, require, updateGlobalBufferAndViews};
 let __dotnet_exportedAPI = __dotnet_runtime.__initializeImportsAndExports(
     { isESM:false, isGlobal:ENVIRONMENT_IS_GLOBAL, isNode:ENVIRONMENT_IS_NODE, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, locateFile, quit_, ExitStatus, requirePromise:Promise.resolve(require)},
     { mono:MONO, binding:BINDING, internal:INTERNAL, module:Module },
     __dotnet_replacements);
+updateGlobalBufferAndViews = __dotnet_replacements.updateGlobalBufferAndViews;
 readAsync = __dotnet_replacements.readAsync;
 var fetch = __dotnet_replacements.fetch;
 require = __dotnet_replacements.requireOut;
@@ -66,6 +67,10 @@ const linked_functions = [
     // pal_icushim_static.c
     "mono_wasm_load_icu_data",
     "mono_wasm_get_icudt_name",
+
+    // pal_crypto_webworker.c
+    "dotnet_browser_simple_digest_hash",
+    "dotnet_browser_can_use_simple_digest_hash",
 ];
 
 // -- this javascript file is evaluated by emcc during compilation! --

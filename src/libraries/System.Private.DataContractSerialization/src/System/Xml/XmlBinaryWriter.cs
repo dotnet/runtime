@@ -152,7 +152,7 @@ namespace System.Xml
             {
                 char ch = prefix[0];
 
-                if (prefix.Length == 1 && ch >= 'a' && ch <= 'z')
+                if (prefix.Length == 1 && char.IsAsciiLetterLower(ch))
                 {
                     WritePrefixNode(XmlBinaryNodeType.PrefixElementA, ch - 'a');
                     WriteName(localName);
@@ -189,7 +189,7 @@ namespace System.Xml
                 {
                     char ch = prefix[0];
 
-                    if (prefix.Length == 1 && ch >= 'a' && ch <= 'z')
+                    if (prefix.Length == 1 && char.IsAsciiLetterLower(ch))
                     {
                         WritePrefixNode(XmlBinaryNodeType.PrefixDictionaryElementA, ch - 'a');
                         WriteDictionaryString(localName, key);
@@ -243,7 +243,7 @@ namespace System.Xml
             else
             {
                 char ch = prefix[0];
-                if (prefix.Length == 1 && ch >= 'a' && ch <= 'z')
+                if (prefix.Length == 1 && char.IsAsciiLetterLower(ch))
                 {
                     WritePrefixNode(XmlBinaryNodeType.PrefixAttributeA, ch - 'a');
                     WriteName(localName);
@@ -276,7 +276,7 @@ namespace System.Xml
                 else
                 {
                     char ch = prefix[0];
-                    if (prefix.Length == 1 && ch >= 'a' && ch <= 'z')
+                    if (prefix.Length == 1 && char.IsAsciiLetterLower(ch))
                     {
                         WritePrefixNode(XmlBinaryNodeType.PrefixDictionaryAttributeA, ch - 'a');
                         WriteDictionaryString(localName, key);
@@ -939,7 +939,7 @@ namespace System.Xml
             {
                 char ch = prefix[0];
                 int key;
-                if (prefix.Length == 1 && (ch >= 'a' && ch <= 'z') && TryGetKey(localName, out key))
+                if (prefix.Length == 1 && char.IsAsciiLetterLower(ch) && TryGetKey(localName, out key))
                 {
                     WriteTextNode(XmlBinaryNodeType.QNameDictionaryText);
                     WriteByte((byte)(ch - 'a'));

@@ -999,6 +999,7 @@ mono_assembly_load_reference (MonoImage *image, int index)
 		} else if (status == MONO_IMAGE_IMAGE_INVALID) {
 			extra_msg = g_strdup ("The file exists but is not a valid assembly.\n");
 		} else {
+			g_assert (status != MONO_IMAGE_NOT_SUPPORTED); // runtime should not use unsupported APIs
 			extra_msg = g_strdup ("");
 		}
 
@@ -1554,7 +1555,7 @@ mono_assembly_open_full (const char *filename, MonoImageOpenStatus *status, gboo
 {
 	if (refonly) {
 		if (status)
-			*status = MONO_IMAGE_IMAGE_INVALID;
+			*status = MONO_IMAGE_NOT_SUPPORTED;
 		return NULL;
 	}
 	MonoAssembly *res;
@@ -1865,7 +1866,7 @@ mono_assembly_load_from_full (MonoImage *image, const char*fname,
 {
 	if (refonly) {
 		if (status)
-			*status = MONO_IMAGE_IMAGE_INVALID;
+			*status = MONO_IMAGE_NOT_SUPPORTED;
 		return NULL;
 	}
 	MonoAssembly *res;
@@ -2725,6 +2726,7 @@ mono_assembly_load_corlib ()
 			g_print ("Missing assembly reference in " MONO_ASSEMBLY_CORLIB_NAME ".dll\n");
 			break;
 		default:
+			g_assert (status != MONO_IMAGE_NOT_SUPPORTED); // runtime should not be using unsupported APIs
 			g_assertf(0, "Unexpected status %d while loading " MONO_ASSEMBLY_CORLIB_NAME ".dll", status);
 			break;
 		}
@@ -2817,7 +2819,7 @@ mono_assembly_load_full (MonoAssemblyName *aname, const char *basedir, MonoImage
 {
 	if (refonly) {
 		if (status)
-			*status = MONO_IMAGE_IMAGE_INVALID;
+			*status = MONO_IMAGE_NOT_SUPPORTED;
 		return NULL;
 	}
 	MonoAssembly *res;

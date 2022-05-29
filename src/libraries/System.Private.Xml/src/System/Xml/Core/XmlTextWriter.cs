@@ -763,7 +763,7 @@ namespace System.Xml
         {
             try
             {
-                if (null != text && (text.Contains("--") || (text.Length != 0 && text[text.Length - 1] == '-')))
+                if (null != text && (text.Contains("--") || text.StartsWith('-')))
                 {
                     throw new ArgumentException(SR.Xml_InvalidCommentChars);
                 }
