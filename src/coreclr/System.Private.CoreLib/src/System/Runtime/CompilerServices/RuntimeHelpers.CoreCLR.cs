@@ -593,22 +593,34 @@ namespace System.Runtime.CompilerServices
         public extern uint GetNumInstanceFieldBytes();
     }
 
-    // Subset of src\vm\typehandle.h
+    /// <summary>
+    /// A type handle, which can wrap either a pointer to a <see cref="TypeDesc"/> or to a <see cref="MethodTable"/>.
+    /// </summary>
     [StructLayout(LayoutKind.Explicit)]
     internal unsafe struct TypeHandle
     {
+        // Subset of src\vm\typehandle.h
+
         /// <summary>
         /// The address of the current type handle object.
         /// </summary>
         [FieldOffset(0)]
         private readonly void* m_asTAddr;
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool IsTypeDesc()
+        /// <summary>
+        /// Gets whether or not this <see cref="TypeHandle"/> wraps a <see cref="TypeDesc"/> pointer.
+        /// If so, <see cref="AsTypeDesc"/> is safe to call. Otherwise, this instance wraps a <see cref="MethodTable"/> pointer.
+        /// </summary>
+        public bool IsTypeDesc
         {
-            return ((nint)m_asTAddr & 2) != 0;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => ((nint)m_asTAddr & 2) != 0;
         }
 
+        /// <summary>
+        /// Gets the <see cref="TypeDesc"/> pointer wrapped by the current instance.
+        /// </summary>
+        /// <remarks>This is only safe to call if <see cref="IsTypeDesc"/> returned <see langword="true"/>.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public TypeDesc* AsTypeDesc()
         {
@@ -617,6 +629,10 @@ namespace System.Runtime.CompilerServices
             return (TypeDesc*)(m_asTAddr - 2);
         }
 
+        /// <summary>
+        /// Gets the <see cref="MethodTable"/> pointer wrapped by the current instance.
+        /// </summary>
+        /// <remarks>This is only safe to call if <see cref="IsTypeDesc"/> returned <see langword="false"/>.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public MethodTable* AsMethodTable()
         {

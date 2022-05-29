@@ -284,7 +284,7 @@ namespace System
 
             // Legacy behavior (none of the cases where the element type is a type descriptor are supported).
             // This includes the case where the element type is a pointer or a function pointer too.
-            if (arrayElementTypeHandle.IsTypeDesc())
+            if (arrayElementTypeHandle.IsTypeDesc)
             {
                 ThrowHelper.ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
             }
