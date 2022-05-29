@@ -276,8 +276,7 @@ namespace System
             }
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal unsafe object? ArrayNativeGetValue(nint flattenedIndex)
+        internal unsafe object? InternalGetValue(nint flattenedIndex)
         {
             MethodTable* pMethodTable = RuntimeHelpers.GetMethodTable(this);
 
@@ -316,32 +315,6 @@ namespace System
 
             return result;
         }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal unsafe object? InternalGetValue(nint flattenedIndex)
-        {
-            MethodTable* pMethodTable = RuntimeHelpers.GetMethodTable(this);
-
-            // If the element type is a reference type, we know that reading a value as an object is always valid.
-            // This path is optimized without a call into the native runtime, by just getting a reference to the
-            // start of the array data, then reinterpreting to a ref object and manually indexing at the right offset.
-            if (pMethodTable->IsElementTypeClass)
-            {
-                ref byte arrayDataRef = ref Unsafe.AddByteOffset(ref Unsafe.As<RawData>(this).Data, pMethodTable->BaseSize - (nuint)(2 * sizeof(IntPtr)));
-                ref object elementRef = ref Unsafe.As<byte, object>(ref arrayDataRef);
-
-                // We have validated the index already, so uncheck-cast to uint to skip the sign extension
-                return Unsafe.Add(ref elementRef, (nuint)flattenedIndex);
-            }
-
-            GC.KeepAlive(this); // Keep the method table alive
-
-            // Slow path if the element type is not a reference type
-            return __InternalGetValue(flattenedIndex);
-        }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal extern unsafe object? __InternalGetValue(nint flattenedIndex);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern void InternalSetValue(object? value, nint flattenedIndex);

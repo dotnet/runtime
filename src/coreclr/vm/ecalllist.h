@@ -458,7 +458,6 @@ FCFuncStart(gArrayFuncs)
     FCFuncElement("IsSimpleCopy", ArrayNative::IsSimpleCopy)
     FCFuncElement("CopySlow", ArrayNative::CopySlow)
     FCFuncElement("InternalCreate", ArrayNative::CreateInstance)
-    FCFuncElement("__InternalGetValue", ArrayNative::GetValue)
     FCFuncElement("InternalSetValue", ArrayNative::SetValue)
 FCFuncEnd()
 
