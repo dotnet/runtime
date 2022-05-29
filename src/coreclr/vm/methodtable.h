@@ -15,6 +15,7 @@
 #include "hash.h"
 #include "crst.h"
 #include "cgensys.h"
+#include "fcall.h"
 #ifdef FEATURE_COMINTEROP
 #include "stdinterfaces.h"
 #endif
@@ -576,6 +577,9 @@ public:
     MethodTable *LoadEnclosingMethodTable(ClassLoadLevel targetLevel = CLASS_DEPENDENCIES_LOADED);
 
     LPCWSTR GetPathForErrorMessages();
+
+    // This method boxes a value type using a given method table pointer
+    static FCDECL2(Object*, InternalBoxForMethodTable, MethodTable* pMethodTable, void* data);
 
     //-------------------------------------------------------------------
     // COM INTEROP

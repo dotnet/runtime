@@ -600,6 +600,7 @@ FCFuncStart(gRuntimeHelpers)
     FCFuncElement("GetTailCallInfo", TailCallHelp::GetTailCallInfo)
     FCFuncElement("RegisterForGCReporting", GCReporting::Register)
     FCFuncElement("UnregisterForGCReporting", GCReporting::Unregister)
+    FCFuncElement("Box", MethodTable::InternalBoxForMethodTable)
 FCFuncEnd()
 
 FCFuncStart(gMethodTableFuncs)

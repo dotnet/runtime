@@ -264,6 +264,17 @@ namespace System.Runtime.CompilerServices
             return GetMethodTable(obj)->HasComponentSize;
         }
 
+        /// <summary>
+        /// Boxes a given value using an input <see cref="MethodTable"/> to determine its type.
+        /// </summary>
+        /// <param name="methodTable">The <see cref="MethodTable"/> pointer to use to create the boxed instance.</param>
+        /// <param name="data">A reference to the data to box.</param>
+        /// <returns>A boxed instance of the value at <paramref name="data"/>.</returns>
+        /// <remarks>This method includes proper handling for nullable value types as well.</remarks>
+        /// <exception cref="InvalidOperationException">Thrown if <paramref name="methodTable"/> refers to a byref-like type.</exception>
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern unsafe object? Box(MethodTable* methodTable, ref byte data);
+
         // Given an object reference, returns its MethodTable*.
         //
         // WARNING: The caller has to ensure that MethodTable* does not get unloaded. The most robust way
