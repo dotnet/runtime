@@ -3957,13 +3957,11 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
 
             if ((castMaxValue == UINT16_MAX) || (castMaxValue == UINT8_MAX))
             {
-                assert(castMinValue == 0);
                 GetEmitter()->emitIns_R_I(INS_cmp, EA_SIZE(desc.CheckSrcSize()), reg, castMaxValue + 1);
                 genJumpToThrowHlpBlk((castMinValue == 0) ? EJ_hs : EJ_ge, SCK_OVERFLOW);
             }
             else if (castMaxValue == INT16_MAX)
             {
-                assert(castMinValue == INT16_MIN);
 #ifdef TARGET_64BIT
                 GetEmitter()->emitIns_R_R(INS_cmp, EA_SIZE(desc.CheckSrcSize()), reg, reg, INS_OPTS_SXTH);
                 genJumpToThrowHlpBlk(EJ_ne, SCK_OVERFLOW);
@@ -3977,7 +3975,6 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
             else
             {
                 assert(castMaxValue == INT8_MAX);
-                assert(castMinValue == INT8_MIN);
 #ifdef TARGET_64BIT
                 GetEmitter()->emitIns_R_R(INS_cmp, EA_SIZE(desc.CheckSrcSize()), reg, reg, INS_OPTS_SXTB);
                 genJumpToThrowHlpBlk(EJ_ne, SCK_OVERFLOW);
