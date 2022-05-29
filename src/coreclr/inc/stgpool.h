@@ -49,7 +49,6 @@ const int DFT_CODE_HEAP_SIZE = 8192;
 class StgStringPool;
 class StgBlobPool;
 class StgCodePool;
-class CorProfileData;
 
 //  Perform binary search on index table.
 //

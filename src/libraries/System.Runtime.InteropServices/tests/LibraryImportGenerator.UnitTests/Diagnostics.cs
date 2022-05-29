@@ -12,6 +12,8 @@ using Microsoft.CodeAnalysis.Testing;
 using Microsoft.Interop;
 using Xunit;
 
+using StringMarshalling = Microsoft.Interop.StringMarshalling;
+
 namespace LibraryImportGenerator.UnitTests
 {
     public class Diagnostics
@@ -293,6 +295,7 @@ partial class Test
         }
 
         [Fact]
+        [OuterLoop("Uses the network for downlevel ref packs")]
         public async Task StringMarshallingForwardingNotSupported_ReportsDiagnostic()
         {
             string source = @"

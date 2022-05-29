@@ -16,7 +16,7 @@ All that's left is to ensure that your changes have worked as expected. To do so
 
 1. From a clean copy of your branch, run `build.cmd/sh libs -allconfigurations`
 
-2. Check in `bin\packages\Debug` for the existence of your package, with the appropriate package version.
+2. Check in `artifacts\bin\packages\Debug` for the existence of your package, with the appropriate package version.
 
 3. Try installing the built package in a test application, testing that your changes to the library are present & working as expected.
    To install your package add your local packages folder as a feed source in VS or your nuget.config and then add a PackageReference to the specific version of the package you built then try using the APIs.

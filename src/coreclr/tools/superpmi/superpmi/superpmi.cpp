@@ -53,6 +53,10 @@ void SetSuperPmiTargetArchitecture(const char* targetArchitecture)
         {
             SetSpmiTargetArchitecture(SPMI_TARGET_ARCHITECTURE_ARM64);
         }
+        else if (0 == _stricmp(targetArchitecture, "loongarch64"))
+        {
+            SetSpmiTargetArchitecture(SPMI_TARGET_ARCHITECTURE_LOONGARCH64);
+        }
         else
         {
             LogError("Illegal target architecture '%s'", targetArchitecture);
@@ -351,13 +355,13 @@ int __cdecl main(int argc, char* argv[])
         {
             if (!jit->resetConfig(mc))
             {
-                LogError("JIT can't reset enviroment");
+                LogError("JIT can't reset environment");
             }
             if (o.nameOfJit2 != nullptr)
             {
                 if (!jit2->resetConfig(mc))
                 {
-                    LogError("JIT2 can't reset enviroment");
+                    LogError("JIT2 can't reset environment");
                 }
             }
         }
@@ -539,6 +543,9 @@ int __cdecl main(int argc, char* argv[])
 
                     totalBaseMetrics.NumDiffedCodeBytes += baseMetrics.NumCodeBytes;
                     totalDiffMetrics.NumDiffedCodeBytes += diffMetrics.NumCodeBytes;
+
+                    totalBaseMetrics.NumDiffExecutedInstructions += baseMetrics.NumExecutedInstructions;
+                    totalDiffMetrics.NumDiffExecutedInstructions += diffMetrics.NumExecutedInstructions;
                 }
             }
         }

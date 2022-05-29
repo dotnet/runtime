@@ -749,6 +749,10 @@ public:
     // during object construction.
     void CheckRunClassInitAsIfConstructingThrowing();
 
+#if defined(TARGET_LOONGARCH64)
+    static int GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE clh);
+#endif
+
 #if defined(UNIX_AMD64_ABI_ITF)
     // Builds the internal data structures and classifies struct eightbytes for Amd System V calling convention.
     bool ClassifyEightBytes(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel, unsigned int startOffsetOfStruct, bool isNativeStruct);
@@ -854,9 +858,7 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        g_IBCLogger.LogMethodTableAccess(this);
-
-        return !(GetWriteableData()->m_dwFlags & MethodTableWriteableData::enum_flag_Unrestored);
+        return IsRestored_NoLogging();
     }
 
     //-------------------------------------------------------------------
@@ -949,8 +951,6 @@ public:
     inline ClassLoadLevel GetLoadLevel()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-
-        g_IBCLogger.LogMethodTableAccess(this);
 
         DWORD dwFlags = GetWriteableData()->m_dwFlags;
 
@@ -1220,7 +1220,6 @@ public:
         {
             // Non-virtual slots < GetNumVtableSlots live in a single chunk pointed to by an optional member
             _ASSERTE(HasNonVirtualSlotsArray());
-            g_IBCLogger.LogMethodTableNonVirtualSlotsAccess(this);
             return GetNonVirtualSlotsArray() + (slotNum - GetNumVirtuals());
         }
     }
@@ -1392,7 +1391,6 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        g_IBCLogger.LogMethodTableAccess(this);
         return GetNumVirtuals_NoLogging();
     }
 
@@ -1416,7 +1414,6 @@ public:
             return 0;
         }
         MethodTable *pMTParent = GetParentMethodTable();
-        g_IBCLogger.LogMethodTableAccess(this);
         return pMTParent == NULL ? 0 : pMTParent->GetNumVirtuals();
     }
 
@@ -1776,7 +1773,6 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
         PRECONDITION(IsParentMethodTablePointerValid());
-        g_IBCLogger.LogMethodTableAccess(this);
         return GetParentMethodTable() == pMT;
     }
 
@@ -2386,7 +2382,6 @@ public:
     OBJECTREF FastBox(void** data);
 #ifndef DACCESS_COMPILE
     BOOL UnBoxInto(void *dest, OBJECTREF src);
-    BOOL UnBoxIntoArg(ArgDestination *argDest, OBJECTREF src);
     void UnBoxIntoUnchecked(void *dest, OBJECTREF src);
 #endif
 
@@ -2725,7 +2720,6 @@ public:
     inline PTR_Const_MethodTableWriteableData GetWriteableData() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        g_IBCLogger.LogMethodTableWriteableDataAccess(this);
         return GetWriteableData_NoLogging();
     }
 
@@ -2738,7 +2732,6 @@ public:
     inline PTR_MethodTableWriteableData GetWriteableDataForWrite()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        g_IBCLogger.LogMethodTableWriteableDataWriteAccess(this);
         return GetWriteableDataForWrite_NoLogging();
     }
 

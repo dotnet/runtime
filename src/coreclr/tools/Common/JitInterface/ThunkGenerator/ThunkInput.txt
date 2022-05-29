@@ -30,7 +30,7 @@
 ; Also, note that an empty line is ignored, and a line that begins with a ; is ignored.
 ;
 ; If the boilerplate around the individual functions needs adjustment, edit the thunk generator source code, and
-;    rebuild with rebuildthunkgen.cmd in the the ThunkGenerator subdir, then rebuildthunks.cmd
+;    rebuild with rebuildthunkgen.cmd in the ThunkGenerator subdir, then rebuildthunks.cmd
 ; If this file is editted, rebuild with gen.cmd -- DO NOT RUN from within a razzle window.
 ;
 NORMALTYPES
@@ -188,7 +188,7 @@ FUNCTIONS
     CORINFO_CLASS_HANDLE getTokenTypeAsHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken)
     bool isValidToken(CORINFO_MODULE_HANDLE module, unsigned metaTOK)
     bool isValidStringRef(CORINFO_MODULE_HANDLE module, unsigned metaTOK)
-    const char16_t * getStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, int* length)
+    int getStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, char16_t* buffer, int bufferSize)
     CorInfoType asCorInfoType(CORINFO_CLASS_HANDLE cls)
     const char* getClassName(CORINFO_CLASS_HANDLE cls)
     const char* getClassNameFromMetadata(CORINFO_CLASS_HANDLE cls, const char **namespaceName)

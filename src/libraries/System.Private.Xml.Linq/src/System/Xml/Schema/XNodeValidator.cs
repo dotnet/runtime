@@ -441,8 +441,10 @@ namespace System.Xml.Schema
         /// Gets the schema information that has been assigned to the <see cref="XElement"/> as a result of schema validation.
         /// </summary>
         /// <param name="source">Extension point</param>
-        public static IXmlSchemaInfo? GetSchemaInfo(this XElement source!!)
+        public static IXmlSchemaInfo? GetSchemaInfo(this XElement source)
         {
+            ArgumentNullException.ThrowIfNull(source);
+
             return source.Annotation<IXmlSchemaInfo>();
         }
 
@@ -450,8 +452,10 @@ namespace System.Xml.Schema
         /// Gets the schema information that has been assigned to the <see cref="XAttribute"/> as a result of schema validation.
         /// </summary>
         /// <param name="source">Extension point</param>
-        public static IXmlSchemaInfo? GetSchemaInfo(this XAttribute source!!)
+        public static IXmlSchemaInfo? GetSchemaInfo(this XAttribute source)
         {
+            ArgumentNullException.ThrowIfNull(source);
+
             return source.Annotation<IXmlSchemaInfo>();
         }
 
@@ -479,8 +483,11 @@ namespace System.Xml.Schema
         /// <param name="addSchemaInfo">If enabled the <see cref="XDocument"/> and the corresponding
         /// subtree is augmented with PSVI in the form of <see cref="IXmlSchemaInfo"/> annotations,
         /// default attributes and default element values</param>
-        public static void Validate(this XDocument source!!, XmlSchemaSet schemas!!, ValidationEventHandler? validationEventHandler, bool addSchemaInfo)
+        public static void Validate(this XDocument source, XmlSchemaSet schemas, ValidationEventHandler? validationEventHandler, bool addSchemaInfo)
         {
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(schemas);
+
             new XNodeValidator(schemas, validationEventHandler).Validate(source, null, addSchemaInfo);
         }
 
@@ -514,8 +521,12 @@ namespace System.Xml.Schema
         /// <param name="addSchemaInfo">If enabled the <see cref="XElement"/> and the corresponding
         /// subtree is augmented with PSVI in the form of <see cref="IXmlSchemaInfo"/> annotations,
         /// default attributes and default element values</param>
-        public static void Validate(this XElement source!!, XmlSchemaObject partialValidationType!!, XmlSchemaSet schemas!!, ValidationEventHandler? validationEventHandler, bool addSchemaInfo)
+        public static void Validate(this XElement source, XmlSchemaObject partialValidationType, XmlSchemaSet schemas, ValidationEventHandler? validationEventHandler, bool addSchemaInfo)
         {
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(partialValidationType);
+            ArgumentNullException.ThrowIfNull(schemas);
+
             new XNodeValidator(schemas, validationEventHandler).Validate(source, partialValidationType, addSchemaInfo);
         }
 
@@ -549,8 +560,12 @@ namespace System.Xml.Schema
         /// <param name="addSchemaInfo">If enabled the <see cref="XAttribute"/> is augmented with PSVI
         /// in the form of <see cref="IXmlSchemaInfo"/> annotations, default attributes and
         /// default element values</param>
-        public static void Validate(this XAttribute source!!, XmlSchemaObject partialValidationType!!, XmlSchemaSet schemas!!, ValidationEventHandler? validationEventHandler, bool addSchemaInfo)
+        public static void Validate(this XAttribute source, XmlSchemaObject partialValidationType, XmlSchemaSet schemas, ValidationEventHandler? validationEventHandler, bool addSchemaInfo)
         {
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(partialValidationType);
+            ArgumentNullException.ThrowIfNull(schemas);
+
             new XNodeValidator(schemas, validationEventHandler).Validate(source, partialValidationType, addSchemaInfo);
         }
     }

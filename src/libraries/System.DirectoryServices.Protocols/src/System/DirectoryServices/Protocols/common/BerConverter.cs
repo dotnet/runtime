@@ -10,8 +10,10 @@ namespace System.DirectoryServices.Protocols
 {
     public static partial class BerConverter
     {
-        public static byte[] Encode(string format!!, params object[] value)
+        public static byte[] Encode(string format, params object[] value)
         {
+            ArgumentNullException.ThrowIfNull(format);
+
             // no need to turn on invalid encoding detection as we just do string->byte[] conversion.
             UTF8Encoding utf8Encoder = new UTF8Encoding();
             byte[] encodingResult = null;
@@ -298,8 +300,10 @@ namespace System.DirectoryServices.Protocols
                 throw new BerConversionException();
         }
 
-        internal static object[] TryDecode(string format!!, byte[] value, out bool decodeSucceeded)
+        internal static object[] TryDecode(string format, byte[] value, out bool decodeSucceeded)
         {
+            ArgumentNullException.ThrowIfNull(format);
+
             Debug.WriteLine("Begin decoding");
 
             UTF8Encoding utf8Encoder = new UTF8Encoding(false, true);

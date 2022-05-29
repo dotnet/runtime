@@ -14,7 +14,7 @@ const DotnetSupportLib = {
     // Emscripten's getBinaryPromise is not async for NodeJs, but we would like to have it async, so we replace it.
     // We also replace implementation of readAsync and fetch
     $DOTNET__postset: `
-let __dotnet_replacements = {readAsync, fetch: globalThis.fetch, require};
+let __dotnet_replacements = {readAsync, fetch: globalThis.fetch, require, updateGlobalBufferAndViews};
 if (ENVIRONMENT_IS_NODE) {
     __dotnet_replacements.requirePromise = import('module').then(mod => {
         const require = mod.createRequire(import.meta.url);
@@ -52,6 +52,7 @@ let __dotnet_exportedAPI = __dotnet_runtime.__initializeImportsAndExports(
     { isESM:true, isGlobal:false, isNode:ENVIRONMENT_IS_NODE, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, locateFile, quit_, ExitStatus, requirePromise:__dotnet_replacements.requirePromise },
     { mono:MONO, binding:BINDING, internal:INTERNAL, module:Module },
     __dotnet_replacements);
+updateGlobalBufferAndViews = __dotnet_replacements.updateGlobalBufferAndViews;
 readAsync = __dotnet_replacements.readAsync;
 var fetch = __dotnet_replacements.fetch;
 require = __dotnet_replacements.requireOut;
@@ -80,7 +81,7 @@ const linked_functions = [
     "mono_wasm_trace_logger",
 
     // corebindings.c
-    "mono_wasm_invoke_js_with_args",
+    "mono_wasm_invoke_js_with_args_ref",
     "mono_wasm_get_object_property_ref",
     "mono_wasm_set_object_property_ref",
     "mono_wasm_get_by_index_ref",
@@ -92,17 +93,21 @@ const linked_functions = [
     "mono_wasm_typed_array_copy_to_ref",
     "mono_wasm_typed_array_from_ref",
     "mono_wasm_typed_array_copy_from_ref",
-    "mono_wasm_cancel_promise",
+    "mono_wasm_cancel_promise_ref",
     "mono_wasm_web_socket_open_ref",
     "mono_wasm_web_socket_send",
     "mono_wasm_web_socket_receive",
     "mono_wasm_web_socket_close_ref",
     "mono_wasm_web_socket_abort",
-    "mono_wasm_compile_function",
+    "mono_wasm_compile_function_ref",
 
     // pal_icushim_static.c
     "mono_wasm_load_icu_data",
     "mono_wasm_get_icudt_name",
+
+    // pal_crypto_webworker.c
+    "dotnet_browser_simple_digest_hash",
+    "dotnet_browser_can_use_simple_digest_hash",
 ];
 
 // -- this javascript file is evaluated by emcc during compilation! --

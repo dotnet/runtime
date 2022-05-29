@@ -373,13 +373,14 @@ bool MyICJI::isValidStringRef(CORINFO_MODULE_HANDLE module, /* IN  */
     return jitInstance->mc->repIsValidStringRef(module, metaTOK);
 }
 
-const char16_t* MyICJI::getStringLiteral(CORINFO_MODULE_HANDLE module,  /* IN  */
-                                         unsigned              metaTOK, /* IN  */
-                                         int*                  length   /* OUT */
-                                         )
+int MyICJI::getStringLiteral(CORINFO_MODULE_HANDLE module,    /* IN  */
+                             unsigned              metaTOK,   /* IN  */
+                             char16_t*             buffer,    /* OUT */
+                             int                   bufferSize /* IN  */
+                             )
 {
     jitInstance->mc->cr->AddCall("getStringLiteral");
-    return jitInstance->mc->repGetStringLiteral(module, metaTOK, length);
+    return jitInstance->mc->repGetStringLiteral(module, metaTOK, buffer, bufferSize);
 }
 
 /**********************************************************************************/
@@ -432,7 +433,7 @@ CORINFO_CLASS_HANDLE MyICJI::getTypeInstantiationArgument(CORINFO_CLASS_HANDLE c
 // was truncated when copied to the buffer.
 //
 // Operation:
-// 
+//
 // On entry, `*pnBufLen` specifies the size of the buffer pointed to by `*ppBuf` as a count of characters.
 // There are two cases:
 // 1. If the size is zero, the function computes the length of the representation and returns that.
@@ -1781,7 +1782,7 @@ bool MyICJI::logMsg(unsigned level, const char* fmt, va_list args)
 }
 
 // do an assert.  will return true if the code should retry (DebugBreak)
-// returns false, if the assert should be igored.
+// returns false, if the assert should be ignored.
 int MyICJI::doAssert(const char* szFile, int iLine, const char* szExpr)
 {
     jitInstance->mc->cr->AddCall("doAssert");

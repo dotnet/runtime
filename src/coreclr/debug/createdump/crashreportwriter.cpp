@@ -271,7 +271,7 @@ CrashReportWriter::OpenWriter(const char* fileName)
     m_fd = open(fileName, O_WRONLY|O_CREAT|O_TRUNC, S_IWUSR | S_IRUSR);
     if (m_fd == -1)
     {
-        printf_error("Could not create json file %s: %d %s\n", fileName, errno, strerror(errno));
+        printf_error("Could not create json file '%s': %s (%d)\n", fileName, strerror(errno), errno);
         return false;
     }
     Write("{\n");
@@ -309,7 +309,7 @@ CrashReportWriter::Indent(std::string& text)
 }
 
 void
-CrashReportWriter::WriteSeperator(std::string& text)
+CrashReportWriter::WriteSeparator(std::string& text)
 {
     if (m_comma)
     {
@@ -323,7 +323,7 @@ void
 CrashReportWriter::OpenValue(const char* key, char marker)
 {
     std::string text;
-    WriteSeperator(text);
+    WriteSeparator(text);
     if (key != nullptr)
     {
         text.append("\"");
@@ -354,7 +354,7 @@ void
 CrashReportWriter::WriteValue(const char* key, const char* value)
 {
     std::string text;
-    WriteSeperator(text);
+    WriteSeparator(text);
     text.append("\"");
     text.append(key);
     text.append("\" : \"");

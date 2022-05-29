@@ -2240,7 +2240,7 @@ ves_icall_RuntimeFieldInfo_GetRawConstantValue (MonoReflectionFieldHandle rfield
 		goto invalid_operation;
 
 	if (image_is_dynamic (m_class_get_image (m_field_get_parent (field)))) {
-		MonoClass *klass = m_field_get_parent (field);
+		klass = m_field_get_parent (field);
 		int fidx = field - m_class_get_fields (klass);
 		MonoFieldDefaultValue *def_values = mono_class_get_field_def_values (klass);
 
@@ -2273,8 +2273,6 @@ ves_icall_RuntimeFieldInfo_GetRawConstantValue (MonoReflectionFieldHandle rfield
 	case MONO_TYPE_U8:
 	case MONO_TYPE_I8:
 	case MONO_TYPE_R8: {
-		MonoType *t;
-
 		/* boxed value type */
 		t = g_new0 (MonoType, 1);
 		t->type = def_type;
@@ -3248,44 +3246,47 @@ init_io_stream_slots (void)
 	io_stream_slots_set = TRUE;
 }
 
-MonoBoolean
-ves_icall_System_IO_Stream_HasOverriddenBeginEndRead (MonoObjectHandle stream, MonoError *error)
+
+static MonoBoolean
+stream_has_overriden_begin_or_end_method (MonoObjectHandle stream, int begin_slot, int end_slot, MonoError *error)
 {
 	MonoClass* curr_klass = MONO_HANDLE_GET_CLASS (stream);
 	MonoClass* base_klass = mono_class_try_get_stream_class ();
 
-	if (!io_stream_slots_set)
-		init_io_stream_slots ();
+	mono_class_setup_vtable (curr_klass);
+	if (mono_class_has_failure (curr_klass)) {
+		mono_error_set_for_class_failure (error, curr_klass);
+		return_val_if_nok (error, FALSE);
+	}
 
 	// slots can still be -1 and it means Linker removed the methods from the base class (Stream)
 	// in this case we can safely assume the methods are not overridden
 	// otherwise - check vtable
 	MonoMethod **curr_klass_vtable = m_class_get_vtable (curr_klass);
-	gboolean begin_read_is_overriden = io_stream_begin_read_slot != -1 && curr_klass_vtable [io_stream_begin_read_slot]->klass != base_klass;
-	gboolean end_read_is_overriden = io_stream_end_read_slot != -1 && curr_klass_vtable [io_stream_end_read_slot]->klass != base_klass;
+	gboolean begin_is_overriden = begin_slot != -1 && curr_klass_vtable [begin_slot] != NULL && curr_klass_vtable [begin_slot]->klass != base_klass;
+	gboolean end_is_overriden = end_slot != -1 && curr_klass_vtable [end_slot] != NULL && curr_klass_vtable [end_slot]->klass != base_klass;
+
+	return begin_is_overriden || end_is_overriden;
+}
+
+MonoBoolean
+ves_icall_System_IO_Stream_HasOverriddenBeginEndRead (MonoObjectHandle stream, MonoError *error)
+{
+	if (!io_stream_slots_set)
+		init_io_stream_slots ();
 
 	// return true if BeginRead or EndRead were overriden
-	return begin_read_is_overriden || end_read_is_overriden;
+	return stream_has_overriden_begin_or_end_method (stream, io_stream_begin_read_slot, io_stream_end_read_slot, error);
 }
 
 MonoBoolean
 ves_icall_System_IO_Stream_HasOverriddenBeginEndWrite (MonoObjectHandle stream, MonoError *error)
 {
-	MonoClass* curr_klass = MONO_HANDLE_GETVAL (stream, vtable)->klass;
-	MonoClass* base_klass = mono_class_try_get_stream_class ();
-
 	if (!io_stream_slots_set)
 		init_io_stream_slots ();
 
-	// slots can still be -1 and it means Linker removed the methods from the base class (Stream)
-	// in this case we can safely assume the methods are not overridden
-	// otherwise - check vtable
-	MonoMethod **curr_klass_vtable = m_class_get_vtable (curr_klass);
-	gboolean begin_write_is_overriden = io_stream_begin_write_slot != -1 && curr_klass_vtable [io_stream_begin_write_slot]->klass != base_klass;
-	gboolean end_write_is_overriden = io_stream_end_write_slot != -1 && curr_klass_vtable [io_stream_end_write_slot]->klass != base_klass;
-
 	// return true if BeginWrite or EndWrite were overriden
-	return begin_write_is_overriden || end_write_is_overriden;
+	return stream_has_overriden_begin_or_end_method (stream, io_stream_begin_write_slot, io_stream_end_write_slot, error);
 }
 
 MonoBoolean
@@ -4389,7 +4390,7 @@ ves_icall_System_Reflection_Assembly_InternalGetType (MonoReflectionAssemblyHand
 
 		/* need to report exceptions ? */
 		if (throwOnError && mono_class_has_failure (klass)) {
-			/* report SecurityException (or others) that occured when loading the assembly */
+			/* report SecurityException (or others) that occurred when loading the assembly */
 			mono_error_set_for_class_failure (error, klass);
 			goto fail;
 		}
@@ -6291,24 +6292,6 @@ ves_icall_System_Runtime_InteropServices_Marshal_Prelink (MonoReflectionMethodHa
 		return;
 	mono_lookup_pinvoke_call_internal (method, error);
 	/* create the wrapper, too? */
-}
-
-int
-ves_icall_Interop_Sys_DoubleToString(double value, char *format, char *buffer, int bufferLength)
-{
-#if defined(TARGET_ARM)
-	/* workaround for faulty vcmp.f64 implementation on some 32bit ARM CPUs */
-	guint64 bits = *(guint64 *) &value;
-	if (bits == 0x1) { /* 4.9406564584124654E-324 */
-		g_assert (!strcmp (format, "%.40e"));
-		return snprintf (buffer, bufferLength, "%s", "4.9406564584124654417656879286822137236506e-324");
-	} else if (bits == 0x4) { /* 2E-323 */
-		g_assert (!strcmp (format, "%.40e"));
-		return snprintf (buffer, bufferLength, "%s", "1.9762625833649861767062751714728854894602e-323");
-	}
-#endif
-
-	return snprintf(buffer, bufferLength, format, value);
 }
 
 static gboolean

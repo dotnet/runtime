@@ -362,20 +362,12 @@ namespace System.Security.Cryptography
         public virtual void ImportFromPem(ReadOnlySpan<char> input)
         {
             PemKeyHelpers.ImportPem(input, label =>
-            {
-                if (label.SequenceEqual(PemLabels.Pkcs8PrivateKey))
+                label switch
                 {
-                    return ImportPkcs8PrivateKey;
-                }
-                else if (label.SequenceEqual(PemLabels.SpkiPublicKey))
-                {
-                    return ImportSubjectPublicKeyInfo;
-                }
-                else
-                {
-                    return null;
-                }
-            });
+                    PemLabels.Pkcs8PrivateKey => ImportPkcs8PrivateKey,
+                    PemLabels.SpkiPublicKey => ImportSubjectPublicKeyInfo,
+                    _ => null,
+                });
         }
 
         /// <summary>
@@ -409,7 +401,7 @@ namespace System.Security.Cryptography
             {
                 try
                 {
-                    return PemKeyHelpers.CreatePemFromData(PemLabels.Pkcs8PrivateKey, exported);
+                    return PemEncoding.WriteString(PemLabels.Pkcs8PrivateKey, exported);
                 }
                 finally
                 {
@@ -462,7 +454,7 @@ namespace System.Security.Cryptography
             {
                 try
                 {
-                    return PemKeyHelpers.CreatePemFromData(PemLabels.EncryptedPkcs8PrivateKey, exported);
+                    return PemEncoding.WriteString(PemLabels.EncryptedPkcs8PrivateKey, exported);
                 }
                 finally
                 {
@@ -498,7 +490,7 @@ namespace System.Security.Cryptography
         public string ExportSubjectPublicKeyInfoPem()
         {
             byte[] exported = ExportSubjectPublicKeyInfo();
-            return PemKeyHelpers.CreatePemFromData(PemLabels.SpkiPublicKey, exported);
+            return PemEncoding.WriteString(PemLabels.SpkiPublicKey, exported);
         }
 
         /// <summary>

@@ -18,8 +18,6 @@
 
 RunningOnStatusEnum gRunningOnStatus = RUNNING_ON_STATUS_UNINITED;
 
-#define NON_SUPPORTED_PLATFORM_MSGBOX_TITLE             W("Platform not supported")
-#define NON_SUPPORTED_PLATFORM_MSGBOX_TEXT              W("The minimum supported platform is Windows 7")
 #define NON_SUPPORTED_PLATFORM_TERMINATE_ERROR_CODE     0xBAD1BAD1
 
 //*****************************************************************************
@@ -81,10 +79,8 @@ CHECK_SUPPORTED:
 
     if (!fSupportedPlatform)
     {
-        // The current platform isn't supported. Display a message box to this effect and exit.
-        // Note that this should never happen since the .NET Fx setup should not install on
-        // non supported platforms (which is why the message box text isn't localized).
-        UtilMessageBoxCatastrophicNonLocalized(NON_SUPPORTED_PLATFORM_MSGBOX_TEXT, NON_SUPPORTED_PLATFORM_MSGBOX_TITLE, MB_OK | MB_ICONERROR, TRUE);
+        // The current platform isn't supported. Display a message to this effect and exit.
+        fprintf(stderr, "Platform not supported: The minimum supported platform is Windows 7\n");
         TerminateProcess(GetCurrentProcess(), NON_SUPPORTED_PLATFORM_TERMINATE_ERROR_CODE);
     }
 #endif // TARGET_UNIX
@@ -693,27 +689,6 @@ LPWSTRToGuid(
     return TRUE;
 } // GuidToLPWSTR
 
-
-#ifdef _DEBUG
-// Always write regardless of registry.
-void _cdecl DbgWriteEx(LPCTSTR szFmt, ...)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    WCHAR rcBuff[1024];
-    va_list marker;
-
-    va_start(marker, szFmt);
-    _vsnwprintf_s(rcBuff, ARRAY_SIZE(rcBuff), _TRUNCATE, szFmt, marker);
-    va_end(marker);
-    WszOutputDebugString(rcBuff);
-}
-#endif //_DEBUG
-
 /**************************************************************************/
 void ConfigDWORD::init(const CLRConfig::ConfigDWORDInfo & info)
 {
@@ -770,6 +745,19 @@ void TrimWhiteSpace(_Outptr_result_buffer_(*pcch)  LPCWSTR *pwsz, __inout LPDWOR
     *pcch = cch;
 } // TrimWhiteSpace
 
+void OutputDebugStringUtf8(LPCUTF8 utf8DebugMsg)
+{
+#ifdef TARGET_UNIX
+    OutputDebugStringA(utf8DebugMsg);
+#else
+    if (utf8DebugMsg == NULL)
+        utf8DebugMsg = "";
+
+    MAKE_WIDEPTR_FROMUTF8_NOTHROW(wideDebugMsg, utf8DebugMsg);
+    OutputDebugStringW(wideDebugMsg);
+#endif // !TARGET_UNIX
+}
+
 BOOL ThreadWillCreateGuardPage(SIZE_T sizeReservedStack, SIZE_T sizeCommitedStack)
 {
     // We need to make sure there will be a reserved but never committed page at the end
@@ -811,4 +799,3 @@ BOOL ThreadWillCreateGuardPage(SIZE_T sizeReservedStack, SIZE_T sizeCommitedStac
     // more than sizeCommitedStack.
     return (sizeReservedStack > sizeCommitedStack + ((size_t)sysInfo.dwPageSize));
 } // ThreadWillCreateGuardPage
-

@@ -54,7 +54,7 @@ namespace Microsoft.Extensions.Logging.Console
         }
 
         // for testing
-        internal virtual void WriteMessage(LogMessageEntry entry)
+        internal void WriteMessage(LogMessageEntry entry)
         {
             IConsole console = entry.LogAsError ? ErrorConsole : Console;
             console.Write(entry.Message);

@@ -29,6 +29,7 @@ namespace System.Text.Json
         private static Func<Type, JsonSerializerOptions, JsonTypeInfo>? s_typeInfoCreationFunc;
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         private static void RootReflectionSerializerDependencies()
         {
             // s_typeInfoCreationFunc is the last field assigned.
@@ -42,6 +43,7 @@ namespace System.Text.Json
             }
 
             [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+            [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
             static JsonTypeInfo CreateJsonTypeInfo(Type type, JsonSerializerOptions options)
             {
                 JsonTypeInfo.ValidateType(type, null, null, options);
@@ -66,12 +68,14 @@ namespace System.Text.Json
         }
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         private JsonTypeInfo<T> CreateReflectionJsonTypeInfo<T>()
         {
             return new ReflectionJsonTypeInfo<T>(this);
         }
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         private static JsonConverter[] GetDefaultFactoryConverters()
         {
             return new JsonConverter[]
@@ -94,7 +98,7 @@ namespace System.Text.Json
 
         private static Dictionary<Type, JsonConverter> GetDefaultSimpleConverters()
         {
-            const int NumberOfSimpleConverters = 24;
+            const int NumberOfSimpleConverters = 26;
             var converters = new Dictionary<Type, JsonConverter>(NumberOfSimpleConverters);
 
             // Use a dictionary for simple converters.
@@ -105,14 +109,18 @@ namespace System.Text.Json
             Add(JsonMetadataServices.CharConverter);
             Add(JsonMetadataServices.DateTimeConverter);
             Add(JsonMetadataServices.DateTimeOffsetConverter);
+#if NETCOREAPP
+            Add(JsonMetadataServices.DateOnlyConverter);
+            Add(JsonMetadataServices.TimeOnlyConverter);
+#endif
             Add(JsonMetadataServices.DoubleConverter);
             Add(JsonMetadataServices.DecimalConverter);
             Add(JsonMetadataServices.GuidConverter);
             Add(JsonMetadataServices.Int16Converter);
             Add(JsonMetadataServices.Int32Converter);
             Add(JsonMetadataServices.Int64Converter);
-            Add(new JsonElementConverter());
-            Add(new JsonDocumentConverter());
+            Add(JsonMetadataServices.JsonElementConverter);
+            Add(JsonMetadataServices.JsonDocumentConverter);
             Add(JsonMetadataServices.ObjectConverter);
             Add(JsonMetadataServices.SByteConverter);
             Add(JsonMetadataServices.SingleConverter);
@@ -124,7 +132,7 @@ namespace System.Text.Json
             Add(JsonMetadataServices.UriConverter);
             Add(JsonMetadataServices.VersionConverter);
 
-            Debug.Assert(NumberOfSimpleConverters == converters.Count);
+            Debug.Assert(converters.Count <= NumberOfSimpleConverters);
 
             return converters;
 
@@ -139,6 +147,14 @@ namespace System.Text.Json
         /// Once serialization or deserialization occurs, the list cannot be modified.
         /// </remarks>
         public IList<JsonConverter> Converters => _converters;
+
+        /// <summary>
+        /// The list of custom polymorphic type configurations.
+        /// </summary>
+        /// <remarks>
+        /// Once serialization or deserialization occurs, the list cannot be modified.
+        /// </remarks>
+        public IList<JsonPolymorphicTypeConfiguration> PolymorphicTypeConfigurations => _polymorphicTypeConfigurations;
 
         internal JsonConverter GetConverterFromMember(Type? parentClassType, Type propertyType, MemberInfo? memberInfo)
         {
@@ -204,8 +220,14 @@ namespace System.Text.Json
         /// for <paramref name="typeToConvert"/> or its serializable members.
         /// </exception>
         [RequiresUnreferencedCode("Getting a converter for a type may require reflection which depends on unreferenced code.")]
-        public JsonConverter GetConverter(Type typeToConvert!!)
+        [RequiresDynamicCode("Getting a converter for a type may require reflection which depends on runtime code generation.")]
+        public JsonConverter GetConverter(Type typeToConvert)
         {
+            if (typeToConvert is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(typeToConvert));
+            }
+
             RootReflectionSerializerDependencies();
             return GetConverterInternal(typeToConvert);
         }
@@ -305,6 +327,9 @@ namespace System.Text.Json
             return converter;
         }
 
+        // This suppression needs to be removed. https://github.com/dotnet/runtime/issues/68878
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "The factory constructors are only invoked in the context of reflection serialization code paths " +
+            "and are marked RequiresDynamicCode")]
         private JsonConverter GetConverterFromAttribute(JsonConverterAttribute converterAttribute, Type typeToConvert, Type classTypeAttributeIsOn, MemberInfo? memberInfo)
         {
             JsonConverter? converter;

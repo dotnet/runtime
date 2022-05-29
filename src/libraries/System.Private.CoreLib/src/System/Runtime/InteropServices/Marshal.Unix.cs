@@ -161,8 +161,10 @@ namespace System.Runtime.InteropServices
         }
 
 #pragma warning disable IDE0060
-        internal static Type? GetTypeFromProgID(string progID!!, string? server, bool throwOnError)
+        internal static Type? GetTypeFromProgID(string progID, string? server, bool throwOnError)
         {
+            ArgumentNullException.ThrowIfNull(progID);
+
             if (throwOnError)
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
 

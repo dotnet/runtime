@@ -16,7 +16,6 @@
 
 #include "bindertypes.hpp"
 #include "failurecache.hpp"
-#include "assemblyidentitycache.hpp"
 #include "stringarraylist.h"
 
 namespace BINDER_SPACE
@@ -94,9 +93,6 @@ namespace BINDER_SPACE
                                   /* in */ SString &sAppPaths,
                                   /* in */ BOOL     fAcquireLock);
 
-        HRESULT GetAssemblyIdentity(/* in */ LPCSTR                szTextualIdentity,
-                                    /* in */ AssemblyIdentityUTF8 **ppAssemblyIdentity);
-
         // Getters/Setter
         inline ExecutionContext *GetExecutionContext();
         inline FailureCache *GetFailureCache();
@@ -118,8 +114,6 @@ namespace BINDER_SPACE
         ExecutionContext  *m_pExecutionContext;
         FailureCache      *m_pFailureCache;
         CRITSEC_COOKIE     m_contextCS;
-
-        AssemblyIdentityCache m_assemblyIdentityCache;
 
         StringArrayList    m_platformResourceRoots;
         StringArrayList    m_appPaths;

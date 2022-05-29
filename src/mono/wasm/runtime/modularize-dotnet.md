@@ -34,7 +34,7 @@ In `src\mono\wasm\runtime\CMakeLists.txt` which links only in-tree, we use same 
 # dotnet.*.post.js
 - Executed last (4)
 - When `onRuntimeInitialized` is overriden it would wait for emscriptens `Module.ready`
-- Otherwise it would wait for for MonoVM to load all assets and assemblies.
+- Otherwise it would wait for MonoVM to load all assets and assemblies.
 - It would pass on the API exports
 
 # About new API
@@ -56,7 +56,7 @@ More complex scenario with using APIs, commented
 ```
 import createDotnetRuntime from './dotnet.js'
 
-export const { MONO, BINDING } = await createDotnetRuntime(({ MONO, BINDING, Module }) => 
+export const { MONO, BINDING } = await createDotnetRuntime(({ MONO, BINDING, Module }) =>
 // this is callback with no statement, the APIs are only empty shells here and are populated later.
 ({
     disableDotnet6Compatibility: true,
@@ -67,15 +67,15 @@ export const { MONO, BINDING } = await createDotnetRuntime(({ MONO, BINDING, Mod
         // Module.config is loaded and could be tweaked before application
         Module.config.environment_variables["MONO_LOG_LEVEL"]="debug"
 
-        // here we could use API passed into this callback 
+        // here we could use API passed into this callback
         // call some early available functions
         MONO.mono_wasm_setenv("HELLO", "WORLD);
     }
     onDotnetReady: () => {
         // Only when there is no `onRuntimeInitialized` override.
-        // This is called after all assets are loaded , mapping to legacy `config.loaded_cb`. 
-        // It happens during emscripten `onRuntimeInitialized` after monoVm init + globalization + assemblies. 
-        // This also matches when the top level promise is resolved. 
+        // This is called after all assets are loaded , mapping to legacy `config.loaded_cb`.
+        // It happens during emscripten `onRuntimeInitialized` after monoVm init + globalization + assemblies.
+        // This also matches when the top level promise is resolved.
         // The original emscripten `Module.ready` promise is replaced with this.
 
         // at this point both emscripten and monoVM are fully initialized.

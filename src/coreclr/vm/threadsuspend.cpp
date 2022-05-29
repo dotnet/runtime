@@ -1243,7 +1243,7 @@ Thread::UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout)
     DWORD dwSwitchCount = 0;
 #endif // !defined(DISABLE_THREADSUSPEND)
 
-    for (;;)
+    while (true)
     {
         // Lock the thread store
         LOG((LF_SYNC, INFO3, "UserAbort obtain lock\n"));
@@ -1617,7 +1617,7 @@ LPrepareRetry:
         }
 #endif
 
-    } // for(;;)
+    } // while (true)
 
     if ((GetAbortEndTime() != MAXULONGLONG)  && IsAbortRequested())
     {
@@ -2121,7 +2121,7 @@ void Thread::RareDisablePreemptiveGC()
 
         DWORD dwSwitchCount = 0;
 
-        for (;;)
+        while (true)
         {
             EnablePreemptiveGC();
 
@@ -2495,7 +2495,7 @@ void RedirectedThreadFrame::ExceptionUnwind()
 #ifdef TARGET_X86
 
 //****************************************************************************************
-// This will check who caused the exception.  If it was caused by the the redirect function,
+// This will check who caused the exception.  If it was caused by the redirect function,
 // the reason is to resume the thread back at the point it was redirected in the first
 // place.  If the exception was not caused by the function, then it was caused by the call
 // out to the I[GC|Debugger]ThreadControl client and we need to determine if it's an
@@ -3701,7 +3701,7 @@ void Thread::CommitGCStressInstructionUpdate()
         else
             *(DWORD*)destCodeWriterHolder.GetRW() = *(DWORD*)pbSrcCode;
 
-#elif defined(TARGET_ARM64)
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 
         *(DWORD*)destCodeWriterHolder.GetRW() = *(DWORD*)pbSrcCode;
 
@@ -3728,7 +3728,7 @@ void EnableStressHeapHelper()
 
 // We're done with our GC.  Let all the threads run again.
 // By this point we've already unblocked most threads.  This just releases the ThreadStore lock.
-void ThreadSuspend::ResumeRuntime(BOOL bFinishedGC, BOOL SuspendSucceded)
+void ThreadSuspend::ResumeRuntime(BOOL bFinishedGC, BOOL SuspendSucceeded)
 {
     CONTRACTL {
         NOTHROW;
@@ -3744,7 +3744,7 @@ void ThreadSuspend::ResumeRuntime(BOOL bFinishedGC, BOOL SuspendSucceded)
     _ASSERTE(IsGCSpecialThread() || ThreadStore::HoldingThreadStore());
     _ASSERTE(!GCHeapUtilities::IsGCInProgress() );
 
-    STRESS_LOG2(LF_SYNC, LL_INFO1000, "Thread::ResumeRuntime(finishedGC=%d, SuspendSucceeded=%d) - Start\n", bFinishedGC, SuspendSucceded);
+    STRESS_LOG2(LF_SYNC, LL_INFO1000, "Thread::ResumeRuntime(finishedGC=%d, SuspendSucceeded=%d) - Start\n", bFinishedGC, SuspendSucceeded);
 
     //
     // Notify everyone who cares, that this suspension is over, and this thread is going to go do other things.
@@ -4860,7 +4860,7 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
                     {
                          // We already have the caller context available at this point
                         _ASSERTE(pRDT->IsCallerContextValid);
-#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 
                         // Why do we use CallerContextPointers below?
                         //
@@ -4879,7 +4879,11 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
                         // Note that the JIT always pushes LR even for leaf methods to make hijacking
                         // work for them. See comment in code:Compiler::genPushCalleeSavedRegisters.
 
+#if defined(TARGET_LOONGARCH64)
+                        if (pRDT->pCallerContextPointers->Ra == &pRDT->pContext->Ra)
+#else
                         if(pRDT->pCallerContextPointers->Lr == &pRDT->pContext->Lr)
+#endif
                         {
                             // This is the case when we are either:
                             //
@@ -4914,7 +4918,11 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
                             // This is the case of IP being inside the method body and LR is
                             // pushed on the stack. We get it to determine the return address
                             // in the caller of the current non-interruptible frame.
+#if defined(TARGET_LOONGARCH64)
+                            pES->m_ppvRetAddrPtr = (void **) pRDT->pCallerContextPointers->Ra;
+#else
                             pES->m_ppvRetAddrPtr = (void **) pRDT->pCallerContextPointers->Lr;
+#endif
                         }
 #elif defined(TARGET_X86) || defined(TARGET_AMD64)
                         pES->m_ppvRetAddrPtr = (void **) (EECodeManager::GetCallerSp(pRDT) - sizeof(void*));
@@ -5517,7 +5525,7 @@ void Thread::UnmarkForSuspension(ULONG mask)
 
 //----------------------------------------------------------------------------
 
-void ThreadSuspend::RestartEE(BOOL bFinishedGC, BOOL SuspendSucceded)
+void ThreadSuspend::RestartEE(BOOL bFinishedGC, BOOL SuspendSucceeded)
 {
     ThreadSuspend::s_fSuspended = false;
 #ifdef TIME_SUSPEND
@@ -5570,7 +5578,7 @@ void ThreadSuspend::RestartEE(BOOL bFinishedGC, BOOL SuspendSucceded)
     Thread  *thread = NULL;
     while ((thread = ThreadStore::GetThreadList(thread)) != NULL)
     {
-        thread->PrepareForEERestart(SuspendSucceded);
+        thread->PrepareForEERestart(SuspendSucceeded);
     }
 
     //
@@ -5597,7 +5605,7 @@ void ThreadSuspend::RestartEE(BOOL bFinishedGC, BOOL SuspendSucceded)
     GCHeapUtilities::GetGCHeap()->SetWaitForGCEvent();
     _ASSERTE(IsGCSpecialThread() || ThreadStore::HoldingThreadStore());
 
-    ResumeRuntime(bFinishedGC, SuspendSucceded);
+    ResumeRuntime(bFinishedGC, SuspendSucceeded);
 
     FireEtwGCRestartEEEnd_V1(GetClrInstanceId());
 

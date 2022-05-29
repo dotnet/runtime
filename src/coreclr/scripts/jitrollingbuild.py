@@ -14,7 +14,9 @@
 ################################################################################
 
 import argparse
+import jitutil
 import locale
+import logging
 import os
 import shutil
 import sys
@@ -232,31 +234,31 @@ def process_git_hash_arg(coreclr_args):
 
     with ChangeDir(coreclr_args.runtime_repo_location):
         command = [ "git", "rev-parse", "HEAD" ]
-        print("Invoking: {}".format(" ".join(command)))
+        logging.info("Invoking: {}".format(" ".join(command)))
         proc = subprocess.Popen(command, stdout=subprocess.PIPE)
         stdout_git_rev_parse, _ = proc.communicate()
         return_code = proc.returncode
         if return_code == 0:
             current_git_hash = stdout_git_rev_parse.decode('utf-8').strip()
-            print("Current hash: {}".format(current_git_hash))
+            logging.info("Current hash: {}".format(current_git_hash))
         else:
             raise RuntimeError("Couldn't determine current git hash")
 
         # We've got the current hash; figure out the baseline hash.
         command = [ "git", "merge-base", current_git_hash, "origin/main" ]
-        print("Invoking: {}".format(" ".join(command)))
+        logging.info("Invoking: {}".format(" ".join(command)))
         proc = subprocess.Popen(command, stdout=subprocess.PIPE)
         stdout_git_merge_base, _ = proc.communicate()
         return_code = proc.returncode
         if return_code == 0:
             base_git_hash = stdout_git_merge_base.decode('utf-8').strip()
-            print("Baseline hash: {}".format(base_git_hash))
+            logging.info("Baseline hash: {}".format(base_git_hash))
         else:
             raise RuntimeError("Couldn't determine baseline git hash")
 
         # Enumerate the last 20 changes, starting with the baseline, that included JIT changes.
         command = [ "git", "log", "--pretty=format:%H", base_git_hash, "-20", "--", "src/coreclr/jit/*" ]
-        print("Invoking: {}".format(" ".join(command)))
+        logging.info("Invoking: {}".format(" ".join(command)))
         proc = subprocess.Popen(command, stdout=subprocess.PIPE)
         stdout_change_list, _ = proc.communicate()
         return_code = proc.returncode
@@ -273,7 +275,7 @@ def process_git_hash_arg(coreclr_args):
 
         hashnum = 1
         for git_hash in change_list_hashes:
-            print("try {}: {}".format(hashnum, git_hash))
+            logging.info("try {}: {}".format(hashnum, git_hash))
 
             # Set the git hash to look for
             # Note: there's a slight inefficiency here because this code searches for a JIT at this hash value, and
@@ -283,14 +285,14 @@ def process_git_hash_arg(coreclr_args):
             urls = get_jit_urls(coreclr_args, find_all=False)
             if len(urls) > 1:
                 if hashnum > 1:
-                    print("Warning: the baseline found is not built with the first git hash with JIT code changes; there may be extraneous diffs")
+                    logging.warn("Warning: the baseline found is not built with the first git hash with JIT code changes; there may be extraneous diffs")
                 return
 
             # We didn't find a baseline; keep looking
             hashnum += 1
 
         # We ran out of hashes of JIT changes, and didn't find a baseline. Give up.
-        print("Error: no baseline JIT found")
+        logging.error("Error: no baseline JIT found")
 
     raise RuntimeError("No baseline JIT found")
 
@@ -334,8 +336,8 @@ def list_az_jits(filter_func=lambda unused: True, prefix_string = None):
         try:
             contents = urllib.request.urlopen(list_az_container_uri).read().decode('utf-8')
         except Exception as exception:
-            print("Didn't find any collections using {}".format(list_az_container_uri))
-            print("  Error: {}".format(exception))
+            logging.error("Didn't find any collections using {}".format(list_az_container_uri))
+            logging.error("  Error: {}".format(exception))
             return None
 
         # Contents is an XML file with contents like:
@@ -388,7 +390,7 @@ def upload_command(coreclr_args):
         coreclr_args (CoreclrArguments): parsed args
     """
 
-    print("JIT upload")
+    logging.info("JIT upload")
 
     def upload_blob(file, blob_name):
         blob_client = blob_service_client.get_blob_client(container=az_jitrollingbuild_container_name, blob=blob_name)
@@ -397,7 +399,7 @@ def upload_command(coreclr_args):
         try:
             blob_client.get_blob_properties()
             # If no exception, then the blob already exists. Delete it!
-            print("Warning: replacing existing blob!")
+            logging.warn("Warning: replacing existing blob!")
             blob_client.delete_blob()
         except Exception:
             # Blob doesn't exist already; that's good
@@ -425,7 +427,7 @@ def upload_command(coreclr_args):
     jit_name = determine_jit_name(coreclr_args)
     jit_path = os.path.join(coreclr_args.product_location, jit_name)
     if not os.path.isfile(jit_path):
-        print("Error: Couldn't find JIT at {}".format(jit_path))
+        logging.error("Error: Couldn't find JIT at {}".format(jit_path))
         raise RuntimeError("Missing JIT")
 
     files.append(jit_path)
@@ -478,7 +480,7 @@ def upload_command(coreclr_args):
         with ChangeDir(coreclr_args.runtime_repo_location):
             # Enumerate the last change, starting with the jit_git_hash, that included JIT changes.
             command = [ "git", "log", "--pretty=format:%H", jit_git_hash, "-1", "--", "src/coreclr/jit/*" ]
-            print("Invoking: {}".format(" ".join(command)))
+            logging.info("Invoking: {}".format(" ".join(command)))
             proc = subprocess.Popen(command, stdout=subprocess.PIPE)
             stdout_change_list, _ = proc.communicate()
             return_code = proc.returncode
@@ -487,22 +489,22 @@ def upload_command(coreclr_args):
                 change_list_hashes = stdout_change_list.decode('utf-8').strip().splitlines()
 
             if len(change_list_hashes) == 0:
-                print("Couldn't find any JIT changes! Just using the argument git_hash")
+                logging.warn("Couldn't find any JIT changes! Just using the argument git_hash")
             else:
                 jit_git_hash = change_list_hashes[0]
-                print("Using git_hash {}".format(jit_git_hash))
+                logging.info("Using git_hash {}".format(jit_git_hash))
 
-    print("Uploading:")
+    logging.info("Uploading:")
     for item in files:
-        print("  {}".format(item))
+        logging.info("  {}".format(item))
 
     try:
         from azure.storage.blob import BlobServiceClient
 
     except:
-        print("Please install:")
-        print("  pip install azure-storage-blob")
-        print("See also https://docs.microsoft.com/en-us/azure/storage/blobs/storage-quickstart-blobs-python")
+        logging.warn("Please install:")
+        logging.warn("  pip install azure-storage-blob")
+        logging.warn("See also https://docs.microsoft.com/en-us/azure/storage/blobs/storage-quickstart-blobs-python")
         raise RuntimeError("Missing azure storage package.")
 
     blob_service_client = BlobServiceClient(account_url=az_blob_storage_account_uri, credential=coreclr_args.az_storage_key)
@@ -521,89 +523,28 @@ def upload_command(coreclr_args):
                 # Zip compress the file we will upload
                 zip_name = os.path.basename(file) + ".zip"
                 zip_path = os.path.join(temp_location, zip_name)
-                print("Compress {} -> {}".format(file, zip_path))
+                logging.info("Compress {} -> {}".format(file, zip_path))
                 with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zip_file:
                     zip_file.write(file, os.path.basename(file))
 
                 file_stat_result = os.stat(file)
                 zip_stat_result = os.stat(zip_path)
-                print("Compressed {:n} to {:n} bytes".format(file_stat_result.st_size, zip_stat_result.st_size))
+                logging.info("Compressed {:n} to {:n} bytes".format(file_stat_result.st_size, zip_stat_result.st_size))
                 total_bytes_uploaded += zip_stat_result.st_size
 
                 blob_name = "{}/{}".format(blob_folder_name, zip_name)
-                print("Uploading: {} ({}) -> {}".format(file, zip_path, az_blob_storage_jitrollingbuild_container_uri + "/" + blob_name))
+                logging.info("Uploading: {} ({}) -> {}".format(file, zip_path, az_blob_storage_jitrollingbuild_container_uri + "/" + blob_name))
                 upload_blob(zip_path, blob_name)
             else:
                 file_stat_result = os.stat(file)
                 total_bytes_uploaded += file_stat_result.st_size
                 file_name = os.path.basename(file)
                 blob_name = "{}/{}".format(blob_folder_name, file_name)
-                print("Uploading: {} -> {}".format(file, az_blob_storage_jitrollingbuild_container_uri + "/" + blob_name))
+                logging.info("Uploading: {} -> {}".format(file, az_blob_storage_jitrollingbuild_container_uri + "/" + blob_name))
                 upload_blob(file, blob_name)
 
-    print("Uploaded {:n} bytes".format(total_bytes_uploaded))
-    print("Finished JIT upload")
-
-
-def download_urls(urls, target_dir):
-    """ Download a set of files, specified as URLs, to a target directory.
-        If the URLs are to .ZIP files, then uncompress them and copy all contents
-        to the target directory.
-
-    Args:
-        urls (list): the URLs to download
-        target_dir (str): target directory where files are copied. Directory must exist
-
-    Returns:
-        list of local filenames of downloaded files
-    """
-
-    print("Downloading:")
-    for url in urls:
-        print("  {}".format(url))
-
-    local_files = []
-
-    # In case we'll need a temp directory for ZIP file processing, create it first.
-    with TempDir() as temp_location:
-        for url in urls:
-            item_name = url.split("/")[-1]
-
-            if url.lower().endswith(".zip"):
-                # Delete everything in the temp_location (from previous iterations of this loop, so previous URL downloads).
-                temp_location_items = [os.path.join(temp_location, item) for item in os.listdir(temp_location)]
-                for item in temp_location_items:
-                    if os.path.isdir(item):
-                        shutil.rmtree(item)
-                    else:
-                        os.remove(item)
-
-                download_path = os.path.join(temp_location, item_name)
-
-                print("Download: {} -> {}".format(url, download_path))
-                urllib.request.urlretrieve(url, download_path)
-
-                print("Uncompress {}".format(download_path))
-                with zipfile.ZipFile(download_path, "r") as file_handle:
-                    file_handle.extractall(temp_location)
-
-                # Copy everything that was extracted to the target directory.
-                items = [ os.path.join(temp_location, item) for item in os.listdir(temp_location) if not item.endswith(".zip") ]
-                for item in items:
-                    target_path = os.path.join(target_dir, os.path.basename(item))
-                    print("Copy {} -> {}".format(item, target_path))
-                    shutil.copy2(item, target_dir)
-                    local_files.append(target_path)
-            else:
-                # Not a zip file; download directory to target directory
-                download_path = os.path.join(target_dir, item_name)
-
-                print("Download: {} -> {}".format(url, download_path))
-                urllib.request.urlretrieve(url, download_path)
-
-                local_files.append(download_path)
-
-    return local_files
+    logging.info("Uploaded {:n} bytes".format(total_bytes_uploaded))
+    logging.info("Finished JIT upload")
 
 
 def get_jit_urls(coreclr_args, find_all=False):
@@ -637,7 +578,7 @@ def download_command(coreclr_args):
 
     urls = get_jit_urls(coreclr_args, find_all=False)
     if len(urls) == 0:
-        print("Nothing to download")
+        logging.warn("Nothing to download")
         return
 
     if coreclr_args.target_dir is None:
@@ -649,7 +590,7 @@ def download_command(coreclr_args):
     else:
         target_dir = coreclr_args.target_dir
 
-    download_urls(urls, target_dir)
+    jitutil.download_files(urls, target_dir)
 
 
 def list_command(coreclr_args):
@@ -661,22 +602,22 @@ def list_command(coreclr_args):
 
     urls = get_jit_urls(coreclr_args, find_all=coreclr_args.all)
     if len(urls) == 0:
-        print("No JITs found")
+        logging.warn("No JITs found")
         return
 
     count = len(urls)
 
     if coreclr_args.all:
-        print("{} JIT files".format(count))
+        logging.info("{} JIT files".format(count))
     else:
         blob_filter_string = "{}/{}/{}/{}".format(coreclr_args.git_hash, coreclr_args.host_os, coreclr_args.arch, coreclr_args.build_type)
-        print("{} JIT files for {}".format(count, blob_filter_string))
-    print("")
+        logging.info("{} JIT files for {}".format(count, blob_filter_string))
+    logging.info("")
 
     for url in urls:
-        print("{}".format(url))
+        logging.info("{}".format(url))
 
-    print("")
+    logging.info("")
 
 
 def setup_args(args):
@@ -735,7 +676,7 @@ def setup_args(args):
                             "Unable to set skip_cleanup")
 
         if not os.path.isdir(coreclr_args.product_location):
-            print("Built product location could not be determined")
+            logging.error("Built product location could not be determined")
             raise RuntimeError("Error")
 
     elif coreclr_args.mode == "download":
@@ -756,7 +697,7 @@ def setup_args(args):
                             "Unable to set skip_cleanup")
 
         if coreclr_args.target_dir is not None and not os.path.isdir(coreclr_args.target_dir):
-            print("--target_dir directory does not exist")
+            logging.error("--target_dir directory does not exist")
             raise RuntimeError("Error")
 
         process_git_hash_arg(coreclr_args)
@@ -784,8 +725,12 @@ def main(args):
     """ Main method
     """
 
+    logging.basicConfig(format="[%(asctime)s] %(message)s", datefmt="%H:%M:%S")
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
+
     if sys.version_info.major < 3:
-        print("Please install python 3 or greater")
+        logging.error("Please install python 3 or greater")
         return 1
 
     coreclr_args = setup_args(args)

@@ -8,7 +8,7 @@ namespace System.Xml.Xsl.XsltOld
     using System.Xml;
     using System.Xml.XPath;
 
-    internal class AttributeAction : ContainerAction
+    internal sealed class AttributeAction : ContainerAction
     {
         private const int NameDone = 2;
 

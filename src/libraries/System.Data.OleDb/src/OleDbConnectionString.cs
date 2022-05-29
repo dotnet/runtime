@@ -413,13 +413,7 @@ namespace System.Data.OleDb
                         }
                         _oledbServices &= ~(ODB.DBPROPVAL_OS_AGR_AFTERSESSION | ODB.DBPROPVAL_OS_CLIENTCURSOR);
 
-                        StringBuilder builder = new StringBuilder();
-                        builder.Append(KEY.Ole_DB_Services);
-                        builder.Append('=');
-                        builder.Append(_oledbServices.ToString(CultureInfo.InvariantCulture));
-                        builder.Append(';');
-                        builder.Append(connectionString);
-                        connectionString = builder.ToString();
+                        connectionString = $"{KEY.Ole_DB_Services}={_oledbServices.ToString(CultureInfo.InvariantCulture)};{connectionString}";
                     }
                 }
             }

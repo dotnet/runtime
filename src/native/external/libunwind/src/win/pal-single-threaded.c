@@ -15,6 +15,7 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <errno.h>
 #include "libunwind_i.h"
 #include "compiler.h"
 
@@ -23,6 +24,17 @@ int getpagesize(void)
     // 4096 is truth for most targets
     // Unlikely to matter in dump debugging
     return 4096;
+}
+
+long sysconf(int name)
+{
+    if (name == _SC_PAGESIZE)
+    {
+        return getpagesize();
+    }
+
+    errno = EINVAL;
+    return -1;
 }
 
 void* mmap(void *addr, size_t length, int prot, int flags, int fd, size_t offset)
@@ -94,6 +106,13 @@ int sigfillset(sigset_t *set)
 }
 
 ssize_t read(int fd, void *buf, size_t count)
+{
+    // For dump debugging we shouldn't need to open files
+    // Especially since we didn't implement open()
+    return -1;
+}
+
+ssize_t write(int fd, const void *buf, size_t nbyte)
 {
     // For dump debugging we shouldn't need to open files
     // Especially since we didn't implement open()

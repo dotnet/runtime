@@ -264,7 +264,8 @@ namespace ILCompiler
         public ReadyToRunHelperId GetLdTokenHelperForType(TypeDesc type)
         {
             bool canConstructPerWholeProgramAnalysis = _devirtualizationManager == null ? true : _devirtualizationManager.CanConstructType(type);
-            return canConstructPerWholeProgramAnalysis & DependencyAnalysis.ConstructedEETypeNode.CreationAllowed(type)
+            bool creationAllowed = DependencyAnalysis.ConstructedEETypeNode.CreationAllowed(type);
+            return (canConstructPerWholeProgramAnalysis && creationAllowed)
                 ? ReadyToRunHelperId.TypeHandle
                 : ReadyToRunHelperId.NecessaryTypeHandle;
         }
@@ -444,7 +445,7 @@ namespace ILCompiler
         }
 
         /// <summary>
-        /// Retreives method whose runtime handle is suitable for use with GVMLookupForSlot.
+        /// Retrieves method whose runtime handle is suitable for use with GVMLookupForSlot.
         /// </summary>
         public MethodDesc GetTargetOfGenericVirtualMethodCall(MethodDesc calledMethod)
         {

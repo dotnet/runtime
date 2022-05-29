@@ -110,13 +110,20 @@ namespace System.Resources
 
         public
 #if RESOURCES_EXTENSIONS
-        DeserializingResourceReader(Stream stream!!)
+        DeserializingResourceReader(Stream stream)
 #else
-        ResourceReader(Stream stream!!)
+        ResourceReader(Stream stream)
 #endif
         {
+            if (stream is null)
+            {
+                throw new ArgumentNullException(nameof(stream));
+            }
+
             if (!stream.CanRead)
+            {
                 throw new ArgumentException(SR.Argument_StreamNotReadable);
+            }
 
             _resCache = new Dictionary<string, ResourceLocator>(FastResourceComparer.Default);
             _store = new BinaryReader(stream, Encoding.UTF8);

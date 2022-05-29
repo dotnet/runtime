@@ -4,6 +4,7 @@ AppDomainDCEnd_V1
 AssemblyDCEnd_V1
 AssemblyLoad_V1
 AssemblyUnload_V1
+BulkType
 ContentionStart_V1
 ContentionStop
 DCEndComplete_V1
@@ -28,6 +29,7 @@ MethodJitMemoryAllocatedForCode
 MethodJittingStarted_V1
 MethodLoad_V1
 MethodLoadVerbose_V1
+MethodDetails
 ModuleDCEnd_V2
 ModuleLoad_V2
 ModuleUnload_V2
@@ -42,6 +44,7 @@ ThreadPoolWorkerThreadStart
 ThreadPoolWorkerThreadStop
 ThreadPoolWorkerThreadWait
 ThreadPoolWorkingThreadCount
+ThreadPoolIOPack
 ThreadTerminated
 TypeLoadStart
 TypeLoadStop

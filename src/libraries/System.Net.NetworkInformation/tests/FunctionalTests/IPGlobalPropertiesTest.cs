@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Net.Test.Common;
@@ -14,11 +15,19 @@ namespace System.Net.NetworkInformation.Tests
     public class IPGlobalPropertiesTest
     {
         private readonly ITestOutputHelper _log;
-        public static readonly object[][] Loopbacks = new[]
+
+        public static IEnumerable<object[]> Loopbacks()
         {
-            new object[] { IPAddress.Loopback },
-            new object[] { IPAddress.IPv6Loopback },
-        };
+            if (Socket.OSSupportsIPv4)
+            {
+                yield return new object[] { IPAddress.Loopback };
+            }
+
+            if (Socket.OSSupportsIPv6)
+            {
+                yield return new object[] { IPAddress.IPv6Loopback };
+            }
+        }
 
         public IPGlobalPropertiesTest(ITestOutputHelper output)
         {
@@ -35,19 +44,26 @@ namespace System.Net.NetworkInformation.Tests
             Assert.NotNull(gp.GetActiveTcpListeners());
             Assert.NotNull(gp.GetActiveUdpListeners());
 
-            Assert.NotNull(gp.GetIPv4GlobalStatistics());
-            if (!OperatingSystem.IsMacOS() && !OperatingSystem.IsIOS() && !OperatingSystem.IsTvOS() && !OperatingSystem.IsFreeBSD())
+            if (Socket.OSSupportsIPv4)
             {
-                // OSX and FreeBSD do not provide IPv6  stats.
-                Assert.NotNull(gp.GetIPv6GlobalStatistics());
+                Assert.NotNull(gp.GetIPv4GlobalStatistics());
+                Assert.NotNull(gp.GetIcmpV4Statistics());
+                Assert.NotNull(gp.GetTcpIPv4Statistics());
+                Assert.NotNull(gp.GetUdpIPv4Statistics());
             }
 
-            Assert.NotNull(gp.GetIcmpV4Statistics());
-            Assert.NotNull(gp.GetIcmpV6Statistics());
-            Assert.NotNull(gp.GetTcpIPv4Statistics());
-            Assert.NotNull(gp.GetTcpIPv6Statistics());
-            Assert.NotNull(gp.GetUdpIPv4Statistics());
-            Assert.NotNull(gp.GetUdpIPv6Statistics());
+            if (Socket.OSSupportsIPv6)
+            {
+                Assert.NotNull(gp.GetIcmpV6Statistics());
+                Assert.NotNull(gp.GetTcpIPv6Statistics());
+                Assert.NotNull(gp.GetUdpIPv6Statistics());
+
+                if (!OperatingSystem.IsMacOS() && !OperatingSystem.IsIOS() && !OperatingSystem.IsTvOS() && !OperatingSystem.IsFreeBSD())
+                {
+                    // OSX and FreeBSD do not provide IPv6  stats.
+                    Assert.NotNull(gp.GetIPv6GlobalStatistics());
+                }
+            }
         }
 
         [Fact]
@@ -124,17 +140,22 @@ namespace System.Net.NetworkInformation.Tests
                 _log.WriteLine($"listening on {server.LocalEndPoint}");
 
                 IPEndPoint[] tcpListeners = IPGlobalProperties.GetIPGlobalProperties().GetActiveTcpListeners();
-                bool found = false;
-                foreach (IPEndPoint ep in tcpListeners)
-                {
-                    if (ep.Equals(server.LocalEndPoint))
-                    {
-                        found = true;
-                        break;
-                    }
-                }
+                Assert.Contains(server.LocalEndPoint, tcpListeners);
+            }
+        }
 
-                Assert.True(found);
+        [Theory]
+        [MemberData(nameof(Loopbacks))]
+        [SkipOnPlatform(TestPlatforms.Android, "Unsupported on Android")]
+        public void IPGlobalProperties_UdpListeners_Succeed(IPAddress address)
+        {
+            using (var server = new Socket(address.AddressFamily, SocketType.Dgram, ProtocolType.Udp))
+            {
+                server.Bind(new IPEndPoint(address, 0));
+                _log.WriteLine($"listening on {server.LocalEndPoint}");
+
+                IPEndPoint[] udpListeners = IPGlobalProperties.GetIPGlobalProperties().GetActiveUdpListeners();
+                Assert.Contains(server.LocalEndPoint, udpListeners);
             }
         }
 

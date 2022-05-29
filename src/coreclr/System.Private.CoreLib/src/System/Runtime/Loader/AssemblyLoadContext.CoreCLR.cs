@@ -140,8 +140,10 @@ namespace System.Runtime.Loader
         private static partial IntPtr GetLoadContextForAssembly(QCallAssembly assembly);
 
         // Returns the load context in which the specified assembly has been loaded
-        public static AssemblyLoadContext? GetLoadContext(Assembly assembly!!)
+        public static AssemblyLoadContext? GetLoadContext(Assembly assembly)
         {
+            ArgumentNullException.ThrowIfNull(assembly);
+
             RuntimeAssembly? rtAsm = GetRuntimeAssembly(assembly);
 
             // We only support looking up load context for runtime assemblies.

@@ -110,6 +110,12 @@
   #define CALLEE_SAVED_REG_MAXSZ    (CNT_CALLEE_SAVED * REGSIZE_BYTES)
   #define CALLEE_SAVED_FLOAT_MAXSZ  (CNT_CALLEE_SAVED_FLOAT * FPSAVE_REGSIZE_BYTES)
 
+  // On ARM64 we do not use any additional callee-saves for ENC
+  // since there are so many volatile registers available, and
+  // callee saves have to be aggressively saved by ENC codegen
+  // because a future version could use them.
+  #define RBM_ENC_CALLEE_SAVED     0
+
   // Temporary registers used for the GS cookie check.
   #define REG_GSCOOKIE_TMP_0       REG_IP0
   #define REG_GSCOOKIE_TMP_1       REG_IP1

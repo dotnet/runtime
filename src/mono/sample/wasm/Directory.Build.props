@@ -3,6 +3,9 @@
     <!-- These need to be set here because the root Directory.Build.props sets up the intermediate path early -->
     <Configuration>Release</Configuration>
     <OutputType>Exe</OutputType>
+    <TargetOS>browser</TargetOS>
+    <TargetArchitecture>wasm</TargetArchitecture>
+    <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
   </PropertyGroup>
 
   <Import Project="..\Directory.Build.props"/>

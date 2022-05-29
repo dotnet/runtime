@@ -32,20 +32,31 @@ namespace System
           IComparable<TimeSpan>,
           IEquatable<TimeSpan>,
           ISpanFormattable,
-          IAdditionOperators<TimeSpan, TimeSpan, TimeSpan>,
-          IAdditiveIdentity<TimeSpan, TimeSpan>,
-          IComparisonOperators<TimeSpan, TimeSpan>,
-          IDivisionOperators<TimeSpan, double, TimeSpan>,
-          IDivisionOperators<TimeSpan, TimeSpan, double>,
-          IMinMaxValue<TimeSpan>,
-          IMultiplyOperators<TimeSpan, double, TimeSpan>,
-          IMultiplicativeIdentity<TimeSpan, double>,
-          ISpanParsable<TimeSpan>,
-          ISubtractionOperators<TimeSpan, TimeSpan, TimeSpan>,
-          IUnaryNegationOperators<TimeSpan, TimeSpan>,
-          IUnaryPlusOperators<TimeSpan, TimeSpan>
+          ISpanParsable<TimeSpan>
     {
-        public const long TicksPerMillisecond = 10000;
+        /// <summary>
+        /// Represents the number of nanoseconds per tick. This field is constant.
+        /// </summary>
+        /// <remarks>
+        /// The value of this constant is 100.
+        /// </remarks>
+        public const long NanosecondsPerTick = 100;
+
+        /// <summary>
+        /// Represents the number of ticks in 1 microsecond. This field is constant.
+        /// </summary>
+        /// <remarks>
+        /// The value of this constant is 10.
+        /// </remarks>
+        public const long TicksPerMicrosecond = 10;
+
+        /// <summary>
+        /// Represents the number of ticks in 1 millisecond. This field is constant.
+        /// </summary>
+        /// <remarks>
+        /// The value of this constant is 10 thousand; that is, 10,000.
+        /// </remarks>
+        public const long TicksPerMillisecond = TicksPerMicrosecond * 1000;
 
         public const long TicksPerSecond = TicksPerMillisecond * 1000;   // 10,000,000
 
@@ -60,6 +71,9 @@ namespace System
 
         internal const long MaxMilliSeconds = long.MaxValue / TicksPerMillisecond;
         internal const long MinMilliSeconds = long.MinValue / TicksPerMillisecond;
+
+        internal const long MaxMicroSeconds = long.MaxValue / TicksPerMicrosecond;
+        internal const long MinMicroSeconds = long.MinValue / TicksPerMicrosecond;
 
         internal const long TicksPerTenthSecond = TicksPerMillisecond * 100;
 
@@ -87,12 +101,50 @@ namespace System
         {
         }
 
-        public TimeSpan(int days, int hours, int minutes, int seconds, int milliseconds)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TimeSpan"/> structure to a specified number of
+        /// days, hours, minutes, seconds, and milliseconds.
+        /// </summary>
+        /// <param name="days">Number of days.</param>
+        /// <param name="hours">Number of hours.</param>
+        /// <param name="minutes">Number of minutes.</param>
+        /// <param name="seconds">Number of seconds.</param>
+        /// <param name="milliseconds">Number of milliseconds.</param>
+        /// <remarks>
+        /// The specified <paramref name="days"/>, <paramref name="hours"/>, <paramref name="minutes"/>, <paramref name="seconds"/>
+        /// and <paramref name="milliseconds"/> are converted to ticks, and that value initializes this instance.
+        /// </remarks>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// The parameters specify a <see cref="TimeSpan"/> value less than <see cref="MinValue"/> or greater than <see cref="MaxValue"/>
+        /// </exception>
+        public TimeSpan(int days, int hours, int minutes, int seconds, int milliseconds) :
+            this(days, hours, minutes, seconds, milliseconds, 0)
         {
-            long totalMilliSeconds = ((long)days * 3600 * 24 + (long)hours * 3600 + (long)minutes * 60 + seconds) * 1000 + milliseconds;
-            if (totalMilliSeconds > MaxMilliSeconds || totalMilliSeconds < MinMilliSeconds)
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TimeSpan"/> structure to a specified number of
+        /// days, hours, minutes, seconds, and milliseconds.
+        /// </summary>
+        /// <param name="days">Number of days.</param>
+        /// <param name="hours">Number of hours.</param>
+        /// <param name="minutes">Number of minutes.</param>
+        /// <param name="seconds">Number of seconds.</param>
+        /// <param name="milliseconds">Number of milliseconds.</param>
+        /// <param name="microseconds">Number of microseconds.</param>
+        /// <remarks>
+        /// The specified <paramref name="days"/>, <paramref name="hours"/>, <paramref name="minutes"/>, <paramref name="seconds"/>
+        /// <paramref name="milliseconds"/> and <paramref name="microseconds"/> are converted to ticks, and that value initializes this instance.
+        /// </remarks>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// The parameters specify a <see cref="TimeSpan"/> value less than <see cref="MinValue"/> or greater than <see cref="MaxValue"/>
+        /// </exception>
+        public TimeSpan(int days, int hours, int minutes, int seconds, int milliseconds, int microseconds)
+        {
+            long totalMicroseconds = (((long)days * 3600 * 24 + (long)hours * 3600 + (long)minutes * 60 + seconds) * 1000 + milliseconds) * 1000 + microseconds;
+            if (totalMicroseconds > MaxMicroSeconds || totalMicroseconds < MinMicroSeconds)
                 ThrowHelper.ThrowArgumentOutOfRange_TimeSpanTooLong();
-            _ticks = (long)totalMilliSeconds * TicksPerMillisecond;
+            _ticks = totalMicroseconds * TicksPerMicrosecond;
         }
 
         public long Ticks => _ticks;
@@ -102,6 +154,24 @@ namespace System
         public int Hours => (int)((_ticks / TicksPerHour) % 24);
 
         public int Milliseconds => (int)((_ticks / TicksPerMillisecond) % 1000);
+
+        /// <summary>
+        /// Gets the microseconds component of the time interval represented by the current <see cref="TimeSpan"/> structure.
+        /// </summary>
+        /// <remarks>
+        /// The <see cref="Microseconds"/> property represents whole microseconds, whereas the
+        /// <see cref="TotalMicroseconds"/> property represents whole and fractional microseconds.
+        /// </remarks>
+        public int Microseconds => (int)((_ticks / TicksPerMicrosecond) % 1000);
+
+        /// <summary>
+        /// Gets the nanoseconds component of the time interval represented by the current <see cref="TimeSpan"/> structure.
+        /// </summary>
+        /// <remarks>
+        /// The <see cref="Nanoseconds"/> property represents whole nanoseconds, whereas the
+        /// <see cref="TotalNanoseconds"/> property represents whole and fractional nanoseconds.
+        /// </remarks>
+        public int Nanoseconds => (int)((_ticks % TicksPerMicrosecond) * 100);
 
         public int Minutes => (int)((_ticks / TicksPerMinute) % 60);
 
@@ -125,6 +195,30 @@ namespace System
                 return temp;
             }
         }
+
+        /// <summary>
+        /// Gets the value of the current <see cref="TimeSpan"/> structure expressed in whole and fractional microseconds.
+        /// </summary>
+        /// <remarks>
+        /// This property converts the value of this instance from ticks to microseconds.
+        /// This number might include whole and fractional microseconds.
+        ///
+        /// The <see cref="TotalMicroseconds"/> property represents whole and fractional microseconds,
+        /// whereas the <see cref="Microseconds"/> property represents whole microseconds.
+        /// </remarks>
+        public double TotalMicroseconds => (double)_ticks / TicksPerMicrosecond;
+
+        /// <summary>
+        /// Gets the value of the current <see cref="TimeSpan"/> structure expressed in whole and fractional nanoseconds.
+        /// </summary>
+        /// <remarks>
+        /// This property converts the value of this instance from ticks to nanoseconds.
+        /// This number might include whole and fractional nanoseconds.
+        ///
+        /// The <see cref="TotalNanoseconds"/> property represents whole and fractional nanoseconds,
+        /// whereas the <see cref="Nanoseconds"/> property represents whole nanoseconds.
+        /// </remarks>
+        public double TotalNanoseconds => (double)_ticks * NanosecondsPerTick;
 
         public double TotalMinutes => (double)_ticks / TicksPerMinute;
 
@@ -232,6 +326,31 @@ namespace System
         public static TimeSpan FromMilliseconds(double value)
         {
             return Interval(value, TicksPerMillisecond);
+        }
+
+        /// <summary>
+        /// Returns a <see cref="TimeSpan"/> that represents a specified number of microseconds.
+        /// </summary>
+        /// <param name="value">A number of microseconds.</param>
+        /// <returns>An object that represents <paramref name="value"/>.</returns>
+        /// <exception cref="OverflowException">
+        /// <paramref name="value"/> is less than <see cref="MinValue"/> or greater than <see cref="MaxValue"/>.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="value"/> is <see cref="double.PositiveInfinity"/>
+        ///
+        /// -or-
+        ///
+        /// <paramref name="value"/> is <see cref="double.NegativeInfinity"/>
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        /// <paramref name="value"/> is equal to <see cref="double.NaN"/>.
+        /// </exception>
+        public static TimeSpan FromMicroseconds(double value)
+        {
+            // ISSUE: https://github.com/dotnet/runtime/issues/66815
+            return Interval(value, TicksPerMicrosecond);
         }
 
         public static TimeSpan FromMinutes(double value)
@@ -514,65 +633,5 @@ namespace System
 
         /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThanOrEqual(TSelf, TOther)" />
         public static bool operator >=(TimeSpan t1, TimeSpan t2) => t1._ticks >= t2._ticks;
-
-        //
-        // IAdditionOperators
-        //
-
-        /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
-        static TimeSpan IAdditionOperators<TimeSpan, TimeSpan, TimeSpan>.operator checked +(TimeSpan left, TimeSpan right) => left + right;
-
-        //
-        // IAdditiveIdentity
-        //
-
-        /// <inheritdoc cref="IAdditiveIdentity{TSelf, TResult}.AdditiveIdentity" />
-        static TimeSpan IAdditiveIdentity<TimeSpan, TimeSpan>.AdditiveIdentity => default;
-
-        //
-        // IDivisionOperators
-        //
-
-        /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
-        static TimeSpan IDivisionOperators<TimeSpan, double, TimeSpan>.operator checked /(TimeSpan left, double right) => left / right;
-
-        /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
-        static double IDivisionOperators<TimeSpan, TimeSpan, double>.operator checked /(TimeSpan left, TimeSpan right) => left / right;
-
-        //
-        // IMinMaxValue
-        //
-
-        static TimeSpan IMinMaxValue<TimeSpan>.MinValue => MinValue;
-
-        static TimeSpan IMinMaxValue<TimeSpan>.MaxValue => MaxValue;
-
-        //
-        // IMultiplicativeIdentity
-        //
-
-        /// <inheritdoc cref="IMultiplicativeIdentity{TSelf, TResult}.MultiplicativeIdentity" />
-        static double IMultiplicativeIdentity<TimeSpan, double>.MultiplicativeIdentity => 1.0;
-
-        //
-        // IMultiplyOperators
-        //
-
-        /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_CheckedMultiply(TSelf, TOther)" />
-        static TimeSpan IMultiplyOperators<TimeSpan, double, TimeSpan>.operator checked *(TimeSpan left, double right) => left * right;
-
-        //
-        // ISubtractionOperators
-        //
-
-        /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
-        static TimeSpan ISubtractionOperators<TimeSpan, TimeSpan, TimeSpan>.operator checked -(TimeSpan left, TimeSpan right) => left - right;
-
-        //
-        // IUnaryNegationOperators
-        //
-
-        /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_CheckedUnaryNegation(TSelf)" />
-        static TimeSpan IUnaryNegationOperators<TimeSpan, TimeSpan>.operator checked -(TimeSpan value) => -value;
     }
 }

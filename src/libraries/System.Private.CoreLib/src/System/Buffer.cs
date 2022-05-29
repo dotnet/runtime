@@ -17,8 +17,11 @@ namespace System
         // respecting types.  This calls memmove internally.  The count and
         // offset parameters here are in bytes.  If you want to use traditional
         // array element indices and counts, use Array.Copy.
-        public static unsafe void BlockCopy(Array src!!, int srcOffset, Array dst!!, int dstOffset, int count)
+        public static unsafe void BlockCopy(Array src, int srcOffset, Array dst, int dstOffset, int count)
         {
+            ArgumentNullException.ThrowIfNull(src);
+            ArgumentNullException.ThrowIfNull(dst);
+
             nuint uSrcLen = src.NativeLength;
             if (src.GetType() != typeof(byte[]))
             {
@@ -56,8 +59,10 @@ namespace System
             Memmove(ref Unsafe.AddByteOffset(ref MemoryMarshal.GetArrayDataReference(dst), uDstOffset), ref Unsafe.AddByteOffset(ref MemoryMarshal.GetArrayDataReference(src), uSrcOffset), uCount);
         }
 
-        public static int ByteLength(Array array!!)
+        public static int ByteLength(Array array)
         {
+            ArgumentNullException.ThrowIfNull(array);
+
             // Is it of primitive types?
             if (!array.GetCorElementTypeOfElementType().IsPrimitiveType())
                 throw new ArgumentException(SR.Arg_MustBePrimArray, nameof(array));
@@ -95,11 +100,6 @@ namespace System
             }
 
             Unsafe.Add<byte>(ref MemoryMarshal.GetArrayDataReference(array), index) = value;
-        }
-
-        internal static unsafe void ZeroMemory(byte* dest, nuint len)
-        {
-            SpanHelpers.ClearWithoutReferences(ref *dest, len);
         }
 
         // The attributes on this method are chosen for best JIT performance.

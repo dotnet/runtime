@@ -3,11 +3,12 @@
 
 
 using System;
+using Xunit;
 
 
-namespace SinCalc
+namespace SinCalc_sin_functional_cs
 {
-    internal class SinCalc
+    public class SinCalc
     {
         protected struct CalcCtx
         {
@@ -52,7 +53,8 @@ namespace SinCalc
             return ctx.sumOfTerms;
         }
 
-        private static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             object i;
             object Angle;

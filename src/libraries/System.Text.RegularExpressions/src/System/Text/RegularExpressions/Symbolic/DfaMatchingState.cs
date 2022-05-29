@@ -9,7 +9,7 @@ using System.Net;
 namespace System.Text.RegularExpressions.Symbolic
 {
     /// <summary>Captures a state of a DFA explored during matching.</summary>
-    internal sealed class DfaMatchingState<TSet> where TSet : IComparable<TSet>
+    internal sealed class DfaMatchingState<TSet> where TSet : IComparable<TSet>, IEquatable<TSet>
     {
         internal DfaMatchingState(SymbolicRegexNode<TSet> node, uint prevCharKind)
         {
@@ -29,29 +29,17 @@ namespace System.Text.RegularExpressions.Symbolic
         internal bool IsDeadend => Node.IsNothing;
 
         /// <summary>The node must be nullable here</summary>
-        internal int FixedLength
+        internal int FixedLength(uint nextCharKind)
         {
-            get
-            {
-                if (Node._kind == SymbolicRegexNodeKind.FixedLengthMarker)
-                {
-                    return Node._lower;
-                }
-
-                if (Node._kind == SymbolicRegexNodeKind.Or)
-                {
-                    Debug.Assert(Node._alts is not null);
-                    return Node._alts._maximumLength;
-                }
-
-                return -1;
-            }
+            Debug.Assert(nextCharKind is 0 or CharKind.BeginningEnd or CharKind.Newline or CharKind.WordLetter or CharKind.NewLineS);
+            uint context = CharKind.Context(PrevCharKind, nextCharKind);
+            return Node.ResolveFixedLength(context);
         }
 
         /// <summary>If true then the state is a dead-end, rejects all inputs.</summary>
         internal bool IsNothing => Node.IsNothing;
 
-        /// <summary>If true then state starts with a ^ or $ or \A or \z or \Z</summary>
+        /// <summary>If true then state starts with a ^ or $ or \Z</summary>
         internal bool StartsWithLineAnchor => Node._info.StartsWithLineAnchor;
 
         /// <summary>
@@ -105,7 +93,7 @@ namespace System.Text.RegularExpressions.Symbolic
             uint context = CharKind.Context(PrevCharKind, nextCharKind);
 
             // Compute the derivative of the node for the given context
-            SymbolicRegexNode<TSet> derivative = Node.CreateDerivative(minterm, context);
+            SymbolicRegexNode<TSet> derivative = Node.CreateDerivativeWithoutEffects(minterm, context);
 
             // nextCharKind will be the PrevCharKind of the target state
             // use an existing state instead if one exists already
@@ -134,7 +122,9 @@ namespace System.Text.RegularExpressions.Symbolic
                 // nextCharKind will be the PrevCharKind of the target state
                 // use an existing state instead if one exists already
                 // otherwise create a new new id for it
-                list.Add((Node._builder.CreateState(node, nextCharKind, capturing: true), effects));
+                DfaMatchingState<TSet> state = Node._builder.CreateState(node, nextCharKind, capturing: true);
+                if (!state.IsDeadend)
+                    list.Add((state, effects));
             }
             return list;
         }
@@ -152,11 +142,11 @@ namespace System.Text.RegularExpressions.Symbolic
 
         public override int GetHashCode() => (PrevCharKind, Node).GetHashCode();
 
+#if DEBUG
         public override string ToString() =>
             PrevCharKind == 0 ? Node.ToString() :
              $"({CharKind.DescribePrev(PrevCharKind)},{Node})";
 
-#if DEBUG
         internal string DgmlView
         {
             get
