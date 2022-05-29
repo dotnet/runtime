@@ -22,6 +22,7 @@ namespace System.Text.RegularExpressions.Symbolic
             var converter = new RegexNodeConverter(bddBuilder, regexTree.CaptureNumberSparseMapping);
 
             SymbolicRegexNode<BDD> rootNode = converter.ConvertToSymbolicRegexNode(regexTree.Root);
+            rootNode = rootNode.AddFixedLengthMarkers();
             BDD[] minterms = rootNode.ComputeMinterms();
 
             _matcher = minterms.Length > 64 ?

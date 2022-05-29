@@ -3504,7 +3504,7 @@ mini_llvmonly_throw_corlib_exception (guint32 ex_token_index)
 	MonoException *ex;
 
 	ex = mono_exception_from_token (m_class_get_image (mono_defaults.exception_class), ex_token);
-	jit_tls->thrown_exc = mono_gchandle_new_internal ((MonoObject*)ex, FALSE);
+	jit_tls->thrown_exc = mono_gchandle_new_internal ((MonoObject*)ex, TRUE);
 
 	mini_llvmonly_throw_exception ((MonoObject*)ex);
 }

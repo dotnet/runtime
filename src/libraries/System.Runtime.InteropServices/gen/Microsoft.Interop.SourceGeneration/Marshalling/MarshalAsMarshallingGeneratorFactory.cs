@@ -109,7 +109,7 @@ namespace Microsoft.Interop
                     return s_safeHandle;
 
                 case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Char } }:
-                    return CreateCharMarshaller(info, context);
+                    return CreateCharMarshaller(info, context, Options);
 
                 case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_String } }:
                     return ReportStringMarshallingNotSupported(info, context);
@@ -122,7 +122,7 @@ namespace Microsoft.Interop
             }
         }
 
-        private static IMarshallingGenerator CreateCharMarshaller(TypePositionInfo info, StubCodeContext context)
+        private static IMarshallingGenerator CreateCharMarshaller(TypePositionInfo info, StubCodeContext context, InteropGenerationOptions options)
         {
             MarshallingInfo marshalInfo = info.MarshallingAttributeInfo;
             if (marshalInfo is NoMarshallingInfo)
@@ -141,7 +141,8 @@ namespace Microsoft.Interop
                 {
                     case UnmanagedType.I2:
                     case UnmanagedType.U2:
-                        return s_utf16Char;
+                        // If runtime marshalling is disabled, we treat UTF-16 char as blittable
+                        return options.RuntimeMarshallingDisabled ? s_blittable : s_utf16Char;
                 }
             }
             else if (marshalInfo is MarshallingInfoStringSupport marshalStringInfo)
@@ -149,7 +150,8 @@ namespace Microsoft.Interop
                 switch (marshalStringInfo.CharEncoding)
                 {
                     case CharEncoding.Utf16:
-                        return s_utf16Char;
+                        // If runtime marshalling is disabled, we treat UTF-16 char as blittable
+                        return options.RuntimeMarshallingDisabled ? s_blittable : s_utf16Char;
                     case CharEncoding.Utf8:
                         throw new MarshallingNotSupportedException(info, context) // [Compat] UTF-8 is not supported for char
                         {
