@@ -1654,16 +1654,21 @@ namespace System.Text.RegularExpressions.Tests
 
             Assert.Equal(expectedSuccessStartAt, r.IsMatch(input, startat));
 
+            // Normal matching, but any match before startat is ignored.
             Match match = r.Match(input, startat);
             Assert.Equal(expectedSuccessStartAt, match.Success);
             Assert.Equal(expectedSuccessStartAt ? expectedValue : "", match.Value);
             Assert.Equal(expectedSuccessStartAt ? expectedIndex : 0, match.Index);
 
+            // Substring means that anchors and assertions can't examine the string
+            // beyond the specified range
             match = r.Match(input.Substring(startat, length));
             Assert.Equal(expectedSuccessBeginning, match.Success);
             Assert.Equal(expectedSuccessBeginning ? expectedValue : "", match.Value);
             Assert.Equal(expectedSuccessBeginning ? expectedIndex - startat : 0, match.Index);
 
+            // (input, startat, length) behavior is identical to substring case,
+            // except that index of any match is relative to the original input.
             match = r.Match(input, startat, length);
             Assert.Equal(expectedSuccessBeginning, match.Success);
             Assert.Equal(expectedSuccessBeginning ? expectedValue : "", match.Value);
