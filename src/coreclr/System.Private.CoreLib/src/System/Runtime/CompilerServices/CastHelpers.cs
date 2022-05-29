@@ -552,7 +552,7 @@ namespace System.Runtime.CompilerServices
         {
             // this will throw appropriate exceptions if array is null or access is out of range.
             ref object? element = ref Unsafe.As<ArrayElement[]>(array)[index].Value;
-            void* elementType = RuntimeHelpers.GetMethodTable(array)->ElementType;
+            void* elementType = RuntimeHelpers.GetMethodTable(array)->ElementTypeHandle;
 
             if (elementType == type)
                 return ref element;
@@ -568,7 +568,7 @@ namespace System.Runtime.CompilerServices
         {
             // this will throw appropriate exceptions if array is null or access is out of range.
             ref object? element = ref Unsafe.As<ArrayElement[]>(array)[index].Value;
-            void* elementType = RuntimeHelpers.GetMethodTable(array)->ElementType;
+            void* elementType = RuntimeHelpers.GetMethodTable(array)->ElementTypeHandle;
 
             if (obj == null)
                 goto assigningNull;

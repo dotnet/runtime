@@ -410,18 +410,63 @@ namespace System.Runtime.CompilerServices
     [StructLayout(LayoutKind.Explicit)]
     internal unsafe struct MethodTable
     {
+        /// <summary>
+        /// The low WORD of the first field is the component size for array and string types.
+        /// </summary>
         [FieldOffset(0)]
         public ushort ComponentSize;
+
+        /// <summary>
+        /// The flags for the current method table (only for not array or string types).
+        /// </summary>
         [FieldOffset(0)]
         private uint Flags;
+
+        /// <summary>
+        /// The base size of the type (used when allocating an instance on the heap).
+        /// </summary>
         [FieldOffset(4)]
         public uint BaseSize;
-        [FieldOffset(0x0e)]
+
+        // See additional native members in methodtable.h, not needed here yet.
+        // 0x8: m_wFlags2 (additional flags)
+        // 0xA: m_wToken (class token if it fits in 16 bits)
+        // 0xC: m_wNumVirtuals
+
+        /// <summary>
+        /// The number of interfaces implemented by the current type.
+        /// </summary>
+        [FieldOffset(0x0E)]
         public ushort InterfaceCount;
+
+        // For DEBUG builds, there is a conditional field here (see methodtable.h again).
+        // 0x10: debug_m_szClassName (display name of the class, for the debugger)
+
+        /// <summary>
+        /// A pointer to the parent method table for the current one.
+        /// </summary>
         [FieldOffset(ParentMethodTableOffset)]
         public MethodTable* ParentMethodTable;
+
+        // Additional conditional fields (see methodtable.h).
+        // m_pLoaderModule
+        // m_pWriteableData
+        // union {
+        //   m_pEEClass (pointer to the EE class)
+        //   m_pCanonMT (pointer to the canonical method table)
+        // }
+
+        /// <summary>
+        /// This element type handle is in a union with additional info or a pointer to the interface map.
+        /// Which one is used is based on the specific method table being in used (so this field is not
+        /// always guaranteed to actually be a pointer to a type handle for the element type of this type).
+        /// </summary>
         [FieldOffset(ElementTypeOffset)]
-        public void* ElementType;
+        public void* ElementTypeHandle;
+
+        /// <summary>
+        /// This interface map is a union with a multipurpose slot, so should be checked before use.
+        /// </summary>
         [FieldOffset(InterfaceMapOffset)]
         public MethodTable** InterfaceMap;
 
@@ -432,6 +477,7 @@ namespace System.Runtime.CompilerServices
         private const uint enum_flag_Category_ValueType = 0x00040000;
         private const uint enum_flag_Category_PrimitiveValueType = 0x00060000;
         private const uint enum_flag_Category_ElementTypeMask = 0x000E0000;
+        private const uint enum_flag_Category_ValueType_Mask = 0x000C0000;
         // Types that require non-trivial interface cast have this bit set in the category
         private const uint enum_flag_NonTrivialInterfaceCast = 0x00080000 // enum_flag_Category_Array
                                                              | 0x40000000 // enum_flag_ComObject
@@ -534,8 +580,93 @@ namespace System.Runtime.CompilerServices
             }
         }
 
+        public bool IsValueType
+        {
+            get
+            {
+                return (Flags & enum_flag_Category_ValueType_Mask) == enum_flag_Category_ValueType;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public TypeHandle GetArrayElementTypeHandle()
+        {
+            return *(TypeHandle*)&((MethodTable*)Unsafe.AsPointer(ref this))->ElementTypeHandle;
+        }
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         public extern uint GetNumInstanceFieldBytes();
+    }
+
+    // Subset of src\vm\typehandle.h
+    [StructLayout(LayoutKind.Explicit)]
+    internal unsafe struct TypeHandle
+    {
+        /// <summary>
+        /// The address of the current type handle object.
+        /// </summary>
+        [FieldOffset(0)]
+        private readonly void* m_asTAddr;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool IsTypeDesc()
+        {
+            return ((nint)m_asTAddr & 2) != 0;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public TypeDesc* AsTypeDesc()
+        {
+            Debug.Assert(IsTypeDesc());
+
+            return (TypeDesc*)(m_asTAddr - 2);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public MethodTable* GetMethodTable()
+        {
+            if (IsTypeDesc())
+            {
+                return AsTypeDesc()->GetMethodTable();
+            }
+
+            return (MethodTable*)m_asTAddr;
+        }
+    }
+
+    // Subset of src\vm\typedesc.h
+    [StructLayout(LayoutKind.Explicit)]
+    internal unsafe struct TypeDesc
+    {
+        /// <summary>
+        /// <para>
+        /// The low-order 8 bits of this flag are used to store the <see cref="CorElementType"/>,
+        /// which discriminates what kind of <see cref="TypeDesc"/> this is.
+        /// </para>
+        /// <para>The remaining bits are available for flags.</para>
+        /// </summary>
+        [FieldOffset(0)]
+        private readonly uint TypeAndFlags;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public CorElementType GetInternalCorElementType()
+        {
+            return (CorElementType)(TypeAndFlags & 0xFF);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public MethodTable* GetMethodTable()
+        {
+            // TODO
+            throw new NotImplementedException();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool IsGenericVariable()
+        {
+            // TODO
+            throw new NotImplementedException();
+        }
     }
 
     // Helper structs used for tail calls via helper.
@@ -552,5 +683,4 @@ namespace System.Runtime.CompilerServices
         public PortableTailCallFrame* Frame;
         public IntPtr ArgBuffer;
     }
-
 }

@@ -277,6 +277,51 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+        internal unsafe object? ArrayNativeGetValue(nint flattenedIndex)
+        {
+            MethodTable* pMethodTable = RuntimeHelpers.GetMethodTable(this);
+
+            TypeHandle arrayElementTypeHandle = pMethodTable->GetArrayElementTypeHandle();
+
+            // Legacy behavior
+            if (arrayElementTypeHandle.IsTypeDesc())
+            {
+                CorElementType elementType = arrayElementTypeHandle.AsTypeDesc()->GetInternalCorElementType();
+
+                if (elementType is CorElementType.ELEMENT_TYPE_PTR or CorElementType.ELEMENT_TYPE_FNPTR)
+                {
+                    ThrowHelper.ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
+                }
+            }
+
+            Debug.Assert(flattenedIndex < NativeLength);
+
+            ref byte arrayDataRef = ref Unsafe.AddByteOffset(ref Unsafe.As<RawData>(this).Data, pMethodTable->BaseSize - (nuint)(2 * sizeof(IntPtr)));
+            object? result;
+
+            MethodTable* pElementMethodTable = arrayElementTypeHandle.GetMethodTable();
+
+            if (pElementMethodTable->IsValueType)
+            {
+                // TODO (add a managed box helper)
+                result = null;
+            }
+            else
+            {
+                // The element is a reference type, so no need to retrieve the component size.
+                // Just offset with object size as element type, since it's the same regardless of T.
+                ref object elementRef = ref Unsafe.As<byte, object>(ref arrayDataRef);
+                ref object offsetElementRef = Unsafe.Add(ref elementRef, (nuint)flattenedIndex);
+
+                result = offsetElementRef;
+            }
+
+            GC.KeepAlive(this); // Keep the method table alive
+
+            return result;
+        }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
         internal unsafe object? InternalGetValue(nint flattenedIndex)
         {
             MethodTable* pMethodTable = RuntimeHelpers.GetMethodTable(this);
@@ -367,7 +412,7 @@ namespace System
         private unsafe bool IsValueOfElementType(object value)
         {
             MethodTable* thisMT = RuntimeHelpers.GetMethodTable(this);
-            return (IntPtr)thisMT->ElementType == (IntPtr)RuntimeHelpers.GetMethodTable(value);
+            return (IntPtr)thisMT->ElementTypeHandle == (IntPtr)RuntimeHelpers.GetMethodTable(value);
         }
 
         // if this is an array of value classes and that value class has a default constructor
