@@ -283,15 +283,11 @@ namespace System
 
             TypeHandle arrayElementTypeHandle = pMethodTable->GetArrayElementTypeHandle();
 
-            // Legacy behavior
+            // Legacy behavior (none of the cases where the element type is a type descriptor are supported).
+            // This includes the case where the element type is a pointer or a function pointer too.
             if (arrayElementTypeHandle.IsTypeDesc())
             {
-                CorElementType elementType = arrayElementTypeHandle.AsTypeDesc()->GetInternalCorElementType();
-
-                if (elementType is CorElementType.ELEMENT_TYPE_PTR or CorElementType.ELEMENT_TYPE_FNPTR)
-                {
-                    ThrowHelper.ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
-                }
+                ThrowHelper.ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
             }
 
             Debug.Assert(flattenedIndex < NativeLength);
@@ -299,7 +295,7 @@ namespace System
             ref byte arrayDataRef = ref Unsafe.AddByteOffset(ref Unsafe.As<RawData>(this).Data, pMethodTable->BaseSize - (nuint)(2 * sizeof(IntPtr)));
             object? result;
 
-            MethodTable* pElementMethodTable = arrayElementTypeHandle.GetMethodTable();
+            MethodTable* pElementMethodTable = arrayElementTypeHandle.AsMethodTable();
 
             if (pElementMethodTable->IsValueType)
             {

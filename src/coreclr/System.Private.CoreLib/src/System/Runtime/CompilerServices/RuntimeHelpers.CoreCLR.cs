@@ -623,12 +623,9 @@ namespace System.Runtime.CompilerServices
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public MethodTable* GetMethodTable()
+        public MethodTable* AsMethodTable()
         {
-            if (IsTypeDesc())
-            {
-                return AsTypeDesc()->GetMethodTable();
-            }
+            Debug.Assert(!IsTypeDesc());
 
             return (MethodTable*)m_asTAddr;
         }
@@ -652,20 +649,6 @@ namespace System.Runtime.CompilerServices
         public CorElementType GetInternalCorElementType()
         {
             return (CorElementType)(TypeAndFlags & 0xFF);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public MethodTable* GetMethodTable()
-        {
-            // TODO
-            throw new NotImplementedException();
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool IsGenericVariable()
-        {
-            // TODO
-            throw new NotImplementedException();
         }
     }
 
