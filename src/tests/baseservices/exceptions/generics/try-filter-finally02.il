@@ -1,12 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-//  Microsoft (R) .NET Framework IL Disassembler.  Version 1.2.2211.0
-//  Copyright (C) Microsoft Corporation 1998-2002. All rights reserved.
-
-
-
-// Metadata version: v1.1.2211
 .assembly extern legacy library mscorlib {}
 .assembly extern xunit.core {}
 .assembly extern System.Console

@@ -6,6 +6,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -43,6 +44,8 @@ namespace System.Net.NetworkInformation
         private static Timer? s_availabilityTimer;
         private static bool s_availabilityHasChanged;
 
+        [UnsupportedOSPlatform("illumos")]
+        [UnsupportedOSPlatform("solaris")]
         public static event NetworkAddressChangedEventHandler? NetworkAddressChanged
         {
             add
@@ -83,6 +86,8 @@ namespace System.Net.NetworkInformation
             }
         }
 
+        [UnsupportedOSPlatform("illumos")]
+        [UnsupportedOSPlatform("solaris")]
         public static event NetworkAvailabilityChangedEventHandler? NetworkAvailabilityChanged
         {
             add

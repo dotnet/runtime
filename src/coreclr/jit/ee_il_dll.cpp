@@ -444,6 +444,14 @@ unsigned Compiler::eeGetArgSize(CORINFO_ARG_LIST_HANDLE list, CORINFO_SIG_INFO* 
                 }
             }
         }
+#elif defined(TARGET_LOONGARCH64)
+        // Any structs that are larger than MAX_PASS_MULTIREG_BYTES are always passed by reference
+        if (structSize > MAX_PASS_MULTIREG_BYTES)
+        {
+            // This struct is passed by reference using a single 'slot'
+            return TARGET_POINTER_SIZE;
+        }
+//  otherwise will we pass this struct by value in multiple registers
 #elif !defined(TARGET_ARM)
         NYI("unknown target");
 #endif // defined(TARGET_XXX)
@@ -773,7 +781,7 @@ void Compiler::eeGetVars()
 
     /* If extendOthers is set, then assume the scope of unreported vars
        is the entire method. Note that this will cause fgExtendDbgLifetimes()
-       to zero-initalize all of them. This will be expensive if it's used
+       to zero-initialize all of them. This will be expensive if it's used
        for too many variables.
      */
     if (extendOthers)
@@ -1114,6 +1122,37 @@ void Compiler::eeDispLineInfos()
  * (e.g., host AMD64, target ARM64), then VM will get confused anyway.
  */
 
+void Compiler::eeAllocMem(AllocMemArgs* args)
+{
+#ifdef DEBUG
+    // Fake splitting implementation: hot section = hot code + 4K buffer + cold code
+    const UNATIVE_OFFSET hotSizeRequest      = args->hotCodeSize;
+    const UNATIVE_OFFSET coldSizeRequest     = args->coldCodeSize;
+    const UNATIVE_OFFSET fakeSplittingBuffer = 4096;
+
+    if (JitConfig.JitFakeProcedureSplitting() && (coldSizeRequest > 0))
+    {
+        args->hotCodeSize  = hotSizeRequest + fakeSplittingBuffer + coldSizeRequest;
+        args->coldCodeSize = 0;
+    }
+#endif
+
+    info.compCompHnd->allocMem(args);
+
+#ifdef DEBUG
+    if (JitConfig.JitFakeProcedureSplitting() && (coldSizeRequest > 0))
+    {
+        // Fix up hot/cold code pointers
+        args->coldCodeBlock   = ((BYTE*)args->hotCodeBlock) + hotSizeRequest + fakeSplittingBuffer;
+        args->coldCodeBlockRW = ((BYTE*)args->hotCodeBlockRW) + hotSizeRequest + fakeSplittingBuffer;
+
+        // Reset args' hot/cold code sizes in case caller reads them later
+        args->hotCodeSize  = hotSizeRequest;
+        args->coldCodeSize = coldSizeRequest;
+    }
+#endif
+}
+
 void Compiler::eeReserveUnwindInfo(bool isFunclet, bool isColdCode, ULONG unwindSize)
 {
 #ifdef DEBUG
@@ -1121,6 +1160,13 @@ void Compiler::eeReserveUnwindInfo(bool isFunclet, bool isColdCode, ULONG unwind
     {
         printf("reserveUnwindInfo(isFunclet=%s, isColdCode=%s, unwindSize=0x%x)\n", isFunclet ? "true" : "false",
                isColdCode ? "true" : "false", unwindSize);
+    }
+
+    // Fake splitting currently does not handle unwind info for cold code
+    if (isColdCode && JitConfig.JitFakeProcedureSplitting())
+    {
+        JITDUMP("reserveUnwindInfo for cold code with JitFakeProcedureSplitting enabled: ignoring cold unwind info\n");
+        return;
     }
 #endif // DEBUG
 
@@ -1160,6 +1206,13 @@ void Compiler::eeAllocUnwindInfo(BYTE*          pHotCode,
                 break;
         }
         printf(")\n");
+    }
+
+    // Fake splitting currently does not handle unwind info for cold code
+    if (pColdCode && JitConfig.JitFakeProcedureSplitting())
+    {
+        JITDUMP("allocUnwindInfo for cold code with JitFakeProcedureSplitting enabled: ignoring cold unwind info\n");
+        return;
     }
 #endif // DEBUG
 

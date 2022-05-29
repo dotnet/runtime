@@ -39,7 +39,7 @@ namespace Microsoft.Extensions.Logging.Console
         /// <summary>
         /// Name of the log message formatter to use. Defaults to "simple" />.
         /// </summary>
-        public string FormatterName { get; set; }
+        public string? FormatterName { get; set; }
 
         /// <summary>
         /// Includes scopes when <see langword="true" />.
@@ -56,7 +56,7 @@ namespace Microsoft.Extensions.Logging.Console
         /// Gets or sets format string used to format timestamp in logging messages. Defaults to <c>null</c>.
         /// </summary>
         [System.ObsoleteAttribute("ConsoleLoggerOptions.TimestampFormat has been deprecated. Use ConsoleFormatterOptions.TimestampFormat instead.")]
-        public string TimestampFormat { get; set; }
+        public string? TimestampFormat { get; set; }
 
         /// <summary>
         /// Gets or sets indication whether or not UTC timezone should be used to format timestamps in logging messages. Defaults to <c>false</c>.

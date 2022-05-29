@@ -1,13 +1,8 @@
 ; Licensed to the .NET Foundation under one or more agreements.
 ; The .NET Foundation licenses this file to you under the MIT license.
 
-; ==++==
-;
-
-;
-; ==--==
 ; ***********************************************************************
-; File: JitHelpers_FastWriteBarriers.asm, see jithelp.asm for history
+; File: JitHelpers_FastWriteBarriers.asm
 ;
 ; Notes: these are the fast write barriers which are copied in to the
 ;        JIT_WriteBarrier buffer (found in JitHelpers_Fast.asm).

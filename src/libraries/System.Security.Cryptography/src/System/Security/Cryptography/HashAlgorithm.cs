@@ -77,8 +77,10 @@ namespace System.Security.Cryptography
             return true;
         }
 
-        public byte[] ComputeHash(byte[] buffer!!, int offset, int count)
+        public byte[] ComputeHash(byte[] buffer, int offset, int count)
         {
+            ArgumentNullException.ThrowIfNull(buffer);
+
             if (offset < 0)
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (count < 0 || (count > buffer.Length))
@@ -120,9 +122,11 @@ namespace System.Security.Cryptography
         }
 
         public Task<byte[]> ComputeHashAsync(
-            Stream inputStream!!,
+            Stream inputStream,
             CancellationToken cancellationToken = default)
         {
+            ArgumentNullException.ThrowIfNull(inputStream);
+
             if (_disposed)
                 throw new ObjectDisposedException(null);
 
@@ -235,8 +239,10 @@ namespace System.Security.Cryptography
             return outputBytes;
         }
 
-        private void ValidateTransformBlock(byte[] inputBuffer!!, int inputOffset, int inputCount)
+        private void ValidateTransformBlock(byte[] inputBuffer, int inputOffset, int inputCount)
         {
+            ArgumentNullException.ThrowIfNull(inputBuffer);
+
             if (inputOffset < 0)
                 throw new ArgumentOutOfRangeException(nameof(inputOffset), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (inputCount < 0 || inputCount > inputBuffer.Length)

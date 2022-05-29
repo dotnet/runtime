@@ -31,16 +31,16 @@
     <NoWarn>$(NoWarn),0419,0649,CA2249,CA1830</NoWarn>
 
     <!-- Disable nullability-related warnings -->
-    <NoWarn>$(NoWarn);CS8600;CS8602;CS8603;CS8604;CS8618;CS8625;CS8632;CS8765</NoWarn>
+    <NoWarn>$(NoWarn);CS8602;CS8603;CS8604;CS8618;CS8625;CS8632;CS8765</NoWarn>
 
     <!-- we should just fix -->
-    <NoWarn>$(NoWarn);CA1810;CA1823;CA1825;CA2208;SA1129;SA1205;SA1400;SA1517</NoWarn>
+    <NoWarn>$(NoWarn);CA1810;CA1823;CA1825;CA1852;CA2208;SA1129;SA1205;SA1400;SA1517</NoWarn>
 
     <!-- Arrays as attribute arguments is not CLS-compliant -->
     <NoWarn>$(NoWarn);CS3016</NoWarn>
 
     <!-- Ignore all previous constants since we are sensitive to what is defined and the Sdk adds some by default -->
-    <DefineConstants>CORERT;NETCOREAPP</DefineConstants>
+    <DefineConstants>NATIVEAOT;NETCOREAPP</DefineConstants>
 
     <DisableImplicitConfigurationDefines>true</DisableImplicitConfigurationDefines>
 

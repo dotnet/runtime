@@ -4,7 +4,10 @@
 // Throw from outside of an EH region
 
 using System;
+using Xunit;
 
+namespace Test_throwoutside_basics
+{
 public class a
 {
     private static TestUtil.TestLog testLog;
@@ -29,7 +32,8 @@ public class a
         throw new Exception();
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         //Start recording
         testLog.StartRecording();
@@ -49,4 +53,5 @@ public class a
 
         return testLog.VerifyOutput();
     }
+}
 }

@@ -28,8 +28,6 @@ Abstract:
     If you want to add a PAL_ wrapper function to a native function in
     here, you also need to edit palinternal.h and win32pal.h.
 
-
-
 --*/
 
 #ifndef __PAL_H__
@@ -453,7 +451,9 @@ PALAPI
 PAL_GenerateCoreDump(
     IN LPCSTR dumpName,
     IN INT dumpType,
-    IN ULONG32 flags);
+    IN ULONG32 flags,
+    LPSTR errorMessageBuffer,
+    INT cbErrorMessageBuffer);
 
 typedef VOID (*PPAL_STARTUP_CALLBACK)(
     char *modulePath,
@@ -586,64 +586,20 @@ PAL_PerfJitDump_Finish();
 
 /******************* winuser.h Entrypoints *******************************/
 
-#define MB_OK                   0x00000000L
 #define MB_OKCANCEL             0x00000001L
 #define MB_ABORTRETRYIGNORE     0x00000002L
-#define MB_YESNO                0x00000004L
-#define MB_RETRYCANCEL          0x00000005L
 
-#define MB_ICONHAND             0x00000010L
 #define MB_ICONQUESTION         0x00000020L
 #define MB_ICONEXCLAMATION      0x00000030L
-#define MB_ICONASTERISK         0x00000040L
 
-#define MB_ICONINFORMATION      MB_ICONASTERISK
-#define MB_ICONSTOP             MB_ICONHAND
-#define MB_ICONERROR            MB_ICONHAND
-
-#define MB_DEFBUTTON1           0x00000000L
-#define MB_DEFBUTTON2           0x00000100L
-#define MB_DEFBUTTON3           0x00000200L
-
-#define MB_SYSTEMMODAL          0x00001000L
 #define MB_TASKMODAL            0x00002000L
-#define MB_SETFOREGROUND        0x00010000L
-#define MB_TOPMOST              0x00040000L
 
-#define MB_NOFOCUS                  0x00008000L
 #define MB_DEFAULT_DESKTOP_ONLY     0x00020000L
-
-// Note: this is the NT 4.0 and greater value.
-#define MB_SERVICE_NOTIFICATION 0x00200000L
-
-#define MB_TYPEMASK             0x0000000FL
-#define MB_ICONMASK             0x000000F0L
-#define MB_DEFMASK              0x00000F00L
 
 #define IDOK                    1
 #define IDCANCEL                2
 #define IDABORT                 3
 #define IDRETRY                 4
-#define IDIGNORE                5
-#define IDYES                   6
-#define IDNO                    7
-
-
-PALIMPORT
-int
-PALAPI
-MessageBoxW(
-        IN LPVOID hWnd,  // NOTE: diff from winuser.h
-        IN LPCWSTR lpText,
-        IN LPCWSTR lpCaption,
-        IN UINT uType);
-
-
-#ifdef UNICODE
-#define MessageBox MessageBoxW
-#else
-#define MessageBox MessageBoxA
-#endif
 
 // From win32.h
 #ifndef _CRTIMP
@@ -777,19 +733,6 @@ MoveFileExW(
 #else
 #define MoveFileEx MoveFileExA
 #endif
-
-typedef struct _BY_HANDLE_FILE_INFORMATION {
-    DWORD dwFileAttributes;
-    FILETIME ftCreationTime;
-    FILETIME ftLastAccessTime;
-    FILETIME ftLastWriteTime;
-    DWORD dwVolumeSerialNumber;
-    DWORD nFileSizeHigh;
-    DWORD nFileSizeLow;
-    DWORD nNumberOfLinks;
-    DWORD nFileIndexHigh;
-    DWORD nFileIndexLow;
-} BY_HANDLE_FILE_INFORMATION, *PBY_HANDLE_FILE_INFORMATION, *LPBY_HANDLE_FILE_INFORMATION;
 
 typedef struct _WIN32_FIND_DATAA {
     DWORD dwFileAttributes;
@@ -1640,13 +1583,11 @@ typedef struct _XMM_SAVE_AREA32 {
     BYTE  Reserved4[96];
 } XMM_SAVE_AREA32, *PXMM_SAVE_AREA32;
 
-#define LEGACY_SAVE_AREA_LENGTH sizeof(XMM_SAVE_AREA32)
-
 //
 // Context Frame
 //
 //  This frame has a several purposes: 1) it is used as an argument to
-//  NtContinue, 2) is is used to constuct a call frame for APC delivery,
+//  NtContinue, 2) it is used to constuct a call frame for APC delivery,
 //  and 3) it is used in the user level thread creation routines.
 //
 //
@@ -1655,7 +1596,7 @@ typedef struct _XMM_SAVE_AREA32 {
 //
 // If the context record is used as an input parameter, then for each
 // portion of the context record controlled by a flag whose value is
-// set, it is assumed that that portion of the context record contains
+// set, it is assumed that such portion of the context record contains
 // valid context. If the context record is being used to modify a threads
 // context, then only that portion of the threads context is modified.
 //
@@ -1901,7 +1842,7 @@ typedef struct _NEON128 {
 //
 // If the context record is used as an input parameter, then for each
 // portion of the context record controlled by a flag whose value is
-// set, it is assumed that that portion of the context record contains
+// set, it is assumed that such portion of the context record contains
 // valid context. If the context record is being used to modify a threads
 // context, then only that portion of the threads context is modified.
 //
@@ -2083,7 +2024,7 @@ typedef struct _IMAGE_ARM_RUNTIME_FUNCTION_ENTRY {
 //
 // If the context record is used as an input parameter, then for each
 // portion of the context record controlled by a flag whose value is
-// set, it is assumed that that portion of the context record contains
+// set, it is assumed that such portion of the context record contains
 // valid context. If the context record is being used to modify a threads
 // context, then only that portion of the threads context is modified.
 //
@@ -2260,7 +2201,7 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 //
 // If the context record is used as an input parameter, then for each
 // portion of the context record controlled by a flag whose value is
-// set, it is assumed that that portion of the context record contains
+// set, it is assumed that such portion of the context record contains
 // valid context. If the context record is being used to modify a threads
 // context, then only that portion of the threads context is modified.
 //
@@ -2278,7 +2219,7 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
     /* +0x000 */ DWORD ContextFlags;
 
     //
-    // Integer registers, abi=N64.
+    // Integer registers.
     //
     DWORD64 R0;
     DWORD64 Ra;
@@ -2317,8 +2258,8 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
     //
     // Floating Point Registers
     //
-    //TODO: support the SIMD.
-    DWORD64 F[32];
+    // TODO-LoongArch64: support the SIMD.
+    ULONGLONG F[32];
     DWORD Fcsr;
 } CONTEXT, *PCONTEXT, *LPCONTEXT;
 
@@ -2871,20 +2812,6 @@ GetModuleFileNameW(
 #define GetModuleFileName GetModuleFileNameA
 #endif
 
-PALIMPORT
-DWORD
-PALAPI
-GetModuleFileNameExW(
-    IN HANDLE hProcess,
-    IN HMODULE hModule,
-    OUT LPWSTR lpFilename,
-    IN DWORD nSize
-    );
-
-#ifdef UNICODE
-#define GetModuleFileNameEx GetModuleFileNameExW
-#endif
-
 // Get base address of the module containing a given symbol
 PALIMPORT
 LPCVOID
@@ -2907,7 +2834,8 @@ PALAPI
 PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(
     IN LPCVOID lpBeginAddress,
     IN LPCVOID lpEndAddress,
-    IN SIZE_T dwSize);
+    IN SIZE_T dwSize,
+    IN BOOL storeAllocationInfo);
 
 PALIMPORT
 void
@@ -3144,16 +3072,6 @@ OpenProcess(
     );
 
 PALIMPORT
-BOOL
-PALAPI
-EnumProcessModules(
-    IN HANDLE hProcess,
-    OUT HMODULE *lphModule,
-    IN DWORD cb,
-    OUT LPDWORD lpcbNeeded
-    );
-
-PALIMPORT
 VOID
 PALAPI
 OutputDebugStringA(
@@ -3236,6 +3154,7 @@ RaiseException(
 PALIMPORT
 VOID
 PALAPI
+DECLSPEC_NORETURN
 RaiseFailFastException(
     IN PEXCEPTION_RECORD pExceptionRecord,
     IN PCONTEXT pContextRecord,
@@ -3519,7 +3438,6 @@ InterlockedDecrement(
     return result;
 }
 
-#define InterlockedDecrementAcquire InterlockedDecrement
 #define InterlockedDecrementRelease InterlockedDecrement
 
 EXTERN_C
@@ -3720,30 +3638,6 @@ InterlockedOr(
     LONG result = __sync_fetch_and_or(Destination, Value);
     PAL_ArmInterlockedOperationBarrier();
     return result;
-}
-
-EXTERN_C
-PALIMPORT
-inline
-UCHAR
-PALAPI
-InterlockedBitTestAndReset(
-    IN OUT LONG volatile *Base,
-    IN LONG Bit)
-{
-    return (InterlockedAnd(Base, ~(1 << Bit)) & (1 << Bit)) != 0;
-}
-
-EXTERN_C
-PALIMPORT
-inline
-UCHAR
-PALAPI
-InterlockedBitTestAndSet(
-    IN OUT LONG volatile *Base,
-    IN LONG Bit)
-{
-    return (InterlockedOr(Base, (1 << Bit)) & (1 << Bit)) != 0;
 }
 
 #if defined(HOST_64BIT)
@@ -4197,8 +4091,6 @@ PALIMPORT char * __cdecl strrchr(const char *, int);
 PALIMPORT char * __cdecl strpbrk(const char *, const char *);
 PALIMPORT char * __cdecl strstr(const char *, const char *);
 PALIMPORT char * __cdecl strtok(char *, const char *);
-PALIMPORT size_t __cdecl strspn(const char *, const char *);
-PALIMPORT size_t  __cdecl strcspn(const char *, const char *);
 PALIMPORT int __cdecl atoi(const char *);
 PALIMPORT ULONG __cdecl strtoul(const char *, char **, int);
 PALIMPORT ULONGLONG __cdecl strtoull(const char *, char **, int);
@@ -4210,8 +4102,6 @@ PALIMPORT int __cdecl isalpha(int);
 PALIMPORT int __cdecl isalnum(int);
 PALIMPORT int __cdecl isdigit(int);
 PALIMPORT int __cdecl isxdigit(int);
-PALIMPORT int __cdecl isupper(int);
-PALIMPORT int __cdecl islower(int);
 PALIMPORT int __cdecl tolower(int);
 PALIMPORT int __cdecl toupper(int);
 PALIMPORT int __cdecl iswalpha(wint_t);
@@ -4636,6 +4526,7 @@ private:
         ExceptionPointers.ContextRecord = ex.ExceptionPointers.ContextRecord;
         TargetFrameSp = ex.TargetFrameSp;
         RecordsOnStack = ex.RecordsOnStack;
+        IsExternal = ex.IsExternal;
         ManagedToNativeExceptionCallback = ex.ManagedToNativeExceptionCallback;
         ManagedToNativeExceptionCallbackContext = ex.ManagedToNativeExceptionCallbackContext;
 
@@ -4657,6 +4548,9 @@ public:
     // Target frame stack pointer set before the 2nd pass.
     SIZE_T TargetFrameSp;
     bool RecordsOnStack;
+    // The exception is a hardware exception coming from a native code out of
+    // the well known runtime helpers
+    bool IsExternal;
 
     void(*ManagedToNativeExceptionCallback)(void* context);
     void* ManagedToNativeExceptionCallbackContext;
@@ -4667,6 +4561,7 @@ public:
         ExceptionPointers.ContextRecord = pContextRecord;
         TargetFrameSp = NoTargetFrameSp;
         RecordsOnStack = onStack;
+        IsExternal = false;
         ManagedToNativeExceptionCallback = NULL;
         ManagedToNativeExceptionCallbackContext = NULL;
     }
@@ -4705,6 +4600,7 @@ public:
         ExceptionPointers.ContextRecord = NULL;
         TargetFrameSp = NoTargetFrameSp;
         RecordsOnStack = false;
+        IsExternal = false;
         ManagedToNativeExceptionCallback = NULL;
         ManagedToNativeExceptionCallbackContext = NULL;
     }
@@ -5011,6 +4907,7 @@ public:
     {                                   \
         try                             \
         {                               \
+            HardwareExceptionHolder     \
             tryBlock(__param);          \
         }                               \
         catch (...)                     \

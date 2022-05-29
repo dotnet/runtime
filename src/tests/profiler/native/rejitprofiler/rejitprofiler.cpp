@@ -287,12 +287,19 @@ HRESULT STDMETHODCALLTYPE ReJITProfiler::JITCachedFunctionSearchFinished(Functio
         COR_PRF_METHOD method;
         while (pEnum->Next(1, &method, NULL) == S_OK)
         {
-            FunctionID inlinerFuncId = GetFunctionIDFromToken(method.moduleId, method.methodId);
+            FunctionID inlinerFuncId = GetFunctionIDFromToken(method.moduleId, method.methodId, true);
 
-            // GetFunctionIDFromToken doesn't handle generics, will return NULL
+            // GetFunctionIDFromToken doesn't handle generics or not yet loaded methods, will return NULL
             if (inlinerFuncId != mdTokenNil)
             {
                 AddInlining(inlinerFuncId, functionId);
+            }
+            else
+            {
+                String calleeName = GetFunctionIDName(functionId);
+                String moduleName = GetModuleIDName(GetModuleIDForFunction(functionId));
+                String inlinerModuleId = GetModuleIDName(method.moduleId);
+                INFO(L"Inlining occurred, but name could not be resolved! Inliner=ModuleId=" << inlinerModuleId << L" Token=" << std::hex << method.methodId << L",  Inlinee=" << calleeName << L" Inlinee module name=" << moduleName);
             }
         }
     }
@@ -313,7 +320,7 @@ HRESULT STDMETHODCALLTYPE ReJITProfiler::GetReJITParameters(ModuleID moduleId, m
 {
     SHUTDOWNGUARD();
 
-    INFO(L"Starting to build IL for method " << GetFunctionIDName(GetFunctionIDFromToken(moduleId, methodId)));
+    INFO(L"Starting to build IL for method " << GetFunctionIDName(GetFunctionIDFromToken(moduleId, methodId, false)));
     COMPtrHolder<IUnknown> pUnk;
     HRESULT hr = _profInfo10->GetModuleMetaData(moduleId, ofWrite, IID_IMetaDataEmit2, &pUnk);
     if (FAILED(hr))
@@ -444,13 +451,21 @@ void ReJITProfiler::AddInlining(FunctionID inliner, FunctionID inlinee)
     INFO(L"Inlining occurred! Inliner=" << GetFunctionIDName(inliner) << L" Inlinee=" << calleeName << L" Inlinee module name=" << moduleName);
 }
 
-FunctionID ReJITProfiler::GetFunctionIDFromToken(ModuleID module, mdMethodDef token)
+FunctionID ReJITProfiler::GetFunctionIDFromToken(ModuleID module, mdMethodDef token, bool invalidArgNotFailure)
 {
     HRESULT hr = S_OK;
     FunctionID functionId;
-    if (FAILED(hr = pCorProfilerInfo->GetFunctionFromToken(module,
-                                                           token,
-                                                           &functionId)))
+    hr = pCorProfilerInfo->GetFunctionFromToken(module,
+                                                token,
+                                                &functionId);
+
+    if (invalidArgNotFailure && hr == E_INVALIDARG)
+    {
+        printf("Call to GetFunctionFromToken failed with E_INVALIDARG, this may be caused by the method not yet being loaded\n");
+        return mdTokenNil;
+    }
+
+    if (FAILED(hr))
     {
         printf("Call to GetFunctionFromToken failed with hr=0x%x\n", hr);
         _failures++;

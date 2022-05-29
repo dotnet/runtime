@@ -941,15 +941,12 @@ public class Interfaces
                 throw new Exception($"{actual} != {expected}");
             }
 
-            // Uncomment after we pick up fix for https://github.com/dotnet/roslyn/issues/60069
-#if false
             Func<string> del = T.GetCookie;
             actual = del();
             if (actual != expected)
             {
                 throw new Exception($"{actual} != {expected}");
             }
-#endif
         }
 
         static void TestSimpleInterfaceWithGenericMethod<T, U>(string expected) where T : ISimple

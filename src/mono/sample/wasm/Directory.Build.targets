@@ -40,6 +40,10 @@
   <Target Name="RunSampleWithBrowser" DependsOnTargets="BuildSampleInTree;CheckServe">
     <Exec Command="$(_Dotnet) serve -o -d:bin/$(Configuration)/AppBundle -p:8000 --mime .mjs=text/javascript" IgnoreExitCode="true" YieldDuringToolExecution="true" />
   </Target>
+  <Target Name="RunSampleWithBrowserAndSimpleServer" DependsOnTargets="BuildSampleInTree">
+    <Exec Command="$(_Dotnet) build -c $(Configuration) ..\simple-server\HttpServer.csproj" />
+    <Exec WorkingDirectory="bin/$(Configuration)/AppBundle" Command="..\..\..\..\simple-server\bin\$(Configuration)\net6.0\HttpServer" />
+  </Target>
 
   <Target Name="TriggerGenerateRunScript"
           Condition="'$(GenerateRunScriptForSample)' == 'true'"

@@ -87,9 +87,8 @@ namespace System
             UnhandledException_ExceptionDispatchNotAllowed = 2,  // "Unhandled exception: no handler found before escaping a finally clause or other fail-fast scope."
             UnhandledException_CallerDidNotHandle = 3,           // "Unhandled exception: no handler found in calling method."
             ClassLibDidNotTranslateExceptionID = 4,              // "Unable to translate failure into a classlib-specific exception object."
-            PN_UnhandledException = 5,                           // ProjectN: "Unhandled exception: a managed exception was not handled before reaching unmanaged code"
-            PN_UnhandledExceptionFromPInvoke = 6,                // ProjectN: "Unhandled exception: an unmanaged exception was thrown out of a managed-to-native transition."
-            Max
+            UnhandledException = 5,                              // "Unhandled exception: a managed exception was not handled before reaching unmanaged code"
+            UnhandledExceptionFromPInvoke = 6,                   // "Unhandled exception: an unmanaged exception was thrown out of a managed-to-native transition."
         }
 
         // This is the classlib-provided fail-fast function that will be invoked whenever the runtime

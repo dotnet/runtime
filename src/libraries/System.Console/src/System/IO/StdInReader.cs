@@ -46,11 +46,15 @@ namespace System.IO
 
         internal void AppendExtraBuffer(ReadOnlySpan<byte> buffer)
         {
-            // Ensure a reasonable upper bound applies to the stackalloc
-            Debug.Assert(buffer.Length <= 1024);
-
-            // Then convert the bytes to chars
-            Span<char> chars = stackalloc char[_encoding.GetMaxCharCount(buffer.Length)];
+            // Most inputs to this will have a buffer length of one.
+            // The cases where it is larger than one only occur in ReadKey
+            // when the input is not redirected, so those cases should be
+            // rare, so just allocate.
+            const int MaxStackAllocation = 256;
+            int maxCharsCount = _encoding.GetMaxCharCount(buffer.Length);
+            Span<char> chars = (uint)maxCharsCount <= MaxStackAllocation ?
+                stackalloc char[MaxStackAllocation] :
+                new char[maxCharsCount];
             int charLen = _encoding.GetChars(buffer, chars);
             chars = chars.Slice(0, charLen);
 
@@ -340,27 +344,27 @@ namespace System.IO
 
                 default:
                     // 1. Ctrl A to Ctrl Z.
-                    if (x >= 1 && x <= 26)
+                    if (char.IsBetween(x, (char)1, (char)26))
                     {
                         isCtrl = true;
                         return ConsoleKey.A + x - 1;
                     }
 
                     // 2. Numbers from 0 to 9.
-                    if (x >= '0' && x <= '9')
+                    if (char.IsAsciiDigit(x))
                     {
                         return ConsoleKey.D0 + x - '0';
                     }
 
                     //3. A to Z
-                    if (x >= 'A' && x <= 'Z')
+                    if (char.IsAsciiLetterUpper(x))
                     {
                         isShift = true;
                         return ConsoleKey.A + (x - 'A');
                     }
 
                     // 4. a to z.
-                    if (x >= 'a' && x <= 'z')
+                    if (char.IsAsciiLetterLower(x))
                     {
                         return ConsoleKey.A + (x - 'a');
                     }

@@ -69,8 +69,10 @@ namespace System.ComponentModel
             }
         }
 
-        public void AddHandlers(EventHandlerList listToAddFrom!!)
+        public void AddHandlers(EventHandlerList listToAddFrom)
         {
+            ArgumentNullException.ThrowIfNull(listToAddFrom);
+
             ListEntry? currentListEntry = listToAddFrom._head;
             while (currentListEntry != null)
             {

@@ -56,7 +56,7 @@ namespace System
                     if (NotAny(Flags.DosPath) &&
                         uriKind != UriKind.Absolute &&
                        ((uriKind == UriKind.Relative || (_string.Length >= 2 && (_string[0] != '\\' || _string[1] != '\\')))
-                    || (!IsWindowsSystem && InFact(Flags.UnixPath))))
+                    || (!OperatingSystem.IsWindows() && InFact(Flags.UnixPath))))
                     {
                         _syntax = null!; //make it be relative Uri
                         _flags &= Flags.UserEscaped; // the only flag that makes sense for a relative uri
@@ -248,7 +248,7 @@ namespace System
         //  Returns true if the string represents a valid argument to the Uri ctor
         //  If uriKind != AbsoluteUri then certain parsing errors are ignored but Uri usage is limited
         //
-        public static bool TryCreate([NotNullWhen(true)] string? uriString, UriKind uriKind, [NotNullWhen(true)] out Uri? result)
+        public static bool TryCreate([NotNullWhen(true), StringSyntax(StringSyntaxAttribute.Uri, "uriKind")] string? uriString, UriKind uriKind, [NotNullWhen(true)] out Uri? result)
         {
             if (uriString is null)
             {
@@ -268,7 +268,7 @@ namespace System
         /// <param name="creationOptions">Options that control how the <seealso cref="Uri"/> is created and behaves.</param>
         /// <param name="result">The constructed <see cref="Uri"/>.</param>
         /// <returns><see langword="true"/> if the <see cref="Uri"/> was successfully created; otherwise, <see langword="false"/>.</returns>
-        public static bool TryCreate([NotNullWhen(true)] string? uriString, in UriCreationOptions creationOptions, [NotNullWhen(true)] out Uri? result)
+        public static bool TryCreate([NotNullWhen(true), StringSyntax(StringSyntaxAttribute.Uri)] string? uriString, in UriCreationOptions creationOptions, [NotNullWhen(true)] out Uri? result)
         {
             if (uriString is null)
             {
@@ -400,7 +400,7 @@ namespace System
             return Syntax.InternalIsWellFormedOriginalString(this);
         }
 
-        public static bool IsWellFormedUriString([NotNullWhen(true)] string? uriString, UriKind uriKind)
+        public static bool IsWellFormedUriString([NotNullWhen(true), StringSyntax(StringSyntaxAttribute.Uri, "uriKind")] string? uriString, UriKind uriKind)
         {
             Uri? result;
 
@@ -554,8 +554,10 @@ namespace System
             return true;
         }
 
-        public static string UnescapeDataString(string stringToUnescape!!)
+        public static string UnescapeDataString(string stringToUnescape)
         {
+            ArgumentNullException.ThrowIfNull(stringToUnescape);
+
             if (stringToUnescape.Length == 0)
                 return string.Empty;
 
@@ -729,7 +731,7 @@ namespace System
             // Check on the DOS path in the relative Uri (a special case)
             if (relativeStr.Length >= 3
                 && (relativeStr[1] == ':' || relativeStr[1] == '|')
-                && UriHelper.IsAsciiLetter(relativeStr[0])
+                && char.IsAsciiLetter(relativeStr[0])
                 && (relativeStr[2] == '\\' || relativeStr[2] == '/'))
             {
                 if (baseUri.IsImplicitFile)
@@ -852,8 +854,10 @@ namespace System
             }
         }
 
-        public bool IsBaseOf(Uri uri!!)
+        public bool IsBaseOf(Uri uri)
         {
+            ArgumentNullException.ThrowIfNull(uri);
+
             if (!IsAbsoluteUri)
                 return false;
 

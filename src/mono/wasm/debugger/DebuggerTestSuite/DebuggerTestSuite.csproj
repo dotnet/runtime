@@ -3,25 +3,21 @@
   <PropertyGroup>
     <TargetFramework>$(AspNetCoreAppCurrent)</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <RunAnalyzers>false</RunAnalyzers>
     <IsTestProject>true</IsTestProject>
-    <VersionsPropsFile>$(MSBuildThisFileDirectory)..\..\BrowsersForTesting.props</VersionsPropsFile>
+    <RunAnalyzers>false</RunAnalyzers>
+    <DebuggerHost Condition="'$(DebuggerHost)' == '' or ('$(DebuggerHost)' != 'chrome' and '$(DebuggerHost)' != 'firefox')">chrome</DebuggerHost>
+    <DefineConstants Condition="'$(DebuggerHost)' == 'chrome'">$(DefineConstants);RUN_IN_CHROME</DefineConstants>
     <BrowserHost Condition="$([MSBuild]::IsOSPlatform('windows'))">windows</BrowserHost>
-    <InstallChromeForDebuggerTests Condition="'$(InstallChromeForDebuggerTests)' == '' and '$(ContinuousIntegrationBuild)' != 'true' and Exists('/.dockerenv')">true</InstallChromeForDebuggerTests>
+    <InstallChromeForTests Condition="'$(InstallChromeForTests)' == '' and '$(DebuggerHost)' == 'chrome' and '$(ContinuousIntegrationBuild)' != 'true' and Exists('/.dockerenv')">true</InstallChromeForTests>
+    <InstallFirefoxForTests Condition="'$(DebuggerHost)' == 'firefox' and '$(InstallFirefoxForTests)' == '' and '$(ContinuousIntegrationBuild)' != 'true' and Exists('/.dockerenv')">true</InstallFirefoxForTests>
   </PropertyGroup>
 
-  <Import Project="$(VersionsPropsFile)" />
-
-  <PropertyGroup>
-    <ChromeDir>$(ArtifactsBinDir)DebuggerTestSuite\chrome\</ChromeDir>
-    <ChromeStampDir>$(ArtifactsBinDir)DebuggerTestSuite\</ChromeStampDir>
-    <ChromeStampFile>$(ChromeStampDir).install-chrome-$(ChromiumRevision).stamp</ChromeStampFile>
-  </PropertyGroup>
+  <Import Project="$(RepositoryEngineeringDir)testing\provisioning.targets" />
 
   <ItemGroup>
     <Content Include="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
 
-    <Compile Include="..\BrowserDebugProxy\DevToolsQueue.cs" />
+    <Compile Include="..\BrowserDebugProxy\Common\*.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -46,31 +42,4 @@
     <Copy SourceFiles="@(_FilesToCopy)" DestinationFiles="$(ArchiveDirForHelix)\%(TargetPath)\%(RecursiveDir)%(FileName)%(Extension)" />
   </Target>
 
-  <Target Name="DownloadAndInstallChrome"
-          AfterTargets="Build"
-          Condition="!Exists($(ChromeStampFile)) and '$(InstallChromeForDebuggerTests)' == 'true'">
-
-    <ItemGroup>
-      <_StampFile Include="$(ChromeStampDir).install-chrome*.stamp" />
-    </ItemGroup>
-
-    <Delete Files="@(_StampFile)" />
-    <RemoveDir Directories="$(ChromeDir)" />
-
-    <DownloadFile SourceUrl="$(ChromiumUrl)" DestinationFolder="$(ChromeDir)" SkipUnchangedFiles="true">
-      <Output TaskParameter="DownloadedFile" PropertyName="_DownloadedFile" />
-    </DownloadFile>
-    <Unzip SourceFiles="$(_DownloadedFile)" DestinationFolder="$(ChromeDir)" />
-
-    <PropertyGroup>
-      <_ChromeBinaryPath>$([MSBuild]::NormalizePath($(ChromeDir), $(ChromiumDirName), $(ChromiumBinaryName)))</_ChromeBinaryPath>
-    </PropertyGroup>
-
-    <Error Text="Cannot find chrome at $(_ChromeBinaryPath) in the downloaded copy"
-           Condition="!Exists($(_ChromeBinaryPath))" />
-
-    <Exec Command="chmod +x $(_ChromeBinaryPath)" Condition="!$([MSBuild]::IsOSPlatform('windows'))" />
-
-    <Touch Files="$(ChromeStampFile)" AlwaysCreate="true" />
-  </Target>
 </Project>

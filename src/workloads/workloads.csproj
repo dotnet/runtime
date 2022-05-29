@@ -72,6 +72,9 @@
                           Description=".NET runtime components for tvOS execution."/>
       <ComponentResources Include="runtimes-maccatalyst" Title=".NET Mac Catalyst Build Tools"
                           Description=".NET runtime components for Mac Catalyst execution."/>
+      <ComponentResources Include="runtimes-windows" Title=".NET Windows Runtimes"
+                          Description=".NET runtime components for Windows execution."/>
+      
 
       <!-- Visual Studio components must be versioned. Build tasks will fall back to cobbling a version number from
            the manifest information unless it's overridden. -->
@@ -85,6 +88,7 @@
       <ComponentVersions Include="runtimes-ios" Version="$(FileVersion)" />
       <ComponentVersions Include="runtimes-tvos" Version="$(FileVersion)" />
       <ComponentVersions Include="runtimes-maccatalyst" Version="$(FileVersion)" />
+      <ComponentVersions Include="runtimes-windows" Version="$(FileVersion)" />
     </ItemGroup>
 
     <!-- BAR requires having version information in blobs -->
@@ -137,9 +141,10 @@
     <MSBuild Projects="$(MSBuildProjectFile)" Properties="_WixObjDir=%(Msis.WixObj);_Msi=%(Msis.Identity)" Targets="CreateWixPack" />
 
     <!-- Build the Visual Studio manifest project. -->
-    <ItemGroup>
+    <!-- This is currently a manual endeavor. Building it in CI brings .NET Framework dependencies that make machine servicing harder. -->
+    <!-- <ItemGroup>
       <VisualStudioManifestProjects Include="mono_wasm_mobile.vsmanproj" />
-    </ItemGroup>
+    </ItemGroup> -->
 
     <MSBuild Projects="@(VisualStudioManifestProjects)" Properties="SwixBuildTargets=$(SwixBuildTargets);ManifestOutputPath=$(VersionedVisualStudioSetupInsertionPath);OutputPath=$(VersionedVisualStudioSetupInsertionPath)" />
 

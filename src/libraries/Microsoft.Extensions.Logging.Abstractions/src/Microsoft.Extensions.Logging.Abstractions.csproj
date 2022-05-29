@@ -4,9 +4,6 @@
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <!-- Use targeting pack references instead of granular ones in the project file. -->
-    <DisableImplicitAssemblyReferences>false</DisableImplicitAssemblyReferences>
-    <Nullable>enable</Nullable>
     <IsPackable>true</IsPackable>
     <PackageDescription>Logging abstractions for Microsoft.Extensions.Logging.
 
@@ -30,6 +27,8 @@ Microsoft.Extensions.Logging.Abstractions.NullLogger</PackageDescription>
              Link="Common\src\Extensions\Logging\NullScope.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
              Link="Common\System\Text\ValueStringBuilder.cs" />
+    <Compile Include="$(CommonPath)System\ThrowHelper.cs"
+             Link="Common\System\ThrowHelper.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
@@ -39,8 +38,12 @@ Microsoft.Extensions.Logging.Abstractions.NullLogger</PackageDescription>
 
   <ItemGroup>
     <AnalyzerReference Include="..\gen\Microsoft.Extensions.Logging.Generators.Roslyn3.11.csproj"
+                       Pack="true"
+                       ReferenceAnalyzer="false"
                        Condition="'$(DotNetBuildFromSource)' != 'true'" />
-    <AnalyzerReference Include="..\gen\Microsoft.Extensions.Logging.Generators.Roslyn4.0.csproj" />
+    <AnalyzerReference Include="..\gen\Microsoft.Extensions.Logging.Generators.Roslyn4.0.csproj"
+                       Pack="true"
+                       ReferenceAnalyzer="false" />
   </ItemGroup>
 
 </Project>

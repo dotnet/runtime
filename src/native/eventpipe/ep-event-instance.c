@@ -69,7 +69,7 @@ ep_event_instance_init (
 
 #ifdef EP_CHECKED_BUILD
 	event_instance->debug_event_start = 0xDEADBEEF;
-	event_instance->debug_event_end = 0xCAFEBABE;
+	event_instance->debug_event_end = 0xC0DEC0DE;
 #endif
 
 	event_instance->ep_event = ep_event;
@@ -113,7 +113,7 @@ ep_event_instance_ensure_consistency (const EventPipeEventInstance *ep_event_ins
 {
 #ifdef EP_CHECKED_BUILD
 	EP_ASSERT (ep_event_instance->debug_event_start == 0xDEADBEEF);
-	EP_ASSERT (ep_event_instance->debug_event_end == 0xCAFEBABE);
+	EP_ASSERT (ep_event_instance->debug_event_end == 0xC0DEC0DE);
 #endif
 
 	return true;
@@ -148,7 +148,7 @@ ep_event_instance_get_aligned_total_size (
 			// Prepended stack payload size in bytes
 			sizeof (uint32_t) +
 			// Stack payload size
-			ep_stack_contents_get_size (&ep_event_instance->stack_contents);
+			ep_stack_contents_instance_get_size (&ep_event_instance->stack_contents_instance);
 	} else if (format == EP_SERIALIZATION_FORMAT_NETTRACE_V4) {
 		payload_len =
 			// Metadata ID
@@ -207,7 +207,7 @@ ep_event_instance_serialize_to_json_file (
 		ep_event_get_event_version (ep_event_instance->ep_event));
 
 	if (characters_written > 0 && characters_written < (int32_t)ARRAY_SIZE (buffer))
-		ep_json_file_write_event_data (json_file, ep_event_instance->timestamp, ep_rt_uint64_t_to_thread_id_t (ep_event_instance->thread_id), buffer, &ep_event_instance->stack_contents);
+		ep_json_file_write_event_data (json_file, ep_event_instance->timestamp, ep_rt_uint64_t_to_thread_id_t (ep_event_instance->thread_id), buffer, &ep_event_instance->stack_contents_instance);
 }
 #else
 void
@@ -289,7 +289,7 @@ ep_sequence_point_free (EventPipeSequencePoint *sequence_point)
 #endif /* !defined(EP_INCLUDE_SOURCE_FILES) || defined(EP_FORCE_INCLUDE_SOURCE_FILES) */
 #endif /* ENABLE_PERFTRACING */
 
-#ifndef EP_INCLUDE_SOURCE_FILES
+#if !defined(ENABLE_PERFTRACING) || (defined(EP_INCLUDE_SOURCE_FILES) && !defined(EP_FORCE_INCLUDE_SOURCE_FILES))
 extern const char quiet_linker_empty_file_warning_eventpipe_event_instance;
 const char quiet_linker_empty_file_warning_eventpipe_event_instance = 0;
 #endif

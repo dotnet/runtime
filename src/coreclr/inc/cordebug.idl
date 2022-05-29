@@ -997,7 +997,7 @@ interface ICorDebugManagedCallback : IUnknown
 {
     /*
      * All callbacks are called with the process in the synchronized state
-     * All callbacks are serialized, and are called in in the same thread.
+     * All callbacks are serialized, and are called in the same thread.
      * Each callback implementor must call Continue in a callback to
      *      resume execution.
      * If Continue is not called before returning, the process will
@@ -2364,7 +2364,7 @@ interface ICorDebugAppDomain4 : IUnknown
 
 /* ------------------------------------------------------------------------- *
  * Assembly interface
- * An ICorDebugAssembly instance corresponds to a a managed assembly loaded
+ * An ICorDebugAssembly instance corresponds to a managed assembly loaded
  * into a specific AppDomain in the CLR.  For assemblies shared between multiple
  * AppDomains (eg. CoreLib), there will be a separate ICorDebugAssembly instance
  * per AppDomain in which it is used.
@@ -3919,10 +3919,11 @@ interface ICorDebugRegisterSet : IUnknown
         REGISTER_ARM64_V31,
 
         // LoongArch64 registers
-        REGISTER_LOONGARCH64_R0 = 0,
+        REGISTER_LOONGARCH64_PC = 0,
+        REGISTER_LOONGARCH64_SP,
+        REGISTER_LOONGARCH64_FP,
         REGISTER_LOONGARCH64_RA,
         REGISTER_LOONGARCH64_TP,
-        REGISTER_LOONGARCH64_SP,
         REGISTER_LOONGARCH64_A0,
         REGISTER_LOONGARCH64_A1,
         REGISTER_LOONGARCH64_A2,
@@ -3941,7 +3942,6 @@ interface ICorDebugRegisterSet : IUnknown
         REGISTER_LOONGARCH64_T7,
         REGISTER_LOONGARCH64_T8,
         REGISTER_LOONGARCH64_X0,
-        REGISTER_LOONGARCH64_FP,
         REGISTER_LOONGARCH64_S0,
         REGISTER_LOONGARCH64_S1,
         REGISTER_LOONGARCH64_S2,
@@ -3951,7 +3951,6 @@ interface ICorDebugRegisterSet : IUnknown
         REGISTER_LOONGARCH64_S6,
         REGISTER_LOONGARCH64_S7,
         REGISTER_LOONGARCH64_S8,
-        REGISTER_LOONGARCH64_PC,
 
         REGISTER_LOONGARCH64_F0,
         REGISTER_LOONGARCH64_F1,
@@ -6277,7 +6276,7 @@ interface ICorDebugEval2 : IUnknown
                         [in, size_is(nTypeArgs)] ICorDebugType *ppTypeArgs[]);
 
     /*
-     * NewParamaterizedArray allocates a new array whose elements may be instances
+     * NewParameterizedArray allocates a new array whose elements may be instances
      * of a generic type.  The array is always created in the AppDomain the thread is
      * currently in.
      */
@@ -6638,7 +6637,7 @@ interface ICorDebugObjectValue : ICorDebugValue
     HRESULT GetContext([out] ICorDebugContext **ppContext);
 
     /*
-     * IsValueClass returns true if the the class of this object is
+     * IsValueClass returns true if the class of this object is
      * a value class.
      */
 
@@ -7359,7 +7358,7 @@ interface ICorDebugType : IUnknown
      * GetClass and the relevant metadata, but it is relatively painful: you would
      * have to lookup the class, then the metadata of that class
      * to find the "generic" base type, then instantiate this generic base type by
-     * looking up the type paramaters to the initial type,
+     * looking up the type parameters to the initial type,
      * and then perform the appropriate instantiation in the case where the class
      * happens to be either a generic class or a normal class with a constructed type
      * as its parent.  Looking up the base types is useful to implement common

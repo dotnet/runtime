@@ -84,17 +84,20 @@ namespace System.ComponentModel.Design
 
             public override void Flush() => _stream.Flush();
 
-            public override int Read(byte[] buffer, int offset, int count)
+            public override int Read(byte[] buffer, int offset, int count) =>
+                Read(new Span<byte>(buffer, offset, count));
+
+            public override int Read(Span<byte> buffer)
             {
                 Debug.Assert(_stream.Position != 0, "Expected the first byte to be read first");
                 if (_stream.Position == 1)
                 {
                     Debug.Assert(_readFirstByte == true);
                     // Add the first byte read by ReadByte into buffer here
-                    buffer[offset] = _firstByte;
-                    return _stream.Read(buffer, offset + 1, count - 1) + 1;
+                    buffer[0] = _firstByte;
+                    return _stream.Read(buffer.Slice(1)) + 1;
                 }
-                return _stream.Read(buffer, offset, count);
+                return _stream.Read(buffer);
             }
 
             public override long Seek(long offset, SeekOrigin origin) => _stream.Seek(offset, origin);

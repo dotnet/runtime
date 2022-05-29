@@ -61,7 +61,7 @@ namespace System
                 value = (short)-value;
                 if (value < 0)
                 {
-                    ThrowAbsOverflow();
+                    ThrowNegateTwosCompOverflow();
                 }
             }
             return value;
@@ -75,7 +75,7 @@ namespace System
                 value = -value;
                 if (value < 0)
                 {
-                    ThrowAbsOverflow();
+                    ThrowNegateTwosCompOverflow();
                 }
             }
             return value;
@@ -89,7 +89,7 @@ namespace System
                 value = -value;
                 if (value < 0)
                 {
-                    ThrowAbsOverflow();
+                    ThrowNegateTwosCompOverflow();
                 }
             }
             return value;
@@ -106,7 +106,7 @@ namespace System
                 value = -value;
                 if (value < 0)
                 {
-                    ThrowAbsOverflow();
+                    ThrowNegateTwosCompOverflow();
                 }
             }
             return value;
@@ -121,7 +121,7 @@ namespace System
                 value = (sbyte)-value;
                 if (value < 0)
                 {
-                    ThrowAbsOverflow();
+                    ThrowNegateTwosCompOverflow();
                 }
             }
             return value;
@@ -155,7 +155,7 @@ namespace System
 
         [DoesNotReturn]
         [StackTraceHidden]
-        private static void ThrowAbsOverflow()
+        internal static void ThrowNegateTwosCompOverflow()
         {
             throw new OverflowException(SR.Overflow_NegateTwosCompNum);
         }
@@ -1236,9 +1236,9 @@ namespace System
             // This is based on the 'Berkeley SoftFloat Release 3e' algorithm
 
             ulong bits = BitConverter.DoubleToUInt64Bits(a);
-            int exponent = double.ExtractExponentFromBits(bits);
+            ushort biasedExponent = double.ExtractBiasedExponentFromBits(bits);
 
-            if (exponent <= 0x03FE)
+            if (biasedExponent <= 0x03FE)
             {
                 if ((bits << 1) == 0)
                 {
@@ -1250,11 +1250,11 @@ namespace System
                 // and any value greater than 0.5 will always round to exactly one. However,
                 // we need to preserve the original sign for IEEE compliance.
 
-                double result = ((exponent == 0x03FE) && (double.ExtractSignificandFromBits(bits) != 0)) ? 1.0 : 0.0;
+                double result = ((biasedExponent == 0x03FE) && (double.ExtractTrailingSignificandFromBits(bits) != 0)) ? 1.0 : 0.0;
                 return CopySign(result, a);
             }
 
-            if (exponent >= 0x0433)
+            if (biasedExponent >= 0x0433)
             {
                 // Any value greater than or equal to 2^52 cannot have a fractional part,
                 // So it will always round to exactly itself.
@@ -1263,12 +1263,12 @@ namespace System
             }
 
             // The absolute value should be greater than or equal to 1.0 and less than 2^52
-            Debug.Assert((0x03FF <= exponent) && (exponent <= 0x0432));
+            Debug.Assert((0x03FF <= biasedExponent) && (biasedExponent <= 0x0432));
 
             // Determine the last bit that represents the integral portion of the value
             // and the bits representing the fractional portion
 
-            ulong lastBitMask = 1UL << (0x0433 - exponent);
+            ulong lastBitMask = 1UL << (0x0433 - biasedExponent);
             ulong roundBitsMask = lastBitMask - 1;
 
             // Increment the first fractional bit, which represents the midpoint between
@@ -1476,7 +1476,7 @@ namespace System
         }
 
         [DoesNotReturn]
-        private static void ThrowMinMaxException<T>(T min, T max)
+        internal static void ThrowMinMaxException<T>(T min, T max)
         {
             throw new ArgumentException(SR.Format(SR.Argument_MinMaxValue, min, max));
         }

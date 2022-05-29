@@ -1,10 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
-  </PropertyGroup>
-  <PropertyGroup>
     <DebugType>None</DebugType>
     <Optimize>True</Optimize>
+    <!-- https://github.com/dotnet/runtime/issues/68060 -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).il" />

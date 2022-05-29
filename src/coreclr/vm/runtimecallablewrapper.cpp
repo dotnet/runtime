@@ -1474,9 +1474,9 @@ void RCW::Initialize(IUnknown* pUnk, DWORD dwSyncBlockIndex, MethodTable *pClass
 
     // We can't safely pump here for Releasing (or directly release)
     // if we're currently in a SendMessage.
-    // Also, clients can opt out of this. The option is is a per-thread flag which they can
+    // Also, clients can opt out of this. The option is a per-thread flag which they can
     // set by calling DisableComEagerCleanup on the appropriate thread. Why would they
-    // want to opt out? Because pumping can lead to re-entrancy in in unexpected places.
+    // want to opt out? Because pumping can lead to re-entrancy in unexpected places.
     // If a client decides to opt out, they are required to cleanup RCWs themselves by
     // calling Marshal.CleanupUnusedObjectsInCurrentContext periodically. The best place
     // to make that call is within their own message pump.

@@ -32,12 +32,12 @@
     .field public valuetype JitTest_sizeof64_Target_32Bit_x86_il.SimpleStruct[0...] ss_array
     .field public valuetype JitTest_sizeof64_Target_32Bit_x86_il.SimpleStruct ss2
   }
-  .class private sequential ansi sealed beforefieldinit Test
+  .class public sequential ansi sealed beforefieldinit Test
          extends [mscorlib]System.ValueType
   {
     .pack 1
     .size 1
-    .method private hidebysig static int32
+    .method public hidebysig static int32
             Main() cil managed
     {
       // [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsX86Process))]

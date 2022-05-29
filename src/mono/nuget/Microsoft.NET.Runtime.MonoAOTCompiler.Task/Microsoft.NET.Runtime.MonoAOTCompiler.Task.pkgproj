@@ -8,9 +8,28 @@
   <ItemGroup>
     <ProjectReference Include="$(RepoTasksDir)AotCompilerTask\MonoAOTCompiler.csproj" />
 
-    <PackageFile Include="Sdk\Sdk.props" TargetPath="Sdk" />
     <PackageFile Include="build\$(MSBuildProjectName).props" TargetPath="build" />
   </ItemGroup>
+
+  <Target Name="_PrepareForPack" BeforeTargets="GetPackageFiles">
+    <PropertyGroup>
+      <SdkPropsPath>$(IntermediateOutputPath)Sdk.props</SdkPropsPath>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_ReplacementValue Include="TargetFrameworkForNETCoreTasks" Value="$(TargetFrameworkForNETCoreTasks)" />
+      <_ReplacementValue Include="TargetFrameworkForNETFrameworkTasks" Value="$(TargetFrameworkForNETFrameworkTasks)" />
+    </ItemGroup>
+
+    <GenerateFileFromTemplate
+      TemplateFile="Sdk/Sdk.props.in"
+      Properties="@(_ReplacementValue)"
+      OutputPath="$(SdkPropsPath)" />
+
+    <ItemGroup>
+      <PackageFile Include="$(SdkPropsPath)" TargetPath="Sdk" />
+    </ItemGroup>
+  </Target>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 </Project>

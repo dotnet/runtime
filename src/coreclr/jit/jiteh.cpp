@@ -888,7 +888,7 @@ unsigned Compiler::ehGetCallFinallyRegionIndex(unsigned finallyIndex, bool* inTr
     assert(finallyIndex != EHblkDsc::NO_ENCLOSING_INDEX);
     assert(ehGetDsc(finallyIndex)->HasFinallyHandler());
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     return ehGetDsc(finallyIndex)->ebdGetEnclosingRegionIndex(inTryRegion);
 #else
     *inTryRegion = true;
@@ -4518,7 +4518,7 @@ void Compiler::fgExtendEHRegionAfter(BasicBlock* block)
 // inserting the block and properly extending some EH regions (if necessary)
 // puts the block in the correct region. We only consider the case of extending
 // an EH region after 'blk' (that is, to include 'blk' and the newly insert block);
-// we don't consider inserting a block as the the first block of an EH region following 'blk'.
+// we don't consider inserting a block as the first block of an EH region following 'blk'.
 //
 // Consider this example:
 //

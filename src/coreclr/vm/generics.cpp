@@ -500,9 +500,6 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
         {
             pStaticFieldDescs = (FieldDesc*) pamTracker->Track(pAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(FieldDesc)) * S_SIZE_T(pOldMT->GetNumStaticFields())));
             FieldDesc* pOldFD = pOldMT->GetGenericsStaticFieldDescs();
-
-            g_IBCLogger.LogFieldDescsAccess(pOldFD);
-
             for (DWORD i = 0; i < pOldMT->GetNumStaticFields(); i++)
             {
                 pStaticFieldDescs[i].InitializeFrom(pOldFD[i], pMT);
@@ -573,8 +570,6 @@ BOOL CheckInstantiation(Instantiation inst)
             return TRUE;
         }
 
-        g_IBCLogger.LogTypeMethodTableAccess(&th);
-
         if (   type == ELEMENT_TYPE_BYREF
             || type == ELEMENT_TYPE_TYPEDBYREF
             || type == ELEMENT_TYPE_VOID
@@ -582,15 +577,6 @@ BOOL CheckInstantiation(Instantiation inst)
             || type == ELEMENT_TYPE_FNPTR)
         {
             return FALSE;
-        }
-
-        MethodTable* pMT = th.GetMethodTable();
-        if (pMT != NULL)
-        {
-            if (pMT->IsByRefLike())
-            {
-                return FALSE;
-            }
         }
     }
     return TRUE;

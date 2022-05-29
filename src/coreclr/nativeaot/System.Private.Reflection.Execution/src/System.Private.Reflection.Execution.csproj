@@ -2,7 +2,6 @@
   <ItemGroup>
     <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
     <ProjectReference Include="..\..\System.Private.Reflection.Metadata\src\System.Private.Reflection.Metadata.csproj" />
-    <ProjectReference Include="..\..\System.Private.Interop\src\System.Private.Interop.csproj" />
     <ProjectReference Include="..\..\System.Private.TypeLoader\src\System.Private.TypeLoader.csproj" />
     <ProjectReference Include="..\..\System.Private.Reflection.Core\src\System.Private.Reflection.Core.csproj" />
   </ItemGroup>
@@ -25,7 +24,6 @@
     <Compile Include="Internal\Reflection\Execution\ReflectionExecution.cs" />
     <Compile Include="Internal\Reflection\Execution\ReflectionDomainSetupImplementation.cs" />
     <Compile Include="Internal\Reflection\Execution\ExecutionEnvironmentImplementation.cs" />
-    <Compile Include="Internal\Reflection\Execution\ExecutionEnvironmentImplementation.Interop.cs" />
     <Compile Include="Internal\Reflection\Execution\ExecutionEnvironmentImplementation.Runtime.cs" />
     <Compile Include="Internal\Reflection\Execution\ExecutionEnvironmentImplementation.MappingTables.cs" />
     <Compile Include="Internal\Reflection\Execution\ExecutionEnvironmentImplementation.MetadataTable.cs" />

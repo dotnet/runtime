@@ -16,6 +16,11 @@ public static class RunnerEntryPoint
         string? filter,
         HashSet<string> testExclusionList)
     {
+        // If an exclusion list is passed as a filter, treat it as though no filter is provided here.
+        if (filter?.StartsWith("--exclusion-list=") == true)
+        {
+            filter = null;
+        }
         ApplicationEntryPoint? entryPoint = null;
         if (OperatingSystem.IsAndroid())
         {

@@ -52,7 +52,8 @@ enum EXTRA_JIT_FLAGS
     HAS_CLASS_PROFILE = 61,
     HAS_LIKELY_CLASS = 60,
     HAS_STATIC_PROFILE = 59,
-    HAS_DYNAMIC_PROFILE = 58
+    HAS_DYNAMIC_PROFILE = 58,
+    HAS_METHOD_PROFILE = 57,
 };
 
 // Asserts to catch changes in corjit flags definitions.
@@ -66,6 +67,8 @@ static_assert((int)EXTRA_JIT_FLAGS::HAS_DYNAMIC_PROFILE == (int)CORJIT_FLAGS::Co
 
 class MethodContext
 {
+    friend class CompileResult;
+
 public:
     MethodContext();
 
@@ -103,7 +106,7 @@ public:
     int dumpMethodIdentityInfoToBuffer(char* buff, int len, bool ignoreMethodName = false, CORINFO_METHOD_INFO* optInfo = nullptr, unsigned optFlags = 0);
     int dumpMethodMD5HashToBuffer(char* buff, int len, bool ignoreMethodName = false, CORINFO_METHOD_INFO* optInfo = nullptr, unsigned optFlags = 0);
 
-    bool hasPgoData(bool& hasEdgeProfile, bool& hasClassProfile, bool& hasLikelyClass, ICorJitInfo::PgoSource& pgoSource);
+    bool hasPgoData(bool& hasEdgeProfile, bool& hasClassProfile, bool& hasMethodProfile, bool& hasLikelyClass, ICorJitInfo::PgoSource& pgoSource);
 
     void recGlobalContext(const MethodContext& other);
 
@@ -598,9 +601,9 @@ public:
     void dmpIsValidStringRef(DLD key, DWORD value);
     bool repIsValidStringRef(CORINFO_MODULE_HANDLE module, unsigned metaTOK);
 
-    void recGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, int length, const char16_t* result);
-    void dmpGetStringLiteral(DLD key, DD value);
-    const char16_t* repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, int* length);
+    void recGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, char16_t* buffer, int bufferSize, int length);
+    void dmpGetStringLiteral(DLDD key, DD value);
+    int repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, char16_t* buffer, int bufferSize);
 
     void recGetHelperName(CorInfoHelpFunc funcNum, const char* result);
     void dmpGetHelperName(DWORD key, DWORD value);

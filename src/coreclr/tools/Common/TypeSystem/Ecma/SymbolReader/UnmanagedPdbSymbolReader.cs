@@ -148,7 +148,7 @@ namespace Internal.TypeSystem.Ecma
             }
             protected override void ReleaseObjects(IEnumerable objects) => throw new NotImplementedException();
 
-            public unsafe sealed record ClrRuntimeInfoRcw(IntPtr Inst) : ICLRRuntimeInfo, IDisposable
+            public sealed unsafe record ClrRuntimeInfoRcw(IntPtr Inst) : ICLRRuntimeInfo, IDisposable
             {
                 /// <summary>
                 /// List of offsets of methods in the vtable (0-based). First three are from IUnknown.
@@ -381,7 +381,7 @@ namespace Internal.TypeSystem.Ecma
             }
             protected override void ReleaseObjects(IEnumerable objects) => throw new NotImplementedException();
 
-            public unsafe sealed record SymUnmanagedNamespaceRcw(IntPtr Inst) : ISymUnmanagedNamespace
+            public sealed unsafe record SymUnmanagedNamespaceRcw(IntPtr Inst) : ISymUnmanagedNamespace
             {
                 private bool _disposed = false;
 
@@ -494,7 +494,7 @@ namespace Internal.TypeSystem.Ecma
             }
             protected override void ReleaseObjects(IEnumerable objects) => throw new NotImplementedException();
 
-            public unsafe sealed record SymUnmanagedVariableRcw(IntPtr Inst) : ISymUnmanagedVariable
+            public sealed unsafe record SymUnmanagedVariableRcw(IntPtr Inst) : ISymUnmanagedVariable
             {
                 private bool _disposed = false;
 
@@ -578,7 +578,7 @@ namespace Internal.TypeSystem.Ecma
 
             protected override void ReleaseObjects(IEnumerable objects) => throw new NotImplementedException();
 
-            public unsafe sealed record SymUnmanagedScopeRcw(IntPtr Inst) : ISymUnmanagedScope
+            public sealed unsafe record SymUnmanagedScopeRcw(IntPtr Inst) : ISymUnmanagedScope
             {
                 private bool _disposed = false;
 
@@ -862,7 +862,7 @@ namespace Internal.TypeSystem.Ecma
             }
             protected override void ReleaseObjects(IEnumerable objects) => throw new NotImplementedException();
 
-            public unsafe sealed record SymUnmanagedMethodRcw(IntPtr Inst) : ISymUnmanagedMethod
+            public sealed unsafe record SymUnmanagedMethodRcw(IntPtr Inst) : ISymUnmanagedMethod
             {
                 private bool _disposed = false;
 

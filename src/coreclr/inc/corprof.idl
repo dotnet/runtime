@@ -13,9 +13,6 @@
 
 #if !DEFINITIONS_FROM_NON_IMPORTABLE_PLACES
 
-cpp_quote("#define CorDB_CONTROL_Profiling         \"Cor_Enable_Profiling\"")
-cpp_quote("#define CorDB_CONTROL_ProfilingL       L\"Cor_Enable_Profiling\"")
-
 cpp_quote("#if 0")
 
 
@@ -1356,7 +1353,7 @@ interface ICorProfilerCallback : IUnknown
 
     /*
      * The CLR calls RemotingClientSendingMessage to notify the profiler that
-     * a remoting call is requiring the the caller to send an invocation request through
+     * a remoting call is requiring the caller to send an invocation request through
      * a remoting channel.
      *
      * pCookie  - if remoting GUID cookies are active, this value will correspond with the
@@ -2510,7 +2507,7 @@ interface ICorProfilerCallback7 : ICorProfilerCallback6
     // in-memory module is updated. Even when symbols are provided up-front in
     // a call to the managed API Assembly.Load(byte[], byte[], ...) the runtime
     // may not actually associate the symbolic data with the module until after
-    // the ModuleLoadFinished callback has occured. This event provides a later
+    // the ModuleLoadFinished callback has occurred. This event provides a later
     // opportunity to collect symbols for such modules.
     //
     // This event is controlled by the COR_PRF_HIGH_IN_MEMORY_SYMBOLS_UPDATED
@@ -4049,7 +4046,7 @@ interface ICorProfilerInfo8 : ICorProfilerInfo7
                                [out] ReJITID * pReJitId);
 
     /*
-    * Retrieves informaiton about dynamic methods
+    * Retrieves information about dynamic methods
     *
     * Certain methods like IL Stubs or LCG do not have
     * associated metadata that can be retrieved using the IMetaDataImport APIs.
@@ -4083,7 +4080,7 @@ interface ICorProfilerInfo9 : ICorProfilerInfo8
     //Given the native code start address, return the native->IL mapping information for this jitted version of the code
     HRESULT GetILToNativeMapping3(UINT_PTR pNativeCodeStartAddress, ULONG32 cMap, ULONG32 *pcMap, COR_DEBUG_IL_TO_NATIVE_MAP map[]);
 
-    //Given the native code start address, return the the blocks of virtual memory that store this code (method code is not necessarily stored in a single contiguous memory region)
+    //Given the native code start address, return the blocks of virtual memory that store this code (method code is not necessarily stored in a single contiguous memory region)
     HRESULT GetCodeInfo4(UINT_PTR pNativeCodeStartAddress, ULONG32 cCodeInfos, ULONG32* pcCodeInfos, COR_PRF_CODE_INFO codeInfos[]);
 };
 
