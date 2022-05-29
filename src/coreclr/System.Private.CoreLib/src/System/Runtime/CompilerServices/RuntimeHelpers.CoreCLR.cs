@@ -486,8 +486,6 @@ namespace System.Runtime.CompilerServices
         private const uint enum_flag_HasComponentSize = 0x80000000;
         private const uint enum_flag_HasTypeEquivalence = 0x02000000;
         private const uint enum_flag_Category_ValueType = 0x00040000;
-        private const uint enum_flag_Category_PrimitiveValueType = 0x00060000;
-        private const uint enum_flag_Category_ElementTypeMask = 0x000E0000;
         private const uint enum_flag_Category_ValueType_Mask = 0x000C0000;
         // Types that require non-trivial interface cast have this bit set in the category
         private const uint enum_flag_NonTrivialInterfaceCast = 0x00080000 // enum_flag_Category_Array
@@ -551,20 +549,6 @@ namespace System.Runtime.CompilerServices
             get
             {
                 return (Flags & enum_flag_HasTypeEquivalence) != 0;
-            }
-        }
-
-        public bool IsElementTypeClass
-        {
-            get
-            {
-                const uint nonClassElementTypeMask =
-                    enum_flag_Category_ValueType |
-                    enum_flag_Category_PrimitiveValueType;
-
-                uint elementTypeBits = Flags & enum_flag_Category_ElementTypeMask;
-
-                return (elementTypeBits & nonClassElementTypeMask) == 0;
             }
         }
 
