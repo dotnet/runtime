@@ -594,7 +594,7 @@ namespace System.Runtime.CompilerServices
     }
 
     /// <summary>
-    /// A type handle, which can wrap either a pointer to a <see cref="TypeDesc"/> or to a <see cref="MethodTable"/>.
+    /// A type handle, which can wrap either a pointer to a <c>TypeDesc</c> or to a <see cref="MethodTable"/>.
     /// </summary>
     [StructLayout(LayoutKind.Explicit)]
     internal unsafe struct TypeHandle
@@ -608,25 +608,13 @@ namespace System.Runtime.CompilerServices
         private readonly void* m_asTAddr;
 
         /// <summary>
-        /// Gets whether or not this <see cref="TypeHandle"/> wraps a <see cref="TypeDesc"/> pointer.
-        /// If so, <see cref="AsTypeDesc"/> is safe to call. Otherwise, this instance wraps a <see cref="MethodTable"/> pointer.
+        /// Gets whether or not this <see cref="TypeHandle"/> wraps a <c>TypeDesc</c> pointer.
+        /// Only if this returns <see langword="false"/> it is safe to call <see cref="AsMethodTable"/>.
         /// </summary>
         public bool IsTypeDesc
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => ((nint)m_asTAddr & 2) != 0;
-        }
-
-        /// <summary>
-        /// Gets the <see cref="TypeDesc"/> pointer wrapped by the current instance.
-        /// </summary>
-        /// <remarks>This is only safe to call if <see cref="IsTypeDesc"/> returned <see langword="true"/>.</remarks>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public TypeDesc* AsTypeDesc()
-        {
-            Debug.Assert(IsTypeDesc);
-
-            return (TypeDesc*)((byte*)m_asTAddr - 2);
         }
 
         /// <summary>
@@ -639,27 +627,6 @@ namespace System.Runtime.CompilerServices
             Debug.Assert(!IsTypeDesc);
 
             return (MethodTable*)m_asTAddr;
-        }
-    }
-
-    // Subset of src\vm\typedesc.h
-    [StructLayout(LayoutKind.Explicit)]
-    internal unsafe struct TypeDesc
-    {
-        /// <summary>
-        /// <para>
-        /// The low-order 8 bits of this flag are used to store the <see cref="CorElementType"/>,
-        /// which discriminates what kind of <see cref="TypeDesc"/> this is.
-        /// </para>
-        /// <para>The remaining bits are available for flags.</para>
-        /// </summary>
-        [FieldOffset(0)]
-        private readonly uint TypeAndFlags;
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public CorElementType GetInternalCorElementType()
-        {
-            return (CorElementType)(TypeAndFlags & 0xFF);
         }
     }
 
