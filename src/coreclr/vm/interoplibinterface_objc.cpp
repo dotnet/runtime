@@ -38,7 +38,7 @@ extern "C" BOOL QCALLTYPE ObjCMarshal_TryInitializeReferenceTracker(
     BEGIN_QCALL;
 
     // Switch to Cooperative mode since we are setting callbacks that
-    // will be used during a GC and we want to ensure a GC isn't occuring
+    // will be used during a GC and we want to ensure a GC isn't occurring
     // while they are being set.
     {
         GCX_COOP();

@@ -898,7 +898,7 @@ methodDecl              : _EMITBYTE int32                   { PASM->EmitByte($2)
                                                                 PASM->m_pCurMethod->m_dwExportOrdinal = $3;
                                                                 PASM->m_pCurMethod->m_szExportAlias = NULL;
                                                                 if(PASM->m_pCurMethod->m_wVTEntry == 0) PASM->m_pCurMethod->m_wVTEntry = 1;
-                                                                if(PASM->m_pCurMethod->m_wVTSlot  == 0) PASM->m_pCurMethod->m_wVTSlot = $3 + 0x8000;
+                                                                if(PASM->m_pCurMethod->m_wVTSlot  == 0) PASM->m_pCurMethod->m_wVTSlot = (WORD)($3 + 0x8000);
                                                               }
                                                               else
                                                                 PASM->report->warn("Duplicate .export directive, ignored\n");
@@ -908,7 +908,7 @@ methodDecl              : _EMITBYTE int32                   { PASM->EmitByte($2)
                                                                 PASM->m_pCurMethod->m_dwExportOrdinal = $3;
                                                                 PASM->m_pCurMethod->m_szExportAlias = $6;
                                                                 if(PASM->m_pCurMethod->m_wVTEntry == 0) PASM->m_pCurMethod->m_wVTEntry = 1;
-                                                                if(PASM->m_pCurMethod->m_wVTSlot  == 0) PASM->m_pCurMethod->m_wVTSlot = $3 + 0x8000;
+                                                                if(PASM->m_pCurMethod->m_wVTSlot  == 0) PASM->m_pCurMethod->m_wVTSlot = (WORD)($3 + 0x8000);
                                                               }
                                                               else
                                                                 PASM->report->warn("Duplicate .export directive, ignored\n");

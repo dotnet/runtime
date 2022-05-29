@@ -999,6 +999,7 @@ mono_assembly_load_reference (MonoImage *image, int index)
 		} else if (status == MONO_IMAGE_IMAGE_INVALID) {
 			extra_msg = g_strdup ("The file exists but is not a valid assembly.\n");
 		} else {
+			g_assert (status != MONO_IMAGE_NOT_SUPPORTED); // runtime should not use unsupported APIs
 			extra_msg = g_strdup ("");
 		}
 
@@ -1511,6 +1512,7 @@ mono_assembly_open_from_bundle (MonoAssemblyLoadContext *alc, const char *filena
 	 * purpose assembly loading mechanism.
 	 */
 	MonoImage *image = NULL;
+	MONO_ENTER_GC_UNSAFE;
 	gboolean is_satellite = culture && culture [0] != 0;
 
 	if (is_satellite)
@@ -1522,6 +1524,7 @@ mono_assembly_open_from_bundle (MonoAssemblyLoadContext *alc, const char *filena
 		mono_image_addref (image);
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Assembly Loader loaded assembly from bundle: '%s'.", filename);
 	}
+	MONO_EXIT_GC_UNSAFE;
 	return image;
 }
 
@@ -1552,7 +1555,7 @@ mono_assembly_open_full (const char *filename, MonoImageOpenStatus *status, gboo
 {
 	if (refonly) {
 		if (status)
-			*status = MONO_IMAGE_IMAGE_INVALID;
+			*status = MONO_IMAGE_NOT_SUPPORTED;
 		return NULL;
 	}
 	MonoAssembly *res;
@@ -1863,7 +1866,7 @@ mono_assembly_load_from_full (MonoImage *image, const char*fname,
 {
 	if (refonly) {
 		if (status)
-			*status = MONO_IMAGE_IMAGE_INVALID;
+			*status = MONO_IMAGE_NOT_SUPPORTED;
 		return NULL;
 	}
 	MonoAssembly *res;
@@ -2723,6 +2726,7 @@ mono_assembly_load_corlib ()
 			g_print ("Missing assembly reference in " MONO_ASSEMBLY_CORLIB_NAME ".dll\n");
 			break;
 		default:
+			g_assert (status != MONO_IMAGE_NOT_SUPPORTED); // runtime should not be using unsupported APIs
 			g_assertf(0, "Unexpected status %d while loading " MONO_ASSEMBLY_CORLIB_NAME ".dll", status);
 			break;
 		}
@@ -2815,7 +2819,7 @@ mono_assembly_load_full (MonoAssemblyName *aname, const char *basedir, MonoImage
 {
 	if (refonly) {
 		if (status)
-			*status = MONO_IMAGE_IMAGE_INVALID;
+			*status = MONO_IMAGE_NOT_SUPPORTED;
 		return NULL;
 	}
 	MonoAssembly *res;
@@ -2844,11 +2848,15 @@ mono_assembly_load_full (MonoAssemblyName *aname, const char *basedir, MonoImage
 MonoAssembly*
 mono_assembly_load (MonoAssemblyName *aname, const char *basedir, MonoImageOpenStatus *status)
 {
+	MonoAssembly *result = NULL;
+	MONO_ENTER_GC_UNSAFE;
 	MonoAssemblyByNameRequest req;
 	mono_assembly_request_prepare_byname (&req, mono_alc_get_default ());
 	req.requesting_assembly = NULL;
 	req.basedir = basedir;
-	return mono_assembly_request_byname (aname, &req, status);
+	result = mono_assembly_request_byname (aname, &req, status);
+	MONO_EXIT_GC_UNSAFE;
+	return result;
 }
 
 /**

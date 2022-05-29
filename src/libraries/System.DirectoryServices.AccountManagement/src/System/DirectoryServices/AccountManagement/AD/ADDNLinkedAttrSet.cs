@@ -590,7 +590,7 @@ namespace System.DirectoryServices.AccountManagement
 
             List<byte[]> sidList = new List<byte[]>(_foreignMembersCurrentGroup.Count);
 
-            // Foreach foreign principal retrive the sid.
+            // Foreach foreign principal retrieve the sid.
             // If the SID is for a fake object we have to track it separately.  If we were attempt to translate it
             // it would fail and not be returned and we would lose it.
             // Once we have a list of sids then translate them against the target store in one call.

@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 #include "common.h"
 #include "CommonTypes.h"
 #include "CommonMacros.h"
@@ -28,9 +29,9 @@
 
 #ifndef DACCESS_COMPILE
 
-EXTERN_C REDHAWK_API void* REDHAWK_CALLCONV RhpHandleAlloc(void* pObject, int type);
-EXTERN_C REDHAWK_API void REDHAWK_CALLCONV RhHandleSet(void* handle, void* pObject);
-EXTERN_C REDHAWK_API void REDHAWK_CALLCONV RhHandleFree(void* handle);
+EXTERN_C NATIVEAOT_API void* REDHAWK_CALLCONV RhpHandleAlloc(void* pObject, int type);
+EXTERN_C NATIVEAOT_API void REDHAWK_CALLCONV RhHandleSet(void* handle, void* pObject);
+EXTERN_C NATIVEAOT_API void REDHAWK_CALLCONV RhHandleFree(void* handle);
 
 static int (*g_RuntimeInitializationCallback)();
 static Thread* g_RuntimeInitializingThread;
@@ -526,7 +527,7 @@ void Thread::GcScanRootsWorker(void * pfnEnumCallback, void * pvCallbackData, St
             // references which are unreported by any managed method on the stack at the time of the GC we
             // identify (again conservatively) the range of the stack that might contain these references and
             // report everything. Since it should be a very rare occurrence indeed that we actually have to do
-            // this this, it's considered a better trade-off than storing signature metadata for every potential
+            // this, it's considered a better trade-off than storing signature metadata for every potential
             // callsite of the type described above.
             if (frameIterator.HasStackRangeToReportConservatively())
             {
@@ -736,8 +737,6 @@ bool Thread::InternalHijack(PAL_LIMITED_CONTEXT * pSuspendCtx, void * pvHijackTa
     if (frameIterator.IsValid())
     {
         frameIterator.CalculateCurrentMethodState();
-
-        frameIterator.GetCodeManager()->UnsynchronizedHijackMethodLoops(frameIterator.GetMethodInfo());
 
         PTR_PTR_VOID ppvRetAddrLocation;
         GCRefKind retValueKind;
@@ -1130,7 +1129,7 @@ PTR_UInt8 Thread::AllocateThreadLocalStorageForDynamicType(uint32_t uTlsTypeOffs
 }
 
 #ifndef TARGET_UNIX
-EXTERN_C REDHAWK_API uint32_t __cdecl RhCompatibleReentrantWaitAny(UInt32_BOOL alertable, uint32_t timeout, uint32_t count, HANDLE* pHandles)
+EXTERN_C NATIVEAOT_API uint32_t __cdecl RhCompatibleReentrantWaitAny(UInt32_BOOL alertable, uint32_t timeout, uint32_t count, HANDLE* pHandles)
 {
     return PalCompatibleWaitAny(alertable, timeout, count, pHandles, /*allowReentrantWait:*/ TRUE);
 }

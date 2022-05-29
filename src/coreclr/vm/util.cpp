@@ -1281,7 +1281,7 @@ BOOL CLRFreeLibrary(HMODULE hModule)
 GPTR_IMPL(JITNotification, g_pNotificationTable);
 GVAL_IMPL(ULONG32, g_dacNotificationFlags);
 
-BOOL IsValidMethodCodeNotification(USHORT Notification)
+BOOL IsValidMethodCodeNotification(ULONG32 Notification)
 {
     // If any bit is on other than that given by a valid combination of flags, no good.
     if (Notification & ~(
@@ -1793,7 +1793,7 @@ void InitializeClrNotifications()
 // <TODO> FIX IN BETA 2
 //
 // g_dacNotificationFlags is only modified by the DAC and therefore the
-// optmizer can assume that it will always be its default value and has
+// optimizer can assume that it will always be its default value and has
 // been seen to eliminate the code in DoModuleLoadNotification,
 // etc... such that DAC notifications are no longer sent.
 //

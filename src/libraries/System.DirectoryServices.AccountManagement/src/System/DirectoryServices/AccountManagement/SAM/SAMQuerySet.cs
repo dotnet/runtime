@@ -339,9 +339,7 @@ namespace System.DirectoryServices.AccountManagement
                 filter.Extra = regex;
             }
 
-            Match match = regex.Match(property);
-
-            return match.Success;
+            return regex.IsMatch(property);
         }
         // returns true if specified WinNT property's value matches filter.Value
         private delegate bool MatcherDelegate(FilterBase filter, string winNTPropertyName, DirectoryEntry de);

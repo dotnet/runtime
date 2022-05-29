@@ -2185,7 +2185,7 @@ namespace System.Xml.Schema
             } // foreach constraint /constraintstruct
 
             // added on June 19, make connections between new keyref tables with key/unique tables in stack
-            // i can't put it in the above loop, coz there will be key on the same level
+            // i can't put it in the above loop, because there will be key on the same level
             for (int i = 0; i < _context.Constr.Length; ++i)
             {
                 if (_context.Constr[i].constraint.Role == CompiledIdentityConstraint.ConstraintRole.Keyref)
@@ -2414,7 +2414,7 @@ namespace System.Xml.Schema
                                 else if (constraints[i].qualifiedTable!.Contains(ks))
                                 {
                                     // unique or key checking value confliction
-                                    // for redundant key, reporting both occurings
+                                    // for redundant key, reporting both occurrings
                                     // doesn't work... how can i retrieve value out??
                                     //                                        KeySequence ks2 = (KeySequence) conuct.qualifiedTable[ks];
                                     SendValidationEvent(new XmlSchemaValidationException(SR.Sch_DuplicateKey,

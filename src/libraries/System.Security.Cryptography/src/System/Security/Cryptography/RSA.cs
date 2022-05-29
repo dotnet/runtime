@@ -662,28 +662,15 @@ namespace System.Security.Cryptography
         /// </remarks>
         public override void ImportFromPem(ReadOnlySpan<char> input)
         {
-            PemKeyHelpers.ImportPem(input, label => {
-                if (label.SequenceEqual(PemLabels.RsaPrivateKey))
+            PemKeyHelpers.ImportPem(input, label =>
+                label switch
                 {
-                    return ImportRSAPrivateKey;
-                }
-                else if (label.SequenceEqual(PemLabels.Pkcs8PrivateKey))
-                {
-                    return ImportPkcs8PrivateKey;
-                }
-                else if (label.SequenceEqual(PemLabels.RsaPublicKey))
-                {
-                    return ImportRSAPublicKey;
-                }
-                else if (label.SequenceEqual(PemLabels.SpkiPublicKey))
-                {
-                    return ImportSubjectPublicKeyInfo;
-                }
-                else
-                {
-                    return null;
-                }
-            });
+                    PemLabels.RsaPrivateKey => ImportRSAPrivateKey,
+                    PemLabels.Pkcs8PrivateKey => ImportPkcs8PrivateKey,
+                    PemLabels.RsaPublicKey => ImportRSAPublicKey,
+                    PemLabels.SpkiPublicKey => ImportSubjectPublicKeyInfo,
+                    _ => null,
+                });
         }
 
         /// <summary>
@@ -856,7 +843,7 @@ namespace System.Security.Cryptography
             {
                 try
                 {
-                    return PemKeyHelpers.CreatePemFromData(PemLabels.RsaPrivateKey, exported);
+                    return PemEncoding.WriteString(PemLabels.RsaPrivateKey, exported);
                 }
                 finally
                 {
@@ -887,7 +874,7 @@ namespace System.Security.Cryptography
         public string ExportRSAPublicKeyPem()
         {
             byte[] exported = ExportRSAPublicKey();
-            return PemKeyHelpers.CreatePemFromData(PemLabels.RsaPublicKey, exported);
+            return PemEncoding.WriteString(PemLabels.RsaPublicKey, exported);
         }
 
         /// <summary>

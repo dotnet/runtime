@@ -72,7 +72,7 @@ BOOL ZapSig::GetSignatureForTypeDesc(TypeDesc * desc, SigBuilder * pSigBuilder)
                 {
                     TypeHandle th = retAndArgTypes[i];
                     // This should be a consequence of the type key being restored
-                    CONSISTENCY_CHECK(!th.IsNull() && !th.IsEncodedFixup());
+                    CONSISTENCY_CHECK(!th.IsNull());
                     if (!this->GetSignatureForTypeHandle(th, pSigBuilder))
                         return FALSE;
                 }
@@ -233,17 +233,7 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
 
     if ((index != 0) && (this->pfnTokenDefinition != NULL))
     {
-        //
-        // We do not want to log the metadata lookups that we perform here
-        //
-        IBCLoggingDisabler   disableLogging;
-
-        // During IBC profiling this calls
-        //     code:Module::TokenDefinitionHelper
         (*this->pfnTokenDefinition)(this->context.pModuleContext, pTypeHandleModule, index, &token);
-
-        // ibcExternalType tokens are actually encoded as mdtTypeDef tokens in the signature
-        _ASSERTE(TypeFromToken(token) == ibcExternalType);
         token = TokenFromRid(RidFromToken(token), mdtTypeDef);
     }
 
@@ -256,7 +246,7 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
         for (DWORD i = 0; i < inst.GetNumArgs(); i++)
         {
             TypeHandle t = inst[i];
-            CONSISTENCY_CHECK(!t.IsNull() && !t.IsEncodedFixup());
+            CONSISTENCY_CHECK(!t.IsNull());
             if (!this->GetSignatureForTypeHandle(t, pSigBuilder))
                 return FALSE;
         }
@@ -558,7 +548,6 @@ BOOL ZapSig::CompareTypeHandleFieldToTypeHandle(TypeHandle *pTypeHnd, TypeHandle
         FORBID_FAULT;
         PRECONDITION(CheckPointer(pTypeHnd));
         PRECONDITION(CheckPointer(typeHnd2));
-        PRECONDITION(!CORCOMPILE_IS_POINTER_TAGGED((SIZE_T) typeHnd2.AsPtr()));
     }
     CONTRACTL_END
 
@@ -676,7 +665,7 @@ Module *ZapSig::DecodeModuleFromIndexIfLoaded(Module *fromModule,
                 {   // Unexpected failure reading MetaData
                     fValidAssemblyRef = FALSE;
                 }
-    
+
                 if (fValidAssemblyRef)
                 {
                     pAssembly = fromModule->GetAssemblyIfLoaded(
@@ -912,8 +901,6 @@ MethodDesc *ZapSig::DecodeMethod(Module *pInfoModule,
                                                             inst,
                                                             !(isInstantiatingStub || isUnboxingStub) && !actualOwnerRequired,
                                                             actualOwnerRequired);
-
-    g_IBCLogger.LogMethodDescAccess(pMethod);
 
     if (methodFlags & ENCODE_METHOD_SIG_Constrained)
     {
@@ -1198,10 +1185,6 @@ BOOL ZapSig::EncodeMethod(
         externalTokens = ZapSig::MulticoreJitTokens;
         pInfoModule = pMethod->GetModule_NoLogging();
     }
-    else if (pfnDefineToken != NULL)
-    {
-        externalTokens = ZapSig::IbcTokens;
-    }
 
     ZapSig zapSig(pInfoModule, pEncodeModuleContext, externalTokens,
                     (EncodeModuleCallback)    pfnEncodeModule,
@@ -1221,22 +1204,8 @@ BOOL ZapSig::EncodeMethod(
     if (fMethodNeedsInstantiation)
         methodFlags |= ENCODE_METHOD_SIG_MethodInstantiation;
 
-    //
-    // For backward compatibility, IBC tokens use slightly different encoding:
-    // - Owning type is uncoditionally encoded
-    // - Number of method instantiation arguments is not encoded
-    //
-    if (externalTokens == ZapSig::IbcTokens)
-    {
-        // The type is always encoded before flags for IBC
-        if (!zapSig.GetSignatureForTypeHandle(ownerType, pSigBuilder))
-            return FALSE;
-    }
-    else
-    {
-        // Assume that the owner type is going to be needed
-        methodFlags |= ENCODE_METHOD_SIG_OwnerType;
-    }
+    // Assume that the owner type is going to be needed
+    methodFlags |= ENCODE_METHOD_SIG_OwnerType;
 
     if (IsNilToken(methodToken))
     {
@@ -1278,13 +1247,6 @@ BOOL ZapSig::EncodeMethod(
             //
             if ((index != 0) && (pfnDefineToken != NULL))
             {
-                //
-                // We do not want to log the metadata lookups that we perform here
-                //
-                IBCLoggingDisabler   disableLogging;
-
-                // During IBC profiling this calls
-                //     code:Module::TokenDefinitionHelper()
                 (*((TokenDefinitionCallback) pfnDefineToken))(pEncodeModuleContext, pTypeHandleModule, index, &methodToken);
             }
         }
@@ -1367,11 +1329,6 @@ BOOL ZapSig::EncodeMethod(
         else
         {
             Instantiation inst = pMethod->GetMethodInstantiation();
-
-            // Number of method instantiation arguments is not encoded in IBC tokens - see comment above
-            if (externalTokens != ZapSig::IbcTokens)
-                pSigBuilder->AppendData(inst.GetNumArgs());
-
             for (DWORD i = 0; i < inst.GetNumArgs(); i++)
             {
                 TypeHandle t = inst[i];

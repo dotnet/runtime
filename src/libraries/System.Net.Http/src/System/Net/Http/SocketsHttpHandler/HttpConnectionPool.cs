@@ -226,8 +226,8 @@ namespace System.Net.Http
                 // Note that if _host is null, this is a (non-tunneled) proxy connection, and we can't cache the hostname.
                 hostHeader =
                     (_originAuthority.Port != (sslHostName == null ? DefaultHttpPort : DefaultHttpsPort)) ?
-                    $"{_originAuthority.IdnHost}:{_originAuthority.Port}" :
-                    _originAuthority.IdnHost;
+                    $"{_originAuthority.HostValue}:{_originAuthority.Port}" :
+                    _originAuthority.HostValue;
 
                 // Note the IDN hostname should always be ASCII, since it's already been IDNA encoded.
                 _hostHeaderValueBytes = Encoding.ASCII.GetBytes(hostHeader);
@@ -499,7 +499,11 @@ namespace System.Net.Http
 
                 RequestQueue<HttpConnection>.QueueItem queueItem = _http11RequestQueue.PeekNextRequestForConnectionAttempt();
 
-                Task.Run(() => AddHttp11ConnectionAsync(queueItem));
+                // Queue the creation of the connection to escape the held lock
+                ThreadPool.QueueUserWorkItem(static state =>
+                {
+                    _ = state.thisRef.AddHttp11ConnectionAsync(state.queueItem); // ignore returned task
+                }, (thisRef: this, queueItem), preferLocal: true);
             }
         }
 
@@ -721,7 +725,11 @@ namespace System.Net.Http
 
                 RequestQueue<Http2Connection?>.QueueItem queueItem = _http2RequestQueue.PeekNextRequestForConnectionAttempt();
 
-                Task.Run(() => AddHttp2ConnectionAsync(queueItem));
+                // Queue the creation of the connection to escape the held lock
+                ThreadPool.QueueUserWorkItem(static state =>
+                {
+                    _ = state.thisRef.AddHttp2ConnectionAsync(state.queueItem); // ignore returned task
+                }, (thisRef: this, queueItem), preferLocal: true);
             }
         }
 
@@ -1197,7 +1205,9 @@ namespace System.Net.Http
 
                 if (!nextAuthorityPersist)
                 {
+#if !ILLUMOS && !SOLARIS
                     _poolManager.StartMonitoringNetworkChanges();
+#endif
                 }
             }
         }

@@ -153,15 +153,15 @@ MethodTable g_FreeObjectEEType;
 bool RedhawkGCInterface::InitializeSubsystems()
 {
 #ifdef FEATURE_ETW
-    MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_Context.IsEnabled = FALSE;
-    MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_Context.IsEnabled = FALSE;
+    MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_Context.IsEnabled = FALSE;
+    MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.IsEnabled = FALSE;
 
     // Register the Redhawk event provider with the system.
     RH_ETW_REGISTER_Microsoft_Windows_Redhawk_GC_Private();
     RH_ETW_REGISTER_Microsoft_Windows_Redhawk_GC_Public();
 
-    MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_Context.RegistrationHandle = Microsoft_Windows_Redhawk_GC_PrivateHandle;
-    MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_Context.RegistrationHandle = Microsoft_Windows_Redhawk_GC_PublicHandle;
+    MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_Context.RegistrationHandle = Microsoft_Windows_Redhawk_GC_PrivateHandle;
+    MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.RegistrationHandle = Microsoft_Windows_Redhawk_GC_PublicHandle;
 #endif // FEATURE_ETW
 
     // Initialize the special MethodTable used to mark free list entries in the GC heap.
@@ -1180,7 +1180,7 @@ void GCToEEInterface::DiagWalkBGCSurvivors(void* gcContext)
 
 void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
 {
-    // CoreRT doesn't patch the write barrier like CoreCLR does, but it
+    // NativeAOT doesn't patch the write barrier like CoreCLR does, but it
     // still needs to record the changes in the GC heap.
 
     bool is_runtime_suspended = args->is_runtime_suspended;
@@ -1399,7 +1399,7 @@ bool GCToEEInterface::CreateThread(void (*threadStart)(void*), void* arg, bool i
     return true;
 }
 
-// CoreRT does not use async pinned handles
+// NativeAOT does not use async pinned handles
 void GCToEEInterface::WalkAsyncPinnedForPromotion(Object* object, ScanContext* sc, promote_func* callback)
 {
     UNREFERENCED_PARAMETER(object);

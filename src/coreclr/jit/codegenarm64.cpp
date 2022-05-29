@@ -854,7 +854,7 @@ void CodeGen::genSaveCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta, i
 // to high addresses. This means that integer registers are saved at lower addresses than floatint-point/SIMD
 // registers. However, when genSaveFpLrWithAllCalleeSavedRegisters is true, the integer registers are stored
 // at higher addresses than floating-point/SIMD registers, that is, the relative order of these two classes
-// is reveresed. This is done to put the saved frame pointer very high in the frame, for simplicity.
+// is reversed. This is done to put the saved frame pointer very high in the frame, for simplicity.
 //
 // TODO: We could always put integer registers at the higher addresses, if desired, to remove this special
 // case. It would cause many asm diffs when first implemented.
@@ -1081,7 +1081,7 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
  *      |-----------------------|
  *      |Callee saved registers | // multiple of 8 bytes
  *      |-----------------------|
- *      |        PSP slot       | // 8 bytes (omitted in CoreRT ABI)
+ *      |        PSP slot       | // 8 bytes (omitted in NativeAOT ABI)
  *      |-----------------------|
  *      ~  alignment padding    ~ // To make the whole frame 16 byte aligned.
  *      |-----------------------|
@@ -1108,7 +1108,7 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
  *      |-----------------------|
  *      |Callee saved registers | // multiple of 8 bytes
  *      |-----------------------|
- *      |        PSP slot       | // 8 bytes (omitted in CoreRT ABI)
+ *      |        PSP slot       | // 8 bytes (omitted in NativeAOT ABI)
  *      |-----------------------|
  *      ~  alignment padding    ~ // To make the whole frame 16 byte aligned.
  *      |-----------------------|
@@ -1138,7 +1138,7 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
  *      |-----------------------|
  *      |Callee saved registers | // multiple of 8 bytes
  *      |-----------------------|
- *      |        PSP slot       | // 8 bytes (omitted in CoreRT ABI)
+ *      |        PSP slot       | // 8 bytes (omitted in NativeAOT ABI)
  *      |-----------------------|
  *      ~  alignment padding    ~ // To make the first SP subtraction 16 byte aligned
  *      |-----------------------|
@@ -1206,7 +1206,7 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
  *      |-----------------------|
  *      |Callee saved registers | // multiple of 8 bytes
  *      |-----------------------|
- *      |        PSP slot       | // 8 bytes (omitted in CoreRT ABI)
+ *      |        PSP slot       | // 8 bytes (omitted in NativeAOT ABI)
  *      |-----------------------|
  *      ~  alignment padding    ~ // To make the whole frame 16 byte aligned.
  *      |-----------------------|
@@ -1243,7 +1243,7 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
  *      |-----------------------|
  *      |Callee saved registers | // multiple of 8 bytes
  *      |-----------------------|
- *      |        PSP slot       | // 8 bytes (omitted in CoreRT ABI)
+ *      |        PSP slot       | // 8 bytes (omitted in NativeAOT ABI)
  *      |-----------------------|
  *      ~  alignment padding    ~ // To make the first SP subtraction 16 byte aligned
  *      |-----------------------|
@@ -1459,7 +1459,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     // This is the end of the OS-reported prolog for purposes of unwinding
     compiler->unwindEndProlog();
 
-    // If there is no PSPSym (CoreRT ABI), we are done. Otherwise, we need to set up the PSPSym in the funclet frame.
+    // If there is no PSPSym (NativeAOT ABI), we are done. Otherwise, we need to set up the PSPSym in the funclet frame.
     if (compiler->lvaPSPSym != BAD_VAR_NUM)
     {
         if (isFilter)
@@ -1690,6 +1690,14 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
         // For varargs we always save all of the integer register arguments
         // so that they are contiguous with the incoming stack arguments.
         saveRegsPlusPSPSize += MAX_REG_ARG * REGSIZE_BYTES;
+    }
+
+    if (compiler->lvaMonAcquired != BAD_VAR_NUM && !compiler->opts.IsOSR())
+    {
+        // We furthermore allocate the "monitor acquired" bool between PSP and
+        // the saved registers because this is part of the EnC header.
+        // Note that OSR methods reuse the monitor bool created by tier 0.
+        saveRegsPlusPSPSize += compiler->lvaLclSize(compiler->lvaMonAcquired);
     }
 
     unsigned const saveRegsPlusPSPSizeAligned = roundUp(saveRegsPlusPSPSize, STACK_ALIGN);
@@ -2377,20 +2385,60 @@ void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
 
 // Generate code for ADD, SUB, MUL, DIV, UDIV, AND, AND_NOT, OR and XOR
 // This method is expected to have called genConsumeOperands() before calling it.
-void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
+void CodeGen::genCodeForBinary(GenTreeOp* tree)
 {
-    const genTreeOps oper       = treeNode->OperGet();
-    regNumber        targetReg  = treeNode->GetRegNum();
-    var_types        targetType = treeNode->TypeGet();
+    const genTreeOps oper       = tree->OperGet();
+    regNumber        targetReg  = tree->GetRegNum();
+    var_types        targetType = tree->TypeGet();
     emitter*         emit       = GetEmitter();
 
-    assert(treeNode->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_DIV, GT_UDIV, GT_AND, GT_AND_NOT, GT_OR, GT_XOR));
+    assert(tree->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_DIV, GT_UDIV, GT_AND, GT_AND_NOT, GT_OR, GT_XOR));
 
-    GenTree*    op1 = treeNode->gtGetOp1();
-    GenTree*    op2 = treeNode->gtGetOp2();
-    instruction ins = genGetInsForOper(treeNode->OperGet(), targetType);
+    GenTree* op1 = tree->gtGetOp1();
+    GenTree* op2 = tree->gtGetOp2();
 
-    if ((treeNode->gtFlags & GTF_SET_FLAGS) != 0)
+    // Handles combined operations: 'madd', 'msub'
+    if (op2->OperIs(GT_MUL) && op2->isContained())
+    {
+        // In the future, we might consider enabling this for floating-point "unsafe" math.
+        assert(varTypeIsIntegral(tree));
+        assert(!(tree->gtFlags & GTF_SET_FLAGS));
+
+        GenTree* a = op1;
+        GenTree* b = op2->gtGetOp1();
+        GenTree* c = op2->gtGetOp2();
+
+        instruction ins;
+        switch (oper)
+        {
+            case GT_ADD:
+            {
+                // d = a + b * c
+                // madd: d, b, c, a
+                ins = INS_madd;
+                break;
+            }
+
+            case GT_SUB:
+            {
+                // d = a - b * c
+                // msub: d, b, c, a
+                ins = INS_msub;
+                break;
+            }
+
+            default:
+                unreached();
+        }
+
+        emit->emitIns_R_R_R_R(ins, emitActualTypeSize(tree), targetReg, b->GetRegNum(), c->GetRegNum(), a->GetRegNum());
+        genProduceReg(tree);
+        return;
+    }
+
+    instruction ins = genGetInsForOper(tree->OperGet(), targetType);
+
+    if ((tree->gtFlags & GTF_SET_FLAGS) != 0)
     {
         switch (oper)
         {
@@ -2414,10 +2462,10 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
     // The arithmetic node must be sitting in a register (since it's not contained)
     assert(targetReg != REG_NA);
 
-    regNumber r = emit->emitInsTernary(ins, emitActualTypeSize(treeNode), treeNode, op1, op2);
+    regNumber r = emit->emitInsTernary(ins, emitActualTypeSize(tree), tree, op1, op2);
     assert(r == targetReg);
 
-    genProduceReg(treeNode);
+    genProduceReg(tree);
 }
 
 //------------------------------------------------------------------------
@@ -10060,76 +10108,6 @@ void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
     {
         GetEmitter()->emitIns_BARR(INS_dmb, barrierKind == BARRIER_LOAD_ONLY ? INS_BARRIER_ISHLD : INS_BARRIER_ISH);
     }
-}
-
-//-----------------------------------------------------------------------------------
-// genCodeForMadd: Emit a madd (Multiply-Add) instruction
-//
-// Arguments:
-//     tree - GT_MADD tree where op1 or op2 is GT_ADD
-//
-void CodeGen::genCodeForMadd(GenTreeOp* tree)
-{
-    assert(tree->OperIs(GT_MADD) && varTypeIsIntegral(tree) && !(tree->gtFlags & GTF_SET_FLAGS));
-    genConsumeOperands(tree);
-
-    GenTree* a;
-    GenTree* b;
-    GenTree* c;
-    if (tree->gtGetOp1()->OperIs(GT_MUL) && tree->gtGetOp1()->isContained())
-    {
-        a = tree->gtGetOp1()->gtGetOp1();
-        b = tree->gtGetOp1()->gtGetOp2();
-        c = tree->gtGetOp2();
-    }
-    else
-    {
-        assert(tree->gtGetOp2()->OperIs(GT_MUL) && tree->gtGetOp2()->isContained());
-        a = tree->gtGetOp2()->gtGetOp1();
-        b = tree->gtGetOp2()->gtGetOp2();
-        c = tree->gtGetOp1();
-    }
-
-    bool useMsub = false;
-    if (a->OperIs(GT_NEG) && a->isContained())
-    {
-        a       = a->gtGetOp1();
-        useMsub = true;
-    }
-    if (b->OperIs(GT_NEG) && b->isContained())
-    {
-        b       = b->gtGetOp1();
-        useMsub = !useMsub; // it's either "a * -b" or "-a * -b" which is the same as "a * b"
-    }
-
-    GetEmitter()->emitIns_R_R_R_R(useMsub ? INS_msub : INS_madd, emitActualTypeSize(tree), tree->GetRegNum(),
-                                  a->GetRegNum(), b->GetRegNum(), c->GetRegNum());
-    genProduceReg(tree);
-}
-
-//-----------------------------------------------------------------------------------
-// genCodeForMsub: Emit a msub (Multiply-Subtract) instruction
-//
-// Arguments:
-//     tree - GT_MSUB tree where op2 is GT_MUL
-//
-void CodeGen::genCodeForMsub(GenTreeOp* tree)
-{
-    assert(tree->OperIs(GT_MSUB) && varTypeIsIntegral(tree) && !(tree->gtFlags & GTF_SET_FLAGS));
-    genConsumeOperands(tree);
-
-    assert(tree->gtGetOp2()->OperIs(GT_MUL));
-    assert(tree->gtGetOp2()->isContained());
-
-    GenTree* a = tree->gtGetOp1();
-    GenTree* b = tree->gtGetOp2()->gtGetOp1();
-    GenTree* c = tree->gtGetOp2()->gtGetOp2();
-
-    // d = a - b * c
-    // MSUB d, b, c, a
-    GetEmitter()->emitIns_R_R_R_R(INS_msub, emitActualTypeSize(tree), tree->GetRegNum(), b->GetRegNum(), c->GetRegNum(),
-                                  a->GetRegNum());
-    genProduceReg(tree);
 }
 
 //------------------------------------------------------------------------

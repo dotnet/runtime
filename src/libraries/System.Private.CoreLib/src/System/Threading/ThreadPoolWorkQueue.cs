@@ -861,18 +861,16 @@ namespace System.Threading
     // This way we avoid the indirection of a delegate call.
     internal interface IThreadPoolTypedWorkItemQueueCallback<T>
     {
-        // TODO: Make it static abstract when we can.
-        void Invoke(T item);
+        static abstract void Invoke(T item);
     }
 
-    internal sealed class ThreadPoolTypedWorkItemQueue<T, TCallback>
-        : IThreadPoolWorkItem where TCallback : struct, IThreadPoolTypedWorkItemQueueCallback<T>
+    internal sealed class ThreadPoolTypedWorkItemQueue<T, TCallback> : IThreadPoolWorkItem
+        // https://github.com/dotnet/runtime/pull/69278#discussion_r871927939
+        where T : struct
+        where TCallback : struct, IThreadPoolTypedWorkItemQueueCallback<T>
     {
         private int _isScheduledForProcessing;
         private readonly ConcurrentQueue<T> _workItems = new ConcurrentQueue<T>();
-        private readonly TCallback _callback;
-
-        public ThreadPoolTypedWorkItemQueue(TCallback callback) => _callback = callback;
 
         public int Count => _workItems.Count;
 
@@ -906,7 +904,7 @@ namespace System.Threading
             // item queued by the enqueuer.
             _isScheduledForProcessing = 0;
             Interlocked.MemoryBarrier();
-            if (!_workItems.TryDequeue(out T? workItem))
+            if (!_workItems.TryDequeue(out T workItem))
             {
                 return;
             }
@@ -926,7 +924,7 @@ namespace System.Threading
             int startTimeMs = Environment.TickCount;
             while (true)
             {
-                _callback.Invoke(workItem);
+                TCallback.Invoke(workItem);
 
                 // This work item processes queued work items until certain conditions are met, and tracks some things:
                 // - Keep track of the number of work items processed, it will be added to the counter later
@@ -1169,7 +1167,6 @@ namespace System.Threading
         internal static bool EnableWorkerTracking => IsWorkerTrackingEnabledInConfig && EventSource.IsSupported;
 
         [CLSCompliant(false)]
-        [UnsupportedOSPlatform("browser")]
         public static RegisteredWaitHandle RegisterWaitForSingleObject(
              WaitHandle waitObject,
              WaitOrTimerCallback callBack,
@@ -1184,7 +1181,6 @@ namespace System.Threading
         }
 
         [CLSCompliant(false)]
-        [UnsupportedOSPlatform("browser")]
         public static RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(
              WaitHandle waitObject,
              WaitOrTimerCallback callBack,
@@ -1198,7 +1194,6 @@ namespace System.Threading
             return RegisterWaitForSingleObject(waitObject, callBack, state, millisecondsTimeOutInterval, executeOnlyOnce, false);
         }
 
-        [UnsupportedOSPlatform("browser")]
         public static RegisteredWaitHandle RegisterWaitForSingleObject(
              WaitHandle waitObject,
              WaitOrTimerCallback callBack,
@@ -1212,7 +1207,6 @@ namespace System.Threading
             return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)millisecondsTimeOutInterval, executeOnlyOnce, true);
         }
 
-        [UnsupportedOSPlatform("browser")]
         public static RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(
              WaitHandle waitObject,
              WaitOrTimerCallback callBack,
@@ -1226,7 +1220,6 @@ namespace System.Threading
             return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)millisecondsTimeOutInterval, executeOnlyOnce, false);
         }
 
-        [UnsupportedOSPlatform("browser")]
         public static RegisteredWaitHandle RegisterWaitForSingleObject(
             WaitHandle waitObject,
             WaitOrTimerCallback callBack,
@@ -1242,7 +1235,6 @@ namespace System.Threading
             return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)millisecondsTimeOutInterval, executeOnlyOnce, true);
         }
 
-        [UnsupportedOSPlatform("browser")]
         public static RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(
             WaitHandle waitObject,
             WaitOrTimerCallback callBack,
@@ -1258,7 +1250,6 @@ namespace System.Threading
             return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)millisecondsTimeOutInterval, executeOnlyOnce, false);
         }
 
-        [UnsupportedOSPlatform("browser")]
         public static RegisteredWaitHandle RegisterWaitForSingleObject(
                           WaitHandle waitObject,
                           WaitOrTimerCallback callBack,
@@ -1275,7 +1266,6 @@ namespace System.Threading
             return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)tm, executeOnlyOnce, true);
         }
 
-        [UnsupportedOSPlatform("browser")]
         public static RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(
                           WaitHandle waitObject,
                           WaitOrTimerCallback callBack,

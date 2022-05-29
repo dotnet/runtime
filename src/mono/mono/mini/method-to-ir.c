@@ -3777,7 +3777,7 @@ handle_constrained_gsharedvt_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMe
 	/*
 	 * Constrained calls need to behave differently at runtime dependending on whenever the receiver is instantiated as ref type or as a vtype.
 	 * This is hard to do with the current call code, since we would have to emit a branch and two different calls. So instead, we
-	 * pack the arguments into an array, and do the rest of the work in in an icall.
+	 * pack the arguments into an array, and do the rest of the work in an icall.
 	 */
 	supported = ((cmethod->klass == mono_defaults.object_class) || mono_class_is_interface (cmethod->klass) || (!m_class_is_valuetype (cmethod->klass) && m_class_get_image (cmethod->klass) != mono_defaults.corlib));
 	if (supported)
@@ -5540,7 +5540,7 @@ is_supported_tailcall (MonoCompile *cfg, const guint8 *ip, MonoMethod *method, M
 	if (!tailcall && !tailcall_calli)
 		goto exit;
 
-	// FIXME in calli, there is no type for for the this parameter,
+	// FIXME in calli, there is no type for the this parameter,
 	// so we assume it might be valuetype; in future we should issue a range
 	// check, so rule out pointing to frame (for other reference parameters also)
 
@@ -6704,8 +6704,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	if (cfg->method == method) {
 		int breakpoint_id = mono_debugger_method_has_breakpoint (method);
 		if (breakpoint_id) {
-			MONO_INST_NEW (cfg, ins, OP_BREAK);
-			MONO_ADD_INS (cfg->cbb, ins);
+			if (COMPILE_LLVM (cfg)) {
+				mono_emit_jit_icall (cfg, mono_break, NULL);
+			} else {
+				MONO_INST_NEW (cfg, ins, OP_BREAK);
+				MONO_ADD_INS (cfg->cbb, ins);
+			}
 		}
 		mono_debug_init_method (cfg, cfg->cbb, breakpoint_id);
 	}
@@ -8285,7 +8289,7 @@ calli_end:
 			constrained_class = NULL;
 
 			if (need_seq_point) {
-				//check is is a nested call and remove the non_empty_stack of the last call, only for non native methods
+				// check if it is a nested call and remove the non_empty_stack of the last call, only for non native methods
 				if (!(method->flags & METHOD_IMPL_ATTRIBUTE_NATIVE)) {
 					if (emitted_funccall_seq_point) {
 						if (cfg->last_seq_point)
@@ -10026,7 +10030,7 @@ calli_end:
 			} else {
 				gboolean is_const = FALSE;
 				MonoVTable *vtable = NULL;
-				
+
 				addr = NULL;
 				if (!context_used) {
 					vtable = mono_class_vtable_checked (klass, cfg->error);

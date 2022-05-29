@@ -4,14 +4,12 @@
     <AssemblyName>Microsoft.Interop.LibraryImportGenerator</AssemblyName>
     <TargetFramework>netstandard2.0</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <LangVersion>Preview</LangVersion>
-    <Nullable>enable</Nullable>
     <RootNamespace>Microsoft.Interop</RootNamespace>
     <IsRoslynComponent>true</IsRoslynComponent>
-    <RunAnalyzers>true</RunAnalyzers>
     <!-- Disable RS2008: Enable analyzer release tracking
          Diagnostics in runtime use a different mechanism (docs/project/list-of-diagnostics.md) -->
     <NoWarn>RS2008;$(NoWarn)</NoWarn>
+    <AnalyzerLanguage>cs</AnalyzerLanguage>
 
     <!-- Packaging properties -->
     <!-- In the future LibraryImportGenerator might ship as part of a package, but meanwhile disable packaging. -->
@@ -21,13 +19,7 @@
     <PackageProjectUrl>https://github.com/dotnet/runtime/tree/main/src/libraries/System.Runtime.InteropServices/gen/LibraryImportGenerator</PackageProjectUrl>
     <Description>LibraryImportGenerator</Description>
     <PackageTags>LibraryImportGenerator, analyzers</PackageTags>
-    <IsNETCoreAppAnalyzer>true</IsNETCoreAppAnalyzer>
   </PropertyGroup>
-
-  <ItemGroup>
-    <!-- Code included from System.Runtime.InteropServices -->
-    <Compile Include="$(CoreLibSharedDir)System\Runtime\InteropServices\StringMarshalling.cs" Link="Production\StringMarshalling.cs" />
-  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisVersion_4_X)" PrivateAssets="all" />

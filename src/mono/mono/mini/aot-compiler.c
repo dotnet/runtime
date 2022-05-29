@@ -1672,7 +1672,7 @@ arch_emit_label_address (MonoAotCompile *acfg, const char *target, gboolean exte
  * - we use an approach similar to the x86 abi: reserve a register (r30) to hold
  *   the GOT pointer.
  * - The full-aot trampolines need access to the GOT of mscorlib, so we store
- *   in in the 2. slot of every GOT, and require every method to place the GOT
+ *   it in the second slot of every GOT, and require every method to place the GOT
  *   address in r30, even when it doesn't access the GOT otherwise. This way,
  *   the trampolines can compute the mscorlib GOT address by loading 4(r30).
  */
@@ -5060,7 +5060,7 @@ add_wrappers (MonoAotCompile *acfg)
 	rows = table_info_get_rows (&acfg->image->tables [MONO_TABLE_METHOD]);
 	for (int i = 0; i < rows; ++i) {
 		ERROR_DECL (error);
-		
+
 		MonoCustomAttrInfo *cattr;
 		int j;
 
@@ -8446,7 +8446,7 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 		} else if (str_begins_with (arg, "nftnptr-arg-trampolines=")) {
 			opts->nftnptr_arg_trampolines = atoi (arg + strlen ("nftnptr-arg-trampolines="));
 		} else if (str_begins_with (arg, "nunbox-arbitrary-trampolines=")) {
-			opts->nunbox_arbitrary_trampolines = atoi (arg + strlen ("unbox-arbitrary-trampolines="));
+			opts->nunbox_arbitrary_trampolines = atoi (arg + strlen ("nunbox-arbitrary-trampolines="));
 		} else if (str_begins_with (arg, "tool-prefix=")) {
 			opts->tool_prefix = g_strdup (arg + strlen ("tool-prefix="));
 		} else if (str_begins_with (arg, "ld-flags=")) {
@@ -11807,7 +11807,7 @@ emit_file_info (MonoAotCompile *acfg)
 
 		/*
 		 * Emit a global symbol which can be passed by an embedding app to
-		 * mono_aot_register_module (). The symbol points to a pointer to the the file info
+		 * mono_aot_register_module (). The symbol points to a pointer to the file info
 		 * structure.
 		 */
 		sprintf (symbol, "%smono_aot_module_%s_info", acfg->user_symbol_prefix, acfg->image->assembly->aname.name);

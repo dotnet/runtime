@@ -16,6 +16,5 @@
     <Reference Include="System.Collections.Specialized" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Extensions" />
   </ItemGroup>
 </Project>

@@ -30,11 +30,9 @@
     <Reference Include="System.Net.WebHeaderCollection" />
     <Reference Include="System.Net.WebSockets" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Security.Cryptography.X509Certificates" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Security.Cryptography" />
-    <Reference Include="System.Security.Cryptography.Algorithms" />
     <Reference Include="System.Threading.Channels" Condition="'$(TargetPlatformIdentifier)' == 'Browser'" />
     <Reference Include="System.Memory" />
   </ItemGroup>

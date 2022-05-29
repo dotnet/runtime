@@ -62,10 +62,10 @@ bool compare_by_name_and_version(const framework_info &a, const framework_info &
                 pal::readdir_onlydirectories(fx_shared_dir, &fx_names);
             }
 
-            for (pal::string_t fx_name : fx_names)
+            for (pal::string_t fx_name_local : fx_names)
             {
                 auto fx_dir = fx_shared_dir;
-                append_path(&fx_dir, fx_name.c_str());
+                append_path(&fx_dir, fx_name_local.c_str());
 
                 if (pal::directory_exists(fx_dir))
                 {
@@ -81,7 +81,7 @@ bool compare_by_name_and_version(const framework_info &a, const framework_info &
                         {
                             trace::verbose(_X("Found FX version [%s]"), ver.c_str());
 
-                            framework_info info(fx_name, fx_dir, parsed, hive_depth);
+                            framework_info info(fx_name_local, fx_dir, parsed, hive_depth);
                             framework_infos->push_back(info);
                         }
                     }

@@ -118,11 +118,10 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	gregs_offset = offset;
 	offset += 32 * 8;
 	/* fregs */
-	// FIXME: Save 128 bits
 	/* Only have to save the argument regs */
 	num_fregs = 8;
-	fregs_offset = offset;
-	offset += num_fregs * 8;
+	fregs_offset = ALIGN_TO (offset, 16);
+	offset += num_fregs * 16;
 	/* arg */
 	arg_offset = offset;
 	offset += 8;
@@ -161,7 +160,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	code = mono_arm_emit_store_regarray (code, gregs_regset, ARMREG_FP, gregs_offset);
 	/* Save fregs */
 	for (i = 0; i < num_fregs; ++i)
-		arm_strfpx (code, i, ARMREG_FP, fregs_offset + (i * 8));
+		arm_strfpq (code, i, ARMREG_FP, fregs_offset + (i * 16));
 	/* Save trampoline arg */
 	arm_strx (code, ARMREG_IP1, ARMREG_FP, arg_offset);
 
@@ -266,7 +265,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	code = mono_arm_emit_load_regarray (code, 0x1ff | (1 << ARMREG_LR) | (1 << MONO_ARCH_RGCTX_REG), ARMREG_FP, gregs_offset);
 	/* Restore fregs */
 	for (i = 0; i < num_fregs; ++i)
-		arm_ldrfpx (code, i, ARMREG_FP, fregs_offset + (i * 8));
+		arm_ldrfpq (code, i, ARMREG_FP, fregs_offset + (i * 16));
 
 	/* Load the result */
 	arm_ldrx (code, ARMREG_IP1, ARMREG_FP, res_offset);

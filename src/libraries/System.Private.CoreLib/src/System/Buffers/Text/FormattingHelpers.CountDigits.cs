@@ -10,6 +10,32 @@ namespace System.Buffers.Text
     internal static partial class FormattingHelpers
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int CountDigits(UInt128 value)
+        {
+            ulong upper = value.Upper;
+
+            if (upper < 5)
+            {
+                return CountDigits(value.Lower);
+            }
+
+            int digits = 19;
+
+            if (upper > 5)
+            {
+                digits++;
+                value /= new UInt128(0x5, 0x6BC7_5E2D_6310_0000); // value /= 1e20
+                digits += CountDigits(value.Lower);
+            }
+            else if (value.Lower >= 0x6BC75E2D63100000)
+            {
+                digits++;
+            }
+
+            return digits;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int CountDigits(ulong value)
         {
             int digits = 1;
@@ -98,6 +124,13 @@ namespace System.Buffers.Text
             }
 
             return digits;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int CountHexDigits(UInt128 value)
+        {
+            // The number of hex digits is log16(value) + 1, or log2(value) / 4 + 1
+            return ((int)UInt128.Log2(value) >> 2) + 1;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

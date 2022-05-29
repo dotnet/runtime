@@ -1,0 +1,2 @@
+<!-- supress loading of upper dirs Directory.Build.targets -->
+<Project/>

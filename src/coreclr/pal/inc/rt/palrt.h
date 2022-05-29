@@ -660,37 +660,17 @@ typedef unsigned int ALG_ID;
 /******************* shlwapi ************************************/
 
 // note: diff in NULL handing and calling convetion
-#define StrCpyW                 PAL_wcscpy
-#define StrCatW                 PAL_wcscat
 #define StrChrW                 (WCHAR*)PAL_wcschr
-#define StrCmpW                 PAL_wcscmp
-#define StrCmpIW                _wcsicmp
-#define StrCmpNW                PAL_wcsncmp
-#define StrCmpNIW               _wcsnicmp
 
-STDAPI_(LPWSTR) StrNCatW(LPWSTR lpFront, LPCWSTR lpBack, int cchMax);
-STDAPI_(int) StrToIntW(LPCWSTR lpSrc);
-STDAPI_(LPWSTR) StrStrIW(LPCWSTR lpFirst, LPCWSTR lpSrch);
 STDAPI_(LPWSTR) StrRChrW(LPCWSTR lpStart, LPCWSTR lpEnd, WCHAR wMatch);
-STDAPI_(LPWSTR) StrCatBuffW(LPWSTR pszDest, LPCWSTR pszSrc, int cchDestBuffSize);
 
 #define lstrcmpW                PAL_wcscmp
 #define lstrcmpiW               _wcsicmp
 
 #ifdef UNICODE
-#define StrCpy                  StrCpyW
-#define StrCat                  StrCatW
-#define StrNCat                 StrNCatW
 #define StrChr                  StrChrW
-#define StrCmp                  StrCmpW
-#define StrCmpN                 StrCmpNW
-#define StrCmpI                 StrCmpIW
-#define StrCmpNI                StrCmpNIW
 
-#define StrToInt                StrToIntW
-#define StrStrI                 StrStrIW
 #define StrRChr                 StrRChrW
-#define StrCatBuff              StrCatBuffW
 
 #define lstrcmp                 lstrcmpW
 #define lstrcmpi                lstrcmpiW
@@ -774,41 +754,12 @@ inline errno_t __cdecl _fopen_unsafe(PAL_FILE * *ff, const char *fileName, const
 }
 #endif /* __cplusplus */
 
-STDAPI_(BOOL) PathAppendW(LPWSTR pszPath, LPCWSTR pszMore);
-STDAPI_(int) PathCommonPrefixW(LPCWSTR pszFile1, LPCWSTR pszFile2, LPWSTR  pszPath);
-PALIMPORT LPWSTR PALAPI PathFindFileNameW(LPCWSTR pPath);
-STDAPI_(int) PathGetDriveNumberW(LPCWSTR lpsz);
-STDAPI_(BOOL) PathIsRelativeW(LPCWSTR lpszPath);
 STDAPI_(BOOL) PathIsUNCW(LPCWSTR pszPath);
-STDAPI_(LPWSTR) PathAddBackslashW(LPWSTR lpszPath);
-STDAPI_(LPWSTR) PathRemoveBackslashW(LPWSTR lpszPath);
-STDAPI_(void) PathRemoveExtensionW(LPWSTR pszPath);
-STDAPI_(LPWSTR) PathCombineW(LPWSTR lpszDest, LPCWSTR lpszDir, LPCWSTR lpszFile);
 STDAPI_(BOOL) PathCanonicalizeW(LPWSTR lpszDst, LPCWSTR lpszSrc);
-STDAPI_(BOOL) PathRelativePathToW(LPWSTR pszPath, LPCWSTR pszFrom, DWORD dwAttrFrom, LPCWSTR pszTo, DWORD dwAttrTo);
-STDAPI_(BOOL) PathRenameExtensionW(LPWSTR pszPath, LPCWSTR pszExt);
-STDAPI_(BOOL) PathRemoveFileSpecW(LPWSTR pFile);
-STDAPI_(void) PathStripPathW (LPWSTR pszPath);
 
 #ifdef UNICODE
-#define PathAppend          PathAppendW
-#define PathCommonPrefix    PathCommonPrefixW
-#define PathFindFileName    PathFindFileNameW
-#define PathIsRelative      PathIsRelativeW
-#define PathGetDriveNumber  PathGetDriveNumberW
 #define PathIsUNC           PathIsUNCW
-#define PathAddBackslash    PathAddBackslashW
-#define PathRemoveBackslash PathRemoveBackslashW
-#define PathRemoveExtension PathRemoveExtensionW
-#define PathCombine         PathCombineW
-#define PathSkipRoot        PathSkipRootW
-#define PathFindExtension   PathFindExtensionW
 #define PathCanonicalize    PathCanonicalizeW
-#define PathRelativePathTo  PathRelativePathToW
-#define PathRemoveFileSpec  PathRemoveFileSpecW
-#define PathRenameExtension PathRenameExtensionW
-#define PathStripPath       PathStripPathW
-
 
 #endif // UNICODE
 
@@ -1325,34 +1276,6 @@ EXTERN_C HRESULT PALAPI PAL_CoCreateInstance(REFCLSID   rclsid,
 
 STDAPI
 CoCreateGuid(OUT GUID * pguid);
-
-/************** verrsrc.h ************************************/
-
-/* ----- VS_VERSION.dwFileFlags ----- */
-#define VS_FF_DEBUG             0x00000001L
-#define VS_FF_PRERELEASE        0x00000002L
-#define VS_FF_PATCHED           0x00000004L
-#define VS_FF_PRIVATEBUILD      0x00000008L
-#define VS_FF_INFOINFERRED      0x00000010L
-#define VS_FF_SPECIALBUILD      0x00000020L
-
-/* ----- Types and structures ----- */
-typedef struct tagVS_FIXEDFILEINFO
-{
-    DWORD   dwSignature;            /* e.g. 0xfeef04bd */
-    DWORD   dwStrucVersion;         /* e.g. 0x00000042 = "0.42" */
-    DWORD   dwFileVersionMS;        /* e.g. 0x00030075 = "3.75" */
-    DWORD   dwFileVersionLS;        /* e.g. 0x00000031 = "0.31" */
-    DWORD   dwProductVersionMS;     /* e.g. 0x00030010 = "3.10" */
-    DWORD   dwProductVersionLS;     /* e.g. 0x00000031 = "0.31" */
-    DWORD   dwFileFlagsMask;        /* = 0x3F for version "0.42" */
-    DWORD   dwFileFlags;            /* e.g. VFF_DEBUG | VFF_PRERELEASE */
-    DWORD   dwFileOS;               /* e.g. VOS_DOS_WINDOWS16 */
-    DWORD   dwFileType;             /* e.g. VFT_DRIVER */
-    DWORD   dwFileSubtype;          /* e.g. VFT2_DRV_KEYBOARD */
-    DWORD   dwFileDateMS;           /* e.g. 0 */
-    DWORD   dwFileDateLS;           /* e.g. 0 */
-} VS_FIXEDFILEINFO;
 
 /************** Byte swapping & unaligned access ******************/
 
