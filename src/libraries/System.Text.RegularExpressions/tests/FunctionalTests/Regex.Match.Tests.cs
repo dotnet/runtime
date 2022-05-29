@@ -386,12 +386,26 @@ namespace System.Text.RegularExpressions.Tests
                     yield return (@"abc{1,4}d" + endAnchor, "1234567890abcd", anchorOptions, 0, 14, true, "abcd");
                     yield return (@"abc{1,4}d" + endAnchor, "1234567890abccccd", anchorOptions, 0, 17, true, "abccccd");
                 }
+
+                // When matching with (string, int, int), the input outside of the range
+                // is entirely ignored, so e.g, anchors such as ^ and \A do match at the start
+                yield return (@"^abc$", "1abc2", RegexOptions.None, 1, 3, true, "abc");
+                yield return (@"\Aabc\z", "1abc2", anchorOptions, 1, 3, true, "abc");
+
+                // When matching with (string, int), the input outside the range
+                // is not ignored, so e.g., anchors such as ^ and \A do not necessarily match at the start
+                yield return (@"^abc$", "1abc2", RegexOptions.None, 1, 4, false, "");
+                yield return (@"\Aabc\z", "1abc2", anchorOptions, 1, 4, false, "");
             }
+
             if (!RegexHelpers.IsNonBacktracking(engine))
             {
+                // \G means "end of last match if any, else point where matching started"
                 yield return (@"\Gabc", "abc", RegexOptions.None, 0, 3, true, "abc");
                 yield return (@"\Gabc", " abc", RegexOptions.None, 0, 4, false, "");
                 yield return (@"\Gabc", " abc", RegexOptions.None, 1, 3, true, "abc");
+                yield return (@"\Gabc", "  abc", RegexOptions.None, 1, 4, false, "");
+                yield return (@"\Gabc", "  abc", RegexOptions.None, 1, 3, false, "");
                 yield return (@"\Gabc|\Gdef", "def", RegexOptions.None, 0, 3, true, "def");
                 yield return (@"\Gabc|\Gdef", " abc", RegexOptions.None, 0, 4, false, "");
                 yield return (@"\Gabc|\Gdef", " def", RegexOptions.None, 0, 4, false, "");
