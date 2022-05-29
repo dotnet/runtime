@@ -19,8 +19,8 @@ namespace Microsoft.Extensions.Hosting.Unit.Tests
         }
 
         [Theory]
-        [InlineData("Host aborted.", false)]
-        [InlineData("Host aborted.", true)]
+        [InlineData("The host was aborted.", false)]
+        [InlineData("The host was aborted.", true)]
         public void TestException(string? message, bool innerException)
         {
             HostAbortedException exception = innerException
@@ -53,6 +53,21 @@ namespace Microsoft.Extensions.Hosting.Unit.Tests
 
             Assert.Equal(exception.Message, deserializedException.Message);
             Assert.Null(deserializedException.InnerException);
+        }
+
+        [Fact]
+        public void TestSerializationDefaultConstructor() {
+            var exception = new HostAbortedException();
+            using var serializationStream = new MemoryStream();
+
+            var formatter = new BinaryFormatter();
+            formatter.Serialize(serializationStream, exception);
+
+            using var deserializationStream = new MemoryStream(serializationStream.ToArray());
+            HostAbortedException deserializedException = (HostAbortedException)formatter.Deserialize(deserializationStream);
+
+            Assert.Equal(exception.Message, deserializedException.Message);
+            Assert.Null(deserializedException.InnerException);            
         }
     }
 }
