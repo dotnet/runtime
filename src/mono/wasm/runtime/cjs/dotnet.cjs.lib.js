@@ -67,6 +67,10 @@ const linked_functions = [
     // pal_icushim_static.c
     "mono_wasm_load_icu_data",
     "mono_wasm_get_icudt_name",
+
+    // pal_crypto_webworker.c
+    "dotnet_browser_simple_digest_hash",
+    "dotnet_browser_can_use_simple_digest_hash",
 ];
 
 // -- this javascript file is evaluated by emcc during compilation! --

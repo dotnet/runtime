@@ -22,13 +22,14 @@ jobs:
     steps:
     - name: Delete old workflow runs
       run: |
-        _UrlPath="/repos/$GITHUB_REPOSITORY/actions/runs"
+        _UrlPath="/repos/$GITHUB_REPOSITORY/actions/workflows"
+        _CurrentWorkflowID="$(gh api -X GET "$_UrlPath" | jq '.workflows[] | select(.name == '\""$GITHUB_WORKFLOW"\"') | .id')"
 
         # delete workitems which are 'completed'. (other candidate values of status field are: 'queued' and 'in_progress')
 
-        gh api -X GET "$_UrlPath" --paginate \
-          | jq '.workflow_runs[] | select(.name == '\""$GITHUB_WORKFLOW"\"' and .status == "completed") | .id' \
-          | xargs -I{} gh api -X DELETE "$_UrlPath"/{}
+        gh api -X GET "$_UrlPath/$_CurrentWorkflowID/runs" --paginate \
+          | jq '.workflow_runs[] | select(.status == "completed") | .id' \
+          | xargs -I{} gh api -X DELETE "/repos/$GITHUB_REPOSITORY/actions/runs"/{}
 
   backport:
     if: github.event.issue.pull_request != '' && contains(github.event.comment.body, '/backport to')

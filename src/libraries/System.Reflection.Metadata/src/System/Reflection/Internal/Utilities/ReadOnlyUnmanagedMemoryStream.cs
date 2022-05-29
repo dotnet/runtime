@@ -36,6 +36,18 @@ namespace System.Reflection.Internal
             return bytesRead;
         }
 
+#if NETCOREAPP
+        // Duplicate the Read(byte[]) logic here instead of refactoring both to use Spans
+        // so we don't affect perf on .NET Framework.
+        public override int Read(Span<byte> buffer)
+        {
+            int bytesRead = Math.Min(buffer.Length, _length - _position);
+            new Span<byte>(_data + _position, bytesRead).CopyTo(buffer);
+            _position += bytesRead;
+            return bytesRead;
+        }
+#endif
+
         public override void Flush()
         {
         }

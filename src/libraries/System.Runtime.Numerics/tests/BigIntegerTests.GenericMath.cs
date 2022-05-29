@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Globalization;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Numerics.Tests
@@ -995,6 +996,12 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public static void RadixTest()
+        {
+            Assert.Equal(2, NumberBaseHelper<BigInteger>.Radix);
+        }
+
+        [Fact]
         public static void ZeroTest()
         {
             Assert.Equal(Zero, NumberBaseHelper<BigInteger>.Zero);
@@ -1035,6 +1042,60 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public static void CreateCheckedFromDecimalTest()
+        {
+            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateChecked<decimal>(decimal.Zero));
+
+            Assert.Equal(One, NumberBaseHelper<BigInteger>.CreateChecked<decimal>(decimal.One));
+            Assert.Equal(NegativeOne, NumberBaseHelper<BigInteger>.CreateChecked<decimal>(decimal.MinusOne));
+
+            Assert.Equal((BigInteger)(new Int128(0x0000_0000_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)), NumberBaseHelper<BigInteger>.CreateChecked<decimal>(decimal.MaxValue));
+            Assert.Equal((BigInteger)(new Int128(0xFFFF_FFFF_0000_0000, 0x0000_0000_0000_0001)), NumberBaseHelper<BigInteger>.CreateChecked<decimal>(decimal.MinValue));
+        }
+
+        [Fact]
+        public static void CreateCheckedFromDoubleTest()
+        {
+            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateChecked<double>(+0.0));
+            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateChecked<double>(-0.0));
+
+            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateChecked<double>(+double.Epsilon));
+            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateChecked<double>(-double.Epsilon));
+
+            Assert.Equal(One, NumberBaseHelper<BigInteger>.CreateChecked<double>(+1.0));
+            Assert.Equal(NegativeOne, NumberBaseHelper<BigInteger>.CreateChecked<double>(-1.0));
+
+            Assert.Equal((BigInteger)(new Int128(0x7FFF_FFFF_FFFF_FC00, 0x0000_0000_0000_0000)), NumberBaseHelper<BigInteger>.CreateChecked<double>(+170141183460469212842221372237303250944.0));
+            Assert.Equal((BigInteger)(new Int128(0x8000_0000_0000_0400, 0x0000_0000_0000_0000)), NumberBaseHelper<BigInteger>.CreateChecked<double>(-170141183460469212842221372237303250944.0));
+
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<BigInteger>.CreateChecked<double>(double.PositiveInfinity));
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<BigInteger>.CreateChecked<double>(double.NegativeInfinity));
+
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<BigInteger>.CreateChecked<double>(double.NaN));
+        }
+
+        [Fact]
+        public static void CreateCheckedFromHalfTest()
+        {
+            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateChecked<Half>((Half)(+0.0)));
+            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateChecked<Half>((Half)(-0.0)));
+
+            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateChecked<Half>(+Half.Epsilon));
+            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateChecked<Half>(-Half.Epsilon));
+
+            Assert.Equal(One, NumberBaseHelper<BigInteger>.CreateChecked<Half>((Half)(+1.0)));
+            Assert.Equal(NegativeOne, NumberBaseHelper<BigInteger>.CreateChecked<Half>((Half)(-1.0)));
+
+            Assert.Equal(+65504, NumberBaseHelper<BigInteger>.CreateChecked<Half>(Half.MaxValue));
+            Assert.Equal(-65504, NumberBaseHelper<BigInteger>.CreateChecked<Half>(Half.MinValue));
+
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<BigInteger>.CreateChecked<Half>(Half.PositiveInfinity));
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<BigInteger>.CreateChecked<Half>(Half.NegativeInfinity));
+
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<BigInteger>.CreateChecked<Half>(Half.NaN));
+        }
+
+        [Fact]
         public static void CreateCheckedFromInt16Test()
         {
             Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateChecked<short>(0x0000));
@@ -1062,6 +1123,16 @@ namespace System.Numerics.Tests
             Assert.Equal(Int64MaxValue, NumberBaseHelper<BigInteger>.CreateChecked<long>(0x7FFFFFFFFFFFFFFF));
             Assert.Equal(Int64MinValue, NumberBaseHelper<BigInteger>.CreateChecked<long>(unchecked(unchecked((long)0x8000000000000000))));
             Assert.Equal(NegativeOne, NumberBaseHelper<BigInteger>.CreateChecked<long>(unchecked(unchecked((long)0xFFFFFFFFFFFFFFFF))));
+        }
+
+        [Fact]
+        public static void CreateCheckedFromInt128Test()
+        {
+            Assert.Equal(Zero, NumberBaseHelper<Int128>.CreateChecked<Int128>(Int128.Zero));
+            Assert.Equal(One, NumberBaseHelper<Int128>.CreateChecked<Int128>(Int128.One));
+            Assert.Equal(Int128MaxValue, NumberBaseHelper<Int128>.CreateChecked<Int128>(Int128.MaxValue));
+            Assert.Equal(Int128MinValue, NumberBaseHelper<Int128>.CreateChecked<Int128>(Int128.MinValue));
+            Assert.Equal(NegativeOne, NumberBaseHelper<Int128>.CreateChecked<Int128>(Int128.NegativeOne));
         }
 
         [Fact]
@@ -1096,6 +1167,27 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public static void CreateCheckedFromSingleTest()
+        {
+            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateChecked<float>(+0.0f));
+            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateChecked<float>(-0.0f));
+
+            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateChecked<float>(+float.Epsilon));
+            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateChecked<float>(-float.Epsilon));
+
+            Assert.Equal(One, NumberBaseHelper<BigInteger>.CreateChecked<float>(+1.0f));
+            Assert.Equal(NegativeOne, NumberBaseHelper<BigInteger>.CreateChecked<float>(-1.0f));
+
+            Assert.Equal((BigInteger)(new Int128(0x7FFF_FF80_0000_0000, 0x0000_0000_0000_0000)), NumberBaseHelper<BigInteger>.CreateChecked<float>(+170141173319264429905852091742258462720.0f));
+            Assert.Equal((BigInteger)(new Int128(0x8000_0080_0000_0000, 0x0000_0000_0000_0000)), NumberBaseHelper<BigInteger>.CreateChecked<float>(-170141173319264429905852091742258462720.0f));
+
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<BigInteger>.CreateChecked<float>(float.PositiveInfinity));
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<BigInteger>.CreateChecked<float>(float.NegativeInfinity));
+
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<BigInteger>.CreateChecked<float>(float.NaN));
+        }
+
+        [Fact]
         public static void CreateCheckedFromUInt16Test()
         {
             Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateChecked<ushort>(0x0000));
@@ -1123,6 +1215,16 @@ namespace System.Numerics.Tests
             Assert.Equal(Int64MaxValue, NumberBaseHelper<BigInteger>.CreateChecked<ulong>(0x7FFFFFFFFFFFFFFF));
             Assert.Equal(Int64MaxValuePlusOne, NumberBaseHelper<BigInteger>.CreateChecked<ulong>(0x8000000000000000));
             Assert.Equal(UInt64MaxValue, NumberBaseHelper<BigInteger>.CreateChecked<ulong>(0xFFFFFFFFFFFFFFFF));
+        }
+
+        [Fact]
+        public static void CreateCheckedFromUInt128Test()
+        {
+            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateChecked<UInt128>(UInt128.Zero));
+            Assert.Equal(One, NumberBaseHelper<BigInteger>.CreateChecked<UInt128>(UInt128.One));
+            Assert.Equal(Int128MaxValue, NumberBaseHelper<BigInteger>.CreateChecked<UInt128>(new UInt128(0x7FFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)));
+            Assert.Equal(Int128MaxValuePlusOne, NumberBaseHelper<BigInteger>.CreateChecked<UInt128>(new UInt128(0x8000_0000_0000_0000, 0x0000_0000_0000_0000)));
+            Assert.Equal(UInt128MaxValue, NumberBaseHelper<BigInteger>.CreateChecked<UInt128>(UInt128.MaxValue));
         }
 
         [Fact]
@@ -1167,6 +1269,60 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public static void CreateSaturatingFromDecimalTest()
+        {
+            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateSaturating<decimal>(decimal.Zero));
+
+            Assert.Equal(One, NumberBaseHelper<BigInteger>.CreateSaturating<decimal>(decimal.One));
+            Assert.Equal(NegativeOne, NumberBaseHelper<BigInteger>.CreateSaturating<decimal>(decimal.MinusOne));
+
+            Assert.Equal((BigInteger)(new Int128(0x0000_0000_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)), NumberBaseHelper<BigInteger>.CreateSaturating<decimal>(decimal.MaxValue));
+            Assert.Equal((BigInteger)(new Int128(0xFFFF_FFFF_0000_0000, 0x0000_0000_0000_0001)), NumberBaseHelper<BigInteger>.CreateSaturating<decimal>(decimal.MinValue));
+        }
+
+        [Fact]
+        public static void CreateSaturatingFromDoubleTest()
+        {
+            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateSaturating<double>(+0.0));
+            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateSaturating<double>(-0.0));
+
+            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateSaturating<double>(+double.Epsilon));
+            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateSaturating<double>(-double.Epsilon));
+
+            Assert.Equal(One, NumberBaseHelper<BigInteger>.CreateSaturating<double>(+1.0));
+            Assert.Equal(NegativeOne, NumberBaseHelper<BigInteger>.CreateSaturating<double>(-1.0));
+
+            Assert.Equal((BigInteger)(new Int128(0x7FFF_FFFF_FFFF_FC00, 0x0000_0000_0000_0000)), NumberBaseHelper<BigInteger>.CreateSaturating<double>(+170141183460469212842221372237303250944.0));
+            Assert.Equal((BigInteger)(new Int128(0x8000_0000_0000_0400, 0x0000_0000_0000_0000)), NumberBaseHelper<BigInteger>.CreateSaturating<double>(-170141183460469212842221372237303250944.0));
+
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<BigInteger>.CreateSaturating<double>(double.PositiveInfinity));
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<BigInteger>.CreateSaturating<double>(double.NegativeInfinity));
+
+            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateSaturating<double>(double.NaN));
+        }
+
+        [Fact]
+        public static void CreateSaturatingFromHalfTest()
+        {
+            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateSaturating<Half>((Half)(+0.0)));
+            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateSaturating<Half>((Half)(-0.0)));
+
+            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateSaturating<Half>(+Half.Epsilon));
+            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateSaturating<Half>(-Half.Epsilon));
+
+            Assert.Equal(One, NumberBaseHelper<BigInteger>.CreateSaturating<Half>((Half)(+1.0)));
+            Assert.Equal(NegativeOne, NumberBaseHelper<BigInteger>.CreateSaturating<Half>((Half)(-1.0)));
+
+            Assert.Equal(+65504, NumberBaseHelper<BigInteger>.CreateSaturating<Half>(Half.MaxValue));
+            Assert.Equal(-65504, NumberBaseHelper<BigInteger>.CreateSaturating<Half>(Half.MinValue));
+
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<BigInteger>.CreateSaturating<Half>(Half.PositiveInfinity));
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<BigInteger>.CreateSaturating<Half>(Half.NegativeInfinity));
+
+            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateSaturating<Half>(Half.NaN));
+        }
+
+        [Fact]
         public static void CreateSaturatingFromInt16Test()
         {
             Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateSaturating<short>(0x0000));
@@ -1194,6 +1350,16 @@ namespace System.Numerics.Tests
             Assert.Equal(Int64MaxValue, NumberBaseHelper<BigInteger>.CreateSaturating<long>(0x7FFFFFFFFFFFFFFF));
             Assert.Equal(Int64MinValue, NumberBaseHelper<BigInteger>.CreateSaturating<long>(unchecked((long)0x8000000000000000)));
             Assert.Equal(NegativeOne, NumberBaseHelper<BigInteger>.CreateSaturating<long>(unchecked((long)0xFFFFFFFFFFFFFFFF)));
+        }
+
+        [Fact]
+        public static void CreateSaturatingFromInt128Test()
+        {
+            Assert.Equal(Zero, NumberBaseHelper<Int128>.CreateSaturating<Int128>(Int128.Zero));
+            Assert.Equal(One, NumberBaseHelper<Int128>.CreateSaturating<Int128>(Int128.One));
+            Assert.Equal(Int128MaxValue, NumberBaseHelper<Int128>.CreateSaturating<Int128>(Int128.MaxValue));
+            Assert.Equal(Int128MinValue, NumberBaseHelper<Int128>.CreateSaturating<Int128>(Int128.MinValue));
+            Assert.Equal(NegativeOne, NumberBaseHelper<Int128>.CreateSaturating<Int128>(Int128.NegativeOne));
         }
 
         [Fact]
@@ -1228,6 +1394,27 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public static void CreateSaturatingFromSingleTest()
+        {
+            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateSaturating<float>(+0.0f));
+            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateSaturating<float>(-0.0f));
+
+            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateSaturating<float>(+float.Epsilon));
+            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateSaturating<float>(-float.Epsilon));
+
+            Assert.Equal(One, NumberBaseHelper<BigInteger>.CreateSaturating<float>(+1.0f));
+            Assert.Equal(NegativeOne, NumberBaseHelper<BigInteger>.CreateSaturating<float>(-1.0f));
+
+            Assert.Equal((BigInteger)(new Int128(0x7FFF_FF80_0000_0000, 0x0000_0000_0000_0000)), NumberBaseHelper<BigInteger>.CreateSaturating<float>(+170141173319264429905852091742258462720.0f));
+            Assert.Equal((BigInteger)(new Int128(0x8000_0080_0000_0000, 0x0000_0000_0000_0000)), NumberBaseHelper<BigInteger>.CreateSaturating<float>(-170141173319264429905852091742258462720.0f));
+
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<BigInteger>.CreateSaturating<float>(float.PositiveInfinity));
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<BigInteger>.CreateSaturating<float>(float.NegativeInfinity));
+
+            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateSaturating<float>(float.NaN));
+        }
+
+        [Fact]
         public static void CreateSaturatingFromUInt16Test()
         {
             Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateSaturating<ushort>(0x0000));
@@ -1255,6 +1442,16 @@ namespace System.Numerics.Tests
             Assert.Equal(Int64MaxValue, NumberBaseHelper<BigInteger>.CreateSaturating<ulong>(0x7FFFFFFFFFFFFFFF));
             Assert.Equal(Int64MaxValuePlusOne, NumberBaseHelper<BigInteger>.CreateSaturating<ulong>(0x8000000000000000));
             Assert.Equal(UInt64MaxValue, NumberBaseHelper<BigInteger>.CreateSaturating<ulong>(0xFFFFFFFFFFFFFFFF));
+        }
+
+        [Fact]
+        public static void CreateSaturatingFromUInt128Test()
+        {
+            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateSaturating<UInt128>(UInt128.Zero));
+            Assert.Equal(One, NumberBaseHelper<BigInteger>.CreateSaturating<UInt128>(UInt128.One));
+            Assert.Equal(Int128MaxValue, NumberBaseHelper<BigInteger>.CreateSaturating<UInt128>(new UInt128(0x7FFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)));
+            Assert.Equal(Int128MaxValuePlusOne, NumberBaseHelper<BigInteger>.CreateSaturating<UInt128>(new UInt128(0x8000_0000_0000_0000, 0x0000_0000_0000_0000)));
+            Assert.Equal(UInt128MaxValue, NumberBaseHelper<BigInteger>.CreateSaturating<UInt128>(UInt128.MaxValue));
         }
 
         [Fact]
@@ -1299,6 +1496,60 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public static void CreateTruncatingFromDecimalTest()
+        {
+            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateTruncating<decimal>(decimal.Zero));
+
+            Assert.Equal(One, NumberBaseHelper<BigInteger>.CreateTruncating<decimal>(decimal.One));
+            Assert.Equal(NegativeOne, NumberBaseHelper<BigInteger>.CreateTruncating<decimal>(decimal.MinusOne));
+
+            Assert.Equal((BigInteger)(new Int128(0x0000_0000_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)), NumberBaseHelper<BigInteger>.CreateTruncating<decimal>(decimal.MaxValue));
+            Assert.Equal((BigInteger)(new Int128(0xFFFF_FFFF_0000_0000, 0x0000_0000_0000_0001)), NumberBaseHelper<BigInteger>.CreateTruncating<decimal>(decimal.MinValue));
+        }
+
+        [Fact]
+        public static void CreateTruncatingFromDoubleTest()
+        {
+            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateTruncating<double>(+0.0));
+            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateTruncating<double>(-0.0));
+
+            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateTruncating<double>(+double.Epsilon));
+            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateTruncating<double>(-double.Epsilon));
+
+            Assert.Equal(One, NumberBaseHelper<BigInteger>.CreateTruncating<double>(+1.0));
+            Assert.Equal(NegativeOne, NumberBaseHelper<BigInteger>.CreateTruncating<double>(-1.0));
+
+            Assert.Equal((BigInteger)(new Int128(0x7FFF_FFFF_FFFF_FC00, 0x0000_0000_0000_0000)), NumberBaseHelper<BigInteger>.CreateTruncating<double>(+170141183460469212842221372237303250944.0));
+            Assert.Equal((BigInteger)(new Int128(0x8000_0000_0000_0400, 0x0000_0000_0000_0000)), NumberBaseHelper<BigInteger>.CreateTruncating<double>(-170141183460469212842221372237303250944.0));
+
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<BigInteger>.CreateTruncating<double>(double.PositiveInfinity));
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<BigInteger>.CreateTruncating<double>(double.NegativeInfinity));
+
+            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateTruncating<double>(double.NaN));
+        }
+
+        [Fact]
+        public static void CreateTruncatingFromHalfTest()
+        {
+            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateTruncating<Half>((Half)(+0.0)));
+            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateTruncating<Half>((Half)(-0.0)));
+
+            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateTruncating<Half>(+Half.Epsilon));
+            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateTruncating<Half>(-Half.Epsilon));
+
+            Assert.Equal(One, NumberBaseHelper<BigInteger>.CreateTruncating<Half>((Half)(+1.0)));
+            Assert.Equal(NegativeOne, NumberBaseHelper<BigInteger>.CreateTruncating<Half>((Half)(-1.0)));
+
+            Assert.Equal(+65504, NumberBaseHelper<BigInteger>.CreateTruncating<Half>(Half.MaxValue));
+            Assert.Equal(-65504, NumberBaseHelper<BigInteger>.CreateTruncating<Half>(Half.MinValue));
+
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<BigInteger>.CreateTruncating<Half>(Half.PositiveInfinity));
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<BigInteger>.CreateTruncating<Half>(Half.NegativeInfinity));
+
+            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateTruncating<Half>(Half.NaN));
+        }
+
+        [Fact]
         public static void CreateTruncatingFromInt16Test()
         {
             Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateTruncating<short>(0x0000));
@@ -1326,6 +1577,16 @@ namespace System.Numerics.Tests
             Assert.Equal(Int64MaxValue, NumberBaseHelper<BigInteger>.CreateTruncating<long>(0x7FFFFFFFFFFFFFFF));
             Assert.Equal(Int64MinValue, NumberBaseHelper<BigInteger>.CreateTruncating<long>(unchecked((long)0x8000000000000000)));
             Assert.Equal(NegativeOne, NumberBaseHelper<BigInteger>.CreateTruncating<long>(unchecked((long)0xFFFFFFFFFFFFFFFF)));
+        }
+
+        [Fact]
+        public static void CreateTruncatingFromInt128Test()
+        {
+            Assert.Equal(Zero, NumberBaseHelper<Int128>.CreateTruncating<Int128>(Int128.Zero));
+            Assert.Equal(One, NumberBaseHelper<Int128>.CreateTruncating<Int128>(Int128.One));
+            Assert.Equal(Int128MaxValue, NumberBaseHelper<Int128>.CreateTruncating<Int128>(Int128.MaxValue));
+            Assert.Equal(Int128MinValue, NumberBaseHelper<Int128>.CreateTruncating<Int128>(Int128.MinValue));
+            Assert.Equal(NegativeOne, NumberBaseHelper<Int128>.CreateTruncating<Int128>(Int128.NegativeOne));
         }
 
         [Fact]
@@ -1360,6 +1621,27 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public static void CreateTruncatingFromSingleTest()
+        {
+            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateTruncating<float>(+0.0f));
+            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateTruncating<float>(-0.0f));
+
+            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateTruncating<float>(+float.Epsilon));
+            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateTruncating<float>(-float.Epsilon));
+
+            Assert.Equal(One, NumberBaseHelper<BigInteger>.CreateTruncating<float>(+1.0f));
+            Assert.Equal(NegativeOne, NumberBaseHelper<BigInteger>.CreateTruncating<float>(-1.0f));
+
+            Assert.Equal((BigInteger)(new Int128(0x7FFF_FF80_0000_0000, 0x0000_0000_0000_0000)), NumberBaseHelper<BigInteger>.CreateTruncating<float>(+170141173319264429905852091742258462720.0f));
+            Assert.Equal((BigInteger)(new Int128(0x8000_0080_0000_0000, 0x0000_0000_0000_0000)), NumberBaseHelper<BigInteger>.CreateTruncating<float>(-170141173319264429905852091742258462720.0f));
+
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<BigInteger>.CreateTruncating<float>(float.PositiveInfinity));
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<BigInteger>.CreateTruncating<float>(float.NegativeInfinity));
+
+            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateTruncating<float>(float.NaN));
+        }
+
+        [Fact]
         public static void CreateTruncatingFromUInt16Test()
         {
             Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateTruncating<ushort>(0x0000));
@@ -1390,6 +1672,16 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public static void CreateTruncatingFromUInt128Test()
+        {
+            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.CreateTruncating<UInt128>(UInt128.Zero));
+            Assert.Equal(One, NumberBaseHelper<BigInteger>.CreateTruncating<UInt128>(UInt128.One));
+            Assert.Equal(Int128MaxValue, NumberBaseHelper<BigInteger>.CreateTruncating<UInt128>(new UInt128(0x7FFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)));
+            Assert.Equal(Int128MaxValuePlusOne, NumberBaseHelper<BigInteger>.CreateTruncating<UInt128>(new UInt128(0x8000_0000_0000_0000, 0x0000_0000_0000_0000)));
+            Assert.Equal(UInt128MaxValue, NumberBaseHelper<BigInteger>.CreateTruncating<UInt128>(UInt128.MaxValue));
+        }
+
+        [Fact]
         public static void CreateTruncatingFromUIntPtrTest()
         {
             if (Environment.Is64BitProcess)
@@ -1411,6 +1703,48 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public static void IsCanonicalTest()
+        {
+            Assert.True(NumberBaseHelper<BigInteger>.IsCanonical(Zero));
+            Assert.True(NumberBaseHelper<BigInteger>.IsCanonical(One));
+            Assert.True(NumberBaseHelper<BigInteger>.IsCanonical(Int64MaxValue));
+
+            Assert.True(NumberBaseHelper<BigInteger>.IsCanonical(Int64MinValue));
+            Assert.True(NumberBaseHelper<BigInteger>.IsCanonical(NegativeOne));
+
+            Assert.True(NumberBaseHelper<BigInteger>.IsCanonical(Int64MaxValuePlusOne));
+            Assert.True(NumberBaseHelper<BigInteger>.IsCanonical(UInt64MaxValue));
+        }
+
+        [Fact]
+        public static void IsComplexNumberTest()
+        {
+            Assert.False(NumberBaseHelper<BigInteger>.IsComplexNumber(Zero));
+            Assert.False(NumberBaseHelper<BigInteger>.IsComplexNumber(One));
+            Assert.False(NumberBaseHelper<BigInteger>.IsComplexNumber(Int64MaxValue));
+
+            Assert.False(NumberBaseHelper<BigInteger>.IsComplexNumber(Int64MinValue));
+            Assert.False(NumberBaseHelper<BigInteger>.IsComplexNumber(NegativeOne));
+
+            Assert.False(NumberBaseHelper<BigInteger>.IsComplexNumber(Int64MaxValuePlusOne));
+            Assert.False(NumberBaseHelper<BigInteger>.IsComplexNumber(UInt64MaxValue));
+        }
+
+        [Fact]
+        public static void IsEvenIntegerTest()
+        {
+            Assert.True(NumberBaseHelper<BigInteger>.IsEvenInteger(Zero));
+            Assert.False(NumberBaseHelper<BigInteger>.IsEvenInteger(One));
+            Assert.False(NumberBaseHelper<BigInteger>.IsEvenInteger(Int64MaxValue));
+
+            Assert.True(NumberBaseHelper<BigInteger>.IsEvenInteger(Int64MinValue));
+            Assert.False(NumberBaseHelper<BigInteger>.IsEvenInteger(NegativeOne));
+
+            Assert.True(NumberBaseHelper<BigInteger>.IsEvenInteger(Int64MaxValuePlusOne));
+            Assert.False(NumberBaseHelper<BigInteger>.IsEvenInteger(UInt64MaxValue));
+        }
+
+        [Fact]
         public static void IsFiniteTest()
         {
             Assert.True(NumberBaseHelper<BigInteger>.IsFinite(Zero));
@@ -1425,6 +1759,20 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public static void IsImaginaryNumberTest()
+        {
+            Assert.False(NumberBaseHelper<BigInteger>.IsImaginaryNumber(Zero));
+            Assert.False(NumberBaseHelper<BigInteger>.IsImaginaryNumber(One));
+            Assert.False(NumberBaseHelper<BigInteger>.IsImaginaryNumber(Int64MaxValue));
+
+            Assert.False(NumberBaseHelper<BigInteger>.IsImaginaryNumber(Int64MinValue));
+            Assert.False(NumberBaseHelper<BigInteger>.IsImaginaryNumber(NegativeOne));
+
+            Assert.False(NumberBaseHelper<BigInteger>.IsImaginaryNumber(Int64MaxValuePlusOne));
+            Assert.False(NumberBaseHelper<BigInteger>.IsImaginaryNumber(UInt64MaxValue));
+        }
+
+        [Fact]
         public static void IsInfinityTest()
         {
             Assert.False(NumberBaseHelper<BigInteger>.IsInfinity(Zero));
@@ -1436,6 +1784,20 @@ namespace System.Numerics.Tests
 
             Assert.False(NumberBaseHelper<BigInteger>.IsInfinity(Int64MaxValuePlusOne));
             Assert.False(NumberBaseHelper<BigInteger>.IsInfinity(UInt64MaxValue));
+        }
+
+        [Fact]
+        public static void IsIntegerTest()
+        {
+            Assert.True(NumberBaseHelper<BigInteger>.IsInteger(Zero));
+            Assert.True(NumberBaseHelper<BigInteger>.IsInteger(One));
+            Assert.True(NumberBaseHelper<BigInteger>.IsInteger(Int64MaxValue));
+
+            Assert.True(NumberBaseHelper<BigInteger>.IsInteger(Int64MinValue));
+            Assert.True(NumberBaseHelper<BigInteger>.IsInteger(NegativeOne));
+
+            Assert.True(NumberBaseHelper<BigInteger>.IsInteger(Int64MaxValuePlusOne));
+            Assert.True(NumberBaseHelper<BigInteger>.IsInteger(UInt64MaxValue));
         }
 
         [Fact]
@@ -1495,6 +1857,34 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public static void IsOddIntegerTest()
+        {
+            Assert.False(NumberBaseHelper<BigInteger>.IsOddInteger(Zero));
+            Assert.True(NumberBaseHelper<BigInteger>.IsOddInteger(One));
+            Assert.True(NumberBaseHelper<BigInteger>.IsOddInteger(Int64MaxValue));
+
+            Assert.False(NumberBaseHelper<BigInteger>.IsOddInteger(Int64MinValue));
+            Assert.True(NumberBaseHelper<BigInteger>.IsOddInteger(NegativeOne));
+
+            Assert.False(NumberBaseHelper<BigInteger>.IsOddInteger(Int64MaxValuePlusOne));
+            Assert.True(NumberBaseHelper<BigInteger>.IsOddInteger(UInt64MaxValue));
+        }
+
+        [Fact]
+        public static void IsPositiveTest()
+        {
+            Assert.True(NumberBaseHelper<BigInteger>.IsPositive(Zero));
+            Assert.True(NumberBaseHelper<BigInteger>.IsPositive(One));
+            Assert.True(NumberBaseHelper<BigInteger>.IsPositive(Int64MaxValue));
+
+            Assert.False(NumberBaseHelper<BigInteger>.IsPositive(Int64MinValue));
+            Assert.False(NumberBaseHelper<BigInteger>.IsPositive(NegativeOne));
+
+            Assert.True(NumberBaseHelper<BigInteger>.IsPositive(Int64MaxValuePlusOne));
+            Assert.True(NumberBaseHelper<BigInteger>.IsPositive(UInt64MaxValue));
+        }
+
+        [Fact]
         public static void IsPositiveInfinityTest()
         {
             Assert.False(NumberBaseHelper<BigInteger>.IsPositiveInfinity(Zero));
@@ -1509,6 +1899,20 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public static void IsRealNumberTest()
+        {
+            Assert.True(NumberBaseHelper<BigInteger>.IsRealNumber(Zero));
+            Assert.True(NumberBaseHelper<BigInteger>.IsRealNumber(One));
+            Assert.True(NumberBaseHelper<BigInteger>.IsRealNumber(Int64MaxValue));
+
+            Assert.True(NumberBaseHelper<BigInteger>.IsRealNumber(Int64MinValue));
+            Assert.True(NumberBaseHelper<BigInteger>.IsRealNumber(NegativeOne));
+
+            Assert.True(NumberBaseHelper<BigInteger>.IsRealNumber(Int64MaxValuePlusOne));
+            Assert.True(NumberBaseHelper<BigInteger>.IsRealNumber(UInt64MaxValue));
+        }
+
+        [Fact]
         public static void IsSubnormalTest()
         {
             Assert.False(NumberBaseHelper<BigInteger>.IsSubnormal(Zero));
@@ -1520,6 +1924,20 @@ namespace System.Numerics.Tests
 
             Assert.False(NumberBaseHelper<BigInteger>.IsSubnormal(Int64MaxValuePlusOne));
             Assert.False(NumberBaseHelper<BigInteger>.IsSubnormal(UInt64MaxValue));
+        }
+
+        [Fact]
+        public static void IsZeroTest()
+        {
+            Assert.True(NumberBaseHelper<BigInteger>.IsZero(Zero));
+            Assert.False(NumberBaseHelper<BigInteger>.IsZero(One));
+            Assert.False(NumberBaseHelper<BigInteger>.IsZero(Int64MaxValue));
+
+            Assert.False(NumberBaseHelper<BigInteger>.IsZero(Int64MinValue));
+            Assert.False(NumberBaseHelper<BigInteger>.IsZero(NegativeOne));
+
+            Assert.False(NumberBaseHelper<BigInteger>.IsZero(Int64MaxValuePlusOne));
+            Assert.False(NumberBaseHelper<BigInteger>.IsZero(UInt64MaxValue));
         }
 
         [Fact]
@@ -1578,274 +1996,607 @@ namespace System.Numerics.Tests
             Assert.Equal(One, NumberBaseHelper<BigInteger>.MinMagnitudeNumber(UInt64MaxValue, 1));
         }
 
+        //
+        // INumberBase.TryConvertTo
+        //
+
         [Fact]
-        public static void TryCreateFromByteTest()
+        public static void TryConvertToCheckedByteTest()
         {
-            BigInteger result;
-
-            Assert.True(NumberBaseHelper<BigInteger>.TryCreate<byte>(0x00, out result));
-            Assert.Equal(Zero, result);
-
-            Assert.True(NumberBaseHelper<BigInteger>.TryCreate<byte>(0x01, out result));
-            Assert.Equal(One, result);
-
-            Assert.True(NumberBaseHelper<BigInteger>.TryCreate<byte>(0x7F, out result));
-            Assert.Equal(SByteMaxValue, result);
-
-            Assert.True(NumberBaseHelper<BigInteger>.TryCreate<byte>(0x80, out result));
-            Assert.Equal(SByteMaxValuePlusOne, result);
-
-            Assert.True(NumberBaseHelper<BigInteger>.TryCreate<byte>(0xFF, out result));
-            Assert.Equal(ByteMaxValue, result);
+            Assert.Equal((byte)0x00, NumberBaseHelper<byte>.CreateChecked<BigInteger>(Zero));
+            Assert.Equal((byte)0x01, NumberBaseHelper<byte>.CreateChecked<BigInteger>(One));
+            Assert.Equal((byte)0x7F, NumberBaseHelper<byte>.CreateChecked<BigInteger>(SByteMaxValue));
+            Assert.Equal((byte)0x80, NumberBaseHelper<byte>.CreateChecked<BigInteger>(SByteMaxValuePlusOne));
+            Assert.Equal((byte)0xFF, NumberBaseHelper<byte>.CreateChecked<BigInteger>(ByteMaxValue));
         }
 
         [Fact]
-        public static void TryCreateFromCharTest()
+        public static void TryConvertToCheckedCharTest()
         {
-            BigInteger result;
-
-            Assert.True(NumberBaseHelper<BigInteger>.TryCreate<char>((char)0x0000, out result));
-            Assert.Equal(Zero, result);
-
-            Assert.True(NumberBaseHelper<BigInteger>.TryCreate<char>((char)0x0001, out result));
-            Assert.Equal(One, result);
-
-            Assert.True(NumberBaseHelper<BigInteger>.TryCreate<char>((char)0x7FFF, out result));
-            Assert.Equal(Int16MaxValue, result);
-
-            Assert.True(NumberBaseHelper<BigInteger>.TryCreate<char>((char)0x8000, out result));
-            Assert.Equal(Int16MaxValuePlusOne, result);
-
-            Assert.True(NumberBaseHelper<BigInteger>.TryCreate<char>((char)0xFFFF, out result));
-            Assert.Equal(UInt16MaxValue, result);
+            Assert.Equal((char)0x0000, NumberBaseHelper<char>.CreateChecked<BigInteger>(Zero));
+            Assert.Equal((char)0x0001, NumberBaseHelper<char>.CreateChecked<BigInteger>(One));
+            Assert.Equal((char)0x7FFF, NumberBaseHelper<char>.CreateChecked<BigInteger>(Int16MaxValue));
+            Assert.Equal((char)0x8000, NumberBaseHelper<char>.CreateChecked<BigInteger>(Int16MaxValuePlusOne));
+            Assert.Equal((char)0xFFFF, NumberBaseHelper<char>.CreateChecked<BigInteger>(UInt16MaxValue));
         }
 
         [Fact]
-        public static void TryCreateFromInt16Test()
+        public static void TryConvertToCheckedDecimalTest()
         {
-            BigInteger result;
+            Assert.Equal(decimal.Zero, NumberBaseHelper<decimal>.CreateChecked<BigInteger>(Zero));
 
-            Assert.True(NumberBaseHelper<BigInteger>.TryCreate<short>(0x0000, out result));
-            Assert.Equal(Zero, result);
+            Assert.Equal(decimal.One, NumberBaseHelper<decimal>.CreateChecked<BigInteger>(One));
+            Assert.Equal(decimal.MinusOne, NumberBaseHelper<decimal>.CreateChecked<BigInteger>(NegativeOne));
 
-            Assert.True(NumberBaseHelper<BigInteger>.TryCreate<short>(0x0001, out result));
-            Assert.Equal(One, result);
-
-            Assert.True(NumberBaseHelper<BigInteger>.TryCreate<short>(0x7FFF, out result));
-            Assert.Equal(Int16MaxValue, result);
-
-            Assert.True(NumberBaseHelper<BigInteger>.TryCreate<short>(unchecked((short)0x8000), out result));
-            Assert.Equal(Int16MinValue, result);
-
-            Assert.True(NumberBaseHelper<BigInteger>.TryCreate<short>(unchecked((short)0xFFFF), out result));
-            Assert.Equal(NegativeOne, result);
+            Assert.Equal(decimal.MaxValue, NumberBaseHelper<decimal>.CreateChecked<BigInteger>((BigInteger)(new Int128(0x0000_0000_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF))));
+            Assert.Equal(decimal.MinValue, NumberBaseHelper<decimal>.CreateChecked<BigInteger>((BigInteger)(new Int128(0xFFFF_FFFF_0000_0000, 0x0000_0000_0000_0001))));
         }
 
         [Fact]
-        public static void TryCreateFromInt32Test()
+        public static void TryConvertToCheckedDoubleTest()
         {
-            BigInteger result;
+            Assert.Equal(+0.0, NumberBaseHelper<double>.CreateChecked<BigInteger>(Zero));
 
-            Assert.True(NumberBaseHelper<BigInteger>.TryCreate<int>(0x00000000, out result));
-            Assert.Equal(Zero, result);
+            Assert.Equal(+1.0, NumberBaseHelper<double>.CreateChecked<BigInteger>(One));
+            Assert.Equal(-1.0, NumberBaseHelper<double>.CreateChecked<BigInteger>(NegativeOne));
 
-            Assert.True(NumberBaseHelper<BigInteger>.TryCreate<int>(0x00000001, out result));
-            Assert.Equal(One, result);
-
-            Assert.True(NumberBaseHelper<BigInteger>.TryCreate<int>(0x7FFFFFFF, out result));
-            Assert.Equal(Int32MaxValue, result);
-
-            Assert.True(NumberBaseHelper<BigInteger>.TryCreate<int>(unchecked((int)0x80000000), out result));
-            Assert.Equal(Int32MinValue, result);
-
-            Assert.True(NumberBaseHelper<BigInteger>.TryCreate<int>(unchecked((int)0xFFFFFFFF), out result));
-            Assert.Equal(NegativeOne, result);
+            Assert.Equal(+170141183460469212842221372237303250944.0, NumberBaseHelper<double>.CreateChecked<BigInteger>((BigInteger)(new Int128(0x7FFF_FFFF_FFFF_FC00, 0x0000_0000_0000_0000))));
+            Assert.Equal(-170141183460469212842221372237303250944.0, NumberBaseHelper<double>.CreateChecked<BigInteger>((BigInteger)(new Int128(0x8000_0000_0000_0400, 0x0000_0000_0000_0000))));
         }
 
         [Fact]
-        public static void TryCreateFromInt64Test()
+        public static void TryConvertToCheckedHalfTest()
         {
-            BigInteger result;
+            Assert.Equal((Half)(+0.0), NumberBaseHelper<Half>.CreateChecked<BigInteger>(Zero));
 
-            Assert.True(NumberBaseHelper<BigInteger>.TryCreate<long>(0x00000000, out result));
-            Assert.Equal(Zero, result);
+            Assert.Equal((Half)(+1.0), NumberBaseHelper<Half>.CreateChecked<BigInteger>(One));
+            Assert.Equal((Half)(-1.0), NumberBaseHelper<Half>.CreateChecked<BigInteger>(NegativeOne));
 
-            Assert.True(NumberBaseHelper<BigInteger>.TryCreate<long>(0x00000001, out result));
-            Assert.Equal(One, result);
-
-            Assert.True(NumberBaseHelper<BigInteger>.TryCreate<long>(0x7FFFFFFFFFFFFFFF, out result));
-            Assert.Equal(Int64MaxValue, result);
-
-            Assert.True(NumberBaseHelper<BigInteger>.TryCreate<long>(unchecked((long)0x8000000000000000), out result));
-            Assert.Equal(Int64MinValue, result);
-
-            Assert.True(NumberBaseHelper<BigInteger>.TryCreate<long>(unchecked((long)0xFFFFFFFFFFFFFFFF), out result));
-            Assert.Equal(NegativeOne, result);
+            Assert.Equal(Half.MaxValue, NumberBaseHelper<Half>.CreateChecked<BigInteger>(+65504));
+            Assert.Equal(Half.MinValue, NumberBaseHelper<Half>.CreateChecked<BigInteger>(-65504));
         }
 
         [Fact]
-        public static void TryCreateFromIntPtrTest()
+        public static void TryConvertToCheckedInt16Test()
         {
-            BigInteger result;
+            Assert.Equal(0x0000, NumberBaseHelper<short>.CreateChecked<BigInteger>(Zero));
+            Assert.Equal(0x0001, NumberBaseHelper<short>.CreateChecked<BigInteger>(One));
+            Assert.Equal(0x7FFF, NumberBaseHelper<short>.CreateChecked<BigInteger>(Int16MaxValue));
+            Assert.Equal(unchecked((short)0x8000), NumberBaseHelper<short>.CreateChecked<BigInteger>(Int16MinValue));
+            Assert.Equal(unchecked((short)0xFFFF), NumberBaseHelper<short>.CreateChecked<BigInteger>(NegativeOne));
+        }
 
+        [Fact]
+        public static void TryConvertToCheckedInt32Test()
+        {
+            Assert.Equal(0x0000_0000, NumberBaseHelper<int>.CreateChecked<BigInteger>(Zero));
+            Assert.Equal(0x0000_0001, NumberBaseHelper<int>.CreateChecked<BigInteger>(One));
+            Assert.Equal(0x7FFF_FFFF, NumberBaseHelper<int>.CreateChecked<BigInteger>(Int32MaxValue));
+            Assert.Equal(unchecked((int)0x8000_0000), NumberBaseHelper<int>.CreateChecked<BigInteger>(Int32MinValue));
+            Assert.Equal(unchecked((int)0xFFFF_FFFF), NumberBaseHelper<int>.CreateChecked<BigInteger>(NegativeOne));
+        }
+
+        [Fact]
+        public static void TryConvertToCheckedInt64Test()
+        {
+            Assert.Equal(0x0000_0000_0000_0000, NumberBaseHelper<long>.CreateChecked<BigInteger>(Zero));
+            Assert.Equal(0x0000_0000_0000_0001, NumberBaseHelper<long>.CreateChecked<BigInteger>(One));
+            Assert.Equal(0x7FFF_FFFF_FFFF_FFFF, NumberBaseHelper<long>.CreateChecked<BigInteger>(Int64MaxValue));
+            Assert.Equal(unchecked(unchecked((long)0x8000_0000_0000_0000)), NumberBaseHelper<long>.CreateChecked<BigInteger>(Int64MinValue));
+            Assert.Equal(unchecked(unchecked((long)0xFFFF_FFFF_FFFF_FFFF)), NumberBaseHelper<long>.CreateChecked<BigInteger>(NegativeOne));
+        }
+
+        [Fact]
+        public static void TryConvertToCheckedInt128Test()
+        {
+            Assert.Equal(Zero, NumberBaseHelper<Int128>.CreateChecked<Int128>(Int128.Zero));
+            Assert.Equal(One, NumberBaseHelper<Int128>.CreateChecked<Int128>(Int128.One));
+            Assert.Equal(Int128MaxValue, NumberBaseHelper<Int128>.CreateChecked<Int128>(Int128.MaxValue));
+            Assert.Equal(Int128MinValue, NumberBaseHelper<Int128>.CreateChecked<Int128>(Int128.MinValue));
+            Assert.Equal(NegativeOne, NumberBaseHelper<Int128>.CreateChecked<Int128>(Int128.NegativeOne));
+        }
+
+        [Fact]
+        public static void TryConvertToCheckedIntPtrTest()
+        {
             if (Environment.Is64BitProcess)
             {
-                Assert.True(NumberBaseHelper<BigInteger>.TryCreate<nint>(unchecked((nint)0x00000000), out result));
-                Assert.Equal(Zero, result);
-
-                Assert.True(NumberBaseHelper<BigInteger>.TryCreate<nint>(unchecked((nint)0x00000001), out result));
-                Assert.Equal(One, result);
-
-                Assert.True(NumberBaseHelper<BigInteger>.TryCreate<nint>(unchecked((nint)0x7FFFFFFFFFFFFFFF), out result));
-                Assert.Equal(Int64MaxValue, result);
-
-                Assert.True(NumberBaseHelper<BigInteger>.TryCreate<nint>(unchecked((nint)0x8000000000000000), out result));
-                Assert.Equal(Int64MinValue, result);
-
-                Assert.True(NumberBaseHelper<BigInteger>.TryCreate<nint>(unchecked((nint)0xFFFFFFFFFFFFFFFF), out result));
-                Assert.Equal(NegativeOne, result);
+                Assert.Equal(unchecked((nint)0x0000_0000_0000_0000), NumberBaseHelper<nint>.CreateChecked<BigInteger>(Zero));
+                Assert.Equal(unchecked((nint)0x0000_0000_0000_0001), NumberBaseHelper<nint>.CreateChecked<BigInteger>(One));
+                Assert.Equal(unchecked((nint)0x7FFF_FFFF_FFFF_FFFF), NumberBaseHelper<nint>.CreateChecked<BigInteger>(Int64MaxValue));
+                Assert.Equal(unchecked((nint)0x8000_0000_0000_0000), NumberBaseHelper<nint>.CreateChecked<BigInteger>(Int64MinValue));
+                Assert.Equal(unchecked((nint)0xFFFF_FFFF_FFFF_FFFF), NumberBaseHelper<nint>.CreateChecked<BigInteger>(NegativeOne));
             }
             else
             {
-                Assert.True(NumberBaseHelper<BigInteger>.TryCreate<nint>((nint)0x00000000, out result));
-                Assert.Equal(Zero, result);
-
-                Assert.True(NumberBaseHelper<BigInteger>.TryCreate<nint>((nint)0x00000001, out result));
-                Assert.Equal(One, result);
-
-                Assert.True(NumberBaseHelper<BigInteger>.TryCreate<nint>((nint)0x7FFFFFFF, out result));
-                Assert.Equal(Int32MaxValue, result);
-
-                Assert.True(NumberBaseHelper<BigInteger>.TryCreate<nint>(unchecked((nint)0x80000000), out result));
-                Assert.Equal(Int32MinValue, result);
-
-                Assert.True(NumberBaseHelper<BigInteger>.TryCreate<nint>(unchecked((nint)0xFFFFFFFF), out result));
-                Assert.Equal(NegativeOne, result);
+                Assert.Equal((nint)0x0000_0000, NumberBaseHelper<nint>.CreateChecked<BigInteger>(Zero));
+                Assert.Equal((nint)0x0000_0001, NumberBaseHelper<nint>.CreateChecked<BigInteger>(One));
+                Assert.Equal((nint)0x7FFF_FFFF, NumberBaseHelper<nint>.CreateChecked<BigInteger>(Int32MaxValue));
+                Assert.Equal(unchecked((nint)0x8000_0000), NumberBaseHelper<nint>.CreateChecked<BigInteger>(Int32MinValue));
+                Assert.Equal(unchecked((nint)0xFFFF_FFFF), NumberBaseHelper<nint>.CreateChecked<BigInteger>(NegativeOne));
             }
         }
 
         [Fact]
-        public static void TryCreateFromSByteTest()
+        public static void TryConvertToCheckedSByteTest()
         {
-            BigInteger result;
-
-            Assert.True(NumberBaseHelper<BigInteger>.TryCreate<sbyte>(0x00, out result));
-            Assert.Equal(Zero, result);
-
-            Assert.True(NumberBaseHelper<BigInteger>.TryCreate<sbyte>(0x01, out result));
-            Assert.Equal(One, result);
-
-            Assert.True(NumberBaseHelper<BigInteger>.TryCreate<sbyte>(0x7F, out result));
-            Assert.Equal(SByteMaxValue, result);
-
-            Assert.True(NumberBaseHelper<BigInteger>.TryCreate<sbyte>(unchecked((sbyte)0x80), out result));
-            Assert.Equal(SByteMinValue, result);
-
-            Assert.True(NumberBaseHelper<BigInteger>.TryCreate<sbyte>(unchecked((sbyte)0xFF), out result));
-            Assert.Equal(NegativeOne, result);
+            Assert.Equal(0x00, NumberBaseHelper<sbyte>.CreateChecked<BigInteger>(Zero));
+            Assert.Equal(0x01, NumberBaseHelper<sbyte>.CreateChecked<BigInteger>(One));
+            Assert.Equal(0x7F, NumberBaseHelper<sbyte>.CreateChecked<BigInteger>(SByteMaxValue));
+            Assert.Equal(unchecked((sbyte)0x80), NumberBaseHelper<sbyte>.CreateChecked<BigInteger>(SByteMinValue));
+            Assert.Equal(unchecked((sbyte)0xFF), NumberBaseHelper<sbyte>.CreateChecked<BigInteger>(NegativeOne));
         }
 
         [Fact]
-        public static void TryCreateFromUInt16Test()
+        public static void TryConvertToCheckedSingleTest()
         {
-            BigInteger result;
+            Assert.Equal(+0.0f, NumberBaseHelper<float>.CreateChecked<BigInteger>(Zero));
 
-            Assert.True(NumberBaseHelper<BigInteger>.TryCreate<ushort>(0x0000, out result));
-            Assert.Equal(Zero, result);
+            Assert.Equal(+1.0f, NumberBaseHelper<float>.CreateChecked<BigInteger>(One));
+            Assert.Equal(-1.0f, NumberBaseHelper<float>.CreateChecked<BigInteger>(NegativeOne));
 
-            Assert.True(NumberBaseHelper<BigInteger>.TryCreate<ushort>(0x0001, out result));
-            Assert.Equal(One, result);
-
-            Assert.True(NumberBaseHelper<BigInteger>.TryCreate<ushort>(0x7FFF, out result));
-            Assert.Equal(Int16MaxValue, result);
-
-            Assert.True(NumberBaseHelper<BigInteger>.TryCreate<ushort>(0x8000, out result));
-            Assert.Equal(Int16MaxValuePlusOne, result);
-
-            Assert.True(NumberBaseHelper<BigInteger>.TryCreate<ushort>(0xFFFF, out result));
-            Assert.Equal(UInt16MaxValue, result);
+            Assert.Equal(+170141173319264429905852091742258462720.0f, NumberBaseHelper<float>.CreateChecked<BigInteger>((BigInteger)(new Int128(0x7FFF_FF80_0000_0000, 0x0000_0000_0000_0000))));
+            Assert.Equal(-170141173319264429905852091742258462720.0f, NumberBaseHelper<float>.CreateChecked<BigInteger>((BigInteger)(new Int128(0x8000_0080_0000_0000, 0x0000_0000_0000_0000))));
         }
 
         [Fact]
-        public static void TryCreateFromUInt32Test()
+        public static void TryConvertToCheckedUInt16Test()
         {
-            BigInteger result;
-
-            Assert.True(NumberBaseHelper<BigInteger>.TryCreate<uint>(0x00000000, out result));
-            Assert.Equal(Zero, result);
-
-            Assert.True(NumberBaseHelper<BigInteger>.TryCreate<uint>(0x00000001, out result));
-            Assert.Equal(One, result);
-
-            Assert.True(NumberBaseHelper<BigInteger>.TryCreate<uint>(0x7FFFFFFF, out result));
-            Assert.Equal(Int32MaxValue, result);
-
-            Assert.True(NumberBaseHelper<BigInteger>.TryCreate<uint>(0x80000000, out result));
-            Assert.Equal(Int32MaxValuePlusOne, result);
-
-            Assert.True(NumberBaseHelper<BigInteger>.TryCreate<uint>(0xFFFFFFFF, out result));
-            Assert.Equal(UInt32MaxValue, result);
+            Assert.Equal((ushort)0x0000, NumberBaseHelper<ushort>.CreateChecked<BigInteger>(Zero));
+            Assert.Equal((ushort)0x0001, NumberBaseHelper<ushort>.CreateChecked<BigInteger>(One));
+            Assert.Equal((ushort)0x7FFF, NumberBaseHelper<ushort>.CreateChecked<BigInteger>(Int16MaxValue));
+            Assert.Equal((ushort)0x8000, NumberBaseHelper<ushort>.CreateChecked<BigInteger>(Int16MaxValuePlusOne));
+            Assert.Equal((ushort)0xFFFF, NumberBaseHelper<ushort>.CreateChecked<BigInteger>(UInt16MaxValue));
         }
 
         [Fact]
-        public static void TryCreateFromUInt64Test()
+        public static void TryConvertToCheckedUInt32Test()
         {
-            BigInteger result;
-
-            Assert.True(NumberBaseHelper<BigInteger>.TryCreate<ulong>(0x00000000, out result));
-            Assert.Equal(Zero, result);
-
-            Assert.True(NumberBaseHelper<BigInteger>.TryCreate<ulong>(0x00000001, out result));
-            Assert.Equal(One, result);
-
-            Assert.True(NumberBaseHelper<BigInteger>.TryCreate<ulong>(0x7FFFFFFFFFFFFFFF, out result));
-            Assert.Equal(Int64MaxValue, result);
-
-            Assert.True(NumberBaseHelper<BigInteger>.TryCreate<ulong>(0x8000000000000000, out result));
-            Assert.Equal(Int64MaxValuePlusOne, result);
-
-            Assert.True(NumberBaseHelper<BigInteger>.TryCreate<ulong>(0xFFFFFFFFFFFFFFFF, out result));
-            Assert.Equal(UInt64MaxValue, result);
+            Assert.Equal((uint)0x0000_0000, NumberBaseHelper<uint>.CreateChecked<BigInteger>(Zero));
+            Assert.Equal((uint)0x0000_0001, NumberBaseHelper<uint>.CreateChecked<BigInteger>(One));
+            Assert.Equal((uint)0x7FFF_FFFF, NumberBaseHelper<uint>.CreateChecked<BigInteger>(Int32MaxValue));
+            Assert.Equal((uint)0x8000_0000, NumberBaseHelper<uint>.CreateChecked<BigInteger>(Int32MaxValuePlusOne));
+            Assert.Equal((uint)0xFFFF_FFFF, NumberBaseHelper<uint>.CreateChecked<BigInteger>(UInt32MaxValue));
         }
 
         [Fact]
-        public static void TryCreateFromUIntPtrTest()
+        public static void TryConvertToCheckedUInt64Test()
         {
-            BigInteger result;
+            Assert.Equal((ulong)0x0000_0000_0000_0000, NumberBaseHelper<ulong>.CreateChecked<BigInteger>(Zero));
+            Assert.Equal((ulong)0x0000_0000_0000_0001, NumberBaseHelper<ulong>.CreateChecked<BigInteger>(One));
+            Assert.Equal((ulong)0x7FFF_FFFF_FFFF_FFFF, NumberBaseHelper<ulong>.CreateChecked<BigInteger>(Int64MaxValue));
+            Assert.Equal((ulong)0x8000_0000_0000_0000, NumberBaseHelper<ulong>.CreateChecked<BigInteger>(Int64MaxValuePlusOne));
+            Assert.Equal((ulong)0xFFFF_FFFF_FFFF_FFFF, NumberBaseHelper<ulong>.CreateChecked<BigInteger>(UInt64MaxValue));
+        }
 
+        [Fact]
+        public static void TryConvertToCheckedUInt128Test()
+        {
+            Assert.Equal(UInt128.Zero, NumberBaseHelper<UInt128>.CreateChecked<BigInteger>(Zero));
+            Assert.Equal(UInt128.One, NumberBaseHelper<UInt128>.CreateChecked<BigInteger>(One));
+            Assert.Equal(new UInt128(0x7FFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF), NumberBaseHelper<UInt128>.CreateChecked<BigInteger>(Int128MaxValue));
+            Assert.Equal(new UInt128(0x8000_0000_0000_0000, 0x0000_0000_0000_0000), NumberBaseHelper<UInt128>.CreateChecked<BigInteger>(Int128MaxValuePlusOne));
+            Assert.Equal(UInt128.MaxValue, NumberBaseHelper<UInt128>.CreateChecked<BigInteger>(UInt128MaxValue));
+        }
+
+        [Fact]
+        public static void TryConvertToCheckedUIntPtrTest()
+        {
             if (Environment.Is64BitProcess)
             {
-                Assert.True(NumberBaseHelper<BigInteger>.TryCreate<nuint>(unchecked((nuint)0x00000000), out result));
-                Assert.Equal(Zero, result);
-
-                Assert.True(NumberBaseHelper<BigInteger>.TryCreate<nuint>(unchecked((nuint)0x00000001), out result));
-                Assert.Equal(One, result);
-
-                Assert.True(NumberBaseHelper<BigInteger>.TryCreate<nuint>(unchecked((nuint)0x7FFFFFFFFFFFFFFF), out result));
-                Assert.Equal(Int64MaxValue, result);
-
-                Assert.True(NumberBaseHelper<BigInteger>.TryCreate<nuint>(unchecked((nuint)0x8000000000000000), out result));
-                Assert.Equal(Int64MaxValuePlusOne, result);
-
-                Assert.True(NumberBaseHelper<BigInteger>.TryCreate<nuint>(unchecked((nuint)0xFFFFFFFFFFFFFFFF), out result));
-                Assert.Equal(UInt64MaxValue, result);
+                Assert.Equal(unchecked((nuint)0x0000_0000_0000_0000), NumberBaseHelper<nuint>.CreateChecked<BigInteger>(Zero));
+                Assert.Equal(unchecked((nuint)0x0000_0000_0000_0001), NumberBaseHelper<nuint>.CreateChecked<BigInteger>(One));
+                Assert.Equal(unchecked((nuint)0x7FFF_FFFF_FFFF_FFFF), NumberBaseHelper<nuint>.CreateChecked<BigInteger>(Int64MaxValue));
+                Assert.Equal(unchecked((nuint)0x8000_0000_0000_0000), NumberBaseHelper<nuint>.CreateChecked<BigInteger>(Int64MaxValuePlusOne));
+                Assert.Equal(unchecked((nuint)0xFFFF_FFFF_FFFF_FFFF), NumberBaseHelper<nuint>.CreateChecked<BigInteger>(UInt64MaxValue));
             }
             else
             {
-                Assert.True(NumberBaseHelper<BigInteger>.TryCreate<nuint>((nuint)0x00000000, out result));
-                Assert.Equal(Zero, result);
+                Assert.Equal((nuint)0x0000_0000, NumberBaseHelper<nuint>.CreateChecked<BigInteger>(Zero));
+                Assert.Equal((nuint)0x0000_0001, NumberBaseHelper<nuint>.CreateChecked<BigInteger>(One));
+                Assert.Equal((nuint)0x7FFF_FFFF, NumberBaseHelper<nuint>.CreateChecked<BigInteger>(Int32MaxValue));
+                Assert.Equal((nuint)0x8000_0000, NumberBaseHelper<nuint>.CreateChecked<BigInteger>(Int32MaxValuePlusOne));
+                Assert.Equal((nuint)0xFFFF_FFFF, NumberBaseHelper<nuint>.CreateChecked<BigInteger>(UInt32MaxValue));
+            }
+        }
 
-                Assert.True(NumberBaseHelper<BigInteger>.TryCreate<nuint>((nuint)0x00000001, out result));
-                Assert.Equal(One, result);
+        [Fact]
+        public static void TryConvertToSaturatingByteTest()
+        {
+            Assert.Equal((byte)0x00, NumberBaseHelper<byte>.CreateSaturating<BigInteger>(Zero));
+            Assert.Equal((byte)0x01, NumberBaseHelper<byte>.CreateSaturating<BigInteger>(One));
+            Assert.Equal((byte)0x7F, NumberBaseHelper<byte>.CreateSaturating<BigInteger>(SByteMaxValue));
+            Assert.Equal((byte)0x80, NumberBaseHelper<byte>.CreateSaturating<BigInteger>(SByteMaxValuePlusOne));
+            Assert.Equal((byte)0xFF, NumberBaseHelper<byte>.CreateSaturating<BigInteger>(ByteMaxValue));
+        }
 
-                Assert.True(NumberBaseHelper<BigInteger>.TryCreate<nuint>((nuint)0x7FFFFFFF, out result));
-                Assert.Equal(Int32MaxValue, result);
+        [Fact]
+        public static void TryConvertToSaturatingCharTest()
+        {
+            Assert.Equal((char)0x0000, NumberBaseHelper<char>.CreateSaturating<BigInteger>(Zero));
+            Assert.Equal((char)0x0001, NumberBaseHelper<char>.CreateSaturating<BigInteger>(One));
+            Assert.Equal((char)0x7FFF, NumberBaseHelper<char>.CreateSaturating<BigInteger>(Int16MaxValue));
+            Assert.Equal((char)0x8000, NumberBaseHelper<char>.CreateSaturating<BigInteger>(Int16MaxValuePlusOne));
+            Assert.Equal((char)0xFFFF, NumberBaseHelper<char>.CreateSaturating<BigInteger>(UInt16MaxValue));
+        }
 
-                Assert.True(NumberBaseHelper<BigInteger>.TryCreate<nuint>(unchecked((nuint)0x80000000), out result));
-                Assert.Equal(Int32MaxValuePlusOne, result);
+        [Fact]
+        public static void TryConvertToSaturatingDecimalTest()
+        {
+            Assert.Equal(decimal.Zero, NumberBaseHelper<decimal>.CreateSaturating<BigInteger>(Zero));
 
-                Assert.True(NumberBaseHelper<BigInteger>.TryCreate<nuint>(unchecked((nuint)0xFFFFFFFF), out result));
-                Assert.Equal(UInt32MaxValue, result);
+            Assert.Equal(decimal.One, NumberBaseHelper<decimal>.CreateSaturating<BigInteger>(One));
+            Assert.Equal(decimal.MinusOne, NumberBaseHelper<decimal>.CreateSaturating<BigInteger>(NegativeOne));
+
+            Assert.Equal(decimal.MaxValue, NumberBaseHelper<decimal>.CreateSaturating<BigInteger>((BigInteger)(new Int128(0x0000_0000_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF))));
+            Assert.Equal(decimal.MinValue, NumberBaseHelper<decimal>.CreateSaturating<BigInteger>((BigInteger)(new Int128(0xFFFF_FFFF_0000_0000, 0x0000_0000_0000_0001))));
+        }
+
+        [Fact]
+        public static void TryConvertToSaturatingDoubleTest()
+        {
+            Assert.Equal(+0.0, NumberBaseHelper<double>.CreateSaturating<BigInteger>(Zero));
+
+            Assert.Equal(+1.0, NumberBaseHelper<double>.CreateSaturating<BigInteger>(One));
+            Assert.Equal(-1.0, NumberBaseHelper<double>.CreateSaturating<BigInteger>(NegativeOne));
+
+            Assert.Equal(+170141183460469212842221372237303250944.0, NumberBaseHelper<double>.CreateSaturating<BigInteger>((BigInteger)(new Int128(0x7FFF_FFFF_FFFF_FC00, 0x0000_0000_0000_0000))));
+            Assert.Equal(-170141183460469212842221372237303250944.0, NumberBaseHelper<double>.CreateSaturating<BigInteger>((BigInteger)(new Int128(0x8000_0000_0000_0400, 0x0000_0000_0000_0000))));
+        }
+
+        [Fact]
+        public static void TryConvertToSaturatingHalfTest()
+        {
+            Assert.Equal((Half)(+0.0), NumberBaseHelper<Half>.CreateSaturating<BigInteger>(Zero));
+
+            Assert.Equal((Half)(+1.0), NumberBaseHelper<Half>.CreateSaturating<BigInteger>(One));
+            Assert.Equal((Half)(-1.0), NumberBaseHelper<Half>.CreateSaturating<BigInteger>(NegativeOne));
+
+            Assert.Equal(Half.MaxValue, NumberBaseHelper<Half>.CreateSaturating<BigInteger>(+65504));
+            Assert.Equal(Half.MinValue, NumberBaseHelper<Half>.CreateSaturating<BigInteger>(-65504));
+        }
+
+        [Fact]
+        public static void TryConvertToSaturatingInt16Test()
+        {
+            Assert.Equal(0x0000, NumberBaseHelper<short>.CreateSaturating<BigInteger>(Zero));
+            Assert.Equal(0x0001, NumberBaseHelper<short>.CreateSaturating<BigInteger>(One));
+            Assert.Equal(0x7FFF, NumberBaseHelper<short>.CreateSaturating<BigInteger>(Int16MaxValue));
+            Assert.Equal(unchecked((short)0x8000), NumberBaseHelper<short>.CreateSaturating<BigInteger>(Int16MinValue));
+            Assert.Equal(unchecked((short)0xFFFF), NumberBaseHelper<short>.CreateSaturating<BigInteger>(NegativeOne));
+        }
+
+        [Fact]
+        public static void TryConvertToSaturatingInt32Test()
+        {
+            Assert.Equal(0x0000_0000, NumberBaseHelper<int>.CreateSaturating<BigInteger>(Zero));
+            Assert.Equal(0x0000_0001, NumberBaseHelper<int>.CreateSaturating<BigInteger>(One));
+            Assert.Equal(0x7FFF_FFFF, NumberBaseHelper<int>.CreateSaturating<BigInteger>(Int32MaxValue));
+            Assert.Equal(unchecked((int)0x8000_0000), NumberBaseHelper<int>.CreateSaturating<BigInteger>(Int32MinValue));
+            Assert.Equal(unchecked((int)0xFFFF_FFFF), NumberBaseHelper<int>.CreateSaturating<BigInteger>(NegativeOne));
+        }
+
+        [Fact]
+        public static void TryConvertToSaturatingInt64Test()
+        {
+            Assert.Equal(0x0000_0000_0000_0000, NumberBaseHelper<long>.CreateSaturating<BigInteger>(Zero));
+            Assert.Equal(0x0000_0000_0000_0001, NumberBaseHelper<long>.CreateSaturating<BigInteger>(One));
+            Assert.Equal(0x7FFF_FFFF_FFFF_FFFF, NumberBaseHelper<long>.CreateSaturating<BigInteger>(Int64MaxValue));
+            Assert.Equal(unchecked((long)0x8000_0000_0000_0000), NumberBaseHelper<long>.CreateSaturating<BigInteger>(Int64MinValue));
+            Assert.Equal(unchecked((long)0xFFFF_FFFF_FFFF_FFFF), NumberBaseHelper<long>.CreateSaturating<BigInteger>(NegativeOne));
+        }
+
+        [Fact]
+        public static void TryConvertToSaturatingInt128Test()
+        {
+            Assert.Equal(Zero, NumberBaseHelper<Int128>.CreateSaturating<Int128>(Int128.Zero));
+            Assert.Equal(One, NumberBaseHelper<Int128>.CreateSaturating<Int128>(Int128.One));
+            Assert.Equal(Int128MaxValue, NumberBaseHelper<Int128>.CreateSaturating<Int128>(Int128.MaxValue));
+            Assert.Equal(Int128MinValue, NumberBaseHelper<Int128>.CreateSaturating<Int128>(Int128.MinValue));
+            Assert.Equal(NegativeOne, NumberBaseHelper<Int128>.CreateSaturating<Int128>(Int128.NegativeOne));
+        }
+
+        [Fact]
+        public static void TryConvertToSaturatingIntPtrTest()
+        {
+            if (Environment.Is64BitProcess)
+            {
+                Assert.Equal(unchecked((nint)0x0000_0000_0000_0000), NumberBaseHelper<nint>.CreateSaturating<BigInteger>(Zero));
+                Assert.Equal(unchecked((nint)0x0000_0000_0000_0001), NumberBaseHelper<nint>.CreateSaturating<BigInteger>(One));
+                Assert.Equal(unchecked((nint)0x7FFF_FFFF_FFFF_FFFF), NumberBaseHelper<nint>.CreateSaturating<BigInteger>(Int64MaxValue));
+                Assert.Equal(unchecked((nint)0x8000_0000_0000_0000), NumberBaseHelper<nint>.CreateSaturating<BigInteger>(Int64MinValue));
+                Assert.Equal(unchecked((nint)0xFFFF_FFFF_FFFF_FFFF), NumberBaseHelper<nint>.CreateSaturating<BigInteger>(NegativeOne));
+            }
+            else
+            {
+                Assert.Equal((nint)0x0000_0000, NumberBaseHelper<nint>.CreateSaturating<BigInteger>(Zero));
+                Assert.Equal((nint)0x0000_0001, NumberBaseHelper<nint>.CreateSaturating<BigInteger>(One));
+                Assert.Equal((nint)0x7FFF_FFFF, NumberBaseHelper<nint>.CreateSaturating<BigInteger>(Int32MaxValue));
+                Assert.Equal(unchecked((nint)0x8000_0000), NumberBaseHelper<nint>.CreateSaturating<BigInteger>(Int32MinValue));
+                Assert.Equal(unchecked((nint)0xFFFF_FFFF), NumberBaseHelper<nint>.CreateSaturating<BigInteger>(NegativeOne));
+            }
+        }
+
+        [Fact]
+        public static void TryConvertToSaturatingSByteTest()
+        {
+            Assert.Equal(0x00, NumberBaseHelper<sbyte>.CreateSaturating<BigInteger>(Zero));
+            Assert.Equal(0x01, NumberBaseHelper<sbyte>.CreateSaturating<BigInteger>(One));
+            Assert.Equal(0x7F, NumberBaseHelper<sbyte>.CreateSaturating<BigInteger>(SByteMaxValue));
+            Assert.Equal(unchecked((sbyte)0x80), NumberBaseHelper<sbyte>.CreateSaturating<BigInteger>(SByteMinValue));
+            Assert.Equal(unchecked((sbyte)0xFF), NumberBaseHelper<sbyte>.CreateSaturating<BigInteger>(NegativeOne));
+        }
+
+        [Fact]
+        public static void TryConvertToSaturatingSingleTest()
+        {
+            Assert.Equal(+0.0f, NumberBaseHelper<float>.CreateSaturating<BigInteger>(Zero));
+
+            Assert.Equal(+1.0f, NumberBaseHelper<float>.CreateSaturating<BigInteger>(One));
+            Assert.Equal(-1.0f, NumberBaseHelper<float>.CreateSaturating<BigInteger>(NegativeOne));
+
+            Assert.Equal(+170141173319264429905852091742258462720.0f, NumberBaseHelper<float>.CreateSaturating<BigInteger>((BigInteger)(new Int128(0x7FFF_FF80_0000_0000, 0x0000_0000_0000_0000))));
+            Assert.Equal(-170141173319264429905852091742258462720.0f, NumberBaseHelper<float>.CreateSaturating<BigInteger>((BigInteger)(new Int128(0x8000_0080_0000_0000, 0x0000_0000_0000_0000))));
+        }
+
+        [Fact]
+        public static void TryConvertToSaturatingUInt16Test()
+        {
+            Assert.Equal((ushort)0x0000, NumberBaseHelper<ushort>.CreateSaturating<BigInteger>(Zero));
+            Assert.Equal((ushort)0x0001, NumberBaseHelper<ushort>.CreateSaturating<BigInteger>(One));
+            Assert.Equal((ushort)0x7FFF, NumberBaseHelper<ushort>.CreateSaturating<BigInteger>(Int16MaxValue));
+            Assert.Equal((ushort)0x8000, NumberBaseHelper<ushort>.CreateSaturating<BigInteger>(Int16MaxValuePlusOne));
+            Assert.Equal((ushort)0xFFFF, NumberBaseHelper<ushort>.CreateSaturating<BigInteger>(UInt16MaxValue));
+        }
+
+        [Fact]
+        public static void TryConvertToSaturatingUInt32Test()
+        {
+            Assert.Equal((uint)0x0000_0000, NumberBaseHelper<uint>.CreateSaturating<BigInteger>(Zero));
+            Assert.Equal((uint)0x0000_0001, NumberBaseHelper<uint>.CreateSaturating<BigInteger>(One));
+            Assert.Equal((uint)0x7FFF_FFFF, NumberBaseHelper<uint>.CreateSaturating<BigInteger>(Int32MaxValue));
+            Assert.Equal((uint)0x8000_0000, NumberBaseHelper<uint>.CreateSaturating<BigInteger>(Int32MaxValuePlusOne));
+            Assert.Equal((uint)0xFFFF_FFFF, NumberBaseHelper<uint>.CreateSaturating<BigInteger>(UInt32MaxValue));
+        }
+
+        [Fact]
+        public static void TryConvertToSaturatingUInt64Test()
+        {
+            Assert.Equal((ulong)0x0000_0000_0000_0000, NumberBaseHelper<ulong>.CreateSaturating<BigInteger>(Zero));
+            Assert.Equal((ulong)0x0000_0000_0000_0001, NumberBaseHelper<ulong>.CreateSaturating<BigInteger>(One));
+            Assert.Equal((ulong)0x7FFF_FFFF_FFFF_FFFF, NumberBaseHelper<ulong>.CreateSaturating<BigInteger>(Int64MaxValue));
+            Assert.Equal((ulong)0x8000_0000_0000_0000, NumberBaseHelper<ulong>.CreateSaturating<BigInteger>(Int64MaxValuePlusOne));
+            Assert.Equal((ulong)0xFFFF_FFFF_FFFF_FFFF, NumberBaseHelper<ulong>.CreateSaturating<BigInteger>(UInt64MaxValue));
+        }
+
+        [Fact]
+        public static void TryConvertToSaturatingUInt128Test()
+        {
+            Assert.Equal(UInt128.Zero, NumberBaseHelper<UInt128>.CreateSaturating<BigInteger>(Zero));
+            Assert.Equal(UInt128.One, NumberBaseHelper<UInt128>.CreateSaturating<BigInteger>(One));
+            Assert.Equal(new UInt128(0x7FFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF), NumberBaseHelper<UInt128>.CreateSaturating<BigInteger>(Int128MaxValue));
+            Assert.Equal(new UInt128(0x8000_0000_0000_0000, 0x0000_0000_0000_0000), NumberBaseHelper<UInt128>.CreateSaturating<BigInteger>(Int128MaxValuePlusOne));
+            Assert.Equal(UInt128.MaxValue, NumberBaseHelper<UInt128>.CreateSaturating<BigInteger>(UInt128MaxValue));
+        }
+
+        [Fact]
+        public static void TryConvertToSaturatingUIntPtrTest()
+        {
+            if (Environment.Is64BitProcess)
+            {
+                Assert.Equal(unchecked((nuint)0x0000_0000_0000_0000), NumberBaseHelper<nuint>.CreateSaturating<BigInteger>(Zero));
+                Assert.Equal(unchecked((nuint)0x0000_0000_0000_0001), NumberBaseHelper<nuint>.CreateSaturating<BigInteger>(One));
+                Assert.Equal(unchecked((nuint)0x7FFF_FFFF_FFFF_FFFF), NumberBaseHelper<nuint>.CreateSaturating<BigInteger>(Int64MaxValue));
+                Assert.Equal(unchecked((nuint)0x8000_0000_0000_0000), NumberBaseHelper<nuint>.CreateSaturating<BigInteger>(Int64MaxValuePlusOne));
+                Assert.Equal(unchecked((nuint)0xFFFF_FFFF_FFFF_FFFF), NumberBaseHelper<nuint>.CreateSaturating<BigInteger>(UInt64MaxValue));
+            }
+            else
+            {
+                Assert.Equal((nuint)0x0000_0000, NumberBaseHelper<nuint>.CreateSaturating<BigInteger>(Zero));
+                Assert.Equal((nuint)0x0000_0001, NumberBaseHelper<nuint>.CreateSaturating<BigInteger>(One));
+                Assert.Equal((nuint)0x7FFF_FFFF, NumberBaseHelper<nuint>.CreateSaturating<BigInteger>(Int32MaxValue));
+                Assert.Equal((nuint)0x8000_0000, NumberBaseHelper<nuint>.CreateSaturating<BigInteger>(Int32MaxValuePlusOne));
+                Assert.Equal((nuint)0xFFFF_FFFF, NumberBaseHelper<nuint>.CreateSaturating<BigInteger>(UInt32MaxValue));
+            }
+        }
+
+        [Fact]
+        public static void TryConvertToTruncatingByteTest()
+        {
+            Assert.Equal((byte)0x00, NumberBaseHelper<byte>.CreateTruncating<BigInteger>(Zero));
+            Assert.Equal((byte)0x01, NumberBaseHelper<byte>.CreateTruncating<BigInteger>(One));
+            Assert.Equal((byte)0x7F, NumberBaseHelper<byte>.CreateTruncating<BigInteger>(SByteMaxValue));
+            Assert.Equal((byte)0x80, NumberBaseHelper<byte>.CreateTruncating<BigInteger>(SByteMaxValuePlusOne));
+            Assert.Equal((byte)0xFF, NumberBaseHelper<byte>.CreateTruncating<BigInteger>(ByteMaxValue));
+        }
+
+        [Fact]
+        public static void TryConvertToTruncatingCharTest()
+        {
+            Assert.Equal((char)0x0000, NumberBaseHelper<char>.CreateTruncating<BigInteger>(Zero));
+            Assert.Equal((char)0x0001, NumberBaseHelper<char>.CreateTruncating<BigInteger>(One));
+            Assert.Equal((char)0x7FFF, NumberBaseHelper<char>.CreateTruncating<BigInteger>(Int16MaxValue));
+            Assert.Equal((char)0x8000, NumberBaseHelper<char>.CreateTruncating<BigInteger>(Int16MaxValuePlusOne));
+            Assert.Equal((char)0xFFFF, NumberBaseHelper<char>.CreateTruncating<BigInteger>(UInt16MaxValue));
+        }
+
+        [Fact]
+        public static void TryConvertToTruncatingDecimalTest()
+        {
+            Assert.Equal(decimal.Zero, NumberBaseHelper<decimal>.CreateTruncating<BigInteger>(Zero));
+
+            Assert.Equal(decimal.One, NumberBaseHelper<decimal>.CreateTruncating<BigInteger>(One));
+            Assert.Equal(decimal.MinusOne, NumberBaseHelper<decimal>.CreateTruncating<BigInteger>(NegativeOne));
+
+            Assert.Equal(decimal.MaxValue, NumberBaseHelper<decimal>.CreateTruncating<BigInteger>((BigInteger)(new Int128(0x0000_0000_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF))));
+            Assert.Equal(decimal.MinValue, NumberBaseHelper<decimal>.CreateTruncating<BigInteger>((BigInteger)(new Int128(0xFFFF_FFFF_0000_0000, 0x0000_0000_0000_0001))));
+        }
+
+        [Fact]
+        public static void TryConvertToTruncatingDoubleTest()
+        {
+            Assert.Equal(+0.0, NumberBaseHelper<double>.CreateTruncating<BigInteger>(Zero));
+
+            Assert.Equal(+1.0, NumberBaseHelper<double>.CreateTruncating<BigInteger>(One));
+            Assert.Equal(-1.0, NumberBaseHelper<double>.CreateTruncating<BigInteger>(NegativeOne));
+
+            Assert.Equal(+170141183460469212842221372237303250944.0, NumberBaseHelper<double>.CreateTruncating<BigInteger>((BigInteger)(new Int128(0x7FFF_FFFF_FFFF_FC00, 0x0000_0000_0000_0000))));
+            Assert.Equal(-170141183460469212842221372237303250944.0, NumberBaseHelper<double>.CreateTruncating<BigInteger>((BigInteger)(new Int128(0x8000_0000_0000_0400, 0x0000_0000_0000_0000))));
+        }
+
+        [Fact]
+        public static void TryConvertToTruncatingHalfTest()
+        {
+            Assert.Equal((Half)(+0.0), NumberBaseHelper<Half>.CreateTruncating<BigInteger>(Zero));
+
+            Assert.Equal((Half)(+1.0), NumberBaseHelper<Half>.CreateTruncating<BigInteger>(One));
+            Assert.Equal((Half)(-1.0), NumberBaseHelper<Half>.CreateTruncating<BigInteger>(NegativeOne));
+
+            Assert.Equal(Half.MaxValue, NumberBaseHelper<Half>.CreateTruncating<BigInteger>(+65504));
+            Assert.Equal(Half.MinValue, NumberBaseHelper<Half>.CreateTruncating<BigInteger>(-65504));
+        }
+
+        [Fact]
+        public static void TryConvertToTruncatingInt16Test()
+        {
+            Assert.Equal(0x0000, NumberBaseHelper<short>.CreateTruncating<BigInteger>(Zero));
+            Assert.Equal(0x0001, NumberBaseHelper<short>.CreateTruncating<BigInteger>(One));
+            Assert.Equal(0x7FFF, NumberBaseHelper<short>.CreateTruncating<BigInteger>(Int16MaxValue));
+            Assert.Equal(unchecked((short)0x8000), NumberBaseHelper<short>.CreateTruncating<BigInteger>(Int16MinValue));
+            Assert.Equal(unchecked((short)0xFFFF), NumberBaseHelper<short>.CreateTruncating<BigInteger>(NegativeOne));
+        }
+
+        [Fact]
+        public static void TryConvertToTruncatingInt32Test()
+        {
+            Assert.Equal(0x0000_0000, NumberBaseHelper<int>.CreateTruncating<BigInteger>(Zero));
+            Assert.Equal(0x0000_0001, NumberBaseHelper<int>.CreateTruncating<BigInteger>(One));
+            Assert.Equal(0x7FFF_FFFF, NumberBaseHelper<int>.CreateTruncating<BigInteger>(Int32MaxValue));
+            Assert.Equal(unchecked((int)0x8000_0000), NumberBaseHelper<int>.CreateTruncating<BigInteger>(Int32MinValue));
+            Assert.Equal(unchecked((int)0xFFFF_FFFF), NumberBaseHelper<int>.CreateTruncating<BigInteger>(NegativeOne));
+        }
+
+        [Fact]
+        public static void TryConvertToTruncatingInt64Test()
+        {
+            Assert.Equal(0x0000_0000_0000_0000, NumberBaseHelper<long>.CreateTruncating<BigInteger>(Zero));
+            Assert.Equal(0x0000_0000_0000_0001, NumberBaseHelper<long>.CreateTruncating<BigInteger>(One));
+            Assert.Equal(0x7FFF_FFFF_FFFF_FFFF, NumberBaseHelper<long>.CreateTruncating<BigInteger>(Int64MaxValue));
+            Assert.Equal(unchecked((long)0x8000_0000_0000_0000), NumberBaseHelper<long>.CreateTruncating<BigInteger>(Int64MinValue));
+            Assert.Equal(unchecked((long)0xFFFF_FFFF_FFFF_FFFF), NumberBaseHelper<long>.CreateTruncating<BigInteger>(NegativeOne));
+        }
+
+        [Fact]
+        public static void TryConvertToTruncatingInt128Test()
+        {
+            Assert.Equal(Zero, NumberBaseHelper<Int128>.CreateTruncating<Int128>(Int128.Zero));
+            Assert.Equal(One, NumberBaseHelper<Int128>.CreateTruncating<Int128>(Int128.One));
+            Assert.Equal(Int128MaxValue, NumberBaseHelper<Int128>.CreateTruncating<Int128>(Int128.MaxValue));
+            Assert.Equal(Int128MinValue, NumberBaseHelper<Int128>.CreateTruncating<Int128>(Int128.MinValue));
+            Assert.Equal(NegativeOne, NumberBaseHelper<Int128>.CreateTruncating<Int128>(Int128.NegativeOne));
+        }
+
+        [Fact]
+        public static void TryConvertToTruncatingIntPtrTest()
+        {
+            if (Environment.Is64BitProcess)
+            {
+                Assert.Equal(unchecked((nint)0x0000_0000), NumberBaseHelper<nint>.CreateTruncating<BigInteger>(Zero));
+                Assert.Equal(unchecked((nint)0x0000_0001), NumberBaseHelper<nint>.CreateTruncating<BigInteger>(One));
+                Assert.Equal(unchecked((nint)0x7FFF_FFFF_FFFF_FFFF), NumberBaseHelper<nint>.CreateTruncating<BigInteger>(Int64MaxValue));
+                Assert.Equal(unchecked((nint)0x8000_0000_0000_0000), NumberBaseHelper<nint>.CreateTruncating<BigInteger>(Int64MinValue));
+                Assert.Equal(unchecked((nint)0xFFFF_FFFF_FFFF_FFFF), NumberBaseHelper<nint>.CreateTruncating<BigInteger>(NegativeOne));
+            }
+            else
+            {
+                Assert.Equal((nint)0x0000_0000, NumberBaseHelper<nint>.CreateTruncating<BigInteger>(Zero));
+                Assert.Equal((nint)0x0000_0001, NumberBaseHelper<nint>.CreateTruncating<BigInteger>(One));
+                Assert.Equal((nint)0x7FFF_FFFF, NumberBaseHelper<nint>.CreateTruncating<BigInteger>(Int32MaxValue));
+                Assert.Equal(unchecked((nint)0x8000_0000), NumberBaseHelper<nint>.CreateTruncating<BigInteger>(Int32MinValue));
+                Assert.Equal(unchecked((nint)0xFFFF_FFFF), NumberBaseHelper<nint>.CreateTruncating<BigInteger>(NegativeOne));
+            }
+        }
+
+        [Fact]
+        public static void TryConvertToTruncatingSByteTest()
+        {
+            Assert.Equal(0x00, NumberBaseHelper<sbyte>.CreateTruncating<BigInteger>(Zero));
+            Assert.Equal(0x01, NumberBaseHelper<sbyte>.CreateTruncating<BigInteger>(One));
+            Assert.Equal(0x7F, NumberBaseHelper<sbyte>.CreateTruncating<BigInteger>(SByteMaxValue));
+            Assert.Equal(unchecked((sbyte)0x80), NumberBaseHelper<sbyte>.CreateTruncating<BigInteger>(SByteMinValue));
+            Assert.Equal(unchecked((sbyte)0xFF), NumberBaseHelper<sbyte>.CreateTruncating<BigInteger>(NegativeOne));
+        }
+
+        [Fact]
+        public static void TryConvertToTruncatingSingleTest()
+        {
+            Assert.Equal(+0.0f, NumberBaseHelper<float>.CreateTruncating<BigInteger>(Zero));
+
+            Assert.Equal(+1.0f, NumberBaseHelper<float>.CreateTruncating<BigInteger>(One));
+            Assert.Equal(-1.0f, NumberBaseHelper<float>.CreateTruncating<BigInteger>(NegativeOne));
+
+            Assert.Equal(+170141173319264429905852091742258462720.0f, NumberBaseHelper<float>.CreateTruncating<BigInteger>((BigInteger)(new Int128(0x7FFF_FF80_0000_0000, 0x0000_0000_0000_0000))));
+            Assert.Equal(-170141173319264429905852091742258462720.0f, NumberBaseHelper<float>.CreateTruncating<BigInteger>((BigInteger)(new Int128(0x8000_0080_0000_0000, 0x0000_0000_0000_0000))));
+        }
+
+        [Fact]
+        public static void TryConvertToTruncatingUInt16Test()
+        {
+            Assert.Equal((ushort)0x0000, NumberBaseHelper<ushort>.CreateTruncating<BigInteger>(Zero));
+            Assert.Equal((ushort)0x0001, NumberBaseHelper<ushort>.CreateTruncating<BigInteger>(One));
+            Assert.Equal((ushort)0x7FFF, NumberBaseHelper<ushort>.CreateTruncating<BigInteger>(Int16MaxValue));
+            Assert.Equal((ushort)0x8000, NumberBaseHelper<ushort>.CreateTruncating<BigInteger>(Int16MaxValuePlusOne));
+            Assert.Equal((ushort)0xFFFF, NumberBaseHelper<ushort>.CreateTruncating<BigInteger>(UInt16MaxValue));
+        }
+
+        [Fact]
+        public static void TryConvertToTruncatingUInt32Test()
+        {
+            Assert.Equal((uint)0x0000_0000, NumberBaseHelper<uint>.CreateTruncating<BigInteger>(Zero));
+            Assert.Equal((uint)0x0000_0001, NumberBaseHelper<uint>.CreateTruncating<BigInteger>(One));
+            Assert.Equal((uint)0x7FFF_FFFF, NumberBaseHelper<uint>.CreateTruncating<BigInteger>(Int32MaxValue));
+            Assert.Equal((uint)0x8000_0000, NumberBaseHelper<uint>.CreateTruncating<BigInteger>(Int32MaxValuePlusOne));
+            Assert.Equal((uint)0xFFFF_FFFF, NumberBaseHelper<uint>.CreateTruncating<BigInteger>(UInt32MaxValue));
+        }
+
+        [Fact]
+        public static void TryConvertToTruncatingUInt64Test()
+        {
+            Assert.Equal((ulong)0x0000_0000_0000_0000, NumberBaseHelper<ulong>.CreateTruncating<BigInteger>(Zero));
+            Assert.Equal((ulong)0x0000_0000_0000_0001, NumberBaseHelper<ulong>.CreateTruncating<BigInteger>(One));
+            Assert.Equal((ulong)0x7FFF_FFFF_FFFF_FFFF, NumberBaseHelper<ulong>.CreateTruncating<BigInteger>(Int64MaxValue));
+            Assert.Equal((ulong)0x8000_0000_0000_0000, NumberBaseHelper<ulong>.CreateTruncating<BigInteger>(Int64MaxValuePlusOne));
+            Assert.Equal((ulong)0xFFFF_FFFF_FFFF_FFFF, NumberBaseHelper<ulong>.CreateTruncating<BigInteger>(UInt64MaxValue));
+        }
+
+        [Fact]
+        public static void TryConvertToTruncatingUInt128Test()
+        {
+            Assert.Equal(UInt128.Zero, NumberBaseHelper<UInt128>.CreateTruncating<BigInteger>(Zero));
+            Assert.Equal(UInt128.One, NumberBaseHelper<UInt128>.CreateTruncating<BigInteger>(One));
+            Assert.Equal(new UInt128(0x7FFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF), NumberBaseHelper<UInt128>.CreateTruncating<BigInteger>(Int128MaxValue));
+            Assert.Equal(new UInt128(0x8000_0000_0000_0000, 0x0000_0000_0000_0000), NumberBaseHelper<UInt128>.CreateTruncating<BigInteger>(Int128MaxValuePlusOne));
+            Assert.Equal(UInt128.MaxValue, NumberBaseHelper<UInt128>.CreateTruncating<BigInteger>(UInt128MaxValue));
+        }
+
+        [Fact]
+        public static void TryConvertToTruncatingUIntPtrTest()
+        {
+            if (Environment.Is64BitProcess)
+            {
+                Assert.Equal(unchecked((nuint)0x00000000), NumberBaseHelper<nuint>.CreateTruncating<BigInteger>(Zero));
+                Assert.Equal(unchecked((nuint)0x00000001), NumberBaseHelper<nuint>.CreateTruncating<BigInteger>(One));
+                Assert.Equal(unchecked((nuint)0x7FFFFFFFFFFFFFFF), NumberBaseHelper<nuint>.CreateTruncating<BigInteger>(Int64MaxValue));
+                Assert.Equal(unchecked((nuint)0x8000000000000000), NumberBaseHelper<nuint>.CreateTruncating<BigInteger>(Int64MaxValuePlusOne));
+                Assert.Equal(unchecked((nuint)0xFFFFFFFFFFFFFFFF), NumberBaseHelper<nuint>.CreateTruncating<BigInteger>(UInt64MaxValue));
+            }
+            else
+            {
+                Assert.Equal((nuint)0x00000000, NumberBaseHelper<nuint>.CreateTruncating<BigInteger>(Zero));
+                Assert.Equal((nuint)0x00000001, NumberBaseHelper<nuint>.CreateTruncating<BigInteger>(One));
+                Assert.Equal((nuint)0x7FFFFFFF, NumberBaseHelper<nuint>.CreateTruncating<BigInteger>(Int32MaxValue));
+                Assert.Equal((nuint)0x80000000, NumberBaseHelper<nuint>.CreateTruncating<BigInteger>(Int32MaxValuePlusOne));
+                Assert.Equal((nuint)0xFFFFFFFF, NumberBaseHelper<nuint>.CreateTruncating<BigInteger>(UInt32MaxValue));
             }
         }
 

@@ -176,7 +176,7 @@ namespace System.Text.Json.Serialization.Tests
 
             Utf8JsonReader reader = new Utf8JsonReader(nullStringAsBytes);
 
-            JsonTestHelper.AssertThrows<JsonException>(reader, (reader) => JsonSerializer.Deserialize<SimpleStruct>(ref reader));
+            JsonTestHelper.AssertThrows<JsonException>(ref reader, (ref Utf8JsonReader reader) => JsonSerializer.Deserialize<SimpleStruct>(ref reader));
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<SimpleStruct>(nullStringAsBytes));
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<SimpleStruct>(nullString));
 

@@ -7130,7 +7130,7 @@ MethodContext::Environment MethodContext::cloneEnvironment()
     return env;
 }
 
-// Check that there is a difference between the current enviroment variables maps and the prevEnv.
+// Check that there is a difference between the current environment variables maps and the prevEnv.
 bool MethodContext::WasEnvironmentChanged(const Environment& prevEnv)
 {
     if (!IsEnvironmentHeaderEqual(prevEnv))
