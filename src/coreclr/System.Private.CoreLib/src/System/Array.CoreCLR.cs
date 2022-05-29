@@ -383,7 +383,7 @@ namespace System
         private unsafe bool IsValueOfElementType(object value)
         {
             MethodTable* thisMT = RuntimeHelpers.GetMethodTable(this);
-            return (IntPtr)thisMT->ElementTypeHandle == (IntPtr)RuntimeHelpers.GetMethodTable(value);
+            return (IntPtr)thisMT->ElementType == (IntPtr)RuntimeHelpers.GetMethodTable(value);
         }
 
         // if this is an array of value classes and that value class has a default constructor

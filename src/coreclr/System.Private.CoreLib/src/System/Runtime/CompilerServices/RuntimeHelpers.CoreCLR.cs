@@ -473,7 +473,7 @@ namespace System.Runtime.CompilerServices
         /// always guaranteed to actually be a pointer to a type handle for the element type of this type).
         /// </summary>
         [FieldOffset(ElementTypeOffset)]
-        public void* ElementTypeHandle;
+        public void* ElementType;
 
         /// <summary>
         /// This interface map is a union with a multipurpose slot, so should be checked before use.
@@ -586,7 +586,7 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public TypeHandle GetArrayElementTypeHandle()
         {
-            return *(TypeHandle*)&((MethodTable*)Unsafe.AsPointer(ref this))->ElementTypeHandle;
+            return *(TypeHandle*)&((MethodTable*)Unsafe.AsPointer(ref this))->ElementType;
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
