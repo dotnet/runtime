@@ -7353,15 +7353,15 @@ void Compiler::gtSetObjGcInfo(GenTreeObj* objNode)
 }
 
 //------------------------------------------------------------------------
-// gtNewStructVal: Return a node that represents a struct value
+// gtNewStructVal: Return a node that represents a struct or block value
 //
 // Arguments:
 //    layout - The struct's layout
 //    addr   - The address of the struct
 //
 // Return Value:
-//    An "OBJ" node, or "LCL_VAR" node if "addr" points to a local with
-//    a layout compatible with "layout".
+//    An "OBJ/BLK" node, or "LCL_VAR" node if "addr" points to a local
+//    with a layout compatible with "layout".
 //
 GenTree* Compiler::gtNewStructVal(ClassLayout* layout, GenTree* addr)
 {
@@ -7380,7 +7380,17 @@ GenTree* Compiler::gtNewStructVal(ClassLayout* layout, GenTree* addr)
         }
     }
 
-    return gtNewObjNode(layout, addr);
+    GenTreeBlk* blkNode;
+    if (layout->IsBlockLayout())
+    {
+        blkNode = new (this, GT_BLK) GenTreeBlk(GT_BLK, layout->GetType(), addr, layout);
+    }
+    else
+    {
+        blkNode = gtNewObjNode(layout, addr);
+    }
+
+    return blkNode;
 }
 
 //------------------------------------------------------------------------
@@ -7392,31 +7402,13 @@ GenTree* Compiler::gtNewStructVal(ClassLayout* layout, GenTree* addr)
 //
 // Return Value:
 //    A block, object or local node that represents the block value pointed to by 'addr'.
-
+//
 GenTree* Compiler::gtNewBlockVal(GenTree* addr, unsigned size)
 {
-    // By default we treat this as an opaque struct type with known size.
-    var_types blkType = TYP_STRUCT;
-    if (addr->gtOper == GT_ADDR)
-    {
-        GenTree* val = addr->gtGetOp1();
-#if FEATURE_SIMD
-        if (varTypeIsSIMD(val) && (genTypeSize(val) == size))
-        {
-            blkType = val->TypeGet();
-        }
-#endif // FEATURE_SIMD
-        if (varTypeIsStruct(val) && val->OperIs(GT_LCL_VAR))
-        {
-            LclVarDsc* varDsc  = lvaGetDesc(val->AsLclVarCommon());
-            unsigned   varSize = varTypeIsStruct(varDsc) ? varDsc->lvExactSize : genTypeSize(varDsc);
-            if (varSize == size)
-            {
-                return val;
-            }
-        }
-    }
-    return new (this, GT_BLK) GenTreeBlk(GT_BLK, blkType, addr, typGetBlkLayout(size));
+    ClassLayout* layout  = typGetBlkLayout(size);
+    GenTree*     blkNode = gtNewStructVal(layout, addr);
+
+    return blkNode;
 }
 
 // Creates a new assignment node for a CpObj.
