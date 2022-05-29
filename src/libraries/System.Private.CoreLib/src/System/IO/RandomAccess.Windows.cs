@@ -727,7 +727,7 @@ namespace System.IO
         {
             // After SafeFileHandle is bound to ThreadPool, we need to use ThreadPoolBinding
             // to allocate a native overlapped and provide a valid callback.
-            NativeOverlapped* result = handle.ThreadPoolBinding!.AllocateNativeOverlapped(s_callback, resetEvent, null);
+            NativeOverlapped* result = handle.ThreadPoolBinding!.UnsafeAllocateNativeOverlapped(s_callback, resetEvent, null);
 
             if (handle.CanSeek)
             {
