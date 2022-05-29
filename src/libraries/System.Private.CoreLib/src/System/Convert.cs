@@ -2478,7 +2478,7 @@ namespace System
             int calcLength = length - lengthmod3;
             byte a, b, c;
 
-            base64PairsTable ??= CreateBas64PairsTable();
+            base64PairsTable ??= CreateBase64PairsTable();
 
             // get a pointer to the base64PairsTable to avoid unnecessary range checking
             fixed (int* base64Pairs = &base64PairsTable[0])
