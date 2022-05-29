@@ -105,7 +105,11 @@ void Thread::WaitForGC(PInvokeTransitionFrame* pTransitionFrame)
 //
 // Returns true if it sucessfully cached the transition frame (i.e. the thread was in unmanaged).
 // Returns false otherwise.
-//
+// 
+// WARNING: This method is called by suspension while one thread is interrupted
+//          in a random location, possibly holding random locks.
+//          It is unsafe to use blocking APIs or allocate in this method.
+//          Please ensure that all methods called by this one also have this waring.
 bool Thread::CacheTransitionFrameForSuspend()
 {
     if (m_pCachedTransitionFrame != NULL)
@@ -644,12 +648,10 @@ UInt32_BOOL Thread::HijackCallback(HANDLE /*hThread*/, PAL_LIMITED_CONTEXT* pThr
     // we have a thread stopped, and we do not know where exactly.
     // it could be in a system call or in our own runtime holding locks
     // current thread should not block or allocate while we determine whether the location is in managed code.
-    pThread->EnterForbidBlockingRegion();
     if (pThread->CacheTransitionFrameForSuspend())
     {
         // This thread has already made it to preemptive (posted a transition frame)
         // we do not need to hijack it
-        pThread->LeaveForbidBlockingRegion();
         return true;
     }
 
@@ -657,12 +659,8 @@ UInt32_BOOL Thread::HijackCallback(HANDLE /*hThread*/, PAL_LIMITED_CONTEXT* pThr
     {
         // Running in cooperative mode, but not managed.
         // We cannot continue.
-        pThread->LeaveForbidBlockingRegion();
         return false;
     }
-
-    // the thread is stopped in managed code, it does not hold system/runtime locks
-    pThread->LeaveForbidBlockingRegion();
 
     // TODO: attempt to redirect 
 

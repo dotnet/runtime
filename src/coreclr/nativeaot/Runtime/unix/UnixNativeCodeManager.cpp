@@ -95,6 +95,10 @@ bool UnixNativeCodeManager::FindMethodInfo(PTR_VOID        ControlPC,
     return true;
 }
 
+// WARNING: This method is called by suspension while one thread is interrupted
+//          in a random location, possibly holding random locks.
+//          It is unsafe to use blocking APIs or allocate in this method.
+//          Please ensure that all methods called by this one also have this waring.
 bool UnixNativeCodeManager::IsManaged(PTR_VOID pvAddress)
 {
      return (dac_cast<TADDR>(pvAddress) - dac_cast<TADDR>(m_pvManagedCodeStartRange) < m_cbManagedCodeRange);

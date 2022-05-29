@@ -41,26 +41,3 @@ inline PTR_VOID Thread::GetThreadStressLog() const
 {
     return m_pThreadStressLog;
 }
-
-inline void Thread::EnterForbidBlockingRegion()
-{
-#ifdef _DEBUG
-    m_forbidBlocking++;
-#endif
-}
-
-inline void Thread::LeaveForbidBlockingRegion()
-{
-#ifdef _DEBUG
-    m_forbidBlocking--;
-#endif
-}
-
-inline bool Thread::IsInForbidBlockingRegion()
-{
-#ifdef _DEBUG
-    return m_forbidBlocking != 0;
-#else
-    return false;
-#endif
-}
