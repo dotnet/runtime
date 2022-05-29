@@ -298,8 +298,10 @@ namespace System
 
             if (pElementMethodTable->IsValueType)
             {
-                // TODO (add a managed box helper)
-                result = null;
+                // If the element is a value type, shift to the right offset using the component size, then box
+                ref byte offsetDataRef = ref Unsafe.Add(ref arrayDataRef, flattenedIndex * pMethodTable->ComponentSize);
+
+                result = RuntimeHelpers.Box(pElementMethodTable, ref offsetDataRef);
             }
             else
             {
