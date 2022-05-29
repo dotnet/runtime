@@ -1,9 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 #pragma once
 #include <rhbinder.h>
-
-#define ICODEMANAGER_INCLUDED
 
 // TODO: Debugger/DAC support (look for TODO: JIT)
 
@@ -46,6 +45,27 @@ enum GCRefKind : unsigned char
 };
 
 #ifdef TARGET_ARM64
+// Verify that we can use bitwise shifts to convert from GCRefKind to PInvokeTransitionFrameFlags and back
+C_ASSERT(PTFF_X0_IS_GCREF == ((uint64_t)GCRK_Object << 32));
+C_ASSERT(PTFF_X0_IS_BYREF == ((uint64_t)GCRK_Byref << 32));
+C_ASSERT(PTFF_X1_IS_GCREF == ((uint64_t)GCRK_Scalar_Obj << 32));
+C_ASSERT(PTFF_X1_IS_BYREF == ((uint64_t)GCRK_Scalar_Byref << 32));
+
+inline uint64_t ReturnKindToTransitionFrameFlags(GCRefKind returnKind)
+{
+    if (returnKind == GCRK_Scalar)
+        return 0;
+
+    return PTFF_SAVE_X0 | PTFF_SAVE_X1 | ((uint64_t)returnKind << 32);
+}
+
+inline GCRefKind TransitionFrameFlagsToReturnKind(uint64_t transFrameFlags)
+{
+    GCRefKind returnKind = (GCRefKind)((transFrameFlags & (PTFF_X0_IS_GCREF | PTFF_X0_IS_BYREF | PTFF_X1_IS_GCREF | PTFF_X1_IS_BYREF)) >> 32);
+    ASSERT((returnKind == GCRK_Scalar) || ((transFrameFlags & PTFF_SAVE_X0) && (transFrameFlags & PTFF_SAVE_X1)));
+    return returnKind;
+}
+
 // Extract individual GCRefKind components from a composite return kind
 inline GCRefKind ExtractReg0ReturnKind(GCRefKind returnKind)
 {

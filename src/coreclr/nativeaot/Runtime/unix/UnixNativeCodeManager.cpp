@@ -56,7 +56,7 @@ bool UnixNativeCodeManager::FindMethodInfo(PTR_VOID        ControlPC,
                                            MethodInfo *    pMethodInfoOut)
 {
     // Stackwalker may call this with ControlPC that is not in managed code
-    if (!IsManaged())
+    if (!IsManaged(ControlPC))
     {
         return false;
     }
@@ -275,7 +275,8 @@ bool UnixNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
         {
             basePointer = dac_cast<TADDR>(pRegisterSet->GetFP());
         }
-        *ppPreviousTransitionFrame = *(void**)(basePointer + slot);
+
+        *ppPreviousTransitionFrame = *(PInvokeTransitionFrame**)(basePointer + slot);
         return true;
     }
 
