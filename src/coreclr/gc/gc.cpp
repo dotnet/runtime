@@ -25091,6 +25091,7 @@ size_t gc_heap::committed_size()
 
     total_committed += committed_in_free;
 #endif //USE_REGIONS
+
     return total_committed;
 }
 
