@@ -3943,9 +3943,7 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
         case GenIntCastDesc::CHECK_INT_RANGE:
         {
             // Emit "if ((long)(int)x != x) goto OVERFLOW"
-            const regNumber tempReg = cast->GetSingleTempReg();
-            GetEmitter()->emitIns_Mov(INS_sxtw, EA_8BYTE, tempReg, reg, true);
-            GetEmitter()->emitIns_R_R(INS_cmp, EA_8BYTE, reg, tempReg);
+            GetEmitter()->emitIns_R_R(INS_cmp, EA_8BYTE, reg, reg, INS_OPTS_SXTW);
             genJumpToThrowHlpBlk(EJ_ne, SCK_OVERFLOW);
         }
         break;
@@ -3957,26 +3955,38 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
             const int castMaxValue = desc.CheckSmallIntMax();
             const int castMinValue = desc.CheckSmallIntMin();
 
-            // Values greater than 255 cannot be encoded in the immediate operand of CMP.
-            // Replace (x > max) with (x >= max + 1) where max + 1 (a power of 2) can be
-            // encoded. We could do this for all max values but on ARM32 "cmp r0, 255"
-            // is better than "cmp r0, 256" because it has a shorter encoding.
-            if (castMaxValue > 255)
+            if ((castMaxValue == UINT16_MAX) || (castMaxValue == UINT8_MAX))
             {
-                assert((castMaxValue == 32767) || (castMaxValue == 65535));
+                assert(castMinValue == 0);
                 GetEmitter()->emitIns_R_I(INS_cmp, EA_SIZE(desc.CheckSrcSize()), reg, castMaxValue + 1);
                 genJumpToThrowHlpBlk((castMinValue == 0) ? EJ_hs : EJ_ge, SCK_OVERFLOW);
             }
-            else
+            else if (castMaxValue == INT16_MAX)
             {
+                assert(castMinValue == INT16_MIN);
+#ifdef TARGET_64BIT
+                GetEmitter()->emitIns_R_R(INS_cmp, EA_SIZE(desc.CheckSrcSize()), reg, reg, INS_OPTS_SXTH);
+                genJumpToThrowHlpBlk(EJ_ne, SCK_OVERFLOW);
+#else
                 GetEmitter()->emitIns_R_I(INS_cmp, EA_SIZE(desc.CheckSrcSize()), reg, castMaxValue);
                 genJumpToThrowHlpBlk((castMinValue == 0) ? EJ_hi : EJ_gt, SCK_OVERFLOW);
-            }
-
-            if (castMinValue != 0)
-            {
                 GetEmitter()->emitIns_R_I(INS_cmp, EA_SIZE(desc.CheckSrcSize()), reg, castMinValue);
                 genJumpToThrowHlpBlk(EJ_lt, SCK_OVERFLOW);
+#endif
+            }
+            else
+            {
+                assert(castMaxValue == INT8_MAX);
+                assert(castMinValue == INT8_MIN);
+#ifdef TARGET_64BIT
+                GetEmitter()->emitIns_R_R(INS_cmp, EA_SIZE(desc.CheckSrcSize()), reg, reg, INS_OPTS_SXTB);
+                genJumpToThrowHlpBlk(EJ_ne, SCK_OVERFLOW);
+#else
+                GetEmitter()->emitIns_R_I(INS_cmp, EA_SIZE(desc.CheckSrcSize()), reg, castMaxValue);
+                genJumpToThrowHlpBlk((castMinValue == 0) ? EJ_hi : EJ_gt, SCK_OVERFLOW);
+                GetEmitter()->emitIns_R_I(INS_cmp, EA_SIZE(desc.CheckSrcSize()), reg, castMinValue);
+                genJumpToThrowHlpBlk(EJ_lt, SCK_OVERFLOW);
+#endif
             }
         }
         break;
