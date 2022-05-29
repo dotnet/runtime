@@ -386,16 +386,6 @@ namespace System.Text.RegularExpressions.Tests
                     yield return (@"abc{1,4}d" + endAnchor, "1234567890abcd", anchorOptions, 0, 14, true, "abcd");
                     yield return (@"abc{1,4}d" + endAnchor, "1234567890abccccd", anchorOptions, 0, 17, true, "abccccd");
                 }
-
-                // When matching with (string, int, int), the input outside of the range
-                // is entirely ignored, so e.g, anchors such as ^ and \A do match at the start
-                yield return (@"^abc$", "1abc2", RegexOptions.None, 1, 3, true, "abc");
-                yield return (@"\Aabc\z", "1abc2", anchorOptions, 1, 3, true, "abc");
-
-                // When matching with (string, int), the input outside the range
-                // is not ignored, so e.g., anchors such as ^ and \A do not necessarily match at the start
-                yield return (@"^abc$", "1abc2", RegexOptions.None, 1, 4, false, "");
-                yield return (@"\Aabc\z", "1abc2", anchorOptions, 1, 4, false, "");
             }
 
             if (!RegexHelpers.IsNonBacktracking(engine))
@@ -1626,35 +1616,58 @@ namespace System.Text.RegularExpressions.Tests
 
         public static IEnumerable<object[]> Match_StartatDiffersFromBeginning_MemberData()
         {
+            // (RegexEngine engine, string pattern, string input, RegexOptions options,
+            // int startat, bool expectedSuccessStartAt, bool expectedSuccessBeginning,
+            // int expectedIndex)
             foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
             {
                 foreach (RegexOptions options in new[] { RegexOptions.None, RegexOptions.Singleline, RegexOptions.Multiline, RegexOptions.Singleline | RegexOptions.Multiline })
                 {
                     // Anchors
-                    yield return new object[] { engine, @"^.*", "abc", options, 0, true, true };
-                    yield return new object[] { engine, @"^.*", "abc", options, 1, false, true };
+                    yield return new object[] { engine, @"^.*", "abc", options, 0, 3, true, true, "abc", 0 };
+                    yield return new object[] { engine, @"^.*", "abc", options, 1, 2, false, true, "bc", 1 };
+                    yield return new object[] { engine, @"\Aabc\z", "1abc2", options, 1, 3, false, true, "abc", 1 };
+                    yield return new object[] { engine, @"\Aabc\z", "1abc2", options, 1, 4, false, false, "", 0 };
                 }
+
+                // When matching with (string, int, int), an input substring is
+                // used, so e.g, anchors such as ^ and \A will match at the start;
+                // when matching with (string, int) the input outside the range is not ignored,
+                // so e.g., anchors such as ^ and \A do not necessarily match at the start
+                yield return new object[] { engine, @"^abc$", "1abc2", RegexOptions.None, 1, 3, false, true, "abc", 1 };
+                yield return new object[] { engine, @"^abc2$", "1abc2", RegexOptions.None, 1, 4, false, true, "abc2", 1 };
 
                 if (!RegexHelpers.IsNonBacktracking(engine))
                 {
                     // Positive and negative lookbehinds
-                    yield return new object[] { engine, @"(?<=abc)def", "abcdef", RegexOptions.None, 3, true, false };
-                    yield return new object[] { engine, @"(?<!abc)def", "abcdef", RegexOptions.None, 3, false, true };
+                    yield return new object[] { engine, @"(?<=abc)def", "abcdef", RegexOptions.None, 3, 3, true, false, "def", 3 };
+                    yield return new object[] { engine, @"(?<!abc)def", "abcdef", RegexOptions.None, 3, 3, false, true, "def", 3 };
                 }
             }
         }
 
         [Theory]
         [MemberData(nameof(Match_StartatDiffersFromBeginning_MemberData))]
-        public async Task Match_StartatDiffersFromBeginning(RegexEngine engine, string pattern, string input, RegexOptions options, int startat, bool expectedSuccessStartAt, bool expectedSuccessBeginning)
+        public async Task Match_StartatDiffersFromBeginning(RegexEngine engine, string pattern, string input, RegexOptions options, int startat, int length, bool expectedSuccessStartAt, bool expectedSuccessBeginning, string expectedValue, int expectedIndex)
         {
             Regex r = await RegexHelpers.GetRegexAsync(engine, pattern, options);
 
             Assert.Equal(expectedSuccessStartAt, r.IsMatch(input, startat));
-            Assert.Equal(expectedSuccessStartAt, r.Match(input, startat).Success);
 
-            Assert.Equal(expectedSuccessBeginning, r.Match(input.Substring(startat)).Success);
-            Assert.Equal(expectedSuccessBeginning, r.Match(input, startat, input.Length - startat).Success);
+            Match match = r.Match(input, startat);
+            Assert.Equal(expectedSuccessStartAt, match.Success);
+            Assert.Equal(expectedSuccessStartAt ? expectedValue : "", match.Value);
+            Assert.Equal(expectedSuccessStartAt ? expectedIndex : 0, match.Index);
+
+            match = r.Match(input.Substring(startat, length));
+            Assert.Equal(expectedSuccessBeginning, match.Success);
+            Assert.Equal(expectedSuccessBeginning ? expectedValue : "", match.Value);
+            Assert.Equal(expectedSuccessBeginning ? expectedIndex - startat : 0, match.Index);
+
+            match = r.Match(input, startat, length);
+            Assert.Equal(expectedSuccessBeginning, match.Success);
+            Assert.Equal(expectedSuccessBeginning ? expectedValue : "", match.Value);
+            Assert.Equal(expectedSuccessBeginning ? expectedIndex : 0, match.Index);
         }
 
         [Theory]
