@@ -1,6 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
+    <!-- Consider enable it for Mono whenever the implementation is ready -->
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' != 'coreclr'">true</CLRTestTargetUnsupported>
     <CLRTestPriority>0</CLRTestPriority>
   </PropertyGroup>
   <PropertyGroup>
