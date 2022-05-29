@@ -231,20 +231,12 @@ namespace System
             if (RuntimeHelpers.GetMethodTable(this)->IsMultiDimensionalArray)
             {
                 ref int bounds = ref RuntimeHelpers.GetMultiDimensionalArrayBounds(this);
-                int index = rawIndex - Unsafe.Add(ref bounds, 1);
-                int length = bounds;
-                if ((uint)index >= (uint)length)
-                    ThrowHelper.ThrowIndexOutOfRangeException();
+                rawIndex -= Unsafe.Add(ref bounds, 1);
+            }
 
-                Debug.Assert((uint)index < (nuint)LongLength);
-                return index;
-            }
-            else
-            {
-                if ((uint)rawIndex >= (uint)LongLength)
-                    ThrowHelper.ThrowIndexOutOfRangeException();
-                return rawIndex;
-            }
+            if ((uint)rawIndex >= (uint)LongLength)
+                ThrowHelper.ThrowIndexOutOfRangeException();
+            return rawIndex;
         }
 
         private unsafe nint GetFlattenedIndex(ReadOnlySpan<int> indices)

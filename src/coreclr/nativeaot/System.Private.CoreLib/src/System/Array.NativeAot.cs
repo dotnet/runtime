@@ -962,21 +962,13 @@ namespace System
 
             if (!IsSzArray)
             {
-                ref int bounds = ref GetRawMultiDimArrayBounds();                
-                int index = rawIndex - Unsafe.Add(ref bounds, 1);
-                int length = bounds;
-                if ((uint)index >= (uint)length)
-                    ThrowHelper.ThrowIndexOutOfRangeException();
+                ref int bounds = ref GetRawMultiDimArrayBounds();
+                rawIndex -= Unsafe.Add(ref bounds, 1);
+            }
 
-                Debug.Assert((uint)index < NativeLength);
-                return flattenedIndex;
-            }
-            else
-            {
-                if ((uint)rawIndex >= NativeLength)
-                    ThrowHelper.ThrowIndexOutOfRangeException();
-                return rawIndex;
-            }
+            if ((uint)rawIndex >= NativeLength)
+                ThrowHelper.ThrowIndexOutOfRangeException();
+            return rawIndex;
         }
 
         private unsafe nint GetFlattenedIndex(ReadOnlySpan<int> indices)
