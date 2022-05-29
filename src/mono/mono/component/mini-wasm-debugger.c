@@ -428,10 +428,10 @@ mono_wasm_send_dbg_command (int id, MdbgProtCommandSet command_set, int command,
 		}
 		else
 		{
-			int assembly_size = 0;
-			int symfile_size = 0;
-			const char* assembly_bytes = mono_wasm_get_assembly_bytes (assembly_name, &assembly_size);
-			const char* pdb_bytes = mono_get_symfile_bytes_from_bundle (assembly_name, &symfile_size);
+			unsigned int assembly_size = 0;
+			unsigned int symfile_size = 0;
+			const unsigned char* assembly_bytes = mono_wasm_get_assembly_bytes (assembly_name, &assembly_size);
+			const unsigned char* pdb_bytes = mono_get_symfile_bytes_from_bundle (assembly_name, &symfile_size);
 			m_dbgprot_buffer_add_byte_array (&buf, (uint8_t *) assembly_bytes, assembly_size);
 			m_dbgprot_buffer_add_byte_array (&buf, (uint8_t *) pdb_bytes, symfile_size);
 		}
