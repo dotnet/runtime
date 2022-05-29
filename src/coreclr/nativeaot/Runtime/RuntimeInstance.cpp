@@ -69,7 +69,7 @@ PTR_UInt8 RuntimeInstance::FindMethodStartAddress(PTR_VOID ControlPC)
 // WARNING: This method is called by suspension while one thread is interrupted
 //          in a random location, possibly holding random locks.
 //          It is unsafe to use blocking APIs or allocate in this method.
-//          Please ensure that all methods called by this one also have this waring.
+//          Please ensure that all methods called by this one also have this warning.
 bool RuntimeInstance::IsManaged(PTR_VOID pvAddress)
 {
     return m_CodeManager->IsManaged(pvAddress);
@@ -144,7 +144,7 @@ GPTR_IMPL_INIT(RuntimeInstance, g_pTheRuntimeInstance, NULL);
 // WARNING: This method is called by suspension while one thread is interrupted
 //          in a random location, possibly holding random locks.
 //          It is unsafe to use blocking APIs or allocate in this method.
-//          Please ensure that all methods called by this one also have this waring.
+//          Please ensure that all methods called by this one also have this warning.
 PTR_RuntimeInstance GetRuntimeInstance()
 {
     return g_pTheRuntimeInstance;

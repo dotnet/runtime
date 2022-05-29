@@ -109,7 +109,7 @@ void Thread::WaitForGC(PInvokeTransitionFrame* pTransitionFrame)
 // WARNING: This method is called by suspension while one thread is interrupted
 //          in a random location, possibly holding random locks.
 //          It is unsafe to use blocking APIs or allocate in this method.
-//          Please ensure that all methods called by this one also have this waring.
+//          Please ensure that all methods called by this one also have this warning.
 bool Thread::CacheTransitionFrameForSuspend()
 {
     if (m_pCachedTransitionFrame != NULL)
