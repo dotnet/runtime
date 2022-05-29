@@ -16,7 +16,7 @@
 
 // Keep these in sync with src/coreclr/tools/Common/Internal/Runtime/ModuleHeaders.cs
 #define READYTORUN_MAJOR_VERSION 0x0006
-#define READYTORUN_MINOR_VERSION 0x0000
+#define READYTORUN_MINOR_VERSION 0x0001
 
 #define MINIMUM_READYTORUN_MAJOR_VERSION 0x006
 
@@ -97,6 +97,20 @@ struct READYTORUN_SECTION
     IMAGE_DATA_DIRECTORY    Section;
 };
 
+enum class ReadyToRunImportSectionType : uint8_t
+{
+    Unknown   = 0,
+    StubDispatch = 2,
+    StringHandle = 3,
+};
+
+enum class ReadyToRunImportSectionFlags : uint16_t
+{
+    None     = 0x0000,
+    Eager    = 0x0001, // Section at module load time.
+    PCode    = 0x0004, // Section contains pointers to code
+};
+
 //
 // READYTORUN_IMPORT_SECTION describes image range with references to code or runtime data structures
 //
@@ -105,22 +119,12 @@ struct READYTORUN_SECTION
 //
 struct READYTORUN_IMPORT_SECTION
 {
-    IMAGE_DATA_DIRECTORY    Section;            // Section containing values to be fixed up
-    USHORT                  Flags;              // One or more of ReadyToRunImportSectionFlags
-    BYTE                    Type;               // One of ReadyToRunImportSectionType
-    BYTE                    EntrySize;
-    DWORD                   Signatures;         // RVA of optional signature descriptors
-    DWORD                   AuxiliaryData;      // RVA of optional auxiliary data (typically GC info)
-};
-
-enum ReadyToRunImportSectionType
-{
-    READYTORUN_IMPORT_SECTION_TYPE_UNKNOWN   = 0,
-};
-
-enum ReadyToRunImportSectionFlags
-{
-    READYTORUN_IMPORT_SECTION_FLAGS_EAGER    = 0x0001,
+    IMAGE_DATA_DIRECTORY         Section;            // Section containing values to be fixed up
+    ReadyToRunImportSectionFlags Flags;              // One or more of ReadyToRunImportSectionFlags
+    ReadyToRunImportSectionType  Type;               // One of ReadyToRunImportSectionType
+    BYTE                         EntrySize;
+    DWORD                        Signatures;         // RVA of optional signature descriptors
+    DWORD                        AuxiliaryData;      // RVA of optional auxiliary data (typically GC info)
 };
 
 //

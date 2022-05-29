@@ -11,8 +11,10 @@ namespace System.Security.Cryptography.X509Certificates
         {
             private readonly IEnumerator _enumerator;
 
-            public X509CertificateEnumerator(X509CertificateCollection mappings!!)
+            public X509CertificateEnumerator(X509CertificateCollection mappings)
             {
+                ArgumentNullException.ThrowIfNull(mappings);
+
                 _enumerator = ((IEnumerable)mappings).GetEnumerator();
             }
 

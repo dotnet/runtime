@@ -33,7 +33,7 @@ namespace System.Collections.Generic
             return false;
         }
 
-#if !CORERT
+#if !NATIVEAOT
         internal virtual int IndexOf(T[] array, T value, int startIndex, int count)
         {
             int endIndex = startIndex + count;

@@ -347,17 +347,17 @@ namespace ILCompiler
 
         private IReadOnlyCollection<MethodDesc> CreateInitializerList(CompilerTypeSystemContext context)
         {
-            List<ModuleDesc> assembliesWithInitalizers = new List<ModuleDesc>();
+            List<ModuleDesc> assembliesWithInitializers = new List<ModuleDesc>();
 
             // Build a list of assemblies that have an initializer that needs to run before
             // any user code runs.
             foreach (string initAssemblyName in _initAssemblies)
             {
                 ModuleDesc assembly = context.ResolveAssembly(new AssemblyName(initAssemblyName), throwIfNotFound: true);
-                assembliesWithInitalizers.Add(assembly);
+                assembliesWithInitializers.Add(assembly);
             }
 
-            var libraryInitializers = new LibraryInitializers(context, assembliesWithInitalizers);
+            var libraryInitializers = new LibraryInitializers(context, assembliesWithInitializers);
 
             List<MethodDesc> initializerList = new List<MethodDesc>(libraryInitializers.LibraryInitializerMethods);
 
@@ -429,13 +429,11 @@ namespace ILCompiler
             // The runtime expects certain baselines that the codegen can assume as well.
             if ((_targetArchitecture == TargetArchitecture.X86) || (_targetArchitecture == TargetArchitecture.X64))
             {
-                instructionSetSupportBuilder.AddSupportedInstructionSet("sse");
-                instructionSetSupportBuilder.AddSupportedInstructionSet("sse2");
+                instructionSetSupportBuilder.AddSupportedInstructionSet("sse2"); // Lower baselines included by implication
             }
             else if (_targetArchitecture == TargetArchitecture.ARM64)
             {
-                instructionSetSupportBuilder.AddSupportedInstructionSet("base");
-                instructionSetSupportBuilder.AddSupportedInstructionSet("neon");
+                instructionSetSupportBuilder.AddSupportedInstructionSet("neon"); // Lower baselines included by implication
             }
 
             if (_instructionSet != null)
@@ -462,7 +460,7 @@ namespace ILCompiler
                 Dictionary<string, bool> instructionSetSpecification = new Dictionary<string, bool>();
                 foreach (string instructionSetSpecifier in instructionSetParams)
                 {
-                    string instructionSet = instructionSetSpecifier.Substring(1, instructionSetSpecifier.Length - 1);
+                    string instructionSet = instructionSetSpecifier.Substring(1);
 
                     bool enabled = instructionSetSpecifier[0] == '+' ? true : false;
                     if (enabled)
@@ -487,22 +485,18 @@ namespace ILCompiler
             // Optimistically assume some instruction sets are present.
             if ((_targetArchitecture == TargetArchitecture.X86) || (_targetArchitecture == TargetArchitecture.X64))
             {
-                // We set these hardware features as enabled always, as most
-                // of hardware in the wild supports them. Note that we do not indicate support for AVX, or any other
-                // instruction set which uses the VEX encodings as the presence of those makes otherwise acceptable
-                // code be unusable on hardware which does not support VEX encodings, as well as emulators that do not
-                // support AVX instructions.
+                // We set these hardware features as opportunistically enabled as most of hardware in the wild supports them.
+                // Note that we do not indicate support for AVX, or any other instruction set which uses the VEX encodings as
+                // the presence of those makes otherwise acceptable code be unusable on hardware which does not support VEX encodings.
                 //
-                // The compiler is able to generate runtime IsSupported checks for the following instruction sets.
-                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sse4.1");
-                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sse4.2");
-                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("ssse3");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sse4.2"); // Lower SSE versions included by implication
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("aes");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("pclmul");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("movbe");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("popcnt");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("lzcnt");
 
-                // If AVX was enabled, we can opportunistically enable FMA/BMI/VNNI
+                // If AVX was enabled, we can opportunistically enable instruction sets which use the VEX encodings
                 Debug.Assert(InstructionSet.X64_AVX == InstructionSet.X86_AVX);
                 if (supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX))
                 {
@@ -542,9 +536,9 @@ namespace ILCompiler
             SharedGenericsMode genericsMode = SharedGenericsMode.CanonicalReferenceTypes;
 
             var simdVectorLength = instructionSetSupport.GetVectorTSimdVector();
-            var targetAbi = TargetAbi.CoreRT;
+            var targetAbi = TargetAbi.NativeAot;
             var targetDetails = new TargetDetails(_targetArchitecture, _targetOS, targetAbi, simdVectorLength);
-            CompilerTypeSystemContext typeSystemContext = 
+            CompilerTypeSystemContext typeSystemContext =
                 new CompilerTypeSystemContext(targetDetails, genericsMode, supportsReflection ? DelegateFeature.All : 0, _maxGenericCycle);
 
             //
@@ -553,7 +547,7 @@ namespace ILCompiler
             //
             // See: https://github.com/dotnet/corert/issues/2785
             //
-            // When we undo this this hack, replace this foreach with
+            // When we undo this hack, replace the foreach with
             //  typeSystemContext.InputFilePaths = _inputFilePaths;
             //
             Dictionary<string, string> inputFilePaths = new Dictionary<string, string>();
@@ -730,7 +724,7 @@ namespace ILCompiler
 
             PInvokeILEmitterConfiguration pinvokePolicy = new ConfigurablePInvokePolicy(typeSystemContext.Target, _directPInvokes, _directPInvokeLists);
 
-            ILProvider ilProvider = new CoreRTILProvider();
+            ILProvider ilProvider = new NativeAotILProvider();
 
             List<KeyValuePair<string, bool>> featureSwitches = new List<KeyValuePair<string, bool>>();
             foreach (var switchPair in _featureSwitches)

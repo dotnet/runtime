@@ -59,8 +59,9 @@ namespace System.Security.Cryptography.X509Certificates
         ///   <paramref name="value" /> is not encodable as defined by <paramref name="stringEncodingType" />.
         /// </para>
         /// </exception>
-        public void Add(string oidValue, string value!!, UniversalTagNumber? stringEncodingType = null)
+        public void Add(string oidValue, string value, UniversalTagNumber? stringEncodingType = null)
         {
+            ArgumentNullException.ThrowIfNull(value);
             ArgumentException.ThrowIfNullOrEmpty(oidValue);
 
             UniversalTagNumber tag = GetAndValidateTagNumber(stringEncodingType);
@@ -92,8 +93,11 @@ namespace System.Security.Cryptography.X509Certificates
         ///   <paramref name="value" /> is not encodable as defined by <paramref name="stringEncodingType" />.
         /// </para>
         /// </exception>
-        public void Add(Oid oid!!, string value!!, UniversalTagNumber? stringEncodingType = null)
+        public void Add(Oid oid, string value, UniversalTagNumber? stringEncodingType = null)
         {
+            ArgumentNullException.ThrowIfNull(oid);
+            ArgumentNullException.ThrowIfNull(value);
+
             if (string.IsNullOrEmpty(oid.Value))
                 throw new ArgumentException(SR.Format(SR.Arg_EmptyOrNullString_Named, "oid.Value"), nameof(oid));
 
@@ -219,7 +223,7 @@ namespace System.Security.Cryptography.X509Certificates
             // those will be prohibited, so "Length" should be fine for checking the length of
             // the string.
             // Input must be A-Z per ISO 3166.
-            if (twoLetterCode.Length != 2 || !IsAlpha(twoLetterCode[0]) || !IsAlpha(twoLetterCode[1]))
+            if (twoLetterCode.Length != 2 || !char.IsAsciiLetter(twoLetterCode[0]) || !char.IsAsciiLetter(twoLetterCode[1]))
             {
                 throw new ArgumentException(SR.Argument_X500_InvalidCountryOrRegion, nameof(twoLetterCode));
             }
@@ -233,12 +237,6 @@ namespace System.Security.Cryptography.X509Certificates
                 fixupTwoLetterCode,
                 UniversalTagNumber.PrintableString,
                 nameof(twoLetterCode));
-
-            static bool IsAlpha(char ch)
-            {
-                uint c = (uint)ch;
-                return c - 'A' < 26 || c - 'a' < 26;
-            }
         }
 
         /// <summary>

@@ -10,7 +10,7 @@ using global::Internal.Reflection.Execution.PayForPlayExperience;
 namespace Internal.Reflection.Execution
 {
     //=========================================================================================================================
-    // The setup information for the reflection domain used for Project N's "classic reflection".
+    // The setup information for the reflection domain used for "classic reflection".
     //=========================================================================================================================
     internal sealed class ReflectionDomainSetupImplementation : ReflectionDomainSetup
     {

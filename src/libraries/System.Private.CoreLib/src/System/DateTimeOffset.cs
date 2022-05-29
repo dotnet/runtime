@@ -41,13 +41,7 @@ namespace System
           IEquatable<DateTimeOffset>,
           ISerializable,
           IDeserializationCallback,
-          IAdditionOperators<DateTimeOffset, TimeSpan, DateTimeOffset>,
-          IAdditiveIdentity<DateTimeOffset, TimeSpan>,
-          IComparisonOperators<DateTimeOffset, DateTimeOffset>,
-          IMinMaxValue<DateTimeOffset>,
-          ISpanParsable<DateTimeOffset>,
-          ISubtractionOperators<DateTimeOffset, TimeSpan, DateTimeOffset>,
-          ISubtractionOperators<DateTimeOffset, DateTimeOffset, TimeSpan>
+          ISpanParsable<DateTimeOffset>
     {
         // Constants
         internal const long MaxOffset = TimeSpan.TicksPerHour * 14;
@@ -660,14 +654,18 @@ namespace System
             }
         }
 
-        void ISerializable.GetObjectData(SerializationInfo info!!, StreamingContext context)
+        void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
+            ArgumentNullException.ThrowIfNull(info);
+
             info.AddValue("DateTime", _dateTime); // Do not rename (binary serialization)
             info.AddValue("OffsetMinutes", _offsetMinutes); // Do not rename (binary serialization)
         }
 
-        private DateTimeOffset(SerializationInfo info!!, StreamingContext context)
+        private DateTimeOffset(SerializationInfo info, StreamingContext context)
         {
+            ArgumentNullException.ThrowIfNull(info);
+
             _dateTime = (DateTime)info.GetValue("DateTime", typeof(DateTime))!; // Do not rename (binary serialization)
             _offsetMinutes = (short)info.GetValue("OffsetMinutes", typeof(short))!; // Do not rename (binary serialization)
         }
@@ -1050,28 +1048,6 @@ namespace System
             left.UtcDateTime >= right.UtcDateTime;
 
         //
-        // IAdditionOperators
-        //
-
-        /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
-        static DateTimeOffset IAdditionOperators<DateTimeOffset, TimeSpan, DateTimeOffset>.operator checked +(DateTimeOffset left, TimeSpan right) => left + right;
-
-        //
-        // IAdditiveIdentity
-        //
-
-        /// <inheritdoc cref="IAdditiveIdentity{TSelf, TResult}.AdditiveIdentity" />
-        static TimeSpan IAdditiveIdentity<DateTimeOffset, TimeSpan>.AdditiveIdentity => default;
-
-        //
-        // IMinMaxValue
-        //
-
-        static DateTimeOffset IMinMaxValue<DateTimeOffset>.MinValue => MinValue;
-
-        static DateTimeOffset IMinMaxValue<DateTimeOffset>.MaxValue => MaxValue;
-
-        //
         // IParsable
         //
 
@@ -1087,15 +1063,5 @@ namespace System
 
         /// <inheritdoc cref="ISpanParsable{TSelf}.TryParse(ReadOnlySpan{char}, IFormatProvider?, out TSelf)" />
         public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out DateTimeOffset result) => TryParse(s, provider, DateTimeStyles.None, out result);
-
-        //
-        // ISubtractionOperators
-        //
-
-        /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
-        static DateTimeOffset ISubtractionOperators<DateTimeOffset, TimeSpan, DateTimeOffset>.operator checked -(DateTimeOffset left, TimeSpan right) => left - right;
-
-        /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
-        static TimeSpan ISubtractionOperators<DateTimeOffset, DateTimeOffset, TimeSpan>.operator checked -(DateTimeOffset left, DateTimeOffset right) => left - right;
     }
 }

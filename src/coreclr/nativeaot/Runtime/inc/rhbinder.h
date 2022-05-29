@@ -338,7 +338,7 @@ struct InterfaceDispatchCell
 // a single instruction within our stubs.
 enum PInvokeTransitionFrameFlags
 {
-    // NOTE: Keep in sync with ndp\FxCore\CoreRT\src\Native\Runtime\arm\AsmMacros.h
+    // NOTE: Keep in sync with src\coreclr\nativeaot\Runtime\arm\AsmMacros.h
 
     // NOTE: The order in which registers get pushed in the PInvokeTransitionFrame's m_PreservedRegs list has
     //       to match the order of these flags (that's also the order in which they are read in StackFrameIterator.cpp
@@ -374,7 +374,7 @@ enum PInvokeTransitionFrameFlags
 #elif defined(TARGET_ARM64)
 enum PInvokeTransitionFrameFlags : uint64_t
 {
-    // NOTE: Keep in sync with ndp\FxCore\CoreRT\src\Native\Runtime\arm64\AsmMacros.h
+    // NOTE: Keep in sync with src\coreclr\nativeaot\Runtime\arm64\AsmMacros.h
 
     // NOTE: The order in which registers get pushed in the PInvokeTransitionFrame's m_PreservedRegs list has
     //       to match the order of these flags (that's also the order in which they are read in StackFrameIterator.cpp
@@ -459,7 +459,7 @@ inline GCRefKind TransitionFrameFlagsToReturnKind(uint64_t transFrameFlags)
 #else // TARGET_ARM
 enum PInvokeTransitionFrameFlags
 {
-    // NOTE: Keep in sync with ndp\FxCore\CoreRT\src\Native\Runtime\[amd64|i386]\AsmMacros.inc
+    // NOTE: Keep in sync with src\coreclr\nativeaot\Runtime\[amd64|i386]\AsmMacros.inc
 
     // NOTE: The order in which registers get pushed in the PInvokeTransitionFrame's m_PreservedRegs list has
     //       to match the order of these flags (that's also the order in which they are read in StackFrameIterator.cpp

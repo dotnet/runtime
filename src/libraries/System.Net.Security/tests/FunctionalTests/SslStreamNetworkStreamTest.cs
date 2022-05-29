@@ -492,6 +492,7 @@ namespace System.Net.Security.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.SupportsTls13))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task SslStream_NegotiateClientCertificateAsyncTls13_Succeeds(bool sendClientCertificate)
@@ -684,6 +685,7 @@ namespace System.Net.Security.Tests
         [InlineData(false, true)]
         [InlineData(false, false)]
         [InlineData(true, true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task SslStream_TargetHostName_Succeeds(bool useEmptyName, bool useCallback)
         {
             string targetName = useEmptyName ? string.Empty : Guid.NewGuid().ToString("N");
@@ -742,6 +744,7 @@ namespace System.Net.Security.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task SslStream_UntrustedCaWithCustomCallback_OK(bool usePartialChain)
         {
             int split = Random.Shared.Next(0, certificates.serverChain.Count - 1);
@@ -804,6 +807,7 @@ namespace System.Net.Security.Tests
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         [InlineData(true)]
         [InlineData(false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task SslStream_UntrustedCaWithCustomCallback_Throws(bool customCallback)
         {
             string errorMessage;
@@ -850,6 +854,7 @@ namespace System.Net.Security.Tests
         }
 
         [ConditionalFact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task SslStream_ClientCertificate_SendsChain()
         {
             List<SslStream> streams = new List<SslStream>();
@@ -933,6 +938,7 @@ namespace System.Net.Security.Tests
         [InlineData(16384 * 100, 4096, 1024, true)]
         [InlineData(16384 * 100, 1024 * 20, 1024, true)]
         [InlineData(16384, 3, 3, true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task SslStream_RandomSizeWrites_OK(int bufferSize, int readBufferSize, int writeBufferSize, bool useAsync)
         {
             byte[] dataToCopy = RandomNumberGenerator.GetBytes(bufferSize);
@@ -955,7 +961,7 @@ namespace System.Net.Security.Tests
 
                 await TestConfiguration.WhenAllOrAnyFailedWithTimeout(t1, t2);
 
-                Task writer = Task.Run(() =>
+                Task writer = Task.Run(async () =>
                 {
                     Memory<byte> data = new Memory<byte>(dataToCopy);
                     while (data.Length > 0)
@@ -963,11 +969,12 @@ namespace System.Net.Security.Tests
                         int writeLength = Math.Min(data.Length, writeBufferSize);
                         if (useAsync)
                         {
-                            server.WriteAsync(data.Slice(0, writeLength)).GetAwaiter().GetResult();
+                            await server.WriteAsync(data.Slice(0, writeLength));
                         }
                         else
                         {
                             server.Write(data.Span.Slice(0, writeLength));
+                            await Task.CompletedTask;
                         }
 
                         data = data.Slice(Math.Min(writeBufferSize, data.Length));
@@ -976,7 +983,7 @@ namespace System.Net.Security.Tests
                     server.ShutdownAsync().GetAwaiter().GetResult();
                 });
 
-                Task reader = Task.Run(() =>
+                Task reader = Task.Run(async () =>
                 {
                     Memory<byte> readBuffer = new Memory<byte>(dataReceived);
                     int totalLength = 0;
@@ -986,11 +993,12 @@ namespace System.Net.Security.Tests
                     {
                         if (useAsync)
                         {
-                            readLength = client.ReadAsync(readBuffer.Slice(totalLength, readBufferSize)).GetAwaiter().GetResult();
+                            readLength = await client.ReadAsync(readBuffer.Slice(totalLength, readBufferSize));
                         }
                         else
                         {
                             readLength = client.Read(readBuffer.Span.Slice(totalLength, readBufferSize));
+                            await Task.CompletedTask;
                         }
 
                         if (readLength == 0)

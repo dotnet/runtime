@@ -6,7 +6,4 @@
   <ItemGroup>
     <Compile Include="ManualTests.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <Reference Include="System.Diagnostics.Process" />
-  </ItemGroup>
 </Project>

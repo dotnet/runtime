@@ -70,16 +70,17 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
  *                  Forward declarations
  */
 
-struct InfoHdr;            // defined in GCInfo.h
-struct escapeMapping_t;    // defined in fgdiagnostic.cpp
-class emitter;             // defined in emit.h
-struct ShadowParamVarInfo; // defined in GSChecks.cpp
-struct InitVarDscInfo;     // defined in register_arg_convention.h
-class FgStack;             // defined in fgbasic.cpp
-class Instrumentor;        // defined in fgprofile.cpp
-class SpanningTreeVisitor; // defined in fgprofile.cpp
-class CSE_DataFlow;        // defined in OptCSE.cpp
-class OptBoolsDsc;         // defined in optimizer.cpp
+struct InfoHdr;              // defined in GCInfo.h
+struct escapeMapping_t;      // defined in fgdiagnostic.cpp
+class emitter;               // defined in emit.h
+struct ShadowParamVarInfo;   // defined in GSChecks.cpp
+struct InitVarDscInfo;       // defined in register_arg_convention.h
+class FgStack;               // defined in fgbasic.cpp
+class Instrumentor;          // defined in fgprofile.cpp
+class SpanningTreeVisitor;   // defined in fgprofile.cpp
+class CSE_DataFlow;          // defined in OptCSE.cpp
+class OptBoolsDsc;           // defined in optimizer.cpp
+struct RelopImplicationInfo; // defined in redundantbranchopts.cpp
 #ifdef DEBUG
 struct IndentStack;
 #endif
@@ -470,8 +471,6 @@ public:
     unsigned char lvInSsa : 1;       // The variable is in SSA form (set by SsaBuilder)
     unsigned char lvIsCSE : 1;       // Indicates if this LclVar is a CSE variable.
     unsigned char lvHasLdAddrOp : 1; // has ldloca or ldarga opcode on this local.
-    unsigned char lvStackByref : 1;  // This is a compiler temporary of TYP_BYREF that is known to point into our local
-                                     // stack frame.
 
     unsigned char lvHasILStoreOp : 1;         // there is at least one STLOC or STARG on this local
     unsigned char lvHasMultipleILStoreOp : 1; // there is more than one STLOC on this local
@@ -1180,6 +1179,7 @@ enum class SymbolicIntegerValue : int32_t
     UByteMax,
     ShortMax,
     UShortMax,
+    ArrayLenMax,
     IntMax,
     UIntMax,
     LongMax,
@@ -1845,7 +1845,7 @@ public:
     bool verboseSsa; // If true, produce especially verbose dump output in SSA construction.
     bool shouldUseVerboseSsa();
     bool treesBeforeAfterMorph; // If true, print trees before/after morphing (paired by an intra-compilation id:
-    int  morphNum;              // This counts the the trees that have been morphed, allowing us to label each uniquely.
+    int  morphNum;              // This counts the trees that have been morphed, allowing us to label each uniquely.
     bool doExtraSuperPmiQueries;
     void makeExtraStructQueries(CORINFO_CLASS_HANDLE structHandle, int level); // Make queries recursively 'level' deep.
 
@@ -2303,9 +2303,10 @@ protected:
     void gtBlockOpInit(GenTree* result, GenTree* dst, GenTree* srcOrFillVal, bool isVolatile);
 
 public:
+    GenTreeObj* gtNewObjNode(ClassLayout* layout, GenTree* addr);
     GenTreeObj* gtNewObjNode(CORINFO_CLASS_HANDLE structHnd, GenTree* addr);
     void gtSetObjGcInfo(GenTreeObj* objNode);
-    GenTree* gtNewStructVal(CORINFO_CLASS_HANDLE structHnd, GenTree* addr);
+    GenTree* gtNewStructVal(ClassLayout* layout, GenTree* addr);
     GenTree* gtNewBlockVal(GenTree* addr, unsigned size);
 
     GenTree* gtNewCpObjNode(GenTree* dst, GenTree* src, CORINFO_CLASS_HANDLE structHnd, bool isVolatile);
@@ -2522,6 +2523,13 @@ public:
                                  unsigned    simdSize,
                                  bool        isSimdAsHWIntrinsic);
 
+    GenTree* gtNewSimdShuffleNode(var_types   type,
+                                  GenTree*    op1,
+                                  GenTree*    op2,
+                                  CorInfoType simdBaseJitType,
+                                  unsigned    simdSize,
+                                  bool        isSimdAsHWIntrinsic);
+
     GenTree* gtNewSimdSqrtNode(
         var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic);
 
@@ -2604,8 +2612,6 @@ public:
                               GenTree*                assg);
 
     GenTree* gtNewNothingNode();
-
-    GenTree* gtNewArgPlaceHolderNode(var_types type, CORINFO_CLASS_HANDLE clsHnd);
 
     GenTree* gtUnusedValNode(GenTree* expr);
 
@@ -2791,6 +2797,8 @@ public:
     CORINFO_CLASS_HANDLE gtGetFieldClassHandle(CORINFO_FIELD_HANDLE fieldHnd, bool* pIsExact, bool* pIsNonNull);
     // Check if this tree is a gc static base helper call
     bool gtIsStaticGCBaseHelperCall(GenTree* tree);
+
+    GenTree* gtCallGetDefinedRetBufLclAddr(GenTreeCall* call);
 
 //-------------------------------------------------------------------------
 // Functions to display the trees
@@ -3064,7 +3072,7 @@ public:
 
 #ifdef JIT32_GCENCODER
 
-    unsigned lvaLocAllocSPvar; // variable which stores the value of ESP after the the last alloca/localloc
+    unsigned lvaLocAllocSPvar; // variable which stores the value of ESP after the last alloca/localloc
 
 #endif // JIT32_GCENCODER
 
@@ -3506,8 +3514,8 @@ public:
     // Returns underlying type of handles returned by ldtoken instruction
     var_types GetRuntimeHandleUnderlyingType()
     {
-        // RuntimeTypeHandle is backed by raw pointer on CoreRT and by object reference on other runtimes
-        return IsTargetAbi(CORINFO_CORERT_ABI) ? TYP_I_IMPL : TYP_REF;
+        // RuntimeTypeHandle is backed by raw pointer on NativeAOT and by object reference on other runtimes
+        return IsTargetAbi(CORINFO_NATIVEAOT_ABI) ? TYP_I_IMPL : TYP_REF;
     }
 
     void impDevirtualizeCall(GenTreeCall*            call,
@@ -3543,8 +3551,9 @@ protected:
     void impResolveToken(const BYTE* addr, CORINFO_RESOLVED_TOKEN* pResolvedToken, CorInfoTokenKind kind);
 
     void impPushOnStack(GenTree* tree, typeInfo ti);
-    void        impPushNullObjRefOnStack();
-    StackEntry  impPopStack();
+    void       impPushNullObjRefOnStack();
+    StackEntry impPopStack();
+    void impPopStack(unsigned n);
     StackEntry& impStackTop(unsigned n = 0);
     unsigned impStackHeight();
 
@@ -3553,10 +3562,17 @@ protected:
 
     GenTree* impImportLdvirtftn(GenTree* thisPtr, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CALL_INFO* pCallInfo);
 
+    enum class BoxPatterns
+    {
+        None                  = 0,
+        IsByRefLike           = 1,
+        MakeInlineObservation = 2,
+    };
+
     int impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                            const BYTE*             codeAddr,
                            const BYTE*             codeEndp,
-                           bool                    makeInlineObservation = false);
+                           BoxPatterns             opts);
     void impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken);
 
     void impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CALL_INFO* pCallInfo);
@@ -3670,6 +3686,11 @@ protected:
                                           CORINFO_SIG_INFO*     sig,
                                           bool                  mustExpand);
 
+    GenTree* impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
+                                    CORINFO_CLASS_HANDLE  clsHnd,
+                                    CORINFO_METHOD_HANDLE method,
+                                    CORINFO_SIG_INFO*     sig);
+
 #ifdef FEATURE_HW_INTRINSICS
     GenTree* impHWIntrinsic(NamedIntrinsic        intrinsic,
                             CORINFO_CLASS_HANDLE  clsHnd,
@@ -3722,6 +3743,8 @@ protected:
     GenTree* impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
     GenTree* impAvxOrAvx2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
     GenTree* impBMI1OrBMI2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
+
+    GenTree* impSerializeIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
 #endif // TARGET_XARCH
 #endif // FEATURE_HW_INTRINSICS
     GenTree* impArrayAccessIntrinsic(CORINFO_CLASS_HANDLE clsHnd,
@@ -3894,11 +3917,13 @@ private:
                 ((opcode >= CEE_STLOC_0) && (opcode <= CEE_STLOC_3)));
     }
 
-    void impPopCallArgs(unsigned count, CORINFO_SIG_INFO* sig, GenTreeCall* call);
+    void impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call);
 
-    bool impCheckImplicitArgumentCoercion(var_types sigType, var_types nodeType) const;
+public:
+    static bool impCheckImplicitArgumentCoercion(var_types sigType, var_types nodeType);
 
-    void impPopReverseCallArgs(unsigned count, CORINFO_SIG_INFO* sig, GenTreeCall* call, unsigned skipReverseCount = 0);
+private:
+    void impPopReverseCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call, unsigned skipReverseCount);
 
     //---------------- Spilling the importer stack ----------------------------
 
@@ -3949,6 +3974,7 @@ private:
     void impSpillStackEnsure(bool spillLeaves = false);
     void impEvalSideEffects();
     void impSpillSpecialSideEff();
+    void impSpillSideEffect(bool spillGlobEffects, unsigned chkLevel DEBUGARG(const char* reason));
     void impSpillSideEffects(bool spillGlobEffects, unsigned chkLevel DEBUGARG(const char* reason));
     void               impSpillValueClasses();
     void               impSpillEvalStack();
@@ -4103,6 +4129,7 @@ private:
     static LONG jitNestingLevel;
 #endif // DEBUG
 
+    static bool impIsInvariant(const GenTree* tree);
     static bool impIsAddressInLocal(const GenTree* tree, GenTree** lclVarTreeOut = nullptr);
 
     void impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, InlineResult* inlineResult);
@@ -4120,10 +4147,7 @@ private:
                            InlineCandidateInfo**  ppInlineCandidateInfo,
                            InlineResult*          inlineResult);
 
-    void impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
-                                GenTree*      curArgVal,
-                                unsigned      argNum,
-                                InlineResult* inlineResult);
+    void impInlineRecordArgInfo(InlineInfo* pInlineInfo, CallArg* arg, unsigned argNum, InlineResult* inlineResult);
 
     void impInlineInitVars(InlineInfo* pInlineInfo);
 
@@ -4442,8 +4466,6 @@ public:
                                        BasicBlock* canonicalBlock,
                                        flowList*   predEdge);
 
-    GenTree* fgCheckCallArgUpdate(GenTree* parent, GenTree* child, var_types origType);
-
 #if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
     // Sometimes we need to defer updating the BBF_FINALLY_TARGET bit. fgNeedToAddFinallyTargetBits signals
     // when this is necessary.
@@ -4569,7 +4591,8 @@ public:
 
     bool fgTryRemoveNonLocal(GenTree* node, LIR::Range* blockRange);
 
-    void fgRemoveDeadStoreLIR(GenTree* store, BasicBlock* block);
+    bool fgTryRemoveDeadStoreLIR(GenTree* store, GenTreeLclVarCommon* lclNode, BasicBlock* block);
+
     bool fgRemoveDeadStore(GenTree**        pTree,
                            LclVarDsc*       varDsc,
                            VARSET_VALARG_TP life,
@@ -4684,40 +4707,25 @@ public:
     // tree node).
     void fgValueNumber();
 
-    // Computes new GcHeap VN via the assignment H[elemTypeEq][arrVN][inx][fldSeq] = rhsVN.
-    // Assumes that "elemTypeEq" is the (equivalence class rep) of the array element type.
-    // The 'indType' is the indirection type of the lhs of the assignment and will typically
-    // match the element type of the array or fldSeq.  When this type doesn't match
-    // or if the fldSeq is 'NotAField' we invalidate the array contents H[elemTypeEq][arrVN]
-    //
-    ValueNum fgValueNumberArrIndexAssign(CORINFO_CLASS_HANDLE elemTypeEq,
-                                         ValueNum             arrVN,
-                                         ValueNum             inxVN,
-                                         FieldSeqNode*        fldSeq,
-                                         ValueNum             rhsVN,
-                                         var_types            indType);
+    void fgValueNumberLocalStore(GenTree*             storeNode,
+                                 GenTreeLclVarCommon* lclDefNode,
+                                 ssize_t              offset,
+                                 unsigned             storeSize,
+                                 ValueNumPair         value,
+                                 bool                 normalize = true);
 
-    // Requires that "tree" is a GT_IND marked as an array index, and that its address argument
-    // has been parsed to yield the other input arguments.  If evaluation of the address
-    // can raise exceptions, those should be captured in the exception set "addrXvnp".
-    // Assumes that "elemTypeEq" is the (equivalence class rep) of the array element type.
-    // Marks "tree" with the VN for H[elemTypeEq][arrVN][inx][fldSeq] (for the liberal VN; a new unique
-    // VN for the conservative VN.)  Also marks the tree's argument as the address of an array element.
-    // The type tree->TypeGet() will typically match the element type of the array or fldSeq.
-    // When this type doesn't match or if the fldSeq is 'NotAField' we return a new unique VN
-    //
-    ValueNum fgValueNumberArrIndexVal(GenTree*             tree,
-                                      CORINFO_CLASS_HANDLE elemTypeEq,
-                                      ValueNum             arrVN,
-                                      ValueNum             inxVN,
-                                      ValueNumPair         addrXvnp,
-                                      FieldSeqNode*        fldSeq);
+    void fgValueNumberArrayElemLoad(GenTree* loadTree, VNFuncApp* addrFunc);
 
-    // Requires "funcApp" to be a VNF_PtrToArrElem, and "addrXvnp" to represent the exception set thrown
-    // by evaluating the array index expression "tree".  Returns the value number resulting from
-    // dereferencing the array in the current GcHeap state.  If "tree" is non-null, it must be the
-    // "GT_IND" that does the dereference, and it is given the returned value number.
-    ValueNum fgValueNumberArrIndexVal(GenTree* tree, VNFuncApp* funcApp, ValueNumPair addrXvnp);
+    void fgValueNumberArrayElemStore(GenTree* storeNode, VNFuncApp* addrFunc, unsigned storeSize, ValueNum value);
+
+    void fgValueNumberFieldLoad(GenTree* loadTree, GenTree* baseAddr, FieldSeqNode* fieldSeq, ssize_t offset);
+
+    void fgValueNumberFieldStore(GenTree*      storeNode,
+                                 GenTree*      baseAddr,
+                                 FieldSeqNode* fieldSeq,
+                                 ssize_t       offset,
+                                 unsigned      storeSize,
+                                 ValueNum      value);
 
     // Compute the value number for a byref-exposed load of the given type via the given pointerVN.
     ValueNum fgValueNumberByrefExposedLoad(var_types type, ValueNum pointerVN);
@@ -4772,8 +4780,6 @@ public:
 
     // Does value-numbering for a block assignment.
     void fgValueNumberBlockAssignment(GenTree* tree);
-
-    bool fgValueNumberBlockAssignmentTypeCheck(LclVarDsc* dstVarDsc, FieldSeqNode* dstFldSeq, GenTree* src);
 
     // Does value-numbering for a cast tree.
     void fgValueNumberCastTree(GenTree* tree);
@@ -4898,7 +4904,7 @@ public:
         SPK_ByReference
     }; // The struct is passed/returned by reference to a copy/buffer.
 
-    // Get the "primitive" type that is is used when we are given a struct of size 'structSize'.
+    // Get the "primitive" type that is used when we are given a struct of size 'structSize'.
     // For pointer sized structs the 'clsHnd' is used to determine if the struct contains GC ref.
     // A "primitive" type is one of the scalar types: byte, short, int, long, ref, float, double
     // If we can't or shouldn't use a "primitive" type then TYP_UNKNOWN is returned.
@@ -4959,7 +4965,7 @@ protected:
 
     void fgComputeReachability(); // Perform flow graph node reachability analysis.
 
-    void fgRemoveDeadBlocks(); // Identify and remove dead blocks.
+    bool fgRemoveDeadBlocks(); // Identify and remove dead blocks.
 
     BasicBlock* fgIntersectDom(BasicBlock* a, BasicBlock* b); // Intersect two immediate dominator sets.
 
@@ -5312,7 +5318,6 @@ public:
         fgWalkPostFn* wtpoVisitorFn;
         void*         pCallbackData; // user-provided data
         GenTree*      parent;        // parent of current node, provided to callback
-        GenTreeStack* parentStack;   // stack of parent nodes, if asked for
         bool          wtprLclsOnly;  // whether to only visit lclvar nodes
 #ifdef DEBUG
         bool printModified; // callback can use this
@@ -5436,6 +5441,7 @@ public:
     UINT32                                 fgPgoBlockCounts;
     UINT32                                 fgPgoEdgeCounts;
     UINT32                                 fgPgoClassProfiles;
+    UINT32                                 fgPgoMethodProfiles;
     unsigned                               fgPgoInlineePgo;
     unsigned                               fgPgoInlineeNoPgo;
     unsigned                               fgPgoInlineeNoPgoSingleBlock;
@@ -5487,9 +5493,8 @@ private:
     //                  Create a new temporary variable to hold the result of *ppTree,
     //                  and transform the graph accordingly.
     GenTree* fgInsertCommaFormTemp(GenTree** ppTree, CORINFO_CLASS_HANDLE structType = nullptr);
-    GenTree* fgMakeMultiUse(GenTree** ppTree);
+    GenTree* fgMakeMultiUse(GenTree** ppTree, CORINFO_CLASS_HANDLE structType = nullptr);
 
-private:
     //                  Recognize a bitwise rotation pattern and convert into a GT_ROL or a GT_ROR node.
     GenTree* fgRecognizeAndMorphBitwiseRotation(GenTree* tree);
     bool fgOperIsBitwiseRotationRoot(genTreeOps oper);
@@ -5501,15 +5506,11 @@ private:
 #endif
 
     //-------- Determine the order in which the trees will be evaluated -------
-
-    unsigned fgTreeSeqNum;
-    GenTree* fgTreeSeqLst;
-    GenTree* fgTreeSeqBeg;
-
-    GenTree* fgSetTreeSeq(GenTree* tree, GenTree* prev = nullptr, bool isLIR = false);
-    void fgSetTreeSeqHelper(GenTree* tree, bool isLIR);
-    void fgSetTreeSeqFinish(GenTree* tree, bool isLIR);
+public:
     void fgSetStmtSeq(Statement* stmt);
+
+private:
+    GenTree* fgSetTreeSeq(GenTree* tree, bool isLIR = false);
     void fgSetBlockOrder(BasicBlock* block);
 
     //------------------------- Morphing --------------------------------------
@@ -5699,8 +5700,6 @@ private:
     GenTree* fgMorphSmpOpOptional(GenTreeOp* tree);
     GenTree* fgMorphMultiOp(GenTreeMultiOp* multiOp);
     GenTree* fgMorphConst(GenTree* tree);
-
-    bool fgMorphCanUseLclFldForCopy(unsigned lclNum1, unsigned lclNum2);
 
     GenTreeLclVar* fgMorphTryFoldObjAsLclVar(GenTreeObj* obj, bool destroyNodes = true);
     GenTreeOp* fgMorphCommutative(GenTreeOp* tree);
@@ -6123,6 +6122,10 @@ public:
         GenTree*   lpTestTree;         // pointer to the node containing the loop test
         genTreeOps lpTestOper() const; // the type of the comparison between the iterator and the limit (GT_LE, GT_GE,
                                        // etc.)
+
+        bool lpIsIncreasingLoop() const; // if the loop iterator increases from low to high value.
+        bool lpIsDecreasingLoop() const; // if the loop iterator decreases from high to low value.
+
         void VERIFY_lpTestTree() const;
 
         bool     lpIsReversed() const; // true if the iterator node is the second operand in the loop condition
@@ -6737,7 +6740,7 @@ public:
 #define OMF_HAS_EXPRUNTIMELOOKUP 0x00000080 // Method contains a runtime lookup to an expandable dictionary.
 #define OMF_HAS_PATCHPOINT 0x00000100       // Method contains patchpoints
 #define OMF_NEEDS_GCPOLLS 0x00000200        // Method needs GC polls
-#define OMF_HAS_FROZEN_STRING 0x00000400    // Method has a frozen string (REF constant int), currently only on CoreRT.
+#define OMF_HAS_FROZEN_STRING 0x00000400 // Method has a frozen string (REF constant int), currently only on NativeAOT.
 #define OMF_HAS_PARTIAL_COMPILATION_PATCHPOINT 0x00000800 // Method contains partial compilation patchpoints
 #define OMF_HAS_TAILCALL_SUCCESSOR 0x00001000             // Method has potential tail call in a non BBJ_RETURN block
 
@@ -6895,6 +6898,7 @@ public:
     bool optRedundantBranch(BasicBlock* const block);
     bool optJumpThread(BasicBlock* const block, BasicBlock* const domBlock, bool domIsSameRelop);
     bool optReachable(BasicBlock* const fromBlock, BasicBlock* const toBlock, BasicBlock* const excludedBlock);
+    void optRelopImpliesRelop(RelopImplicationInfo* rii);
 
     /**************************************************************************
      *               Value/Assertion propagation
@@ -7491,13 +7495,13 @@ public:
     class VirtualStubParamInfo
     {
     public:
-        VirtualStubParamInfo(bool isCoreRTABI)
+        VirtualStubParamInfo(bool isNativeAOT)
         {
 #if defined(TARGET_X86)
             reg     = REG_EAX;
             regMask = RBM_EAX;
 #elif defined(TARGET_AMD64)
-            if (isCoreRTABI)
+            if (isNativeAOT)
             {
                 reg     = REG_R10;
                 regMask = RBM_R10;
@@ -7508,7 +7512,7 @@ public:
                 regMask = RBM_R11;
             }
 #elif defined(TARGET_ARM)
-            if (isCoreRTABI)
+            if (isNativeAOT)
             {
                 reg     = REG_R12;
                 regMask = RBM_R12;
@@ -7554,7 +7558,7 @@ public:
     bool generateCFIUnwindCodes()
     {
 #if defined(FEATURE_CFI_SUPPORT)
-        return TargetOS::IsUnix && IsTargetAbi(CORINFO_CORERT_ABI);
+        return TargetOS::IsUnix && IsTargetAbi(CORINFO_NATIVEAOT_ABI);
 #else
         return false;
 #endif
@@ -7605,6 +7609,8 @@ public:
 #endif // DEBUG
 
     // ICorJitInfo wrappers
+
+    void eeAllocMem(AllocMemArgs* args);
 
     void eeReserveUnwindInfo(bool isFunclet, bool isColdCode, ULONG unwindSize);
 
@@ -8256,6 +8262,27 @@ private:
         return NO_CLASS_HANDLE;
     }
 
+#if defined(FEATURE_HW_INTRINSICS)
+    CORINFO_CLASS_HANDLE gtGetStructHandleForSimdOrHW(var_types   simdType,
+                                                      CorInfoType simdBaseJitType,
+                                                      bool        isSimdAsHWIntrinsic = false)
+    {
+        CORINFO_CLASS_HANDLE clsHnd = NO_CLASS_HANDLE;
+
+        if (isSimdAsHWIntrinsic)
+        {
+            clsHnd = gtGetStructHandleForSIMD(simdType, simdBaseJitType);
+        }
+        else
+        {
+            clsHnd = gtGetStructHandleForHWSIMD(simdType, simdBaseJitType);
+        }
+
+        assert(clsHnd != NO_CLASS_HANDLE);
+        return clsHnd;
+    }
+#endif // FEATURE_HW_INTRINSICS
+
     // Returns true if this is a SIMD type that should be considered an opaque
     // vector type (i.e. do not analyze or promote its fields).
     // Note that all but the fixed vector types are opaque, even though they may
@@ -8469,10 +8496,10 @@ private:
         return sizeBytes;
     }
 
-    // Get the the number of elements of baseType of SIMD vector given by its size and baseType
+    // Get the number of elements of baseType of SIMD vector given by its size and baseType
     static int getSIMDVectorLength(unsigned simdSize, var_types baseType);
 
-    // Get the the number of elements of baseType of SIMD vector given by its type handle
+    // Get the number of elements of baseType of SIMD vector given by its type handle
     int getSIMDVectorLength(CORINFO_CLASS_HANDLE typeHnd);
 
     // Get preferred alignment of SIMD type.
@@ -8728,19 +8755,19 @@ private:
     }
 
     // Ensure that code will not execute if an instruction set is usable. Call only
-    // if the instruction set has previously reported as unusable, but when
-    // that that status has not yet been recorded to the AOT compiler
+    // if the instruction set has previously reported as unusable, but the status
+    // has not yet been recorded to the AOT compiler.
     void compVerifyInstructionSetUnusable(CORINFO_InstructionSet isa)
     {
-        // use compExactlyDependsOn to capture are record the use of the isa
+        // use compExactlyDependsOn to capture are record the use of the ISA.
         bool isaUsable = compExactlyDependsOn(isa);
         // Assert that the is unusable. If true, this function should never be called.
         assert(!isaUsable);
     }
 
     // Answer the question: Is a particular ISA allowed to be used implicitly by optimizations?
-    // The result of this api call will match the target machine if the result is true
-    // If the result is false, then the target machine may have support for the instruction
+    // The result of this api call will match the target machine if the result is true.
+    // If the result is false, then the target machine may have support for the instruction.
     bool compOpportunisticallyDependsOn(CORINFO_InstructionSet isa) const
     {
         if ((opts.compSupportsISA & (1ULL << isa)) != 0)
@@ -10410,11 +10437,11 @@ public:
     // "op1" or its components is augmented by appending "fieldSeq".  In practice, if "op1" is a GT_LCL_FLD, it has
     // a field sequence as a member; otherwise, it may be the addition of an a byref and a constant, where the const
     // has a field sequence -- in this case "fieldSeq" is appended to that of the constant; otherwise, we
-    // record the the field sequence using the ZeroOffsetFieldMap described above.
+    // record the field sequence using the ZeroOffsetFieldMap described above.
     //
     // One exception above is that "op1" is a node of type "TYP_REF" where "op1" is a GT_LCL_VAR.
     // This happens when System.Object vtable pointer is a regular field at offset 0 in System.Private.CoreLib in
-    // CoreRT. Such case is handled same as the default case.
+    // NativeAOT. Such case is handled same as the default case.
     void fgAddFieldSeqForZeroOffset(GenTree* op1, FieldSeqNode* fieldSeq);
 
     NodeToUnsignedMap* m_memorySsaMap[MemoryKindCount];
@@ -10649,9 +10676,7 @@ public:
 #endif // !FEATURE_EH_FUNCLETS
             case GT_PHI_ARG:
             case GT_JMPTABLE:
-            case GT_CLS_VAR:
             case GT_CLS_VAR_ADDR:
-            case GT_ARGPLACE:
             case GT_PHYSREG:
             case GT_EMITNOP:
             case GT_PINVOKE_PROLOG:
@@ -10696,7 +10721,6 @@ public:
             case GT_NULLCHECK:
             case GT_PUTARG_REG:
             case GT_PUTARG_STK:
-            case GT_PUTARG_TYPE:
             case GT_RETURNTRAP:
             case GT_NOP:
             case GT_FIELD:
@@ -10838,7 +10862,7 @@ public:
             {
                 GenTreeCall* const call = node->AsCall();
 
-                for (CallArg& arg : call->gtArgs.Args())
+                for (CallArg& arg : call->gtArgs.EarlyArgs())
                 {
                     result = WalkTree(&arg.EarlyNodeRef(), call);
                     if (result == fgWalkResult::WALK_ABORT)
@@ -10974,14 +10998,14 @@ public:
     }
 };
 
-template <bool computeStack, bool doPreOrder, bool doPostOrder, bool doLclVarsOnly, bool useExecutionOrder>
+template <bool doPreOrder, bool doPostOrder, bool doLclVarsOnly, bool useExecutionOrder>
 class GenericTreeWalker final
-    : public GenTreeVisitor<GenericTreeWalker<computeStack, doPreOrder, doPostOrder, doLclVarsOnly, useExecutionOrder>>
+    : public GenTreeVisitor<GenericTreeWalker<doPreOrder, doPostOrder, doLclVarsOnly, useExecutionOrder>>
 {
 public:
     enum
     {
-        ComputeStack      = computeStack,
+        ComputeStack      = false,
         DoPreOrder        = doPreOrder,
         DoPostOrder       = doPostOrder,
         DoLclVarsOnly     = doLclVarsOnly,
@@ -10993,16 +11017,11 @@ private:
 
 public:
     GenericTreeWalker(Compiler::fgWalkData* walkData)
-        : GenTreeVisitor<GenericTreeWalker<computeStack, doPreOrder, doPostOrder, doLclVarsOnly, useExecutionOrder>>(
+        : GenTreeVisitor<GenericTreeWalker<doPreOrder, doPostOrder, doLclVarsOnly, useExecutionOrder>>(
               walkData->compiler)
         , m_walkData(walkData)
     {
         assert(walkData != nullptr);
-
-        if (computeStack)
-        {
-            walkData->parentStack = &this->m_ancestors;
-        }
     }
 
     Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)

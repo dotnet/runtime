@@ -93,7 +93,6 @@ namespace Internal.Reflection.Core.Execution
         //==============================================================================================
         // Other
         //==============================================================================================
-        public abstract bool IsCOMObject(Type type);
         public abstract FieldAccessor CreateLiteralFieldAccessor(object value, RuntimeTypeHandle fieldTypeHandle);
         public abstract EnumInfo GetEnumInfo(RuntimeTypeHandle typeHandle);
 

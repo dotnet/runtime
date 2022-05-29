@@ -71,11 +71,12 @@ namespace System.Security.Cryptography
         }
 
         public override byte[] DeriveKeyFromHash(
-            ECDiffieHellmanPublicKey otherPartyPublicKey!!,
+            ECDiffieHellmanPublicKey otherPartyPublicKey,
             HashAlgorithmName hashAlgorithm,
             byte[]? secretPrepend,
             byte[]? secretAppend)
         {
+            ArgumentNullException.ThrowIfNull(otherPartyPublicKey);
             ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
 
             using (SafeNCryptSecretHandle secretAgreement = DeriveSecretAgreementHandle(otherPartyPublicKey))
@@ -90,12 +91,13 @@ namespace System.Security.Cryptography
         }
 
         public override byte[] DeriveKeyFromHmac(
-            ECDiffieHellmanPublicKey otherPartyPublicKey!!,
+            ECDiffieHellmanPublicKey otherPartyPublicKey,
             HashAlgorithmName hashAlgorithm,
             byte[]? hmacKey,
             byte[]? secretPrepend,
             byte[]? secretAppend)
         {
+            ArgumentNullException.ThrowIfNull(otherPartyPublicKey);
             ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
 
             using (SafeNCryptSecretHandle secretAgreement = DeriveSecretAgreementHandle(otherPartyPublicKey))
@@ -114,8 +116,12 @@ namespace System.Security.Cryptography
             }
         }
 
-        public override byte[] DeriveKeyTls(ECDiffieHellmanPublicKey otherPartyPublicKey!!, byte[] prfLabel!!, byte[] prfSeed!!)
+        public override byte[] DeriveKeyTls(ECDiffieHellmanPublicKey otherPartyPublicKey, byte[] prfLabel, byte[] prfSeed)
         {
+            ArgumentNullException.ThrowIfNull(otherPartyPublicKey);
+            ArgumentNullException.ThrowIfNull(prfLabel);
+            ArgumentNullException.ThrowIfNull(prfSeed);
+
             using (SafeNCryptSecretHandle secretAgreement = DeriveSecretAgreementHandle(otherPartyPublicKey))
             {
                 return Interop.NCrypt.DeriveKeyMaterialTls(

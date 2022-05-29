@@ -80,11 +80,14 @@ namespace System.Web
 
         public static NameValueCollection ParseQueryString(string query) => ParseQueryString(query, Encoding.UTF8);
 
-        public static NameValueCollection ParseQueryString(string query!!, Encoding encoding!!)
+        public static NameValueCollection ParseQueryString(string query, Encoding encoding)
         {
+            ArgumentNullException.ThrowIfNull(query);
+            ArgumentNullException.ThrowIfNull(encoding);
+
             HttpQSCollection result = new HttpQSCollection();
             int queryLength = query.Length;
-            int namePos = queryLength > 0 && query[0] == '?' ? 1 : 0;
+            int namePos = query.StartsWith('?') ? 1 : 0;
             if (queryLength == namePos)
             {
                 return result;

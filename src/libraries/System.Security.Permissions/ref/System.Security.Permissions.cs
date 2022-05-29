@@ -1407,10 +1407,10 @@ namespace System.Security.Permissions
         public ReflectionPermissionAttribute(System.Security.Permissions.SecurityAction action) : base (default(System.Security.Permissions.SecurityAction)) { }
         public System.Security.Permissions.ReflectionPermissionFlag Flags { get { throw null; } set { } }
         public bool MemberAccess { get { throw null; } set { } }
-        [System.ObsoleteAttribute]
+        [System.ObsoleteAttribute("ReflectionPermissionAttribute.ReflectionEmit has been deprecated and is not supported.")]
         public bool ReflectionEmit { get { throw null; } set { } }
         public bool RestrictedMemberAccess { get { throw null; } set { } }
-        [System.ObsoleteAttribute]
+        [System.ObsoleteAttribute("ReflectionPermissionAttribute.TypeInformation has been deprecated and is not supported.")]
         public bool TypeInformation { get { throw null; } set { } }
         public override System.Security.IPermission CreatePermission() { throw null; }
     }
@@ -1421,12 +1421,12 @@ namespace System.Security.Permissions
     public enum ReflectionPermissionFlag
     {
         NoFlags = 0,
-        [System.ObsoleteAttribute]
+        [System.ObsoleteAttribute("ReflectionPermissionFlag.TypeInformation has been deprecated and is not supported.")]
         TypeInformation = 1,
         MemberAccess = 2,
-        [System.ObsoleteAttribute]
+        [System.ObsoleteAttribute("ReflectionPermissionFlag.ReflectionEmit  has been deprecated and is not supported.")]
         ReflectionEmit = 4,
-        [System.ObsoleteAttribute]
+        [System.ObsoleteAttribute("ReflectionPermissionFlag.AllFlags has been deprecated. Use PermissionState.Unrestricted to get full access.")]
         AllFlags = 7,
         RestrictedMemberAccess = 8,
     }
@@ -1469,7 +1469,7 @@ namespace System.Security.Permissions
     public sealed partial class RegistryPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
     {
         public RegistryPermissionAttribute(System.Security.Permissions.SecurityAction action) : base (default(System.Security.Permissions.SecurityAction)) { }
-        [System.ObsoleteAttribute]
+        [System.ObsoleteAttribute("RegistryPermissionAttribute.Add has been deprecated. Use ViewAndModify instead.")]
         public string All { get { throw null; } set { } }
         public string ChangeAccessControl { get { throw null; } set { } }
         public string Create { get { throw null; } set { } }

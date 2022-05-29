@@ -34,7 +34,7 @@ namespace Microsoft.Test.ModuleCore
         public class Tokens
         {
             public string Equal = "=";
-            public string Seperator = ";";
+            public string Separator = ";";
             public string SingleQuote = "'";
             public string DoubleQuote = "\"";
         }
@@ -71,7 +71,7 @@ namespace Microsoft.Test.ModuleCore
                             break;
 
                         case PARSE.Keyword:
-                            if (tokens.Seperator.IndexOf(ch) >= 0)
+                            if (tokens.Separator.IndexOf(ch) >= 0)
                             {
                                 state = PARSE.Initial;
                             }
@@ -98,7 +98,7 @@ namespace Microsoft.Test.ModuleCore
                             {
                                 state = PARSE.DoubleBegin;
                             }
-                            else if (tokens.Seperator.IndexOf(ch) >= 0)
+                            else if (tokens.Separator.IndexOf(ch) >= 0)
                             {
                                 keywords.Update(key, string.Empty);
                                 state = PARSE.Initial;
@@ -111,7 +111,7 @@ namespace Microsoft.Test.ModuleCore
                             break;
 
                         case PARSE.Value:
-                            if (tokens.Seperator.IndexOf(ch) >= 0)
+                            if (tokens.Separator.IndexOf(ch) >= 0)
                             {
                                 keywords.Update(key, (builder.ToString()).Trim());
                                 state = PARSE.Initial;
@@ -165,7 +165,7 @@ namespace Microsoft.Test.ModuleCore
                             break;
 
                         case PARSE.End:
-                            if (tokens.Seperator.IndexOf(ch) >= 0)
+                            if (tokens.Separator.IndexOf(ch) >= 0)
                             {
                                 state = PARSE.Initial;
                             }

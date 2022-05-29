@@ -8,7 +8,7 @@ namespace System.Xml.Xsl.XsltOld
     using System.Xml;
     using System.Xml.XPath;
 
-    internal class NewInstructionAction : ContainerAction
+    internal sealed class NewInstructionAction : ContainerAction
     {
         private string? _name;
         private string? _parent;

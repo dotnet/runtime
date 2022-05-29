@@ -10,10 +10,8 @@ namespace System.Runtime.CompilerServices
     {
         public static void InitializeArray(Array array, RuntimeFieldHandle fldHandle)
         {
-            if (array == null)
-                throw new ArgumentNullException(nameof(array));
-            if (fldHandle.Value == IntPtr.Zero)
-                throw new ArgumentNullException(nameof(fldHandle));
+            ArgumentNullException.ThrowIfNull(array);
+            ArgumentNullException.ThrowIfNull(fldHandle.Value, nameof(fldHandle));
 
             InitializeArray(array, fldHandle.Value);
         }
@@ -29,6 +27,7 @@ namespace System.Runtime.CompilerServices
             }
         }
 
+        [Obsolete("OffsetToStringData has been deprecated. Use string.GetPinnableReference() instead.")]
         public static int OffsetToStringData
         {
             [Intrinsic]
@@ -166,10 +165,7 @@ namespace System.Runtime.CompilerServices
         {
             if (type is not RuntimeType rt)
             {
-                if (type is null)
-                {
-                    throw new ArgumentNullException(nameof(type), SR.ArgumentNull_Type);
-                }
+                ArgumentNullException.ThrowIfNull(type);
 
                 throw new SerializationException(SR.Format(SR.Serialization_InvalidType, type));
             }

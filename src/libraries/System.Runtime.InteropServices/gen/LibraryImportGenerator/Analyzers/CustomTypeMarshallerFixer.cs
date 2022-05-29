@@ -18,13 +18,13 @@ using Microsoft.CodeAnalysis.Text;
 
 namespace Microsoft.Interop.Analyzers
 {
-    [ExportCodeFixProvider(LanguageNames.CSharp, LanguageNames.VisualBasic), Shared]
+    [ExportCodeFixProvider(LanguageNames.CSharp), Shared]
     public class CustomTypeMarshallerFixer : CodeFixProvider
     {
         private const string AddMissingCustomTypeMarshallerMembersKey = nameof(AddMissingCustomTypeMarshallerMembersKey);
         private const string AddMissingCustomTypeMarshallerFeaturesKey = nameof(AddMissingCustomTypeMarshallerFeaturesKey);
 
-        private class CustomFixAllProvider : DocumentBasedFixAllProvider
+        private sealed class CustomFixAllProvider : DocumentBasedFixAllProvider
         {
             protected override async Task<Document> FixAllAsync(FixAllContext fixAllContext, Document document, ImmutableArray<Diagnostic> diagnostics)
             {
@@ -99,7 +99,7 @@ namespace Microsoft.Interop.Analyzers
             ImmutableArray.Create(
                 AnalyzerDiagnostics.Ids.CustomMarshallerTypeMustHaveRequiredShape,
                 AnalyzerDiagnostics.Ids.MissingAllocatingMarshallingFallback,
-                AnalyzerDiagnostics.Ids.ProvidedMethodsNotSpecifiedInShape);
+                AnalyzerDiagnostics.Ids.ProvidedMethodsNotSpecifiedInFeatures);
 
         public override async Task RegisterCodeFixesAsync(CodeFixContext context)
         {
@@ -158,7 +158,7 @@ namespace Microsoft.Interop.Analyzers
             CustomTypeMarshallerFeatures featuresToAdd = CustomTypeMarshallerFeatures.None;
             foreach (var diagnostic in diagnostics)
             {
-                if (diagnostic.Id == AnalyzerDiagnostics.Ids.ProvidedMethodsNotSpecifiedInShape)
+                if (diagnostic.Id == AnalyzerDiagnostics.Ids.ProvidedMethodsNotSpecifiedInFeatures)
                 {
                     featuresToAddDiagnostics.Add(diagnostic);
                     if (diagnostic.Properties.TryGetValue(CustomTypeMarshallerAnalyzer.MissingFeaturesKey, out string missingFeatures)

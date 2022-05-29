@@ -10,6 +10,7 @@
 **
 ===========================================================*/
 
+using System.Buffers.Binary;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
@@ -47,19 +48,19 @@ namespace System
         public const float NaN = (float)0.0 / (float)0.0;
 
         /// <summary>Represents the additive identity (0).</summary>
-        private const float AdditiveIdentity = 0.0f;
+        internal const float AdditiveIdentity = 0.0f;
 
         /// <summary>Represents the multiplicative identity (1).</summary>
-        private const float MultiplicativeIdentity = 1.0f;
+        internal const float MultiplicativeIdentity = 1.0f;
 
         /// <summary>Represents the number one (1).</summary>
-        private const float One = 1.0f;
+        internal const float One = 1.0f;
 
         /// <summary>Represents the number zero (0).</summary>
-        private const float Zero = 0.0f;
+        internal const float Zero = 0.0f;
 
         /// <summary>Represents the number negative one (-1).</summary>
-        private const float NegativeOne = -1.0f;
+        internal const float NegativeOne = -1.0f;
 
         /// <summary>Represents the number negative zero (-0).</summary>
         public const float NegativeZero = -0.0f;
@@ -82,21 +83,71 @@ namespace System
 
         internal const uint SignMask = 0x8000_0000;
         internal const int SignShift = 31;
+        internal const byte ShiftedSignMask = (byte)(SignMask >> SignShift);
 
-        internal const uint ExponentMask = 0x7F80_0000;
-        internal const int ExponentShift = 23;
-        internal const uint ShiftedExponentMask = ExponentMask >> ExponentShift;
+        internal const uint BiasedExponentMask = 0x7F80_0000;
+        internal const int BiasedExponentShift = 23;
+        internal const byte ShiftedBiasedExponentMask = (byte)(BiasedExponentMask >> BiasedExponentShift);
 
-        internal const uint SignificandMask = 0x007F_FFFF;
+        internal const uint TrailingSignificandMask = 0x007F_FFFF;
 
         internal const byte MinSign = 0;
         internal const byte MaxSign = 1;
 
-        internal const byte MinExponent = 0x00;
-        internal const byte MaxExponent = 0xFF;
+        internal const byte MinBiasedExponent = 0x00;
+        internal const byte MaxBiasedExponent = 0xFF;
 
-        internal const uint MinSignificand = 0x0000_0000;
-        internal const uint MaxSignificand = 0x007F_FFFF;
+        internal const byte ExponentBias = 127;
+
+        internal const sbyte MinExponent = -126;
+        internal const sbyte MaxExponent = +127;
+
+        internal const uint MinTrailingSignificand = 0x0000_0000;
+        internal const uint MaxTrailingSignificand = 0x007F_FFFF;
+
+        internal byte BiasedExponent
+        {
+            get
+            {
+                uint bits = BitConverter.SingleToUInt32Bits(m_value);
+                return ExtractBiasedExponentFromBits(bits);
+            }
+        }
+
+        internal sbyte Exponent
+        {
+            get
+            {
+                return (sbyte)(BiasedExponent - ExponentBias);
+            }
+        }
+
+        internal uint Significand
+        {
+            get
+            {
+                return TrailingSignificand | ((BiasedExponent != 0) ? (1U << BiasedExponentShift) : 0U);
+            }
+        }
+
+        internal uint TrailingSignificand
+        {
+            get
+            {
+                uint bits = BitConverter.SingleToUInt32Bits(m_value);
+                return ExtractTrailingSignificandFromBits(bits);
+            }
+        }
+
+        internal static byte ExtractBiasedExponentFromBits(uint bits)
+        {
+            return (byte)((bits >> BiasedExponentShift) & ShiftedBiasedExponentMask);
+        }
+
+        internal static uint ExtractTrailingSignificandFromBits(uint bits)
+        {
+            return bits & TrailingSignificandMask;
+        }
 
         /// <summary>Determines whether the specified value is finite (zero, subnormal, or normal).</summary>
         [NonVersionable]
@@ -124,9 +175,9 @@ namespace System
             // A NaN will never equal itself so this is an
             // easy and efficient way to check for NaN.
 
-            #pragma warning disable CS1718
+#pragma warning disable CS1718
             return f != f;
-            #pragma warning restore CS1718
+#pragma warning restore CS1718
         }
 
         /// <summary>Determines whether the specified value is negative.</summary>
@@ -171,16 +222,6 @@ namespace System
             int bits = BitConverter.SingleToInt32Bits(f);
             bits &= 0x7FFFFFFF;
             return (bits < 0x7F800000) && (bits != 0) && ((bits & 0x7F800000) == 0);
-        }
-
-        internal static int ExtractExponentFromBits(uint bits)
-        {
-            return (int)(bits >> ExponentShift) & (int)ShiftedExponentMask;
-        }
-
-        internal static uint ExtractSignificandFromBits(uint bits)
-        {
-            return bits & SignificandMask;
         }
 
         // Compares this object to another object, returning an integer that
@@ -505,12 +546,12 @@ namespace System
         {
             uint bits = BitConverter.SingleToUInt32Bits(value);
 
-            uint exponent = (bits >> ExponentShift) & ShiftedExponentMask;
-            uint significand = bits & SignificandMask;
+            byte biasedExponent = ExtractBiasedExponentFromBits(bits);
+            uint trailingSignificand = ExtractTrailingSignificandFromBits(bits);
 
             return (value > 0)
-                && (exponent != MinExponent) && (exponent != MaxExponent)
-                && (significand == MinSignificand);
+                && (biasedExponent != MinBiasedExponent) && (biasedExponent != MaxBiasedExponent)
+                && (trailingSignificand == MinTrailingSignificand);
         }
 
         /// <inheritdoc cref="IBinaryNumber{TSelf}.Log2(TSelf)" />
@@ -575,20 +616,20 @@ namespace System
         /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp" />
         public static float Exp(float x) => MathF.Exp(x);
 
-        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.ExpM1(TSelf)" />
-        // public static float ExpM1(float x) => MathF.ExpM1(x);
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.ExpM1(TSelf)" />
+        public static float ExpM1(float x) => MathF.Exp(x) - 1;
 
-        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2(TSelf)" />
-        // public static float Exp2(float x) => MathF.Exp2(x);
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2(TSelf)" />
+        public static float Exp2(float x) => MathF.Pow(2, x);
 
-        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2M1(TSelf)" />
-        // public static float Exp2M1(float x) => MathF.Exp2M1(x);
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2M1(TSelf)" />
+        public static float Exp2M1(float x) => MathF.Pow(2, x) - 1;
 
-        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10(TSelf)" />
-        // public static float Exp10(float x) => MathF.Exp10(x);
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10(TSelf)" />
+        public static float Exp10(float x) => MathF.Pow(10, x);
 
-        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10M1(TSelf)" />
-        // public static float Exp10M1(float x) => MathF.Exp10M1(x);
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10M1(TSelf)" />
+        public static float Exp10M1(float x) => MathF.Pow(10, x) - 1;
 
         //
         // IFloatingPoint
@@ -614,6 +655,114 @@ namespace System
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Truncate(TSelf)" />
         public static float Truncate(float x) => MathF.Truncate(x);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetExponentByteCount()" />
+        int IFloatingPoint<float>.GetExponentByteCount() => sizeof(sbyte);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetExponentShortestBitLength()" />
+        int IFloatingPoint<float>.GetExponentShortestBitLength()
+        {
+            sbyte exponent = Exponent;
+
+            if (exponent >= 0)
+            {
+                return (sizeof(sbyte) * 8) - sbyte.LeadingZeroCount(exponent);
+            }
+            else
+            {
+                return (sizeof(sbyte) * 8) + 1 - sbyte.LeadingZeroCount((sbyte)(~exponent));
+            }
+        }
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandByteCount()" />
+        int IFloatingPoint<float>.GetSignificandByteCount() => sizeof(uint);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandBitLength()" />
+        int IFloatingPoint<float>.GetSignificandBitLength() => 24;
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteExponentBigEndian(Span{byte}, out int)" />
+        bool IFloatingPoint<float>.TryWriteExponentBigEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length >= sizeof(sbyte))
+            {
+                sbyte exponent = Exponent;
+                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), exponent);
+
+                bytesWritten = sizeof(sbyte);
+                return true;
+            }
+            else
+            {
+                bytesWritten = 0;
+                return false;
+            }
+        }
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteExponentLittleEndian(Span{byte}, out int)" />
+        bool IFloatingPoint<float>.TryWriteExponentLittleEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length >= sizeof(sbyte))
+            {
+                sbyte exponent = Exponent;
+                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), exponent);
+
+                bytesWritten = sizeof(sbyte);
+                return true;
+            }
+            else
+            {
+                bytesWritten = 0;
+                return false;
+            }
+        }
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteSignificandBigEndian(Span{byte}, out int)" />
+        bool IFloatingPoint<float>.TryWriteSignificandBigEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length >= sizeof(uint))
+            {
+                uint significand = Significand;
+
+                if (BitConverter.IsLittleEndian)
+                {
+                    significand = BinaryPrimitives.ReverseEndianness(significand);
+                }
+
+                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), significand);
+
+                bytesWritten = sizeof(uint);
+                return true;
+            }
+            else
+            {
+                bytesWritten = 0;
+                return false;
+            }
+        }
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteSignificandLittleEndian(Span{byte}, out int)" />
+        bool IFloatingPoint<float>.TryWriteSignificandLittleEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length >= sizeof(uint))
+            {
+                uint significand = Significand;
+
+                if (!BitConverter.IsLittleEndian)
+                {
+                    significand = BinaryPrimitives.ReverseEndianness(significand);
+                }
+
+                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), significand);
+
+                bytesWritten = sizeof(uint);
+                return true;
+            }
+            else
+            {
+                bytesWritten = 0;
+                return false;
+            }
+        }
 
         //
         // IFloatingPointIeee754
@@ -670,18 +819,6 @@ namespace System
         // /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Compound(TSelf, TSelf)" />
         // public static float Compound(float x, float n) => MathF.Compound(x, n);
 
-        // /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MaxMagnitudeNumber(TSelf, TSelf)" />
-        // public static float MaxMagnitudeNumber(float x, float y) => MathF.MaxMagnitudeNumber(x, y);
-
-        // /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MaxNumber(TSelf, TSelf)" />
-        // public static float MaxNumber(float x, float y) => MathF.MaxNumber(x, y);
-
-        // /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
-        // public static float MinMagnitudeNumber(float x, float y) => MathF.MinMagnitudeNumber(x, y);
-
-        // /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MinNumber(TSelf, TSelf)" />
-        // public static float MinNumber(float x, float y) => MathF.MinNumber(x, y);
-
         //
         // IHyperbolicFunctions
         //
@@ -724,17 +861,17 @@ namespace System
         /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log(TSelf, TSelf)" />
         public static float Log(float x, float newBase) => MathF.Log(x, newBase);
 
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.LogP1(TSelf)" />
+        public static float LogP1(float x) => MathF.Log(x + 1);
+
         /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log10(TSelf)" />
         public static float Log10(float x) => MathF.Log10(x);
 
-        // /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.LogP1(TSelf)" />
-        // public static float LogP1(float x) => MathF.LogP1(x);
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log2P1(TSelf)" />
+        public static float Log2P1(float x) => MathF.Log2(x + 1);
 
-        // /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log2P1(TSelf)" />
-        // public static float Log2P1(float x) => MathF.Log2P1(x);
-
-        // /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log10P1(TSelf)" />
-        // public static float Log10P1(float x) => MathF.Log10P1(x);
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log10P1(TSelf)" />
+        public static float Log10P1(float x) => MathF.Log10(x + 1);
 
         //
         // IMinMaxValue
@@ -752,8 +889,6 @@ namespace System
 
         /// <inheritdoc cref="IModulusOperators{TSelf, TOther, TResult}.op_Modulus(TSelf, TOther)" />
         static float IModulusOperators<float, float, float>.operator %(float left, float right) => left % right;
-
-        // static checked float IModulusOperators<float, float, float>.operator %(float left, float right) => checked(left % right);
 
         //
         // IMultiplicativeIdentity
@@ -776,316 +911,64 @@ namespace System
         // INumber
         //
 
-        /// <inheritdoc cref="INumber{TSelf}.Abs(TSelf)" />
-        public static float Abs(float value) => MathF.Abs(value);
-
         /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
         public static float Clamp(float value, float min, float max) => Math.Clamp(value, min, max);
 
         /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
         public static float CopySign(float x, float y) => MathF.CopySign(x, y);
 
-        /// <inheritdoc cref="INumber{TSelf}.CreateChecked{TOther}(TOther)" />
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float CreateChecked<TOther>(TOther value)
-            where TOther : INumber<TOther>
-        {
-            if (typeof(TOther) == typeof(byte))
-            {
-                return (byte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(char))
-            {
-                return (char)(object)value;
-            }
-            else if (typeof(TOther) == typeof(decimal))
-            {
-                return (float)(decimal)(object)value;
-            }
-            else if (typeof(TOther) == typeof(double))
-            {
-                return (float)(double)(object)value;
-            }
-            else if (typeof(TOther) == typeof(short))
-            {
-                return (short)(object)value;
-            }
-            else if (typeof(TOther) == typeof(int))
-            {
-                return (int)(object)value;
-            }
-            else if (typeof(TOther) == typeof(long))
-            {
-                return (long)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nint))
-            {
-                return (nint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(sbyte))
-            {
-                return (sbyte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(float))
-            {
-                return (float)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ushort))
-            {
-                return (ushort)(object)value;
-            }
-            else if (typeof(TOther) == typeof(uint))
-            {
-                return (uint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ulong))
-            {
-                return (ulong)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nuint))
-            {
-                return (nuint)(object)value;
-            }
-            else
-            {
-                ThrowHelper.ThrowNotSupportedException();
-                return default;
-            }
-        }
-
-        /// <inheritdoc cref="INumber{TSelf}.CreateSaturating{TOther}(TOther)" />
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float CreateSaturating<TOther>(TOther value)
-            where TOther : INumber<TOther>
-        {
-            if (typeof(TOther) == typeof(byte))
-            {
-                return (byte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(char))
-            {
-                return (char)(object)value;
-            }
-            else if (typeof(TOther) == typeof(decimal))
-            {
-                return (float)(decimal)(object)value;
-            }
-            else if (typeof(TOther) == typeof(double))
-            {
-                return (float)(double)(object)value;
-            }
-            else if (typeof(TOther) == typeof(short))
-            {
-                return (short)(object)value;
-            }
-            else if (typeof(TOther) == typeof(int))
-            {
-                return (int)(object)value;
-            }
-            else if (typeof(TOther) == typeof(long))
-            {
-                return (long)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nint))
-            {
-                return (nint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(sbyte))
-            {
-                return (sbyte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(float))
-            {
-                return (float)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ushort))
-            {
-                return (ushort)(object)value;
-            }
-            else if (typeof(TOther) == typeof(uint))
-            {
-                return (uint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ulong))
-            {
-                return (ulong)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nuint))
-            {
-                return (nuint)(object)value;
-            }
-            else
-            {
-                ThrowHelper.ThrowNotSupportedException();
-                return default;
-            }
-        }
-
-        /// <inheritdoc cref="INumber{TSelf}.CreateTruncating{TOther}(TOther)" />
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float CreateTruncating<TOther>(TOther value)
-            where TOther : INumber<TOther>
-        {
-            if (typeof(TOther) == typeof(byte))
-            {
-                return (byte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(char))
-            {
-                return (char)(object)value;
-            }
-            else if (typeof(TOther) == typeof(decimal))
-            {
-                return (float)(decimal)(object)value;
-            }
-            else if (typeof(TOther) == typeof(double))
-            {
-                return (float)(double)(object)value;
-            }
-            else if (typeof(TOther) == typeof(short))
-            {
-                return (short)(object)value;
-            }
-            else if (typeof(TOther) == typeof(int))
-            {
-                return (int)(object)value;
-            }
-            else if (typeof(TOther) == typeof(long))
-            {
-                return (long)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nint))
-            {
-                return (nint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(sbyte))
-            {
-                return (sbyte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(float))
-            {
-                return (float)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ushort))
-            {
-                return (ushort)(object)value;
-            }
-            else if (typeof(TOther) == typeof(uint))
-            {
-                return (uint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ulong))
-            {
-                return (ulong)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nuint))
-            {
-                return (nuint)(object)value;
-            }
-            else
-            {
-                ThrowHelper.ThrowNotSupportedException();
-                return default;
-            }
-        }
-
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
         public static float Max(float x, float y) => MathF.Max(x, y);
 
-        /// <inheritdoc cref="INumber{TSelf}.MaxMagnitude(TSelf, TSelf)" />
-        public static float MaxMagnitude(float x, float y) => MathF.MaxMagnitude(x, y);
+        /// <inheritdoc cref="INumber{TSelf}.MaxNumber(TSelf, TSelf)" />
+        public static float MaxNumber(float x, float y)
+        {
+            // This matches the IEEE 754:2019 `maximumNumber` function
+            //
+            // It does not propagate NaN inputs back to the caller and
+            // otherwise returns the larger of the inputs. It
+            // treats +0 as larger than -0 as per the specification.
+
+            if (x != y)
+            {
+                if (!IsNaN(y))
+                {
+                    return y < x ? x : y;
+                }
+
+                return x;
+            }
+
+            return IsNegative(y) ? x : y;
+        }
 
         /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
         public static float Min(float x, float y) => MathF.Min(x, y);
 
-        /// <inheritdoc cref="INumber{TSelf}.MinMagnitude(TSelf, TSelf)" />
-        public static float MinMagnitude(float x, float y) => MathF.MinMagnitude(x, y);
+        /// <inheritdoc cref="INumber{TSelf}.MinNumber(TSelf, TSelf)" />
+        public static float MinNumber(float x, float y)
+        {
+            // This matches the IEEE 754:2019 `minimumNumber` function
+            //
+            // It does not propagate NaN inputs back to the caller and
+            // otherwise returns the larger of the inputs. It
+            // treats +0 as larger than -0 as per the specification.
+
+            if (x != y)
+            {
+                if (!IsNaN(y))
+                {
+                    return x < y ? x : y;
+                }
+
+                return x;
+            }
+
+            return IsNegative(x) ? x : y;
+        }
 
         /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
         public static int Sign(float value) => MathF.Sign(value);
-
-        /// <inheritdoc cref="INumber{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool TryCreate<TOther>(TOther value, out float result)
-            where TOther : INumber<TOther>
-        {
-            if (typeof(TOther) == typeof(byte))
-            {
-                result = (byte)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(char))
-            {
-                result = (char)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(decimal))
-            {
-                result = (float)(decimal)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(double))
-            {
-                result = (float)(double)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(short))
-            {
-                result = (short)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(int))
-            {
-                result = (int)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(long))
-            {
-                result = (long)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(nint))
-            {
-                result = (nint)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(sbyte))
-            {
-                result = (sbyte)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(float))
-            {
-                result = (float)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(ushort))
-            {
-                result = (ushort)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(uint))
-            {
-                result = (uint)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(ulong))
-            {
-                result = (ulong)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(nuint))
-            {
-                result = (nuint)(object)value;
-                return true;
-            }
-            else
-            {
-                ThrowHelper.ThrowNotSupportedException();
-                result = default;
-                return false;
-            }
-        }
 
         //
         // INumberBase
@@ -1094,8 +977,359 @@ namespace System
         /// <inheritdoc cref="INumberBase{TSelf}.One" />
         static float INumberBase<float>.One => One;
 
+        /// <inheritdoc cref="INumberBase{TSelf}.Radix" />
+        static int INumberBase<float>.Radix => 2;
+
         /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
         static float INumberBase<float>.Zero => Zero;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Abs(TSelf)" />
+        public static float Abs(float value) => MathF.Abs(value);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
+        static bool INumberBase<float>.IsCanonical(float value) => true;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsComplexNumber(TSelf)" />
+        static bool INumberBase<float>.IsComplexNumber(float value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsEvenInteger(TSelf)" />
+        public static bool IsEvenInteger(float value) => IsInteger(value) && (Abs(value % 2) == 0);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsImaginaryNumber(TSelf)" />
+        static bool INumberBase<float>.IsImaginaryNumber(float value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsInteger(TSelf)" />
+        public static bool IsInteger(float value) => IsFinite(value) && (value == Truncate(value));
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsOddInteger(TSelf)" />
+        public static bool IsOddInteger(float value) => IsInteger(value) && (Abs((value) % 2) == 1);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsPositive(TSelf)" />
+        public static bool IsPositive(float value) => BitConverter.SingleToInt32Bits(value) >= 0;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsRealNumber(TSelf)" />
+        public static bool IsRealNumber(float value)
+        {
+            // A NaN will never equal itself so this is an
+            // easy and efficient way to check for a real number.
+
+#pragma warning disable CS1718
+            return value == value;
+#pragma warning restore CS1718
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsZero(TSelf)" />
+        static bool INumberBase<float>.IsZero(float value) => (value == 0);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitude(TSelf, TSelf)" />
+        public static float MaxMagnitude(float x, float y) => MathF.MaxMagnitude(x, y);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitudeNumber(TSelf, TSelf)" />
+        public static float MaxMagnitudeNumber(float x, float y)
+        {
+            // This matches the IEEE 754:2019 `maximumMagnitudeNumber` function
+            //
+            // It does not propagate NaN inputs back to the caller and
+            // otherwise returns the input with a larger magnitude.
+            // It treats +0 as larger than -0 as per the specification.
+
+            float ax = Abs(x);
+            float ay = Abs(y);
+
+            if ((ax > ay) || IsNaN(ay))
+            {
+                return x;
+            }
+
+            if (ax == ay)
+            {
+                return IsNegative(x) ? y : x;
+            }
+
+            return y;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitude(TSelf, TSelf)" />
+        public static float MinMagnitude(float x, float y) => MathF.MinMagnitude(x, y);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
+        public static float MinMagnitudeNumber(float x, float y)
+        {
+            // This matches the IEEE 754:2019 `minimumMagnitudeNumber` function
+            //
+            // It does not propagate NaN inputs back to the caller and
+            // otherwise returns the input with a larger magnitude.
+            // It treats +0 as larger than -0 as per the specification.
+
+            float ax = Abs(x);
+            float ay = Abs(y);
+
+            if ((ax < ay) || IsNaN(ay))
+            {
+                return x;
+            }
+
+            if (ax == ay)
+            {
+                return IsNegative(x) ? x : y;
+            }
+
+            return y;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<float>.TryConvertFromChecked<TOther>(TOther value, out float result)
+        {
+            return TryConvertFrom<TOther>(value, out result);
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromSaturating{TOther}(TOther, out TSelf)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<float>.TryConvertFromSaturating<TOther>(TOther value, out float result)
+        {
+            return TryConvertFrom<TOther>(value, out result);
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromTruncating{TOther}(TOther, out TSelf)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<float>.TryConvertFromTruncating<TOther>(TOther value, out float result)
+        {
+            return TryConvertFrom<TOther>(value, out result);
+        }
+
+        private static bool TryConvertFrom<TOther>(TOther value, out float result)
+            where TOther : INumberBase<TOther>
+        {
+            // In order to reduce overall code duplication and improve the inlinabilty of these
+            // methods for the corelib types we have `ConvertFrom` handle the same sign and
+            // `ConvertTo` handle the opposite sign. However, since there is an uneven split
+            // between signed and unsigned types, the one that handles unsigned will also
+            // handle `Decimal`.
+            //
+            // That is, `ConvertFrom` for `float` will handle the other signed types and
+            // `ConvertTo` will handle the unsigned types
+
+            if (typeof(TOther) == typeof(double))
+            {
+                double actualValue = (double)(object)value;
+                result = (float)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Half))
+            {
+                Half actualValue = (Half)(object)value;
+                result = (float)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                short actualValue = (short)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                int actualValue = (int)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                long actualValue = (long)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                Int128 actualValue = (Int128)(object)value;
+                result = (float)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                nint actualValue = (nint)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                sbyte actualValue = (sbyte)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else
+            {
+                result = default;
+                return false;
+            }
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToChecked{TOther}(TSelf, out TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<float>.TryConvertToChecked<TOther>(float value, [NotNullWhen(true)] out TOther result)
+        {
+            // In order to reduce overall code duplication and improve the inlinabilty of these
+            // methods for the corelib types we have `ConvertFrom` handle the same sign and
+            // `ConvertTo` handle the opposite sign. However, since there is an uneven split
+            // between signed and unsigned types, the one that handles unsigned will also
+            // handle `Decimal`.
+            //
+            // That is, `ConvertFrom` for `float` will handle the other signed types and
+            // `ConvertTo` will handle the unsigned types.
+
+            if (typeof(TOther) == typeof(byte))
+            {
+                byte actualResult = checked((byte)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                char actualResult = checked((char)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                decimal actualResult = checked((decimal)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                ushort actualResult = checked((ushort)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                uint actualResult = checked((uint)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                ulong actualResult = checked((ulong)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                UInt128 actualResult = checked((UInt128)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                nuint actualResult = checked((nuint)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else
+            {
+                result = default!;
+                return false;
+            }
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToSaturating{TOther}(TSelf, out TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<float>.TryConvertToSaturating<TOther>(float value, [NotNullWhen(true)] out TOther result)
+        {
+            return TryConvertTo<TOther>(value, out result);
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToTruncating{TOther}(TSelf, out TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<float>.TryConvertToTruncating<TOther>(float value, [NotNullWhen(true)] out TOther result)
+        {
+            return TryConvertTo<TOther>(value, out result);
+        }
+
+        private static bool TryConvertTo<TOther>(float value, [NotNullWhen(true)] out TOther result)
+            where TOther : INumberBase<TOther>
+        {
+            // In order to reduce overall code duplication and improve the inlinabilty of these
+            // methods for the corelib types we have `ConvertFrom` handle the same sign and
+            // `ConvertTo` handle the opposite sign. However, since there is an uneven split
+            // between signed and unsigned types, the one that handles unsigned will also
+            // handle `Decimal`.
+            //
+            // That is, `ConvertFrom` for `float` will handle the other signed types and
+            // `ConvertTo` will handle the unsigned types.
+
+            if (typeof(TOther) == typeof(byte))
+            {
+                var actualResult = (value >= byte.MaxValue) ? byte.MaxValue :
+                                   (value <= byte.MinValue) ? byte.MinValue : (byte)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                char actualResult = (value >= char.MaxValue) ? char.MaxValue :
+                                    (value <= char.MinValue) ? char.MinValue : (char)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                decimal actualResult = (value >= +79228162514264337593543950336.0f) ? decimal.MaxValue :
+                                       (value <= -79228162514264337593543950336.0f) ? decimal.MinValue :
+                                       IsNaN(value) ? 0.0m : (decimal)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                ushort actualResult = (value >= ushort.MaxValue) ? ushort.MaxValue :
+                                      (value <= ushort.MinValue) ? ushort.MinValue : (ushort)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                uint actualResult = (value >= uint.MaxValue) ? uint.MaxValue :
+                                    (value <= uint.MinValue) ? uint.MinValue : (uint)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                ulong actualResult = (value >= ulong.MaxValue) ? ulong.MaxValue :
+                                     (value <= ulong.MinValue) ? ulong.MinValue :
+                                     IsNaN(value) ? 0 : (ulong)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                UInt128 actualResult = (value == PositiveInfinity) ? UInt128.MaxValue :
+                                       (value <= 0.0f) ? UInt128.MinValue : (UInt128)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+#if TARGET_64BIT
+                nuint actualResult = (value >= ulong.MaxValue) ? unchecked((nuint)ulong.MaxValue) :
+                                     (value <= ulong.MinValue) ? unchecked((nuint)ulong.MinValue) : (nuint)value;
+                result = (TOther)(object)actualResult;
+                return true;
+#else
+                nuint actualResult = (value >= uint.MaxValue) ? uint.MaxValue :
+                                     (value <= uint.MinValue) ? uint.MinValue : (nuint)value;
+                result = (TOther)(object)actualResult;
+                return true;
+#endif
+            }
+            else
+            {
+                result = default!;
+                return false;
+            }
+        }
 
         //
         // IParsable

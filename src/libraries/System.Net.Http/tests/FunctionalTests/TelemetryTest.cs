@@ -646,7 +646,7 @@ namespace System.Net.Http.Functional.Tests
                             socketsHttpHandler.MaxConnectionsPerServer = 1;
                             socketsHttpHandler.SslOptions.RemoteCertificateValidationCallback = delegate { return true; };
 
-                            // Dummy request to ensure that the MaxConcurrentStreams setting has been acknowledged
+                            // Dummy request to establish connection and ensure that the MaxConcurrentStreams setting has been acknowledged
                             await client.GetStringAsync(uri);
 
                             Task firstRequest = client.GetStringAsync(uri);
@@ -706,7 +706,14 @@ namespace System.Net.Http.Functional.Tests
                 ValidateConnectionEstablishedClosed(events, version);
 
                 var requestLeftQueueEvents = events.Where(e => e.Event.EventName == "RequestLeftQueue");
-                Assert.InRange(requestLeftQueueEvents.Count(), 2, version.Major == 3 ? 3 : 2);
+                var (minCount, maxCount) = version.Major switch
+                {
+                    1 => (2, 2),
+                    2 => (2, 3), // race condition: if a connection hits its stream limit, it will be removed from the list and re-added on a separate thread
+                    3 => (3, 3),
+                    _ => throw new ArgumentOutOfRangeException()
+                };
+                Assert.InRange(requestLeftQueueEvents.Count(), minCount, maxCount);
 
                 foreach (var (e, _) in requestLeftQueueEvents)
                 {
@@ -762,6 +769,7 @@ namespace System.Net.Http.Functional.Tests
     }
 
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMsQuicSupported))]
+    [Collection(nameof(DisableParallelization))]
     public sealed class TelemetryTest_Http30_MsQuic : TelemetryTest
     {
         protected override Version UseVersion => HttpVersion.Version30;

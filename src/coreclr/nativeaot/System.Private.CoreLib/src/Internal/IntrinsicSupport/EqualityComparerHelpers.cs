@@ -153,6 +153,7 @@ namespace Internal.IntrinsicSupport
         }
 
         private static bool StructOnlyNormalEquals<T>(T left, T right)
+            where T : notnull
         {
             return left.Equals(right);
         }

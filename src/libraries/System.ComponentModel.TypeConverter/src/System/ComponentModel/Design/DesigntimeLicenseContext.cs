@@ -30,8 +30,10 @@ namespace System.ComponentModel.Design
         /// <summary>
         /// Sets a saved license key.
         /// </summary>
-        public override void SetSavedLicenseKey(Type type!!, string key)
+        public override void SetSavedLicenseKey(Type type, string key)
         {
+            ArgumentNullException.ThrowIfNull(type);
+
             _savedLicenseKeys[type.AssemblyQualifiedName!] = key;
         }
     }

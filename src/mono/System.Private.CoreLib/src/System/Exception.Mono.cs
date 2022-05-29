@@ -109,36 +109,6 @@ namespace System
             return true; // mono runtime doesn't have immutable agile exceptions, always return true
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "The API will return null if the metadata for current method cannot be established.")]
-        private string? CreateSourceName()
-        {
-            var st = new StackTrace(this, fNeedFileInfo: false);
-            if (st.FrameCount > 0)
-            {
-                StackFrame sf = st.GetFrame(0)!;
-                MethodBase? method = sf.GetMethod();
-                if (method == null)
-                    return null;
-
-                Module module = method.Module;
-                RuntimeModule? rtModule = module as RuntimeModule;
-
-                if (rtModule == null)
-                {
-                    var moduleBuilder = module as System.Reflection.Emit.ModuleBuilder;
-                    if (moduleBuilder != null)
-                        throw new NotImplementedException(); // TODO: rtModule = moduleBuilder.InternalModule;
-                    else
-                        throw new ArgumentException(SR.Argument_MustBeRuntimeReflectionObject);
-                }
-
-                return rtModule.GetRuntimeAssembly().GetName().Name; // TODO: GetSimpleName ();
-            }
-
-            return null;
-        }
-
         private static IDictionary CreateDataContainer() => new ListDictionaryInternal();
 
         private static string? SerializationWatsonBuckets => null;

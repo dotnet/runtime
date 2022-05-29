@@ -62,8 +62,10 @@ namespace System.Xml
         {
         }
 
-        public unsafe UniqueId(byte[] guid!!, int offset)
+        public unsafe UniqueId(byte[] guid, int offset)
         {
+            ArgumentNullException.ThrowIfNull(guid);
+
             if (offset < 0)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(offset), SR.ValueMustBeNonNegative));
             if (offset > guid.Length)
@@ -77,8 +79,10 @@ namespace System.Xml
             }
         }
 
-        public unsafe UniqueId(string value!!)
+        public unsafe UniqueId(string value)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             if (value.Length == 0)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new FormatException(SR.XmlInvalidUniqueId));
             fixed (char* pch = value)
@@ -88,8 +92,10 @@ namespace System.Xml
             _s = value;
         }
 
-        public unsafe UniqueId(char[] chars!!, int offset, int count)
+        public unsafe UniqueId(char[] chars, int offset, int count)
         {
+            ArgumentNullException.ThrowIfNull(chars);
+
             if (offset < 0)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(offset), SR.ValueMustBeNonNegative));
             if (offset > chars.Length)
@@ -192,8 +198,10 @@ namespace System.Xml
             }
         }
 
-        public int ToCharArray(char[] chars!!, int offset)
+        public int ToCharArray(char[] chars, int offset)
         {
+            ArgumentNullException.ThrowIfNull(chars);
+
             int count = CharArrayLength;
 
             if (offset < 0)

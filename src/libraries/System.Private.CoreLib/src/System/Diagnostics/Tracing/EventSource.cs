@@ -1841,7 +1841,7 @@ namespace System.Diagnostics.Tracing
                         }
                         else if (typeCode == TypeCode.DateTime)
                         {
-                            decoded = *(DateTime*)dataPointer;
+                            decoded = DateTime.FromFileTimeUtc(*(long*)dataPointer);
                         }
                         else if (IntPtr.Size == 8 && dataType == typeof(IntPtr))
                         {
@@ -3715,7 +3715,7 @@ namespace System.Diagnostics.Tracing
 #endif
         private static int GetHelperCallFirstArg(MethodInfo method)
         {
-#if !CORERT
+#if !NATIVEAOT
             // Currently searches for the following pattern
             //
             // ...     // CAN ONLY BE THE INSTRUCTIONS BELOW
@@ -4175,8 +4175,13 @@ namespace System.Diagnostics.Tracing
         ///
         /// This call never has an effect on other EventListeners.
         /// </summary>
-        public void EnableEvents(EventSource eventSource!!, EventLevel level, EventKeywords matchAnyKeyword, IDictionary<string, string?>? arguments)
+        public void EnableEvents(EventSource eventSource, EventLevel level, EventKeywords matchAnyKeyword, IDictionary<string, string?>? arguments)
         {
+            if (eventSource is null)
+            {
+                throw new ArgumentNullException(nameof(eventSource));
+            }
+
             eventSource.SendCommand(this, EventProviderType.None, 0, 0, EventCommand.Update, true, level, matchAnyKeyword, arguments);
 
 #if FEATURE_PERFTRACING
@@ -4191,8 +4196,13 @@ namespace System.Diagnostics.Tracing
         ///
         /// This call never has an effect on other EventListeners.
         /// </summary>
-        public void DisableEvents(EventSource eventSource!!)
+        public void DisableEvents(EventSource eventSource)
         {
+            if (eventSource is null)
+            {
+                throw new ArgumentNullException(nameof(eventSource));
+            }
+
             eventSource.SendCommand(this, EventProviderType.None, 0, 0, EventCommand.Update, false, EventLevel.LogAlways, EventKeywords.None, null);
 
 #if FEATURE_PERFTRACING
@@ -5016,7 +5026,7 @@ namespace System.Diagnostics.Tracing
 #if FEATURE_ADVANCED_MANAGED_ETW_CHANNELS
     public
 #else
-    internal
+    internal sealed
 #endif
     class EventChannelAttribute : Attribute
     {

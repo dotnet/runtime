@@ -5,11 +5,13 @@
 
 let runBenchmark;
 let setTasks;
+let getFullJsonResults;
 
 class MainApp {
     init({ BINDING }) {
         runBenchmark = BINDING.bind_static_method("[Wasm.Browser.Bench.Sample] Sample.Test:RunBenchmark");
         setTasks = BINDING.bind_static_method("[Wasm.Browser.Bench.Sample] Sample.Test:SetTasks");
+        getFullJsonResults = BINDING.bind_static_method("[Wasm.Browser.Bench.Sample] Sample.Test:GetFullJsonResults");
 
         var url = new URL(decodeURI(window.location));
         let tasks = url.searchParams.getAll('task');
@@ -29,6 +31,14 @@ class MainApp {
                 setTimeout(() => { this.yieldBench(); }, 0);
             } else {
                 document.getElementById("out").innerHTML += "Finished";
+                fetch("/results.json", {
+                    method: 'POST',
+                    body: getFullJsonResults()
+                }).then (r => { console.log("post request complete, response: ", r); });
+                fetch("/results.html", {
+                    method: 'POST',
+                    body: document.getElementById("out").innerHTML
+                }).then (r => { console.log("post request complete, response: ", r); });
             }
         });
     }

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -48,12 +48,17 @@ namespace System.Text.Json.Serialization.Metadata
         /// </summary>
         public SourceGenJsonTypeInfo(
             JsonSerializerOptions options,
-            JsonCollectionInfoValues<T> collectionInfo!!,
+            JsonCollectionInfoValues<T> collectionInfo,
             Func<JsonConverter<T>> converterCreator,
             object? createObjectWithArgs = null,
             object? addFunc = null)
             : base(GetConverter(collectionInfo, converterCreator), options)
         {
+            if (collectionInfo is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(collectionInfo));
+            }
+
             KeyTypeInfo = collectionInfo.KeyInfo;
             ElementTypeInfo = collectionInfo.ElementInfo ?? throw new ArgumentNullException(nameof(collectionInfo.ElementInfo));
             NumberHandling = collectionInfo.NumberHandling;

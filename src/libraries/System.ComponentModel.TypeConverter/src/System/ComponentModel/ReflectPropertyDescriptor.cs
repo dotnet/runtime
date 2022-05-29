@@ -59,7 +59,7 @@ namespace System.ComponentModel
         private static readonly int s_bitAmbientValueQueried = InterlockedBitVector32.CreateMask(s_bitReadOnlyChecked);
         private static readonly int s_bitSetOnDemand = InterlockedBitVector32.CreateMask(s_bitAmbientValueQueried);
 
-        private InterlockedBitVector32 _state;             // Contains the state bits for this proeprty descriptor.
+        private InterlockedBitVector32 _state;             // Contains the state bits for this property descriptor.
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         private readonly Type _componentClass;             // used to determine if we should all on us or on the designer
         private readonly Type _type;                       // the data type of the property
@@ -481,8 +481,11 @@ namespace System.ComponentModel
         /// <summary>
         /// Allows interested objects to be notified when this property changes.
         /// </summary>
-        public override void AddValueChanged(object component!!, EventHandler handler!!)
+        public override void AddValueChanged(object component, EventHandler handler)
         {
+            ArgumentNullException.ThrowIfNull(component);
+            ArgumentNullException.ThrowIfNull(handler);
+
             // If there's an event called <propertyname>Changed, hook the caller's handler directly up to that on the component
             EventDescriptor changedEvent = ChangedEventValue;
             if (changedEvent != null && changedEvent.EventType.IsInstanceOfType(handler))

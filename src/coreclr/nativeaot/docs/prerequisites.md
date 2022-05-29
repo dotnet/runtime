@@ -33,7 +33,7 @@ the `%ProgramFiles(x86)%\Microsoft Visual Studio\Installer` directory.
 * Install `clang` and developer packages for libraries that .NET Core depends on:
 
 ```sh
-sudo dnf install clang zlib-devel krb5-libs krb5-devel ncurses-compat-libs
+sudo dnf install clang zlib-devel ncurses-compat-libs
 ```
 
 This was tested on Fedora 31, but will most likely work on lower versions too.
@@ -43,7 +43,7 @@ This was tested on Fedora 31, but will most likely work on lower versions too.
 * Install `clang` and developer packages for libraries that .NET Core depends on:
 
 ```sh
-sudo apt-get install clang zlib1g-dev libkrb5-dev
+sudo apt-get install clang zlib1g-dev
 ```
 
 # macOS (10.13+)

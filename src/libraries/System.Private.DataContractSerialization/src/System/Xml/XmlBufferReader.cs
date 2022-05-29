@@ -234,14 +234,13 @@ namespace System.Xml
                 }
                 int needed = newOffsetMax - _offsetMax;
                 DiagnosticUtility.DebugAssert(needed > 0, "");
-                do
+                int read = _stream.ReadAtLeast(_buffer.AsSpan(_offsetMax, needed), needed, throwOnEndOfStream: false);
+                _offsetMax += read;
+
+                if (read < needed)
                 {
-                    int actual = _stream.Read(_buffer, _offsetMax, needed);
-                    if (actual == 0)
-                        return false;
-                    _offsetMax += actual;
-                    needed -= actual;
-                } while (needed > 0);
+                    return false;
+                }
             } while (true);
         }
 

@@ -180,8 +180,10 @@ namespace System.Text
             m_ChunkChars = GC.AllocateUninitializedArray<char>(capacity);
         }
 
-        private StringBuilder(SerializationInfo info!!, StreamingContext context)
+        private StringBuilder(SerializationInfo info, StreamingContext context)
         {
+            ArgumentNullException.ThrowIfNull(info);
+
             int persistedCapacity = 0;
             string? persistedString = null;
             int persistedMaxCapacity = int.MaxValue;
@@ -238,8 +240,10 @@ namespace System.Text
             AssertInvariants();
         }
 
-        void ISerializable.GetObjectData(SerializationInfo info!!, StreamingContext context)
+        void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
+            ArgumentNullException.ThrowIfNull(info);
+
             AssertInvariants();
             info.AddValue(MaxCapacityField, m_MaxCapacity);
             info.AddValue(CapacityField, Capacity);
@@ -898,8 +902,10 @@ namespace System.Text
             return Append(Environment.NewLine);
         }
 
-        public void CopyTo(int sourceIndex, char[] destination!!, int destinationIndex, int count)
+        public void CopyTo(int sourceIndex, char[] destination, int destinationIndex, int count)
         {
+            ArgumentNullException.ThrowIfNull(destination);
+
             if (destinationIndex < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(destinationIndex), SR.Format(SR.ArgumentOutOfRange_MustBeNonNegNum, nameof(destinationIndex)));
@@ -1449,8 +1455,10 @@ namespace System.Text
         private const int IndexLimit = 1000000; // Note:            0 <= ArgIndex < IndexLimit
         private const int WidthLimit = 1000000; // Note:  -WidthLimit <  ArgAlign < WidthLimit
 
-        internal StringBuilder AppendFormatHelper(IFormatProvider? provider, string format!!, ParamsArray args)
+        internal StringBuilder AppendFormatHelper(IFormatProvider? provider, string format, ParamsArray args)
         {
+            ArgumentNullException.ThrowIfNull(format);
+
             int pos = 0;
             int len = format.Length;
             char ch = '\x0';
@@ -1517,7 +1525,7 @@ namespace System.Text
                 pos++;
                 // If reached end of text then error (Unexpected end of text)
                 // or character is not a digit then error (Unexpected Character)
-                if (pos == len || (ch = format[pos]) < '0' || ch > '9') FormatError();
+                if (pos == len || !char.IsAsciiDigit(ch = format[pos])) FormatError();
                 int index = 0;
                 do
                 {
@@ -1531,7 +1539,7 @@ namespace System.Text
                     ch = format[pos];
                     // so long as character is digit and value of the index is less than 1000000 ( index limit )
                 }
-                while (ch >= '0' && ch <= '9' && index < IndexLimit);
+                while (char.IsAsciiDigit(ch) && index < IndexLimit);
 
                 // If value of index is not within the range of the arguments passed in then error (Index out of range)
                 if (index >= args.Length)
@@ -1579,7 +1587,7 @@ namespace System.Text
                     }
 
                     // If current character is not a digit then error (Unexpected character)
-                    if (ch < '0' || ch > '9')
+                    if (!char.IsAsciiDigit(ch))
                     {
                         FormatError();
                     }
@@ -1596,7 +1604,7 @@ namespace System.Text
                         ch = format[pos];
                         // So long a current character is a digit and the value of width is less than 100000 ( width limit )
                     }
-                    while (ch >= '0' && ch <= '9' && width < WidthLimit);
+                    while (char.IsAsciiDigit(ch) && width < WidthLimit);
                     // end of parsing Argument Alignment
                 }
 

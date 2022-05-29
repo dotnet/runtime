@@ -860,7 +860,7 @@ mono_get_generic_info_from_stack_frame (MonoJitInfo *ji, MonoContext *ctx)
 		/* Avoid returning a managed object */
 		MonoObject *this_obj = (MonoObject *)info;
 
-		return this_obj->vtable;
+		return this_obj ? this_obj->vtable : NULL;
 	}
 }
 
@@ -926,7 +926,7 @@ get_method_from_stack_frame (MonoJitInfo *ji, gpointer generic_info)
 	MonoGenericContext context;
 	MonoMethod *method;
 
-	if (!ji->has_generic_jit_info || !mono_jit_info_get_generic_jit_info (ji)->has_this)
+	if (!ji->has_generic_jit_info || !mono_jit_info_get_generic_jit_info (ji)->has_this || !generic_info)
 		return jinfo_get_method (ji);
 	context = mono_get_generic_context_from_stack_frame (ji, generic_info);
 
@@ -2011,7 +2011,7 @@ handle_exception_first_pass (MonoContext *ctx, MonoObject *obj, gint32 *out_filt
 					if (frame.type == FRAME_TYPE_IL_STATE) {
 						if (mono_trace_is_enabled () && mono_trace_eval (method))
 							g_print ("EXCEPTION: filter clause found in AOTed code, running it with the interpreter.\n");
-						gboolean res = mini_get_interp_callbacks ()->run_clause_with_il_state (frame.il_state, i, ei->data.filter, NULL, ex_obj, &filtered, MONO_EXCEPTION_CLAUSE_FILTER);
+						gboolean res = mini_get_interp_callbacks ()->run_clause_with_il_state (frame.il_state, i, ex_obj, &filtered);
 						// FIXME:
 						g_assert (!res);
 					} else if (ji->is_interp) {
@@ -2574,7 +2574,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 						if (frame.type == FRAME_TYPE_IL_STATE) {
 							if (mono_trace_is_enabled () && mono_trace_eval (method))
 								g_print ("EXCEPTION: finally/fault clause found in AOTed code, running it with the interpreter.\n");
-							mini_get_interp_callbacks ()->run_clause_with_il_state (frame.il_state, i, ei->handler_start, ei->data.handler_end, NULL, NULL, MONO_EXCEPTION_CLAUSE_FINALLY);
+							mini_get_interp_callbacks ()->run_clause_with_il_state (frame.il_state, i, NULL, NULL);
 						} else if (in_interp) {
 							gboolean has_ex = mini_get_interp_callbacks ()->run_finally (&frame, i, ei->handler_start, ei->data.handler_end);
 							if (has_ex) {
@@ -3270,6 +3270,8 @@ mono_thread_state_init (MonoThreadUnwindState *ctx)
 
 #if defined(MONO_CROSS_COMPILE)
 	ctx->valid = FALSE; //A cross compiler doesn't need to suspend.
+#elif defined(HOST_WASM)
+   MONO_INIT_CONTEXT_FROM_FUNC (&(ctx->ctx), mono_thread_state_init);
 #elif defined(HOST_WASI)
 	// TODO: For WASI, we need to review how thread state is initialized
 #elif MONO_ARCH_HAS_MONO_CONTEXT
@@ -3411,7 +3413,7 @@ mono_install_ftnptr_eh_callback (MonoFtnPtrEHCallback callback)
  */
 
 static void
-throw_exception (MonoObject *ex, gboolean rethrow)
+llvmonly_setup_exception (MonoObject *ex, gboolean rethrow)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
@@ -3428,8 +3430,11 @@ throw_exception (MonoObject *ex, gboolean rethrow)
 	else
 		mono_ex = (MonoException*)ex;
 
-	// Note: Not pinned
-	jit_tls->thrown_exc = mono_gchandle_new_internal ((MonoObject*)mono_ex, FALSE);
+	if (jit_tls->thrown_exc)
+		/* Already set in mini_llvmonly_throw_corlib_exception () */
+		mono_gchandle_set_target (jit_tls->thrown_exc, (MonoObject*)mono_ex);
+	else
+		jit_tls->thrown_exc = mono_gchandle_new_internal ((MonoObject*)mono_ex, TRUE);
 
 	if (!rethrow) {
 #ifdef MONO_ARCH_HAVE_UNWIND_BACKTRACE
@@ -3452,15 +3457,6 @@ throw_exception (MonoObject *ex, gboolean rethrow)
 		g_list_free (trace);
 #endif
 	}
-
-	if (rethrow) {
-		MonoContext ctx;
-		MonoJitInfo *out_ji;
-		memset (&ctx, 0, sizeof (MonoContext));
-
-		mono_handle_exception_internal (&ctx, ex, FALSE, &out_ji);
-		mono_llvm_cpp_throw_exception ();
-	}
 }
 
 void
@@ -3480,7 +3476,7 @@ mini_llvmonly_throw_exception (MonoObject *ex)
 
 	mono_handle_exception (&ctx, (MonoObject*)ex);
 
-	throw_exception (ex, FALSE);
+	llvmonly_setup_exception (ex, FALSE);
 
 	/* Unwind back to either an AOTed frame or to the interpreter */
 	mono_llvm_cpp_throw_exception ();
@@ -3489,16 +3485,26 @@ mini_llvmonly_throw_exception (MonoObject *ex)
 void
 mini_llvmonly_rethrow_exception (MonoObject *ex)
 {
-	throw_exception (ex, TRUE);
+	llvmonly_setup_exception (ex, TRUE);
+
+	MonoContext ctx;
+	MonoJitInfo *out_ji;
+	memset (&ctx, 0, sizeof (MonoContext));
+
+	mono_handle_exception_internal (&ctx, ex, FALSE, &out_ji);
+
+	mono_llvm_cpp_throw_exception ();
 }
 
 void
 mini_llvmonly_throw_corlib_exception (guint32 ex_token_index)
 {
 	guint32 ex_token = MONO_TOKEN_TYPE_DEF | ex_token_index;
+	MonoJitTlsData *jit_tls = mono_get_jit_tls ();
 	MonoException *ex;
 
 	ex = mono_exception_from_token (m_class_get_image (mono_defaults.exception_class), ex_token);
+	jit_tls->thrown_exc = mono_gchandle_new_internal ((MonoObject*)ex, TRUE);
 
 	mini_llvmonly_throw_exception ((MonoObject*)ex);
 }
@@ -3577,10 +3583,8 @@ mini_llvmonly_resume_exception_il_state (MonoLMF *lmf, gpointer info)
 	/* Pop the LMF frame so the caller doesn't have to do it */
 	mono_set_lmf ((MonoLMF *)(((gsize)lmf->previous_lmf) & ~3));
 
-	MonoJitInfo *ji = jit_tls->resume_state.ji;
 	int clause_index = jit_tls->resume_state.clause_index;
-	MonoJitExceptionInfo *ei = &ji->clauses [clause_index];
-	gboolean r = mini_get_interp_callbacks ()->run_clause_with_il_state (il_state, clause_index, ei->handler_start, NULL, ex_obj, NULL, MONO_EXCEPTION_CLAUSE_NONE);
+	gboolean r = mini_get_interp_callbacks ()->run_clause_with_il_state (il_state, clause_index, ex_obj, NULL);
 	if (r)
 		/* Another exception thrown, continue unwinding */
 		mono_llvm_cpp_throw_exception ();

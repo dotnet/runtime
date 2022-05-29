@@ -61,8 +61,10 @@ namespace System.Runtime.Serialization
         // find the element, we generate an object id for it and insert the pair into the
         // table.  We return an Int64 for the object id.  The out parameter firstTime
         // is set to true if this is the first time that we have seen this object.
-        public virtual long GetId(object obj!!, out bool firstTime)
+        public virtual long GetId(object obj, out bool firstTime)
         {
+            ArgumentNullException.ThrowIfNull(obj);
+
             bool found;
             int pos = FindElement(obj, out found);
 
@@ -91,8 +93,10 @@ namespace System.Runtime.Serialization
 
         // Checks to see if obj has already been assigned an id.  If it has,
         // we return that id, otherwise we return 0.
-        public virtual long HasId(object obj!!, out bool firstTime)
+        public virtual long HasId(object obj, out bool firstTime)
         {
+            ArgumentNullException.ThrowIfNull(obj);
+
             bool found;
             int pos = FindElement(obj, out found);
             if (found)

@@ -1383,7 +1383,7 @@ mono_class_setup_vtable_ginst (MonoClass *klass, GList *in_setup)
  * vtable_slot_has_preserve_base_overrides_attribute:
  *
  * Needs to walk up the class hierarchy looking for the methods in this slot to
- * see if any are tagged with PreserveBaseOverrideAtrribute.
+ * see if any are tagged with PreserveBaseOverrideAttribute.
  */
 static gboolean
 vtable_slot_has_preserve_base_overrides_attribute (MonoClass *klass, int slot, MonoClass **out_klass)
@@ -1484,7 +1484,7 @@ is_ok_for_covariant_ret (MonoType *type_impl, MonoType *type_decl)
  * }
  * class A : B {
  *   public virtual newslot C Foo () {
- *     .override C C::Foo (); // type load error - it should be a a subclass of B because of B's override of C::Foo
+ *     .override C C::Foo (); // type load error - it should be a subclass of B because of B's override of C::Foo
  *   }
  * }
  */

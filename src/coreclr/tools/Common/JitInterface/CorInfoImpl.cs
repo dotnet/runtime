@@ -34,7 +34,7 @@ using ILCompiler.DependencyAnalysis.ReadyToRun;
 
 namespace Internal.JitInterface
 {
-    internal unsafe sealed partial class CorInfoImpl
+    internal sealed unsafe partial class CorInfoImpl
     {
         //
         // Global initialization and state
@@ -195,8 +195,7 @@ namespace Internal.JitInterface
             bool hasTypeHistogram = false;
             foreach (var elem in pgoData)
             {
-                if (elem.InstrumentationKind == PgoInstrumentationKind.TypeHandleHistogramIntCount ||
-                    elem.InstrumentationKind == PgoInstrumentationKind.TypeHandleHistogramLongCount)
+                if (elem.InstrumentationKind == PgoInstrumentationKind.HandleHistogramTypes)
                 {
                     // found histogram
                     hasTypeHistogram = true;
@@ -218,10 +217,12 @@ namespace Internal.JitInterface
 
                 ComputeJitPgoInstrumentationSchema(LocalObjectToHandle, pgoData, out var nativeSchema, out var instrumentationData);
 
-                for (int i = 0; i < (pgoData.Length); i++)
+                for (int i = 0; i < pgoData.Length; i++)
                 {
-                    if (pgoData[i].InstrumentationKind == PgoInstrumentationKind.TypeHandleHistogramIntCount ||
-                        pgoData[i].InstrumentationKind == PgoInstrumentationKind.TypeHandleHistogramLongCount)
+                    if ((i + 1 < pgoData.Length) &&
+                        (pgoData[i].InstrumentationKind == PgoInstrumentationKind.HandleHistogramIntCount ||
+                         pgoData[i].InstrumentationKind == PgoInstrumentationKind.HandleHistogramLongCount) &&
+                        (pgoData[i + 1].InstrumentationKind == PgoInstrumentationKind.HandleHistogramTypes))
                     {
                         PgoSchemaElem? newElem = ComputeLikelyClass(i, handleToObject, nativeSchema, instrumentationData, compilationModuleGroup);
                         if (newElem.HasValue)
@@ -437,8 +438,7 @@ namespace Internal.JitInterface
             bool needPerMethodInstructionSetFixup = false;
             foreach (var instructionSet in _actualInstructionSetSupported)
             {
-                if (!baselineSupport.IsInstructionSetSupported(instructionSet) &&
-                    !baselineSupport.NonSpecifiableFlags.HasInstructionSet(instructionSet))
+                if (!baselineSupport.IsInstructionSetSupported(instructionSet))
                 {
                     needPerMethodInstructionSetFixup = true;
                 }
@@ -475,8 +475,6 @@ namespace Internal.JitInterface
 
             _methodCodeNode.InitializeLocalTypes(localTypes);
 #endif
-
-            PublishProfileData();
         }
 
         private void PublishROData()
@@ -495,8 +493,6 @@ namespace Internal.JitInterface
 
             _roDataBlob.InitializeData(objectData);
         }
-
-        partial void PublishProfileData();
 
         private MethodDesc MethodBeingCompiled
         {
@@ -570,7 +566,6 @@ namespace Internal.JitInterface
             _lastException = null;
 
 #if READYTORUN
-            _profileDataNode = null;
             _inlinedMethods = new ArrayBuilder<MethodDesc>();
             _actualInstructionSetSupported = default(InstructionSetFlags);
             _actualInstructionSetUnsupported = default(InstructionSetFlags);
@@ -2365,8 +2360,6 @@ namespace Internal.JitInterface
         {
             var type = HandleToObject(cls);
 
-            // we shouldn't allow boxing of types that contains stack pointers
-            // csc and vbc already disallow it.
             if (type.IsByRefLike)
                 ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramSpecific, MethodBeingCompiled);
 
@@ -2714,8 +2707,7 @@ namespace Internal.JitInterface
             }
 
             // If both sides are arrays, then the result is either an array or g_pArrayClass.  The above is
-            // actually true about the element type for references types, but I think that that is a little
-            // excessive for sanity.
+            // actually true for reference types as well, but it is a little excessive to deal with.
             if (type1.IsArray && type2.IsArray)
             {
                 TypeDesc arrayClass = _compilation.TypeSystemContext.GetWellKnownType(WellKnownType.Array);
@@ -3630,7 +3622,7 @@ namespace Internal.JitInterface
 
 #if READYTORUN
                 case BlockType.BBCounts:
-                    relocTarget = _profileDataNode;
+                    relocTarget = null;
                     break;
 #endif
 
@@ -3811,7 +3803,7 @@ namespace Internal.JitInterface
                 flags.Set(CorJitFlag.CORJIT_FLAG_MIN_OPT);
             }
 
-            if (this.MethodBeingCompiled.Context.Target.Abi == TargetAbi.CoreRTArmel)
+            if (this.MethodBeingCompiled.Context.Target.Abi == TargetAbi.NativeAotArmel)
             {
                 flags.Set(CorJitFlag.CORJIT_FLAG_SOFTFP_ABI);
             }
@@ -3869,6 +3861,10 @@ namespace Internal.JitInterface
                             if (typeVal.AsType != null && (typeFilter == null || typeFilter(typeVal.AsType)))
                             {
                                 ptrVal = (IntPtr)objectToHandle(typeVal.AsType);
+                            }
+                            else if (typeVal.AsMethod != null)
+                            {
+                                ptrVal = (IntPtr)objectToHandle(typeVal.AsMethod);
                             }
                             else
                             {
@@ -3932,9 +3928,9 @@ namespace Internal.JitInterface
 
         private bool notifyInstructionSetUsage(InstructionSet instructionSet, bool supportEnabled)
         {
-            InstructionSet_ARM64 asArm64 = (InstructionSet_ARM64)instructionSet;
-            InstructionSet_X64 asX64 = (InstructionSet_X64)instructionSet;
-            InstructionSet_X86 asX86 = (InstructionSet_X86)instructionSet;
+            instructionSet = InstructionSetFlags.ConvertToImpliedInstructionSetForVectorInstructionSets(_compilation.TypeSystemContext.Target.Architecture, instructionSet);
+
+            Debug.Assert(!_compilation.InstructionSetSupport.NonSpecifiableFlags.HasInstructionSet(instructionSet));
 
             if (supportEnabled)
             {
@@ -3946,10 +3942,6 @@ namespace Internal.JitInterface
                 // set is not a reason to not support usage of it.
                 if (!isMethodDefinedInCoreLib())
                 {
-                    // If a vector instruction set is marked as attempted to be used, but is also explicitly unsupported
-                    // then we need to mark as explicitly unsupported the implied instruction set associated with the vector set. 
-                    instructionSet = InstructionSetFlags.ConvertToImpliedInstructionSetForVectorInstructionSets(_compilation.TypeSystemContext.Target.Architecture, instructionSet);
-
                     _actualInstructionSetUnsupported.AddInstructionSet(instructionSet);
                 }
             }
@@ -3958,6 +3950,10 @@ namespace Internal.JitInterface
 #else
         private bool notifyInstructionSetUsage(InstructionSet instructionSet, bool supportEnabled)
         {
+            instructionSet = InstructionSetFlags.ConvertToImpliedInstructionSetForVectorInstructionSets(_compilation.TypeSystemContext.Target.Architecture, instructionSet);
+
+            Debug.Assert(!_compilation.InstructionSetSupport.NonSpecifiableFlags.HasInstructionSet(instructionSet));
+
             return supportEnabled ? _compilation.InstructionSetSupport.IsInstructionSetSupported(instructionSet) : false;
         }
 #endif

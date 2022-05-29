@@ -31,9 +31,11 @@ namespace System
         }
 
 #pragma warning disable CA2229 // public for compat
-        public UnitySerializationHolder(SerializationInfo info!!, StreamingContext context)
+        public UnitySerializationHolder(SerializationInfo info, StreamingContext context)
 #pragma warning restore CA2229
         {
+            ArgumentNullException.ThrowIfNull(info);
+
             // We are ignoring any other serialization input as we are only concerned about DBNull.
             // We also store data and use it for erorr logging.
             _unityType = info.GetInt32("UnityType");
