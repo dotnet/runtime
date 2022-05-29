@@ -596,7 +596,6 @@ namespace System.Runtime.CompilerServices
     /// <summary>
     /// A type handle, which can wrap either a pointer to a <c>TypeDesc</c> or to a <see cref="MethodTable"/>.
     /// </summary>
-    [StructLayout(LayoutKind.Explicit)]
     internal unsafe struct TypeHandle
     {
         // Subset of src\vm\typehandle.h
@@ -604,7 +603,6 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// The address of the current type handle object.
         /// </summary>
-        [FieldOffset(0)]
         private readonly void* m_asTAddr;
 
         /// <summary>

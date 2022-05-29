@@ -3841,18 +3841,6 @@ OBJECTREF MethodTable::Allocate()
     return AllocateObject(this);
 }
 
-// Boxes a value type using an input MethodTable*
-FCIMPL2(Object*, MethodTable::InternalBoxForMethodTable, MethodTable* pMethodTable, void* data)
-{
-    FCALL_CONTRACT;
-
-    _ASSERTE(pMethodTable != NULL);
-    _ASSERTE(data != NULL);
-
-    return OBJECTREFToObject(pMethodTable->Box(data));
-}
-FCIMPLEND
-
 //==========================================================================================
 // box 'data' creating a new object and return it.  This routine understands the special
 // handling needed for Nullable values.
