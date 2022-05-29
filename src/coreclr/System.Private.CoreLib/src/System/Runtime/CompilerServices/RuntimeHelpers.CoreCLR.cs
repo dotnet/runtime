@@ -624,9 +624,9 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public TypeDesc* AsTypeDesc()
         {
-            Debug.Assert(IsTypeDesc());
+            Debug.Assert(IsTypeDesc);
 
-            return (TypeDesc*)(m_asTAddr - 2);
+            return (TypeDesc*)((byte*)m_asTAddr - 2);
         }
 
         /// <summary>
@@ -636,7 +636,7 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public MethodTable* AsMethodTable()
         {
-            Debug.Assert(!IsTypeDesc());
+            Debug.Assert(!IsTypeDesc);
 
             return (MethodTable*)m_asTAddr;
         }

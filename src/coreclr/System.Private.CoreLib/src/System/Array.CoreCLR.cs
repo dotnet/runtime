@@ -289,7 +289,7 @@ namespace System
                 ThrowHelper.ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
             }
 
-            Debug.Assert(flattenedIndex < NativeLength);
+            Debug.Assert((nuint)flattenedIndex < NativeLength);
 
             ref byte arrayDataRef = ref Unsafe.AddByteOffset(ref Unsafe.As<RawData>(this).Data, pMethodTable->BaseSize - (nuint)(2 * sizeof(IntPtr)));
             object? result;
@@ -308,7 +308,7 @@ namespace System
                 // The element is a reference type, so no need to retrieve the component size.
                 // Just offset with object size as element type, since it's the same regardless of T.
                 ref object elementRef = ref Unsafe.As<byte, object>(ref arrayDataRef);
-                ref object offsetElementRef = Unsafe.Add(ref elementRef, (nuint)flattenedIndex);
+                ref object offsetElementRef = ref Unsafe.Add(ref elementRef, (nuint)flattenedIndex);
 
                 result = offsetElementRef;
             }

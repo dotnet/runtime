@@ -287,7 +287,7 @@ namespace System
             Debug.Assert(Rank == 1);
 
             int index = rawIndex - GetLowerBound(0);
-            int length = GetLength(i);
+            int length = GetLength(0);
 
             if ((uint)index >= (uint)length)
                 ThrowHelper.ThrowIndexOutOfRangeException();
