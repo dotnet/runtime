@@ -622,6 +622,11 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <summary>
+        /// Gets whether the current instance wraps a <see langword="null"/> pointer.
+        /// </summary>
+        public bool IsNull => m_asTAddr is null;
+
+        /// <summary>
         /// Gets whether or not this <see cref="TypeHandle"/> wraps a <c>TypeDesc</c> pointer.
         /// Only if this returns <see langword="false"/> it is safe to call <see cref="AsMethodTable"/>.
         /// </summary>
@@ -639,6 +644,21 @@ namespace System.Runtime.CompilerServices
         public MethodTable* AsMethodTable()
         {
             Debug.Assert(!IsTypeDesc);
+
+            return (MethodTable*)m_asTAddr;
+        }
+
+        /// <summary>
+        /// Gets a <see cref="MethodTable"/> pointer for the current type handle.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public MethodTable* GetMethodTable()
+        {
+            if (IsTypeDesc)
+            {
+                // TODO
+                throw new NotImplementedException();
+            }
 
             return (MethodTable*)m_asTAddr;
         }

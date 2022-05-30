@@ -75,13 +75,15 @@ namespace System
             throw new NotSupportedException(SR.NotSupported_NYI);
         }
 
-        public static unsafe object ToObject(TypedReference value)
+#if !CORECLR
+        public static unsafe object? ToObject(TypedReference value)
         {
             return InternalToObject(&value);
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe object InternalToObject(void* value);
+#endif
 
         internal bool IsNull => Unsafe.IsNullRef(ref _value.Value) && _type == IntPtr.Zero;
 

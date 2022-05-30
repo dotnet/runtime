@@ -87,6 +87,12 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowArgumentException_ArgumentNull_TypedRefType()
+        {
+            throw new ArgumentNullException("value", SR.ArgumentNull_TypedRefType);
+        }
+
+        [DoesNotReturn]
         internal static void ThrowArgumentException_CannotExtractScalar(ExceptionArgument argument)
         {
             throw GetArgumentException(ExceptionResource.Argument_CannotExtractScalar, argument);
