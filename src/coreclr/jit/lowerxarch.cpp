@@ -1720,6 +1720,8 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
             BlockRange().InsertAfter(op1, tmp1);
 
             node->Op(1) = tmp1;
+            LowerNode(tmp1);
+
             LIR::Use tmp1Use(BlockRange(), &node->Op(1), node);
             ReplaceWithLclVar(tmp1Use);
             tmp1 = node->Op(1);
@@ -1735,11 +1737,9 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
             BlockRange().InsertAfter(tmp3, idx);
 
             node->ResetHWIntrinsicId(NI_AVX_InsertVector128, comp, tmp3, tmp1, idx);
-
-            LowerNode(tmp1);
             LowerNode(tmp3);
-            LowerNode(node);
 
+            LowerNode(node);
             return node->gtNext;
         }
 
