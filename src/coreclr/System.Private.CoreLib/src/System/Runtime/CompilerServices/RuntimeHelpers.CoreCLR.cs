@@ -627,13 +627,25 @@ namespace System.Runtime.CompilerServices
         public bool IsNull => m_asTAddr is null;
 
         /// <summary>
-        /// Gets whether or not this <see cref="TypeHandle"/> wraps a <c>TypeDesc</c> pointer.
-        /// Only if this returns <see langword="false"/> it is safe to call <see cref="AsMethodTable"/>.
+        /// Gets whether or not this <see cref="TypeHandle"/> wraps a <see cref="TypeDesc"/> pointer.
+        /// If so, <see cref="AsTypeDesc"/> is safe to call. Otherwise, this instance wraps a <see cref="MethodTable"/> pointer.
         /// </summary>
         public bool IsTypeDesc
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => ((nint)m_asTAddr & 2) != 0;
+        }
+
+        /// <summary>
+        /// Gets the <see cref="TypeDesc"/> pointer wrapped by the current instance.
+        /// </summary>
+        /// <remarks>This is only safe to call if <see cref="IsTypeDesc"/> returned <see langword="true"/>.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public TypeDesc* AsTypeDesc()
+        {
+            Debug.Assert(IsTypeDesc);
+
+            return (TypeDesc*)((byte*)m_asTAddr - 2);
         }
 
         /// <summary>
@@ -656,11 +668,95 @@ namespace System.Runtime.CompilerServices
         {
             if (IsTypeDesc)
             {
-                // TODO
-                throw new NotImplementedException();
+                return AsTypeDesc()->GetMethodTable();
             }
 
             return (MethodTable*)m_asTAddr;
+        }
+    }
+
+    internal unsafe struct TypeDesc
+    {
+        /// <summary>
+        /// <para>
+        /// The low-order 8 bits of this flag are used to store the <see cref="CorElementType"/>,
+        /// which discriminates what kind of <see cref="TypeDesc"/> this is.
+        /// </para>
+        /// <para>The remaining bits are available for flags.</para>
+        /// </summary>
+        private readonly uint TypeAndFlags;
+
+        /// <summary>
+        /// Gets whether the current instance represents a generic variable.
+        /// </summary>
+        public bool IsGenericVariable
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Gets a <see cref="MethodTable"/> pointer for the current type desc.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public MethodTable* GetMethodTable()
+        {
+            if (IsGenericVariable)
+            {
+                return null;
+            }
+
+            if (GetInternalCorElementType() == CorElementType.ELEMENT_TYPE_FNPTR)
+            {
+                // return CoreLibBinder::GetElementType(ELEMENT_TYPE_U);
+                throw new NotImplementedException();
+            }
+
+            ParamTypeDesc* asParam = (ParamTypeDesc*)Unsafe.AsPointer(ref this);
+
+            if (GetInternalCorElementType() == CorElementType.ELEMENT_TYPE_VALUETYPE)
+            {
+                return asParam->m_Arg.AsMethodTable();
+            }
+
+            return asParam->GetTemplateMethodTableInternal();
+        }
+
+        /// <summary>
+        /// Gets the <see cref="CorElementType"/> value for the current type desc.
+        /// </summary>
+        /// <returns>The <see cref="CorElementType"/> value for the current type desc.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public CorElementType GetInternalCorElementType()
+        {
+            return (CorElementType)(TypeAndFlags & 0xFF);
+        }
+    }
+
+    // Subset of src\vm\typedesc.h
+    internal unsafe struct ParamTypeDesc
+    {
+        // Same as the one from TypeDesc
+        public readonly uint TypeAndFlags;
+
+        /// <summary>
+        /// The shared method table, some variants do not use this field (it is null.
+        /// </summary>
+        public readonly MethodTable* m_TemplateMT;
+
+        /// <summary>
+        /// The type that is being modified.
+        /// </summary>
+        public readonly TypeHandle m_Arg;
+
+        /// <summary>
+        /// Handle back to the internal reflection Type object.
+        /// </summary>
+        public readonly void* m_hExposedClassObject;
+
+        public MethodTable* GetTemplateMethodTableInternal()
+        {
+            return m_TemplateMT;
         }
     }
 
