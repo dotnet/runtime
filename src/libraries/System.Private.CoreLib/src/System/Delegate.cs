@@ -73,7 +73,7 @@ namespace System
             if (value == null)
                 return source;
 
-            if (!InternalEqualTypes(source, value))
+            if (!EqualTypes(source, value))
                 throw new ArgumentException(SR.Arg_DlgtTypeMis);
 
             return source.RemoveImpl(value);

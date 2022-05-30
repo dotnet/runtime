@@ -2011,14 +2011,14 @@ FCIMPL2(FC_BOOL_RET, COMDelegate::InternalEqualTypes, Object* pThis, Object *pTh
     _ASSERTE(pThisMT != NULL && pThisMT->IsDelegate());
     _ASSERTE(pThatMT != NULL);
 
-    BOOL bResult = (pThisMT == pThatMT);
+    // simple match should be done in managed code
+    _ASSERTE(pThisMT != pThatMT);
 
-    if (!bResult)
-    {
-        HELPER_METHOD_FRAME_BEGIN_RET_0();
-        bResult = pThisMT->IsEquivalentTo(pThatMT);
-        HELPER_METHOD_FRAME_END();
-    }
+    BOOL bResult;
+
+    HELPER_METHOD_FRAME_BEGIN_RET_0();
+    bResult = pThisMT->IsEquivalentTo(pThatMT);
+    HELPER_METHOD_FRAME_END();
 
     FC_RETURN_BOOL(bResult);
 }

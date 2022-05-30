@@ -88,7 +88,7 @@ namespace System
 
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            if (obj == null || !InternalEqualTypes(this, obj))
+            if (obj == null || !EqualTypes(this, obj))
                 return false;
 
             Delegate d = (Delegate)obj;
@@ -411,8 +411,17 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern MulticastDelegate InternalAllocLike(Delegate d);
 
+        internal static bool EqualTypes(object a, object b)
+        {
+            // fast check for method table match
+            if (a.GetType() == b.GetType())
+                return true;
+
+            return InternalEqualTypes(a, b);
+        }
+
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool InternalEqualTypes(object a, object b);
+        private static extern bool InternalEqualTypes(object a, object b);
 
         // Used by the ctor. Do not call directly.
         // The name of this function will appear in managed stacktraces as delegate constructor.
