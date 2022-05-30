@@ -598,9 +598,18 @@ MONO_RESTORE_WARNING
 	return NULL;
 }
 
+
 /*
- * Load custrom attribute without mono allocation - invoked from AOT compiler
- * Caller needs to deallocate memory of the return value
+ * load_cattr_value_noalloc:
+ *
+ * Loads custro attribute values without mono allocation (invoked when AOT compiling).
+ * Returns MonoCustomAttrValue:
+ * 	- for primitive types:
+ * 		- (bools, ints, and enums) a pointer to the value is returned.
+ * 		- for types, the address of the loaded type is returned (DON'T FREE).
+ *		- for strings, the address in the metadata blob is returned (DON'T FREE).
+ * 	- for arrays:
+ * 		- MonoCustomAttrValueArray* is returned.
  */
 static MonoCustomAttrValue*
 load_cattr_value_noalloc (MonoImage *image, MonoType *t, const char *p, const char *boundp, const char **end, MonoError *error)
@@ -1413,34 +1422,79 @@ fail:
 }
 
 /*
- * mono_reflection_create_custom_attr_data_args_noalloc:
- *
- * Same as mono_reflection_create_custom_attr_data_args but allocate no managed objects, return values
- * using C arrays. Only usable for cattrs with primitive/type/string arguments.
- * For types, a MonoType* is returned.
- * For strings, the address in the metadata blob is returned.
- * TYPED_ARGS, NAMED_ARGS, and NAMED_ARG_INFO should be freed using g_free ().
+ * free_decoded_custom_attr:
+ * 
+ * Handles freeing of MonoCustomAttrValue type properly.
+ * Strings and MonoType* are not freed since they come from the metadata.
  */
 void
-mono_reflection_create_custom_attr_data_args_noalloc (MonoImage *image, MonoMethod *method, const guchar *data, guint32 len,
-													  gpointer **typed_args_out, gpointer **named_args_out, int *num_named_args,
-													  CattrNamedArg **named_arg_info, MonoError *error)
+free_decoded_custom_attr(MonoCustomAttrValue* cattr_val)
 {
-	gpointer *typed_args, *named_args;
+	if (!cattr_val)
+		return;
+
+	if (cattr_val->type == MONO_TYPE_SZARRAY) {
+		for (int i = 0; i < cattr_val->value.array->len; i++)
+			free_decoded_custom_attr (&cattr_val->value.array->values[i]);
+		g_free (cattr_val->value.array);
+	} else if (cattr_val->type != MONO_TYPE_STRING && cattr_val->type != MONO_TYPE_CLASS) {
+		g_free (cattr_val->value.primitive);
+	}
+}
+
+/*
+ * mono_reflection_free_custom_attr_data_args_noalloc:
+ * 
+ * Frees up MonoDecodeCustomAttr type.
+ * Must be called after mono_reflection_create_custom_attr_data_args_noalloc to properly free up allocated struct.
+ */
+void
+mono_reflection_free_custom_attr_data_args_noalloc (MonoDecodeCustomAttr* decoded_args)
+{
+	if (!decoded_args)
+		return;
+
+	// free typed args
+	for (int i = 0; i < decoded_args->typed_args_num; i++) {
+		free_decoded_custom_attr(decoded_args->typed_args[i]);
+		g_free(decoded_args->typed_args[i]);
+	}
+	g_free(decoded_args->typed_args);
+
+	// free named args
+	for (int i = 0; i < decoded_args->named_args_num; i++) {
+		free_decoded_custom_attr(decoded_args->named_args[i]);
+		g_free(decoded_args->named_args[i]);
+	}
+	g_free(decoded_args->named_args);
+
+	// free named args info
+	g_free(decoded_args->named_args_info);
+
+	g_free(decoded_args);
+}
+
+/*
+ * mono_reflection_create_custom_attr_data_args_noalloc:
+ *
+ * Same as mono_reflection_create_custom_attr_data_args but allocate no managed objects.
+ * Returns MonoDecodeCustomAttr struct with information about typed and named arguments.
+ * Typed and named arguments are represented as array of MonoCustomAttrValue.
+ * Return value - decoded_args_out must be freed using mono_reflection_free_custom_attr_data_args_noalloc ().
+ */
+void
+mono_reflection_create_custom_attr_data_args_noalloc (MonoImage *image, MonoMethod *method, const guchar *data, guint32 len, MonoDecodeCustomAttr** decoded_args_out, MonoError *error)
+{
 	MonoClass *attrklass;
 	const char *p = (const char*)data;
 	const char *data_end = p + len;
 	const char *named;
 	guint32 i, j, num_named;
-	CattrNamedArg *arginfo = NULL;
+	MonoDecodeCustomAttr *decoded_args = NULL;
 	MonoMethodSignature *sig = mono_method_signature_internal (method);
 
-	*typed_args_out = NULL;
-	*named_args_out = NULL;
-	*named_arg_info = NULL;
-
-	typed_args = NULL;
-	named_args = NULL;
+	*decoded_args_out = NULL;
+	decoded_args = g_malloc0 (sizeof (MonoDecodeCustomAttr));
 
 	error_init (error);
 
@@ -1452,10 +1506,10 @@ mono_reflection_create_custom_attr_data_args_noalloc (MonoImage *image, MonoMeth
 	/* skip prolog */
 	p += 2;
 
-	typed_args = g_new0 (gpointer, sig->param_count);
-
+	decoded_args->typed_args_num = sig->param_count;
+	decoded_args->typed_args = g_malloc0 (sig->param_count * sizeof (MonoCustomAttrValue*));
 	for (i = 0; i < sig->param_count; ++i) {
-		typed_args [i] = load_cattr_value_noalloc (image, sig->params [i], p, data_end, &p, error);
+		decoded_args->typed_args [i] = load_cattr_value_noalloc (image, sig->params [i], p, data_end, &p, error);
 		return_if_nok (error);
 	}
 
@@ -1465,14 +1519,15 @@ mono_reflection_create_custom_attr_data_args_noalloc (MonoImage *image, MonoMeth
 	if (!bcheck_blob (named, 1, data_end, error))
 		goto fail;
 	num_named = read16 (named);
-	named_args = g_new0 (gpointer, num_named);
+
+	decoded_args->named_args_num = num_named;
+	decoded_args->named_args = g_malloc0 (num_named * sizeof (MonoCustomAttrValue*));
+
 	return_if_nok (error);
 	named += 2;
 	attrklass = method->klass;
 
-	arginfo = g_new0 (CattrNamedArg, num_named);
-	*named_arg_info = arginfo;
-	*num_named_args = num_named;
+	decoded_args->named_args_info = g_new0 (CattrNamedArg, num_named);
 
 	/* Parse each named arg, and add to arginfo.  Each named argument could
 	 * be a field name or a property name followed by a value. */
@@ -1521,10 +1576,10 @@ mono_reflection_create_custom_attr_data_args_noalloc (MonoImage *image, MonoMeth
 				goto fail;
 			}
 
-			arginfo [j].type = field->type;
-			arginfo [j].field = field;
+			decoded_args->named_args_info [j].type = field->type;
+			decoded_args->named_args_info [j].field = field;
 
-			named_args [j] = load_cattr_value_noalloc (image, field->type, named, data_end, &named, error);
+			decoded_args->named_args [j] = load_cattr_value_noalloc (image, field->type, named, data_end, &named, error);
 
 			if (!is_ok (error)) {
 				g_free (name);
@@ -1543,10 +1598,10 @@ mono_reflection_create_custom_attr_data_args_noalloc (MonoImage *image, MonoMeth
 			prop_type = prop->get? mono_method_signature_internal (prop->get)->ret :
 			     mono_method_signature_internal (prop->set)->params [mono_method_signature_internal (prop->set)->param_count - 1];
 
-			arginfo [j].type = prop_type;
-			arginfo [j].prop = prop;
+			decoded_args->named_args_info [j].type = prop_type;
+			decoded_args->named_args_info [j].prop = prop;
 
-			named_args [j] = load_cattr_value_noalloc (image, prop_type, named, data_end, &named, error);
+			decoded_args->named_args [j] = load_cattr_value_noalloc (image, prop_type, named, data_end, &named, error);
 			if (!is_ok (error)) {
 				g_free (name);
 				goto fail;
@@ -1555,15 +1610,11 @@ mono_reflection_create_custom_attr_data_args_noalloc (MonoImage *image, MonoMeth
 		g_free (name);
 	}
 
-	*typed_args_out = typed_args;
-	*named_args_out = named_args;
+	*decoded_args_out = decoded_args;
 	return;
 fail:
 	mono_error_set_generic_error (error, "System.Reflection", "CustomAttributeFormatException", "Binary format of the specified custom attribute was invalid.");
-	g_free (typed_args);
-	g_free (named_args);
-	g_free (arginfo);
-	*named_arg_info = NULL;
+	mono_reflection_free_custom_attr_data_args_noalloc(decoded_args);
 }
 
 void

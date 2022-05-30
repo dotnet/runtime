@@ -3404,29 +3404,22 @@ mono_marshal_set_callconv_from_unmanaged_callers_only_attribute (MonoMethod *met
 
 	if (attr != NULL)
 	{
-		gpointer *typed_args = NULL;
-		gpointer *named_args = NULL;
-		CattrNamedArg *named_arg_info = NULL;
-		int num_named_args = 0;
-		mono_reflection_create_custom_attr_data_args_noalloc (mono_defaults.corlib, attr->ctor, attr->data, attr->data_size, &typed_args, &named_args, &num_named_args, &named_arg_info, error);
-		for (i = 0; i < num_named_args; ++i) {
-			if (named_arg_info [i].field && !strcmp (named_arg_info [i].field->name, "CallConvs")) {
-				MonoCustomAttrValue* calling_conventions_attr =  (MonoCustomAttrValue*) named_args [i];
-				g_assertf(named_arg_info [i].field->type->type == MONO_TYPE_SZARRAY, "UnmanagedCallersOnlyAttribute parameter %s must be an array, specified for method %s", named_arg_info [i].field->name, method->name);
-				
-				MonoCustomAttrValueArray* calling_conventions = (MonoCustomAttrValueArray*) calling_conventions_attr->value.array;
+		MonoDecodeCustomAttr *decoded_args = NULL;
+		mono_reflection_create_custom_attr_data_args_noalloc (mono_defaults.corlib, attr->ctor, attr->data, attr->data_size, &decoded_args, error);
+		for (i = 0; i < decoded_args->named_args_num; ++i) {
+			if (decoded_args->named_args_info [i].field && !strcmp (decoded_args->named_args_info [i].field->name, "CallConvs")) {
+				g_assertf(decoded_args->named_args_info [i].field->type->type == MONO_TYPE_SZARRAY, "UnmanagedCallersOnlyAttribute parameter %s must be an array, specified for method %s", decoded_args->named_args_info [i].field->name, method->name);
+				MonoCustomAttrValueArray *calling_conventions = decoded_args->named_args[i]->value.array;
 				if (calling_conventions->len > 0) {
 					if (calling_conventions->len > 1)
-						g_warning ("Multiple calling conventions are not supported for UnmanagedCallersOnlyAttribute parameter %s, specified for method %s. Only the first calling convention will be taken into account", named_arg_info [i].field->name, method->name);
+						g_warning ("Multiple calling conventions are not supported for UnmanagedCallersOnlyAttribute parameter %s, specified for method %s. Only the first calling convention will be taken into account", decoded_args->named_args_info [i].field->name, method->name);
 					// TODO: Support multiple conventions?
 					MonoType* calling_convention = (MonoType*)calling_conventions->values[0].value.primitive;
 					mono_marshal_set_signature_callconv_from_attribute (csig, calling_convention, error);
 				}
-				g_free(calling_conventions);
 			}
 		}
-		g_free (named_args);
-		g_free (named_arg_info);
+		mono_reflection_free_custom_attr_data_args_noalloc (decoded_args);
 	}
 
 	if (!cinfo->cached)
@@ -4155,31 +4148,25 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 			}
 		}
 		if (attr) {
-			gpointer *typed_args, *named_args;
-			CattrNamedArg *arginfo;
 			gint32 call_conv;
 			gint32 charset = 0;
 			MonoBoolean set_last_error = 0;
-			int num_named_args;
-			MonoCustomAttrValue *call_conv_attr_value;
+			MonoDecodeCustomAttr *decoded_args = NULL;
 
-			mono_reflection_create_custom_attr_data_args_noalloc (mono_defaults.corlib, attr->ctor, attr->data, attr->data_size,
-																  &typed_args, &named_args, &num_named_args, &arginfo, error);
+			mono_reflection_create_custom_attr_data_args_noalloc (mono_defaults.corlib, attr->ctor, attr->data, attr->data_size, &decoded_args, error);
 			g_assert (is_ok (error));
 
 			/* typed args */
-			call_conv_attr_value = (MonoCustomAttrValue*)typed_args [0];
-			call_conv = *(gint32*)call_conv_attr_value->value.primitive;
+			call_conv = *(gint32*)decoded_args->typed_args[0]->value.primitive;
 			/* named args */
-			for (i = 0; i < num_named_args; ++i) {
-				CattrNamedArg *narg = &arginfo [i];
-				MonoCustomAttrValue *attr_value = (MonoCustomAttrValue*)named_args [i];
-
+			for (i = 0; i < decoded_args->named_args_num; ++i) {
+				CattrNamedArg *narg = &decoded_args->named_args_info[i];
 				g_assert (narg->field);
+
 				if (!strcmp (narg->field->name, "CharSet")) {
-					charset = *(gint32*)attr_value->value.primitive;
+					charset = *(gint32*)decoded_args->named_args [i]->value.primitive;
 				} else if (!strcmp (narg->field->name, "SetLastError")) {
-					set_last_error = *(MonoBoolean*)attr_value->value.primitive;
+					set_last_error = *(MonoBoolean*)decoded_args->named_args [i]->value.primitive;
 				} else if (!strcmp (narg->field->name, "BestFitMapping")) {
 					// best_fit_mapping = *(MonoBoolean*)mono_object_unbox_internal (o);
 				} else if (!strcmp (narg->field->name, "ThrowOnUnmappableChar")) {
@@ -4187,12 +4174,8 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 				} else {
 					g_assert_not_reached ();
 				}
-				g_free (named_args [i]);
 			}
-			g_free (typed_args [0]);
-			g_free (typed_args);
-			g_free (named_args);
-			g_free (arginfo);
+			mono_reflection_free_custom_attr_data_args_noalloc (decoded_args);
 
 			memset (&piinfo, 0, sizeof (piinfo));
 			m.piinfo = &piinfo;

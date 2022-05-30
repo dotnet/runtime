@@ -24,6 +24,14 @@ struct _MonoCustomAttrValueArray {
 	MonoCustomAttrValue values[MONO_ZERO_LEN_ARRAY];
 };
 
+typedef struct _MonoDecodeCustomAttr {
+	int typed_args_num;
+	int named_args_num;
+	MonoCustomAttrValue **typed_args;
+	MonoCustomAttrValue **named_args;
+	CattrNamedArg *named_args_info;
+} MonoDecodeCustomAttr;
+
 MonoCustomAttrInfo*
 mono_custom_attrs_from_builders (MonoImage *alloc_img, MonoImage *image, MonoArray *cattrs);
 
@@ -48,8 +56,9 @@ MONO_COMPONENT_API void
 mono_reflection_create_custom_attr_data_args (MonoImage *image, MonoMethod *method, const guchar *data, guint32 len, MonoArrayHandleOut typed_args_out, MonoArrayHandleOut named_args_out, CattrNamedArg **named_arg_info, MonoError *error);
 
 MONO_COMPONENT_API void
-mono_reflection_create_custom_attr_data_args_noalloc (MonoImage *image, MonoMethod *method, const guchar *data, guint32 len,
-													  gpointer **typed_args_out, gpointer **named_args_out, int *num_named_args,
-													  CattrNamedArg **named_arg_info, MonoError *error);
+mono_reflection_free_custom_attr_data_args_noalloc(MonoDecodeCustomAttr* decoded_args);
+
+MONO_COMPONENT_API void
+mono_reflection_create_custom_attr_data_args_noalloc (MonoImage *image, MonoMethod *method, const guchar *data, guint32 len, MonoDecodeCustomAttr** decoded_args, MonoError *error);
 
 #endif  /* __MONO_METADATA_REFLECTION_CUSTOM_ATTRS_INTERNALS_H__ */
