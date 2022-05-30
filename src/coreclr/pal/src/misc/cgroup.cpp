@@ -87,9 +87,9 @@ public:
         if (s_cgroup_version == 0)
             return false;
         else if (s_cgroup_version == 1)
-            return GetCGroupMemoryUsage(val, CGROUP1_MEMORY_USAGE_FILENAME);
+            return GetCGroupMemoryUsage(val, CGROUP1_MEMORY_USAGE_FILENAME, CGROUP1_MEMORY_STAT_INACTIVE_FIELD);
         else if (s_cgroup_version == 2)
-            return GetCGroupMemoryUsage(val, CGROUP2_MEMORY_USAGE_FILENAME);
+            return GetCGroupMemoryUsage(val, CGROUP2_MEMORY_USAGE_FILENAME, CGROUP2_MEMORY_STAT_INACTIVE_FIELD);
         else
         {
             _ASSERTE(!"Unknown cgroup version.");
@@ -395,7 +395,7 @@ private:
         return result;
     }
 
-    static bool GetCGroupMemoryUsage(size_t *val, const char *filename)
+    static bool GetCGroupMemoryUsage(size_t *val, const char *filename, const char *inactiveFileFieldName)
     {
         // Use the same way to calculate memory load as popular container tools (Docker, Kubernetes, Containerd etc.)
         // For cgroup v1: value of 'memory.usage_in_bytes' minus 'total_inactive_file' value of 'memory.stat'
@@ -443,10 +443,6 @@ private:
         size_t lineLen = 0;
         bool foundInactiveFileValue = false;
         char* endptr;
-
-        const char* inactiveFileFieldName = s_cgroup_version == 1
-            ? CGROUP1_MEMORY_STAT_INACTIVE_FIELD
-            : CGROUP2_MEMORY_STAT_INACTIVE_FIELD;
 
         size_t inactiveFileFieldNameLength = strlen(inactiveFileFieldName);
 
