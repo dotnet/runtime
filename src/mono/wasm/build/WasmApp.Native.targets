@@ -272,7 +272,12 @@
       <_WasmPInvokeModules Include="libSystem.Globalization.Native" />
       <_WasmPInvokeModules Include="libSystem.Security.Cryptography.Native.Browser" />
     </ItemGroup>
-    
+
+    <PropertyGroup>
+      <_HasMscorlib Condition="'%(_WasmAssembliesInternal.FileName)%(_WasmAssembliesInternal.Extension)' == 'mscorlib.dll'">true</_HasMscorlib>
+      <_MscorlibPath Condition="'$(_HasMscorlib)' != 'true'">$(MicrosoftNetCoreAppRuntimePackRidDir)lib\net7.0\mscorlib.dll</_MscorlibPath>
+    </PropertyGroup>
+
     <Error Condition="'$(_MonoAotCrossCompilerPath)' == '' or !Exists('$(_MonoAotCrossCompilerPath)')"
            Text="Could not find AOT cross compiler at %24(_MonoAotCrossCompilerPath)=$(_MonoAotCrossCompilerPath)" />
 
@@ -284,7 +289,7 @@
     <MakeDir Directories="$(_WasmIntermediateOutputPath)" Condition="!Exists('$(_WasmIntermediateOutputPath)')"  />
 
     <ManagedToNativeGenerator
-      Assemblies="@(_WasmAssembliesInternal)"
+      Assemblies="@(_WasmAssembliesInternal);$(_MscorlibPath)"
       RuntimeIcallTableFile="$(_WasmRuntimeICallTablePath)"
       IcallOutputPath="$(_WasmICallTablePath)"
       PInvokeModules="@(_WasmPInvokeModules)"

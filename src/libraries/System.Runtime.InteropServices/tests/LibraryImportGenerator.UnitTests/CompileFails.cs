@@ -32,10 +32,10 @@ namespace LibraryImportGenerator.UnitTests
             yield return new object[] { CodeSnippets.MarshalAsArrayParametersAndModifiers<bool>(), 5, 0 };
 
             // Unsupported StringMarshalling configuration
-            yield return new object[] { CodeSnippets.BasicParametersAndModifiersWithStringMarshalling<char>(StringMarshalling.Utf8), 6, 0 };
-            yield return new object[] { CodeSnippets.BasicParametersAndModifiersWithStringMarshalling<char>(StringMarshalling.Custom), 7, 0 };
-            yield return new object[] { CodeSnippets.BasicParametersAndModifiersWithStringMarshalling<string>(StringMarshalling.Custom), 7, 0 };
-            yield return new object[] { CodeSnippets.CustomStringMarshallingParametersAndModifiers<char>(), 6, 0 };
+            yield return new object[] { CodeSnippets.BasicParametersAndModifiersWithStringMarshalling<char>(StringMarshalling.Utf8), 5, 0 };
+            yield return new object[] { CodeSnippets.BasicParametersAndModifiersWithStringMarshalling<char>(StringMarshalling.Custom), 6, 0 };
+            yield return new object[] { CodeSnippets.BasicParametersAndModifiersWithStringMarshalling<string>(StringMarshalling.Custom), 6, 0 };
+            yield return new object[] { CodeSnippets.CustomStringMarshallingParametersAndModifiers<char>(), 5, 0 };
 
             // Unsupported UnmanagedType
             yield return new object[] { CodeSnippets.MarshalAsParametersAndModifiers<char>(UnmanagedType.I1), 5, 0 };

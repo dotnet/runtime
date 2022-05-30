@@ -715,12 +715,6 @@ void TypeString::AppendType(TypeNameBuilder& tnb, TypeHandle ty, Instantiation t
         tnb.AddName(W("(null)"));
     }
     else
-    // It's not restored yet!
-    if (ty.IsEncodedFixup())
-    {
-        tnb.AddName(W("(fixup)"));
-    }
-    else
 
     // It's an array, with format
     //   element_ty[] (1-d, SZARRAY)

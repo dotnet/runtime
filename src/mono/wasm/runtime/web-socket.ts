@@ -88,10 +88,13 @@ export function mono_wasm_web_socket_open_ref(uri_address: MonoObjectRef, subPro
                 receive_promise_control.resolve(null);
             });
         };
+        const local_on_error = (ev: any) => {
+            open_promise_control.reject(ev.message);
+        };
         ws.addEventListener("message", local_on_message);
         ws.addEventListener("open", local_on_open, { once: true });
         ws.addEventListener("close", local_on_close, { once: true });
-
+        ws.addEventListener("error", local_on_error, { once: true });
         const ws_js_handle = mono_wasm_get_js_handle(ws);
         Module.setValue(web_socket_js_handle, <any>ws_js_handle, "i32");
 
