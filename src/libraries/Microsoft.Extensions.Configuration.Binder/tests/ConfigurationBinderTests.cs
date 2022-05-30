@@ -71,7 +71,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
 
             public ISet<UnsupportedTypeInHashSet> UninstantiatedHashSetWithUnsupportedKey { get; set; } 
 
-#if NET5_0_OR_GREATER
+#if NETCOREAPP
             public IReadOnlySet<string> InstantiatedIReadOnlySet { get; set; } = new HashSet<string>();
             public IReadOnlySet<string> InstantiatedIReadOnlySetWithSomeValues { get; set; } =
                 new HashSet<string>(new[] { "existing1", "existing2" });
@@ -560,7 +560,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal("Yo2", options.NonInstantiatedISet.ElementAt(1));
         }
 
-#if NET5_0_OR_GREATER
+#if NETCOREAPP
         [Fact]
         public void CanBindInstantiatedIReadOnlySet()
         {
