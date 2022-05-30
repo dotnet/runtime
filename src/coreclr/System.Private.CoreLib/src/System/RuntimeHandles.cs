@@ -345,6 +345,14 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern CorElementType GetCorElementType(RuntimeType type);
 
+        /// <summary>
+        /// Gets the <see cref="MethodTable"/> pointer for a shared type.
+        /// </summary>
+        /// <param name="elementType">The specific element type to get the shared <see cref="MethodTable"/> for.</param>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern unsafe MethodTable* GetElementTypeMethodTable(CorElementType elementType);
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern RuntimeAssembly GetAssembly(RuntimeType type);
 

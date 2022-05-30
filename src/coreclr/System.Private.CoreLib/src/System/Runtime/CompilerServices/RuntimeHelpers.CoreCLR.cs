@@ -708,8 +708,7 @@ namespace System.Runtime.CompilerServices
 
             if (GetInternalCorElementType() == CorElementType.ELEMENT_TYPE_FNPTR)
             {
-                // return CoreLibBinder::GetElementType(ELEMENT_TYPE_U);
-                throw new NotImplementedException();
+                return RuntimeTypeHandle.GetElementTypeMethodTable(CorElementType.ELEMENT_TYPE_U);
             }
 
             ParamTypeDesc* asParam = (ParamTypeDesc*)Unsafe.AsPointer(ref this);

@@ -474,6 +474,15 @@ FCIMPL1(ReflectClassBaseObject *, RuntimeTypeHandle::GetElementType, ReflectClas
 }
 FCIMPLEND
 
+// Gets the method table for a shared element type
+FCIMPL1(void*, RuntimeTypeHandle::GetElementTypeMethodTable, CorElementType elementType)
+{
+    FCALL_CONTRACT;
+
+    return CoreLibBinder::GetElementType(elementType);
+}
+FCIMPLEND
+
 FCIMPL1(INT32, RuntimeTypeHandle::GetArrayRank, ReflectClassBaseObject *pTypeUNSAFE) {
     CONTRACTL {
         FCALL_CHECK;
