@@ -39,13 +39,26 @@ bool IntegralRange::Contains(int64_t value) const
 //    value - the symbolic value in question
 //
 // Return Value:
-//    Integer correspoding to the symbolic value.
+//    Integer corresponding to the symbolic value.
 //
 /* static */ int64_t IntegralRange::SymbolicToRealValue(SymbolicIntegerValue value)
 {
-    static const int64_t SymbolicToRealMap[]{INT64_MIN, INT32_MIN,  INT16_MIN, INT8_MIN,  0,
-                                             1,         INT8_MAX,   UINT8_MAX, INT16_MAX, UINT16_MAX,
-                                             INT32_MAX, UINT32_MAX, INT64_MAX};
+    static const int64_t SymbolicToRealMap[]{
+        INT64_MIN,               // SymbolicIntegerValue::LongMin
+        INT32_MIN,               // SymbolicIntegerValue::IntMin
+        INT16_MIN,               // SymbolicIntegerValue::ShortMin
+        INT8_MIN,                // SymbolicIntegerValue::ByteMin
+        0,                       // SymbolicIntegerValue::Zero
+        1,                       // SymbolicIntegerValue::One
+        INT8_MAX,                // SymbolicIntegerValue::ByteMax
+        UINT8_MAX,               // SymbolicIntegerValue::UByteMax
+        INT16_MAX,               // SymbolicIntegerValue::ShortMax
+        UINT16_MAX,              // SymbolicIntegerValue::UShortMax
+        CORINFO_Array_MaxLength, // SymbolicIntegerValue::ArrayLenMax
+        INT32_MAX,               // SymbolicIntegerValue::IntMax
+        UINT32_MAX,              // SymbolicIntegerValue::UIntMax
+        INT64_MAX                // SymbolicIntegerValue::LongMax
+    };
 
     assert(sizeof(SymbolicIntegerValue) == sizeof(int32_t));
     assert(SymbolicToRealMap[static_cast<int32_t>(SymbolicIntegerValue::LongMin)] == INT64_MIN);
@@ -145,7 +158,7 @@ bool IntegralRange::Contains(int64_t value) const
             return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::One};
 
         case GT_ARR_LENGTH:
-            return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::IntMax};
+            return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::ArrayLenMax};
 
         case GT_CALL:
             if (node->AsCall()->NormalizesSmallTypesOnReturn())

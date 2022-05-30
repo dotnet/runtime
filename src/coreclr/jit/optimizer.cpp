@@ -8107,10 +8107,12 @@ void Compiler::AddModifiedElemTypeAllContainingLoops(unsigned lnum, CORINFO_CLAS
 // Return Value:
 //    Rewritten "check" - no-op if it has no side effects or the tree that contains them.
 //
-// Assumptions:
-//    This method is capable of removing checks of two kinds: COMMA-based and standalone top-level ones.
-//    In case of a COMMA-based check, "check" must be a non-null first operand of a non-null COMMA.
-//    In case of a standalone check, "comma" must be null and "check" - "stmt"'s root.
+// Notes:
+//    This method is capable of removing checks of two kinds: COMMA-based and standalone top-level
+//    ones. In case of a COMMA-based check, "check" must be a non-null first operand of a non-null
+//    COMMA. In case of a standalone check, "comma" must be null and "check" - "stmt"'s root.
+//
+//    Does not keep costs or node threading up to date, but does update side effect flags.
 //
 GenTree* Compiler::optRemoveRangeCheck(GenTreeBoundsChk* check, GenTree* comma, Statement* stmt)
 {
@@ -8164,15 +8166,6 @@ GenTree* Compiler::optRemoveRangeCheck(GenTreeBoundsChk* check, GenTree* comma, 
     }
 
     gtUpdateSideEffects(stmt, tree);
-
-    // Recalculate the GetCostSz(), etc...
-    gtSetStmtInfo(stmt);
-
-    // Re-thread the nodes if necessary
-    if (fgStmtListThreaded)
-    {
-        fgSetStmtSeq(stmt);
-    }
 
 #ifdef DEBUG
     if (verbose)

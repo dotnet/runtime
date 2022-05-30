@@ -12,13 +12,13 @@ namespace Microsoft.Interop
     public sealed class ArrayMarshaller : IMarshallingGenerator
     {
         private readonly IMarshallingGenerator _manualMarshallingGenerator;
-        private readonly TypeSyntax _elementType;
+        private readonly TypePositionInfo _elementInfo;
         private readonly bool _enablePinning;
 
-        public ArrayMarshaller(IMarshallingGenerator manualMarshallingGenerator, TypeSyntax elementType, bool enablePinning)
+        public ArrayMarshaller(IMarshallingGenerator manualMarshallingGenerator, TypePositionInfo elementInfo, bool enablePinning)
         {
             _manualMarshallingGenerator = manualMarshallingGenerator;
-            _elementType = elementType;
+            _elementInfo = elementInfo;
             _enablePinning = enablePinning;
         }
 
@@ -59,7 +59,14 @@ namespace Microsoft.Interop
         {
             if (context.SingleFrameSpansNativeContext && _enablePinning)
             {
-                return false;
+                // Only report no support for by-value contents when element is strictly blittable, such that
+                // the status remains the same regardless of whether or not runtime marshalling is enabled
+                if (_elementInfo.MarshallingAttributeInfo is NoMarshallingInfo
+                    || _elementInfo.MarshallingAttributeInfo is UnmanagedBlittableMarshallingInfo { IsStrictlyBlittable: true }
+                    || _elementInfo.MarshallingAttributeInfo is NativeMarshallingAttributeInfo { IsStrictlyBlittable: true })
+                {
+                    return false;
+                }
             }
             return marshalKind.HasFlag(ByValueContentsMarshalKind.Out);
         }
@@ -86,7 +93,7 @@ namespace Microsoft.Interop
             // The element type here is used only for refs/pointers. In the pointer array case, we use byte as the basic placeholder type,
             // since we can't use pointer types in generic type parameters.
             bool isPointerArray = info.ManagedType is SzArrayType arrayType && arrayType.ElementTypeInfo is PointerTypeInfo;
-            TypeSyntax arrayElementType = isPointerArray ? PredefinedType(Token(SyntaxKind.ByteKeyword)) : _elementType;
+            TypeSyntax arrayElementType = isPointerArray ? PredefinedType(Token(SyntaxKind.ByteKeyword)) : _elementInfo.ManagedType.Syntax;
             if (context.CurrentStage == StubCodeContext.Stage.Marshal)
             {
                 // [COMPAT] We use explicit byref calculations here instead of just using a fixed statement

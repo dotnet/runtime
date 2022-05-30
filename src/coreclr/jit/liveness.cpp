@@ -243,18 +243,17 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
             // Otherwise, we treat it as a use here.
             if ((tree->gtFlags & GTF_IND_ASG_LHS) == 0)
             {
-                GenTreeLclVarCommon* dummyLclVarTree = nullptr;
-                bool                 dummyIsEntire   = false;
-                GenTree*             addrArg         = tree->AsOp()->gtOp1->gtEffectiveVal(/*commaOnly*/ true);
-                if (!addrArg->DefinesLocalAddr(this, /*width doesn't matter*/ 0, &dummyLclVarTree, &dummyIsEntire))
+                GenTreeLclVarCommon* lclVarTree = nullptr;
+                GenTree*             addrArg    = tree->AsOp()->gtOp1->gtEffectiveVal(/*commaOnly*/ true);
+                if (!addrArg->DefinesLocalAddr(&lclVarTree))
                 {
                     fgCurMemoryUse |= memoryKindSet(GcHeap, ByrefExposed);
                 }
                 else
                 {
                     // Defines a local addr
-                    assert(dummyLclVarTree != nullptr);
-                    fgMarkUseDef(dummyLclVarTree->AsLclVarCommon());
+                    assert(lclVarTree != nullptr);
+                    fgMarkUseDef(lclVarTree->AsLclVarCommon());
                 }
             }
             break;

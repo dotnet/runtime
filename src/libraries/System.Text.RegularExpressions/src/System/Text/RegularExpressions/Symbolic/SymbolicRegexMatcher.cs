@@ -15,29 +15,20 @@ namespace System.Text.RegularExpressions.Symbolic
     internal abstract class SymbolicRegexMatcher
     {
 #if DEBUG
-        /// <summary>Unwind the regex of the matcher and save the resulting state graph in DGML</summary>
-        /// <param name="writer">Writer to which the DGML is written.</param>
-        /// <param name="nfa">True to create an NFA instead of a DFA.</param>
-        /// <param name="addDotStar">True to prepend .*? onto the pattern (outside of the implicit root capture).</param>
-        /// <param name="reverse">If true, then unwind the regex backwards.</param>
-        /// <param name="maxStates">The approximate maximum number of states to include; less than or equal to 0 for no maximum.</param>
-        /// <param name="maxLabelLength">maximum length of labels in nodes anything over that length is indicated with .. </param>
-        public abstract void SaveDGML(TextWriter writer, bool nfa, bool addDotStar, bool reverse, int maxStates, int maxLabelLength);
+        /// <inheritdoc cref="Regex.SaveDGML(TextWriter, int)"/>
+        public abstract void SaveDGML(TextWriter writer, int maxLabelLength);
 
-        /// <summary>
-        /// Generates up to k random strings matched by the regex
-        /// </summary>
-        /// <param name="k">upper bound on the number of generated strings</param>
-        /// <param name="randomseed">random seed for the generator, 0 means no random seed</param>
-        /// <param name="negative">if true then generate inputs that do not match</param>
-        /// <returns></returns>
-        public abstract IEnumerable<string> GenerateRandomMembers(int k, int randomseed, bool negative);
+        /// <inheritdoc cref="Regex.SampleMatches(int, int)"/>
+        public abstract IEnumerable<string> SampleMatches(int k, int randomseed);
+
+        /// <inheritdoc cref="Regex.Explore(bool, bool, bool, bool, bool)"/>
+        public abstract void Explore(bool includeDotStarred, bool includeReverse, bool includeOriginal, bool exploreDfa, bool exploreNfa);
 #endif
     }
 
     /// <summary>Represents a regex matching engine that performs regex matching using symbolic derivatives.</summary>
     /// <typeparam name="TSet">Character set type.</typeparam>
-    internal sealed class SymbolicRegexMatcher<TSet> : SymbolicRegexMatcher where TSet : IComparable<TSet>, IEquatable<TSet>
+    internal sealed partial class SymbolicRegexMatcher<TSet> : SymbolicRegexMatcher where TSet : IComparable<TSet>, IEquatable<TSet>
     {
         /// <summary>Maximum number of built states before switching over to NFA mode.</summary>
         /// <remarks>
@@ -534,7 +525,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     {
                         // Check whether there's a fixed-length marker for the current state.  If there is, we can
                         // use that length to optimize subsequent matching phases.
-                        matchLength = TStateHandler.FixedLength(ref state);
+                        matchLength = TStateHandler.FixedLength(ref state, GetCharKind(input, pos));
                         endPos = pos;
 
                         // A match is known to exist.  If that's all we need to know, we're done.
@@ -945,24 +936,12 @@ namespace System.Text.RegularExpressions.Symbolic
 
                 // If the DFA state is a union of multiple DFA states, loop through all of them
                 // adding an NFA state for each.
-                SymbolicRegexNode<TSet> node = dfaMatchingState.Node.Kind == SymbolicRegexNodeKind.DisableBacktrackingSimulation ?
-                    dfaMatchingState.Node._left! : dfaMatchingState.Node;
-                while (node.Kind is SymbolicRegexNodeKind.OrderedOr)
+                foreach (SymbolicRegexNode<TSet> element in dfaMatchingState.Node.EnumerateAlternationBranches())
                 {
-                    Debug.Assert(node._left is not null && node._right is not null);
-
-                    // Re-wrap the element nodes in DisableBacktrackingSimulation if the top level node was too
-                    SymbolicRegexNode<TSet> element = dfaMatchingState.Node.Kind == SymbolicRegexNodeKind.DisableBacktrackingSimulation ?
-                        Builder.CreateDisableBacktrackingSimulation(node._left) : node._left;
-
                     // Create (possibly new) NFA states for all the members.
                     // Add their IDs to the current set of NFA states and into the list.
                     NfaStateSet.Add(Builder.CreateNfaState(element, dfaMatchingState.PrevCharKind), out _);
-                    node = node._right;
                 }
-
-                // Finally, just add an NFA state for the singular DFA state or last element of a union.
-                NfaStateSet.Add(Builder.CreateNfaState(node, dfaMatchingState.PrevCharKind), out _);
             }
         }
 
@@ -996,7 +975,7 @@ namespace System.Text.RegularExpressions.Symbolic
             public static abstract bool StartsWithLineAnchor(ref CurrentState state);
             public static abstract bool IsNullable(ref CurrentState state, uint nextCharKind);
             public static abstract bool IsDeadend(ref CurrentState state);
-            public static abstract int FixedLength(ref CurrentState state);
+            public static abstract int FixedLength(ref CurrentState state, uint nextCharKind);
             public static abstract bool IsInitialState(ref CurrentState state);
             public static abstract bool TakeTransition(SymbolicRegexBuilder<TSet> builder, ref CurrentState state, int mintermId);
         }
@@ -1016,7 +995,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
             /// <summary>Gets the length of any fixed-length marker that exists for this state, or -1 if there is none.</summary>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static int FixedLength(ref CurrentState state) => state.DfaState!.FixedLength;
+            public static int FixedLength(ref CurrentState state, uint nextCharKind) => state.DfaState!.FixedLength(nextCharKind);
 
             /// <summary>Gets whether this is an initial state.</summary>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1089,7 +1068,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
             /// <summary>Gets the length of any fixed-length marker that exists for this state, or -1 if there is none.</summary>
             /// <summary>In NFA mode, there are no fixed-length markers.</summary>
-            public static int FixedLength(ref CurrentState state) => -1;
+            public static int FixedLength(ref CurrentState state, uint nextCharKind) => -1;
 
             /// <summary>Gets whether this is an initial state.</summary>
             /// <summary>In NFA mode, no set of states qualifies as an initial state.</summary>
@@ -1147,14 +1126,56 @@ namespace System.Text.RegularExpressions.Symbolic
                     return builder._nfaDelta[nfaOffset] ?? builder.CreateNewNfaTransition(sourceState, mintermId, nfaOffset);
                 }
             }
-        }
 
 #if DEBUG
-        public override void SaveDGML(TextWriter writer, bool nfa, bool addDotStar, bool reverse, int maxStates, int maxLabelLength) =>
-            DgmlWriter<TSet>.Write(writer, this, nfa, addDotStar, reverse, maxStates, maxLabelLength);
+            /// <summary>Undo a previous call to <see cref="TakeTransition"/>.</summary>
+            public static void UndoTransition(ref CurrentState state)
+            {
+                Debug.Assert(state.DfaState is null, $"Expected null {nameof(state.DfaState)}.");
+                Debug.Assert(state.NfaState is not null, $"Expected non-null {nameof(state.NfaState)}.");
 
-        public override IEnumerable<string> GenerateRandomMembers(int k, int randomseed, bool negative) =>
-            new SymbolicRegexSampler<TSet>(_pattern, randomseed, negative).GenerateRandomMembers(k);
+                NfaMatchingState nfaState = state.NfaState!;
+
+                // Swap the current active states set with the scratch set to undo a previous transition.
+                SparseIntMap<int> nextStates = nfaState.NfaStateSet;
+                SparseIntMap<int> sourceStates = nfaState.NfaStateSetScratch;
+                nfaState.NfaStateSet = sourceStates;
+                nfaState.NfaStateSetScratch = nextStates;
+
+                // Sanity check: if there are any next states, then there must have been some source states.
+                Debug.Assert(nextStates.Count == 0 || sourceStates.Count > 0);
+            }
+
+            /// <summary>Check if any underlying core state is unconditionally nullable.</summary>
+            public static bool IsNullable(ref CurrentState state)
+            {
+                SymbolicRegexBuilder<TSet> builder = state.NfaState!.Builder;
+                foreach (ref KeyValuePair<int, int> nfaState in CollectionsMarshal.AsSpan(state.NfaState!.NfaStateSet.Values))
+                {
+                    if (builder.GetCoreState(nfaState.Key).Node.IsNullable)
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+
+            /// <summary>Check if any underlying core state can be nullable.</summary>
+            public static bool CanBeNullable(ref CurrentState state)
+            {
+                SymbolicRegexBuilder<TSet> builder = state.NfaState!.Builder;
+                foreach (ref KeyValuePair<int, int> nfaState in CollectionsMarshal.AsSpan(state.NfaState!.NfaStateSet.Values))
+                {
+                    if (builder.GetCoreState(nfaState.Key).Node.CanBeNullable)
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
 #endif
+        }
     }
 }
