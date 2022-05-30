@@ -582,10 +582,16 @@ namespace System.Runtime.CompilerServices
             }
         }
 
+        /// <summary>
+        /// Gets a <see cref="TypeHandle"/> for the element type of the current type.
+        /// </summary>
+        /// <remarks>This method should only be called when the current <see cref="MethodTable"/> instance represents an array or string type.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public TypeHandle GetArrayElementTypeHandle()
         {
-            return *(TypeHandle*)&((MethodTable*)Unsafe.AsPointer(ref this))->ElementType;
+            Debug.Assert(HasComponentSize);
+
+            return new(ElementType);
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -603,6 +609,12 @@ namespace System.Runtime.CompilerServices
         /// The address of the current type handle object.
         /// </summary>
         private readonly void* m_asTAddr;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public TypeHandle(void* tAddr)
+        {
+            m_asTAddr = tAddr;
+        }
 
         /// <summary>
         /// Gets whether or not this <see cref="TypeHandle"/> wraps a <c>TypeDesc</c> pointer.
