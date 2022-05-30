@@ -1488,34 +1488,6 @@ MethodDesc* COMDelegate::GetILStubMethodDesc(EEImplMethodDesc* pDelegateMD, DWOR
     return NDirect::CreateCLRToNativeILStub(&sigInfo, dwStubFlags, pDelegateMD);
 }
 
-
-
-FCIMPL2(FC_BOOL_RET, COMDelegate::CompareUnmanagedFunctionPtrs, Object *refDelegate1UNSAFE, Object *refDelegate2UNSAFE)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(refDelegate1UNSAFE != NULL);
-        PRECONDITION(refDelegate2UNSAFE != NULL);
-    }
-    CONTRACTL_END;
-
-    DELEGATEREF refD1 = (DELEGATEREF) ObjectToOBJECTREF(refDelegate1UNSAFE);
-    DELEGATEREF refD2 = (DELEGATEREF) ObjectToOBJECTREF(refDelegate2UNSAFE);
-    BOOL ret = FALSE;
-
-    // Make sure this is an unmanaged function pointer wrapped in a delegate.
-    CONSISTENCY_CHECK(DELEGATE_MARKER_UNMANAGEDFPTR == refD1->GetInvocationCount());
-    CONSISTENCY_CHECK(DELEGATE_MARKER_UNMANAGEDFPTR == refD2->GetInvocationCount());
-
-    ret = (refD1->GetMethodPtr() == refD2->GetMethodPtr() &&
-           refD1->GetMethodPtrAux() == refD2->GetMethodPtrAux());
-
-    FC_RETURN_BOOL(ret);
-}
-FCIMPLEND
-
-
 void COMDelegate::RemoveEntryFromFPtrHash(UPTR key)
 {
     WRAPPER_NO_CONTRACT;

@@ -90,9 +90,6 @@ public:
     static ComPlusCallInfo * PopulateComPlusCallInfo(MethodTable * pDelMT);
 #endif // FEATURE_COMINTEROP
 
-    // Checks whether two delegates wrapping function pointers have the same unmanaged target
-    static FCDECL2(FC_BOOL_RET, CompareUnmanagedFunctionPtrs, Object *refDelegate1UNSAFE, Object *refDelegate2UNSAFE);
-
     static PCODE GetStubForILStub(EEImplMethodDesc* pDelegateMD, MethodDesc** ppStubMD, DWORD dwStubFlags);
     static MethodDesc* GetILStubMethodDesc(EEImplMethodDesc* pDelegateMD, DWORD dwStubFlags);
 

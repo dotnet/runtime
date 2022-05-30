@@ -441,9 +441,6 @@ namespace System
         {
             return (_methodPtrAux == IntPtr.Zero) ? _target : null;
         }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool CompareUnmanagedFunctionPtrs(Delegate d1, Delegate d2);
     }
 
     // These flags effect the way BindToMethodInfo and BindToMethodName are allowed to bind a delegate to a target method. Their
