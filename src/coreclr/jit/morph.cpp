@@ -13655,6 +13655,15 @@ GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
     if (opts.OptimizationEnabled() && multiOp->OperIs(GT_HWINTRINSIC))
     {
         GenTreeHWIntrinsic* hw = multiOp->AsHWIntrinsic();
+
+        // Move constant vectors from op1 to op2 for commutative and compare operations
+        // For now we only do it for zero vector
+        if ((hw->GetOperandCount() == 2) && hw->Op(1)->IsVectorZero() &&
+            HWIntrinsicInfo::IsCommutative(hw->GetHWIntrinsicId()))
+        {
+            std::swap(hw->Op(1), hw->Op(2));
+        }
+
         switch (hw->GetHWIntrinsicId())
         {
 #if defined(TARGET_XARCH)
@@ -13668,12 +13677,6 @@ GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
                 GenTree* op2 = hw->Op(2);
                 if (!gtIsActiveCSE_Candidate(hw))
                 {
-                    if (op1->IsIntegralConstVector(0) && !gtIsActiveCSE_Candidate(op1))
-                    {
-                        DEBUG_DESTROY_NODE(hw);
-                        DEBUG_DESTROY_NODE(op1);
-                        return op2;
-                    }
                     if (op2->IsIntegralConstVector(0) && !gtIsActiveCSE_Candidate(op2))
                     {
                         DEBUG_DESTROY_NODE(hw);
