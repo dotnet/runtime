@@ -738,7 +738,6 @@ namespace System.Runtime.Serialization.Formatters.Tests
             yield return new object[] { "NullableEqualityComparer`1", EqualityComparer<byte?>.Default };
             yield return new object[] { "NullableEqualityComparer`1", EqualityComparer<int?>.Default };
             yield return new object[] { "NullableEqualityComparer`1", EqualityComparer<float?>.Default };
-            yield return new object[] { "NullableEqualityComparer`1", EqualityComparer<IntPtr?>.Default };
             yield return new object[] { "NullableEqualityComparer`1", EqualityComparer<Guid?>.Default }; // implements IEquatable<>
 
             yield return new object[] { "ObjectEqualityComparer`1", EqualityComparer<MyStruct?>.Default };  // doesn't implement IEquatable<>
@@ -747,10 +746,9 @@ namespace System.Runtime.Serialization.Formatters.Tests
             yield return new object[] { "NullableComparer`1", Comparer<byte?>.Default };
             yield return new object[] { "NullableComparer`1", Comparer<int?>.Default };
             yield return new object[] { "NullableComparer`1", Comparer<float?>.Default };
-            yield return new object[] { "NullableComparer`1", Comparer<IntPtr?>.Default };
             yield return new object[] { "NullableComparer`1", Comparer<Guid?>.Default };
 
-            yield return new object[] { "ObjectComparer`1", Comparer<Program.MyStruct?>.Default };
+            yield return new object[] { "ObjectComparer`1", Comparer<MyStruct?>.Default };
             yield return new object[] { "ObjectComparer`1", Comparer<DayOfWeek?>.Default };
         }
 
@@ -758,7 +756,8 @@ namespace System.Runtime.Serialization.Formatters.Tests
         [MemberData(nameof(NullableComparersTestData))]
         public void NullableComparersRoundtrip(string expectedType, object obj)
         {
-            Assert.Equal(expectedType, FromBase64String(ToBase64String(obj)).GetType().Name);
+            string serialized = BinaryFormatterHelpers.ToBase64String(obj);
+            Assert.Equal(expectedType, BinaryFormatterHelpers.FromBase64String(serialized).GetType().Name);
         }
     }
 }
