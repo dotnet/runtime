@@ -3350,7 +3350,8 @@ mono_marshal_set_callconv_from_unmanaged_callconv_attribute (MonoMethod *method,
 		mono_custom_attrs_free(cinfo);
 }
 
-static void mono_marshal_set_signature_callconv_from_attribute(MonoMethodSignature *sig, MonoType *cmod_type, MonoError *error)
+static void 
+mono_marshal_set_signature_callconv_from_attribute(MonoMethodSignature *sig, MonoType *cmod_type, MonoError *error)
 {
 	g_assert (cmod_type->type == MONO_TYPE_CLASS);
 	MonoClass *cmod_klass = mono_class_from_mono_type_internal (cmod_type);

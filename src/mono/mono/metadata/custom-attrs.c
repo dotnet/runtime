@@ -1427,7 +1427,7 @@ fail:
  * Handles freeing of MonoCustomAttrValue type properly.
  * Strings and MonoType* are not freed since they come from the metadata.
  */
-void
+static void
 free_decoded_custom_attr(MonoCustomAttrValue* cattr_val)
 {
 	if (!cattr_val)
