@@ -271,7 +271,7 @@ CrashReportWriter::OpenWriter(const char* fileName)
     m_fd = open(fileName, O_WRONLY|O_CREAT|O_TRUNC, S_IWUSR | S_IRUSR);
     if (m_fd == -1)
     {
-        printf_error("Could not create json file %s: %d %s\n", fileName, errno, strerror(errno));
+        printf_error("Could not create json file '%s': %s (%d)\n", fileName, strerror(errno), errno);
         return false;
     }
     Write("{\n");

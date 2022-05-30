@@ -29,23 +29,11 @@ namespace System.Text.RegularExpressions.Symbolic
         internal bool IsDeadend => Node.IsNothing;
 
         /// <summary>The node must be nullable here</summary>
-        internal int FixedLength
+        internal int FixedLength(uint nextCharKind)
         {
-            get
-            {
-                if (Node._kind == SymbolicRegexNodeKind.FixedLengthMarker)
-                {
-                    return Node._lower;
-                }
-
-                if (Node._kind == SymbolicRegexNodeKind.Or)
-                {
-                    Debug.Assert(Node._alts is not null);
-                    return Node._alts._maximumLength;
-                }
-
-                return -1;
-            }
+            Debug.Assert(nextCharKind is 0 or CharKind.BeginningEnd or CharKind.Newline or CharKind.WordLetter or CharKind.NewLineS);
+            uint context = CharKind.Context(PrevCharKind, nextCharKind);
+            return Node.ResolveFixedLength(context);
         }
 
         /// <summary>If true then the state is a dead-end, rejects all inputs.</summary>

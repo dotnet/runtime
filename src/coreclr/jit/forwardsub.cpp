@@ -628,15 +628,16 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     // These conditions can be checked earlier in the final version to save some throughput.
     // Perhaps allowing for bypass with jit stress.
     //
-    // If fwdSubNode is an address-exposed local, forwarding it may lose optimizations.
-    // (maybe similar for dner?)
+    // If fwdSubNode is an address-exposed local, forwarding it may lose optimizations due
+    // to GLOB_REF "poisoning" the tree. CQ analysis shows this to not be a problem with
+    // structs.
     //
     if (fwdSubNode->OperIs(GT_LCL_VAR))
     {
         unsigned const   fwdLclNum = fwdSubNode->AsLclVarCommon()->GetLclNum();
         LclVarDsc* const fwdVarDsc = lvaGetDesc(fwdLclNum);
 
-        if (fwdVarDsc->IsAddressExposed())
+        if (!varTypeIsStruct(fwdVarDsc) && fwdVarDsc->IsAddressExposed())
         {
             JITDUMP(" V%02u is address exposed\n", fwdLclNum);
             return false;
@@ -734,7 +735,7 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     {
         if (!fwdSubNode->OperIs(GT_LCL_VAR))
         {
-            JITDUMP(" parent is return, fwd sub node is not lcl var\n");
+            JITDUMP(" parent is multi-reg return, fwd sub node is not lcl var\n");
             return false;
         }
 
@@ -747,8 +748,17 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
 #endif // defined(TARGET_X86) || defined(TARGET_ARM)
 
         GenTreeLclVar* const fwdSubNodeLocal = fwdSubNode->AsLclVar();
+        unsigned const       fwdLclNum       = fwdSubNodeLocal->GetLclNum();
 
-        unsigned const   fwdLclNum = fwdSubNodeLocal->GetLclNum();
+        // These may later turn into indirections and the backend does not support
+        // those as sources of multi-reg returns.
+        //
+        if (lvaIsImplicitByRefLocal(fwdLclNum))
+        {
+            JITDUMP(" parent is multi-reg return; fwd sub node is implicit byref\n");
+            return false;
+        }
+
         LclVarDsc* const fwdVarDsc = lvaGetDesc(fwdLclNum);
 
         JITDUMP(" [marking V%02u as multi-reg-ret]", fwdLclNum);

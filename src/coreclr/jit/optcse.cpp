@@ -1851,7 +1851,19 @@ public:
                 //
                 // Thus we might need to use large displacements when loading or storing
                 // to CSE LclVars that are not enregistered
-                // On ARM64 this means using rsGetRsvdReg() to hold the large displacement
+                // On ARM64 this means using rsGetRsvdReg() or R21 to hold the large displacement
+                //
+                largeFrame = true;
+                break; // early out,  we don't need to keep increasing frameSize
+            }
+#elif defined(TARGET_LOONGARCH64)
+            if (frameSize > 0x7ff)
+            {
+                // We likely have a large stack frame.
+                //
+                // Thus we might need to use large displacements when loading or storing
+                // to CSE LclVars that are not enregistered
+                // On LoongArch64 this means using rsGetRsvdReg() to hold the large displacement
                 //
                 largeFrame = true;
                 break; // early out,  we don't need to keep increasing frameSize

@@ -802,6 +802,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                         return value_json_str != null
                                     ? ValueOrError<GetMembersResult>.WithValue(GetMembersResult.FromValues(JArray.Parse(value_json_str)))
                                     : ValueOrError<GetMembersResult>.WithError(res);
+                    case "evaluationResult":
+                        JArray evaluationRes = (JArray)context.SdbAgent.GetEvaluationResultProperties(objectId.ToString());
+                        return ValueOrError<GetMembersResult>.WithValue(GetMembersResult.FromValues(evaluationRes));
                     default:
                         return ValueOrError<GetMembersResult>.WithError($"RuntimeGetProperties: unknown object id scheme: {objectId.Scheme}");
                 }

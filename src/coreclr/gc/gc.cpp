@@ -4379,7 +4379,7 @@ class CObjectHeader : public Object
 {
 public:
 
-#if defined(FEATURE_REDHAWK) || defined(BUILD_AS_STANDALONE)
+#if defined(FEATURE_NATIVEAOT) || defined(BUILD_AS_STANDALONE)
     // The GC expects the following methods that are provided by the Object class in the CLR but not provided
     // by Redhawk's version of Object.
     uint32_t GetNumComponents()
@@ -4410,7 +4410,7 @@ public:
         _ASSERTE(IsStructAligned((uint8_t *)this, GetMethodTable()->GetBaseAlignment()));
 #endif // FEATURE_STRUCTALIGN
 
-#if defined(FEATURE_64BIT_ALIGNMENT) && !defined(FEATURE_REDHAWK)
+#if defined(FEATURE_64BIT_ALIGNMENT) && !defined(FEATURE_NATIVEAOT)
         if (pMT->RequiresAlign8())
         {
             _ASSERTE((((size_t)this) & 0x7) == (pMT->IsValueType() ? 4U : 0U));
@@ -4436,7 +4436,7 @@ public:
         Validate(bDeep);
     }
 
-#endif //FEATURE_REDHAWK || BUILD_AS_STANDALONE
+#endif //FEATURE_NATIVEAOT || BUILD_AS_STANDALONE
 
     /////
     //
@@ -6782,7 +6782,7 @@ void gc_heap::gc_thread_function ()
 
 bool gc_heap::virtual_alloc_commit_for_heap (void* addr, size_t size, int h_number)
 {
-#if defined(MULTIPLE_HEAPS) && !defined(FEATURE_REDHAWK)
+#if defined(MULTIPLE_HEAPS) && !defined(FEATURE_NATIVEAOT)
     // Currently there is no way for us to specific the numa node to allocate on via hosting interfaces to
     // a host. This will need to be added later.
 #if !defined(FEATURE_CORECLR) && !defined(BUILD_AS_STANDALONE)
@@ -6796,9 +6796,9 @@ bool gc_heap::virtual_alloc_commit_for_heap (void* addr, size_t size, int h_numb
                 return true;
         }
     }
-#else //MULTIPLE_HEAPS && !FEATURE_REDHAWK
+#else //MULTIPLE_HEAPS && !FEATURE_NATIVEAOT
     UNREFERENCED_PARAMETER(h_number);
-#endif //MULTIPLE_HEAPS && !FEATURE_REDHAWK
+#endif //MULTIPLE_HEAPS && !FEATURE_NATIVEAOT
 
     //numa aware not enabled, or call failed --> fallback to VirtualCommit()
     return GCToOSInterface::VirtualCommit(addr, size);
@@ -19433,7 +19433,7 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
     if (n_original != max_generation &&
         g_pConfig->GetGCStressLevel() && gc_can_use_concurrent)
     {
-#ifndef FEATURE_REDHAWK
+#ifndef FEATURE_NATIVEAOT
         if (*blocking_collection_p)
         {
             // We call StressHeap() a lot for Concurrent GC Stress. However,
@@ -19442,7 +19442,7 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
             GCStressPolicy::GlobalDisable();
         }
         else
-#endif // !FEATURE_REDHAWK
+#endif // !FEATURE_NATIVEAOT
         {
             gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_stress);
             n = max_generation;
@@ -20731,10 +20731,10 @@ void gc_heap::gc1()
     if (!settings.concurrent)
 #endif //BACKGROUND_GC
     {
-#ifndef FEATURE_REDHAWK
+#ifndef FEATURE_NATIVEAOT
         // GCToEEInterface::IsGCThread() always returns false on NativeAOT, but this assert is useful in CoreCLR.
         assert(GCToEEInterface::IsGCThread());
-#endif // FEATURE_REDHAWK
+#endif // FEATURE_NATIVEAOT
         adjust_ephemeral_limits();
     }
 
@@ -40195,11 +40195,11 @@ BOOL gc_heap::decide_on_compacting (int condemned_gen_number,
     }
 #endif //USE_REGIONS
 
-#if defined(STRESS_HEAP) && !defined(FEATURE_REDHAWK)
+#if defined(STRESS_HEAP) && !defined(FEATURE_NATIVEAOT)
     // for GC stress runs we need compaction
     if (GCStress<cfg_any>::IsEnabled() && !settings.concurrent)
         should_compact = TRUE;
-#endif //defined(STRESS_HEAP) && !defined(FEATURE_REDHAWK)
+#endif //defined(STRESS_HEAP) && !defined(FEATURE_NATIVEAOT)
 
     if (GCConfig::GetForceCompact())
         should_compact = TRUE;
@@ -42606,14 +42606,14 @@ CFinalize*        GCHeap::m_Finalize              = 0;
 BOOL              GCHeap::GcCollectClasses        = FALSE;
 VOLATILE(int32_t) GCHeap::m_GCFLock               = 0;
 
-#ifndef FEATURE_REDHAWK // Redhawk forces relocation a different way
+#ifndef FEATURE_NATIVEAOT // Redhawk forces relocation a different way
 #ifdef STRESS_HEAP
 #ifndef MULTIPLE_HEAPS
 OBJECTHANDLE      GCHeap::m_StressObjs[NUM_HEAP_STRESS_OBJS];
 int               GCHeap::m_CurStressObj          = 0;
 #endif // !MULTIPLE_HEAPS
 #endif // STRESS_HEAP
-#endif // FEATURE_REDHAWK
+#endif // FEATURE_NATIVEAOT
 
 #endif //FEATURE_PREMORTEM_FINALIZATION
 
@@ -44118,7 +44118,7 @@ HRESULT GCHeap::Initialize()
         return E_FAIL;
     }
 
-#ifndef FEATURE_REDHAWK // Redhawk forces relocation a different way
+#ifndef FEATURE_NATIVEAOT // Redhawk forces relocation a different way
 #if defined (STRESS_HEAP) && !defined (MULTIPLE_HEAPS)
     if (GCStress<cfg_any>::IsEnabled())
     {
@@ -44129,7 +44129,7 @@ HRESULT GCHeap::Initialize()
         m_CurStressObj = 0;
     }
 #endif //STRESS_HEAP && !MULTIPLE_HEAPS
-#endif // FEATURE_REDHAWK
+#endif // FEATURE_NATIVEAOT
 
     initGCShadow();         // If we are debugging write barriers, initialize heap shadow
 
@@ -44636,7 +44636,7 @@ void GCHeap::Relocate (Object** ppObject, ScanContext* sc,
     return size( pObj ) >= loh_size_threshold;
 }
 
-#ifndef FEATURE_REDHAWK // Redhawk forces relocation a different way
+#ifndef FEATURE_NATIVEAOT // Redhawk forces relocation a different way
 #ifdef STRESS_HEAP
 
 void StressHeapDummy ();
@@ -44662,13 +44662,13 @@ int StressRNG(int iMaxValue)
     return randValue % iMaxValue;
 }
 #endif // STRESS_HEAP
-#endif // !FEATURE_REDHAWK
+#endif // !FEATURE_NATIVEAOT
 
 // free up object so that things will move and then do a GC
 //return TRUE if GC actually happens, otherwise FALSE
 bool GCHeap::StressHeap(gc_alloc_context * context)
 {
-#if defined(STRESS_HEAP) && !defined(FEATURE_REDHAWK)
+#if defined(STRESS_HEAP) && !defined(FEATURE_NATIVEAOT)
     alloc_context* acontext = static_cast<alloc_context*>(context);
     assert(context != nullptr);
 
@@ -44809,7 +44809,7 @@ bool GCHeap::StressHeap(gc_alloc_context * context)
 #else
     UNREFERENCED_PARAMETER(context);
     return FALSE;
-#endif //STRESS_HEAP && !FEATURE_REDHAWK
+#endif //STRESS_HEAP && !FEATURE_NATIVEAOT
 }
 
 #ifdef FEATURE_PREMORTEM_FINALIZATION

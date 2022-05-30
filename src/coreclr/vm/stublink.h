@@ -167,20 +167,6 @@ class StubLinker
         VOID EmitPtr(const VOID *pval);
 
         //---------------------------------------------------------------
-        // Emit a UTF8 string
-        //---------------------------------------------------------------
-        VOID EmitUtf8(LPCUTF8 pUTF8)
-        {
-            WRAPPER_NO_CONTRACT;
-
-            LPCUTF8 p = pUTF8;
-            while (*(p++)) {
-                //nothing
-            }
-            EmitBytes((const BYTE *)pUTF8, (unsigned int)(p-pUTF8-1));
-        }
-
-        //---------------------------------------------------------------
         // Append an instruction containing a reference to a label.
         //
         //      target             - the label being referenced.
