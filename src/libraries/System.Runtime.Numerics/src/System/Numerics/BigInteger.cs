@@ -2693,7 +2693,7 @@ namespace System.Numerics
                                 : bitsFromPool = ArrayPool<uint>.Shared.Rent(size)).Slice(0, size);
 
                 BigIntegerCalculator.Square(left, bits);
-                result = new BigInteger(bits, negative: false);
+                result = new BigInteger(bits, (leftSign < 0) ^ (rightSign < 0));
             }
             else if (left.Length < right.Length)
             {
