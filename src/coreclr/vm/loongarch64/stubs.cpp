@@ -893,10 +893,10 @@ static void UpdateWriteBarrierState(bool skipEphemeralCheck)
 {
     BYTE *writeBarrierCodeStart = GetWriteBarrierCodeLocation((void*)JIT_PatchedCodeStart);
     BYTE *writeBarrierCodeStartRW = writeBarrierCodeStart;
-    ExecutableWriterHolder<BYTE> writeBarrierWriterHolder;
+    ExecutableWriterHolderNoLog<BYTE> writeBarrierWriterHolder;
     if (IsWriteBarrierCopyEnabled())
     {
-        writeBarrierWriterHolder = ExecutableWriterHolder<BYTE>(writeBarrierCodeStart, (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart);
+        writeBarrierWriterHolder.AssignExecutableWriterHolder(writeBarrierCodeStart, (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart);
         writeBarrierCodeStartRW = writeBarrierWriterHolder.GetRW();
     }
     JIT_UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap(), writeBarrierCodeStartRW - writeBarrierCodeStart);
@@ -990,7 +990,7 @@ AdjustContextForVirtualStub(
 
     if (sk == VirtualCallStubManager::SK_DISPATCH)
     {
-        if (*PTR_DWORD(f_IP) != DISPATCH_STUB_FIRST_DWORD)
+        if (*PTR_DWORD(f_IP - 4) != DISPATCH_STUB_FIRST_DWORD)
         {
             _ASSERTE(!"AV in DispatchStub at unknown instruction");
             return FALSE;

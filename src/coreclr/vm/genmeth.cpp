@@ -1236,12 +1236,11 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
         if (methodInst.GetNumArgs() != pMethod->GetNumGenericMethodArgs())
             COMPlusThrow(kArgumentException);
 
-        // we base the creation of an unboxing stub on whether the original method was one already
-        // that keeps the reflection logic the same for value types
+        // we need unboxing stubs for virtual methods on value types
         pInstMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
             pMethod,
             pMT,
-            pMethod->IsUnboxingStub(),
+            instType.IsValueType() && pMethod->IsVirtual(),
             methodInst,
             FALSE,      /* no allowInstParam */
             TRUE   /* force remotable method (i.e. inst wrappers for non-generic methods on generic interfaces) */);
@@ -1263,12 +1262,8 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
         // - non generic method on a generic interface
         //
 
-        // we base the creation of an unboxing stub on whether the original method was one already
-        // that keeps the reflection logic the same for value types
-
         // we need unboxing stubs for virtual methods on value types unless the method is generic
-        BOOL fNeedUnboxingStub = pMethod->IsUnboxingStub() ||
-            ( instType.IsValueType() && pMethod->IsVirtual() );
+        BOOL fNeedUnboxingStub = instType.IsValueType() && pMethod->IsVirtual();
 
         pInstMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
             pMethod,            /* the original MD          */

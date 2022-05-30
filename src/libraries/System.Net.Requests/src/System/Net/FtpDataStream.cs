@@ -193,12 +193,47 @@ namespace System.Net
             return readBytes;
         }
 
+        public override int Read(Span<byte> buffer)
+        {
+            CheckError();
+            int readBytes;
+            try
+            {
+                readBytes = _networkStream.Read(buffer);
+            }
+            catch
+            {
+                CheckError();
+                throw;
+            }
+            if (readBytes == 0)
+            {
+                _isFullyRead = true;
+                Close();
+            }
+            return readBytes;
+        }
+
         public override void Write(byte[] buffer, int offset, int size)
         {
             CheckError();
             try
             {
                 _networkStream.Write(buffer, offset, size);
+            }
+            catch
+            {
+                CheckError();
+                throw;
+            }
+        }
+
+        public override void Write(ReadOnlySpan<byte> buffer)
+        {
+            CheckError();
+            try
+            {
+                _networkStream.Write(buffer);
             }
             catch
             {

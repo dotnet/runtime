@@ -423,6 +423,24 @@ namespace System.Security.Cryptography
         /// </exception>
         public static bool TryWrite(ReadOnlySpan<char> label, ReadOnlySpan<byte> data, Span<char> destination, out int charsWritten)
         {
+            if (!IsValidLabel(label))
+                throw new ArgumentException(SR.Argument_PemEncoding_InvalidLabel, nameof(label));
+
+            int encodedSize = GetEncodedSize(label.Length, data.Length);
+
+            if (destination.Length < encodedSize)
+            {
+                charsWritten = 0;
+                return false;
+            }
+
+            charsWritten = WriteCore(label, data, destination);
+            Debug.Assert(encodedSize == charsWritten);
+            return true;
+        }
+
+        private static int WriteCore(ReadOnlySpan<char> label, ReadOnlySpan<byte> data, Span<char> destination)
+        {
             static int Write(ReadOnlySpan<char> str, Span<char> dest, int offset)
             {
                 str.CopyTo(dest.Slice(offset));
@@ -442,20 +460,10 @@ namespace System.Security.Cryptography
                 return base64Written;
             }
 
-            if (!IsValidLabel(label))
-                throw new ArgumentException(SR.Argument_PemEncoding_InvalidLabel, nameof(label));
-
             const string NewLine = "\n";
             const int BytesPerLine = 48;
-            int encodedSize = GetEncodedSize(label.Length, data.Length);
 
-            if (destination.Length < encodedSize)
-            {
-                charsWritten = 0;
-                return false;
-            }
-
-            charsWritten = 0;
+            int charsWritten = 0;
             charsWritten += Write(PreEBPrefix, destination, charsWritten);
             charsWritten += Write(label, destination, charsWritten);
             charsWritten += Write(Ending, destination, charsWritten);
@@ -481,7 +489,7 @@ namespace System.Security.Cryptography
             charsWritten += Write(label, destination, charsWritten);
             charsWritten += Write(Ending, destination, charsWritten);
 
-            return true;
+            return charsWritten;
         }
 
         /// <summary>
@@ -522,14 +530,68 @@ namespace System.Security.Cryptography
             int encodedSize = GetEncodedSize(label.Length, data.Length);
             char[] buffer = new char[encodedSize];
 
-            if (!TryWrite(label, data, buffer, out int charsWritten))
-            {
-                Debug.Fail("TryWrite failed with a pre-sized buffer");
-                throw new ArgumentException(null, nameof(data));
-            }
-
+            int charsWritten = WriteCore(label, data, buffer);
             Debug.Assert(charsWritten == encodedSize);
             return buffer;
+        }
+
+        /// <summary>
+        ///   Creates an encoded PEM with the given label and data.
+        /// </summary>
+        /// <param name="label">
+        ///   The label to encode.
+        /// </param>
+        /// <param name="data">
+        ///   The data to encode.
+        /// </param>
+        /// <returns>
+        ///   A string of the encoded PEM.
+        /// </returns>
+        /// <remarks>
+        ///   This method always wraps the base-64 encoded text to 64 characters, per the
+        ///   recommended wrapping of RFC-7468. Unix-style line endings are used for line breaks.
+        /// </remarks>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="label"/> exceeds the maximum possible label length.
+        ///
+        ///   -or-
+        ///
+        ///   <paramref name="data"/> exceeds the maximum possible encoded data length.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   The resulting PEM-encoded text is larger than <see cref="int.MaxValue"/>.
+        ///
+        ///   - or -
+        ///
+        ///   <paramref name="label"/> contains invalid characters.
+        /// </exception>
+        public static unsafe string WriteString(ReadOnlySpan<char> label, ReadOnlySpan<byte> data)
+        {
+            if (!IsValidLabel(label))
+                throw new ArgumentException(SR.Argument_PemEncoding_InvalidLabel, nameof(label));
+
+            int encodedSize = GetEncodedSize(label.Length, data.Length);
+
+            fixed (char* pLabel = label)
+            fixed (byte* pData = data)
+            {
+                return string.Create(
+                    encodedSize,
+                    (LabelPointer : new IntPtr(pLabel), LabelLength : label.Length, DataPointer : new IntPtr(pData), DataLength : data.Length),
+                    static (destination, state) =>
+                    {
+                        ReadOnlySpan<byte> data = new ReadOnlySpan<byte>(state.DataPointer.ToPointer(), state.DataLength);
+                        ReadOnlySpan<char> label = new ReadOnlySpan<char>(state.LabelPointer.ToPointer(), state.LabelLength);
+
+                        int charsWritten = WriteCore(label, data, destination);
+
+                        if (charsWritten != destination.Length)
+                        {
+                            Debug.Fail("WriteCore wrote the wrong amount of data");
+                            throw new CryptographicException();
+                        }
+                    });
+            }
         }
     }
 }

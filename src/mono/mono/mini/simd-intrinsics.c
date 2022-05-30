@@ -928,11 +928,6 @@ static guint16 sri_vector_methods [] = {
 	SN_get_IsHardwareAccelerated,
 };
 
-/* nint and nuint haven't been enabled yet for System.Runtime.Intrinsics.
- * Remove this once support has been added.
- */
-#define MONO_TYPE_IS_INTRINSICS_VECTOR_PRIMITIVE(t) ((MONO_TYPE_IS_VECTOR_PRIMITIVE(t)) && ((t)->type != MONO_TYPE_I) && ((t)->type != MONO_TYPE_U))
-
 static gboolean
 is_elementwise_ctor (MonoMethodSignature *fsig, MonoType *etype)
 {
@@ -950,7 +945,7 @@ is_elementwise_create_overload (MonoMethodSignature *fsig, MonoType *ret_type)
 	uint16_t param_count = fsig->param_count;
 	if (param_count < 1) return FALSE;
 	MonoType *type = fsig->params [0];
-	if (!MONO_TYPE_IS_INTRINSICS_VECTOR_PRIMITIVE (type)) return FALSE;
+	if (!MONO_TYPE_IS_VECTOR_PRIMITIVE (type)) return FALSE;
 	if (!mono_metadata_type_equal (ret_type, type)) return FALSE;
 	for (uint16_t i = 1; i < param_count; ++i)
 		if (!mono_metadata_type_equal (type, fsig->params [i])) return FALSE;
@@ -969,7 +964,7 @@ static gboolean
 is_element_type_primitive (MonoType *vector_type)
 {
 	MonoType *element_type = get_vector_t_elem_type (vector_type);
-	return MONO_TYPE_IS_INTRINSICS_VECTOR_PRIMITIVE (element_type);
+	return MONO_TYPE_IS_VECTOR_PRIMITIVE (element_type);
 }
 
 static MonoInst*
@@ -1470,7 +1465,7 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	int len = size / esize;
 	MonoTypeEnum arg0_type = fsig->param_count > 0 ? get_underlying_type (fsig->params [0]) : MONO_TYPE_VOID;
 
-	if (!MONO_TYPE_IS_INTRINSICS_VECTOR_PRIMITIVE (etype))
+	if (!MONO_TYPE_IS_VECTOR_PRIMITIVE (etype))
 		return NULL;
 
 	if (cfg->verbose_level > 1) {

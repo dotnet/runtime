@@ -13,7 +13,7 @@ namespace System.Text.Json.Serialization
         /// Gets or sets a custom type discriminator property name for the polymorhic type.
         /// Uses the default '$type' property name if left unset.
         /// </summary>
-        public string? CustomTypeDiscriminatorPropertyName { get; set; }
+        public string? TypeDiscriminatorPropertyName { get; set; }
 
         /// <summary>
         /// Gets or sets the behavior when serializing an undeclared derived runtime type.
