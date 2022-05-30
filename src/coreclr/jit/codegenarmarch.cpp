@@ -1095,8 +1095,9 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
 
             while (remainingSize > 0)
             {
-                var_types type;
+                nextIndex = structOffset / TARGET_POINTER_SIZE;
 
+                var_types type;
                 if (remainingSize >= TARGET_POINTER_SIZE)
                 {
                     type = layout->GetGCPtrType(nextIndex);
@@ -1106,18 +1107,18 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                     // the left over size is smaller than a pointer and thus can never be a GC type
                     assert(!layout->IsGCPtr(nextIndex));
 
-                    if (remainingSize == 1)
+                    if (remainingSize >= 4)
                     {
-                        type = TYP_UBYTE;
+                        type = TYP_INT;
                     }
-                    else if (remainingSize == 2)
+                    else if (remainingSize >= 2)
                     {
                         type = TYP_USHORT;
                     }
                     else
                     {
-                        assert(remainingSize == 4);
-                        type = TYP_UINT;
+                        assert(remainingSize == 1);
+                        type = TYP_UBYTE;
                     }
                 }
 
@@ -1146,7 +1147,6 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                 assert(argOffsetOut <= argOffsetMax); // We can't write beyond the outgoing arg area
 
                 structOffset += moveSize;
-                nextIndex++;
             }
         }
     }

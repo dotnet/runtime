@@ -170,7 +170,6 @@
       <Compile Include="$(BclSourcesRoot)\System\Object.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Math.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\MathF.Mono.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\MissingMemberException.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\ModuleHandle.cs" />
       <Compile Include="$(BclSourcesRoot)\System\MulticastDelegate.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Nullable.Mono.cs" />

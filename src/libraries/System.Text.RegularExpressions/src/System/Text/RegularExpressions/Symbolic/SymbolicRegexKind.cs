@@ -14,17 +14,8 @@ namespace System.Text.RegularExpressions.Symbolic
         Concat,
         /// <summary>A node that matches a loop (e.g. <see cref="RegexNodeKind.Loop"/>, <see cref="RegexNodeKind.Lazyloop"/>, <see cref="RegexNodeKind.Setloop"/>, etc.).</summary>
         Loop,
-
-        /// <summary>A node that matches if any of its nodes match.</summary>
-        /// <remarks>This is typically used to combine singletons.</remarks>
-        Or,
         /// <summary>A node that matches if any of its nodes match and that matches them in a fixed order that mirrors how the backtracking engines operate (e.g. <see cref="RegexNodeKind.Alternate"/>).</summary>
-        OrderedOr,
-        /// <summary>A node that matches if all of its nodes match.</summary>
-        /// <remarks>This is typically used to combine singletons.</remarks>
-        And,
-        /// <summary>A node that matches if its node doesn't (e.g. <see cref="RegexNodeKind.Notone"/>).</summary>
-        Not,
+        Alternate,
 
         /// <summary>A node that represents a beginning anchor (i.e. <see cref="RegexNodeKind.Beginning"/>).</summary>
         BeginningAnchor,

@@ -678,8 +678,8 @@ namespace ILCompiler.DependencyAnalysis
 
             EagerImports = new ImportSectionNode(
                 "EagerImports",
-                CorCompileImportType.CORCOMPILE_IMPORT_TYPE_UNKNOWN,
-                CorCompileImportFlags.CORCOMPILE_IMPORT_FLAGS_EAGER,
+                ReadyToRunImportSectionType.Unknown,
+                ReadyToRunImportSectionFlags.Eager,
                 (byte)Target.PointerSize,
                 emitPrecode: false,
                 emitGCRefMap: false);
@@ -730,8 +730,8 @@ namespace ILCompiler.DependencyAnalysis
 
             MethodImports = new ImportSectionNode(
                 "MethodImports",
-                CorCompileImportType.CORCOMPILE_IMPORT_TYPE_STUB_DISPATCH,
-                CorCompileImportFlags.CORCOMPILE_IMPORT_FLAGS_PCODE,
+                ReadyToRunImportSectionType.StubDispatch,
+                ReadyToRunImportSectionFlags.PCode,
                 (byte)Target.PointerSize,
                 emitPrecode: false,
                 emitGCRefMap: true);
@@ -739,8 +739,8 @@ namespace ILCompiler.DependencyAnalysis
 
             DispatchImports = new ImportSectionNode(
                 "DispatchImports",
-                CorCompileImportType.CORCOMPILE_IMPORT_TYPE_STUB_DISPATCH,
-                CorCompileImportFlags.CORCOMPILE_IMPORT_FLAGS_PCODE,
+                ReadyToRunImportSectionType.StubDispatch,
+                ReadyToRunImportSectionFlags.PCode,
                 (byte)Target.PointerSize,
                 emitPrecode: false,
                 emitGCRefMap: true);
@@ -748,8 +748,8 @@ namespace ILCompiler.DependencyAnalysis
 
             HelperImports = new ImportSectionNode(
                 "HelperImports",
-                CorCompileImportType.CORCOMPILE_IMPORT_TYPE_UNKNOWN,
-                CorCompileImportFlags.CORCOMPILE_IMPORT_FLAGS_PCODE,
+                ReadyToRunImportSectionType.Unknown,
+                ReadyToRunImportSectionFlags.PCode,
                 (byte)Target.PointerSize,
                 emitPrecode: false,
                 emitGCRefMap: false);
@@ -757,8 +757,8 @@ namespace ILCompiler.DependencyAnalysis
 
             PrecodeImports = new ImportSectionNode(
                 "PrecodeImports",
-                CorCompileImportType.CORCOMPILE_IMPORT_TYPE_UNKNOWN,
-                CorCompileImportFlags.CORCOMPILE_IMPORT_FLAGS_PCODE,
+                ReadyToRunImportSectionType.Unknown,
+                ReadyToRunImportSectionFlags.PCode,
                 (byte)Target.PointerSize,
                 emitPrecode: true,
                 emitGCRefMap: false);
@@ -766,8 +766,8 @@ namespace ILCompiler.DependencyAnalysis
 
             StringImports = new ImportSectionNode(
                 "StringImports",
-                CorCompileImportType.CORCOMPILE_IMPORT_TYPE_STRING_HANDLE,
-                CorCompileImportFlags.CORCOMPILE_IMPORT_FLAGS_UNKNOWN,
+                ReadyToRunImportSectionType.StringHandle,
+                ReadyToRunImportSectionFlags.None,
                 (byte)Target.PointerSize,
                 emitPrecode: true,
                 emitGCRefMap: false);
