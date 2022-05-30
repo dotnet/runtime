@@ -2036,26 +2036,6 @@ FCIMPL1(UINT32, MethodTableNative::GetNumInstanceFieldBytes, MethodTable* mt)
 }
 FCIMPLEND
 
-// Boxes a value type using an input MethodTable*
-FCIMPL2(Object*, MethodTable::InternalBoxForMethodTable, MethodTable* pMethodTable, void* data)
-{
-    FCALL_CONTRACT;
-
-    _ASSERTE(pMethodTable != NULL);
-    _ASSERTE(data != NULL);
-
-    OBJECTREF objRef = NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_0()
-
-    objRef = pMethodTable->Box(data);
-
-    HELPER_METHOD_FRAME_END();
-
-    return OBJECTREFToObject(objRef);
-}
-FCIMPLEND
-
 static MethodTable * g_pStreamMT;
 static WORD g_slotBeginRead, g_slotEndRead;
 static WORD g_slotBeginWrite, g_slotEndWrite;

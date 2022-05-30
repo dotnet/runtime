@@ -221,12 +221,6 @@ public:
     static FCDECL1(INT32, GetHashCode, Object* objRef);
 };
 
-class MethodTable {
-public:
-    // This method boxes a value type using a given method table pointer
-    static FCDECL2(Object*, InternalBoxForMethodTable, MethodTable* pMethodTable, void* data);
-};
-
 class MethodTableNative {
 public:
     static FCDECL1(UINT32, GetNumInstanceFieldBytes, MethodTable* mt);
