@@ -152,7 +152,7 @@ GTNODE(INDEX            , GenTreeIndex       ,0,GTK_BINOP|GTK_EXOP|DBK_NOTLIR) /
 GTNODE(INDEX_ADDR       , GenTreeIndexAddr   ,0,GTK_BINOP|GTK_EXOP)            // Addr of SZ-array-element; used when aiming to minimize compile times.
 
 GTNODE(MKREFANY         , GenTreeOp          ,0,GTK_BINOP|DBK_NOTLIR)
-GTNODE(LEA              , GenTreeAddrMode    ,0,GTK_BINOP|GTK_EXOP)
+GTNODE(LEA              , GenTreeAddrMode    ,0,GTK_BINOP|GTK_EXOP|DBK_NOTHIR)
 
 #if !defined(TARGET_64BIT)
 // A GT_LONG node simply represents the long value produced by the concatenation
