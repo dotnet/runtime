@@ -16,6 +16,19 @@ void interceptor_ICJC::setTargetOS(CORINFO_OS os)
     original_ICorJitCompiler->setTargetOS(os);
 }
 
+void interceptor_ICJC::finalizeAndCommitCollection(MethodContext* mc, CorJitResult result, uint8_t* nativeEntry, uint32_t nativeSizeOfCode)
+{
+    mc->cr->recCompileMethod(&nativeEntry, &nativeSizeOfCode, result);
+
+    if (result == CORJIT_OK)
+    {
+        mc->cr->recAllocMemCapture();
+        mc->cr->recAllocGCInfoCapture();
+    }
+
+    mc->saveToFile(hFile);
+}
+
 CorJitResult interceptor_ICJC::compileMethod(ICorJitInfo*                comp,     /* IN */
                                              struct CORINFO_METHOD_INFO* info,     /* IN */
                                              unsigned /* code:CorJitFlag */ flags, /* IN */
@@ -23,14 +36,12 @@ CorJitResult interceptor_ICJC::compileMethod(ICorJitInfo*                comp,  
                                              uint32_t* nativeSizeOfCode            /* OUT */
                                              )
 {
-    interceptor_ICJI our_ICorJitInfo;
-    our_ICorJitInfo.original_ICorJitInfo = comp;
-
     auto* mc = new MethodContext();
-    our_ICorJitInfo.mc = mc;
-    our_ICorJitInfo.mc->cr->recProcessName(GetCommandLineA());
+    interceptor_ICJI our_ICorJitInfo(this, comp, mc);
 
-    our_ICorJitInfo.mc->recCompileMethod(info, flags, currentOs);
+    mc->cr->recProcessName(GetCommandLineA());
+
+    mc->recCompileMethod(info, flags, currentOs);
 
     // force some extra data into our tables..
     // data probably not needed with RyuJIT, but needed in 4.5 and 4.5.1 to help with catching cached values
@@ -57,25 +68,57 @@ CorJitResult interceptor_ICJC::compileMethod(ICorJitInfo*                comp,  
     // Record data from the global context, if any
     if (g_globalContext != nullptr)
     {
-        our_ICorJitInfo.mc->recGlobalContext(*g_globalContext);
+        mc->recGlobalContext(*g_globalContext);
     }
 
-    CorJitResult temp =
-        original_ICorJitCompiler->compileMethod(&our_ICorJitInfo, info, flags, nativeEntry, nativeSizeOfCode);
-
-    if (temp == CORJIT_OK)
+    struct CompileParams
     {
-        // capture the results of compilation
-        our_ICorJitInfo.mc->cr->recCompileMethod(nativeEntry, nativeSizeOfCode, temp);
+        ICorJitCompiler* origComp;
+        interceptor_ICJI* ourICJI;
+        struct CORINFO_METHOD_INFO* methodInfo;
+        unsigned flags;
+        uint8_t** nativeEntry;
+        uint32_t* nativeSizeOfCode;
+        CorJitResult result;
+    } compileParams;
 
-        our_ICorJitInfo.mc->cr->recAllocMemCapture();
-        our_ICorJitInfo.mc->cr->recAllocGCInfoCapture();
-        our_ICorJitInfo.mc->saveToFile(hFile);
-    }
+    compileParams.origComp = original_ICorJitCompiler;
+    compileParams.ourICJI = &our_ICorJitInfo;
+    compileParams.methodInfo = info;
+    compileParams.flags = flags;
+    compileParams.nativeEntry = nativeEntry;
+    compileParams.nativeSizeOfCode = nativeSizeOfCode;
+    compileParams.result = CORJIT_INTERNALERROR;
 
-    delete mc;
+    *nativeEntry = nullptr;
+    *nativeSizeOfCode = 0;
 
-    return temp;
+    auto doCompile = [mc, our_ICorJitInfo, this, &compileParams]()
+    {
+        PAL_TRY(CompileParams*, pParam, &compileParams)
+        {
+            pParam->result = pParam->origComp->compileMethod(
+                pParam->ourICJI,
+                pParam->methodInfo,
+                pParam->flags,
+                pParam->nativeEntry,
+                pParam->nativeSizeOfCode);
+        }
+        PAL_FINALLY
+        {
+            if (!our_ICorJitInfo.SavedCollectionEarly())
+            {
+                finalizeAndCommitCollection(mc, compileParams.result, *compileParams.nativeEntry, *compileParams.nativeSizeOfCode);
+            }
+
+            delete mc;
+        }
+        PAL_ENDTRY;
+    };
+
+    doCompile();
+
+    return compileParams.result;
 }
 
 void interceptor_ICJC::ProcessShutdownWork(ICorStaticInfo* info)

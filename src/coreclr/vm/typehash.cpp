@@ -206,7 +206,6 @@ static DWORD HashTypeHandle(TypeHandle t)
         GC_NOTRIGGER;
         MODE_ANY;
         PRECONDITION(CheckPointer(t));
-        PRECONDITION(!t.IsEncodedFixup());
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
@@ -528,7 +527,6 @@ VOID EETypeHashTable::InsertValue(TypeHandle data)
         INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(IsUnsealed());          // If we are sealed then we should not be adding to this hashtable
         PRECONDITION(CheckPointer(data));
-        PRECONDITION(!data.IsEncodedFixup());
         PRECONDITION(!data.IsGenericTypeDefinition()); // Generic type defs live in typedef table (availableClasses)
         PRECONDITION(data.HasInstantiation() || data.HasTypeParam() || data.IsFnPtrType()); // It's an instantiated type or an array/ptr/byref type
         PRECONDITION(m_pModule == NULL || GetModule()->IsTenured()); // Destruct won't destruct m_pAvailableParamTypes for non-tenured modules - so make sure no one tries to insert one before the Module has been tenured
