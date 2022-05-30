@@ -10242,13 +10242,18 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                 if (op1->OperIs(GT_NEG) && !op1->gtGetOp1()->IsCnsIntOrI() && op2->IsCnsIntOrI() &&
                     !op2->IsIconHandle())
                 {
-                    GenTree* newOp1   = op1->gtGetOp1();
-                    GenTree* newConst = gtNewIconNode(-op2->AsIntCon()->IconValue(), op2->TypeGet());
-                    DEBUG_DESTROY_NODE(op1);
-                    DEBUG_DESTROY_NODE(op2);
-                    tree->AsOp()->gtOp1 = newOp1;
-                    tree->AsOp()->gtOp2 = newConst;
-                    return fgMorphSmpOp(tree, mac);
+                    // We are changing the shape of a child node here which
+                    // means we need to recall fgMorphTree (in particular to
+                    // do promotion-specific morphing of op1); however, morphing
+                    // the top-level node twice is not ok. Reuse op1 as the new
+                    // top-level node instead.
+                    op2->AsIntCon()->gtIconVal = -op2->AsIntCon()->gtIconVal;
+                    op1->ChangeOper(GT_MUL);
+                    op1->SetVNsFromNode(tree);
+                    op1->AsOp()->gtOp2 = op2;
+                    DEBUG_DESTROY_NODE(tree);
+
+                    return fgMorphTree(op1);
                 }
             }
 
