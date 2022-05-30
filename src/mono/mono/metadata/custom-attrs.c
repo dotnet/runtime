@@ -1434,8 +1434,11 @@ free_decoded_custom_attr(MonoCustomAttrValue* cattr_val)
 		return;
 
 	if (cattr_val->type == MONO_TYPE_SZARRAY) {
-		for (int i = 0; i < cattr_val->value.array->len; i++)
-			free_decoded_custom_attr (&cattr_val->value.array->values[i]);
+		// attribute parameter types only support single-dimensional arrays
+		for (int i = 0; i < cattr_val->value.array->len; i++) {
+			if (cattr_val->value.array->values[i].type != MONO_TYPE_STRING && cattr_val->value.array->values[i].type != MONO_TYPE_CLASS)
+				g_free(cattr_val->value.array->values[i].value.primitive);
+		}
 		g_free (cattr_val->value.array);
 	} else if (cattr_val->type != MONO_TYPE_STRING && cattr_val->type != MONO_TYPE_CLASS) {
 		g_free (cattr_val->value.primitive);
