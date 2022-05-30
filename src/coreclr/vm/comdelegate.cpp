@@ -2013,6 +2013,8 @@ FCIMPL2(FC_BOOL_RET, COMDelegate::InternalEqualTypes, Object* pThis, Object *pTh
 
     // simple match should be done in managed code
     _ASSERTE(pThisMT != pThatMT);
+    _ASSERTE(pThisMT->HasTypeEquivalence());
+    _ASSERTE(pThatMT->HasTypeEquivalence());
 
     BOOL bResult;
 

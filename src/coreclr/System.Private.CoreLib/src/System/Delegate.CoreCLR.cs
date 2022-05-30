@@ -411,12 +411,22 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern MulticastDelegate InternalAllocLike(Delegate d);
 
-        internal static bool EqualTypes(object a, object b)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe bool EqualTypes(object a, object b)
         {
-            // fast check for method table match
             if (a.GetType() == b.GetType())
                 return true;
 
+            bool hasTypeEquivalance =
+                RuntimeHelpers.GetMethodTable(a)->HasTypeEquivalence
+                && RuntimeHelpers.GetMethodTable(b)->HasTypeEquivalence;
+            GC.KeepAlive(a);
+            GC.KeepAlive(b);
+
+            if (!hasTypeEquivalance)
+                return false;
+
+            // only use FCall to check the type equivalence scenario
             return InternalEqualTypes(a, b);
         }
 
