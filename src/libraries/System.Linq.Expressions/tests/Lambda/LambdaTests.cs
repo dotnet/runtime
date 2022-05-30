@@ -943,9 +943,8 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(42, del.DynamicInvoke());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetFramework), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsNotNativeAot))]
         [SkipOnTargetFramework(~TargetFrameworkMonikers.Netcoreapp, "Optimization in .NET Core")]
-        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void ValidateThatInterpreterWithSimpleTypeUsesNonDynamicThunk()
         {
             Expression<Action> action = () => Console.WriteLine("");
@@ -963,9 +962,8 @@ namespace System.Linq.Expressions.Tests
             Assert.True(func2.Compile(preferInterpretation:true).Method.GetType().Name == "RuntimeMethodInfo");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetFramework), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsNotNativeAot))]
         [SkipOnTargetFramework(~TargetFrameworkMonikers.Netcoreapp, "Optimization in .NET Core")]
-        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void ValidateThatInterpreterWithSimpleTypeUsesDynamicThunk()
         {
             Expression<Action<object,object,object>> complexaction = (object o1, object o2, object o3) => Console.WriteLine("");

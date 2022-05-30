@@ -14,7 +14,7 @@ namespace System.Linq.Expressions.Tests
         /// so we can safely call MakeGenericMethod on their methods.
         /// </summary>
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69944", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static void VerifyMethodsCalledWithMakeGenericMethod()
         {
             Assembly linqExpressions = typeof(Expression).Assembly;

@@ -490,7 +490,8 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69944", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        // this tests calling static methods by name (generic and non-generic)
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69928", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static void TestCallStaticMethodsByName()
         {
             NWindProxy.Customer[] custs = new[] { new NWindProxy.Customer { CustomerID = "BUBBA", ContactName = "Bubba Gump" } };
