@@ -20,6 +20,7 @@ public class SingleFileTestRunner : XunitTestFramework
     private SingleFileTestRunner(IMessageSink messageSink)
     : base(messageSink) { }
 
+
     public static int Main(string[] args)
     {
         var asm = typeof(SingleFileTestRunner).Assembly;
@@ -35,6 +36,9 @@ public class SingleFileTestRunner : XunitTestFramework
         var resultsSink = new DelegatingXmlCreationSink(summarySink, resultsXmlAssembly);
 
         testSink.Execution.TestSkippedEvent += args => { Console.WriteLine($"[SKIP] {args.Message.Test.DisplayName}"); };
+        //testSink.Execution.TestCaseStartingEvent += args => { Console.WriteLine($"[START-1] {args.Message}"); };
+        testSink.Execution.TestStartingEvent += args => { Console.WriteLine($"[START] {args.Message.Test.DisplayName}:{DateTime.UtcNow}"); };
+        testSink.Execution.TestFinishedEvent += args => { Console.WriteLine($"[END] {args.Message.Test.DisplayName}:{DateTime.UtcNow}"); };        
         testSink.Execution.TestFailedEvent += args => { Console.WriteLine($"[FAIL] {args.Message.Test.DisplayName}{Environment.NewLine}{Xunit.ExceptionUtility.CombineMessages(args.Message)}{Environment.NewLine}{Xunit.ExceptionUtility.CombineStackTraces(args.Message)}"); };
 
         testSink.Execution.TestAssemblyFinishedEvent += args =>
@@ -51,8 +55,28 @@ public class SingleFileTestRunner : XunitTestFramework
         var discoverer = xunitTestFx.CreateDiscoverer(asmInfo);
         discoverer.Find(false, discoverySink, TestFrameworkOptions.ForDiscovery());
         discoverySink.Finished.WaitOne();
+
         XunitFilters filters = new XunitFilters();
-        filters.ExcludedTraits.Add("category", new List<string> { "failing" });
+        // Quick hack wo much validation to get no traits passed
+        Dictionary<string, List<string>> noTraits = new Dictionary<string, List<string>>();
+        for (int i = 0; i < args.Length; i++)
+        {
+            if (args[i].Equals("-notrait", StringComparison.OrdinalIgnoreCase))
+            {
+                var traitKeyValue=args[i + 1].Split("=", StringSplitOptions.TrimEntries);
+                if (!noTraits.TryGetValue(traitKeyValue[0], out List<string> values))
+                {
+                    noTraits.Add(traitKeyValue[0], values = new List<string>());
+                }
+                values.Add(traitKeyValue[1]);
+            }
+        }
+
+        foreach (KeyValuePair<string, List<string>> kvp in noTraits)
+        {
+            filters.ExcludedTraits.Add(kvp.Key, kvp.Value);
+        }
+
         var filteredTestCases = discoverySink.TestCases.Where(filters.Filter).ToList();
         var executor = xunitTestFx.CreateExecutor(asmName);
         executor.RunTests(filteredTestCases, resultsSink, TestFrameworkOptions.ForExecution());
