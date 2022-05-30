@@ -58,7 +58,7 @@ namespace System
                 return false;
             if (object.ReferenceEquals(this, obj))
                 return true;
-            if (!EqualTypes(this, obj))
+            if (!InternalEqualTypes(this, obj))
                 return false;
 
             // Since this is a MulticastDelegate and we know
@@ -225,7 +225,7 @@ namespace System
                 return this;
 
             // Verify that the types are the same...
-            if (!EqualTypes(this, follow))
+            if (!InternalEqualTypes(this, follow))
                 throw new ArgumentException(SR.Arg_DlgtTypeMis);
 
             MulticastDelegate dFollow = (MulticastDelegate)follow;

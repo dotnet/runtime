@@ -88,7 +88,7 @@ namespace System
 
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            if (obj == null || !EqualTypes(this, obj))
+            if (obj == null || !InternalEqualTypes(this, obj))
                 return false;
 
             Delegate d = (Delegate)obj;
@@ -412,7 +412,7 @@ namespace System
         internal static extern MulticastDelegate InternalAllocLike(Delegate d);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe bool EqualTypes(object a, object b)
+        internal static unsafe bool InternalEqualTypes(object a, object b)
         {
             if (a.GetType() == b.GetType())
                 return true;
@@ -427,11 +427,11 @@ namespace System
                 return false;
 
             // only use FCall to check the type equivalence scenario
-            return InternalEqualTypes(a, b);
+            return InternalEqualTypes_Internal(a, b);
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern bool InternalEqualTypes(object a, object b);
+        private static extern bool InternalEqualTypes_Internal(object a, object b);
 
         // Used by the ctor. Do not call directly.
         // The name of this function will appear in managed stacktraces as delegate constructor.
