@@ -341,9 +341,12 @@ namespace Microsoft.Extensions.Configuration
                 // At this point we know that we have a non-null bindingPoint.Value, we just have to populate the items
                 // using the IDictionary<> or ICollection<> interfaces, or properties using reflection.
                 Type? dictionaryInterface = FindOpenGenericInterface(typeof(IDictionary<,>), type);
-                if (dictionaryInterface != null)
+                Type? dictionaryInterface2 = FindOpenGenericInterface(typeof(IReadOnlyDictionary<,>), type);
+
+                Type? di = dictionaryInterface ?? dictionaryInterface2;
+                if (di != null)
                 {
-                    BindDictionary(bindingPoint.Value!, dictionaryInterface, config, options);
+                    BindDictionary(bindingPoint.Value!, di, config, options);
                 }
                 else
                 {

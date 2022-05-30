@@ -15,6 +15,12 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
     {
         public class ComplexOptions
         {
+            private static Dictionary<string, int> _existingDictionary = new()
+            {
+                {"existing-item1", 1},
+                {"existing-item2", 2},
+            };
+
             public ComplexOptions()
             {
                 Nested = new NestedOptions();
@@ -82,6 +88,14 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
                     {"item1", new HashSet<string>(new[] {"existing1", "existing2"})}
                 };
 #endif
+            public IReadOnlyDictionary<string, int> InstantiatedReadOnlyDictionaryWithWithSomeValues { get; set; } =
+                _existingDictionary;
+
+            public IReadOnlyDictionary<string, int> NonInstantiatedReadOnlyDictionary { get; set; }
+
+            public CustomICollectionWithoutAnAddMethod InstantiatedCustomICollectionWithoutAnAddMethod { get; set; } = new();
+            public CustomICollectionWithoutAnAddMethod NonInstantiatedCustomICollectionWithoutAnAddMethod { get; set; }
+
             public IEnumerable<string> InstantiatedIEnumerable { get; set; } = new List<string>();
             public ICollection<string> InstantiatedICollection { get; set; } = new List<string>();
             public IReadOnlyCollection<string> InstantiatedIReadOnlyCollection { get; set; } = new List<string>();
@@ -116,6 +130,27 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         {
             public ICustomCollectionDerivedFromIEnumerableT<string> CustomIEnumerableCollection { get; set; }
             public ICustomCollectionDerivedFromICollectionT<string> CustomCollection { get; set; }
+        }
+
+        public class CustomICollectionWithoutAnAddMethod : ICollection<string>
+        {
+            private readonly List<string> _items = new();
+            public IEnumerator<string> GetEnumerator() => _items.GetEnumerator();
+
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+            void ICollection<string>.Add(string item) => _items.Add(item);
+
+            public void Clear() => _items.Clear();
+
+            public bool Contains(string item) => _items.Contains(item);
+
+            public void CopyTo(string[] array, int arrayIndex) => _items.CopyTo(array, arrayIndex);
+
+            public bool Remove(string item) => _items.Remove(item);
+
+            public int Count => _items.Count;
+            public bool IsReadOnly => false;
         }
 
         public interface ICustomSet<T> : ISet<T>
@@ -651,6 +686,84 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         }
 #endif
 
+        public class Foo
+        {
+            public IReadOnlyDictionary<string, int> Items { get; set; } =
+                new Dictionary<string, int> {{"existing-item1", 1}, {"existing-item2", 2}};
+
+        }
+
+        [Fact]
+        public void CanBindInstantiatedReadOnlyDictionary2()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Items:item3", "3"},
+                {"Items:item4", "4"}
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<Foo>()!;
+
+            Assert.Equal(4, options.Items.Count);
+            Assert.Equal(1, options.Items["existing-item1"]);
+            Assert.Equal(2, options.Items["existing-item2"]);
+            Assert.Equal(3, options.Items["item3"]);
+            Assert.Equal(4, options.Items["item4"]);
+
+            
+        }
+
+        [Fact]
+        public void CanBindInstantiatedReadOnlyDictionary()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"InstantiatedReadOnlyDictionaryWithWithSomeValues:item3", "3"},
+                {"InstantiatedReadOnlyDictionaryWithWithSomeValues:item4", "4"}
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexOptions>()!;
+
+            Assert.Equal(4, options.InstantiatedReadOnlyDictionaryWithWithSomeValues.Count);
+            Assert.Equal(1, options.InstantiatedReadOnlyDictionaryWithWithSomeValues["existing-item1"]);
+            Assert.Equal(2, options.InstantiatedReadOnlyDictionaryWithWithSomeValues["existing-item2"]);
+            Assert.Equal(3, options.InstantiatedReadOnlyDictionaryWithWithSomeValues["item3"]);
+            Assert.Equal(4, options.InstantiatedReadOnlyDictionaryWithWithSomeValues["item4"]);
+
+            
+        }
+
+        [Fact]
+        public void CanBindNonInstantiatedReadOnlyDictionary()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"NonInstantiatedReadOnlyDictionary:item3", "3"},
+                {"NonInstantiatedReadOnlyDictionary:item4", "4"}
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexOptions>()!;
+
+            Assert.Equal(2, options.NonInstantiatedReadOnlyDictionary.Count);
+            Assert.Equal(3, options.NonInstantiatedReadOnlyDictionary["item3"]);
+            Assert.Equal(4, options.NonInstantiatedReadOnlyDictionary["item4"]);
+
+            
+        }
+        
+
         [Fact]
         public void CanBindNonInstantiatedDictionaryOfISet()
         {
@@ -891,6 +1004,46 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal(2, options.InstantiatedIEnumerable.Count());
             Assert.Equal("Yo1", options.InstantiatedIEnumerable.ElementAt(0));
             Assert.Equal("Yo2", options.InstantiatedIEnumerable.ElementAt(1));
+        }
+
+        [Fact]
+        public void CanBindInstantiatedCustomICollectionWithoutAnAddMethodWithItems()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"InstantiatedCustomICollectionWithoutAnAddMethod:0", "Yo1"},
+                {"InstantiatedCustomICollectionWithoutAnAddMethod:1", "Yo2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexOptions>()!;
+
+            Assert.Equal(2, options.InstantiatedCustomICollectionWithoutAnAddMethod.Count);
+            Assert.Equal("Yo1", options.InstantiatedCustomICollectionWithoutAnAddMethod.ElementAt(0));
+            Assert.Equal("Yo2", options.InstantiatedCustomICollectionWithoutAnAddMethod.ElementAt(1));
+        }
+
+        [Fact]
+        public void CanBindNonInstantiatedCustomICollectionWithoutAnAddMethodWithItems()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"NonInstantiatedCustomICollectionWithoutAnAddMethod:0", "Yo1"},
+                {"NonInstantiatedCustomICollectionWithoutAnAddMethod:1", "Yo2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexOptions>()!;
+
+            Assert.Equal(2, options.NonInstantiatedCustomICollectionWithoutAnAddMethod.Count);
+            Assert.Equal("Yo1", options.NonInstantiatedCustomICollectionWithoutAnAddMethod.ElementAt(0));
+            Assert.Equal("Yo2", options.NonInstantiatedCustomICollectionWithoutAnAddMethod.ElementAt(1));
         }
 
         [Fact]
