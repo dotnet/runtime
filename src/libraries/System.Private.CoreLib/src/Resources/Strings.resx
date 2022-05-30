@@ -3748,6 +3748,9 @@
   <data name="Arg_InvalidFileAttrs" xml:space="preserve">
     <value>Invalid File or Directory attributes value.</value>
   </data>
+  <data name="Arg_InvalidUnixFileMode" xml:space="preserve">
+    <value>Invalid UnixFileMode value.</value>
+  </data>
   <data name="Arg_Path2IsRooted" xml:space="preserve">
     <value>Second path fragment must not be a drive or UNC name.</value>
   </data>

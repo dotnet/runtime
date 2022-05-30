@@ -130,6 +130,12 @@ namespace System.IO
             }
         }
 
+        public UnixFileMode UnixFileMode
+        {
+            get => UnixFileModeCore;
+            set => UnixFileModeCore = value;
+        }
+
         /// <summary>
         /// Creates a symbolic link located in <see cref="FullName"/> that points to the specified <paramref name="pathToTarget"/>.
         /// </summary>

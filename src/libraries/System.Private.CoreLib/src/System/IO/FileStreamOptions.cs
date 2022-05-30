@@ -11,6 +11,7 @@ namespace System.IO
         private FileOptions _options;
         private long _preallocationSize;
         private int _bufferSize = FileStream.DefaultBufferSize;
+        private UnixFileMode? _unixCreateMode;
 
         /// <summary>
         /// One of the enumeration values that determines how to open or create the file.
@@ -108,6 +109,23 @@ namespace System.IO
         {
             get => _bufferSize;
             set => _bufferSize = value >= 0 ? value : throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NeedNonNegNum);
+        }
+
+        /// <summary>
+        /// Unix file mode used when a new file is created.
+        /// </summary>
+        public UnixFileMode? UnixCreateMode
+        {
+            get => _unixCreateMode;
+            set
+            {
+                if ((value & ~FileSystem.ValidUnixFileModes) != 0)
+                {
+                    ThrowHelper.ArgumentOutOfRangeException_Enum_Value();
+                }
+
+                _unixCreateMode = value;
+            }
         }
     }
 }

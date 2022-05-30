@@ -9216,6 +9216,7 @@ namespace System.IO
     public static partial class Directory
     {
         public static System.IO.DirectoryInfo CreateDirectory(string path) { throw null; }
+        public static System.IO.DirectoryInfo CreateDirectory(string path, System.IO.UnixFileMode unixCreateMode) { throw null; }
         public static System.IO.FileSystemInfo CreateSymbolicLink(string path, string pathToTarget) { throw null; }
         public static void Delete(string path) { }
         public static void Delete(string path, bool recursive) { }
@@ -9359,6 +9360,8 @@ namespace System.IO
         public static System.DateTime GetLastAccessTimeUtc(string path) { throw null; }
         public static System.DateTime GetLastWriteTime(string path) { throw null; }
         public static System.DateTime GetLastWriteTimeUtc(string path) { throw null; }
+        public static System.IO.UnixFileMode GetUnixFileMode(Microsoft.Win32.SafeHandles.SafeFileHandle fileHandle) { throw null; }
+        public static System.IO.UnixFileMode GetUnixFileMode(string path) { throw null; }
         public static void Move(string sourceFileName, string destFileName) { }
         public static void Move(string sourceFileName, string destFileName, bool overwrite) { }
         public static System.IO.FileStream Open(string path, System.IO.FileMode mode) { throw null; }
@@ -9393,6 +9396,8 @@ namespace System.IO
         public static void SetLastAccessTimeUtc(string path, System.DateTime lastAccessTimeUtc) { }
         public static void SetLastWriteTime(string path, System.DateTime lastWriteTime) { }
         public static void SetLastWriteTimeUtc(string path, System.DateTime lastWriteTimeUtc) { }
+        public static void SetUnixFileMode(Microsoft.Win32.SafeHandles.SafeFileHandle fileHandle, System.IO.UnixFileMode mode) { }
+        public static void SetUnixFileMode(string path, System.IO.UnixFileMode mode) { }
         public static void WriteAllBytes(string path, byte[] bytes) { }
         public static System.Threading.Tasks.Task WriteAllBytesAsync(string path, byte[] bytes, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static void WriteAllLines(string path, System.Collections.Generic.IEnumerable<string> contents) { }
@@ -9599,6 +9604,7 @@ namespace System.IO
         public System.IO.FileOptions Options { get { throw null; } set { } }
         public long PreallocationSize { get { throw null; } set { } }
         public System.IO.FileShare Share { get { throw null; } set { } }
+        public System.IO.UnixFileMode? UnixCreateMode { get { throw null; } set { } }
     }
     public abstract partial class FileSystemInfo : System.MarshalByRefObject, System.Runtime.Serialization.ISerializable
     {
@@ -9618,6 +9624,7 @@ namespace System.IO
         public System.DateTime LastWriteTimeUtc { get { throw null; } set { } }
         public string? LinkTarget { get { throw null; } }
         public abstract string Name { get; }
+        public System.IO.UnixFileMode UnixFileMode { get { throw null; } set { } }
         public void CreateAsSymbolicLink(string pathToTarget) { }
         public abstract void Delete();
         public virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
@@ -10074,6 +10081,23 @@ namespace System.IO
         public virtual System.Threading.Tasks.Task WriteLineAsync(System.ReadOnlyMemory<char> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public virtual System.Threading.Tasks.Task WriteLineAsync(string? value) { throw null; }
         public virtual System.Threading.Tasks.Task WriteLineAsync(System.Text.StringBuilder? value, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+    }
+    [System.FlagsAttribute]
+    public enum UnixFileMode
+    {
+        None = 0,
+        OtherExecute = 1,
+        OtherWrite = 2,
+        OtherRead = 4,
+        GroupExecute = 8,
+        GroupWrite = 16,
+        GroupRead = 32,
+        UserExecute = 64,
+        UserWrite = 128,
+        UserRead = 256,
+        StickyBit = 512,
+        SetGroup = 1024,
+        SetUser = 2048,
     }
     public partial class UnmanagedMemoryStream : System.IO.Stream
     {

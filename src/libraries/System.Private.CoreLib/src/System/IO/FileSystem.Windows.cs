@@ -459,6 +459,18 @@ namespace System.IO
         public static void SetLastWriteTime(string fullPath, DateTimeOffset time, bool asDirectory)
            => SetFileTime(fullPath, asDirectory, lastWriteTime: time.ToFileTime());
 
+        public static UnixFileMode GetUnixFileMode(string fullPath)
+            => throw NotImplementedException(); // TODO (Windows)
+
+        public static UnixFileMode GetUnixFileMode(SafeFileHandle fileHandle)
+            => throw NotImplementedException(); // TODO (Windows)
+
+        public static void SetUnixFileMode(string fullPath, UnixFileMode mode)
+            => throw NotImplementedException(); // TODO (Windows)
+
+        public static void SetUnixFileMode(SafeFileHandle fileHandle, UnixFileMode mode)
+            => throw NotImplementedException(); // TODO (Windows)
+
         public static string[] GetLogicalDrives()
             => DriveInfoInternal.GetLogicalDrives();
 

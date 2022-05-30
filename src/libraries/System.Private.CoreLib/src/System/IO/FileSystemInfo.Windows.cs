@@ -130,6 +130,20 @@ namespace System.IO
             }
         }
 
+        internal UnixFileMode UnixFileModeCore
+        {
+            get
+            {
+                EnsureDataInitialized();
+                throw new NotImplementedException(); // TODO (Windows)
+            }
+            set
+            {
+                FileSystem.SetUnixFileMode(FullPath, value);
+                _dataInitialized = -1;
+            }
+        }
+
         private void EnsureDataInitialized()
         {
             if (_dataInitialized == -1)

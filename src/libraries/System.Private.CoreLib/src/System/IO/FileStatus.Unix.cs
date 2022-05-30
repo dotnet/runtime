@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.IO
 {
@@ -397,6 +398,48 @@ namespace System.IO
 
             EnsureCachesInitialized(path, continueOnError);
             return EntryExists ? _fileCache.Size : 0;
+        }
+
+        internal UnixFileMode GetUnixFileMode(ReadOnlySpan<char> path, bool continueOnError = false)
+            => GetUnixFileMode(handle: null, path, continueOnError);
+
+        internal UnixFileMode GetUnixFileMode(SafeFileHandle handle, bool continueOnError = false)
+            => GetUnixFileMode(handle, handle.Path, continueOnError);
+
+        private UnixFileMode GetUnixFileMode(SafeFileHandle? handle, ReadOnlySpan<char> path, bool continueOnError = false)
+        {
+            EnsureCachesInitialized(handle, path, continueOnError);
+
+            if (!EntryExists)
+                return (UnixFileMode)(-1);
+
+            return (UnixFileMode)(_fileCache.Mode & (int)FileSystem.ValidUnixFileModes);
+        }
+
+        internal void SetUnixFileMode(string path, UnixFileMode mode)
+            => SetUnixFileMode(handle: null, path, mode);
+
+        internal void SetUnixFileMode(SafeFileHandle handle, UnixFileMode mode)
+            => SetUnixFileMode(handle, handle.Path, mode);
+
+        private void SetUnixFileMode(SafeFileHandle? handle, string? path, UnixFileMode mode)
+        {
+            if ((mode & ~FileSystem.ValidUnixFileModes) != 0)
+            {
+                // Using constant string for argument to match historical throw
+                throw new ArgumentException(SR.Arg_InvalidUnixFileMode, "UnixFileMode");
+            }
+
+            EnsureCachesInitialized(handle, path);
+
+            if (!EntryExists)
+                FileSystemInfo.ThrowNotFound(path);
+
+            int rv = handle is not null ? Interop.Sys.FChMod(handle, (int)mode) :
+                                          Interop.Sys.ChMod(path!, (int)mode);
+            Interop.CheckIo(rv, path);
+
+            InvalidateCaches();
         }
 
         // Tries to refresh the lstat cache (_fileCache).

@@ -220,6 +220,18 @@ namespace System.IO
         public static void SetAttributes(string path, FileAttributes fileAttributes)
             => FileSystem.SetAttributes(Path.GetFullPath(path), fileAttributes);
 
+        public static UnixFileMode GetUnixFileMode(string path)
+            => FileSystem.GetUnixFileMode(Path.GetFullPath(path));
+
+        public static UnixFileMode GetUnixFileMode(SafeFileHandle fileHandle)
+            => FileSystem.GetUnixFileMode(fileHandle);
+
+        public static void SetUnixFileMode(string path, UnixFileMode mode)
+            => FileSystem.SetUnixFileMode(Path.GetFullPath(path), mode);
+
+        public static void SetUnixFileMode(SafeFileHandle fileHandle, UnixFileMode mode)
+            => FileSystem.SetUnixFileMode(fileHandle, mode);
+
         public static FileStream OpenRead(string path)
             => new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
 

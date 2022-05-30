@@ -24,12 +24,18 @@ namespace System.IO
         }
 
         public static DirectoryInfo CreateDirectory(string path)
+            => CreateDirectory(path, null);
+
+        public static DirectoryInfo CreateDirectory(string path, UnixFileMode unixCreateMode)
+            => CreateDirectory(path, (UnixFileMode?)unixCreateMode);
+
+        private static DirectoryInfo CreateDirectory(string path, UnixFileMode? unixCreateMode)
         {
             ArgumentException.ThrowIfNullOrEmpty(path);
 
             string fullPath = Path.GetFullPath(path);
 
-            FileSystem.CreateDirectory(fullPath);
+            FileSystem.CreateDirectory(fullPath, unixCreateMode);
 
             return new DirectoryInfo(path, fullPath, isNormalized: true);
         }

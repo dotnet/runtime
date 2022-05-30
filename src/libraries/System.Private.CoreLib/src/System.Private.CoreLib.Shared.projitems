@@ -461,6 +461,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\StringWriter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\TextReader.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\TextWriter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\UnixFileMode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\UnmanagedMemoryAccessor.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\UnmanagedMemoryStream.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\UnmanagedMemoryStreamWrapper.cs" />

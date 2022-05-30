@@ -203,14 +203,14 @@ namespace System.IO
             FileStreamHelpers.SerializationGuard(options.Access);
 
             _strategy = FileStreamHelpers.ChooseStrategy(
-                this, path, options.Mode, options.Access, options.Share, options.BufferSize, options.Options, options.PreallocationSize);
+                this, path, options.Mode, options.Access, options.Share, options.BufferSize, options.Options, options.PreallocationSize, options.UnixCreateMode);
         }
 
         private FileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, long preallocationSize)
         {
             FileStreamHelpers.ValidateArguments(path, mode, access, share, bufferSize, options, preallocationSize);
 
-            _strategy = FileStreamHelpers.ChooseStrategy(this, path, mode, access, share, bufferSize, options, preallocationSize);
+            _strategy = FileStreamHelpers.ChooseStrategy(this, path, mode, access, share, bufferSize, options, preallocationSize, unixCreateMode: null);
         }
 
         [Obsolete("FileStream.Handle has been deprecated. Use FileStream's SafeFileHandle property instead.")]
