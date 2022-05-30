@@ -5182,7 +5182,7 @@ void CEEInfo::getCallInfo(
         pResult->kind = CORINFO_VIRTUALCALL_STUB;
         if (fIsStaticVirtualMethod)
         {
-            pResult->kind = CORINFO_VIRTUALSTATICCALL;
+            pResult->kind = CORINFO_CALL_CODE_POINTER;
         }
 
         // We can't make stub calls when we need exact information

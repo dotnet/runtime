@@ -2162,10 +2162,6 @@ GenTree* Compiler::impMethodPointer(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORI
             op1 = impLookupToTree(pResolvedToken, &pCallInfo->codePointerLookup, GTF_ICON_FTN_ADDR, pCallInfo->hMethod);
             break;
 
-        case CORINFO_VIRTUALSTATICCALL:
-            op1 = impRuntimeLookupToTree(pResolvedToken, &pCallInfo->stubLookup, pCallInfo->hMethod);
-            break;
-
         default:
             noway_assert(!"unknown call kind");
             break;
@@ -9459,45 +9455,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
         switch (callInfo->kind)
         {
-            case CORINFO_VIRTUALSTATICCALL:
-            {
-                assert((mflags & CORINFO_FLG_STATIC));
-                assert(!(clsFlags & CORINFO_FLG_VALUECLASS));
-                assert(callInfo->stubLookup.lookupKind.needsRuntimeLookup);
-
-                GenTree* targetAddrPtr = impRuntimeLookupToTree(pResolvedToken, &callInfo->stubLookup, methHnd);
-                assert(!compDonotInline());
-
-                // This is the rough code to set up an indirect stub call
-                assert(targetAddrPtr != nullptr);
-
-                // The targetAddrPtr may be a
-                // complex expression. As it is evaluated after the args,
-                // it may cause registered args to be spilled. Simply spill it.
-
-                unsigned lclNum = lvaGrabTemp(true DEBUGARG("VirtualStaticCall with runtime lookup"));
-                impAssignTempGen(lclNum, targetAddrPtr, (unsigned)CHECK_SPILL_NONE);
-                targetAddrPtr = gtNewLclvNode(lclNum, TYP_I_IMPL);
-
-                // Create the actual call node
-
-                assert((sig->callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_VARARG &&
-                       (sig->callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_NATIVEVARARG);
-
-                call = gtNewIndCallNode(targetAddrPtr, callRetTyp);
-
-                call->gtFlags |= GTF_EXCEPT | (targetAddrPtr->gtFlags & GTF_GLOB_EFFECT);
-                call->gtFlags |= GTF_CALL_NONVIRT;
-
-#ifdef TARGET_X86
-                // No tailcalls allowed for these yet...
-                canTailCall             = false;
-                szCanTailCallFailReason = "VirtualStaticCall with runtime lookup";
-#endif
-
-                break;
-            }
-
             case CORINFO_VIRTUALCALL_STUB:
             {
                 assert(!(mflags & CORINFO_FLG_STATIC)); // can't call a static method
