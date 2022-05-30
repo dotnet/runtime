@@ -4955,10 +4955,15 @@ void CEEInfo::getCallInfo(
     MethodDesc * pTargetMD = pMDAfterConstraintResolution;
     DWORD dwTargetMethodAttrs = pTargetMD->GetAttrs();
 
+    pResult->exactContextNeedsRuntimeLookup = (!constrainedType.IsNull() && constrainedType.IsCanonicalSubtype());
+
     if (pTargetMD->HasMethodInstantiation())
     {
         pResult->contextHandle = MAKE_METHODCONTEXT(pTargetMD);
-        pResult->exactContextNeedsRuntimeLookup = pTargetMD->GetMethodTable()->IsSharedByGenericInstantiations() || TypeHandle::IsCanonicalSubtypeInstantiation(pTargetMD->GetMethodInstantiation());
+        if (pTargetMD->GetMethodTable()->IsSharedByGenericInstantiations() || TypeHandle::IsCanonicalSubtypeInstantiation(pTargetMD->GetMethodInstantiation()))
+        {
+            pResult->exactContextNeedsRuntimeLookup = TRUE;
+        }
     }
     else
     {
@@ -4972,7 +4977,10 @@ void CEEInfo::getCallInfo(
         }
 
         pResult->contextHandle = MAKE_CLASSCONTEXT(exactType.AsPtr());
-        pResult->exactContextNeedsRuntimeLookup = exactType.IsSharedByGenericInstantiations();
+        if (exactType.IsSharedByGenericInstantiations())
+        {
+            pResult->exactContextNeedsRuntimeLookup = TRUE;
+        }
 
         // Use main method as the context as long as the methods are called on the same type
         if (pResult->exactContextNeedsRuntimeLookup &&

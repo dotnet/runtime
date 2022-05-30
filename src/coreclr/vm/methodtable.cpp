@@ -5475,8 +5475,7 @@ namespace
         MethodDesc *interfaceMD,
         MethodTable *interfaceMT,
         BOOL allowVariance,
-        MethodDesc **candidateMD,
-        BOOL *uniqueResolution)
+        MethodDesc **candidateMD)
     {
         *candidateMD = NULL;
 
@@ -5569,8 +5568,7 @@ namespace
                         candidateMaybe = pMT->TryResolveVirtualStaticMethodOnThisType(
                             interfaceMT,
                             interfaceMD,
-                            /* verifyImplemented */ FALSE,
-                            /* uniqueResolution */ uniqueResolution);
+                            /* verifyImplemented */ FALSE);
                     }
                 }
             }
@@ -5629,8 +5627,7 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
 
     // Check the current method table itself
     MethodDesc *candidateMaybe = NULL;
-    BOOL uniqueResolution;
-    if (IsInterface() && TryGetCandidateImplementation(this, pInterfaceMD, pInterfaceMT, allowVariance, &candidateMaybe, &uniqueResolution))
+    if (IsInterface() && TryGetCandidateImplementation(this, pInterfaceMD, pInterfaceMT, allowVariance, &candidateMaybe))
     {
         _ASSERTE(candidateMaybe != NULL);
 
@@ -5670,7 +5667,7 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
                 MethodTable *pCurMT = it.GetInterface(pMT);
 
                 MethodDesc *pCurMD = NULL;
-                if (TryGetCandidateImplementation(pCurMT, pInterfaceMD, pInterfaceMT, allowVariance, &pCurMD, &uniqueResolution))
+                if (TryGetCandidateImplementation(pCurMT, pInterfaceMD, pInterfaceMT, allowVariance, &pCurMD))
                 {
                     //
                     // Found a match. But is it a more specific match (we want most specific interfaces)
@@ -8032,7 +8029,7 @@ MethodTable::ResolveVirtualStaticMethod(
             // Search for match on a per-level in the type hierarchy
             for (MethodTable* pMT = this; pMT != nullptr; pMT = pMT->GetParentMethodTable())
             {
-                MethodDesc* pMD = pMT->TryResolveVirtualStaticMethodOnThisType(pInterfaceType, pInterfaceMD, verifyImplemented, uniqueResolution);
+                MethodDesc* pMD = pMT->TryResolveVirtualStaticMethodOnThisType(pInterfaceType, pInterfaceMD, verifyImplemented);
                 if (pMD != nullptr)
                 {
                     return pMD;
@@ -8076,7 +8073,7 @@ MethodTable::ResolveVirtualStaticMethod(
                         {
                             // Variant or equivalent matching interface found
                             // Attempt to resolve on variance matched interface
-                            pMD = pMT->TryResolveVirtualStaticMethodOnThisType(pItfInMap, pInterfaceMD, verifyImplemented, uniqueResolution);
+                            pMD = pMT->TryResolveVirtualStaticMethodOnThisType(pItfInMap, pInterfaceMD, verifyImplemented);
                             if (pMD != nullptr)
                             {
                                 return pMD;
@@ -8120,7 +8117,7 @@ MethodTable::ResolveVirtualStaticMethod(
 // Try to locate the appropriate MethodImpl matching a given interface static virtual method.
 // Returns nullptr on failure.
 MethodDesc*
-MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, BOOL verifyImplemented, BOOL* uniqueResolution)
+MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, BOOL verifyImplemented)
 {
     HRESULT hr = S_OK;
     IMDInternalImport* pMDInternalImport = GetMDImport();
@@ -8255,7 +8252,7 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType
             {
                 return pMethodImpl;
             }
-            if (pPrevMethodImpl != nullptr && uniqueResolution == nullptr)
+            if (pPrevMethodImpl != nullptr)
             {
                 // Two MethodImpl records found for the same virtual static interface method
                 COMPlusThrow(kTypeLoadException, E_FAIL);

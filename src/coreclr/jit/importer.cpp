@@ -2162,6 +2162,10 @@ GenTree* Compiler::impMethodPointer(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORI
             op1 = impLookupToTree(pResolvedToken, &pCallInfo->codePointerLookup, GTF_ICON_FTN_ADDR, pCallInfo->hMethod);
             break;
 
+        case CORINFO_VIRTUALSTATICCALL:
+            op1 = impRuntimeLookupToTree(pResolvedToken, &pCallInfo->stubLookup, pCallInfo->hMethod);
+            break;
+
         default:
             noway_assert(!"unknown call kind");
             break;

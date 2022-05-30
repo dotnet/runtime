@@ -2218,7 +2218,7 @@ public:
 
     // Try to resolve a given static virtual method override on this type. Return nullptr
     // when not found.
-    MethodDesc *TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, BOOL verifyImplemented, BOOL* uniqueResolution);
+    MethodDesc *TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, BOOL verifyImplemented);
 
 public:
     static MethodDesc *MapMethodDeclToMethodImpl(MethodDesc *pMDDecl);
