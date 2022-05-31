@@ -3112,8 +3112,6 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
             }
         }
 
-        CORINFO_CLASS_HANDLE copyBlkClass = NO_CLASS_HANDLE;
-
         // TODO-ARGS: Review this, is it really necessary to treat them specially here?
         if (call->gtArgs.IsNonStandard(this, call, &arg) && arg.AbiInfo.IsPassedInRegisters())
         {
@@ -3138,33 +3136,32 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
         // Struct arguments may be morphed into a node that is not a struct type.
         // In such case the CallArgABIInformation keeps track of whether the original node (before morphing)
         // was a struct and the struct classification.
-        bool isStructArg = arg.AbiInfo.IsStruct;
+        bool     isStructArg    = arg.AbiInfo.IsStruct;
+        GenTree* argObj         = argx->gtEffectiveVal(true /*commaOnly*/);
+        bool     makeOutArgCopy = false;
 
-        GenTree* argObj = argx->gtEffectiveVal(true /*commaOnly*/);
         if (isStructArg && varTypeIsStruct(argObj) && !argObj->OperIs(GT_ASG, GT_MKREFANY, GT_FIELD_LIST))
         {
-            CORINFO_CLASS_HANDLE objClass = gtGetStructHandle(argObj);
-            unsigned             originalSize;
+            unsigned originalSize;
             if (argObj->TypeGet() == TYP_STRUCT)
             {
                 if (argObj->OperIs(GT_OBJ))
                 {
-                    // Get the size off the OBJ node.
-                    originalSize = argObj->AsObj()->GetLayout()->GetSize();
-                    assert(originalSize == info.compCompHnd->getClassSize(objClass));
+                    originalSize = argObj->AsObj()->Size();
                 }
                 else
                 {
-                    // We have a BADCODE assert for this in AddFinalArgsAndDetermineABIInfo.
-                    assert(argObj->OperIs(GT_LCL_VAR));
-                    originalSize = lvaGetDesc(argObj->AsLclVarCommon())->lvExactSize;
+                    // Must be LCL_VAR: we have a BADCODE assert for this in AddFinalArgsAndDetermineABIInfo.
+                    originalSize = lvaGetDesc(argObj->AsLclVar())->lvExactSize;
                 }
             }
             else
             {
                 originalSize = genTypeSize(argx);
-                assert(originalSize == info.compCompHnd->getClassSize(objClass));
             }
+
+            assert(originalSize == info.compCompHnd->getClassSize(arg.GetSignatureClassHandle()));
+
             unsigned  roundupSize    = (unsigned)roundUp(originalSize, TARGET_POINTER_SIZE);
             var_types structBaseType = arg.AbiInfo.ArgType;
 
@@ -3172,7 +3169,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
             if (arg.AbiInfo.PassedByRef)
             {
                 assert(arg.AbiInfo.ByteSize == TARGET_POINTER_SIZE);
-                copyBlkClass = objClass;
+                makeOutArgCopy = true;
 #ifdef UNIX_AMD64_ABI
                 assert(!"Structs are not passed by reference on x64/ux");
 #endif // UNIX_AMD64_ABI
@@ -3219,7 +3216,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                     // On Windows structs are always copied and passed by reference (handled above) unless they are
                     // passed by value in a single register.
                     assert(arg.AbiInfo.GetStackSlotsNumber() == 1);
-                    copyBlkClass = objClass;
+                    makeOutArgCopy = true;
 #else  // UNIX_AMD64_ABI
                     // On Unix, structs are always passed by value.
                     // We only need a copy if we have one of the following:
@@ -3233,7 +3230,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                         {
                             if (passingSize != structSize)
                             {
-                                copyBlkClass = objClass;
+                                makeOutArgCopy = true;
                             }
                         }
                         else if (lclVar == nullptr)
@@ -3242,7 +3239,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                             assert(argObj->TypeGet() != TYP_STRUCT);
                             if (arg.AbiInfo.NumRegs > 1)
                             {
-                                copyBlkClass = objClass;
+                                makeOutArgCopy = true;
                             }
                         }
                     }
@@ -3250,7 +3247,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
 #elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
                     if ((passingSize != structSize) && (lclVar == nullptr))
                     {
-                        copyBlkClass = objClass;
+                        makeOutArgCopy = true;
                     }
 #endif
 
@@ -3260,12 +3257,12 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                          (lvaGetPromotionType(lclVar->AsLclVarCommon()->GetLclNum()) == PROMOTION_TYPE_INDEPENDENT)) ||
                         ((argObj->OperIs(GT_OBJ)) && (passingSize != structSize)))
                     {
-                        copyBlkClass = objClass;
+                        makeOutArgCopy = true;
                     }
 
                     if (structSize < TARGET_POINTER_SIZE)
                     {
-                        copyBlkClass = objClass;
+                        makeOutArgCopy = true;
                     }
 #endif // TARGET_ARM
                 }
@@ -3328,7 +3325,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                                         argObj->gtType = structBaseType;
                                     }
                                     assert(varTypeIsEnregisterable(argObj->TypeGet()));
-                                    assert(copyBlkClass == NO_CLASS_HANDLE);
+                                    assert(!makeOutArgCopy);
                                 }
                                 else
                                 {
@@ -3342,7 +3339,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                             {
                                 // The struct fits into a single register, but it has been promoted into its
                                 // constituent fields, and so we have to re-assemble it
-                                copyBlkClass = objClass;
+                                makeOutArgCopy = true;
                             }
                         }
                         else if (genTypeSize(varDsc->TypeGet()) != genTypeSize(structBaseType))
@@ -3359,7 +3356,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                         argObj->gtType = structBaseType;
                     }
                     assert(varTypeIsEnregisterable(argObj->TypeGet()) ||
-                           ((copyBlkClass != NO_CLASS_HANDLE) && varTypeIsEnregisterable(structBaseType)));
+                           (makeOutArgCopy && varTypeIsEnregisterable(structBaseType)));
                 }
 
 #if !defined(UNIX_AMD64_ABI) && !defined(TARGET_ARMARCH) && !defined(TARGET_LOONGARCH64)
@@ -3377,7 +3374,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                     // the obj reading memory past the end of the valuetype
                     if (roundupSize > originalSize)
                     {
-                        copyBlkClass = objClass;
+                        makeOutArgCopy = true;
 
                         // There are a few special cases where we can omit using a CopyBlk
                         // where we normally would need to use one.
@@ -3385,7 +3382,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                         if (argObj->OperIs(GT_OBJ) &&
                             argObj->AsObj()->gtGetOp1()->IsLocalAddrExpr() != nullptr) // Is the source a LclVar?
                         {
-                            copyBlkClass = NO_CLASS_HANDLE;
+                            makeOutArgCopy = false;
                         }
                     }
                 }
@@ -3394,9 +3391,9 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
             }
         }
 
-        if (copyBlkClass != NO_CLASS_HANDLE)
+        if (makeOutArgCopy)
         {
-            fgMakeOutgoingStructArgCopy(call, &arg, copyBlkClass);
+            fgMakeOutgoingStructArgCopy(call, &arg);
         }
 
         if (argx->gtOper == GT_MKREFANY)
@@ -3421,11 +3418,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
             // (tmp.ptr=argx),(tmp.type=handle)
             GenTreeLclFld* destPtrSlot  = gtNewLclFldNode(tmp, TYP_I_IMPL, OFFSETOF__CORINFO_TypedReference__dataPtr);
             GenTreeLclFld* destTypeSlot = gtNewLclFldNode(tmp, TYP_I_IMPL, OFFSETOF__CORINFO_TypedReference__type);
-            destPtrSlot->SetFieldSeq(
-                GetFieldSeqStore()->CreateSingleton(GetRefanyDataField(), OFFSETOF__CORINFO_TypedReference__dataPtr));
             destPtrSlot->gtFlags |= GTF_VAR_DEF;
-            destTypeSlot->SetFieldSeq(
-                GetFieldSeqStore()->CreateSingleton(GetRefanyTypeField(), OFFSETOF__CORINFO_TypedReference__type));
             destTypeSlot->gtFlags |= GTF_VAR_DEF;
 
             GenTree* asgPtrSlot  = gtNewAssignNode(destPtrSlot, argx->AsOp()->gtOp1);
@@ -4067,14 +4060,13 @@ GenTreeFieldList* Compiler::fgMorphLclArgToFieldlist(GenTreeLclVarCommon* lcl)
 // Arguments:
 //    call - call being processed
 //    arg - arg for the call
-//    copyBlkClass - class handle for the struct
 //
 // The arg is updated if necessary with the copy.
 //
-void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg, CORINFO_CLASS_HANDLE copyBlkClass)
+void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
 {
     GenTree* argx = arg->GetEarlyNode();
-    noway_assert(argx->gtOper != GT_MKREFANY);
+    noway_assert(!argx->OperIs(GT_MKREFANY));
 
     // If we're optimizing, see if we can avoid making a copy.
     //
@@ -4125,8 +4117,9 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg, CORI
         fgOutgoingArgTemps = hashBv::Create(this);
     }
 
-    unsigned tmp   = 0;
-    bool     found = false;
+    CORINFO_CLASS_HANDLE copyBlkClass = arg->GetSignatureClassHandle();
+    unsigned             tmp          = 0;
+    bool                 found        = false;
 
     // Attempt to find a local we have already used for an outgoing struct and reuse it.
     // We do not reuse within a statement.
@@ -9645,45 +9638,6 @@ GenTree* Compiler::fgMorphBlockOperand(GenTree* tree, var_types asgType, unsigne
     return tree;
 }
 
-//------------------------------------------------------------------------
-// fgMorphCanUseLclFldForCopy: check if we can access LclVar2 using LclVar1's fields.
-//
-// Arguments:
-//    lclNum1 - a promoted lclVar that is used in fieldwise assignment;
-//    lclNum2 - the local variable on the other side of ASG, can be BAD_VAR_NUM.
-//
-// Return Value:
-//    True if the second local is valid and has the same struct handle as the first,
-//    false otherwise.
-//
-// Notes:
-//   TODO-PhysicalVN: with the physical VN scheme, this method is no longer needed.
-//
-bool Compiler::fgMorphCanUseLclFldForCopy(unsigned lclNum1, unsigned lclNum2)
-{
-    assert(lclNum1 != BAD_VAR_NUM);
-    if (lclNum2 == BAD_VAR_NUM)
-    {
-        return false;
-    }
-    const LclVarDsc* varDsc1 = lvaGetDesc(lclNum1);
-    const LclVarDsc* varDsc2 = lvaGetDesc(lclNum2);
-    assert(varTypeIsStruct(varDsc1));
-    if (!varTypeIsStruct(varDsc2))
-    {
-        return false;
-    }
-    CORINFO_CLASS_HANDLE struct1 = varDsc1->GetStructHnd();
-    CORINFO_CLASS_HANDLE struct2 = varDsc2->GetStructHnd();
-    assert(struct1 != NO_CLASS_HANDLE);
-    assert(struct2 != NO_CLASS_HANDLE);
-    if (struct1 != struct2)
-    {
-        return false;
-    }
-    return true;
-}
-
 // insert conversions and normalize to make tree amenable to register
 // FP architectures
 GenTree* Compiler::fgMorphForRegisterFP(GenTree* tree)
@@ -11672,11 +11626,7 @@ DONE_MORPHING_CHILDREN:
 
                             if ((fieldSeq != nullptr) && (temp->OperGet() == GT_LCL_FLD))
                             {
-                                // Append the field sequence, change the type.
-                                temp->AsLclFld()->SetFieldSeq(
-                                    GetFieldSeqStore()->Append(temp->AsLclFld()->GetFieldSeq(), fieldSeq));
-                                temp->gtType = typ;
-
+                                temp->gtType      = typ;
                                 foldAndReturnTemp = true;
                             }
                         }
@@ -11730,13 +11680,6 @@ DONE_MORPHING_CHILDREN:
 
                         ival1    = op1->AsOp()->gtOp2->AsIntCon()->gtIconVal;
                         fieldSeq = op1->AsOp()->gtOp2->AsIntCon()->gtFieldSeq;
-
-                        // Does the address have an associated zero-offset field sequence?
-                        FieldSeqNode* addrFieldSeq = nullptr;
-                        if (GetZeroOffsetFieldMap()->Lookup(op1->AsOp()->gtOp1, &addrFieldSeq))
-                        {
-                            fieldSeq = GetFieldSeqStore()->Append(addrFieldSeq, fieldSeq);
-                        }
 
                         if (ival1 == 0 && typ == temp->TypeGet() && temp->TypeGet() != TYP_STRUCT)
                         {
@@ -11795,7 +11738,6 @@ DONE_MORPHING_CHILDREN:
                     {
                         lclFld = temp->AsLclFld();
                         lclFld->SetLclOffs(lclFld->GetLclOffs() + static_cast<unsigned>(ival1));
-                        lclFld->SetFieldSeq(GetFieldSeqStore()->Append(lclFld->GetFieldSeq(), fieldSeq));
                     }
                     else // We have a GT_LCL_VAR.
                     {
@@ -11803,12 +11745,6 @@ DONE_MORPHING_CHILDREN:
                         temp->ChangeOper(GT_LCL_FLD); // Note that this makes the gtFieldSeq "NotAField".
                         lclFld = temp->AsLclFld();
                         lclFld->SetLclOffs(static_cast<unsigned>(ival1));
-
-                        if (fieldSeq != nullptr)
-                        {
-                            // If it does represent a field, note that.
-                            lclFld->SetFieldSeq(fieldSeq);
-                        }
                     }
 
                     temp->gtType      = tree->gtType;
@@ -11826,6 +11762,7 @@ DONE_MORPHING_CHILDREN:
                 // 'temp' because a GT_ADDR always marks it for its operand.
                 temp->gtFlags &= ~GTF_DONT_CSE;
                 temp->gtFlags |= (tree->gtFlags & GTF_DONT_CSE);
+                temp->SetVNsFromNode(tree);
 
                 if (op1->OperGet() == GT_ADD)
                 {
@@ -13718,6 +13655,15 @@ GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
     if (opts.OptimizationEnabled() && multiOp->OperIs(GT_HWINTRINSIC))
     {
         GenTreeHWIntrinsic* hw = multiOp->AsHWIntrinsic();
+
+        // Move constant vectors from op1 to op2 for commutative and compare operations
+        // For now we only do it for zero vector
+        if ((hw->GetOperandCount() == 2) && hw->Op(1)->IsVectorZero() &&
+            HWIntrinsicInfo::IsCommutative(hw->GetHWIntrinsicId()))
+        {
+            std::swap(hw->Op(1), hw->Op(2));
+        }
+
         switch (hw->GetHWIntrinsicId())
         {
 #if defined(TARGET_XARCH)
@@ -13731,12 +13677,6 @@ GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
                 GenTree* op2 = hw->Op(2);
                 if (!gtIsActiveCSE_Candidate(hw))
                 {
-                    if (op1->IsIntegralConstVector(0) && !gtIsActiveCSE_Candidate(op1))
-                    {
-                        DEBUG_DESTROY_NODE(hw);
-                        DEBUG_DESTROY_NODE(op1);
-                        return op2;
-                    }
                     if (op2->IsIntegralConstVector(0) && !gtIsActiveCSE_Candidate(op2))
                     {
                         DEBUG_DESTROY_NODE(hw);
@@ -17245,18 +17185,6 @@ void Compiler::fgAddFieldSeqForZeroOffset(GenTree* addr, FieldSeqNode* fieldSeqZ
             fieldSeqRecorded             = true;
             break;
 
-        case GT_ADDR:
-            if (addr->AsOp()->gtOp1->OperGet() == GT_LCL_FLD)
-            {
-                fieldSeqNode = addr->AsOp()->gtOp1;
-
-                GenTreeLclFld* lclFld = addr->AsOp()->gtOp1->AsLclFld();
-                fieldSeqUpdate        = GetFieldSeqStore()->Append(lclFld->GetFieldSeq(), fieldSeqZero);
-                lclFld->SetFieldSeq(fieldSeqUpdate);
-                fieldSeqRecorded = true;
-            }
-            break;
-
         case GT_ADD:
             if (addr->AsOp()->gtOp1->OperGet() == GT_CNS_INT)
             {
@@ -17402,7 +17330,7 @@ bool Compiler::fgMorphCombineSIMDFieldAssignments(BasicBlock* block, Statement* 
     {
         dstNode         = originalLHS;
         dstNode->gtType = simdType;
-        dstNode->AsLclFld()->SetFieldSeq(FieldSeqStore::NotAField());
+        dstNode->AsLclFld()->SetLayout(nullptr);
 
         // This may have changed a partial local field into full local field
         if (dstNode->IsPartialLclFld(this))
