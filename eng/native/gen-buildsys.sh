@@ -3,8 +3,6 @@
 # This file invokes cmake and generates the build system for Clang.
 #
 
-set -x
-
 scriptroot="$( cd -P "$( dirname "$0" )" && pwd )"
 
 if [[ "$#" -lt 4 ]]; then
