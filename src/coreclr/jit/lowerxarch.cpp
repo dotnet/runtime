@@ -174,24 +174,35 @@ GenTree* Lowering::LowerMul(GenTreeOp* mul)
 GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
 {
 #ifdef FEATURE_HW_INTRINSICS
-    if (comp->opts.OptimizationEnabled() && binOp->OperIs(GT_AND) && varTypeIsIntegral(binOp))
+    if (comp->opts.OptimizationEnabled() && varTypeIsIntegral(binOp))
     {
-        GenTree* replacementNode = TryLowerAndOpToAndNot(binOp);
-        if (replacementNode != nullptr)
+        if (binOp->OperIs(GT_AND))
         {
-            return replacementNode->gtNext;
-        }
+            GenTree* replacementNode = TryLowerAndOpToAndNot(binOp);
+            if (replacementNode != nullptr)
+            {
+                return replacementNode->gtNext;
+            }
 
-        replacementNode = TryLowerAndOpToResetLowestSetBit(binOp);
-        if (replacementNode != nullptr)
-        {
-            return replacementNode->gtNext;
-        }
+            replacementNode = TryLowerAndOpToResetLowestSetBit(binOp);
+            if (replacementNode != nullptr)
+            {
+                return replacementNode->gtNext;
+            }
 
-        replacementNode = TryLowerAndOpToExtractLowestSetBit(binOp);
-        if (replacementNode != nullptr)
+            replacementNode = TryLowerAndOpToExtractLowestSetBit(binOp);
+            if (replacementNode != nullptr)
+            {
+                return replacementNode->gtNext;
+            }
+        }
+        else if (binOp->OperIs(GT_XOR))
         {
-            return replacementNode->gtNext;
+            GenTree* replacementNode = TryLowerXorOpToGetMaskUpToLowestSetBit(binOp);
+            if (replacementNode != nullptr)
+            {
+                return replacementNode->gtNext;
+            }
         }
     }
 #endif
@@ -4095,6 +4106,93 @@ GenTree* Lowering::TryLowerAndOpToAndNot(GenTreeOp* andNode)
     ContainCheckHWIntrinsic(andnNode);
 
     return andnNode;
+}
+
+//----------------------------------------------------------------------------------------------
+// Lowering::TryLowerXorOpToGetMaskUpToLowestSetBit: Lowers a tree XOR(X, NOT(X)) to
+// HWIntrinsic::GetMaskUpToLowestSetBit
+//
+// Arguments:
+//    xorNode - GT_XOR node of integral type
+//
+// Return Value:
+//    Returns the replacement node if one is created else nullptr indicating no replacement
+//
+// Notes:
+//    Performs containment checks on the replacement node if one is created
+GenTree* Lowering::TryLowerXorOpToGetMaskUpToLowestSetBit(GenTreeOp* xorNode)
+{
+    assert(xorNode->OperIs(GT_XOR) && varTypeIsIntegral(xorNode));
+
+    GenTree* opNode  = nullptr;
+    GenTree* negNode = nullptr;
+    if (xorNode->gtGetOp1()->OperIs(GT_NEG))
+    {
+        negNode = xorNode->gtGetOp1();
+        opNode  = xorNode->gtGetOp2();
+    }
+    else if (xorNode->gtGetOp2()->OperIs(GT_NEG))
+    {
+        negNode = xorNode->gtGetOp2();
+        opNode  = xorNode->gtGetOp1();
+    }
+
+    if (opNode == nullptr)
+    {
+        return nullptr;
+    }
+
+    GenTree* negOp = negNode->AsUnOp()->gtGetOp1();
+    if (!negOp->OperIs(GT_LCL_VAR) || !opNode->OperIs(GT_LCL_VAR) ||
+        (negOp->AsLclVar()->GetLclNum() != opNode->AsLclVar()->GetLclNum()))
+    {
+        return nullptr;
+    }
+
+    // prevent decomposed 64 integer node parts in x86 from being recognised
+    if (((xorNode->gtFlags & GTF_SET_FLAGS) == GTF_SET_FLAGS) || ((negOp->gtFlags & GTF_SET_FLAGS) == GTF_SET_FLAGS) ||
+        ((negNode->gtFlags & GTF_SET_FLAGS) == GTF_SET_FLAGS))
+    {
+        return nullptr;
+    }
+
+    NamedIntrinsic intrinsic;
+    if (xorNode->TypeIs(TYP_LONG) && comp->compOpportunisticallyDependsOn(InstructionSet_BMI1_X64))
+    {
+        intrinsic = NamedIntrinsic::NI_BMI1_X64_GetMaskUpToLowestSetBit;
+    }
+    else if (comp->compOpportunisticallyDependsOn(InstructionSet_BMI1))
+    {
+        intrinsic = NamedIntrinsic::NI_BMI1_GetMaskUpToLowestSetBit;
+    }
+    else
+    {
+        return nullptr;
+    }
+
+    LIR::Use use;
+    if (!BlockRange().TryGetUse(xorNode, &use))
+    {
+        return nullptr;
+    }
+
+    GenTreeHWIntrinsic* blsmskNode = comp->gtNewScalarHWIntrinsicNode(xorNode->TypeGet(), opNode, intrinsic);
+
+    JITDUMP("Lower: optimize XOR(X, NEG(X)))\n");
+    DISPNODE(xorNode);
+    JITDUMP("to:\n");
+    DISPNODE(blsmskNode);
+
+    use.ReplaceWith(blsmskNode);
+
+    BlockRange().InsertBefore(xorNode, blsmskNode);
+    BlockRange().Remove(xorNode);
+    BlockRange().Remove(negNode);
+    BlockRange().Remove(negOp);
+
+    ContainCheckHWIntrinsic(blsmskNode);
+
+    return blsmskNode;
 }
 
 //----------------------------------------------------------------------------------------------
