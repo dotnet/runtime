@@ -582,17 +582,21 @@ namespace DebuggerTests
         }
 
         [ConditionalTheory(nameof(RunningOnChrome))]
-        [InlineData(false, "RunStepThrough", 847, 8)]
-        [InlineData(true, "RunStepThrough", 847, 8)]
-        [InlineData(false, "RunNonUserCode", 852, 4, "NonUserCodeBp")]
-        [InlineData(true, "RunNonUserCode", 867, 8)]
-        [InlineData(false, "RunStepThroughWithNonUserCode", 933, 8)]
-        [InlineData(true, "RunStepThroughWithNonUserCode", 933, 8)]
-        public async Task StepThroughOrNonUserCodeAttributeStepInNoBp(bool justMyCodeEnabled, string evalFunName, int line, int col, string funcName="")
+        [InlineData(false, "RunStepThrough", "DebuggerAttribute", 1, 847, 8)]
+        [InlineData(true, "RunStepThrough", "DebuggerAttribute", 1, 847, 8)]
+        [InlineData(false, "RunNonUserCode", "DebuggerAttribute", 1, 852, 4, "NonUserCodeBp")]
+        [InlineData(true, "RunNonUserCode", "DebuggerAttribute", 1, 867, 8)]
+        [InlineData(false, "RunStepThroughWithNonUserCode", "DebuggerAttribute", 1, 933, 8)]
+        [InlineData(true, "RunStepThroughWithNonUserCode", "DebuggerAttribute", 1, 933, 8)]
+        [InlineData(false, "Evaluate", "DefaultInterfaceMethod", 7, 1052, 8)] // stepThrough
+        [InlineData(true, "Evaluate", "DefaultInterfaceMethod", 7, 1052, 8)] // stepThrough
+        [InlineData(false, "Evaluate", "DefaultInterfaceMethod", 8, 1027, 4, "NonUserCodeDefaultMethod")] // nonUserCode
+        [InlineData(true, "Evaluate", "DefaultInterfaceMethod", 8, 1053, 8)] // nonUserCode
+        public async Task StepThroughOrNonUserCodeAttributeStepInNoBp(bool justMyCodeEnabled, string evalFunName, string evalClassName, int bpLine, int line, int col, string funcName="")
         {
-            var bp_init = await SetBreakpointInMethod("debugger-test.dll", "DebuggerAttribute", evalFunName, 1);
+            var bp_init = await SetBreakpointInMethod("debugger-test.dll", evalClassName, evalFunName, bpLine);
             var init_location = await EvaluateAndCheck(
-                $"window.setTimeout(function() {{ invoke_static_method('[debugger-test] DebuggerAttribute:{evalFunName}'); }}, 1);",
+                $"window.setTimeout(function() {{ invoke_static_method('[debugger-test] {evalClassName}:{evalFunName}'); }}, 1);",
                 "dotnet://debugger-test.dll/debugger-test.cs",
                 bp_init.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp_init.Value["locations"][0]["columnNumber"].Value<int>(),
@@ -708,38 +712,42 @@ namespace DebuggerTests
         }
 
         [ConditionalTheory(nameof(RunningOnChrome))]
-        [InlineData("Debugger.stepInto", 1, 2, false)]
-        [InlineData("Debugger.stepInto", 1, 2, true)]
-        [InlineData("Debugger.resume", 1, 2, true)]
-        [InlineData("Debugger.stepInto", 2, 3, false)]
-        [InlineData("Debugger.resume", 2, 3, false)]
-        public async Task StepperBoundary(string debuggingAction, int lineBpInit, int lineBpFinal, bool hasBpInDecoratedFun)
+        [InlineData("DebuggerAttribute", "RunNoBoundary", "DebuggerAttribute", "Debugger.stepInto", 1, 2, false)]
+        [InlineData("DebuggerAttribute", "RunNoBoundary", "DebuggerAttribute", "Debugger.stepInto", 1, 2, true)]
+        [InlineData("DebuggerAttribute", "RunNoBoundary", "DebuggerAttribute", "Debugger.resume", 1, 2, true)]
+        [InlineData("DebuggerAttribute", "RunNoBoundary", "DebuggerAttribute", "Debugger.stepInto", 2, 3, false, true)]
+        [InlineData("DebuggerAttribute", "RunNoBoundary", "DebuggerAttribute", "Debugger.resume", 2, 3, false, true)]
+        [InlineData("DefaultInterfaceMethod", "Evaluate", "IOverrideDefaultInterface", "Debugger.stepInto", 10, 11, false)]
+        [InlineData("DefaultInterfaceMethod", "Evaluate", "IOverrideDefaultInterface", "Debugger.stepInto", 10, 11, true)]
+        [InlineData("DefaultInterfaceMethod", "Evaluate", "IOverrideDefaultInterface", "Debugger.resume", 10, 11, true)]
+        public async Task StepperBoundary(
+            string className, string evalFunName, string decoratedMethodClassName, string debuggingAction, int lineBpInit, int lineBpFinal, bool hasBpInDecoratedFun, bool isTestingUserBp = false)
         {
             // behavior of StepperBoundary is the same for JMC enabled and disabled
             // but the effect of NonUserCode escape is better visible for JMC: enabled
             await SetJustMyCode(true); 
-            var bp_init = await SetBreakpointInMethod("debugger-test.dll", "DebuggerAttribute", "RunNoBoundary", lineBpInit);
+            var bp_init = await SetBreakpointInMethod("debugger-test.dll", className, evalFunName, lineBpInit);
             var init_location = await EvaluateAndCheck(
-                $"window.setTimeout(function() {{ invoke_static_method('[debugger-test] DebuggerAttribute:RunNoBoundary'); }}, {lineBpInit});",
+                $"window.setTimeout(function() {{ invoke_static_method('[debugger-test] {className}:{evalFunName}'); }}, {lineBpInit});",
                 "dotnet://debugger-test.dll/debugger-test.cs",
                 bp_init.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp_init.Value["locations"][0]["columnNumber"].Value<int>(),
-                "RunNoBoundary"
+                evalFunName
             );
-            var bp_final = await SetBreakpointInMethod("debugger-test.dll", "DebuggerAttribute", "RunNoBoundary", lineBpFinal);
+            var bp_final = await SetBreakpointInMethod("debugger-test.dll", className, evalFunName, lineBpFinal);
             if (hasBpInDecoratedFun)
             {
-                var bp_decorated_fun = await SetBreakpointInMethod("debugger-test.dll", "DebuggerAttribute", "BoundaryBp", 2);
+                var bp_decorated_fun = await SetBreakpointInMethod("debugger-test.dll", decoratedMethodClassName, "BoundaryBp", 2);
                 var line_decorated_fun = bp_decorated_fun.Value["locations"][0]["lineNumber"].Value<int>();
                 var col_decorated_fun = bp_decorated_fun.Value["locations"][0]["columnNumber"].Value<int>();
                 await SendCommandAndCheck(null, debuggingAction, "dotnet://debugger-test.dll/debugger-test.cs", line_decorated_fun, col_decorated_fun, "BoundaryBp");
             }
-            if (lineBpInit == 2)
+            if (isTestingUserBp)
                 await SendCommandAndCheck(null, debuggingAction, "dotnet://debugger-test.dll/debugger-test.cs", 879, 8, "BoundaryUserBp");
             
             var line = bp_final.Value["locations"][0]["lineNumber"].Value<int>();
             var col = bp_final.Value["locations"][0]["columnNumber"].Value<int>();
-            await SendCommandAndCheck(null, debuggingAction, "dotnet://debugger-test.dll/debugger-test.cs", line, col, "RunNoBoundary");
+            await SendCommandAndCheck(null, debuggingAction, "dotnet://debugger-test.dll/debugger-test.cs", line, col, evalFunName);
         }
 
         [ConditionalFact(nameof(RunningOnChrome))]
@@ -809,6 +817,67 @@ namespace DebuggerTests
                     CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 14, 4, scripts, scope["endLocation"]);
                     await Task.CompletedTask;
                 }
+            );
+        }
+
+        [Fact]
+        public async Task BreakInDefaultInterfaceMethod()
+        {
+            string methodName = "DefaultMethod";
+            string assembly = "dotnet://debugger-test.dll/debugger-test.cs";
+            var bp_dim = await SetBreakpointInMethod("debugger-test.dll", "IDefaultInterface", methodName, 1);
+            var init_location = await EvaluateAndCheck(
+                $"window.setTimeout(function() {{ invoke_static_method('[debugger-test] DefaultInterfaceMethod:Evaluate'); }}, 1);",
+                assembly,
+                bp_dim.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp_dim.Value["locations"][0]["columnNumber"].Value<int>(),
+                methodName,
+                wait_for_event_fn: async (pause_location) => { await CheckDefaultMethod(pause_location); }
+            );
+            await SendCommandAndCheck(null, "Debugger.resume",
+                assembly,
+                bp_dim.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp_dim.Value["locations"][0]["columnNumber"].Value<int>(),
+                methodName,
+                wait_for_event_fn: async (pause_location) => { await CheckDefaultMethod(pause_location); }
+            );
+
+            async Task CheckDefaultMethod(JObject pause_location)
+            {
+                Assert.Equal("other", pause_location["reason"]?.Value<string>());
+                Assert.Equal(bp_dim.Value["breakpointId"]?.ToString(), pause_location["hitBreakpoints"]?[0]?.Value<string>());
+
+                var top_frame = pause_location["callFrames"][0];
+                Assert.Equal(methodName, top_frame["functionName"].Value<string>());
+                Assert.Contains("debugger-test.cs", top_frame["url"].Value<string>());
+
+                CheckLocation(assembly, 999, 4, scripts, top_frame["functionLocation"]);
+
+                var scope = top_frame["scopeChain"][0];
+                Assert.Equal("local", scope["type"]);
+                Assert.Equal(methodName, scope["name"]);
+
+                Assert.Equal("object", scope["object"]["type"]);
+                CheckLocation(assembly, 999, 4, scripts, scope["startLocation"]);
+                CheckLocation(assembly, 1002, 4, scripts, scope["endLocation"]);
+                await Task.CompletedTask;
+            }
+        }
+
+        [Fact]
+        public async Task CheckDefaultInterfaceMethodHiddenAttribute()
+        {
+            string methodName = "Evaluate";
+            string assembly = "dotnet://debugger-test.dll/debugger-test.cs";
+            var hidden_bp = await SetBreakpointInMethod("debugger-test.dll", "IOverrideDefaultInterface", "HiddenDefaultMethod", 1);
+            var final_bp = await SetBreakpointInMethod("debugger-test.dll", "DefaultInterfaceMethod", methodName, 7);
+            // check if bp in hidden DIM was ignored:
+            await EvaluateAndCheck(
+                $"window.setTimeout(function() {{ invoke_static_method('[debugger-test] DefaultInterfaceMethod:{methodName}'); }}, 1);",
+                assembly,
+                final_bp.Value["locations"][0]["lineNumber"].Value<int>(),
+                final_bp.Value["locations"][0]["columnNumber"].Value<int>(),
+                methodName
             );
         }
     }

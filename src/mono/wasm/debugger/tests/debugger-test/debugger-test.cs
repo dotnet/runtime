@@ -992,3 +992,67 @@ public class TestHotReloadUsingSDB {
             myMethod.Invoke(null, null);
         }
 }
+
+#region Default Interface Method
+public interface IDefaultInterface
+{
+    string DefaultMethod()
+    {
+        string localString = "DefaultMethod()";
+        return $"{localString} from IDefaultInterface";
+    }
+}
+
+public interface IOverrideDefaultInterface : IDefaultInterface
+{
+    void DefaultMethod2(out string t)
+    {
+        string localString = "DefaultMethod2()";
+        t = $"{localString} from IOverrideDefaultInterface";
+    }
+
+    [System.Diagnostics.DebuggerHidden]
+    void HiddenDefaultMethod()
+    {
+        var a = 9;
+    }
+
+    [System.Diagnostics.DebuggerStepThroughAttribute]
+    void StepThroughDefaultMethod()
+    {
+        var a = 0;
+    }
+
+    [System.Diagnostics.DebuggerNonUserCode]
+    void NonUserCodeDefaultMethod(Action boundaryTestFun = null)
+    {
+        if (boundaryTestFun != null)
+            boundaryTestFun();
+    }
+
+    [System.Diagnostics.DebuggerStepperBoundary]
+    void BoundaryBp()
+    {
+        var a = 15;
+    }
+}
+
+public class DIMClass : IOverrideDefaultInterface { }
+
+public static class DefaultInterfaceMethod
+{
+    public static void Evaluate()
+    {
+        IDefaultInterface defaultInter = new DIMClass();
+        IOverrideDefaultInterface overrideDefaultInter = new DIMClass();
+
+        string defaultFromIDefault = defaultInter.DefaultMethod();
+        string defaultFromIOverride = overrideDefaultInter.DefaultMethod();
+        overrideDefaultInter.DefaultMethod2(out string default2FromIOverride);
+        overrideDefaultInter.StepThroughDefaultMethod();
+        overrideDefaultInter.NonUserCodeDefaultMethod();
+        overrideDefaultInter.HiddenDefaultMethod();
+        overrideDefaultInter.NonUserCodeDefaultMethod(overrideDefaultInter.BoundaryBp);
+    }
+}
+#endregion

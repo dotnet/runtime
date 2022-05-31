@@ -1220,5 +1220,34 @@ namespace DebuggerTests
                 expected_props = new [] { TString("S"), TString("T"), TString("R") };
                 await CheckProps(props, expected_props, "props#2");
              });
+
+        [Fact]
+        public async Task EvaluateDefaultInterfaceMethod() =>  
+            await CheckInspectLocalsAtBreakpointSite(
+            "DefaultInterfaceMethod", "Evaluate", 7, "Evaluate",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DefaultInterfaceMethod:Evaluate'); })",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+
+                await EvaluateOnCallFrameAndCheck(id,
+                    ("defaultFromIDefault", TString("DefaultMethod() from IDefaultInterface")),
+                    ("defaultFromIOverride", TString("DefaultMethod() from IDefaultInterface")),
+                    ("default2FromIOverride", TString("DefaultMethod2() from IOverrideDefaultInterface"))
+                );
+            });
+
+        [Theory]
+        [InlineData("DefaultMethod", "IDefaultInterface")]
+        [InlineData("DefaultMethod2", "IOverrideDefaultInterface")]
+        public async Task EvaluateLocalsInDefaultInterfaceMethod(string pauseMethod, string methodInterface) =>  
+            await CheckInspectLocalsAtBreakpointSite(
+            methodInterface, pauseMethod, 2, pauseMethod,
+            $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DefaultInterfaceMethod:Evaluate'); }})",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+                await EvaluateOnCallFrameAndCheck(id, ("localString", TString($"{pauseMethod}()")));
+            });
     }
 }
