@@ -758,11 +758,12 @@ using System.Text.Json.Serialization;
 
 namespace Test
 {
-    [JsonSerializable(typeof(ClassWithPropertyNameThatIsAReservedKeyword))]
+    [JsonSerializable(typeof(ClassWithPropertiesAndFieldsThatIreReservedKeywords))]
     public partial class JsonContext : JsonSerializerContext { }
 
-    public class ClassWithPropertyNameThatIsAReservedKeyword
+    public class ClassWithPropertiesAndFieldsThatIreReservedKeywords
     {
+        public int @class;
         public string @event { get; set; }
     }
 }
