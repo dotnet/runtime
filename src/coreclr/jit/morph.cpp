@@ -17527,6 +17527,7 @@ bool Compiler::fgCheckStmtAfterTailCall()
 bool Compiler::fgCanTailCallViaJitHelper()
 {
 #if !defined(TARGET_X86) || defined(UNIX_X86_ABI)
+    // On anything except windows X86 we have no faster mechanism available.
     return false;
 #else
     // For R2R make sure we go through portable mechanism that the 'EE' side
