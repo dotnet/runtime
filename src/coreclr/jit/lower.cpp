@@ -318,8 +318,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
 
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
-            LowerHWIntrinsic(node->AsHWIntrinsic());
-            break;
+            return LowerHWIntrinsic(node->AsHWIntrinsic());
 #endif // FEATURE_HW_INTRINSICS
 
         case GT_LCL_FLD:
@@ -3502,28 +3501,21 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
         else if (src->OperIs(GT_CNS_INT))
         {
             assert(src->IsIntegralConst(0) && "expected an INIT_VAL for non-zero init.");
+
 #ifdef FEATURE_SIMD
             if (varTypeIsSIMD(lclRegType))
             {
-                CorInfoType simdBaseJitType = comp->getBaseJitTypeOfSIMDLocal(lclStore);
-                if (simdBaseJitType == CORINFO_TYPE_UNDEF)
-                {
-                    // Lie about the type if we don't know/have it.
-                    simdBaseJitType = CORINFO_TYPE_FLOAT;
-                }
-                GenTreeSIMD* simdTree =
-                    comp->gtNewSIMDNode(lclRegType, src, SIMDIntrinsicInit, simdBaseJitType, varDsc->lvExactSize);
-                BlockRange().InsertAfter(src, simdTree);
-                LowerSIMD(simdTree);
-                src               = simdTree;
-                lclStore->gtOp1   = src;
-                convertToStoreObj = false;
+                GenTree* zeroCon = comp->gtNewZeroConNode(lclRegType, CORINFO_TYPE_FLOAT);
+
+                BlockRange().InsertAfter(src, zeroCon);
+                BlockRange().Remove(src);
+
+                src             = zeroCon;
+                lclStore->gtOp1 = src;
             }
-            else
 #endif // FEATURE_SIMD
-            {
-                convertToStoreObj = false;
-            }
+
+            convertToStoreObj = false;
         }
         else if (src->OperIs(GT_LCL_VAR))
         {
