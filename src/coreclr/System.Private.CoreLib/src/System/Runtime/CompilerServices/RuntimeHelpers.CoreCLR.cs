@@ -627,25 +627,13 @@ namespace System.Runtime.CompilerServices
         public bool IsNull => m_asTAddr is null;
 
         /// <summary>
-        /// Gets whether or not this <see cref="TypeHandle"/> wraps a <see cref="TypeDesc"/> pointer.
-        /// If so, <see cref="AsTypeDesc"/> is safe to call. Otherwise, this instance wraps a <see cref="MethodTable"/> pointer.
+        /// Gets whether or not this <see cref="TypeHandle"/> wraps a <c>TypeDesc</c> pointer.
+        /// Only if this returns <see langword="false"/> it is safe to call <see cref="AsMethodTable"/>.
         /// </summary>
         public bool IsTypeDesc
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => ((nint)m_asTAddr & 2) != 0;
-        }
-
-        /// <summary>
-        /// Gets the <see cref="TypeDesc"/> pointer wrapped by the current instance.
-        /// </summary>
-        /// <remarks>This is only safe to call if <see cref="IsTypeDesc"/> returned <see langword="true"/>.</remarks>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public TypeDesc* AsTypeDesc()
-        {
-            Debug.Assert(IsTypeDesc);
-
-            return (TypeDesc*)((byte*)m_asTAddr - 2);
         }
 
         /// <summary>
@@ -658,99 +646,6 @@ namespace System.Runtime.CompilerServices
             Debug.Assert(!IsTypeDesc);
 
             return (MethodTable*)m_asTAddr;
-        }
-
-        /// <summary>
-        /// Gets a <see cref="MethodTable"/> pointer for the current type handle.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public MethodTable* GetMethodTable()
-        {
-            if (IsTypeDesc)
-            {
-                return AsTypeDesc()->GetMethodTable();
-            }
-
-            return (MethodTable*)m_asTAddr;
-        }
-    }
-
-    internal unsafe struct TypeDesc
-    {
-        /// <summary>
-        /// <para>
-        /// The low-order 8 bits of this flag are used to store the <see cref="CorElementType"/>,
-        /// which discriminates what kind of <see cref="TypeDesc"/> this is.
-        /// </para>
-        /// <para>The remaining bits are available for flags.</para>
-        /// </summary>
-        private readonly uint TypeAndFlags;
-
-        /// <summary>
-        /// Gets a <see cref="MethodTable"/> pointer for the current type desc.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public MethodTable* GetMethodTable()
-        {
-            // The native version here has a check for IsGenericVariable, which causes this method to return null.
-            // This path is never taken by TypedReference, as it always assumes the returned MethodTable* pointer
-            // is not null. If adding code that needs this path to be available as well, it needs to be ported too.
-            //
-            // if (IsGenericVariable)
-            // {
-            //     return null;
-            // }
-
-            if (GetInternalCorElementType() == CorElementType.ELEMENT_TYPE_FNPTR)
-            {
-                return RuntimeTypeHandle.GetElementTypeMethodTable(CorElementType.ELEMENT_TYPE_U);
-            }
-
-            ParamTypeDesc* asParam = (ParamTypeDesc*)Unsafe.AsPointer(ref this);
-
-            if (GetInternalCorElementType() == CorElementType.ELEMENT_TYPE_VALUETYPE)
-            {
-                return asParam->m_Arg.AsMethodTable();
-            }
-
-            return asParam->GetTemplateMethodTableInternal();
-        }
-
-        /// <summary>
-        /// Gets the <see cref="CorElementType"/> value for the current type desc.
-        /// </summary>
-        /// <returns>The <see cref="CorElementType"/> value for the current type desc.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public CorElementType GetInternalCorElementType()
-        {
-            return (CorElementType)(TypeAndFlags & 0xFF);
-        }
-    }
-
-    // Subset of src\vm\typedesc.h
-    internal unsafe struct ParamTypeDesc
-    {
-        // Same as the one from TypeDesc
-        public readonly uint TypeAndFlags;
-
-        /// <summary>
-        /// The shared method table, some variants do not use this field (it is null.
-        /// </summary>
-        public readonly MethodTable* m_TemplateMT;
-
-        /// <summary>
-        /// The type that is being modified.
-        /// </summary>
-        public readonly TypeHandle m_Arg;
-
-        /// <summary>
-        /// Handle back to the internal reflection Type object.
-        /// </summary>
-        public readonly void* m_hExposedClassObject;
-
-        public MethodTable* GetTemplateMethodTableInternal()
-        {
-            return m_TemplateMT;
         }
     }
 

@@ -5,6 +5,7 @@
 // These are blob that must be dealt with by the compiler.
 
 using System.Diagnostics;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 
 namespace System
@@ -24,7 +25,13 @@ namespace System
                 ThrowHelper.ThrowArgumentException_ArgumentNull_TypedRefType();
             }
 
-            MethodTable* pMethodTable = typeHandle.GetMethodTable();
+            // The only case where a type handle here might be a type desc is when the type is either a
+            // pointer or a function pointer. In those cases, just always return the method table pointer
+            // for System.UIntPtr without inspecting the type desc any further. Otherwise, the type handle
+            // is just wrapping a method table pointer, so return that directly with a reinterpret cast.
+            MethodTable* pMethodTable = typeHandle.IsTypeDesc
+                ? RuntimeTypeHandle.GetElementTypeMethodTable(CorElementType.ELEMENT_TYPE_U)
+                : typeHandle.AsMethodTable();
 
             Debug.Assert(pMethodTable is not null);
 
