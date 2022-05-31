@@ -342,19 +342,10 @@ namespace CoreclrTestLib
                     // Process completed. Check process.ExitCode here.
                     exitCode = process.ExitCode;
 
-                    // See https://github.com/dotnet/xharness/blob/main/src/Microsoft.DotNet.XHarness.Common/CLI/ExitCode.cs
-                    // 78 - PACKAGE_INSTALLATION_FAILURE
-                    // 81 - DEVICE_NOT_FOUND
-                    // 85 - ADB_DEVICE_ENUMERATION_FAILURE
-                    // 86 - PACKAGE_INSTALLATION_TIMEOUT
-                    // 88 - SIMULATOR_FAILURE
-                    // 89 - DEVICE_FAILURE
-                    // 90 - APP_LAUNCH_TIMEOUT
-                    // 91 - ADB_FAILURE
-                    var retriableCodes = new[] { 78, 81, 85, 86, 88, 89, 90, 91 };
+                    var retriableCodes = MobileAppHandler.GetKnownExitCodes();
                     if (retriableCodes.Contains(exitCode))
                     {
-                        CreateRetryFile($"{testBinaryBase}/.retry", exitCode, category);
+                        MobileAppHandler.CreateRetryFile($"{testBinaryBase}/.retry", exitCode, category);
                     }
 
                     Task.WaitAll(copyOutput, copyError);
