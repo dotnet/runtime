@@ -88,6 +88,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
+		public Task StubBodyWithStaticCtor ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
 		public Task StubBodyWithValue ()
 		{
 			return RunTest (allowMissingWarnings: true);

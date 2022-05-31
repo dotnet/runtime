@@ -9,6 +9,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
 	[SetupCompileArgument ("/langversion:7.3")]
+	[SetupCompileArgument ("/unsafe")]
 	[Kept]
 	[ExpectedNoWarnings]
 	class ByRefDataflow
@@ -31,6 +32,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			PassRefToField ();
 			PassRefToParameter (null);
+
+			PointerDereference.Test ();
 		}
 
 		[Kept]
@@ -101,6 +104,33 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[Kept]
 			public static void KeptMethod () { }
 			internal static void RemovedMethod () { }
+		}
+
+		[Kept]
+		unsafe class PointerDereference
+		{
+			[Kept]
+			[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+			[RequiresUnreferencedCode ("")]
+			static unsafe void IntPtrDeref ()
+			{
+				*_ptr = GetDangerous ();
+			}
+
+			[Kept]
+			static IntPtr* _ptr;
+
+			[Kept]
+			[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+			[RequiresUnreferencedCode ("")]
+			static IntPtr GetDangerous () { return IntPtr.Zero; }
+
+			[Kept]
+			[ExpectedWarning ("IL2026")]
+			public static void Test ()
+			{
+				IntPtrDeref ();
+			}
 		}
 	}
 }
