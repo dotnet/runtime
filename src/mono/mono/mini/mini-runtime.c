@@ -424,7 +424,7 @@ mono_global_codeman_foreach (MonoCodeManagerFunc func, void *user_data)
  *   Create an unwind op with the given parameters.
  */
 MonoUnwindOp*
-mono_create_unwind_op (size_t when, guint8 tag, guint16 reg, int val)
+mono_create_unwind_op (gsize when, guint8 tag, guint16 reg, int val)
 {
 	MonoUnwindOp *op = g_new0 (MonoUnwindOp, 1);
 

@@ -115,7 +115,7 @@ typedef struct {
  * cfg->unwind_ops.
  */
 void
-mono_emit_unwind_op (MonoCompile *cfg, size_t when, guint8 tag, guint16 reg, int val)
+mono_emit_unwind_op (MonoCompile *cfg, gsize when, guint8 tag, guint16 reg, int val)
 {
 	MonoUnwindOp *op = (MonoUnwindOp *)mono_mempool_alloc0 (cfg->mempool, sizeof (MonoUnwindOp));
 	guint32 when32 = GSIZE_TO_UINT32 (when);
