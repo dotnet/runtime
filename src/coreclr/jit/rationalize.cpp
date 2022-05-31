@@ -138,7 +138,7 @@ void Rationalizer::RewriteSIMDIndir(LIR::Use& use)
     {
         GenTree* location = addr->AsUnOp()->gtGetOp1();
 
-        if (location->OperIsSimdOrHWintrinsic())
+        if (location->OperIsSimdOrHWintrinsic() || location->IsCnsVec())
         {
             // If we have IND(ADDR(SIMD)) then we can keep only the SIMD node.
             // This is a special tree created by impNormStructVal to preserve the class layout
