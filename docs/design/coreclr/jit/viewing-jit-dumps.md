@@ -63,8 +63,8 @@ The first thing to do is setup the .NET Core app we want to dump. Here are the s
 
     ```shell
     # Windows
-    robocopy /e <runtime-repo path>\artifacts\bin\coreclr\windows.<arch>.Release <app root>\bin\Release\$(NetCoreAppCurrent)\<rid>\publish > NUL
-    copy /y <runtime-repo path>\artifacts\bin\coreclr\windows.<arch>.Debug\clrjit.dll <app root>\bin\Release\$(NetCoreAppCurrent)\<rid>\publish > NUL
+    robocopy /e <runtime-repo path>\artifacts\bin\coreclr\windows.<arch>.Release <app root>\bin\Release\<tfm>\<rid>\publish > NUL
+    copy /y <runtime-repo path>\artifacts\bin\coreclr\windows.<arch>.Debug\clrjit.dll <app root>\bin\Release\<tfm>\<rid>\publish > NUL
 
     # Unix
     cp -rT <runtime-repo path>/artifacts/bin/coreclr/<OS>.<arch>.Release <app root>/bin/Release/$(NetCoreAppCurrent)<rid>/publish
