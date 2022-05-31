@@ -1500,6 +1500,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/RuntimeConfiguration/*">
             <Issue>Tests features specific to coreclr</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/DiamondShape/**">
+            <Issue>https://github.com/dotnet/runtime/issues/70040</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/CollectibleAssemblies/ByRefLocals/**">
             <Issue>https://github.com/dotnet/runtime/issues/40394</Issue>
         </ExcludeList>
