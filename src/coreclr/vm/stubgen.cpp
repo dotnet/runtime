@@ -468,7 +468,7 @@ ILStubLinker::LogILInstruction(
 
     if (isLabeled)
     {
-        strLabel.Printf("IL_%04zx:", curOffset);
+        strLabel.Printf("IL_%04x:", (int32_t)curOffset);
     }
     else
     {
@@ -500,7 +500,7 @@ ILStubLinker::LogILInstruction(
     {
         size_t branchDistance = (size_t)pInstruction->uArg;
         size_t targetOffset = curOffset + s_rgbOpcodeSizes[instr] + branchDistance;
-        strArgument.Printf("IL_%04zx", targetOffset);
+        strArgument.Printf("IL_%04x", (int32_t)targetOffset);
     }
     else if ((ILCodeStream::ILInstrEnum)CEE_NOP == instr)
     {
@@ -516,11 +516,11 @@ ILStubLinker::LogILInstruction(
         case ShortInlineVar:
         case ShortInlineI:
         case InlineI:
-            strArgument.Printf("0x%zx", pInstruction->uArg);
+            strArgument.Printf("0x%p", pInstruction->uArg);
             break;
 
         case InlineI8:
-            strArgument.Printf("0x%p", (void *)pInstruction->uArg);
+            strArgument.Printf("0x%llx", (uint64_t)pInstruction->uArg);
             break;
 
         case InlineMethod:
@@ -532,7 +532,7 @@ ILStubLinker::LogILInstruction(
         case InlineTok:
             // No token value when we dump IL for ETW
             if (pDumpILStubCode == NULL)
-                strArgument.Printf("0x%08zx", pInstruction->uArg);
+                strArgument.Printf("0x%08p", pInstruction->uArg);
 
             // Dump to szTokenNameBuffer if logging, otherwise dump to szArgumentBuffer to avoid an extra space because we are omitting the token
             _ASSERTE(FitsIn<mdToken>(pInstruction->uArg));
