@@ -159,6 +159,12 @@ namespace System
             return corElemType == CorElementType.ELEMENT_TYPE_SZARRAY;
         }
 
+        internal static bool IsFunctionPointer(RuntimeType type)
+        {
+            CorElementType corElemType = GetCorElementType(type);
+            return corElemType == CorElementType.ELEMENT_TYPE_FNPTR;
+        }
+
         internal static bool HasElementType(RuntimeType type)
         {
             CorElementType corElemType = GetCorElementType(type);
@@ -359,6 +365,12 @@ namespace System
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern RuntimeMethodHandleInternal GetMethodAt(RuntimeType type, int slot);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern Type[] GetArgumentTypesFromFunctionPointer(RuntimeType type);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern bool IsUnmanagedFunctionPointer(RuntimeType type);
 
         // This is managed wrapper for MethodTable::IntroducedMethodIterator
         internal struct IntroducedMethodEnumerator
@@ -1557,28 +1569,6 @@ namespace System
 
     internal sealed unsafe class Signature
     {
-        #region Definitions
-        internal enum MdSigCallingConvention : byte
-        {
-            Generics = 0x10,
-            HasThis = 0x20,
-            ExplicitThis = 0x40,
-            CallConvMask = 0x0F,
-            Default = 0x00,
-            C = 0x01,
-            StdCall = 0x02,
-            ThisCall = 0x03,
-            FastCall = 0x04,
-            Vararg = 0x05,
-            Field = 0x06,
-            LocalSig = 0x07,
-            Property = 0x08,
-            Unmanaged = 0x09,
-            GenericInst = 0x0A,
-            Max = 0x0B,
-        }
-        #endregion
-
         #region FCalls
         [MemberNotNull(nameof(m_arguments))]
         [MemberNotNull(nameof(m_returnTypeORfieldType))]
@@ -1586,7 +1576,6 @@ namespace System
         private extern void GetSignature(
             void* pCorSig, int cCorSig,
             RuntimeFieldHandleInternal fieldHandle, IRuntimeMethodInfo? methodHandle, RuntimeType? declaringType);
-
         #endregion
 
         #region Private Data Members
@@ -1646,7 +1635,13 @@ namespace System
         internal static extern bool CompareSig(Signature sig1, Signature sig2);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal extern Type[] GetCustomModifiers(int position, bool required);
+        internal extern Type[] GetCustomModifiers(int rootSignatureParameterIndex, bool required, int nestedSignatureIndex = -1, int nestedSignatureParameterIndex = -1);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal extern byte GetCallingConventionFromFunctionPointer(int rootSignatureParameterIndex, int nestedSignatureIndex);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal extern bool IsUnmanagedFunctionPointer();
         #endregion
     }
 

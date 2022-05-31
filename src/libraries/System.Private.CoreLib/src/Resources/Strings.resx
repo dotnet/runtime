@@ -3992,4 +3992,7 @@
   <data name="Argument_DirectorySeparatorInvalid" xml:space="preserve">
     <value>The value may not contain directory separator characters.</value>
   </data>
+  <data name="InvalidOperation_NotFunctionPointer" xml:space="preserve">
+    <value>Method may only be called on a Type for which Type.IsFunctionPointer is true.</value>
+  </data>
 </root>

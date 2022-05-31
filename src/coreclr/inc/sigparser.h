@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 // sigparser.h
-//
-
-//
 
 #ifndef _H_SIGPARSER
 #define _H_SIGPARSER
@@ -724,7 +721,18 @@ class SigParser
         __checkReturn
         HRESULT SkipSignature();
 
+private:
+
+        __checkReturn
+        HRESULT SigParser::MoveToNewSignature(uint32_t indexToFind, uint32_t currentIndex, BOOL* isFinished);
+
 public:
+
+        //------------------------------------------------------------------------
+        // Move to the specified signature (immediately follows an ELEMENT_TYPE_FNPTR)
+        //------------------------------------------------------------------------
+        __checkReturn
+        HRESULT SigParser::MoveToNewSignature(uint32_t indexToFind);
 
         //------------------------------------------------------------------------
         // Return pointer

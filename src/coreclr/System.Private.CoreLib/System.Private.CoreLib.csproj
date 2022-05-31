@@ -191,6 +191,8 @@
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Metadata\MetadataUpdater.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodBase.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodInvoker.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\ModifiedFunctionPointerType.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\ModifiedType.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\RtFieldInfo.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeAssembly.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeConstructorInfo.CoreCLR.cs" />
@@ -243,6 +245,9 @@
     <Compile Include="$(BclSourcesRoot)\System\TypeLoadException.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\TypeNameParser.cs" />
     <Compile Include="$(BclSourcesRoot)\System\ValueType.cs" />
+    <Compile Include="$(CommonPath)System\Collections\Generic\ArrayBuilder.cs">
+      <Link>Common\System\Collections\Generic\ArrayBuilder.cs</Link>
+    </Compile>    
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureComWrappers)' == 'true'">
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComWrappers.cs" />

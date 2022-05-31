@@ -42,6 +42,8 @@ namespace System.Reflection
             return Array.Empty<object>();
         }
 
+        public virtual Type GetModifiedParameterType() => throw new NotSupportedException();
+
         public virtual Type[] GetOptionalCustomModifiers() => Type.EmptyTypes;
         public virtual Type[] GetRequiredCustomModifiers() => Type.EmptyTypes;
 

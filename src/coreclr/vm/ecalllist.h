@@ -164,6 +164,9 @@ FCFuncStart(gCOMTypeHandleFuncs)
     FCFuncElement("IsGenericVariable", RuntimeTypeHandle::IsGenericVariable)
     FCFuncElement("ContainsGenericVariables", RuntimeTypeHandle::ContainsGenericVariables)
     FCFuncElement("SatisfiesConstraints", RuntimeTypeHandle::SatisfiesConstraints)
+    FCFuncElement("GetArgumentTypesFromFunctionPointer", RuntimeTypeHandle::GetArgumentTypesFromFunctionPointer)
+    FCFuncElement("IsUnmanagedFunctionPointer", RuntimeTypeHandle::IsUnmanagedFunctionPointer)
+
 #ifdef FEATURE_COMINTEROP
     FCFuncElement("AllocateComObject", RuntimeTypeHandle::AllocateComObject)
 #endif // FEATURE_COMINTEROP
@@ -202,6 +205,7 @@ FCFuncEnd()
 FCFuncStart(gSignatureNative)
     FCFuncElement("GetSignature", SignatureNative::GetSignature)
     FCFuncElement("GetCustomModifiers", SignatureNative::GetCustomModifiers)
+    FCFuncElement("GetCallingConventionFromFunctionPointer", SignatureNative::GetCallingConventionFromFunctionPointer)
     FCFuncElement("CompareSig", SignatureNative::CompareSig)
 FCFuncEnd()
 

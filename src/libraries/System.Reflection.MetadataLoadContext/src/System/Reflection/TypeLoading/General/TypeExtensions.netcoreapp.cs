@@ -17,8 +17,9 @@ namespace System.Reflection.TypeLoading
     }
 
     /// <summary>
-    /// Another layer of base types. For NetCore, these base types are empty. For NetStandard, these base types add the NetCore apis to NetStandard
-    /// so code interacting with "RoTypes" and friends can happily code to the full NetCore surface area.
+    /// Another layer of base types.
+    /// For NetStandard, these base types add the NetCore apis to NetStandard so code interacting with "RoTypes" and friends can
+    /// happily code to the full NetCore surface area.
     /// </summary>
     internal abstract class LeveledTypeInfo : TypeInfo
     {
@@ -42,6 +43,10 @@ namespace System.Reflection.TypeLoading
     }
 
     internal abstract class LeveledFieldInfo : FieldInfo
+    {
+    }
+
+    internal abstract class LeveledParameterInfo : ParameterInfo
     {
     }
 

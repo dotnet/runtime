@@ -338,7 +338,6 @@ FCIMPL1(AssemblyBaseObject*, RuntimeTypeHandle::GetAssembly, ReflectClassBaseObj
 }
 FCIMPLEND
 
-
 FCIMPL1(FC_BOOL_RET, RuntimeFieldHandle::AcquiresContextFromThis, FieldDesc* pField)
 {
     CONTRACTL {
@@ -873,6 +872,67 @@ FCIMPL1(FC_BOOL_RET, RuntimeTypeHandle::IsByRefLike, ReflectClassBaseObject *pTy
     TypeHandle typeHandle = refType->GetType();
 
     FC_RETURN_BOOL(typeHandle.IsByRefLike());
+}
+FCIMPLEND
+
+FCIMPL1(Object *, RuntimeTypeHandle::GetArgumentTypesFromFunctionPointer, ReflectClassBaseObject *pTypeUNSAFE)
+{
+    CONTRACTL {
+        FCALL_CHECK;
+        PRECONDITION(CheckPointer(pTypeUNSAFE));
+    }
+    CONTRACTL_END;
+
+    struct
+    {
+        PTRARRAYREF retVal;
+    } gc;
+
+    gc.retVal = NULL;
+
+    REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
+    TypeHandle typeHandle = refType->GetType();
+    if (!typeHandle.IsFnPtrType())
+        FCThrowRes(kArgumentException, W("Arg_InvalidHandle"));
+
+    FnPtrTypeDesc* fnPtr = typeHandle.AsFnPtrType();
+    
+    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
+    {
+        MethodTable *pMT = CoreLibBinder::GetClass(CLASS__TYPE);
+        TypeHandle arrayHandle = ClassLoader::LoadArrayTypeThrowing(TypeHandle(pMT), ELEMENT_TYPE_SZARRAY);
+        DWORD cArgs = fnPtr->GetNumArgs();
+        gc.retVal = (PTRARRAYREF) AllocateSzArray(arrayHandle, cArgs + 1);
+
+        for (DWORD position = 0; position <= cArgs; position++)
+        {
+            TypeHandle typeHandle = fnPtr->GetRetAndArgTypes()[position];
+            OBJECTREF refType = typeHandle.GetManagedClassObject();
+            gc.retVal->SetAt(position, refType);                
+        }
+    }
+    HELPER_METHOD_FRAME_END();
+
+    return OBJECTREFToObject(gc.retVal);
+}
+FCIMPLEND
+
+FCIMPL1(FC_BOOL_RET, RuntimeTypeHandle::IsUnmanagedFunctionPointer, ReflectClassBaseObject *pTypeUNSAFE);
+{
+    CONTRACTL {
+        FCALL_CHECK;
+        PRECONDITION(CheckPointer(pTypeUNSAFE));
+    }
+    CONTRACTL_END;
+
+    REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
+    TypeHandle typeHandle = refType->GetType();
+    if (!typeHandle.IsFnPtrType())
+        FCThrowRes(kArgumentException, W("Arg_InvalidHandle"));
+
+    FnPtrTypeDesc* fnPtr = typeHandle.AsFnPtrType();
+    BOOL unmanaged = (fnPtr->GetCallConv() & IMAGE_CEE_CS_CALLCONV_UNMANAGED) == IMAGE_CEE_CS_CALLCONV_UNMANAGED;
+    FC_RETURN_BOOL(unmanaged);
 }
 FCIMPLEND
 
@@ -1760,8 +1820,12 @@ FCIMPL1(INT32, RuntimeMethodHandle::GetSlot, MethodDesc *pMethod) {
 }
 FCIMPLEND
 
-FCIMPL3(Object *, SignatureNative::GetCustomModifiers, SignatureNative* pSignatureUNSAFE,
-    INT32 parameter, CLR_BOOL fRequired)
+FCIMPL5(Object *, SignatureNative::GetCustomModifiers,
+    SignatureNative* pSignatureUNSAFE,
+    INT32 rootSignatureParameterIndex,
+    CLR_BOOL fRequired,
+    INT32 nestedSignatureIndex,
+    INT32 nestedSignatureParameterIndex)
 {
     CONTRACTL {
         FCALL_CHECK;
@@ -1779,38 +1843,54 @@ FCIMPL3(Object *, SignatureNative::GetCustomModifiers, SignatureNative* pSignatu
 
     HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
     {
-
         BYTE callConv = *(BYTE*)gc.pSig->GetCorSig();
         SigTypeContext typeContext;
         gc.pSig->GetTypeContext(&typeContext);
-        MetaSig sig(gc.pSig->GetCorSig(),
-                    gc.pSig->GetCorSigSize(),
-                    gc.pSig->GetModule(),
-                    &typeContext,
-                    (callConv & IMAGE_CEE_CS_CALLCONV_MASK) == IMAGE_CEE_CS_CALLCONV_FIELD ? MetaSig::sigField : MetaSig::sigMember);
+        MetaSig sig = MetaSig(gc.pSig->GetCorSig(),
+            gc.pSig->GetCorSigSize(),
+            gc.pSig->GetModule(),
+            &typeContext,
+            (callConv & IMAGE_CEE_CS_CALLCONV_MASK) == IMAGE_CEE_CS_CALLCONV_FIELD ? MetaSig::sigField : MetaSig::sigMember);
+
         _ASSERTE(callConv == sig.GetCallingConventionInfo());
+        PRECONDITION(sig.GetCallingConvention() != IMAGE_CEE_CS_CALLCONV_FIELD || rootSignatureParameterIndex == 1);            
 
         SigPointer argument(NULL, 0);
 
-        PRECONDITION(sig.GetCallingConvention() != IMAGE_CEE_CS_CALLCONV_FIELD || parameter == 1);
-
-        if (parameter == 0)
+        if (rootSignatureParameterIndex == 0)
         {
             argument = sig.GetReturnProps();
         }
         else
         {
-            for(INT32 i = 0; i < parameter; i++)
+            for(INT32 i = 0; i < rootSignatureParameterIndex; i++)
                 sig.NextArg();
 
             argument = sig.GetArgProps();
         }
 
+        if (nestedSignatureIndex >= 0)
+        {
+            sig.MoveToNewSignature(argument, nestedSignatureIndex);
+
+            if (nestedSignatureParameterIndex == 0)
+            {
+                argument = sig.GetReturnProps();
+            }
+            else
+            {
+                for(INT32 i = 0; i < nestedSignatureParameterIndex; i++)
+                    sig.NextArg();
+
+                argument = sig.GetArgProps();
+            }
+        }
+
+        // @todo: why is this commented out?
         //if (parameter < 0 || parameter > (INT32)sig.NumFixedArgs())
         //    FCThrowResVoid(kArgumentNullException, W("Arg_ArgumentOutOfRangeException"));
 
         SigPointer sp = argument;
-        Module* pModule = sig.GetModule();
         INT32 cMods = 0;
         CorElementType cmodType;
 
@@ -1842,6 +1922,7 @@ FCIMPL3(Object *, SignatureNative::GetCustomModifiers, SignatureNative* pSignatu
         // modifiers now that we know how long they should be.
         sp = argument;
 
+        Module* pModule = sig.GetModule();
         MethodTable *pMT = CoreLibBinder::GetClass(CLASS__TYPE);
         TypeHandle arrayHandle = ClassLoader::LoadArrayTypeThrowing(TypeHandle(pMT), ELEMENT_TYPE_SZARRAY);
 
@@ -1871,6 +1952,60 @@ FCIMPL3(Object *, SignatureNative::GetCustomModifiers, SignatureNative* pSignatu
     HELPER_METHOD_FRAME_END();
 
     return OBJECTREFToObject(gc.retVal);
+}
+FCIMPLEND
+
+FCIMPL3(FC_INT8_RET, SignatureNative::GetCallingConventionFromFunctionPointer,
+    SignatureNative* pSignatureUNSAFE,
+    INT32 rootSignatureParameterIndex,
+    INT32 nestedSignatureIndex)
+{
+    struct
+    {
+        SIGNATURENATIVEREF pSig;
+    } gc;
+
+    gc.pSig = (SIGNATURENATIVEREF)pSignatureUNSAFE;
+    BYTE retVal = 0;
+
+    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
+    {
+        BYTE callConv = *(BYTE*)gc.pSig->GetCorSig();
+        SigTypeContext typeContext;
+        gc.pSig->GetTypeContext(&typeContext);
+        MetaSig sig = MetaSig(gc.pSig->GetCorSig(),
+            gc.pSig->GetCorSigSize(),
+            gc.pSig->GetModule(),
+            &typeContext,
+            (callConv & IMAGE_CEE_CS_CALLCONV_MASK) == IMAGE_CEE_CS_CALLCONV_FIELD ? MetaSig::sigField : MetaSig::sigMember);
+
+        _ASSERTE(callConv == sig.GetCallingConventionInfo());
+        PRECONDITION(sig.GetCallingConvention() != IMAGE_CEE_CS_CALLCONV_FIELD || rootSignatureParameterIndex == 1);            
+
+        SigPointer argument(NULL, 0);
+
+        if (nestedSignatureIndex >= 0)
+        {
+            if (rootSignatureParameterIndex == 0)
+            {
+                argument = sig.GetReturnProps();
+            }
+            else
+            {
+                for(INT32 i = 0; i < rootSignatureParameterIndex; i++)
+                    sig.NextArg();
+
+                argument = sig.GetArgProps();
+            }
+
+            sig.MoveToNewSignature(argument, nestedSignatureIndex);
+        }
+
+        retVal = sig.GetCallingConventionInfo() & IMAGE_CEE_CS_CALLCONV_MASK;
+    }
+    HELPER_METHOD_FRAME_END();
+
+    return (FC_INT8_RET)(retVal);
 }
 FCIMPLEND
 
@@ -1975,6 +2110,7 @@ FCIMPL6(void, SignatureNative::GetSignature,
                 pMethod, declType.GetClassOrArrayInstantiation(), pMethod->LoadMethodInstantiation(), &typeContext);
         else
             SigTypeContext::InitTypeContext(declType, &typeContext);
+        
         MetaSig msig(pCorSig, cCorSig, pModule, &typeContext,
             (callConv & IMAGE_CEE_CS_CALLCONV_MASK) == IMAGE_CEE_CS_CALLCONV_FIELD ? MetaSig::sigField : MetaSig::sigMember);
 

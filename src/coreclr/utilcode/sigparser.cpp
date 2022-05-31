@@ -192,3 +192,188 @@ HRESULT SigParser::SkipSignature()
 
     return hr;
 }
+
+HRESULT SigParser::MoveToNewSignature(uint32_t indexToFind)
+{
+    CONTRACTL
+    {
+        INSTANCE_CHECK;
+        NOTHROW;
+        GC_NOTRIGGER;
+        FORBID_FAULT;
+        SUPPORTS_DAC;
+    }
+    CONTRACTL_END
+
+    BOOL isFinished = FALSE;
+    HRESULT hr = MoveToNewSignature(indexToFind, 0, &isFinished);
+    if (isFinished == FALSE)
+    {
+        return META_E_BAD_SIGNATURE;
+    }
+
+    return hr;
+}
+
+HRESULT SigParser::MoveToNewSignature(uint32_t indexToFind, uint32_t currentIndex, BOOL* isFinished)
+{
+    CONTRACTL
+    {
+        INSTANCE_CHECK;
+        NOTHROW;
+        GC_NOTRIGGER;
+        FORBID_FAULT;
+        SUPPORTS_DAC;
+    }
+    CONTRACTL_END
+
+    CorElementType typ;
+    HRESULT hr = GetElemType(&typ);
+    IfFailRet(hr);
+
+    if (!CorIsPrimitiveType(typ))
+    {
+        switch ((DWORD)typ)
+        {
+            default:
+                return META_E_BAD_SIGNATURE;
+                break;
+            case ELEMENT_TYPE_VAR:
+            case ELEMENT_TYPE_MVAR:
+                IfFailRet(GetData(NULL)); // Skip variable number
+                break;
+            case ELEMENT_TYPE_VAR_ZAPSIG:
+                IfFailRet(GetData(NULL)); // Skip RID
+                break;
+            case ELEMENT_TYPE_OBJECT:
+            case ELEMENT_TYPE_STRING:
+            case ELEMENT_TYPE_TYPEDBYREF:
+            case ELEMENT_TYPE_CANON_ZAPSIG:
+                break;
+
+            case ELEMENT_TYPE_BYREF: //fallthru
+            case ELEMENT_TYPE_PTR:
+            case ELEMENT_TYPE_PINNED:
+            case ELEMENT_TYPE_SZARRAY:
+            case ELEMENT_TYPE_NATIVE_VALUETYPE_ZAPSIG:
+                IfFailRet(MoveToNewSignature(indexToFind, currentIndex, isFinished));
+
+                if (*isFinished)
+                    return S_OK;
+
+                break;
+
+            case ELEMENT_TYPE_VALUETYPE: //fallthru
+            case ELEMENT_TYPE_CLASS:
+                IfFailRet(GetToken(NULL)); // Skip RID
+                break;
+
+            case ELEMENT_TYPE_MODULE_ZAPSIG:
+                IfFailRet(GetData(NULL)); // Skip index
+                IfFailRet(SkipExactlyOne()); // Skip type
+                break;
+
+            case ELEMENT_TYPE_FNPTR:
+                if (indexToFind == currentIndex)
+                {
+                    *isFinished = TRUE;
+                    return S_OK;
+                }
+
+                currentIndex++;
+
+                // Skip calling convention
+                uint32_t uCallConv;
+                IfFailRet(GetCallingConvInfo(&uCallConv));
+                if ((uCallConv == IMAGE_CEE_CS_CALLCONV_FIELD) ||
+                    (uCallConv == IMAGE_CEE_CS_CALLCONV_LOCAL_SIG))
+                {
+                    return META_E_BAD_SIGNATURE;
+                }
+
+                // Skip type parameter count
+                if (uCallConv & IMAGE_CEE_CS_CALLCONV_GENERIC)
+                    IfFailRet(GetData(NULL));
+
+                // Get arg count;
+                uint32_t fpArgCnt;
+                IfFailRet(GetData(&fpArgCnt));
+
+                // Handle return type
+                IfFailRet(MoveToNewSignature(indexToFind, currentIndex, isFinished));
+
+                // Handle args
+                while (fpArgCnt--)
+                {
+                    IfFailRet(MoveToNewSignature(indexToFind, currentIndex, isFinished));
+
+                    if (*isFinished)
+                        return S_OK;
+                }
+
+                break;
+
+            case ELEMENT_TYPE_ARRAY:
+                {
+                    IfFailRet(MoveToNewSignature(indexToFind, currentIndex, isFinished)); // Element type
+                    if (*isFinished)
+                        return S_OK;
+
+                    uint32_t rank;
+                    IfFailRet(GetData(&rank)); // Get rank
+                    if (rank)
+                    {
+                        uint32_t nsizes;
+                        IfFailRet(GetData(&nsizes)); // Get # of sizes
+                        while (nsizes--)
+                        {
+                            IfFailRet(GetData(NULL)); // Skip size
+                        }
+
+                        uint32_t nlbounds;
+                        IfFailRet(GetData(&nlbounds)); // Get # of lower bounds
+                        while (nlbounds--)
+                        {
+                            IfFailRet(GetData(NULL)); // Skip lower bounds
+                        }
+                    }
+
+                }
+                break;
+
+            case ELEMENT_TYPE_SENTINEL:
+                // Should be unreachable since GetElem strips it
+                break;
+
+            case ELEMENT_TYPE_INTERNAL:
+                IfFailRet(GetPointer(NULL));
+                break;
+
+            case ELEMENT_TYPE_GENERICINST:
+                if (indexToFind == currentIndex)
+                {
+                     *isFinished = TRUE;
+                     return S_OK;
+                }
+
+                currentIndex++;
+
+                IfFailRet(SkipExactlyOne()); // Skip generic type
+
+                // Handle args
+                uint32_t argCnt;
+                IfFailRet(GetData(&argCnt));
+                while (argCnt--)
+                {
+                    IfFailRet(MoveToNewSignature(indexToFind, currentIndex, isFinished));
+
+                    if (*isFinished)
+                        return S_OK;
+                }
+
+                break;
+        }
+    }
+
+    return hr;
+}

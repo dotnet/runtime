@@ -2966,9 +2966,9 @@ TypeHandle ClassLoader::CreateTypeHandleForTypeKey(TypeKey* pKey, AllocMemTracke
     else if (pKey->GetKind() == ELEMENT_TYPE_FNPTR)
     {
         Module *pLoaderModule = ComputeLoaderModule(pKey);
+        PREFIX_ASSUME(pLoaderModule != NULL);
         pLoaderModule->GetLoaderAllocator()->EnsureInstantiation(NULL, Instantiation(pKey->GetRetAndArgTypes(), pKey->GetNumArgs() + 1));
 
-        PREFIX_ASSUME(pLoaderModule!=NULL);
         DWORD numArgs = pKey->GetNumArgs();
         BYTE* mem = (BYTE*) pamTracker->Track(pLoaderModule->GetAssembly()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(FnPtrTypeDesc)) + S_SIZE_T(sizeof(TypeHandle)) * S_SIZE_T(numArgs)));
 

@@ -561,5 +561,5 @@ namespace SampleMetadata
     public class PublicClass
     {
         internal class InternalNestedClass { }
-    }
+   }
 }

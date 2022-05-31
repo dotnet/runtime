@@ -11,6 +11,7 @@ namespace System.Reflection.TypeLoading
     internal abstract class RoMethodParameter : RoParameter
     {
         private readonly Type _parameterType;
+        private RoModifiedType? _modifiedType;
 
         protected RoMethodParameter(IRoMethodBase roMethodBase, int position, Type parameterType)
             : base(roMethodBase.MethodBase, position)
@@ -18,13 +19,35 @@ namespace System.Reflection.TypeLoading
             Debug.Assert(roMethodBase != null);
             Debug.Assert(parameterType != null);
 
-            _parameterType = parameterType;
+            if (parameterType is RoModifiedType modifiedType)
+            {
+                _modifiedType = modifiedType;
+                _parameterType = parameterType.UnderlyingSystemType;
+            }
+            else
+            {
+                _parameterType = parameterType;
+            }
         }
 
         public sealed override Type ParameterType => _parameterType;
 
-        public sealed override Type[] GetOptionalCustomModifiers() => GetRoMethodBase().GetCustomModifiers(Position, isRequired: false).CloneArray();
-        public sealed override Type[] GetRequiredCustomModifiers() => GetRoMethodBase().GetCustomModifiers(Position, isRequired: true).CloneArray();
+        protected RoModifiedType ModifiedType
+        {
+            get
+            {
+                _modifiedType ??= RoModifiedType.Create((RoType)_parameterType);
+                return _modifiedType;
+            }
+        }
+
+        public sealed override Type[] GetOptionalCustomModifiers() => ModifiedType.GetOptionalCustomModifiers();
+        public sealed override Type[] GetRequiredCustomModifiers() => ModifiedType.GetRequiredCustomModifiers();
+
+        public sealed override Type GetModifiedParameterType()
+        {
+            return ModifiedType;
+        }
 
         public sealed override string ToString() => Loader.GetDisposedString() ?? GetRoMethodBase().GetMethodSigString(Position) + " " + Name;
 

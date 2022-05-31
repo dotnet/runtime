@@ -9,7 +9,7 @@ namespace System.Reflection.TypeLoading
     /// <summary>
     /// Base class for all ParameterInfo objects created by a MetadataLoadContext.
     /// </summary>
-    internal abstract partial class RoParameter : ParameterInfo
+    internal abstract partial class RoParameter : LeveledParameterInfo
     {
         private readonly MemberInfo _member;
         private readonly int _position;

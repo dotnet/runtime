@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-
-
 #ifndef _RUNTIMEHANDLES_H_
 #define _RUNTIMEHANDLES_H_
 
@@ -138,6 +136,9 @@ public:
     static FCDECL1(FC_BOOL_RET, IsInterface, ReflectClassBaseObject* pType);
     static FCDECL1(FC_BOOL_RET, IsByRefLike, ReflectClassBaseObject* pType);
 
+    static FCDECL1(Object *, GetArgumentTypesFromFunctionPointer, ReflectClassBaseObject *pTypeUNSAFE);
+    static FCDECL1(FC_BOOL_RET, IsUnmanagedFunctionPointer, ReflectClassBaseObject *pTypeUNSAFE);
+    
     static FCDECL2(FC_BOOL_RET, CanCastTo, ReflectClassBaseObject *pType, ReflectClassBaseObject *pTarget);
     static FCDECL2(FC_BOOL_RET, IsInstanceOfType, ReflectClassBaseObject *pType, Object *object);
 
@@ -373,9 +374,20 @@ public:
         PCCOR_SIGNATURE pCorSig, DWORD cCorSig,
         FieldDesc *pFieldDesc, ReflectMethodObject *pMethodUNSAFE,
         ReflectClassBaseObject *pDeclaringType);
-    static FCDECL3(Object *, GetCustomModifiers, SignatureNative* pSig, INT32 parameter, CLR_BOOL fRequired);
-    static FCDECL2(FC_BOOL_RET, CompareSig, SignatureNative* pLhs, SignatureNative* pRhs);
 
+    static FCDECL5(Object *, GetCustomModifiers,
+        SignatureNative* pSig,
+        INT32 rootSignatureParameterIndex,
+        CLR_BOOL fRequired,
+        INT32 nestedSignatureIndex,
+        INT32 nestedSignatureParameterIndex);
+
+    static FCDECL2(FC_BOOL_RET, CompareSig, SignatureNative* pLhs, SignatureNative* pRhs);
+    
+    static FCDECL3(FC_INT8_RET, GetCallingConventionFromFunctionPointer,
+        SignatureNative* pSig,
+        INT32 rootSignatureParameterIndex,
+        INT32 nestedSignatureIndex);    
 
     BOOL HasThis() { LIMITED_METHOD_CONTRACT; return (m_managedCallingConvention & CALLCONV_HasThis); }
     INT32 NumFixedArgs() { WRAPPER_NO_CONTRACT; return m_PtrArrayarguments->GetNumComponents(); }
@@ -556,4 +568,3 @@ public:
 };
 
 #endif
-

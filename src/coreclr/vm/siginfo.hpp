@@ -571,6 +571,12 @@ class MetaSig
         void SkipArg();
 
         //------------------------------------------------------------------
+        // Move to the specified new signature in a type tree and
+        // re-initialize.
+        //------------------------------------------------------------------
+        HRESULT MoveToNewSignature(SigPointer start, INT32 index);
+
+        //------------------------------------------------------------------
         // Returns a read-only SigPointer for the m_pLastType set by one
         // of NextArg() or SkipArg()
         // This allows extracting more information for complex types.
