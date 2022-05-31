@@ -468,7 +468,7 @@ ILStubLinker::LogILInstruction(
 
     if (isLabeled)
     {
-        strLabel.Printf("IL_%04x:", (int32_t)curOffset);
+        strLabel.Printf("IL_%04x:", (uint32_t)curOffset);
     }
     else
     {
@@ -500,7 +500,7 @@ ILStubLinker::LogILInstruction(
     {
         size_t branchDistance = (size_t)pInstruction->uArg;
         size_t targetOffset = curOffset + s_rgbOpcodeSizes[instr] + branchDistance;
-        strArgument.Printf("IL_%04x", (int32_t)targetOffset);
+        strArgument.Printf("IL_%04x", (uint32_t)targetOffset);
     }
     else if ((ILCodeStream::ILInstrEnum)CEE_NOP == instr)
     {
@@ -612,7 +612,7 @@ ILStubLinker::LogILStubWorker(
     {
         if (pDumpILStubCode)
         {
-            pDumpILStubCode->AppendPrintf("IL_%04zx:\n", *pcbCode);
+            pDumpILStubCode->AppendPrintf("IL_%04x:\n", (uint32_t)*pcbCode);
         }
         else
         {
