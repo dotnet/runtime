@@ -194,7 +194,7 @@ mini_resolve_imt_method (MonoVTable *vt, gpointer *vtable_slot, MonoMethod *imt_
 	MonoMethod *impl = NULL, *generic_virtual = NULL;
 	gboolean lookup_aot, variance_used = FALSE, need_rgctx_tramp = FALSE;
 	guint8 *aot_addr = NULL;
-	int displacement = vtable_slot - ((gpointer*)vt);
+	int displacement = GPTRDIFF_TO_INT (vtable_slot - ((gpointer*)vt));
 	int interface_offset;
 	int imt_slot = MONO_IMT_SIZE + displacement;
 
@@ -584,7 +584,7 @@ common_call_trampoline (host_mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTa
 		g_assert (vtable_slot || klass);
 
 		if (vtable_slot) {
-			int displacement = vtable_slot - ((gpointer*)actual_vt );
+			int displacement = GPTRDIFF_TO_INT (vtable_slot - ((gpointer*)actual_vt));
 
 			g_assert_not_reached ();
 

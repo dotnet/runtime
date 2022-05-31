@@ -452,7 +452,7 @@ parse_unmanaged_function_pointer_attr (MonoClass *klass, MonoMethodPInvoke *piin
 		if (cinfo && !mono_runtime_get_no_exec ()) {
 			attr = (MonoReflectionUnmanagedFunctionPointerAttribute*)mono_custom_attrs_get_attr_checked (cinfo, mono_class_try_get_unmanaged_function_pointer_attribute_class (), error);
 			if (attr) {
-				piinfo->piflags = (attr->call_conv << 8) | (attr->charset ? (attr->charset - 1) * 2 : 1) | attr->set_last_error;
+				piinfo->piflags = GINT_TO_UINT16 ((attr->call_conv << 8) | (attr->charset ? (attr->charset - 1) * 2 : 1) | attr->set_last_error);
 			} else {
 				if (!is_ok (error)) {
 					g_warning ("Could not load UnmanagedFunctionPointerAttribute due to %s", mono_error_get_message (error));
@@ -717,7 +717,7 @@ mono_array_to_byte_byvalarray_impl (gpointer native_arr, MonoArrayHandle arr, gu
 	GError *gerror = NULL;
 
 	MonoGCHandle gchandle = NULL;
-	char *as = g_utf16_to_utf8 (MONO_ARRAY_HANDLE_PIN (arr, gunichar2, 0, &gchandle), mono_array_handle_length (arr), NULL, NULL, &gerror);
+	char *as = g_utf16_to_utf8 (MONO_ARRAY_HANDLE_PIN (arr, gunichar2, 0, &gchandle), GUINTPTR_TO_LONG (mono_array_handle_length (arr)), NULL, NULL, &gerror);
 	mono_gchandle_free_internal (gchandle);
 	if (gerror) {
 		mono_error_set_argument (error, "string", gerror->message);
@@ -1156,7 +1156,7 @@ mono_string_new_len_wrapper_impl (const char *text, guint length, MonoError *err
 	return MONO_HANDLE_NEW (MonoString, s);
 }
 
-guint
+guint8
 mono_type_to_ldind (MonoType *type)
 {
 	if (m_type_is_byref (type))
@@ -1213,7 +1213,7 @@ handle_enum:
 	return -1;
 }
 
-guint
+guint8
 mono_type_to_stind (MonoType *type)
 {
 	if (m_type_is_byref (type))
@@ -3023,7 +3023,7 @@ runtime_marshalling_enabled (MonoImage *img)
 	if (attrs)
 		mono_custom_attrs_free (attrs);
 
-	ass->runtime_marshalling_enabled = runtime_marshalling_enabled;
+	ass->runtime_marshalling_enabled = !!runtime_marshalling_enabled;
 	mono_memory_barrier ();
 	ass->runtime_marshalling_enabled_inited = TRUE;
 
@@ -3186,7 +3186,6 @@ static void
 mono_marshal_set_callconv_from_modopt (MonoMethod *method, MonoMethodSignature *csig, gboolean set_default)
 {
 	MonoMethodSignature *sig;
-	int i;
 
 #ifdef TARGET_WIN32
 	/*
@@ -3199,7 +3198,7 @@ mono_marshal_set_callconv_from_modopt (MonoMethod *method, MonoMethodSignature *
 
 	sig = mono_method_signature_internal (method);
 
-	int cmod_count = 0;
+	guint8 cmod_count = 0;
 	if (sig->ret)
 		cmod_count = mono_type_custom_modifier_count (sig->ret);
 
@@ -3208,7 +3207,7 @@ mono_marshal_set_callconv_from_modopt (MonoMethod *method, MonoMethodSignature *
 	if (cmod_count == 0)
 		return;
 
-	for (i = 0; i < cmod_count; ++i) {
+	for (guint8 i = 0; i < cmod_count; ++i) {
 		ERROR_DECL (error);
 		gboolean required;
 		MonoType *cmod_type = mono_type_get_custom_modifier (sig->ret, i, &required, error);
@@ -4042,7 +4041,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 
 			memset (&piinfo, 0, sizeof (piinfo));
 			m.piinfo = &piinfo;
-			piinfo.piflags = (call_conv << 8) | (charset ? (charset - 1) * 2 : 1) | set_last_error;
+			piinfo.piflags = GINT_TO_UINT16 ((call_conv << 8) | (charset ? (charset - 1) * 2 : 1) | set_last_error);
 
 			csig->call_convention = call_conv - 1;
 		}
@@ -6036,7 +6035,8 @@ mono_marshal_get_thunk_invoke_wrapper (MonoMethod *method)
 	MonoClass *klass;
 	GHashTable *cache;
 	MonoMethod *res;
-	int i, param_count, sig_size;
+	guint16 param_count;
+	int i, sig_size;
 
 	g_assert (method);
 
@@ -6054,7 +6054,7 @@ mono_marshal_get_thunk_invoke_wrapper (MonoMethod *method)
 	mb = mono_mb_new (klass, method->name, MONO_WRAPPER_NATIVE_TO_MANAGED);
 
 	/* add "this" and exception param */
-	param_count = sig->param_count + sig->hasthis + 1;
+	param_count = sig->param_count + (sig->hasthis ? 1 : 0) + 1;
 
 	/* dup & extend signature */
 	csig = mono_metadata_signature_alloc (image, param_count);

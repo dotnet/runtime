@@ -557,7 +557,7 @@ add_widen_op (MonoCompile *cfg, MonoInst *ins, MonoInst **arg1_ref, MonoInst **a
 		} \
 		MONO_RESTORE_WARNING \
 		if (sp != stack_start) { \
-			handle_stack_args (cfg, stack_start, sp - stack_start); \
+			handle_stack_args (cfg, stack_start, GPTRDIFF_TO_INT (sp - stack_start)); \
 			CHECK_UNVERIFIABLE (cfg); \
 		} \
 		MONO_ADD_INS (cfg->cbb, cmp); \
@@ -830,7 +830,7 @@ handle_enum:
 		inst->type = STACK_I8;
 		return;
 	case MONO_TYPE_R4:
-		inst->type = cfg->r4_stack_type;
+		inst->type = GINT_TO_UINT8 (cfg->r4_stack_type);
 		break;
 	case MONO_TYPE_R8:
 		inst->type = STACK_R8;
@@ -1164,7 +1164,7 @@ type_from_op (MonoCompile *cfg, MonoInst *ins, MonoInst *src1, MonoInst *src2)
 		ins->opcode += ovf2ops_op_map [src1->type];
 		break;
 	case MONO_CEE_CONV_R4:
-		ins->type = cfg->r4_stack_type;
+		ins->type = GINT_TO_UINT8 (cfg->r4_stack_type);
 		ins->opcode += unops_op_map [src1->type];
 		break;
 	case MONO_CEE_CONV_R8:
@@ -1222,7 +1222,7 @@ type_from_op (MonoCompile *cfg, MonoInst *ins, MonoInst *src1, MonoInst *src2)
 		ins->type = STACK_I8;
 		break;
 	case OP_LOADR4_MEMBASE:
-		ins->type = cfg->r4_stack_type;
+		ins->type = GINT_TO_UINT8 (cfg->r4_stack_type);
 		break;
 	case OP_LOADR8_MEMBASE:
 		ins->type = STACK_R8;
@@ -1524,7 +1524,7 @@ mono_compile_get_interface_var (MonoCompile *cfg, int slot, MonoInst *ins)
 		if ((vnum = cfg->intvars [pos]))
 			return cfg->varinfo [vnum];
 		res = mono_compile_create_var (cfg, type, OP_LOCAL);
-		cfg->intvars [pos] = res->inst_c0;
+		cfg->intvars [pos] = GTMREG_TO_UINT16 (res->inst_c0);
 		break;
 	default:
 		res = mono_compile_create_var (cfg, type, OP_LOCAL);
@@ -1563,7 +1563,6 @@ mono_save_token_info (MonoCompile *cfg, MonoImage *image, guint32 token, gpointe
 static void
 handle_stack_args (MonoCompile *cfg, MonoInst **sp, int count)
 {
-	int i, bindex;
 	MonoBasicBlock *bb = cfg->cbb;
 	MonoBasicBlock *outb;
 	MonoInst *inst, **locals;
@@ -1574,10 +1573,10 @@ handle_stack_args (MonoCompile *cfg, MonoInst **sp, int count)
 	if (cfg->verbose_level > 3)
 		printf ("%d item(s) on exit from B%d\n", count, bb->block_num);
 	if (!bb->out_scount) {
-		bb->out_scount = count;
+		bb->out_scount = GINT_TO_UINT16 (count);
 		//printf ("bblock %d has out:", bb->block_num);
 		found = FALSE;
-		for (i = 0; i < bb->out_count; ++i) {
+		for (gint16 i = 0; i < bb->out_count; ++i) {
 			outb = bb->out_bb [i];
 			/* exception handlers are linked, but they should not be considered for stack args */
 			if (outb->flags & BB_EXCEPTION_HANDLER)
@@ -1592,7 +1591,7 @@ handle_stack_args (MonoCompile *cfg, MonoInst **sp, int count)
 		//printf ("\n");
 		if (!found) {
 			bb->out_stack = (MonoInst **)mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*) * count);
-			for (i = 0; i < count; ++i) {
+			for (int i = 0; i < count; ++i) {
 				/*
 				 * try to reuse temps already allocated for this purpouse, if they occupy the same
 				 * stack slot and if they are of the same type.
@@ -1610,7 +1609,7 @@ handle_stack_args (MonoCompile *cfg, MonoInst **sp, int count)
 		}
 	}
 
-	for (i = 0; i < bb->out_count; ++i) {
+	for (gint16 i = 0; i < bb->out_count; ++i) {
 		outb = bb->out_bb [i];
 		/* exception handlers are linked, but they should not be considered for stack args */
 		if (outb->flags & BB_EXCEPTION_HANDLER)
@@ -1622,13 +1621,13 @@ handle_stack_args (MonoCompile *cfg, MonoInst **sp, int count)
 			}
 			continue; /* check they are the same locals */
 		}
-		outb->in_scount = count;
+		outb->in_scount = GINT_TO_UINT16 (count);
 		outb->in_stack = bb->out_stack;
 	}
 
 	locals = bb->out_stack;
 	cfg->cbb = bb;
-	for (i = 0; i < count; ++i) {
+	for (int i = 0; i < count; ++i) {
 		sp [i] = convert_value (cfg, locals [i]->inst_vtype, sp [i]);
 		EMIT_NEW_TEMPSTORE (cfg, inst, locals [i]->inst_c0, sp [i]);
 		inst->cil_code = sp [i]->cil_code;
@@ -1644,7 +1643,7 @@ handle_stack_args (MonoCompile *cfg, MonoInst **sp, int count)
 	 */
 
 	found = TRUE;
-	bindex = 0;
+	gint16 bindex = 0;
 	while (found) {
 		/* Find a bblock which has a different in_stack */
 		found = FALSE;
@@ -1656,7 +1655,7 @@ handle_stack_args (MonoCompile *cfg, MonoInst **sp, int count)
 				continue;
 			}
 			if (outb->in_stack != locals) {
-				for (i = 0; i < count; ++i) {
+				for (int i = 0; i < count; ++i) {
 					sp [i] = convert_value (cfg, outb->in_stack [i]->inst_vtype, sp [i]);
 					EMIT_NEW_TEMPSTORE (cfg, inst, outb->in_stack [i]->inst_c0, sp [i]);
 					inst->cil_code = sp [i]->cil_code;
@@ -4933,7 +4932,7 @@ get_basic_blocks (MonoCompile *cfg, MonoMethodHeader* header, guint real_offset,
 	const MonoOpcode *opcode;
 
 	while (ip < end) {
-		cli_addr = ip - start;
+		cli_addr = GPTRDIFF_TO_UINT (ip - start);
 		i = mono_opcode_value ((const guint8 **)&ip, end);
 		if (i < 0)
 			UNVERIFIED;
@@ -6766,7 +6765,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	start_new_bblock = 0;
 	MonoOpcodeEnum il_op; il_op = MonoOpcodeEnum_Invalid;
 
-	emit_set_deopt_il_offset (cfg, ip - cfg->cil_start);
+	emit_set_deopt_il_offset (cfg, GPTRDIFF_TO_INT (ip - cfg->cil_start));
 
 	for (guchar *next_ip = ip; ip < end; ip = next_ip) {
 		MonoOpcodeEnum previous_il_op = il_op;
@@ -6776,7 +6775,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		next_ip += op_size;
 
 		if (cfg->method == method)
-			cfg->real_offset = ip - header->code;
+			cfg->real_offset = GPTRDIFF_TO_UINT (ip - header->code);
 		else
 			cfg->real_offset = inline_offset;
 		cfg->ip = ip;
@@ -6784,7 +6783,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		context_used = 0;
 
 		if (start_new_bblock) {
-			cfg->cbb->cil_length = ip - cfg->cbb->cil_code;
+			cfg->cbb->cil_length = GPTRDIFF_TO_INT32 (ip - cfg->cbb->cil_code);
 			if (start_new_bblock == 2) {
 				g_assert (ip == tblock->cil_code);
 			} else {
@@ -6802,12 +6801,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (class_inits)
 				g_slist_free (class_inits);
 			class_inits = NULL;
-			emit_set_deopt_il_offset (cfg, ip - cfg->cil_start);
+			emit_set_deopt_il_offset (cfg, GPTRDIFF_TO_INT (ip - cfg->cil_start));
 		} else {
 			if ((tblock = cfg->cil_offset_to_bb [ip - cfg->cil_start]) && (tblock != cfg->cbb)) {
 				link_bblock (cfg, cfg->cbb, tblock);
 				if (sp != stack_start) {
-					handle_stack_args (cfg, stack_start, sp - stack_start);
+					handle_stack_args (cfg, stack_start, GPTRDIFF_TO_INT (sp - stack_start));
 					sp = stack_start;
 					CHECK_UNVERIFIABLE (cfg);
 				}
@@ -6821,7 +6820,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				}
 				g_slist_free (class_inits);
 				class_inits = NULL;
-				emit_set_deopt_il_offset (cfg, ip - cfg->cil_start);
+				emit_set_deopt_il_offset (cfg, GPTRDIFF_TO_INT (ip - cfg->cil_start));
 			}
 		}
 
@@ -6834,7 +6833,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		}
 
 		if (skip_dead_blocks) {
-			int ip_offset = ip - header->code;
+			int ip_offset = GPTRDIFF_TO_INT (ip - header->code);
 
 			if (ip_offset == bb->end)
 				bb = bb->next;
@@ -6881,7 +6880,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				mono_bitset_set_fast (seq_point_set_locs, ip - header->code);
 
 			if (cfg->prof_coverage) {
-				guint32 cil_offset = ip - header->code;
+				ptrdiff_t cil_offset = ip - header->code;
 				gpointer counter = &cfg->coverage_info->data [cil_offset].count;
 				cfg->coverage_info->data [cil_offset].cil_code = ip;
 
@@ -6907,7 +6906,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		cfg->cbb->real_offset = cfg->real_offset;
 
 		if (cfg->verbose_level > 3)
-			printf ("converting (in B%d: stack: %d) %s", cfg->cbb->block_num, (int)(sp - stack_start), mono_disasm_code_one (NULL, method, ip, NULL));
+			printf ("converting (in B%d: stack: %d) %s", cfg->cbb->block_num, GPTRDIFF_TO_INT (sp - stack_start), mono_disasm_code_one (NULL, method, ip, NULL));
 
 		/*
 		 * This is used to compute BB_HAS_SIDE_EFFECTS, which is used for the elimination of
@@ -7103,10 +7102,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				dreg = alloc_freg (cfg);
 				EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOADR4_MEMBASE, dreg, cons->dreg, 0);
-				ins->type = cfg->r4_stack_type;
+				ins->type = GINT_TO_UINT8 (cfg->r4_stack_type);
 			} else {
 				MONO_INST_NEW (cfg, ins, OP_R4CONST);
-				ins->type = cfg->r4_stack_type;
+				ins->type = GINT_TO_UINT8 (cfg->r4_stack_type);
 				ins->dreg = alloc_dreg (cfg, STACK_R8);
 				ins->inst_p0 = f;
 				MONO_ADD_INS (cfg->cbb, ins);
@@ -8375,7 +8374,7 @@ calli_end:
 			link_bblock (cfg, cfg->cbb, tblock);
 			ins->inst_target_bb = tblock;
 			if (sp != stack_start) {
-				handle_stack_args (cfg, stack_start, sp - stack_start);
+				handle_stack_args (cfg, stack_start, GPTRDIFF_TO_INT (sp - stack_start));
 				sp = stack_start;
 				CHECK_UNVERIFIABLE (cfg);
 			}
@@ -8407,7 +8406,7 @@ calli_end:
 			link_bblock (cfg, cfg->cbb, tblock);
 			ins->inst_target_bb = tblock;
 			if (sp != stack_start) {
-				handle_stack_args (cfg, stack_start, sp - stack_start);
+				handle_stack_args (cfg, stack_start, GPTRDIFF_TO_INT (sp - stack_start));
 				sp = stack_start;
 				CHECK_UNVERIFIABLE (cfg);
 			}
@@ -8435,7 +8434,7 @@ calli_end:
 			link_bblock (cfg, cfg->cbb, tblock);
 
 			if (sp != stack_start) {
-				handle_stack_args (cfg, stack_start, sp - stack_start);
+				handle_stack_args (cfg, stack_start, GPTRDIFF_TO_INT (sp - stack_start));
 				CHECK_UNVERIFIABLE (cfg);
 			}
 
@@ -8528,7 +8527,7 @@ calli_end:
 				for (int i = 0; i < n; ++i)
 					link_bblock (cfg, cfg->cbb, targets [i]);
 
-				handle_stack_args (cfg, stack_start, sp - stack_start);
+				handle_stack_args (cfg, stack_start, GPTRDIFF_TO_INT (sp - stack_start));
 				sp = stack_start;
 				CHECK_UNVERIFIABLE (cfg);
 
@@ -8652,7 +8651,7 @@ calli_end:
 
 			if ((sp [1]->opcode == OP_ICONST) && mono_arch_is_inst_imm (ins->opcode, imm_opcode, sp [1]->inst_c0)) {
 				if (imm_opcode != -1) {
-					ins->opcode = imm_opcode;
+					ins->opcode = GINT_TO_OPCODE (imm_opcode);
 					ins->inst_p1 = (gpointer)(gssize)(sp [1]->inst_c0);
 					ins->sreg2 = -1;
 
@@ -8692,7 +8691,7 @@ calli_end:
 			if (((sp [1]->opcode == OP_ICONST) || (sp [1]->opcode == OP_I8CONST)) &&
 			    mono_arch_is_inst_imm (ins->opcode, imm_opcode, sp [1]->opcode == OP_ICONST ? sp [1]->inst_c0 : sp [1]->inst_l)) {
 				if (imm_opcode != -1) {
-					ins->opcode = imm_opcode;
+					ins->opcode = GINT_TO_OPCODE (imm_opcode);
 					if (sp [1]->opcode == OP_I8CONST) {
 #if SIZEOF_REGISTER == 8
 						ins->inst_imm = sp [1]->inst_l;
@@ -8729,7 +8728,7 @@ calli_end:
 		case MONO_CEE_CONV_R_UN:
 			/* Special case this earlier so we have long constants in the IR */
 			if ((il_op == MONO_CEE_CONV_I8 || il_op == MONO_CEE_CONV_U8) && (sp [-1]->opcode == OP_ICONST)) {
-				int data = sp [-1]->inst_c0;
+				int data = GTMREG_TO_INT (sp [-1]->inst_c0);
 				sp [-1]->opcode = OP_I8CONST;
 				sp [-1]->type = STACK_I8;
 #if SIZEOF_REGISTER == 8
@@ -9532,7 +9531,7 @@ calli_end:
 				next_ip = ip;
 
 				if (cfg->verbose_level > 3) {
-					printf ("converting (in B%d: stack: %d) %s", cfg->cbb->block_num, (int)(sp - stack_start), mono_disasm_code_one (NULL, method, ip, NULL));
+					printf ("converting (in B%d: stack: %d) %s", cfg->cbb->block_num, GPTRDIFF_TO_INT (sp - stack_start), mono_disasm_code_one (NULL, method, ip, NULL));
 					printf ("<box+brtrue opt>\n");
 				}
 
@@ -9549,7 +9548,7 @@ calli_end:
 				mono_link_bblock (cfg, cfg->cbb, false_bb);
 
 				if (sp != stack_start) {
-					handle_stack_args (cfg, stack_start, sp - stack_start);
+					handle_stack_args (cfg, stack_start, GPTRDIFF_TO_INT (sp - stack_start));
 					sp = stack_start;
 					CHECK_UNVERIFIABLE (cfg);
 				}
@@ -10236,7 +10235,7 @@ field_access_end:
 					&& (len_ins->opcode == OP_ICONST)
 					&& (data_ptr = initialize_array_data (cfg, method,
 						cfg->compile_aot, next_ip, end, klass,
-						len_ins->inst_c0, &data_size, &field_token,
+						GTMREG_TO_UINT32 (len_ins->inst_c0), &data_size, &field_token,
 						&il_op, &next_ip))) {
 				MonoMethod *memcpy_method = mini_get_memcpy_method ();
 				MonoInst *iargs [3];
@@ -10244,7 +10243,7 @@ field_access_end:
 
 				EMIT_NEW_BIALU_IMM (cfg, iargs [0], OP_PADD_IMM, add_reg, ins->dreg, MONO_STRUCT_OFFSET (MonoArray, vector));
 				if (cfg->compile_aot) {
-					EMIT_NEW_AOTCONST_TOKEN (cfg, iargs [1], MONO_PATCH_INFO_RVA, m_class_get_image (method->klass), GPOINTER_TO_UINT(field_token), STACK_PTR, NULL);
+					EMIT_NEW_AOTCONST_TOKEN (cfg, iargs [1], MONO_PATCH_INFO_RVA, m_class_get_image (method->klass), field_token, STACK_PTR, NULL);
 				} else {
 					EMIT_NEW_PCONST (cfg, iargs [1], (char*)data_ptr);
 				}
@@ -10614,7 +10613,7 @@ field_access_end:
 				INLINE_FAILURE ("throw");
 			break;
 		case MONO_CEE_ENDFINALLY:
-			if (!ip_in_finally_clause (cfg, ip - header->code))
+			if (!ip_in_finally_clause (cfg, GPTRDIFF_TO_INT (ip - header->code)))
 				UNVERIFIED;
 			/* mono_save_seq_point_info () depends on this */
 			if (sp != stack_start)
@@ -11387,7 +11386,7 @@ mono_ldptr:
 
 					if ((invoke_context_used == 0 || !cfg->gsharedvt) || cfg->llvm_only) {
 						if (cfg->verbose_level > 3)
-							g_print ("converting (in B%d: stack: %d) %s", cfg->cbb->block_num, (int)(sp - stack_start), mono_disasm_code_one (NULL, method, ip + 6, NULL));
+							g_print ("converting (in B%d: stack: %d) %s", cfg->cbb->block_num, GPTRDIFF_TO_INT (sp - stack_start), mono_disasm_code_one (NULL, method, ip + 6, NULL));
 						if ((handle_ins = handle_delegate_ctor (cfg, ctor_method->klass, target_ins, cmethod, context_used, invoke_context_used, FALSE))) {
 							sp --;
 							*sp = handle_ins;
@@ -11478,7 +11477,7 @@ mono_ldptr:
 
 					if (invoke_context_used == 0 || !cfg->gsharedvt || cfg->llvm_only) {
 						if (cfg->verbose_level > 3)
-							g_print ("converting (in B%d: stack: %d) %s", cfg->cbb->block_num, (int)(sp - stack_start), mono_disasm_code_one (NULL, method, ip + 6, NULL));
+							g_print ("converting (in B%d: stack: %d) %s", cfg->cbb->block_num, GPTRDIFF_TO_INT (sp - stack_start), mono_disasm_code_one (NULL, method, ip + 6, NULL));
 						if ((handle_ins = handle_delegate_ctor (cfg, ctor_method->klass, target_ins, cmethod, context_used, invoke_context_used, is_virtual))) {
 							sp -= 2;
 							*sp = handle_ins;
@@ -11741,7 +11740,7 @@ mono_ldptr:
 	if (start_new_bblock != 1)
 		UNVERIFIED;
 
-	cfg->cbb->cil_length = ip - cfg->cbb->cil_code;
+	cfg->cbb->cil_length = GPTRDIFF_TO_INT32 (ip - cfg->cbb->cil_code);
 	if (cfg->cbb->next_bb) {
 		/* This could already be set because of inlining, #693905 */
 		MonoBasicBlock *cbb = cfg->cbb;
@@ -12942,7 +12941,7 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 						def_ins = NULL;
 					} else {
 						dreg_using_dest_to_membase_op = ins->dreg;
-						ins->opcode = op_to_op_dest_membase (store_opcode, ins->opcode);
+						ins->opcode = GINT_TO_OPCODE (op_to_op_dest_membase (store_opcode, ins->opcode));
 						ins->inst_basereg = var->inst_basereg;
 						ins->inst_offset = var->inst_offset;
 						ins->dreg = -1;
@@ -12983,13 +12982,13 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 						/* Try to fuse the store into the instruction itself */
 						/* FIXME: Add more instructions */
 						if (!lvreg && ((ins->opcode == OP_ICONST) || ((ins->opcode == OP_I8CONST) && (ins->inst_c0 == 0)))) {
-							ins->opcode = store_membase_reg_to_store_membase_imm (store_opcode);
+							ins->opcode = GINT_TO_OPCODE (store_membase_reg_to_store_membase_imm (store_opcode));
 							ins->inst_imm = ins->inst_c0;
 							ins->inst_destbasereg = var->inst_basereg;
 							ins->inst_offset = var->inst_offset;
 							spec = INS_INFO (ins->opcode);
 						} else if (!lvreg && ((ins->opcode == OP_MOVE) || (ins->opcode == OP_FMOVE) || (ins->opcode == OP_LMOVE) || (ins->opcode == OP_RMOVE))) {
-							ins->opcode = store_opcode;
+							ins->opcode = GINT_TO_OPCODE (store_opcode);
 							ins->inst_destbasereg = var->inst_basereg;
 							ins->inst_offset = var->inst_offset;
 
@@ -13007,7 +13006,7 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 							spec = spec2;
 						} else if (!lvreg && (op_to_op_store_membase (store_opcode, ins->opcode) != -1)) {
 							// FIXME: The backends expect the base reg to be in inst_basereg
-							ins->opcode = op_to_op_store_membase (store_opcode, ins->opcode);
+							ins->opcode = GINT_TO_OPCODE (op_to_op_store_membase (store_opcode, ins->opcode));
 							ins->dreg = -1;
 							ins->inst_basereg = var->inst_basereg;
 							ins->inst_offset = var->inst_offset;
@@ -13099,12 +13098,12 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 
 					/* Try to fuse the load into the instruction */
 					if ((srcindex == 0) && (op_to_op_src1_membase (cfg, load_opcode, ins->opcode) != -1)) {
-						ins->opcode = op_to_op_src1_membase (cfg, load_opcode, ins->opcode);
+						ins->opcode = GINT_TO_OPCODE (op_to_op_src1_membase (cfg, load_opcode, ins->opcode));
 						sregs [0] = var->inst_basereg;
 						//mono_inst_set_src_registers (ins, sregs);
 						ins->inst_offset = var->inst_offset;
 					} else if ((srcindex == 1) && (op_to_op_src2_membase (cfg, load_opcode, ins->opcode) != -1)) {
-						ins->opcode = op_to_op_src2_membase (cfg, load_opcode, ins->opcode);
+						ins->opcode = GINT_TO_OPCODE (op_to_op_src2_membase (cfg, load_opcode, ins->opcode));
 						sregs [1] = var->inst_basereg;
 						//mono_inst_set_src_registers (ins, sregs);
 						ins->inst_offset = var->inst_offset;
