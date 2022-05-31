@@ -34,6 +34,7 @@ import re
 import urllib
 import urllib.request
 import zipfile
+import time
 
 from coreclr_arguments import *
 from jitutil import TempDir, ChangeDir, remove_prefix, is_zero_length_file, is_nonzero_length_file, \
@@ -339,6 +340,7 @@ asm_diff_parser.add_argument("-tag", help="Specify a word to add to the director
 asm_diff_parser.add_argument("-metrics", action="append", help="Metrics option to pass to jit-analyze. Can be specified multiple times, or pass comma-separated values.")
 asm_diff_parser.add_argument("-retainOnlyTopFiles", action="store_true", help="Retain only top .dasm files with largest improvements or regressions and delete remaining files.")
 asm_diff_parser.add_argument("--diff_with_release", action="store_true", help="Specify if this is asmdiff using release binaries.")
+asm_diff_parser.add_argument("--git_diff", action="store_true", help="Produce a '.diff' file from 'base' and 'diff' folders if there were any differences.")
 
 # subparser for throughput
 throughput_parser = subparsers.add_parser("tpdiff", description=throughput_description, parents=[target_parser, superpmi_common_parser, replay_common_parser, base_diff_parser])
@@ -1721,6 +1723,20 @@ class SuperPMIReplayAsmDiffs:
                         if not ran_jit_analyze:
                             logging.info("jit-analyze not found on PATH. Generate a diff analysis report by building jit-analyze from https://github.com/dotnet/jitutils and running:")
                             logging.info("    jit-analyze -r --base %s --diff %s", base_asm_location, diff_asm_location)
+
+                        if self.coreclr_args.git_diff:
+                            asm_diffs_location = os.path.join(asm_root_dir, "asm_diffs.diff")
+                            git_diff_command = [ "git", "diff", "--output=" + asm_diffs_location, "--no-index", "--", base_asm_location, diff_asm_location ]
+                            git_diff_time = time.time() * 1000
+                            git_diff_proc = subprocess.Popen(git_diff_command, stdout=subprocess.PIPE)
+                            git_diff_proc.communicate()
+                            git_diff_elapsed_time = round((time.time() * 1000) - git_diff_time, 1)
+                            git_diff_return_code = git_diff_proc.returncode
+                            if git_diff_return_code == 0 or git_diff_return_code == 1: # 0 means no differences and 1 means differences
+                                logging.info("Created git diff file at %s in %s ms", asm_diffs_location, git_diff_elapsed_time)
+                                logging.info("-------")
+                            else:
+                                raise RuntimeError("Couldn't create git diff")
 
                     else:
                         logging.warning("No textual differences. Is this an issue with coredistools?")
@@ -3655,6 +3671,11 @@ def setup_args(args):
                             "diff_with_release",
                             lambda unused: True,
                             "Unable to set diff_with_release.")
+
+        coreclr_args.verify(args,
+                            "git_diff",
+                            lambda unused: True,
+                            "Unable to set git_diff.")
 
         process_base_jit_path_arg(coreclr_args)
 

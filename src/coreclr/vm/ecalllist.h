@@ -83,9 +83,7 @@ FCFuncEnd()
 
 FCFuncStart(gValueTypeFuncs)
     FCFuncElement("CanCompareBits", ValueTypeHelper::CanCompareBits)
-    FCFuncElement("FastEqualsCheck", ValueTypeHelper::FastEqualsCheck)
     FCFuncElement("GetHashCode", ValueTypeHelper::GetHashCode)
-    FCFuncElement("GetHashCodeOfPtr", ValueTypeHelper::GetHashCodeOfPtr)
 FCFuncEnd()
 
 FCFuncStart(gDiagnosticsDebugger)
@@ -539,10 +537,6 @@ FCFuncStart(gInteropMarshalFuncs)
 #endif // FEATURE_COMINTEROP
 FCFuncEnd()
 
-FCFuncStart(gMissingMemberExceptionFuncs)
-    FCFuncElement("FormatSignature", MissingMemberException_FormatSignature)
-FCFuncEnd()
-
 FCFuncStart(gInterlockedFuncs)
     FCFuncElementSig("Exchange", &gsig_SM_RefInt_Int_RetInt, COMInterlocked::Exchange)
     FCFuncElementSig("Exchange", &gsig_SM_RefLong_Long_RetLong, COMInterlocked::Exchange64)
@@ -607,6 +601,10 @@ FCFuncStart(gRuntimeHelpers)
     FCFuncElement("GetTailCallInfo", TailCallHelp::GetTailCallInfo)
     FCFuncElement("RegisterForGCReporting", GCReporting::Register)
     FCFuncElement("UnregisterForGCReporting", GCReporting::Unregister)
+FCFuncEnd()
+
+FCFuncStart(gMethodTableFuncs)
+    FCFuncElement("GetNumInstanceFieldBytes", MethodTableNative::GetNumInstanceFieldBytes)
 FCFuncEnd()
 
 FCFuncStart(gMngdFixedArrayMarshalerFuncs)
@@ -787,7 +785,7 @@ FCClassElement("Marshal", "System.Runtime.InteropServices", gInteropMarshalFuncs
 FCClassElement("Math", "System", gMathFuncs)
 FCClassElement("MathF", "System", gMathFFuncs)
 FCClassElement("MetadataImport", "System.Reflection", gMetaDataImport)
-FCClassElement("MissingMemberException", "System",  gMissingMemberExceptionFuncs)
+FCClassElement("MethodTable", "System.Runtime.CompilerServices", gMethodTableFuncs)
 FCClassElement("MngdFixedArrayMarshaler", "System.StubHelpers", gMngdFixedArrayMarshalerFuncs)
 FCClassElement("MngdNativeArrayMarshaler", "System.StubHelpers", gMngdNativeArrayMarshalerFuncs)
 FCClassElement("MngdRefCustomMarshaler", "System.StubHelpers", gMngdRefCustomMarshalerFuncs)

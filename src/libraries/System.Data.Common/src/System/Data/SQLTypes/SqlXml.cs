@@ -424,6 +424,22 @@ namespace System.Data.SqlTypes
             return iBytesRead;
         }
 
+        // Duplicate the Read(byte[]) logic here instead of refactoring both to use Spans
+        // in case the backing _stream doesn't override Read(Span).
+        public override int Read(Span<byte> buffer)
+        {
+            ThrowIfStreamClosed(nameof(Read));
+            ThrowIfStreamCannotRead(nameof(Read));
+
+            if (_stream.CanSeek && _stream.Position != _lPosition)
+                _stream.Seek(_lPosition, SeekOrigin.Begin);
+
+            int iBytesRead = _stream.Read(buffer);
+            _lPosition += iBytesRead;
+
+            return iBytesRead;
+        }
+
         public override void Write(byte[] buffer, int offset, int count)
         {
             ThrowIfStreamClosed(nameof(Write));
