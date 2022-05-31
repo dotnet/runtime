@@ -297,6 +297,8 @@ namespace System
     {
         public static TSelf One => TSelf.One;
 
+        public static int Radix => TSelf.Radix;
+
         public static TSelf Zero => TSelf.Zero;
 
         public static TSelf Abs(TSelf value) => TSelf.Abs(value);
@@ -310,9 +312,19 @@ namespace System
         public static TSelf CreateTruncating<TOther>(TOther value)
             where TOther : INumberBase<TOther> => TSelf.CreateTruncating(value);
 
+        public static bool IsCanonical(TSelf value) => TSelf.IsCanonical(value);
+
+        public static bool IsComplexNumber(TSelf value) => TSelf.IsComplexNumber(value);
+
+        public static bool IsEvenInteger(TSelf value) => TSelf.IsEvenInteger(value);
+
         public static bool IsFinite(TSelf value) => TSelf.IsFinite(value);
 
+        public static bool IsImaginaryNumber(TSelf value) => TSelf.IsImaginaryNumber(value);
+
         public static bool IsInfinity(TSelf value) => TSelf.IsInfinity(value);
+
+        public static bool IsInteger(TSelf value) => TSelf.IsInteger(value);
 
         public static bool IsNaN(TSelf value) => TSelf.IsNaN(value);
 
@@ -322,9 +334,17 @@ namespace System
 
         public static bool IsNormal(TSelf value) => TSelf.IsNormal(value);
 
+        public static bool IsOddInteger(TSelf value) => TSelf.IsOddInteger(value);
+
+        public static bool IsPositive(TSelf value) => TSelf.IsPositive(value);
+
         public static bool IsPositiveInfinity(TSelf value) => TSelf.IsPositiveInfinity(value);
 
+        public static bool IsRealNumber(TSelf value) => TSelf.IsRealNumber(value);
+
         public static bool IsSubnormal(TSelf value) => TSelf.IsSubnormal(value);
+
+        public static bool IsZero(TSelf value) => TSelf.IsZero(value);
 
         public static TSelf MaxMagnitude(TSelf x, TSelf y) => TSelf.MaxMagnitude(x, y);
 
@@ -337,9 +357,6 @@ namespace System
         public static TSelf Parse(string s, NumberStyles style, IFormatProvider provider) => TSelf.Parse(s, style, provider);
 
         public static TSelf Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider provider) => TSelf.Parse(s, style, provider);
-
-        public static bool TryCreate<TOther>(TOther value, out TSelf result)
-            where TOther : INumberBase<TOther> => TSelf.TryCreate(value, out result);
 
         public static bool TryParse(string s, NumberStyles style, IFormatProvider provider, out TSelf result) => TSelf.TryParse(s, style, provider, out result);
 

@@ -120,7 +120,7 @@ void mono_threads_suspend_override_policy (MonoThreadsSuspendPolicy new_policy);
 
 /*
  * The following are used when detaching a thread. We need to pass the MonoThreadInfo*
- * as a paramater as the thread info TLS key is being destructed, meaning that
+ * as a parameter as the thread info TLS key is being destructed, meaning that
  * mono_thread_info_current_unchecked will return NULL, which would lead to a
  * runtime assertion error when trying to switch the state of the current thread.
  */

@@ -100,8 +100,8 @@ namespace ILCompiler
         }
 
         // Compilation Unit Index is the compilation unit of a given module. If the compilation unit
-        // is unknown the module will be given an independent index from other modules, but 
-        // IsCompilationUnitIndexExact will return false for that index. All compilation unit indices 
+        // is unknown the module will be given an independent index from other modules, but
+        // IsCompilationUnitIndexExact will return false for that index. All compilation unit indices
         // are >= 2, to allow for 0 and 1 to be sentinel values.
         private CompilationUnitIndex ModuleToCompilationUnitIndex(ModuleDesc nonEcmaModule)
         {
@@ -111,12 +111,12 @@ namespace ILCompiler
 
             if (!VersionsWithModule(module))
                 return CompilationUnitIndex.OutsideOfVersionBubble;
-            
-            // Assemblies within the version bubble, but not compiled as part of this compilation unit are given 
-            // unique seperate compilation units. The practical effect of this is that the compiler can assume that
+
+            // Assemblies within the version bubble, but not compiled as part of this compilation unit are given
+            // unique separate compilation units. The practical effect of this is that the compiler can assume that
             // types which are entirely defined in one module can be laid out in an optimal fashion, but types
             // which are laid out relying on multiple modules cannot have their type layout precisely known as
-            // it is unknown if the modules are bounding into a single composite image or into individual assemblies. 
+            // it is unknown if the modules are bounding into a single composite image or into individual assemblies.
             lock (_moduleCompilationUnits)
             {
                 if (!_moduleCompilationUnits.TryGetValue(module, out CompilationUnitIndex compilationUnit))
@@ -139,7 +139,7 @@ namespace ILCompiler
             // 2. That any assembly which is compiled in the current process may be considered to be part of a single unit.
             //
             // At some point, the compiler could take new parameters to allow the compiler to know that assemblies not in the current compilation
-            // unit are to be compiled into composite images or into seperate binaries, and this helper function could return true for these other
+            // unit are to be compiled into composite images or into separate binaries, and this helper function could return true for these other
             // compilation unit shapes.
             if (compilationUnitIndex != CompilationUnitIndex.Current)
                 return false;
@@ -175,7 +175,7 @@ namespace ILCompiler
                 {
                     if (_bits == null)
                         return false;
-                        
+
                     return _bits[(int)CompilationUnitIndex.RESERVEDForHasMultipleCompilationUnits];
                 }
             }
@@ -197,7 +197,7 @@ namespace ILCompiler
 
                 if (other._bits.Length > _bits.Length)
                     _bits.Length = other._bits.Length;
-                
+
                 if (other._bits.Length < _bits.Length)
                 {
                     for (int i = 0; i < other._bits.Length; i++)

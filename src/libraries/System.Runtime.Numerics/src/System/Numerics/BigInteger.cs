@@ -1742,13 +1742,372 @@ namespace System.Numerics
             return result;
         }
 
+        //
+        // Explicit Conversions From BigInteger
+        //
+
+        public static explicit operator byte(BigInteger value)
+        {
+            return checked((byte)((int)value));
+        }
+
+        /// <summary>Explicitly converts a big integer to a <see cref="char" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to <see cref="char" /> value.</returns>
+        public static explicit operator char(BigInteger value)
+        {
+            return checked((char)((int)value));
+        }
+
+        public static explicit operator decimal(BigInteger value)
+        {
+            value.AssertValid();
+            if (value._bits == null)
+                return value._sign;
+
+            int length = value._bits.Length;
+            if (length > 3) throw new OverflowException(SR.Overflow_Decimal);
+
+            int lo = 0, mi = 0, hi = 0;
+
+            unchecked
+            {
+                if (length > 2) hi = (int)value._bits[2];
+                if (length > 1) mi = (int)value._bits[1];
+                if (length > 0) lo = (int)value._bits[0];
+            }
+
+            return new decimal(lo, mi, hi, value._sign < 0, 0);
+        }
+
+        public static explicit operator double(BigInteger value)
+        {
+            value.AssertValid();
+
+            int sign = value._sign;
+            uint[]? bits = value._bits;
+
+            if (bits == null)
+                return sign;
+
+            int length = bits.Length;
+
+            // The maximum exponent for doubles is 1023, which corresponds to a uint bit length of 32.
+            // All BigIntegers with bits[] longer than 32 evaluate to Double.Infinity (or NegativeInfinity).
+            // Cases where the exponent is between 1024 and 1035 are handled in NumericsHelpers.GetDoubleFromParts.
+            const int InfinityLength = 1024 / kcbitUint;
+
+            if (length > InfinityLength)
+            {
+                if (sign == 1)
+                    return double.PositiveInfinity;
+                else
+                    return double.NegativeInfinity;
+            }
+
+            ulong h = bits[length - 1];
+            ulong m = length > 1 ? bits[length - 2] : 0;
+            ulong l = length > 2 ? bits[length - 3] : 0;
+
+            int z = BitOperations.LeadingZeroCount((uint)h);
+
+            int exp = (length - 2) * 32 - z;
+            ulong man = (h << 32 + z) | (m << z) | (l >> 32 - z);
+
+            return NumericsHelpers.GetDoubleFromParts(sign, exp, man);
+        }
+
+        /// <summary>Explicitly converts a big integer to a <see cref="Half" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to <see cref="Half" /> value.</returns>
+        public static explicit operator Half(BigInteger value)
+        {
+            return (Half)(double)value;
+        }
+
+        public static explicit operator short(BigInteger value)
+        {
+            return checked((short)((int)value));
+        }
+
+        public static explicit operator int(BigInteger value)
+        {
+            value.AssertValid();
+            if (value._bits == null)
+            {
+                return value._sign;  // Value packed into int32 sign
+            }
+            if (value._bits.Length > 1)
+            {
+                // More than 32 bits
+                throw new OverflowException(SR.Overflow_Int32);
+            }
+            if (value._sign > 0)
+            {
+                return checked((int)value._bits[0]);
+            }
+            if (value._bits[0] > kuMaskHighBit)
+            {
+                // Value > Int32.MinValue
+                throw new OverflowException(SR.Overflow_Int32);
+            }
+            return unchecked(-(int)value._bits[0]);
+        }
+
+        public static explicit operator long(BigInteger value)
+        {
+            value.AssertValid();
+            if (value._bits == null)
+            {
+                return value._sign;
+            }
+
+            int len = value._bits.Length;
+            if (len > 2)
+            {
+                throw new OverflowException(SR.Overflow_Int64);
+            }
+
+            ulong uu;
+            if (len > 1)
+            {
+                uu = NumericsHelpers.MakeUInt64(value._bits[1], value._bits[0]);
+            }
+            else
+            {
+                uu = value._bits[0];
+            }
+
+            long ll = value._sign > 0 ? unchecked((long)uu) : unchecked(-(long)uu);
+            if ((ll > 0 && value._sign > 0) || (ll < 0 && value._sign < 0))
+            {
+                // Signs match, no overflow
+                return ll;
+            }
+            throw new OverflowException(SR.Overflow_Int64);
+        }
+
+        /// <summary>Explicitly converts a big integer to a <see cref="Int128" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to <see cref="Int128" /> value.</returns>
+        public static explicit operator Int128(BigInteger value)
+        {
+            value.AssertValid();
+
+            if (value._bits is null)
+            {
+                return value._sign;
+            }
+
+            int len = value._bits.Length;
+
+            if (len > 4)
+            {
+                throw new OverflowException(SR.Overflow_Int128);
+            }
+
+            UInt128 uu;
+
+            if (len > 2)
+            {
+                uu = new UInt128(
+                    NumericsHelpers.MakeUInt64((len > 3) ? value._bits[3] : 0, value._bits[2]),
+                    NumericsHelpers.MakeUInt64(value._bits[1], value._bits[0])
+                );
+            }
+            else if (len > 1)
+            {
+                uu = NumericsHelpers.MakeUInt64(value._bits[1], value._bits[0]);
+            }
+            else
+            {
+                uu = value._bits[0];
+            }
+
+            Int128 ll = (value._sign > 0) ? unchecked((Int128)uu) : unchecked(-(Int128)uu);
+
+            if (((ll > 0) && (value._sign > 0)) || ((ll < 0) && (value._sign < 0)))
+            {
+                // Signs match, no overflow
+                return ll;
+            }
+            throw new OverflowException(SR.Overflow_Int128);
+        }
+
+        /// <summary>Explicitly converts a big integer to a <see cref="IntPtr" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to <see cref="IntPtr" /> value.</returns>
+        public static explicit operator nint(BigInteger value)
+        {
+            if (Environment.Is64BitProcess)
+            {
+                return (nint)(long)value;
+            }
+            else
+            {
+                return (int)value;
+            }
+        }
+
+        [CLSCompliant(false)]
+        public static explicit operator sbyte(BigInteger value)
+        {
+            return checked((sbyte)((int)value));
+        }
+
+        public static explicit operator float(BigInteger value)
+        {
+            return (float)((double)value);
+        }
+
+        [CLSCompliant(false)]
+        public static explicit operator ushort(BigInteger value)
+        {
+            return checked((ushort)((int)value));
+        }
+
+        [CLSCompliant(false)]
+        public static explicit operator uint(BigInteger value)
+        {
+            value.AssertValid();
+            if (value._bits == null)
+            {
+                return checked((uint)value._sign);
+            }
+            else if (value._bits.Length > 1 || value._sign < 0)
+            {
+                throw new OverflowException(SR.Overflow_UInt32);
+            }
+            else
+            {
+                return value._bits[0];
+            }
+        }
+
+        [CLSCompliant(false)]
+        public static explicit operator ulong(BigInteger value)
+        {
+            value.AssertValid();
+            if (value._bits == null)
+            {
+                return checked((ulong)value._sign);
+            }
+
+            int len = value._bits.Length;
+            if (len > 2 || value._sign < 0)
+            {
+                throw new OverflowException(SR.Overflow_UInt64);
+            }
+
+            if (len > 1)
+            {
+                return NumericsHelpers.MakeUInt64(value._bits[1], value._bits[0]);
+            }
+            return value._bits[0];
+        }
+
+        /// <summary>Explicitly converts a big integer to a <see cref="UInt128" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to <see cref="UInt128" /> value.</returns>
+        [CLSCompliant(false)]
+        public static explicit operator UInt128(BigInteger value)
+        {
+            value.AssertValid();
+
+            if (value._bits is null)
+            {
+                return checked((UInt128)value._sign);
+            }
+
+            int len = value._bits.Length;
+
+            if ((len > 4) || (value._sign < 0))
+            {
+                throw new OverflowException(SR.Overflow_UInt128);
+            }
+
+            if (len > 2)
+            {
+                return new UInt128(
+                    NumericsHelpers.MakeUInt64((len > 3) ? value._bits[3] : 0, value._bits[2]),
+                    NumericsHelpers.MakeUInt64(value._bits[1], value._bits[0])
+                );
+            }
+            else if (len > 1)
+            {
+                return NumericsHelpers.MakeUInt64(value._bits[1], value._bits[0]);
+            }
+            return value._bits[0];
+        }
+
+        /// <summary>Explicitly converts a big integer to a <see cref="UIntPtr" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to <see cref="UIntPtr" /> value.</returns>
+        [CLSCompliant(false)]
+        public static explicit operator nuint(BigInteger value)
+        {
+            if (Environment.Is64BitProcess)
+            {
+                return (nuint)(ulong)value;
+            }
+            else
+            {
+                return (uint)value;
+            }
+        }
+
+        //
+        // Explicit Conversions To BigInteger
+        //
+
+        public static explicit operator BigInteger(decimal value)
+        {
+            return new BigInteger(value);
+        }
+
+        public static explicit operator BigInteger(double value)
+        {
+            return new BigInteger(value);
+        }
+
+        /// <summary>Explicitly converts a <see cref="Half" /> value to a big integer.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to a big integer.</returns>
+        public static explicit operator BigInteger(Half value)
+        {
+            return new BigInteger((float)value);
+        }
+
+        /// <summary>Explicitly converts a <see cref="Complex" /> value to a big integer.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to a big integer.</returns>
+        public static explicit operator BigInteger(Complex value)
+        {
+            if (value.Imaginary != 0)
+            {
+                ThrowHelper.ThrowOverflowException();
+            }
+            return (BigInteger)value.Real;
+        }
+
+        public static explicit operator BigInteger(float value)
+        {
+            return new BigInteger(value);
+        }
+
+        //
+        // Implicit Conversions To BigInteger
+        //
+
         public static implicit operator BigInteger(byte value)
         {
             return new BigInteger(value);
         }
 
-        [CLSCompliant(false)]
-        public static implicit operator BigInteger(sbyte value)
+        /// <summary>Implicitly converts a <see cref="char" /> value to a big integer.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to a big integer.</returns>
+        public static implicit operator BigInteger(char value)
         {
             return new BigInteger(value);
         }
@@ -1758,19 +2117,7 @@ namespace System.Numerics
             return new BigInteger(value);
         }
 
-        [CLSCompliant(false)]
-        public static implicit operator BigInteger(ushort value)
-        {
-            return new BigInteger(value);
-        }
-
         public static implicit operator BigInteger(int value)
-        {
-            return new BigInteger(value);
-        }
-
-        [CLSCompliant(false)]
-        public static implicit operator BigInteger(uint value)
         {
             return new BigInteger(value);
         }
@@ -1780,37 +2127,9 @@ namespace System.Numerics
             return new BigInteger(value);
         }
 
-        [CLSCompliant(false)]
-        public static implicit operator BigInteger(ulong value)
-        {
-            return new BigInteger(value);
-        }
-
-        public static implicit operator BigInteger(nint value)
-        {
-            if (Environment.Is64BitProcess)
-            {
-                return new BigInteger(value);
-            }
-            else
-            {
-                return new BigInteger((int)value);
-            }
-        }
-
-        [CLSCompliant(false)]
-        public static implicit operator BigInteger(nuint value)
-        {
-            if (Environment.Is64BitProcess)
-            {
-                return new BigInteger(value);
-            }
-            else
-            {
-                return new BigInteger((uint)value);
-            }
-        }
-
+        /// <summary>Implicitly converts a <see cref="Int128" /> value to a big integer.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to a big integer.</returns>
         public static implicit operator BigInteger(Int128 value)
         {
             int sign;
@@ -1870,6 +2189,48 @@ namespace System.Numerics
             return new BigInteger(sign, bits);
         }
 
+        /// <summary>Implicitly converts a <see cref="IntPtr" /> value to a big integer.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to a big integer.</returns>
+        public static implicit operator BigInteger(nint value)
+        {
+            if (Environment.Is64BitProcess)
+            {
+                return new BigInteger(value);
+            }
+            else
+            {
+                return new BigInteger((int)value);
+            }
+        }
+
+        [CLSCompliant(false)]
+        public static implicit operator BigInteger(sbyte value)
+        {
+            return new BigInteger(value);
+        }
+
+        [CLSCompliant(false)]
+        public static implicit operator BigInteger(ushort value)
+        {
+            return new BigInteger(value);
+        }
+
+        [CLSCompliant(false)]
+        public static implicit operator BigInteger(uint value)
+        {
+            return new BigInteger(value);
+        }
+
+        [CLSCompliant(false)]
+        public static implicit operator BigInteger(ulong value)
+        {
+            return new BigInteger(value);
+        }
+
+        /// <summary>Implicitly converts a <see cref="UInt128" /> value to a big integer.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to a big integer.</returns>
         [CLSCompliant(false)]
         public static implicit operator BigInteger(UInt128 value)
         {
@@ -1911,301 +2272,20 @@ namespace System.Numerics
             return new BigInteger(sign, bits);
         }
 
-        public static explicit operator BigInteger(float value)
-        {
-            return new BigInteger(value);
-        }
-
-        public static explicit operator BigInteger(double value)
-        {
-            return new BigInteger(value);
-        }
-
-        public static explicit operator BigInteger(decimal value)
-        {
-            return new BigInteger(value);
-        }
-
-        public static explicit operator byte(BigInteger value)
-        {
-            return checked((byte)((int)value));
-        }
-
+        /// <summary>Implicitly converts a <see cref="UIntPtr" /> value to a big integer.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to a big integer.</returns>
         [CLSCompliant(false)]
-        public static explicit operator sbyte(BigInteger value)
-        {
-            return checked((sbyte)((int)value));
-        }
-
-        public static explicit operator short(BigInteger value)
-        {
-            return checked((short)((int)value));
-        }
-
-        [CLSCompliant(false)]
-        public static explicit operator ushort(BigInteger value)
-        {
-            return checked((ushort)((int)value));
-        }
-
-        public static explicit operator int(BigInteger value)
-        {
-            value.AssertValid();
-            if (value._bits == null)
-            {
-                return value._sign;  // Value packed into int32 sign
-            }
-            if (value._bits.Length > 1)
-            {
-                // More than 32 bits
-                throw new OverflowException(SR.Overflow_Int32);
-            }
-            if (value._sign > 0)
-            {
-                return checked((int)value._bits[0]);
-            }
-            if (value._bits[0] > kuMaskHighBit)
-            {
-                // Value > Int32.MinValue
-                throw new OverflowException(SR.Overflow_Int32);
-            }
-            return unchecked(-(int)value._bits[0]);
-        }
-
-        [CLSCompliant(false)]
-        public static explicit operator uint(BigInteger value)
-        {
-            value.AssertValid();
-            if (value._bits == null)
-            {
-                return checked((uint)value._sign);
-            }
-            else if (value._bits.Length > 1 || value._sign < 0)
-            {
-                throw new OverflowException(SR.Overflow_UInt32);
-            }
-            else
-            {
-                return value._bits[0];
-            }
-        }
-
-        public static explicit operator long(BigInteger value)
-        {
-            value.AssertValid();
-            if (value._bits == null)
-            {
-                return value._sign;
-            }
-
-            int len = value._bits.Length;
-            if (len > 2)
-            {
-                throw new OverflowException(SR.Overflow_Int64);
-            }
-
-            ulong uu;
-            if (len > 1)
-            {
-                uu = NumericsHelpers.MakeUInt64(value._bits[1], value._bits[0]);
-            }
-            else
-            {
-                uu = value._bits[0];
-            }
-
-            long ll = value._sign > 0 ? unchecked((long)uu) : unchecked(-(long)uu);
-            if ((ll > 0 && value._sign > 0) || (ll < 0 && value._sign < 0))
-            {
-                // Signs match, no overflow
-                return ll;
-            }
-            throw new OverflowException(SR.Overflow_Int64);
-        }
-
-        [CLSCompliant(false)]
-        public static explicit operator ulong(BigInteger value)
-        {
-            value.AssertValid();
-            if (value._bits == null)
-            {
-                return checked((ulong)value._sign);
-            }
-
-            int len = value._bits.Length;
-            if (len > 2 || value._sign < 0)
-            {
-                throw new OverflowException(SR.Overflow_UInt64);
-            }
-
-            if (len > 1)
-            {
-                return NumericsHelpers.MakeUInt64(value._bits[1], value._bits[0]);
-            }
-            return value._bits[0];
-        }
-
-        public static explicit operator Int128(BigInteger value)
-        {
-            value.AssertValid();
-
-            if (value._bits is null)
-            {
-                return value._sign;
-            }
-
-            int len = value._bits.Length;
-
-            if (len > 4)
-            {
-                throw new OverflowException(SR.Overflow_Int128);
-            }
-
-            UInt128 uu;
-
-            if (len > 2)
-            {
-                uu = new UInt128(
-                    NumericsHelpers.MakeUInt64((len > 3) ? value._bits[3] : 0, value._bits[2]),
-                    NumericsHelpers.MakeUInt64(value._bits[1], value._bits[0])
-                );
-            }
-            else if (len > 1)
-            {
-                uu = NumericsHelpers.MakeUInt64(value._bits[1], value._bits[0]);
-            }
-            else
-            {
-                uu = value._bits[0];
-            }
-
-            Int128 ll = (value._sign > 0) ? unchecked((Int128)uu) : unchecked(-(Int128)uu);
-
-            if (((ll > 0) && (value._sign > 0)) || ((ll < 0) && (value._sign < 0)))
-            {
-                // Signs match, no overflow
-                return ll;
-            }
-            throw new OverflowException(SR.Overflow_Int128);
-        }
-
-        [CLSCompliant(false)]
-        public static explicit operator UInt128(BigInteger value)
-        {
-            value.AssertValid();
-
-            if (value._bits is null)
-            {
-                return checked((UInt128)value._sign);
-            }
-
-            int len = value._bits.Length;
-
-            if ((len > 4) || (value._sign < 0))
-            {
-                throw new OverflowException(SR.Overflow_UInt128);
-            }
-
-            if (len > 2)
-            {
-                return new UInt128(
-                    NumericsHelpers.MakeUInt64((len > 3) ? value._bits[3] : 0, value._bits[2]),
-                    NumericsHelpers.MakeUInt64(value._bits[1], value._bits[0])
-                );
-            }
-            else if (len > 1)
-            {
-                return NumericsHelpers.MakeUInt64(value._bits[1], value._bits[0]);
-            }
-            return value._bits[0];
-        }
-
-        public static explicit operator nint(BigInteger value)
+        public static implicit operator BigInteger(nuint value)
         {
             if (Environment.Is64BitProcess)
             {
-                return (nint)(long)value;
+                return new BigInteger(value);
             }
             else
             {
-                return (int)value;
+                return new BigInteger((uint)value);
             }
-        }
-
-        [CLSCompliant(false)]
-        public static explicit operator nuint(BigInteger value)
-        {
-            if (Environment.Is64BitProcess)
-            {
-                return (nuint)(ulong)value;
-            }
-            else
-            {
-                return (uint)value;
-            }
-        }
-
-        public static explicit operator float(BigInteger value)
-        {
-            return (float)((double)value);
-        }
-
-        public static explicit operator double(BigInteger value)
-        {
-            value.AssertValid();
-
-            int sign = value._sign;
-            uint[]? bits = value._bits;
-
-            if (bits == null)
-                return sign;
-
-            int length = bits.Length;
-
-            // The maximum exponent for doubles is 1023, which corresponds to a uint bit length of 32.
-            // All BigIntegers with bits[] longer than 32 evaluate to Double.Infinity (or NegativeInfinity).
-            // Cases where the exponent is between 1024 and 1035 are handled in NumericsHelpers.GetDoubleFromParts.
-            const int InfinityLength = 1024 / kcbitUint;
-
-            if (length > InfinityLength)
-            {
-                if (sign == 1)
-                    return double.PositiveInfinity;
-                else
-                    return double.NegativeInfinity;
-            }
-
-            ulong h = bits[length - 1];
-            ulong m = length > 1 ? bits[length - 2] : 0;
-            ulong l = length > 2 ? bits[length - 3] : 0;
-
-            int z = BitOperations.LeadingZeroCount((uint)h);
-
-            int exp = (length - 2) * 32 - z;
-            ulong man = (h << 32 + z) | (m << z) | (l >> 32 - z);
-
-            return NumericsHelpers.GetDoubleFromParts(sign, exp, man);
-        }
-
-        public static explicit operator decimal(BigInteger value)
-        {
-            value.AssertValid();
-            if (value._bits == null)
-                return value._sign;
-
-            int length = value._bits.Length;
-            if (length > 3) throw new OverflowException(SR.Overflow_Decimal);
-
-            int lo = 0, mi = 0, hi = 0;
-
-            unchecked
-            {
-                if (length > 2) hi = (int)value._bits[2];
-                if (length > 1) mi = (int)value._bits[1];
-                if (length > 0) lo = (int)value._bits[0];
-            }
-
-            return new decimal(lo, mi, hi, value._sign < 0, 0);
         }
 
         public static BigInteger operator &(BigInteger left, BigInteger right)
@@ -3885,227 +3965,38 @@ namespace System.Numerics
         // INumberBase
         //
 
-        /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static BigInteger CreateChecked<TOther>(TOther value)
-            where TOther : INumberBase<TOther>
-        {
-            if (typeof(TOther) == typeof(byte))
-            {
-                return (byte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(char))
-            {
-                return (char)(object)value;
-            }
-            else if (typeof(TOther) == typeof(decimal))
-            {
-                return checked((BigInteger)(decimal)(object)value);
-            }
-            else if (typeof(TOther) == typeof(double))
-            {
-                return checked((BigInteger)(double)(object)value);
-            }
-            else if (typeof(TOther) == typeof(short))
-            {
-                return (short)(object)value;
-            }
-            else if (typeof(TOther) == typeof(int))
-            {
-                return (int)(object)value;
-            }
-            else if (typeof(TOther) == typeof(long))
-            {
-                return (long)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nint))
-            {
-                return (nint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(sbyte))
-            {
-                return (sbyte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(float))
-            {
-                return checked((BigInteger)(float)(object)value);
-            }
-            else if (typeof(TOther) == typeof(ushort))
-            {
-                return (ushort)(object)value;
-            }
-            else if (typeof(TOther) == typeof(uint))
-            {
-                return (uint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ulong))
-            {
-                return (ulong)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nuint))
-            {
-                return (nuint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(BigInteger))
-            {
-                return (BigInteger)(object)value;
-            }
-            else
-            {
-                ThrowHelper.ThrowNotSupportedException();
-                return default;
-            }
-        }
+        /// <inheritdoc cref="INumberBase{TSelf}.Radix" />
+        static int INumberBase<BigInteger>.Radix => 2;
 
-        /// <inheritdoc cref="INumberBase{TSelf}.CreateSaturating{TOther}(TOther)" />
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static BigInteger CreateSaturating<TOther>(TOther value)
-            where TOther : INumberBase<TOther>
-        {
-            if (typeof(TOther) == typeof(byte))
-            {
-                return (byte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(char))
-            {
-                return (char)(object)value;
-            }
-            else if (typeof(TOther) == typeof(decimal))
-            {
-                return (BigInteger)(decimal)(object)value;
-            }
-            else if (typeof(TOther) == typeof(double))
-            {
-                return (BigInteger)(double)(object)value;
-            }
-            else if (typeof(TOther) == typeof(short))
-            {
-                return (short)(object)value;
-            }
-            else if (typeof(TOther) == typeof(int))
-            {
-                return (int)(object)value;
-            }
-            else if (typeof(TOther) == typeof(long))
-            {
-                return (long)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nint))
-            {
-                return (nint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(sbyte))
-            {
-                return (sbyte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(float))
-            {
-                return (BigInteger)(float)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ushort))
-            {
-                return (ushort)(object)value;
-            }
-            else if (typeof(TOther) == typeof(uint))
-            {
-                return (uint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ulong))
-            {
-                return (ulong)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nuint))
-            {
-                return (nuint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(BigInteger))
-            {
-                return (BigInteger)(object)value;
-            }
-            else
-            {
-                ThrowHelper.ThrowNotSupportedException();
-                return default;
-            }
-        }
+        /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
+        static bool INumberBase<BigInteger>.IsCanonical(BigInteger value) => true;
 
-        /// <inheritdoc cref="INumberBase{TSelf}.CreateTruncating{TOther}(TOther)" />
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static BigInteger CreateTruncating<TOther>(TOther value)
-            where TOther : INumberBase<TOther>
+        /// <inheritdoc cref="INumberBase{TSelf}.IsComplexNumber(TSelf)" />
+        static bool INumberBase<BigInteger>.IsComplexNumber(BigInteger value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsEvenInteger(TSelf)" />
+        public static bool IsEvenInteger(BigInteger value)
         {
-            if (typeof(TOther) == typeof(byte))
+            value.AssertValid();
+
+            if (value._bits is null)
             {
-                return (byte)(object)value;
+                return (value._sign & 1) == 0;
             }
-            else if (typeof(TOther) == typeof(char))
-            {
-                return (char)(object)value;
-            }
-            else if (typeof(TOther) == typeof(decimal))
-            {
-                return (BigInteger)(decimal)(object)value;
-            }
-            else if (typeof(TOther) == typeof(double))
-            {
-                return (BigInteger)(double)(object)value;
-            }
-            else if (typeof(TOther) == typeof(short))
-            {
-                return (short)(object)value;
-            }
-            else if (typeof(TOther) == typeof(int))
-            {
-                return (int)(object)value;
-            }
-            else if (typeof(TOther) == typeof(long))
-            {
-                return (long)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nint))
-            {
-                return (nint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(sbyte))
-            {
-                return (sbyte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(float))
-            {
-                return (BigInteger)(float)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ushort))
-            {
-                return (ushort)(object)value;
-            }
-            else if (typeof(TOther) == typeof(uint))
-            {
-                return (uint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ulong))
-            {
-                return (ulong)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nuint))
-            {
-                return (nuint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(BigInteger))
-            {
-                return (BigInteger)(object)value;
-            }
-            else
-            {
-                ThrowHelper.ThrowNotSupportedException();
-                return default;
-            }
+            return (value._bits[0] & 1) == 0;
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsFinite(TSelf)" />
         static bool INumberBase<BigInteger>.IsFinite(BigInteger value) => true;
 
+        /// <inheritdoc cref="INumberBase{TSelf}.IsImaginaryNumber(TSelf)" />
+        static bool INumberBase<BigInteger>.IsImaginaryNumber(BigInteger value) => false;
+
         /// <inheritdoc cref="INumberBase{TSelf}.IsInfinity(TSelf)" />
         static bool INumberBase<BigInteger>.IsInfinity(BigInteger value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsInteger(TSelf)" />
+        static bool INumberBase<BigInteger>.IsInteger(BigInteger value) => true;
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsNaN(TSelf)" />
         static bool INumberBase<BigInteger>.IsNaN(BigInteger value) => false;
@@ -4123,11 +4014,40 @@ namespace System.Numerics
         /// <inheritdoc cref="INumberBase{TSelf}.IsNormal(TSelf)" />
         static bool INumberBase<BigInteger>.IsNormal(BigInteger value) => (value != 0);
 
+        /// <inheritdoc cref="INumberBase{TSelf}.IsOddInteger(TSelf)" />
+        public static bool IsOddInteger(BigInteger value)
+        {
+            value.AssertValid();
+
+            if (value._bits is null)
+            {
+                return (value._sign & 1) != 0;
+            }
+            return (value._bits[0] & 1) != 0;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsPositive(TSelf)" />
+        public static bool IsPositive(BigInteger value)
+        {
+            value.AssertValid();
+            return value._sign >= 0;
+        }
+
         /// <inheritdoc cref="INumberBase{TSelf}.IsPositiveInfinity(TSelf)" />
         static bool INumberBase<BigInteger>.IsPositiveInfinity(BigInteger value) => false;
 
+        /// <inheritdoc cref="INumberBase{TSelf}.IsRealNumber(TSelf)" />
+        static bool INumberBase<BigInteger>.IsRealNumber(BigInteger value) => true;
+
         /// <inheritdoc cref="INumberBase{TSelf}.IsSubnormal(TSelf)" />
         static bool INumberBase<BigInteger>.IsSubnormal(BigInteger value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsZero(TSelf)" />
+        static bool INumberBase<BigInteger>.IsZero(BigInteger value)
+        {
+            value.AssertValid();
+            return value._sign == 0;
+        }
 
         /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitude(TSelf, TSelf)" />
         public static BigInteger MaxMagnitude(BigInteger x, BigInteger y)
@@ -4179,106 +4099,1049 @@ namespace System.Numerics
         /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
         static BigInteger INumberBase<BigInteger>.MinMagnitudeNumber(BigInteger x, BigInteger y) => MinMagnitude(x, y);
 
-        /// <inheritdoc cref="INumberBase{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool TryCreate<TOther>(TOther value, out BigInteger result)
-            where TOther : INumberBase<TOther>
+        static bool INumberBase<BigInteger>.TryConvertFromChecked<TOther>(TOther value, out BigInteger result)
         {
             if (typeof(TOther) == typeof(byte))
             {
-                result = (byte)(object)value;
+                byte actualValue = (byte)(object)value;
+                result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(char))
             {
-                result = (char)(object)value;
+                char actualValue = (char)(object)value;
+                result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(decimal))
             {
-                result = (BigInteger)(decimal)(object)value;
+                decimal actualValue = (decimal)(object)value;
+                result = (BigInteger)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(double))
             {
-                var actualValue = (double)(object)value;
-
-                if (!double.IsFinite(actualValue))
-                {
-                    result = default;
-                    return false;
-                }
-
-                result = (BigInteger)actualValue;
+                double actualValue = (double)(object)value;
+                result = checked((BigInteger)actualValue);
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Half))
+            {
+                Half actualValue = (Half)(object)value;
+                result = checked((BigInteger)actualValue);
                 return true;
             }
             else if (typeof(TOther) == typeof(short))
             {
-                result = (short)(object)value;
+                short actualValue = (short)(object)value;
+                result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(int))
             {
-                result = (int)(object)value;
+                int actualValue = (int)(object)value;
+                result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(long))
             {
-                result = (long)(object)value;
+                long actualValue = (long)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                Int128 actualValue = (Int128)(object)value;
+                result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(nint))
             {
-                result = (nint)(object)value;
+                nint actualValue = (nint)(object)value;
+                result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(sbyte))
             {
-                result = (sbyte)(object)value;
+                sbyte actualValue = (sbyte)(object)value;
+                result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(float))
             {
-                var actualValue = (float)(object)value;
-
-                if (!float.IsFinite(actualValue))
-                {
-                    result = default;
-                    return false;
-                }
-
-                result = (BigInteger)actualValue;
+                float actualValue = (float)(object)value;
+                result = checked((BigInteger)actualValue);
                 return true;
             }
             else if (typeof(TOther) == typeof(ushort))
             {
-                result = (ushort)(object)value;
+                ushort actualValue = (ushort)(object)value;
+                result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(uint))
             {
-                result = (uint)(object)value;
+                uint actualValue = (uint)(object)value;
+                result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(ulong))
             {
-                result = (ulong)(object)value;
+                ulong actualValue = (ulong)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                UInt128 actualValue = (UInt128)(object)value;
+                result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(nuint))
             {
-                result = (nuint)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(BigInteger))
-            {
-                result = (BigInteger)(object)value;
+                nuint actualValue = (nuint)(object)value;
+                result = actualValue;
                 return true;
             }
             else
             {
-                ThrowHelper.ThrowNotSupportedException();
                 result = default;
+                return false;
+            }
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromSaturating{TOther}(TOther, out TSelf)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<BigInteger>.TryConvertFromSaturating<TOther>(TOther value, out BigInteger result)
+        {
+            if (typeof(TOther) == typeof(byte))
+            {
+                byte actualValue = (byte)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                char actualValue = (char)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                decimal actualValue = (decimal)(object)value;
+                result = (BigInteger)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(double))
+            {
+                double actualValue = (double)(object)value;
+                result = double.IsNaN(actualValue) ? Zero : (BigInteger)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Half))
+            {
+                Half actualValue = (Half)(object)value;
+                result = Half.IsNaN(actualValue) ? Zero : (BigInteger)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                short actualValue = (short)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                int actualValue = (int)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                long actualValue = (long)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                Int128 actualValue = (Int128)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                nint actualValue = (nint)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                sbyte actualValue = (sbyte)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                float actualValue = (float)(object)value;
+                result = float.IsNaN(actualValue) ? Zero : (BigInteger)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                ushort actualValue = (ushort)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                uint actualValue = (uint)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                ulong actualValue = (ulong)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                UInt128 actualValue = (UInt128)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                nuint actualValue = (nuint)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else
+            {
+                result = default;
+                return false;
+            }
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromTruncating{TOther}(TOther, out TSelf)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<BigInteger>.TryConvertFromTruncating<TOther>(TOther value, out BigInteger result)
+        {
+            if (typeof(TOther) == typeof(byte))
+            {
+                byte actualValue = (byte)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                char actualValue = (char)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                decimal actualValue = (decimal)(object)value;
+                result = (BigInteger)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(double))
+            {
+                double actualValue = (double)(object)value;
+                result = double.IsNaN(actualValue) ? Zero : (BigInteger)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Half))
+            {
+                Half actualValue = (Half)(object)value;
+                result = Half.IsNaN(actualValue) ? Zero : (BigInteger)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                short actualValue = (short)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                int actualValue = (int)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                long actualValue = (long)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                Int128 actualValue = (Int128)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                nint actualValue = (nint)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                sbyte actualValue = (sbyte)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                float actualValue = (float)(object)value;
+                result = float.IsNaN(actualValue) ? Zero : (BigInteger)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                ushort actualValue = (ushort)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                uint actualValue = (uint)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                ulong actualValue = (ulong)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                UInt128 actualValue = (UInt128)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                nuint actualValue = (nuint)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else
+            {
+                result = default;
+                return false;
+            }
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToChecked{TOther}(TSelf, out TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<BigInteger>.TryConvertToChecked<TOther>(BigInteger value, [NotNullWhen(true)] out TOther result)
+        {
+            if (typeof(TOther) == typeof(byte))
+            {
+                byte actualResult = checked((byte)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                char actualResult = checked((char)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                decimal actualResult = checked((decimal)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(double))
+            {
+                double actualResult = (double)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Half))
+            {
+                Half actualResult = (Half)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                short actualResult = checked((short)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                int actualResult = checked((int)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                long actualResult = checked((long)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                Int128 actualResult = checked((Int128)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                nint actualResult = checked((nint)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Complex))
+            {
+                Complex actualResult = (Complex)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                sbyte actualResult = checked((sbyte)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                float actualResult = checked((float)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                ushort actualResult = checked((ushort)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                uint actualResult = checked((uint)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                ulong actualResult = checked((ulong)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                UInt128 actualResult = checked((UInt128)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                nuint actualResult = checked((nuint)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else
+            {
+                result = default!;
+                return false;
+            }
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToSaturating{TOther}(TSelf, out TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<BigInteger>.TryConvertToSaturating<TOther>(BigInteger value, [NotNullWhen(true)] out TOther result)
+        {
+            if (typeof(TOther) == typeof(byte))
+            {
+                byte actualResult;
+
+                if (value._bits is not null)
+                {
+                    actualResult = IsNegative(value) ? byte.MinValue : byte.MaxValue;
+                }
+                else
+                {
+                    actualResult = (value._sign >= byte.MaxValue) ? byte.MaxValue :
+                                   (value._sign <= byte.MinValue) ? byte.MinValue : (byte)value._sign;
+                }
+
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                char actualResult;
+
+                if (value._bits is not null)
+                {
+                    actualResult = IsNegative(value) ? char.MinValue : char.MaxValue;
+                }
+                else
+                {
+                    actualResult = (value._sign >= char.MaxValue) ? char.MaxValue :
+                                   (value._sign <= char.MinValue) ? char.MinValue : (char)value._sign;
+                }
+
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                decimal actualResult = (value >= new Int128(0x0000_0000_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)) ? decimal.MaxValue :
+                                       (value <= new Int128(0xFFFF_FFFF_0000_0000, 0x0000_0000_0000_0001)) ? decimal.MinValue : (decimal)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(double))
+            {
+                double actualResult = (double)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Half))
+            {
+                Half actualResult = (Half)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                short actualResult;
+
+                if (value._bits is not null)
+                {
+                    actualResult = IsNegative(value) ? short.MinValue : short.MaxValue;
+                }
+                else
+                {
+                    actualResult = (value._sign >= short.MaxValue) ? short.MaxValue :
+                                   (value._sign <= short.MinValue) ? short.MinValue : (short)value._sign;
+                }
+
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                int actualResult;
+
+                if (value._bits is not null)
+                {
+                    actualResult = IsNegative(value) ? int.MinValue : int.MaxValue;
+                }
+                else
+                {
+                    actualResult = (value._sign >= int.MaxValue) ? int.MaxValue :
+                                   (value._sign <= int.MinValue) ? int.MinValue : (int)value._sign;
+                }
+
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                long actualResult = (value >= long.MaxValue) ? long.MaxValue :
+                                    (value <= long.MinValue) ? long.MinValue : (long)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                Int128 actualResult = (value >= Int128.MaxValue) ? Int128.MaxValue :
+                                      (value <= Int128.MinValue) ? Int128.MinValue : (Int128)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                nint actualResult = (value >= nint.MaxValue) ? nint.MaxValue :
+                                    (value <= nint.MinValue) ? nint.MinValue : (nint)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Complex))
+            {
+                Complex actualResult = (Complex)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                sbyte actualResult;
+
+                if (value._bits is not null)
+                {
+                    actualResult = IsNegative(value) ? sbyte.MinValue : sbyte.MaxValue;
+                }
+                else
+                {
+                    actualResult = (value._sign >= sbyte.MaxValue) ? sbyte.MaxValue :
+                                   (value._sign <= sbyte.MinValue) ? sbyte.MinValue : (sbyte)value._sign;
+                }
+
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                float actualResult = (float)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                ushort actualResult;
+
+                if (value._bits is not null)
+                {
+                    actualResult = IsNegative(value) ? ushort.MinValue : ushort.MaxValue;
+                }
+                else
+                {
+                    actualResult = (value._sign >= ushort.MaxValue) ? ushort.MaxValue :
+                                   (value._sign <= ushort.MinValue) ? ushort.MinValue : (ushort)value._sign;
+                }
+
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                uint actualResult = (value >= uint.MaxValue) ? uint.MaxValue :
+                                    IsNegative(value) ? uint.MinValue : (uint)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                ulong actualResult = (value >= ulong.MaxValue) ? ulong.MaxValue :
+                                     IsNegative(value) ? ulong.MinValue : (ulong)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                UInt128 actualResult = (value >= UInt128.MaxValue) ? UInt128.MaxValue :
+                                       IsNegative(value) ? UInt128.MinValue : (UInt128)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                nuint actualResult = (value >= nuint.MaxValue) ? nuint.MaxValue :
+                                     IsNegative(value) ? nuint.MinValue : (nuint)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else
+            {
+                result = default!;
+                return false;
+            }
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToTruncating{TOther}(TSelf, out TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<BigInteger>.TryConvertToTruncating<TOther>(BigInteger value, [NotNullWhen(true)] out TOther result)
+        {
+            if (typeof(TOther) == typeof(byte))
+            {
+                byte actualResult;
+
+                if (value._bits is not null)
+                {
+                    uint bits = value._bits[0];
+
+                    if (IsNegative(value))
+                    {
+                        bits = ~bits + 1;
+                    }
+
+                    actualResult = (byte)bits;
+                }
+                else
+                {
+                    actualResult = (byte)value._sign;
+                }
+
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                char actualResult;
+
+                if (value._bits is not null)
+                {
+                    uint bits = value._bits[0];
+
+                    if (IsNegative(value))
+                    {
+                        bits = ~bits + 1;
+                    }
+
+                    actualResult = (char)bits;
+                }
+                else
+                {
+                    actualResult = (char)value._sign;
+                }
+
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                decimal actualResult = (value >= new Int128(0x0000_0000_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)) ? decimal.MaxValue :
+                                       (value <= new Int128(0xFFFF_FFFF_0000_0000, 0x0000_0000_0000_0001)) ? decimal.MinValue : (decimal)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(double))
+            {
+                double actualResult = (double)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Half))
+            {
+                Half actualResult = (Half)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                short actualResult;
+
+                if (value._bits is not null)
+                {
+                    actualResult = IsNegative(value) ? (short)(~value._bits[0] + 1) : (short)value._bits[0];
+                }
+                else
+                {
+                    actualResult = (short)value._sign;
+                }
+
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                int actualResult;
+
+                if (value._bits is not null)
+                {
+                    actualResult = IsNegative(value) ? (int)(~value._bits[0] + 1) : (int)value._bits[0];
+                }
+                else
+                {
+                    actualResult = value._sign;
+                }
+
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                long actualResult;
+
+                if (value._bits is not null)
+                {
+                    ulong bits = 0;
+
+                    if (value._bits.Length >= 2)
+                    {
+                        bits = value._bits[1];
+                        bits <<= 32;
+                    }
+
+                    bits |= value._bits[0];
+
+                    if (IsNegative(value))
+                    {
+                        bits = ~bits + 1;
+                    }
+
+                    actualResult = (long)bits;
+                }
+                else
+                {
+                    actualResult = value._sign;
+                }
+
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                Int128 actualResult;
+
+                if (value._bits is not null)
+                {
+                    ulong lowerBits = 0;
+                    ulong upperBits = 0;
+
+                    if (value._bits.Length >= 4)
+                    {
+                        upperBits = value._bits[3];
+                        upperBits <<= 32;
+                    }
+
+                    if (value._bits.Length >= 3)
+                    {
+                        upperBits = value._bits[2];
+                    }
+
+                    if (value._bits.Length >= 2)
+                    {
+                        lowerBits = value._bits[1];
+                        lowerBits <<= 32;
+                    }
+
+                    lowerBits |= value._bits[0];
+
+                    UInt128 bits = new UInt128(upperBits, lowerBits);
+
+                    if (IsNegative(value))
+                    {
+                        bits = ~bits + 1;
+                    }
+
+                    actualResult = (Int128)bits;
+                }
+                else
+                {
+                    actualResult = value._sign;
+                }
+
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                nint actualResult;
+
+                if (value._bits is not null)
+                {
+                    nuint bits = 0;
+
+                    if (Environment.Is64BitProcess && (value._bits.Length >= 2))
+                    {
+                        bits = value._bits[1];
+                        bits <<= 32;
+                    }
+
+                    bits |= value._bits[0];
+
+                    if (IsNegative(value))
+                    {
+                        bits = ~bits + 1;
+                    }
+
+                    actualResult = (nint)bits;
+                }
+                else
+                {
+                    actualResult = value._sign;
+                }
+
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Complex))
+            {
+                Complex actualResult = (Complex)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                sbyte actualResult;
+
+                if (value._bits is not null)
+                {
+                    actualResult = IsNegative(value) ? (sbyte)(~value._bits[0] + 1) : (sbyte)value._bits[0];
+                }
+                else
+                {
+                    actualResult = (sbyte)value._sign;
+                }
+
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                float actualResult = (float)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                ushort actualResult;
+
+                if (value._bits is not null)
+                {
+                    uint bits = value._bits[0];
+
+                    if (IsNegative(value))
+                    {
+                        bits = ~bits + 1;
+                    }
+
+                    actualResult = (ushort)bits;
+                }
+                else
+                {
+                    actualResult = (ushort)value._sign;
+                }
+
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                uint actualResult;
+
+                if (value._bits is not null)
+                {
+                    uint bits = value._bits[0];
+
+                    if (IsNegative(value))
+                    {
+                        bits = ~bits + 1;
+                    }
+
+                    actualResult = bits;
+                }
+                else
+                {
+                    actualResult = (uint)value._sign;
+                }
+
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                ulong actualResult;
+
+                if (value._bits is not null)
+                {
+                    ulong bits = 0;
+
+                    if (value._bits.Length >= 2)
+                    {
+                        bits = value._bits[1];
+                        bits <<= 32;
+                    }
+
+                    bits |= value._bits[0];
+
+                    if (IsNegative(value))
+                    {
+                        bits = ~bits + 1;
+                    }
+
+                    actualResult = bits;
+                }
+                else
+                {
+                    actualResult = (ulong)value._sign;
+                }
+
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                UInt128 actualResult;
+
+                if (value._bits is not null)
+                {
+                    ulong lowerBits = 0;
+                    ulong upperBits = 0;
+
+                    if (value._bits.Length >= 4)
+                    {
+                        upperBits = value._bits[3];
+                        upperBits <<= 32;
+                    }
+
+                    if (value._bits.Length >= 3)
+                    {
+                        upperBits |= value._bits[2];
+                    }
+
+                    if (value._bits.Length >= 2)
+                    {
+                        lowerBits = value._bits[1];
+                        lowerBits <<= 32;
+                    }
+
+                    lowerBits |= value._bits[0];
+
+                    UInt128 bits = new UInt128(upperBits, lowerBits);
+
+                    if (IsNegative(value))
+                    {
+                        bits = ~bits + 1;
+                    }
+
+                    actualResult = bits;
+                }
+                else
+                {
+                    actualResult = (UInt128)value._sign;
+                }
+
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                nuint actualResult;
+
+                if (value._bits is not null)
+                {
+                    nuint bits = 0;
+
+                    if (Environment.Is64BitProcess && (value._bits.Length >= 2))
+                    {
+                        bits = value._bits[1];
+                        bits <<= 32;
+                    }
+
+                    bits |= value._bits[0];
+
+                    if (IsNegative(value))
+                    {
+                        bits = ~bits + 1;
+                    }
+
+                    actualResult = bits;
+                }
+                else
+                {
+                    actualResult = (nuint)value._sign;
+                }
+
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else
+            {
+                result = default!;
                 return false;
             }
         }

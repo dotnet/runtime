@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// codeman.cpp - a managment class for handling multiple code managers
-//
 
+//
+// codeman.cpp - a managment class for handling multiple code managers
 //
 
 #include "common.h"
@@ -929,7 +929,7 @@ PTR_RUNTIME_FUNCTION FindRootEntry(PTR_RUNTIME_FUNCTION pFunctionEntry, TADDR ba
         // Walk backwards in the RUNTIME_FUNCTION array until we find a non-fragment.
         // We're guaranteed to find one, because we require that a fragment live in a function or funclet
         // that has a prolog, which will have non-fragment .xdata.
-        for (;;)
+        while (true)
         {
             if (!IsFunctionFragment(baseAddress, pRootEntry))
             {
@@ -2393,7 +2393,7 @@ VOID EEJitManager::EnsureJumpStubReserve(BYTE * pImageBase, SIZE_T imageSize, SI
     {
         NewHolder<EmergencyJumpStubReserve> pNewReserve(new EmergencyJumpStubReserve());
 
-        for (;;)
+        while (true)
         {
             BYTE * loAddrCurrent = loAddr;
             BYTE * hiAddrCurrent = hiAddr;
@@ -5865,7 +5865,7 @@ PTR_EXCEPTION_CLAUSE_TOKEN ReadyToRunJitManager::GetNextEHClause(EH_CLAUSE_ENUME
 
     CORCOMPILE_EXCEPTION_CLAUSE* pClause = &(dac_cast<PTR_CORCOMPILE_EXCEPTION_CLAUSE>(pEnumState->pExceptionClauseArray)[iCurrentPos]);
 
-    // copy to the input parmeter, this is a nice abstraction for the future
+    // copy to the input parameter, this is a nice abstraction for the future
     // if we want to compress the Clause encoding, we can do without affecting the call sites
     pEHClauseOut->TryStartPC = pClause->TryStartPC;
     pEHClauseOut->TryEndPC = pClause->TryEndPC;

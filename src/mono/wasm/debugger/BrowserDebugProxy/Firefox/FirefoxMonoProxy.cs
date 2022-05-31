@@ -17,7 +17,7 @@ namespace Microsoft.WebAssembly.Diagnostics;
 
 internal sealed class FirefoxMonoProxy : MonoProxy
 {
-    public FirefoxMonoProxy(ILogger logger, string loggerId = null) : base(logger, null, loggerId: loggerId)
+    public FirefoxMonoProxy(ILogger logger, string loggerId = null, ProxyOptions options = null) : base(logger, null, loggerId: loggerId, options: options)
     {
     }
 

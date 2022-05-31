@@ -581,8 +581,8 @@ public:
     // Inspect the assertions about the current ValueNum to refine pRange
     void MergeEdgeAssertions(ValueNum num, ASSERT_VALARG_TP assertions, Range* pRange);
 
-    // The maximum possible value of the given "limit." If such a value could not be determined
-    // return "false." For example: ARRLEN_MAX for array length.
+    // The maximum possible value of the given "limit". If such a value could not be determined
+    // return "false". For example: CORINFO_Array_MaxLength for array length.
     bool GetLimitMax(Limit& limit, int* pMax);
 
     // Does the addition of the two limits overflow?
@@ -650,4 +650,7 @@ private:
     // The number of nodes for which range is computed throughout the current method.
     // When this limit is zero, we have exhausted all the budget to walk the ud-chain.
     int m_nVisitBudget;
+
+    // Set to "true" whenever we remove a check and need to re-thread the statement.
+    bool m_updateStmt;
 };

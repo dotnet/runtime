@@ -2158,6 +2158,7 @@ FCIMPL1(ReflectMethodObject *, COMDelegate::FindMethodHandle, Object* refThisIn)
     HELPER_METHOD_FRAME_BEGIN_RET_1(refThis);
 
     pMD = GetMethodDesc(refThis);
+    pMD = MethodDesc::FindOrCreateAssociatedMethodDescForReflection(pMD, TypeHandle(pMD->GetMethodTable()), pMD->GetMethodInstantiation());
     pRet = pMD->GetStubMethodInfo();
     HELPER_METHOD_FRAME_END();
 
