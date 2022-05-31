@@ -1136,7 +1136,7 @@ mono_interp_jit_call_supported (MonoMethod *method, MonoMethodSignature *sig)
 {
 	GSList *l;
 
-	if (sig->param_count > 6)
+	if (sig->param_count > 10)
 		return FALSE;
 	if (sig->pinvoke)
 		return FALSE;
