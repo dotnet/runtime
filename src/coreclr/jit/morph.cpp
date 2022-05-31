@@ -14522,7 +14522,7 @@ GenTree* Compiler::fgRootCommas(GenTree* tree)
             return tree;
     }
 
-    const int maxCommaCount = 4;
+    const int maxCommaCount = 1;
     GenTree*  commas[maxCommaCount]{};
     int       commaCount = 0;
 
