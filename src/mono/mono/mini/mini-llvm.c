@@ -4114,15 +4114,17 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 
 #ifdef TARGET_WASM
 	/*
-	 * Store ref arguments to the pin area.
-	 * FIXME: This might not be needed, since the caller already does it ?
+	 * Storing ref arguments to the pin area is not needed
+	 * since it's done by the caller.
 	 */
+	/*
 	for (int i = 0; i < cfg->num_varinfo; ++i) {
 		MonoInst *var = cfg->varinfo [i];
 
 		if (var->opcode == OP_ARG && vreg_is_ref (cfg, var->dreg) && ctx->values [var->dreg])
 			emit_gc_pin (ctx, builder, var->dreg);
 	}
+	*/
 #endif
 
 	if (cfg->deopt) {
@@ -11292,7 +11294,7 @@ MONO_RESTORE_WARNING
 			if (!skip_volatile_store)
 				emit_volatile_store (ctx, ins->dreg);
 #ifdef TARGET_WASM
-			if (vreg_is_ref (cfg, ins->dreg) && ctx->values [ins->dreg])
+			if (vreg_is_ref (cfg, ins->dreg) && ctx->values [ins->dreg] && ins->opcode != OP_MOVE)
 				emit_gc_pin (ctx, builder, ins->dreg);
 #endif
 		}
