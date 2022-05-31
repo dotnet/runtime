@@ -285,6 +285,11 @@ namespace System.Runtime.CompilerServices
             return (MethodTable *)Unsafe.Add(ref Unsafe.As<byte, IntPtr>(ref obj.GetRawData()), -1);
         }
 
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MethodTable_AreTypesEquivalent")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static unsafe partial bool AreTypesEquivalent(MethodTable* pMTa, MethodTable* pMTb);
+
         /// <summary>
         /// Allocate memory that is associated with the <paramref name="type"/> and
         /// will be freed if and when the <see cref="System.Type"/> is unloaded.
@@ -519,9 +524,6 @@ namespace System.Runtime.CompilerServices
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public extern uint GetNumInstanceFieldBytes();
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public extern bool IsEquivalentTo(MethodTable* pMTOther);
     }
 
     // Helper structs used for tail calls via helper.

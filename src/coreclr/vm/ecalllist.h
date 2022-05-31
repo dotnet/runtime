@@ -603,7 +603,6 @@ FCFuncEnd()
 
 FCFuncStart(gMethodTableFuncs)
     FCFuncElement("GetNumInstanceFieldBytes", MethodTableNative::GetNumInstanceFieldBytes)
-    FCFuncElement("IsEquivalentTo", MethodTableNative::IsEquivalentTo)
 FCFuncEnd()
 
 FCFuncStart(gMngdFixedArrayMarshalerFuncs)

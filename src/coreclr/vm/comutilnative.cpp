@@ -2036,19 +2036,20 @@ FCIMPL1(UINT32, MethodTableNative::GetNumInstanceFieldBytes, MethodTable* mt)
 }
 FCIMPLEND
 
-FCIMPL2(FC_BOOL_RET, MethodTableNative::IsEquivalentTo, MethodTable* mta, MethodTable* mtb)
+extern "C" BOOL QCALLTYPE MethodTable_AreTypesEquivalent(MethodTable* mta, MethodTable* mtb)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
     BOOL bResult = FALSE;
 
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-    bResult = mta->IsEquivalentTo(mtb);
-    HELPER_METHOD_FRAME_END();
+    BEGIN_QCALL;
 
-    FC_RETURN_BOOL(bResult);
+    bResult = mta->IsEquivalentTo(mtb);
+
+    END_QCALL;
+
+    return bResult;
 }
-FCIMPLEND
 
 static MethodTable * g_pStreamMT;
 static WORD g_slotBeginRead, g_slotEndRead;

@@ -422,9 +422,9 @@ namespace System
 
             bool ret;
 
-            // only use FCall to check the type equivalence scenario
+            // only use QCall to check the type equivalence scenario
             if (pMTa->HasTypeEquivalence && pMTb->HasTypeEquivalence)
-                ret = pMTa->IsEquivalentTo(pMTb);
+                ret = RuntimeHelpers.AreTypesEquivalent(pMTa, pMTb);
             else
                 ret = false;
 
