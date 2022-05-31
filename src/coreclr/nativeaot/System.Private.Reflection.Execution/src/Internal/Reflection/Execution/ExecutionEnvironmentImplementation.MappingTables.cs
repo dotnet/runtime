@@ -27,7 +27,9 @@ using CanonicalFormKind = global::Internal.TypeSystem.CanonicalFormKind;
 
 
 using Debug = System.Diagnostics.Debug;
+#if FEATURE_UNIVERSAL_GENERICS
 using ThunkKind = Internal.Runtime.TypeLoader.CallConverterThunk.ThunkKind;
+#endif
 using Interlocked = System.Threading.Interlocked;
 
 namespace Internal.Reflection.Execution
@@ -475,6 +477,7 @@ namespace Internal.Reflection.Execution
             }
         }
 
+#if FEATURE_UNIVERSAL_GENERICS
         private static IntPtr GetDynamicMethodInvokerThunk(MethodBase methodInfo)
         {
             MethodParametersInfo methodParamsInfo = new MethodParametersInfo(methodInfo);
@@ -487,6 +490,7 @@ namespace Internal.Reflection.Execution
                 methodParamsInfo.ReturnTypeAndParametersByRefFlags,
                 null);
         }
+#endif
 
         private static RuntimeTypeHandle[] GetDynamicInvokeInstantiationArguments(MethodBase reflectionMethodBase)
         {
@@ -590,6 +594,7 @@ namespace Internal.Reflection.Execution
                 return null;
             }
 
+#if FEATURE_UNIVERSAL_GENERICS
             if ((methodInvokeMetadata.InvokeTableFlags & InvokeTableFlags.IsUniversalCanonicalEntry) != 0)
             {
                 // Wrap the method entry point in a calling convention converter thunk if it's a universal canonical implementation
@@ -602,13 +607,18 @@ namespace Internal.Reflection.Execution
                     methodInfo,
                     methodHandle.NativeFormatHandle);
             }
+#endif
 
             IntPtr dynamicInvokeMethod;
             IntPtr dynamicInvokeMethodGenericDictionary;
             if ((methodInvokeMetadata.InvokeTableFlags & InvokeTableFlags.NeedsParameterInterpretation) != 0)
             {
+#if FEATURE_UNIVERSAL_GENERICS
                 dynamicInvokeMethod = GetDynamicMethodInvokerThunk(methodInfo);
                 dynamicInvokeMethodGenericDictionary = IntPtr.Zero;
+#else
+                throw new NotSupportedException();
+#endif
             }
             else
             {
@@ -645,6 +655,7 @@ namespace Internal.Reflection.Execution
             return methodInvokeInfo;
         }
 
+#if FEATURE_UNIVERSAL_GENERICS
         private static IntPtr GetCallingConventionConverterForMethodEntrypoint(MetadataReader metadataReader, RuntimeTypeHandle declaringType, IntPtr methodEntrypoint, IntPtr dictionary, MethodBase methodBase, MethodHandle mdHandle)
         {
             MethodParametersInfo methodParamsInfo = new MethodParametersInfo(metadataReader, methodBase, mdHandle);
@@ -695,6 +706,7 @@ namespace Internal.Reflection.Execution
                     return FunctionPointerOps.GetGenericMethodFunctionPointer(methodEntrypoint, dictionary);
             }
         }
+#endif
 
         private static RuntimeTypeHandle GetExactDeclaringType(RuntimeTypeHandle dstType, RuntimeTypeHandle srcType)
         {
@@ -897,8 +909,10 @@ namespace Internal.Reflection.Execution
             }
             else
             {
+#if FEATURE_UNIVERSAL_GENERICS
                 // The thunk could have been created by the TypeLoader as a dictionary slot for USG code
                 if (!CallConverterThunk.TryGetCallConversionTargetPointerAndInstantiatingArg(originalLdFtnResult, out canonOriginalLdFtnResult, out instantiationArgument))
+#endif
                 {
                     canonOriginalLdFtnResult = RuntimeAugments.GetCodeTarget(originalLdFtnResult);
                     instantiationArgument = IntPtr.Zero;
