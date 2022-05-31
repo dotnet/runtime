@@ -38,10 +38,22 @@
     <PackageReference Include="System.Runtime.TimeZoneData" PrivateAssets="all" Version="$(SystemRuntimeTimeZoneDataVersion)" GeneratePathProperty="true" />
   </ItemGroup>
 
-  <UsingTask TaskName="PInvokeTableGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"/>
-  <Target Name="BuildPInvokeTable" DependsOnTargets="CheckEnv;ResolveLibrariesFromLocalBuild">
+  <UsingTask TaskName="GenerateWasmBundle"
+    AssemblyFile="$(WasmBuildTasksAssemblyPath)"/>
+  <Target Name="BundleTimeZones">
     <PropertyGroup>
-      <WasmPInvokeTablePath>$(ArtifactsObjDir)wasm\pinvoke-table.h</WasmPInvokeTablePath>
+      <TimeZonesDataPath>$(NativeBinDir)dotnet.timezones.blat</TimeZonesDataPath>
+    </PropertyGroup>
+    <GenerateWasmBundle
+      InputDirectory="$([MSBuild]::NormalizePath('$(PkgSystem_Runtime_TimeZoneData)', 'contentFiles', 'any', 'any', 'data'))"
+      OutputFileName="$(TimeZonesDataPath)" />
+  </Target>
+  
+  <UsingTask TaskName="ManagedToNativeGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
+  <Target Name="GenerateManagedToNative" DependsOnTargets="CheckEnv;ResolveLibrariesFromLocalBuild">
+    <PropertyGroup>
+      <WasmPInvokeTablePath>$(WasmObjDir)\pinvoke-table.h</WasmPInvokeTablePath>
+      <WasmInterpToNativeTablePath>$(WasmObjDir)\wasm_m2n_invoke.g.h</WasmInterpToNativeTablePath>
     </PropertyGroup>
 
     <ItemGroup>
@@ -58,21 +70,15 @@
       <Output TaskParameter="TargetOutputs" ItemName="WasmPInvokeAssembly" />
     </MSBuild>
 
-    <MakeDir Directories="$(ArtifactsObjDir)wasm" />
-    <PInvokeTableGenerator Modules="@(WasmPInvokeModule)"
-                           Assemblies="@(WasmPInvokeAssembly)"
-                           OutputPath="$(WasmPInvokeTablePath)" />
-  </Target>
-
-  <UsingTask TaskName="GenerateWasmBundle"
-    AssemblyFile="$(WasmBuildTasksAssemblyPath)"/>
-  <Target Name="BundleTimeZones">
-    <PropertyGroup>
-      <TimeZonesDataPath>$(NativeBinDir)dotnet.timezones.blat</TimeZonesDataPath>
-    </PropertyGroup>
-    <GenerateWasmBundle
-      InputDirectory="$([MSBuild]::NormalizePath('$(PkgSystem_Runtime_TimeZoneData)', 'contentFiles', 'any', 'any', 'data'))"
-      OutputFileName="$(TimeZonesDataPath)" />
+    <MakeDir Directories="$(WasmObjDir)" Condition="!Exists('$(WasmObjDir)')" />
+    
+    <ManagedToNativeGenerator
+      Assemblies="@(WasmPInvokeAssembly)"
+      PInvokeModules="@(WasmPInvokeModule)"
+      PInvokeOutputPath="$(WasmPInvokeTablePath)"
+      InterpToNativeOutputPath="$(WasmInterpToNativeTablePath)">
+      <Output TaskParameter="FileWrites" ItemName="FileWrites" />
+    </ManagedToNativeGenerator>
   </Target>
 
   <Target Name="GenerateEmccPropsAndRspFiles">
@@ -178,7 +184,7 @@
   <!-- This is a documented target that is invoked by developers in their innerloop work. -->
   <Target Name="BuildWasmRuntimes"
           AfterTargets="Build"
-          DependsOnTargets="GenerateEmccPropsAndRspFiles;BuildPInvokeTable;BundleTimeZones;InstallNpmPackages;BuildWithRollup">
+          DependsOnTargets="GenerateEmccPropsAndRspFiles;GenerateManagedToNative;BundleTimeZones;InstallNpmPackages;BuildWithRollup">
 
     <ItemGroup>
       <ICULibNativeFiles Include="$(ICULibDir)/libicuuc.a;
@@ -187,6 +193,7 @@
     </ItemGroup>
     <PropertyGroup>
       <PInvokeTableFile>$(ArtifactsObjDir)wasm/pinvoke-table.h</PInvokeTableFile>
+      <InterpToNativeTableFile>$(ArtifactsObjDir)wasm/wasm_m2n_invoke.g.h</InterpToNativeTableFile>
       <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Debug'">-g -Os -s -DDEBUG=1 -DENABLE_AOT_PROFILER=1</CMakeConfigurationEmccFlags>
       <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Release'">-Oz</CMakeConfigurationEmccFlags>
 
@@ -220,6 +227,10 @@
     </PropertyGroup>
 
     <Copy SourceFiles="$(PInvokeTableFile)"
+          DestinationFolder="$(MonoObjDir)"
+          SkipUnchangedFiles="true" />
+
+    <Copy SourceFiles="$(InterpToNativeTableFile)"
           DestinationFolder="$(MonoObjDir)"
           SkipUnchangedFiles="true" />
 

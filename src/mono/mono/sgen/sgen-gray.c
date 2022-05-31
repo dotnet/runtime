@@ -164,7 +164,7 @@ sgen_gray_object_spread (SgenGrayQueue *queue, int num_sections)
 		return;
 
 	/* Compute number of elements in the gray queue */
-	queue->first->size = queue->cursor - queue->first->entries + 1;
+	queue->first->size = GPTRDIFF_TO_INT (queue->cursor - queue->first->entries + 1);
 	total_entries = queue->first->size;
 	for (section_start = queue->first->next; section_start != NULL; section_start = section_start->next) {
 		SGEN_ASSERT (0, section_start->size == SGEN_GRAY_QUEUE_SECTION_SIZE, "We expect all section aside from the first one to be full");
@@ -282,7 +282,7 @@ sgen_gray_object_dequeue_section (SgenGrayQueue *queue)
 		queue->last = NULL;
 
 	section->next = NULL;
-	section->size = queue->cursor - section->entries + 1;
+	section->size = GPTRDIFF_TO_INT (queue->cursor - section->entries + 1);
 
 	queue->cursor = queue->first ? queue->first->entries + queue->first->size - 1 : NULL;
 
@@ -346,7 +346,7 @@ sgen_gray_object_enqueue_section (SgenGrayQueue *queue, GrayQueueSection *sectio
 	STATE_TRANSITION (section, GRAY_QUEUE_SECTION_STATE_FLOATING, GRAY_QUEUE_SECTION_STATE_ENQUEUED);
 
 	if (queue->first)
-		queue->first->size = queue->cursor - queue->first->entries + 1;
+		queue->first->size = GPTRDIFF_TO_INT (queue->cursor - queue->first->entries + 1);
 
 	section->next = queue->first;
 	section->prev = NULL;

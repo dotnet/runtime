@@ -82,6 +82,7 @@ namespace Sample
             set { task = value; }
         }
         List<BenchTask.Result> results = new();
+        Dictionary<string, double> minTimes = new();
         bool resultsReturned;
 
         bool NextTask()
@@ -146,9 +147,9 @@ namespace Sample
 
         string ResultsSummary()
         {
-            var minTimes = ProcessResults();
+            ProcessResults();
             if (JsonResults)
-                PrintJsonResults(minTimes);
+                PrintJsonResults();
 
             StringBuilder sb = new($"{formatter.NewLine}Summary{formatter.NewLine}");
             foreach (var key in minTimes.Keys)
@@ -175,9 +176,9 @@ namespace Sample
             return sb.ToString();
         }
 
-        private Dictionary<string, double> ProcessResults()
+        private void ProcessResults()
         {
-            Dictionary<string, double> minTimes = new Dictionary<string, double>();
+            minTimes.Clear();
 
             foreach (var result in results)
             {
@@ -189,24 +190,31 @@ namespace Sample
 
                 minTimes[key] = t;
             }
-
-            return minTimes;
         }
 
         class JsonResultsData
         {
             public List<BenchTask.Result> results;
             public Dictionary<string, double> minTimes;
+            public DateTime timeStamp;
         }
 
-        private void PrintJsonResults(Dictionary<string, double> minTimes)
+        public static string GetFullJsonResults()
         {
-            DateTime now = DateTime.Now;
+            return instance.GetJsonResults();
+        }
+
+        string GetJsonResults ()
+        {
             var options = new JsonSerializerOptions { IncludeFields = true, WriteIndented = true };
-            var jsonObject = new JsonResultsData { results = results, minTimes = minTimes };
-            var str = JsonSerializer.Serialize(jsonObject, options);
+            var jsonObject = new JsonResultsData { results = results, minTimes = minTimes, timeStamp = DateTime.UtcNow };
+            return JsonSerializer.Serialize(jsonObject, options);
+        }
+
+        private void PrintJsonResults()
+        {
             Console.WriteLine("=== json results start ===");
-            Console.WriteLine(str);
+            Console.WriteLine(GetJsonResults ());
             Console.WriteLine("=== json results end ===");
         }
     }

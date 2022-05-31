@@ -1687,7 +1687,7 @@ sleep_interruptable (guint32 ms, gboolean *alerted)
 		}
 
 		if (ms != MONO_INFINITE_WAIT)
-			mono_coop_cond_timedwait (&sleep_cond, &sleep_mutex, end - now);
+			mono_coop_cond_timedwait (&sleep_cond, &sleep_mutex, GUINT64_TO_UINT32 (end - now));
 		else
 			mono_coop_cond_wait (&sleep_cond, &sleep_mutex);
 
@@ -1776,7 +1776,7 @@ gint
 mono_thread_info_usleep (guint64 us)
 {
 	MONO_ENTER_GC_SAFE;
-	g_usleep (us);
+	g_usleep (GUINT64_TO_ULONG (us));
 	MONO_EXIT_GC_SAFE;
 	return 0;
 }

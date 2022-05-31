@@ -481,7 +481,7 @@ load_metadata_ptrs (MonoImage *image, MonoCLIImageInfo *iinfo)
 		ptr += 4;
 		image->version = g_strndup (ptr, version_string_len);
 		ptr += version_string_len;
-		pad = ptr - image->raw_metadata;
+		pad = GPTRDIFF_TO_UINT32 (ptr - image->raw_metadata);
 		if (pad % 4)
 			ptr += 4 - (pad % 4);
 	} else
@@ -535,7 +535,7 @@ load_metadata_ptrs (MonoImage *image, MonoCLIImageInfo *iinfo)
 			g_message ("Unknown heap type: %s\n", ptr + 8);
 			ptr += 8 + strlen (ptr + 8) + 1;
 		}
-		pad = ptr - image->raw_metadata;
+		pad = GPTRDIFF_TO_UINT32 (ptr - image->raw_metadata);
 		if (pad % 4)
 			ptr += 4 - (pad % 4);
 	}
@@ -832,15 +832,15 @@ do_load_header_internal (const char *raw_data, guint32 raw_data_len, MonoDotNetH
 		 * will be fixed when we change MonoDotNetHeader to not match the 32 bit variant
 		 */
 		SWAP64	(header64.nt.pe_image_base);
-		header->nt.pe_image_base = header64.nt.pe_image_base;
+		header->nt.pe_image_base = GUINT64_TO_UINT32 (header64.nt.pe_image_base);
 		SWAP64	(header64.nt.pe_stack_reserve);
-		header->nt.pe_stack_reserve = header64.nt.pe_stack_reserve;
+		header->nt.pe_stack_reserve = GUINT64_TO_UINT32 (header64.nt.pe_stack_reserve);
 		SWAP64	(header64.nt.pe_stack_commit);
-		header->nt.pe_stack_commit = header64.nt.pe_stack_commit;
+		header->nt.pe_stack_commit = GUINT64_TO_UINT32 (header64.nt.pe_stack_commit);
 		SWAP64	(header64.nt.pe_heap_reserve);
-		header->nt.pe_heap_reserve = header64.nt.pe_heap_reserve;
+		header->nt.pe_heap_reserve = GUINT64_TO_UINT32 (header64.nt.pe_heap_reserve);
 		SWAP64	(header64.nt.pe_heap_commit);
-		header->nt.pe_heap_commit = header64.nt.pe_heap_commit;
+		header->nt.pe_heap_commit = GUINT64_TO_UINT32 (header64.nt.pe_heap_commit);
 
 		header->nt.pe_section_align = header64.nt.pe_section_align;
 		header->nt.pe_file_alignment = header64.nt.pe_file_alignment;
@@ -1362,7 +1362,7 @@ mono_image_storage_open (const char *fname)
 	MonoImageStorage *storage = g_new0 (MonoImageStorage, 1);
 	mono_refcount_init (storage, mono_image_storage_dtor);
 	storage->raw_buffer_used = TRUE;
-	storage->raw_data_len = mono_file_map_size (filed);
+	storage->raw_data_len = GUINT64_TO_UINT32 (mono_file_map_size (filed));
 	storage->raw_data = (char*)mono_file_map (storage->raw_data_len, MONO_MMAP_READ|MONO_MMAP_PRIVATE, mono_file_map_fd (filed), 0, &storage->raw_data_handle);
 #if defined(HAVE_MMAP) && !defined (HOST_WIN32)
 	if (!storage->raw_data) {
@@ -1397,7 +1397,7 @@ mono_image_storage_new_raw_data (char *datac, guint32 data_len, gboolean raw_dat
 
 	storage->raw_data = datac;
 	storage->raw_data_len = data_len;
-	storage->raw_data_allocated = raw_data_allocated;
+	storage->raw_data_allocated = !!raw_data_allocated;
 
 	storage->key = key;
 	MonoImageStorage *other_storage = NULL;
@@ -1437,7 +1437,7 @@ do_mono_image_open (MonoAssemblyLoadContext *alc, const char *fname, MonoImageOp
 	image->image_info = iinfo;
 	image->name = mono_path_resolve_symlinks (fname);
 	image->filename = g_strdup (image->name);
-	image->metadata_only = metadata_only;
+	image->metadata_only = !!metadata_only;
 	image->ref_count = 1;
 	image->alc = alc;
 	return do_mono_image_load (image, status, care_about_cli, care_about_pecoff);
@@ -1623,7 +1623,7 @@ mono_image_open_from_data_internal (MonoAssemblyLoadContext *alc, char *data, gu
 	image->filename = filename ? g_strdup (filename) : NULL;
 	iinfo = g_new0 (MonoCLIImageInfo, 1);
 	image->image_info = iinfo;
-	image->metadata_only = metadata_only;
+	image->metadata_only = !!metadata_only;
 	image->ref_count = 1;
 	image->alc = alc;
 
@@ -1712,7 +1712,7 @@ mono_image_storage_open_from_module_handle (HMODULE module_handle, const char *f
 	mono_refcount_init (storage, mono_image_storage_dtor);
 	storage->raw_data = (char*) module_handle;
 	storage->is_module_handle = TRUE;
-	storage->has_entry_point = has_entry_point;
+	storage->has_entry_point = !!has_entry_point;
 
 	storage->key = key;
 
@@ -1981,7 +1981,7 @@ mono_image_fixup_vtable (MonoImage *image)
 			}
 		else if (slot_type & VTFIXUP_TYPE_64BIT)
 			while (slot_count--) {
-				*((guint64*) slot) = (guint64) mono_marshal_get_vtfixup_ftnptr (image, *((guint64*) slot), slot_type);
+				*((guint64*) slot) = (guint64) mono_marshal_get_vtfixup_ftnptr (image, GUINT64_TO_UINT32 (*((guint64*) slot)), slot_type);
 				slot = ((guint32*) slot) + 1;
 			}
 		else

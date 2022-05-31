@@ -3,6 +3,8 @@
 
 #include "createdump.h"
 
+int g_readProcessMemoryResult = KERN_SUCCESS;
+
 bool
 CrashInfo::Initialize()
 {
@@ -12,7 +14,10 @@ CrashInfo::Initialize()
     kern_return_t result = ::task_for_pid(mach_task_self(), m_pid, &m_task);
     if (result != KERN_SUCCESS)
     {
-        printf_error("task_for_pid(%d) FAILED %x %s\n", m_pid, result, mach_error_string(result));
+        // Regardless of the reason (invalid process id or invalid signing/entitlements) it always returns KERN_FAILURE (5)
+        printf_error("Invalid process id: task_for_pid(%d) FAILED %s (%x)\n"
+            "This failure may be because createdump or the application is not properly signed and entitled.\n",
+            m_pid, mach_error_string(result), result);
         return false;
     }
     return true;
@@ -37,14 +42,14 @@ CrashInfo::EnumerateAndSuspendThreads()
     kern_return_t result = ::task_suspend(Task());
     if (result != KERN_SUCCESS)
     {
-        printf_error("task_suspend(%d) FAILED %x %s\n", m_pid, result, mach_error_string(result));
+        printf_error("Problem suspending process: task_suspend(%d) FAILED %s (%x)\n", m_pid, mach_error_string(result), result);
         return false;
     }
 
     result = ::task_threads(Task(), &threadList, &threadCount);
     if (result != KERN_SUCCESS)
     {
-        printf_error("task_threads(%d) FAILED %x %s\n", m_pid, result, mach_error_string(result));
+        printf_error("Problem enumerating threads: task_threads(%d) FAILED %s (%x)\n", m_pid, mach_error_string(result), result);
         return false;
     }
 
@@ -57,7 +62,7 @@ CrashInfo::EnumerateAndSuspendThreads()
         result = ::thread_info(threadList[i], THREAD_IDENTIFIER_INFO, (thread_info_t)&tident, &tident_count);
         if (result != KERN_SUCCESS)
         {
-            TRACE("%d thread_info(%x) FAILED %x %s\n", i, threadList[i], result, mach_error_string(result));
+            TRACE("%d thread_info(%x) FAILED %s (%x)\n", i, threadList[i], mach_error_string(result), result);
             tid = (int)threadList[i];
         }
         else
@@ -105,7 +110,7 @@ CrashInfo::EnumerateMemoryRegions()
         if (result != KERN_SUCCESS) {
             // Iteration can be ended on a KERN_INVALID_ADDRESS
             // Allow other kernel errors to continue too so we can get at least part of a dump
-            TRACE("mach_vm_region_recurse for address %016llx %08llx FAILED %x %s\n", address, size, result, mach_error_string(result));
+            TRACE("mach_vm_region_recurse for address %016llx %08llx FAILED %s (%x)\n", address, size, mach_error_string(result), result);
             break;
         }
         TRACE_VERBOSE("%016llx - %016llx (%06llx) %08llx %s %d %d %d %c%c%c %02x\n",
@@ -382,8 +387,9 @@ CrashInfo::ReadProcessMemory(void* address, void* buffer, size_t size, size_t* r
         kern_return_t result = ::vm_read_overwrite(Task(), addressAligned, PAGE_SIZE, (vm_address_t)data, &bytesRead);
         if (result != KERN_SUCCESS || bytesRead != PAGE_SIZE)
         {
-            TRACE_VERBOSE("ReadProcessMemory(%p %d): vm_read_overwrite failed bytesLeft %d bytesRead %d from %p: %x %s\n",
-                address, size, bytesLeft, bytesRead, (void*)addressAligned, result, mach_error_string(result));
+            g_readProcessMemoryResult = result;
+            TRACE_VERBOSE("ReadProcessMemory(%p %d): vm_read_overwrite failed bytesLeft %d bytesRead %d from %p: %s (%x)\n",
+                address, size, bytesLeft, bytesRead, (void*)addressAligned, mach_error_string(result), result);
             break;
         }
         ssize_t bytesToCopy = PAGE_SIZE - offset;

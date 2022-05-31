@@ -1470,7 +1470,7 @@ load_agent (MonoDomain *domain, char *desc)
 	MonoImageOpenStatus open_status;
 
 	if (col) {
-		agent = (char *)g_memdup (desc, col - desc + 1);
+		agent = (char *)g_memdup (desc, GPTRDIFF_TO_UINT (col - desc + 1));
 		agent [col - desc] = '\0';
 		args = col + 1;
 	} else {

@@ -470,6 +470,11 @@ ovr_tag_from_mono_vector_class (MonoClass *klass) {
 	case MONO_TYPE_I2: case MONO_TYPE_U2: ret |= INTRIN_int16; break;
 	case MONO_TYPE_I4: case MONO_TYPE_U4: ret |= INTRIN_int32; break;
 	case MONO_TYPE_I8: case MONO_TYPE_U8: ret |= INTRIN_int64; break;
+#if TARGET_SIZEOF_VOID_P == 8
+	case MONO_TYPE_I: case MONO_TYPE_U: ret |= INTRIN_int64; break;
+#else
+	case MONO_TYPE_I: case MONO_TYPE_U: ret |= INTRIN_int32; break;
+#endif
 	case MONO_TYPE_R4: ret |= INTRIN_float32; break;
 	case MONO_TYPE_R8: ret |= INTRIN_float64; break;
 	}
@@ -1738,6 +1743,11 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 				}
 			}
 			break;
+		case LLVMArgVtypeInSIMDReg: {
+			MonoClass *klass = mono_class_from_mono_type_internal (sig->params [i]);
+			param_types [pindex ++] = simd_class_to_llvm_type (ctx, klass);
+			break;
+		}
 		case LLVMArgVtypeByVal:
 			param_types [pindex] = type_to_llvm_arg_type (ctx, ainfo->type);
 			if (!ctx_ok (ctx))
@@ -3922,6 +3932,13 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 			emit_args_to_vtype (ctx, builder, ainfo->type, ctx->addresses [reg]->value, ainfo, args);
 			break;
 		}
+		case LLVMArgVtypeInSIMDReg: {
+			LLVMValueRef arg = LLVMGetParam (ctx->lmethod, pindex);
+
+			ctx->addresses [reg] = build_alloca_address (ctx, ainfo->type);
+			LLVMBuildStore (builder, arg, build_ptr_cast (builder, ctx->addresses [reg]->value,  pointer_type(LLVMTypeOf (arg))));
+			break;
+		}
 		case LLVMArgVtypeByVal: {
 			g_assert (ctx->param_etypes [pindex]);
 			ctx->addresses [reg] = create_address (ctx->module, LLVMGetParam (ctx->lmethod, pindex), ctx->param_etypes [pindex]);
@@ -4017,6 +4034,7 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 
 		switch (ainfo->storage) {
 		case LLVMArgVtypeInReg:
+		case LLVMArgVtypeInSIMDReg:
 		case LLVMArgVtypeByVal:
 		case LLVMArgAsIArgs:
 			// FIXME: Enabling this fails on windows
@@ -4569,6 +4587,10 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 
 			// FIXME: alignment
 			// FIXME: Get rid of the VMOVE
+			break;
+		}
+		case LLVMArgVtypeInSIMDReg: {
+			args [pindex] = LLVMBuildLoad2 (ctx->builder, addresses [reg]->type, addresses [reg]->value, "load_param");
 			break;
 		}
 		case LLVMArgVtypeByVal:
@@ -7778,7 +7800,7 @@ MONO_RESTORE_WARNING
 					g_assert_not_reached ();
 				}
 #if defined(TARGET_ARM64)
-				if ((ins->inst_c1 == MONO_TYPE_U8) || (ins->inst_c1 == MONO_TYPE_I8)) {
+				if ((ins->inst_c1 == MONO_TYPE_U8) || (ins->inst_c1 == MONO_TYPE_I8) || (ins->inst_c1 == MONO_TYPE_I) || (ins->inst_c1 == MONO_TYPE_U)) {
 					LLVMValueRef cmp = LLVMBuildICmp (builder, op, l, r, "");
 					result = LLVMBuildSelect (builder, cmp, l, r, "");
 				} else {
@@ -12427,6 +12449,7 @@ mono_llvm_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		case LLVMArgVtypeByVal:
 		case LLVMArgVtypeByRef:
 		case LLVMArgVtypeInReg:
+		case LLVMArgVtypeInSIMDReg:
 		case LLVMArgVtypeAddr:
 		case LLVMArgVtypeAsScalar:
 		case LLVMArgAsIArgs:

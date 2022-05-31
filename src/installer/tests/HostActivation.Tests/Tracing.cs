@@ -44,9 +44,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             var appDll = fixture.TestProject.AppDll;
 
             dotnet.Exec(appDll)
-                .EnvironmentVariable("COREHOST_TRACE", "1")
-                .CaptureStdOut()
-                .CaptureStdErr()
+                .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
@@ -62,10 +60,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             var appDll = fixture.TestProject.AppDll;
 
             dotnet.Exec(appDll)
-                .EnvironmentVariable("COREHOST_TRACE", "1")
-                .EnvironmentVariable("COREHOST_TRACE_VERBOSITY", "4")
-                .CaptureStdOut()
-                .CaptureStdErr()
+                .EnableTracingAndCaptureOutputs()
+                .EnvironmentVariable(Constants.HostTracing.VerbosityEnvironmentVariable, "4")
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
@@ -81,10 +77,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             var appDll = fixture.TestProject.AppDll;
 
             dotnet.Exec(appDll)
-                .EnvironmentVariable("COREHOST_TRACE", "1")
-                .EnvironmentVariable("COREHOST_TRACE_VERBOSITY", "3")
-                .CaptureStdOut()
-                .CaptureStdErr()
+                .EnableTracingAndCaptureOutputs()
+                .EnvironmentVariable(Constants.HostTracing.VerbosityEnvironmentVariable, "3")
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
@@ -100,10 +94,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             var appDll = fixture.TestProject.AppDll;
 
             dotnet.Exec(appDll)
-                .EnvironmentVariable("COREHOST_TRACE", "1")
-                .EnvironmentVariable("COREHOST_TRACE_VERBOSITY", "2")
-                .CaptureStdOut()
-                .CaptureStdErr()
+                .EnableTracingAndCaptureOutputs()
+                .EnvironmentVariable(Constants.HostTracing.VerbosityEnvironmentVariable, "2")
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
@@ -118,9 +110,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             var dotnet = fixture.BuiltDotnet;
             var appDll = fixture.TestProject.AppDll;
 
+            string traceFilePath;
             dotnet.Exec(appDll)
-                .EnvironmentVariable("COREHOST_TRACE", "1")
-                .EnvironmentVariable("COREHOST_TRACEFILE", "TracingOnToFileDefault.log")
+                .EnableHostTracingToFile(out traceFilePath)
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
@@ -128,8 +120,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .And.HaveStdOutContaining("Hello World")
                 .And.NotHaveStdErrContaining(ExpectedInfoMessage)
                 .And.NotHaveStdErrContaining(ExpectedVerboseMessage)
-                .And.FileExists("TracingOnToFileDefault.log")
-                .And.FileContains("TracingOnToFileDefault.log", ExpectedVerboseMessage);
+                .And.FileExists(traceFilePath)
+                .And.FileContains(traceFilePath, ExpectedVerboseMessage);
+
+            FileUtils.DeleteFileIfPossible(traceFilePath);
         }
 
         [Fact]
@@ -140,10 +134,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             var appDll = fixture.TestProject.AppDll;
 
             dotnet.Exec(appDll)
-                .EnvironmentVariable("COREHOST_TRACE", "1")
-                .EnvironmentVariable("COREHOST_TRACEFILE", "badpath/TracingOnToFileBadPathDefault.log")
-                .CaptureStdOut()
-                .CaptureStdErr()
+                .EnableTracingAndCaptureOutputs()
+                .EnvironmentVariable(Constants.HostTracing.TraceFileEnvironmentVariable, "badpath/TracingOnToFileBadPathDefault.log")
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")

@@ -220,7 +220,6 @@ set(wasm_sources
     mini-wasm.c
     tramp-wasm.c
     exceptions-wasm.c
-    wasm_m2n_invoke.g.h
     cpu-wasm.h)
 
 if(TARGET_AMD64)
@@ -265,7 +264,9 @@ set(interp_sources
     interp/interp-intrins.c
     interp/mintops.h
     interp/mintops.c
-    interp/transform.c)
+    interp/transform.c
+    interp/tiering.h
+    interp/tiering.c)
 set(interp_stub_sources
     interp-stubs.c)
 
