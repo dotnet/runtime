@@ -14554,7 +14554,6 @@ GenTree* Compiler::fgRootCommas(GenTree* tree)
             comma->ChangeType(tree->TypeGet());
             tree = comma;
             tree->gtFlags |= GTF_CAN_SPLIT_COMMA;
-            gtUpdateNodeSideEffects(tree);
         }
     }
 
