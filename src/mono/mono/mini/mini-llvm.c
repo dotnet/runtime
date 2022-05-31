@@ -3818,6 +3818,9 @@ emit_gc_pin (EmitContext *ctx, LLVMBuilderRef builder, int vreg)
 {
 	if (ctx->values [vreg] == LLVMConstNull (IntPtrType ()))
 		return;
+	MonoInst *var = get_vreg_to_inst (ctx->cfg, vreg);
+	if (var && var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT|MONO_INST_IS_DEAD))
+		return;
 	LLVMValueRef index0 = const_int32 (0);
 	LLVMValueRef index1 = const_int32 (ctx->gc_var_indexes [vreg] - 1);
 	LLVMValueRef indexes [] = { index0, index1 };
@@ -3858,8 +3861,11 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 	int ngc_vars = 0;
 	for (int i = 0; i < cfg->next_vreg; ++i) {
 		if (vreg_is_ref (cfg, i)) {
-			ctx->gc_var_indexes [i] = ngc_vars + 1;
-			ngc_vars ++;
+			MonoInst *var = get_vreg_to_inst (ctx->cfg, i);
+			if (!(var && var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT|MONO_INST_IS_DEAD))) {
+				ctx->gc_var_indexes [i] = ngc_vars + 1;
+				ngc_vars ++;
+			}
 		}
 	}
 
