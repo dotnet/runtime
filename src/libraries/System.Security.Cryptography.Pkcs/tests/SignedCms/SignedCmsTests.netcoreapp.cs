@@ -59,7 +59,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
         public static void SignCmsUsingExplicitRSAKey()
         {
             using (X509Certificate2 cert = Certificates.RSA2048SignatureOnly.TryGetCertificateWithPrivateKey())
@@ -100,7 +100,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
         [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
         public static void CounterSignCmsUsingExplicitRSAKeyForFirstSignerAndDSAForCounterSignature()
         {
@@ -126,7 +126,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
         public static void CounterSignCmsUsingExplicitECDsaKeyForFirstSignerAndRSAForCounterSignature()
         {
             using (X509Certificate2 cert = Certificates.ECDsaP256Win.TryGetCertificateWithPrivateKey())
@@ -239,7 +239,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
         public static void AddCertificate()
         {
             SignedCms cms = new SignedCms();
@@ -258,7 +258,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
         public static void AddCertificateWithPrivateKey()
         {
             SignedCms cms = new SignedCms();
@@ -323,7 +323,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
         public static void RemoveAllCertsAddBackSignerCert()
         {
             SignedCms cms = new SignedCms();
@@ -509,17 +509,24 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 }
 
                 signer.DigestAlgorithm = new Oid(digestOid, null);
-                cms.ComputeSignature(signer);
-                cmsBytes = cms.Encode();
+                if (!SignatureSupport.SupportsRsaSha1Signatures &&
+                    digestOid == Oids.Sha1)
+                {
+                    Assert.ThrowsAny<CryptographicException>(() => cms.ComputeSignature(signer));
+                }
+                else
+                {
+                    cms.ComputeSignature(signer);
+                    cmsBytes = cms.Encode();
+                    cms = new SignedCms();
+                    cms.Decode(cmsBytes);
+                    cms.CheckSignature(true); // Assert.NoThrow
+                    Assert.Single(cms.SignerInfos);
+
+                    SignerInfo signerInfo = cms.SignerInfos[0];
+                    Assert.Equal(Oids.RsaPss, signerInfo.SignatureAlgorithm.Value);
+                }
             }
-
-            cms = new SignedCms();
-            cms.Decode(cmsBytes);
-            cms.CheckSignature(true); // Assert.NoThrow
-            Assert.Single(cms.SignerInfos);
-
-            SignerInfo signerInfo = cms.SignerInfos[0];
-            Assert.Equal(Oids.RsaPss, signerInfo.SignatureAlgorithm.Value);
         }
 
         [Fact]
