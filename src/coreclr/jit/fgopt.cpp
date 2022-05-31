@@ -735,25 +735,26 @@ bool Compiler::fgRemoveDeadBlocks()
     do
     {
         changed = false;
-        fgRemoveUnreachableBlocks(isBlockRemovable);
-
-        // Check if we produced some more unreachable blocks and if yes, remove them as well.
-        // Note: We skip recalculating all the visited blocks and instead just remove them from
-        // the visited list because of two reasons - We won't have to recreate the visited list
-        // and it is rare to have a scenario.
-        //
-        // TODO-CQ: Ideally, we should have a PriorityQueue that sorts the blocks based on bbRefs
-        // and remove them as they become unreachable.
-        for (auto reachableBlock : visitedlist)
+        if (fgRemoveUnreachableBlocks(isBlockRemovable))
         {
-            if (reachableBlock->bbRefs == 0)
+            // If we produced more unreachable blocks, remove them as well.
+            // Note: We skip recalculating all the visited blocks and instead just remove them from
+            // the visited list because of two reasons - We won't have to recreate the visited list
+            // and it is rare scenario .
+            //
+            // TODO-CQ: Ideally, we should have a PriorityQueue that sorts the blocks based on bbRefs
+            // and remove them as they become unreachable.
+            for (auto reachableBlock : visitedlist)
             {
-                if (BlockSetOps::IsMember(this, visitedBlocks, reachableBlock->bbNum) &&
-                    ((reachableBlock->bbFlags & BBF_REMOVED) == 0))
+                if (reachableBlock->bbRefs == 0)
                 {
-                    changed = true;
-                    BlockSetOps::RemoveElemD(this, visitedBlocks, reachableBlock->bbNum);
-                    JITDUMP("Found a reachable block " FMT_BB " that now has zero refs\n", reachableBlock->bbNum);
+                    if (BlockSetOps::IsMember(this, visitedBlocks, reachableBlock->bbNum) &&
+                        ((reachableBlock->bbFlags & BBF_REMOVED) == 0))
+                    {
+                        changed = true;
+                        BlockSetOps::RemoveElemD(this, visitedBlocks, reachableBlock->bbNum);
+                        JITDUMP("Found a reachable block " FMT_BB " that now has zero refs\n", reachableBlock->bbNum);
+                    }
                 }
             }
         }
