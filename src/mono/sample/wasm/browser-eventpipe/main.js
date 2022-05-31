@@ -89,7 +89,6 @@ function getOnClickHandler(startWork, stopWork, getIterationsDone) {
         const blob = eventSession.getTraceBlob();
         const uri = URL.createObjectURL(blob);
         downloadData(uri, filename);
-        URL.revokeObjectURL(uri);
     }
 }
 
