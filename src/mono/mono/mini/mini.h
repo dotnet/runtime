@@ -632,6 +632,8 @@ typedef enum {
 	LLVMArgInFPReg,
 	/* Valuetype passed in 1-2 consecutive register */
 	LLVMArgVtypeInReg,
+	/* Pass vector types in SIMD registers */
+	LLVMArgVtypeInSIMDReg,
 	LLVMArgVtypeByVal,
 	LLVMArgVtypeRetAddr, /* On on cinfo->ret */
 	LLVMArgGSharedVt,

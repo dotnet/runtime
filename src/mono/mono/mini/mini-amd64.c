@@ -2171,6 +2171,14 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 				return linfo;
 			}
 
+			if ((t->type == MONO_TYPE_GENERICINST) && !cfg->full_aot && !sig->pinvoke) {
+				MonoClass *klass = mono_class_from_mono_type_internal (t);
+				if (m_class_is_simd_type (klass)) {
+					linfo->args [i].storage = LLVMArgVtypeInSIMDReg;
+					break;
+				}
+			}
+
 			linfo->args [i].storage = LLVMArgVtypeInReg;
 			for (j = 0; j < 2; ++j)
 				linfo->args [i].pair_storage [j] = arg_storage_to_llvm_arg_storage (cfg, ainfo->pair_storage [j]);
