@@ -14543,7 +14543,7 @@ GenTree* Compiler::fgRootCommas(GenTree* tree)
             comma->AsOp()->gtOp2 = tree;
             comma->ChangeType(tree->TypeGet());
             tree = comma;
-            tree->gtFlags |= GTF_CAN_HOIST_COMMA;
+            tree->gtFlags |= GTF_CAN_SPLIT_COMMA;
             gtUpdateNodeSideEffects(tree);
         }
     }
@@ -15308,8 +15308,8 @@ void Compiler::fgMorphStmts(BasicBlock* block)
                          (!call->IsTailCall() && (compCurBB->bbJumpKind == BBJ_RETURN)));
         }
 
-        // Hoist commas into statements.
-        while (morphedTree->OperIs(GT_COMMA) && (morphedTree->gtFlags & GTF_CAN_HOIST_COMMA) != 0)
+        // Split commas into statements.
+        while (morphedTree->OperIs(GT_COMMA) && (morphedTree->gtFlags & GTF_CAN_SPLIT_COMMA) != 0)
         {
             GenTree* comma = morphedTree;
 
