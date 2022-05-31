@@ -160,6 +160,7 @@ namespace ILCompiler.DependencyAnalysisFramework
                             if (!combinedNodesReported.Contains(combinedNode))
                             {
                                 logNodeVisitor.VisitCombinedNode(combinedNode);
+                                combinedNodesReported.Add(combinedNode);
                             }
                         }
                     }
