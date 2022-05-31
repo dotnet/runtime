@@ -1773,8 +1773,8 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Generics/GenericsTest/GenericsTest/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Int128/Int128Test/Int128Test/**">
-            <Issue>needs triage</Issue>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Int128/Int128Test/**">
+            <Issue>https://github.com/dotnet/runtime/issues/69531</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/SafeHandles/**">
             <Issue>https://github.com/dotnet/runtime/issues/48084</Issue>
@@ -3285,6 +3285,13 @@
 
 
     <ItemGroup Condition=" '$(TargetArchitecture)' == 'wasm' " >
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/tailcall/**">
+            <Issue>https://github.com/dotnet/runtime/issues/69517</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/IL/Tailcall/ExplicitTailCallNoSO/*">
+            <Issue>https://github.com/dotnet/runtime/issues/69517</Issue>
+        </ExcludeList>
+
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Intrinsics/TypeIntrinsics_r/**">
             <Issue>https://github.com/dotnet/runtime/issues/54867</Issue>
         </ExcludeList>

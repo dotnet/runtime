@@ -148,7 +148,6 @@
     <Compile Include="$(BclSourcesRoot)\System\IO\FileNotFoundException.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Math.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\MathF.CoreCLR.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\MissingMemberException.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\MulticastDelegate.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Object.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Assembly.CoreCLR.cs" />

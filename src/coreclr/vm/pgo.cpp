@@ -976,7 +976,7 @@ public:
                     if (importSection != 0xF)
                     {
                         COUNT_T countImportSections;
-                        PTR_CORCOMPILE_IMPORT_SECTION pImportSections = m_pReadyToRunInfo->GetImportSections(&countImportSections);
+                        PTR_READYTORUN_IMPORT_SECTION pImportSections = m_pReadyToRunInfo->GetImportSections(&countImportSections);
 
                         if (importSection >= countImportSections)
                         {
@@ -984,7 +984,7 @@ public:
                             return false;
                         }
 
-                        PTR_CORCOMPILE_IMPORT_SECTION pImportSection = &pImportSections[importSection];
+                        PTR_READYTORUN_IMPORT_SECTION pImportSection = &pImportSections[importSection];
                         COUNT_T cbData;
                         TADDR pData = m_pNativeImage->GetDirectoryData(&pImportSection->Section, &cbData);
                         uint32_t fixupIndex = (uint32_t)typeIndex;

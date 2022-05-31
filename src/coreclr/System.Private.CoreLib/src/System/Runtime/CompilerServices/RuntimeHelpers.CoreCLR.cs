@@ -516,6 +516,9 @@ namespace System.Runtime.CompilerServices
                 return (int)((BaseSize - (uint)(3 * sizeof(IntPtr))) / (uint)(2 * sizeof(int)));
             }
         }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public extern uint GetNumInstanceFieldBytes();
     }
 
     // Helper structs used for tail calls via helper.
