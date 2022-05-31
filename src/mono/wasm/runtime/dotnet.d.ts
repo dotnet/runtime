@@ -155,6 +155,7 @@ declare type MonoConfig = {
     runtime_options?: string[];
     aot_profiler_options?: AOTProfilerOptions;
     coverage_profiler_options?: CoverageProfilerOptions;
+    diagnostic_options?: DiagnosticOptions;
     ignore_pdb_load_errors?: boolean;
     wait_for_debugger?: number;
 };
@@ -208,6 +209,13 @@ declare type CoverageProfilerOptions = {
     write_at?: string;
     send_to?: string;
 };
+declare type DiagnosticOptions = {
+    sessions?: (EventPipeSessionOptions & EventPipeSessionAutoStopOptions)[];
+};
+interface EventPipeSessionAutoStopOptions {
+    stop_at?: string;
+    on_session_stopped?: (session: EventPipeSession) => void;
+}
 interface EventPipeSessionOptions {
     collectRundownEvents?: boolean;
     providers: string;
@@ -242,7 +250,6 @@ declare type DotnetModuleConfigImports = {
     };
     url?: any;
 };
-
 declare type EventPipeSessionID = bigint;
 interface EventPipeSession {
     get sessionID(): EventPipeSessionID;
@@ -250,6 +257,7 @@ interface EventPipeSession {
     stop(): void;
     getTraceBlob(): Blob;
 }
+
 declare const eventLevel: {
     readonly LogAlways: 0;
     readonly Critical: 1;

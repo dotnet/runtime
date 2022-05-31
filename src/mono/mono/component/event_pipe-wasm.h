@@ -43,6 +43,12 @@ mono_wasm_event_pipe_session_start_streaming (MonoWasmEventPipeSessionID session
 EMSCRIPTEN_KEEPALIVE gboolean
 mono_wasm_event_pipe_session_disable (MonoWasmEventPipeSessionID session_id);
 
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_event_pipe_session_set_startup_sessions (uint32_t count, const char **provider_configs);
+
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_event_pipe_session_get_startup_session_ids (uint32_t count, uint32_t *session_id_dest);
+
 G_END_DECLS
 
 #endif /* HOST_WASM */

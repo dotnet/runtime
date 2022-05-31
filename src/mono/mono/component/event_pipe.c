@@ -98,6 +98,9 @@ event_pipe_wait_for_session_signal (
 	EventPipeSessionID session_id,
 	uint32_t timeout);
 
+static void
+event_pipe_create_and_start_startup_sessions (void);
+
 static MonoComponentEventPipe fn_table = {
 	{ MONO_COMPONENT_ITF_VERSION, &event_pipe_available },
 	&ep_init,
@@ -228,6 +231,8 @@ event_pipe_add_rundown_execution_checkpoint_2 (
 	const ep_char8_t *name,
 	ep_timestamp_t timestamp)
 {
+	// If WASM installed any startup session provider configs, start those sessions and record the session IDs
+	event_pipe_create_and_start_startup_sessions();
 	return ep_add_rundown_execution_checkpoint (name, timestamp);
 }
 
@@ -401,6 +406,35 @@ mono_wasm_event_pipe_session_disable (MonoWasmEventPipeSessionID session_id)
 	ep_disable (wasm_to_ep_session_id (session_id));
 	MONO_EXIT_GC_UNSAFE;
 	return TRUE;
+}
+
+static uint32_t startup_session_provider_configs_count;
+static const char **startup_session_provider_configs;
+static uint32_t *startup_session_ids;
+
+void
+event_pipe_create_and_start_startup_sessions (void)
+{
+	uint32_t count = startup_session_provider_configs_count;
+	const char **configs = startup_session_provider_configs;
+	uint32_t *ids = g_new0 (
+}
+
+void
+mono_wasm_event_pipe_session_set_startup_sessions (uint32_t count, const char **provider_configs)
+{
+	g_assert (count == 0 || provider_configs != NULL);
+	startup_session_provider_configs_counts = count;
+	startup_session_provider_configs = provider_configs;
+}
+
+void
+mono_wasm_event_pipe_session_get_startup_session_ids (uint32_t count, uint32_t *session_id_dest)
+{
+	g_assert (session_id_dest);
+	for (uint32_t i = 0; i < count; ++i) {
+		session_id_dest [i] = NULL; /* FIXME: create the sessions and install them */
+	}
 }
 
 #endif /* HOST_WASM */

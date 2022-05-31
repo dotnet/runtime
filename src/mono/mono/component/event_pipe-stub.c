@@ -552,4 +552,15 @@ mono_wasm_event_pipe_session_disable (MonoWasmEventPipeSessionID session_id)
 	g_assert_not_reached ();
 }
 
+void
+mono_wasm_event_pipe_session_set_startup_sessions (uint32_t count, const char **provider_configs)
+{
+}
+
+void
+mono_wasm_event_pipe_session_get_startup_session_ids (uint32_t count, uint32_t *session_id_dest)
+{
+}
+
+
 #endif /* HOST_WASM */
