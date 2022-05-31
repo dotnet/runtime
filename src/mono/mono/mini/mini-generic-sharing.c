@@ -3161,12 +3161,11 @@ mono_class_fill_runtime_generic_context (MonoVTable *class_vtable, guint32 slot,
 {
 	MonoRuntimeGenericContext *rgctx, *new_rgctx;
 	gpointer info;
-	MonoJitMemoryManager *jit_mm = jit_mm_for_class (class_vtable->klass);
-
-	error_init (error);
 
 	rgctx = class_vtable->runtime_generic_context;
 	if (G_UNLIKELY (!rgctx)) {
+		MonoJitMemoryManager *jit_mm = jit_mm_for_class (class_vtable->klass);
+
 		new_rgctx = alloc_rgctx_array (jit_mm->mem_manager, 0, FALSE);
 		/* Make sure that this array is zeroed if other threads access it */
 		mono_memory_write_barrier ();
