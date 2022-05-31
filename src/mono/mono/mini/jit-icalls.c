@@ -1605,6 +1605,14 @@ mono_ckfinite (double d)
 }
 
 void
+mono_throw_ambiguous_implementation (void)
+{
+	ERROR_DECL (error);
+	mono_error_set_ambiguous_implementation (error, "Ambiguous implementation found");
+	mono_error_set_pending_exception (error);
+}
+
+void
 mono_throw_method_access (MonoMethod *caller, MonoMethod *callee)
 {
 	char *caller_name = mono_method_get_reflection_name (caller);

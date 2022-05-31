@@ -1227,40 +1227,15 @@ interp_generate_mae_throw (TransformData *td, MonoMethod *method, MonoMethod *ta
 }
 
 static void
-interp_generate_bie_throw (TransformData *td)
+interp_generate_void_throw (TransformData *td, MonoJitICallId icall_id)
 {
-	MonoJitICallInfo *info = &mono_get_jit_icall_info ()->mono_throw_bad_image;
+	MonoJitICallInfo *info = mono_find_jit_icall_info (icall_id);
 
 	interp_add_ins (td, MINT_ICALL_V_V);
 	interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
 	td->last_ins->data [0] = get_data_item_index (td, (gpointer)info->func);
 	td->last_ins->info.call_args = NULL;
 	td->last_ins->flags |= INTERP_INST_FLAG_CALL;
-}
-
-static void
-interp_generate_not_supported_throw (TransformData *td)
-{
-	MonoJitICallInfo *info = &mono_get_jit_icall_info ()->mono_throw_not_supported;
-
-	interp_add_ins (td, MINT_ICALL_V_V);
-	interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
-	td->last_ins->data [0] = get_data_item_index (td, (gpointer)info->func);
-	td->last_ins->info.call_args = NULL;
-	td->last_ins->flags |= INTERP_INST_FLAG_CALL;
-}
-
-static void
-interp_generate_platform_not_supported_throw (TransformData *td)
-{
-	MonoJitICallInfo *info = &mono_get_jit_icall_info ()->mono_throw_platform_not_supported;
-
-	interp_add_ins (td, MINT_ICALL_V_V);
-	// Allocate a dummy local to serve as dreg for this instruction
-	push_simple_type (td, STACK_TYPE_I4);
-	td->sp--;
-	interp_ins_set_dreg (td->last_ins, td->sp [0].local);
-	td->last_ins->data [0] = get_data_item_index (td, (gpointer)info->func);
 }
 
 static void
@@ -2436,7 +2411,7 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 	} else if (in_corlib &&
 		(!strncmp ("System.Runtime.Intrinsics.Arm", klass_name_space, 29) ||
 		!strncmp ("System.Runtime.Intrinsics.X86", klass_name_space, 29))) {
-		interp_generate_platform_not_supported_throw (td);
+		interp_generate_void_throw (td, MONO_JIT_ICALL_mono_throw_platform_not_supported);
 	}
 
 	return FALSE;
@@ -3080,6 +3055,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 #if DEBUG_INTERP
 		g_print ("CONSTRAINED.CALLVIRT: %s::%s.  %s (%p) ->\n", target_method->klass->name, target_method->name, mono_signature_full_name (target_method->signature), target_method);
 #endif
+		MonoMethod *virt_method = target_method;
 		target_method = mono_get_method_constrained_with_method (image, target_method, constrained_class, generic_context, error);
 #if DEBUG_INTERP
 		g_print ("                    : %s::%s.  %s (%p)\n", target_method->klass->name, target_method->name, mono_signature_full_name (target_method->signature), target_method);
@@ -3091,6 +3067,8 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		}
 
 		return_val_if_nok (error, FALSE);
+		if (mono_class_has_dim_conflicts (constrained_class) && mono_class_is_method_ambiguous (constrained_class, virt_method))
+			interp_generate_void_throw (td, MONO_JIT_ICALL_mono_throw_ambiguous_implementation);
 		mono_class_setup_vtable (target_method->klass);
 
 		// Follow the rules for constrained calls from ECMA spec
@@ -3123,7 +3101,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 
 	if (!is_virtual && target_method && (target_method->flags & METHOD_ATTRIBUTE_ABSTRACT) && !m_method_is_static (target_method)) {
 		if (!mono_class_is_interface (method->klass))
-			interp_generate_bie_throw (td);
+			interp_generate_void_throw (td, MONO_JIT_ICALL_mono_throw_bad_image);
 		else
 			is_virtual = TRUE;
 	}
@@ -7126,8 +7104,11 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					m = mono_marshal_get_synchronized_wrapper (m);
 
 				if (constrained_class) {
+					MonoMethod *virt_method = m;
 					m = mono_get_method_constrained_with_method (image, m, constrained_class, generic_context, error);
 					goto_if_nok (error, exit);
+					if (mono_class_has_dim_conflicts (constrained_class) && mono_class_is_method_ambiguous (constrained_class, virt_method))
+						interp_generate_void_throw (td, MONO_JIT_ICALL_mono_throw_ambiguous_implementation);
 					constrained_class = NULL;
 				}
 
@@ -7136,7 +7117,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 						mono_method_has_unmanaged_callers_only_attribute (m))) {
 
 					if (m->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
-						interp_generate_not_supported_throw (td);
+						interp_generate_void_throw (td, MONO_JIT_ICALL_mono_throw_not_supported);
 						interp_add_ins (td, MINT_LDNULL);
 						push_simple_type (td, STACK_TYPE_MP);
 						interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
