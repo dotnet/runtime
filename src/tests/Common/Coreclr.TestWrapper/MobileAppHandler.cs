@@ -133,7 +133,6 @@ namespace CoreclrTestLib
                             if (retriableCodes.Contains(exitCode))
                             {
                                 CreateRetryFile($"{testBinaryBase}/.retry", exitCode, category);
-                                return exitCode;
                             }
 
                             Task.WaitAll(copyOutput, copyError);

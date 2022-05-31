@@ -291,6 +291,12 @@ namespace CoreclrTestLib
 
             int exitCode = -100;
 
+            if (File.Exists($"{testBinaryBase}/.retry"))
+            {
+                // We have requested a work item retry because of an infra issue - no point executing further tests
+                return exitCode;
+            }
+
             // If a timeout was given to us by an environment variable, use it instead of the default
             // timeout.
             string environmentVar = Environment.GetEnvironmentVariable(TIMEOUT_ENVIRONMENT_VAR);
@@ -335,6 +341,22 @@ namespace CoreclrTestLib
                 {
                     // Process completed. Check process.ExitCode here.
                     exitCode = process.ExitCode;
+
+                    // See https://github.com/dotnet/xharness/blob/main/src/Microsoft.DotNet.XHarness.Common/CLI/ExitCode.cs
+                    // 78 - PACKAGE_INSTALLATION_FAILURE
+                    // 81 - DEVICE_NOT_FOUND
+                    // 85 - ADB_DEVICE_ENUMERATION_FAILURE
+                    // 86 - PACKAGE_INSTALLATION_TIMEOUT
+                    // 88 - SIMULATOR_FAILURE
+                    // 89 - DEVICE_FAILURE
+                    // 90 - APP_LAUNCH_TIMEOUT
+                    // 91 - ADB_FAILURE
+                    var retriableCodes = new[] { 78, 81, 85, 86, 88, 89, 90, 91 };
+                    if (retriableCodes.Contains(exitCode))
+                    {
+                        CreateRetryFile($"{testBinaryBase}/.retry", exitCode, category);
+                    }
+
                     Task.WaitAll(copyOutput, copyError);
                 }
                 else
