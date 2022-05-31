@@ -106,7 +106,7 @@ namespace System.Collections.Generic
             if (!typeof(T).IsAssignableTo(typeof(IEquatable<T>)))
             {
                 // We used to use NullableComparer only for types implementing IEquatable<T>
-                info.SetType(typeof(ObjectEqualityComparer<T>));
+                info.SetType(typeof(ObjectEqualityComparer<T?>));
             }
         }
 

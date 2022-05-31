@@ -86,7 +86,7 @@ namespace System.Collections.Generic
             if (!typeof(T).IsAssignableTo(typeof(IComparable<T>)))
             {
                 // We used to use NullableComparer only for types implementing IComparable<T>
-                info.SetType(typeof(ObjectComparer<T>));
+                info.SetType(typeof(ObjectComparer<T?>));
             }
         }
 
