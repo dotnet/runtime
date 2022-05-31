@@ -14512,6 +14512,10 @@ GenTree* Compiler::fgRootCommas(GenTree* tree)
     switch (tree->OperGet())
     {
         case GT_RETURN:
+            if ((tree->gtFlags & GTF_RET_MERGED) != 0)
+            {
+                return tree;
+            }
             break;
 
         default:
@@ -15317,17 +15321,6 @@ void Compiler::fgMorphStmts(BasicBlock* block)
                          (!call->IsTailCall() && (compCurBB->bbJumpKind == BBJ_RETURN)));
         }
 
-        // Split commas into statements.
-        while (morphedTree->OperIs(GT_COMMA) && (morphedTree->gtFlags & GTF_CAN_SPLIT_COMMA) != 0)
-        {
-            GenTree* comma = morphedTree;
-
-            Statement* newStmt = gtNewStmt(comma->gtGetOp1());
-            fgInsertStmtBefore(block, stmt, newStmt);
-            morphedTree = comma->gtGetOp2();
-            DEBUG_DESTROY_NODE(comma);
-        }
-
 #ifdef DEBUG
         if (compStressCompile(STRESS_CLONE_EXPR, 30))
         {
@@ -15370,6 +15363,17 @@ void Compiler::fgMorphStmts(BasicBlock* block)
             noway_assert((morphedTree->gtFlags & GTF_COLON_COND) == 0);
 
             fgRemoveRestOfBlock = true;
+        }
+
+        // Split commas into statements.
+        while (morphedTree->OperIs(GT_COMMA) && (morphedTree->gtFlags & GTF_CAN_SPLIT_COMMA) != 0)
+        {
+            GenTree* comma = morphedTree;
+
+            Statement* newStmt = gtNewStmt(comma->gtGetOp1());
+            fgInsertStmtBefore(block, stmt, newStmt);
+            morphedTree = comma->gtGetOp2();
+            DEBUG_DESTROY_NODE(comma);
         }
 
         stmt->SetRootNode(morphedTree);
