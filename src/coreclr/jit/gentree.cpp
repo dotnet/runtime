@@ -7029,7 +7029,6 @@ GenTree* Compiler::gtNewZeroConNode(var_types type, CorInfoType simdBaseJitType)
     GenTreeVecCon* vecCon = gtNewVconNode(type, simdBaseJitType);
     vecCon->gtSimd32Val   = {};
     return vecCon;
-    ;
 }
 
 GenTree* Compiler::gtNewOneConNode(var_types type)
