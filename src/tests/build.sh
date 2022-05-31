@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-set -x
-
 build_Tests()
 {
     echo "${__MsgPrefix}Building Tests..."
