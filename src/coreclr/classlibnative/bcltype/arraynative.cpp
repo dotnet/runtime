@@ -1081,9 +1081,6 @@ FCIMPL2_IV(void, ArrayNative::InitializeArray, ArrayBase* pArrayRef, FCALLRuntim
     if (!pField->IsRVA())
         COMPlusThrow(kArgumentException);
 
-    // Report the RVA field to the logger.
-    g_IBCLogger.LogRVADataAccess(pField);
-
     // Note that we do not check that the field is actually in the PE file that is initializing
     // the array. Basically the data being published is can be accessed by anyone with the proper
     // permissions (C# marks these as assembly visibility, and thus are protected from outside
@@ -1160,9 +1157,6 @@ FCIMPL3_VVI(void*, ArrayNative::GetSpanDataFrom, FCALLRuntimeFieldHandle structF
 
     DWORD totalSize = pField->LoadSize();
     DWORD targetTypeSize = targetTypeHandle.GetSize();
-
-    // Report the RVA field to the logger.
-    g_IBCLogger.LogRVADataAccess(pField);
 
     data = pField->GetStaticAddressHandle(NULL);
     _ASSERTE(data != NULL);

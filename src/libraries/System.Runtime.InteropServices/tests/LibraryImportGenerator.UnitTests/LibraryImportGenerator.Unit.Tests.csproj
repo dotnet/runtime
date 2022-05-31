@@ -2,8 +2,6 @@
 
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <IsPackable>false</IsPackable>
-    <LangVersion>Preview</LangVersion>
     <Nullable>enable</Nullable>
     <TestRunRequiresLiveRefPack>true</TestRunRequiresLiveRefPack>
   </PropertyGroup>

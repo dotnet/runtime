@@ -51,8 +51,8 @@ namespace System.Xml.Schema
             if (depth == this.curDepth - 1)
             {
                 // really need to move the current node pointer to parent
-                // what i did here is for seperating the case of IsDss or only IsChild
-                // bcoz in the first case i need to expect "a" from random depth
+                // what i did here is for separating the case of IsDss or only IsChild
+                // because in the first case i need to expect "a" from random depth
                 // -1 means it doesn't expect some specific depth (referecing the dealing to -1 in movetochild method
                 // while in the second case i can't change the root depth which is 1.
                 if ((this.curNode.Input == parent.RootNode) && (parent.IsDss))

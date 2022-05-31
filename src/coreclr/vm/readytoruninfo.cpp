@@ -464,7 +464,7 @@ static bool AcquireImage(Module * pModule, PEImageLayout * pLayout, READYTORUN_H
     for (READYTORUN_IMPORT_SECTION * pCurSection = pImportSections; pCurSection < pImportSectionsEnd; pCurSection++)
     {
         // The import for the module pointer is always in an eager fixup section, so skip delayed fixup sections.
-        if ((pCurSection->Flags & READYTORUN_IMPORT_SECTION_FLAGS_EAGER) == 0)
+        if ((pCurSection->Flags & ReadyToRunImportSectionFlags::Eager) != ReadyToRunImportSectionFlags::Eager)
             continue;
 
         // Found an eager fixup section. Check the signature of each fixup in this section.
@@ -649,8 +649,8 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
     IMAGE_DATA_DIRECTORY * pImportSectionsDir = m_pComposite->FindSection(ReadyToRunSectionType::ImportSections);
     if (pImportSectionsDir != NULL)
     {
-        m_pImportSections = (CORCOMPILE_IMPORT_SECTION*)m_pComposite->GetLayout()->GetDirectoryData(pImportSectionsDir);
-        m_nImportSections = pImportSectionsDir->Size / sizeof(CORCOMPILE_IMPORT_SECTION);
+        m_pImportSections = (READYTORUN_IMPORT_SECTION*)m_pComposite->GetLayout()->GetDirectoryData(pImportSectionsDir);
+        m_nImportSections = pImportSectionsDir->Size / sizeof(READYTORUN_IMPORT_SECTION);
     }
     else
     {
@@ -727,19 +727,6 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
             const BYTE* pInlineTrackingMapData = (const BYTE*)m_pComposite->GetImage()->GetDirectoryData(pInlineTrackingInfoDir);
             PersistentInlineTrackingMapR2R::TryLoad(pModule, pInlineTrackingMapData, pInlineTrackingInfoDir->Size,
                                                     pamTracker, &m_pPersistentInlineTrackingMap);
-        }
-    }
-
-    // For format version 2.2 and later, there is an optional profile-data section
-    if (IsImageVersionAtLeast(2, 2))
-    {
-        IMAGE_DATA_DIRECTORY * pProfileDataInfoDir = m_pComposite->FindSection(ReadyToRunSectionType::ProfileDataInfo);
-        if (pProfileDataInfoDir != NULL)
-        {
-            CORCOMPILE_METHOD_PROFILE_LIST * pMethodProfileList;
-            pMethodProfileList = (CORCOMPILE_METHOD_PROFILE_LIST *)m_pComposite->GetImage()->GetDirectoryData(pProfileDataInfoDir);
-
-            pModule->SetMethodProfileList(pMethodProfileList);
         }
     }
 

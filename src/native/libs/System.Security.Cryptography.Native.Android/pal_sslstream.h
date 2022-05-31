@@ -60,7 +60,7 @@ Initialize an SSL context
   - isServer      : true if the context should be created in server mode
   - streamReader  : callback for reading data from the connection
   - streamWriter  : callback for writing data to the connection
-  - appBufferSize : initial buffer size for applicaiton data
+  - appBufferSize : initial buffer size for application data
 
 Returns 1 on success, 0 otherwise
 */

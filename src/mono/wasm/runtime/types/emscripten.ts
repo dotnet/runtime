@@ -52,6 +52,10 @@ export declare interface EmscriptenModule {
     FS_readFile(filename: string, opts: any): any;
     removeRunDependency(id: string): void;
     addRunDependency(id: string): void;
+    stackSave(): VoidPtr;
+    stackRestore(stack: VoidPtr): void;
+    stackAlloc(size: number): VoidPtr;
+
 
     ready: Promise<unknown>;
     preInit?: (() => any)[];

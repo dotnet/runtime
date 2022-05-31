@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
@@ -52,11 +52,12 @@ namespace System.Net.Security
             _exception = s_disposedSentinel;
             CloseContext();
 
-            // Ensure a Read operation is not in progress,
-            // block potential reads since SslStream is disposing.
-            // This leaves the _nestedRead = 1, but that's ok, since
-            // subsequent Reads first check if the context is still available.
-            if (Interlocked.CompareExchange(ref _nestedRead, 1, 0) == 0)
+            // Ensure a Read or Auth operation is not in progress,
+            // block potential future read and auth operations since SslStream is disposing.
+            // This leaves the _nestedRead = 1 and _nestedAuth = 1, but that's ok, since
+            // subsequent operations check the _exception sentinel first
+            if (Interlocked.Exchange(ref _nestedRead, 1) == 0 &&
+                Interlocked.Exchange(ref _nestedAuth, 1) == 0)
             {
                 _buffer.ReturnBuffer();
             }
@@ -121,7 +122,7 @@ namespace System.Net.Security
 
             try
             {
-                Task task = isAsync?
+                Task task = isAsync ?
                     ForceAuthenticationAsync<AsyncReadWriteAdapter>(IsServer, null, cancellationToken) :
                     ForceAuthenticationAsync<SyncReadWriteAdapter>(IsServer, null, cancellationToken);
 
@@ -377,7 +378,7 @@ namespace System.Net.Security
                 case TlsContentType.Handshake:
                     if (!_isRenego && _buffer.EncryptedReadOnlySpan[TlsFrameHelper.HeaderSize] == (byte)TlsHandshakeType.ClientHello &&
                         _sslAuthenticationOptions!.IsServer) // guard against malicious endpoints. We should not see ClientHello on client.
-                     {
+                    {
                         TlsFrameHelper.ProcessingOptions options = NetEventSource.Log.IsEnabled() ?
                                                                     TlsFrameHelper.ProcessingOptions.All :
                                                                     TlsFrameHelper.ProcessingOptions.ServerName;
@@ -674,7 +675,7 @@ namespace System.Net.Security
             return _buffer.EncryptedLength >= frameSize;
         }
 
-
+        [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))]
         private async ValueTask<int> EnsureFullTlsFrameAsync<TIOAdapter>(CancellationToken cancellationToken)
             where TIOAdapter : IReadWriteAdapter
         {
@@ -759,6 +760,7 @@ namespace System.Net.Security
             return status;
         }
 
+        [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))]
         private async ValueTask<int> ReadAsyncInternal<TIOAdapter>(Memory<byte> buffer, CancellationToken cancellationToken)
             where TIOAdapter : IReadWriteAdapter
         {

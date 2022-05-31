@@ -28,8 +28,6 @@ Abstract:
     If you want to add a PAL_ wrapper function to a native function in
     here, you also need to edit palinternal.h and win32pal.h.
 
-
-
 --*/
 
 #ifndef __PAL_H__
@@ -453,7 +451,9 @@ PALAPI
 PAL_GenerateCoreDump(
     IN LPCSTR dumpName,
     IN INT dumpType,
-    IN ULONG32 flags);
+    IN ULONG32 flags,
+    LPSTR errorMessageBuffer,
+    INT cbErrorMessageBuffer);
 
 typedef VOID (*PPAL_STARTUP_CALLBACK)(
     char *modulePath,
@@ -733,19 +733,6 @@ MoveFileExW(
 #else
 #define MoveFileEx MoveFileExA
 #endif
-
-typedef struct _BY_HANDLE_FILE_INFORMATION {
-    DWORD dwFileAttributes;
-    FILETIME ftCreationTime;
-    FILETIME ftLastAccessTime;
-    FILETIME ftLastWriteTime;
-    DWORD dwVolumeSerialNumber;
-    DWORD nFileSizeHigh;
-    DWORD nFileSizeLow;
-    DWORD nNumberOfLinks;
-    DWORD nFileIndexHigh;
-    DWORD nFileIndexLow;
-} BY_HANDLE_FILE_INFORMATION, *PBY_HANDLE_FILE_INFORMATION, *LPBY_HANDLE_FILE_INFORMATION;
 
 typedef struct _WIN32_FIND_DATAA {
     DWORD dwFileAttributes;
@@ -1596,8 +1583,6 @@ typedef struct _XMM_SAVE_AREA32 {
     BYTE  Reserved4[96];
 } XMM_SAVE_AREA32, *PXMM_SAVE_AREA32;
 
-#define LEGACY_SAVE_AREA_LENGTH sizeof(XMM_SAVE_AREA32)
-
 //
 // Context Frame
 //
@@ -1611,7 +1596,7 @@ typedef struct _XMM_SAVE_AREA32 {
 //
 // If the context record is used as an input parameter, then for each
 // portion of the context record controlled by a flag whose value is
-// set, it is assumed that that portion of the context record contains
+// set, it is assumed that such portion of the context record contains
 // valid context. If the context record is being used to modify a threads
 // context, then only that portion of the threads context is modified.
 //
@@ -1857,7 +1842,7 @@ typedef struct _NEON128 {
 //
 // If the context record is used as an input parameter, then for each
 // portion of the context record controlled by a flag whose value is
-// set, it is assumed that that portion of the context record contains
+// set, it is assumed that such portion of the context record contains
 // valid context. If the context record is being used to modify a threads
 // context, then only that portion of the threads context is modified.
 //
@@ -2039,7 +2024,7 @@ typedef struct _IMAGE_ARM_RUNTIME_FUNCTION_ENTRY {
 //
 // If the context record is used as an input parameter, then for each
 // portion of the context record controlled by a flag whose value is
-// set, it is assumed that that portion of the context record contains
+// set, it is assumed that such portion of the context record contains
 // valid context. If the context record is being used to modify a threads
 // context, then only that portion of the threads context is modified.
 //
@@ -2216,7 +2201,7 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 //
 // If the context record is used as an input parameter, then for each
 // portion of the context record controlled by a flag whose value is
-// set, it is assumed that that portion of the context record contains
+// set, it is assumed that such portion of the context record contains
 // valid context. If the context record is being used to modify a threads
 // context, then only that portion of the threads context is modified.
 //
@@ -2849,7 +2834,8 @@ PALAPI
 PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(
     IN LPCVOID lpBeginAddress,
     IN LPCVOID lpEndAddress,
-    IN SIZE_T dwSize);
+    IN SIZE_T dwSize,
+    IN BOOL storeAllocationInfo);
 
 PALIMPORT
 void
@@ -3452,7 +3438,6 @@ InterlockedDecrement(
     return result;
 }
 
-#define InterlockedDecrementAcquire InterlockedDecrement
 #define InterlockedDecrementRelease InterlockedDecrement
 
 EXTERN_C
@@ -3653,30 +3638,6 @@ InterlockedOr(
     LONG result = __sync_fetch_and_or(Destination, Value);
     PAL_ArmInterlockedOperationBarrier();
     return result;
-}
-
-EXTERN_C
-PALIMPORT
-inline
-UCHAR
-PALAPI
-InterlockedBitTestAndReset(
-    IN OUT LONG volatile *Base,
-    IN LONG Bit)
-{
-    return (InterlockedAnd(Base, ~(1 << Bit)) & (1 << Bit)) != 0;
-}
-
-EXTERN_C
-PALIMPORT
-inline
-UCHAR
-PALAPI
-InterlockedBitTestAndSet(
-    IN OUT LONG volatile *Base,
-    IN LONG Bit)
-{
-    return (InterlockedOr(Base, (1 << Bit)) & (1 << Bit)) != 0;
 }
 
 #if defined(HOST_64BIT)
@@ -4130,8 +4091,6 @@ PALIMPORT char * __cdecl strrchr(const char *, int);
 PALIMPORT char * __cdecl strpbrk(const char *, const char *);
 PALIMPORT char * __cdecl strstr(const char *, const char *);
 PALIMPORT char * __cdecl strtok(char *, const char *);
-PALIMPORT size_t __cdecl strspn(const char *, const char *);
-PALIMPORT size_t  __cdecl strcspn(const char *, const char *);
 PALIMPORT int __cdecl atoi(const char *);
 PALIMPORT ULONG __cdecl strtoul(const char *, char **, int);
 PALIMPORT ULONGLONG __cdecl strtoull(const char *, char **, int);
@@ -4143,8 +4102,6 @@ PALIMPORT int __cdecl isalpha(int);
 PALIMPORT int __cdecl isalnum(int);
 PALIMPORT int __cdecl isdigit(int);
 PALIMPORT int __cdecl isxdigit(int);
-PALIMPORT int __cdecl isupper(int);
-PALIMPORT int __cdecl islower(int);
 PALIMPORT int __cdecl tolower(int);
 PALIMPORT int __cdecl toupper(int);
 PALIMPORT int __cdecl iswalpha(wint_t);
@@ -4569,6 +4526,7 @@ private:
         ExceptionPointers.ContextRecord = ex.ExceptionPointers.ContextRecord;
         TargetFrameSp = ex.TargetFrameSp;
         RecordsOnStack = ex.RecordsOnStack;
+        IsExternal = ex.IsExternal;
         ManagedToNativeExceptionCallback = ex.ManagedToNativeExceptionCallback;
         ManagedToNativeExceptionCallbackContext = ex.ManagedToNativeExceptionCallbackContext;
 
@@ -4590,6 +4548,9 @@ public:
     // Target frame stack pointer set before the 2nd pass.
     SIZE_T TargetFrameSp;
     bool RecordsOnStack;
+    // The exception is a hardware exception coming from a native code out of
+    // the well known runtime helpers
+    bool IsExternal;
 
     void(*ManagedToNativeExceptionCallback)(void* context);
     void* ManagedToNativeExceptionCallbackContext;
@@ -4600,6 +4561,7 @@ public:
         ExceptionPointers.ContextRecord = pContextRecord;
         TargetFrameSp = NoTargetFrameSp;
         RecordsOnStack = onStack;
+        IsExternal = false;
         ManagedToNativeExceptionCallback = NULL;
         ManagedToNativeExceptionCallbackContext = NULL;
     }
@@ -4638,6 +4600,7 @@ public:
         ExceptionPointers.ContextRecord = NULL;
         TargetFrameSp = NoTargetFrameSp;
         RecordsOnStack = false;
+        IsExternal = false;
         ManagedToNativeExceptionCallback = NULL;
         ManagedToNativeExceptionCallbackContext = NULL;
     }
@@ -4944,6 +4907,7 @@ public:
     {                                   \
         try                             \
         {                               \
+            HardwareExceptionHolder     \
             tryBlock(__param);          \
         }                               \
         catch (...)                     \

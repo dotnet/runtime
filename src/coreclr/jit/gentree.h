@@ -527,9 +527,16 @@ enum GenTreeFlags : unsigned int
                                               //             alignment of 1 byte)
     GTF_IND_INVARIANT           = 0x01000000, // GT_IND   -- the target is invariant (a prejit indirection)
     GTF_IND_NONNULL             = 0x00400000, // GT_IND   -- the indirection never returns null (zero)
+#if defined(TARGET_XARCH)
+    GTF_IND_DONT_EXTEND         = 0x00200000, // GT_IND   -- the indirection does not need to extend for small types
+#endif // TARGET_XARCH
 
     GTF_IND_FLAGS = GTF_IND_VOLATILE | GTF_IND_NONFAULTING | GTF_IND_TLS_REF | GTF_IND_UNALIGNED | GTF_IND_INVARIANT |
-                    GTF_IND_NONNULL | GTF_IND_TGT_NOT_HEAP | GTF_IND_TGT_HEAP,
+                    GTF_IND_NONNULL | GTF_IND_TGT_NOT_HEAP | GTF_IND_TGT_HEAP
+#if defined(TARGET_XARCH)
+                     | GTF_IND_DONT_EXTEND 
+#endif // TARGET_XARCH
+                    ,
 
     GTF_ADDRMODE_NO_CSE         = 0x80000000, // GT_ADD/GT_MUL/GT_LSH -- Do not CSE this node only, forms complex
                                               //                         addressing mode
@@ -1762,9 +1769,6 @@ public:
 
     inline GenTree* gtCommaAssignVal();
 
-    // Tunnel through any GT_RET_EXPRs
-    GenTree* gtRetExprVal(BasicBlockFlags* pbbFlags = nullptr);
-
     // Return the child of this node if it is a GT_RELOAD or GT_COPY; otherwise simply return the node itself
     inline GenTree* gtSkipReloadOrCopy();
 
@@ -1912,23 +1916,13 @@ public:
     // is not the same size as the type of the GT_LCL_VAR.
     bool IsPartialLclFld(Compiler* comp);
 
-    // Returns "true" iff "this" defines a local variable.  Requires "comp" to be the
-    // current compilation.  If returns "true", sets "*pLclVarTree" to the
-    // tree for the local that is defined, and, if "pIsEntire" is non-null, sets "*pIsEntire" to
-    // true or false, depending on whether the assignment writes to the entirety of the local
-    // variable, or just a portion of it.
     bool DefinesLocal(Compiler*             comp,
                       GenTreeLclVarCommon** pLclVarTree,
                       bool*                 pIsEntire = nullptr,
                       ssize_t*              pOffset   = nullptr);
 
-    bool IsLocalAddrExpr(Compiler*             comp,
-                         GenTreeLclVarCommon** pLclVarTree,
-                         FieldSeqNode**        pFldSeq,
-                         ssize_t*              pOffset = nullptr);
+    bool DefinesLocalAddr(GenTreeLclVarCommon** pLclVarTree, ssize_t* pOffset = nullptr);
 
-    // Simpler variant of the above which just returns the local node if this is an expression that
-    // yields an address into a local
     const GenTreeLclVarCommon* IsLocalAddrExpr() const;
     GenTreeLclVarCommon*       IsLocalAddrExpr()
     {
@@ -1938,10 +1932,6 @@ public:
     // Determine if this tree represents the value of an entire implicit byref parameter,
     // and if so return the tree for the parameter.
     GenTreeLclVar* IsImplicitByrefParameterValue(Compiler* compiler);
-
-    // Determine if this is a LclVarCommon node and return some additional info about it in the
-    // two out parameters.
-    bool IsLocalExpr(Compiler* comp, GenTreeLclVarCommon** pLclVarTree, FieldSeqNode** pFldSeq);
 
     // Determine whether this is an assignment tree of the form X = X (op) Y,
     // where Y is an arbitrary tree, and X is a lclVar.
@@ -1953,14 +1943,6 @@ public:
     bool IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeqNode** pFldSeq, ssize_t* pOffset);
 
     bool IsArrayAddr(GenTreeArrAddr** pArrAddr);
-
-    // Assumes that "this" occurs in a context where it is being dereferenced as the LHS of an assignment-like
-    // statement (assignment, initblk, or copyblk).  The "width" should be the number of bytes copied by the
-    // operation.  Returns "true" if "this" is an address of (or within)
-    // a local variable; sets "*pLclVarTree" to that local variable instance; and, if "pIsEntire" is non-null,
-    // sets "*pIsEntire" to true if this assignment writes the full width of the local.
-    bool DefinesLocalAddr(
-        Compiler* comp, unsigned width, GenTreeLclVarCommon** pLclVarTree, bool* pIsEntire, ssize_t* pOffset = nullptr);
 
     // These are only used for dumping.
     // The GetRegNum() is only valid in LIR, but the dumping methods are not easily
@@ -2112,25 +2094,22 @@ public:
 
     bool IsIconHandle() const
     {
-        assert(gtOper == GT_CNS_INT);
-        return (gtFlags & GTF_ICON_HDL_MASK) ? true : false;
+        return (gtOper == GT_CNS_INT) && ((gtFlags & GTF_ICON_HDL_MASK) != 0);
     }
 
     bool IsIconHandle(GenTreeFlags handleType) const
     {
-        assert(gtOper == GT_CNS_INT);
-        assert((handleType & GTF_ICON_HDL_MASK) != 0); // check that handleType is one of the valid GTF_ICON_* values
+        // check that handleType is one of the valid GTF_ICON_* values
+        assert((handleType & GTF_ICON_HDL_MASK) != 0);
         assert((handleType & ~GTF_ICON_HDL_MASK) == 0);
-        return (gtFlags & GTF_ICON_HDL_MASK) == handleType;
+        return (gtOper == GT_CNS_INT) && ((gtFlags & GTF_ICON_HDL_MASK) == handleType);
     }
 
-    // Return just the part of the flags corresponding to the GTF_ICON_*_HDL flag. For example,
-    // GTF_ICON_SCOPE_HDL. The tree node must be a const int, but it might not be a handle, in which
-    // case we'll return zero.
+    // Return just the part of the flags corresponding to the GTF_ICON_*_HDL flag.
+    // For non-icon handle trees, returns GTF_EMPTY.
     GenTreeFlags GetIconHandleFlag() const
     {
-        assert(gtOper == GT_CNS_INT);
-        return (gtFlags & GTF_ICON_HDL_MASK);
+        return (gtOper == GT_CNS_INT) ? (gtFlags & GTF_ICON_HDL_MASK) : GTF_EMPTY;
     }
 
     // Mark this node as no longer being a handle; clear its GTF_ICON_*_HDL bits.
@@ -2138,12 +2117,6 @@ public:
     {
         assert(gtOper == GT_CNS_INT);
         gtFlags &= ~GTF_ICON_HDL_MASK;
-    }
-
-    // Return true if the two GT_CNS_INT trees have the same handle flag (GTF_ICON_*_HDL).
-    static bool SameIconHandleFlag(GenTree* t1, GenTree* t2)
-    {
-        return t1->GetIconHandleFlag() == t2->GetIconHandleFlag();
     }
 
     bool IsCall() const
@@ -2213,7 +2186,7 @@ public:
     //     });
     //
     // This function is generally more efficient that the operand iterator and should be preferred over that API for
-    // hot code, as it affords better opportunities for inlining and acheives shorter dynamic path lengths when
+    // hot code, as it affords better opportunities for inlining and achieves shorter dynamic path lengths when
     // deciding how operands need to be accessed.
     //
     // Note that this function does not respect `GTF_REVERSE_OPS`. This is always safe in LIR, but may be dangerous
@@ -3292,6 +3265,12 @@ public:
         SetLclNum(lclNum);
     }
 
+    GenTree*& Data()
+    {
+        assert(OperIsLocalStore());
+        return gtOp1;
+    }
+
     unsigned GetLclNum() const
     {
         return _gtLclNum;
@@ -3510,12 +3489,12 @@ public:
 struct GenTreeLclFld : public GenTreeLclVarCommon
 {
 private:
-    uint16_t      m_lclOffs;  // offset into the variable to access
-    FieldSeqNode* m_fieldSeq; // This LclFld node represents some sequences of accesses.
+    uint16_t     m_lclOffs; // offset into the variable to access
+    ClassLayout* m_layout;  // The struct layout for this local field.
 
 public:
-    GenTreeLclFld(genTreeOps oper, var_types type, unsigned lclNum, unsigned lclOffs)
-        : GenTreeLclVarCommon(oper, type, lclNum), m_lclOffs(static_cast<uint16_t>(lclOffs)), m_fieldSeq(nullptr)
+    GenTreeLclFld(genTreeOps oper, var_types type, unsigned lclNum, unsigned lclOffs, ClassLayout* layout = nullptr)
+        : GenTreeLclVarCommon(oper, type, lclNum), m_lclOffs(static_cast<uint16_t>(lclOffs)), m_layout(layout)
     {
         assert(lclOffs <= UINT16_MAX);
     }
@@ -3531,14 +3510,14 @@ public:
         m_lclOffs = static_cast<uint16_t>(lclOffs);
     }
 
-    FieldSeqNode* GetFieldSeq() const
+    ClassLayout* GetLayout() const
     {
-        return m_fieldSeq;
+        return m_layout;
     }
 
-    void SetFieldSeq(FieldSeqNode* fieldSeq)
+    void SetLayout(ClassLayout* layout)
     {
-        m_fieldSeq = fieldSeq;
+        m_layout = layout;
     }
 
     unsigned GetSize() const;
@@ -3576,7 +3555,7 @@ public:
 //     -> FP" cases. For all other unchecked casts, "IsUnsigned" is meaningless.
 //  4) For unchecked casts, signedness of the target type is only meaningful if
 //     the cast is to an FP or small type. In the latter case (and everywhere
-//     else in IR) it decided whether the value will be sign- or zero-extended.
+//     else in IR) it decides whether the value will be sign- or zero-extended.
 //
 // For additional context on "GT_CAST"'s semantics, see "IntegralRange::ForCast"
 // methods and "GenIntCastDesc"'s constructor.
@@ -3760,7 +3739,7 @@ enum GenTreeCallFlags : unsigned int
     GTF_CALL_M_EXP_RUNTIME_LOOKUP      = 0x02000000, // this call needs to be tranformed into CFG for the dynamic dictionary expansion feature.
     GTF_CALL_M_STRESS_TAILCALL         = 0x04000000, // the call is NOT "tail" prefixed but GTF_CALL_M_EXPLICIT_TAILCALL was added because of tail call stress mode
     GTF_CALL_M_EXPANDED_EARLY          = 0x08000000, // the Virtual Call target address is expanded and placed in gtControlExpr in Morph rather than in Lower
-    GTF_CALL_M_LATE_DEVIRT             = 0x10000000, // this call has late devirtualzation info
+    GTF_CALL_M_HAS_LATE_DEVIRT_INFO    = 0x10000000, // this call has late devirtualzation info
 };
 
 inline constexpr GenTreeCallFlags operator ~(GenTreeCallFlags a)
@@ -6178,6 +6157,16 @@ struct GenTreeIndexAddr : public GenTreeOp
     {
     }
 #endif
+
+    bool IsBoundsChecked() const
+    {
+        return (gtFlags & GTF_INX_RNGCHK) != 0;
+    }
+
+    bool IsNotNull() const
+    {
+        return IsBoundsChecked();
+    }
 };
 
 // GenTreeArrAddr - GT_ARR_ADDR, carries information about the array type from morph to VN.
@@ -6198,8 +6187,7 @@ public:
         , m_elemType(elemType)
         , m_firstElemOffset(firstElemOffset)
     {
-        // Temporarily disable this assert. Tracking: https://github.com/dotnet/runtime/issues/67600
-        // assert(addr->TypeIs(TYP_BYREF) || addr->IsIntegralConst(0));
+        assert(addr->TypeIs(TYP_BYREF));
         assert(((elemType == TYP_STRUCT) && (elemClassHandle != NO_CLASS_HANDLE)) ||
                (elemClassHandle == NO_CLASS_HANDLE));
 
@@ -6605,6 +6593,12 @@ struct GenTreeIndir : public GenTreeOp
         gtOp1 = addr;
     }
 
+    GenTree*& Data()
+    {
+        assert(OperIs(GT_STOREIND) || OperIsStoreBlk());
+        return gtOp2;
+    }
+
     // these methods provide an interface to the indirection node which
     bool     HasBase();
     bool     HasIndex();
@@ -6630,6 +6624,23 @@ struct GenTreeIndir : public GenTreeOp
     {
         return (gtFlags & GTF_IND_UNALIGNED) != 0;
     }
+
+#if defined(TARGET_XARCH)
+    void SetDontExtend()
+    {
+        gtFlags |= GTF_IND_DONT_EXTEND;
+    }
+
+    void ClearDontExtend()
+    {
+        gtFlags &= ~GTF_IND_DONT_EXTEND;
+    }
+
+    bool DontExtend() const
+    {
+        return (gtFlags & GTF_IND_DONT_EXTEND) != 0;
+    }
+#endif // TARGET_XARCH
 
 #if DEBUGGABLE_GENTREE
     // Used only for GenTree::GetVtableForOper()
@@ -8508,7 +8519,7 @@ inline GenTree* GenTree::gtGetOp2IfPresent() const
 inline GenTree* GenTree::gtEffectiveVal(bool commaOnly /* = false */)
 {
     GenTree* effectiveVal = this;
-    for (;;)
+    while (true)
     {
         if (effectiveVal->gtOper == GT_COMMA)
         {

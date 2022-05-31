@@ -9,8 +9,10 @@ namespace Microsoft.Interop
 {
     public sealed class MarshalAsMarshallingGeneratorFactory : IMarshallingGeneratorFactory
     {
-        private static readonly ByteBoolMarshaller s_byteBool = new();
-        private static readonly WinBoolMarshaller s_winBool = new();
+        private static readonly ByteBoolMarshaller s_byteBool = new(signed: false);
+        private static readonly ByteBoolMarshaller s_signed_byteBool = new(signed: true);
+        private static readonly WinBoolMarshaller s_winBool = new(signed: false);
+        private static readonly WinBoolMarshaller s_signed_winBool = new(signed: true);
         private static readonly VariantBoolMarshaller s_variantBool = new();
 
         private static readonly Utf16CharMarshaller s_utf16Char = new();
@@ -78,10 +80,14 @@ namespace Microsoft.Interop
                     {
                         NotSupportedDetails = SR.MarshallingBoolAsUndefinedNotSupported
                     };
-                case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.I1 or UnmanagedType.U1, _) }:
+                case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.U1, _) }:
                     return s_byteBool;
-                case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.I4 or UnmanagedType.U4 or UnmanagedType.Bool, _) }:
+                case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.I1, _) }:
+                    return s_signed_byteBool;
+                case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.U4, _) }:
                     return s_winBool;
+                case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.I4 or UnmanagedType.Bool, _) }:
+                    return s_signed_winBool;
                 case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.VariantBool, _) }:
                     return s_variantBool;
 
@@ -103,7 +109,7 @@ namespace Microsoft.Interop
                     return s_safeHandle;
 
                 case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Char } }:
-                    return CreateCharMarshaller(info, context);
+                    return CreateCharMarshaller(info, context, Options);
 
                 case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_String } }:
                     return ReportStringMarshallingNotSupported(info, context);
@@ -116,7 +122,7 @@ namespace Microsoft.Interop
             }
         }
 
-        private static IMarshallingGenerator CreateCharMarshaller(TypePositionInfo info, StubCodeContext context)
+        private static IMarshallingGenerator CreateCharMarshaller(TypePositionInfo info, StubCodeContext context, InteropGenerationOptions options)
         {
             MarshallingInfo marshalInfo = info.MarshallingAttributeInfo;
             if (marshalInfo is NoMarshallingInfo)
@@ -135,7 +141,8 @@ namespace Microsoft.Interop
                 {
                     case UnmanagedType.I2:
                     case UnmanagedType.U2:
-                        return s_utf16Char;
+                        // If runtime marshalling is disabled, we treat UTF-16 char as blittable
+                        return options.RuntimeMarshallingDisabled ? s_blittable : s_utf16Char;
                 }
             }
             else if (marshalInfo is MarshallingInfoStringSupport marshalStringInfo)
@@ -143,7 +150,8 @@ namespace Microsoft.Interop
                 switch (marshalStringInfo.CharEncoding)
                 {
                     case CharEncoding.Utf16:
-                        return s_utf16Char;
+                        // If runtime marshalling is disabled, we treat UTF-16 char as blittable
+                        return options.RuntimeMarshallingDisabled ? s_blittable : s_utf16Char;
                     case CharEncoding.Utf8:
                         throw new MarshallingNotSupportedException(info, context) // [Compat] UTF-8 is not supported for char
                         {

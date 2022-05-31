@@ -58,6 +58,10 @@ namespace System
             return value.GetHashCode();
         }
 
+        public static RuntimeFieldHandle FromIntPtr(IntPtr value) => new RuntimeFieldHandle(value);
+
+        public static IntPtr ToIntPtr(RuntimeFieldHandle value) => value.Value;
+
         public static bool operator ==(RuntimeFieldHandle left, RuntimeFieldHandle right)
         {
             return left.Equals(right);

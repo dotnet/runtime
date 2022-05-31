@@ -7,7 +7,6 @@ using System.Collections.Immutable;
 using System.Composition;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.Marshalling;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -19,7 +18,7 @@ using Microsoft.CodeAnalysis.Text;
 
 namespace Microsoft.Interop.Analyzers
 {
-    [ExportCodeFixProvider(LanguageNames.CSharp, LanguageNames.VisualBasic), Shared]
+    [ExportCodeFixProvider(LanguageNames.CSharp), Shared]
     public class CustomTypeMarshallerFixer : CodeFixProvider
     {
         private const string AddMissingCustomTypeMarshallerMembersKey = nameof(AddMissingCustomTypeMarshallerMembersKey);

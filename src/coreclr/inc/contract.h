@@ -226,7 +226,7 @@
 #define ENABLE_CONTRACTS
 #endif
 
-// Finally, only define the implementaiton parts of contracts if this isn't a DAC build.
+// Finally, only define the implementation parts of contracts if this isn't a DAC build.
 #if defined(_DEBUG_IMPL) && defined(ENABLE_CONTRACTS)
 #define ENABLE_CONTRACTS_IMPL
 #endif

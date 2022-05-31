@@ -14,8 +14,8 @@ namespace System.Runtime.InteropServices.Marshalling
         Features = CustomTypeMarshallerFeatures.UnmanagedResources | CustomTypeMarshallerFeatures.TwoStageMarshalling | CustomTypeMarshallerFeatures.CallerAllocatedBuffer)]
     public unsafe ref struct Utf8StringMarshaller
     {
-        private byte* _allocated;
-        private readonly Span<byte> _span;
+        private byte* _nativeValue;
+        private bool _allocated;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Utf8StringMarshaller"/>.
@@ -37,32 +37,33 @@ namespace System.Runtime.InteropServices.Marshalling
         /// </remarks>
         public Utf8StringMarshaller(string? str, Span<byte> buffer)
         {
-            _allocated = null;
+            _allocated = false;
+
             if (str is null)
             {
-                _span = default;
+                _nativeValue = null;
                 return;
             }
 
-            // + 1 for null terminator
-            int maxByteCount =  Encoding.UTF8.GetMaxByteCount(str.Length) + 1;
-            if (buffer.Length >= maxByteCount)
+            const int MaxUtf8BytesPerChar = 3;
+
+            // >= for null terminator
+            // Use the cast to long to avoid the checked operation
+            if ((long)MaxUtf8BytesPerChar * str.Length >= buffer.Length)
             {
-                int byteCount = Encoding.UTF8.GetBytes(str, buffer);
-                buffer[byteCount] = 0; // null-terminate
-                _span = buffer;
-            }
-            else
-            {
-                _allocated = (byte*)Marshal.AllocCoTaskMem(maxByteCount);
-                int byteCount;
-                fixed (char* ptr = str)
+                // Calculate accurate byte count when the provided stack-allocated buffer is not sufficient
+                int exactByteCount = checked(Encoding.UTF8.GetByteCount(str) + 1); // + 1 for null terminator
+                if (exactByteCount > buffer.Length)
                 {
-                    byteCount = Encoding.UTF8.GetBytes(ptr, str.Length, _allocated, maxByteCount);
+                    buffer = new Span<byte>((byte*)Marshal.AllocCoTaskMem(exactByteCount), exactByteCount);
+                    _allocated = true;
                 }
-                _allocated[byteCount] = 0; // null-terminate
-                _span = default;
             }
+
+            _nativeValue = (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(buffer));
+
+            int byteCount = Encoding.UTF8.GetBytes(str, buffer);
+            buffer[byteCount] = 0; // null-terminate
         }
 
         /// <summary>
@@ -71,7 +72,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <remarks>
         /// <seealso cref="CustomTypeMarshallerFeatures.TwoStageMarshalling"/>
         /// </remarks>
-        public byte* ToNativeValue() => _allocated != null ? _allocated : (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(_span));
+        public byte* ToNativeValue() => _nativeValue;
 
         /// <summary>
         /// Sets the native value representing the string.
@@ -80,7 +81,11 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <remarks>
         /// <seealso cref="CustomTypeMarshallerFeatures.TwoStageMarshalling"/>
         /// </remarks>
-        public void FromNativeValue(byte* value) => _allocated = value;
+        public void FromNativeValue(byte* value)
+        {
+            _nativeValue = value;
+            _allocated = true;
+        }
 
         /// <summary>
         /// Returns the managed string.
@@ -88,7 +93,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <remarks>
         /// <seealso cref="CustomTypeMarshallerDirection.Out"/>
         /// </remarks>
-        public string? ToManaged() => _allocated == null ? null : Marshal.PtrToStringUTF8((IntPtr)_allocated);
+        public string? ToManaged() => Marshal.PtrToStringUTF8((IntPtr)_nativeValue);
 
         /// <summary>
         /// Frees native resources.
@@ -98,8 +103,8 @@ namespace System.Runtime.InteropServices.Marshalling
         /// </remarks>
         public void FreeNative()
         {
-            if (_allocated != null)
-                Marshal.FreeCoTaskMem((IntPtr)_allocated);
+            if (_allocated)
+                Marshal.FreeCoTaskMem((IntPtr)_nativeValue);
         }
     }
 }

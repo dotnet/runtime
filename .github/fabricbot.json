@@ -1307,7 +1307,7 @@
         {
           "name": "addReply",
           "parameters": {
-            "comment": "Due to lack of recent activity, this issue has been marked as a candidate for backlog cleanup.  It will be closed if no further activity occurs within 14 more days. Any new comment (by anyone, not necessarily the author) will undo this process.\n\nThis process is part of the experimental [issue cleanup initiative](https://github.com/dotnet/runtime/issues/60288) we are currently trialing. Please share any feedback you might have in the linked issue."
+            "comment": "Due to lack of recent activity, this issue has been marked as a candidate for backlog cleanup.  It will be closed if no further activity occurs within 14 more days. Any new comment (by anyone, not necessarily the author) will undo this process.\n\nThis process is part of our [issue cleanup automation](https://github.com/dotnet/runtime/blob/main/docs/issue-cleanup.md)."
           }
         },
         {
@@ -1422,16 +1422,16 @@
       "taskName": "Automated Issue cleanup",
       "actions": [
         {
-          "name": "addLabel",
+          "name": "addReply",
           "parameters": {
-            "label": "backlog-cleanup-candidate"
+            "comment": "Due to lack of recent activity, this issue has been marked as a candidate for backlog cleanup.  It will be closed if no further activity occurs within 14 more days. Any new comment (by anyone, not necessarily the author) will undo this process.\n\nThis process is part of our [issue cleanup automation](https://github.com/dotnet/runtime/blob/main/docs/issue-cleanup.md)."
           }
         },
         {
-          "name": "addReply",
-          "parameters": {
-            "comment": "Due to lack of recent activity, this issue has been marked as a candidate for backlog cleanup.  It will be closed if no further activity occurs within 14 more days. Any new comment (by anyone, not necessarily the author) will undo this process.\n\nThis process is part of the experimental [issue cleanup initiative](https://github.com/dotnet/runtime/issues/60288) we are currently trialing. Please share any feedback you might have in the linked issue."
-          }
+            "name": "addLabel",
+            "parameters": {
+              "label": "backlog-cleanup-candidate"
+            }
         },
         {
           "name": "addLabel",
@@ -2346,6 +2346,12 @@
           "parameters": {
             "label": "no-recent-activity"
           }
+        },
+        {
+            "name": "removeLabel",
+            "parameters": {
+              "label": "backlog-cleanup-candidate"
+            }
         }
       ],
       "eventType": "issue",
@@ -2401,6 +2407,12 @@
           "parameters": {
             "label": "no-recent-activity"
           }
+        },
+        {
+            "name": "removeLabel",
+            "parameters": {
+              "label": "backlog-cleanup-candidate"
+            }
         }
       ],
       "eventType": "issue",
@@ -5672,162 +5684,6 @@
     "taskSource": "fabricbot-config",
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
-    "subCapability": "IssuesOnlyResponder",
-    "version": "1.0",
-    "config": {
-      "taskName": "[Area Pod: Buyaa / Jose / Steve - Issue Triage] Stephen T Updated Issue",
-      "actions": [
-        {
-          "name": "moveToProjectColumn",
-          "parameters": {
-            "projectName": "Area Pod: Buyaa / Jose / Steve - Issue Triage",
-            "columnName": "Triage: Stephen T",
-            "isOrgProject": true
-          }
-        }
-      ],
-      "eventType": "issue",
-      "eventNames": [
-        "issues"
-      ],
-      "conditions": {
-        "operator": "and",
-        "operands": [
-          {
-            "name": "isInProjectColumn",
-            "parameters": {
-              "projectName": "Area Pod: Buyaa / Jose / Steve - Issue Triage",
-              "isOrgProject": true,
-              "columnName": "Needs Triage"
-            }
-          },
-          {
-            "name": "isActivitySender",
-            "parameters": {
-              "user": "stephentoub"
-            }
-          },
-          {
-            "name": "isOpen",
-            "parameters": {}
-          },
-          {
-            "operator": "not",
-            "operands": [
-              {
-                "name": "isInMilestone",
-                "parameters": {}
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "needs-author-action"
-                }
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "api-ready-for-review"
-                }
-              }
-            ]
-          }
-        ]
-      }
-    }
-  },
-  {
-    "taskSource": "fabricbot-config",
-    "taskType": "trigger",
-    "capabilityId": "IssueResponder",
-    "subCapability": "IssueCommentResponder",
-    "version": "1.0",
-    "config": {
-      "taskName": "[Area Pod: Buyaa / Jose / Steve - Issue Triage] Stephen T Commented",
-      "actions": [
-        {
-          "name": "moveToProjectColumn",
-          "parameters": {
-            "projectName": "Area Pod: Buyaa / Jose / Steve - Issue Triage",
-            "columnName": "Triage: Stephen T",
-            "isOrgProject": true
-          }
-        }
-      ],
-      "eventType": "issue",
-      "eventNames": [
-        "issue_comment"
-      ],
-      "conditions": {
-        "operator": "and",
-        "operands": [
-          {
-            "name": "isInProjectColumn",
-            "parameters": {
-              "projectName": "Area Pod: Buyaa / Jose / Steve - Issue Triage",
-              "isOrgProject": true,
-              "columnName": "Needs Triage"
-            }
-          },
-          {
-            "name": "isActivitySender",
-            "parameters": {
-              "user": "stephentoub"
-            }
-          },
-          {
-            "name": "isOpen",
-            "parameters": {}
-          },
-          {
-            "operator": "not",
-            "operands": [
-              {
-                "name": "isInMilestone",
-                "parameters": {}
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "needs-author-action"
-                }
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "api-ready-for-review"
-                }
-              }
-            ]
-          }
-        ]
-      }
-    }
-  },
-  {
-    "taskSource": "fabricbot-config",
-    "taskType": "trigger",
-    "capabilityId": "IssueResponder",
     "subCapability": "PullRequestResponder",
     "version": "1.0",
     "config": {
@@ -6187,30 +6043,6 @@
                   }
                 ]
               }
-            ],
-            [
-              {
-                "operator": "not",
-                "operands": [
-                  {
-                    "name": "isAssignedToUser",
-                    "parameters": {
-                      "user": "stephentoub"
-                    }
-                  }
-                ]
-              },
-              {
-                "operator": "not",
-                "operands": [
-                  {
-                    "name": "isActivitySender",
-                    "parameters": {
-                      "user": "stephentoub"
-                    }
-                  }
-                ]
-              }
             ]
           ],
           {
@@ -6389,17 +6221,6 @@
                 "name": "isAssignedToUser",
                 "parameters": {
                   "user": "steveharter"
-                }
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
-              {
-                "name": "isAssignedToUser",
-                "parameters": {
-                  "user": "stephentoub"
                 }
               }
             ]
@@ -6953,187 +6774,15 @@
     "taskSource": "fabricbot-config",
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
-    "subCapability": "PullRequestResponder",
-    "version": "1.0",
-    "config": {
-      "taskName": "[Area Pod: Buyaa / Jose / Steve - PRs] Stephen T Assigned as Champion",
-      "actions": [
-        {
-          "name": "removeFromProject",
-          "parameters": {
-            "projectName": "Area Pod: Buyaa / Jose / Steve - PRs",
-            "isOrgProject": true
-          }
-        },
-        {
-          "name": "addToProject",
-          "parameters": {
-            "projectName": "Area Pod: Buyaa / Jose / Steve - PRs",
-            "columnName": "Champion: Stephen T",
-            "isOrgProject": true
-          }
-        }
-      ],
-      "eventType": "pull_request",
-      "eventNames": [
-        "pull_request"
-      ],
-      "conditions": {
-        "operator": "and",
-        "operands": [
-          {
-            "name": "isOpen",
-            "parameters": {}
-          },
-          {
-            "operator": "or",
-            "operands": [
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "area-System.CodeDom"
-                }
-              },
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "area-System.Configuration"
-                }
-              },
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "area-System.Reflection"
-                }
-              },
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "area-System.Reflection.Emit"
-                }
-              },
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "area-System.Reflection.Metadata"
-                }
-              },
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "area-System.Resources"
-                }
-              },
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "area-System.Runtime.CompilerServices"
-                }
-              },
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "area-System.Text.RegularExpressions"
-                }
-              },
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "area-System.Threading.Channels"
-                }
-              },
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "area-System.Threading.Tasks"
-                }
-              },
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "area-System.DirectoryServices"
-                }
-              }
-            ]
-          },
-          {
-            "operator": "or",
-            "operands": [
-              {
-                "name": "isAssignedToUser",
-                "parameters": {
-                  "user": "stephentoub"
-                }
-              },
-              {
-                "operator": "and",
-                "operands": [
-                  {
-                    "name": "isAction",
-                    "parameters": {
-                      "action": "opened"
-                    }
-                  },
-                  {
-                    "name": "isActivitySender",
-                    "parameters": {
-                      "user": "stephentoub"
-                    }
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "operator": "or",
-            "operands": [
-              {
-                "operator": "not",
-                "operands": [
-                  {
-                    "name": "isInProject",
-                    "parameters": {
-                      "projectName": "Area Pod: Buyaa / Jose / Steve - PRs",
-                      "isOrgProject": true
-                    }
-                  }
-                ]
-              },
-              {
-                "name": "isInProjectColumn",
-                "parameters": {
-                  "projectName": "Area Pod: Buyaa / Jose / Steve - PRs",
-                  "columnName": "Needs Champion",
-                  "isOrgProject": true
-                }
-              },
-              {
-                "name": "isInProjectColumn",
-                "parameters": {
-                  "projectName": "Area Pod: Buyaa / Jose / Steve - PRs",
-                  "columnName": "Done",
-                  "isOrgProject": true
-                }
-              }
-            ]
-          }
-        ]
-      }
-    }
-  },
-  {
-    "taskSource": "fabricbot-config",
-    "taskType": "trigger",
-    "capabilityId": "IssueResponder",
     "subCapability": "IssuesOnlyResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Carlos / Viktor - Issue Triage] Moved to Another Area",
+      "taskName": "[Area Pod: Akhil / Carlos / Viktor - Issue Triage] Moved to Another Area",
       "actions": [
         {
           "name": "addToProject",
           "parameters": {
-            "projectName": "Area Pod: Carlos / Viktor - Issue Triage",
+            "projectName": "Area Pod: Akhil / Carlos / Viktor - Issue Triage",
             "columnName": "Triaged",
             "isOrgProject": true
           }
@@ -7152,7 +6801,7 @@
               {
                 "name": "isInProjectColumn",
                 "parameters": {
-                  "projectName": "Area Pod: Carlos / Viktor - Issue Triage",
+                  "projectName": "Area Pod: Akhil / Carlos / Viktor - Issue Triage",
                   "columnName": "Triaged",
                   "isOrgProject": true
                 }
@@ -7261,7 +6910,7 @@
           {
             "name": "isInProject",
             "parameters": {
-              "projectName": "Area Pod: Carlos / Viktor - Issue Triage",
+              "projectName": "Area Pod: Akhil / Carlos / Viktor - Issue Triage",
               "isOrgProject": true
             }
           }
@@ -7276,19 +6925,19 @@
     "subCapability": "IssuesOnlyResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Carlos / Viktor - Issue Triage] Needs Triage",
+      "taskName": "[Area Pod: Akhil / Carlos / Viktor - Issue Triage] Needs Triage",
       "actions": [
         {
           "name": "removeFromProject",
           "parameters": {
-            "projectName": "Area Pod: Carlos / Viktor - Issue Triage",
+            "projectName": "Area Pod: Akhil / Carlos / Viktor - Issue Triage",
             "isOrgProject": true
           }
         },
         {
           "name": "addToProject",
           "parameters": {
-            "projectName": "Area Pod: Carlos / Viktor - Issue Triage",
+            "projectName": "Area Pod: Akhil / Carlos / Viktor - Issue Triage",
             "columnName": "Needs Triage",
             "isOrgProject": true
           }
@@ -7450,7 +7099,7 @@
                   {
                     "name": "isInProject",
                     "parameters": {
-                      "projectName": "Area Pod: Carlos / Viktor - Issue Triage",
+                      "projectName": "Area Pod: Akhil / Carlos / Viktor - Issue Triage",
                       "isOrgProject": true
                     }
                   }
@@ -7459,7 +7108,7 @@
               {
                 "name": "isInProjectColumn",
                 "parameters": {
-                  "projectName": "Area Pod: Carlos / Viktor - Issue Triage",
+                  "projectName": "Area Pod: Akhil / Carlos / Viktor - Issue Triage",
                   "isOrgProject": true,
                   "columnName": "Triaged"
                 }
@@ -7477,19 +7126,19 @@
     "subCapability": "IssueCommentResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Carlos / Viktor - Issue Triage] Needs Further Triage",
+      "taskName": "[Area Pod: Akhil / Carlos / Viktor - Issue Triage] Needs Further Triage",
       "actions": [
         {
           "name": "removeFromProject",
           "parameters": {
-            "projectName": "Area Pod: Carlos / Viktor - Issue Triage",
+            "projectName": "Area Pod: Akhil / Carlos / Viktor - Issue Triage",
             "isOrgProject": true
           }
         },
         {
           "name": "addToProject",
           "parameters": {
-            "projectName": "Area Pod: Carlos / Viktor - Issue Triage",
+            "projectName": "Area Pod: Akhil / Carlos / Viktor - Issue Triage",
             "columnName": "Needs Triage",
             "isOrgProject": true
           }
@@ -7579,7 +7228,7 @@
                   {
                     "name": "isInProject",
                     "parameters": {
-                      "projectName": "Area Pod: Carlos / Viktor - Issue Triage",
+                      "projectName": "Area Pod: Akhil / Carlos / Viktor - Issue Triage",
                       "isOrgProject": true
                     }
                   }
@@ -7588,7 +7237,7 @@
               {
                 "name": "isInProjectColumn",
                 "parameters": {
-                  "projectName": "Area Pod: Carlos / Viktor - Issue Triage",
+                  "projectName": "Area Pod: Akhil / Carlos / Viktor - Issue Triage",
                   "columnName": "Triaged",
                   "isOrgProject": true
                 }
@@ -7606,12 +7255,12 @@
     "subCapability": "IssuesOnlyResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Carlos / Viktor - Issue Triage] Triaged",
+      "taskName": "[Area Pod: Akhil / Carlos / Viktor - Issue Triage] Triaged",
       "actions": [
         {
           "name": "addToProject",
           "parameters": {
-            "projectName": "Area Pod: Carlos / Viktor - Issue Triage",
+            "projectName": "Area Pod: Akhil / Carlos / Viktor - Issue Triage",
             "columnName": "Triaged",
             "isOrgProject": true
           }
@@ -7633,7 +7282,7 @@
           {
             "name": "isInProject",
             "parameters": {
-              "projectName": "Area Pod: Carlos / Viktor - Issue Triage",
+              "projectName": "Area Pod: Akhil / Carlos / Viktor - Issue Triage",
               "isOrgProject": true
             }
           },
@@ -7675,12 +7324,168 @@
     "subCapability": "IssuesOnlyResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Carlos / Viktor - Issue Triage] Carlos Updated Issue",
+      "taskName": "[Area Pod: Akhil / Carlos / Viktor - Issue Triage] Akhil Updated Issue",
       "actions": [
         {
           "name": "moveToProjectColumn",
           "parameters": {
-            "projectName": "Area Pod: Carlos / Viktor - Issue Triage",
+            "projectName": "Area Pod: Akhil / Carlos / Viktor - Issue Triage",
+            "columnName": "Triage: Akhil",
+            "isOrgProject": true
+          }
+        }
+      ],
+      "eventType": "issue",
+      "eventNames": [
+        "issues"
+      ],
+      "conditions": {
+        "operator": "and",
+        "operands": [
+          {
+            "name": "isInProjectColumn",
+            "parameters": {
+              "projectName": "Area Pod: Akhil / Carlos / Viktor - Issue Triage",
+              "isOrgProject": true,
+              "columnName": "Needs Triage"
+            }
+          },
+          {
+            "name": "isActivitySender",
+            "parameters": {
+              "user": "smasher164"
+            }
+          },
+          {
+            "name": "isOpen",
+            "parameters": {}
+          },
+          {
+            "operator": "not",
+            "operands": [
+              {
+                "name": "isInMilestone",
+                "parameters": {}
+              }
+            ]
+          },
+          {
+            "operator": "not",
+            "operands": [
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "needs-author-action"
+                }
+              }
+            ]
+          },
+          {
+            "operator": "not",
+            "operands": [
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "api-ready-for-review"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "taskSource": "fabricbot-config",
+    "taskType": "trigger",
+    "capabilityId": "IssueResponder",
+    "subCapability": "IssueCommentResponder",
+    "version": "1.0",
+    "config": {
+      "taskName": "[Area Pod: Akhil / Carlos / Viktor - Issue Triage] Akhil Commented",
+      "actions": [
+        {
+          "name": "moveToProjectColumn",
+          "parameters": {
+            "projectName": "Area Pod: Akhil / Carlos / Viktor - Issue Triage",
+            "columnName": "Triage: Akhil",
+            "isOrgProject": true
+          }
+        }
+      ],
+      "eventType": "issue",
+      "eventNames": [
+        "issue_comment"
+      ],
+      "conditions": {
+        "operator": "and",
+        "operands": [
+          {
+            "name": "isInProjectColumn",
+            "parameters": {
+              "projectName": "Area Pod: Akhil / Carlos / Viktor - Issue Triage",
+              "isOrgProject": true,
+              "columnName": "Needs Triage"
+            }
+          },
+          {
+            "name": "isActivitySender",
+            "parameters": {
+              "user": "smasher164"
+            }
+          },
+          {
+            "name": "isOpen",
+            "parameters": {}
+          },
+          {
+            "operator": "not",
+            "operands": [
+              {
+                "name": "isInMilestone",
+                "parameters": {}
+              }
+            ]
+          },
+          {
+            "operator": "not",
+            "operands": [
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "needs-author-action"
+                }
+              }
+            ]
+          },
+          {
+            "operator": "not",
+            "operands": [
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "api-ready-for-review"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "taskSource": "fabricbot-config",
+    "taskType": "trigger",
+    "capabilityId": "IssueResponder",
+    "subCapability": "IssuesOnlyResponder",
+    "version": "1.0",
+    "config": {
+      "taskName": "[Area Pod: Akhil / Carlos / Viktor - Issue Triage] Carlos Updated Issue",
+      "actions": [
+        {
+          "name": "moveToProjectColumn",
+          "parameters": {
+            "projectName": "Area Pod: Akhil / Carlos / Viktor - Issue Triage",
             "columnName": "Triage: Carlos",
             "isOrgProject": true
           }
@@ -7696,7 +7501,7 @@
           {
             "name": "isInProjectColumn",
             "parameters": {
-              "projectName": "Area Pod: Carlos / Viktor - Issue Triage",
+              "projectName": "Area Pod: Akhil / Carlos / Viktor - Issue Triage",
               "isOrgProject": true,
               "columnName": "Needs Triage"
             }
@@ -7753,12 +7558,12 @@
     "subCapability": "IssueCommentResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Carlos / Viktor - Issue Triage] Carlos Commented",
+      "taskName": "[Area Pod: Akhil / Carlos / Viktor - Issue Triage] Carlos Commented",
       "actions": [
         {
           "name": "moveToProjectColumn",
           "parameters": {
-            "projectName": "Area Pod: Carlos / Viktor - Issue Triage",
+            "projectName": "Area Pod: Akhil / Carlos / Viktor - Issue Triage",
             "columnName": "Triage: Carlos",
             "isOrgProject": true
           }
@@ -7774,7 +7579,7 @@
           {
             "name": "isInProjectColumn",
             "parameters": {
-              "projectName": "Area Pod: Carlos / Viktor - Issue Triage",
+              "projectName": "Area Pod: Akhil / Carlos / Viktor - Issue Triage",
               "isOrgProject": true,
               "columnName": "Needs Triage"
             }
@@ -7831,12 +7636,12 @@
     "subCapability": "IssuesOnlyResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Carlos / Viktor - Issue Triage] Viktor Updated Issue",
+      "taskName": "[Area Pod: Akhil / Carlos / Viktor - Issue Triage] Viktor Updated Issue",
       "actions": [
         {
           "name": "moveToProjectColumn",
           "parameters": {
-            "projectName": "Area Pod: Carlos / Viktor - Issue Triage",
+            "projectName": "Area Pod: Akhil / Carlos / Viktor - Issue Triage",
             "columnName": "Triage: Viktor",
             "isOrgProject": true
           }
@@ -7852,7 +7657,7 @@
           {
             "name": "isInProjectColumn",
             "parameters": {
-              "projectName": "Area Pod: Carlos / Viktor - Issue Triage",
+              "projectName": "Area Pod: Akhil / Carlos / Viktor - Issue Triage",
               "isOrgProject": true,
               "columnName": "Needs Triage"
             }
@@ -7909,12 +7714,12 @@
     "subCapability": "IssueCommentResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Carlos / Viktor - Issue Triage] Viktor Commented",
+      "taskName": "[Area Pod: Akhil / Carlos / Viktor - Issue Triage] Viktor Commented",
       "actions": [
         {
           "name": "moveToProjectColumn",
           "parameters": {
-            "projectName": "Area Pod: Carlos / Viktor - Issue Triage",
+            "projectName": "Area Pod: Akhil / Carlos / Viktor - Issue Triage",
             "columnName": "Triage: Viktor",
             "isOrgProject": true
           }
@@ -7930,7 +7735,7 @@
           {
             "name": "isInProjectColumn",
             "parameters": {
-              "projectName": "Area Pod: Carlos / Viktor - Issue Triage",
+              "projectName": "Area Pod: Akhil / Carlos / Viktor - Issue Triage",
               "isOrgProject": true,
               "columnName": "Needs Triage"
             }
@@ -7987,12 +7792,12 @@
     "subCapability": "PullRequestResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Carlos / Viktor - PRs] Closed, Merged, or Moved",
+      "taskName": "[Area Pod: Akhil / Carlos / Viktor - PRs] Closed, Merged, or Moved",
       "actions": [
         {
           "name": "moveToProjectColumn",
           "parameters": {
-            "projectName": "Area Pod: Carlos / Viktor - PRs",
+            "projectName": "Area Pod: Akhil / Carlos / Viktor - PRs",
             "columnName": "Done",
             "isOrgProject": true
           }
@@ -8008,7 +7813,7 @@
           {
             "name": "isInProject",
             "parameters": {
-              "projectName": "Area Pod: Carlos / Viktor - PRs",
+              "projectName": "Area Pod: Akhil / Carlos / Viktor - PRs",
               "isOrgProject": true
             }
           },
@@ -8018,7 +7823,7 @@
               {
                 "name": "isInProjectColumn",
                 "parameters": {
-                  "projectName": "Area Pod: Carlos / Viktor - PRs",
+                  "projectName": "Area Pod: Akhil / Carlos / Viktor - PRs",
                   "columnName": "Done",
                   "isOrgProject": true
                 }
@@ -8143,12 +7948,12 @@
     "subCapability": "PullRequestResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Carlos / Viktor - PRs] New PR Needs Champion",
+      "taskName": "[Area Pod: Akhil / Carlos / Viktor - PRs] New PR Needs Champion",
       "actions": [
         {
           "name": "addToProject",
           "parameters": {
-            "projectName": "Area Pod: Carlos / Viktor - PRs",
+            "projectName": "Area Pod: Akhil / Carlos / Viktor - PRs",
             "columnName": "Needs Champion",
             "isOrgProject": true
           }
@@ -8228,6 +8033,30 @@
                   {
                     "name": "isAssignedToUser",
                     "parameters": {
+                      "user": "smasher164"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "isActivitySender",
+                    "parameters": {
+                      "user": "smasher164"
+                    }
+                  }
+                ]
+              }
+            ],
+            [
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "isAssignedToUser",
+                    "parameters": {
                       "user": "carlossanlop"
                     }
                   }
@@ -8279,7 +8108,7 @@
                   {
                     "name": "isInProject",
                     "parameters": {
-                      "projectName": "Area Pod: Carlos / Viktor - PRs",
+                      "projectName": "Area Pod: Akhil / Carlos / Viktor - PRs",
                       "isOrgProject": true
                     }
                   }
@@ -8288,7 +8117,7 @@
               {
                 "name": "isInProjectColumn",
                 "parameters": {
-                  "projectName": "Area Pod: Carlos / Viktor - PRs",
+                  "projectName": "Area Pod: Akhil / Carlos / Viktor - PRs",
                   "columnName": "Done",
                   "isOrgProject": true
                 }
@@ -8306,19 +8135,19 @@
     "subCapability": "PullRequestResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Carlos / Viktor - PRs] Updated PR Needs Champion",
+      "taskName": "[Area Pod: Akhil / Carlos / Viktor - PRs] Updated PR Needs Champion",
       "actions": [
         {
           "name": "removeFromProject",
           "parameters": {
-            "projectName": "Area Pod: Carlos / Viktor - PRs",
+            "projectName": "Area Pod: Akhil / Carlos / Viktor - PRs",
             "isOrgProject": true
           }
         },
         {
           "name": "addToProject",
           "parameters": {
-            "projectName": "Area Pod: Carlos / Viktor - PRs",
+            "projectName": "Area Pod: Akhil / Carlos / Viktor - PRs",
             "columnName": "Needs Champion",
             "isOrgProject": true
           }
@@ -8405,6 +8234,17 @@
               {
                 "name": "isAssignedToUser",
                 "parameters": {
+                  "user": "smasher164"
+                }
+              }
+            ]
+          },
+          {
+            "operator": "not",
+            "operands": [
+              {
+                "name": "isAssignedToUser",
+                "parameters": {
                   "user": "carlossanlop"
                 }
               }
@@ -8430,7 +8270,7 @@
                   {
                     "name": "isInProject",
                     "parameters": {
-                      "projectName": "Area Pod: Carlos / Viktor - PRs",
+                      "projectName": "Area Pod: Akhil / Carlos / Viktor - PRs",
                       "isOrgProject": true
                     }
                   }
@@ -8439,7 +8279,7 @@
               {
                 "name": "isInProjectColumn",
                 "parameters": {
-                  "projectName": "Area Pod: Carlos / Viktor - PRs",
+                  "projectName": "Area Pod: Akhil / Carlos / Viktor - PRs",
                   "columnName": "Done",
                   "isOrgProject": true
                 }
@@ -8457,19 +8297,173 @@
     "subCapability": "PullRequestResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Carlos / Viktor - PRs] Carlos Assigned as Champion",
+      "taskName": "[Area Pod: Akhil / Carlos / Viktor - PRs] Akhil Assigned as Champion",
       "actions": [
         {
           "name": "removeFromProject",
           "parameters": {
-            "projectName": "Area Pod: Carlos / Viktor - PRs",
+            "projectName": "Area Pod: Akhil / Carlos / Viktor - PRs",
             "isOrgProject": true
           }
         },
         {
           "name": "addToProject",
           "parameters": {
-            "projectName": "Area Pod: Carlos / Viktor - PRs",
+            "projectName": "Area Pod: Akhil / Carlos / Viktor - PRs",
+            "columnName": "Champion: Akhil",
+            "isOrgProject": true
+          }
+        }
+      ],
+      "eventType": "pull_request",
+      "eventNames": [
+        "pull_request"
+      ],
+      "conditions": {
+        "operator": "and",
+        "operands": [
+          {
+            "name": "isOpen",
+            "parameters": {}
+          },
+          {
+            "operator": "or",
+            "operands": [
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-Infrastructure-libraries"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-Microsoft.Win32"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-System.Diagnostics.EventLog"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-System.Diagnostics.PerformanceCounter"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-System.Diagnostics.TraceSource"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-System.Drawing"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-System.Management"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-System.ServiceProcess"
+                }
+              }
+            ]
+          },
+          {
+            "operator": "or",
+            "operands": [
+              {
+                "name": "isAssignedToUser",
+                "parameters": {
+                  "user": "smasher164"
+                }
+              },
+              {
+                "operator": "and",
+                "operands": [
+                  {
+                    "name": "isAction",
+                    "parameters": {
+                      "action": "opened"
+                    }
+                  },
+                  {
+                    "name": "isActivitySender",
+                    "parameters": {
+                      "user": "smasher164"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "operator": "or",
+            "operands": [
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "isInProject",
+                    "parameters": {
+                      "projectName": "Area Pod: Akhil / Carlos / Viktor - PRs",
+                      "isOrgProject": true
+                    }
+                  }
+                ]
+              },
+              {
+                "name": "isInProjectColumn",
+                "parameters": {
+                  "projectName": "Area Pod: Akhil / Carlos / Viktor - PRs",
+                  "columnName": "Needs Champion",
+                  "isOrgProject": true
+                }
+              },
+              {
+                "name": "isInProjectColumn",
+                "parameters": {
+                  "projectName": "Area Pod: Akhil / Carlos / Viktor - PRs",
+                  "columnName": "Done",
+                  "isOrgProject": true
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "taskSource": "fabricbot-config",
+    "taskType": "trigger",
+    "capabilityId": "IssueResponder",
+    "subCapability": "PullRequestResponder",
+    "version": "1.0",
+    "config": {
+      "taskName": "[Area Pod: Akhil / Carlos / Viktor - PRs] Carlos Assigned as Champion",
+      "actions": [
+        {
+          "name": "removeFromProject",
+          "parameters": {
+            "projectName": "Area Pod: Akhil / Carlos / Viktor - PRs",
+            "isOrgProject": true
+          }
+        },
+        {
+          "name": "addToProject",
+          "parameters": {
+            "projectName": "Area Pod: Akhil / Carlos / Viktor - PRs",
             "columnName": "Champion: Carlos",
             "isOrgProject": true
           }
@@ -8576,7 +8570,7 @@
                   {
                     "name": "isInProject",
                     "parameters": {
-                      "projectName": "Area Pod: Carlos / Viktor - PRs",
+                      "projectName": "Area Pod: Akhil / Carlos / Viktor - PRs",
                       "isOrgProject": true
                     }
                   }
@@ -8585,7 +8579,7 @@
               {
                 "name": "isInProjectColumn",
                 "parameters": {
-                  "projectName": "Area Pod: Carlos / Viktor - PRs",
+                  "projectName": "Area Pod: Akhil / Carlos / Viktor - PRs",
                   "columnName": "Needs Champion",
                   "isOrgProject": true
                 }
@@ -8593,7 +8587,7 @@
               {
                 "name": "isInProjectColumn",
                 "parameters": {
-                  "projectName": "Area Pod: Carlos / Viktor - PRs",
+                  "projectName": "Area Pod: Akhil / Carlos / Viktor - PRs",
                   "columnName": "Done",
                   "isOrgProject": true
                 }
@@ -8611,19 +8605,19 @@
     "subCapability": "PullRequestResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Carlos / Viktor - PRs] Viktor Assigned as Champion",
+      "taskName": "[Area Pod: Akhil / Carlos / Viktor - PRs] Viktor Assigned as Champion",
       "actions": [
         {
           "name": "removeFromProject",
           "parameters": {
-            "projectName": "Area Pod: Carlos / Viktor - PRs",
+            "projectName": "Area Pod: Akhil / Carlos / Viktor - PRs",
             "isOrgProject": true
           }
         },
         {
           "name": "addToProject",
           "parameters": {
-            "projectName": "Area Pod: Carlos / Viktor - PRs",
+            "projectName": "Area Pod: Akhil / Carlos / Viktor - PRs",
             "columnName": "Champion: Viktor",
             "isOrgProject": true
           }
@@ -8730,7 +8724,7 @@
                   {
                     "name": "isInProject",
                     "parameters": {
-                      "projectName": "Area Pod: Carlos / Viktor - PRs",
+                      "projectName": "Area Pod: Akhil / Carlos / Viktor - PRs",
                       "isOrgProject": true
                     }
                   }
@@ -8739,7 +8733,7 @@
               {
                 "name": "isInProjectColumn",
                 "parameters": {
-                  "projectName": "Area Pod: Carlos / Viktor - PRs",
+                  "projectName": "Area Pod: Akhil / Carlos / Viktor - PRs",
                   "columnName": "Needs Champion",
                   "isOrgProject": true
                 }
@@ -8747,7 +8741,7 @@
               {
                 "name": "isInProjectColumn",
                 "parameters": {
-                  "projectName": "Area Pod: Carlos / Viktor - PRs",
+                  "projectName": "Area Pod: Akhil / Carlos / Viktor - PRs",
                   "columnName": "Done",
                   "isOrgProject": true
                 }

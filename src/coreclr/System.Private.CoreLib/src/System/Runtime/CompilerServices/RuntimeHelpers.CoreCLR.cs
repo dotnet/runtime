@@ -230,6 +230,8 @@ namespace System.Runtime.CompilerServices
             return rawSize;
         }
 
+        // Returns array element size.
+        // Callers are required to keep obj alive
         internal static unsafe ushort GetElementSize(this Array array)
         {
             Debug.Assert(ObjectHasComponentSize(array));
@@ -514,6 +516,9 @@ namespace System.Runtime.CompilerServices
                 return (int)((BaseSize - (uint)(3 * sizeof(IntPtr))) / (uint)(2 * sizeof(int)));
             }
         }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public extern uint GetNumInstanceFieldBytes();
     }
 
     // Helper structs used for tail calls via helper.

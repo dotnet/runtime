@@ -188,7 +188,11 @@ ds_rt_config_value_get_default_port_suspend (void)
 
 static
 ds_ipc_result_t
-ds_rt_generate_core_dump (DiagnosticsDumpCommandId commandId, DiagnosticsGenerateCoreDumpCommandPayload *payload)
+ds_rt_generate_core_dump (
+	DiagnosticsDumpCommandId commandId,
+	DiagnosticsGenerateCoreDumpCommandPayload *payload,
+	ep_char8_t *errorMessageBuffer,
+	int32_t cbErrorMessageBuffer)
 {
 	STATIC_CONTRACT_NOTHROW;
 
@@ -196,15 +200,17 @@ ds_rt_generate_core_dump (DiagnosticsDumpCommandId commandId, DiagnosticsGenerat
 	EX_TRY
 	{
 		uint32_t flags = ds_generate_core_dump_command_payload_get_flags(payload);
- 		if (commandId == DS_DUMP_COMMANDID_GENERATE_CORE_DUMP)
- 		{
- 			// For the old commmand, this payload field is a bool of whether to enable logging
- 			flags = flags != 0 ? GenerateDumpFlagsLoggingEnabled : 0;
+		if (commandId == DS_DUMP_COMMANDID_GENERATE_CORE_DUMP)
+		{
+			// For the old commmand, this payload field is a bool of whether to enable logging
+			flags = flags != 0 ? GenerateDumpFlagsLoggingEnabled : 0;
 		}
-		if (GenerateDump (reinterpret_cast<LPCWSTR>(ds_generate_core_dump_command_payload_get_dump_name (payload)),
-			static_cast<int32_t>(ds_generate_core_dump_command_payload_get_dump_type (payload)),
-			flags))
+		LPCWSTR dumpName = reinterpret_cast<LPCWSTR>(ds_generate_core_dump_command_payload_get_dump_name (payload));
+		int32_t dumpType = static_cast<int32_t>(ds_generate_core_dump_command_payload_get_dump_type (payload));
+		if (GenerateDump(dumpName, dumpType, flags, errorMessageBuffer, cbErrorMessageBuffer))
+		{
 			result = DS_IPC_S_OK;
+		}
 	}
 	EX_CATCH {}
 	EX_END_CATCH(SwallowAllExceptions);

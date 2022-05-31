@@ -40,12 +40,12 @@ namespace System.Text.RegularExpressions.Symbolic
             DoublyLinkedList<SymbolicRegexNode<BDD>> rootResult = new();
 
             // Create a stack to be processed in order to process iteratively rather than recursively, and push the root on.
-            Stack<(RegexNode Node, bool TryToMarkFixedLength, DoublyLinkedList<SymbolicRegexNode<BDD>> Result, DoublyLinkedList<SymbolicRegexNode<BDD>>[]? ChildResults)> stack = new();
-            stack.Push((root, true, rootResult, CreateChildResultArray(root.ChildCount())));
+            Stack<(RegexNode Node, DoublyLinkedList<SymbolicRegexNode<BDD>> Result, DoublyLinkedList<SymbolicRegexNode<BDD>>[]? ChildResults)> stack = new();
+            stack.Push((root, rootResult, CreateChildResultArray(root.ChildCount())));
 
             // Continue to iterate until the stack is empty, popping the next item on each iteration.
             // Some popped items may be pushed back on as part of processing.
-            while (stack.TryPop(out (RegexNode Node, bool TryToMarkFixedLength, DoublyLinkedList<SymbolicRegexNode<BDD>> Result, DoublyLinkedList<SymbolicRegexNode<BDD>>[]? ChildResults) popped))
+            while (stack.TryPop(out (RegexNode Node, DoublyLinkedList<SymbolicRegexNode<BDD>> Result, DoublyLinkedList<SymbolicRegexNode<BDD>>[]? ChildResults) popped))
             {
                 RegexNode node = popped.Node;
                 DoublyLinkedList<SymbolicRegexNode<BDD>> result = popped.Result;
@@ -96,15 +96,13 @@ namespace System.Text.RegularExpressions.Symbolic
                                 Debug.Assert(childResults is not null && childResults.Length == node.ChildCount());
 
                                 // Push back the temporarily popped item. Next time this work item is seen, its ChildResults list will be ready.
-                                // Propagate the length mark check only in case of alternation.
                                 stack.Push(popped);
-                                bool mark = node.Kind == RegexNodeKind.Alternate && popped.TryToMarkFixedLength;
 
                                 // Push all the children to be converted
                                 for (int i = 0; i < node.ChildCount(); ++i)
                                 {
                                     childResults[i] = new DoublyLinkedList<SymbolicRegexNode<BDD>>();
-                                    stack.Push((node.Child(i), mark, childResults[i], CreateChildResultArray(node.Child(i).ChildCount())));
+                                    stack.Push((node.Child(i), childResults[i], CreateChildResultArray(node.Child(i).ChildCount())));
                                 }
                                 break;
                             }
@@ -228,8 +226,9 @@ namespace System.Text.RegularExpressions.Symbolic
 
                         case RegexNodeKind.Alternate:
                             {
-                                // Alternations are created by creating an Or of all of its children.
-                                // This Or needs to be "ordered" to achieve the same semantics as the backtracking engines.
+                                // Alternations in SymbolicRegexNode are binary and always normalized to right associative
+                                // form, so here the list of children is built into a tree of alternations.
+                                // The order is kept to achieve the same semantics as the backtracking engines.
                                 SymbolicRegexNode<BDD> or = _builder._nothing;
 
                                 // Enumerate in reverse order through the child results
@@ -240,7 +239,7 @@ namespace System.Text.RegularExpressions.Symbolic
                                     // If childResult is a non-singleton list, then it denotes a concatenation that must be constructed at this point.
                                     SymbolicRegexNode<BDD> elem = childResult.Count == 1 ?
                                         childResult.FirstElement :
-                                        _builder.CreateConcatAlreadyReversed(childResult.EnumerateLastToFirst(), popped.TryToMarkFixedLength);
+                                        _builder.CreateConcatAlreadyReversed(childResult.EnumerateLastToFirst());
                                     if (elem.IsNothing)
                                     {
                                         continue;
@@ -248,7 +247,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
                                     or = elem.IsAnyStar ?
                                         elem : // .* is the absorbing element
-                                        SymbolicRegexNode<BDD>.OrderedOr(_builder, elem, or);
+                                        SymbolicRegexNode<BDD>.CreateAlternate(_builder, elem, or);
                                 }
                                 result.AddLast(or);
                                 break;
@@ -260,10 +259,10 @@ namespace System.Text.RegularExpressions.Symbolic
                                 Debug.Assert(childResults.Length == 1);
                                 DoublyLinkedList<SymbolicRegexNode<BDD>> childResult = childResults[0];
 
-                                // Convert a list of nodes into a concatenation, do not propagate the length marker flag inside the loop body
+                                // Convert a list of nodes into a concatenation
                                 SymbolicRegexNode<BDD> body = childResult.Count == 1 ?
                                     childResult.FirstElement :
-                                    _builder.CreateConcatAlreadyReversed(childResult.EnumerateLastToFirst(), false);
+                                    _builder.CreateConcatAlreadyReversed(childResult.EnumerateLastToFirst());
                                 result.AddLast(_builder.CreateLoop(body, node.Kind == RegexNodeKind.Lazyloop, node.M, node.N));
                                 break;
                             }
@@ -291,10 +290,9 @@ namespace System.Text.RegularExpressions.Symbolic
             // Only a top-level concatenation or capture node can result in a non-singleton list.
             Debug.Assert(rootResult.Count == 1 || root.Kind == RegexNodeKind.Concatenate || root.Kind == RegexNodeKind.Capture);
 
-            // If the root node is a concatenation, then the converted concatenation is built with length marker check being true.
             return rootResult.Count == 1 ?
                 rootResult.FirstElement :
-                _builder.CreateConcatAlreadyReversed(rootResult.EnumerateLastToFirst(), tryCreateFixedLengthMarker: true);
+                _builder.CreateConcatAlreadyReversed(rootResult.EnumerateLastToFirst());
 
             void EnsureNewlinePredicateInitialized()
             {

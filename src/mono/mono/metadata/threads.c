@@ -1055,8 +1055,8 @@ mono_thread_detach_internal (MonoInternalThread *thread)
 	/* There is no more any guarantee that `thread` is alive */
 	mono_memory_barrier ();
 
+	mono_domain_unset();
 	SET_CURRENT_OBJECT (NULL);
-	mono_domain_unset ();
 
 	if (!mono_thread_info_try_get_internal_thread_gchandle (info, &gchandle))
 		g_error ("%s: failed to get gchandle, info = %p", __func__, info);
@@ -4815,7 +4815,7 @@ ves_icall_System_Threading_Thread_StartInternal (MonoThreadObjectHandle thread_h
 	MonoThread *internal = MONO_HANDLE_RAW (thread_handle);
 	gboolean res;
 
-#ifdef DISABLE_THREADS
+#if defined (DISABLE_THREADS) || defined (DISABLE_WASM_USER_THREADS)
 	mono_error_set_platform_not_supported (error, "Cannot start threads on this runtime.");
 	return;
 #endif

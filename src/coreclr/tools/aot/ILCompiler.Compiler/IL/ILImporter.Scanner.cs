@@ -420,11 +420,12 @@ namespace Internal.IL
                     // Either
                     //    1. no constraint resolution at compile time (!directMethod)
                     // OR 2. no code sharing lookup in call
-                    // OR 3. we have have resolved to an instantiating stub
+                    // OR 3. we have resolved to an instantiating stub
 
                     methodAfterConstraintResolution = directMethod;
 
-                    Debug.Assert(!methodAfterConstraintResolution.OwningType.IsInterface);
+                    Debug.Assert(!methodAfterConstraintResolution.OwningType.IsInterface
+                        || methodAfterConstraintResolution.Signature.IsStatic);
                     resolvedConstraint = true;
 
                     exactType = constrained;
@@ -848,7 +849,7 @@ namespace Internal.IL
             }
             else
             {
-                _dependencies.Add(_factory.ConstructedTypeSymbol(type), reason);
+                _dependencies.Add(_factory.MaximallyConstructableType(type), reason);
             }
         }
 
