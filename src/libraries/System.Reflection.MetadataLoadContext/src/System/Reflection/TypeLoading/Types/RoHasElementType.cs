@@ -31,6 +31,8 @@ namespace System.Reflection.TypeLoading
         public sealed override bool IsGenericTypeParameter => false;
         public sealed override bool IsGenericMethodParameter => false;
         public sealed override bool ContainsGenericParameters => _elementType.ContainsGenericParameters;
+        public sealed override bool IsFunctionPointer => false;
+        public sealed override bool IsUnmanagedFunctionPointer => false;
 
         internal sealed override RoModule GetRoModule() => _elementType.GetRoModule();
 
@@ -68,6 +70,11 @@ namespace System.Reflection.TypeLoading
         public sealed override int GenericParameterPosition => throw new InvalidOperationException(SR.Arg_NotGenericParameter);
         public sealed override Type[] GetGenericParameterConstraints() => throw new InvalidOperationException(SR.Arg_NotGenericParameter);
 
+        public sealed override Type[] GetFunctionPointerCallingConventions() => throw new InvalidOperationException(SR.InvalidOperation_NotFunctionPointer);
+#if FUNCTIONPOINTER_SUPPORT
+        public sealed override FunctionPointerParameterInfo GetFunctionPointerReturnParameter() => throw new InvalidOperationException(SR.InvalidOperation_NotFunctionPointer);
+        public sealed override FunctionPointerParameterInfo[] GetFunctionPointerParameterInfos() => throw new InvalidOperationException(SR.InvalidOperation_NotFunctionPointer);
+#endif
         public sealed override Guid GUID => Guid.Empty;
         public sealed override StructLayoutAttribute? StructLayoutAttribute => null;
         protected internal sealed override RoType ComputeEnumUnderlyingType() => throw new ArgumentException(SR.Arg_MustBeEnum);

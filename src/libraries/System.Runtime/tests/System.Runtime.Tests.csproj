@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\EnumTypes.cs" Link="Common\System\EnumTypes.cs" />
+    <Compile Include="$(CommonTestPath)System\FunctionPointerTests.cs" Link="Common\System\FunctionPointerTests.cs" />
     <Compile Include="$(CommonTestPath)System\MockType.cs" Link="Common\System\MockType.cs" />
     <Compile Include="$(CommonTestPath)System\Collections\CollectionAsserts.cs" Link="Common\System\Collections\CollectionAsserts.cs" />
     <Compile Include="$(CommonTestPath)System\Collections\ICollection.Generic.Tests.cs" Link="Common\System\Collections\ICollection.Generic.Tests.cs" />
@@ -142,6 +143,7 @@
     <Compile Include="System\TypeLoadExceptionTests.cs" />
     <Compile Include="System\TypeUnloadedExceptionTests.cs" />
     <Compile Include="System\TupleTests.cs" />
+    <Compile Include="System\Type\FunctionPointerTestExtensions.cs" />
     <Compile Include="System\UseResourceKeysTest.cs" />
     <Compile Include="System\UInt16Tests.cs" />
     <Compile Include="System\UInt32Tests.cs" />
@@ -321,6 +323,7 @@
     <PackageReference Include="Moq" Version="$(MoqVersion)" />
     <PackageReference Include="System.Runtime.Numerics.TestData" Version="$(SystemRuntimeNumericsTestDataVersion)" GeneratePathProperty="true" />
 
+    <ProjectReference Include="$(CommonPath)..\tests\System\TestFunctionPointerAssembly\TestFunctionPointerAssembly.csproj" Link="Common\System\\TestFunctionPointerAssembly\TestFunctionPointerAssembly.csproj" />
     <ProjectReference Include="TestLoadAssembly\TestLoadAssembly.csproj" />
     <ProjectReference Include="TestCollectibleAssembly\TestCollectibleAssembly.csproj" />
     <ProjectReference Include="TestModule\System.Reflection.TestModule.ilproj" />

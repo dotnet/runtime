@@ -223,6 +223,36 @@ HRESULT TypeNameBuilder::AddName(LPCWSTR szName, LPCWSTR szNamespace)
     return hr;
 }
 
+HRESULT TypeNameBuilder::AddNameNoEscaping(LPCWSTR szName)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    if (!szName)
+        return Fail();
+
+    if (!CheckParseState(ParseStateSTART | ParseStateNAME))
+        return Fail();
+
+    HRESULT hr = S_OK;
+
+    m_parseState = ParseStateNAME;
+
+    if (m_bNestedName)
+        Append(W('+'));
+
+    m_bNestedName = TRUE;
+
+    Append(szName);
+
+    return hr;
+}
+
 HRESULT TypeNameBuilder::OpenGenericArguments()
 {
     WRAPPER_NO_CONTRACT;
@@ -760,8 +790,47 @@ void TypeString::AppendType(TypeNameBuilder& tnb, TypeHandle ty, Instantiation t
     // ...or function pointer
     else if (ty.IsFnPtrType())
     {
-        // Don't attempt to format this currently, it may trigger GC due to fixups.
-        tnb.AddName(W("(fnptr)"));
+        // Currently function pointers return NULL for FullName and AssemblyQualifiedName and "*()" for Name.
+        // We need a grammar update in order to support parsing (see https://docs.microsoft.com/en-us/dotnet/framework/reflection-and-codedom/specifying-fully-qualified-type-names)
+        if (format & FormatNamespace)
+        {
+            FnPtrTypeDesc* fnPtr = ty.AsFnPtrType();
+            TypeHandle *retAndArgTypes = fnPtr->GetRetAndArgTypesPointer();
+
+            StackSString ss;
+            AppendType(ss, retAndArgTypes[0], format);
+
+            SString ssOpening(SString::Literal, "(");
+            ss += ssOpening;
+        
+            SString ssComma(SString::Literal, ", ");
+            DWORD cArgs = fnPtr->GetNumArgs();
+            for (DWORD i = 1; i <= cArgs; i++)
+            {
+                if (i != 1)
+                    ss += ssComma;
+
+                AppendType(ss, retAndArgTypes[i], format);
+            }
+
+            if ((fnPtr->GetCallConv() & IMAGE_CEE_CS_CALLCONV_MASK) == IMAGE_CEE_CS_CALLCONV_VARARG)
+            {
+                if (cArgs)
+                    ss += ssComma;
+
+                SString ssEllipsis(SString::Literal, "...");
+                ss += ssEllipsis;
+            }        
+
+            SString ssClosing(SString::Literal, ")");
+            ss += ssClosing;
+            
+            tnb.AddNameNoEscaping(ss);
+        }
+        else
+        {        
+            tnb.AddNameNoEscaping(W("*()"));            
+        }
     }
 
     // ...otherwise it's just a plain type def or an instantiated type

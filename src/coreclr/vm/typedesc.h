@@ -439,17 +439,24 @@ protected:
 /*************************************************************************/
 /* represents a function type.  */
 
-typedef SPTR(class FnPtrTypeDesc) PTR_FnPtrTypeDesc;
+typedef DPTR(class FnPtrTypeDesc) PTR_FnPtrTypeDesc;
 
 class FnPtrTypeDesc : public TypeDesc
 {
 
 public:
 #ifndef DACCESS_COMPILE
-    FnPtrTypeDesc(BYTE callConv, DWORD numArgs, TypeHandle * retAndArgTypes)
-        : TypeDesc(ELEMENT_TYPE_FNPTR), m_NumArgs(numArgs), m_CallConv(callConv)
+    FnPtrTypeDesc(
+        PTR_Module module,
+        PCOR_SIGNATURE sig /*copy made by caller*/,
+        int32_t sigLen,
+        BYTE callConv,
+        DWORD numArgs,
+        TypeHandle * retAndArgTypes)
+        : TypeDesc(ELEMENT_TYPE_FNPTR), m_pModule(module), m_hExposedClassObject(0), m_NumArgs(numArgs), m_CallConv(callConv), m_sig(sig), m_sigLen(sigLen)
     {
         LIMITED_METHOD_CONTRACT;
+
         for (DWORD i = 0; i <= numArgs; i++)
         {
             m_RetAndArgTypes[i] = retAndArgTypes[i];
@@ -470,6 +477,27 @@ public:
         SUPPORTS_DAC;
         _ASSERTE(FitsIn<BYTE>(m_CallConv));
         return static_cast<BYTE>(m_CallConv);
+    }
+
+    PCOR_SIGNATURE GetSignature()
+    {
+        LIMITED_METHOD_CONTRACT;
+        SUPPORTS_DAC;
+        return m_sig;
+    }
+
+    uint32_t GetSignatureLen()
+    {
+        LIMITED_METHOD_CONTRACT;
+        SUPPORTS_DAC;
+        return m_sigLen;
+    }
+
+    PTR_Module GetModule()
+    {
+        LIMITED_METHOD_CONTRACT;
+        SUPPORTS_DAC;
+        return m_pModule;
     }
 
     // Return a pointer to the types of the signature, return type followed by argument types
@@ -507,12 +535,45 @@ public:
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif //DACCESS_COMPILE
 
+    OBJECTREF GetManagedClassObject();
+
+    OBJECTREF GetManagedClassObjectIfExists()
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_NOTRIGGER;
+            MODE_COOPERATIVE;
+        }
+        CONTRACTL_END;
+
+        OBJECTREF objRet = NULL;
+        GET_LOADERHANDLE_VALUE_FAST(GetLoaderAllocator(), m_hExposedClassObject, &objRet);
+        return objRet;
+    }
+    OBJECTREF GetManagedClassObjectFast()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        OBJECTREF objRet = NULL;
+        LoaderAllocator::GetHandleValueFast(m_hExposedClassObject, &objRet);
+        return objRet;
+    }    
+
 protected:
+    PTR_Module m_pModule;
+    
+    // Handle back to the internal reflection Type object
+    LOADERHANDLE m_hExposedClassObject;
+
     // Number of arguments
     DWORD m_NumArgs;
 
     // Calling convention (actually just a single byte)
     DWORD m_CallConv;
+
+    PCOR_SIGNATURE m_sig;
+    uint32_t m_sigLen;
 
     // Return type first, then argument types
     TypeHandle m_RetAndArgTypes[1];

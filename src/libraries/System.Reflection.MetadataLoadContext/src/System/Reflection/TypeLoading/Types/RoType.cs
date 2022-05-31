@@ -23,20 +23,57 @@ namespace System.Reflection.TypeLoading
         public sealed override Type AsType() => this;
         public sealed override Type UnderlyingSystemType => this;
 
+        public override bool Equals([NotNullWhen(true)] object? obj)
+        {
+            if (obj is RoType objType)
+            {
+                if (objType is RoTypeDelegator ftObj)
+                {
+                    objType = ftObj.ActualType;
+                }
+
+                if (this is RoTypeDelegator ftThis)
+                {
+                    // Call this Equals() again, but with actual type.
+                    return ftThis.ActualType.Equals(objType);
+                }
+
+                return base.Equals(objType);
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        public override int GetHashCode() => base.GetHashCode();
+
         // Type classifiers
         public abstract override bool IsTypeDefinition { get; }
         public abstract override bool IsGenericTypeDefinition { get; }
         protected abstract override bool HasElementTypeImpl();
+        internal bool Call_HasElementTypeImpl() => HasElementTypeImpl();
         protected abstract override bool IsArrayImpl();
+        internal bool Call_IsArrayImpl() => IsArrayImpl();
         public abstract override bool IsSZArray { get; }
         public abstract override bool IsVariableBoundArray { get; }
         protected abstract override bool IsByRefImpl();
+        internal bool Call_IsByRefImpl() => IsByRefImpl();
         protected abstract override bool IsPointerImpl();
+        internal bool Call_IsPointerImpl() => IsPointerImpl();
         public abstract override bool IsConstructedGenericType { get; }
         public abstract override bool IsGenericParameter { get; }
         public abstract override bool IsGenericTypeParameter { get; }
         public abstract override bool IsGenericMethodParameter { get; }
         public sealed override bool IsByRefLike => (GetClassification() & TypeClassification.IsByRefLike) != 0;
+
+        public abstract override bool IsFunctionPointer { get; }
+        public abstract override bool IsUnmanagedFunctionPointer { get; }
+        public abstract override Type[] GetFunctionPointerCallingConventions();
+#if FUNCTIONPOINTER_SUPPORT
+        public abstract override FunctionPointerParameterInfo GetFunctionPointerReturnParameter();
+        public abstract override FunctionPointerParameterInfo[] GetFunctionPointerParameterInfos();
+#endif
 
         public abstract override bool ContainsGenericParameters { get; }
 
@@ -69,17 +106,19 @@ namespace System.Reflection.TypeLoading
         // Naming
         public sealed override string Name => _lazyName ??= ComputeName();
         protected abstract string ComputeName();
+        internal string Call_ComputeName() => ComputeName();
         private volatile string? _lazyName;
 
         public sealed override string? Namespace => _lazyNamespace ??= ComputeNamespace();
         protected abstract string? ComputeNamespace();
+        internal string? Call_ComputeNamespace() => ComputeNamespace();
         private volatile string? _lazyNamespace;
 
         public sealed override string? FullName => _lazyFullName ??= ComputeFullName();
         protected abstract string? ComputeFullName();
+        internal string? Call_ComputeFullName() => ComputeFullName();
         private volatile string? _lazyFullName;
-
-        public sealed override string? AssemblyQualifiedName => _lazyAssemblyQualifiedFullName ??= ComputeAssemblyQualifiedName();
+        public override string? AssemblyQualifiedName => _lazyAssemblyQualifiedFullName ??= ComputeAssemblyQualifiedName();
         private string? ComputeAssemblyQualifiedName()
         {
             string? fullName = FullName;
@@ -99,6 +138,7 @@ namespace System.Reflection.TypeLoading
         public sealed override Type? DeclaringType => GetRoDeclaringType();
         protected abstract RoType? ComputeDeclaringType();
         internal RoType? GetRoDeclaringType() => _lazyDeclaringType ??= ComputeDeclaringType();
+        internal RoType? Call_ComputeDeclaringType() => ComputeDeclaringType();
         private volatile RoType? _lazyDeclaringType;
 
         public abstract override MethodBase? DeclaringMethod { get; }
@@ -149,7 +189,7 @@ namespace System.Reflection.TypeLoading
         // To implement this with the least amount of code smell, we'll implement the idealized version of BaseType here
         // and make the special-case adjustment in the public version of BaseType.
         //
-        protected abstract RoType? ComputeBaseTypeWithoutDesktopQuirk();
+        internal abstract RoType? ComputeBaseTypeWithoutDesktopQuirk();
 
         public sealed override Type[] GetInterfaces() => GetInterfacesNoCopy().CloneArray<Type>();
 
@@ -164,7 +204,7 @@ namespace System.Reflection.TypeLoading
             }
         }
 
-        protected abstract IEnumerable<RoType> ComputeDirectlyImplementedInterfaces();
+        internal abstract IEnumerable<RoType> ComputeDirectlyImplementedInterfaces();
 
         internal RoType[] GetInterfacesNoCopy() => _lazyInterfaces ??= ComputeInterfaceClosure();
         private RoType[] ComputeInterfaceClosure()
@@ -235,11 +275,13 @@ namespace System.Reflection.TypeLoading
         // TypeAttributes
         protected sealed override TypeAttributes GetAttributeFlagsImpl() => (_lazyTypeAttributes == TypeAttributesSentinel) ? (_lazyTypeAttributes = ComputeAttributeFlags()) : _lazyTypeAttributes;
         protected abstract TypeAttributes ComputeAttributeFlags();
+        internal TypeAttributes Call_ComputeAttributeFlags() => ComputeAttributeFlags();
         private volatile TypeAttributes _lazyTypeAttributes = TypeAttributesSentinel;
 
         // Miscellaneous properties
         public sealed override MemberTypes MemberType => IsPublic || IsNotPublic ? MemberTypes.TypeInfo : MemberTypes.NestedType;
         protected abstract override TypeCode GetTypeCodeImpl();
+        internal TypeCode Call_GetTypeCodeImpl() => GetTypeCodeImpl();
         public abstract override string ToString();
 
         // Random interop stuff

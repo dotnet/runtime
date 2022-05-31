@@ -558,4 +558,15 @@ namespace SampleMetadata
     {
         internal class InternalNestedClass { }
     }
+
+#if FUNCTIONPOINTER_SUPPORT
+    public unsafe class FunctionPointerHolder
+    {
+        public delegate* managed<int> Field;
+        public delegate* managed<int> Prop { get; }
+        public delegate* managed<int> MethodReturnValue() => default;
+        public void MethodArg(delegate* managed<int> f) { }
+        public void MethodArgNative(delegate* unmanaged[Stdcall, SuppressGCTransition]<int, bool, bool> f) { }
+    }
+#endif
 }

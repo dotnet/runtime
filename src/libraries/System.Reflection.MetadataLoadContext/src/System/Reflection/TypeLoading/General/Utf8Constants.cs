@@ -60,5 +60,9 @@ namespace System.Reflection.TypeLoading
         public static ReadOnlySpan<byte> GuidAttribute => "GuidAttribute"u8;
         public static ReadOnlySpan<byte> DefaultMemberAttribute => "DefaultMemberAttribute"u8;
         public static ReadOnlySpan<byte> DateTimeConstantAttribute => "DateTimeConstantAttribute"u8;
+        public static ReadOnlySpan<byte> CallConvCdecl => "CallConvCdecl"u8;
+        public static ReadOnlySpan<byte> CallConvFastcall => "CallConvFastcall"u8;
+        public static ReadOnlySpan<byte> CallConvStdcall => "CallConvStdcall"u8;
+        public static ReadOnlySpan<byte> CallConvThiscall => "CallConvThiscall"u8;
     }
 }

@@ -1489,7 +1489,7 @@ namespace System
             private static CerHashtable<RuntimeMethodInfo, RuntimeMethodInfo> s_methodInstantiations;
             private static object? s_methodInstantiationsLock;
             private string? m_defaultMemberName;
-            private object? m_genericCache; // Generic cache for rare scenario specific data. It is used to cache Enum names and values.
+            private object? m_genericCache;
             private object[]? _emptyArray; // Object array cache for Attribute.GetCustomAttributes() pathological no-result case.
             #endregion
 
@@ -1532,6 +1532,10 @@ namespace System
 
             #region Internal Members
 
+
+            /// <summary>
+            /// Generic cache for rare scenario specific data. It is used to cache either Enum names, Enum values, the Activator cache or a function pointer.
+            /// </summary>
             internal object? GenericCache
             {
                 get => m_genericCache;
@@ -1561,6 +1565,11 @@ namespace System
                         if (!m_runtimeType.GetRootElementType().IsGenericTypeDefinition && m_runtimeType.ContainsGenericParameters)
                             return null;
 
+                        // Exclude function pointer; it requires a grammar update (see https://docs.microsoft.com/en-us/dotnet/framework/reflection-and-codedom/specifying-fully-qualified-type-names)
+                        // and parsing support for Type.GetType(...) and related GetType() methods.
+                        if (m_runtimeType.IsFunctionPointer)
+                            return null;
+
                         // No assembly.
                         return ConstructName(ref m_fullname, TypeNameFormatFlags.FormatNamespace | TypeNameFormatFlags.FormatFullInst);
 
@@ -1579,6 +1588,11 @@ namespace System
                 if (m_namespace == null)
                 {
                     Type type = m_runtimeType;
+
+                    // Since Function pointers don't have a TypeDef metadata record just use the namespace for System.Type.
+                    if (type.IsFunctionPointer)
+                        return typeof(Type).Namespace!;
+
                     type = type.GetRootElementType();
 
                     while (type.IsNested)
@@ -1755,6 +1769,12 @@ namespace System
             {
                 GetMemberCache<RuntimeFieldInfo>(ref m_fieldInfoCache);
                 return m_fieldInfoCache!.AddField(field);
+            }
+
+            internal FunctionPointerInfo? FunctionPointerInfo
+            {
+                get => GenericCache as FunctionPointerInfo;
+                set => GenericCache = value;
             }
 
             #endregion
@@ -3321,7 +3341,8 @@ namespace System
             {
                 string? fullname = FullName;
 
-                // FullName is null if this type contains generic parameters but is not a generic type definition.
+                // FullName is null if this type contains generic parameters but is not a generic type definition
+                // or if it is a function pointer.
                 if (fullname == null)
                     return null;
 
@@ -3764,6 +3785,32 @@ namespace System
             return RuntimeTypeHandle.GetCorElementType(type);
         }
 
+        #endregion
+
+        #region Function Pointer
+        public override bool IsFunctionPointer => RuntimeTypeHandle.IsFunctionPointer(this);
+        public override bool IsUnmanagedFunctionPointer => RuntimeTypeHandle.IsUnmanagedFunctionPointer(this);
+        public override FunctionPointerParameterInfo[] GetFunctionPointerParameterInfos() => GetFunctionPointerInfo().ParameterInfos;
+        public override FunctionPointerParameterInfo GetFunctionPointerReturnParameter() => GetFunctionPointerInfo().ReturnParameter;
+        public override Type[] GetFunctionPointerCallingConventions() => GetFunctionPointerInfo().GetCallingConventions();
+
+        internal FunctionPointerInfo GetFunctionPointerInfo()
+        {
+            FunctionPointerInfo? fnPtr = Cache.FunctionPointerInfo;
+
+            if (fnPtr == null)
+            {
+                if (!IsFunctionPointer)
+                {
+                    throw new InvalidOperationException(SR.InvalidOperation_NotFunctionPointer);
+                }
+
+                fnPtr = new FunctionPointerInfo(this, new Signature(this));
+                Cache.FunctionPointerInfo = fnPtr;
+            }
+
+            return fnPtr;
+        }
         #endregion
 
         #endregion

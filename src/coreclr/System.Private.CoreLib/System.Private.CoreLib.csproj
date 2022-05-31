@@ -178,6 +178,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\TypeBuilderInstantiation.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\XXXOnTypeBuilderInstantiation.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\FieldInfo.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\FunctionPointerInfo.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\LoaderAllocator.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\MdConstant.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\MdFieldInfo.cs" />
@@ -194,6 +195,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeEventInfo.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeExceptionHandlingClause.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeFieldInfo.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeFunctionPointerParameterInfo.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeLocalVariableInfo.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeMethodBody.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeMethodInfo.CoreCLR.cs" />

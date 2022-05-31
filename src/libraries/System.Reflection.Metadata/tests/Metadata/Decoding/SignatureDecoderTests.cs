@@ -241,6 +241,8 @@ namespace System.Reflection.Metadata.Decoding.Tests
             public struct Nested { }
             public Nested Property { get { throw null; } }
             public event EventHandler<EventArgs> Event { add { } remove { } }
+            public delegate* managed<int, bool> ManagedFunctionPointer;
+            public delegate* unmanaged[Stdcall]<int, bool> NativeFunctionPointer;
         }
 
         [Fact]
@@ -329,6 +331,8 @@ namespace System.Reflection.Metadata.Decoding.Tests
                 { "Array", "int32[0...,0...]" },
                 { "GenericTypeParameter", "!T" },
                 { "GenericInstantiation", $"[{CollectionsAssemblyName}]System.Collections.Generic.List`1<int32>" },
+                { "ManagedFunctionPointer", "method bool *(int32)" },
+                { "NativeFunctionPointer", "method bool *(int32)" },
             };
         }
 

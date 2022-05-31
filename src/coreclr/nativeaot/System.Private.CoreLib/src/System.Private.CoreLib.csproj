@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
   </PropertyGroup>
@@ -159,6 +159,7 @@
     <Compile Include="System\Reflection\MethodBase.NativeAot.cs" />
     <Compile Include="System\Reflection\Metadata\AssemblyExtensions.cs" />
     <Compile Include="System\Reflection\Metadata\MetadataUpdater.cs" />
+    <Compile Include="System\Reflection\RuntimeFunctionPointerParameterInfo.NativeAot.cs" />
     <Compile Include="System\Runtime\InteropServices\CriticalHandle.NativeAot.cs" />
     <Compile Include="System\Activator.NativeAot.cs" />
     <Compile Include="System\AppContext.NativeAot.cs" />
@@ -509,7 +510,7 @@
     <Compile Include="System\Reflection\Runtime\TypeInfos\NativeFormat\NativeFormatRuntimeTypeInfo.CoreGetDeclared.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeArrayTypeInfo.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeByRefTypeInfo.cs" />
-    <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeClsIdTypeInfo.cs" Condition="'$(FeatureComInterop)' == 'true'"/>
+    <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeClsIdTypeInfo.cs" Condition="'$(FeatureComInterop)' == 'true'" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeClsIdTypeInfo.UnificationKey.cs" Condition="'$(FeatureComInterop)' == 'true'" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeConstructedGenericTypeInfo.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeConstructedGenericTypeInfo.UnificationKey.cs" />

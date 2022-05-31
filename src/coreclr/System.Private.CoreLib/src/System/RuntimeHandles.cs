@@ -182,6 +182,18 @@ namespace System
             return corElemType == CorElementType.ELEMENT_TYPE_SZARRAY;
         }
 
+        internal static bool IsFunctionPointer(RuntimeType type)
+        {
+            CorElementType corElemType = GetCorElementType(type);
+            return corElemType == CorElementType.ELEMENT_TYPE_FNPTR;
+        }
+
+        internal static bool IsUnmanagedFunctionPointer(RuntimeType type)
+        {
+            // Fast native path that does not need to create FunctionPointerInfo and parse the Signature.
+            return _IsUnmanagedFunctionPointer(type);
+        }
+
         internal static bool HasElementType(RuntimeType type)
         {
             CorElementType corElemType = GetCorElementType(type);
@@ -521,6 +533,9 @@ namespace System
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern bool IsValueType(RuntimeType type);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern bool _IsUnmanagedFunctionPointer(RuntimeType type);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_ConstructName")]
         private static partial void ConstructName(QCallTypeHandle handle, TypeNameFormatFlags formatFlags, StringHandleOnStack retString);
@@ -1600,28 +1615,6 @@ namespace System
 
     internal sealed unsafe class Signature
     {
-        #region Definitions
-        internal enum MdSigCallingConvention : byte
-        {
-            Generics = 0x10,
-            HasThis = 0x20,
-            ExplicitThis = 0x40,
-            CallConvMask = 0x0F,
-            Default = 0x00,
-            C = 0x01,
-            StdCall = 0x02,
-            ThisCall = 0x03,
-            FastCall = 0x04,
-            Vararg = 0x05,
-            Field = 0x06,
-            LocalSig = 0x07,
-            Property = 0x08,
-            Unmanaged = 0x09,
-            GenericInst = 0x0A,
-            Max = 0x0B,
-        }
-        #endregion
-
         #region FCalls
         [MemberNotNull(nameof(m_arguments))]
         [MemberNotNull(nameof(m_returnTypeORfieldType))]
@@ -1671,6 +1664,16 @@ namespace System
         {
             GetSignature(null, 0, fieldHandle.Value, null, declaringType);
             GC.KeepAlive(fieldHandle);
+        }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private extern void GetSignatureFromFunctionPointer(Type functionPointerType);
+
+        public Signature(RuntimeType functionPointerType)
+        {
+            m_arguments = default!;
+            m_returnTypeORfieldType = default!;
+            GetSignatureFromFunctionPointer(functionPointerType);
         }
 
         public Signature(void* pCorSig, int cCorSig, RuntimeType declaringType)

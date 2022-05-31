@@ -37,7 +37,7 @@ namespace Generics { class RecursionGraph; }
 struct CORINFO_CLASS_STRUCT_;
 
 typedef DPTR(class TypeVarTypeDesc) PTR_TypeVarTypeDesc;
-typedef SPTR(class FnPtrTypeDesc) PTR_FnPtrTypeDesc;
+typedef DPTR(class FnPtrTypeDesc) PTR_FnPtrTypeDesc;
 typedef DPTR(class ParamTypeDesc) PTR_ParamTypeDesc;
 typedef DPTR(class TypeDesc) PTR_TypeDesc;
 typedef DPTR(class TypeHandle) PTR_TypeHandle;
@@ -459,6 +459,8 @@ public:
 
     // PTR
     BOOL IsPointer() const;
+
+    BOOL IsUnmanagedFunctionPointer() const;
 
     // True if this type *is* a formal generic type parameter or any component of it is a formal generic type parameter
     BOOL ContainsGenericVariables(BOOL methodOnly=FALSE) const;

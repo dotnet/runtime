@@ -19,6 +19,7 @@ public:
         //@GENERICS: the owning type handle is required because pMeth may be shared between instantiations
     SigFormat(MethodDesc* pMeth, TypeHandle owner, BOOL fIgnoreMethodName = false);
     SigFormat(MetaSig &metaSig, LPCUTF8 memberName, LPCUTF8 className = NULL, LPCUTF8 ns = NULL);
+    SigFormat(FnPtrTypeDesc* pFnPtr);
 
     ~SigFormat();
 

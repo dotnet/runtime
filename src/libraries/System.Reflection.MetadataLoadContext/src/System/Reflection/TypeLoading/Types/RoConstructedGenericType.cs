@@ -35,6 +35,8 @@ namespace System.Reflection.TypeLoading
         public sealed override bool IsVariableBoundArray => false;
         protected sealed override bool IsByRefImpl() => false;
         protected sealed override bool IsPointerImpl() => false;
+        public sealed override bool IsFunctionPointer => false;
+        public sealed override bool IsUnmanagedFunctionPointer => false;
         public sealed override bool IsConstructedGenericType => true;
         public sealed override bool IsGenericParameter => false;
         public sealed override bool IsGenericTypeParameter => false;
@@ -53,6 +55,11 @@ namespace System.Reflection.TypeLoading
             }
         }
 
+        public sealed override Type[] GetFunctionPointerCallingConventions() => throw new InvalidOperationException(SR.InvalidOperation_NotFunctionPointer);
+#if FUNCTIONPOINTER_SUPPORT
+        public sealed override FunctionPointerParameterInfo GetFunctionPointerReturnParameter() => throw new InvalidOperationException(SR.InvalidOperation_NotFunctionPointer);
+        public sealed override FunctionPointerParameterInfo[] GetFunctionPointerParameterInfos() => throw new InvalidOperationException(SR.InvalidOperation_NotFunctionPointer);
+#endif
         internal sealed override RoModule GetRoModule() => _genericTypeDefinition.GetRoModule();
 
         protected sealed override string ComputeName() => _genericTypeDefinition.Name;
@@ -98,8 +105,8 @@ namespace System.Reflection.TypeLoading
         public sealed override MethodBase DeclaringMethod => throw new InvalidOperationException(SR.Arg_NotGenericParameter);
         protected sealed override RoType? ComputeDeclaringType() => _genericTypeDefinition.GetRoDeclaringType();
 
-        protected sealed override RoType? ComputeBaseTypeWithoutDesktopQuirk() => _genericTypeDefinition.SpecializeBaseType(Instantiation);
-        protected sealed override IEnumerable<RoType> ComputeDirectlyImplementedInterfaces() => _genericTypeDefinition.SpecializeInterfaces(Instantiation);
+        internal sealed override RoType? ComputeBaseTypeWithoutDesktopQuirk() => _genericTypeDefinition.SpecializeBaseType(Instantiation);
+        internal sealed override IEnumerable<RoType> ComputeDirectlyImplementedInterfaces() => _genericTypeDefinition.SpecializeInterfaces(Instantiation);
 
         public sealed override IEnumerable<CustomAttributeData> CustomAttributes => _genericTypeDefinition.CustomAttributes;
         internal sealed override bool IsCustomAttributeDefined(ReadOnlySpan<byte> ns, ReadOnlySpan<byte> name) => _genericTypeDefinition.IsCustomAttributeDefined(ns, name);

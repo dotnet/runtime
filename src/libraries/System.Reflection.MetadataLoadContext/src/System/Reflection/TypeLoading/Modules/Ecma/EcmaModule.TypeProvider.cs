@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Reflection.Metadata;
@@ -34,8 +35,33 @@ namespace System.Reflection.TypeLoading.Ecma
         public RoType GetGenericTypeParameter(TypeContext genericContext, int index) => genericContext.GetGenericTypeArgumentOrNull(index) ?? throw new BadImageFormatException(SR.Format(SR.GenericTypeParamIndexOutOfRange, index));
         public RoType GetGenericMethodParameter(TypeContext genericContext, int index) => genericContext.GetGenericMethodArgumentOrNull(index) ?? throw new BadImageFormatException(SR.Format(SR.GenericMethodParamIndexOutOfRange, index));
 
+#if FUNCTIONPOINTER_SUPPORT
+        public RoType GetFunctionPointerType(MethodSignature<RoType> signature) => new RoFunctionPointerType(this, signature);
+        public RoType GetModifiedType(RoType modifier, RoType unmodifiedType, bool isRequired)
+        {
+            RoFunctionPointerDelegator? forwardingType = unmodifiedType as RoFunctionPointerDelegator;
+
+            if (forwardingType is null)
+            {
+                forwardingType = new(unmodifiedType);
+            }
+
+            if (isRequired)
+            {
+                forwardingType.AddRequiredModifier(modifier);
+            }
+            else
+            {
+                forwardingType.AddOptionalModifier(modifier);
+            }
+
+            return forwardingType;
+        }
+#else
         public RoType GetFunctionPointerType(MethodSignature<RoType> signature) => throw new NotSupportedException(SR.NotSupported_FunctionPointers);
         public RoType GetModifiedType(RoType modifier, RoType unmodifiedType, bool isRequired) => unmodifiedType;
+#endif
+
         public RoType GetPinnedType(RoType elementType) => elementType;
 
         public RoType GetPrimitiveType(PrimitiveTypeCode typeCode) => Loader.GetCoreType(typeCode.ToCoreType());

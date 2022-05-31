@@ -15,6 +15,7 @@
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Reflection.CustomAttributeTypedArgument))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Reflection.EventInfo))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Reflection.FieldInfo))]
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Reflection.FunctionPointerParameterInfo))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Reflection.ICustomAttributeProvider))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Reflection.IntrospectionExtensions))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Reflection.InvalidFilterCriteriaException))]

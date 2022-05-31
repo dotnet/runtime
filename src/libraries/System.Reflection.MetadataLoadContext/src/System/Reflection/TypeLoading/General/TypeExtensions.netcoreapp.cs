@@ -17,12 +17,19 @@ namespace System.Reflection.TypeLoading
     }
 
     /// <summary>
-    /// Another layer of base types. For NetCore, these base types are empty. For NetStandard, these base types add the NetCore apis to NetStandard
-    /// so code interacting with "RoTypes" and friends can happily code to the full NetCore surface area.
+    /// Another layer of base types. For NetCore, these base types are empty except for function pointers which were added in 7.0.
+    /// For NetStandard, these base types add the NetCore apis to NetStandard so code interacting with "RoTypes" and friends can
+    /// happily code to the full NetCore surface area.
     /// </summary>
     internal abstract class LeveledTypeInfo : TypeInfo
     {
         protected LeveledTypeInfo() : base() { }
+
+#if !FUNCTIONPOINTER_SUPPORT
+        public abstract bool IsFunctionPointer { get; }
+        public abstract bool IsUnmanagedFunctionPointer { get; }
+        public abstract Type[] GetFunctionPointerCallingConventions();
+#endif
     }
 
     internal abstract class LeveledAssembly : Assembly

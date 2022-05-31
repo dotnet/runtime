@@ -3988,4 +3988,7 @@
   <data name="FileNotFound_AssemblyNotFound" xml:space="preserve">
     <value>Cannot load assembly '{0}'. No metadata found for this assembly.</value>
   </data>
+  <data name="InvalidOperation_NotFunctionPointer" xml:space="preserve">
+    <value>Method may only be called on a Type for which Type.IsFunctionPointer is true.</value>
+  </data>
 </root>

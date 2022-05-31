@@ -7,7 +7,9 @@
     <PackageDescription>Provides read-only reflection on assemblies in an isolated context with support for assemblies that target different processor architectures and runtimes. Using MetadataLoadContext enables you to inspect assemblies without loading them into the main execution context. Assemblies in MetadataLoadContext are treated only as metadata, that is, you can read information about their members, but cannot execute any code contained in them.</PackageDescription>
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
-
+  <PropertyGroup>
+    <DefineConstants Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">$(DefineConstants);FUNCTIONPOINTER_SUPPORT</DefineConstants>
+  </PropertyGroup>  
   <ItemGroup>
     <Compile Include="System\CoreRtBridge.cs" />
     <Compile Include="System\Reflection\DefaultBinder.cs" />
@@ -60,6 +62,7 @@
     <Compile Include="System\Reflection\TypeLoading\Events\RoEvent.cs" />
     <Compile Include="System\Reflection\TypeLoading\Fields\Ecma\EcmaField.cs" />
     <Compile Include="System\Reflection\TypeLoading\Fields\RoField.cs" />
+    <Compile Include="System\Reflection\TypeLoading\FunctionPointer\RoFunctionPointerParameterInfo.cs" Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))" />
     <Compile Include="System\Reflection\TypeLoading\General\Assignability.cs" />
     <Compile Include="System\Reflection\TypeLoading\General\AssemblyNameData.cs" />
     <Compile Include="System\Reflection\TypeLoading\General\CoreType.cs" />
@@ -78,12 +81,12 @@
     <Compile Include="System\Reflection\TypeLoading\General\Ecma\MetadataTable.cs" />
     <Compile Include="System\Reflection\TypeLoading\General\HashHelpers.cs" />
     <Compile Include="System\Reflection\TypeLoading\General\Helpers.cs" />
-    <Compile Include="System\Reflection\TypeLoading\General\TypeExtensions.netcoreapp.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
-    <Compile Include="System\Reflection\TypeLoading\General\TypeExtensions.netstandard.cs" Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
     <Compile Include="System\Reflection\TypeLoading\General\MethodSig.cs" />
     <Compile Include="System\Reflection\TypeLoading\General\RoAssemblyName.cs" />
     <Compile Include="System\Reflection\TypeLoading\General\Sentinels.cs" />
     <Compile Include="System\Reflection\TypeLoading\General\TypeContext.cs" />
+    <Compile Include="System\Reflection\TypeLoading\General\TypeExtensions.netcoreapp.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
+    <Compile Include="System\Reflection\TypeLoading\General\TypeExtensions.netstandard.cs" Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
     <Compile Include="System\Reflection\TypeLoading\General\TypeFactories.cs" />
     <Compile Include="System\Reflection\TypeLoading\General\Utf8Constants.cs" />
     <Compile Include="System\Reflection\TypeLoading\MethodBase\IMethodDecoder.cs" />
@@ -130,9 +133,12 @@
     <Compile Include="System\Reflection\TypeLoading\Types\RoConstructedGenericType.Key.cs" />
     <Compile Include="System\Reflection\TypeLoading\Types\RoDefinitionType.cs" />
     <Compile Include="System\Reflection\TypeLoading\Types\RoExceptionType.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Types\RoFunctionPointerDelegator.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Types\RoFunctionPointerType.cs" Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))" />
     <Compile Include="System\Reflection\TypeLoading\Types\RoGenericParameterType.cs" />
     <Compile Include="System\Reflection\TypeLoading\Types\RoHasElementType.cs" />
     <Compile Include="System\Reflection\TypeLoading\Types\RoInstantiationProviderType.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Types\RoTypeDelegator.cs" />
     <Compile Include="System\Reflection\TypeLoading\Types\RoModifiedType.cs" />
     <Compile Include="System\Reflection\TypeLoading\Types\RoPinnedType.cs" />
     <Compile Include="System\Reflection\TypeLoading\Types\RoPointerType.cs" />

@@ -10,7 +10,7 @@ using CultureInfo = System.Globalization.CultureInfo;
 
 namespace System.Reflection
 {
-    public class TypeDelegator : TypeInfo
+    public partial class TypeDelegator : TypeInfo
     {
         public override bool IsAssignableFrom([NotNullWhen(true)] TypeInfo? typeInfo)
         {
@@ -84,6 +84,10 @@ namespace System.Reflection
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
         public override FieldInfo[] GetFields(BindingFlags bindingAttr) => typeImpl.GetFields(bindingAttr);
 
+        public override Type[] GetFunctionPointerCallingConventions() => typeImpl.GetFunctionPointerCallingConventions();
+        public override FunctionPointerParameterInfo[] GetFunctionPointerParameterInfos() => typeImpl.GetFunctionPointerParameterInfos();
+        public override FunctionPointerParameterInfo GetFunctionPointerReturnParameter() => typeImpl.GetFunctionPointerReturnParameter();
+
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         public override Type? GetInterface(string name, bool ignoreCase) => typeImpl.GetInterface(name, ignoreCase);
@@ -145,6 +149,9 @@ namespace System.Reflection
         public override bool IsConstructedGenericType => typeImpl.IsConstructedGenericType;
 
         public override bool IsCollectible => typeImpl.IsCollectible;
+
+        public override bool IsFunctionPointer => typeImpl.IsFunctionPointer;
+        public override bool IsUnmanagedFunctionPointer => typeImpl.IsUnmanagedFunctionPointer;
 
         public override Type? GetElementType() => typeImpl.GetElementType();
         protected override bool HasElementTypeImpl() => typeImpl.HasElementType;

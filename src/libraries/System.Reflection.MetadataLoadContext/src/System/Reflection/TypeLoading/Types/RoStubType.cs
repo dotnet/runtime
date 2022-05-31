@@ -21,6 +21,8 @@ namespace System.Reflection.TypeLoading
         public sealed override bool IsVariableBoundArray => throw null!;
         protected sealed override bool IsByRefImpl() => throw null!;
         protected sealed override bool IsPointerImpl() => throw null!;
+        public sealed override bool IsFunctionPointer => throw null!;
+        public sealed override bool IsUnmanagedFunctionPointer => throw null!;
         public sealed override bool IsConstructedGenericType => throw null!;
         public sealed override bool IsGenericParameter => throw null!;
         public sealed override bool IsGenericTypeParameter => throw null!;
@@ -61,13 +63,18 @@ namespace System.Reflection.TypeLoading
         public sealed override GenericParameterAttributes GenericParameterAttributes => throw null!;
         public sealed override int GenericParameterPosition => throw null!;
         public sealed override Type[] GetGenericParameterConstraints() => throw null!;
+        public sealed override Type[] GetFunctionPointerCallingConventions() => throw null!;
+#if FUNCTIONPOINTER_SUPPORT
+        public sealed override FunctionPointerParameterInfo GetFunctionPointerReturnParameter() => throw null!;
+        public sealed override FunctionPointerParameterInfo[] GetFunctionPointerParameterInfos() => throw null!;
+#endif
 
         public sealed override Guid GUID => throw null!;
         public sealed override StructLayoutAttribute StructLayoutAttribute => throw null!;
         protected internal sealed override RoType ComputeEnumUnderlyingType() => throw null!;
 
-        protected sealed override RoType ComputeBaseTypeWithoutDesktopQuirk() => throw null!;
-        protected sealed override IEnumerable<RoType> ComputeDirectlyImplementedInterfaces() => throw null!;
+        internal sealed override RoType ComputeBaseTypeWithoutDesktopQuirk() => throw null!;
+        internal sealed override IEnumerable<RoType> ComputeDirectlyImplementedInterfaces() => throw null!;
 
         // Low level support for the BindingFlag-driven enumerator apis.
         internal sealed override IEnumerable<ConstructorInfo> GetConstructorsCore(NameFilter? filter) => throw null!;

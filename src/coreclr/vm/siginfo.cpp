@@ -1488,9 +1488,9 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
             {
                 if (TypeFromToken(typeToken) == mdtTypeRef)
                 {
-                        loadedType = TypeHandle(CoreLibBinder::GetElementType(ELEMENT_TYPE_VOID));
-                        thRet = loadedType;
-                        break;
+                    loadedType = TypeHandle(CoreLibBinder::GetElementType(ELEMENT_TYPE_VOID));
+                    thRet = loadedType;
+                    break;
                 }
             }
 
@@ -1542,8 +1542,8 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
                                                              pZapSigContext);
             if (elemType.IsNull())
             {
-                    thRet = elemType;
-                    break;
+                thRet = elemType;
+                break;
             }
 
             uint32_t rank = 0;
@@ -1554,7 +1554,7 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
                 _ASSERTE(0 < rank);
             }
             thRet = ClassLoader::LoadArrayTypeThrowing(elemType, typ, rank, fLoadTypes, level);
-                break;
+            break;
         }
 
         case ELEMENT_TYPE_PINNED:
@@ -1566,7 +1566,7 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
                                                dropGenericArgumentLevel,
                                                pSubst,
                                                pZapSigContext);
-                break;
+            break;
 
         case ELEMENT_TYPE_BYREF:
         case ELEMENT_TYPE_PTR:
@@ -1584,14 +1584,15 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
             }
             else
             {
-                    thRet = ClassLoader::LoadPointerOrByrefTypeThrowing(typ, baseType, fLoadTypes, level);
+                thRet = ClassLoader::LoadPointerOrByrefTypeThrowing(typ, baseType, fLoadTypes, level);
             }
-                break;
+            break;
         }
 
         case ELEMENT_TYPE_FNPTR:
             {
 #ifndef DACCESS_COMPILE
+                uint32_t sigStart = psig.m_dwLen;
                 uint32_t uCallConv = 0;
                 IfFailThrowBF(psig.GetData(&uCallConv), BFA_BAD_SIGNATURE, pOrigModule);
 
@@ -1639,13 +1640,16 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
                     break;
                 }
 
-                // Now make the function pointer type
-                thRet = ClassLoader::LoadFnptrTypeThrowing((BYTE) uCallConv, cArgs, retAndArgTypes, fLoadTypes, level);
+                uint32_t sigLen = sigStart - psig.m_dwLen;
+                PCOR_SIGNATURE sig = (PCOR_SIGNATURE)psig.m_ptr - sigLen;
+
+                // Now find an existing function pointer or make a new one
+                thRet = ClassLoader::LoadFnptrTypeThrowing(static_cast<Module*>(pOrigModule), sig, sigLen, (BYTE) uCallConv, cArgs, retAndArgTypes, fLoadTypes, level);                
 #else
-            DacNotImpl();
+                DacNotImpl();
                 thRet = TypeHandle();
 #endif
-            break;
+                break;
             }
 
         case ELEMENT_TYPE_INTERNAL :

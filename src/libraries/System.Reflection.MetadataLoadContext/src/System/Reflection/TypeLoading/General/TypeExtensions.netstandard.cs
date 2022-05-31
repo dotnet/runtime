@@ -52,6 +52,14 @@ namespace System.Reflection.TypeLoading
         public virtual bool IsSignatureType => false;
         protected abstract MethodInfo GetMethodImpl(string name, int genericParameterCount, BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers);
         public abstract bool HasSameMetadataDefinitionAs(MemberInfo other);
+
+        public abstract bool IsFunctionPointer { get; }
+        public abstract bool IsUnmanagedFunctionPointer { get; }
+        public abstract Type[] GetFunctionPointerCallingConventions();
+
+        // These are not implemented since they expose new types:
+        // public abstract override FunctionPointerParameterInfo GetFunctionPointerReturnParameter();
+        // public abstract override FunctionPointerParameterInfo[] GetFunctionPointerParameterInfos();
     }
 
     internal abstract class LeveledAssembly : Assembly

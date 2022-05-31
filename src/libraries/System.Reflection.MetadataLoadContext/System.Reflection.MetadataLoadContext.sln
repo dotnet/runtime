@@ -17,6 +17,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Reflection.MetadataL
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Reflection.MetadataLoadContext.Tests", "tests\System.Reflection.MetadataLoadContext.Tests.csproj", "{D28B6414-C82C-4BDE-B8BB-A4E3297A0651}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestFunctionPointerAssembly", "..\Common\tests\System\TestFunctionPointerAssembly\TestFunctionPointerAssembly.csproj", "{F85BDD51-AC29-4D8D-8257-C509BED9A448}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LibraryImportGenerator", "..\System.Runtime.InteropServices\gen\LibraryImportGenerator\LibraryImportGenerator.csproj", "{4361CEFA-8238-4247-9CC5-D99DF794843C}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Interop.SourceGeneration", "..\System.Runtime.InteropServices\gen\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj", "{7393C7CD-4C31-4B1C-96DC-1D46D240538A}"
@@ -73,6 +75,10 @@ Global
 		{D28B6414-C82C-4BDE-B8BB-A4E3297A0651}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D28B6414-C82C-4BDE-B8BB-A4E3297A0651}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D28B6414-C82C-4BDE-B8BB-A4E3297A0651}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F85BDD51-AC29-4D8D-8257-C509BED9A448}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F85BDD51-AC29-4D8D-8257-C509BED9A448}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F85BDD51-AC29-4D8D-8257-C509BED9A448}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F85BDD51-AC29-4D8D-8257-C509BED9A448}.Release|Any CPU.Build.0 = Release|Any CPU
 		{4361CEFA-8238-4247-9CC5-D99DF794843C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{4361CEFA-8238-4247-9CC5-D99DF794843C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4361CEFA-8238-4247-9CC5-D99DF794843C}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -92,6 +98,7 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{6A69770F-4F95-411F-ACAE-2B902EB62161} = {F45DECCA-03D3-4087-AB01-F099C027DC33}
 		{D28B6414-C82C-4BDE-B8BB-A4E3297A0651} = {F45DECCA-03D3-4087-AB01-F099C027DC33}
+		{F85BDD51-AC29-4D8D-8257-C509BED9A448} = {F45DECCA-03D3-4087-AB01-F099C027DC33}
 		{22BDB23C-24DE-4C3C-9A18-A048C445EDC1} = {B3731232-B2FE-401B-A9F1-5DFB1A90D687}
 		{E524DAF8-3F2C-4EC5-833D-E7D182055A66} = {B3731232-B2FE-401B-A9F1-5DFB1A90D687}
 		{7AE8D7FD-6CEE-4F70-8675-0896AA6487BD} = {B3731232-B2FE-401B-A9F1-5DFB1A90D687}

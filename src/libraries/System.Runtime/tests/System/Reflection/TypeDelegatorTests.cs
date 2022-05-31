@@ -43,15 +43,30 @@ namespace System.Reflection.Tests
             Assert.False(new TypeDelegator(typeof(IComparable)).IsValueType);
             Assert.False(new TypeDelegator(typeof(IComparable)).IsEnum);
             Assert.True(new TypeDelegator(typeof(IComparable)).IsInterface);
+            Assert.False(new TypeDelegator(typeof(IComparable)).IsFunctionPointer);
 
             Assert.True(new TypeDelegator(typeof(TypeDelegatorTests)).IsClass);
             Assert.False(new TypeDelegator(typeof(TypeDelegatorTests)).IsValueType);
             Assert.False(new TypeDelegator(typeof(TypeDelegatorTests)).IsInterface);
+            Assert.False(new TypeDelegator(typeof(IComparable)).IsFunctionPointer);
 
             Assert.False(new TypeDelegator(typeof(TypeCode)).IsClass);
             Assert.False(new TypeDelegator(typeof(TypeCode)).IsInterface);
             Assert.True(new TypeDelegator(typeof(TypeCode)).IsValueType);
             Assert.True(new TypeDelegator(typeof(TypeCode)).IsEnum);
+            Assert.False(new TypeDelegator(typeof(IComparable)).IsFunctionPointer);
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
+        public void FunctionPointers()
+        {
+            Assert.True(new TypeDelegator(typeof(delegate* unmanaged<void>)).IsClass);
+            Assert.True(new TypeDelegator(typeof(delegate* unmanaged<void>)).IsFunctionPointer);
+            Assert.True(new TypeDelegator(typeof(delegate* unmanaged<void>)).IsUnmanagedFunctionPointer);
+            Assert.NotNull(new TypeDelegator(typeof(delegate* unmanaged<void>)).GetFunctionPointerCallingConventions());
+            Assert.NotNull(new TypeDelegator(typeof(delegate* unmanaged<void>)).GetFunctionPointerParameterInfos());
+            Assert.NotNull(new TypeDelegator(typeof(delegate* unmanaged<void>)).GetFunctionPointerReturnParameter());
         }
 
         public static IEnumerable<object[]> SZArrayOrNotTypes()

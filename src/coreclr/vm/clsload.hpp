@@ -693,7 +693,10 @@ public:
                                             LoadTypesFlag fLoadTypes = LoadTypes,
                                             ClassLoadLevel level = CLASS_LOADED);
 
-    static TypeHandle LoadFnptrTypeThrowing(BYTE callConv,
+    static TypeHandle LoadFnptrTypeThrowing(Module *pModule,
+                                            PCOR_SIGNATURE sig,
+                                            uint32_t sigLen,
+                                            BYTE callConv,
                                             DWORD numArgs,
                                             TypeHandle* retAndArgTypes,
                                             LoadTypesFlag fLoadTypes = LoadTypes,

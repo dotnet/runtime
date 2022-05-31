@@ -264,8 +264,7 @@ FORCEINLINE OBJECTREF TypeHandle::GetManagedClassObjectFast() const
             break;
 
         case ELEMENT_TYPE_FNPTR:
-            // A function pointer is mapped into typeof(IntPtr). It results in a loss of information.
-            o = CoreLibBinder::GetElementType(ELEMENT_TYPE_I)->GetManagedClassObjectIfExists();
+            o = dac_cast<PTR_FnPtrTypeDesc>(AsTypeDesc())->GetManagedClassObjectFast();//GetManagedClassObjectIfExists();
             break;
 
         default:

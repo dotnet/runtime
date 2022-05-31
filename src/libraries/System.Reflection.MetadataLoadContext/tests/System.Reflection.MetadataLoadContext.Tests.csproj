@@ -6,11 +6,12 @@
          SYSLIB0037: AssemblyName members HashAlgorithm, ProcessorArchitecture, and VersionCompatibility are obsolete. -->
     <NoWarn>$(NoWarn);SYSLIB0005;SYSLIB0037</NoWarn>
   </PropertyGroup>
+  <PropertyGroup>
+    <DefineConstants Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">$(DefineConstants);FUNCTIONPOINTER_SUPPORT</DefineConstants>
+  </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)System\IO\TempDirectory.cs"
-             Link="Common\System\IO\TempDirectory.cs" />
-    <Compile Include="$(CommonTestPath)System\IO\TempFile.cs"
-             Link="Common\System\IO\TempFile.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\TempDirectory.cs" Link="Common\System\IO\TempDirectory.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\TempFile.cs" Link="Common\System\IO\TempFile.cs" />
     <Compile Include="src\SampleMetadata\SampleMetadata.cs" />
     <Compile Include="src\Tests\Assembly\AssemblyGetNameTests.cs" />
     <Compile Include="src\Tests\Assembly\AssemblyProhibitedApiTests.cs" />
@@ -72,8 +73,14 @@
     <Compile Include="src\TestUtils\TestUtils.JittedRuntimes.cs" />
     <Compile Include="src\TestUtils\TypeWrapper.cs" />
   </ItemGroup>
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">
+    <Compile Include="$(CommonTestPath)System\FunctionPointerTests.cs" Link="Common\System\FunctionPointerTests.cs" />
+  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\src\System.Reflection.MetadataLoadContext.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">
+    <ProjectReference Include="$(CommonPath)..\tests\System\TestFunctionPointerAssembly\TestFunctionPointerAssembly.csproj" />    
   </ItemGroup>
   <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
     <WasmFilesToIncludeFromPublishDir Include="System.Private.CoreLib.dll" />

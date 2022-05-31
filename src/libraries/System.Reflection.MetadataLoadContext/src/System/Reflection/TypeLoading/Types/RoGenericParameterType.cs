@@ -25,6 +25,8 @@ namespace System.Reflection.TypeLoading
         public sealed override bool IsVariableBoundArray => false;
         protected sealed override bool IsByRefImpl() => false;
         protected sealed override bool IsPointerImpl() => false;
+        public sealed override bool IsFunctionPointer => false;
+        public sealed override bool IsUnmanagedFunctionPointer => false;
         public sealed override bool IsConstructedGenericType => false;
         public sealed override bool IsGenericParameter => true;
         public sealed override bool ContainsGenericParameters => true;
@@ -55,11 +57,16 @@ namespace System.Reflection.TypeLoading
         protected abstract RoType[] ComputeGenericParameterConstraints();
         private volatile RoType[]? _lazyConstraints;
 
+        public sealed override Type[] GetFunctionPointerCallingConventions() => throw new InvalidOperationException(SR.InvalidOperation_NotFunctionPointer);
+#if FUNCTIONPOINTER_SUPPORT
+        public sealed override FunctionPointerParameterInfo GetFunctionPointerReturnParameter() => throw new InvalidOperationException(SR.InvalidOperation_NotFunctionPointer);
+        public sealed override FunctionPointerParameterInfo[] GetFunctionPointerParameterInfos() => throw new InvalidOperationException(SR.InvalidOperation_NotFunctionPointer);
+#endif
         public sealed override Guid GUID => Guid.Empty;
         public sealed override StructLayoutAttribute? StructLayoutAttribute => null;
         protected internal sealed override RoType ComputeEnumUnderlyingType() => throw new ArgumentException(SR.Arg_MustBeEnum);
 
-        protected sealed override RoType? ComputeBaseTypeWithoutDesktopQuirk()
+        internal sealed override RoType? ComputeBaseTypeWithoutDesktopQuirk()
         {
             RoType[] constraints = GetGenericParameterConstraintsNoCopy();
             foreach (RoType constraint in constraints)
@@ -70,7 +77,7 @@ namespace System.Reflection.TypeLoading
             return Loader.GetCoreType(CoreType.Object);
         }
 
-        protected sealed override IEnumerable<RoType> ComputeDirectlyImplementedInterfaces()
+        internal sealed override IEnumerable<RoType> ComputeDirectlyImplementedInterfaces()
         {
             RoType[] constraints = GetGenericParameterConstraintsNoCopy();
             foreach (RoType constraint in constraints)

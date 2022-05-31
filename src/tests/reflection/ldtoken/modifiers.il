@@ -6,8 +6,8 @@
 
 .method private hidebysig static int32  Main() cil managed
 {
-  .locals init (valuetype [System.Runtime]System.RuntimeTypeHandle)
   .entrypoint
+  .locals init (valuetype [System.Runtime]System.RuntimeTypeHandle)
 
   ldtoken string[]
   stloc.0
@@ -59,6 +59,40 @@ UIntArrayModifiedUIntArrayOK:
   ret
 MyStructPtrModifiedMyStructPtrOK:
 
+  ldtoken method int32 *()
+  stloc.0
+  ldloca 0
+  ldtoken method int32 modopt(MyModifier) *()
+
+  call instance bool valuetype [System.Runtime]System.RuntimeTypeHandle::Equals(valuetype [System.Runtime]System.RuntimeTypeHandle)
+  // All modifiers are considered as part of identity.
+  brfalse IntReturnManagedFunctionPointerModifiedOK
+  ldc.i4.6
+  ret
+IntReturnManagedFunctionPointerModifiedOK:
+
+  ldtoken method unmanaged cdecl int32 modopt(MyModifier) *()
+  stloc.0
+  ldloca 0
+  ldtoken method unmanaged cdecl int32 modopt(MyModifier) *()
+
+  call instance bool valuetype [System.Runtime]System.RuntimeTypeHandle::Equals(valuetype [System.Runtime]System.RuntimeTypeHandle)
+  // CallKind and modifiers are the same
+  brtrue IntReturnUnmanagedFunctionPointerModifiedOK
+  ldc.i4.7
+  ret
+IntReturnUnmanagedFunctionPointerModifiedOK:
+
+  ldtoken method unmanaged cdecl int32 modopt([System.Runtime]System.Runtime.CompilerServices.CallConvStdcall) *()
+  stloc.0
+  ldloca 0
+  ldtoken method unmanaged cdecl int32 modopt([System.Runtime]System.Runtime.CompilerServices.CallConvSuppressGCTransition) modopt([System.Runtime]System.Runtime.CompilerServices.CallConvStdcall) *()
+  call instance bool valuetype [System.Runtime]System.RuntimeTypeHandle::Equals(valuetype [System.Runtime]System.RuntimeTypeHandle)
+  brfalse IntReturnUnmanagedFunctionPointerWithCallConvModifiedOK
+  ldc.i4.8
+  ret
+
+IntReturnUnmanagedFunctionPointerWithCallConvModifiedOK:
   ldc.i4 100
   ret
 }

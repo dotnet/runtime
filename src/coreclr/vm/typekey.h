@@ -53,9 +53,12 @@ class TypeKey
         // m_kind = FNPTR
         struct
         {
-            BYTE m_callConv;
-            DWORD m_numArgs;
-            TypeHandle* m_pRetAndArgTypes;
+            Module *       m_pModule;
+            PCOR_SIGNATURE m_sig;
+            uint32_t       m_sigLen;
+            BYTE           m_callConv;
+            DWORD          m_numArgs;
+            TypeHandle*    m_pRetAndArgTypes;
         } asFnPtr;
     } u;
 
@@ -90,11 +93,14 @@ public:
     }
 
     // Constructor for function pointer type
-    TypeKey(BYTE callConv, DWORD numArgs, TypeHandle* retAndArgTypes)
+    TypeKey(Module *pModule, PCOR_SIGNATURE sig, uint32_t sigLen, BYTE callConv, DWORD numArgs, TypeHandle* retAndArgTypes)
     {
         WRAPPER_NO_CONTRACT;
         PRECONDITION(CheckPointer(retAndArgTypes));
         m_kind = ELEMENT_TYPE_FNPTR;
+        u.asFnPtr.m_pModule = pModule;
+        u.asFnPtr.m_sig = sig;
+        u.asFnPtr.m_sigLen = sigLen;
         u.asFnPtr.m_callConv = callConv;
         u.asFnPtr.m_numArgs = numArgs;
         u.asFnPtr.m_pRetAndArgTypes = retAndArgTypes;
@@ -146,6 +152,8 @@ public:
             return PTR_Module(u.asClass.m_pModule);
         else if (CorTypeInfo::IsModifier_NoThrow(m_kind) || m_kind == ELEMENT_TYPE_VALUETYPE)
             return GetElementType().GetModule();
+        else if (m_kind == ELEMENT_TYPE_FNPTR)
+            return PTR_Module(u.asClass.m_pModule);
         else
             return NULL;
     }
@@ -183,6 +191,22 @@ public:
     }
 
     // Accessors on function pointer types
+    PCOR_SIGNATURE GetSignature() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        SUPPORTS_DAC;
+        PRECONDITION(m_kind == ELEMENT_TYPE_FNPTR);
+        return u.asFnPtr.m_sig;
+    }
+
+    uint32_t GetSignatureLen() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        SUPPORTS_DAC;
+        PRECONDITION(m_kind == ELEMENT_TYPE_FNPTR);
+        return u.asFnPtr.m_sigLen;
+    }
+
     DWORD GetNumArgs() const
     {
         LIMITED_METHOD_CONTRACT;
@@ -243,7 +267,11 @@ public:
         else
         {
             _ASSERTE(pKey1->m_kind == ELEMENT_TYPE_FNPTR);
-            if (pKey1->u.asFnPtr.m_callConv != pKey2->u.asFnPtr.m_callConv ||
+
+            // See also EETypeHashTable::CompareFnPtrType
+
+            BYTE callConv = pKey1->u.asFnPtr.m_callConv;
+            if (callConv != pKey2->u.asFnPtr.m_callConv ||
                 pKey1->u.asFnPtr.m_numArgs != pKey2->u.asFnPtr.m_numArgs)
                 return FALSE;
 
@@ -253,7 +281,26 @@ public:
                 if (pKey1->u.asFnPtr.m_pRetAndArgTypes[i] != pKey2->u.asFnPtr.m_pRetAndArgTypes[i])
                     return FALSE;
             }
-            return TRUE;
+
+            // Match the signatures.
+            uint32_t sigLen1 = pKey1->u.asFnPtr.m_sigLen;
+            uint32_t sigLen2 = pKey2->u.asFnPtr.m_sigLen;
+            if (sigLen1 == 0 && sigLen2 == 0)
+            {
+                // Some keys don't have a signature; just skip in that case.
+                return TRUE;
+            }
+            
+            if (sigLen1 == 0 || sigLen2 == 0)
+            {
+                // Only one key has a signature.
+                return FALSE;
+            }
+
+            return MetaSig::CompareMethodSigs(
+                pKey1->u.asFnPtr.m_sig, sigLen1, pKey1->u.asFnPtr.m_pModule, NULL,
+                pKey2->u.asFnPtr.m_sig, sigLen2, pKey2->u.asFnPtr.m_pModule, NULL,
+                FALSE);
         }
     }
 };

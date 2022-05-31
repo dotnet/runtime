@@ -53,6 +53,9 @@ namespace System
 
         public virtual bool IsByRefLike { [Intrinsic] get => throw new NotSupportedException(SR.NotSupported_SubclassOverride); }
 
+        public virtual bool IsFunctionPointer => false;
+        public virtual bool IsUnmanagedFunctionPointer => false;
+
         public bool HasElementType => HasElementTypeImpl();
         protected abstract bool HasElementTypeImpl();
         public abstract Type? GetElementType();
@@ -200,6 +203,10 @@ namespace System
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
         public abstract FieldInfo[] GetFields(BindingFlags bindingAttr);
+
+        public virtual Type[] GetFunctionPointerCallingConventions() => throw new InvalidOperationException(SR.InvalidOperation_NotFunctionPointer);
+        public virtual FunctionPointerParameterInfo GetFunctionPointerReturnParameter() => throw new InvalidOperationException(SR.InvalidOperation_NotFunctionPointer);
+        public virtual FunctionPointerParameterInfo[] GetFunctionPointerParameterInfos() => throw new InvalidOperationException(SR.InvalidOperation_NotFunctionPointer);
 
         [DynamicallyAccessedMembers(
             DynamicallyAccessedMemberTypes.PublicFields |

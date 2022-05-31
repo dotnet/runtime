@@ -140,6 +140,7 @@ public:
     static FCDECL1(FC_BOOL_RET, IsValueType, ReflectClassBaseObject* pType);
     static FCDECL1(FC_BOOL_RET, IsInterface, ReflectClassBaseObject* pType);
     static FCDECL1(FC_BOOL_RET, IsByRefLike, ReflectClassBaseObject* pType);
+    static FCDECL1(FC_BOOL_RET, IsUnmanagedFunctionPointer, ReflectClassBaseObject* pType);
 
     static FCDECL2(FC_BOOL_RET, CanCastTo, ReflectClassBaseObject *pType, ReflectClassBaseObject *pTarget);
     static FCDECL2(FC_BOOL_RET, IsInstanceOfType, ReflectClassBaseObject *pType, Object *object);
@@ -382,6 +383,11 @@ public:
         PCCOR_SIGNATURE pCorSig, DWORD cCorSig,
         FieldDesc *pFieldDesc, ReflectMethodObject *pMethodUNSAFE,
         ReflectClassBaseObject *pDeclaringType);
+
+    static FCDECL2(void, GetSignatureFromFunctionPointer,
+        SignatureNative* pSignatureNativeUNSAFE,
+        ReflectClassBaseObject* pTypeUNSAFE);
+
     static FCDECL3(Object *, GetCustomModifiers, SignatureNative* pSig, INT32 parameter, CLR_BOOL fRequired);
     static FCDECL2(FC_BOOL_RET, CompareSig, SignatureNative* pLhs, SignatureNative* pRhs);
 

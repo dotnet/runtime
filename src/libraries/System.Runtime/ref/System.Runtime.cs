@@ -5748,6 +5748,7 @@ namespace System
         public bool IsContextful { get { throw null; } }
         public virtual bool IsEnum { get { throw null; } }
         public bool IsExplicitLayout { get { throw null; } }
+        public virtual bool IsFunctionPointer { get { throw null; } }
         public virtual bool IsGenericMethodParameter { get { throw null; } }
         public virtual bool IsGenericParameter { get { throw null; } }
         public virtual bool IsGenericType { get { throw null; } }
@@ -5778,6 +5779,7 @@ namespace System
         public virtual bool IsSZArray { get { throw null; } }
         public virtual bool IsTypeDefinition { get { throw null; } }
         public bool IsUnicodeClass { get { throw null; } }
+        public virtual bool IsUnmanagedFunctionPointer { get { throw null; } }
         public bool IsValueType { get { throw null; } }
         public virtual bool IsVariableBoundArray { get { throw null; } }
         public bool IsVisible { get { throw null; } }
@@ -5817,7 +5819,7 @@ namespace System
         public virtual string? GetEnumName(object value) { throw null; }
         public virtual string[] GetEnumNames() { throw null; }
         public virtual System.Type GetEnumUnderlyingType() { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("It might not be possible to create an array of the enum type at runtime. Use Enum.GetValues<TEnum> instead.")]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("It might not be possible to create an array of the enum type at runtime. Use Enum.GetValues<TEnum> instead.")]
         public virtual System.Array GetEnumValues() { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicEvents)]
         public System.Reflection.EventInfo? GetEvent(string name) { throw null; }
@@ -5835,6 +5837,9 @@ namespace System
         public System.Reflection.FieldInfo[] GetFields() { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields)]
         public abstract System.Reflection.FieldInfo[] GetFields(System.Reflection.BindingFlags bindingAttr);
+        public virtual System.Type[] GetFunctionPointerCallingConventions() { throw null; }
+        public virtual System.Reflection.FunctionPointerParameterInfo[] GetFunctionPointerParameterInfos() { throw null; }
+        public virtual System.Reflection.FunctionPointerParameterInfo GetFunctionPointerReturnParameter() { throw null; }
         public virtual System.Type[] GetGenericArguments() { throw null; }
         public virtual System.Type[] GetGenericParameterConstraints() { throw null; }
         public virtual System.Type GetGenericTypeDefinition() { throw null; }
@@ -5972,14 +5977,14 @@ namespace System
         protected abstract bool IsPrimitiveImpl();
         public virtual bool IsSubclassOf(System.Type c) { throw null; }
         protected virtual bool IsValueTypeImpl() { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("The code for an array of the specified type might not be available.")]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("The code for an array of the specified type might not be available.")]
         public virtual System.Type MakeArrayType() { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("The code for an array of the specified type might not be available.")]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("The code for an array of the specified type might not be available.")]
         public virtual System.Type MakeArrayType(int rank) { throw null; }
         public virtual System.Type MakeByRefType() { throw null; }
         public static System.Type MakeGenericMethodParameter(int position) { throw null; }
         public static System.Type MakeGenericSignatureType(System.Type genericTypeDefinition, params System.Type[] typeArguments) { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("The native code for this instantiation might not be available at runtime.")]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("The native code for this instantiation might not be available at runtime.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public virtual System.Type MakeGenericType(params System.Type[] typeArguments) { throw null; }
         public virtual System.Type MakePointerType() { throw null; }
@@ -11209,6 +11214,13 @@ namespace System.Reflection
         [System.CLSCompliantAttribute(false)]
         public virtual void SetValueDirect(System.TypedReference obj, object value) { }
     }
+    public abstract class FunctionPointerParameterInfo
+    {
+        public abstract Type ParameterType { get; }
+        public abstract Type[] GetOptionalCustomModifiers();
+        public abstract Type[] GetRequiredCustomModifiers();
+        public override string ToString() { throw null; }
+    }
     [System.FlagsAttribute]
     public enum GenericParameterAttributes
     {
@@ -11832,10 +11844,12 @@ namespace System.Reflection
         public override bool IsByRefLike { get { throw null; } }
         public override bool IsCollectible { get { throw null; } }
         public override bool IsConstructedGenericType { get { throw null; } }
+        public override bool IsFunctionPointer { get { throw null; } }
         public override bool IsGenericMethodParameter { get { throw null; } }
         public override bool IsGenericTypeParameter { get { throw null; } }
         public override bool IsSZArray { get { throw null; } }
         public override bool IsTypeDefinition { get { throw null; } }
+        public override bool IsUnmanagedFunctionPointer { get { throw null; } }
         public override bool IsVariableBoundArray { get { throw null; } }
         public override int MetadataToken { get { throw null; } }
         public override System.Reflection.Module Module { get { throw null; } }
@@ -11861,6 +11875,9 @@ namespace System.Reflection
         public override System.Reflection.FieldInfo? GetField(string name, System.Reflection.BindingFlags bindingAttr) { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields)]
         public override System.Reflection.FieldInfo[] GetFields(System.Reflection.BindingFlags bindingAttr) { throw null; }
+        public override System.Type[] GetFunctionPointerCallingConventions() { throw null; }
+        public override System.Reflection.FunctionPointerParameterInfo[] GetFunctionPointerParameterInfos() { throw null; }
+        public override System.Reflection.FunctionPointerParameterInfo GetFunctionPointerReturnParameter() { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.Interfaces)]
         [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.Interfaces)]
         public override System.Type? GetInterface(string name, bool ignoreCase) { throw null; }

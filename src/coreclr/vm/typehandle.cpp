@@ -1098,8 +1098,7 @@ OBJECTREF TypeHandle::GetManagedClassObject() const
                 return ((TypeVarTypeDesc*)AsTypeDesc())->GetManagedClassObject();
 
             case ELEMENT_TYPE_FNPTR:
-                // A function pointer is mapped into typeof(IntPtr). It results in a loss of information.
-                return CoreLibBinder::GetElementType(ELEMENT_TYPE_I)->GetManagedClassObject();
+                return ((FnPtrTypeDesc*)AsTypeDesc())->GetManagedClassObject();
 
             default:
                 _ASSERTE(!"Bad Element Type");
@@ -1459,7 +1458,12 @@ TypeKey TypeHandle::GetTypeKey() const
         {
             CONSISTENCY_CHECK(etype == ELEMENT_TYPE_FNPTR);
             FnPtrTypeDesc* pFTD = (FnPtrTypeDesc*) pTD;
-            TypeKey tk(pFTD->GetCallConv(), pFTD->GetNumArgs(), pFTD->GetRetAndArgTypesPointer());
+            TypeKey tk(NULL /*module*/,
+                pFTD->GetSignature(),
+                pFTD->GetSignatureLen(),
+                pFTD->GetCallConv(),
+                pFTD->GetNumArgs(),
+                pFTD->GetRetAndArgTypesPointer());
             return tk;
         }
     }
