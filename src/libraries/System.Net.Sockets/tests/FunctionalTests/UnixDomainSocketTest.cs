@@ -538,8 +538,8 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void FilePathEquality()
         {
-            string path1 = "filename";
-            string path2 = "." + Path.DirectorySeparatorChar + "filename";
+            string path1 = "relative" + Path.DirectorySeparatorChar + "path";
+            string path2 = new(path1); // make a copy to avoid reference equality
             string path3 = GetRandomNonExistingFilePath();
 
             UnixDomainSocketEndPoint endPoint1 = new(path1);

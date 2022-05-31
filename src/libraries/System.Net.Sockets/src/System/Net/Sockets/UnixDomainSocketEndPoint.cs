@@ -11,38 +11,13 @@ namespace System.Net.Sockets
     /// <summary>Represents a Unix Domain Socket endpoint as a path.</summary>
     public sealed partial class UnixDomainSocketEndPoint : EndPoint
     {
-        // taken from System.IO.PathInternal
-        private static readonly StringComparison s_filePathComparison = OperatingSystem.IsWindows() ||
-                                                    OperatingSystem.IsMacOS() ||
-                                                    OperatingSystem.IsIOS() ||
-                                                    OperatingSystem.IsTvOS() ||
-                                                    OperatingSystem.IsWatchOS()
-                                                    ? StringComparison.OrdinalIgnoreCase
-                                                    : StringComparison.Ordinal;
-
         private const AddressFamily EndPointAddressFamily = AddressFamily.Unix;
 
         private readonly string _path;
         private readonly byte[] _encodedPath;
 
-        // The field is needed to distinguish the situation when
-        // _fullPath is not null but the object doesn't bound
-        // to the full path. _fullPath can be initialized by Equals/GetHashCode
-        // but it doesn't mean that the EndPoint is bound to the file system object.
-        private readonly bool _isBound;
-
-        // The field can be initialized lazily in the following circumstances:
-        // 1. Inside of Equals method
-        // 2. Inside of GetHashCode method
-        // 3. Inside of CreateBoundEndPoint method
-        // In case of non-abstract path, we need to have full path to the file system object.
-        // Otherwise, two endpoints may not be equal even if they pointing to the same file.
-        // Lazily initialized field then can be reused by these methods to avoid further
-        // allocations.
-        private string? _fullPath;
-
         // Tracks the file Socket should delete on Dispose.
-        internal string? BoundFileName => _isBound ? _fullPath : null;
+        internal string? BoundFileName { get; }
 
         public UnixDomainSocketEndPoint(string path)
             : this(path, null)
@@ -52,8 +27,7 @@ namespace System.Net.Sockets
         {
             ArgumentNullException.ThrowIfNull(path);
 
-            _isBound = boundFileName is not null;
-            _fullPath = boundFileName;
+            BoundFileName = boundFileName;
 
             // Pathname socket addresses should be null-terminated.
             // Linux abstract socket addresses start with a zero byte, they must not be null-terminated.
@@ -151,41 +125,14 @@ namespace System.Net.Sockets
             }
         }
 
-        [MemberNotNull(nameof(_fullPath))]
-        private void EnsurePathNormalized()
-        {
-            Debug.Assert(!IsAbstract(_path));
-
-            _fullPath ??= Path.GetFullPath(_path);
-        }
-
         public override bool Equals([NotNullWhen(true)] object? obj)
-        {
-            if (obj is not UnixDomainSocketEndPoint uds)
-                return false;
-
-            switch ((IsAbstract(_path), IsAbstract(uds._path)))
-            {
-                case (true, true):
-                    // abstract paths are case-sensitive on Windows and Unix-based systems
-                    return MemoryExtensions.Equals(_path.AsSpan(1), uds._path.AsSpan(1), StringComparison.Ordinal);
-                case (false, false):
-                    EnsurePathNormalized();
-                    uds.EnsurePathNormalized();
-                    return MemoryExtensions.Equals(_fullPath, uds._fullPath, s_filePathComparison);
-                default:
-                    return false;
-            }
-        }
+            => obj is UnixDomainSocketEndPoint ep && MemoryExtensions.SequenceEqual<byte>(_encodedPath, ep._encodedPath);
 
         public override int GetHashCode()
         {
-            // abstract paths are case-sensitive on Windows and Unix-based systems
-            if (IsAbstract(_path))
-                return string.GetHashCode(_path.AsSpan(1), StringComparison.Ordinal);
-
-            EnsurePathNormalized();
-            return string.GetHashCode(_fullPath, s_filePathComparison);
+            HashCode hash = default;
+            hash.AddBytes(_encodedPath);
+            return hash.ToHashCode();
         }
 
         internal UnixDomainSocketEndPoint CreateBoundEndPoint()
@@ -195,13 +142,12 @@ namespace System.Net.Sockets
                 return this;
             }
 
-            EnsurePathNormalized();
-            return new UnixDomainSocketEndPoint(_path, _fullPath);
+            return new UnixDomainSocketEndPoint(_path, Path.GetFullPath(_path));
         }
 
         internal UnixDomainSocketEndPoint CreateUnboundEndPoint()
         {
-            if (IsAbstract(_path) || !_isBound)
+            if (IsAbstract(_path) || BoundFileName is null)
             {
                 return this;
             }
