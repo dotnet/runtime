@@ -5421,7 +5421,8 @@ handle_call_res_devirt (MonoCompile *cfg, MonoMethod *cmethod, MonoInst *call_re
 
 		/* EqualityComparer<T>.Default returns specific types depending on T */
 		// FIXME: Add more
-		/* 1. Implements IEquatable<T> */
+		// 1. Implements IEquatable<T>
+		// 2. Nullable<T>
 		/*
 		 * Can't use this for string/byte as it might use a different comparer:
 		 *
