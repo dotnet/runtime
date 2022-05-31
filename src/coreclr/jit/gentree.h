@@ -3266,6 +3266,9 @@ struct GenTreeVecCon : public GenTree
     };
 
 private:
+    // TODO-1stClassStructs: Tracking the size and base type should be unnecessary since the
+    // size should be `gtType` and the handle should be looked up at callsites where required
+
     unsigned char gtSimdBaseJitType; // SIMD vector base JIT type
     unsigned char gtSimdSize;        // SIMD vector size in bytes
 
@@ -3309,7 +3312,7 @@ public:
             case TYP_DOUBLE:
             case TYP_SIMD8:
             {
-                // TYP_SIMD8 may get retyped to TYP_LONG or TYP_DOUBLE in lowering or morph
+                // TODO-1stClassStructs: do not retype SIMD nodes
                 return (gtSimd8Val.u64[0] == 0xFFFFFFFFFFFFFFFF);
             }
 
@@ -3354,7 +3357,7 @@ public:
             case TYP_DOUBLE:
             case TYP_SIMD8:
             {
-                // TYP_SIMD8 may get retyped to TYP_LONG or TYP_DOUBLE in lowering or morph
+                // TODO-1stClassStructs: do not retype SIMD nodes
                 return (left->gtSimd8Val.u64[0] == right->gtSimd8Val.u64[0]);
             }
 
@@ -3396,7 +3399,7 @@ public:
             case TYP_DOUBLE:
             case TYP_SIMD8:
             {
-                // TYP_SIMD8 may get retyped to TYP_LONG or TYP_DOUBLE in lowering or morph
+                // TODO-1stClassStructs: do not retype SIMD nodes
                 return (gtSimd8Val.u64[0] == 0x0000000000000000);
             }
 

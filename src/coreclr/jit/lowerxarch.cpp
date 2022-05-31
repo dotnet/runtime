@@ -1445,8 +1445,7 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
     node->gtType = TYP_VOID;
     node->ClearUnusedValue();
 
-    LowerNode(node);
-    return node->gtNext;
+    return LowerNode(node);
 }
 
 //----------------------------------------------------------------------------------------------
@@ -1659,8 +1658,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 
         BlockRange().Remove(node);
 
-        LowerNode(vecCon);
-        return vecCon->gtNext;
+        return LowerNode(vecCon);
     }
     else if (argCnt == 1)
     {
@@ -1689,8 +1687,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 
                 node->ResetHWIntrinsicId(NI_AVX2_BroadcastScalarToVector256, tmp1);
 
-                LowerNode(node);
-                return node->gtNext;
+                return LowerNode(node);
             }
 
             assert(comp->compIsaSupportedDebugOnly(InstructionSet_AVX));
@@ -1739,8 +1736,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
             node->ResetHWIntrinsicId(NI_AVX_InsertVector128, comp, tmp3, tmp1, idx);
             LowerNode(tmp3);
 
-            LowerNode(node);
-            return node->gtNext;
+            return LowerNode(node);
         }
 
         // We will be constructing the following parts:
@@ -1769,8 +1765,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 
             node->ChangeHWIntrinsicId(NI_AVX2_BroadcastScalarToVector128, tmp1);
 
-            LowerNode(node);
-            return node->gtNext;
+            return LowerNode(node);
         }
 
         switch (simdBaseType)
@@ -2040,8 +2035,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
             }
         }
 
-        LowerNode(node);
-        return node->gtNext;
+        return LowerNode(node);
     }
 
     GenTree* op2 = node->Op(2);
@@ -2107,9 +2101,8 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 
         LowerNode(lo);
         LowerNode(hi);
-        LowerNode(node);
 
-        return node->gtNext;
+        return LowerNode(node);
     }
 
     // We will be constructing the following parts:
@@ -2525,8 +2518,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
         }
     }
 
-    LowerNode(node);
-    return node->gtNext;
+    return LowerNode(node);
 }
 
 //----------------------------------------------------------------------------------------------
@@ -3232,8 +3224,7 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
 
                 node->ResetHWIntrinsicId(NI_Vector128_ToScalar, tmp3);
 
-                LowerNode(node);
-                return node->gtNext;
+                return LowerNode(node);
             }
 
             case TYP_DOUBLE:
@@ -3322,8 +3313,7 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
 
                     node->ResetHWIntrinsicId(NI_Vector128_ToScalar, tmp3);
 
-                    LowerNode(node);
-                    return node->gtNext;
+                    return LowerNode(node);
                 }
 
                 multiply      = NI_SSE_Multiply;
@@ -3364,8 +3354,7 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
 
                     node->ResetHWIntrinsicId(NI_Vector128_ToScalar, tmp3);
 
-                    LowerNode(node);
-                    return node->gtNext;
+                    return LowerNode(node);
                 }
 
                 multiply      = NI_SSE2_Multiply;
@@ -3721,8 +3710,7 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
 
     node->ResetHWIntrinsicId(NI_Vector128_ToScalar, tmp1);
 
-    LowerNode(node);
-    return node->gtNext;
+    return LowerNode(node);
 }
 
 //----------------------------------------------------------------------------------------------

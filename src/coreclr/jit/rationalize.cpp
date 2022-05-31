@@ -758,9 +758,8 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
         {
             GenTreeVecCon* vecCon = node->AsVecCon();
 
-            // TODO-1stClassStructs: This should be handled more generally for enregistered or promoted
-            // structs that are passed or returned in a different register type than their enregistered
-            // type(s).
+            // TODO-1stClassStructs: do not retype SIMD nodes
+
             if ((vecCon->TypeIs(TYP_I_IMPL)) && (vecCon->GetSimdSize() == TARGET_POINTER_SIZE))
             {
                 assert(genTypeSize(vecCon->GetSimdBaseType()) == 4);

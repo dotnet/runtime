@@ -847,7 +847,7 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                     case TYP_DOUBLE:
                     case TYP_SIMD8:
                     {
-                        // TYP_SIMD8 may get retyped to TYP_LONG or TYP_DOUBLE in lowering or morph
+                        // TODO-1stClassStructs: do not retype SIMD nodes
                         simd8_t constValue = op->AsVecCon()->gtSimd8Val;
                         return OperandDesc(emit->emitSimd8Const(constValue));
                     }

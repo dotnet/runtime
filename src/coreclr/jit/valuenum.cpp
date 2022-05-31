@@ -7962,7 +7962,7 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
 #ifdef FEATURE_SIMD
             else if (tree->IsCnsVec())
             {
-                // TYP_SIMD8 is sometimes retyped to be TYP_LONG
+                // TODO-1stClassStructs: do not retype SIMD nodes
                 assert(varTypeIsLong(typ));
 
                 simd8_t simd8Val = tree->AsVecCon()->gtSimd8Val;
@@ -7984,6 +7984,7 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
         {
             simd8_t simd8Val;
 
+            // TODO-Cleanup: delete SIMD-typed CNS_INT nodes
             if (tree->IsIntegralConst(0))
             {
                 simd8Val = {};
@@ -8001,6 +8002,7 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
         {
             simd12_t simd12Val;
 
+            // TODO-Cleanup: delete SIMD-typed CNS_INT nodes
             if (tree->IsIntegralConst(0))
             {
                 simd12Val = {};
@@ -8018,6 +8020,7 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
         {
             simd16_t simd16Val;
 
+            // TODO-Cleanup: delete SIMD-typed CNS_INT nodes
             if (tree->IsIntegralConst(0))
             {
                 simd16Val = {};
@@ -8035,6 +8038,7 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
         {
             simd32_t simd32Val;
 
+            // TODO-Cleanup: delete SIMD-typed CNS_INT nodes
             if (tree->IsIntegralConst(0))
             {
                 simd32Val = {};
@@ -8060,7 +8064,7 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
 #ifdef FEATURE_SIMD
             if (tree->IsCnsVec())
             {
-                // TYP_SIMD8 is sometimes retyped to be TYP_DOUBLE
+                // TODO-1stClassStructs: do not retype SIMD nodes
                 simd8_t simd8Val = tree->AsVecCon()->gtSimd8Val;
                 tree->gtVNPair.SetBoth(vnStore->VNForSimd8Con(simd8Val));
             }
