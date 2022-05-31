@@ -58,7 +58,7 @@ mono_reflection_create_custom_attr_data_args (MonoImage *image, MonoMethod *meth
 MONO_COMPONENT_API void
 mono_reflection_free_custom_attr_data_args_noalloc(MonoDecodeCustomAttr* decoded_args);
 
-MONO_COMPONENT_API void
-mono_reflection_create_custom_attr_data_args_noalloc (MonoImage *image, MonoMethod *method, const guchar *data, guint32 len, MonoDecodeCustomAttr** decoded_args, MonoError *error);
+MONO_COMPONENT_API MonoDecodeCustomAttr*
+mono_reflection_create_custom_attr_data_args_noalloc (MonoImage *image, MonoMethod *method, const guchar *data, guint32 len, MonoError *error);
 
 #endif  /* __MONO_METADATA_REFLECTION_CUSTOM_ATTRS_INTERNALS_H__ */

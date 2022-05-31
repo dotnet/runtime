@@ -944,8 +944,7 @@ get_dllimportsearchpath_flags (MonoCustomAttrInfo *cinfo)
 	if (!attr)
 		return -3;
 
-	MonoDecodeCustomAttr *decoded_args = NULL;
-	mono_reflection_create_custom_attr_data_args_noalloc (m_class_get_image (attr->ctor->klass), attr->ctor, attr->data, attr->data_size, &decoded_args, error);
+	MonoDecodeCustomAttr *decoded_args = mono_reflection_create_custom_attr_data_args_noalloc (m_class_get_image (attr->ctor->klass), attr->ctor, attr->data, attr->data_size, error);
 	if (!is_ok (error)) {
 		mono_error_cleanup (error);
 		return -4;

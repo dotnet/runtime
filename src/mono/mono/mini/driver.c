@@ -429,8 +429,7 @@ method_should_be_regression_tested (MonoMethod *method, gboolean interp)
 		if (strcmp (m_class_get_name (klass), "CategoryAttribute") || mono_method_signature_internal (centry->ctor)->param_count != 1)
 			continue;
 
-		MonoDecodeCustomAttr *decoded_args = NULL;
-		mono_reflection_create_custom_attr_data_args_noalloc (mono_defaults.corlib, centry->ctor, centry->data, centry->data_size, &decoded_args, error);
+		MonoDecodeCustomAttr *decoded_args = mono_reflection_create_custom_attr_data_args_noalloc (mono_defaults.corlib, centry->ctor, centry->data, centry->data_size, error);
 		if (!is_ok (error))
 			continue;
 

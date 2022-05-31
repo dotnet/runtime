@@ -218,8 +218,7 @@ mono_marshal_shared_get_fixed_buffer_attr (MonoClassField *field, MonoType **out
 		}
 	}
 	if (attr) {
-		MonoDecodeCustomAttr *decoded_args = NULL;
-		mono_reflection_create_custom_attr_data_args_noalloc (mono_defaults.corlib, attr->ctor, attr->data, attr->data_size, &decoded_args, error);
+		MonoDecodeCustomAttr *decoded_args = mono_reflection_create_custom_attr_data_args_noalloc (mono_defaults.corlib, attr->ctor, attr->data, attr->data_size, error);
 		if (!is_ok (error))
 			return FALSE;
 

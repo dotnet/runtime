@@ -1483,21 +1483,18 @@ mono_reflection_free_custom_attr_data_args_noalloc (MonoDecodeCustomAttr* decode
  * Same as mono_reflection_create_custom_attr_data_args but allocate no managed objects.
  * Returns MonoDecodeCustomAttr struct with information about typed and named arguments.
  * Typed and named arguments are represented as array of MonoCustomAttrValue.
- * Return value - decoded_args_out must be freed using mono_reflection_free_custom_attr_data_args_noalloc ().
+ * Return value must be freed using mono_reflection_free_custom_attr_data_args_noalloc ().
  */
-void
-mono_reflection_create_custom_attr_data_args_noalloc (MonoImage *image, MonoMethod *method, const guchar *data, guint32 len, MonoDecodeCustomAttr** decoded_args_out, MonoError *error)
+MonoDecodeCustomAttr*
+mono_reflection_create_custom_attr_data_args_noalloc (MonoImage *image, MonoMethod *method, const guchar *data, guint32 len, MonoError *error)
 {
 	MonoClass *attrklass;
 	const char *p = (const char*)data;
 	const char *data_end = p + len;
 	const char *named;
 	guint32 i, j, num_named;
-	MonoDecodeCustomAttr *decoded_args = NULL;
+	MonoDecodeCustomAttr *decoded_args = g_malloc0 (sizeof (MonoDecodeCustomAttr));
 	MonoMethodSignature *sig = mono_method_signature_internal (method);
-
-	*decoded_args_out = NULL;
-	decoded_args = g_malloc0 (sizeof (MonoDecodeCustomAttr));
 
 	error_init (error);
 
@@ -1513,7 +1510,7 @@ mono_reflection_create_custom_attr_data_args_noalloc (MonoImage *image, MonoMeth
 	decoded_args->typed_args = g_malloc0 (sig->param_count * sizeof (MonoCustomAttrValue*));
 	for (i = 0; i < sig->param_count; ++i) {
 		decoded_args->typed_args [i] = load_cattr_value_noalloc (image, sig->params [i], p, data_end, &p, error);
-		return_if_nok (error);
+		return_val_if_nok (error, NULL);
 	}
 
 	named = p;
@@ -1526,7 +1523,7 @@ mono_reflection_create_custom_attr_data_args_noalloc (MonoImage *image, MonoMeth
 	decoded_args->named_args_num = num_named;
 	decoded_args->named_args = g_malloc0 (num_named * sizeof (MonoCustomAttrValue*));
 
-	return_if_nok (error);
+	return_val_if_nok (error, NULL);
 	named += 2;
 	attrklass = method->klass;
 
@@ -1613,11 +1610,11 @@ mono_reflection_create_custom_attr_data_args_noalloc (MonoImage *image, MonoMeth
 		g_free (name);
 	}
 
-	*decoded_args_out = decoded_args;
-	return;
+	return decoded_args;
 fail:
 	mono_error_set_generic_error (error, "System.Reflection", "CustomAttributeFormatException", "Binary format of the specified custom attribute was invalid.");
 	mono_reflection_free_custom_attr_data_args_noalloc(decoded_args);
+	return NULL;
 }
 
 void
