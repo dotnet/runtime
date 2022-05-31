@@ -62,34 +62,6 @@ void Rationalizer::RewriteIndir(LIR::Use& use)
         {
             RewriteSIMDIndir(use);
         }
-        else
-        {
-            // Due to promotion of structs containing fields of type struct with a
-            // single scalar type field, we could potentially see IR nodes of the
-            // form GT_IND(GT_ADD(lclvarAddr, 0)) where 0 is an offset representing
-            // a field-seq. These get folded here.
-            //
-            // TODO: This code can be removed once JIT implements recursive struct
-            // promotion instead of lying about the type of struct field as the type
-            // of its single scalar field.
-            GenTree* addr = indir->Addr();
-            if (addr->OperGet() == GT_ADD && addr->gtGetOp1()->OperGet() == GT_LCL_VAR_ADDR &&
-                addr->gtGetOp2()->IsIntegralConst(0))
-            {
-                GenTreeLclVarCommon* lclVarNode = addr->gtGetOp1()->AsLclVarCommon();
-                const LclVarDsc*     varDsc     = comp->lvaGetDesc(lclVarNode);
-                if (indir->TypeGet() == varDsc->TypeGet())
-                {
-                    JITDUMP("Rewriting GT_IND(GT_ADD(LCL_VAR_ADDR,0)) to LCL_VAR\n");
-                    lclVarNode->SetOper(GT_LCL_VAR);
-                    lclVarNode->gtType = indir->TypeGet();
-                    use.ReplaceWith(lclVarNode);
-                    BlockRange().Remove(addr);
-                    BlockRange().Remove(addr->gtGetOp2());
-                    BlockRange().Remove(indir);
-                }
-            }
-        }
     }
     else if (indir->OperIs(GT_OBJ))
     {

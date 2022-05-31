@@ -7390,16 +7390,17 @@ interp_get_resume_state (const MonoJitTlsData *jit_tls, gboolean *has_resume_sta
  * Return TRUE if the finally clause threw an exception.
  */
 static gboolean
-interp_run_finally (StackFrameInfo *frame, int clause_index, gpointer handler_ip, gpointer handler_ip_end)
+interp_run_finally (StackFrameInfo *frame, int clause_index)
 {
 	InterpFrame *iframe = (InterpFrame*)frame->interp_frame;
+	MonoJitExceptionInfo *ei = &iframe->imethod->jinfo->clauses [clause_index];
 	ThreadContext *context = get_context ();
 	FrameClauseArgs clause_args;
 	const guint16 *state_ip;
 
 	memset (&clause_args, 0, sizeof (FrameClauseArgs));
-	clause_args.start_with_ip = (const guint16*)handler_ip;
-	clause_args.end_at_ip = (const guint16*)handler_ip_end;
+	clause_args.start_with_ip = (const guint16*)ei->handler_start;
+	clause_args.end_at_ip = (const guint16*)ei->data.handler_end;
 	clause_args.exec_frame = iframe;
 
 	state_ip = iframe->state.ip;

@@ -10175,8 +10175,6 @@ BYTE* emitter::emitOutputAlign(insGroup* ig, instrDesc* id, BYTE* dst)
     emitComp->loopsAligned++;
 #endif
 
-    BYTE* dstRW = dst + writeableOffset;
-
 #ifdef DEBUG
     // Under STRESS_EMITTER, if this is the 'align' before the 'jmp' instruction,
     // then add "int3" instruction. Since int3 takes 1 byte, we would only add
@@ -10199,12 +10197,13 @@ BYTE* emitter::emitOutputAlign(insGroup* ig, instrDesc* id, BYTE* dst)
 
         //    printf("                      %-9s  ; stress-mode injected interrupt\n", "int3");
         //}
-        dstRW += emitOutputByte(dstRW, int3Code);
+        dst += emitOutputByte(dst, int3Code);
         paddingToAdd -= 1;
     }
 #endif
 
-    dstRW = emitOutputNOP(dstRW, paddingToAdd);
+    BYTE* dstRW = dst + writeableOffset;
+    dstRW       = emitOutputNOP(dstRW, paddingToAdd);
     return dstRW - writeableOffset;
 }
 

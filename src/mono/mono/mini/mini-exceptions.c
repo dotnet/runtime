@@ -2576,7 +2576,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 								g_print ("EXCEPTION: finally/fault clause found in AOTed code, running it with the interpreter.\n");
 							mini_get_interp_callbacks ()->run_clause_with_il_state (frame.il_state, i, NULL, NULL);
 						} else if (in_interp) {
-							gboolean has_ex = mini_get_interp_callbacks ()->run_finally (&frame, i, ei->handler_start, ei->data.handler_end);
+							gboolean has_ex = mini_get_interp_callbacks ()->run_finally (&frame, i);
 							if (has_ex) {
 								/*
 								 * If run_finally didn't resume to a context, it means that the handler frame

@@ -5223,7 +5223,7 @@ public:
     void fgComputeCalledCount(weight_t returnWeight);
     void fgComputeEdgeWeights();
 
-    bool fgReorderBlocks();
+    bool fgReorderBlocks(bool useProfile);
 
     PhaseStatus fgDetermineFirstColdBlock();
 
@@ -5616,7 +5616,7 @@ private:
     GenTreeFieldList* fgMorphLclArgToFieldlist(GenTreeLclVarCommon* lcl);
     GenTreeCall* fgMorphArgs(GenTreeCall* call);
 
-    void fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg, CORINFO_CLASS_HANDLE copyBlkClass);
+    void fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg);
 
     GenTree* fgMorphLocalVar(GenTree* tree, bool forceRemorph);
 
@@ -5998,6 +5998,7 @@ public:
 
 public:
     PhaseStatus optInvertLoops();    // Invert loops so they're entered at top and tested at bottom.
+    PhaseStatus optOptimizeFlow();   // Simplify flow graph and do tail duplication
     PhaseStatus optOptimizeLayout(); // Optimize the BasicBlock layout of the method
     PhaseStatus optSetBlockWeights();
     PhaseStatus optFindLoopsPhase(); // Finds loops and records them in the loop table

@@ -175,7 +175,7 @@ PhaseStatus Compiler::fgInsertGCPolls()
     if (createdPollBlocks)
     {
         noway_assert(opts.OptimizationEnabled());
-        fgReorderBlocks();
+        fgReorderBlocks(/* useProfileData */ false);
         constexpr bool computePreds = true;
         constexpr bool computeDoms  = false;
         fgUpdateChangedFlowGraph(computePreds, computeDoms);

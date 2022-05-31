@@ -181,7 +181,6 @@
     <Compile Include="System\Helpers.cs" />
     <Compile Include="System\Math.NativeAot.cs" />
     <Compile Include="System\MathF.NativeAot.cs" />
-    <Compile Include="System\MissingMemberException.NativeAot.cs" />
     <Compile Include="System\MulticastDelegate.cs" />
     <Compile Include="System\Object.NativeAot.cs" />
     <Compile Include="System\Reflection\MissingMetadataException.cs" />
@@ -258,6 +257,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)'=='true'">
     <Compile Include="Microsoft\Win32\SafeHandles\SafeThreadPoolIOHandle.cs" />
+    <Compile Include="System\Runtime\InteropServices\NativeLibrary.NativeAot.Windows.cs" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.Windows.cs" />
     <Compile Include="$(CommonPath)\System\Runtime\InteropServices\Variant.cs">
       <Link>System\Runtime\InteropServices\Variant.cs</Link>
@@ -317,6 +317,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)'=='true'">
     <Compile Include="System\Environment.NativeAot.Unix.cs" />
+    <Compile Include="System\Runtime\InteropServices\NativeLibrary.NativeAot.Unix.cs" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.Unix.cs" />
     <Compile Include="System\Threading\LowLevelLifoSemaphore.Unix.cs" />
     <Compile Include="System\Threading\Thread.NativeAot.Unix.cs" />
