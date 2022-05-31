@@ -9,7 +9,6 @@ namespace ILCompiler
 {
     public interface ILogWriter
     {
-        TextWriter Writer { get; }
         void WriteMessage(MessageContainer message);
         void WriteWarning(MessageContainer warning);
         void WriteError(MessageContainer error);

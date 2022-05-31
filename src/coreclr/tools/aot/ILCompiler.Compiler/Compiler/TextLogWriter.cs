@@ -9,26 +9,26 @@ namespace ILCompiler
 {
     public class TextLogWriter : ILogWriter
     {
-        public TextWriter Writer { get; }
+        TextWriter _writer;
 
         public TextLogWriter(TextWriter writer)
         {
-            Writer = TextWriter.Synchronized(writer);
+            _writer = TextWriter.Synchronized(writer);
         }
 
         public void WriteMessage(MessageContainer message)
         {
-            Writer.WriteLine(message.ToMSBuildString());
+            _writer.WriteLine(message.ToMSBuildString());
         }
 
         public void WriteWarning(MessageContainer warning)
         {
-            Writer.WriteLine(warning.ToMSBuildString());
+            _writer.WriteLine(warning.ToMSBuildString());
         }
 
         public void WriteError(MessageContainer error)
         {
-            Writer.WriteLine(error.ToMSBuildString());
+            _writer.WriteLine(error.ToMSBuildString());
         }
     }
 }

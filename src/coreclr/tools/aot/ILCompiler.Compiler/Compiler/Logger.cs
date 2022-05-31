@@ -31,8 +31,6 @@ namespace ILCompiler
 
         public static Logger Null = new Logger(new TextLogWriter(TextWriter.Null), false);
 
-        public TextWriter Writer => _logWriter.Writer;
-
         public bool IsVerbose { get; }
 
         public Logger(ILogWriter writer, bool isVerbose, IEnumerable<int> suppressedWarnings, bool singleWarn, IEnumerable<string> singleWarnEnabledModules, IEnumerable<string> singleWarnDisabledModules)
