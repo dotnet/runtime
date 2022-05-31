@@ -7821,9 +7821,6 @@ static int get_static_field_value(MonoClassField* f, MonoClass* klass, MonoDomai
 	if (!is_ok(error))
 		return -1;
 
-	/* TODO: metadata-update.  implement support for added fields */
-	g_assert (!m_field_is_from_update (f));
-
 	if (CHECK_ICORDBG (TRUE))
 	{
 		void *src;

@@ -26,6 +26,7 @@
 #include "mono/metadata/debug-internals.h"
 #include "mono/metadata/mono-debug.h"
 #include "mono/metadata/debug-mono-ppdb.h"
+#include "mono/metadata/class-init.h"
 #include "mono/utils/bsearch.h"
 
 
@@ -134,6 +135,9 @@ hot_reload_added_methods_iter (MonoClass *klass, gpointer *iter);
 static MonoClassField *
 hot_reload_added_fields_iter (MonoClass *klass, gboolean lazy, gpointer *iter);
 
+static uint32_t
+hot_reload_get_num_fields_added (MonoClass *klass);
+
 static MonoClassMetadataUpdateField *
 metadata_update_field_setup_basic_info_and_resolve (MonoImage *image_base, BaselineInfo *base_info, uint32_t generation, DeltaInfo *delta_info, MonoClass *parent_klass, uint32_t fielddef_token, uint32_t field_flags, MonoError *error);
 
@@ -167,6 +171,7 @@ static MonoComponentHotReload fn_table = {
 	&hot_reload_get_typedef_skeleton_events,
 	&hot_reload_added_methods_iter,
 	&hot_reload_added_fields_iter,
+	&hot_reload_get_num_fields_added,
 };
 
 MonoComponentHotReload *
@@ -2854,7 +2859,8 @@ hot_reload_get_field (MonoClass *klass, uint32_t fielddef_token) {
 static MonoClassMetadataUpdateField *
 metadata_update_field_setup_basic_info_and_resolve (MonoImage *image_base, BaselineInfo *base_info, uint32_t generation, DeltaInfo *delta_info, MonoClass *parent_klass, uint32_t fielddef_token, uint32_t field_flags, MonoError *error)
 {
-	g_assert (m_class_is_inited (parent_klass));
+	if (!m_class_is_inited (parent_klass))
+		mono_class_init_internal (parent_klass);
 
 	MonoClassMetadataUpdateInfo *parent_info = mono_class_get_or_add_metadata_update_info (parent_klass);
 
@@ -3086,4 +3092,14 @@ hot_reload_added_fields_iter (MonoClass *klass, gboolean lazy G_GNUC_UNUSED, gpo
 	idx++;
 	*iter = GUINT_TO_POINTER (idx);
 	return &field->field;
+}
+
+static uint32_t
+hot_reload_get_num_fields_added (MonoClass *klass)
+{
+	MonoClassMetadataUpdateInfo *info = mono_class_get_metadata_update_info (klass);
+	if (!info)
+		return 0;
+
+	return g_slist_length(info->added_fields);
 }
