@@ -392,6 +392,7 @@
     <!-- Run only a small randomly chosen set of passing test suites -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj" />
     <ProjectExclusions Remove="$(MSBuildThisFileDirectory)System.Collections\tests\System.Collections.Tests.csproj" />
+    <ProjectExclusions Remove="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup>
