@@ -793,7 +793,7 @@ namespace System.Text
             if (byteCount < 0)
                 throw new ArgumentOutOfRangeException(nameof(byteCount),
                      SR.ArgumentOutOfRange_NeedNonNegNum);
-            
+
             // GetMaxCharCount assumes that the caller might have a stateful Decoder instance. If the
             // Decoder instance already has a captured partial UTF-8 subsequence, then one of two
             // thngs will happen:
