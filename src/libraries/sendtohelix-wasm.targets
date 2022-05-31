@@ -14,7 +14,6 @@
     <EnableDefaultBuildHelixWorkItems Condition="'$(IsRunningLibraryTests)' != 'true'">false</EnableDefaultBuildHelixWorkItems>
 
     <BuildWasmAppsJobsList>$(RepositoryEngineeringDir)\testing\scenarios\BuildWasmAppsJobsList.txt</BuildWasmAppsJobsList>
-    <WasmDebuggerTestsJobsList>$(RepositoryEngineeringDir)\testing\scenarios\WasmDebuggerTestsJobsList.txt</WasmDebuggerTestsJobsList>
 
     <!-- on unix CI has emscripten provisioned in $(EMSDK_PATH) as `/usr/local/emscripten`. -->
     <EMSDK_PATH Condition="$([MSBuild]::IsOSPlatform('WINDOWS')) and '$(EMSDK_PATH)' == ''">$(RepoRoot)src\mono\wasm\emsdk\</EMSDK_PATH>
@@ -23,7 +22,7 @@
     <DebuggerHost Condition="'$(DebuggerHost)' == ''">chrome</DebuggerHost>
 
     <NeedsWorkload Condition="'$(Scenario)' == 'BuildWasmApps'">true</NeedsWorkload>
-    <NeedsEMSDK Condition="'$(NeedsToBuildWasmAppsOnHelix)' == 'true' or '$(Scenario)' == 'BuildWasmApps'">true</NeedsEMSDK>
+    <NeedsEMSDK Condition="'$(NeedsToBuildWasmAppsOnHelix)' == 'true'">true</NeedsEMSDK>
     <NeedsEMSDKNode Condition="'$(Scenario)' == 'WasmTestOnNodeJs' or '$(Scenario)' == 'BuildWasmApps'">true</NeedsEMSDKNode>
     <NeedsToRunOnBrowser Condition="'$(Scenario)' == 'WasmTestOnBrowser' or '$(Scenario)' == 'BuildWasmApps'">true</NeedsToRunOnBrowser>
     <NeedsToRunOnBrowser Condition="'$(NeedsToRunOnBrowser)' == '' and '$(IsWasmDebuggerTests)' == 'true'">true</NeedsToRunOnBrowser>
@@ -83,6 +82,15 @@
     <HelixPreCommand Include="set PATH=$(_HelixLocalNodePath)/%_HELIX_NODEJS_VERSION%/bin%3B%PATH%" />
   </ItemGroup>
 
+  <PropertyGroup Condition="'$(Scenario)' == 'BuildWasmApps'">
+    <_XUnitTraitArg Condition="'$(TestUsingWorkloads)' == 'true'">-notrait category=no-workload</_XUnitTraitArg>
+    <_XUnitTraitArg Condition="'$(TestUsingWorkloads)' != 'true'">-trait category=no-workload</_XUnitTraitArg>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(Scenario)' == 'BuildWasmApps'">
+    <HelixPreCommand Condition="'$(WindowsShell)' == 'true'" Include="set &quot;XUnitTraitArg=$(_XUnitTraitArg)&quot;" />
+    <HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="export &quot;XUnitTraitArg=$(_XUnitTraitArg)&quot;" />
+  </ItemGroup>
+
   <PropertyGroup>
 
     <!--
@@ -123,7 +131,8 @@
       <TestEchoMiddleware>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'bin', 'NetCoreServer', '$(Configuration)', '$(AspNetCoreAppCurrent)'))</TestEchoMiddleware>
       <RemoteLoopMiddleware>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'bin', 'RemoteLoopServer', '$(Configuration)', '$(AspNetCoreAppCurrent)'))</RemoteLoopMiddleware>
       <WorkItemPrefix Condition="'$(Scenario)' == 'BuildWasmApps' and '$(TestUsingWorkloads)' == 'true'">Workloads-</WorkItemPrefix>
-      <WorkItemPrefix Condition="'$(Scenario)' == 'BuildWasmApps' and '$(TestUsingWorkloads)' != 'true'">EMSDK-</WorkItemPrefix>
+      <WorkItemPrefix Condition="'$(Scenario)' == 'BuildWasmApps' and '$(TestUsingWorkloads)' != 'true'">NoWorkload-</WorkItemPrefix>
+      <WorkItemPrefix Condition="'$(IsWasmDebuggerTests)' == 'true'">$(DebuggerHost)-</WorkItemPrefix>
       <WorkItemPrefix Condition="'$(WorkItemPrefix)' == '' and '$(Scenario)' != ''">$(Scenario)-</WorkItemPrefix>
     </PropertyGroup>
 
@@ -155,12 +164,8 @@
       <HelixCorrelationPayload Include="$(RemoteLoopMiddleware)" Destination="xharness/RemoteLoopMiddleware" Condition="Exists('$(RemoteLoopMiddleware)')" />
     </ItemGroup>
 
-    <ReadLinesFromFile File="$(BuildWasmAppsJobsList)" Condition="Exists($(BuildWasmAppsJobsList)) and '$(Scenario)' == 'BuildWasmApps'">
+    <ReadLinesFromFile File="$(BuildWasmAppsJobsList)" Condition="Exists($(BuildWasmAppsJobsList)) and '$(Scenario)' == 'BuildWasmApps' and '$(TestUsingWorkloads)' == 'true'">
       <Output TaskParameter="Lines" ItemName="BuildWasmApps_PerJobList" />
-    </ReadLinesFromFile>
-
-    <ReadLinesFromFile File="$(WasmDebuggerTestsJobsList)" Condition="Exists($(WasmDebuggerTestsJobsList)) and '$(Scenario)' == 'WasmDebuggerTests'">
-      <Output TaskParameter="Lines" ItemName="WasmDebuggerTests_PerJobList" />
     </ReadLinesFromFile>
 
     <!-- library tests get added as default work items -->
@@ -191,24 +196,26 @@
       </HelixWorkItem>
     </ItemGroup>
 
+    <!-- for testing with workloads, we use separate items -->
     <ItemGroup Condition="'$(Scenario)' == 'BuildWasmApps'">
-      <HelixWorkItem Include="@(BuildWasmApps_PerJobList->'$(WorkItemPrefix)%(Extension)')">
+      <HelixWorkItem Include="@(BuildWasmApps_PerJobList->'$(WorkItemPrefix)%(Extension)')" Condition="'$(TestUsingWorkloads)' == 'true'">
         <PayloadArchive>$(_BuildWasmAppsPayloadArchive)</PayloadArchive>
         <PreCommands Condition="'$(OS)' == 'Windows_NT'">set &quot;HELIX_XUNIT_ARGS=-class %(Identity)&quot;</PreCommands>
         <PreCommands Condition="'$(OS)' != 'Windows_NT'">export &quot;HELIX_XUNIT_ARGS=-class %(Identity)&quot;</PreCommands>
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_workItemTimeout)</Timeout>
       </HelixWorkItem>
+
+      <HelixWorkItem Include="NoWorkload-Wasm.Build.Tests" Condition="'$(TestUsingWorkloads)' != 'true'">
+        <PayloadArchive>$(_BuildWasmAppsPayloadArchive)</PayloadArchive>
+        <Command>$(HelixCommand)</Command>
+        <Timeout>$(_workItemTimeout)</Timeout>
+      </HelixWorkItem>
     </ItemGroup>
 
     <ItemGroup Condition="'$(Scenario)' == 'WasmDebuggerTests'">
-      <HelixWorkItem Include="@(WasmDebuggerTests_PerJobList -> '$(DebuggerHost)-%(Identity)')">
+      <HelixWorkItem Include="$(DebuggerHost)-DebuggerTests">
         <PayloadArchive>$(_WasmDebuggerTestsPayloadArchive)</PayloadArchive>
-
-        <!-- FIXME: workaround for https://github.com/dotnet/runtime/issues/62660 -->
-        <PreCommands Condition="'$(OS)' == 'Windows_NT'">set TEST_ARGS=--filter &quot;FullyQualifiedName~%(Identity)&amp;Category^!=windows-failing&amp;Category^!=failing&quot;</PreCommands>
-        <PreCommands Condition="'$(OS)' != 'Windows_NT'">export TEST_ARGS=&quot;--filter FullyQualifiedName~%(Identity)&amp;Category!=linux-failing&amp;Category!=failing&quot;</PreCommands>
-
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_workItemTimeout)</Timeout>
       </HelixWorkItem>

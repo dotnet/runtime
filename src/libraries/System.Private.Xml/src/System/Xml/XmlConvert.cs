@@ -429,7 +429,10 @@ namespace System.Xml
                 return token;
             }
 
-            if (token[0] == ' ' || token[token.Length - 1] == ' ' || token.IndexOfAny(crt) != -1 || token.IndexOf("  ", StringComparison.Ordinal) != -1)
+            if (token.StartsWith(' ') ||
+                token.EndsWith(' ') ||
+                token.IndexOfAny(crt) >= 0 ||
+                token.Contains("  "))
             {
                 throw new XmlException(SR.Sch_NotTokenString, token);
             }
@@ -438,12 +441,15 @@ namespace System.Xml
 
         internal static Exception? TryVerifyTOKEN(string token)
         {
-            if (token == null || token.Length == 0)
+            if (string.IsNullOrEmpty(token))
             {
                 return null;
             }
 
-            if (token[0] == ' ' || token[token.Length - 1] == ' ' || token.IndexOfAny(crt) != -1 || token.IndexOf("  ", StringComparison.Ordinal) != -1)
+            if (token.StartsWith(' ') ||
+                token.EndsWith(' ') ||
+                token.IndexOfAny(crt) >= 0 ||
+                token.Contains("  "))
             {
                 return new XmlException(SR.Sch_NotTokenString, token);
             }

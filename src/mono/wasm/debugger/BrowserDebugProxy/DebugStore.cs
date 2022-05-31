@@ -70,7 +70,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public bool IsResolved => Assembly != null;
         public List<Breakpoint> Locations { get; set; } = new List<Breakpoint>();
 
-        public override string ToString() => $"BreakpointRequest Assembly: {Assembly} File: {File} Line: {Line} Column: {Column}";
+        public override string ToString() => $"BreakpointRequest Assembly: {Assembly} File: {File} Line: {Line} Column: {Column}, Id: {Id}";
 
         public object AsSetBreakpointByUrlResponse(IEnumerable<object> jsloc) => new { breakpointId = Id, locations = Locations.Select(l => l.Location.AsLocation()).Concat(jsloc) };
 
@@ -1227,7 +1227,6 @@ namespace Microsoft.WebAssembly.Diagnostics
         internal List<AssemblyInfo> assemblies = new List<AssemblyInfo>();
         private readonly ILogger logger;
         private readonly MonoProxy monoProxy;
-        private MethodInfo _entryPoint;
 
         public DebugStore(MonoProxy monoProxy, ILogger logger)
         {
@@ -1345,12 +1344,11 @@ namespace Microsoft.WebAssembly.Diagnostics
         public SourceFile GetFileById(SourceId id) => AllSources().SingleOrDefault(f => f.SourceId.Equals(id));
 
         public AssemblyInfo GetAssemblyByName(string name) => assemblies.FirstOrDefault(a => a.Name.Equals(name, StringComparison.InvariantCultureIgnoreCase));
-        public MethodInfo FindEntryPoint()
+        public MethodInfo FindEntryPoint(string preferredEntrypointAssembly)
         {
-            if (_entryPoint is null)
-                _entryPoint = assemblies.Where(asm => asm.EntryPoint is not null).Select(asm => asm.EntryPoint).FirstOrDefault();
-
-            return _entryPoint;
+            AssemblyInfo foundAsm = assemblies.FirstOrDefault(asm => asm.EntryPoint?.Assembly.Name == preferredEntrypointAssembly);
+            foundAsm ??= assemblies.FirstOrDefault(asm => asm.EntryPoint is not null);
+            return foundAsm?.EntryPoint;
         }
 
         /*

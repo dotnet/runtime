@@ -4,6 +4,7 @@
 
 #include <config.h>
 #include "mono/component/event_pipe.h"
+#include "mono/component/event_pipe-wasm.h"
 #include "mono/metadata/components.h"
 
 static EventPipeSessionID _dummy_session_id;
@@ -495,3 +496,37 @@ mono_component_event_pipe_init (void)
 {
 	return component_event_pipe_stub_init ();
 }
+
+#ifdef HOST_WASM
+
+EMSCRIPTEN_KEEPALIVE gboolean
+mono_wasm_event_pipe_enable (const ep_char8_t *output_path,
+			     uint32_t circular_buffer_size_in_mb,
+			     const ep_char8_t *providers,
+			     /* EventPipeSessionType session_type = EP_SESSION_TYPE_FILE, */
+			     /* EventPipieSerializationFormat format = EP_SERIALIZATION_FORMAT_NETTRACE_V4, */
+			     /* bool */ gboolean rundown_requested,
+			     /* IpcStream stream = NULL, */
+			     /* EventPipeSessionSycnhronousCallback sync_callback = NULL, */
+			     /* void *callback_additional_data, */
+			     MonoWasmEventPipeSessionID *out_session_id)
+{
+	if (out_session_id)
+		*out_session_id = 0;
+	return 0;
+}
+
+
+EMSCRIPTEN_KEEPALIVE gboolean
+mono_wasm_event_pipe_session_start_streaming (MonoWasmEventPipeSessionID session_id)
+{
+	g_assert_not_reached ();
+}
+
+EMSCRIPTEN_KEEPALIVE gboolean
+mono_wasm_event_pipe_session_disable (MonoWasmEventPipeSessionID session_id)
+{
+	g_assert_not_reached ();
+}
+
+#endif /* HOST_WASM */

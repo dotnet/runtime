@@ -2097,14 +2097,14 @@ bool GenTreeCall::TreatAsShouldHaveRetBufArg(Compiler* compiler) const
         return true;
     }
 
-    // If we see a Jit helper call that returns a TYP_STRUCT we will
+    // If we see a Jit helper call that returns a TYP_STRUCT we may
     // transform it as if it has a Return Buffer Argument
     //
     if (IsHelperCall() && (gtReturnType == TYP_STRUCT))
     {
-        // There are two possible helper calls that use this path:
-        //  CORINFO_HELP_GETFIELDSTRUCT and CORINFO_HELP_UNBOX_NULLABLE
-        //
+        // There are three possible helper calls that use this path:
+        //  CORINFO_HELP_GETFIELDSTRUCT,  CORINFO_HELP_UNBOX_NULLABLE
+        //  CORINFO_HELP_PINVOKE_CALLI
         CorInfoHelpFunc helpFunc = compiler->eeGetHelperNum(gtCallMethHnd);
 
         if (helpFunc == CORINFO_HELP_GETFIELDSTRUCT)
@@ -2114,6 +2114,10 @@ bool GenTreeCall::TreatAsShouldHaveRetBufArg(Compiler* compiler) const
         else if (helpFunc == CORINFO_HELP_UNBOX_NULLABLE)
         {
             return true;
+        }
+        else if (helpFunc == CORINFO_HELP_PINVOKE_CALLI)
+        {
+            return false;
         }
         else
         {
@@ -3703,7 +3707,7 @@ void Compiler::gtWalkOp(GenTree** op1WB, GenTree** op2WB, GenTree* base, bool co
  */
 GenTree* Compiler::gtWalkOpEffectiveVal(GenTree* op)
 {
-    for (;;)
+    while (true)
     {
         op = op->gtEffectiveVal();
 
@@ -7109,20 +7113,12 @@ GenTreeLclVar* Compiler::gtNewLclVarAddrNode(unsigned lclNum, var_types type)
 GenTreeLclFld* Compiler::gtNewLclFldAddrNode(unsigned lclNum, unsigned lclOffs, FieldSeqNode* fieldSeq, var_types type)
 {
     GenTreeLclFld* node = new (this, GT_LCL_FLD_ADDR) GenTreeLclFld(GT_LCL_FLD_ADDR, type, lclNum, lclOffs);
-    node->SetFieldSeq(fieldSeq == nullptr ? FieldSeqStore::NotAField() : fieldSeq);
     return node;
 }
 
 GenTreeLclFld* Compiler::gtNewLclFldNode(unsigned lnum, var_types type, unsigned offset)
 {
     GenTreeLclFld* node = new (this, GT_LCL_FLD) GenTreeLclFld(GT_LCL_FLD, type, lnum, offset);
-
-    /* Cannot have this assert because the inliner uses this function
-     * to add temporaries */
-
-    // assert(lnum < lvaCount);
-
-    node->SetFieldSeq(FieldSeqStore::NotAField());
     return node;
 }
 
@@ -7913,8 +7909,7 @@ GenTree* Compiler::gtClone(GenTree* tree, bool complexOK)
         case GT_LCL_FLD_ADDR:
             copy = new (this, tree->OperGet())
                 GenTreeLclFld(tree->OperGet(), tree->TypeGet(), tree->AsLclFld()->GetLclNum(),
-                              tree->AsLclFld()->GetLclOffs());
-            copy->AsLclFld()->SetFieldSeq(tree->AsLclFld()->GetFieldSeq());
+                              tree->AsLclFld()->GetLclOffs(), tree->AsLclFld()->GetLayout());
             goto FINISH_CLONING_LCL_NODE;
 
         FINISH_CLONING_LCL_NODE:
@@ -8103,10 +8098,9 @@ GenTree* Compiler::gtCloneExpr(
                     // Remember that the LclVar node has been cloned. The flag will
                     // be set on 'copy' as well.
                     tree->gtFlags |= GTF_VAR_CLONED;
-                    copy =
-                        new (this, GT_LCL_FLD) GenTreeLclFld(GT_LCL_FLD, tree->TypeGet(), tree->AsLclFld()->GetLclNum(),
-                                                             tree->AsLclFld()->GetLclOffs());
-                    copy->AsLclFld()->SetFieldSeq(tree->AsLclFld()->GetFieldSeq());
+                    copy = new (this, GT_LCL_FLD)
+                        GenTreeLclFld(GT_LCL_FLD, tree->TypeGet(), tree->AsLclFld()->GetLclNum(),
+                                      tree->AsLclFld()->GetLclOffs(), tree->AsLclFld()->GetLayout());
                     copy->AsLclFld()->SetSsaNum(tree->AsLclFld()->GetSsaNum());
                 }
                 goto DONE;
@@ -8150,7 +8144,6 @@ GenTree* Compiler::gtCloneExpr(
             case GT_LCL_FLD_ADDR:
                 copy = new (this, oper)
                     GenTreeLclFld(oper, tree->TypeGet(), tree->AsLclFld()->GetLclNum(), tree->AsLclFld()->GetLclOffs());
-                copy->AsLclFld()->SetFieldSeq(tree->AsLclFld()->GetFieldSeq());
                 goto DONE;
 
             default:
@@ -10381,6 +10374,10 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
                         layout = varDsc->GetLayout();
                     }
                 }
+                else if (tree->OperIs(GT_LCL_FLD, GT_STORE_LCL_FLD))
+                {
+                    layout = tree->AsLclFld()->GetLayout();
+                }
                 else if (tree->OperIs(GT_INDEX))
                 {
                     GenTreeIndex*        asInd  = tree->AsIndex();
@@ -11115,7 +11112,6 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
             if (isLclFld)
             {
                 printf("[+%u]", tree->AsLclFld()->GetLclOffs());
-                gtDispFieldSeq(tree->AsLclFld()->GetFieldSeq());
             }
 
             if (varDsc->lvRegister)
@@ -13247,7 +13243,7 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
                 op = op2->AsColon()->ElseNode();
             }
 
-            // Clear colon flags only if the qmark itself is not conditionaly executed
+            // Clear colon flags only if the qmark itself is not conditionally executed
             if ((tree->gtFlags & GTF_COLON_COND) == 0)
             {
                 fgWalkTreePre(&op, gtClearColonCond);
@@ -15685,7 +15681,7 @@ void dispNodeList(GenTree* list, bool verbose)
         return;
     }
 
-    for (;;)
+    while (true)
     {
         next = list->gtNext;
 
@@ -16010,48 +16006,70 @@ bool GenTree::IsPhiDefn()
 // Return Value:
 //    Returns "true" iff 'this' is a GT_LCL_FLD or GT_STORE_LCL_FLD on which the type
 //    is not the same size as the type of the GT_LCL_VAR
-
+//
 bool GenTree::IsPartialLclFld(Compiler* comp)
 {
-    return ((gtOper == GT_LCL_FLD) &&
-            (comp->lvaTable[this->AsLclVarCommon()->GetLclNum()].lvExactSize != genTypeSize(gtType)));
+    return OperIs(GT_LCL_FLD, GT_STORE_LCL_FLD) && (comp->lvaGetDesc(AsLclFld())->lvExactSize != AsLclFld()->GetSize());
 }
 
+//------------------------------------------------------------------------
+// DefinesLocal: Does "this" define a local?
+//
+// Recognizes "ASG" stores. Also recognizes "STORE_OBJ/BLK".
+//
+// Arguments:
+//    comp        - the compiler instance
+//    pLclVarTree - [out] parameter for the local representing the definition
+//    pIsEntire   - optional [out] parameter for whether the store represents
+//                  a "full" definition (overwites the entire variable)
+//    pOffset     - optional [out] parameter for the offset, relative to the
+//                  local, at which the store is performed
+//
+// Return Value:
+//    Whether "this" represents a store to a local variable.
+//
+// Notes:
+//    This function is contractually bound to recognize a superset of stores
+//    that "LocalAddressVisitor" recognizes, as it is used to detect which
+//    trees can define tracked locals.
+//
 bool GenTree::DefinesLocal(Compiler* comp, GenTreeLclVarCommon** pLclVarTree, bool* pIsEntire, ssize_t* pOffset)
 {
-    GenTreeBlk* blkNode = nullptr;
+    assert((pOffset == nullptr) || (*pOffset == 0));
+
+    GenTreeLclVarCommon* lclVarTree = nullptr;
+    unsigned             storeSize  = 0;
+    ssize_t              offset     = 0;
+
     if (OperIs(GT_ASG))
     {
-        if (AsOp()->gtOp1->IsLocal())
+        GenTree* lhs = AsOp()->gtGetOp1();
+
+        // Return early for the common case.
+        //
+        if (lhs->OperIs(GT_LCL_VAR, GT_LCL_FLD))
         {
-            GenTreeLclVarCommon* lclVarTree = AsOp()->gtOp1->AsLclVarCommon();
-            *pLclVarTree                    = lclVarTree;
+            *pLclVarTree = lhs->AsLclVarCommon();
             if (pIsEntire != nullptr)
             {
-                if (lclVarTree->IsPartialLclFld(comp))
-                {
-                    *pIsEntire = false;
-                }
-                else
-                {
-                    *pIsEntire = true;
-                }
+                *pIsEntire = !lhs->IsPartialLclFld(comp);
             }
+
             if (pOffset != nullptr)
             {
-                *pOffset = AsOp()->gtOp1->AsLclVarCommon()->GetLclOffs();
+                *pOffset = lhs->AsLclVarCommon()->GetLclOffs();
             }
+
             return true;
         }
-        else if (AsOp()->gtOp1->OperGet() == GT_IND)
+
+        if (lhs->OperIsIndir() && lhs->AsIndir()->Addr()->DefinesLocalAddr(&lclVarTree, &offset))
         {
-            GenTree* indArg = AsOp()->gtOp1->AsOp()->gtOp1;
-            return indArg->DefinesLocalAddr(comp, genTypeSize(AsOp()->gtOp1->TypeGet()), pLclVarTree, pIsEntire,
-                                            pOffset);
+            storeSize = lhs->AsIndir()->Size();
         }
-        else if (AsOp()->gtOp1->OperIsBlk())
+        else
         {
-            blkNode = AsOp()->gtOp1->AsBlk();
+            return false;
         }
     }
     else if (OperIs(GT_CALL))
@@ -16062,41 +16080,71 @@ bool GenTree::DefinesLocal(Compiler* comp, GenTreeLclVarCommon** pLclVarTree, bo
             return false;
         }
 
-        unsigned size = comp->typGetObjLayout(AsCall()->gtRetClsHnd)->GetSize();
-        return retBufArg->DefinesLocalAddr(comp, size, pLclVarTree, pIsEntire, pOffset);
-    }
-    else if (OperIsBlk())
-    {
-        blkNode = this->AsBlk();
-    }
-    if (blkNode != nullptr)
-    {
-        GenTree* destAddr = blkNode->Addr();
-        unsigned width    = blkNode->Size();
-        // Do we care about whether this assigns the entire variable?
-        if (pIsEntire != nullptr && blkNode->OperIs(GT_STORE_DYN_BLK))
+        if (!retBufArg->DefinesLocalAddr(&lclVarTree, &offset))
         {
-            GenTree* blockWidth = blkNode->AsStoreDynBlk()->gtDynamicSize;
-            if (blockWidth->IsCnsIntOrI())
-            {
-                assert(blockWidth->AsIntConCommon()->FitsInI32());
-                width = static_cast<unsigned>(blockWidth->AsIntConCommon()->IconValue());
-
-                if (width == 0)
-                {
-                    return false;
-                }
-            }
+            return false;
         }
 
-        return destAddr->DefinesLocalAddr(comp, width, pLclVarTree, pIsEntire, pOffset);
+        storeSize = comp->typGetObjLayout(AsCall()->gtRetClsHnd)->GetSize();
     }
-    // Otherwise...
-    return false;
+    else if (OperIs(GT_STORE_BLK, GT_STORE_OBJ) && AsBlk()->Addr()->DefinesLocalAddr(&lclVarTree, &offset))
+    {
+        storeSize = AsBlk()->Size();
+    }
+    else
+    {
+        return false;
+    }
+
+    assert(lclVarTree != nullptr);
+    *pLclVarTree = lclVarTree;
+
+    if (pIsEntire != nullptr)
+    {
+        if (offset == 0)
+        {
+            unsigned lclSize = comp->lvaLclExactSize(lclVarTree->GetLclNum());
+            if (comp->lvaGetDesc(lclVarTree)->lvNormalizeOnStore())
+            {
+                // It's normalize on store, so use the full storage width -- writing to low bytes won't
+                // necessarily yield a normalized value.
+                lclSize = genTypeSize(TYP_INT);
+            }
+
+            *pIsEntire = storeSize == lclSize;
+        }
+        else
+        {
+            *pIsEntire = false;
+        }
+    }
+
+    if (pOffset != nullptr)
+    {
+        *pOffset = offset;
+    }
+
+    return true;
 }
 
-bool GenTree::DefinesLocalAddr(
-    Compiler* comp, unsigned width, GenTreeLclVarCommon** pLclVarTree, bool* pIsEntire, ssize_t* pOffset)
+//------------------------------------------------------------------------
+// DefinesLocalAddr: Does "this" represent a local address tree?
+//
+// Arguments:
+//    pLclVarTree - [out] parameter for the local node
+//    pOffset     - optional [out] parameter for the offset (relative to the
+//                  local itself) that this tree computes. The caller must
+//                  initialize this to zero.
+//
+// Return Value:
+//    Whether "this" is a LCL_VAR|FLD_ADDR-equivalent tree.
+//
+// Notes:
+//    This function is contractually bound to recognize a superset of trees
+//    that "LocalAddressVisitor" recognizes, as it is used by "DefinesLocal"
+//    to detect stores to tracked locals.
+//
+bool GenTree::DefinesLocalAddr(GenTreeLclVarCommon** pLclVarTree, ssize_t* pOffset)
 {
     if (OperIs(GT_ADDR, GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR))
     {
@@ -16110,32 +16158,10 @@ bool GenTree::DefinesLocalAddr(
         {
             GenTreeLclVarCommon* addrArgLcl = addrArg->AsLclVarCommon();
             *pLclVarTree                    = addrArgLcl;
-            unsigned lclOffset              = addrArgLcl->GetLclOffs();
-
-            if (pIsEntire != nullptr)
-            {
-                if (lclOffset != 0)
-                {
-                    // We aren't updating the bytes at [0..lclOffset-1] so *pIsEntire should be set to false
-                    *pIsEntire = false;
-                }
-                else
-                {
-                    unsigned lclNum   = addrArgLcl->GetLclNum();
-                    unsigned varWidth = comp->lvaLclExactSize(lclNum);
-                    if (comp->lvaTable[lclNum].lvNormalizeOnStore())
-                    {
-                        // It's normalize on store, so use the full storage width -- writing to low bytes won't
-                        // necessarily yield a normalized value.
-                        varWidth = genTypeStSz(var_types(comp->lvaTable[lclNum].lvType)) * sizeof(int);
-                    }
-                    *pIsEntire = (varWidth == width);
-                }
-            }
 
             if (pOffset != nullptr)
             {
-                *pOffset += lclOffset;
+                *pOffset += addrArgLcl->GetLclOffs();
             }
 
             return true;
@@ -16143,7 +16169,7 @@ bool GenTree::DefinesLocalAddr(
         else if (addrArg->OperGet() == GT_IND)
         {
             // A GT_ADDR of a GT_IND can both be optimized away, recurse using the child of the GT_IND
-            return addrArg->AsOp()->gtOp1->DefinesLocalAddr(comp, width, pLclVarTree, pIsEntire, pOffset);
+            return addrArg->AsIndir()->Addr()->DefinesLocalAddr(pLclVarTree, pOffset);
         }
     }
     else if (OperGet() == GT_ADD)
@@ -16155,10 +16181,7 @@ bool GenTree::DefinesLocalAddr(
                 *pOffset += AsOp()->gtOp1->AsIntCon()->IconValue();
             }
 
-            // If we just adding a zero then we allow an IsEntire match against width
-            //  otherwise we change width to zero to disallow an IsEntire Match
-            return AsOp()->gtOp2->DefinesLocalAddr(comp, AsOp()->gtOp1->IsIntegralConst(0) ? width : 0, pLclVarTree,
-                                                   pIsEntire, pOffset);
+            return AsOp()->gtOp2->DefinesLocalAddr(pLclVarTree, pOffset);
         }
         else if (AsOp()->gtOp2->IsCnsIntOrI())
         {
@@ -16167,10 +16190,7 @@ bool GenTree::DefinesLocalAddr(
                 *pOffset += AsOp()->gtOp2->AsIntCon()->IconValue();
             }
 
-            // If we just adding a zero then we allow an IsEntire match against width
-            //  otherwise we change width to zero to disallow an IsEntire Match
-            return AsOp()->gtOp1->DefinesLocalAddr(comp, AsOp()->gtOp2->IsIntegralConst(0) ? width : 0, pLclVarTree,
-                                                   pIsEntire, pOffset);
+            return AsOp()->gtOp1->DefinesLocalAddr(pLclVarTree, pOffset);
         }
     }
     // Post rationalization we could have GT_IND(GT_LEA(..)) trees.
@@ -16186,11 +16206,10 @@ bool GenTree::DefinesLocalAddr(
         GenTree* index = AsOp()->gtOp2;
         if (index != nullptr)
         {
-            assert(!index->DefinesLocalAddr(comp, width, pLclVarTree, pIsEntire, pOffset));
+            assert(!index->DefinesLocalAddr(pLclVarTree, pOffset));
         }
 #endif // DEBUG
 
-        // base
         GenTree* base = AsAddrMode()->Base();
         if (base != nullptr)
         {
@@ -16199,44 +16218,12 @@ bool GenTree::DefinesLocalAddr(
                 *pOffset += AsAddrMode()->Offset();
             }
 
-            return base->DefinesLocalAddr(comp, width, pLclVarTree, pIsEntire, pOffset);
+            return base->DefinesLocalAddr(pLclVarTree, pOffset);
         }
     }
+
     // Otherwise...
     return false;
-}
-
-//------------------------------------------------------------------------
-// IsLocalExpr: Determine if this is a LclVarCommon node and return some
-//              additional info about it in the two out parameters.
-//
-// Arguments:
-//    comp        - The Compiler instance
-//    pLclVarTree - An "out" argument that returns the local tree as a
-//                  LclVarCommon, if it is indeed local.
-//    pFldSeq     - An "out" argument that returns the value numbering field
-//                  sequence for the node, if any.
-//
-// Return Value:
-//    Returns true, and sets the out arguments accordingly, if this is
-//    a LclVarCommon node.
-
-bool GenTree::IsLocalExpr(Compiler* comp, GenTreeLclVarCommon** pLclVarTree, FieldSeqNode** pFldSeq)
-{
-    if (IsLocal()) // Note that this covers "GT_LCL_FLD."
-    {
-        *pLclVarTree = AsLclVarCommon();
-        if (OperGet() == GT_LCL_FLD)
-        {
-            // Otherwise, prepend this field to whatever we've already accumulated outside in.
-            *pFldSeq = comp->GetFieldSeqStore()->Append(AsLclFld()->GetFieldSeq(), *pFldSeq);
-        }
-        return true;
-    }
-    else
-    {
-        return false;
-    }
 }
 
 // If this tree evaluates some sum of a local address and some constants,
@@ -16265,93 +16252,6 @@ const GenTreeLclVarCommon* GenTree::IsLocalAddrExpr() const
     }
     // Otherwise...
     return nullptr;
-}
-
-//------------------------------------------------------------------------
-// IsLocalAddrExpr: finds if "this" is an address of a local var/fld.
-//
-// Arguments:
-//    comp - a compiler instance;
-//    pLclVarTree - [out] sets to the node indicating the local variable if found;
-//    pFldSeq - [out] sets to the field sequence representing the field, else null;
-//    pOffset - [out](optional) sets to the sum offset of the lcl/fld if found,
-//              note it does not include pLclVarTree->GetLclOffs().
-//
-// Returns:
-//    Returns true if "this" represents the address of a local, or a field of a local.
-//
-// Notes:
-//    It is mostly used for optimizations but assertion propagation depends on it for correctness.
-//    So if this function does not recognize a def of a LCL_VAR we can have an incorrect optimization.
-//
-bool GenTree::IsLocalAddrExpr(Compiler*             comp,
-                              GenTreeLclVarCommon** pLclVarTree,
-                              FieldSeqNode**        pFldSeq,
-                              ssize_t*              pOffset /* = nullptr */)
-{
-    if (OperGet() == GT_ADDR)
-    {
-        assert(!comp->compRationalIRForm);
-        GenTree* addrArg = AsOp()->gtOp1;
-        if (addrArg->IsLocal()) // Note that this covers "GT_LCL_FLD."
-        {
-            *pLclVarTree = addrArg->AsLclVarCommon();
-            if (addrArg->OperGet() == GT_LCL_FLD)
-            {
-                // Otherwise, prepend this field to whatever we've already accumulated outside in.
-                *pFldSeq = comp->GetFieldSeqStore()->Append(addrArg->AsLclFld()->GetFieldSeq(), *pFldSeq);
-            }
-            return true;
-        }
-        else
-        {
-            return false;
-        }
-    }
-    else if (OperIsLocalAddr())
-    {
-        *pLclVarTree = this->AsLclVarCommon();
-        if (this->OperGet() == GT_LCL_FLD_ADDR)
-        {
-            *pFldSeq = comp->GetFieldSeqStore()->Append(this->AsLclFld()->GetFieldSeq(), *pFldSeq);
-        }
-        return true;
-    }
-    else if (OperGet() == GT_ADD)
-    {
-        if (AsOp()->gtOp1->OperGet() == GT_CNS_INT)
-        {
-            GenTreeIntCon* cnst = AsOp()->gtOp1->AsIntCon();
-            if (cnst->gtFieldSeq == nullptr)
-            {
-                return false;
-            }
-            // Otherwise, prepend this field to whatever we've already accumulated outside in.
-            *pFldSeq = comp->GetFieldSeqStore()->Append(cnst->gtFieldSeq, *pFldSeq);
-            if (pOffset != nullptr)
-            {
-                *pOffset += cnst->IconValue();
-            }
-            return AsOp()->gtOp2->IsLocalAddrExpr(comp, pLclVarTree, pFldSeq, pOffset);
-        }
-        else if (AsOp()->gtOp2->OperGet() == GT_CNS_INT)
-        {
-            GenTreeIntCon* cnst = AsOp()->gtOp2->AsIntCon();
-            if (cnst->gtFieldSeq == nullptr)
-            {
-                return false;
-            }
-            // Otherwise, prepend this field to whatever we've already accumulated outside in.
-            *pFldSeq = comp->GetFieldSeqStore()->Append(cnst->gtFieldSeq, *pFldSeq);
-            if (pOffset != nullptr)
-            {
-                *pOffset += cnst->IconValue();
-            }
-            return AsOp()->gtOp1->IsLocalAddrExpr(comp, pLclVarTree, pFldSeq, pOffset);
-        }
-    }
-    // Otherwise...
-    return false;
 }
 
 //------------------------------------------------------------------------
@@ -17885,9 +17785,8 @@ GenTree* Compiler::gtCallGetDefinedRetBufLclAddr(GenTreeCall* call)
     node = node->gtSkipReloadOrCopy();
 
 #ifdef DEBUG
-    unsigned             size = typGetObjLayout(call->gtRetClsHnd)->GetSize();
     GenTreeLclVarCommon* lcl;
-    assert(node->DefinesLocalAddr(this, size, &lcl, nullptr) && lvaGetDesc(lcl)->lvHiddenBufferStructArg);
+    assert(node->DefinesLocalAddr(&lcl) && lvaGetDesc(lcl)->lvHiddenBufferStructArg);
 #endif
 
     return node;
@@ -20383,27 +20282,9 @@ GenTree* Compiler::gtNewSimdCndSelNode(var_types   type,
     NamedIntrinsic intrinsic = NI_Illegal;
 
 #if defined(TARGET_XARCH)
-    // TODO-XARCH-CQ: It's likely beneficial to have a dedicated CndSel node so we
-    // can special case when the condition is the result of various compare operations.
-    //
-    // When it is, the condition is AllBitsSet or Zero on a per-element basis and we
-    // could change this to be a Blend operation in lowering as an optimization.
-
     assert((simdSize != 32) || compIsaSupportedDebugOnly(InstructionSet_AVX));
-    CORINFO_CLASS_HANDLE clsHnd = gtGetStructHandleForSIMD(type, simdBaseJitType);
-
-    GenTree* op1Dup;
-    op1 = impCloneExpr(op1, &op1Dup, clsHnd, (unsigned)CHECK_SPILL_ALL,
-                       nullptr DEBUGARG("Clone op1 for vector conditional select"));
-
-    // op2 = op2 & op1
-    op2 = gtNewSimdBinOpNode(GT_AND, type, op2, op1, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
-
-    // op3 = op3 & ~op1Dup
-    op3 = gtNewSimdBinOpNode(GT_AND_NOT, type, op3, op1Dup, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
-
-    // result = op2 | op3
-    return gtNewSimdBinOpNode(GT_OR, type, op2, op3, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+    intrinsic = (simdSize == 32) ? NI_Vector256_ConditionalSelect : NI_Vector128_ConditionalSelect;
+    return gtNewSimdHWIntrinsicNode(type, op1, op2, op3, intrinsic, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
 #elif defined(TARGET_ARM64)
     return gtNewSimdHWIntrinsicNode(type, op1, op2, op3, NI_AdvSimd_BitwiseSelect, simdBaseJitType, simdSize,
                                     isSimdAsHWIntrinsic);

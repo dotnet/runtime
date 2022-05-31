@@ -492,11 +492,7 @@ namespace System.Tests
 
         private static bool IsValidBase64Char(char c)
         {
-            return c >= 'A' && c <= 'Z'
-                || c >= 'a' && c <= 'z'
-                || c >= '0' && c <= '9'
-                || c == '+'
-                || c == '/';
+            return char.IsAsciiLetterOrDigit(c) || c is '+' or '/';
         }
     }
 }

@@ -728,7 +728,7 @@ namespace System.DirectoryServices.AccountManagement
                 return false;
             }
 
-            // Retrive the parsed username which has had the domain removed because LogonUser
+            // Retrieve the parsed username which has had the domain removed because LogonUser
             // expects creds this way.
             string userName = credential.ParsedUserName;
             string password = credential.Password;

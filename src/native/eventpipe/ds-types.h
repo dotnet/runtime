@@ -20,6 +20,7 @@ typedef struct _DiagnosticsStartupProfilerCommandPayload DiagnosticsStartupProfi
 typedef struct _DiagnosticsConnectPort DiagnosticsConnectPort;
 typedef struct _DiagnosticsEnvironmentInfoPayload DiagnosticsEnvironmentInfoPayload;
 typedef struct _DiagnosticsGenerateCoreDumpCommandPayload DiagnosticsGenerateCoreDumpCommandPayload;
+typedef struct _DiagnosticsGenerateCoreDumpResponsePayload DiagnosticsGenerateCoreDumpResponsePayload;
 typedef struct _DiagnosticsSetEnvironmentVariablePayload DiagnosticsSetEnvironmentVariablePayload;
 typedef struct _DiagnosticsGetEnvironmentVariablePayload DiagnosticsGetEnvironmentVariablePayload;
 typedef struct _DiagnosticsIpcHeader DiagnosticsIpcHeader;
@@ -45,6 +46,7 @@ typedef enum {
 	DS_DUMP_COMMANDID_RESERVED = 0x00,
 	DS_DUMP_COMMANDID_GENERATE_CORE_DUMP = 0x01,
 	DS_DUMP_COMMANDID_GENERATE_CORE_DUMP2 = 0x02,
+	DS_DUMP_COMMANDID_GENERATE_CORE_DUMP3 = 0x03,
 	// future
 } DiagnosticsDumpCommandId;
 
