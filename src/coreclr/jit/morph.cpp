@@ -14526,12 +14526,18 @@ GenTree* Compiler::fgRootCommas(GenTree* tree)
     {
         GenTree* comma = tree->gtGetOp1();
 
-        commas[commaCount] = comma;
-        commaCount++;
+        // Do not root commas that do bounds check as later phases
+        // look for that pattern to determine whether not
+        // to eliminate the bounds check.
+        if (!comma->gtGetOp1()->OperIs(GT_BOUNDS_CHECK))
+        {
+            commas[commaCount] = comma;
+            commaCount++;
 
-        tree->AsOp()->gtOp1 = comma->gtGetOp2();
-        tree->gtFlags &= ~GTF_ALL_EFFECT;
-        gtUpdateNodeSideEffects(tree);
+            tree->AsOp()->gtOp1 = comma->gtGetOp2();
+            tree->gtFlags &= ~GTF_ALL_EFFECT;
+            gtUpdateNodeSideEffects(tree);
+        }
     }
 
     if (commaCount > 0)
