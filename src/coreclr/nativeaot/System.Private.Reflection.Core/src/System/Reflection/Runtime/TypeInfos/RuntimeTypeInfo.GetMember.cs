@@ -124,7 +124,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 throw new ArgumentNullException(nameof(member));
 
             // Need to walk up the inheritance chain if member is not found
-            // Leverage the existing cache mechanism of per type to store members
+            // Leverage the existing cache mechanism on per type to store members
             RuntimeTypeInfo? runtimeType = this;
             while (runtimeType != null)
             {
