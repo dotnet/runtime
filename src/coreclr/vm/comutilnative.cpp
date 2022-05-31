@@ -2040,7 +2040,7 @@ FCIMPL2(FC_BOOL_RET, MethodTableNative::IsEquivalentTo, MethodTable* mta, Method
 {
     FCALL_CONTRACT;
 
-    BOOL bResult;
+    BOOL bResult = FALSE;
 
     HELPER_METHOD_FRAME_BEGIN_RET_0();
     bResult = mta->IsEquivalentTo(mtb);
