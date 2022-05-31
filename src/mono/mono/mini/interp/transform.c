@@ -1108,7 +1108,7 @@ get_data_item_index_imethod (TransformData *td, InterpMethod *imethod)
 	g_assertf (index <= G_MAXUINT16, "Interpreter data item index 0x%x for method '%s' overflows", index, td->method->name);
 	if (new_slot && imethod && !imethod->optimized)
 		td->imethod_items = g_slist_prepend (td->imethod_items, (gpointer)(gsize)index);
-	return index;
+	return GUINT32_TO_UINT16 (index);
 }
 
 static gboolean
@@ -6766,7 +6766,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 						td->patchpoint_data_n++;
 						interp_add_ins (td, MINT_TIER_PATCHPOINT_DATA);
 						call_handler_count++;
-						td->last_ins->data [0] = call_handler_count;
+						td->last_ins->data [0] = GINT_TO_UINT16 (call_handler_count);
 						g_assert (call_handler_count < G_MAXUINT16);
 					}
 				}
