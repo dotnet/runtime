@@ -56,6 +56,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
+		public Task ReplacedJumpTarget ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
 		public Task ReplacedReturns ()
 		{
 			return RunTest (allowMissingWarnings: true);

@@ -147,6 +147,17 @@ namespace ILLink.Shared.TrimAnalysis
 		public bool ShouldWarnWhenAccessedForReflection (FieldDefinition field) =>
 			GetAnnotations (field.DeclaringType).TryGetAnnotation (field, out _);
 
+		public bool IsTypeInterestingForDataflow (TypeReference typeReference)
+		{
+			if (typeReference.MetadataType == MetadataType.String)
+				return true;
+
+			TypeDefinition? type = _context.TryResolve (typeReference);
+			return type != null && (
+				_hierarchyInfo.IsSystemType (type) ||
+				_hierarchyInfo.IsSystemReflectionIReflect (type));
+		}
+
 		TypeAnnotations GetAnnotations (TypeDefinition type)
 		{
 			if (!_annotations.TryGetValue (type, out TypeAnnotations value)) {
@@ -451,17 +462,6 @@ namespace ILLink.Shared.TrimAnalysis
 			}
 
 			return true;
-		}
-
-		bool IsTypeInterestingForDataflow (TypeReference typeReference)
-		{
-			if (typeReference.MetadataType == MetadataType.String)
-				return true;
-
-			TypeDefinition? type = _context.TryResolve (typeReference);
-			return type != null && (
-				_hierarchyInfo.IsSystemType (type) ||
-				_hierarchyInfo.IsSystemReflectionIReflect (type));
 		}
 
 		internal void ValidateMethodAnnotationsAreSame (MethodDefinition method, MethodDefinition baseMethod)
