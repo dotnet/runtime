@@ -184,11 +184,11 @@ namespace System.Net.NameResolution.Tests
             using var cts = new CancellationTokenSource();
 
             Task task = Dns.GetHostAddressesAsync(TestSettings.UncachedHost, cts.Token);
+            cts.Cancel();
 
             // This test is nondeterministic, the cancellation may take too long to trigger:
             // It's a race between the DNS server getting back to us and the cancellation processing.
-            cts.Cancel();
-
+            // since the host does not exist, both cases throw an exception.
             Exception ex = await Assert.ThrowsAnyAsync<Exception>(() => task);
             if (ex is OperationCanceledException oce)
             {
