@@ -519,6 +519,9 @@ namespace System.Runtime.CompilerServices
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public extern uint GetNumInstanceFieldBytes();
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public extern bool IsEquivalentTo(MethodTable* pMTOther);
     }
 
     // Helper structs used for tail calls via helper.

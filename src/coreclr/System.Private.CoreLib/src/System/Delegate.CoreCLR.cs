@@ -417,21 +417,22 @@ namespace System
             if (a.GetType() == b.GetType())
                 return true;
 
-            bool hasTypeEquivalance =
-                RuntimeHelpers.GetMethodTable(a)->HasTypeEquivalence
-                && RuntimeHelpers.GetMethodTable(b)->HasTypeEquivalence;
+            MethodTable* pMTa = RuntimeHelpers.GetMethodTable(a);
+            MethodTable* pMTb = RuntimeHelpers.GetMethodTable(b);
+
+            bool ret;
+
+            // only use FCall to check the type equivalence scenario
+            if (pMTa->HasTypeEquivalence && pMTb->HasTypeEquivalence)
+                ret = pMTa->IsEquivalentTo(pMTb);
+            else
+                ret = false;
+
             GC.KeepAlive(a);
             GC.KeepAlive(b);
 
-            if (!hasTypeEquivalance)
-                return false;
-
-            // only use FCall to check the type equivalence scenario
-            return InternalEqualTypes_Internal(a, b);
+            return ret;
         }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern bool InternalEqualTypes_Internal(object a, object b);
 
         // Used by the ctor. Do not call directly.
         // The name of this function will appear in managed stacktraces as delegate constructor.

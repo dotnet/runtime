@@ -224,6 +224,7 @@ public:
 class MethodTableNative {
 public:
     static FCDECL1(UINT32, GetNumInstanceFieldBytes, MethodTable* mt);
+    static FCDECL2(FC_BOOL_RET, IsEquivalentTo, MethodTable* mta, MethodTable* mtb);
 };
 
 class StreamNative {

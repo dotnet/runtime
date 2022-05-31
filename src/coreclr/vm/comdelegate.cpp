@@ -2001,32 +2001,6 @@ FCIMPL1(Object*, COMDelegate::InternalAllocLike, Object* pThis)
 }
 FCIMPLEND
 
-FCIMPL2(FC_BOOL_RET, COMDelegate::InternalEqualTypes, Object* pThis, Object *pThat)
-{
-    FCALL_CONTRACT;
-
-    MethodTable *pThisMT = pThis->GetMethodTable();
-    MethodTable *pThatMT = pThat->GetMethodTable();
-
-    _ASSERTE(pThisMT != NULL && pThisMT->IsDelegate());
-    _ASSERTE(pThatMT != NULL);
-
-    // simple match should be done in managed code
-    _ASSERTE(pThisMT != pThatMT);
-    _ASSERTE(pThisMT->HasTypeEquivalence());
-    _ASSERTE(pThatMT->HasTypeEquivalence());
-
-    BOOL bResult;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-    bResult = pThisMT->IsEquivalentTo(pThatMT);
-    HELPER_METHOD_FRAME_END();
-
-    FC_RETURN_BOOL(bResult);
-}
-FCIMPLEND
-
-
 void COMDelegate::ThrowIfInvalidUnmanagedCallersOnlyUsage(MethodDesc* pMD)
 {
     CONTRACTL

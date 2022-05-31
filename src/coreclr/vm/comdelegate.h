@@ -58,7 +58,6 @@ public:
 
     static FCDECL1(Object*, InternalAlloc, ReflectClassBaseObject* target);
     static FCDECL1(Object*, InternalAllocLike, Object* pThis);
-    static FCDECL2(FC_BOOL_RET, InternalEqualTypes, Object* pThis, Object *pThat);
 
     static FCDECL3(PCODE, AdjustTarget, Object* refThis, Object* target, PCODE method);
     static FCDECL2(PCODE, GetCallStub, Object* refThis, PCODE method);

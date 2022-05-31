@@ -2036,6 +2036,13 @@ FCIMPL1(UINT32, MethodTableNative::GetNumInstanceFieldBytes, MethodTable* mt)
 }
 FCIMPLEND
 
+FCIMPL2(FC_BOOL_RET, MethodTableNative::IsEquivalentTo, MethodTable* mta, MethodTable* mtb)
+{
+    FCALL_CONTRACT;
+    FC_RETURN_BOOL(mta->IsEquivalentTo(mtb));
+}
+FCIMPLEND
+
 static MethodTable * g_pStreamMT;
 static WORD g_slotBeginRead, g_slotEndRead;
 static WORD g_slotBeginWrite, g_slotEndWrite;
