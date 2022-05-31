@@ -250,4 +250,7 @@
   <data name="BinaryFormatterMessage" xml:space="preserve">
     <value>BinaryFormatter serialization is obsolete and should not be used. See https://aka.ms/binaryformatter for more information.</value>
   </data>
+  <data name="Arg_InvalidBase" xml:space="preserve">
+    <value>Invalid Base.</value>
+  </data>
 </root>
