@@ -1123,9 +1123,9 @@ namespace Internal.Runtime.TypeLoader
                         if (returnType == CorElementType.ELEMENT_TYPE_BYREF && returnValueToCopy == null)
                         {
                             // This is a byref return and dereferencing it would result in a NullReferenceException.
-                            // Set the return value to a sentinel that InvokeUtils will recognize.
-                            // Can't throw from here or we would wrap this in a TargetInvocationException.
-                            returnValue = InvokeUtils.NullByRefValueSentinel;
+                            CompilerHelpers.ThrowHelpers.ThrowInvokeNullRefReturned();
+                            // Unreachable
+                            returnValue = null;
                         }
                         else if (RuntimeAugments.IsUnmanagedPointerType(returnTypeRuntimeTypeHandle))
                         {
