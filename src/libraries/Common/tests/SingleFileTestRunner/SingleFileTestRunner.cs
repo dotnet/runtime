@@ -36,8 +36,6 @@ public class SingleFileTestRunner : XunitTestFramework
         var resultsSink = new DelegatingXmlCreationSink(summarySink, resultsXmlAssembly);
 
         testSink.Execution.TestSkippedEvent += args => { Console.WriteLine($"[SKIP] {args.Message.Test.DisplayName}"); };
-        testSink.Execution.TestStartingEvent += args => { Console.WriteLine($"[START]###{args.Message.Test.DisplayName}###{DateTime.Now}"); };
-        testSink.Execution.TestFinishedEvent += args => { Console.WriteLine($"[END]###{args.Message.Test.DisplayName}###{DateTime.Now}"); };        
         testSink.Execution.TestFailedEvent += args => { Console.WriteLine($"[FAIL] {args.Message.Test.DisplayName}{Environment.NewLine}{Xunit.ExceptionUtility.CombineMessages(args.Message)}{Environment.NewLine}{Xunit.ExceptionUtility.CombineStackTraces(args.Message)}"); };
 
         testSink.Execution.TestAssemblyFinishedEvent += args =>
