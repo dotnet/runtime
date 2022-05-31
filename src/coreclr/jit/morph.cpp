@@ -14529,7 +14529,11 @@ GenTree* Compiler::fgRootCommas(GenTree* tree)
         // Do not root commas that do bounds check as later phases
         // look for that pattern to determine whether not
         // to eliminate the bounds check.
-        if (!comma->gtGetOp1()->OperIs(GT_BOUNDS_CHECK))
+        if (comma->gtGetOp1()->OperIs(GT_BOUNDS_CHECK))
+        {
+            break;
+        }
+        else
         {
             commas[commaCount] = comma;
             commaCount++;
