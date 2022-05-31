@@ -3,8 +3,6 @@
 
 using System.Buffers.Text;
 using System.Diagnostics;
-using System.Globalization;
-using System.Runtime.ExceptionServices;
 
 namespace System.Text.Json.Serialization.Converters
 {
