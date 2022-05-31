@@ -1699,6 +1699,10 @@ namespace System.Reflection.Emit
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2083:UnrecognizedReflectionPattern",
             Justification = "Reflection.Emit is not subject to trimming")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2068:UnrecognizedReflectionPattern",
+            Justification = "Reflection.Emit is not subject to trimming")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2069:UnrecognizedReflectionPattern",
+            Justification = "Reflection.Emit is not subject to trimming")]
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         private TypeInfo? CreateTypeNoLock()
         {
@@ -1868,7 +1872,8 @@ namespace System.Reflection.Emit
 
             if (!m_isHiddenGlobalType)
             {
-                m_bakedRuntimeType = cls!;
+                // Why was this previously not warning?
+                m_bakedRuntimeType = cls!; // m_bakedRuntimeType requires All, but ref cls above doesn't satisfy it. 2069
 
                 // if this type is a nested type, we need to invalidate the cached nested runtime type on the nesting type
                 if (m_DeclaringType != null && m_DeclaringType.m_bakedRuntimeType != null)
@@ -1876,7 +1881,7 @@ namespace System.Reflection.Emit
                     m_DeclaringType.m_bakedRuntimeType.InvalidateCachedNestedType();
                 }
 
-                return cls;
+                return cls; // same here, but 2068
             }
             else
             {

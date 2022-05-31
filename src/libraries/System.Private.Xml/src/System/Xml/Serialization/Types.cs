@@ -510,6 +510,7 @@ namespace System.Xml.Serialization
             "token"
         };
 
+        [UnconditionalSuppressMessage ("", "IL2118", Justification = "preserve all, hopefully doesn't actually need the compiler-generated code... :/")]
         static TypeScope()
         {
             AddPrimitive(typeof(string), "string", "String", TypeFlags.CanBeAttributeValue | TypeFlags.CanBeElementValue | TypeFlags.CanBeTextValue | TypeFlags.Reference | TypeFlags.HasDefaultConstructor);
