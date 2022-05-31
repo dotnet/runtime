@@ -126,14 +126,9 @@ namespace System.Net.Sockets
         }
 
         public override bool Equals([NotNullWhen(true)] object? obj)
-            => obj is UnixDomainSocketEndPoint ep && MemoryExtensions.SequenceEqual<byte>(_encodedPath, ep._encodedPath);
+            => obj is UnixDomainSocketEndPoint ep && _path == ep._path;
 
-        public override int GetHashCode()
-        {
-            HashCode hash = default;
-            hash.AddBytes(_encodedPath);
-            return hash.ToHashCode();
-        }
+        public override int GetHashCode() => _path.GetHashCode();
 
         internal UnixDomainSocketEndPoint CreateBoundEndPoint()
         {
