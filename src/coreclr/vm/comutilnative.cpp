@@ -2039,7 +2039,14 @@ FCIMPLEND
 FCIMPL2(FC_BOOL_RET, MethodTableNative::IsEquivalentTo, MethodTable* mta, MethodTable* mtb)
 {
     FCALL_CONTRACT;
-    FC_RETURN_BOOL(mta->IsEquivalentTo(mtb));
+
+    BOOL bResult;
+
+    HELPER_METHOD_FRAME_BEGIN_RET_0();
+    bResult = mta->IsEquivalentTo(mtb);
+    HELPER_METHOD_FRAME_END();
+
+    FC_RETURN_BOOL(bResult);
 }
 FCIMPLEND
 
