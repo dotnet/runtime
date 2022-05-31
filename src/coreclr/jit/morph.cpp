@@ -13854,27 +13854,27 @@ GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
 //    eliminate the redundant div from code like "x = a / 3; y = a % 3;".
 //
 //    Before:
-//        *  RETURN    int   
-//        \--*  MOD       int   
-//           +--*  MUL       int   
-//           |  +--*  LCL_VAR   int    V00 arg0         
-//           |  \--*  LCL_VAR   int    V00 arg0         
+//        *  RETURN    int
+//        \--*  MOD       int
+//           +--*  MUL       int
+//           |  +--*  LCL_VAR   int    V00 arg0
+//           |  \--*  LCL_VAR   int    V00 arg0
 //           \--*  LCL_VAR   int    V01 arg1
 //    After:
-//        *  RETURN    int   
-//        \--*  COMMA     int   
-//           +--*  ASG       int   
-//           |  +--*  LCL_VAR   int    V03 tmp1         
-//           |  \--*  MUL       int   
-//           |     +--*  LCL_VAR   int    V00 arg0         
-//           |     \--*  LCL_VAR   int    V00 arg0         
-//           \--*  SUB       int   
-//              +--*  LCL_VAR   int    V03 tmp1         
-//              \--*  MUL       int   
-//                 +--*  DIV       int   
-//                 |  +--*  LCL_VAR   int    V03 tmp1         
-//                 |  \--*  LCL_VAR   int    V01 arg1         
-//                 \--*  LCL_VAR   int    V01 arg1 
+//        *  RETURN    int
+//        \--*  COMMA     int
+//           +--*  ASG       int
+//           |  +--*  LCL_VAR   int    V03 tmp1
+//           |  \--*  MUL       int
+//           |     +--*  LCL_VAR   int    V00 arg0
+//           |     \--*  LCL_VAR   int    V00 arg0
+//           \--*  SUB       int
+//              +--*  LCL_VAR   int    V03 tmp1
+//              \--*  MUL       int
+//                 +--*  DIV       int
+//                 |  +--*  LCL_VAR   int    V03 tmp1
+//                 |  \--*  LCL_VAR   int    V01 arg1
+//                 \--*  LCL_VAR   int    V01 arg1
 GenTree* Compiler::fgMorphModToSubMulDiv(GenTreeOp* tree)
 {
     JITDUMP("\nMorphing MOD/UMOD [%06u] to Sub/Mul/Div\n", dspTreeID(tree));
