@@ -19,7 +19,7 @@ Console.WriteLine(data.ToString()); // prints "some data"
 
  To/From bytes:
 ```C# Snippet:BinaryDataToFromBytes
-byte[] bytes = Encoding.UTF8.GetBytes("some data");
+byte[] bytes = "some data"u8.ToArray();
 
 // Create BinaryData using a constructor ...
 BinaryData data = new BinaryData(bytes);
@@ -41,7 +41,7 @@ byte[] array = data.ToArray();
 ```
 To/From stream:
 ```C# Snippet:BinaryDataToFromStream
-var bytes = Encoding.UTF8.GetBytes("some data");
+var bytes = "some data"u8.ToArray();
 Stream stream = new MemoryStream(bytes);
 var data = BinaryData.FromStream(stream);
 

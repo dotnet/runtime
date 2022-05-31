@@ -99,7 +99,7 @@ namespace System.Diagnostics.Tests
         public static int WriteSlowlyByByte()
         {
             var stdout = Console.OpenStandardOutput();
-            var bytes = new byte[] { 97, 0 }; //Encoding.Unicode.GetBytes("a");
+            var bytes = "a\0"u8.ToArray();
 
             for (int i = 0; i != bytes.Length; ++i)
             {
