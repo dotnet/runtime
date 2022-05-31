@@ -687,24 +687,19 @@ namespace System.Runtime.CompilerServices
         private readonly uint TypeAndFlags;
 
         /// <summary>
-        /// Gets whether the current instance represents a generic variable.
-        /// </summary>
-        public bool IsGenericVariable
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => throw new NotImplementedException();
-        }
-
-        /// <summary>
         /// Gets a <see cref="MethodTable"/> pointer for the current type desc.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public MethodTable* GetMethodTable()
         {
-            if (IsGenericVariable)
-            {
-                return null;
-            }
+            // The native version here has a check for IsGenericVariable, which causes this method to return null.
+            // This path is never taken by TypedReference, as it always assumes the returned MethodTable* pointer
+            // is not null. If adding code that needs this path to be available as well, it needs to be ported too.
+            //
+            // if (IsGenericVariable)
+            // {
+            //     return null;
+            // }
 
             if (GetInternalCorElementType() == CorElementType.ELEMENT_TYPE_FNPTR)
             {

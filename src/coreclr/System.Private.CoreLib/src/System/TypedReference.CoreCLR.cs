@@ -4,6 +4,7 @@
 // TypedReference is basically only ever seen on the call stack, and in param arrays.
 // These are blob that must be dealt with by the compiler.
 
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace System
@@ -24,6 +25,8 @@ namespace System
             }
 
             MethodTable* pMethodTable = typeHandle.GetMethodTable();
+
+            Debug.Assert(pMethodTable is not null);
 
             object? result;
 
