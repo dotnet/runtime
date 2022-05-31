@@ -602,7 +602,7 @@ MONO_RESTORE_WARNING
 /*
  * load_cattr_value_noalloc:
  *
- * Loads custro attribute values without mono allocation (invoked when AOT compiling).
+ * Loads custom attribute values without mono allocation (invoked when AOT compiling).
  * Returns MonoCustomAttrValue:
  * 	- for primitive types:
  * 		- (bools, ints, and enums) a pointer to the value is returned.

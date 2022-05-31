@@ -3358,11 +3358,10 @@ mono_marshal_set_signature_callconv_from_attribute(MonoMethodSignature *sig, Mon
 	g_assert (m_class_get_image (cmod_klass) == mono_defaults.corlib);
 	g_assert (!strcmp (m_class_get_name_space (cmod_klass), "System.Runtime.CompilerServices"));
 
-	size_t calling_convention_id_offset = strlen ("CallConv");
 	const char *name = m_class_get_name (cmod_klass);
-	g_assert (!strncmp (name, "CallConv", calling_convention_id_offset));
+	g_assert (g_str_has_prefix (name, "CallConv"));
 
-	name += calling_convention_id_offset;
+	name += strlen ("CallConv");
 	if (!strcmp (name, "Cdecl"))
 		sig->call_convention = MONO_CALL_C;
 	else if (!strcmp (name, "Stdcall"))
@@ -3403,8 +3402,7 @@ mono_marshal_set_callconv_from_unmanaged_callers_only_attribute (MonoMethod *met
 		}
 	}
 
-	if (attr != NULL)
-	{
+	if (attr != NULL) {
 		MonoDecodeCustomAttr *decoded_args = mono_reflection_create_custom_attr_data_args_noalloc (mono_defaults.corlib, attr->ctor, attr->data, attr->data_size, error);
 		mono_error_assert_ok (error);
 		for (i = 0; i < decoded_args->named_args_num; ++i) {
