@@ -180,6 +180,16 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 				// Assignment to 'this' is not tracked currently.
 				// Not relevant for trimming dataflow.
 				break;
+			case IInvocationOperation:
+				// This can happen for an assignment to a ref return. Skip for now.
+				// The analyzer doesn't handle refs yet. This should be fixed once the analyzer
+				// also produces warnings for ref params/locals/returns.
+				// https://github.com/dotnet/linker/issues/2632
+				// https://github.com/dotnet/linker/issues/2158
+				break;
+			// Keep these cases in sync with those in CapturedReferenceValue, for any that
+			// can show up in a flow capture reference (for example, where the right-hand side
+			// is a null-coalescing operator).
 			default:
 				// NoneOperation represents operations which are unimplemented by Roslyn
 				// (don't have specific I*Operation types), such as pointer dereferences.

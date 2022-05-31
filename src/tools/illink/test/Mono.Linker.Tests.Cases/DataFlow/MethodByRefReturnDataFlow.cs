@@ -17,6 +17,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 			ReturnAnnotatedTypeReferenceAsUnannotated ();
 			AssignToAnnotatedTypeReference ();
+			AssignDirectlyToAnnotatedTypeReference ();
+			AssignToCapturedAnnotatedTypeReference ();
 		}
 
 		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
@@ -39,6 +41,29 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			typeShouldHaveAllMethods = typeof (TestTypeWithRequires); // This should apply the annotation -> cause IL2026 due to RUC method
 			_annotatedField.GetMethods (); // Doesn't warn, but now contains typeof(TestType) - no warning here is correct
 		}
+
+		// Same as above for IL analysis, but this looks different to the Roslyn analyzer.
+		// https://github.com/dotnet/linker/issues/2158
+		[ExpectedWarning ("IL2026", "Message for --TestType.Requires--", ProducedBy = ProducedBy.Trimmer)]
+		static void AssignDirectlyToAnnotatedTypeReference ()
+		{
+			ReturnAnnotatedTypeReferenceAsAnnotated () = typeof (TestTypeWithRequires);
+			_annotatedField.GetMethods ();
+		}
+
+		// https://github.com/dotnet/linker/issues/2158
+		[ExpectedWarning ("IL2073", nameof (GetWithPublicFields), ProducedBy = ProducedBy.Trimmer)]
+		static void AssignToCapturedAnnotatedTypeReference ()
+		{
+			// In this testcase, the Roslyn analyzer sees an assignment to a flow-capture reference.
+			ReturnAnnotatedTypeReferenceAsAnnotated () = GetWithPublicMethods () ?? GetWithPublicFields ();
+		}
+
+		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+		static Type GetWithPublicMethods () => null;
+
+		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+		static Type GetWithPublicFields () => null;
 
 		public class TestTypeWithRequires
 		{
