@@ -30,7 +30,7 @@ inline PTR_MethodTable  TypeDesc::GetMethodTable() {
     if (GetInternalCorElementType() == ELEMENT_TYPE_VALUETYPE)
         return dac_cast<PTR_MethodTable>(asParam->m_Arg.AsMethodTable());
     else
-        return(asParam->GetTemplateMethodTableInternal());
+        return NULL;
 }
 
 inline TypeHandle TypeDesc::GetTypeParam() {
