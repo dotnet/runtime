@@ -2700,8 +2700,22 @@ void EEClass::AddChunk (MethodDescChunk* pNewChunk)
     STATIC_CONTRACT_FORBID_FAULT;
 
     _ASSERTE(pNewChunk->GetNextChunk() == NULL);
-    pNewChunk->SetNextChunk(GetChunks());
-    SetChunks(pNewChunk);
+
+    MethodDescChunk* head = GetChunks();
+
+    if (head == NULL)
+    {
+        SetChunks(pNewChunk);
+    }
+    else
+    {
+        // Current chunk needs to be added to the end of the list so that
+        // when reflection is iterating all methods, they would come in declared order
+        while (head->GetNextChunk() != NULL)
+            head = head->GetNextChunk();
+
+        head->SetNextChunk(pNewChunk);
+    }
 }
 
 //*******************************************************************************
