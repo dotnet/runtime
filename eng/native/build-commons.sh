@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-set -x
-
 initTargetDistroRid()
 {
     source "$__RepoRootDir/eng/native/init-distro-rid.sh"
