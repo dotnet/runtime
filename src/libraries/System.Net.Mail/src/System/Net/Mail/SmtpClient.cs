@@ -648,8 +648,23 @@ namespace System.Net.Mail
                         _operationCompletedResult = new ContextAwareResult(_transport.IdentityRequired, true, null, this, s_contextSafeCompleteCallback);
                         lock (_operationCompletedResult.StartPostingAsyncOp())
                         {
-                            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Calling BeginConnect. Transport: {_transport}");
-                            _transport.BeginGetConnection(_operationCompletedResult, ConnectCallback, _operationCompletedResult, Host!, Port);
+                            if (_transport.IsConnected)
+                            {
+                                try
+                                {
+                                    SendMailAsync(_operationCompletedResult);
+                                }
+                                catch (Exception e)
+                                {
+                                    Complete(e, _operationCompletedResult);
+                                }
+                            }
+                            else
+                            {
+                                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Calling BeginConnect. Transport: {_transport}");
+                                _transport.BeginGetConnection(_operationCompletedResult, ConnectCallback, _operationCompletedResult, Host!, Port);
+                            }
+
                             _operationCompletedResult.FinishPostingAsyncOp();
                         }
                         break;
@@ -829,9 +844,9 @@ namespace System.Net.Mail
             }
         }
 
-        private void Complete(Exception? exception, IAsyncResult result)
+        private void Complete(Exception? exception, object result)
         {
-            ContextAwareResult operationCompletedResult = (ContextAwareResult)result.AsyncState!;
+            ContextAwareResult operationCompletedResult = (ContextAwareResult)result;
             try
             {
                 if (_cancelled)
@@ -893,11 +908,11 @@ namespace System.Net.Mail
             {
                 _message!.EndSend(result);
                 // If some recipients failed but not others, throw AFTER sending the message.
-                Complete(_failedRecipientException, result);
+                Complete(_failedRecipientException, result.AsyncState!);
             }
             catch (Exception e)
             {
-                Complete(e, result);
+                Complete(e, result.AsyncState!);
             }
         }
 
@@ -916,7 +931,7 @@ namespace System.Net.Mail
             }
             catch (Exception e)
             {
-                Complete(e, result);
+                Complete(e, result.AsyncState!);
                 return;
             }
 
@@ -924,7 +939,7 @@ namespace System.Net.Mail
             {
                 if (_cancelled)
                 {
-                    Complete(null, result);
+                    Complete(null, result.AsyncState!);
                 }
                 else
                 {
@@ -934,7 +949,7 @@ namespace System.Net.Mail
             }
             catch (Exception e)
             {
-                Complete(e, result);
+                Complete(e, result.AsyncState!);
             }
         }
 
@@ -945,22 +960,27 @@ namespace System.Net.Mail
                 SmtpTransport.EndGetConnection(result);
                 if (_cancelled)
                 {
-                    Complete(null, result);
+                    Complete(null, result.AsyncState!);
                 }
                 else
                 {
-                    // Detected during Begin/EndGetConnection, restrictable using DeliveryFormat
-                    bool allowUnicode = IsUnicodeSupported();
-                    ValidateUnicodeRequirement(_message!, _recipients!, allowUnicode);
-                    _transport.BeginSendMail(_message!.Sender ?? _message.From!, _recipients!,
-                        _message.BuildDeliveryStatusNotificationString(), allowUnicode,
-                        new AsyncCallback(SendMailCallback), result.AsyncState!);
+                    SendMailAsync(result.AsyncState!);
                 }
             }
             catch (Exception e)
             {
-                Complete(e, result);
+                Complete(e, result.AsyncState!);
             }
+        }
+
+        private void SendMailAsync(object state)
+        {
+            // Detected during Begin/EndGetConnection, restrictable using DeliveryFormat
+            bool allowUnicode = IsUnicodeSupported();
+            ValidateUnicodeRequirement(_message!, _recipients!, allowUnicode);
+            _transport.BeginSendMail(_message!.Sender ?? _message.From!, _recipients!,
+                _message.BuildDeliveryStatusNotificationString(), allowUnicode,
+                new AsyncCallback(SendMailCallback), state);
         }
 
         // After we've estabilished a connection and initilized ServerSupportsEai,
