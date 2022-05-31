@@ -91,7 +91,8 @@ LOCAL_LABEL(EphemeralCheckEnabled):
     ld.d  $a7, $a7, 0
 
     // Update wbs state
-    la.local  $t2, wbs_begin   //JIT_WriteBarrier_Table_Loc
+    la.local  $t2, JIT_WriteBarrier_Table_Loc
+    ld.d  $t2, $t2, 0
     add.d $t2,$t2,$t1
 
     st.d  $a0, $t2, 0
@@ -122,73 +123,60 @@ LEAF_ENTRY  JIT_WriteBarrier_Callable, _TEXT
 LEAF_END JIT_WriteBarrier_Callable, _TEXT
 
 
-// Begin patchable literal pool
-    .balign 64  // Align to power of two at least as big as patchable literal pool so that it fits optimally in cache line
-    .section .data
-//.global JIT_WriteBarrier_Table
-wbs_begin:
-wbs_card_table:
-    .quad 0
-wbs_card_bundle_table:
-    .quad 0
-wbs_GCShadow:
-    .quad 0
-wbs_sw_ww_table:
-    .quad 0
-wbs_ephemeral_low:
-    .quad 0
-wbs_ephemeral_high:
-    .quad 0
-wbs_lowest_address:
-    .quad 0
-wbs_highest_address:
-    .quad 0
-     .previous
-
+.balign 64  // Align to power of two at least as big as patchable literal pool so that it fits optimally in cache line
 // ------------------------------------------------------------------
 // Start of the writeable code region
 LEAF_ENTRY JIT_PatchedCodeStart, _TEXT
     jirl  $r0, $ra, 0
 LEAF_END JIT_PatchedCodeStart, _TEXT
 
-
+// void JIT_ByRefWriteBarrier
 //
-// If a preserved register were pushed onto the stack between
-// the managed caller and the H_M_F, ptrS0_S8 will point to its
-// location on the stack and it would have been updated on the
-// stack by the GC already and it will be popped back into the
-// appropriate register when the appropriate epilog is run.
+// On entry:
+//   t8 : the source address (points to object reference to write)
+//   t6: the destination address (object reference written here)
 //
-// Otherwise, the register is preserved across all the code
-// in this HCALL or FCALL, so we need to update those registers
-// here because the GC will have updated our copies in the
-// frame.
+// On exit:
+//   t8  : incremented by 8
+//   t7  : trashed
 //
-// So, if ptrS0_S8 points into the MachState, we need to update
-// the register here.  That's what this macro does.
+WRITE_BARRIER_ENTRY JIT_ByRefWriteBarrier
+    ld.d  $t7, $t8, 0
+    addi.d  $t8, $t8, 8
+    b  C_FUNC(JIT_CheckedWriteBarrier)
+WRITE_BARRIER_END JIT_ByRefWriteBarrier
+
+//-----------------------------------------------------------------------------
+// Simple WriteBarriers
+// void JIT_CheckedWriteBarrier(Object** dst, Object* src)
 //
-.macro RestoreRegMS regIndex, reg
-    // Incoming:
-    //
-    // $a0 = address of MachState
-    //
-    // $regIndex: Index of the register (s0-s8). For s0, index is 23.
-    //For s1, index is 24, and so on.
-    //
-    // $reg: Register name (e.g. s0, s1, etc)
-    //
-    // Get the address of the specified captured register from machine state
-    addi.d  $a2, $a0,(MachState__captureCalleeSavedRegisters + ((\regIndex-23)*8))
+// On entry:
+//   t6 : the destination address (LHS of the assignment)
+//   t7 : the object reference (RHS of the assignment)
+//
+// On exit:
+//   $t1  : trashed
+//   $t0  : trashed
+//   $t3  : trashed
+//   $t4  : trashed
+//   t6  : trashed (incremented by 8 to implement JIT_ByRefWriteBarrier contract)
+//
+WRITE_BARRIER_ENTRY JIT_CheckedWriteBarrier
 
-    //// Get the content of specified preserved register pointer from machine state
-    ld.d  $a3, $a0, (MachState__ptrCalleeSavedRegisters + ((\regIndex-23)*8))
+    la.local  $t3, wbs_lowest_address
+    ld.d  $t3, $t3, 0
+    slt  $t4, $t6, $t3
 
-    bne  $a2, $a3, LOCAL_LABEL(NoRestore_\reg)
+    la.local  $t1, wbs_highest_address
+    ld.d  $t1, $t1, 0
+    slt  $t0, $t1, $t6
+    or  $t4, $t0, $t4
+    beq  $t4, $zero, C_FUNC(JIT_WriteBarrier)
 
-    ld.d  $\reg, $a2, 0
-LOCAL_LABEL(NoRestore_\reg):
-
-.endm
+    st.d  $t7, $t6, 0
+    addi.d  $t6, $t6, 8
+    jirl  $r0, $ra, 0
+WRITE_BARRIER_END JIT_CheckedWriteBarrier
 
 // void JIT_WriteBarrier(Object** dst, Object* src)
 // On entry:
@@ -312,6 +300,74 @@ LOCAL_LABEL(Exit):
     addi.d  $t6, $t6, 8
     jirl  $r0, $ra, 0
 WRITE_BARRIER_END JIT_WriteBarrier
+
+
+// Begin patchable literal pool
+    .balign 64  // Align to power of two at least as big as patchable literal pool so that it fits optimally in cache line
+WRITE_BARRIER_ENTRY JIT_WriteBarrier_Table
+wbs_begin:
+wbs_card_table:
+    .quad 0
+wbs_card_bundle_table:
+    .quad 0
+wbs_GCShadow:
+    .quad 0
+wbs_sw_ww_table:
+    .quad 0
+wbs_ephemeral_low:
+    .quad 0
+wbs_ephemeral_high:
+    .quad 0
+wbs_lowest_address:
+    .quad 0
+wbs_highest_address:
+    .quad 0
+WRITE_BARRIER_END JIT_WriteBarrier_Table
+
+// ------------------------------------------------------------------
+// End of the writeable code region
+LEAF_ENTRY JIT_PatchedCodeLast, _TEXT
+    jirl  $r0, $ra, 0
+LEAF_END JIT_PatchedCodeLast, _TEXT
+
+
+//
+// If a preserved register were pushed onto the stack between
+// the managed caller and the H_M_F, ptrS0_S8 will point to its
+// location on the stack and it would have been updated on the
+// stack by the GC already and it will be popped back into the
+// appropriate register when the appropriate epilog is run.
+//
+// Otherwise, the register is preserved across all the code
+// in this HCALL or FCALL, so we need to update those registers
+// here because the GC will have updated our copies in the
+// frame.
+//
+// So, if ptrS0_S8 points into the MachState, we need to update
+// the register here.  That's what this macro does.
+//
+.macro RestoreRegMS regIndex, reg
+    // Incoming:
+    //
+    // $a0 = address of MachState
+    //
+    // $regIndex: Index of the register (s0-s8). For s0, index is 23.
+    //For s1, index is 24, and so on.
+    //
+    // $reg: Register name (e.g. s0, s1, etc)
+    //
+    // Get the address of the specified captured register from machine state
+    addi.d  $a2, $a0,(MachState__captureCalleeSavedRegisters + ((\regIndex-23)*8))
+
+    //// Get the content of specified preserved register pointer from machine state
+    ld.d  $a3, $a0, (MachState__ptrCalleeSavedRegisters + ((\regIndex-23)*8))
+
+    bne  $a2, $a3, LOCAL_LABEL(NoRestore_\reg)
+
+    ld.d  $\reg, $a2, 0
+LOCAL_LABEL(NoRestore_\reg):
+
+.endm
 
 NESTED_ENTRY ThePreStub, _TEXT, NoHandler
     PROLOG_WITH_TRANSITION_BLOCK
@@ -480,54 +536,6 @@ LOCAL_LABEL(LNullThis):
     addi.d  $a0, $zero, CORINFO_NullReferenceException_ASM
     b JIT_InternalThrow
 LEAF_END SinglecastDelegateInvokeStub, _TEXT
-
-// void JIT_ByRefWriteBarrier
-//
-// On entry:
-//   t8 : the source address (points to object reference to write)
-//   t6: the destination address (object reference written here)
-//
-// On exit:
-//   t8  : incremented by 8
-//   t7  : trashed
-//
-WRITE_BARRIER_ENTRY JIT_ByRefWriteBarrier
-    ld.d  $t7, $t8, 0
-    addi.d  $t8, $t8, 8
-    b  C_FUNC(JIT_CheckedWriteBarrier)
-WRITE_BARRIER_END JIT_ByRefWriteBarrier
-
-//-----------------------------------------------------------------------------
-// Simple WriteBarriers
-// void JIT_CheckedWriteBarrier(Object** dst, Object* src)
-//
-// On entry:
-//   t6 : the destination address (LHS of the assignment)
-//   t7 : the object reference (RHS of the assignment)
-//
-// On exit:
-//   $t1  : trashed
-//   $t0  : trashed
-//   $t3  : trashed
-//   $t4  : trashed
-//   t6  : trashed (incremented by 8 to implement JIT_ByRefWriteBarrier contract)
-//
-WRITE_BARRIER_ENTRY JIT_CheckedWriteBarrier
-
-    la.local  $t3, wbs_lowest_address
-    ld.d  $t3, $t3, 0
-    slt  $t4, $t6, $t3
-
-    la.local  $t1, wbs_highest_address
-    ld.d  $t1, $t1, 0
-    slt  $t0, $t1, $t6
-    or  $t4, $t0, $t4
-    beq  $t4, $zero, C_FUNC(JIT_WriteBarrier)
-
-    st.d  $t7, $t6, 0
-    addi.d  $t6, $t6, 8
-    jirl  $r0, $ra, 0
-WRITE_BARRIER_END JIT_CheckedWriteBarrier
 
 // ------------------------------------------------------------------
 // ThePreStubPatch()
@@ -709,12 +717,6 @@ NESTED_END ResolveWorkerChainLookupAsmStub, _TEXT
 #define UMThunkStub_Offset_s0    0x60
 #define UMThunkStub_StackArgs    0x70   // Frame size.
 
-
-// ------------------------------------------------------------------
-// End of the writeable code region
-LEAF_ENTRY JIT_PatchedCodeLast, _TEXT
-    jirl  $r0, $ra, 0
-LEAF_END JIT_PatchedCodeLast, _TEXT
 
 // ------------------------------------------------------------------
 // void ResolveWorkerAsmStub(args in regs $a0-$a7 & stack, t8:IndirectionCellAndFlags, $t2:DispatchToken)

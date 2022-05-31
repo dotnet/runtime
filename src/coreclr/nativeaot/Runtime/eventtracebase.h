@@ -118,7 +118,7 @@ struct ProfilingScanContext;
         ETWTraceStartup::StartupTraceEvent(Microsoft_Windows_DotNETRuntimePrivateHandle, &EventName, &StartupId);
 #endif // FEATURE_DTRACE
 
-#ifndef FEATURE_REDHAWK
+#ifndef FEATURE_NATIVEAOT
 
 // Headers
 #ifndef FEATURE_PAL
@@ -137,7 +137,7 @@ struct ProfilingScanContext;
 #include "clrdtrace.h"
 #endif
 
-#endif //!FEATURE_REDHAWK
+#endif //!FEATURE_NATIVEAOT
 
 
 #else // FEATURE_EVENT_TRACE
@@ -145,7 +145,7 @@ struct ProfilingScanContext;
 #include "etmdummy.h"
 #endif // FEATURE_EVENT_TRACE
 
-#ifndef FEATURE_REDHAWK
+#ifndef FEATURE_NATIVEAOT
 
 #include "corprof.h"
 
@@ -921,9 +921,9 @@ McGenEventProviderEnabled(
 
 #endif // FEATURE_EVENT_TRACE && !FEATURE_PAL
 
-#endif // !FEATURE_REDHAWK
-// These parts of the ETW namespace are common for both FEATURE_REDHAWK and
-// !FEATURE_REDHAWK builds.
+#endif // !FEATURE_NATIVEAOT
+// These parts of the ETW namespace are common for both FEATURE_NATIVEAOT and
+// !FEATURE_NATIVEAOT builds.
 
 
 struct ProfilingScanContext;
@@ -944,7 +944,7 @@ namespace ETW
     };
 };
 
-#ifndef FEATURE_REDHAWK
+#ifndef FEATURE_NATIVEAOT
 
 #ifdef FEATURE_EVENT_TRACE
 
@@ -1083,6 +1083,6 @@ public:
 
 #endif // FEATURE_EVENT_TRACE
 
-#endif // FEATURE_REDHAWK
+#endif // FEATURE_NATIVEAOT
 
 #endif //_ETWTRACER_HXX_

@@ -474,9 +474,6 @@ public:
     // Does this type have zap-encoded components (generic arguments, etc)?
     BOOL HasUnrestoredTypeKey() const;
 
-    // True if this type handle is a zap-encoded fixup
-    BOOL IsEncodedFixup() const;
-
     void DoRestoreTypeKey();
 
     void CheckRestore() const;

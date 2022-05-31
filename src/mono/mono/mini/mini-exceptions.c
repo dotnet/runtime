@@ -473,7 +473,7 @@ arch_unwind_frame (MonoJitTlsData *jit_tls,
 				} else {
 					/* Set ctx->ip to the beginning of the corresponding interpreter try clause */
 					g_assert (clause_index < frame->ji->num_clauses);
-					frame->native_offset = (guint8*)frame->ji->clauses [clause_index].try_start - (guint8*)frame->ji->code_start;
+					frame->native_offset = GPTRDIFF_TO_INT ((guint8*)frame->ji->clauses [clause_index].try_start - (guint8*)frame->ji->code_start);
 				}
 			} else {
 				g_assert_not_reached ();
@@ -605,7 +605,7 @@ mono_find_jit_info (MonoJitTlsData *jit_tls, MonoJitInfo *res, MonoJitInfo *prev
 
 		real_ip = (const char*)MINI_FTNPTR_TO_ADDR (real_ip);
 		if ((real_ip >= start) && (real_ip <= start + ji->code_size))
-			offset = real_ip - start;
+			offset = GPTRDIFF_TO_INT32 (real_ip - start);
 		else
 			offset = -1;
 
@@ -723,7 +723,7 @@ mono_find_jit_info_ext (MonoJitTlsData *jit_tls,
 
 		if (frame->type != FRAME_TYPE_IL_STATE) {
 			if ((real_ip >= start) && (real_ip <= start + ji->code_size))
-				frame->native_offset = real_ip - start;
+				frame->native_offset = GPTRDIFF_TO_INT (real_ip - start);
 			else {
 				frame->native_offset = -1;
 			}
@@ -1139,7 +1139,7 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 
 		sf->method_index = ji->from_aot ? mono_aot_find_method_index (method) : 0xffffff;
 		sf->method_address = (gsize) ji->code_start;
-		sf->native_offset = (char *)ip - (char *)ji->code_start;
+		sf->native_offset = GPTRDIFF_TO_INT32 ((char *)ip - (char *)ji->code_start);
 
 		/*
 		 * mono_debug_lookup_source_location() returns both the file / line number information
@@ -1311,7 +1311,7 @@ mono_walk_stack_full (MonoJitStackWalk func, MonoContext *start_ctx, MonoJitTlsD
 				if (!frame.method->wrapper_type || frame.method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD)
 					frame.managed = TRUE;
 			}
-			frame.native_offset = ip - (guint8*)frame.ji->code_start;
+			frame.native_offset = GPTRDIFF_TO_INT (ip - (guint8*)frame.ji->code_start);
 			frame.il_offset = -1;
 
 			if (func (&frame, NULL, user_data))
@@ -1456,7 +1456,7 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 			return FALSE;
 		/* No way to resolve generic instances */
 		actual_method = jmethod;
-		*native_offset = frame_ip - (guint8*)ji->code_start;
+		*native_offset = GPTRDIFF_TO_INT32 (frame_ip - (guint8*)ji->code_start);
 	} else {
 		mono_arch_flush_register_windows ();
 		MONO_INIT_CONTEXT_FROM_FUNC (&ctx, ves_icall_get_frame_info);
@@ -1658,7 +1658,7 @@ wrap_non_exception_throws (MonoMethod *m)
 		mono_custom_attrs_free (attrs);
 	}
 
-	ass->wrap_non_exception_throws = val;
+	ass->wrap_non_exception_throws = !!val;
 	mono_memory_barrier ();
 	ass->wrap_non_exception_throws_inited = TRUE;
 
@@ -2011,7 +2011,7 @@ handle_exception_first_pass (MonoContext *ctx, MonoObject *obj, gint32 *out_filt
 					if (frame.type == FRAME_TYPE_IL_STATE) {
 						if (mono_trace_is_enabled () && mono_trace_eval (method))
 							g_print ("EXCEPTION: filter clause found in AOTed code, running it with the interpreter.\n");
-						gboolean res = mini_get_interp_callbacks ()->run_clause_with_il_state (frame.il_state, i, ei->data.filter, NULL, ex_obj, &filtered, MONO_EXCEPTION_CLAUSE_FILTER);
+						gboolean res = mini_get_interp_callbacks ()->run_clause_with_il_state (frame.il_state, i, ex_obj, &filtered);
 						// FIXME:
 						g_assert (!res);
 					} else if (ji->is_interp) {
@@ -2036,7 +2036,7 @@ handle_exception_first_pass (MonoContext *ctx, MonoObject *obj, gint32 *out_filt
 						/* mono_debugger_agent_handle_exception () needs this */
 						mini_set_abort_threshold (&frame);
 						MONO_CONTEXT_SET_IP (ctx, ei->handler_start);
-						frame.native_offset = (char*)ei->handler_start - (char*)ji->code_start;
+						frame.native_offset = GPTRDIFF_TO_INT ((char*)ei->handler_start - (char*)ji->code_start);
 						*catch_frame = frame;
 						result = MONO_FIRST_PASS_HANDLED;
 						return result;
@@ -2055,7 +2055,7 @@ handle_exception_first_pass (MonoContext *ctx, MonoObject *obj, gint32 *out_filt
 					/* mono_debugger_agent_handle_exception () needs this */
 					if (!in_interp)
 						MONO_CONTEXT_SET_IP (ctx, ei->handler_start);
-					frame.native_offset = (char*)ei->handler_start - (char*)ji->code_start;
+					frame.native_offset = GPTRDIFF_TO_INT ((char*)ei->handler_start - (char*)ji->code_start);
 					*catch_frame = frame;
 					result = MONO_FIRST_PASS_HANDLED;
 					if (method->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE) {
@@ -2574,9 +2574,9 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 						if (frame.type == FRAME_TYPE_IL_STATE) {
 							if (mono_trace_is_enabled () && mono_trace_eval (method))
 								g_print ("EXCEPTION: finally/fault clause found in AOTed code, running it with the interpreter.\n");
-							mini_get_interp_callbacks ()->run_clause_with_il_state (frame.il_state, i, ei->handler_start, ei->data.handler_end, NULL, NULL, MONO_EXCEPTION_CLAUSE_FINALLY);
+							mini_get_interp_callbacks ()->run_clause_with_il_state (frame.il_state, i, NULL, NULL);
 						} else if (in_interp) {
-							gboolean has_ex = mini_get_interp_callbacks ()->run_finally (&frame, i, ei->handler_start, ei->data.handler_end);
+							gboolean has_ex = mini_get_interp_callbacks ()->run_finally (&frame, i);
 							if (has_ex) {
 								/*
 								 * If run_finally didn't resume to a context, it means that the handler frame
@@ -3504,7 +3504,7 @@ mini_llvmonly_throw_corlib_exception (guint32 ex_token_index)
 	MonoException *ex;
 
 	ex = mono_exception_from_token (m_class_get_image (mono_defaults.exception_class), ex_token);
-	jit_tls->thrown_exc = mono_gchandle_new_internal ((MonoObject*)ex, FALSE);
+	jit_tls->thrown_exc = mono_gchandle_new_internal ((MonoObject*)ex, TRUE);
 
 	mini_llvmonly_throw_exception ((MonoObject*)ex);
 }
@@ -3583,10 +3583,8 @@ mini_llvmonly_resume_exception_il_state (MonoLMF *lmf, gpointer info)
 	/* Pop the LMF frame so the caller doesn't have to do it */
 	mono_set_lmf ((MonoLMF *)(((gsize)lmf->previous_lmf) & ~3));
 
-	MonoJitInfo *ji = jit_tls->resume_state.ji;
 	int clause_index = jit_tls->resume_state.clause_index;
-	MonoJitExceptionInfo *ei = &ji->clauses [clause_index];
-	gboolean r = mini_get_interp_callbacks ()->run_clause_with_il_state (il_state, clause_index, ei->handler_start, NULL, ex_obj, NULL, MONO_EXCEPTION_CLAUSE_NONE);
+	gboolean r = mini_get_interp_callbacks ()->run_clause_with_il_state (il_state, clause_index, ex_obj, NULL);
 	if (r)
 		/* Another exception thrown, continue unwinding */
 		mono_llvm_cpp_throw_exception ();

@@ -49,7 +49,7 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Equal("http://www.w3.org/2000/09/xmldsig#sha1", SignedXml.XmlDsigSHA1Url);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
         public void Constructor_Empty()
         {
             XmlDocument doc = new XmlDocument();
@@ -62,7 +62,7 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.True(sx.CheckSignature(), "CheckSignature");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
         public void Constructor_XmlDocument()
         {
             XmlDocument doc = new XmlDocument();
@@ -82,7 +82,7 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Throws<ArgumentNullException>(() => new SignedXml(doc));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
         public void Constructor_XmlElement()
         {
             XmlDocument doc = new XmlDocument();
@@ -276,7 +276,7 @@ namespace System.Security.Cryptography.Xml.Tests
         // Example output from Windows for AsymmetricRSAMixedCaseAttributes()
         private const string AsymmetricRSAMixedCaseAttributesResult = "<Signature xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><SignedInfo><CanonicalizationMethod Algorithm=\"http://www.w3.org/TR/2001/REC-xml-c14n-20010315\" /><SignatureMethod Algorithm=\"http://www.w3.org/2000/09/xmldsig#rsa-sha1\" /><Reference URI=\"#MyObjectId\"><DigestMethod Algorithm=\"http://www.w3.org/2000/09/xmldsig#sha1\" /><DigestValue>0j1xLsePFtuRHfXEnVdTSLWtAm4=</DigestValue></Reference></SignedInfo><SignatureValue>hmrEBgns5Xx14aDhzqOyIh0qLNMUldtW8+fNPcvtD/2KtEhNZQGctnhs90CRa1NZ08TqzW2pUaEwmqvMAtF4v8KtWzC/zTuc1jH6nxQvQSQo0ABhuXdu7/hknZkXJ4yKBbdgbKjAsKfULwbWrP/PacLPoYfCO+wXSrt+wLMTTWU=</SignatureValue><KeyInfo><KeyValue><RSAKeyValue><Modulus>4h/rHDr54r6SZWk2IPCeHX7N+wR1za0VBLshuS6tq3RSWap4PY2BM8VdbKH2T9RzyZoiHufjng+1seUx430iMsXisOLUkPP+yGtMQOSZ3CQHAa+IYA+fplXipixI0rV1J1wJNXQm3HxXQqKWpIv5fkwBtj8o2k6CWMgPNgFCnxc=</Modulus><Exponent>AQAB</Exponent></RSAKeyValue></KeyValue></KeyInfo><Object Id=\"MyObjectId\"><MyElement Aa=\"one\" Bb=\"two\" aa=\"three\" bb=\"four\" xmlns=\"samples\">This is some text</MyElement></Object></Signature>";
 
-        [Fact]
+        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
         public void AsymmetricRSAMixedCaseAttributesVerifyWindows()
         {
             XmlDocument doc = new XmlDocument();
@@ -363,7 +363,7 @@ namespace System.Security.Cryptography.Xml.Tests
 
         // Using empty constructor
         // The two other constructors don't seems to apply in verifying signatures
-        [Fact]
+        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
         public void AsymmetricRSAVerify()
         {
             string value = "<Signature xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><SignedInfo><CanonicalizationMethod Algorithm=\"http://www.w3.org/TR/2001/REC-xml-c14n-20010315\" /><SignatureMethod Algorithm=\"http://www.w3.org/2000/09/xmldsig#rsa-sha1\" /><Reference URI=\"#MyObjectId\"><DigestMethod Algorithm=\"http://www.w3.org/2000/09/xmldsig#sha1\" /><DigestValue>/Vvq6sXEVbtZC8GwNtLQnGOy/VI=</DigestValue></Reference></SignedInfo><SignatureValue>A6XuE8Cy9iOffRXaW9b0+dUcMUJQnlmwLsiqtQnADbCtZXnXAaeJ6nGnQ4Mm0IGi0AJc7/2CoJReXl7iW4hltmFguG1e3nl0VxCyCTHKGOCo1u8R3K+B1rTaenFbSxs42EM7/D9KETsPlzfYfis36yM3PqatiCUOsoMsAiMGzlc=</SignatureValue><KeyInfo><KeyValue xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><RSAKeyValue><Modulus>tI8QYIpbG/m6JLyvP+S3X8mzcaAIayxomyTimSh9UCpEucRnGvLw0P73uStNpiF7wltTZA1HEsv+Ha39dY/0j/Wiy3RAodGDRNuKQao1wu34aNybZ673brbsbHFUfw/o7nlKD2xO84fbajBZmKtBBDy63NHt+QL+grSrREPfCTM=</Modulus><Exponent>AQAB</Exponent></RSAKeyValue></KeyValue></KeyInfo><Object Id=\"MyObjectId\"><MyElement xmlns=\"samples\">This is some text</MyElement></Object></Signature>";
@@ -426,7 +426,7 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.True(v1.CheckSignature(hmac), "HMACSHA1-CheckSignature(key)");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
         // adapted from http://bugzilla.ximian.com/show_bug.cgi?id=52084
         public void GetIdElement()
         {
@@ -641,7 +641,7 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Null(sign.GetIdElement(new XmlDocument(), null));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/51370", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void DigestValue_CRLF()
         {
@@ -701,7 +701,7 @@ namespace System.Security.Cryptography.Xml.Tests
                 + "</SignedInfo>", signedXml.SignedInfo.GetXml().OuterXml);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/51370", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void DigestValue_LF()
         {
@@ -761,7 +761,7 @@ namespace System.Security.Cryptography.Xml.Tests
                 + "</SignedInfo>", signedXml.SignedInfo.GetXml().OuterXml);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/51370", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void SignedXML_CRLF_Invalid()
         {
@@ -825,7 +825,7 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.True(!signedXml.CheckSignature(), "#2");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/51370", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void SignedXML_CRLF_Valid()
         {
@@ -883,7 +883,7 @@ namespace System.Security.Cryptography.Xml.Tests
                 "</person>", "\r\n"), doc.OuterXml);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/51370", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void SignedXML_LF_Valid()
         {
@@ -941,7 +941,7 @@ namespace System.Security.Cryptography.Xml.Tests
                 "</person>", "\n"), doc.OuterXml);
         }
 
-        [Fact] // part of bug #79454
+        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))] // part of bug #79454
         [ActiveIssue("https://github.com/dotnet/runtime/issues/51370", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void MultipleX509Certificates()
         {
@@ -1798,7 +1798,7 @@ namespace System.Security.Cryptography.Xml.Tests
             return subject;
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
         [InlineData("a"/*, 1*/)]
         [InlineData("b"/*, 2*/)]
         [InlineData("y"/*, 1*/)]
@@ -1821,7 +1821,7 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.True(subject.CheckSignature(), "Multiple signatures, validating " + signatureParent);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
         [InlineData("a", "a", false)]
         [InlineData("a", "b", true)]
         [InlineData("b", "b", false)]
@@ -1844,7 +1844,7 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Equal(expected, subject.CheckSignature());
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
         [InlineData("a", "b")]
         [InlineData("a", "nonexisting")]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "SignedXml has been failing validation on nested signatures all the time with .NET Framework and .NET (Core) up to .NET 6. This test was added together with a fix for .NET 7.")]

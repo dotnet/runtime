@@ -406,6 +406,7 @@ export function bindings_lazy_init(): void {
     runtimeHelpers._unbox_buffer_size = 65536;
     runtimeHelpers._box_buffer = Module._malloc(runtimeHelpers._box_buffer_size);
     runtimeHelpers._unbox_buffer = Module._malloc(runtimeHelpers._unbox_buffer_size);
+    runtimeHelpers._i52_error_scratch_buffer = <any>Module._malloc(4);
     runtimeHelpers._class_int32 = find_corlib_class("System", "Int32");
     runtimeHelpers._class_uint32 = find_corlib_class("System", "UInt32");
     runtimeHelpers._class_double = find_corlib_class("System", "Double");

@@ -181,7 +181,7 @@ mono_mempool_stats (MonoMemPool *pool)
 		count++;
 	}
 	if (pool) {
-		still_free = pool->end - pool->pos;
+		still_free = GPTRDIFF_TO_UINT32 (pool->end - pool->pos);
 		g_print ("Mempool %p stats:\n", pool);
 		g_print ("Total mem allocated: %d\n", pool->d.allocated);
 		g_print ("Num chunks: %d\n", count);
@@ -417,5 +417,5 @@ mono_mempool_get_allocated (MonoMemPool *pool)
 long
 mono_mempool_get_bytes_allocated (void)
 {
-	return UnlockedRead64 (&total_bytes_allocated);
+	return GINT64_TO_LONG (UnlockedRead64 (&total_bytes_allocated));
 }

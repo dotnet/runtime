@@ -104,7 +104,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 actionDelegate(3.14,40);
             "));
 
-            Assert.Contains("Value is not integer but float", ex.Message);
+            Assert.Contains("Value is not an integer: 3.14 (number)", ex.Message);
             Assert.Equal(0, HelperMarshal._actionResultValue);
         }
 
@@ -289,7 +289,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             var value = await promise;
 
             Assert.Equal("foo", (string)value);
-            
+
         }
 
         [Fact]
