@@ -5657,7 +5657,7 @@ get_new_trampoline_from_page (int tramp_type)
 		 */
 		if (tramp_type != MONO_AOT_TRAMP_SPECIFIC) {
 			/* Register the rest of the page as a single trampoline */
-			sp_info = mono_tramp_info_create (NULL, code, page->trampolines_end - code, NULL, NULL);
+			sp_info = mono_tramp_info_create (NULL, code, (guint32)(page->trampolines_end - code), NULL, NULL);
 			read_page_trampoline_uwinfo (sp_info, tramp_type, FALSE);
 			mono_aot_tramp_info_register (sp_info, NULL);
 		}
