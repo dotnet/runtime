@@ -461,8 +461,8 @@ GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdT
         case NI_AVX2_ShiftRightArithmetic:
         case NI_AVX2_ShiftRightLogical:
         {
-            impSpillSideEffect(true, verCurrentState.esStackDepth -
-                               2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
+            impSpillSideEffect(true,
+                               verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
 
             GenTree* op2 = impPopStack().val;
             GenTree* op1 = impSIMDPopStack(simdType);
@@ -2163,8 +2163,8 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 2);
             var_types simdType = getSIMDTypeForSize(simdSize);
 
-            impSpillSideEffect(true, verCurrentState.esStackDepth -
-                               2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
+            impSpillSideEffect(true,
+                               verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
 
             op2 = impPopStack().val;
             op1 = impSIMDPopStack(simdType);
@@ -2194,8 +2194,8 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 2);
             var_types simdType = getSIMDTypeForSize(simdSize);
 
-            impSpillSideEffect(true, verCurrentState.esStackDepth -
-                               2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
+            impSpillSideEffect(true,
+                               verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
 
             op2 = impPopStack().val;
             op1 = impSIMDPopStack(simdType);
@@ -2225,8 +2225,8 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 2);
             var_types simdType = getSIMDTypeForSize(simdSize);
 
-            impSpillSideEffect(true, verCurrentState.esStackDepth -
-                               2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
+            impSpillSideEffect(true,
+                               verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
 
             op2 = impPopStack().val;
             op1 = impSIMDPopStack(simdType);
@@ -2258,10 +2258,10 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             if (sig->numArgs == 3)
             {
                 impSpillSideEffect(true, verCurrentState.esStackDepth -
-                                   3 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
+                                             3 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
 
                 impSpillSideEffect(true, verCurrentState.esStackDepth -
-                                   2 DEBUGARG("Spilling op2 side effects for HWIntrinsic"));
+                                             2 DEBUGARG("Spilling op2 side effects for HWIntrinsic"));
 
                 op3 = impPopStack().val;
             }
@@ -2270,7 +2270,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                 assert(sig->numArgs == 2);
 
                 impSpillSideEffect(true, verCurrentState.esStackDepth -
-                                   2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
+                                             2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
             }
 
             op2 = impPopStack().val;
@@ -2524,7 +2524,7 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAND
             if (!supportsAvx)
             {
                 impSpillSideEffect(true, verCurrentState.esStackDepth -
-                                   2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
+                                             2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
             }
 
             op2             = impSIMDPopStack(TYP_SIMD16);
@@ -2605,7 +2605,7 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
             if (!supportsAvx)
             {
                 impSpillSideEffect(true, verCurrentState.esStackDepth -
-                                   2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
+                                             2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
             }
 
             op2 = impSIMDPopStack(TYP_SIMD16);
@@ -2682,8 +2682,8 @@ GenTree* Compiler::impAvxOrAvx2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHO
         {
             simdBaseJitType = getBaseJitTypeOfSIMDType(sig->retTypeSigClass);
 
-            impSpillSideEffect(true, verCurrentState.esStackDepth -
-                               2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
+            impSpillSideEffect(true,
+                               verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
 
             // swap the two operands
             GenTree* indexVector  = impSIMDPopStack(TYP_SIMD32);
