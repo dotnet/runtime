@@ -508,8 +508,6 @@ if(GCC)
   if (CMAKE_C_COMPILER_ID MATCHES "Clang")
     set(WARNINGS "${WARNINGS} -Qunused-arguments -Wno-tautological-compare -Wno-parentheses-equality -Wno-self-assign -Wno-return-stack-address -Wno-constant-logical-operand -Wno-zero-length-array -Wno-asm-operand-widths")
     set(WERROR "${WERROR} -Werror=implicit-int-conversion")
-  else()
-    set(WERROR_C "${WERROR_C} -Werror=no-int-conversion")
   endif()
 
   check_c_compiler_flag("-Werror=incompatible-pointer-types" WERROR_INCOMPATIBLE_POINTER_TYPES)
