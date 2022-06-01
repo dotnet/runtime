@@ -10689,14 +10689,15 @@ void* CEEJitInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
         // the direct call instead goes to a jump stub which jumps to the jit helper.
         // However in this process the jump stub will corrupt RAX.
         //
-        // The set of helpers for which RAX must be preserved are the profiler probes
+        // The set of helpers for which RAX must be preserved are profiler probes, CFG dispatcher
         // and the STOP_FOR_GC helper which maps to JIT_RareDisableHelper.
         // In the case of the STOP_FOR_GC helper RAX can be holding a function return value.
         //
         if (dynamicFtnNum == DYNAMIC_CORINFO_HELP_STOP_FOR_GC    ||
             dynamicFtnNum == DYNAMIC_CORINFO_HELP_PROF_FCN_ENTER ||
             dynamicFtnNum == DYNAMIC_CORINFO_HELP_PROF_FCN_LEAVE ||
-            dynamicFtnNum == DYNAMIC_CORINFO_HELP_PROF_FCN_TAILCALL)
+            dynamicFtnNum == DYNAMIC_CORINFO_HELP_PROF_FCN_TAILCALL ||
+            dynamicFtnNum == DYNAMIC_CORINFO_HELP_DISPATCH_INDIRECT_CALL)
         {
             _ASSERTE(ppIndirection != NULL);
             *ppIndirection = &hlpDynamicFuncTable[dynamicFtnNum].pfnHelper;
