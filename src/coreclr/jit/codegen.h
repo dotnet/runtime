@@ -1361,6 +1361,8 @@ protected:
     void genTableBasedSwitch(GenTree* tree);
     void genCodeForArrIndex(GenTreeArrIndex* treeNode);
     void genCodeForArrOffset(GenTreeArrOffs* treeNode);
+    void genCodeForMDArrLen(GenTreeMDArrLen* tree);
+    void genCodeForMDArrLowerBound(GenTreeMDArrLowerBound* tree);
 #if defined(TARGET_LOONGARCH64)
     instruction genGetInsForOper(GenTree* treeNode);
 #else

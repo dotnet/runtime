@@ -5625,6 +5625,16 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForArrOffset(treeNode->AsArrOffs());
             break;
 
+#if 0  // TODO-MDArray
+        case GT_MDARR_LENGTH:
+            genCodeForMDArrLen(treeNode->AsMDArrLen());
+            break;
+
+        case GT_MDARR_LOWER_BOUND:
+            genCodeForMDArrLowerBound(treeNode->AsMDArrLowerBound());
+            break;
+#endif // TODO-MDArray
+
         case GT_IL_OFFSET:
             // Do nothing; these nodes are simply markers for debug info.
             break;

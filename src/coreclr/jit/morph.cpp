@@ -17531,3 +17531,94 @@ GenTree* Compiler::fgMorphReduceAddOps(GenTree* tree)
 
     return morphed;
 }
+
+//------------------------------------------------------------------------
+// fgMorphArrayOpsTreeCB: Callback used by the tree walker to implement array ops morphing.
+//
+// Arguments:
+//      standard fgWalkPostFn arguments
+//
+// Returns:
+//      standard fgWalkResult result
+//
+// static
+Compiler::fgWalkResult Compiler::fgMorphArrayOpsTreeCB(GenTree** pTree, Compiler::fgWalkData* pWalkData)
+{
+    return Compiler::WALK_CONTINUE;
+}
+
+//------------------------------------------------------------------------
+// fgMorphArrayOps: Morph multi-dimensional array operations in this method.
+//
+// GT_ARR_ELEM nodes are morphed to appropriate trees.
+//
+// TODO: including look of trees, e.g., from https://github.com/dotnet/runtime/issues/60785.
+//
+// Returns:
+//   suitable phase status
+//
+// TODO: only morph when there are MD Array ops in the function / statement
+PhaseStatus Compiler::fgMorphArrayOps()
+{
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("\n*************** In fgMorphArrayOps()\n");
+    }
+#endif
+
+    bool changed = false;
+
+    // Process all basic blocks in the function.
+
+    for (BasicBlock* const block : Blocks())
+    {
+#ifdef DEBUG
+        if (verbose)
+        {
+            printf("Morphing array ops in " FMT_BB " of '%s'\n", block->bbNum, info.compFullName);
+        }
+#endif
+
+        // Make the current basic block address available globally.
+        compCurBB = block;
+
+        // Process all statement trees in the basic block.
+        for (Statement* const stmt : block->Statements())
+        {
+            fgMorphStmt      = stmt;
+            compCurStmt      = stmt;
+            GenTree* oldTree = stmt->GetRootNode();
+
+#if 0  // def DEBUG
+            unsigned oldHash = verbose ? gtHashValue(oldTree) : DUMMY_INIT(~0);
+
+            if (verbose)
+            {
+                printf("\nfgMorphArrayOps " FMT_BB ", " FMT_STMT " (before)\n", block->bbNum, stmt->GetID());
+                gtDispTree(oldTree);
+            }
+#endif // DEBUG
+
+            /* Morph this statement tree */
+
+            // TODO: pass any data to tree walker?
+            fgWalkResult result = fgWalkTreePost(stmt->GetRootNodePointer(), fgMorphArrayOpsTreeCB);
+
+#if 0  // def DEBUG
+            /* If the hash value changes. we modified the tree during morphing */
+            if (verbose)
+            {
+                unsigned newHash = gtHashValue(morphedTree);
+                if (newHash != oldHash)
+                {
+                    printf("\nfgMorphArrayOps " FMT_BB ", " FMT_STMT " (after)\n", block->bbNum, stmt->GetID());
+                    gtDispTree(morphedTree);
+                }
+            }
+#endif // DEBUG
+        }
+    }
+
+    return changed ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+}

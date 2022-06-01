@@ -267,6 +267,14 @@ GenTree* Lowering::LowerNode(GenTree* node)
             ContainCheckArrOffset(node->AsArrOffs());
             break;
 
+        case GT_MDARR_LENGTH:
+            LowerMDArrLength(node->AsMDArrLen());
+            break;
+
+        case GT_MDARR_LOWER_BOUND:
+            LowerMDArrLowerBound(node->AsMDArrLowerBound());
+            break;
+
         case GT_ROL:
         case GT_ROR:
             LowerRotate(node);
@@ -6332,6 +6340,34 @@ GenTree* Lowering::LowerArrElem(GenTreeArrElem* arrElem)
     JITDUMP("\n\n");
 
     return nextToLower;
+}
+
+//------------------------------------------------------------------------
+// LowerMDArrLen: Lower a GT_MDARR_LENGTH node
+//
+// Arguments:
+//    node - the GT_MDARR_LENGTH node to lower.
+//
+// Return Value:
+//    None
+//
+void Lowering::LowerMDArrLength(GenTreeMDArrLen* tree)
+{
+    // TODO-MDArray: needed?
+}
+
+//------------------------------------------------------------------------
+// LowerMDArrLowerBound: Lower a GT_MDARR_LOWER_BOUND node
+//
+// Arguments:
+//    node - the GT_MDARR_LOWER_BOUND node to lower.
+//
+// Return Value:
+//    None
+//
+void Lowering::LowerMDArrLowerBound(GenTreeMDArrLowerBound* tree)
+{
+    // TODO-MDArray: needed?
 }
 
 PhaseStatus Lowering::DoPhase()

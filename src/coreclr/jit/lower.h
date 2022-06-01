@@ -334,6 +334,8 @@ private:
     bool CheckMultiRegLclVar(GenTreeLclVar* lclNode, const ReturnTypeDesc* retTypeDesc);
     void LowerStoreLoc(GenTreeLclVarCommon* tree);
     GenTree* LowerArrElem(GenTreeArrElem* arrElem);
+    void LowerMDArrLength(GenTreeMDArrLen* tree);
+    void LowerMDArrLowerBound(GenTreeMDArrLowerBound* tree);
     void LowerRotate(GenTree* tree);
     void LowerShift(GenTreeOp* shift);
 #ifdef FEATURE_SIMD
