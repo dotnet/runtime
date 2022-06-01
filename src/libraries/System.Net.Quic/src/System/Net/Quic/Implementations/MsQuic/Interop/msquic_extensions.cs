@@ -9,7 +9,7 @@ using System;
 
 namespace Microsoft.Quic
 {
-    internal unsafe static class MsQuicExtensions
+    internal static unsafe class MsQuicExtensions
     {
         public static void SetConnectionCallback(this ref QUIC_API_TABLE Table, QUIC_HANDLE* Handle, delegate* unmanaged[Cdecl]<QUIC_HANDLE*, void*, QUIC_CONNECTION_EVENT*, int> Callback, void* Context)
         {
