@@ -220,7 +220,7 @@ ves_icall_System_Diagnostics_Tracing_EventPipeInternal_WaitForSessionSignal (
 	uint64_t session_id,
 	int32_t timeout)
 {
-	return (MonoBoolean) mono_component_event_pipe()->wait_for_session_signal ((EventPipeSessionID)session_id, (uint32_t)timeout);
+	return mono_component_event_pipe()->wait_for_session_signal ((EventPipeSessionID)session_id, (uint32_t)timeout) ? TRUE : FALSE;
 }
 
 void
