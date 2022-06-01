@@ -265,6 +265,62 @@ void Rationalizer::RewriteIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTree*
                       arg1, arg2);
 }
 
+#ifdef TARGET_ARM64
+// RewriteSubLshDiv: Possibly rewrite a SubLshDiv node into a Mod.
+//
+// Arguments:
+//    use - A use of a node.
+//
+// Transform: a - (a / cns) >> shift  =>  a % cns1
+//            where cns is an signed integer constant that is a power of 2.
+// We do this transformation because Lowering has a specific optimization
+// for 'a % cns1' that is not easily reduced by other means.
+//
+void Rationalizer::RewriteSubLshDiv(GenTree** use)
+{
+    GenTree* const node = *use;
+
+    if (!node->OperIs(GT_SUB) || node->IsReverseOp())
+        return;
+
+    GenTree* op1 = node->gtGetOp1();
+    GenTree* op2 = node->gtGetOp2();
+
+    if (!(node->TypeIs(TYP_INT, TYP_LONG) && !node->IsUnsigned() && op1->OperIs(GT_LCL_VAR)))
+        return;
+
+    if (!op2->OperIs(GT_LSH) || op2->IsReverseOp())
+        return;
+
+    GenTree* lsh   = op2;
+    GenTree* div   = lsh->gtGetOp1();
+    GenTree* shift = lsh->gtGetOp2();
+    if (div->OperIs(GT_DIV) && !div->IsReverseOp() && shift->IsIntegralConst())
+    {
+        GenTree* a   = div->gtGetOp1();
+        GenTree* cns = div->gtGetOp2();
+        if (a->OperIs(GT_LCL_VAR) && cns->IsIntegralConstPow2() &&
+            op1->AsLclVar()->GetLclNum() == a->AsLclVar()->GetLclNum())
+        {
+            size_t shiftValue = shift->AsIntConCommon()->IntegralValue();
+            size_t cnsValue   = cns->AsIntConCommon()->IntegralValue();
+            if ((cnsValue >> shiftValue) == 1)
+            {
+                GenTree* const treeFirstNode  = comp->fgGetFirstNode(node);
+                GenTree* const insertionPoint = treeFirstNode->gtPrev;
+                BlockRange().Remove(treeFirstNode, node);
+
+                node->ChangeOper(GT_MOD);
+                node->AsOp()->gtOp2 = cns;
+
+                comp->gtSetEvalOrder(node);
+                BlockRange().InsertAfter(insertionPoint, LIR::Range(comp->fgSetTreeSeq(node), node));
+            }
+        }
+    }
+}
+#endif
+
 #ifdef DEBUG
 
 void Rationalizer::ValidateStatement(Statement* stmt, BasicBlock* block)
@@ -854,6 +910,13 @@ PhaseStatus Rationalizer::DoPhase()
             {
                 m_rationalizer.RewriteIntrinsicAsUserCall(use, this->m_ancestors);
             }
+
+#ifdef TARGET_ARM64
+            if (node->OperIs(GT_SUB))
+            {
+                m_rationalizer.RewriteSubLshDiv(use);
+            }
+#endif
 
             return Compiler::WALK_CONTINUE;
         }
