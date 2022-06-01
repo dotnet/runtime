@@ -143,6 +143,7 @@ namespace System.Net.Security.Tests
                 out CertificateAuthority intermediateAuthority,
                 out X509Certificate2 serverCert,
                 subjectName: serverName,
+                keySize: 2048,
                 extensions: TestHelper.BuildTlsServerCertExtensions(serverName));
 
             SslClientAuthenticationOptions clientOpts = new SslClientAuthenticationOptions
