@@ -22,7 +22,7 @@ namespace System.Formats.Tar.Tests
 
             PaxTarEntry file = reader.GetNextEntry() as PaxTarEntry;
 
-            VerifyRegularFileEntry(file, TarFormat.Pax, "file.txt", $"Hello {testCaseName}");
+            VerifyRegularFileEntry(file, TarEntryFormat.Pax, "file.txt", $"Hello {testCaseName}");
 
             Assert.Null(reader.GetNextEntry());
         }
@@ -39,11 +39,11 @@ namespace System.Formats.Tar.Tests
 
             TarEntry file = reader.GetNextEntry();
 
-            VerifyRegularFileEntry(file, TarFormat.Pax, "file.txt", $"Hello {testCaseName}");
+            VerifyRegularFileEntry(file, TarEntryFormat.Pax, "file.txt", $"Hello {testCaseName}");
 
             TarEntry hardLink = reader.GetNextEntry();
             // The 'tar' tool detects hardlinks as regular files and saves them as such in the archives, for all formats
-            VerifyRegularFileEntry(hardLink, TarFormat.Pax, "hardlink.txt", $"Hello {testCaseName}");
+            VerifyRegularFileEntry(hardLink, TarEntryFormat.Pax, "hardlink.txt", $"Hello {testCaseName}");
 
             Assert.Null(reader.GetNextEntry());
         }
@@ -60,10 +60,10 @@ namespace System.Formats.Tar.Tests
 
             TarEntry file = reader.GetNextEntry();
 
-            VerifyRegularFileEntry(file, TarFormat.Pax, "file.txt", $"Hello {testCaseName}");
+            VerifyRegularFileEntry(file, TarEntryFormat.Pax, "file.txt", $"Hello {testCaseName}");
 
             TarEntry symbolicLink = reader.GetNextEntry();
-            VerifySymbolicLinkEntry(symbolicLink, TarFormat.Pax, "link.txt", "file.txt");
+            VerifySymbolicLinkEntry(symbolicLink, TarEntryFormat.Pax, "link.txt", "file.txt");
 
             Assert.Null(reader.GetNextEntry());
         }
@@ -80,10 +80,10 @@ namespace System.Formats.Tar.Tests
 
             TarEntry directory = reader.GetNextEntry();
 
-            VerifyDirectoryEntry(directory, TarFormat.Pax, "folder/");
+            VerifyDirectoryEntry(directory, TarEntryFormat.Pax, "folder/");
 
             TarEntry file = reader.GetNextEntry();
-            VerifyRegularFileEntry(file, TarFormat.Pax, "folder/file.txt", $"Hello {testCaseName}");
+            VerifyRegularFileEntry(file, TarEntryFormat.Pax, "folder/file.txt", $"Hello {testCaseName}");
 
             Assert.Null(reader.GetNextEntry());
         }
@@ -100,10 +100,10 @@ namespace System.Formats.Tar.Tests
 
             TarEntry directory = reader.GetNextEntry();
 
-            VerifyDirectoryEntry(directory, TarFormat.Pax, "földër/");
+            VerifyDirectoryEntry(directory, TarEntryFormat.Pax, "földër/");
 
             TarEntry file = reader.GetNextEntry();
-            VerifyRegularFileEntry(file, TarFormat.Pax, "földër/áöñ.txt", $"Hello {testCaseName}");
+            VerifyRegularFileEntry(file, TarEntryFormat.Pax, "földër/áöñ.txt", $"Hello {testCaseName}");
 
             Assert.Null(reader.GetNextEntry());
         }
@@ -120,13 +120,13 @@ namespace System.Formats.Tar.Tests
 
             TarEntry parent = reader.GetNextEntry();
 
-            VerifyDirectoryEntry(parent, TarFormat.Pax, "parent/");
+            VerifyDirectoryEntry(parent, TarEntryFormat.Pax, "parent/");
 
             TarEntry child = reader.GetNextEntry();
-            VerifyDirectoryEntry(child, TarFormat.Pax, "parent/child/");
+            VerifyDirectoryEntry(child, TarEntryFormat.Pax, "parent/child/");
 
             TarEntry file = reader.GetNextEntry();
-            VerifyRegularFileEntry(file, TarFormat.Pax, "parent/child/file.txt", $"Hello {testCaseName}");
+            VerifyRegularFileEntry(file, TarEntryFormat.Pax, "parent/child/file.txt", $"Hello {testCaseName}");
 
             Assert.Null(reader.GetNextEntry());
         }
@@ -143,16 +143,16 @@ namespace System.Formats.Tar.Tests
 
             TarEntry childlink = reader.GetNextEntry();
 
-            VerifySymbolicLinkEntry(childlink, TarFormat.Pax, "childlink", "parent/child");
+            VerifySymbolicLinkEntry(childlink, TarEntryFormat.Pax, "childlink", "parent/child");
 
             TarEntry parent = reader.GetNextEntry();
-            VerifyDirectoryEntry(parent, TarFormat.Pax, "parent/");
+            VerifyDirectoryEntry(parent, TarEntryFormat.Pax, "parent/");
 
             TarEntry child = reader.GetNextEntry();
-            VerifyDirectoryEntry(child, TarFormat.Pax, "parent/child/");
+            VerifyDirectoryEntry(child, TarEntryFormat.Pax, "parent/child/");
 
             TarEntry file = reader.GetNextEntry();
-            VerifyRegularFileEntry(file, TarFormat.Pax, "parent/child/file.txt", $"Hello {testCaseName}");
+            VerifyRegularFileEntry(file, TarEntryFormat.Pax, "parent/child/file.txt", $"Hello {testCaseName}");
 
             Assert.Null(reader.GetNextEntry());
         }
@@ -201,11 +201,11 @@ namespace System.Formats.Tar.Tests
 
             TarEntry directory = reader.GetNextEntry();
 
-            VerifyDirectoryEntry(directory, TarFormat.Pax,
+            VerifyDirectoryEntry(directory, TarEntryFormat.Pax,
                 "00000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999/");
 
             TarEntry file = reader.GetNextEntry();
-            VerifyRegularFileEntry(file, TarFormat.Pax,
+            VerifyRegularFileEntry(file, TarEntryFormat.Pax,
                 $"00000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999/00000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999.txt",
                 $"Hello {testCaseName}");
 
@@ -224,13 +224,13 @@ namespace System.Formats.Tar.Tests
 
             PosixTarEntry blockDevice = reader.GetNextEntry() as PosixTarEntry;
 
-            VerifyBlockDeviceEntry(blockDevice, TarFormat.Pax, AssetBlockDeviceFileName);
+            VerifyBlockDeviceEntry(blockDevice, TarEntryFormat.Pax, AssetBlockDeviceFileName);
 
             PosixTarEntry characterDevice = reader.GetNextEntry() as PosixTarEntry;
-            VerifyCharacterDeviceEntry(characterDevice, TarFormat.Pax, AssetCharacterDeviceFileName);
+            VerifyCharacterDeviceEntry(characterDevice, TarEntryFormat.Pax, AssetCharacterDeviceFileName);
 
             PosixTarEntry fifo = reader.GetNextEntry() as PosixTarEntry;
-            VerifyFifoEntry(fifo, TarFormat.Pax, "fifofile");
+            VerifyFifoEntry(fifo, TarEntryFormat.Pax, "fifofile");
 
             Assert.Null(reader.GetNextEntry());
         }
@@ -247,16 +247,16 @@ namespace System.Formats.Tar.Tests
 
             TarEntry directory = reader.GetNextEntry();
 
-            VerifyDirectoryEntry(directory, TarFormat.Pax,
+            VerifyDirectoryEntry(directory, TarEntryFormat.Pax,
             "000000000011111111112222222222333333333344444444445555555555666666666677777777778888888888999999999900000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999990000000000111111111122222222223333333333444444444455555/");
 
             TarEntry file = reader.GetNextEntry();
-            VerifyRegularFileEntry(file, TarFormat.Pax,
+            VerifyRegularFileEntry(file, TarEntryFormat.Pax,
             "000000000011111111112222222222333333333344444444445555555555666666666677777777778888888888999999999900000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999990000000000111111111122222222223333333333444444444455555/00000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999990000000000111111111122222222223333333333444444444455555555556666666666777777777788888888889999999999000000000011111111112222222222333333333344444444445.txt",
             $"Hello {testCaseName}");
 
             TarEntry symbolicLink = reader.GetNextEntry();
-            VerifySymbolicLinkEntry(symbolicLink, TarFormat.Pax,
+            VerifySymbolicLinkEntry(symbolicLink, TarEntryFormat.Pax,
             "link.txt",
             "000000000011111111112222222222333333333344444444445555555555666666666677777777778888888888999999999900000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999990000000000111111111122222222223333333333444444444455555/00000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999990000000000111111111122222222223333333333444444444455555555556666666666777777777788888888889999999999000000000011111111112222222222333333333344444444445.txt");
 
@@ -275,7 +275,7 @@ namespace System.Formats.Tar.Tests
 
             TarEntry file = reader.GetNextEntry();
 
-            VerifyRegularFileEntry(file, TarFormat.Pax,
+            VerifyRegularFileEntry(file, TarEntryFormat.Pax,
                 "000000000011111111112222222222333333333344444444445555555555666666666677777777778888888888999999999900000000001111111111222222222233333333334444444444.txt",
                 $"Hello {testCaseName}");
 
@@ -294,11 +294,11 @@ namespace System.Formats.Tar.Tests
 
             TarEntry directory = reader.GetNextEntry();
 
-            VerifyDirectoryEntry(directory, TarFormat.Pax,
+            VerifyDirectoryEntry(directory, TarEntryFormat.Pax,
             "000000000011111111112222222222333333333344444444445555555555666666666677777777778888888888999999999900000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999990000000000111111111122222222223333333333444444444455555/");
 
             TarEntry file = reader.GetNextEntry();
-            VerifyRegularFileEntry(file, TarFormat.Pax,
+            VerifyRegularFileEntry(file, TarEntryFormat.Pax,
             "000000000011111111112222222222333333333344444444445555555555666666666677777777778888888888999999999900000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999990000000000111111111122222222223333333333444444444455555/00000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999990000000000111111111122222222223333333333444444444455555555556666666666777777777788888888889999999999000000000011111111112222222222333333333344444444445.txt",
             $"Hello {testCaseName}");
 
@@ -310,7 +310,7 @@ namespace System.Formats.Tar.Tests
             PaxGlobalExtendedAttributesTarEntry gea = reader.GetNextEntry() as PaxGlobalExtendedAttributesTarEntry;
             Assert.NotNull(gea);
             Assert.Equal(TarEntryType.GlobalExtendedAttributes, gea.EntryType);
-            Assert.Equal(TarFormat.Pax, gea.Format);
+            Assert.Equal(TarEntryFormat.Pax, gea.Format);
 
             // Format: %d/GlobalHead.%p.%n, where:
             // - %d is the tmp path (platform dependent, and if too long, gets truncated to just '/tmp')

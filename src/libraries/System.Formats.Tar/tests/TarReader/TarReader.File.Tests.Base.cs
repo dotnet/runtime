@@ -10,7 +10,7 @@ namespace System.Formats.Tar.Tests
 {
     public class TarReader_File_Tests_Base : TarTestsBase
     {
-        protected void VerifyRegularFileEntry(TarEntry file, TarFormat format, string expectedFileName, string expectedContents)
+        protected void VerifyRegularFileEntry(TarEntry file, TarEntryFormat format, string expectedFileName, string expectedContents)
         {
             Assert.NotNull(file);
             Assert.Equal(format, file.Format);
@@ -27,7 +27,7 @@ namespace System.Formats.Tar.Tests
                 Assert.Equal(expectedContents, contents);
             }
 
-            TarEntryType expectedEntryType = format == TarFormat.V7 ? TarEntryType.V7RegularFile : TarEntryType.RegularFile;
+            TarEntryType expectedEntryType = format == TarEntryFormat.V7 ? TarEntryType.V7RegularFile : TarEntryType.RegularFile;
             Assert.Equal(expectedEntryType, file.EntryType);
 
             Assert.Equal(AssetGid, file.Gid);
@@ -56,7 +56,7 @@ namespace System.Formats.Tar.Tests
             }
         }
 
-        protected void VerifySymbolicLinkEntry(TarEntry symbolicLink, TarFormat format, string expectedFileName, string expectedTargetName)
+        protected void VerifySymbolicLinkEntry(TarEntry symbolicLink, TarEntryFormat format, string expectedFileName, string expectedTargetName)
         {
             Assert.NotNull(symbolicLink);
             Assert.Equal(format, symbolicLink.Format);
@@ -92,7 +92,7 @@ namespace System.Formats.Tar.Tests
             }
         }
 
-        protected void VerifyDirectoryEntry(TarEntry directory, TarFormat format, string expectedFileName)
+        protected void VerifyDirectoryEntry(TarEntry directory, TarEntryFormat format, string expectedFileName)
         {
             Assert.NotNull(directory);
             Assert.Equal(format, directory.Format);
@@ -128,7 +128,7 @@ namespace System.Formats.Tar.Tests
             }
         }
 
-        protected void VerifyBlockDeviceEntry(PosixTarEntry blockDevice, TarFormat format, string expectedFileName)
+        protected void VerifyBlockDeviceEntry(PosixTarEntry blockDevice, TarEntryFormat format, string expectedFileName)
         {
             Assert.NotNull(blockDevice);
             Assert.Equal(TarEntryType.BlockDevice, blockDevice.EntryType);
@@ -164,7 +164,7 @@ namespace System.Formats.Tar.Tests
             }
         }
 
-        protected void VerifyCharacterDeviceEntry(PosixTarEntry characterDevice, TarFormat format, string expectedFileName)
+        protected void VerifyCharacterDeviceEntry(PosixTarEntry characterDevice, TarEntryFormat format, string expectedFileName)
         {
             Assert.NotNull(characterDevice);
             Assert.Equal(TarEntryType.CharacterDevice, characterDevice.EntryType);
@@ -200,7 +200,7 @@ namespace System.Formats.Tar.Tests
             }
         }
 
-        protected void VerifyFifoEntry(PosixTarEntry fifo, TarFormat format, string expectedFileName)
+        protected void VerifyFifoEntry(PosixTarEntry fifo, TarEntryFormat format, string expectedFileName)
         {
             Assert.NotNull(fifo);
             Assert.Equal(format, fifo.Format);
@@ -236,7 +236,7 @@ namespace System.Formats.Tar.Tests
         private void VerifyExtendedAttributes(PaxTarEntry pax)
         {
             Assert.NotNull(pax.ExtendedAttributes);
-            Assert.Equal(TarFormat.Pax, pax.Format);
+            Assert.Equal(TarEntryFormat.Pax, pax.Format);
             Assert.True(pax.ExtendedAttributes.Count() >= 3); // Expect to at least collect mtime, ctime and atime
 
             Assert.Contains("mtime", pax.ExtendedAttributes);
@@ -255,7 +255,7 @@ namespace System.Formats.Tar.Tests
 
         private void VerifyGnuFields(GnuTarEntry gnu)
         {
-            Assert.Equal(TarFormat.Gnu, gnu.Format);
+            Assert.Equal(TarEntryFormat.Gnu, gnu.Format);
             Assert.True(gnu.AccessTime >= DateTimeOffset.UnixEpoch);
             Assert.True(gnu.ChangeTime >= DateTimeOffset.UnixEpoch);
         }
