@@ -31,6 +31,7 @@ namespace System.Formats.Tar
         {
             ArgumentNullException.ThrowIfNull(globalExtendedAttributes);
 
+            _header._format = TarEntryFormat.Pax;
             _header._extendedAttributes = new Dictionary<string, string>(globalExtendedAttributes);
 
             _header._name = TarHeader.GlobalHeadFormatPrefix; // Does not contain the sequence number, since that depends on the archive to write
