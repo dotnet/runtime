@@ -357,7 +357,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             this.Source = source;
             this.Token = token;
             this.methodDefHandle = methodDefHandle;
-            this.Name = asmMetadataReader.GetString(AssemblyInfo.GetCorrectStringHandle(methodDef.Name));
+            this.Name = assembly.EnCGetString(methodDef.Name);
             this.pdbMetadataReader = pdbMetadataReader;
             this.IsEnCMethod = false;
             this.TypeInfo = type;
@@ -398,7 +398,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     if (ctorHandle.Kind == HandleKind.MemberReference)
                     {
                         var container = asmMetadataReader.GetMemberReference((MemberReferenceHandle)ctorHandle).Parent;
-                        var name = asmMetadataReader.GetString(asmMetadataReader.GetTypeReference((TypeReferenceHandle)container).Name);
+                        var name = assembly.EnCGetString(asmMetadataReader.GetTypeReference((TypeReferenceHandle)container).Name);
                         switch (name)
                         {
                             case "DebuggerHiddenAttribute":
@@ -434,7 +434,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             for (int i = 0; i < paramsCnt; i++)
             {
                 var parameter = Assembly.asmMetadataReader.GetParameter(paramsHandles[i]);
-                var paramName = Assembly.asmMetadataReader.GetString(parameter.Name);
+                var paramName = Assembly.EnCGetString(parameter.Name);
                 var isOptional = parameter.Attributes.HasFlag(ParameterAttributes.Optional) && parameter.Attributes.HasFlag(ParameterAttributes.HasDefault);
                 if (!isOptional)
                 {
@@ -678,21 +678,21 @@ namespace Microsoft.WebAssembly.Diagnostics
         public Dictionary<string, DebuggerBrowsableState?> DebuggerBrowsableFields = new();
         public Dictionary<string, DebuggerBrowsableState?> DebuggerBrowsableProperties = new();
 
-        public TypeInfo(AssemblyInfo assembly, TypeDefinitionHandle typeHandle, TypeDefinition type, MetadataReader metadataReader, ILogger logger)
+        public TypeInfo(AssemblyInfo assembly, TypeDefinitionHandle typeHandle, TypeDefinition type, MetadataReader metadataReader, bool fromEnC, ILogger logger)
         {
             this.logger = logger;
             this.assembly = assembly;
             Token = MetadataTokens.GetToken(metadataReader, typeHandle);
             this.type = type;
             methods = new List<MethodInfo>();
-            Name = metadataReader.GetString(AssemblyInfo.GetCorrectStringHandle(type.Name));
+            Name = assembly.EnCGetString(type.Name);
             var declaringType = type;
             while (declaringType.IsNested)
             {
                 declaringType = metadataReader.GetTypeDefinition(declaringType.GetDeclaringType());
-                Name = metadataReader.GetString(AssemblyInfo.GetCorrectStringHandle(declaringType.Name)) + "." + Name;
+                Name = metadataReader.GetString(declaringType.Name) + "." + Name;
             }
-            Namespace = metadataReader.GetString(AssemblyInfo.GetCorrectStringHandle(declaringType.Namespace));
+            Namespace = assembly.EnCGetString(declaringType.Namespace);
             if (Namespace.Length > 0)
                 FullName = Namespace + "." + Name;
             else
@@ -703,7 +703,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 try
                 {
                     var fieldDefinition = metadataReader.GetFieldDefinition(field);
-                    var fieldName = metadataReader.GetString(AssemblyInfo.GetCorrectStringHandle(fieldDefinition.Name));
+                    var fieldName = assembly.EnCGetString(fieldDefinition.Name);
                     AppendToBrowsable(DebuggerBrowsableFields, fieldDefinition.GetCustomAttributes(), fieldName);
                 }
                 catch (Exception ex)
@@ -718,7 +718,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 try
                 {
                     var propDefinition = metadataReader.GetPropertyDefinition(prop);
-                    var propName = metadataReader.GetString(AssemblyInfo.GetCorrectStringHandle(propDefinition.Name));
+                    var propName = assembly.EnCGetString(propDefinition.Name);
                     AppendToBrowsable(DebuggerBrowsableProperties, propDefinition.GetCustomAttributes(), propName);
                 }
                 catch (Exception ex)
@@ -739,7 +739,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             continue;
                         var container = metadataReader.GetMemberReference((MemberReferenceHandle)ctorHandle).Parent;
                         var valueBytes = metadataReader.GetBlobBytes(metadataReader.GetCustomAttribute(cattr).Value);
-                        var attributeName = metadataReader.GetString(metadataReader.GetTypeReference((TypeReferenceHandle)container).Name);
+                        var attributeName = assembly.EnCGetString(metadataReader.GetTypeReference((TypeReferenceHandle)container).Name);
                         if (attributeName != "DebuggerBrowsableAttribute")
                             continue;
                         var state = (DebuggerBrowsableState)valueBytes[2];
@@ -876,6 +876,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             return -1;
         }
+
         private static int GetMethodDebugInformation(MetadataReader pdbMetadataReaderParm, int number)
         {
             int i = 1;
@@ -891,10 +892,21 @@ namespace Microsoft.WebAssembly.Diagnostics
             return -1;
         }
 
-        internal static StringHandle GetCorrectStringHandle(StringHandle strHandle)  //https://github.com/dotnet/runtime/blob/215b39abf947da7a40b0cb137eab4bceb24ad3e3/src/libraries/System.Reflection.Metadata/src/System/Reflection/Metadata/TypeSystem/Handles.TypeSystem.cs#L2215
+        internal string EnCGetString(StringHandle strHandle)
         {
-            return MetadataTokens.StringHandle(strHandle.GetHashCode() & 127);
+            var asmMetadataReaderLocal = asmMetadataReader;
+            var strIdx = strHandle.GetHashCode();
+            int i = 0;
+            while (strIdx > asmMetadataReaderLocal.GetHeapSize(HeapIndex.String))
+            {
+                strIdx = strIdx - asmMetadataReaderLocal.GetHeapSize(HeapIndex.String);
+                asmMetadataReaderLocal = enCMetadataReader[i];
+                if (strIdx < asmMetadataReaderLocal.GetHeapSize(HeapIndex.String))
+                    break;
+            }
+            return asmMetadataReaderLocal.GetString(MetadataTokens.StringHandle(strIdx));
         }
+
         private void PopulateEnC(MetadataReader asmMetadataReaderParm, MetadataReader pdbMetadataReaderParm)
         {
             TypeInfo typeInfo = null;
@@ -912,7 +924,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             int typeDefIdx = GetTypeDefIdx(asmMetadataReaderParm, asmMetadataReaderParm.GetRowNumber(entry.Handle));
                             var typeDefinition = asmMetadataReaderParm.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle(typeDefIdx));
                             StringHandle name = MetadataTokens.StringHandle(typeDefinition.Name.GetHashCode() & 127);
-                            typeInfo = new TypeInfo(this, typeHandle, typeDefinition, asmMetadataReaderParm, logger);
+                            typeInfo = new TypeInfo(this, typeHandle, typeDefinition, asmMetadataReaderParm, true, logger);
                             TypesByName[typeInfo.FullName] = typeInfo;
                             TypesByToken[typeInfo.Token] = typeInfo;
                         }
@@ -985,7 +997,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 var typeDefinition = asmMetadataReader.GetTypeDefinition(type);
 
-                var typeInfo = new TypeInfo(this, type, typeDefinition, asmMetadataReader, logger);
+                var typeInfo = new TypeInfo(this, type, typeDefinition, asmMetadataReader, false, logger);
                 TypesByName[typeInfo.FullName] = typeInfo;
                 TypesByToken[typeInfo.Token] = typeInfo;
                 if (pdbMetadataReader != null)

@@ -483,7 +483,8 @@ namespace DebuggerTests
 
             var bp_notchanged = await SetBreakpoint(".*/MethodBody1.cs$", 55, 12, use_regex: true);
             var bp_invalid = await SetBreakpoint(".*/MethodBody1.cs$", 73, 12, use_regex: true);
-            var bp_invalid1 = await SetBreakpoint(".*/MethodBody1.cs$", 82, 12, use_regex: true);
+            var bp_invalid1 = await SetBreakpoint(".*/MethodBody1.cs$", 83, 12, use_regex: true);
+            var bp_invalid2 = await SetBreakpoint(".*/MethodBody1.cs$", 102, 12, use_regex: true);
 
             var pause_location = await LoadAssemblyAndTestHotReloadUsingSDBWithoutChanges(
                     asm_file, pdb_file, "MethodBody6", "StaticMethod1");
@@ -497,7 +498,7 @@ namespace DebuggerTests
             AssertEqual("StaticMethod1", top_frame?["functionName"]?.Value<string>(), top_frame?.ToString());
             CheckLocation("dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 73, 12, scripts, top_frame["location"]);
 
-            pause_location = await StepAndCheck(StepKind.Resume, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 82, 12, "InstanceMethod",
+            pause_location = await StepAndCheck(StepKind.Resume, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 83, 12, "InstanceMethod",
             locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, "aLocal", 50);
@@ -512,6 +513,14 @@ namespace DebuggerTests
             
             await EvaluateOnCallFrameAndCheck(pause_location["callFrames"]?[0]["callFrameId"].Value<string>(),
             ("ApplyUpdateReferencedAssembly.MethodBody7.staticField", TNumber(80)));
+
+            //apply second update
+            pause_location = await LoadAssemblyAndTestHotReloadUsingSDB(
+                    asm_file_hot_reload, "MethodBody8", "StaticMethod1", 2);
+
+            top_frame = pause_location["callFrames"]?[0];
+            AssertEqual("InstanceMethod", top_frame?["functionName"]?.Value<string>(), top_frame?.ToString());
+            CheckLocation("dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 102, 12, scripts, top_frame["location"]);
         }
     }
 }

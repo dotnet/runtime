@@ -972,6 +972,17 @@ dump_update_summary (MonoImage *image_base, MonoImage *image_dmeta)
 	}
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "================================");
 
+	rows = mono_image_get_table_rows (image_dmeta, MONO_TABLE_TYPEDEF);
+	for (int i = 1; i <= rows; ++i) {
+		guint32 cols [MONO_TYPEDEF_SIZE];
+		mono_metadata_decode_row (&image_dmeta->tables [MONO_TABLE_TYPEDEF], i - 1, cols, MONO_TYPEDEF_SIZE);
+		const char *name = mono_metadata_string_heap (image_base, cols [MONO_TYPEDEF_NAME]);
+		const char *nspace = mono_metadata_string_heap (image_base, cols [MONO_TYPEDEF_NAMESPACE]);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "dmeta typedef i=%d (token=0x%08x) -> nspace=[%x]%s, name=[%x]%s", i, MONO_TOKEN_TYPE_REF | i, cols [MONO_TYPEDEF_NAMESPACE], nspace, cols [MONO_TYPEDEF_NAME], name);
+	}
+
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "================================");
+
 	rows = mono_image_get_table_rows (image_base, MONO_TABLE_METHOD);
 	for (int i = 1; i <= rows ; ++i) {
 		guint32 cols [MONO_METHOD_SIZE];

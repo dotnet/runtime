@@ -74,15 +74,33 @@ namespace ApplyUpdateReferencedAssembly
             Console.WriteLine("breakpoint in a method in a new class");
             Console.WriteLine("original");
             MethodBody7 newvar = new MethodBody7();
+            staticField = 80;            
             newvar.InstanceMethod();
         }
         public void InstanceMethod () {
             int aLocal = 50;
             attr1 = 15;
             attr2 = "20";
-            staticField = 80;
             Console.WriteLine($"add a breakpoint the instance method of the new class");
-            
+        }
+    }
+
+    public class MethodBody8 {
+        public static int staticField;
+        int attr1;
+        string attr2;
+        public static void StaticMethod1 () {
+            Console.WriteLine("breakpoint in a method in a new class");
+            Console.WriteLine("original");
+            MethodBody8 newvar = new MethodBody8();
+            staticField = 80;            
+            newvar.InstanceMethod();
+        }
+        public void InstanceMethod () {
+            int aLocal = 50;
+            attr1 = 15;
+            attr2 = "20";
+            Console.WriteLine($"add a breakpoint the instance method of the new class");
         }
     }
 }
