@@ -11,31 +11,8 @@ namespace System.Reflection.PortableExecutable.Tests
 {
     internal static class SigningUtilities
     {
-        private static int _supportsSigning = 0;
-
-        public static bool SupportsSigning
-        {
-            get
-            {
-                if (_supportsSigning == 0)
-                {
-                    bool supported;
-                    try
-                    {
-                        using var rsa = RSA.Create();
-                        rsa.SignData(Array.Empty<byte>(), HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1);
-                        supported = true;
-                    }
-                    catch (CryptographicException)
-                    {
-                        supported = false;
-                    }
-
-                    _supportsSigning = supported ? 1 : -1;
-                }
-                return _supportsSigning == 1;
-            }
-        }
+        public static bool SupportsSigning { get; } =
+            System.Security.Cryptography.Tests.SignatureSupport.CanProduceSha1Signature(RSA.Create());
 
         public static byte[] CalculateRsaSignature(IEnumerable<Blob> content, byte[] privateKey)
         {
