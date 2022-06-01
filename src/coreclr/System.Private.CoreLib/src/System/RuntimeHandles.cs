@@ -237,6 +237,9 @@ namespace System
             return outHandles;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:ParameterDoesntMeetParameterRequirements",
+            Justification = "The parameter 'type' is passed as a ref parameter and not used again." +
+                            "Since it is not used after being passed to QCallTypeHandle, it will not cause issues")]
         internal static object CreateInstanceForAnotherGenericParameter(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] RuntimeType type,
             RuntimeType genericParameter)
@@ -257,6 +260,9 @@ namespace System
             return instantiatedObject!;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:ParameterDoesntMeetParameterRequirements",
+            Justification = "The parameter 'type' is passed as a ref parameter and not used again." +
+                            "Since it is not used after being passed to QCallTypeHandle, it will not cause issues")]
         internal static object CreateInstanceForAnotherGenericParameter(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] RuntimeType type,
             RuntimeType genericParameter1,

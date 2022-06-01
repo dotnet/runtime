@@ -1872,8 +1872,7 @@ namespace System.Reflection.Emit
 
             if (!m_isHiddenGlobalType)
             {
-                // Why was this previously not warning?
-                m_bakedRuntimeType = cls!; // m_bakedRuntimeType requires All, but ref cls above doesn't satisfy it. 2069
+                m_bakedRuntimeType = cls!;
 
                 // if this type is a nested type, we need to invalidate the cached nested runtime type on the nesting type
                 if (m_DeclaringType != null && m_DeclaringType.m_bakedRuntimeType != null)

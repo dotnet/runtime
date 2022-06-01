@@ -113,7 +113,7 @@ namespace System.ComponentModel.DataAnnotations
                 }
             }
 
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2068:UnrecognizedReflectionPattern",
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2068:ParameterDoesntMeetReturnValueRequirements",
                 Justification = "The cache is a dictionary which is hard to annotate. All values in the cache" +
                                 "have annotation All (since we only ever add attribute.MetadataClassType which has All)." +
                                 "But the call to TryGetValue doesn't carry the annotation so this warns when trying" +
