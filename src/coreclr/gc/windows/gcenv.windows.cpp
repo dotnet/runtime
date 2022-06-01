@@ -447,7 +447,7 @@ void GetGroupForProcessor(uint16_t processor_number, uint16_t* group_number, uin
 {
     assert(g_fEnableGCCPUGroups);
 
-#if !defined(FEATURE_REDHAWK) && (defined(TARGET_AMD64) || defined(TARGET_ARM64))
+#if !defined(FEATURE_NATIVEAOT) && (defined(TARGET_AMD64) || defined(TARGET_ARM64))
     WORD bTemp = 0;
     WORD bDiff = processor_number - bTemp;
 

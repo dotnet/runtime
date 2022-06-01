@@ -137,7 +137,7 @@ mono_wasm_enable_debugging_internal (int debug_level)
 {
 	log_level = debug_level;
 	if (debug_level != 0) {
-		PRINT_DEBUG_MSG (1, "DEBUGGING ENABLED\n");
+		wasm_debugger_log(1, "DEBUGGING ENABLED\n");
 		debugger_enabled = TRUE;
 	}
 }

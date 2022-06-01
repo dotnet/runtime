@@ -109,6 +109,7 @@ typedef int T_CONTEXT;
 extern bool FormatDumpName(std::string& name, const char* pattern, const char* exename, int pid);
 extern bool CreateDump(const char* dumpPathTemplate, int pid, const char* dumpType, MINIDUMP_TYPE minidumpType, bool crashReport, int crashThread, int signal);
 
+extern std::string GetLastErrorString();
 extern void printf_status(const char* format, ...);
 extern void printf_error(const char* format, ...);
 

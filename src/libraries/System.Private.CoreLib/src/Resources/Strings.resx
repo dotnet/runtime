@@ -2738,7 +2738,7 @@
     <value>Field not found.</value>
   </data>
   <data name="MissingField_Name" xml:space="preserve">
-    <value>Field '{0}' not found.</value>
+    <value>Field '{0}.{1}' not found.</value>
   </data>
   <data name="MissingManifestResource_MultipleBlobs" xml:space="preserve">
     <value>A case-insensitive lookup for resource file "{0}" in assembly "{1}" found multiple entries. Remove the duplicates or specify the exact case.</value>
@@ -2753,7 +2753,7 @@
     <value>Member not found.</value>
   </data>
   <data name="MissingMember_Name" xml:space="preserve">
-    <value>Member '{0}' not found.</value>
+    <value>Member '{0}.{1}' not found.</value>
   </data>
   <data name="MissingMemberNestErr" xml:space="preserve">
     <value>TypedReference can only be made on nested value Types.</value>
@@ -2762,7 +2762,7 @@
     <value>FieldInfo does not match the target Type.</value>
   </data>
   <data name="MissingMethod_Name" xml:space="preserve">
-    <value>Method '{0}' not found.</value>
+    <value>Method '{0}.{1}' not found.</value>
   </data>
   <data name="MissingSatelliteAssembly_Culture_Name" xml:space="preserve">
     <value>The satellite assembly named "{1}" for fallback culture "{0}" either could not be found or could not be loaded. This is generally a setup problem. Please consider reinstalling or repairing the application.</value>
@@ -3529,6 +3529,15 @@
   <data name="Arg_NullArgumentNullRef" xml:space="preserve">
     <value>The method was called with a null array argument.</value>
   </data>
+  <data name="Argument_AggressiveGCRequiresMaxGeneration" xml:space="preserve">
+    <value>AggressiveGC requires setting the generation parameter to MaxGeneration</value>
+  </data>
+  <data name="Argument_AggressiveGCRequiresBlocking" xml:space="preserve">
+    <value>AggressiveGC requires setting the blocking parameter to true.</value>
+  </data>
+  <data name="Argument_AggressiveGCRequiresCompacting" xml:space="preserve">
+    <value>AggressiveGC requires setting the compacting parameter to true.</value>
+  </data>
   <data name="Argument_CannotPrepareAbstract" xml:space="preserve">
     <value>Abstract methods cannot be prepared.</value>
   </data>
@@ -3910,13 +3919,25 @@
   <data name="Arg_EntryPointNotFoundExceptionParameterizedNoLibrary" xml:space="preserve">
     <value>Unable to find an entry point named '{0}' in native library.</value>
   </data>
-  <data name="Arg_DllNotFoundExceptionParameterized" xml:space="preserve">
-    <value>Unable to load native library '{0}' or one of its dependencies.</value>
+  <data name="DllNotFound_Windows" xml:space="preserve">
+    <value>Unable to load DLL '{0}' or one of its dependencies: {1}</value>
+  </data>
+  <data name="DllNotFound_Linux" xml:space="preserve">
+    <value>Unable to load shared library '{0}' or one of its dependencies. In order to help diagnose loading problems, consider using a tool like strace. If you're using glibc, consider setting the LD_DEBUG environment variable: {1}</value>
+  </data>
+  <data name="DllNotFound_Mac" xml:space="preserve">
+    <value>Unable to load shared library '{0}' or one of its dependencies. In order to help diagnose loading problems, consider setting the DYLD_PRINT_LIBRARIES environment variable: {1}</value>
   </data>
   <data name="InvalidOperation_ComInteropRequireComWrapperInstance" xml:space="preserve">
     <value>COM Interop requires ComWrapper instance registered for marshalling.</value>
   </data>
   <data name="ArgumentOutOfRange_NotGreaterThanBufferLength" xml:space="preserve">
     <value>Must not be greater than the length of the buffer.</value>
+  </data>
+  <data name="StructMarshalling_MissingInteropData" xml:space="preserve">
+    <value>{0} is missing structure marshalling data. To enable structure marshalling data, add a MarshalStructure directive to the application rd.xml file. For more information, please visit http://go.microsoft.com/fwlink/?LinkID=393965</value>
+  </data>
+  <data name="DelegateMarshalling_MissingInteropData" xml:space="preserve">
+    <value>{0} is missing delegate marshalling data. To enable delegate marshalling data, add a MarshalDelegate directive to the application rd.xml file. For more information, please visit http://go.microsoft.com/fwlink/?LinkID=393965</value>
   </data>
 </root>
