@@ -212,7 +212,7 @@ ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetSessionInfo (
 MonoBoolean
 ves_icall_System_Diagnostics_Tracing_EventPipeInternal_SignalSession (uint64_t session_id)
 {
-	return (MonoBoolean) mono_component_event_pipe()->signal_session ((EventPipeSessionID)session_id);
+	return mono_component_event_pipe()->signal_session ((EventPipeSessionID)session_id) ? TRUE : FALSE;
 }
 
 MonoBoolean
