@@ -598,14 +598,14 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 		offset += 4;
 	}
 
-	arg_info [0].offset = offset;
+	arg_info [0].offset = GINT32_TO_UINT16 (offset);
 
 	if (csig->hasthis) {
 		frame_size += sizeof (target_mgreg_t);
 		offset += 4;
 	}
 
-	arg_info [0].size = frame_size;
+	arg_info [0].size = GINT32_TO_UINT16 (frame_size);
 
 	for (k = 0; k < param_count; k++) {
 		size = mini_type_stack_size_full (csig->params [k], &align, csig->pinvoke && !csig->marshalling_disabled);
@@ -614,18 +614,18 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 		align = 1;
 
 		frame_size += pad = (align - (frame_size & (align - 1))) & (align - 1);
-		arg_info [k].pad = pad;
+		arg_info [k].pad = GUINT32_TO_UINT8 (pad);
 		frame_size += size;
 		arg_info [k + 1].pad = 0;
-		arg_info [k + 1].size = size;
+		arg_info [k + 1].size = GINT32_TO_UINT16 (size);
 		offset += pad;
-		arg_info [k + 1].offset = offset;
+		arg_info [k + 1].offset = GINT32_TO_UINT16 (offset);
 		offset += size;
 	}
 
 	align = MONO_ARCH_FRAME_ALIGNMENT;
 	frame_size += pad = (align - (frame_size & (align - 1))) & (align - 1);
-	arg_info [k].pad = pad;
+	arg_info [k].pad = GUINT32_TO_UINT8 (pad);
 
 	return frame_size;
 }
@@ -1083,7 +1083,7 @@ add_general (guint *gr, guint *stack_size, ArgInfo *ainfo, gboolean simple)
 			*stack_size += 4;
 		} else {
 			ainfo->storage = RegTypeGeneral;
-			ainfo->reg = *gr;
+			ainfo->reg = GUINT32_TO_UINT8 (*gr);
 		}
 	} else {
 		gboolean split;
@@ -1118,7 +1118,7 @@ add_general (guint *gr, guint *stack_size, ArgInfo *ainfo, gboolean simple)
 					(*gr) ++;
 			}
 			ainfo->storage = RegTypeIRegPair;
-			ainfo->reg = *gr;
+			ainfo->reg = GUINT32_TO_UINT8 (*gr);
 		}
 		(*gr) ++;
 	}
@@ -1170,7 +1170,7 @@ add_float (guint *fpr, guint *stack_size, ArgInfo *ainfo, gboolean is_double, gi
 			 * At this point, we have an even register
 			 * so we assign that and move along.
 			 */
-			ainfo->reg = *fpr;
+			ainfo->reg = GUINT32_TO_UINT8 (*fpr);
 			*fpr += 2;
 		} else if (*float_spare >= 0) {
 			/*
@@ -1180,7 +1180,7 @@ add_float (guint *fpr, guint *stack_size, ArgInfo *ainfo, gboolean is_double, gi
 			 * use it.
 			 */
 
-			ainfo->reg = *float_spare;
+			ainfo->reg = GINT32_TO_UINT8 (*float_spare);
 			*float_spare = -1;
 		} else {
 			/*
@@ -1189,7 +1189,7 @@ add_float (guint *fpr, guint *stack_size, ArgInfo *ainfo, gboolean is_double, gi
 			 * use the next available register.
 			 */
 
-			ainfo->reg = *fpr;
+			ainfo->reg = GUINT32_TO_UINT8 (*fpr);
 			(*fpr)++;
 		}
 	} else {
@@ -1387,7 +1387,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 			pstart = 1;
 		}
 		n ++;
-		cinfo->ret.reg = gr;
+		cinfo->ret.reg = GUINT32_TO_UINT8 (gr);
 		gr ++;
 		cinfo->vret_arg_index = 1;
 	} else {
@@ -1397,7 +1397,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 			n ++;
 		}
 		if (vtype_retaddr) {
-			cinfo->ret.reg = gr;
+			cinfo->ret.reg = GUINT32_TO_UINT8 (gr);
 			gr ++;
 		}
 	}
@@ -1480,7 +1480,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 			if (IS_HARD_FLOAT && sig->pinvoke && is_hfa (t, &nfields, &esize)) {
 				if (fpr + nfields < ARM_VFP_F16) {
 					ainfo->storage = RegTypeHFA;
-					ainfo->reg = fpr;
+					ainfo->reg = GUINT32_TO_UINT8 (fpr);
 					ainfo->nregs = nfields;
 					ainfo->esize = esize;
 					if (esize == 4)
@@ -1540,14 +1540,14 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 			}
 			if (gr > ARMREG_R3) {
 				ainfo->size = 0;
-				ainfo->vtsize = nwords;
+				ainfo->vtsize = GINT32_TO_UINT16 (nwords);
 			} else {
 				int rest = ARMREG_R3 - gr + 1;
 				int n_in_regs = rest >= nwords? nwords: rest;
 
-				ainfo->size = n_in_regs;
-				ainfo->vtsize = nwords - n_in_regs;
-				ainfo->reg = gr;
+				ainfo->size = GINT32_TO_UINT8 (n_in_regs);
+				ainfo->vtsize = GINT32_TO_UINT16 (nwords - n_in_regs);
+				ainfo->reg = GUINT32_TO_UINT8 (gr);
 				gr += n_in_regs;
 				nwords -= n_in_regs;
 			}
@@ -3100,16 +3100,16 @@ mono_arch_finish_dyn_call (MonoDynCallInfo *info, guint8 *buf)
 		*(gpointer*)ret = (gpointer)(gsize)res;
 		break;
 	case MONO_TYPE_I1:
-		*(gint8*)ret = res;
+		*(gint8*)ret = GINT32_TO_INT8 (res);
 		break;
 	case MONO_TYPE_U1:
-		*(guint8*)ret = res;
+		*(guint8*)ret = GINT32_TO_UINT8 (res);
 		break;
 	case MONO_TYPE_I2:
-		*(gint16*)ret = res;
+		*(gint16*)ret = GINT32_TO_INT16 (res);
 		break;
 	case MONO_TYPE_U2:
-		*(guint16*)ret = res;
+		*(guint16*)ret = GINT32_TO_UINT16 (res);
 		break;
 	case MONO_TYPE_I4:
 		*(gint32*)ret = res;
