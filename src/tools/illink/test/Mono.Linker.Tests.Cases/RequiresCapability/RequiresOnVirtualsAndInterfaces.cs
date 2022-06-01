@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Expectations.Helpers;
 
 namespace Mono.Linker.Tests.Cases.RequiresCapability
 {
@@ -24,6 +25,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			TestInterfaceMethodWithRequires ();
 			TestCovariantReturnCallOnDerived ();
 			CovariantReturnViaLdftn.Test ();
+			NewSlotVirtual.Test ();
 		}
 
 		class BaseType
@@ -193,6 +195,39 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			{
 				var tmp = new Derived ();
 				var _ = new Func<DerivedReturnType> (tmp.GetRequires);
+			}
+		}
+
+		class NewSlotVirtual
+		{
+			class Base
+			{
+				[RequiresUnreferencedCode ("Message for --NewSlotVirtual.Base.RUCMethod--")]
+				[RequiresAssemblyFiles ("Message for --NewSlotVirtual.Base.RUCMethod--")]
+				[RequiresDynamicCode ("Message for --NewSlotVirtual.Base.RUCMethod--")]
+				public virtual void RUCMethod () { }
+			}
+
+			class Derived : Base
+			{
+				[RequiresUnreferencedCode ("Message for --NewSlotVirtual.Derived.RUCMethod--")]
+				[RequiresAssemblyFiles ("Message for --NewSlotVirtual.Derived.RUCMethod--")]
+				[RequiresDynamicCode ("Message for --NewSlotVirtual.Derived.RUCMethod--")]
+				public virtual void RUCMethod () { }
+			}
+
+			[ExpectedWarning ("IL2026", "Message for --NewSlotVirtual.Base.RUCMethod--")]
+			// Reflection triggered warnings are not produced by analyzer for RDC/RAS
+			// [ExpectedWarning ("IL3002", "Message for --NewSlotVirtual.Base.RUCMethod--", ProducedBy = ProducedBy.Analyzer)]
+			// [ExpectedWarning ("IL3050", "Message for --NewSlotVirtual.Base.RUCMethod--", ProducedBy = ProducedBy.Analyzer)]
+			// https://github.com/dotnet/linker/issues/2815
+			[ExpectedWarning ("IL2026", "Message for --NewSlotVirtual.Derived.RUCMethod--", ProducedBy = ProducedBy.Analyzer)]
+			// Reflection triggered warnings are not produced by analyzer for RDC/RAS
+			// [ExpectedWarning ("IL3002", "Message for --NewSlotVirtual.Derived.RUCMethod--", ProducedBy = ProducedBy.Analyzer)]
+			// [ExpectedWarning ("IL3050", "Message for --NewSlotVirtual.Derived.RUCMethod--", ProducedBy = ProducedBy.Analyzer)]
+			public static void Test ()
+			{
+				typeof (Derived).RequiresPublicMethods ();
 			}
 		}
 	}

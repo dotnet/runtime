@@ -49,6 +49,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			// for some non-reflection access.
 			var f = AnnotatedPublicMethods.DAMField;
 
+			RUCOnNewSlotVirtualMethodDerivedAnnotated.Test ();
+
 			CompilerGeneratedBackingField.Test ();
 		}
 
@@ -593,6 +595,46 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[Kept]
 			[ExpectedWarning ("IL2112", "--AnnotatedRUCPublicMethods--")]
 			public static void StaticMethod () { }
+		}
+
+		[Kept]
+		class RUCOnNewSlotVirtualMethodDerivedAnnotated
+		{
+			[Kept]
+			[KeptMember (".ctor()")]
+			public class Base
+			{
+				[Kept]
+				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+				[RequiresUnreferencedCode ("--RUCOnVirtualMethodDerivedAnnotated.Base.RUCVirtualMethod--")]
+				public virtual void RUCVirtualMethod () { }
+			}
+
+			[Kept]
+			[KeptMember (".ctor()")]
+			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+			[KeptBaseType (typeof (Base))]
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+			[ExpectedWarning ("IL2113", "--RUCOnVirtualMethodDerivedAnnotated.Base.RUCVirtualMethod--")]
+			// https://github.com/dotnet/linker/issues/2815
+			// [ExpectedWarning ("IL2112", "--RUCOnVirtualMethodDerivedAnnotated.Derived.RUCVirtualMethod--")]
+			public class Derived : Base
+			{
+				[Kept]
+				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+				[RequiresUnreferencedCode ("--RUCOnVirtualMethodDerivedAnnotated.Derived.RUCVirtualMethod--")]
+				public virtual void RUCVirtualMethod () { }
+			}
+
+			[Kept]
+			static Derived _derivedInstance;
+
+			[Kept]
+			public static void Test ()
+			{
+				_derivedInstance = new Derived ();
+				_derivedInstance.GetType ().RequiresPublicMethods ();
+			}
 		}
 
 		[Kept]
