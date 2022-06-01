@@ -762,7 +762,7 @@ mono_llvm_register_overloaded_intrinsic (LLVMModuleRef module, IntrinsicId id, L
 unsigned int
 mono_llvm_get_prim_size_bits (LLVMTypeRef type)
 {
-	return unwrap (type)->getPrimitiveSizeInBits ();
+	return static_cast<unsigned int> (unwrap (type)->getPrimitiveSizeInBits ());
 }
 
 /*

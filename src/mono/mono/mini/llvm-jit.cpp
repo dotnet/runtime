@@ -139,7 +139,7 @@ MonoLLVMMemoryManager::allocateCodeSection(uintptr_t Size,
 										  unsigned SectionID,
 										  StringRef SectionName)
 {
-	uint8_t *mem = alloc_code (NULL, Size);
+	uint8_t *mem = alloc_code (NULL, static_cast<int> (Size));
 	PendingCodeMem.push_back (sys::MemoryBlock ((void *)mem, Size));
 	return mem;
 }
