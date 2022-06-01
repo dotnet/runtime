@@ -80,9 +80,8 @@ namespace System.ComponentModel
         /// </summary>
         public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
         {
-            if (destinationType == typeof(string) && value is TimeOnly)
+            if (destinationType == typeof(string) && value is TimeOnly timeOnly)
             {
-                TimeOnly timeOnly = (TimeOnly)value;
                 if (timeOnly == TimeOnly.MinValue)
                 {
                     return string.Empty;
@@ -98,16 +97,15 @@ namespace System.ComponentModel
                 return timeOnly.ToString(formatInfo!.ShortTimePattern, CultureInfo.CurrentCulture);
             }
 
-            if (destinationType == typeof(InstanceDescriptor) && value is TimeOnly)
+            if (destinationType == typeof(InstanceDescriptor) && value is TimeOnly time)
             {
-                TimeOnly timeOnly = (TimeOnly)value;
-                if (timeOnly.Ticks == 0)
+                if (time.Ticks == 0)
                 {
-                    return new InstanceDescriptor(typeof(TimeOnly).GetConstructor(new Type[] { typeof(long) }), new object[] { timeOnly.Ticks });
+                    return new InstanceDescriptor(typeof(TimeOnly).GetConstructor(new Type[] { typeof(long) }), new object[] { time.Ticks });
                 }
 
                 return new InstanceDescriptor(typeof(TimeOnly).GetConstructor(new Type[] { typeof(int), typeof(int), typeof(int), typeof(int), typeof(int) }),
-                                                new object[] { timeOnly.Hour, timeOnly.Minute, timeOnly.Second, timeOnly.Millisecond, timeOnly.Microsecond});
+                                                new object[] { time.Hour, time.Minute, time.Second, time.Millisecond, time.Microsecond});
             }
 
             return base.ConvertTo(context, culture, value, destinationType);

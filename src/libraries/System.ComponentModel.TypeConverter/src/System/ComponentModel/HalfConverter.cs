@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Globalization;
 
 namespace System.ComponentModel
@@ -24,19 +25,22 @@ namespace System.ComponentModel
         /// <summary>
         /// Convert the given value to a string using the given radix
         /// </summary>
-        internal override object FromString(string value, int radix) => value is null ? (object)0 : Half.Parse(value, CultureInfo.CurrentCulture);
+        internal override object FromString(string value, int radix)
+        {
+            Debug.Assert(radix == 10);
+            Debug.Assert(value is not null);
+            return Half.Parse(value!, CultureInfo.CurrentCulture);
+        }
 
         /// <summary>
         /// Convert the given value to a string using the given formatInfo
         /// </summary>
-        internal override object FromString(string value, NumberFormatInfo? formatInfo) => Half.Parse(value, NumberStyles.Float, formatInfo);
+        internal override object FromString(string value, NumberFormatInfo? formatInfo) => Half.Parse(value, formatInfo);
 
         /// <summary>
         /// Convert the given value from a string using the given formatInfo
         /// </summary>
-        internal override string ToString(object value, NumberFormatInfo? formatInfo)
-        {
-            return ((Half)value).ToString("R", formatInfo);
-        }
+        internal override string ToString(object value, NumberFormatInfo? formatInfo) =>
+            ((Half)value).ToString(formatInfo);
     }
 }

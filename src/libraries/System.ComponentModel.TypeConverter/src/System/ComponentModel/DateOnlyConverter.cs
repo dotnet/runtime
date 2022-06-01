@@ -80,9 +80,8 @@ namespace System.ComponentModel
         /// </summary>
         public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
         {
-            if (destinationType == typeof(string) && value is DateOnly)
+            if (destinationType == typeof(string) && value is DateOnly dateOnly)
             {
-                DateOnly dateOnly = (DateOnly)value;
                 if (dateOnly == DateOnly.MinValue)
                 {
                     return string.Empty;
@@ -105,10 +104,9 @@ namespace System.ComponentModel
                 return dateOnly.ToString(format, CultureInfo.CurrentCulture);
             }
 
-            if (destinationType == typeof(InstanceDescriptor) && value is DateOnly)
+            if (destinationType == typeof(InstanceDescriptor) && value is DateOnly date)
             {
-                DateOnly dateOnly = (DateOnly)value;
-                return new InstanceDescriptor(typeof(DateOnly).GetConstructor(new Type[] { typeof(int), typeof(int), typeof(int) }), new object[] { dateOnly.Year, dateOnly.Month, dateOnly.Day });
+                return new InstanceDescriptor(typeof(DateOnly).GetConstructor(new Type[] { typeof(int), typeof(int), typeof(int) }), new object[] { date.Year, date.Month, date.Day });
             }
 
             return base.ConvertTo(context, culture, value, destinationType);

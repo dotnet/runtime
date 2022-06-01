@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Globalization;
 
 namespace System.ComponentModel
@@ -21,29 +22,27 @@ namespace System.ComponentModel
         /// </summary>
         internal override object FromString(string value, int radix)
         {
-            // We only support decimal and hex radix in the converter.
-            if (radix != 10 && radix != 16)
+            Debug.Assert(radix == 10 && radix == 16);
+            Debug.Assert(value is not null);
+
+            if (radix == 16)
             {
-                throw new ArgumentException(SR.Arg_InvalidBase);
+                return UInt128.Parse(value, NumberStyles.HexNumber);
             }
 
-            return value is null ? 0 : UInt128.Parse(value, radix == 16 ? NumberStyles.HexNumber : NumberStyles.None);
+            return UInt128.Parse(value);
         }
 
         /// <summary>
         /// Convert the given value to a string using the given formatInfo
         /// </summary>
-        internal override object FromString(string value, NumberFormatInfo? formatInfo)
-        {
-            return UInt128.Parse(value, NumberStyles.Integer, formatInfo);
-        }
+        internal override object FromString(string value, NumberFormatInfo? formatInfo) =>
+            UInt128.Parse(value, formatInfo);
 
         /// <summary>
         /// Convert the given value from a string using the given formatInfo
         /// </summary>
-        internal override string ToString(object value, NumberFormatInfo? formatInfo)
-        {
-            return ((UInt128)value).ToString("G", formatInfo);
-        }
+        internal override string ToString(object value, NumberFormatInfo? formatInfo) =>
+            ((UInt128)value).ToString(formatInfo);
     }
 }
