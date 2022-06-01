@@ -4128,9 +4128,9 @@ void emitter::emitDispCommentForHandle(size_t handle, GenTreeFlags flag)
 
 //****************************************************************************
 // emitRemoveJumpToNextInst:  Checks all jumps in the jump list to see if they are
-//   unconditional jumps generated marked with idjIsRemovableJmpCandidate which are
-//   generated at of BBJ_ALWAYS basic blocks. If any candidate is not a jump to the
-//   next instruction it will be removed from the jump list.
+//   unconditional jumps marked with idjIsRemovableJmpCandidate,generated from
+//   BBJ_ALWAYS blocks. Any such candidate that jumps to the next instruction
+//   will be removed from the jump list.
 //
 // Assumptions:
 //    the jump list must be ordered by increasing igNum+insNo
@@ -4160,7 +4160,6 @@ void emitter::emitRemoveJumpToNextInst()
     instrDescJmp*  jmp              = emitJumpList;
     instrDescJmp*  previousJmp      = nullptr;
 #if DEBUG
-    int            totalRemovedCount  = 0;
     UNATIVE_OFFSET previousJumpIgNum  = (UNATIVE_OFFSET)-1;
     unsigned int   previousJumpInsNum = -1;
 #endif // DEBUG
@@ -4215,8 +4214,8 @@ void emitter::emitRemoveJumpToNextInst()
                     emitDispIG(jmpGroup, nullptr, true);
                     printf("target group:\n");
                     emitDispIG(targetGroup, nullptr, false);
+                    assert(jmp == id);
                 }
-                assert(jmp == id);
 #endif // DEBUG
 
                 JITDUMP("IG%02u IN%04x is the last instruction in the group and jumps to the next instruction group "
@@ -4247,9 +4246,6 @@ void emitter::emitRemoveJumpToNextInst()
 
                 emitTotalCodeSize -= codeSize;
                 totalRemovedSize += codeSize;
-#if DEBUG
-                totalRemovedCount += 1;
-#endif // DEBUG
             }
             else
             {
@@ -4311,7 +4307,7 @@ void emitter::emitRemoveJumpToNextInst()
             emitDispJumpList();
         }
 #endif // DEBUG
-        JITDUMP("emitRemoveJumpToNextInst removed %d jumps and %u bytes\n", totalRemovedCount, totalRemovedSize);
+        JITDUMP("emitRemoveJumpToNextInst removed %u bytes of unconditional jumps\n", totalRemovedSize);
     }
     else
     {
