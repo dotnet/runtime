@@ -1743,6 +1743,11 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 				}
 			}
 			break;
+		case LLVMArgVtypeInSIMDReg: {
+			MonoClass *klass = mono_class_from_mono_type_internal (sig->params [i]);
+			param_types [pindex ++] = simd_class_to_llvm_type (ctx, klass);
+			break;
+		}
 		case LLVMArgVtypeByVal:
 			param_types [pindex] = type_to_llvm_arg_type (ctx, ainfo->type);
 			if (!ctx_ok (ctx))
@@ -3927,6 +3932,13 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 			emit_args_to_vtype (ctx, builder, ainfo->type, ctx->addresses [reg]->value, ainfo, args);
 			break;
 		}
+		case LLVMArgVtypeInSIMDReg: {
+			LLVMValueRef arg = LLVMGetParam (ctx->lmethod, pindex);
+
+			ctx->addresses [reg] = build_alloca_address (ctx, ainfo->type);
+			LLVMBuildStore (builder, arg, build_ptr_cast (builder, ctx->addresses [reg]->value,  pointer_type(LLVMTypeOf (arg))));
+			break;
+		}
 		case LLVMArgVtypeByVal: {
 			g_assert (ctx->param_etypes [pindex]);
 			ctx->addresses [reg] = create_address (ctx->module, LLVMGetParam (ctx->lmethod, pindex), ctx->param_etypes [pindex]);
@@ -4022,6 +4034,7 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 
 		switch (ainfo->storage) {
 		case LLVMArgVtypeInReg:
+		case LLVMArgVtypeInSIMDReg:
 		case LLVMArgVtypeByVal:
 		case LLVMArgAsIArgs:
 			// FIXME: Enabling this fails on windows
@@ -4574,6 +4587,10 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 
 			// FIXME: alignment
 			// FIXME: Get rid of the VMOVE
+			break;
+		}
+		case LLVMArgVtypeInSIMDReg: {
+			args [pindex] = LLVMBuildLoad2 (ctx->builder, addresses [reg]->type, addresses [reg]->value, "load_param");
 			break;
 		}
 		case LLVMArgVtypeByVal:
@@ -12432,6 +12449,7 @@ mono_llvm_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		case LLVMArgVtypeByVal:
 		case LLVMArgVtypeByRef:
 		case LLVMArgVtypeInReg:
+		case LLVMArgVtypeInSIMDReg:
 		case LLVMArgVtypeAddr:
 		case LLVMArgVtypeAsScalar:
 		case LLVMArgAsIArgs:

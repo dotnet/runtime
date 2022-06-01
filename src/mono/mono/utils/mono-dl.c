@@ -98,7 +98,7 @@ read_string (char *p, FILE *file)
 		if (!endp)
 			return NULL;
 		*endp = 0;
-		return (char *) g_memdup (startp, (endp - startp) + 1);
+		return (char *) g_memdup (startp, GPTRDIFF_TO_UINT ((endp - startp) + 1));
 	}
 	if (*p == 0)
 		return NULL;
@@ -106,7 +106,7 @@ read_string (char *p, FILE *file)
 	while (*p && !isspace (*p))
 		++p;
 	*p = 0;
-	return (char *) g_memdup (startp, (p - startp) + 1);
+	return (char *) g_memdup (startp, GPTRDIFF_TO_UINT ((p - startp) + 1));
 }
 
 /*

@@ -8,6 +8,7 @@ Apply https://github.com/libunwind/libunwind/pull/333
 Apply https://github.com/libunwind/libunwind/pull/342
 Apply https://github.com/libunwind/libunwind/pull/353
 Apply https://github.com/libunwind/libunwind/pull/358
+Apply https://github.com/libunwind/libunwind/commit/7cf6e84bb86ff5840896b4910ccc3865d4f00ffb
 
 For LoongArch64:
 Apply https://github.com/libunwind/libunwind/pull/316 and https://github.com/libunwind/libunwind/pull/322

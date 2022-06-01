@@ -543,6 +543,12 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Stress/ABI/pinvokes_do/**">
             <Issue>https://github.com/dotnet/runtime/issues/66745</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Stress/ABI/tailcalls_d/**">
+            <Issue>https://github.com/dotnet/runtime/issues/70042</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Stress/ABI/tailcalls_do/**">
+            <Issue>https://github.com/dotnet/runtime/issues/70042</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Windows arm64 specific excludes -->
@@ -3285,6 +3291,13 @@
 
 
     <ItemGroup Condition=" '$(TargetArchitecture)' == 'wasm' " >
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/tailcall/**">
+            <Issue>https://github.com/dotnet/runtime/issues/69517</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/IL/Tailcall/ExplicitTailCallNoSO/*">
+            <Issue>https://github.com/dotnet/runtime/issues/69517</Issue>
+        </ExcludeList>
+
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Intrinsics/TypeIntrinsics_r/**">
             <Issue>https://github.com/dotnet/runtime/issues/54867</Issue>
         </ExcludeList>
@@ -3348,6 +3361,9 @@
             <Issue>https://github.com/dotnet/runtime/issues/41519</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/UnmanagedCallersOnly/UnmanagedCallersOnlyTest/**">
+            <Issue>https://github.com/dotnet/runtime/issues/41519</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/Interop/UnmanagedCallersOnly_MonoAot/UnmanagedCallersOnly_MonoAotTest/**">
             <Issue>https://github.com/dotnet/runtime/issues/41519</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/CodeGenBringUpTests/LocallocLarge_d/**">
@@ -3713,6 +3729,9 @@
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/UnmanagedCallersOnly/UnmanagedCallersOnlyTest/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/Interop/UnmanagedCallersOnly_MonoAot/UnmanagedCallersOnly_MonoAotTest/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/CheckProjects/CheckProjects/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
@@ -3859,12 +3878,6 @@
     <ItemGroup Condition=" $(TargetOS) == 'Android' And '$(TargetArchitecture)' == 'arm64' " >
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Performance/CodeQuality/BenchmarksGame/fannkuch-redux/fannkuch-redux-5/**">
             <Issue>https://github.com/dotnet/runtime/issues/52781</Issue>
-        </ExcludeList>
-    </ItemGroup>
-
-    <ItemGroup Condition=" $(TargetOS) == 'Android' And '$(RuntimeVariant)' == 'monointerpreter' " >
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Performance/CodeQuality/BenchmarksGame/mandelbrot/mandelbrot-7/**">
-            <Issue>https://github.com/dotnet/runtime/issues/55528</Issue>
         </ExcludeList>
     </ItemGroup>
 

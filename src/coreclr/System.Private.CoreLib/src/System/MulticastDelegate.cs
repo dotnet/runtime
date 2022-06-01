@@ -82,7 +82,8 @@ namespace System
                         if (!d.IsUnmanagedFunctionPtr())
                             return false;
 
-                        return CompareUnmanagedFunctionPtrs(this, d);
+                        return _methodPtr == d._methodPtr
+                            && _methodPtrAux == d._methodPtrAux;
                     }
 
                     // now we know 'this' is not a special one, so we can work out what the other is

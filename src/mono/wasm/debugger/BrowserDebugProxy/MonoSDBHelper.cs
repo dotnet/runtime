@@ -1387,6 +1387,14 @@ namespace Microsoft.WebAssembly.Diagnostics
             return retDebuggerCmdReader.ReadInt32();
         }
 
+        public JToken GetEvaluationResultProperties(string id)
+        {
+            ExecutionContext context = proxy.GetContext(sessionId);
+            var resolver = new MemberReferenceResolver(proxy, context, sessionId, context.CallStack.First().Id, logger);
+            var evaluationResult = resolver.TryGetEvaluationResult(id);
+            return evaluationResult["value"];
+        }
+
         public async Task<string> GetValueFromDebuggerDisplayAttribute(DotnetObjectId dotnetObjectId, int typeId, CancellationToken token)
         {
             string expr = "";
