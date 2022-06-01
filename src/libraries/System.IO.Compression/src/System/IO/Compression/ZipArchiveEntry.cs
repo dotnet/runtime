@@ -56,7 +56,7 @@ namespace System.IO.Compression
             _versionMadeBySpecification = (ZipVersionNeededValues)cd.VersionMadeBySpecification;
             _versionToExtract = (ZipVersionNeededValues)cd.VersionNeededToExtract;
             _generalPurposeBitFlag = (BitFlagValues)cd.GeneralPurposeBitFlag;
-            _isEncrypted = _generalPurposeBitFlag.HasFlag(BitFlagValues.IsEncrypted);
+            _isEncrypted = (_generalPurposeBitFlag & BitFlagValues.IsEncrypted) != 0;
             CompressionMethod = (CompressionMethodValues)cd.CompressionMethod;
             _lastModified = new DateTimeOffset(ZipHelper.DosTimeToDateTime(cd.LastModified));
             _compressedSize = cd.CompressedSize;
@@ -154,9 +154,9 @@ namespace System.IO.Compression
         public uint Crc32 => _crc32;
 
         /// <summary>
-        /// Gets whether or not this archive entry is encrypted.
+        /// Gets a value that indicates whether the entry is encrypted.
         /// </summary>
-        public bool IsEncrypted { get => _isEncrypted; }
+        public bool IsEncrypted => _isEncrypted;
 
         /// <summary>
         /// The compressed size of the entry. If the archive that the entry belongs to is in Create mode, attempts to get this property will always throw an exception. If the archive that the entry belongs to is in update mode, this property will only be valid if the entry has not been opened.
