@@ -877,7 +877,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return -1;
         }
 
-        private static int GetMethodDebugInformation(MetadataReader pdbMetadataReaderParm, int number)
+        private static int GetMethodDebugInformationIdx(MetadataReader pdbMetadataReaderParm, int number)
         {
             int i = 1;
             foreach (var encMapHandle in pdbMetadataReaderParm.GetEditAndContinueMapEntries())
@@ -910,61 +910,54 @@ namespace Microsoft.WebAssembly.Diagnostics
         private void PopulateEnC(MetadataReader asmMetadataReaderParm, MetadataReader pdbMetadataReaderParm)
         {
             TypeInfo typeInfo = null;
-            try {
-                int methodIdxAsm = 1;
-                //int typeIdxAsm = 1;
-                foreach (var entry in asmMetadataReaderParm.GetEditAndContinueLogEntries())
+            int methodIdxAsm = 1;
+            foreach (var entry in asmMetadataReaderParm.GetEditAndContinueLogEntries())
+            {
+                if (entry.Operation == EditAndContinueOperation.AddMethod ||
+                    entry.Operation == EditAndContinueOperation.AddField)
                 {
-                    if (entry.Operation == EditAndContinueOperation.AddMethod ||
-                        entry.Operation == EditAndContinueOperation.AddField)
+                    var typeHandle = (TypeDefinitionHandle)entry.Handle;
+                    if (!TypesByToken.TryGetValue(MetadataTokens.GetToken(asmMetadataReaderParm, typeHandle), out typeInfo))
                     {
-                        var typeHandle = (TypeDefinitionHandle)entry.Handle;
-                        if (!TypesByToken.TryGetValue(MetadataTokens.GetToken(asmMetadataReaderParm, typeHandle), out typeInfo))
-                        {
-                            int typeDefIdx = GetTypeDefIdx(asmMetadataReaderParm, asmMetadataReaderParm.GetRowNumber(entry.Handle));
-                            var typeDefinition = asmMetadataReaderParm.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle(typeDefIdx));
-                            StringHandle name = MetadataTokens.StringHandle(typeDefinition.Name.GetHashCode() & 127);
-                            typeInfo = new TypeInfo(this, typeHandle, typeDefinition, asmMetadataReaderParm, true, logger);
-                            TypesByName[typeInfo.FullName] = typeInfo;
-                            TypesByToken[typeInfo.Token] = typeInfo;
-                        }
-                    }
-                    else
-                    {
-                        if (entry.Handle.Kind == HandleKind.MethodDefinition)
-                        {
-                            var methodDefinition = asmMetadataReaderParm.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle(methodIdxAsm));
-                            int methodIdx = GetMethodDebugInformation(pdbMetadataReaderParm, asmMetadataReader.GetRowNumber(entry.Handle));
-                            if (methods.TryGetValue(asmMetadataReader.GetRowNumber(entry.Handle), out MethodInfo method))
-                                method.UpdateEnC(asmMetadataReaderParm, pdbMetadataReaderParm, methodIdx);
-                            else if (typeInfo != null)
-                            {
-                                var methodDebugInformation = pdbMetadataReaderParm.GetMethodDebugInformation(MetadataTokens.MethodDebugInformationHandle(methodIdx));
-                                if (!methodDebugInformation.Document.IsNil) //fix this after entrypoint PR merged
-                                {
-                                    var document = pdbMetadataReaderParm.GetDocument(methodDebugInformation.Document);
-                                    var documentName = pdbMetadataReaderParm.GetString(document.Name);
-                                    SourceFile source = FindSource(methodDebugInformation.Document, asmMetadataReaderParm.GetRowNumber(methodDebugInformation.Document), documentName);
-                                    var methodDef = asmMetadataReaderParm.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle(methodIdxAsm));
-                                    var methodInfo = new MethodInfo(this, MetadataTokens.MethodDefinitionHandle(methodIdxAsm), asmMetadataReader.GetRowNumber(entry.Handle), source, typeInfo, asmMetadataReaderParm, pdbMetadataReaderParm);
-                                    methods[asmMetadataReader.GetRowNumber(entry.Handle)] = methodInfo;
-                                    if (source != null)
-                                        source.AddMethod(methodInfo);
-                                    typeInfo.Methods.Add(methodInfo);
-                                }
-                            }
-                            methodIdxAsm++;
-                        }
-                        else if (entry.Handle.Kind == HandleKind.FieldDefinition)
-                        {
-                            //Implement new instance field when it's supported on runtime
-                        }
+                        int typeDefIdx = GetTypeDefIdx(asmMetadataReaderParm, asmMetadataReaderParm.GetRowNumber(entry.Handle));
+                        var typeDefinition = asmMetadataReaderParm.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle(typeDefIdx));
+                        StringHandle name = MetadataTokens.StringHandle(typeDefinition.Name.GetHashCode() & 127);
+                        typeInfo = new TypeInfo(this, typeHandle, typeDefinition, asmMetadataReaderParm, true, logger);
+                        TypesByName[typeInfo.FullName] = typeInfo;
+                        TypesByToken[typeInfo.Token] = typeInfo;
                     }
                 }
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine($"olha thays {e}");
+                else
+                {
+                    if (entry.Handle.Kind == HandleKind.MethodDefinition)
+                    {
+                        var methodDefinition = asmMetadataReaderParm.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle(methodIdxAsm));
+                        int methodIdx = GetMethodDebugInformationIdx(pdbMetadataReaderParm, asmMetadataReader.GetRowNumber(entry.Handle));
+                        if (methods.TryGetValue(asmMetadataReader.GetRowNumber(entry.Handle), out MethodInfo method))
+                            method.UpdateEnC(asmMetadataReaderParm, pdbMetadataReaderParm, methodIdx);
+                        else if (typeInfo != null)
+                        {
+                            var methodDebugInformation = pdbMetadataReaderParm.GetMethodDebugInformation(MetadataTokens.MethodDebugInformationHandle(methodIdx));
+                            if (!methodDebugInformation.Document.IsNil) //fix this after entrypoint PR merged
+                            {
+                                var document = pdbMetadataReaderParm.GetDocument(methodDebugInformation.Document);
+                                var documentName = pdbMetadataReaderParm.GetString(document.Name);
+                                SourceFile source = FindSource(methodDebugInformation.Document, asmMetadataReaderParm.GetRowNumber(methodDebugInformation.Document), documentName);
+                                var methodDef = asmMetadataReaderParm.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle(methodIdxAsm));
+                                var methodInfo = new MethodInfo(this, MetadataTokens.MethodDefinitionHandle(methodIdxAsm), asmMetadataReader.GetRowNumber(entry.Handle), source, typeInfo, asmMetadataReaderParm, pdbMetadataReaderParm);
+                                methods[asmMetadataReader.GetRowNumber(entry.Handle)] = methodInfo;
+                                if (source != null)
+                                    source.AddMethod(methodInfo);
+                                typeInfo.Methods.Add(methodInfo);
+                            }
+                        }
+                        methodIdxAsm++;
+                    }
+                    else if (entry.Handle.Kind == HandleKind.FieldDefinition)
+                    {
+                        //Implement new instance field when it's supported on runtime
+                    }
+                }
             }
         }
         private SourceFile FindSource(DocumentHandle doc, int rowid, string documentName)
