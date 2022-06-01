@@ -262,7 +262,7 @@ jobs:
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
         ${{ if eq(parameters.container, '') }}:
-          image: centos-7-20210714125435-9b5bbc2
+          image: cbl-mariner-2.0-20220511134249-db4fcc3
         ${{ if ne(parameters.container, '') }}:
           image: ${{ parameters.container }}
         registry: mcr
