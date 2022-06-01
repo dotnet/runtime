@@ -85,11 +85,13 @@ namespace System.Security.Cryptography.Pkcs.Tests
 
                 using (var signerCert = new X509Certificate2(testData.ExternalCertificateBytes))
                 {
-                    if (!SignatureSupport.SupportsRsaSha1Signatures && signerCert.SignatureAlgorithm.FriendlyName == "sha512RSA")
+                    if (!SignatureSupport.SupportsRsaSha1Signatures &&
+                        signedCms.SignerInfos[0].SignatureAlgorithm.Value == Oids.Rsa &&
+                        signedCms.SignerInfos[0].DigestAlgorithm.Value == Oids.Sha1)
                     {
                         Assert.ThrowsAny<CryptographicException>(() => signedCms.CheckSignature(
-                                                new X509Certificate2Collection(signerCert),
-                                                true));
+                            new X509Certificate2Collection(signerCert),
+                            true));
                         return;
                     }
                     else
