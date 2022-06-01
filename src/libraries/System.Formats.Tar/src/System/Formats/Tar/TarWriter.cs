@@ -20,26 +20,25 @@ namespace System.Formats.Tar
         private int _globalExtendedAttributesEntryNumber;
 
         /// <summary>
-        /// Initializes a <see cref="TarWriter"/> instance that can write tar entries to the specified stream and optionally leaves the stream open upon disposal of this instance. When using this constructor, the format of the resulting archive is <see cref="TarEntryFormat.Pax"/>.
+        /// Initializes a <see cref="TarWriter"/> instance that can write tar entries to the specified stream and closes the <paramref name="archiveStream"/> upon disposal of this instance. When using this constructor, the format of the resulting archive is <see cref="TarEntryFormat.Pax"/>.
         /// </summary>
         /// <param name="archiveStream">The stream to write to.</param>
-        /// <param name="leaveOpen"><see langword="false"/> to dispose the <paramref name="archiveStream"/> when this instance is disposed; <see langword="true"/> to leave the stream open.</param>
-        public TarWriter(Stream archiveStream, bool leaveOpen = false)
-            : this(archiveStream, TarEntryFormat.Pax, leaveOpen)
+        public TarWriter(Stream archiveStream)
+            : this(archiveStream, TarEntryFormat.Pax, leaveOpen: false)
         {
         }
 
         /// <summary>
-        /// Initializes a <see cref="TarWriter"/> instance that can write tar entries to the specified stream, optionally leaves the stream open upon disposal of this instance, and can specify the format of the underlying archive.
+        /// Initializes a <see cref="TarWriter"/> instance that can write tar entries to the specified stream, optionally leaves the stream open upon disposal of this instance, and can optionally specify the preferred default format when writing entries using the <see cref="WriteEntry(string, string?)"/> method.
         /// </summary>
         /// <param name="archiveStream">The stream to write to.</param>
-        /// <param name="archiveFormat">The format of the archive.</param>
-        /// <param name="leaveOpen"><see langword="false"/> to dispose the <paramref name="archiveStream"/> when this instance is disposed; <see langword="true"/> to leave the stream open.</param>
+        /// <param name="archiveFormat">The preferred default format when writing entries to the archive using the <see cref="WriteEntry(string, string?)"/> method. The default format is <see cref="TarEntryFormat.Pax"/>.</param>
+        /// <param name="leaveOpen"><see langword="false"/> to dispose the <paramref name="archiveStream"/> when this instance is disposed; <see langword="true"/> to leave the stream open. The default is <see langword="false"/>.</param>
         /// <remarks>The recommended format is <see cref="TarEntryFormat.Pax"/> for its flexibility.</remarks>
         /// <exception cref="ArgumentNullException"><paramref name="archiveStream"/> is <see langword="null"/>.</exception>
         /// <exception cref="IOException"><paramref name="archiveStream"/> is unwritable.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="archiveFormat"/> is either <see cref="TarEntryFormat.Unknown"/>, or not one of the other enum values.</exception>
-        public TarWriter(Stream archiveStream, TarEntryFormat archiveFormat, bool leaveOpen = false)
+        public TarWriter(Stream archiveStream, TarEntryFormat archiveFormat = TarEntryFormat.Pax, bool leaveOpen = false)
         {
             ArgumentNullException.ThrowIfNull(archiveStream);
 
@@ -62,7 +61,7 @@ namespace System.Formats.Tar
         }
 
         /// <summary>
-        /// The default format of the entries that are written to the archive.
+        /// The preferred default format of the entries when writing entries to the archive using the <see cref="WriteEntry(string, string?)"/> method.
         /// </summary>
         /// <remarks>This format is used when writing entries into the archive using the <see cref="WriteEntry(string, string?)"/> method, but entries of any <see cref="TarEntryFormat"/> can be written to the archive when using the method <see cref="WriteEntry(TarEntry)"/>.</remarks>
         public TarEntryFormat Format { get; private set; }
@@ -120,7 +119,7 @@ namespace System.Formats.Tar
         // }
 
         /// <summary>
-        /// Writes the specified entry into the archive stream.
+        /// Writes the specified entry into the archive stream, in the specific <see cref="TarEntry.Format"/> of the entry.
         /// </summary>
         /// <param name="entry">The tar entry to write.</param>
         /// <remarks><para>Before writing an entry to the archive, if you wrote data into the entry's <see cref="TarEntry.DataStream"/>, make sure to rewind it to the desired start position.</para>
@@ -156,14 +155,14 @@ namespace System.Formats.Tar
         {
             ThrowIfDisposed();
 
-            TarHelpers.VerifyEntryTypeIsSupported(entry.EntryType, Format, forWriting: true);
+            TarHelpers.VerifyEntryTypeIsSupported(entry.EntryType, entry.Format, forWriting: true);
 
             byte[] rented = ArrayPool<byte>.Shared.Rent(minimumLength: TarHelpers.RecordSize);
             Span<byte> buffer = rented.AsSpan(0, TarHelpers.RecordSize); // minimumLength means the array could've been larger
             buffer.Clear(); // Rented arrays aren't clean
             try
             {
-                switch (Format)
+                switch (entry.Format) // Respect the underlying format of the passed entry
                 {
                     case TarEntryFormat.V7:
                         entry._header.WriteAsV7(_archiveStream, buffer);
@@ -199,7 +198,7 @@ namespace System.Formats.Tar
         }
 
         // /// <summary>
-        // /// Asynchronously writes the specified entry into the archive stream.
+        // /// Asynchronously writes the specified entry into the archive stream, in the specific <see cref="TarEntry.Format"/> of the entry.
         // /// </summary>
         // /// <param name="entry">The tar entry to write.</param>
         // /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.</param>
