@@ -25,12 +25,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Convert the given value to a string using the given radix
         /// </summary>
-        internal override object FromString(string value, int radix)
-        {
-            Debug.Assert(radix == 10);
-            Debug.Assert(value is not null);
-            return Half.Parse(value!, CultureInfo.CurrentCulture);
-        }
+        internal override object FromString(string value, int radix) => throw new NotImplementedException(); // This method shouldn't be called anyway for the Half type as it doesn't support hex formatting.
 
         /// <summary>
         /// Convert the given value to a string using the given formatInfo

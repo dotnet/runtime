@@ -22,15 +22,10 @@ namespace System.ComponentModel
         /// </summary>
         internal override object FromString(string value, int radix)
         {
-            Debug.Assert(radix == 10 && radix == 16);
+            Debug.Assert(radix == 16);
             Debug.Assert(value is not null);
 
-            if (radix == 16)
-            {
-                return UInt128.Parse(value, NumberStyles.HexNumber);
-            }
-
-            return UInt128.Parse(value);
+            return UInt128.Parse(value, NumberStyles.HexNumber);
         }
 
         /// <summary>

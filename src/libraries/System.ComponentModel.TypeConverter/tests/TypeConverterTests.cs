@@ -148,7 +148,7 @@ namespace System.ComponentModel.Tests
             Assert.Equal(new TimeOnly(20, 30, 50), time);
 
             TypeConverter halfConverter = TypeDescriptor.GetConverter(typeof(Half));
-            Half? half = halfConverter.ConvertFromString("-1.2") as Half?;
+            Half? half = halfConverter.ConvertFromString(((Half)(-1.2)).ToString()) as Half?;
             Assert.Equal((Half)(-1.2), half);
 
             TypeConverter Int128Converter = TypeDescriptor.GetConverter(typeof(Int128));
