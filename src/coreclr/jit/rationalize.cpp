@@ -280,7 +280,7 @@ void Rationalizer::RewriteSubLshDiv(GenTree** use)
 {
     GenTree* const node = *use;
 
-    if (!node->OperIs(GT_SUB) || node->IsReverseOp())
+    if (!node->OperIs(GT_SUB))
         return;
 
     GenTree* op1 = node->gtGetOp1();
@@ -289,13 +289,13 @@ void Rationalizer::RewriteSubLshDiv(GenTree** use)
     if (!(node->TypeIs(TYP_INT, TYP_LONG) && !node->IsUnsigned() && op1->OperIs(GT_LCL_VAR)))
         return;
 
-    if (!op2->OperIs(GT_LSH) || op2->IsReverseOp())
+    if (!op2->OperIs(GT_LSH))
         return;
 
     GenTree* lsh   = op2;
     GenTree* div   = lsh->gtGetOp1();
     GenTree* shift = lsh->gtGetOp2();
-    if (div->OperIs(GT_DIV) && !div->IsReverseOp() && shift->IsIntegralConst())
+    if (div->OperIs(GT_DIV) && shift->IsIntegralConst())
     {
         GenTree* a   = div->gtGetOp1();
         GenTree* cns = div->gtGetOp2();
