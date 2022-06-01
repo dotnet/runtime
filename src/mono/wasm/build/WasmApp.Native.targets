@@ -428,7 +428,7 @@
     </ItemGroup>
 
     <Message Text="Stripping symbols from dotnet.wasm ..." Importance="High" Condition="'$(WasmNativeStrip)' == 'true'" />
-    <Exec Command='wasm-opt$(_ExeExt) --enable-simd --enable-exception-handling --strip-dwarf "$(_WasmIntermediateOutputPath)dotnet.wasm" -o "$(_WasmIntermediateOutputPath)dotnet.wasm"'
+    <Exec Command='wasm-opt$(_ExeExt) --enable-exception-handling @(WasmOptConfigurationFlags->'%(Identity)', ' ') --strip-dwarf "$(_WasmIntermediateOutputPath)dotnet.wasm" -o "$(_WasmIntermediateOutputPath)dotnet.wasm"'
           Condition="'$(WasmNativeStrip)' == 'true'"
           IgnoreStandardErrorWarningFormat="true"
           EnvironmentVariables="@(EmscriptenEnvVars)" />
@@ -452,10 +452,15 @@
 
     <ReadEmccProps JsonFilePath="$(_WasmRuntimePackSrcDir)emcc-props.json">
       <Output TaskParameter="EmccProperties" ItemName="_EmccPropItems" />
+      <Output TaskParameter="WasmOptConfigurationFlags" = "_WasmOptConfigurationFlagsItems" />
     </ReadEmccProps>
 
     <CreateProperty Value="%(_EmccPropItems.Value)">
       <Output TaskParameter="Value" PropertyName="%(_EmccPropItems.Identity)" />
+    </CreateProperty>
+
+    <CreateProperty Value="%(_WasmOptConfigurationFlagsItems.Value)">
+      <Output TaskParameter="Value" PropertyName="%(_WasmOptConfigurationFlagsItems.Identity)" />
     </CreateProperty>
 
     <Error Condition="'$(RuntimeEmccVersionRaw)' == ''"
