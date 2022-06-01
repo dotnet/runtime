@@ -1073,11 +1073,11 @@ void emitter::emitBegFN(bool hasFramePtr
     emitJumpList = emitJumpLast = nullptr;
     emitCurIGjmpList            = nullptr;
 
-    emitFwdJumps                         = false;
-    emitNoGCRequestCount                 = 0;
-    emitNoGCIG                           = false;
-    emitForceNewIG                       = false;
-    emitContainsCandidateJumpsToNextInst = false;
+    emitFwdJumps                       = false;
+    emitNoGCRequestCount               = 0;
+    emitNoGCIG                         = false;
+    emitForceNewIG                     = false;
+    emitContainsRemovableJmpCandidates = false;
 
 #if FEATURE_LOOP_ALIGN
     /* We don't have any align instructions */
@@ -3874,12 +3874,11 @@ void emitter::emitDispJumpList()
     unsigned int jmpCount = 0;
     for (instrDescJmp* jmp = emitJumpList; jmp != nullptr; jmp = jmp->idjNext)
     {
-        printf("IG%02u IN%04x %3s[%u] -> IG%02u L_M%03u_" FMT_BB "%s\n", jmp->idjIG->igNum,
-               jmp->idDebugOnlyInfo()->idNum, codeGen->genInsDisplayName(jmp), jmp->idCodeSize(),
-               ((insGroup*)emitCodeGetCookie(jmp->idAddr()->iiaBBlabel))->igNum, emitComp->compMethodID,
-               jmp->idAddr()->iiaBBlabel->bbNum,
+        printf("IG%02u IN%04x %3s[%u] -> IG%02u %s\n", jmp->idjIG->igNum, jmp->idDebugOnlyInfo()->idNum,
+               codeGen->genInsDisplayName(jmp), jmp->idCodeSize(),
+               ((insGroup*)emitCodeGetCookie(jmp->idAddr()->iiaBBlabel))->igNum,
 #if defined(TARGET_XARCH)
-               jmp->idjIsJmpAlways ? " ; BBJ_ALWAYS" : ""
+               jmp->idjIsRemovableJmpCandidate ? " ; removal candidate" : ""
 #else
                ""
 #endif
@@ -4129,9 +4128,9 @@ void emitter::emitDispCommentForHandle(size_t handle, GenTreeFlags flag)
 
 //****************************************************************************
 // emitRemoveJumpToNextInst:  Checks all jumps in the jump list to see if they are
-//   unconditional jumps generated at the end of BBJ_ALWAYS basic blocks and whether
-//   they are now a jump to the next instruction. This can happen when the following
-//   basic block emitted no instructions.
+//   unconditional jumps generated marked with idjIsRemovableJmpCandidate which are
+//   generated at of BBJ_ALWAYS basic blocks. If any candidate is not a jump to the
+//   next instruction it will be removed from the jump list.
 //
 // Assumptions:
 //    the jump list must be ordered by increasing igNum+insNo
@@ -4139,7 +4138,7 @@ void emitter::emitDispCommentForHandle(size_t handle, GenTreeFlags flag)
 void emitter::emitRemoveJumpToNextInst()
 {
 #ifdef TARGET_XARCH
-    if (!emitContainsCandidateJumpsToNextInst)
+    if (!emitContainsRemovableJmpCandidates)
     {
         return;
     }
@@ -4171,8 +4170,7 @@ void emitter::emitRemoveJumpToNextInst()
         insGroup*     jmpGroup = jmp->idjIG;
         instrDescJmp* nextJmp  = jmp->idjNext;
 
-        // if the jump is unconditional then it is a candidate
-        if (jmp->idInsFmt() == IF_LABEL && emitIsUncondJump(jmp) && jmp->idjIsJmpAlways)
+        if (jmp->idInsFmt() == IF_LABEL && emitIsUncondJump(jmp) && jmp->idjIsRemovableJmpCandidate)
         {
 #if DEBUG
             assert((jmpGroup->igFlags & IGF_HAS_ALIGN) == 0);
@@ -4317,7 +4315,7 @@ void emitter::emitRemoveJumpToNextInst()
     }
     else
     {
-        JITDUMP("emitRemoveJumpToNextInst no unconditional jumps removed\n");
+        JITDUMP("emitRemoveJumpToNextInst removed no unconditional jumps\n");
     }
 #endif // TARGET_XARCH
 }

@@ -1541,8 +1541,9 @@ protected:
         unsigned idjOffs :
 #if defined(TARGET_XARCH)
             29;
-
-        unsigned idjIsJmpAlways : 1; // indicates that the jump was added at the end of a BBJ_ALWAYS basic block
+        // indicates that the jump was added at the end of a BBJ_ALWAYS basic block and is
+        // a candidate for being removed if it jumps to the next instruction
+        unsigned idjIsRemovableJmpCandidate : 1;
 #else
             30;
 #endif
@@ -2006,7 +2007,7 @@ private:
     instrDescJmp* emitJumpList;       // list of local jumps in method
     instrDescJmp* emitJumpLast;       // last of local jumps in method
     void          emitJumpDistBind(); // Bind all the local jumps in method
-    bool          emitContainsCandidateJumpsToNextInst;
+    bool          emitContainsRemovableJmpCandidates;
     void          emitRemoveJumpToNextInst(); // try to remove unconditional jumps to the next instruction
 
 #if FEATURE_LOOP_ALIGN

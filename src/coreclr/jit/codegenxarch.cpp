@@ -1371,7 +1371,7 @@ void CodeGen::inst_SETCC(GenCondition condition, var_types type, regNumber dstRe
 //------------------------------------------------------------------------
 // inst_JMP: Generate a jump instruction.
 //
-void CodeGen::inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock, bool isJmpAlways)
+void CodeGen::inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock, bool isRemovableJmpCandidate)
 {
 #if !FEATURE_FIXED_OUT_ARGS
     // On the x86 we are pushing (and changing the stack level), but on x64 and other archs we have
@@ -1389,7 +1389,7 @@ void CodeGen::inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock, bool isJmpAlways)
 #endif
 #endif // !FEATURE_FIXED_OUT_ARGS
 
-    GetEmitter()->emitIns_J(emitter::emitJumpKindToIns(jmp), tgtBlock, 0, isJmpAlways);
+    GetEmitter()->emitIns_J(emitter::emitJumpKindToIns(jmp), tgtBlock, 0, isRemovableJmpCandidate);
 }
 
 //------------------------------------------------------------------------

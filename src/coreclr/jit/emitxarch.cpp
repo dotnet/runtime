@@ -2071,7 +2071,7 @@ inline bool emitter::emitInstHasNoCode(instrDesc* id)
         return true;
     }
 
-    if ((id->idCodeSize() == 0) && emitIsUncondJump(id) && (((instrDescJmp*)id)->idjIsJmpAlways))
+    if ((id->idCodeSize() == 0) && emitIsUncondJump(id) && (((instrDescJmp*)id)->idjIsRemovableJmpCandidate))
     {
         return true;
     }
@@ -7469,7 +7469,10 @@ void emitter::emitSetShortJump(instrDescJmp* id)
  *       to jump: positive is forward, negative is backward.
  */
 
-void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount /* = 0 */, bool isJmpAlways /* = false */)
+void emitter::emitIns_J(instruction ins,
+                        BasicBlock* dst,
+                        int         instrCount /* = 0 */,
+                        bool        isRemovableJmpCandidate /* = false */)
 {
     UNATIVE_OFFSET sz;
     instrDescJmp*  id = emitNewInstrJmp();
@@ -7498,9 +7501,9 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount /* = 0 
     }
 #endif // DEBUG
 
-    emitContainsCandidateJumpsToNextInst |= isJmpAlways;
-    id->idjIsJmpAlways = isJmpAlways ? 1 : 0;
-    id->idjShort       = 0;
+    emitContainsRemovableJmpCandidates |= isRemovableJmpCandidate;
+    id->idjIsRemovableJmpCandidate = isRemovableJmpCandidate ? 1 : 0;
+    id->idjShort                   = 0;
     if (dst != nullptr)
     {
         /* Assume the jump will be long */
@@ -13687,7 +13690,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             }
             else
             {
-                assert(((instrDescJmp*)id)->idjIsJmpAlways);
+                assert(((instrDescJmp*)id)->idjIsRemovableJmpCandidate);
             }
             sz = (id->idInsFmt() == IF_SWR_LABEL ? sizeof(instrDescLbl) : sizeof(instrDescJmp));
             break;
