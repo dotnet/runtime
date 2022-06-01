@@ -782,7 +782,8 @@ mono_wasm_assembly_get_entry_point (MonoAssembly *assembly, int auto_insert_brea
 	{
 		MonoAssemblyName *aname = mono_assembly_get_name (assembly);
 		const char *name = mono_assembly_name_get_name (aname);
-		mono_wasm_set_entrypoint_breakpoint(name, mono_method_get_token (method));
+		if (name != NULL)
+			mono_wasm_set_entrypoint_breakpoint(name, mono_method_get_token (method));
 	}
 	return method;
 }

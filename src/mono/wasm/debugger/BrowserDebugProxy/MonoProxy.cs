@@ -216,19 +216,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                             case "mono_wasm_set_entrypoint_breakpoint":
                             case "_mono_wasm_set_entrypoint_breakpoint":
                                 {
-                                    var argsNew = JObject.FromObject(new
-                                    {
-                                        callFrameId = args?["callFrames"]?[0]?["callFrameId"]?.Value<string>(),
-                                        expression = "assembly_name_str",
-                                    });
-                                    Result assemblyNameStr = await SendCommand(sessionId, "Debugger.evaluateOnCallFrame", argsNew, token);
-                                    var argsNew2 = JObject.FromObject(new
-                                    {
-                                        callFrameId = args?["callFrames"]?[0]?["callFrameId"]?.Value<string>(),
-                                        expression = "token",
-                                    });
-                                    Result tokenResult = await SendCommand(sessionId, "Debugger.evaluateOnCallFrame", argsNew2, token);
-                                    return await OnSetEntrypointBreakpoint(sessionId, assemblyNameStr.Value["result"]["value"].Value<string>(), tokenResult.Value["result"]["value"].Value<int>() & 0xffffff, token);
+                                    await OnSetEntrypointBreakpoint(sessionId, args, token);
+                                    return true;
                                 }
                             case "mono_wasm_runtime_ready":
                             case "_mono_wasm_runtime_ready":
@@ -1323,30 +1312,53 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        private async Task<bool> OnSetEntrypointBreakpoint(SessionId sessionId, string assemblyName, int methodToken, CancellationToken token)
+        private async Task OnSetEntrypointBreakpoint(SessionId sessionId, JObject args, CancellationToken token)
         {
-            ExecutionContext context = GetContext(sessionId);
-            var store = await LoadStore(sessionId, token);
-            AssemblyInfo assembly = store.GetAssemblyByName(assemblyName);
-            if (assembly == null)
-                return true;
-            var method = assembly.GetMethodByToken(methodToken);
-            if (method.StartLocation == null) //It's an async method and we need to get the MoveNext method to add the breakpoint
-                method = assembly.Methods.FirstOrDefault(m => m.Value.KickOffMethod == methodToken).Value;
-            var sourceFile = assembly.Sources.Single(sf => sf.SourceId == method.SourceId);
-            string bpId = $"auto:{method.StartLocation.Line}:{method.StartLocation.Column}:{sourceFile.DotNetUrl}";
-            BreakpointRequest request = new(bpId, JObject.FromObject(new
+            try
             {
-                lineNumber = method.StartLocation.Line,
-                columnNumber = method.StartLocation.Column,
-                url = sourceFile.Url
-            }));
-            context.BreakpointRequests[bpId] = request;
-            if (request.TryResolve(sourceFile))
-                await SetBreakpoint(sessionId, context.store, request, true, true, token);
-            logger.LogInformation($"Adding bp req {request}");
-            await SendResume(sessionId, token);
-            return true;
+                ExecutionContext context = GetContext(sessionId);
+
+                var argsNew = JObject.FromObject(new
+                {
+                    callFrameId = args?["callFrames"]?[0]?["callFrameId"]?.Value<string>(),
+                    expression = "assembly_name_str + '|' + entrypoint_method_token",
+                });
+                Result assemblyAndMethodToken = await SendCommand(sessionId, "Debugger.evaluateOnCallFrame", argsNew, token);
+
+                var assemblyAndMethodTokenArr = assemblyAndMethodToken.Value["result"]["value"].Value<string>().Split('|');
+                var assemblyName = assemblyAndMethodTokenArr[0];
+                var methodToken = Convert.ToInt32(assemblyAndMethodTokenArr[1]) & 0xffffff;
+
+                var store = await LoadStore(sessionId, token);
+                AssemblyInfo assembly = store.GetAssemblyByName(assemblyName);
+                if (assembly == null)
+                    return;
+                var method = assembly.GetMethodByToken(methodToken);
+                if (method.StartLocation == null) //It's an async method and we need to get the MoveNext method to add the breakpoint
+                    method = assembly.Methods.FirstOrDefault(m => m.Value.KickOffMethod == methodToken).Value;
+                if (method == null)
+                    return;
+                var sourceFile = assembly.Sources.Single(sf => sf.SourceId == method.SourceId);
+                string bpId = $"auto:{method.StartLocation.Line}:{method.StartLocation.Column}:{sourceFile.DotNetUrl}";
+                BreakpointRequest request = new(bpId, JObject.FromObject(new
+                {
+                    lineNumber = method.StartLocation.Line,
+                    columnNumber = method.StartLocation.Column,
+                    url = sourceFile.Url
+                }));
+                context.BreakpointRequests[bpId] = request;
+                if (request.TryResolve(sourceFile))
+                    await SetBreakpoint(sessionId, context.store, request, true, true, token);
+                logger.LogInformation($"Adding bp req {request}");
+            }
+            catch (Exception)
+            {
+                logger.LogDebug($"Unable to set entrypoint breakpoint.");
+            }
+            finally
+            {
+                await SendResume(sessionId, token);
+            }
         }
 
         private async Task<bool> OnEvaluateOnCallFrame(MessageId msg_id, int scopeId, string expression, CancellationToken token)
