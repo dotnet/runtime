@@ -2563,7 +2563,7 @@ inline void Compiler::impEvalSideEffects()
  *  i is the stack entry which will be checked and spilled.
  */
 
-inline void Compiler::impSpillSideEffect(bool spillGlobEffects, unsigned i DEBUGARG(const char* reason))
+void Compiler::impSpillSideEffect(bool spillGlobEffects, unsigned i DEBUGARG(const char* reason))
 {
     assert(i <= verCurrentState.esStackDepth);
 
