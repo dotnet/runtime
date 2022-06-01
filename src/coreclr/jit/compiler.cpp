@@ -2839,6 +2839,8 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.compLongAddress = false;
     opts.optRepeat       = false;
 
+    opts.compJitEarlyExpandMDArrays = false;
+
 #ifdef LATE_DISASM
     opts.doLateDisasm = false;
 #endif // LATE_DISASM
@@ -2991,6 +2993,12 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         if (JitConfig.JitOptRepeat().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
         {
             opts.optRepeat = true;
+        }
+
+        if (JitConfig.JitEarlyExpandMDArrays().contains(info.compMethodName, info.compClassName,
+                                                        &info.compMethodInfo->args))
+        {
+            opts.compJitEarlyExpandMDArrays = true;
         }
     }
 

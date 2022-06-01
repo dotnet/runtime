@@ -17544,6 +17544,14 @@ GenTree* Compiler::fgMorphReduceAddOps(GenTree* tree)
 // static
 Compiler::fgWalkResult Compiler::fgMorphArrayOpsTreeCB(GenTree** pTree, Compiler::fgWalkData* pWalkData)
 {
+    GenTree* tree = *pTree;
+
+    // If it's a GT_ARR_ELEM, then morph it.
+    if (!tree->OperIs(GT_ARR_ELEM))
+    {
+        return Compiler::WALK_CONTINUE;
+    }
+
     return Compiler::WALK_CONTINUE;
 }
 
@@ -17564,6 +17572,15 @@ PhaseStatus Compiler::fgMorphArrayOps()
     if (verbose)
     {
         printf("\n*************** In fgMorphArrayOps()\n");
+    }
+
+    if (!opts.compJitEarlyExpandMDArrays)
+    {
+        if (verbose)
+        {
+            printf("Early expansion of MD arrays disabled\n");
+        }
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 #endif
 
