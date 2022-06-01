@@ -51,7 +51,6 @@ namespace System.Diagnostics.Tracing
             public const EventOpcode IODequeue = (EventOpcode)14;
             public const EventOpcode IOPack = (EventOpcode)15;
             public const EventOpcode Wait = (EventOpcode)90;
-            public const EventOpcode Update = (EventOpcode)91;
             public const EventOpcode Sample = (EventOpcode)100;
             public const EventOpcode Adjustment = (EventOpcode)101;
             public const EventOpcode Stats = (EventOpcode)102;

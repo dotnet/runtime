@@ -9039,7 +9039,6 @@
                 <string id="RuntimePublisher.ILStubGeneratedOpcodeMessage" value="StubGenerated" />
                 <string id="RuntimePublisher.ILStubCacheHitOpcodeMessage" value="StubCacheHit" />
                 <string id="RuntimePublisher.WaitOpcodeMessage" value="Wait" />
-                <string id="RuntimePublisher.UpdateOpcodeMessage" value="Update" />
                 <string id="RuntimePublisher.SampleOpcodeMessage" value="Sample" />
                 <string id="RuntimePublisher.AdjustmentOpcodeMessage" value="Adjustment" />
                 <string id="RuntimePublisher.StatsOpcodeMessage" value="Stats" />
