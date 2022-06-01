@@ -3270,6 +3270,17 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                         makeOutArgCopy = true;
                     }
 
+                    // ARM32 has an edge case where we need to pass 3 bytes in
+                    // the last register, which would require two loads and a
+                    // shift to avoid loading too much if the source is a
+                    // potentially arbitrary address. Handle the edge case here
+                    // by copying into the local stack frame first so we can
+                    // use a register wide load.
+                    if (!arg.AbiInfo.IsSplit() && (((arg.AbiInfo.NumRegs * REGSIZE_BYTES) - passingSize) == 1))
+                    {
+                        makeOutArgCopy = true;
+                    }
+
                     if (structSize < TARGET_POINTER_SIZE)
                     {
                         makeOutArgCopy = true;
@@ -3854,7 +3865,8 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
                         break;
 #endif // (TARGET_ARM64) || (UNIX_AMD64_ABI) || (TARGET_LOONGARCH64)
                     default:
-                        noway_assert(!"NYI: odd sized struct in fgMorphMultiregStructArg");
+                        noway_assert(!"Cannot load odd sized last element from arbitrary source; expected source to be "
+                                      "local in this case");
                         break;
                 }
             }
