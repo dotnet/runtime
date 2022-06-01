@@ -64,9 +64,6 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MkFifo.cs" Link="Common\Interop\Unix\System.Native\Interop.MkFifo.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Permissions.cs" Link="Common\Interop\Unix\Interop.Permissions.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.cs" Link="Common\Interop\Unix\Interop.Stat.cs" />
-  </ItemGroup>
-  <!-- Unix and Browser specific files -->
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix' or '$(TargetPlatformIdentifier)' == 'Browser'">
     <Compile Include="$(CommonPath)System\IO\Archiving.Utils.Unix.cs" Link="Common\System\IO\Archiving.Utils.Unix.cs" />
   </ItemGroup>
   <ItemGroup>
