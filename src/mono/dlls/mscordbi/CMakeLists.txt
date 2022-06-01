@@ -28,6 +28,12 @@ endif()
 
 add_definitions(-DDBI_COMPONENT_MONO)
 
+if (CLR_CMAKE_HOST_UNIX)
+  if (CMAKE_C_COMPILER_ID MATCHES "Clang")
+    append("-Wno-shorten-64-to-32 -Wno-implicit-int-conversion" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
+  endif()
+endif()
+
 include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}/../../..
   ${PROJECT_SOURCE_DIR}/../../
