@@ -105,9 +105,13 @@ namespace System.Reflection.Emit.Tests
                 Assert.Equal(type.AsType().GetNestedTypes(AllFlags), createdType.GetNestedTypes(AllFlags));
                 Assert.Equal(type.AsType().GetNestedType(name, AllFlags), createdType.GetNestedType(name, AllFlags));
 
-                Assert.Equal(createdType, module.GetType(name, true, true));
-                Assert.Equal(createdType, module.GetType(name.ToLowerInvariant(), true, true));
-                Assert.Equal(createdType, module.GetType(name.ToUpperInvariant(), true, true));
+                if (!PlatformDetection.IsMonoRuntime)
+                {
+                    // [ActiveIssue("https://github.com/dotnet/runtime/issues/18231", TestRuntimes.Mono)]
+                    Assert.Equal(createdType, module.GetType(name, true, true));
+                    Assert.Equal(createdType, module.GetType(name.ToLowerInvariant(), true, true));
+                    Assert.Equal(createdType, module.GetType(name.ToUpperInvariant(), true, true));
+                }
             }
         }
 
