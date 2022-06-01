@@ -32,7 +32,15 @@ namespace ILCompiler.Dataflow
 
         internal static string GetParameterNameForErrorMessage(ParameterOrigin origin)
         {
-            return $"#{origin.Index}";
+            return GetParameterNameForErrorMessage(origin.Method, origin.Index);
+        }
+
+        internal static string GetParameterNameForErrorMessage(MethodDesc method, int parameterIndex)
+        {
+            if (method is EcmaMethod ecmaMethod)
+                return ecmaMethod.GetParameterDisplayName(parameterIndex);
+
+            return $"#{parameterIndex}";
         }
 
         internal static string GetMethodSignatureDisplayName(MethodDesc method)
