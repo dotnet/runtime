@@ -530,7 +530,7 @@
             "area-CodeGen-coreclr"
           ],
           "mentionees": [
-            "JulieLeeMSFT"
+            "dotnet/jit-contrib"
           ]
         },
         {
