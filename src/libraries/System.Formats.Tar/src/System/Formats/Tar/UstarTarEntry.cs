@@ -32,6 +32,21 @@ namespace System.Formats.Tar
         {
         }
 
+        /// <summary>
+        /// Initializes a new <see cref="UstarTarEntry"/> instance by converting the specified <paramref name="other"/> entry into the Ustar format.
+        /// </summary>
+        public UstarTarEntry(TarEntry other)
+            : base(other._header, other._readerOfOrigin!)
+        {
+            if (_header._typeFlag == TarEntryType.V7RegularFile)
+            {
+                _header._typeFlag = TarEntryType.RegularFile;
+            }
+            TarHelpers.VerifyEntryTypeIsSupported(_header._typeFlag, TarEntryFormat.Ustar, forWriting: false);
+
+            _header._format = TarEntryFormat.Ustar;
+        }
+
         // Determines if the current instance's entry type supports setting a data stream.
         internal override bool IsDataStreamSetterSupported() => EntryType == TarEntryType.RegularFile;
     }

@@ -34,6 +34,21 @@ namespace System.Formats.Tar
         }
 
         /// <summary>
+        /// Initializes a new <see cref="GnuTarEntry"/> instance by converting the specified <paramref name="other"/> entry into the GNU format.
+        /// </summary>
+        public GnuTarEntry(TarEntry other)
+            : base(other._header, other._readerOfOrigin!)
+        {
+            if (_header._typeFlag == TarEntryType.V7RegularFile)
+            {
+                _header._typeFlag = TarEntryType.RegularFile;
+            }
+            TarHelpers.VerifyEntryTypeIsSupported(_header._typeFlag, TarEntryFormat.Gnu, forWriting: false);
+
+            _header._format = TarEntryFormat.Gnu;
+        }
+
+        /// <summary>
         /// A timestamp that represents the last time the file represented by this entry was accessed.
         /// </summary>
         /// <remarks>In Unix platforms, this timestamp is commonly known as <c>atime</c>.</remarks>
