@@ -2802,11 +2802,6 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
     CopyBlockUnrollHelper helper(srcOffset, dstOffset, size);
     regNumber             srcReg = srcAddrBaseReg;
 
-#ifdef DEBUG
-    bool isSrcRegAddrAlignmentKnown = false;
-    bool isDstRegAddrAlignmentKnown = false;
-#endif
-
     if (srcLclNum != BAD_VAR_NUM)
     {
         bool      fpBased;
@@ -2814,10 +2809,6 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
 
         srcReg = fpBased ? REG_FPBASE : REG_SPBASE;
         helper.SetSrcOffset(baseAddr + srcOffset);
-
-#ifdef DEBUG
-        isSrcRegAddrAlignmentKnown = true;
-#endif
     }
 
     regNumber dstReg = dstAddrBaseReg;
@@ -2829,10 +2820,6 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
 
         dstReg = fpBased ? REG_FPBASE : REG_SPBASE;
         helper.SetDstOffset(baseAddr + dstOffset);
-
-#ifdef DEBUG
-        isDstRegAddrAlignmentKnown = true;
-#endif
     }
 
     bool canEncodeAllLoads  = true;
@@ -2946,8 +2933,8 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
     }
 #endif
 
-#ifndef JIT32_GCENCODER
-    if (!node->gtBlkOpGcUnsafe && ((srcOffsetAdjustment != 0) || (dstOffsetAdjustment != 0)))
+    if (!node->gtBlkOpGcUnsafe &&
+        ((srcOffsetAdjustment != 0) || (dstOffsetAdjustment != 0) || (node->GetLayout()->HasGCPtr())))
     {
         // If node is not already marked as non-interruptible, and if are about to generate code
         // that produce GC references in temporary registers not reported, then mark the block
@@ -2956,7 +2943,6 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
         node->gtBlkOpGcUnsafe = true;
         GetEmitter()->emitDisableGC();
     }
-#endif
 
     if ((srcOffsetAdjustment != 0) && (dstOffsetAdjustment != 0))
     {
