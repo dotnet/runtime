@@ -6296,27 +6296,10 @@ void Compiler::optHoistLoopNest(unsigned lnum, LoopHoistContext* hoistCtxt)
             childLoops.Push(child);
         }
 
-        // Push the fresh cache to collect the VNs for all the child loops
-        hoistCtxt->PushVnSetForSiblingLoop(this);
         while (!childLoops.Empty())
         {
             unsigned child = childLoops.Pop();
             optHoistLoopNest(child, hoistCtxt);
-            VNSet* hoistedInCurLoop = hoistCtxt->ExtractHoistedInCurLoop();
-
-            // Add the ones hoisted in "lnum" to "hoistedInSibling" for any sibling loops.
-            // TODO-Cleanup: we should have a set abstraction for loops.
-            if (hoistedInCurLoop != nullptr)
-            {
-                for (VNSet::KeyIterator keys = hoistedInCurLoop->Begin(); !keys.Equal(hoistedInCurLoop->End()); ++keys)
-                {
-#ifdef DEBUG
-                    bool b;
-                    assert(!hoistCtxt->GetVnSetHoistedForSiblingLoop()->Lookup(keys.Get(), &b));
-#endif
-                    hoistCtxt->GetVnSetHoistedForSiblingLoop()->Set(keys.Get(), true);
-                }
-            }
 
             if (optLoopTable[child].lpFlags & LPFLG_HAS_PREHEAD)
             {
@@ -6344,7 +6327,6 @@ void Compiler::optHoistLoopNest(unsigned lnum, LoopHoistContext* hoistCtxt)
                 }
             }
         }
-        hoistCtxt->PopVnSetForSiblingLoop();
     }
 
     optHoistThisLoop(lnum, hoistCtxt, firstPreHeader);
@@ -7386,16 +7368,6 @@ void Compiler::optHoistCandidate(GenTree* tree, BasicBlock* treeBb, unsigned lnu
     if (!optIsProfitableToHoistTree(tree, lnum))
     {
         JITDUMP("   ... not profitable to hoist\n");
-        return;
-    }
-
-    VNSet* vnSetHoistedForSibling = hoistCtxt->GetVnSetHoistedForSiblingLoop();
-    if ((vnSetHoistedForSibling != nullptr) && (vnSetHoistedForSibling->Lookup(tree->gtVNPair.GetLiberal())))
-    {
-        // already hoisted in a sibling loop, so don't hoist this expression.
-
-        JITDUMP("      [%06u] ... already hoisted " FMT_VN " VN in sibling loop\n", dspTreeID(tree),
-                tree->gtVNPair.GetLiberal());
         return;
     }
 
