@@ -3449,7 +3449,7 @@ loop_start:
 				ins->sreg2 = temp->dreg;
 				if (opcode2 == -1)
 					g_error ("mono_op_imm_to_op failed for %s\n", mono_inst_name (ins->opcode));
-				ins->opcode = opcode2;
+				ins->opcode = GINT32_TO_UINT16 (opcode2);
 			}
 			if (ins->opcode == OP_SBB || ins->opcode == OP_ISBB || ins->opcode == OP_SUBCC)
 				goto loop_start;
@@ -3507,7 +3507,7 @@ loop_start:
 			ins->sreg2 = temp->dreg;
 			if (opcode2 == -1)
 				g_error ("mono_op_imm_to_op failed for %s\n", mono_inst_name (ins->opcode));
-			ins->opcode = opcode2;
+			ins->opcode = GINT32_TO_UINT16 (opcode2);
 			break;
 		}
 		case OP_LOCALLOC_IMM:
@@ -3532,7 +3532,7 @@ loop_start:
 			temp->inst_c0 = ins->inst_offset;
 			temp->dreg = mono_alloc_ireg (cfg);
 			ins->sreg2 = temp->dreg;
-			ins->opcode = map_to_reg_reg_op (ins->opcode);
+			ins->opcode = GINT32_TO_UINT16 (map_to_reg_reg_op (ins->opcode));
 			break;
 		case OP_LOADI2_MEMBASE:
 		case OP_LOADU2_MEMBASE:
@@ -3543,7 +3543,7 @@ loop_start:
 			temp->inst_c0 = ins->inst_offset;
 			temp->dreg = mono_alloc_ireg (cfg);
 			ins->sreg2 = temp->dreg;
-			ins->opcode = map_to_reg_reg_op (ins->opcode);
+			ins->opcode = GINT32_TO_UINT16 (map_to_reg_reg_op (ins->opcode));
 			break;
 		case OP_LOADR4_MEMBASE:
 		case OP_LOADR8_MEMBASE:
@@ -3582,7 +3582,7 @@ loop_start:
 			temp->inst_c0 = ins->inst_offset;
 			temp->dreg = mono_alloc_ireg (cfg);
 			ins->sreg2 = temp->dreg;
-			ins->opcode = map_to_reg_reg_op (ins->opcode);
+			ins->opcode = GINT32_TO_UINT16 (map_to_reg_reg_op (ins->opcode));
 			break;
 		case OP_STOREI2_MEMBASE_REG:
 			if (arm_is_imm8 (ins->inst_offset))
@@ -3591,7 +3591,7 @@ loop_start:
 			temp->inst_c0 = ins->inst_offset;
 			temp->dreg = mono_alloc_ireg (cfg);
 			ins->sreg2 = temp->dreg;
-			ins->opcode = map_to_reg_reg_op (ins->opcode);
+			ins->opcode = GINT32_TO_UINT16 (map_to_reg_reg_op (ins->opcode));
 			break;
 		case OP_STORER4_MEMBASE_REG:
 		case OP_STORER8_MEMBASE_REG:
@@ -3629,7 +3629,7 @@ loop_start:
 			temp->inst_c0 = ins->inst_imm;
 			temp->dreg = mono_alloc_ireg (cfg);
 			ins->sreg1 = temp->dreg;
-			ins->opcode = map_to_reg_reg_op (ins->opcode);
+			ins->opcode = GINT32_TO_UINT16 (map_to_reg_reg_op (ins->opcode));
 			last_ins = temp;
 			goto loop_start; /* make it handle the possibly big ins->inst_offset */
 		case OP_FCOMPARE:
