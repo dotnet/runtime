@@ -944,22 +944,14 @@ get_dllimportsearchpath_flags (MonoCustomAttrInfo *cinfo)
 	if (!attr)
 		return -3;
 
-	gpointer *typed_args, *named_args;
-	CattrNamedArg *arginfo;
-	int num_named_args;
-
-	mono_reflection_create_custom_attr_data_args_noalloc (m_class_get_image (attr->ctor->klass), attr->ctor, attr->data, attr->data_size,
-															&typed_args, &named_args, &num_named_args, &arginfo, error);
+	MonoDecodeCustomAttr *decoded_args = mono_reflection_create_custom_attr_data_args_noalloc (m_class_get_image (attr->ctor->klass), attr->ctor, attr->data, attr->data_size, error);
 	if (!is_ok (error)) {
 		mono_error_cleanup (error);
 		return -4;
 	}
 
-	flags = *(gint32*)typed_args [0];
-	g_free (typed_args [0]);
-	g_free (typed_args);
-	g_free (named_args);
-	g_free (arginfo);
+	flags = *(gint32*)decoded_args->typed_args[0]->value.primitive;
+	mono_reflection_free_custom_attr_data_args_noalloc (decoded_args);
 
 	return flags;
 }
