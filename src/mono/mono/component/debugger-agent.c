@@ -3561,7 +3561,7 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 	buffer_add_int (&buf, nevents);
 
 	for (l = events; l; l = l->next) {
-		buffer_add_byte (&buf, event); // event kind
+		buffer_add_byte (&buf, GINT_TO_UINT8 (event)); // event kind
 		buffer_add_int (&buf, GPOINTER_TO_INT (l->data)); // request id
 
 		ecount ++;

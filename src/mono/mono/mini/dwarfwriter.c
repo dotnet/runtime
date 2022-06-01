@@ -1290,7 +1290,7 @@ emit_loclist (MonoDwarfWriter *w, MonoInst *ins,
 
 	emit_pointer_value (w, loclist_begin_addr);
 	emit_pointer_value (w, loclist_end_addr);
-	emit_byte (w, expr_len % 256);
+	emit_byte (w, GUINT32_TO_UINT8 (expr_len % 256));
 	emit_byte (w, GUINT32_TO_UINT8 (expr_len / 256));
 	emit_bytes (w, expr, expr_len);
 

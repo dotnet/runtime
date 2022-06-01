@@ -2511,7 +2511,7 @@ ep_rt_mono_system_time_get (EventPipeSystemTime *system_time)
 		int old_seconds;
 		int new_seconds;
 
-		milliseconds = time_val.tv_usec / MSECS_TO_MIS;
+		milliseconds = (uint16_t)(time_val.tv_usec / MSECS_TO_MIS);
 
 		old_seconds = ut_ptr->tm_sec;
 		new_seconds = time_val.tv_sec % 60;
@@ -2523,13 +2523,13 @@ ep_rt_mono_system_time_get (EventPipeSystemTime *system_time)
 
 	ep_system_time_set (
 		system_time,
-		1900 + ut_ptr->tm_year,
-		ut_ptr->tm_mon + 1,
-		ut_ptr->tm_wday,
-		ut_ptr->tm_mday,
-		ut_ptr->tm_hour,
-		ut_ptr->tm_min,
-		ut_ptr->tm_sec,
+		(uint16_t)(1900 + ut_ptr->tm_year),
+		(uint16_t)ut_ptr->tm_mon + 1,
+		(uint16_t)ut_ptr->tm_wday,
+		(uint16_t)ut_ptr->tm_mday,
+		(uint16_t)ut_ptr->tm_hour,
+		(uint16_t)ut_ptr->tm_min,
+		(uint16_t)ut_ptr->tm_sec,
 		milliseconds);
 }
 
@@ -2609,7 +2609,7 @@ void
 ep_rt_mono_provider_config_init (EventPipeProviderConfiguration *provider_config)
 {
 	if (!ep_rt_utf8_string_compare (ep_config_get_rundown_provider_name_utf8 (), ep_provider_config_get_provider_name (provider_config))) {
-		MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_EVENTPIPE_Context.Level = ep_provider_config_get_logging_level (provider_config);
+		MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_EVENTPIPE_Context.Level = (uint8_t)ep_provider_config_get_logging_level (provider_config);
 		MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_EVENTPIPE_Context.EnabledKeywordsBitmask = ep_provider_config_get_keywords (provider_config);
 		MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_EVENTPIPE_Context.IsEnabled = true;
 	}
