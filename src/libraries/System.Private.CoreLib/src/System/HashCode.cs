@@ -42,6 +42,7 @@ https://raw.githubusercontent.com/Cyan4973/xxHash/5c174cfa4e45a42f94082dc0d4539b
 
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -319,6 +320,38 @@ namespace System
             ref byte pos = ref MemoryMarshal.GetReference(value);
             ref byte end = ref Unsafe.Add(ref pos, value.Length);
 
+            if ((nint)Unsafe.ByteOffset(ref pos, ref end) < sizeof(int) * 4)
+            {
+                goto Small;
+            }
+
+            // If we have more than 16 bytes to hash, we can add them in 16-byte batches,
+            // but we first have to add enough data to flush any queued values.
+            while (_length % 4 != 0 && (nint)Unsafe.ByteOffset(ref pos, ref end) >= sizeof(int))
+            {
+                Add(Unsafe.ReadUnaligned<int>(ref pos));
+                pos = ref Unsafe.Add(ref pos, sizeof(int));
+            }
+
+            // Usually Add calls Initialize but if we haven't used HashCode before it won't have been called.
+            if (_length == 0)
+            {
+                Initialize(out _v1, out _v2, out _v3, out _v4);
+            }
+
+            // With the queue clear, we add sixteen bytes at a time until the input has fewer than sixteen bytes remaining.
+            while ((nint)Unsafe.ByteOffset(ref pos, ref end) >= sizeof(int) * 4)
+            {
+                uint v1 = Unsafe.ReadUnaligned<uint>(ref pos);
+                uint v2 = Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref pos, sizeof(int) * 1));
+                uint v3 = Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref pos, sizeof(int) * 2));
+                uint v4 = Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref pos, sizeof(int) * 3));
+
+                UnsafeAddMany(v1, v2, v3, v4);
+                pos = ref Unsafe.Add(ref pos, sizeof(int) * 4);
+            }
+
+        Small:
             // Add four bytes at a time until the input has fewer than four bytes remaining.
             while ((nint)Unsafe.ByteOffset(ref pos, ref end) >= sizeof(int))
             {
@@ -382,6 +415,19 @@ namespace System
                 _v3 = Round(_v3, _queue3);
                 _v4 = Round(_v4, val);
             }
+        }
+
+        private void UnsafeAddMany(uint v1, uint v2, uint v3, uint v4)
+        {
+            // We update all four state values at once, but the queue must be empty.
+            // Also the caller must ensure the state is initialized; we can't check that.
+            Debug.Assert(_length % 4 == 0);
+
+            _length += 4;
+            _v1 = Round(_v1, v1);
+            _v2 = Round(_v2, v2);
+            _v3 = Round(_v3, v3);
+            _v4 = Round(_v4, v4);
         }
 
         public int ToHashCode()
