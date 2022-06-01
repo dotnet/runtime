@@ -106,10 +106,6 @@
       <_EmccVersionHash>$([System.Text.RegularExpressions.Regex]::Match($(_EmccVersionRaw), $(_EmccVersionRegexPattern)).Groups[2].Value)</_EmccVersionHash>
     </PropertyGroup>
 
-    <PropertyGroup>
-        <_WasmOptConfigurationFlags>@(WasmOptConfigurationFlags)</_WasmOptConfigurationFlags>
-    </PropertyGroup>
-
     <Error Text="Failed to parse emcc version, and hash from the full version string: '$(_EmccVersionRaw)'"
            Condition="'$(_EmccVersion)' == '' or '$(_EmccVersionHash)' == ''" />
 
@@ -157,6 +153,7 @@
     </ItemGroup>
 
     <PropertyGroup>
+      <_WasmOptConfigurationFlags>@(WasmOptConfigurationFlags->'%(Identity)', '; ') </_WasmOptConfigurationFlags>
       <_EmccPropsJson>
 <![CDATA[
 {
@@ -167,7 +164,7 @@
       { "identity": "RuntimeEmccVersionHash", "value": "$(_EmccVersionHash)" }
     ],
     "WasmOptConfigurationFlags": [
-      { "identity": "WasmOptConfigurationFlags", "value": "@(WasmOptConfigurationFlags->'%(Identity)', ';')" }
+      { "identity": "WasmOptConfigurationFlags", "value": "$(_WasmOptConfigurationFlags)" }
     ]
   }
 }
