@@ -108,6 +108,9 @@ namespace System.Threading
                 _maxThreads = _minThreads;
             }
 
+            NativeRuntimeEventSource.Log.ThreadPoolMinWorkerThreads(_minThreads);
+            NativeRuntimeEventSource.Log.ThreadPoolMaxWorkerThreads(_maxThreads);
+
             _legacy_minIOCompletionThreads = 1;
             _legacy_maxIOCompletionThreads = 1000;
 
@@ -169,6 +172,7 @@ namespace System.Threading
                 }
 
                 _minThreads = newMinThreads;
+
                 if (_numBlockedThreads > 0)
                 {
                     // Blocking adjustment will adjust the goal according to its heuristics
@@ -186,6 +190,7 @@ namespace System.Threading
                         addWorker = true;
                     }
                 }
+                
             }
             finally
             {
@@ -200,6 +205,7 @@ namespace System.Threading
             {
                 GateThread.Wake(this);
             }
+            NativeRuntimeEventSource.Log.ThreadPoolMinWorkerThreads(_minThreads);
             return true;
         }
 
@@ -256,6 +262,7 @@ namespace System.Threading
                 {
                     _separated.counts.InterlockedSetNumThreadsGoal(newMaxThreads);
                 }
+                NativeRuntimeEventSource.Log.ThreadPoolMaxWorkerThreads(_maxThreads);
                 return true;
             }
             finally

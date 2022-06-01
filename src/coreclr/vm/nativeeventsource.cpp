@@ -84,7 +84,7 @@ extern "C" void QCALLTYPE LogThreadPoolMinWorkerThreads(_In_z_ int WorkerThreads
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE LogThreadPoolMinWorkerThreads(_In_z_ int WorkerThreads, _In_z_ short clrInstanceID)
+extern "C" void QCALLTYPE LogThreadPoolMaxWorkerThreads(_In_z_ int WorkerThreads, _In_z_ short clrInstanceID)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
