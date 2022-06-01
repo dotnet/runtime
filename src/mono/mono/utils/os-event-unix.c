@@ -198,7 +198,7 @@ mono_os_event_wait_multiple (MonoOSEvent **events, gsize nevents, gboolean waita
 				goto done;
 			}
 
-			res = mono_os_cond_timedwait (&signal_cond, &signal_mutex, timeout - elapsed);
+			res = mono_os_cond_timedwait (&signal_cond, &signal_mutex, timeout - (guint32)elapsed);
 			if (res != 0) {
 				ret = MONO_OS_EVENT_WAIT_RET_TIMEOUT;
 				goto done;

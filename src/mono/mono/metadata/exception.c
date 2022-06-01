@@ -1131,7 +1131,7 @@ mono_exception_handle_get_native_backtrace (MonoExceptionHandle exc)
 
 	if (MONO_HANDLE_IS_NULL(arr))
 		return g_strdup ("");
-	len = mono_array_handle_length (arr);
+	len = GSIZE_TO_INT (mono_array_handle_length (arr));
 	text = g_string_new_len (NULL, len * 20);
 	MonoGCHandle gchandle;
 	gpointer *addr = MONO_ARRAY_HANDLE_PIN (arr, gpointer, 0, &gchandle);
@@ -1145,7 +1145,7 @@ mono_exception_handle_get_native_backtrace (MonoExceptionHandle exc)
 		MONO_HANDLE_ARRAY_GETVAL (ip, arr, gpointer, i);
 		MonoJitInfo *ji = mono_jit_info_table_find_internal (ip, TRUE, FALSE);
 		if (ji) {
-			char *msg = mono_debug_print_stack_frame (mono_jit_info_get_method (ji), (char*)ip - (char*)ji->code_start, NULL);
+			char *msg = mono_debug_print_stack_frame (mono_jit_info_get_method (ji), (uint32_t) ((char*)ip - (char*)ji->code_start), NULL);
 			g_string_append_printf (text, "%s\n", msg);
 			g_free (msg);
 		} else {

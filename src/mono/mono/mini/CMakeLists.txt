@@ -317,6 +317,12 @@ if(HOST_WIN32)
 set_source_files_properties(${ZLIB_SOURCES} PROPERTIES COMPILE_OPTIONS "/wd4005;/wd4127;/wd4131;/wd4244")
 endif()
 
+if(NOT HOST_WIN32)
+  if (CMAKE_C_COMPILER_ID MATCHES "Clang")
+    set_source_files_properties("../utils/dlmalloc.c" PROPERTIES COMPILE_OPTIONS "-Wno-shorten-64-to-32")
+  endif()
+endif()
+
 set(monosgen-sources "${metadata_sources};${utils_sources};${sgen_sources};${icu_shim_sources};${mini_sources};${ZLIB_SOURCES}")
 
 add_library(monosgen-objects OBJECT "${monosgen-sources}")

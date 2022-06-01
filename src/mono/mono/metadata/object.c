@@ -6177,7 +6177,7 @@ mono_string_new_utf8_len (const char *text, guint length, MonoError *error)
 		//mono_error_set_execution_engine (error, "String conversion error: %s", eg_error->message);
 		g_error_free (eg_error);
 	} else {
-		o = mono_string_new_utf16_handle (ut, items_written, error);
+		o = mono_string_new_utf16_handle (ut, GLONG_TO_INT32 (items_written), error);
 	}
 
 	g_free (ut);
@@ -6247,7 +6247,7 @@ mono_string_new_checked (const char *text, MonoError *error)
 	ut = g_utf8_to_utf16 (text, (glong)strlen (text), NULL, &items_written, &eg_error);
 
 	if (!eg_error)
-		o = mono_string_new_utf16_checked (ut, items_written, error);
+		o = mono_string_new_utf16_checked (ut, GLONG_TO_INT32 (items_written), error);
 	else {
 		mono_error_set_execution_engine (error, "String conversion error: %s", eg_error->message);
 		g_error_free (eg_error);
@@ -6281,7 +6281,7 @@ mono_string_new_wtf8_len_checked (const char *text, guint length, MonoError *err
 	ut = eg_wtf8_to_utf16 (text, length, NULL, &items_written, &eg_error);
 
 	if (!eg_error)
-		o = mono_string_new_utf16_checked (ut, items_written, error);
+		o = mono_string_new_utf16_checked (ut, GLONG_TO_INT32 (items_written), error);
 	else
 		g_error_free (eg_error);
 

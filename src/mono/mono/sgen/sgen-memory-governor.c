@@ -395,10 +395,10 @@ This tracks the total usage of memory by the GC. This includes
 managed and unmanaged memory.
 */
 
-static unsigned long
+static unsigned int
 prot_flags_for_activate (int activate)
 {
-	unsigned long prot_flags = activate? MONO_MMAP_READ|MONO_MMAP_WRITE: MONO_MMAP_NONE;
+	unsigned int prot_flags = activate? MONO_MMAP_READ|MONO_MMAP_WRITE: MONO_MMAP_NONE;
 	return prot_flags | MONO_MMAP_PRIVATE | MONO_MMAP_ANON;
 }
 

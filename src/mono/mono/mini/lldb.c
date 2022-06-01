@@ -329,7 +329,7 @@ register_codegen_region (gpointer region_start, int region_size, gboolean dynami
 	strcpy (region_entry->magic, OBJFILE_MAGIC);
 	region_entry->id = id;
 	region_entry->start = (gsize)region_start;
-	region_entry->size = (gsize)region_size;
+	region_entry->size = GINT_TO_UINT32 (region_size);
 
 	add_entry (ENTRY_CODE_REGION, buf);
 	buffer_free (buf);

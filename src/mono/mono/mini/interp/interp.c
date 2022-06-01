@@ -796,7 +796,7 @@ stackval_size (MonoType *type, gboolean pinvoke)
 				size = mono_class_native_size (type->data.klass, NULL);
 			else
 				size = mono_class_value_size (type->data.klass, NULL);
-			return ALIGN_TO (size, MINT_STACK_SLOT_SIZE);
+			return (int) ALIGN_TO (size, MINT_STACK_SLOT_SIZE);
 		}
 	case MONO_TYPE_GENERICINST: {
 		if (mono_type_generic_inst_is_valuetype (type)) {
@@ -806,7 +806,7 @@ stackval_size (MonoType *type, gboolean pinvoke)
 				size = mono_class_native_size (klass, NULL);
 			else
 				size = mono_class_value_size (klass, NULL);
-			return ALIGN_TO (size, MINT_STACK_SLOT_SIZE);
+			return (int) ALIGN_TO (size, MINT_STACK_SLOT_SIZE);
 		}
 		return stackval_size (m_class_get_byval_arg (type->data.generic_class->container_class), pinvoke);
 	}
@@ -882,7 +882,7 @@ stackval_from_data (MonoType *type, stackval *result, const void *data, gboolean
 			else
 				size = mono_class_value_size (type->data.klass, NULL);
 			memcpy (result, data, size);
-			return ALIGN_TO (size, MINT_STACK_SLOT_SIZE);
+			return (int) ALIGN_TO (size, MINT_STACK_SLOT_SIZE);
 		}
 	case MONO_TYPE_GENERICINST: {
 		if (mono_type_generic_inst_is_valuetype (type)) {
@@ -893,7 +893,7 @@ stackval_from_data (MonoType *type, stackval *result, const void *data, gboolean
 			else
 				size = mono_class_value_size (klass, NULL);
 			memcpy (result, data, size);
-			return ALIGN_TO (size, MINT_STACK_SLOT_SIZE);
+			return (int) ALIGN_TO (size, MINT_STACK_SLOT_SIZE);
 		}
 		return stackval_from_data (m_class_get_byval_arg (type->data.generic_class->container_class), result, data, pinvoke);
 	}
@@ -992,7 +992,7 @@ stackval_to_data (MonoType *type, stackval *val, void *data, gboolean pinvoke)
 				size = mono_class_value_size (type->data.klass, NULL);
 				mono_value_copy_internal (data, val, type->data.klass);
 			}
-			return ALIGN_TO (size, MINT_STACK_SLOT_SIZE);
+			return (int) ALIGN_TO (size, MINT_STACK_SLOT_SIZE);
 		}
 	case MONO_TYPE_GENERICINST: {
 		MonoClass *container_class = type->data.generic_class->container_class;
@@ -1007,7 +1007,7 @@ stackval_to_data (MonoType *type, stackval *val, void *data, gboolean pinvoke)
 				size = mono_class_value_size (klass, NULL);
 				mono_value_copy_internal (data, val, klass);
 			}
-			return ALIGN_TO (size, MINT_STACK_SLOT_SIZE);
+			return (int) ALIGN_TO (size, MINT_STACK_SLOT_SIZE);
 		}
 		return stackval_to_data (m_class_get_byval_arg (type->data.generic_class->container_class), val, data, pinvoke);
 	}
@@ -1301,7 +1301,7 @@ compute_arg_offset (MonoMethodSignature *sig, int index, int prev_offset)
 		int size, align;
 		MonoType *type = sig->params [index - 1];
 		size = mono_type_size (type, &align);
-		return prev_offset + ALIGN_TO (size, MINT_STACK_SLOT_SIZE);
+		return prev_offset + (int) ALIGN_TO (size, MINT_STACK_SLOT_SIZE);
 	}
 }
 
@@ -2545,7 +2545,7 @@ init_jit_call_info (InterpMethod *rmethod, MonoError *error)
 			 * that could end up doing a jit call.
 			 */
 			gint32 size = mono_class_value_size (klass, NULL);
-			cinfo->res_size = ALIGN_TO (size, MINT_VT_ALIGNMENT);
+			cinfo->res_size = (int32_t) ALIGN_TO (size, MINT_VT_ALIGNMENT);
 		} else {
 			cinfo->res_size = MINT_STACK_SLOT_SIZE;
 		}
@@ -7044,7 +7044,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 
 		MINT_IN_CASE(MINT_LOCALLOC) {
 			int len = LOCAL_VAR (ip [2], gint32);
-			gpointer mem = frame_data_allocator_alloc (&context->data_stack, frame, ALIGN_TO (len, MINT_VT_ALIGNMENT));
+			gpointer mem = frame_data_allocator_alloc (&context->data_stack, frame, (int) ALIGN_TO (len, MINT_VT_ALIGNMENT));
 
 			if (frame->imethod->init_locals)
 				memset (mem, 0, len);

@@ -119,7 +119,7 @@ resolve_symlink (const char *path)
 	p = g_strdup (path);
 	do {
 		iterations++;
-		n = readlink (p, buffer, sizeof (buffer)-1);
+		n = (int) readlink (p, buffer, sizeof (buffer)-1);
 		if (n < 0){
 			char *copy = p;
 			p = mono_path_canonicalize (copy);

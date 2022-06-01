@@ -2236,7 +2236,7 @@ ep_rt_mono_file_write (
 
 	do {
 		MONO_ENTER_GC_SAFE;
-		ret = write (fd, buffer, numbytes);
+		ret = (uint32_t) write (fd, buffer, numbytes);
 		MONO_EXIT_GC_SAFE;
 	} while (ret == -1 && errno == EINTR &&
 		 !mono_thread_info_is_interrupt_state (info));
@@ -3916,7 +3916,7 @@ ep_rt_mono_write_event_thread_created (ep_rt_thread_id_t tid)
 		return true;
 
 	uint64_t managed_thread = 0;
-	uint32_t native_thread_id = MONO_NATIVE_THREAD_ID_TO_UINT (tid);
+	uint32_t native_thread_id = GSIZE_TO_UINT32 (MONO_NATIVE_THREAD_ID_TO_UINT (tid));
 	uint32_t managed_thread_id = 0;
 	uint32_t flags = 0;
 

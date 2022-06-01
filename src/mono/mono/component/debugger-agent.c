@@ -931,7 +931,7 @@ socket_transport_recv (void *buf, int len)
 
 	do {
 	again:
-		res = recv (fd, (char *) buf + total, len - total, flags);
+		res = (int)recv (fd, (char *) buf + total, len - total, flags);
 		if (res > 0)
 			total += res;
 		if (agent_config.keepalive) {
@@ -997,7 +997,7 @@ socket_transport_send (void *data, int len)
 	MONO_REQ_GC_SAFE_MODE;
 
 	do {
-		res = send (conn_fd, (const char*)data, len, 0);
+		res = (int) send (conn_fd, (const char*)data, len, 0);
 	} while (res == SOCKET_ERROR && get_last_sock_error () == MONO_EINTR);
 
 	if (res != len)

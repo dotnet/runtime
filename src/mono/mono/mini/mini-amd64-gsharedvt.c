@@ -515,7 +515,7 @@ mono_arch_get_gsharedvt_call_info (MonoMemoryManager *mem_manager, gpointer addr
 		DEBUG_AMD64_GSHAREDVT_PRINT ("RET marshal is %s\n", ret_marshal_name [info->ret_marshal]);
 	}
 
-	info->stack_usage = ALIGN_TO (info->stack_usage, MONO_ARCH_FRAME_ALIGNMENT);
+	info->stack_usage = (int) ALIGN_TO (info->stack_usage, MONO_ARCH_FRAME_ALIGNMENT);
 
 	g_free (callee_cinfo);
 	g_free (caller_cinfo);

@@ -434,7 +434,7 @@ push_type_explicit (TransformData *td, int type, MonoClass *k, int type_size)
 	td->sp->klass = k;
 	td->sp->flags = 0;
 	td->sp->local = create_interp_stack_local (td, type, k, type_size);
-	td->sp->size = ALIGN_TO (type_size, MINT_STACK_SLOT_SIZE);
+	td->sp->size = (int) ALIGN_TO (type_size, MINT_STACK_SLOT_SIZE);
 	td->sp++;
 }
 
@@ -447,7 +447,7 @@ push_var (TransformData *td, int var_index)
 	td->sp->klass = mono_class_from_mono_type_internal (var->type);
 	td->sp->flags = 0;
 	td->sp->local = var_index;
-	td->sp->size = ALIGN_TO (var->size, MINT_STACK_SLOT_SIZE);
+	td->sp->size = (int) ALIGN_TO (var->size, MINT_STACK_SLOT_SIZE);
 	td->sp++;
 }
 
@@ -1309,7 +1309,7 @@ alloc_var_offset (TransformData *td, int local, gint32 *ptos)
 
 	td->locals [local].offset = offset;
 
-	*ptos = ALIGN_TO (offset + size, MINT_STACK_SLOT_SIZE);
+	*ptos = (gint32) ALIGN_TO (offset + size, MINT_STACK_SLOT_SIZE);
 
 	return td->locals [local].offset;
 }
@@ -2839,7 +2839,7 @@ interp_inline_newobj (TransformData *td, MonoMethod *target_method, MonoMethodSi
 		newobj_fast = interp_add_ins (td, MINT_NEWOBJ_VT_INLINED);
 		interp_ins_set_dreg (newobj_fast, this_reg);
 		interp_ins_set_sreg (newobj_fast, dreg);
-		newobj_fast->data [0] = ALIGN_TO (vtsize, MINT_STACK_SLOT_SIZE);
+		newobj_fast->data [0] = GINT_TO_UINT16 ((int) ALIGN_TO (vtsize, MINT_STACK_SLOT_SIZE));
 	} else {
 		MonoVTable *vtable = mono_class_vtable_checked (klass, error);
 		goto_if_nok (error, fail);
@@ -3245,7 +3245,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			else
 				res_size = mono_class_value_size (klass, NULL);
 			push_type_vt (td, klass, res_size);
-			res_size = ALIGN_TO (res_size, MINT_VT_ALIGNMENT);
+			res_size = (guint32) ALIGN_TO (res_size, MINT_VT_ALIGNMENT);
 			if (mono_class_has_failure (klass)) {
 				mono_error_set_for_class_failure (error, klass);
 				return FALSE;
@@ -3840,7 +3840,7 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 		// Every local takes a MINT_STACK_SLOT_SIZE so IL locals have same behavior as execution locals
 		offset += ALIGN_TO (size, MINT_STACK_SLOT_SIZE);
 	}
-	offset = ALIGN_TO (offset, MINT_VT_ALIGNMENT);
+	offset = (int) ALIGN_TO (offset, MINT_VT_ALIGNMENT);
 	td->il_locals_size = offset - td->il_locals_offset;
 	td->total_locals_size = offset;
 
@@ -5638,7 +5638,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					if (is_vt) {
 						newobj_fast = interp_add_ins (td, MINT_NEWOBJ_VT);
 						interp_ins_set_dreg (newobj_fast, dreg);
-						newobj_fast->data [1] = ALIGN_TO (vtsize, MINT_STACK_SLOT_SIZE);
+						newobj_fast->data [1] = GINT_TO_UINT16 ((int) ALIGN_TO (vtsize, MINT_STACK_SLOT_SIZE));
 					} else {
 						MonoVTable *vtable = mono_class_vtable_checked (klass, error);
 						goto_if_nok (error, exit);
@@ -5861,7 +5861,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			mt = mint_type (m_class_get_byval_arg (field_klass));
 			int field_size = mono_class_value_size (field_klass, NULL);
 			int obj_size = mono_class_value_size (klass, NULL);
-			obj_size = ALIGN_TO (obj_size, MINT_VT_ALIGNMENT);
+			obj_size = (int) ALIGN_TO (obj_size, MINT_VT_ALIGNMENT);
 
 			{
 				if (is_static) {
@@ -9093,7 +9093,7 @@ get_call_param_size (TransformData *td, InterpInst *call)
 
 	int var = *call_args;
 	while (var != -1) {
-		param_size = ALIGN_TO (param_size + td->locals [var].size, MINT_STACK_SLOT_SIZE);
+		param_size = (int) ALIGN_TO (param_size + td->locals [var].size, MINT_STACK_SLOT_SIZE);
 		call_args++;
 		var = *call_args;
 	}
@@ -9429,7 +9429,7 @@ interp_alloc_offsets (TransformData *td)
 			final_total_locals_size = MAX (td->locals [i].offset + td->locals [i].size, final_total_locals_size);
 		}
 	}
-	td->total_locals_size = ALIGN_TO (final_total_locals_size, MINT_STACK_SLOT_SIZE);
+	td->total_locals_size = (int) ALIGN_TO (final_total_locals_size, MINT_STACK_SLOT_SIZE);
 }
 
 /*

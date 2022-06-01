@@ -224,7 +224,7 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 
 	/*callconv in regs */
 	caller_reg_area_offset = offset;
-	reg_area_size = ALIGN_TO ((n_arg_regs + n_arg_fregs) * 8, MONO_ARCH_FRAME_ALIGNMENT);
+	reg_area_size = (int) ALIGN_TO ((n_arg_regs + n_arg_fregs) * 8, MONO_ARCH_FRAME_ALIGNMENT);
 	offset += reg_area_size;
 
 	framesize = offset;

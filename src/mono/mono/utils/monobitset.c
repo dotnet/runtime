@@ -292,7 +292,7 @@ my_g_bit_nth_lsf (gsize mask, gint nth_bit)
 
 	__asm__("bsfq %1,%0\n\t"
 			: "=r" (r) : "rm" (mask));
-	return nth_bit + r;
+	return (gint)(nth_bit + r);
  }
 #else
 	while (! (mask & 0x1)) {
@@ -319,7 +319,7 @@ my_g_bit_nth_lsf_nomask (gsize mask)
 
 	__asm__("bsfq %1,%0\n\t"
 			: "=r" (r) : "rm" (mask));
-	return r;
+	return (gint)r;
 #else
 	int nth_bit = 0;
 

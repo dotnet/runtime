@@ -217,10 +217,10 @@ image_strdup (MonoImage *image, const char *s)
 #endif
 
 #define image_g_new(image,struct_type, n_structs)		\
-    ((struct_type *) image_g_malloc (image, ((gsize) sizeof (struct_type)) * ((gsize) (n_structs))))
+	((struct_type *) image_g_malloc (image, GSIZE_TO_UINT (((gsize) sizeof (struct_type)) * ((gsize) (n_structs)))))
 
 #define image_g_new0(image,struct_type, n_structs)		\
-    ((struct_type *) mono_image_g_malloc0 (image, ((gsize) sizeof (struct_type)) * ((gsize) (n_structs))))
+	((struct_type *) mono_image_g_malloc0 (image, GSIZE_TO_UINT (((gsize) sizeof (struct_type)) * ((gsize) (n_structs)))))
 
 
 static void

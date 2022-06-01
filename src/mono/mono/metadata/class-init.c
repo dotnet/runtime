@@ -147,7 +147,7 @@ disable_gclass_recording (gclass_record_func func, void *user_data)
 }
 
 #define mono_class_new0(klass,struct_type, n_structs)		\
-    ((struct_type *) mono_class_alloc0 ((klass), ((gsize) sizeof (struct_type)) * ((gsize) (n_structs))))
+	((struct_type *) mono_class_alloc0 ((klass), GSIZE_TO_INT (((gsize) sizeof (struct_type)) * ((gsize) (n_structs)))))
 
 /**
  * mono_class_setup_basic_field_info:

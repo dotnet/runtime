@@ -183,7 +183,7 @@ mono_regstate_alloc_int (MonoRegState *rs, regmask_t allow)
 			: "=r" (i) : "rm" (mask));
 
 	rs->ifree_mask &= ~ ((regmask_t)1 << i);
-	return i;
+	return (int)i;
  }
 #else
 	int i;

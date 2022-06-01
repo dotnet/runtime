@@ -113,7 +113,7 @@ interp_intrins_u32_to_decstr (guint32 value, MonoArray *cache, MonoVTable *vtabl
 	if (bufferLength == 1)
 		return mono_array_get_fast (cache, MonoString*, value);
 
-	int size = (G_STRUCT_OFFSET (MonoString, chars) + (((size_t)bufferLength + 1) * 2));
+	size_t size = (G_STRUCT_OFFSET (MonoString, chars) + (((size_t)bufferLength + 1) * 2));
 	MonoString* result = mono_gc_alloc_string (vtable, size, bufferLength);
 	mono_unichar2 *buffer = &result->chars [0];
 	mono_unichar2 *p = buffer + bufferLength;

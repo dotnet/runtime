@@ -271,7 +271,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	offset += 4 * sizeof (target_mgreg_t);
 #endif
 
-	framesize = ALIGN_TO (offset, MONO_ARCH_FRAME_ALIGNMENT);
+	framesize = (int) ALIGN_TO (offset, MONO_ARCH_FRAME_ALIGNMENT);
 
 	// CFA = sp + 16 (the trampoline address is on the stack)
 	cfa_offset = 16;
@@ -923,7 +923,7 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
 	ctx_offset = framesize;
 	framesize += sizeof (MonoContext);
 
-	framesize = ALIGN_TO (framesize, MONO_ARCH_FRAME_ALIGNMENT);
+	framesize = (int) ALIGN_TO (framesize, MONO_ARCH_FRAME_ALIGNMENT);
 
 	// CFA = sp + 8
 	cfa_offset = 8;
@@ -1146,7 +1146,7 @@ mono_arch_get_native_to_interp_trampoline (MonoTrampInfo **info)
 
 	ctx_offset = framesize;
 	framesize += MONO_ABI_SIZEOF (CallContext);
-	framesize = ALIGN_TO (framesize, MONO_ARCH_FRAME_ALIGNMENT);
+	framesize = (int) ALIGN_TO (framesize, MONO_ARCH_FRAME_ALIGNMENT);
 
 	// CFA = sp + 8
 	cfa_offset = 8;

@@ -159,7 +159,7 @@ get_entropy_from_egd (const char *path, guchar *buffer, gssize buffer_size, Mono
 		request [0] = 2;
 		request [1] = buffer_size < 255 ? (guchar)buffer_size : 255;
 		while (count < 2) {
-			int sent = write (socket_fd, request + count, 2 - count);
+			int sent = (int) write (socket_fd, request + count, 2 - count);
 			err = errno;
 			if (sent >= 0) {
 				count += sent;
@@ -176,7 +176,7 @@ get_entropy_from_egd (const char *path, guchar *buffer, gssize buffer_size, Mono
 		count = 0;
 		while (count != request [1]) {
 			int received;
-			received = read (socket_fd, buffer + offset, request [1] - count);
+			received = (int) read (socket_fd, buffer + offset, request [1] - count);
 			err = errno;
 			if (received > 0) {
 				count += received;

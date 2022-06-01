@@ -635,7 +635,7 @@ ipc_socket_recv (
 			buffer_cursor,
 			bytes_to_read - total_bytes_read,
 			0);
-		if (ipc_retry_syscall (current_bytes_read))
+		if (ipc_retry_syscall ((int)current_bytes_read))
 			continue;
 		continue_recv = current_bytes_read > 0;
 		if (!continue_recv)
@@ -669,7 +669,7 @@ ipc_socket_send (
 			buffer_cursor,
 			bytes_to_write - total_bytes_written,
 			0);
-		if (ipc_retry_syscall (current_bytes_written))
+		if (ipc_retry_syscall ((int)current_bytes_written))
 			continue;
 		continue_send = current_bytes_written != DS_IPC_SOCKET_ERROR;
 		if (!continue_send)

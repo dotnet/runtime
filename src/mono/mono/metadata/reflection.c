@@ -1539,19 +1539,19 @@ assembly_name_to_aname (MonoAssemblyName *assembly, char *p)
 			p++;
 			while (*p && g_ascii_isspace (*p))
 				p++;
-			assembly->major = strtoul (p, &s, 10);
+			assembly->major = (int32_t) strtoul (p, &s, 10);
 			if (s == p || *s != '.')
 				return 1;
 			p = ++s;
-			assembly->minor = strtoul (p, &s, 10);
+			assembly->minor = (int32_t) strtoul (p, &s, 10);
 			if (s == p || *s != '.')
 				return 1;
 			p = ++s;
-			assembly->build = strtoul (p, &s, 10);
+			assembly->build = (int32_t) strtoul (p, &s, 10);
 			if (s == p || *s != '.')
 				return 1;
 			p = ++s;
-			assembly->revision = strtoul (p, &s, 10);
+			assembly->revision = (int32_t) strtoul (p, &s, 10);
 			if (s == p)
 				return 1;
 			p = s;

@@ -1041,7 +1041,7 @@ sgen_dump_section (GCMemSection *section, const char *type)
 	fprintf (heap_dump_file, "<section type=\"%s\" size=\"%lu\">\n", type, (unsigned long)(section->end_data - section->data));
 
 	while (start < end) {
-		guint size;
+		gsize size;
 		//GCVTable vt;
 		//MonoClass *class;
 

@@ -233,7 +233,7 @@ add_general (guint32 *gr, guint32 *stack_size, ArgInfo *ainfo)
 		(*stack_size) += sizeof (target_mgreg_t);
 	} else {
 		ainfo->storage = ArgInIReg;
-		ainfo->reg = param_regs [*gr];
+		ainfo->reg = (guint8) param_regs [*gr];
 		(*gr) ++;
 	}
 }
@@ -676,11 +676,11 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 
 	if (pass_on_stack) {
 		/* Allways pass in memory */
-		ainfo->offset = *stack_size;
+		ainfo->offset = (gint16) *stack_size;
 		*stack_size += ALIGN_TO (size, 8);
 		ainfo->storage = is_return ? ArgValuetypeAddrInIReg : ArgOnStack;
 		if (!is_return)
-			ainfo->arg_size = ALIGN_TO (size, 8);
+			ainfo->arg_size = (int) ALIGN_TO (size, 8);
 
 		g_array_free (fields_array, TRUE);
 		return;
@@ -718,11 +718,11 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 		}
 
 		if (struct_size > 16) {
-			ainfo->offset = *stack_size;
+			ainfo->offset = (gint16) *stack_size;
 			*stack_size += ALIGN_TO (struct_size, 8);
 			ainfo->storage = is_return ? ArgValuetypeAddrInIReg : ArgOnStack;
 			if (!is_return)
-				ainfo->arg_size = ALIGN_TO (struct_size, 8);
+				ainfo->arg_size = (int) ALIGN_TO (struct_size, 8);
 
 			g_array_free (fields_array, TRUE);
 			return;
@@ -793,9 +793,9 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 				else {
 					ainfo->pair_storage [quad] = ArgInIReg;
 					if (is_return)
-						ainfo->pair_regs [quad] = return_regs [*gr];
+						ainfo->pair_regs [quad] = (guint8) return_regs [*gr];
 					else
-						ainfo->pair_regs [quad] = param_regs [*gr];
+						ainfo->pair_regs [quad] = (guint8) param_regs [*gr];
 					(*gr) ++;
 				}
 				break;
@@ -806,7 +806,7 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 					if (quadsize[quad] <= 4)
 						ainfo->pair_storage [quad] = ArgInFloatSSEReg;
 					else ainfo->pair_storage [quad] = ArgInDoubleSSEReg;
-					ainfo->pair_regs [quad] = *fr;
+					ainfo->pair_regs [quad] = (guint8) *fr;
 					(*fr) ++;
 				}
 				break;
@@ -825,9 +825,9 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 			*gr = orig_gr;
 			*fr = orig_fr;
 
-			ainfo->offset = *stack_size;
+			ainfo->offset = (guint16) *stack_size;
 			if (sig->pinvoke)
-				arg_size = ALIGN_TO (struct_size, 8);
+				arg_size = (int) ALIGN_TO (struct_size, 8);
 			else
 				arg_size = nquads * sizeof (target_mgreg_t);
 			*stack_size += arg_size;
@@ -1187,7 +1187,7 @@ mono_arch_set_native_call_context_args (CallContext *ccontext, gpointer frame, M
 
 	memset (ccontext, 0, sizeof (CallContext));
 
-	ccontext->stack_size = ALIGN_TO (cinfo->stack_usage, MONO_ARCH_FRAME_ALIGNMENT);
+	ccontext->stack_size = (guint32) ALIGN_TO (cinfo->stack_usage, MONO_ARCH_FRAME_ALIGNMENT);
 	if (ccontext->stack_size)
 		ccontext->stack = (guint8*)g_calloc (1, ccontext->stack_size);
 
@@ -1889,7 +1889,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 				indir->opcode = OP_REGOFFSET;
 				if (ainfo->pair_storage [0] == ArgInIReg) {
 					indir->inst_basereg = cfg->frame_reg;
-					offset = ALIGN_TO (offset, sizeof (target_mgreg_t));
+					offset = (int) ALIGN_TO (offset, sizeof (target_mgreg_t));
 					offset += sizeof (target_mgreg_t);
 					indir->inst_offset = - offset;
 				}
@@ -1911,7 +1911,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 				ins->opcode = OP_REGOFFSET;
 				ins->inst_basereg = cfg->frame_reg;
 				/* These arguments are saved to the stack in the prolog */
-				offset = ALIGN_TO (offset, sizeof (target_mgreg_t));
+				offset = (int) ALIGN_TO (offset, sizeof (target_mgreg_t));
 				if (cfg->arch.omit_fp) {
 					ins->inst_offset = offset;
 					offset += (ainfo->storage == ArgValuetypeInReg) ? ainfo->nregs * sizeof (target_mgreg_t) : sizeof (target_mgreg_t);
@@ -2639,7 +2639,7 @@ mono_arch_dyn_call_prepare (MonoMethodSignature *sig)
 		}
 	}
 
-	info->nullable_area = ALIGN_TO (info->nullable_area, 16);
+	info->nullable_area = (int) ALIGN_TO (info->nullable_area, 16);
 
 	/* Align to 16 bytes */
 	if (info->nstack_args & 1)
@@ -3076,7 +3076,7 @@ emit_call (MonoCompile *cfg, MonoCallInst *call, guint8 *code, MonoJitICallId ji
 
 			if (jinfo) {
 				if (jinfo->type == MONO_PATCH_INFO_JIT_ICALL_ADDR) {
-					MonoJitICallInfo *mi = mono_find_jit_icall_info (jinfo->data.jit_icall_id);
+					MonoJitICallInfo *mi = mono_find_jit_icall_info ((MonoJitICallId)jinfo->data.jit_icall_id);
 					if (mi && (((guint64)mi->func) >> 32) == 0)
 						near_call = TRUE;
 					no_patch = TRUE;
@@ -5648,7 +5648,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_push_membase (code, ins->inst_basereg, ins->inst_offset);
 			break;
 		case OP_X86_PUSH_OBJ: {
-			int size = ALIGN_TO (ins->inst_imm, 8);
+			int size = (int) ALIGN_TO (ins->inst_imm, 8);
 
 			g_assert_not_reached ();
 
@@ -7498,7 +7498,7 @@ mono_arch_patch_code_new (MonoCompile *cfg, guint8 *code, MonoJumpInfo *ji, gpoi
 			printf ("TYPE: %d\n", ji->type);
 			switch (ji->type) {
 			case MONO_PATCH_INFO_JIT_ICALL_ID:
-				printf ("V: %s\n", mono_find_jit_icall_info (ji->data.jit_icall_id)->name);
+				printf ("V: %s\n", mono_find_jit_icall_info ((MonoJitICallId)ji->data.jit_icall_id)->name);
 				break;
 			case MONO_PATCH_INFO_METHOD_JUMP:
 			case MONO_PATCH_INFO_METHOD:
@@ -7654,14 +7654,14 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		 * address. It is either made aligned by the pushing of %rbp, or by
 		 * this.
 		 */
-		alloc_size = ALIGN_TO (cfg->stack_offset, 8);
+		alloc_size = (int) ALIGN_TO (cfg->stack_offset, 8);
 		if ((alloc_size % 16) == 0) {
 			alloc_size += 8;
 			/* Mark the padding slot as NOREF */
 			mini_gc_set_slot_type_from_cfa (cfg, -cfa_offset - sizeof (target_mgreg_t), SLOT_NOREF);
 		}
 	} else {
-		alloc_size = ALIGN_TO (cfg->stack_offset, MONO_ARCH_FRAME_ALIGNMENT);
+		alloc_size = (int) ALIGN_TO (cfg->stack_offset, MONO_ARCH_FRAME_ALIGNMENT);
 		if (cfg->stack_offset != alloc_size) {
 			/* Mark the padding slot as NOREF */
 			mini_gc_set_slot_type_from_fp (cfg, -alloc_size + cfg->param_area, SLOT_NOREF);
@@ -8486,7 +8486,7 @@ get_delegate_invoke_impl (MonoTrampInfo **info, gboolean has_target, guint32 par
 			buff = (char*)"delegate_invoke_has_target";
 		else
 			buff = g_strdup_printf ("delegate_invoke_no_target_%d", param_count);
-		mono_emit_jit_tramp (start, code - start, buff);
+		mono_emit_jit_tramp (start, GSIZE_TO_INT (code - start), buff);
 		if (!has_target)
 			g_free (buff);
 	}

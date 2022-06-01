@@ -109,7 +109,7 @@ safe_read (int fd, gchar *buffer, gint count, GError **gerror)
 {
 	int res;
 
-	NO_INTR (res, read (fd, buffer, count));
+	NO_INTR (res, GSSIZE_TO_INT (read (fd, buffer, count)));
 	set_error_cond (res == -1, "%s", "Error reading from pipe.");
 	return res;
 }
@@ -211,7 +211,7 @@ write_all (int fd, const void *vbuf, size_t n)
 
 	do {
 		do {
-			w = write (fd, buf + nwritten, n - nwritten);
+			w = GSSIZE_TO_INT (write (fd, buf + nwritten, n - nwritten));
 		} while (w == -1 && errno == EINTR);
 
 		if (w == -1)
@@ -220,7 +220,7 @@ write_all (int fd, const void *vbuf, size_t n)
 		nwritten += w;
 	} while (nwritten < n);
 
-	return nwritten;
+	return GSIZE_TO_INT (nwritten);
 }
 
 #endif // HAVE_G_SPAWN
@@ -235,7 +235,7 @@ eg_getdtablesize (void)
 
 	res = getrlimit (RLIMIT_NOFILE, &limit);
 	g_assert (res == 0);
-	return limit.rlim_cur;
+	return (int)(size_t)limit.rlim_cur;
 #else
 	return getdtablesize ();
 #endif
@@ -412,7 +412,7 @@ g_spawn_async_with_pipes (const gchar *working_directory,
 
 	if ((flags & G_SPAWN_DO_NOT_REAP_CHILD) == 0) {
 		int x;
-		NO_INTR (x, read (info_pipe [0], &pid, sizeof (pid_t))); /* if we read < sizeof (pid_t)... */
+		NO_INTR (x, GSSIZE_TO_INT (read (info_pipe [0], &pid, sizeof (pid_t)))); /* if we read < sizeof (pid_t)... */
 	}
 
 	if (child_pid) {

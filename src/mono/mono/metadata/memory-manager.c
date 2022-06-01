@@ -66,7 +66,7 @@ lock_free_mempool_alloc0 (LockFreeMempool *mp, guint size)
 
 	// FIXME: Free the allocator
 
-	size = ALIGN_TO (size, 8);
+	size = (guint)ALIGN_TO (size, 8);
 	chunk = mp->current;
 	if (!chunk) {
 		chunk = lock_free_mempool_chunk_new (mp, size);

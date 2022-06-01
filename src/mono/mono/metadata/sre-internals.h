@@ -57,7 +57,7 @@ mono_reflection_dynimage_basic_init (MonoReflectionAssemblyBuilder *assemblyb, M
 gpointer
 mono_image_g_malloc0 (MonoImage *image, guint size);
 
-#define mono_image_g_malloc0(image, size) (g_cast (mono_image_g_malloc0 ((image), (size))))
+#define mono_image_g_malloc0(image, size) (g_cast (mono_image_g_malloc0 ((image), (guint)(size))))
 
 gboolean
 mono_is_sre_type_builder (MonoClass *klass);

@@ -56,7 +56,7 @@ create_socket (const char *hostname, const int port)
     }
 
     serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons (port);
+    serv_addr.sin_port = htons (GINT_TO_UINT16 (port));
     serv_addr.sin_addr.s_addr = inet_addr (hostname);
 
     if (connect (sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
@@ -71,7 +71,7 @@ static void
 write_byte (MonoCompile *cfg, unsigned char b)
 {
 	int ret;
-	while ((ret = write (cfg->gdump_ctx->fd, &b, 1)) < 0 && errno == EINTR);
+	while ((ret = (int) write (cfg->gdump_ctx->fd, &b, 1)) < 0 && errno == EINTR);
 }
 
 static void
@@ -79,14 +79,14 @@ write_short (MonoCompile *cfg, short s)
 {
 	short swap = htons (s);
 	int ret;
-	while ((ret = write (cfg->gdump_ctx->fd, &swap, 2)) < 0 && errno == EINTR);
+	while ((ret = (int) write (cfg->gdump_ctx->fd, &swap, 2)) < 0 && errno == EINTR);
 }
 
 static void
 write_int (MonoCompile *cfg, int v)
 {
 	int swap = htonl (v), ret;
-	while ((ret = write (cfg->gdump_ctx->fd, &swap, 4)) < 0 && errno == EINTR);
+	while ((ret = (int) write (cfg->gdump_ctx->fd, &swap, 4)) < 0 && errno == EINTR);
 }
 
 static void
@@ -152,7 +152,7 @@ add_pool_entry (MonoCompile *cfg, ConstantPoolEntry *entry)
 
 			write_string (cfg, mono_inst_name (insn->opcode));
 			GString *insndesc = mono_print_ins_index_strbuf (-1, insn);
-			const int len = g_strnlen (insndesc->str, 0x2000);
+			const int len = (int) g_strnlen (insndesc->str, 0x2000);
 #define CUTOFF 40
 			if (len > CUTOFF) {
 				insndesc->str[CUTOFF] = '\0';

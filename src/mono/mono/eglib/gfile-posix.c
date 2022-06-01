@@ -87,7 +87,7 @@ g_file_get_contents (const gchar *filename, gchar **contents, gsize *length, GEr
 	str = g_malloc (st.st_size + 1);
 	offset = 0;
 	do {
-		nread = read (fd, str + offset, st.st_size - offset);
+		nread = GSSIZE_TO_INT (read (fd, str + offset, st.st_size - offset));
 		if (nread > 0) {
 			offset += nread;
 		}

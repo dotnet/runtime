@@ -7250,9 +7250,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			common_call = TRUE; // i.e. skip_ret/push_res/seq_point logic
 			cmethod = NULL;
 
-			gboolean const inst_tailcall = G_UNLIKELY (debug_tailcall_try_all
+			gboolean const inst_tailcall = debug_tailcall_try_all
 							? (next_ip < end && next_ip [0] == CEE_RET)
-							: ((ins_flag & MONO_INST_TAILCALL) != 0));
+							: ((ins_flag & MONO_INST_TAILCALL) != 0);
 			ins = NULL;
 
 			//GSHAREDVT_FAILURE (il_op);
@@ -7343,8 +7343,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				g_assert (addr); // Doubles as boolean after tailcall check.
 			}
 
-			inst_tailcall && is_supported_tailcall (cfg, ip, method, NULL, fsig,
-						FALSE/*virtual irrelevant*/, addr != NULL, &tailcall);
+			if (G_UNLIKELY (inst_tailcall))
+				is_supported_tailcall (cfg, ip, method, NULL, fsig,
+							FALSE/*virtual irrelevant*/, addr != NULL, &tailcall);
 
 			if (save_last_error)
 				mono_emit_jit_icall (cfg, mono_marshal_clear_last_error, NULL);
@@ -7432,9 +7433,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			gboolean tailcall_virtual; tailcall_virtual = FALSE;
 			gboolean tailcall_extra_arg; tailcall_extra_arg = FALSE;
 
-			gboolean inst_tailcall; inst_tailcall = G_UNLIKELY (debug_tailcall_try_all
+			gboolean inst_tailcall; inst_tailcall = debug_tailcall_try_all
 							? (next_ip < end && next_ip [0] == CEE_RET)
-							: ((ins_flag & MONO_INST_TAILCALL) != 0));
+							: ((ins_flag & MONO_INST_TAILCALL) != 0);
 
 			gboolean make_generic_call_out_of_gsharedvt_method = FALSE;
 			gboolean will_have_imt_arg = FALSE;
@@ -7663,7 +7664,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					emit_widen = FALSE;
 				}
 				// FIXME This is only missed if in fact the intrinsic involves a call.
-				if (inst_tailcall) // FIXME
+				if (G_UNLIKELY (inst_tailcall)) // FIXME
 					mono_tailcall_print ("missed tailcall intrins %s -> %s\n", method->name, cmethod->name);
 				goto call_end;
 			}
@@ -7715,7 +7716,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					// like desktop, then this factor mostly falls away, except
 					// that inlining can affect tailcall performance due to
 					// signature match/mismatch.
-					if (inst_tailcall) // FIXME
+					if (G_UNLIKELY (inst_tailcall)) // FIXME
 						mono_tailcall_print ("missed tailcall inline %s -> %s\n", method->name, cmethod->name);
 					if (is_empty)
 						ins_has_side_effect = FALSE;
@@ -7895,7 +7896,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				ins = (MonoInst*)mini_emit_calli (cfg, fsig, sp, addr, NULL, NULL);
 
-				if (inst_tailcall) // FIXME
+				if (G_UNLIKELY (inst_tailcall)) // FIXME
 					mono_tailcall_print ("missed tailcall virtual generic %s -> %s\n", method->name, cmethod->name);
 				goto call_end;
 			}
@@ -8002,7 +8003,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if (cfg->llvm_only) {
 					// FIXME: Avoid initializing vtable_arg
 					ins = mini_emit_llvmonly_calli (cfg, fsig, sp, addr);
-					if (inst_tailcall) // FIXME
+					if (G_UNLIKELY (inst_tailcall)) // FIXME
 						mono_tailcall_print ("missed tailcall llvmonly gsharedvt %s -> %s\n", method->name, cmethod->name);
 				} else {
 					tailcall = tailcall_calli;
@@ -8053,7 +8054,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					}
 					// FIXME: Avoid initializing imt_arg/vtable_arg
 					ins = mini_emit_llvmonly_calli (cfg, fsig, sp, addr);
-					if (inst_tailcall) // FIXME
+					if (G_UNLIKELY (inst_tailcall)) // FIXME
 						mono_tailcall_print ("missed tailcall context_used_llvmonly %s -> %s\n", method->name, cmethod->name);
 				} else {
 					if (gshared_static_virtual) {
@@ -8065,7 +8066,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					} else {
 						addr = emit_get_rgctx_method (cfg, context_used, cmethod, MONO_RGCTX_INFO_GENERIC_METHOD_CODE);
 					}
-					if (inst_tailcall)
+					if (G_UNLIKELY (inst_tailcall))
 						mono_tailcall_print ("%s tailcall_calli#2 %s -> %s\n", tailcall_calli ? "making" : "missed", method->name, cmethod->name);
 					tailcall = tailcall_calli;
 					ins = (MonoInst*)mini_emit_calli_full (cfg, fsig, sp, addr, imt_arg, vtable_arg, tailcall);
@@ -8092,7 +8093,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				inline_costs += costs;
 
-				if (inst_tailcall) // FIXME
+				if (G_UNLIKELY (inst_tailcall)) // FIXME
 					mono_tailcall_print ("missed tailcall direct_icall %s -> %s\n", method->name, cmethod->name);
 				goto call_end;
 			}
@@ -8134,14 +8135,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				}
 
 				emit_widen = FALSE;
-				if (inst_tailcall) // FIXME
+				if (G_UNLIKELY (inst_tailcall)) // FIXME
 					mono_tailcall_print ("missed tailcall array_rank %s -> %s\n", method->name, cmethod->name);
 				goto call_end;
 			}
 
 			ins = mini_redirect_call (cfg, cmethod, fsig, sp, virtual_ ? sp [0] : NULL);
 			if (ins) {
-				if (inst_tailcall) // FIXME
+				if (G_UNLIKELY (inst_tailcall)) // FIXME
 					mono_tailcall_print ("missed tailcall redirect %s -> %s\n", method->name, cmethod->name);
 				goto call_end;
 			}

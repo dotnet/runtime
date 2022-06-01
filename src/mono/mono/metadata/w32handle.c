@@ -735,7 +735,7 @@ mono_w32handle_wait_one (gpointer handle, guint32 timeout, gboolean alertable)
 				goto done;
 			}
 
-			waited = mono_w32handle_timedwait_signal_handle (handle_data, timeout - elapsed, FALSE, alertable ? &alerted : NULL);
+			waited = mono_w32handle_timedwait_signal_handle (handle_data, timeout - (guint32)elapsed, FALSE, alertable ? &alerted : NULL);
 		}
 
 		if (alerted) {

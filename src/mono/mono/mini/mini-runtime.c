@@ -1084,7 +1084,7 @@ mono_print_ji (const MonoJumpInfo *ji)
 		break;
 	}
 	case MONO_PATCH_INFO_JIT_ICALL_ID:
-		printf ("[JIT_ICALL %s]", mono_find_jit_icall_info (ji->data.jit_icall_id)->name);
+		printf ("[JIT_ICALL %s]", mono_find_jit_icall_info ((MonoJitICallId)ji->data.jit_icall_id)->name);
 		break;
 	case MONO_PATCH_INFO_CLASS:
 	case MONO_PATCH_INFO_VTABLE: {
@@ -1444,13 +1444,13 @@ mono_resolve_patch_target_ext (MonoMemoryManager *mem_manager, MonoMethod *metho
 		target = ip;
 		break;
 	case MONO_PATCH_INFO_JIT_ICALL_ID: {
-		MonoJitICallInfo * const mi = mono_find_jit_icall_info (patch_info->data.jit_icall_id);
+		MonoJitICallInfo * const mi = mono_find_jit_icall_info ((MonoJitICallId)patch_info->data.jit_icall_id);
 		target = mono_icall_get_wrapper (mi);
 		break;
 	}
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL: {
-		MonoJitICallInfo * const mi = mono_find_jit_icall_info (patch_info->data.jit_icall_id);
+		MonoJitICallInfo * const mi = mono_find_jit_icall_info ((MonoJitICallId)patch_info->data.jit_icall_id);
 		target = mi->func;
 		break;
 	}
@@ -2127,7 +2127,7 @@ mono_emit_jit_dump (MonoJitInfo *jinfo, gpointer code)
 		memset (&record, 0, sizeof (record));
 
 		add_basic_JitCodeLoadRecord_info (&record);
-		record.header.total_size = sizeof (record) + nameLen + 1 + jinfo->code_size;
+		record.header.total_size = GSIZE_TO_UINT32 (sizeof (record) + nameLen + 1 + jinfo->code_size);
 		record.vma = (guint64)jinfo->code_start;
 		record.code_addr = (guint64)jinfo->code_start;
 		record.code_size = (guint64)jinfo->code_size;
@@ -2154,7 +2154,7 @@ add_basic_JitCodeLoadRecord_info (JitCodeLoadRecord *record)
 	record->header.id = JIT_CODE_LOAD;
 	record->header.timestamp = mono_clock_get_time_ns (clock_id);
 	record->pid = perf_dump_pid;
-	record->tid = syscall (SYS_gettid);
+	record->tid = (guint32) syscall (SYS_gettid);
 }
 
 void

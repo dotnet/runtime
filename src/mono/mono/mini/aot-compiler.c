@@ -3026,7 +3026,7 @@ encode_value (gint32 value, guint8 *buf, guint8 **endbuf)
 		p [1] = value & 0xff;
 		p += 2;
 	} else if ((value >= 0) && (value <= 0x1fffffff)) {
-		p [0] = (value >> 24) | 0xc0;
+		p [0] = GINT32_TO_UINT8 ((value >> 24) | 0xc0);
 		p [1] = (value >> 16) & 0xff;
 		p [2] = (value >> 8) & 0xff;
 		p [3] = value & 0xff;
@@ -6470,7 +6470,7 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 						}
 					}
 				} else if (patch_info->type == MONO_PATCH_INFO_JIT_ICALL_ADDR) {
-					const char *sym = mono_find_jit_icall_info (patch_info->data.jit_icall_id)->c_symbol;
+					const char *sym = mono_find_jit_icall_info ((MonoJitICallId)patch_info->data.jit_icall_id)->c_symbol;
 					if (!got_only && sym && acfg->aot_opts.direct_icalls) {
 						/* Call to a C function implementing a jit icall */
 						direct_call = TRUE;
@@ -6479,7 +6479,7 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 						direct_call_target = g_strdup_printf ("%s%s", acfg->user_symbol_prefix, sym);
 					}
 				} else if (patch_info->type == MONO_PATCH_INFO_JIT_ICALL_ID) {
-					MonoJitICallInfo * const info = mono_find_jit_icall_info (patch_info->data.jit_icall_id);
+					MonoJitICallInfo * const info = mono_find_jit_icall_info ((MonoJitICallId)patch_info->data.jit_icall_id);
 					const char * const sym = info->c_symbol;
 					if (!got_only && sym && acfg->aot_opts.direct_icalls && info->func == info->wrapper) {
 						/* Call to a jit icall without a wrapper */
@@ -7559,7 +7559,7 @@ get_plt_entry_debug_sym (MonoAotCompile *acfg, MonoJumpInfo *ji, GHashTable *cac
 		debug_sym = get_debug_sym (ji->data.method, prefix, cache);
 		break;
 	case MONO_PATCH_INFO_JIT_ICALL_ID:
-		debug_sym = g_strdup_printf ("%s_jit_icall_%s", prefix, mono_find_jit_icall_info (ji->data.jit_icall_id)->name);
+		debug_sym = g_strdup_printf ("%s_jit_icall_%s", prefix, mono_find_jit_icall_info ((MonoJitICallId)ji->data.jit_icall_id)->name);
 		break;
 	case MONO_PATCH_INFO_RGCTX_FETCH:
 		debug_sym = g_strdup_printf ("%s_rgctx_fetch_%d", prefix, acfg->label_generator ++);
@@ -7576,7 +7576,7 @@ get_plt_entry_debug_sym (MonoAotCompile *acfg, MonoJumpInfo *ji, GHashTable *cac
 		debug_sym = g_strdup_printf ("%s_jit_icall_native_specific_trampoline_lazy_fetch_%lu", prefix, (gulong)ji->data.uindex);
 		break;
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
-		debug_sym = g_strdup_printf ("%s_jit_icall_native_%s", prefix, mono_find_jit_icall_info (ji->data.jit_icall_id)->name);
+		debug_sym = g_strdup_printf ("%s_jit_icall_native_%s", prefix, mono_find_jit_icall_info ((MonoJitICallId)ji->data.jit_icall_id)->name);
 		break;
 	default:
 		break;

@@ -134,7 +134,7 @@ parse_arg (const char *arg)
 		usage ();
 	} else if (match_option (arg, "duration", &val)) {
 		char *end;
-		aot_profiler.duration = strtoul (val, &end, 10);
+		aot_profiler.duration = (int) strtoul (val, &end, 10);
 	} else if (match_option (arg, "write-at-method", &val)) {
 		aot_profiler.write_at = mono_method_desc_new (val, TRUE);
 		if (!aot_profiler.write_at) {
@@ -154,7 +154,7 @@ parse_arg (const char *arg)
 		aot_profiler.outfile_name = g_strdup (val);
 	} else if (match_option (arg, "port", &val)) {
 		char *end;
-		aot_profiler.command_port = strtoul (val, &end, 10);
+		aot_profiler.command_port = (int) strtoul (val, &end, 10);
 	} else if (match_option (arg, "verbose", NULL)) {
 		aot_profiler.verbose = TRUE;
 	} else {
@@ -263,7 +263,7 @@ helper_thread (void *arg)
 					continue;
 
 				char buf [64];
-				int len = read (fd, buf, sizeof (buf) - 1);
+				int len = (int) read (fd, buf, sizeof (buf) - 1);
 
 				if (len == SOCKET_ERROR)
 					continue;
@@ -382,7 +382,7 @@ mono_profiler_init_aot (const char *desc)
 			g_assert_not_reached ();
 #endif
 		}  else if (*aot_profiler.outfile_name == '#') {
-			aot_profiler.outfile = fdopen (strtol (aot_profiler.outfile_name + 1, NULL, 10), "a");
+			aot_profiler.outfile = fdopen ((int) strtol (aot_profiler.outfile_name + 1, NULL, 10), "a");
 		} else {
 			aot_profiler.outfile = fopen (aot_profiler.outfile_name, "w");
 		}

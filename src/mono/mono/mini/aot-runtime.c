@@ -2230,7 +2230,8 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 #ifndef TARGET_WIN32
 		guint8 *addr;
 		guint8 *page_start, *page_end;
-		int err, len;
+		int err;
+		gssize len;
 
 		addr = amodule->mem_begin;
 		g_assert (addr);

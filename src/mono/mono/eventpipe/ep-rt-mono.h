@@ -897,7 +897,7 @@ ep_rt_config_value_get_circular_mb (void)
 	if (!value)
 		value = g_getenv ("COMPlus_EventPipeCircularMB");
 	if (value)
-		circular_mb = strtoul (value, NULL, 10);
+		circular_mb = (uint32_t)strtoul (value, NULL, 10);
 	g_free (value);
 	return circular_mb;
 }

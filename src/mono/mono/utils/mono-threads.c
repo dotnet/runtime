@@ -973,8 +973,8 @@ mono_thread_info_init (size_t info_size)
 		mono_set_errno (0);
 		long threshold = strtol(sleepLimit, NULL, 10);
 		if ((errno == 0) && (threshold >= 40))  {
-			sleepAbortDuration = threshold;
-			sleepWarnDuration = threshold / 20;
+			sleepAbortDuration = (guint32) threshold;
+			sleepWarnDuration = (guint32) (threshold / 20);
 		} else
 			g_warning("MONO_SLEEP_ABORT_LIMIT must be a number >= 40");
 		g_free (sleepLimit);

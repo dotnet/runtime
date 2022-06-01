@@ -62,7 +62,7 @@ gboolean
 mono_trace_is_traced (GLogLevelFlags level, MonoTraceMask mask);
 
 #define MONO_TRACE_IS_TRACED(level, mask) \
-	G_UNLIKELY ((level) <= mono_internal_current_level && ((mask) & mono_internal_current_mask))
+	G_UNLIKELY ((level) <= mono_internal_current_level && ((mask) & mono_internal_current_mask) != 0)
 
 G_GNUC_UNUSED static void
 mono_tracev (GLogLevelFlags level, MonoTraceMask mask, const char *format, va_list args)
