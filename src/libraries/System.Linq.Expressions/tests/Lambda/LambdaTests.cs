@@ -960,7 +960,6 @@ namespace System.Linq.Expressions.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetFramework), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsNotNativeAot))]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.Netcoreapp, "Optimization in .NET Core")]
         public void ValidateThatInterpreterWithSimpleTypeUsesDynamicThunk()
         {
             Expression<Action<object,object,object>> complexaction = (object o1, object o2, object o3) => Console.WriteLine("");

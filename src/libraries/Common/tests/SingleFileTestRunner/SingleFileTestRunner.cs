@@ -20,7 +20,6 @@ public class SingleFileTestRunner : XunitTestFramework
     private SingleFileTestRunner(IMessageSink messageSink)
     : base(messageSink) { }
 
-
     public static int Main(string[] args)
     {
         var asm = typeof(SingleFileTestRunner).Assembly;

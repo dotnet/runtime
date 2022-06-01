@@ -395,7 +395,9 @@
     <ProjectExclusions Remove="$(MSBuildThisFileDirectory)System.Reflection\tests\System.Reflection.Tests.csproj" 
                        Condition="'$(TargetOS)' == 'windows'" />
     <ProjectExclusions Remove="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests.csproj" />
-    <ProjectExclusions Remove="$(MSBuildThisFileDirectory)System.Linq.Expressions\tests\System.Linq.Expressions.Tests.csproj" />
+    <!-- Remove the condition after https://github.com/dotnet/runtime/issues/70012 is fixed -->
+    <ProjectExclusions Remove="$(MSBuildThisFileDirectory)System.Linq.Expressions\tests\System.Linq.Expressions.Tests.csproj"
+                       Condition="'$(TargetOS)' == 'windows'" />
   </ItemGroup>
 
   <ItemGroup>
