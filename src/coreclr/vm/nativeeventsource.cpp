@@ -74,22 +74,12 @@ extern "C" void QCALLTYPE LogThreadPoolWorkerThreadWait(_In_z_ uint activeWorker
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE LogThreadPoolMinWorkerThreads(_In_z_ int WorkerThreads, _In_z_ short clrInstanceID)
+extern "C" void QCALLTYPE LogThreadPoolMinMaxThreads(_In_z_ short minWorkerThreads, _In_z_ short maxWorkerThreads, _In_z_ short minIOCompletionThreads, _In_z_ short maxIOCompletionThreads, _In_z_ short clrInstanceID)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
 
-    FireEtwThreadPoolMinWorkerThreads(WorkerThreads, clrInstanceID);
-
-    END_QCALL;
-}
-
-extern "C" void QCALLTYPE LogThreadPoolMaxWorkerThreads(_In_z_ int WorkerThreads, _In_z_ short clrInstanceID)
-{
-    QCALL_CONTRACT;
-    BEGIN_QCALL;
-
-    LogThreadPoolMaxWorkerThreads(WorkerThreads, clrInstanceID);
+    FireEtwThreadPoolMinMaxThreads(minWorkerThreads, maxWorkerThreads, minIOCompletionThreads, maxIOCompletionThreads, clrInstanceID);
 
     END_QCALL;
 }

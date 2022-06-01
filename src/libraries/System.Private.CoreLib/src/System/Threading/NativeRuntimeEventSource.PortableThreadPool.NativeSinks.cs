@@ -26,7 +26,7 @@ namespace System.Diagnostics.Tracing
         private static class Messages
         {
             public const string WorkerThread = "ActiveWorkerThreadCount={0};\nRetiredWorkerThreadCount={1};\nClrInstanceID={2}";
-            public const string WorkerThreadMinMax = "WorkerThreads={0};\nClrInstanceID={1}";
+            public const string MinMaxThreads = "MinWorkerThreads={0};\nMaxWorkerThreads={1};\nMinIOCompletionThreads={2};\nMaxIOCompletionThreads={3};\nClrInstanceID={4}";
             public const string WorkerThreadAdjustmentSample = "Throughput={0};\nClrInstanceID={1}";
             public const string WorkerThreadAdjustmentAdjustment = "AverageThroughput={0};\nNewWorkerThreadCount={1};\nReason={2};\nClrInstanceID={3}";
             public const string WorkerThreadAdjustmentStats = "Duration={0};\nThroughput={1};\nThreadWave={2};\nThroughputWave={3};\nThroughputErrorEstimate={4};\nAverageThroughputErrorEstimate={5};\nThroughputRatio={6};\nConfidence={7};\nNewControlSetting={8};\nNewThreadWaveMagnitude={9};\nClrInstanceID={10}";
@@ -42,7 +42,7 @@ namespace System.Diagnostics.Tracing
             public const EventTask ThreadPoolWorkerThreadAdjustment = (EventTask)18;
             public const EventTask ThreadPool = (EventTask)23;
             public const EventTask ThreadPoolWorkingThreadCount = (EventTask)22;
-            public const EventTask ThreadPoolMinMaxWorkerThreads = (EventTask)38;
+            public const EventTask ThreadPoolMinMaxThreads = (EventTask)38;
         }
 
         public static class Opcodes // this name and visibility is important for EventSource
@@ -252,25 +252,18 @@ namespace System.Diagnostics.Tracing
             LogThreadPoolIOPack(NativeOverlapped, Overlapped, ClrInstanceID);
         }
 
-        [Event(75, Level = EventLevel.Informational, Message = Messages.WorkerThreadMinMax, Task = Tasks.ThreadPoolMinMaxWorkerThreads, Opcode = Opcodes.Update, Version = 0, Keywords = Keywords.ThreadingKeyword)]
-        public unsafe void ThreadPoolMinWorkerThreads(
-            int WorkerThreads,
-            ushort ClrInstanceID = DefaultClrInstanceId)
-        {
-            if (IsEnabled(EventLevel.Informational, Keywords.ThreadingKeyword))
-            {
-                LogThreadPoolMinWorkerThreads(WorkerThreads, ClrInstanceID);
-            }
-        }
 
-        [Event(76, Level = EventLevel.Informational, Message = Messages.WorkerThreadMinMax, Task = Tasks.ThreadPoolMinMaxWorkerThreads, Opcode = Opcodes.Update, Version = 0, Keywords = Keywords.ThreadingKeyword)]
-        public unsafe void ThreadPoolMaxWorkerThreads(
-            int WorkerThreads,
+        [Event(59, Level = EventLevel.Informational, Message = Messages.MinMaxThreads, Task = Tasks.ThreadPoolMinMaxThreads, Opcode = EventOpcode.Info, Version = 0, Keywords = Keywords.ThreadingKeyword)]
+        public unsafe void ThreadPoolMinMaxThreads(
+            short MinWorkerThreads,
+            short MaxWorkerThreads,
+            short MinIOCompletionThreads,
+            short MaxIOCompletionThreads,
             ushort ClrInstanceID = DefaultClrInstanceId)
         {
             if (IsEnabled(EventLevel.Informational, Keywords.ThreadingKeyword))
             {
-                LogThreadPoolMaxWorkerThreads(WorkerThreads, ClrInstanceID);
+                LogThreadPoolMinMaxThreads(MinWorkerThreads, MaxWorkerThreads, MinIOCompletionThreads, MaxIOCompletionThreads, ClrInstanceID);
             }
         }
     }
