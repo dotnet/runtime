@@ -49,7 +49,7 @@ int32_t AppleCryptoNative_EccGenerateKey(int32_t keySizeBits,
     return ret;
 }
 
-uint64_t AppleCryptoNative_EccGetKeySizeInBits(SecKeyRef publicKey)
+int32_t AppleCryptoNative_EccGetKeySizeInBits(SecKeyRef publicKey)
 {
     if (publicKey == NULL)
         return 0;
@@ -71,7 +71,7 @@ uint64_t AppleCryptoNative_EccGetKeySizeInBits(SecKeyRef publicKey)
         else if (size != 256 && size != 384 && size != 521)
         {
             // Restrict the key size to sizes that are understood by managed code.
-            // Otherwise, return 0 so the managed code treats it as unsupported key size. 
+            // Otherwise, return 0 so the managed code treats it as unsupported key size.
             size = 0;
         }
     }
