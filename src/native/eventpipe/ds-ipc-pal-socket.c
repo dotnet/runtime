@@ -467,7 +467,7 @@ ipc_poll_fds (
 		if (timeout != EP_INFINITE_WAIT)
 			start = ep_rt_perf_counter_query ();
 
-		result_poll = poll (fds, nfds, (int)timeout);
+		result_poll = poll (fds, (nfds_t)nfds, (int)timeout);
 		retry_poll = ipc_retry_syscall (result_poll);
 
 		if (retry_poll && timeout != EP_INFINITE_WAIT) {
