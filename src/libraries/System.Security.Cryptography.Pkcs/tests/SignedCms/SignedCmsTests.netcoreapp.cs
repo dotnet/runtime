@@ -650,7 +650,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 CmsSigner cmsCounterSigner = new CmsSigner(SubjectIdentifierType.SubjectKeyIdentifier, counterSignerPubCert, counterSignerKey)
                 {
                     IncludeOption = X509IncludeOption.EndCertOnly,
-                    DigestAlgorithm = key is DSA ? new Oid(Oids.Sha1, Oids.Sha1) : new Oid(Oids.Sha256, Oids.Sha256)
+                    DigestAlgorithm = counterSignerKey is DSA ? new Oid(Oids.Sha1, Oids.Sha1) : new Oid(Oids.Sha256, Oids.Sha256)
                 };
 
                 cms.ComputeSignature(cmsSigner);
