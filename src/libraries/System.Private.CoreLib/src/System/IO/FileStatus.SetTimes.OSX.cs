@@ -14,7 +14,7 @@ namespace System.IO
         internal void SetCreationTime(SafeFileHandle handle, DateTimeOffset time, bool asDirectory)
             => SetCreationTime(handle, handle.Path, time, asDirectory);
 
-        private void SetCreationTime(SafeFileHandle? handle, ReadOnlySpan<char> path, DateTimeOffset time, bool asDirectory)
+        private void SetCreationTime(SafeFileHandle? handle, string? path, DateTimeOffset time, bool asDirectory)
         {
             // Try to set the attribute on the file system entry using setattrlist,
             // if we get ENOTSUP then it means that "The volume does not support
@@ -42,7 +42,7 @@ namespace System.IO
             }
         }
 
-        private static unsafe Interop.Error SetCreationTimeCore(SafeFileHandle? handle, ReadOnlySpan<char> path, long seconds, long nanoseconds)
+        private static unsafe Interop.Error SetCreationTimeCore(SafeFileHandle? handle, string? path, long seconds, long nanoseconds)
         {
             Interop.Sys.TimeSpec timeSpec = default;
 
@@ -55,14 +55,14 @@ namespace System.IO
 
             int result = handle is not null
                 ? Interop.libc.fsetattrlist(handle, &attrList, &timeSpec, sizeof(Interop.Sys.TimeSpec), new CULong(Interop.libc.FSOPT_NOFOLLOW))
-                : Interop.libc.setattrlist(path.ToString(), &attrList, &timeSpec, sizeof(Interop.Sys.TimeSpec), new CULong(Interop.libc.FSOPT_NOFOLLOW));
+                : Interop.libc.setattrlist(path!, &attrList, &timeSpec, sizeof(Interop.Sys.TimeSpec), new CULong(Interop.libc.FSOPT_NOFOLLOW));
 
             return result == 0 ?
                 Interop.Error.SUCCESS :
                 Interop.Sys.GetLastErrorInfo().Error;
         }
 
-        private void SetAccessOrWriteTime(SafeFileHandle? handle, ReadOnlySpan<char> path, DateTimeOffset time, bool isAccessTime, bool asDirectory) =>
+        private void SetAccessOrWriteTime(SafeFileHandle? handle, string? path, DateTimeOffset time, bool isAccessTime, bool asDirectory) =>
             SetAccessOrWriteTimeCore(handle, path, time, isAccessTime, checkCreationTime: true, asDirectory);
     }
 }

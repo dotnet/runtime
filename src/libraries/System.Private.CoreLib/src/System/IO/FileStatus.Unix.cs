@@ -322,13 +322,13 @@ namespace System.IO
             return UnixTimeToDateTimeOffset(_fileCache.ATime, _fileCache.ATimeNsec);
         }
 
-        internal void SetLastAccessTime(string? path, DateTimeOffset time, bool asDirectory)
+        internal void SetLastAccessTime(string path, DateTimeOffset time, bool asDirectory)
             => SetLastAccessTime(handle: null, path, time, asDirectory);
 
         internal void SetLastAccessTime(SafeFileHandle handle, DateTimeOffset time, bool asDirectory)
             => SetLastAccessTime(handle, handle.Path, time, asDirectory);
 
-        private void SetLastAccessTime(SafeFileHandle? handle, ReadOnlySpan<char> path, DateTimeOffset time, bool asDirectory)
+        private void SetLastAccessTime(SafeFileHandle? handle, string? path, DateTimeOffset time, bool asDirectory)
             => SetAccessOrWriteTime(handle, path, time, isAccessTime: true, asDirectory);
 
         internal DateTimeOffset GetLastWriteTime(ReadOnlySpan<char> path, bool continueOnError = false)
@@ -347,13 +347,13 @@ namespace System.IO
             return UnixTimeToDateTimeOffset(_fileCache.MTime, _fileCache.MTimeNsec);
         }
 
-        internal void SetLastWriteTime(string? path, DateTimeOffset time, bool asDirectory)
+        internal void SetLastWriteTime(string path, DateTimeOffset time, bool asDirectory)
             => SetLastWriteTime(handle: null, path, time, asDirectory);
 
         internal void SetLastWriteTime(SafeFileHandle handle, DateTimeOffset time, bool asDirectory)
             => SetLastWriteTime(handle, handle.Path, time, asDirectory);
 
-        internal void SetLastWriteTime(SafeFileHandle? handle, ReadOnlySpan<char> path, DateTimeOffset time, bool asDirectory)
+        internal void SetLastWriteTime(SafeFileHandle? handle, string? path, DateTimeOffset time, bool asDirectory)
             => SetAccessOrWriteTime(handle, path, time, isAccessTime: false, asDirectory);
 
         private static DateTimeOffset UnixTimeToDateTimeOffset(long seconds, long nanoseconds)
@@ -361,7 +361,7 @@ namespace System.IO
             return DateTimeOffset.FromUnixTimeSeconds(seconds).AddTicks(nanoseconds / NanosecondsPerTick);
         }
 
-        private unsafe void SetAccessOrWriteTimeCore(SafeFileHandle? handle, ReadOnlySpan<char> path, DateTimeOffset time, bool isAccessTime, bool checkCreationTime, bool asDirectory)
+        private unsafe void SetAccessOrWriteTimeCore(SafeFileHandle? handle, string? path, DateTimeOffset time, bool isAccessTime, bool checkCreationTime, bool asDirectory)
         {
             // This api is used to set creation time on non OSX platforms, and as a fallback for OSX platforms.
             // The reason why we use it to set 'creation time' is the below comment:
@@ -411,7 +411,7 @@ namespace System.IO
 #endif
             int rv = handle is not null
                 ? Interop.Sys.FUTimens(handle, buf)
-                : Interop.Sys.UTimensat(path.ToString(), buf);
+                : Interop.Sys.UTimensat(path!, buf);
             Interop.CheckIo(rv, path, asDirectory);
 
             // On OSX-like platforms, when the modification time is less than the creation time (including
