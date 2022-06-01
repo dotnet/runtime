@@ -8,12 +8,14 @@ namespace System.Formats.Tar
 {
     public sealed partial class GnuTarEntry : System.Formats.Tar.PosixTarEntry
     {
+        public GnuTarEntry(System.Formats.Tar.TarEntry other) { }
         public GnuTarEntry(System.Formats.Tar.TarEntryType entryType, string entryName) { }
         public System.DateTimeOffset AccessTime { get { throw null; } set { } }
         public System.DateTimeOffset ChangeTime { get { throw null; } set { } }
     }
     public sealed partial class PaxTarEntry : System.Formats.Tar.PosixTarEntry
     {
+        public PaxTarEntry(System.Formats.Tar.TarEntry other) { }
         public PaxTarEntry(System.Formats.Tar.TarEntryType entryType, string entryName) { }
         public PaxTarEntry(System.Formats.Tar.TarEntryType entryType, string entryName, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>> extendedAttributes) { }
         public System.Collections.Generic.IReadOnlyDictionary<string, string> ExtendedAttributes { get { throw null; } }
@@ -114,10 +116,12 @@ namespace System.Formats.Tar
     }
     public sealed partial class UstarTarEntry : System.Formats.Tar.PosixTarEntry
     {
+        public UstarTarEntry(System.Formats.Tar.TarEntry other) { }
         public UstarTarEntry(System.Formats.Tar.TarEntryType entryType, string entryName) { }
     }
     public sealed partial class V7TarEntry : System.Formats.Tar.TarEntry
     {
+        public V7TarEntry(System.Formats.Tar.TarEntry other) { }
         public V7TarEntry(System.Formats.Tar.TarEntryType entryType, string entryName) { }
     }
 }
