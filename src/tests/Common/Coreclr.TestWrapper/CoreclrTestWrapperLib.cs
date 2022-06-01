@@ -291,12 +291,6 @@ namespace CoreclrTestLib
 
             int exitCode = -100;
 
-            if (File.Exists($"{testBinaryBase}/.retry"))
-            {
-                // We have requested a work item retry because of an infra issue - no point executing further tests
-                return exitCode;
-            }
-
             // If a timeout was given to us by an environment variable, use it instead of the default
             // timeout.
             string environmentVar = Environment.GetEnvironmentVariable(TIMEOUT_ENVIRONMENT_VAR);
@@ -311,92 +305,99 @@ namespace CoreclrTestLib
             using (var errorWriter = new StreamWriter(errorStream))
             using (Process process = new Process())
             {
-                // Windows can run the executable implicitly
-                if (OperatingSystem.IsWindows())
+                if (File.Exists($"{testBinaryBase}/.retry"))
                 {
-                    process.StartInfo.FileName = executable;
-                }
-                // Non-windows needs to be told explicitly to run through /bin/bash shell
-                else
-                {
-                    process.StartInfo.FileName = "/bin/bash";
-                    process.StartInfo.Arguments = executable;
-                }
-
-                process.StartInfo.UseShellExecute = false;
-                process.StartInfo.RedirectStandardOutput = true;
-                process.StartInfo.RedirectStandardError = true;
-                process.StartInfo.EnvironmentVariables.Add("__Category", category);
-                process.StartInfo.EnvironmentVariables.Add("__TestBinaryBase", testBinaryBase);
-                process.StartInfo.EnvironmentVariables.Add("__OutputDir", outputDir);
-
-                DateTime startTime = DateTime.Now;
-                process.Start();
-
-                var cts = new CancellationTokenSource();
-                Task copyOutput = process.StandardOutput.BaseStream.CopyToAsync(outputStream, 4096, cts.Token);
-                Task copyError = process.StandardError.BaseStream.CopyToAsync(errorStream, 4096, cts.Token);
-
-                if (process.WaitForExit(timeout))
-                {
-                    // Process completed. Check process.ExitCode here.
-                    exitCode = process.ExitCode;
-
-                    var retriableCodes = MobileAppHandler.GetKnownExitCodes();
-                    if (retriableCodes.Contains(exitCode))
-                    {
-                        MobileAppHandler.CreateRetryFile($"{testBinaryBase}/.retry", exitCode, category);
-                    }
-
-                    Task.WaitAll(copyOutput, copyError);
+                    // We have requested a work item retry because of an infra issue - no point executing further tests
+                    outputWriter.WriteLine("\nretry file was found, quit testing...");
                 }
                 else
                 {
-                    // Timed out.
-
-                    DateTime endTime = DateTime.Now;
-
-                    try
+                    // Windows can run the executable implicitly
+                    if (OperatingSystem.IsWindows())
                     {
-                        cts.Cancel();
+                        process.StartInfo.FileName = executable;
                     }
-                    catch {}
-
-                    outputWriter.WriteLine("\ncmdLine:{0} Timed Out (timeout in milliseconds: {1}{2}{3}, start: {4}, end: {5})",
-                            executable, timeout, (environmentVar != null) ? " from variable " : "", (environmentVar != null) ? TIMEOUT_ENVIRONMENT_VAR : "",
-                            startTime.ToString(), endTime.ToString());
-                    errorWriter.WriteLine("\ncmdLine:{0} Timed Out (timeout in milliseconds: {1}{2}{3}, start: {4}, end: {5})",
-                            executable, timeout, (environmentVar != null) ? " from variable " : "", (environmentVar != null) ? TIMEOUT_ENVIRONMENT_VAR : "",
-                            startTime.ToString(), endTime.ToString());
-
-                    if (collectCrashDumps)
+                    // Non-windows needs to be told explicitly to run through /bin/bash shell
+                    else
                     {
-                        if (crashDumpFolder != null)
+                        process.StartInfo.FileName = "/bin/bash";
+                        process.StartInfo.Arguments = executable;
+                    }
+
+                    process.StartInfo.UseShellExecute = false;
+                    process.StartInfo.RedirectStandardOutput = true;
+                    process.StartInfo.RedirectStandardError = true;
+                    process.StartInfo.EnvironmentVariables.Add("__Category", category);
+                    process.StartInfo.EnvironmentVariables.Add("__TestBinaryBase", testBinaryBase);
+                    process.StartInfo.EnvironmentVariables.Add("__OutputDir", outputDir);
+
+                    DateTime startTime = DateTime.Now;
+                    process.Start();
+
+                    var cts = new CancellationTokenSource();
+                    Task copyOutput = process.StandardOutput.BaseStream.CopyToAsync(outputStream, 4096, cts.Token);
+                    Task copyError = process.StandardError.BaseStream.CopyToAsync(errorStream, 4096, cts.Token);
+
+                    if (process.WaitForExit(timeout))
+                    {
+                        // Process completed. Check process.ExitCode here.
+                        exitCode = process.ExitCode;
+
+                        var retriableCodes = CoreclrTestLib.MobileAppHandler.GetKnownExitCodes();
+                        if (retriableCodes.Contains(exitCode))
                         {
-                            foreach (var child in FindChildProcessesByName(process, "corerun"))
+                            CoreclrTestLib.MobileAppHandler.CreateRetryFile($"{testBinaryBase}/.retry", exitCode, category);
+                            outputWriter.WriteLine("\nretry file has been created.");
+                        }
+
+                        Task.WaitAll(copyOutput, copyError);
+                    }
+                    else
+                    {
+                        // Timed out.
+                        DateTime endTime = DateTime.Now;
+
+                        try
+                        {
+                            cts.Cancel();
+                        }
+                        catch {}
+
+                        outputWriter.WriteLine("\ncmdLine:{0} Timed Out (timeout in milliseconds: {1}{2}{3}, start: {4}, end: {5})",
+                                executable, timeout, (environmentVar != null) ? " from variable " : "", (environmentVar != null) ? TIMEOUT_ENVIRONMENT_VAR : "",
+                                startTime.ToString(), endTime.ToString());
+                        errorWriter.WriteLine("\ncmdLine:{0} Timed Out (timeout in milliseconds: {1}{2}{3}, start: {4}, end: {5})",
+                                executable, timeout, (environmentVar != null) ? " from variable " : "", (environmentVar != null) ? TIMEOUT_ENVIRONMENT_VAR : "",
+                                startTime.ToString(), endTime.ToString());
+
+                        if (collectCrashDumps)
+                        {
+                            if (crashDumpFolder != null)
                             {
-                                string crashDumpPath = Path.Combine(Path.GetFullPath(crashDumpFolder), string.Format("crashdump_{0}.dmp", child.Id));
-                                Console.WriteLine($"Attempting to collect crash dump: {crashDumpPath}");
-                                if (CollectCrashDump(child, crashDumpPath))
+                                foreach (var child in FindChildProcessesByName(process, "corerun"))
                                 {
-                                    Console.WriteLine("Collected crash dump: {0}", crashDumpPath);
-                                }
-                                else
-                                {
-                                    Console.WriteLine("Failed to collect crash dump");
+                                    string crashDumpPath = Path.Combine(Path.GetFullPath(crashDumpFolder), string.Format("crashdump_{0}.dmp", child.Id));
+                                    Console.WriteLine($"Attempting to collect crash dump: {crashDumpPath}");
+                                    if (CollectCrashDump(child, crashDumpPath))
+                                    {
+                                        Console.WriteLine("Collected crash dump: {0}", crashDumpPath);
+                                    }
+                                    else
+                                    {
+                                        Console.WriteLine("Failed to collect crash dump");
+                                    }
                                 }
                             }
                         }
-                    }
 
-                    // kill the timed out processes after we've collected dumps
-                    process.Kill(entireProcessTree: true);
+                        // kill the timed out processes after we've collected dumps
+                        process.Kill(entireProcessTree: true);
+                    }
                 }
 
-               outputWriter.WriteLine("Test Harness Exitcode is : " + exitCode.ToString());
-               outputWriter.Flush();
-
-               errorWriter.Flush();
+                outputWriter.WriteLine("Test Harness Exitcode is : " + exitCode.ToString());
+                outputWriter.Flush();
+                errorWriter.Flush();
             }
 
             return exitCode;

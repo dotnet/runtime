@@ -23,12 +23,6 @@ namespace CoreclrTestLib
         {
             int exitCode = -100;
 
-            if (File.Exists($"{testBinaryBase}/.retry"))
-            {
-                // We have requested a work item retry because of an infra issue - no point executing further tests
-                return exitCode;
-            }
-
             string outputFile = Path.Combine(reportBase, action, $"{category}_{action}.output.txt");
             string errorFile = Path.Combine(reportBase, action, $"{category}_{action}.error.txt");
             bool platformValueFlag = true;
@@ -41,111 +35,119 @@ namespace CoreclrTestLib
             using (var outputWriter = new StreamWriter(outputStream))
             using (var errorWriter = new StreamWriter(errorStream))
             {
-                if ((platform != "android") && (platform != "apple"))
+                if (File.Exists($"{testBinaryBase}/.retry"))
                 {
-                    outputWriter.WriteLine($"Incorrect value of platform. Provided {platform}. Valid strings are android and apple.");
-                    platformValueFlag = false;
+                    outputWriter.WriteLine("\nretry file was found, quit mobile app installation/uninstallation...");
                 }
-
-                if ((action != "install") && (action != "uninstall"))
+                else
                 {
-                    outputWriter.WriteLine($"Incorrect value of action. Provided {action}. Valid strings are install and uninstall.");
-                    actionValueFlag = false;
-                }
-
-                if (platformValueFlag && actionValueFlag)
-                {
-                    int timeout = 240000; // Set timeout to 4 mins, because the installation on Android arm64/32 devices could take up to 10 mins on CI
-                    string dotnetCmd_raw = System.Environment.GetEnvironmentVariable("__TestDotNetCmd");
-                    string xharnessCmd_raw = System.Environment.GetEnvironmentVariable("XHARNESS_CLI_PATH");
-                    string dotnetCmd = string.IsNullOrEmpty(dotnetCmd_raw) ? "dotnet" : dotnetCmd_raw;
-                    string xharnessCmd = string.IsNullOrEmpty(xharnessCmd_raw) ? "xharness" : $"exec {xharnessCmd_raw}";
-                    string appExtension = platform == "android" ? "apk" : "app";
-
-                    string cmdStr = $"{dotnetCmd} {xharnessCmd} {platform} {action}";
-
-                    if (platform == "android")
+                    if ((platform != "android") && (platform != "apple"))
                     {
-                        cmdStr += $" --package-name=net.dot.{category}";
+                        outputWriter.WriteLine($"Incorrect value of platform. Provided {platform}. Valid strings are android and apple.");
+                        platformValueFlag = false;
+                    }
+
+                    if ((action != "install") && (action != "uninstall"))
+                    {
+                        outputWriter.WriteLine($"Incorrect value of action. Provided {action}. Valid strings are install and uninstall.");
+                        actionValueFlag = false;
+                    }
+
+                    if (platformValueFlag && actionValueFlag)
+                    {
+                        int timeout = 240000; // Set timeout to 4 mins, because the installation on Android arm64/32 devices could take up to 10 mins on CI
+                        string dotnetCmd_raw = System.Environment.GetEnvironmentVariable("__TestDotNetCmd");
+                        string xharnessCmd_raw = System.Environment.GetEnvironmentVariable("XHARNESS_CLI_PATH");
+                        string dotnetCmd = string.IsNullOrEmpty(dotnetCmd_raw) ? "dotnet" : dotnetCmd_raw;
+                        string xharnessCmd = string.IsNullOrEmpty(xharnessCmd_raw) ? "xharness" : $"exec {xharnessCmd_raw}";
+                        string appExtension = platform == "android" ? "apk" : "app";
+
+                        string cmdStr = $"{dotnetCmd} {xharnessCmd} {platform} {action}";
+
+                        if (platform == "android")
+                        {
+                            cmdStr += $" --package-name=net.dot.{category}";
+
+                            if (action == "install")
+                            {
+                                cmdStr += $" --app={testBinaryBase}/{category}.{appExtension} --output-directory={reportBase}/{action}";
+                            }
+                        }
+                        else // platform is apple
+                        {
+                            cmdStr += $" --output-directory={reportBase}/{action} --target=ios-simulator-64"; //To Do: target should be either emulator or device
+
+                            if (action == "install")
+                            {
+                                cmdStr += $" --app={testBinaryBase}/{category}.{appExtension}";
+                            }
+                            else // action is uninstall
+                            {
+                                cmdStr += $" --app=net.dot.{category}";
+                            }
+                        }
 
                         if (action == "install")
                         {
-                            cmdStr += $" --app={testBinaryBase}/{category}.{appExtension} --output-directory={reportBase}/{action}";
-                        }
-                    }
-                    else // platform is apple
-                    {
-                        cmdStr += $" --output-directory={reportBase}/{action} --target=ios-simulator-64"; //To Do: target should be either emulator or device
-
-                        if (action == "install")
-                        {
-                            cmdStr += $" --app={testBinaryBase}/{category}.{appExtension}";
-                        }
-                        else // action is uninstall
-                        {
-                            cmdStr += $" --app=net.dot.{category}";
-                        }
-                    }
-
-                    if (action == "install")
-                    {
-                        cmdStr += " --timeout 00:02:30";
-                    }
-
-                    using (Process process = new Process())
-                    {
-                        if (OperatingSystem.IsWindows())
-                        {
-                            process.StartInfo.FileName = "cmd.exe";
-                        }
-                        else
-                        {
-                            process.StartInfo.FileName = "/bin/bash";
+                            cmdStr += " --timeout 00:02:30";
                         }
 
-                        process.StartInfo.Arguments = ConvertCmd2Arg(cmdStr);
-                        process.StartInfo.UseShellExecute = false;
-                        process.StartInfo.RedirectStandardOutput = true;
-                        process.StartInfo.RedirectStandardError = true;
-
-                        DateTime startTime = DateTime.Now;
-                        process.Start();
-
-                        var cts = new CancellationTokenSource();
-                        Task copyOutput = process.StandardOutput.BaseStream.CopyToAsync(outputStream, 4096, cts.Token);
-                        Task copyError = process.StandardError.BaseStream.CopyToAsync(errorStream, 4096, cts.Token);
-
-                        if (process.WaitForExit(timeout))
+                        using (Process process = new Process())
                         {
-                            // Process completed.
-                            exitCode = process.ExitCode;
-
-                            
-                            var retriableCodes = GetKnownExitCodes();
-                            if (retriableCodes.Contains(exitCode))
+                            if (OperatingSystem.IsWindows())
                             {
-                                CreateRetryFile($"{testBinaryBase}/.retry", exitCode, category);
+                                process.StartInfo.FileName = "cmd.exe";
+                            }
+                            else
+                            {
+                                process.StartInfo.FileName = "/bin/bash";
                             }
 
-                            Task.WaitAll(copyOutput, copyError);
-                        }
-                        else
-                        {
-                            //Time out.
-                            DateTime endTime = DateTime.Now;
+                            process.StartInfo.Arguments = ConvertCmd2Arg(cmdStr);
+                            process.StartInfo.UseShellExecute = false;
+                            process.StartInfo.RedirectStandardOutput = true;
+                            process.StartInfo.RedirectStandardError = true;
 
-                            try
+                            DateTime startTime = DateTime.Now;
+                            process.Start();
+
+                            var cts = new CancellationTokenSource();
+                            Task copyOutput = process.StandardOutput.BaseStream.CopyToAsync(outputStream, 4096, cts.Token);
+                            Task copyError = process.StandardError.BaseStream.CopyToAsync(errorStream, 4096, cts.Token);
+
+                            if (process.WaitForExit(timeout))
                             {
-                                cts.Cancel();
+                                // Process completed.
+                                exitCode = process.ExitCode;
+
+                                
+                                var retriableCodes = GetKnownExitCodes();
+                                if (retriableCodes.Contains(exitCode))
+                                {
+                                    CreateRetryFile($"{testBinaryBase}/.retry", exitCode, category);
+                                    outputWriter.WriteLine("\nretry file has been created.");
+                                }
+
+                                Task.WaitAll(copyOutput, copyError);
                             }
-                            catch {}
+                            else
+                            {
+                                //Time out.
+                                DateTime endTime = DateTime.Now;
 
-                            outputWriter.WriteLine("\ncmdLine:{0} Timed Out (timeout in milliseconds: {1}, start: {2}, end: {3})",
-                                    cmdStr, timeout, startTime.ToString(), endTime.ToString());
-                            errorWriter.WriteLine("\ncmdLine:{0} Timed Out (timeout in milliseconds: {1}, start: {2}, end: {3})",
-                                    cmdStr, timeout, startTime.ToString(), endTime.ToString());
+                                try
+                                {
+                                    cts.Cancel();
+                                }
+                                catch {}
 
-                            process.Kill(entireProcessTree: true);
+                                outputWriter.WriteLine("\ncmdLine:{0} Timed Out (timeout in milliseconds: {1}, start: {2}, end: {3})",
+                                        cmdStr, timeout, startTime.ToString(), endTime.ToString());
+                                errorWriter.WriteLine("\ncmdLine:{0} Timed Out (timeout in milliseconds: {1}, start: {2}, end: {3})",
+                                        cmdStr, timeout, startTime.ToString(), endTime.ToString());
+
+                                process.Kill(entireProcessTree: true);
+                            }
                         }
                     }
                 }
