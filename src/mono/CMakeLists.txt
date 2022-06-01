@@ -503,7 +503,7 @@ if(GCC)
   set(WARNINGS_C "-Wmissing-prototypes -Wstrict-prototypes -Wnested-externs")
 
   set(WERROR "-Werror=return-type")
-  set(WERROR_C "-Werror=implicit-function-declaration -Werror=implicit-int-conversion")
+  set(WERROR_C "-Werror=implicit-function-declaration")
 
   if (CMAKE_C_COMPILER_ID MATCHES "Clang")
     set(WARNINGS "${WARNINGS} -Qunused-arguments -Wno-tautological-compare -Wno-parentheses-equality -Wno-self-assign -Wno-return-stack-address -Wno-constant-logical-operand -Wno-zero-length-array -Wno-asm-operand-widths")
