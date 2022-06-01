@@ -79,6 +79,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/70091")]
         public static unsafe void MakeTypedReference_ToObjectTests_WithPointer()
         {
             float* pointer = (float*)(nuint)0x12345678;
@@ -92,6 +93,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/70091")]
         public static unsafe void MakeTypedReference_ToObjectTests_WithFunctionPointer()
         {
             delegate*<int, float, string> pointer = (delegate*<int, float, string>)(void*)(nuint)0x12345678;
