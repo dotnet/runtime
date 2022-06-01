@@ -395,10 +395,10 @@ ICALL_EXPORT
 void
 mono_marshal_clear_last_error (void);
 
-guint
+guint8
 mono_type_to_ldind (MonoType *type);
 
-guint
+guint8
 mono_type_to_stind (MonoType *type);
 
 /* functions to create various architecture independent helper functions */

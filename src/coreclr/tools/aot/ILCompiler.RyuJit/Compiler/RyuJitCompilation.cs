@@ -144,7 +144,7 @@ namespace ILCompiler
         {
             if (Logger.IsVerbose)
             {
-                Logger.Writer.WriteLine($"Compiling {methodsToCompile.Count} methods...");
+                Logger.LogMessage($"Compiling {methodsToCompile.Count} methods...");
             }
 
             Parallel.ForEach(
@@ -162,7 +162,7 @@ namespace ILCompiler
             {
                 if (Logger.IsVerbose)
                 {
-                    Logger.Writer.WriteLine($"Compiling {methodCodeNodeNeedingCode.Method}...");
+                    Logger.LogMessage($"Compiling {methodCodeNodeNeedingCode.Method}...");
                 }
 
                 CompileSingleMethod(corInfo, methodCodeNodeNeedingCode);

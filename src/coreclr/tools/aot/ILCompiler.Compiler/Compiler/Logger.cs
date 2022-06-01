@@ -19,6 +19,8 @@ namespace ILCompiler
 {
     public class Logger
     {
+        private readonly ILogWriter _logWriter;
+
         private readonly HashSet<int> _suppressedWarnings;
 
         private readonly bool _isSingleWarn;
@@ -27,15 +29,13 @@ namespace ILCompiler
         private readonly HashSet<string> _trimWarnedAssemblies = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<string> _aotWarnedAssemblies = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        public static Logger Null = new Logger(TextWriter.Null, false);
-
-        public TextWriter Writer { get; }
+        public static Logger Null = new Logger(new TextLogWriter(TextWriter.Null), false);
 
         public bool IsVerbose { get; }
 
-        public Logger(TextWriter writer, bool isVerbose, IEnumerable<int> suppressedWarnings, bool singleWarn, IEnumerable<string> singleWarnEnabledModules, IEnumerable<string> singleWarnDisabledModules)
+        public Logger(ILogWriter writer, bool isVerbose, IEnumerable<int> suppressedWarnings, bool singleWarn, IEnumerable<string> singleWarnEnabledModules, IEnumerable<string> singleWarnDisabledModules)
         {
-            Writer = TextWriter.Synchronized(writer);
+            _logWriter = writer;
             IsVerbose = isVerbose;
             _suppressedWarnings = new HashSet<int>(suppressedWarnings);
             _isSingleWarn = singleWarn;
@@ -43,30 +43,40 @@ namespace ILCompiler
             _singleWarnDisabledAssemblies = new HashSet<string>(singleWarnDisabledModules, StringComparer.OrdinalIgnoreCase);
         }
 
-        public Logger(TextWriter writer, bool isVerbose)
+        public Logger(TextWriter writer, bool isVerbose, IEnumerable<int> suppressedWarnings, bool singleWarn, IEnumerable<string> singleWarnEnabledModules, IEnumerable<string> singleWarnDisabledModules)
+            : this(new TextLogWriter(writer), isVerbose, suppressedWarnings, singleWarn, singleWarnEnabledModules, singleWarnDisabledModules)
+        {
+        }
+
+        public Logger(ILogWriter writer, bool isVerbose)
             : this(writer, isVerbose, Array.Empty<int>(), singleWarn: false, Array.Empty<string>(), Array.Empty<string>())
+        {
+        }
+
+        public Logger(TextWriter writer, bool isVerbose)
+            : this(new TextLogWriter(writer), isVerbose)
         {
         }
 
         public void LogMessage(string message)
         {
             MessageContainer? messageContainer = MessageContainer.CreateInfoMessage(message);
-            if(messageContainer.HasValue)
-                Writer.WriteLine(messageContainer.Value.ToMSBuildString());
+            if (messageContainer.HasValue)
+                _logWriter.WriteMessage(messageContainer.Value);
         }
 
         public void LogWarning(string text, int code, MessageOrigin origin, string subcategory = MessageSubCategory.None)
         {
             MessageContainer? warning = MessageContainer.CreateWarningMessage(this, text, code, origin, subcategory);
             if (warning.HasValue)
-                Writer.WriteLine(warning.Value.ToMSBuildString());
+                _logWriter.WriteWarning(warning.Value);
         }
 
         public void LogWarning(MessageOrigin origin, DiagnosticId id, params string[] args)
         {
             MessageContainer? warning = MessageContainer.CreateWarningMessage(this, origin, id, args);
             if (warning.HasValue)
-                Writer.WriteLine(warning.Value.ToMSBuildString());
+                _logWriter.WriteWarning(warning.Value);
         }
 
         public void LogWarning(string text, int code, TypeSystemEntity origin, string subcategory = MessageSubCategory.None) =>
@@ -139,14 +149,14 @@ namespace ILCompiler
         {
             MessageContainer? error = MessageContainer.CreateErrorMessage(text, code, subcategory, origin);
             if (error.HasValue)
-                Writer.WriteLine(error.Value.ToMSBuildString());
+                _logWriter.WriteError(error.Value);
         }
 
         public void LogError(MessageOrigin? origin, DiagnosticId id, params string[] args)
         {
             MessageContainer? error = MessageContainer.CreateErrorMessage(origin, id, args);
             if (error.HasValue)
-                Writer.WriteLine(error.Value.ToMSBuildString());
+                _logWriter.WriteError(error.Value);
         }
 
         public void LogError(string text, int code, TypeSystemEntity origin, string subcategory = MessageSubCategory.None) =>

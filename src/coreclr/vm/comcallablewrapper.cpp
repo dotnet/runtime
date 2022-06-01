@@ -647,7 +647,7 @@ NOINLINE void LogCCWRefCountChange_BREAKPOINT(ComCallWrapper *pCCW)
         DebugBreak();
 }
 
-void SimpleComCallWrapper::BuildRefCountLogMessage(LPCWSTR wszOperation, StackSString &ssMessage, ULONG dwEstimatedRefCount)
+void SimpleComCallWrapper::BuildRefCountLogMessage(LPCSTR szOperation, StackSString &ssMessage, ULONG dwEstimatedRefCount)
 {
     CONTRACTL
     {
@@ -678,6 +678,8 @@ void SimpleComCallWrapper::BuildRefCountLogMessage(LPCWSTR wszOperation, StackSS
                 className.SetUTF8(pszClassName);
                 SString nameSpace;
                 nameSpace.SetUTF8(pszNamespace);
+                SString operation;
+                nameSpace.SetUTF8(szOperation);
 
                 FireEtwCCWRefCountChange(
                     handle,
@@ -685,7 +687,7 @@ void SimpleComCallWrapper::BuildRefCountLogMessage(LPCWSTR wszOperation, StackSS
                     this,
                     dwEstimatedRefCount,
                     NULL,                   // domain value is not interesting in CoreCLR
-                    className.GetUnicode(), nameSpace.GetUnicode(), wszOperation, GetClrInstanceId());
+                    className.GetUnicode(), nameSpace.GetUnicode(), operation.GetUnicode(), GetClrInstanceId());
             }
             EX_CATCH
             { }
@@ -696,13 +698,11 @@ void SimpleComCallWrapper::BuildRefCountLogMessage(LPCWSTR wszOperation, StackSS
         {
             EX_TRY
             {
-                StackSString ssClassName;
-                TypeString::AppendType(ssClassName, TypeHandle(m_pMT));
-
-                ssMessage.Printf(W("LogCCWRefCountChange[%s]: '%s', Object=poi(%p)"),
-                    wszOperation,                                          // %s operation
-                    ssClassName.GetUnicode(),                              // %s type name
-                    handle);               // %p Object
+                ssMessage.Printf("LogCCWRefCountChange[%s]: '%s.%s', Object=poi(%p)",
+                    szOperation,
+                    pszNamespace,
+                    pszClassName,
+                    handle);
             }
             EX_CATCH
             { }
@@ -726,8 +726,8 @@ void SimpleComCallWrapper::LogRefCount(ComCallWrapper *pWrap, StackSString &ssMe
     {
         EX_TRY
         {
-            ssMessage.AppendPrintf(W(", RefCount=%u\n"), dwRefCountToLog);
-            WszOutputDebugString(ssMessage.GetUnicode());
+            ssMessage.AppendPrintf(", RefCount=%u\n", dwRefCountToLog);
+            OutputDebugStringUtf8(ssMessage.GetUTF8NoConvert());
         }
         EX_CATCH
         { }
@@ -751,7 +751,7 @@ LONGLONG SimpleComCallWrapper::ReleaseImplWithLogging(LONGLONG * pRefCount)
 
     StackSString ssMessage;
     ComCallWrapper *pWrap = GetMainWrapper();
-    BuildRefCountLogMessage(W("Release"), ssMessage, GET_EXT_COM_REF(READ_REF(*pRefCount)-1));
+    BuildRefCountLogMessage("Release", ssMessage, GET_EXT_COM_REF(READ_REF(*pRefCount)-1));
 
     // Decrement the ref count
     newRefCount = ::InterlockedDecrement64(pRefCount);
@@ -853,7 +853,7 @@ VOID SimpleComCallWrapper::Neuter()
     ComCallWrapper *pWrap = m_pWrap;
     if (g_pConfig->LogCCWRefCountChangeEnabled())
     {
-        BuildRefCountLogMessage(W("Neuter"), ssMessage, GET_EXT_COM_REF(READ_REF(m_llRefCount) | CLEANUP_SENTINEL));
+        BuildRefCountLogMessage("Neuter", ssMessage, GET_EXT_COM_REF(READ_REF(m_llRefCount) | CLEANUP_SENTINEL));
     }
 
     // Set the neutered bit on the ref-count.

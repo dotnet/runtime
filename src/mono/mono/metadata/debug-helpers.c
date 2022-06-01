@@ -114,8 +114,8 @@ static void
 mono_custom_modifiers_get_desc (GString *res, const MonoType *type, gboolean include_namespace)
 {
 	ERROR_DECL (error);
-	int count = mono_type_custom_modifier_count (type);
-	for (int i = 0; i < count; ++i) {
+	uint8_t count = mono_type_custom_modifier_count (type);
+	for (uint8_t i = 0; i < count; ++i) {
 		gboolean required;
 		MonoType *cmod_type = mono_type_get_custom_modifier (type, i, &required, error);
 		mono_error_assert_ok (error);
@@ -655,7 +655,7 @@ dis_one (GString *str, MonoDisHelper *dh, MonoMethod *method, const unsigned cha
 	}
 	il_code = mono_method_header_get_code (header, NULL, NULL);
 
-	label = ip - il_code;
+	label = GPTRDIFF_TO_UINT32 (ip - il_code);
 	if (dh->indenter) {
 		tmp = dh->indenter (dh, method, label);
 		g_string_append (str, tmp);
@@ -1064,7 +1064,7 @@ mono_object_describe (MonoObject *obj)
 }
 
 static void
-print_field_value (const char *field_ptr, MonoClassField *field, int type_offset)
+print_field_value (const char *field_ptr, MonoClassField *field, gssize type_offset)
 {
 	MonoType *type;
 	g_print ("At %p (ofs: %2d) %s: ", field_ptr, m_field_is_from_update (field) ? -1 : (field->offset + type_offset), mono_field_get_name (field));
