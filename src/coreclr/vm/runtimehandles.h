@@ -176,9 +176,6 @@ public:
     static FCDECL1(MethodDesc *, GetFirstIntroducedMethod, ReflectClassBaseObject* pType);
     static FCDECL1(void, GetNextIntroducedMethod, MethodDesc **ppMethod);
 
-    // Gets the method table for a shared element type
-    static FCDECL1(void*, GetElementTypeMethodTable, CorElementType elementType);
-
     static FCDECL1(IMDInternalImport*, GetMetadataImport, ReflectClassBaseObject * pModuleUNSAFE);
 
     // Helper methods not called by managed code

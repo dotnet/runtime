@@ -5,7 +5,6 @@
 // These are blob that must be dealt with by the compiler.
 
 using System.Diagnostics;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 
 namespace System
@@ -30,7 +29,7 @@ namespace System
             // for System.UIntPtr without inspecting the type desc any further. Otherwise, the type handle
             // is just wrapping a method table pointer, so return that directly with a reinterpret cast.
             MethodTable* pMethodTable = typeHandle.IsTypeDesc
-                ? RuntimeTypeHandle.GetElementTypeMethodTable(CorElementType.ELEMENT_TYPE_U)
+                ? (MethodTable*)RuntimeTypeHandle.GetValueInternal(typeof(UIntPtr).TypeHandle)
                 : typeHandle.AsMethodTable();
 
             Debug.Assert(pMethodTable is not null);
