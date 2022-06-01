@@ -4523,6 +4523,9 @@ public:
 
     bool fgMorphBlockStmt(BasicBlock* block, Statement* stmt DEBUGARG(const char* msg));
 
+    static fgWalkResult fgMorphArrayOpsTreeCB(GenTree** pTree, Compiler::fgWalkData* pWalkData);
+    PhaseStatus fgMorphArrayOps();
+
     void fgSetOptions();
 
 #ifdef DEBUG
