@@ -124,8 +124,16 @@ namespace System.Diagnostics.Tests
 
         public static InstanceDataCollectionCollection GetInstanceDataCollectionCollection()
         {
-            PerformanceCounterCategory pcc =  Helpers.RetryOnAllPlatforms(() => new PerformanceCounterCategory("Processor"));
-            return Helpers.RetryOnAllPlatforms(() => pcc.ReadCategory());
+            PerformanceCounterCategory pcc = Helpers.RetryOnAllPlatforms(() => new PerformanceCounterCategory("Processor"));
+            return Helpers.RetryOnAllPlatforms(() =>
+            {
+                var idcc = pcc.ReadCategory();
+                if (idcc.Values.Count == 0)
+                {
+                    throw new Exception();
+                }
+                return idcc;
+            });
         }
 
         public static InstanceDataCollection GetInstanceDataCollection()
