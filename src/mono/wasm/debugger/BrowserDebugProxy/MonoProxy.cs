@@ -1327,7 +1327,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 var assemblyAndMethodTokenArr = assemblyAndMethodToken.Value["result"]["value"].Value<string>().Split('|');
                 var assemblyName = assemblyAndMethodTokenArr[0];
-                var methodToken = Convert.ToInt32(assemblyAndMethodTokenArr[1]) & 0xffffff;
+                var methodToken = Convert.ToInt32(assemblyAndMethodTokenArr[1]) & 0xffffff; //token
 
                 var store = await LoadStore(sessionId, token);
                 AssemblyInfo assembly = store.GetAssemblyByName(assemblyName);
