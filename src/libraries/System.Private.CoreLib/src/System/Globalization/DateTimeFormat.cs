@@ -799,6 +799,7 @@ namespace System
                 if (tokenLen >= 3)
                 {
                     // 'zzz*' or longer format e.g "-07:30"
+                    result.Append(':');
                     result.AppendSpanFormattable(offset.Minutes, "00", CultureInfo.InvariantCulture);
                 }
             }
