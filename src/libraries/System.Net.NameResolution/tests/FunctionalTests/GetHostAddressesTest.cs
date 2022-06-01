@@ -197,7 +197,6 @@ namespace System.Net.NameResolution.Tests
         // This is a regression test for https://github.com/dotnet/runtime/issues/63552
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/33378", TestPlatforms.AnyUnix)] // Cancellation of an outstanding getaddrinfo is not supported on *nix.
-        [SkipOnCoreClr("JitStress interferes with cancellation timing", RuntimeTestModes.JitStress | RuntimeTestModes.JitStressRegs)]
         public async Task DnsGetHostAddresses_ResolveParallelCancelOnFailure_AllCallsReturn()
         {
             string invalidAddress = TestSettings.UncachedHost;
