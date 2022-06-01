@@ -7273,7 +7273,7 @@ MONO_RESTORE_WARNING
 			values [ins->dreg] = LLVMBuildLoad2 (builder, IntPtrType (), LLVMBuildIntToPtr (builder, LLVMConstInt (IntPtrType (), ins->inst_offset, TRUE), ptrtype, ""), "");
 #elif defined(TARGET_AMD64) && defined(TARGET_OSX)
 			/* See mono_amd64_emit_tls_get () */
-			int offset = mono_amd64_get_tls_gs_offset () + (ins->inst_offset * 8);
+			int offset = mono_amd64_get_tls_gs_offset () + (int)(ins->inst_offset * 8);
 
 			// 256 == GS segment register
 			LLVMTypeRef ptrtype = LLVMPointerType (IntPtrType (), 256);
