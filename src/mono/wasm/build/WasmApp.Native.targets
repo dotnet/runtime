@@ -427,6 +427,11 @@
       <FileWrites Include="$(_WasmIntermediateOutputPath)dotnet.js.symbols" Condition="'$(WasmEmitSymbolMap)' == 'true'" />
     </ItemGroup>
 
+    <ItemGroup>
+        <!-- WasmOptConfigurationFlags property is set by reading from emcc-props.json -->
+        <WasmOptConfigurationFlags Condition="'$(WasmOptConfigurationFlags)' != ''" Include="$(WasmOptConfigurationFlags)" />
+    </ItemGroup>
+
     <Message Text="Stripping symbols from dotnet.wasm ..." Importance="High" Condition="'$(WasmNativeStrip)' == 'true'" />
     <Exec Command='wasm-opt$(_ExeExt) --enable-exception-handling @(WasmOptConfigurationFlags->'%(Identity)', ' ') --strip-dwarf "$(_WasmIntermediateOutputPath)dotnet.wasm" -o "$(_WasmIntermediateOutputPath)dotnet.wasm"'
           Condition="'$(WasmNativeStrip)' == 'true'"
@@ -452,7 +457,7 @@
 
     <ReadEmccProps JsonFilePath="$(_WasmRuntimePackSrcDir)emcc-props.json">
       <Output TaskParameter="EmccProperties" ItemName="_EmccPropItems" />
-      <Output TaskParameter="WasmOptConfigurationFlags" = "_WasmOptConfigurationFlagsItems" />
+      <Output TaskParameter="WasmOptConfigurationFlags" ItemName= "_WasmOptConfigurationFlagsItems" />
     </ReadEmccProps>
 
     <CreateProperty Value="%(_EmccPropItems.Value)">
