@@ -765,8 +765,8 @@
       <Link>Common\System\Security\Cryptography\Asn1\Pkcs7\EncryptedDataAsn.xml.cs</Link>
       <DependentUpon>Common\System\Security\Cryptography\Asn1\Pkcs7\EncryptedDataAsn.xml</DependentUpon>
     </Compile>
-    <Compile Include="$(CommonPath)System\Text\Base64UrlEncoding.cs"
-             Link="Common\System\Text\Base64UrlEncoding.cs" />
+    <Compile Include="$(CommonPath)System\Text\UrlBase64Encoding.cs"
+             Link="Common\System\Text\UrlBase64Encoding.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueUtf8Converter.cs"
              Link="Common\System\Text\ValueUtf8Converter.cs" />
     <Compile Include="System\Security\Cryptography\AesImplementation.OpenSsl.cs" />
