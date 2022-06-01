@@ -478,7 +478,19 @@ namespace Internal.TypeSystem
             }
         }
 
-        private readonly record struct CalliMarshallingMethodThunkKey(MethodSignature Signature, bool RuntimeMarshallingEnabled);
+        private readonly record struct CalliMarshallingMethodThunkKey(MethodSignature Signature, bool RuntimeMarshallingEnabled)
+        {
+            public bool Equals(CalliMarshallingMethodThunkKey other)
+            {
+                return Signature.EqualsWithCallConventionType(other.Signature)
+                    && RuntimeMarshallingEnabled == other.RuntimeMarshallingEnabled;
+            }
+            public override int GetHashCode()
+            {
+                return Signature.GetHashCode()
+                    * -1521134295 + RuntimeMarshallingEnabled.GetHashCode();
+            }
+        }
 
         private class PInvokeCalliHashtable : LockFreeReaderHashtable<CalliMarshallingMethodThunkKey, CalliMarshallingMethodThunk>
         {
@@ -497,12 +509,12 @@ namespace Internal.TypeSystem
 
             protected override bool CompareKeyToValue(CalliMarshallingMethodThunkKey key, CalliMarshallingMethodThunk value)
             {
-                return key.Signature.Equals(value.TargetSignature) && key.RuntimeMarshallingEnabled == value.RuntimeMarshallingEnabled;
+                return key.Signature.EqualsWithCallConventionType(value.TargetSignature) && key.RuntimeMarshallingEnabled == value.RuntimeMarshallingEnabled;
             }
 
             protected override bool CompareValueToValue(CalliMarshallingMethodThunk value1, CalliMarshallingMethodThunk value2)
             {
-                return value1.TargetSignature.Equals(value2.TargetSignature) && value1.RuntimeMarshallingEnabled == value2.RuntimeMarshallingEnabled;
+                return value1.TargetSignature.EqualsWithCallConventionType(value2.TargetSignature) && value1.RuntimeMarshallingEnabled == value2.RuntimeMarshallingEnabled;
             }
 
             protected override CalliMarshallingMethodThunk CreateValueFromKey(CalliMarshallingMethodThunkKey key)

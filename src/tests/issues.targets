@@ -950,9 +950,6 @@
 
       <!-- NativeAOT specific -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TestBuildMode)' == 'nativeaot' and '$(RuntimeFlavor)' == 'coreclr'">
-        <ExcludeList Include="$(XunitTestBinBase)/baseservices/callconvs/TestCallingConventions/*">
-            <Issue>https://github.com/dotnet/runtimelab/issues/153</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/RuntimeConfiguration/TestConfig/*">
             <Issue>Test expects being run with corerun</Issue>
         </ExcludeList>

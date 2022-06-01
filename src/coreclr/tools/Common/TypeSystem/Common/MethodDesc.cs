@@ -193,15 +193,20 @@ namespace Internal.TypeSystem
 
         public bool Equals(MethodSignature otherSignature)
         {
-            return Equals(otherSignature, allowCovariantReturn: false);
+            return Equals(otherSignature, allowCovariantReturn: false, checkOnlyCallConvention: false);
         }
 
         public bool EqualsWithCovariantReturnType(MethodSignature otherSignature)
         {
-            return Equals(otherSignature, allowCovariantReturn: true);
+            return Equals(otherSignature, allowCovariantReturn: true, checkOnlyCallConvention: false);
         }
 
-        private bool Equals(MethodSignature otherSignature, bool allowCovariantReturn)
+        public bool EqualsWithCallConventionType(MethodSignature otherSignature)
+        {
+            return Equals(otherSignature, allowCovariantReturn: false, checkOnlyCallConvention: true);
+        }
+
+        private bool Equals(MethodSignature otherSignature, bool allowCovariantReturn, bool checkOnlyCallConvention)
         {
             // TODO: Generics, etc.
             if (this._flags != otherSignature._flags)
@@ -234,34 +239,105 @@ namespace Internal.TypeSystem
             }
 
             // Array methods do not need to have matching details for the array parameters they support
-            if (this.EmbeddedSignatureMismatchPermitted ||
-                otherSignature.EmbeddedSignatureMismatchPermitted)
+            if (!checkOnlyCallConvention)
             {
-                return true;
+                if (this.EmbeddedSignatureMismatchPermitted ||
+                    otherSignature.EmbeddedSignatureMismatchPermitted)
+                {
+                    return true;
+                }
+
+                if (this._embeddedSignatureData != null && otherSignature._embeddedSignatureData != null)
+                {
+                    if (this._embeddedSignatureData.Length != otherSignature._embeddedSignatureData.Length)
+                    {
+                        return false;
+                    }
+
+                    for (int i = 0; i < this._embeddedSignatureData.Length; i++)
+                    {
+                        if (this._embeddedSignatureData[i].index != otherSignature._embeddedSignatureData[i].index)
+                            return false;
+                        if (this._embeddedSignatureData[i].kind != otherSignature._embeddedSignatureData[i].kind)
+                            return false;
+                        if (this._embeddedSignatureData[i].type != otherSignature._embeddedSignatureData[i].type)
+                            return false;
+                    }
+
+                    return true;
+                }
             }
-
-            if (this._embeddedSignatureData != null && otherSignature._embeddedSignatureData != null)
+            else
             {
-                if (this._embeddedSignatureData.Length != otherSignature._embeddedSignatureData.Length)
+                if (this.TryGetUnmanagedCallingConventionFromModOpt(out MethodSignatureFlags thisCallConv, out bool thisSuppressGCTransition)
+                    == otherSignature.TryGetUnmanagedCallingConventionFromModOpt(out MethodSignatureFlags otherCallConv, out bool otherSuppressGCTransition))
                 {
-                    return false;
+                    if (thisCallConv == otherCallConv && thisSuppressGCTransition == otherSuppressGCTransition)
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
                 }
-
-                for (int i = 0; i < this._embeddedSignatureData.Length; i++)
-                {
-                    if (this._embeddedSignatureData[i].index != otherSignature._embeddedSignatureData[i].index)
-                        return false;
-                    if (this._embeddedSignatureData[i].kind != otherSignature._embeddedSignatureData[i].kind)
-                        return false;
-                    if (this._embeddedSignatureData[i].type != otherSignature._embeddedSignatureData[i].type)
-                        return false;
-                }
-
-                return true;
             }
 
             return false;
         }
+
+        private bool TryGetUnmanagedCallingConventionFromModOpt(out MethodSignatureFlags callConv, out bool suppressGCTransition)
+        {
+            suppressGCTransition = false;
+            // Default to managed since in the modopt case we need to differentiate explicitly using a calling convention that matches the default
+            // and not specifying a calling convention at all and using the implicit default case in P/Invoke stub inlining.
+            callConv = MethodSignatureFlags.None;
+            if (!HasEmbeddedSignatureData)
+                return false;
+
+            bool found = false;
+            foreach (EmbeddedSignatureData data in GetEmbeddedSignatureData())
+            {
+                if (data.kind != EmbeddedSignatureDataKind.OptionalCustomModifier)
+                    continue;
+
+                // We only care about the modifiers for the return type. These will be at the start of
+                // the signature, so will be first in the array of embedded signature data.
+                if (data.index != MethodSignature.IndexOfCustomModifiersOnReturnType)
+                    break;
+
+                if (!(data.type is DefType defType))
+                    continue;
+
+                if (defType.Namespace != "System.Runtime.CompilerServices")
+                    continue;
+
+                if (defType.Name == "CallConvSuppressGCTransition")
+                {
+                    suppressGCTransition = true;
+                    continue;
+                }
+
+                MethodSignatureFlags? callConvLocal = GetCallingConventionForCallConvType(defType);
+                if (callConvLocal.HasValue && !found)
+                {
+                    callConv = callConvLocal.Value;
+                    found = true;
+                }
+            }
+
+            return found;
+        }
+
+        private static MethodSignatureFlags? GetCallingConventionForCallConvType(DefType defType) =>
+            // Look for a recognized calling convention in metadata.
+            defType.Name switch
+            {
+                "CallConvCdecl" => MethodSignatureFlags.UnmanagedCallingConventionCdecl,
+                "CallConvStdcall" => MethodSignatureFlags.UnmanagedCallingConventionStdCall,
+                "CallConvThiscall" => MethodSignatureFlags.UnmanagedCallingConventionThisCall,
+                _ => null
+            };
 
         public override bool Equals(object obj)
         {
