@@ -150,7 +150,7 @@ mono_cpu_count (void)
 
 #if defined (_SC_NPROCESSORS_CONF) && defined (HAVE_SYSCONF)
 	{
-		int count = sysconf (_SC_NPROCESSORS_CONF);
+		int count = (int) sysconf (_SC_NPROCESSORS_CONF);
 		if (count > 0)
 			return count;
 	}

@@ -452,7 +452,7 @@ clock_sleep_ns_abs (guint64 ns_abs)
 	kern_return_t ret;
 	mach_timespec_t then, remain_unused;
 
-	then.tv_sec = ns_abs / 1000000000;
+	then.tv_sec = (unsigned int)(ns_abs / 1000000000);
 	then.tv_nsec = ns_abs % 1000000000;
 
 	do {
