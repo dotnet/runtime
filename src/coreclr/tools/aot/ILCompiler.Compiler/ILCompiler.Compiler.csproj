@@ -332,7 +332,6 @@
     <Compile Include="Compiler\Dataflow\DiagnosticUtilities.cs" />
     <Compile Include="Compiler\Dataflow\Origin.cs" />
     <Compile Include="Compiler\Dataflow\ReflectionMethodBodyScanner.cs" />
-    <Compile Include="Compiler\Dataflow\ReflectionPatternContext.cs" />
     <Compile Include="Compiler\Dataflow\ReflectionMarker.cs" />
     <Compile Include="Compiler\Dataflow\RequireDynamicallyAccessedMembersAction.cs" />
     <Compile Include="Compiler\Dataflow\ScannerExtensions.cs" />

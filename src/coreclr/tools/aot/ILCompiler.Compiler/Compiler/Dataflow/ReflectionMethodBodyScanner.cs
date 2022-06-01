@@ -406,7 +406,6 @@ namespace ILCompiler.Dataflow
             var callingMethodDefinition = callingMethodBody.OwningMethod;
             bool shouldEnableReflectionWarnings = !ShouldSuppressAnalysisWarningsForRequires(callingMethodDefinition, RequiresUnreferencedCodeAttribute);
             bool shouldEnableAotWarnings = !ShouldSuppressAnalysisWarningsForRequires(callingMethodDefinition, RequiresDynamicCodeAttribute);
-            var reflectionContext = new ReflectionPatternContext(_logger, shouldEnableReflectionWarnings, callingMethodBody, offset, new MethodOrigin(calledMethod));
 
             DynamicallyAccessedMemberTypes returnValueDynamicallyAccessedMemberTypes = 0;
 
@@ -681,8 +680,6 @@ namespace ILCompiler.Dataflow
                             }
                             else
                             {
-                                reflectionContext.AnalyzingPattern();
-
                                 Debug.Assert(staticType is MetadataType || staticType.IsArray);
                                 MetadataType closestMetadataType = staticType is MetadataType mdType ?
                                     mdType : (MetadataType)_factory.TypeSystemContext.GetWellKnownType(Internal.TypeSystem.WellKnownType.Array);
