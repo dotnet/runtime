@@ -1187,7 +1187,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             var exception = Assert.Throws<InvalidOperationException>(
                 () => config.Bind(new TestOptions()));
             Assert.Equal(
-                SR.Format(SR.Error_ConstructorParametersDoNotMatchPropertiesOrFields, typeof(ClassWhereParametersDoNotMatchProperties), "age"),
+                SR.Format(SR.Error_ConstructorParametersDoNotMatchProperties, typeof(ClassWhereParametersDoNotMatchProperties), "age"),
                 exception.Message);
         }
 
@@ -1228,7 +1228,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             var exception = Assert.Throws<InvalidOperationException>(
                 () => config.Bind(new TestOptions()));
             Assert.Equal(
-                SR.Format(SR.Error_ConstructorParametersDoNotMatchPropertiesOrFields, typeof(ClassWhereParametersDoNotMatchProperties), "age"),
+                SR.Format(SR.Error_ConstructorParametersDoNotMatchProperties, typeof(ClassWhereParametersDoNotMatchProperties), "age"),
                 exception.Message);
         }
 
@@ -1254,7 +1254,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         }
 
         [Fact]
-        public void BindsToClassConstructorParametersWhereTheyMatchPropertiesAndFields()
+        public void FieldsNotSupported_ExceptionBindingToConstructorWithParameterMatchingAField()
         {
             var input = new Dictionary<string, string>
             {
@@ -1267,12 +1267,12 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             configurationBuilder.AddInMemoryCollection(input);
             var config = configurationBuilder.Build();
 
-            TestOptions testOptions = new TestOptions();
+            var exception = Assert.Throws<InvalidOperationException>(
+                () => config.Bind(new TestOptions()));
 
-            config.Bind(testOptions);
-            Assert.Equal("John", testOptions.ClassWhereParametersMatchPropertiesAndFieldsProperty.Name);
-            Assert.Equal("123, Abc St.", testOptions.ClassWhereParametersMatchPropertiesAndFieldsProperty.Address);
-            Assert.Equal(42, testOptions.ClassWhereParametersMatchPropertiesAndFieldsProperty.GetAge());
+            Assert.Equal(
+                SR.Format(SR.Error_ConstructorParametersDoNotMatchProperties, typeof(ClassWhereParametersMatchPropertiesAndFields), "age"),
+                exception.Message);
         }
 
         [Fact]
