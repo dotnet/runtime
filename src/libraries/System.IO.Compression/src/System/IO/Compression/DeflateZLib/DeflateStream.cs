@@ -778,7 +778,7 @@ namespace System.IO.Compression
             return WriteAsyncMemory(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).AsTask();
         }
 
-        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             if (GetType() != typeof(DeflateStream))
             {
