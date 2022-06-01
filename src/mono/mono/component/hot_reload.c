@@ -3111,6 +3111,5 @@ hot_reload_get_num_fields_added (MonoClass *klass)
 	MonoClassMetadataUpdateInfo *info = mono_class_get_metadata_update_info (klass);
 	if (!info)
 		return 0;
-
-	return g_slist_length(info->added_fields);
+	return g_slist_length (info->added_fields);
 }
