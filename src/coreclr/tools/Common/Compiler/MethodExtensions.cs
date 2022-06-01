@@ -111,7 +111,6 @@ namespace ILCompiler
 
             var type = (EcmaType)ecmaAccessor.OwningType;
             var reader = type.MetadataReader;
-            var module = type.EcmaModule;
             foreach (var propertyHandle in reader.GetTypeDefinition(type.Handle).GetProperties())
             {
                 var accessors = reader.GetPropertyDefinition(propertyHandle).GetAccessors();
