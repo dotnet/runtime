@@ -657,7 +657,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
 
             MethodInfo methodInfo = type.Methods.FirstOrDefault(m => m.Name == methodName);
-            if (methodInfo == null || methodInfo.Source == null)
+            if (methodInfo?.Source is null)
             {
                 // Maybe this is an async method, in which case the debug info is attached
                 // to the async method implementation, in class named:
