@@ -3875,12 +3875,6 @@
         </ExcludeList>
     </ItemGroup>
 
-    <ItemGroup Condition=" $(TargetOS) == 'Android' And '$(RuntimeVariant)' == 'monointerpreter' " >
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Performance/CodeQuality/BenchmarksGame/mandelbrot/mandelbrot-7/**">
-            <Issue>https://github.com/dotnet/runtime/issues/55528</Issue>
-        </ExcludeList>
-    </ItemGroup>
-
     <ItemGroup Condition=" $(TargetOS) == 'iOSSimulator' " >
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/PInvoke/Miscellaneous/MultipleAssembliesWithSamePInvoke/MAWSPITest/**">
             <Issue>missing assembly</Issue>
