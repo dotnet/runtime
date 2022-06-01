@@ -19,16 +19,17 @@ namespace System.Formats.Tar.Tests
             {
                 V7TarEntry entry = new V7TarEntry(TarEntryType.V7RegularFile, InitialEntryName);
 
-                // Should be written as RegularFile
+                // Should be written in the format of the entry
                 writer.WriteEntry(entry);
             }
 
             archive.Seek(0, SeekOrigin.Begin);
             using (TarReader reader = new TarReader(archive))
             {
-                PaxTarEntry entry = reader.GetNextEntry() as PaxTarEntry;
+                TarEntry entry = reader.GetNextEntry();
                 Assert.NotNull(entry);
-                Assert.Equal(TarEntryType.RegularFile, entry.EntryType);
+                Assert.Equal(TarEntryFormat.V7, entry.Format);
+                Assert.True(entry is V7TarEntry);
 
                 Assert.Null(reader.GetNextEntry());
             }
