@@ -2314,6 +2314,77 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
         }
         break;
 
+        case GT_CNS_VEC:
+        {
+            GenTreeVecCon* vecCon = tree->AsVecCon();
+
+            emitter* emit = GetEmitter();
+            emitAttr attr = emitTypeSize(targetType);
+
+            switch (tree->TypeGet())
+            {
+#if defined(FEATURE_SIMD)
+                case TYP_LONG:
+                case TYP_DOUBLE:
+                case TYP_SIMD8:
+                {
+                    // TODO-1stClassStructs: do not retype SIMD nodes
+
+                    if (vecCon->IsAllBitsSet())
+                    {
+                        emit->emitIns_R_I(INS_mvni, attr, targetReg, 0, INS_OPTS_2S);
+                    }
+                    else if (vecCon->IsZero())
+                    {
+                        emit->emitIns_R_I(INS_movi, attr, targetReg, 0, INS_OPTS_2S);
+                    }
+                    else
+                    {
+                        // Get a temp integer register to compute long address.
+                        regNumber addrReg = tree->GetSingleTempReg();
+
+                        simd8_t              constValue = vecCon->gtSimd8Val;
+                        CORINFO_FIELD_HANDLE hnd        = emit->emitSimd8Const(constValue);
+
+                        emit->emitIns_R_C(INS_ldr, attr, targetReg, addrReg, hnd, 0);
+                    }
+                    break;
+                }
+
+                case TYP_SIMD12:
+                case TYP_SIMD16:
+                {
+                    if (vecCon->IsAllBitsSet())
+                    {
+                        emit->emitIns_R_I(INS_mvni, attr, targetReg, 0, INS_OPTS_4S);
+                    }
+                    else if (vecCon->IsZero())
+                    {
+                        emit->emitIns_R_I(INS_movi, attr, targetReg, 0, INS_OPTS_4S);
+                    }
+                    else
+                    {
+                        // Get a temp integer register to compute long address.
+                        regNumber addrReg = tree->GetSingleTempReg();
+
+                        simd16_t             constValue = vecCon->gtSimd16Val;
+                        CORINFO_FIELD_HANDLE hnd        = emit->emitSimd16Const(constValue);
+
+                        emit->emitIns_R_C(INS_ldr, attr, targetReg, addrReg, hnd, 0);
+                    }
+                    break;
+                }
+#endif // FEATURE_SIMD
+
+                default:
+                {
+                    unreached();
+                }
+            }
+
+            break;
+        }
+
         default:
             unreached();
     }
@@ -2548,10 +2619,18 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
     }
     else if (data->isContained())
     {
-        assert(data->OperIs(GT_BITCAST));
-        const GenTree* bitcastSrc = data->AsUnOp()->gtGetOp1();
-        assert(!bitcastSrc->isContained());
-        dataReg = bitcastSrc->GetRegNum();
+        if (data->IsCnsVec())
+        {
+            assert(data->AsVecCon()->IsZero());
+            dataReg = REG_ZR;
+        }
+        else
+        {
+            assert(data->OperIs(GT_BITCAST));
+            const GenTree* bitcastSrc = data->AsUnOp()->gtGetOp1();
+            assert(!bitcastSrc->isContained());
+            dataReg = bitcastSrc->GetRegNum();
+        }
     }
     else
     {
@@ -2629,7 +2708,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
         if (data->isContained())
         {
             // This is only possible for a zero-init or bitcast.
-            const bool zeroInit = (data->IsIntegralConst(0) || data->IsSIMDZero());
+            const bool zeroInit = (data->IsIntegralConst(0) || data->IsVectorZero());
             assert(zeroInit || data->OperIs(GT_BITCAST));
 
             if (zeroInit && varTypeIsSIMD(targetType))
@@ -4249,7 +4328,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
         assert(!op1->isContained());
         assert(op1Type == op2Type);
 
-        if (op2->IsFPZero())
+        if (op2->IsFloatPositiveZero())
         {
             assert(op2->isContained());
             emit->emitIns_R_F(INS_fcmp, cmpSize, op1->GetRegNum(), 0.0);
@@ -5088,7 +5167,7 @@ void CodeGen::genStoreLclTypeSIMD12(GenTree* treeNode)
     if (op1->isContained())
     {
         // This is only possible for a zero-init.
-        assert(op1->IsIntegralConst(0) || op1->IsSIMDZero());
+        assert(op1->IsIntegralConst(0) || op1->IsVectorZero());
 
         // store lower 8 bytes
         GetEmitter()->emitIns_S_R(ins_Store(TYP_DOUBLE), EA_8BYTE, REG_ZR, varNum, offs);

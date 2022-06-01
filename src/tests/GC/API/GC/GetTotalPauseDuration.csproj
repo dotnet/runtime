@@ -3,8 +3,12 @@
     <OutputType>Exe</OutputType>
     <!-- Consider enable it for Mono whenever the implementation is ready -->
     <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' != 'coreclr'">true</CLRTestTargetUnsupported>
-    <!-- Temporaily set to P0 so that it runs on CI for initial testing -->
-    <CLRTestPriority>0</CLRTestPriority>
+    <!--
+        This test requires the test case to perform exactly 1 GC right at the spot, so it won't run
+        correctly under GCStress.
+     -->
+    <GCStressIncompatible>true</GCStressIncompatible>
+    <CLRTestPriority>1</CLRTestPriority>
   </PropertyGroup>
   <PropertyGroup>
     <!-- Set to 'Full' if the Debug? column is marked in the spreadsheet. Leave blank otherwise. -->
