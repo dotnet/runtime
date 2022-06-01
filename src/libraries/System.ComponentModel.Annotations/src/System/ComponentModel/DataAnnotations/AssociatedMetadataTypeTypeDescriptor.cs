@@ -121,8 +121,7 @@ namespace System.ComponentModel.DataAnnotations
             // Better "fix" for the missing annotation would be a local funcion
             // `bool TryGetAssociatedMetadataTypeFromCache(Type type, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] out Type? associatedMetadataType)`
             // With the suppression on it - since that would be much more localized.
-            // Unfortunately this currently doesn't work due to an issue in the trimmer
-            // https://github.com/dotnet/linker/issues/2632
+            // This is possible now that the linker supports out and ref parameters
             [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
             public static Type? GetAssociatedMetadataType(Type type)
             {

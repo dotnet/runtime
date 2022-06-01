@@ -660,8 +660,6 @@ namespace System.Diagnostics
 
                         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                             Justification = "DiagnosticSource.Write is marked with RequiresUnreferencedCode.")]
-                        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2119",
-                            Justification = "EventSource does not access this local function.")]
                         void OnEventWritten(KeyValuePair<string, object?> evnt)
                         {
                             // The filter given to the DiagnosticSource may not work if users don't is 'IsEnabled' as expected.

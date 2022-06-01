@@ -625,11 +625,6 @@ namespace System.Runtime.Serialization
 
     internal sealed class DateTimeDataContract : PrimitiveDataContract
     {
-        // DataContractPreserveMemberTypes applied to DateTime, which uses LowGranularityNonCachedFallback compiler-generated code internals
-        // that uses pinvokes.
-        // Hopefully it doesn't actually access the compiler-generated code... even though DataContractPreserveMemberTypes includes
-        // NonPublicMethods... :/
-        [UnconditionalSuppressMessage ("", "IL2118")]
         public DateTimeDataContract() : base(typeof(DateTime), DictionaryGlobals.DateTimeLocalName, DictionaryGlobals.SchemaNamespace)
         {
         }

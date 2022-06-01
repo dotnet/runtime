@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Threading;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Diagnostics.Tracing
 {
@@ -67,7 +66,6 @@ namespace System.Diagnostics.Tracing
             base.WriteEvent((int)EventId.AppContextSwitch, switchName, value);
         }
 
-        [UnconditionalSuppressMessage ("DAM", "IL2119", Justification = "DAM on EventSource references this compiler-generated code which calls a PInvoke.")]
         protected override void OnEventCommand(EventCommandEventArgs command)
         {
             if (command.Command == EventCommand.Enable)
