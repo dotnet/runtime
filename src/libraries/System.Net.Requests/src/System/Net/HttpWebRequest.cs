@@ -1560,7 +1560,7 @@ namespace System.Net
         {
             SetSpecialHeaders(headerName, dateTime == DateTime.MinValue ?
                 null : // remove header
-                dateTime.ToString("r"));
+                dateTime.ToUniversalTime().ToString("r"));
         }
 
         private bool TryGetHostUri(string hostName, [NotNullWhen(true)] out Uri? hostUri)
