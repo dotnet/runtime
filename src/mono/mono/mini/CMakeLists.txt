@@ -315,6 +315,8 @@ endif()
 
 if(HOST_WIN32)
 set_source_files_properties(${ZLIB_SOURCES} PROPERTIES COMPILE_OPTIONS "/wd4005;/wd4127;/wd4131;/wd4244")
+elseif(HOST_BROWSER)
+set_source_files_properties(${ZLIB_SOURCES} PROPERTIES COMPILE_OPTIONS "-Wno-implicit-int-conversion -Wno-shorten-64-to-32")
 endif()
 
 if(NOT HOST_WIN32)
