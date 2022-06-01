@@ -253,7 +253,7 @@ void TypeDesc::ConstructName(CorElementType kind,
         break;
 
     case ELEMENT_TYPE_FNPTR:
-        ssBuff.Printf(W("FNPTR"));
+        ssBuff.Set(W("FNPTR"));
         break;
 
     default:

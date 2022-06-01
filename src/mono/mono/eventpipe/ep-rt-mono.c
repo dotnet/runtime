@@ -1450,7 +1450,7 @@ eventpipe_fire_method_events (
 
 	}
 
-	uint16_t offset_entries = 0;
+	uint32_t offset_entries = 0;
 	uint32_t *il_offsets = NULL;
 	uint32_t *native_offsets = NULL;
 
@@ -1499,7 +1499,7 @@ eventpipe_fire_method_events (
 		(ep_char8_t *)method_namespace,
 		(ep_char8_t *)method_name,
 		(ep_char8_t *)method_signature,
-		offset_entries,
+		GUINT32_TO_UINT16 (offset_entries),
 		il_offsets,
 		native_offsets,
 		(ji->from_aot || ji->from_llvm),
@@ -1555,7 +1555,7 @@ eventpipe_fire_assembly_events (
 	// Native methods are part of JIT table and already emitted.
 	// TODO: FireEtwMethodDCEndVerbose_V1_or_V2 for all native methods in module as well?
 
-	uint64_t binding_id = 0;
+	uint32_t binding_id = 0;
 
 	ModuleEventData module_data;
 	memset (&module_data, 0, sizeof (module_data));
@@ -2792,7 +2792,7 @@ ep_rt_mono_execute_rundown (ep_rt_execution_checkpoint_array_t *execution_checkp
 	ep_char8_t runtime_module_path [256];
 	const uint8_t object_guid [EP_GUID_SIZE] = { 0 };
 	const uint16_t runtime_product_qfe_version = 0;
-	const uint32_t startup_flags = 0;
+	const uint8_t startup_flags = 0;
 	const uint8_t startup_mode = 0;
 	const ep_char8_t *command_line = "";
 
@@ -3507,7 +3507,7 @@ ep_rt_mono_write_event_method_il_to_native_map (
 		uint32_t fixed_buffer [64];
 		uint8_t *buffer = NULL;
 
-		uint16_t offset_entries = 0;
+		uint32_t offset_entries = 0;
 		uint32_t *il_offsets = NULL;
 		uint32_t *native_offsets = NULL;
 
@@ -3548,7 +3548,7 @@ ep_rt_mono_write_event_method_il_to_native_map (
 			method_id,
 			0,
 			0,
-			offset_entries,
+			GUINT32_TO_UINT16 (offset_entries),
 			il_offsets,
 			native_offsets,
 			clr_instance_get_id (),
@@ -3916,13 +3916,13 @@ ep_rt_mono_write_event_thread_created (ep_rt_thread_id_t tid)
 		return true;
 
 	uint64_t managed_thread = 0;
-	uint64_t native_thread_id = ep_rt_thread_id_t_to_uint64_t (tid);
-	uint64_t managed_thread_id = 0;
+	uint32_t native_thread_id = MONO_NATIVE_THREAD_ID_TO_UINT (tid);
+	uint32_t managed_thread_id = 0;
 	uint32_t flags = 0;
 
 	MonoThread *thread = mono_thread_current ();
 	if (thread && mono_thread_info_get_tid (thread->thread_info) == tid) {
-		managed_thread_id = (uint64_t)mono_thread_get_managed_id (thread);
+		managed_thread_id = mono_thread_get_managed_id (thread);
 		managed_thread = (uint64_t)thread;
 
 		switch (mono_thread_info_get_flags (thread->thread_info)) {
@@ -3983,7 +3983,7 @@ get_type_start_id (MonoType *type)
 MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 	// Mix in highest bits on 64-bit systems only
 	if (sizeof (type) > 4)
-		start_id = start_id ^ (((uint64_t)type >> 31) >> 1);
+		start_id = start_id ^ GUINT64_TO_UINT32 ((((uint64_t)type >> 31) >> 1));
 MONO_RESTORE_WARNING
 
 	return start_id;
@@ -5495,15 +5495,17 @@ mono_profiler_fire_buffered_gc_event_heap_dump_object_reference (
 	object_size += 7;
 	object_size &= ~7;
 
-	MonoProfilerBufferedGCEvent gc_event_data;
-	gc_event_data.type = MONO_PROFILER_BUFFERED_GC_EVENT_OBJECT_REF;
-	gc_event_data.payload_size =
+	size_t payload_size =
 		sizeof (object_id) +
 		sizeof (vtable_id) +
 		sizeof (object_size) +
 		sizeof (object_gen) +
 		sizeof (object_ref_count) +
 		(object_ref_count * (sizeof (uint32_t) + sizeof (uintptr_t)));
+
+	MonoProfilerBufferedGCEvent gc_event_data;
+	gc_event_data.type = MONO_PROFILER_BUFFERED_GC_EVENT_OBJECT_REF;
+	gc_event_data.payload_size = GSIZE_TO_UINT32 (payload_size);
 
 	uint8_t *buffer = mono_profiler_buffered_gc_event_alloc (gc_event_data.payload_size);
 	if (buffer) {
@@ -5538,7 +5540,7 @@ mono_profiler_fire_buffered_gc_event_heap_dump_object_reference (
 		uintptr_t last_offset = 0;
 		for (uintptr_t i = 0; i < object_ref_count; i++) {
 			// GCEvent.Values[].ReferencesOffset
-			object_ref_offset = offsets [i] - last_offset;
+			object_ref_offset = GUINTPTR_TO_UINT32 (offsets [i] - last_offset);
 			memcpy (buffer, &object_ref_offset, sizeof (object_ref_offset));
 			buffer += sizeof (object_ref_offset);
 

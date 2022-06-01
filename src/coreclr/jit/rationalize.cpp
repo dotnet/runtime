@@ -134,17 +134,22 @@ void Rationalizer::RewriteSIMDIndir(LIR::Use& use)
         addr->gtType = simdType;
         use.ReplaceWith(addr);
     }
-    else if (addr->OperIs(GT_ADDR) && addr->AsUnOp()->gtGetOp1()->OperIsSimdOrHWintrinsic())
+    else if (addr->OperIs(GT_ADDR))
     {
-        // If we have IND(ADDR(SIMD)) then we can keep only the SIMD node.
-        // This is a special tree created by impNormStructVal to preserve the class layout
-        // needed by call morphing on an OBJ node. This information is no longer needed at
-        // this point (and the address of a SIMD node can't be obtained anyway).
+        GenTree* location = addr->AsUnOp()->gtGetOp1();
 
-        BlockRange().Remove(indir);
-        BlockRange().Remove(addr);
+        if (location->OperIsSimdOrHWintrinsic() || location->IsCnsVec())
+        {
+            // If we have IND(ADDR(SIMD)) then we can keep only the SIMD node.
+            // This is a special tree created by impNormStructVal to preserve the class layout
+            // needed by call morphing on an OBJ node. This information is no longer needed at
+            // this point (and the address of a SIMD node can't be obtained anyway).
 
-        use.ReplaceWith(addr->AsUnOp()->gtGetOp1());
+            BlockRange().Remove(indir);
+            BlockRange().Remove(addr);
+
+            use.ReplaceWith(addr->AsUnOp()->gtGetOp1());
+        }
     }
 #endif // FEATURE_SIMD
 }
@@ -376,20 +381,35 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
         {
             if (location->OperIs(GT_LCL_VAR))
             {
-                var_types   simdType        = location->TypeGet();
-                GenTree*    initVal         = assignment->AsOp()->gtOp2;
+                var_types simdType = location->TypeGet();
+                GenTree*  initVal  = assignment->AsOp()->gtOp2;
+
                 CorInfoType simdBaseJitType = comp->getBaseJitTypeOfSIMDLocal(location);
                 if (simdBaseJitType == CORINFO_TYPE_UNDEF)
                 {
                     // Lie about the type if we don't know/have it.
                     simdBaseJitType = CORINFO_TYPE_FLOAT;
                 }
-                GenTreeSIMD* simdTree =
-                    comp->gtNewSIMDNode(simdType, initVal, SIMDIntrinsicInit, simdBaseJitType, genTypeSize(simdType));
-                assignment->gtOp2 = simdTree;
-                value             = simdTree;
 
-                BlockRange().InsertAfter(initVal, simdTree);
+                if (initVal->IsIntegralConst(0))
+                {
+                    GenTree* zeroCon = comp->gtNewZeroConNode(simdType, simdBaseJitType);
+
+                    assignment->gtOp2 = zeroCon;
+                    value             = zeroCon;
+
+                    BlockRange().InsertAfter(initVal, zeroCon);
+                    BlockRange().Remove(initVal);
+                }
+                else
+                {
+                    GenTreeSIMD* simdTree = comp->gtNewSIMDNode(simdType, initVal, SIMDIntrinsicInit, simdBaseJitType,
+                                                                genTypeSize(simdType));
+                    assignment->gtOp2 = simdTree;
+                    value             = simdTree;
+
+                    BlockRange().InsertAfter(initVal, simdTree);
+                }
             }
         }
 #endif // FEATURE_SIMD
@@ -732,6 +752,22 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             break;
         }
 #endif // FEATURE_HW_INTRINSICS
+
+#if defined(FEATURE_SIMD)
+        case GT_CNS_VEC:
+        {
+            GenTreeVecCon* vecCon = node->AsVecCon();
+
+            // TODO-1stClassStructs: do not retype SIMD nodes
+
+            if ((vecCon->TypeIs(TYP_I_IMPL)) && (vecCon->GetSimdSize() == TARGET_POINTER_SIZE))
+            {
+                assert(genTypeSize(vecCon->GetSimdBaseType()) == 4);
+                vecCon->gtType = TYP_SIMD8;
+            }
+            break;
+        }
+#endif // FEATURE_SIMD
 
         default:
             // Check that we don't have nodes not allowed in HIR here.

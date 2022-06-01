@@ -155,7 +155,7 @@ find_field_index (MonoClass *klass, MonoClassField *field) {
 		return mono_metadata_update_get_field_idx (field);
 	int fcount = mono_class_get_field_count (klass);
 	MonoClassField *klass_fields = m_class_get_fields (klass);
-	int index = field - klass_fields;
+	int index = GPTRDIFF_TO_INT (field - klass_fields);
 	if (index > fcount)
 		return 0;
 
@@ -736,7 +736,7 @@ mono_custom_attrs_from_builders_handle (MonoImage *alloc_img, MonoImage *image, 
 	MonoArrayHandle cattr_data = MONO_HANDLE_NEW (MonoArray, NULL);
 	MonoReflectionMethodHandle ctor_handle = MONO_HANDLE_NEW (MonoReflectionMethod, NULL);
 
-	int const count = mono_array_handle_length (cattrs);
+	int const count = GUINTPTR_TO_INT (mono_array_handle_length (cattrs));
 	MonoMethod *ctor_method =  NULL;
 
 	/* Skip nonpublic attributes since MS.NET seems to do the same */
@@ -763,14 +763,14 @@ mono_custom_attrs_from_builders_handle (MonoImage *alloc_img, MonoImage *image, 
 			mono_reflection_resolution_scope_from_image ((MonoDynamicImage *)image->assembly->image, m_class_get_image (ctor_method->klass));
 
 		MONO_HANDLE_GET (cattr_data, cattr, data);
-		unsigned char *saved = (unsigned char *)mono_image_alloc (image, mono_array_handle_length (cattr_data));
+		unsigned char *saved = (unsigned char *)mono_image_alloc (image, GUINTPTR_TO_UINT (mono_array_handle_length (cattr_data)));
 		MonoGCHandle gchandle = NULL;
-		memcpy (saved, MONO_ARRAY_HANDLE_PIN (cattr_data, char, 0, &gchandle), mono_array_handle_length (cattr_data));
+		memcpy (saved, MONO_ARRAY_HANDLE_PIN (cattr_data, char, 0, &gchandle), GUINTPTR_TO_UINT32 (mono_array_handle_length (cattr_data)));
 		mono_gchandle_free_internal (gchandle);
 		ainfo->attrs [index].ctor = ctor_method;
 		g_assert (ctor_method);
 		ainfo->attrs [index].data = saved;
-		ainfo->attrs [index].data_size = mono_array_handle_length (cattr_data);
+		ainfo->attrs [index].data_size = GUINTPTR_TO_UINT32 (mono_array_handle_length (cattr_data));
 		index ++;
 	}
 	g_assert (index == count_visible);

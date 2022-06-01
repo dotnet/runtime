@@ -324,7 +324,7 @@ mono_marshal_shared_emit_fixed_buf_conv (MonoMethodBuilder *mb, MonoType *type, 
 		}
 
 		/* Loop footer */
-		mono_mb_emit_add_to_local (mb, index_var, 1);
+		mono_mb_emit_add_to_local (mb, GINT_TO_UINT16 (index_var), 1);
 
 		mono_mb_emit_branch_label (mb, CEE_BR, label2);
 
@@ -582,7 +582,7 @@ mono_marshal_shared_emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *ty
 			mono_marshal_shared_emit_struct_conv (mb, eklass, TRUE);
 
 			/* Loop footer */
-			mono_mb_emit_add_to_local (mb, index_var, 1);
+			mono_mb_emit_add_to_local (mb, GINT_TO_UINT16 (index_var), 1);
 
 			mono_mb_emit_branch_label (mb, CEE_BR, label2);
 
@@ -1067,7 +1067,7 @@ mono_marshal_shared_emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *ty
 		mono_mb_emit_ldloc (mb, 0);
 		mono_mb_emit_byte (mb, CEE_LDIND_REF);
 		mono_mb_emit_icall_id (mb, mono_marshal_shared_conv_to_icall (conv, &stind_op));
-		mono_mb_emit_byte (mb, stind_op);
+		mono_mb_emit_byte (mb, GINT_TO_UINT8 (stind_op));
 		break;
 	}
 	case MONO_MARSHAL_CONV_ARRAY_SAVEARRAY:
@@ -1077,7 +1077,7 @@ mono_marshal_shared_emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *ty
 		mono_mb_emit_ldloc (mb, 0);
 		mono_mb_emit_byte (mb, CEE_LDIND_REF);
 		mono_mb_emit_icall_id (mb, mono_marshal_shared_conv_to_icall (conv, &stind_op));
-		mono_mb_emit_byte (mb, stind_op);
+		mono_mb_emit_byte (mb, GINT_TO_UINT8 (stind_op));
 		break;
 	case MONO_MARSHAL_CONV_STR_BYVALSTR:
 	case MONO_MARSHAL_CONV_STR_BYVALWSTR: {
@@ -1166,7 +1166,7 @@ mono_marshal_shared_emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *ty
 			mono_marshal_shared_emit_struct_conv (mb, eklass, FALSE);
 
 			/* Loop footer */
-			mono_mb_emit_add_to_local (mb, index_var, 1);
+			mono_mb_emit_add_to_local (mb, GINT_TO_UINT16 (index_var), 1);
 
 			mono_mb_emit_branch_label (mb, CEE_BR, label2);
 
