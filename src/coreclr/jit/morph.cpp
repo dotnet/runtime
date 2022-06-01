@@ -2347,30 +2347,9 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             GenTree* actualArg = argx->gtEffectiveVal(true /* Commas only */);
 
             // Here we look at "actualArg" to avoid calling "getClassSize".
-            if (actualArg->TypeGet() == TYP_STRUCT)
-            {
-                switch (actualArg->OperGet())
-                {
-                    case GT_OBJ:
-                        structSize = actualArg->AsObj()->Size();
-                        break;
-                    case GT_LCL_VAR:
-                        structSize = comp->lvaGetDesc(actualArg->AsLclVarCommon())->lvExactSize;
-                        break;
-                    case GT_MKREFANY:
-                        structSize = comp->info.compCompHnd->getClassSize(argSigClass);
-                        break;
-                    default:
-                        BADCODE("illegal argument tree: cannot determine size for ABI handling");
-                        break;
-                }
-            }
-            else
-            {
-                structSize = genTypeSize(actualArg);
-            }
+            structSize = actualArg->TypeIs(TYP_STRUCT) ? actualArg->GetLayout(comp)->GetSize() : genTypeSize(actualArg);
 
-            assert(structSize = comp->info.compCompHnd->getClassSize(argSigClass));
+            assert(structSize == comp->info.compCompHnd->getClassSize(argSigClass));
         }
 #if defined(TARGET_AMD64)
 #ifdef UNIX_AMD64_ABI
@@ -3190,15 +3169,8 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
             unsigned originalSize;
             if (argObj->TypeGet() == TYP_STRUCT)
             {
-                if (argObj->OperIs(GT_OBJ))
-                {
-                    originalSize = argObj->AsObj()->Size();
-                }
-                else
-                {
-                    // Must be LCL_VAR: we have a BADCODE assert for this in AddFinalArgsAndDetermineABIInfo.
-                    originalSize = lvaGetDesc(argObj->AsLclVar())->lvExactSize;
-                }
+                assert(argObj->OperIs(GT_OBJ, GT_LCL_VAR, GT_LCL_FLD));
+                originalSize = argObj->GetLayout(this)->GetSize();
             }
             else
             {
