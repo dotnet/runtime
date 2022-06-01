@@ -91,7 +91,7 @@ namespace System.Net.Security
 
             if (now > _ocspExpiration)
             {
-                return DownloadOcsp();
+                return DownloadOcspAsync();
             }
 
             if (now > _nextDownload)
@@ -102,14 +102,14 @@ namespace System.Net.Security
                 //
                 // We don't want the result here, just the task to background.
 #pragma warning disable CA2012 // Use ValueTasks correctly
-                DownloadOcsp();
+                DownloadOcspAsync();
 #pragma warning restore CA2012 // Use ValueTasks correctly
             }
 
             return ValueTask.FromResult(_ocspResponse);
         }
 
-        private ValueTask<byte[]?> DownloadOcsp()
+        private ValueTask<byte[]?> DownloadOcspAsync()
         {
             Task<byte[]?>? pending = _pendingDownload;
 
@@ -152,14 +152,14 @@ namespace System.Net.Security
 
                 if (pending is null || pending.IsFaulted)
                 {
-                    _pendingDownload = pending = FetchOcsp();
+                    _pendingDownload = pending = FetchOcspAsync();
                 }
             }
 
             return new ValueTask<byte[]?>(pending);
         }
 
-        private async Task<byte[]?> FetchOcsp()
+        private async Task<byte[]?> FetchOcspAsync()
         {
             X509Certificate2? caCert = _ca;
             Debug.Assert(_ocspUrls is not null);
@@ -175,7 +175,7 @@ namespace System.Net.Security
                 int encodingSize = Interop.Crypto.EncodeOcspRequest(ocspRequest, rentedBytes);
                 ArraySegment<byte> encoded = new ArraySegment<byte>(rentedBytes, 0, encodingSize);
 
-                ArraySegment<char> rentedChars = Base64UrlEncoding.RentEncode(encoded);
+                ArraySegment<char> rentedChars = UrlBase64Encoding.RentEncode(encoded);
                 byte[]? ret = null;
 
                 for (int i = 0; i < _ocspUrls.Count; i++)
@@ -204,6 +204,7 @@ namespace System.Net.Security
                         _ocspResponse = ret;
                         _ocspExpiration = expiration;
                         _nextDownload = nextCheckA < nextCheckB ? nextCheckA : nextCheckB;
+                        _pendingDownload = null;
                         break;
                     }
                 }
@@ -235,31 +236,15 @@ namespace System.Net.Security
             // Since the certificate isn't expected to have a slash at the end, but might,
             // use a custom concat over Uri's built-in combining constructor.
 
-            int count = baseUri.Length + encodedRequest.Count;
             string uriString;
 
-            if (baseUri[baseUri.Length - 1] == '/')
+            if (baseUri.EndsWith('/'))
             {
-                uriString = string.Create(
-                    count,
-                    (baseUri, encodedRequest),
-                    (buf, st) =>
-                    {
-                        st.baseUri.CopyTo(buf);
-                        st.encodedRequest.AsSpan().CopyTo(buf.Slice(st.baseUri.Length));
-                    });
+                uriString = string.Concat(baseUri, encodedRequest.AsSpan());
             }
             else
             {
-                uriString = string.Create(
-                    count + 1,
-                    (baseUri, encodedRequest),
-                    (buf, st) =>
-                    {
-                        st.baseUri.CopyTo(buf);
-                        buf[st.baseUri.Length] = '/';
-                        st.encodedRequest.AsSpan().CopyTo(buf.Slice(st.baseUri.Length + 1));
-                    });
+                uriString = string.Concat(baseUri, "/", encodedRequest.AsSpan());
             }
 
             return uriString;

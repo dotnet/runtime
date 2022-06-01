@@ -764,7 +764,7 @@ namespace System.Security.Cryptography.X509Certificates
                     (handle, buf) => Interop.Crypto.EncodeOcspRequest(handle, buf),
                     req);
 
-                ArraySegment<char> urlEncoded = Base64UrlEncoding.RentEncode(encoded);
+                ArraySegment<char> urlEncoded = UrlBase64Encoding.RentEncode(encoded);
                 string requestUrl = UrlPathAppend(baseUri, urlEncoded);
 
                 // Nothing sensitive is in the encoded request (it was sent via HTTP-non-S)
@@ -815,29 +815,12 @@ namespace System.Security.Cryptography.X509Certificates
             Debug.Assert(baseUri.Length > 0);
             Debug.Assert(resource.Length > 0);
 
-            int count = baseUri.Length + resource.Length;
-
             if (baseUri.EndsWith('/'))
             {
-                return string.Create(
-                    count,
-                    (baseUri, resource),
-                    (buf, st) =>
-                    {
-                        st.baseUri.CopyTo(buf);
-                        st.resource.Span.CopyTo(buf.Slice(st.baseUri.Length));
-                    });
+                return string.Concat(baseUri, resource.Span);
             }
 
-            return string.Create(
-                count + 1,
-                (baseUri, resource),
-                (buf, st) =>
-                {
-                    st.baseUri.CopyTo(buf);
-                    buf[st.baseUri.Length] = '/';
-                    st.resource.Span.CopyTo(buf.Slice(st.baseUri.Length + 1));
-                });
+            return string.Concat(baseUri, "/", resource.Span);
         }
 
         private X509ChainElement[] BuildChainElements(

@@ -59,18 +59,7 @@ namespace System.Net.Http
 
             try
             {
-                ValueTask<byte[]?> task = s_downloadBytes(uri, cts?.Token ?? default, async);
-
-                if (async)
-                {
-                    ret = await task.ConfigureAwait(false);
-                }
-                else
-                {
-                    Debug.Assert(task.IsCompleted);
-                    ret = task.Result;
-                }
-
+                ret = await s_downloadBytes(uri, cts?.Token ?? default, async).ConfigureAwait(false);
                 return ret;
             }
             catch { }

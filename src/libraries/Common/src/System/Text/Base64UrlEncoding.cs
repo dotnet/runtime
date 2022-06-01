@@ -6,7 +6,10 @@ using System.Diagnostics;
 
 namespace System.Text
 {
-    internal static class Base64UrlEncoding
+    /// <summary>
+    /// This class provides URL-encoded-Base64, which is distinct from the base64url encoding.
+    /// </summary>
+    internal static class UrlBase64Encoding
     {
         internal static ArraySegment<char> RentEncode(ReadOnlySpan<byte> input)
         {
@@ -25,43 +28,53 @@ namespace System.Text
             // In the degenerate case every char will turn into 3 chars.
             int urlEncodedLen = charsWritten * 3;
             char[] urlEncoded = ArrayPool<char>.Shared.Rent(urlEncodedLen);
-            int writeIdx = 0;
 
-            for (int readIdx = 0; readIdx < charsWritten; readIdx++)
+            ReadOnlySpan<char> source = base64.AsSpan(0, base64Len);
+            Span<char> dest = urlEncoded;
+            int written = 0;
+
+            while (!source.IsEmpty)
             {
-                char cur = base64[readIdx];
+                int pos = source.IndexOfAny('+', '/', '=');
 
-                if (char.IsAsciiLetterOrDigit(cur))
+                if (pos < 0)
                 {
-                    urlEncoded[writeIdx++] = cur;
+                    source.CopyTo(dest);
+                    written += source.Length;
+                    break;
                 }
-                else if (cur == '+')
+
+                source.Slice(0, pos).CopyTo(dest);
+                source = source.Slice(pos);
+                dest = dest.Slice(pos);
+                written += pos;
+
+                dest[0] = '%';
+
+                switch (source[0])
                 {
-                    urlEncoded[writeIdx++] = '%';
-                    urlEncoded[writeIdx++] = '2';
-                    urlEncoded[writeIdx++] = 'B';
+                    case '+':
+                        dest[1] = '2';
+                        dest[2] = 'B';
+                        break;
+                    case '/':
+                        dest[1] = '2';
+                        dest[2] = 'F';
+                        break;
+                    default:
+                        Debug.Assert(source[0] == '=');
+                        dest[1] = '3';
+                        dest[2] = 'D';
+                        break;
                 }
-                else if (cur == '/')
-                {
-                    urlEncoded[writeIdx++] = '%';
-                    urlEncoded[writeIdx++] = '2';
-                    urlEncoded[writeIdx++] = 'F';
-                }
-                else if (cur == '=')
-                {
-                    urlEncoded[writeIdx++] = '%';
-                    urlEncoded[writeIdx++] = '3';
-                    urlEncoded[writeIdx++] = 'D';
-                }
-                else
-                {
-                    Debug.Fail($"'{cur}' is not a valid Base64 character");
-                    throw new UnreachableException();
-                }
+
+                source = source.Slice(1);
+                dest = dest.Slice(3);
+                written += 3;
             }
 
             ArrayPool<char>.Shared.Return(base64);
-            return new ArraySegment<char>(urlEncoded, 0, writeIdx);
+            return new ArraySegment<char>(urlEncoded, 0, written);
         }
     }
 }
