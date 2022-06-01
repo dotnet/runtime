@@ -336,7 +336,8 @@ typedef unsigned IL_OFFSET;
 
 const IL_OFFSET BAD_IL_OFFSET = 0xffffffff;
 
-const unsigned BAD_VAR_NUM = UINT_MAX;
+const unsigned BAD_VAR_NUM    = UINT_MAX;
+const uint16_t BAD_LCL_OFFSET = UINT16_MAX;
 
 // Code can't be more than 2^31 in any direction.  This is signed, so it should be used for anything that is
 // relative to something else.

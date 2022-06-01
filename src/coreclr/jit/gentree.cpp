@@ -568,13 +568,46 @@ void Compiler::fgWalkAllTreesPre(fgWalkPreFn* visitor, void* pCallBackData)
 }
 
 //-----------------------------------------------------------
+// GetLayout: Get the struct layout for this node.
+//
+// Arguments:
+//     compiler - The Compiler instance
+//
+// Return Value:
+//     The struct layout of this node; it must have one.
+//
+// Notes:
+//     This is the "general" method for getting the layout,
+//     the more efficient node-specific ones should be used
+//     in case the node's oper is known.
+//
+ClassLayout* GenTree::GetLayout(Compiler* compiler) const
+{
+    assert(varTypeIsStruct(TypeGet()));
+
+    switch (OperGet())
+    {
+        case GT_LCL_VAR:
+            return compiler->lvaGetDesc(AsLclVar())->GetLayout();
+
+        case GT_LCL_FLD:
+            return AsLclFld()->GetLayout();
+
+        case GT_OBJ:
+        case GT_BLK:
+            return AsBlk()->GetLayout();
+
+        default:
+            unreached();
+    }
+}
+
+//-----------------------------------------------------------
 // CopyReg: Copy the _gtRegNum/gtRegTag fields.
 //
 // Arguments:
 //     from   -  GenTree node from which to copy
 //
-// Return Value:
-//     None
 void GenTree::CopyReg(GenTree* from)
 {
     _gtRegNum = from->_gtRegNum;
