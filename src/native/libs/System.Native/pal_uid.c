@@ -284,7 +284,13 @@ char* SystemNative_GetGroupName(uint32_t gid)
     }
 #else
     // Platforms like Android API level < 24 do not have getgrgid_r available
-    pthread_mutex_lock(&s_getgrgid_lock);
+    int rv = pthread_mutex_lock(&s_getgrgid_lock);
+    if (rv != 0)
+    {
+        errno = rv;
+        return NULL;
+    }
+
     struct group* result = getgrgid(gid);
     if (result == NULL)
     {
