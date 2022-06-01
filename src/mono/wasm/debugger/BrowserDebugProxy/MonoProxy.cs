@@ -248,12 +248,10 @@ namespace Microsoft.WebAssembly.Diagnostics
                         switch (url)
                         {
                             case var _ when url == "":
-                            case var _ when url.StartsWith("wasm://", StringComparison.Ordinal):
-                            case var _ when url.EndsWith(".wasm", StringComparison.Ordinal):
-                                {
-                                    logger.LogTrace($"ignoring wasm: Debugger.scriptParsed {url}");
-                                    return true;
-                                }
+                            {
+                                logger.LogTrace($"ignoring empty: Debugger.scriptParsed {url}");
+                                return true;
+                            }
                         }
                         logger.LogTrace($"proxying Debugger.scriptParsed ({sessionId.sessionId}) {url} {args}");
                         break;
