@@ -79,6 +79,32 @@ namespace System.Tests
         }
 
         [Fact]
+        public static unsafe void MakeTypedReference_ToObjectTests_WithPointer()
+        {
+            float* pointer = (float*)(nuint)0x12345678;
+            TypedReference reference = __makeref(pointer);
+            object obj = TypedReference.ToObject(reference);
+
+            // TypedReference-s over pointers use the UIntPtr type when boxing
+            Assert.NotNull(obj);
+            Assert.IsType<UIntPtr>(obj);
+            Assert.Equal((nuint)0x12345678, (nuint)obj);
+        }
+
+        [Fact]
+        public static unsafe void MakeTypedReference_ToObjectTests_WithFunctionPointer()
+        {
+            delegate*<int, float, string> pointer = (delegate*<int, float, string>)(void*)(nuint)0x12345678;
+            TypedReference reference = __makeref(pointer);
+            object obj = TypedReference.ToObject(reference);
+
+            // TypedReference-s over function pointers use the UIntPtr type when boxing
+            Assert.NotNull(obj);
+            Assert.IsType<UIntPtr>(obj);
+            Assert.Equal((nuint)0x12345678, (nuint)obj);
+        }
+
+        [Fact]
         public static void MakeTypedReference_ReadOnlyField_Succeeds()
         {
             var os = new OneStruct() { b = 42, field = "data" };
