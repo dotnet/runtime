@@ -9225,6 +9225,12 @@ public:
         static const bool compUseSoftFP = false;
 #endif // ARM_SOFTFP
 #endif // CONFIGURABLE_ARM_ABI
+
+#ifdef DEBUG
+        // Use early multi-dimensional array operator expansion (expand after loop optimizations; before lowering).
+        bool compJitEarlyExpandMDArrays;
+#endif
+
     } opts;
 
     static bool                s_pAltJitExcludeAssembliesListInitialized;
