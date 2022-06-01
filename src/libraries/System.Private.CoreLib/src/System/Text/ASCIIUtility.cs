@@ -431,8 +431,7 @@ namespace System.Text
 
             Debug.Assert(bufferLength < SizeOfVector256);
 
-            // QWORD drain
-            // TODO: Finish this
+            // 1st and 2nd QWORD drain
 
             if ((bufferLength & 16) != 0)
             {
@@ -1965,6 +1964,32 @@ namespace System.Text
 
                     currentOffset = NarrowUtf16ToAscii_Avx2(pUtf16Buffer, pAsciiBuffer, elementCount);
                 }
+                else if (elementCount >= 2 * (uint)Unsafe.SizeOf<Vector128<byte>>())
+                {
+                    // Since there's overhead to setting up the vectorized code path, we only want to
+                    // call into it after a quick probe to ensure the next immediate characters really are ASCII.
+                    // If we see non-ASCII data, we'll jump immediately to the draining logic at the end of the method.
+
+                    if (IntPtr.Size >= 8)
+                    {
+                        utf16Data64Bits = Unsafe.ReadUnaligned<ulong>(pUtf16Buffer);
+                        if (!AllCharsInUInt64AreAscii(utf16Data64Bits))
+                        {
+                            goto FoundNonAsciiDataIn64BitRead;
+                        }
+                    }
+                    else
+                    {
+                        utf16Data32BitsHigh = Unsafe.ReadUnaligned<uint>(pUtf16Buffer);
+                        utf16Data32BitsLow = Unsafe.ReadUnaligned<uint>(pUtf16Buffer + 4 / sizeof(char));
+                        if (!AllCharsInUInt32AreAscii(utf16Data32BitsHigh | utf16Data32BitsLow))
+                        {
+                            goto FoundNonAsciiDataIn64BitRead;
+                        }
+                    }
+
+                    currentOffset = NarrowUtf16ToAscii_Sse2(pUtf16Buffer, pAsciiBuffer, elementCount);
+                }
             }
             else if (Sse2.IsSupported)
             {
@@ -2552,6 +2577,10 @@ namespace System.Text
                 if (elementCount >= 2 * (uint)Unsafe.SizeOf<Vector256<byte>>())
                 {
                     currentOffset = WidenAsciiToUtf16_Avx2(pAsciiBuffer, pUtf16Buffer, elementCount);
+                }
+                else if (elementCount >= 2 * (uint)Unsafe.SizeOf<Vector128<byte>>())
+                {
+                    currentOffset = WidenAsciiToUtf16_Intrinsified(pAsciiBuffer, pUtf16Buffer, elementCount);
                 }
             }
             else if (Sse2.IsSupported || (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian))
