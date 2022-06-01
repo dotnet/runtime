@@ -269,6 +269,7 @@ jobs:
         testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
       condition: >-
         or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
           eq(variables['isFullMatrix'], true))
 
