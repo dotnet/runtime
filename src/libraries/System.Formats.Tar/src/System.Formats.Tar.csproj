@@ -27,7 +27,7 @@
     <Compile Include="System\Formats\Tar\PaxTarEntry.cs" />
     <Compile Include="System\Formats\Tar\TarEntryType.cs" />
     <Compile Include="System\Formats\Tar\TarFile.cs" />
-    <Compile Include="System\Formats\Tar\TarFormat.cs" />
+    <Compile Include="System\Formats\Tar\TarEntryFormat.cs" />
     <Compile Include="System\Formats\Tar\TarReader.cs" />
     <Compile Include="System\Formats\Tar\TarWriter.cs" />
     <Compile Include="System\Formats\Tar\SubReadStream.cs" />

@@ -20,12 +20,12 @@ namespace System.Formats.Tar
         private int _globalExtendedAttributesEntryNumber;
 
         /// <summary>
-        /// Initializes a <see cref="TarWriter"/> instance that can write tar entries to the specified stream and optionally leaves the stream open upon disposal of this instance. When using this constructor, the format of the resulting archive is <see cref="TarFormat.Pax"/>.
+        /// Initializes a <see cref="TarWriter"/> instance that can write tar entries to the specified stream and optionally leaves the stream open upon disposal of this instance. When using this constructor, the format of the resulting archive is <see cref="TarEntryFormat.Pax"/>.
         /// </summary>
         /// <param name="archiveStream">The stream to write to.</param>
         /// <param name="leaveOpen"><see langword="false"/> to dispose the <paramref name="archiveStream"/> when this instance is disposed; <see langword="true"/> to leave the stream open.</param>
         public TarWriter(Stream archiveStream, bool leaveOpen = false)
-            : this(archiveStream, TarFormat.Pax, leaveOpen)
+            : this(archiveStream, TarEntryFormat.Pax, leaveOpen)
         {
         }
 
@@ -35,11 +35,11 @@ namespace System.Formats.Tar
         /// <param name="archiveStream">The stream to write to.</param>
         /// <param name="archiveFormat">The format of the archive.</param>
         /// <param name="leaveOpen"><see langword="false"/> to dispose the <paramref name="archiveStream"/> when this instance is disposed; <see langword="true"/> to leave the stream open.</param>
-        /// <remarks>The recommended format is <see cref="TarFormat.Pax"/> for its flexibility.</remarks>
+        /// <remarks>The recommended format is <see cref="TarEntryFormat.Pax"/> for its flexibility.</remarks>
         /// <exception cref="ArgumentNullException"><paramref name="archiveStream"/> is <see langword="null"/>.</exception>
         /// <exception cref="IOException"><paramref name="archiveStream"/> is unwritable.</exception>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="archiveFormat"/> is either <see cref="TarFormat.Unknown"/>, or not one of the other enum values.</exception>
-        public TarWriter(Stream archiveStream, TarFormat archiveFormat, bool leaveOpen = false)
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="archiveFormat"/> is either <see cref="TarEntryFormat.Unknown"/>, or not one of the other enum values.</exception>
+        public TarWriter(Stream archiveStream, TarEntryFormat archiveFormat, bool leaveOpen = false)
         {
             ArgumentNullException.ThrowIfNull(archiveStream);
 
@@ -48,7 +48,7 @@ namespace System.Formats.Tar
                 throw new IOException(SR.IO_NotSupported_UnwritableStream);
             }
 
-            if (archiveFormat is not TarFormat.V7 and not TarFormat.Ustar and not TarFormat.Pax and not TarFormat.Gnu)
+            if (archiveFormat is not TarEntryFormat.V7 and not TarEntryFormat.Ustar and not TarEntryFormat.Pax and not TarEntryFormat.Gnu)
             {
                 throw new ArgumentOutOfRangeException(nameof(archiveFormat));
             }
@@ -62,9 +62,10 @@ namespace System.Formats.Tar
         }
 
         /// <summary>
-        /// The format of the archive.
+        /// The default format of the entries that are written to the archive.
         /// </summary>
-        public TarFormat Format { get; private set; }
+        /// <remarks>This format is used when writing entries into the archive using the <see cref="WriteEntry(string, string?)"/> method, but entries of any <see cref="TarEntryFormat"/> can be written to the archive when using the method <see cref="WriteEntry(TarEntry)"/>.</remarks>
+        public TarEntryFormat Format { get; private set; }
 
         /// <summary>
         /// Disposes the current <see cref="TarWriter"/> instance, and closes the archive stream if the <c>leaveOpen</c> argument was set to <see langword="false"/> in the constructor.
@@ -84,7 +85,7 @@ namespace System.Formats.Tar
         // }
 
         /// <summary>
-        /// Writes the specified file into the archive stream as a tar entry.
+        /// Writes the specified file into the archive stream as a tar entry, using the format specified by <see cref="Format"/>.
         /// </summary>
         /// <param name="fileName">The path to the file to write to the archive.</param>
         /// <param name="entryName">The name of the file as it should be represented in the archive. It should include the optional relative path and the filename.</param>
@@ -126,7 +127,7 @@ namespace System.Formats.Tar
         /// <para>These are the entry types supported for writing on each format:</para>
         /// <list type="bullet">
         /// <item>
-        /// <para><see cref="TarFormat.V7"/></para>
+        /// <para><see cref="TarEntryFormat.V7"/></para>
         /// <list type="bullet">
         /// <item><see cref="TarEntryType.Directory"/></item>
         /// <item><see cref="TarEntryType.HardLink"/></item>
@@ -135,7 +136,7 @@ namespace System.Formats.Tar
         /// </list>
         /// </item>
         /// <item>
-        /// <para><see cref="TarFormat.Ustar"/>, <see cref="TarFormat.Pax"/> and <see cref="TarFormat.Gnu"/></para>
+        /// <para><see cref="TarEntryFormat.Ustar"/>, <see cref="TarEntryFormat.Pax"/> and <see cref="TarEntryFormat.Gnu"/></para>
         /// <list type="bullet">
         /// <item><see cref="TarEntryType.BlockDevice"/></item>
         /// <item><see cref="TarEntryType.CharacterDevice"/></item>
@@ -164,13 +165,13 @@ namespace System.Formats.Tar
             {
                 switch (Format)
                 {
-                    case TarFormat.V7:
+                    case TarEntryFormat.V7:
                         entry._header.WriteAsV7(_archiveStream, buffer);
                         break;
-                    case TarFormat.Ustar:
+                    case TarEntryFormat.Ustar:
                         entry._header.WriteAsUstar(_archiveStream, buffer);
                         break;
-                    case TarFormat.Pax:
+                    case TarEntryFormat.Pax:
                         if (entry._header._typeFlag is TarEntryType.GlobalExtendedAttributes)
                         {
                             entry._header.WriteAsPaxGlobalExtendedAttributes(_archiveStream, buffer, _globalExtendedAttributesEntryNumber);
@@ -181,10 +182,10 @@ namespace System.Formats.Tar
                             entry._header.WriteAsPax(_archiveStream, buffer);
                         }
                         break;
-                    case TarFormat.Gnu:
+                    case TarEntryFormat.Gnu:
                         entry._header.WriteAsGnu(_archiveStream, buffer);
                         break;
-                    case TarFormat.Unknown:
+                    case TarEntryFormat.Unknown:
                     default:
                         throw new FormatException(string.Format(SR.TarInvalidFormat, Format));
                 }
@@ -206,7 +207,7 @@ namespace System.Formats.Tar
         // /// <para>These are the entry types supported for writing on each format:</para>
         // /// <list type="bullet">
         // /// <item>
-        // /// <para><see cref="TarFormat.V7"/></para>
+        // /// <para><see cref="TarEntryFormat.V7"/></para>
         // /// <list type="bullet">
         // /// <item><see cref="TarEntryType.Directory"/></item>
         // /// <item><see cref="TarEntryType.HardLink"/></item>
@@ -215,7 +216,7 @@ namespace System.Formats.Tar
         // /// </list>
         // /// </item>
         // /// <item>
-        // /// <para><see cref="TarFormat.Ustar"/>, <see cref="TarFormat.Pax"/> and <see cref="TarFormat.Gnu"/></para>
+        // /// <para><see cref="TarEntryFormat.Ustar"/>, <see cref="TarEntryFormat.Pax"/> and <see cref="TarEntryFormat.Gnu"/></para>
         // /// <list type="bullet">
         // /// <item><see cref="TarEntryType.BlockDevice"/></item>
         // /// <item><see cref="TarEntryType.CharacterDevice"/></item>

@@ -4,9 +4,9 @@
 namespace System.Formats.Tar
 {
     /// <summary>
-    /// Specifies the supported Tar formats.
+    /// Specifies the supported Tar formats that entries can use.
     /// </summary>
-    public enum TarFormat
+    public enum TarEntryFormat
     {
         /// <summary>
         /// Tar format undetermined.
