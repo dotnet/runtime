@@ -9579,7 +9579,9 @@ MONO_RESTORE_WARNING
 			break;
 		}
 		case OP_WASM_SIMD_SHUFFLE: {
-			/* FIXME: this crashes 'WebAssembly Instruction Selection' pass in some cases */
+			/* FIXME: this crashes 'WebAssembly Instruction Selection' pass in some cases
+			   https://github.com/llvm/llvm-project/issues/55559
+			 */
 			LLVMValueRef args [18] = { lhs, rhs };
 			for (int i = 0; i < 16; i++) {
 				args[2 + i] = LLVMBuildZExt (builder, LLVMBuildExtractElement (builder, arg3, const_int32 (i), ""), LLVMInt32Type (), "");
