@@ -1319,14 +1319,20 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 foreach (string file_name in loaded_files)
                 {
-                    if (!file_name.EndsWith(".pdb", StringComparison.OrdinalIgnoreCase))
+                    if (file_name.EndsWith(".pdb", StringComparison.OrdinalIgnoreCase))
+                        continue;
+                    try
                     {
                         steps.Add(
                             new DebugItem
                             {
                                 Url = file_name,
-                                Data = context.SdbAgent.GetBytesFromAssemblyAndPdb(System.IO.Path.GetFileName(file_name), token)
+                                Data = context.SdbAgent.GetBytesFromAssemblyAndPdb(Path.GetFileName(file_name), token)
                             });
+                    }
+                    catch (Exception e)
+                    {
+                        logger.LogDebug($"Failed to read {file_name} ({e.Message})");
                     }
                 }
             }
@@ -1337,6 +1343,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                 try
                 {
                     byte[][] bytes = await step.Data.ConfigureAwait(false);
+                    if (bytes[0] == null)
+                    {
+                        logger.LogDebug($"Bytes from assembly {step.Url} is NULL");
+                        continue;
+                    }
                     assembly = new AssemblyInfo(monoProxy, id, step.Url, bytes[0], bytes[1], logger, token);
                 }
                 catch (Exception e)

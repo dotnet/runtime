@@ -2155,7 +2155,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdVM.GetAssemblyAndPdbBytes, commandParamsWriter, token);
             int assembly_size = retDebuggerCmdReader.ReadInt32();
             if (assembly_size > 0)
-             assembly_buf = retDebuggerCmdReader.ReadBytes(assembly_size);
+                assembly_buf = retDebuggerCmdReader.ReadBytes(assembly_size);
             int pdb_size = retDebuggerCmdReader.ReadInt32();
             if (pdb_size > 0)
                 pdb_buf = retDebuggerCmdReader.ReadBytes(pdb_size);
