@@ -130,7 +130,7 @@ namespace System.Diagnostics.Tests
                 var idcc = pcc.ReadCategory();
                 if (idcc.Values.Count == 0)
                 {
-                    throw new Exception();
+                    Assert.InRange(idcc.Values.Count, 1, int.MaxValue);
                 }
                 return idcc;
             });
