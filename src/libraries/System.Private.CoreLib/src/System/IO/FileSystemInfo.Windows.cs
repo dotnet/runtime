@@ -130,19 +130,19 @@ namespace System.IO
             }
         }
 
+#pragma warning disable CA1822
         internal UnixFileMode UnixFileModeCore
         {
             get
             {
-                EnsureDataInitialized();
-                throw new NotImplementedException(); // TODO (Windows)
+                throw new PlatformNotSupportedException(SR.PlatformNotSupported_UnixFileMode);
             }
             set
             {
-                FileSystem.SetUnixFileMode(FullPath, value);
-                _dataInitialized = -1;
+                throw new PlatformNotSupportedException(SR.PlatformNotSupported_UnixFileMode);
             }
         }
+#pragma warning restore CA1822
 
         private void EnsureDataInitialized()
         {

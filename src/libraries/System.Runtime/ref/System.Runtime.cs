@@ -9216,6 +9216,7 @@ namespace System.IO
     public static partial class Directory
     {
         public static System.IO.DirectoryInfo CreateDirectory(string path) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
         public static System.IO.DirectoryInfo CreateDirectory(string path, System.IO.UnixFileMode unixCreateMode) { throw null; }
         public static System.IO.FileSystemInfo CreateSymbolicLink(string path, string pathToTarget) { throw null; }
         public static void Delete(string path) { }
@@ -9360,7 +9361,9 @@ namespace System.IO
         public static System.DateTime GetLastAccessTimeUtc(string path) { throw null; }
         public static System.DateTime GetLastWriteTime(string path) { throw null; }
         public static System.DateTime GetLastWriteTimeUtc(string path) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
         public static System.IO.UnixFileMode GetUnixFileMode(Microsoft.Win32.SafeHandles.SafeFileHandle fileHandle) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
         public static System.IO.UnixFileMode GetUnixFileMode(string path) { throw null; }
         public static void Move(string sourceFileName, string destFileName) { }
         public static void Move(string sourceFileName, string destFileName, bool overwrite) { }
@@ -9396,7 +9399,9 @@ namespace System.IO
         public static void SetLastAccessTimeUtc(string path, System.DateTime lastAccessTimeUtc) { }
         public static void SetLastWriteTime(string path, System.DateTime lastWriteTime) { }
         public static void SetLastWriteTimeUtc(string path, System.DateTime lastWriteTimeUtc) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
         public static void SetUnixFileMode(Microsoft.Win32.SafeHandles.SafeFileHandle fileHandle, System.IO.UnixFileMode mode) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
         public static void SetUnixFileMode(string path, System.IO.UnixFileMode mode) { }
         public static void WriteAllBytes(string path, byte[] bytes) { }
         public static System.Threading.Tasks.Task WriteAllBytesAsync(string path, byte[] bytes, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
@@ -9604,7 +9609,7 @@ namespace System.IO
         public System.IO.FileOptions Options { get { throw null; } set { } }
         public long PreallocationSize { get { throw null; } set { } }
         public System.IO.FileShare Share { get { throw null; } set { } }
-        public System.IO.UnixFileMode? UnixCreateMode { get { throw null; } set { } }
+        public System.IO.UnixFileMode? UnixCreateMode { get { throw null; } [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")] set { } }
     }
     public abstract partial class FileSystemInfo : System.MarshalByRefObject, System.Runtime.Serialization.ISerializable
     {
@@ -9624,7 +9629,7 @@ namespace System.IO
         public System.DateTime LastWriteTimeUtc { get { throw null; } set { } }
         public string? LinkTarget { get { throw null; } }
         public abstract string Name { get; }
-        public System.IO.UnixFileMode UnixFileMode { get { throw null; } set { } }
+        public System.IO.UnixFileMode UnixFileMode { [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")] get { throw null; } [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")] set { } }
         public void CreateAsSymbolicLink(string pathToTarget) { }
         public abstract void Delete();
         public virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }

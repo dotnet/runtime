@@ -37,12 +37,10 @@ namespace Microsoft.Win32.SafeHandles
 
         internal static unsafe SafeFileHandle Open(string fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize, UnixFileMode? unixCreateMode = null)
         {
+            Debug.Assert(!unixCreateMode.HasValue);
+
             using (DisableMediaInsertionPrompt.Create())
             {
-                // TODO (Windows): set unixCreateMode.
-                // On Unix, this gets filtered by the process umask.
-                // Is there a umask we can use? Or should we assume a umask, like 002, or 022?
-
                 // we don't use NtCreateFile as there is no public and reliable way
                 // of converting DOS to NT file paths (RtlDosPathNameToRelativeNtPathName_U_WithStatus is not documented)
                 SafeFileHandle fileHandle = CreateFile(fullPath, mode, access, share, options);

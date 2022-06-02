@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.Versioning;
+
 namespace System.IO
 {
     public sealed class FileStreamOptions
@@ -116,10 +118,19 @@ namespace System.IO
         /// </summary>
         public UnixFileMode? UnixCreateMode
         {
-            get => _unixCreateMode;
+            get
+            {
+                return _unixCreateMode;
+            }
+            [UnsupportedOSPlatform("windows")]
             set
             {
-                if ((value & ~FileSystem.ValidUnixFileModes) != 0)
+                if (OperatingSystem.IsWindows())
+                {
+                    throw new PlatformNotSupportedException(SR.PlatformNotSupported_UnixFileMode);
+                }
+
+                if (value.HasValue && ((value & ~FileSystem.ValidUnixFileModes) != 0))
                 {
                     ThrowHelper.ArgumentOutOfRangeException_Enum_Value();
                 }

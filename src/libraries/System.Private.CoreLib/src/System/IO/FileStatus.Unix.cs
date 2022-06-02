@@ -426,7 +426,6 @@ namespace System.IO
         {
             if ((mode & ~FileSystem.ValidUnixFileModes) != 0)
             {
-                // Using constant string for argument to match historical throw
                 throw new ArgumentException(SR.Arg_InvalidUnixFileMode, "UnixFileMode");
             }
 

@@ -460,16 +460,16 @@ namespace System.IO
            => SetFileTime(fullPath, asDirectory, lastWriteTime: time.ToFileTime());
 
         public static UnixFileMode GetUnixFileMode(string fullPath)
-            => throw NotImplementedException(); // TODO (Windows)
+            => throw new PlatformNotSupportedException(SR.PlatformNotSupported_UnixFileMode);
 
         public static UnixFileMode GetUnixFileMode(SafeFileHandle fileHandle)
-            => throw NotImplementedException(); // TODO (Windows)
+            => throw new PlatformNotSupportedException(SR.PlatformNotSupported_UnixFileMode);
 
         public static void SetUnixFileMode(string fullPath, UnixFileMode mode)
-            => throw NotImplementedException(); // TODO (Windows)
+            => throw new PlatformNotSupportedException(SR.PlatformNotSupported_UnixFileMode);
 
         public static void SetUnixFileMode(SafeFileHandle fileHandle, UnixFileMode mode)
-            => throw NotImplementedException(); // TODO (Windows)
+            => throw new PlatformNotSupportedException(SR.PlatformNotSupported_UnixFileMode);
 
         public static string[] GetLogicalDrives()
             => DriveInfoInternal.GetLogicalDrives();

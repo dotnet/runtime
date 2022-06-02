@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.IO.Enumeration;
+using System.Runtime.Versioning;
 
 namespace System.IO
 {
@@ -24,12 +25,18 @@ namespace System.IO
         }
 
         public static DirectoryInfo CreateDirectory(string path)
-            => CreateDirectory(path, null);
+        {
+            ArgumentException.ThrowIfNullOrEmpty(path);
 
+            string fullPath = Path.GetFullPath(path);
+
+            FileSystem.CreateDirectory(fullPath);
+
+            return new DirectoryInfo(path, fullPath, isNormalized: true);
+        }
+
+        [UnsupportedOSPlatform("windows")]
         public static DirectoryInfo CreateDirectory(string path, UnixFileMode unixCreateMode)
-            => CreateDirectory(path, (UnixFileMode?)unixCreateMode);
-
-        private static DirectoryInfo CreateDirectory(string path, UnixFileMode? unixCreateMode)
         {
             ArgumentException.ThrowIfNullOrEmpty(path);
 

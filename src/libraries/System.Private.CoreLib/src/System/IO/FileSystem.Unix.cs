@@ -290,8 +290,8 @@ namespace System.IO
             }
         }
 
-        public static void CreateDirectory(string fullPath, UnixFileMode? unixCreateMode = null)
-            => CreateDirectory(fullPath, unixCreateMode ?? DefaultUnixCreateDirectoryMode);
+        public static void CreateDirectory(string fullPath)
+            => CreateDirectory(fullPath, DefaultUnixCreateDirectoryMode);
 
         public static void CreateDirectory(string fullPath, UnixFileMode unixCreateMode)
         {

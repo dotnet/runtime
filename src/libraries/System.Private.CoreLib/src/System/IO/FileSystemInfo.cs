@@ -4,6 +4,7 @@
 using System;
 using System.IO;
 using System.Runtime.Serialization;
+using System.Runtime.Versioning;
 
 namespace System.IO
 {
@@ -130,6 +131,7 @@ namespace System.IO
             }
         }
 
+        [UnsupportedOSPlatform("windows")]
         public UnixFileMode UnixFileMode
         {
             get => UnixFileModeCore;

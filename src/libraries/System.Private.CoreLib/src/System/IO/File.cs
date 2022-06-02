@@ -220,15 +220,19 @@ namespace System.IO
         public static void SetAttributes(string path, FileAttributes fileAttributes)
             => FileSystem.SetAttributes(Path.GetFullPath(path), fileAttributes);
 
+        [UnsupportedOSPlatform("windows")]
         public static UnixFileMode GetUnixFileMode(string path)
             => FileSystem.GetUnixFileMode(Path.GetFullPath(path));
 
+        [UnsupportedOSPlatform("windows")]
         public static UnixFileMode GetUnixFileMode(SafeFileHandle fileHandle)
             => FileSystem.GetUnixFileMode(fileHandle);
 
+        [UnsupportedOSPlatform("windows")]
         public static void SetUnixFileMode(string path, UnixFileMode mode)
             => FileSystem.SetUnixFileMode(Path.GetFullPath(path), mode);
 
+        [UnsupportedOSPlatform("windows")]
         public static void SetUnixFileMode(SafeFileHandle fileHandle, UnixFileMode mode)
             => FileSystem.SetUnixFileMode(fileHandle, mode);
 
