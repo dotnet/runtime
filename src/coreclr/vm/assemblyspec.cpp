@@ -282,8 +282,8 @@ void AssemblySpec::InitializeAssemblyNameRef(_In_ BINDER_SPACE::AssemblyName* as
     StackEString<EncodingUTF8> cultureUTF8;
     if (assemblyName->Have(BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_CULTURE))
     {
-        assemblyName->GetCulture().ConvertToUTF8(nameUTF8);
-        LPCSTR culture = assemblyName->IsNeutralCulture() ? "" : nameUTF8;
+        assemblyName->GetCulture().ConvertToUTF8(cultureUTF8);
+        LPCSTR culture = assemblyName->IsNeutralCulture() ? "" : cultureUTF8;
         spec.SetCulture(culture);
     }
 
