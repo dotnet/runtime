@@ -23,7 +23,6 @@
 #include "comdynamic.h"
 
 #include <wincrypt.h>
-#include "urlmon.h"
 #include "sha1.h"
 
 #include "eeconfig.h"
