@@ -8,7 +8,6 @@
 #include "ex.h"
 #include "pedecoder.h"
 
-#include <wininet.h>
 #include <urlmon.h>
 
 DWORD
