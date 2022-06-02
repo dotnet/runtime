@@ -131,10 +131,11 @@ namespace System.IO
             }
         }
 
-        [UnsupportedOSPlatform("windows")]
         public UnixFileMode UnixFileMode
         {
+            [UnsupportedOSPlatform("windows")]
             get => UnixFileModeCore;
+            [UnsupportedOSPlatform("windows")]
             set => UnixFileModeCore = value;
         }
 
