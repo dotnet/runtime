@@ -10,6 +10,11 @@ namespace System.IO
 {
     internal static partial class FileSystem
     {
+        public static void CreateDirectory(string fullPath, UnixFileMode unixCreateMode)
+        {
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_UnixFileMode);
+        }
+
         public static void Encrypt(string path)
         {
             string fullPath = Path.GetFullPath(path);
