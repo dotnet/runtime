@@ -73,7 +73,7 @@ jobs:
     crossrootfsDir: ${{ parameters.crossrootfsDir }}
 
     gatherAssetManifests: true
-    variables:3
+    variables:
     - name: osGroup
       value: ${{ parameters.osGroup }}
     - name: osSubgroup
