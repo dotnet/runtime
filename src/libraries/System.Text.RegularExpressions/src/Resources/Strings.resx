@@ -262,7 +262,7 @@
     <comment>{Locked="RegexOptions.NonBacktracking"}</comment>
   </data>
   <data name="NotSupported_NonBacktrackingUnsafeSize" xml:space="preserve">
-    <value>RegexOptions.NonBacktracking is not supported for expressions of potential expanded size: '{0}', that exceeds the safe size threshold: '{1}'.</value>
+    <value>The specified pattern with RegexOptions.NonBacktracking could result in an automata as large as '{0}' nodes, which is larger than the default limit of '{1}'.</value>
     <comment>{Locked="RegexOptions.NonBacktracking"}</comment>
   </data>
   <data name="ExpressionDescription_Backreference" xml:space="preserve">
