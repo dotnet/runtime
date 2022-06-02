@@ -92,7 +92,7 @@ jobs:
         value: 'BuildLogs_CoreCLR_GCC'
     - ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.compilerName, 'gcc')) }}:
       - name: compilerArg
-        value: '-clang12'
+        value: '-clang'
       # Building for x64 MUSL happens on Alpine Linux and we need to use the stable version available there
       - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubgroup, '_musl'), eq(parameters.archType, 'x64')) }}:
         - name: compilerArg
