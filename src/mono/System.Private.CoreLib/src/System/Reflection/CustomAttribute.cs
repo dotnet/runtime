@@ -282,7 +282,7 @@ namespace System.Reflection
                     inheritanceLevel++;
                     res = GetCustomAttributesBase(btype, attributeType, true);
                 }
-            } while (inherit && btype != null);
+            } while (btype != null);
 
             if (attributeType == null || attributeType.IsValueType)
                 array = new Attribute[a.Count];
@@ -450,7 +450,7 @@ namespace System.Reflection
                     inheritanceLevel++;
                     res = GetCustomAttributesDataBase(btype, attributeType, true);
                 }
-            } while (inherit && btype != null);
+            } while (btype != null);
 
             return a.ToArray();
         }

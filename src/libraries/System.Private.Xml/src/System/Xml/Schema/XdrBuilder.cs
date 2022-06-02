@@ -1655,7 +1655,7 @@ namespace System.Xml.Schema
                 builder.SendValidationEvent(SR.Sch_DupDtMaxLength);
             }
 
-            if (!ParseInteger((string)obj, ref cVal) || cVal < 0)
+            if (!ParseInteger((string)obj, ref cVal))
             {
                 builder.SendValidationEvent(SR.Sch_DtMaxLengthInvalid, obj.ToString());
             }
@@ -1668,7 +1668,7 @@ namespace System.Xml.Schema
                 builder.SendValidationEvent(SR.Sch_DupDtMinLength);
             }
 
-            if (!ParseInteger((string)obj, ref cVal) || cVal < 0)
+            if (!ParseInteger((string)obj, ref cVal))
             {
                 builder.SendValidationEvent(SR.Sch_DtMinLengthInvalid, obj.ToString());
             }

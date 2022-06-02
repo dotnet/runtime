@@ -3791,10 +3791,7 @@ namespace System.Xml
                         if (XmlConvert.StrEqual(_ps.chars, _ps.charPos, nameEndPos - _ps.charPos, "standalone") &&
                              (xmlDeclState == 1 || xmlDeclState == 2) && !isTextDecl)
                         {
-                            if (!isTextDecl)
-                            {
-                                attr = AddAttributeNoChecks("standalone", 1);
-                            }
+                            attr = AddAttributeNoChecks("standalone", 1);
                             xmlDeclState = 2;
                             break;
                         }
@@ -6168,7 +6165,7 @@ namespace System.Xml
                 {
                     PushExternalEntity(entity);
                     _curNode.entityId = _ps.entityId;
-                    return (isInAttributeValue && _validatingReaderCompatFlag) ? EntityType.ExpandedInAttribute : EntityType.Expanded;
+                    return EntityType.Expanded;
                 }
             }
             else

@@ -1727,10 +1727,8 @@ namespace System.Xml.Schema
                 SetParent(complexType.ContentModel, complexType); //SimpleContent / complexCotent
                 PreprocessAnnotation(complexType.ContentModel);
 
-                if (complexType.Particle != null || complexType.Attributes != null)
-                {
-                    // this is illegal
-                }
+                // "complexType.Particle != null || complexType.Attributes != null" is illegal
+
                 if (complexType.ContentModel is XmlSchemaSimpleContent)
                 {
                     XmlSchemaSimpleContent content = (XmlSchemaSimpleContent)complexType.ContentModel;
