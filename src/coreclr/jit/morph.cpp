@@ -9621,6 +9621,11 @@ GenTree* Compiler::fgMorphBlockOperand(GenTree* tree, var_types asgType, ClassLa
         {
             lclNode = effectiveVal->AsLclVarCommon();
         }
+        else if (effectiveVal->OperIs(GT_LCL_FLD))
+        {
+            needsIndirection = false;
+            assert(ClassLayout::AreCompatible(effectiveVal->AsLclFld()->GetLayout(), blockLayout));
+        }
         else if (effectiveVal->IsCall())
         {
             needsIndirection = false;
