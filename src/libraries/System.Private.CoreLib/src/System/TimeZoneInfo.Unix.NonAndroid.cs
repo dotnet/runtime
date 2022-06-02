@@ -5,8 +5,9 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using System.Text;
+using System.Runtime.InteropServices;
 using System.Security;
+using System.Text;
 using Microsoft.Win32.SafeHandles;
 
 namespace System
@@ -392,6 +393,10 @@ namespace System
             rawData = null;
             id = null;
             string? tzVariable = GetTzEnvironmentVariable();
+
+#if TARGET_IOS || TARGET_TVOS
+            tzVariable = Interop.Sys.GetDefaultTimeZone();
+#endif
 
             // If the env var is null, use the localtime file
             if (tzVariable == null)

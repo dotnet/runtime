@@ -1425,5 +1425,17 @@ namespace System.Tests
         {
             VerifyDateTimeOffset(DateTimeOffset.UnixEpoch, 1970, 1, 1, 0, 0, 0, 0, 0, TimeSpan.Zero);
         }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Android | TestPlatforms.iOS | TestPlatforms.tvOS)]
+        public static void UtcIsNotLocalTime()
+        {
+            DateTimeOffset utcNow = DateTimeOffset.UtcNow;
+            
+            string utcTime = utcNow.ToString();
+            string localTime = utcNow.ToLocalTime().ToString();
+
+            Assert.NotEqual(utcTime, localTime);
+        }
     }
 }
