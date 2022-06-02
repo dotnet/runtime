@@ -129,14 +129,6 @@ namespace System.IO.Compression
         Create = 1,
         Update = 2,
     }
-    public partial class ZLibException : System.IO.IOException, System.Runtime.Serialization.ISerializable
-    {
-        public ZLibException() { }
-        protected ZLibException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        public ZLibException(string? message, System.Exception? innerException) { }
-        public ZLibException(string? message, string? zlibErrorContext, int zlibErrorCode, string? zlibErrorMessage) { }
-        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo si, System.Runtime.Serialization.StreamingContext context) { }
-    }
     public sealed partial class ZLibStream : System.IO.Stream
     {
         public ZLibStream(System.IO.Stream stream, System.IO.Compression.CompressionLevel compressionLevel) { }
