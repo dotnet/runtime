@@ -839,10 +839,9 @@ bool Compiler::optPopulateInitInfo(unsigned loopInd, BasicBlock* initBlock, GenT
 // optCheckIterInLoopTest: Check if iter var is used in loop test.
 //
 // Arguments:
+//      loopInd       loopIndex
 //      test          "jtrue" tree or an asg of the loop iter termination condition
-//      from/to       blocks (beg, end) which are part of the loop.
 //      iterVar       loop iteration variable.
-//      loopInd       loop index.
 //
 //  Operation:
 //      The test tree is parsed to check if "iterVar" matches the lhs of the condition
@@ -853,8 +852,7 @@ bool Compiler::optPopulateInitInfo(unsigned loopInd, BasicBlock* initBlock, GenT
 //      "false" if the loop table could not be populated with the loop test info or
 //      if the test condition doesn't involve iterVar.
 //
-bool Compiler::optCheckIterInLoopTest(
-    unsigned loopInd, GenTree* test, BasicBlock* from, BasicBlock* to, unsigned iterVar)
+bool Compiler::optCheckIterInLoopTest(unsigned loopInd, GenTree* test, unsigned iterVar)
 {
     // Obtain the relop from the "test" tree.
     GenTree* relop;
@@ -909,20 +907,46 @@ bool Compiler::optCheckIterInLoopTest(
             optLoopTable[loopInd].lpFlags |= LPFLG_SIMD_LIMIT;
         }
     }
-    else if (limitOp->gtOper == GT_LCL_VAR &&
-             !optIsVarAssigned(from, to, nullptr, limitOp->AsLclVarCommon()->GetLclNum()))
+    else if (limitOp->gtOper == GT_LCL_VAR)
     {
-        optLoopTable[loopInd].lpFlags |= LPFLG_VAR_LIMIT;
+        // See if limit var is a loop invariant
+        //
+        if (!optIsVarAssgLoop(loopInd, limitOp->AsLclVarCommon()->GetLclNum()))
+        {
+            optLoopTable[loopInd].lpFlags |= LPFLG_VAR_LIMIT;
+        }
+        else
+        {
+            JITDUMP("Limit var %V02u modifiable in " FMT_LP "\n", limitOp->AsLclVarCommon()->GetLclNum(), loopInd);
+        }
     }
     else if (limitOp->gtOper == GT_ARR_LENGTH)
     {
-        optLoopTable[loopInd].lpFlags |= LPFLG_ARRLEN_LIMIT;
+        // See if limit array is a loop invariant
+        //
+        GenTree* const array = limitOp->AsArrLen()->ArrRef();
+
+        if (array->OperIs(GT_LCL_VAR))
+        {
+            if (!optIsVarAssgLoop(loopInd, array->AsLclVarCommon()->GetLclNum()))
+            {
+                optLoopTable[loopInd].lpFlags |= LPFLG_ARRLEN_LIMIT;
+            }
+        }
     }
     else
     {
+        // Not clear why we return false here. We know the loop exit test
+        // is comparing iterVar to something; we just don't know what.
+        //
+        // No real difference between this case and the cases above where
+        // we don't set some kind of limit flag.
+        //
         return false;
     }
+
     // Save the type of the comparison between the iterator and the limit.
+    //
     optLoopTable[loopInd].lpTestTree = relop;
     return true;
 }
@@ -977,7 +1001,7 @@ unsigned Compiler::optIsLoopIncrTree(GenTree* incr)
 // optComputeIterInfo: Check tree is loop increment of a lcl that is loop-invariant.
 //
 // Arguments:
-//      from, to    - are blocks (beg, end) which are part of the loop.
+//      lnum        - loop in question
 //      incr        - tree that increments the loop iterator. v+=1 or v=v+1.
 //      pIterVar    - see return value.
 //
@@ -987,21 +1011,47 @@ unsigned Compiler::optIsLoopIncrTree(GenTree* incr)
 //
 //  Operation:
 //      Check if the "incr" tree is a "v=v+1 or v+=1" type tree and make sure it is not
-//      assigned in the loop.
+//      otherwise modified in the loop.
 //
 bool Compiler::optComputeIterInfo(GenTree* incr, BasicBlock* from, BasicBlock* to, unsigned* pIterVar)
 {
+    const unsigned iterVar = optIsLoopIncrTree(incr);
 
-    unsigned iterVar = optIsLoopIncrTree(incr);
     if (iterVar == BAD_VAR_NUM)
     {
         return false;
     }
-    if (optIsVarAssigned(from, to, incr, iterVar))
+
+    // Note we can't use optIsVarAssgLoop here, as iterVar is indeed
+    // assigned within the loop.
+    //
+    // Bail on promoted case, otherwise we'd have to search the loop
+    // for both iterVar and its parent.
+    //
+    // Bail on the potentially aliased case.
+    //
+    LclVarDsc* const iterVarDsc = lvaGetDesc(iterVar);
+
+    if (iterVarDsc->lvIsStructField)
     {
-        JITDUMP("iterVar is assigned in loop\n");
+        JITDUMP("iterVar V%02u is a promoted field\n", iterVar);
         return false;
     }
+
+    if (iterVarDsc->IsAddressExposed())
+    {
+        JITDUMP("iterVar V%02u is address exposed\n", iterVar);
+        return false;
+    }
+
+    if (optIsVarAssigned(from, to, incr, iterVar))
+    {
+        JITDUMP("iterVar V%02u is assigned in loop\n", iterVar);
+        return false;
+    }
+
+    JITDUMP("iterVar V%02u is invariant in loop (with the exception of the update in [%06u])\n", iterVar,
+            dspTreeID(incr));
 
     *pIterVar = iterVar;
     return true;
@@ -1282,6 +1332,9 @@ bool Compiler::optRecordLoop(
     }
 #endif // DEBUG
 
+    bool loopInsertedAtEnd = (loopInd == optLoopCount);
+    optLoopCount++;
+
     optLoopTable[loopInd].lpHead    = head;
     optLoopTable[loopInd].lpTop     = top;
     optLoopTable[loopInd].lpBottom  = bottom;
@@ -1338,9 +1391,10 @@ bool Compiler::optRecordLoop(
         optPopulateInitInfo(loopInd, head, init, iterVar);
 
         // Check that the iterator is used in the loop condition.
-        if (!optCheckIterInLoopTest(loopInd, test, head->bbNext, bottom, iterVar))
+        if (!optCheckIterInLoopTest(loopInd, test, iterVar))
         {
-            JITDUMP(FMT_LP ": iterator not used in loop condition; not LPFLG_ITER loop\n", loopInd);
+            JITDUMP(FMT_LP ": iterator V%02u fails analysis of loop condition [%06u]; not LPFLG_ITER loop\n", loopInd,
+                    iterVar, dspTreeID(test));
             goto DONE_LOOP;
         }
 
@@ -1364,9 +1418,6 @@ bool Compiler::optRecordLoop(
     }
 
 DONE_LOOP:
-
-    bool loopInsertedAtEnd = (loopInd == optLoopCount);
-    optLoopCount++;
 
 #ifdef DEBUG
     if (verbose)
@@ -5614,12 +5665,16 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
     return false;
 }
 
-/*****************************************************************************
- *
- *  The following logic figures out whether the given variable is assigned
- *  somewhere in a list of basic blocks (or in an entire loop).
- */
-
+//------------------------------------------------------------------------
+// optIsVarAssgCB: callback to record local modification info
+//
+// Arguments:
+//     pTree - pointer to tree to scan
+//     data - ambient walk data
+//
+// Returns:
+//     standard walk result
+//
 Compiler::fgWalkResult Compiler::optIsVarAssgCB(GenTree** pTree, fgWalkData* data)
 {
     GenTree* tree = *pTree;
@@ -5671,20 +5726,20 @@ Compiler::fgWalkResult Compiler::optIsVarAssgCB(GenTree** pTree, fgWalkData* dat
         }
         else if (destOper == GT_LCL_FLD)
         {
-            /* We can't track every field of every var. Moreover, indirections
-               may access different parts of the var as different (but
-               overlapping) fields. So just treat them as indirect accesses */
-
+            // We can't track every field of every var. Moreover, indirections
+            // may access different parts of the var as different (but
+            // overlapping) fields. So just treat them as indirect accesses
+            //
             // unsigned    lclNum = dest->AsLclFld()->GetLclNum();
             // noway_assert(lvaTable[lclNum].lvAddrTaken);
-
+            //
             varRefKinds refs = varTypeIsGC(tree->TypeGet()) ? VR_IND_REF : VR_IND_SCL;
             desc->ivaMaskInd = varRefKinds(desc->ivaMaskInd | refs);
         }
         else if (destOper == GT_IND)
         {
-            /* Set the proper indirection bits */
-
+            // Set the proper indirection bits
+            //
             varRefKinds refs = varTypeIsGC(tree->TypeGet()) ? VR_IND_REF : VR_IND_SCL;
             desc->ivaMaskInd = varRefKinds(desc->ivaMaskInd | refs);
         }
@@ -5693,8 +5748,23 @@ Compiler::fgWalkResult Compiler::optIsVarAssgCB(GenTree** pTree, fgWalkData* dat
     return WALK_CONTINUE;
 }
 
-/*****************************************************************************/
-
+//------------------------------------------------------------------------
+// optIsVarAssigned: see if a local is assigned in a range of blocks
+//
+// Arguments:
+//     beg - first block in range
+//     end - last block in range
+//     skip - tree to ignore (nullptr if none)
+//     var - local to check
+//
+// Returns:
+//     true if local is directly modified
+//
+// Notes:
+//     Does a full walk of all blocks/statements/trees, so potentially expensive.
+//
+//     Does not do proper checks for struct fields or exposed locals.
+//
 bool Compiler::optIsVarAssigned(BasicBlock* beg, BasicBlock* end, GenTree* skip, unsigned var)
 {
     bool         result;
@@ -5736,38 +5806,97 @@ DONE:
     return result;
 }
 
-/*****************************************************************************
- *  Is "var" assigned in the loop "lnum" ?
- */
-
+//------------------------------------------------------------------------
+// optIsVarAssgLoop: see if a local is assigned in a loop
+//
+// Arguments:
+//     lnum - loop number
+//     var - var to check
+//
+// Returns:
+//     true if var can possibly be modified in the loop specified by lnum
+//     false if var is a loop invariant
+//
 bool Compiler::optIsVarAssgLoop(unsigned lnum, unsigned var)
 {
     assert(lnum < optLoopCount);
+
+    LclVarDsc* const varDsc = lvaGetDesc(var);
+    if (varDsc->IsAddressExposed())
+    {
+        // Assume the worst
+        //
+        return true;
+    }
+
     if (var < lclMAX_ALLSET_TRACKED)
     {
         ALLVARSET_TP vs(AllVarSetOps::MakeSingleton(this, var));
+
+        // If local is a promoted field, also check for modifications to parent.
+        //
+        if (varDsc->lvIsStructField)
+        {
+            unsigned const parentVar = varDsc->lvParentLcl;
+            assert(!lvaGetDesc(parentVar)->IsAddressExposed());
+            assert(lvaGetDesc(parentVar)->lvPromoted);
+
+            if (parentVar < lclMAX_ALLSET_TRACKED)
+            {
+                JITDUMP("optIsVarAssgLoop: V%02u promoted, also checking V%02u\n", var, parentVar);
+                AllVarSetOps::AddElemD(this, vs, parentVar);
+            }
+            else
+            {
+                // Parent var index is too large, assume the worst.
+                //
+                return false;
+            }
+        }
+
         return optIsSetAssgLoop(lnum, vs) != 0;
     }
     else
     {
+        if (varDsc->lvIsStructField)
+        {
+            return false;
+        }
+
         return optIsVarAssigned(optLoopTable[lnum].lpHead->bbNext, optLoopTable[lnum].lpBottom, nullptr, var);
     }
 }
 
-/*****************************************************************************/
-int Compiler::optIsSetAssgLoop(unsigned lnum, ALLVARSET_VALARG_TP vars, varRefKinds inds)
+//------------------------------------------------------------------------
+// optIsSetAssgLoop: see if a set of locals is assigned in a loop
+//
+// Arguments:
+//     lnum - loop number
+//     vars - var set to check
+//     inds - also consider impact of indirect stores and calls
+//
+// Returns:
+//     true if any of vars are possibly modified in any of the blocks of the
+//     loop specified by lnum, or if the loop contains any of the specified
+//     aliasing operations.
+//
+// Notes:
+//     Uses a cache to avoid repeatedly scanning the loop blocks. However this
+//     cache never invalidates and so this method must be used with care.
+//
+bool Compiler::optIsSetAssgLoop(unsigned lnum, ALLVARSET_VALARG_TP vars, varRefKinds inds)
 {
     noway_assert(lnum < optLoopCount);
     LoopDsc* loop = &optLoopTable[lnum];
 
-    /* Do we already know what variables are assigned within this loop? */
-
+    // Do we already know what variables are assigned within this loop?
+    //
     if (!(loop->lpFlags & LPFLG_ASGVARS_YES))
     {
         isVarAssgDsc desc;
 
-        /* Prepare the descriptor used by the tree walker call-back */
-
+        // Prepare the descriptor used by the tree walker call-back
+        //
         desc.ivaVar  = (unsigned)-1;
         desc.ivaSkip = nullptr;
 #ifdef DEBUG
@@ -5778,8 +5907,8 @@ int Compiler::optIsSetAssgLoop(unsigned lnum, ALLVARSET_VALARG_TP vars, varRefKi
         desc.ivaMaskCall       = CALLINT_NONE;
         desc.ivaMaskIncomplete = false;
 
-        /* Now walk all the statements of the loop */
-
+        // Now walk all the statements of the loop
+        //
         for (BasicBlock* const block : loop->LoopBlocks())
         {
             for (Statement* const stmt : block->NonPhiStatements())
@@ -5797,15 +5926,16 @@ int Compiler::optIsSetAssgLoop(unsigned lnum, ALLVARSET_VALARG_TP vars, varRefKi
         loop->lpAsgInds = desc.ivaMaskInd;
         loop->lpAsgCall = desc.ivaMaskCall;
 
-        /* Now we know what variables are assigned in the loop */
-
+        // Now we know what variables are assigned in the loop
+        //
         loop->lpFlags |= LPFLG_ASGVARS_YES;
     }
 
-    /* Now we can finally test the caller's mask against the loop's */
+    // Now we can finally test the caller's mask against the loop's
+    //
     if (!AllVarSetOps::IsEmptyIntersection(this, loop->lpAsgVars, vars) || (loop->lpAsgInds & inds))
     {
-        return 1;
+        return true;
     }
 
     switch (loop->lpAsgCall)
@@ -5816,7 +5946,7 @@ int Compiler::optIsSetAssgLoop(unsigned lnum, ALLVARSET_VALARG_TP vars, varRefKi
 
             if (loop->lpAsgInds != VR_NONE)
             {
-                return 1;
+                return true;
             }
 
             break;
@@ -5827,7 +5957,7 @@ int Compiler::optIsSetAssgLoop(unsigned lnum, ALLVARSET_VALARG_TP vars, varRefKi
 
             if (loop->lpAsgInds & VR_IND_REF)
             {
-                return 1;
+                return true;
             }
 
             break;
@@ -5838,7 +5968,7 @@ int Compiler::optIsSetAssgLoop(unsigned lnum, ALLVARSET_VALARG_TP vars, varRefKi
 
             if (loop->lpAsgInds & VR_IND_SCL)
             {
-                return 1;
+                return true;
             }
 
             break;
@@ -5849,7 +5979,7 @@ int Compiler::optIsSetAssgLoop(unsigned lnum, ALLVARSET_VALARG_TP vars, varRefKi
 
             if (loop->lpAsgInds & (VR_IND_REF | VR_IND_SCL))
             {
-                return 1;
+                return true;
             }
 
             break;
@@ -5864,7 +5994,7 @@ int Compiler::optIsSetAssgLoop(unsigned lnum, ALLVARSET_VALARG_TP vars, varRefKi
             noway_assert(!"Unexpected lpAsgCall value");
     }
 
-    return 0;
+    return false;
 }
 
 void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, unsigned lnum)
