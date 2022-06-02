@@ -392,9 +392,13 @@
     <!-- Run only a small randomly chosen set of passing test suites -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj" />
     <ProjectExclusions Remove="$(MSBuildThisFileDirectory)System.Collections\tests\System.Collections.Tests.csproj" />
+    <!-- Remove the condition after fix, https://github.com/dotnet/runtime/issues/70010 -->
     <ProjectExclusions Remove="$(MSBuildThisFileDirectory)System.Reflection\tests\System.Reflection.Tests.csproj" 
                        Condition="'$(TargetOS)' == 'windows'" />
     <ProjectExclusions Remove="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests.csproj" />
+    <ProjectExclusions Remove="$(MSBuildThisFileDirectory)System.IO.Compression\tests\System.IO.Compression.Tests.csproj" />
+    <ProjectExclusions Remove="$(MSBuildThisFileDirectory)System.IO.FileSystem\tests\System.IO.FileSystem.Tests.csproj" />
+    <ProjectExclusions Remove="$(MSBuildThisFileDirectory)System.Threading\tests\System.Threading.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup>
