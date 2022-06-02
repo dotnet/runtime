@@ -9,21 +9,13 @@ namespace System
     {
         private static unsafe bool TryConvertIanaIdToWindowsId(string ianaId, bool allocate, out string? windowsId)
         {
-            if (GlobalizationMode.Invariant || GlobalizationMode.UseNls || ianaId is null)
+            if (GlobalizationMode.Invariant ||
+                GlobalizationMode.UseNls ||
+                ianaId is null ||
+                ianaId.AsSpan().IndexOfAny('\\', '\n', '\r') >= 0) // ICU uses these characters as a separator
             {
                 windowsId = null;
                 return false;
-            }
-
-            foreach (char c in ianaId)
-            {
-                // ICU uses some characters as a separator and trim the id at that character.
-                // while we should fail if the Id contained one of these characters.
-                if (c == '\\' || c == '\n' || c == '\r')
-                {
-                    windowsId = null;
-                    return false;
-                }
             }
 
             char* buffer = stackalloc char[100];
@@ -54,15 +46,10 @@ namespace System
                 return true;
             }
 
-            foreach (char c in windowsId)
+            if (windowsId.AsSpan().IndexOfAny('\\', '\n', '\r') >= 0) // ICU uses these characters as a separator
             {
-                // ICU uses some characters as a separator and trim the id at that character.
-                // while we should fail if the Id contained one of these characters.
-                if (c == '\\' || c == '\n' || c == '\r')
-                {
-                    ianaId = null;
-                    return false;
-                }
+                ianaId = null;
+                return false;
             }
 
             // regionPtr will point at the region name encoded as ASCII.

@@ -207,17 +207,8 @@ namespace System.Net.Http
             return sb.ToString();
         }
 
-        private static bool ContainsNewLineCharacter(string value)
-        {
-            foreach (char character in value)
-            {
-                if ((character == HttpRuleParser.CR) || (character == HttpRuleParser.LF))
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
+        private static bool ContainsNewLineCharacter(string value) =>
+            value.AsSpan().IndexOfAny(HttpRuleParser.CR, HttpRuleParser.LF) >= 0;
 
         #region IDisposable Members
 
