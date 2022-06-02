@@ -406,7 +406,7 @@ namespace System
             if (tzVariable == null)
             {
 #if TARGET_IOS || TARGET_TVOS
-                return TryLoadTzFile(Interop.Sys.GetDefaultTimeZone()!, ref rawData, ref id);
+                tzVariable = Interop.Sys.GetDefaultTimeZone();
 #else
                 return
                     TryLoadTzFile("/etc/localtime", ref rawData, ref id) ||
@@ -415,7 +415,7 @@ namespace System
             }
 
             // If it's empty, use UTC (TryGetLocalTzFile() should return false).
-            if (tzVariable.Length == 0)
+            if (tzVariable!.Length == 0)
             {
                 return false;
             }
@@ -423,7 +423,7 @@ namespace System
             // Otherwise, use the path from the env var.  If it's not absolute, make it relative
             // to the system timezone directory
             string tzFilePath;
-            if (tzVariable[0] != '/')
+            if (tzVariable![0] != '/')
             {
                 id = tzVariable;
                 tzFilePath = Path.Combine(GetTimeZoneDirectory(), tzVariable);
