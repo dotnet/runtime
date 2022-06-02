@@ -153,7 +153,15 @@ namespace System.IO.Tests
             output.Directory.Create();
             output = input.CopyTo(output.FullName, true);
 
-            Assert.Equal(input.LastWriteTime.Ticks, output.LastWriteTime.Ticks);
+            double iTicks = input.LastWriteTime.Ticks;
+            double oTicks = output.LastWriteTime.Ticks;
+
+            // On Browser, we sometimes see a difference of exactly 10M, eg.,
+            // Expected: 637949564520000000
+            // Actual:   637949564530000000
+            double tolerance = PlatformDetection.IsBrowser ? 10_000_000 : 0;
+
+            Assert.Equal(iTicks, iTicks, tolerance);
             Assert.False(HasNonZeroNanoseconds(output.LastWriteTime));
         }
 
