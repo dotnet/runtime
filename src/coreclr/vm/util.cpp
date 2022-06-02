@@ -13,8 +13,6 @@
 #include "eventtrace.h"
 #include "posterror.h"
 
-#include <shlobj.h>
-
 #include "dlwrap.h"
 
 #ifndef DACCESS_COMPILE
