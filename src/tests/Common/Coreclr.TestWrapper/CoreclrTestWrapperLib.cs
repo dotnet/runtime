@@ -307,8 +307,7 @@ namespace CoreclrTestLib
             {
                 if (File.Exists($"{testBinaryBase}/.retry"))
                 {
-                    // We have requested a work item retry because of an infra issue - no point executing further tests
-                    outputWriter.WriteLine("\nretry file was found, quit testing...");
+                    outputWriter.WriteLine("\nWork item retry had been requested earlier - skipping test...");
                 }
                 else
                 {
