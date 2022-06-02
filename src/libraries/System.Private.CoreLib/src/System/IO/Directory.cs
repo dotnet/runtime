@@ -35,10 +35,33 @@ namespace System.IO
             return new DirectoryInfo(path, fullPath, isNormalized: true);
         }
 
+        /// <summary>
+        /// Creates all directories and subdirectories in the specified path with the specified permissions unless they already exist.
+        /// </summary>
+        /// <param name="path">The directory to create.</param>
+        /// <param name="unixCreateMode">Unix file mode used to create directories.</param>
+        /// <returns>An object that represents the directory at the specified path. This object is returned regardless of whether a directory at the specified path already exists.</returns>
+        /// <exception cref="T:System.IO.IOException">The directory specified by <paramref name="path" /> is a file.
+        /// -or-
+        /// The network name is not known.</exception>
+        /// <exception cref="T:System.UnauthorizedAccessException">The caller does not have the required permission.</exception>
+        /// <exception cref="T:System.ArgumentException"><paramref name="path" /> is a zero-length string, contains only white space, or contains one or more invalid characters. You can query for invalid characters by using the <see cref="M:System.IO.Path.GetInvalidPathChars" /> method.
+        /// -or-
+        /// <paramref name="path" /> is prefixed with, or contains, only a colon character (:).</exception>
+        /// <exception cref="T:System.ArgumentNullException"><paramref name="path" /> is <see langword="null" />.</exception>
+        /// <exception cref="T:System.IO.PathTooLongException">The specified path, file name, or both exceed the system-defined maximum length.</exception>
+        /// <exception cref="T:System.IO.DirectoryNotFoundException">The specified path is invalid (for example, it is on an unmapped drive).</exception>
+        /// <exception cref="T:System.NotSupportedException"><paramref name="path" /> contains a colon character (:) that is not part of a drive label ("C:\\").</exception>
+        /// <exception cref="T:System.ArgumentException">The caller attempts use an invalid file mode.</exception>
         [UnsupportedOSPlatform("windows")]
         public static DirectoryInfo CreateDirectory(string path, UnixFileMode unixCreateMode)
         {
             ArgumentException.ThrowIfNullOrEmpty(path);
+
+            if ((unixCreateMode & ~FileSystem.ValidUnixFileModes) != 0)
+            {
+                ThrowHelper.ArgumentOutOfRangeException_Enum_Value();
+            }
 
             string fullPath = Path.GetFullPath(path);
 

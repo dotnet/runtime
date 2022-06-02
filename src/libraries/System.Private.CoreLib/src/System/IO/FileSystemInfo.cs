@@ -131,6 +131,15 @@ namespace System.IO
             }
         }
 
+        /// <summary>Gets or sets the Unix file mode for the current file or directory.</summary>
+        /// <value><see cref="T:System.IO.UnixFileMode" /> of the current <see cref="T:System.IO.FileSystemInfo" />.</value>
+        /// <exception cref="T:System.IO.FileNotFoundException">The specified file doesn't exist. Only thrown when setting the property value.</exception>
+        /// <exception cref="T:System.IO.DirectoryNotFoundException">The specified path is invalid. For example, it's on an unmapped drive. Only thrown when setting the property value.</exception>
+        /// <exception cref="T:System.Security.SecurityException">The caller doesn't have the required permission.</exception>
+        /// <exception cref="T:System.UnauthorizedAccessException">The user attempts to set an attribute value but doesn't have write permission.</exception>
+        /// <exception cref="T:System.IO.PathTooLongException">The specified path, file name, or both exceed the system-defined maximum length.</exception>
+        /// <exception cref="T:System.ArgumentException">The caller attempts to set an invalid mode.</exception>
+        /// <exception cref="T:System.IO.IOException"><see cref="M:System.IO.FileSystemInfo.Refresh" /> cannot initialize the data.</exception>
         public UnixFileMode UnixFileMode
         {
             [UnsupportedOSPlatform("windows")]

@@ -220,21 +220,61 @@ namespace System.IO
         public static void SetAttributes(string path, FileAttributes fileAttributes)
             => FileSystem.SetAttributes(Path.GetFullPath(path), fileAttributes);
 
+        /// <summary>Gets the <see cref="T:System.IO.UnixFileMode" /> of the file on the path.</summary>
+        /// <param name="path">The path to the file.</param>
+        /// <returns>The <see cref="T:System.IO.UnixFileMode" /> of the file on the path.</returns>
         [UnsupportedOSPlatform("windows")]
         public static UnixFileMode GetUnixFileMode(string path)
             => FileSystem.GetUnixFileMode(Path.GetFullPath(path));
 
+        /// <summary>Gets the <see cref="T:System.IO.UnixFileMode" /> of the specified file handle.</summary>
+        /// <param name="fileHandle">The file handle.</param>
+        /// <returns>The <see cref="T:System.IO.UnixFileMode" /> of the file handle.</returns>
+        /// <exception cref="T:System.UnauthorizedAccessException">The caller does not have the required permission.</exception>
         [UnsupportedOSPlatform("windows")]
         public static UnixFileMode GetUnixFileMode(SafeFileHandle fileHandle)
             => FileSystem.GetUnixFileMode(fileHandle);
 
+        /// <summary>Sets the specified <see cref="T:System.IO.UnixFileMode" /> of the file on the specified path.</summary>
+        /// <param name="path">The path to the file.</param>
+        /// <param name="mode">The unix file mode.</param>
+        /// <exception cref="T:System.ArgumentException"><paramref name="path" /> is empty, contains only white spaces, contains invalid characters, or the file mode is invalid.</exception>
+        /// <exception cref="T:System.IO.PathTooLongException">The specified path, file name, or both exceed the system-defined maximum length. </exception>
+        /// <exception cref="T:System.NotSupportedException"><paramref name="path" /> is in an invalid format.</exception>
+        /// <exception cref="T:System.IO.DirectoryNotFoundException">The specified path is invalid, (for example, it is on an unmapped drive).</exception>
+        /// <exception cref="T:System.IO.FileNotFoundException">The file cannot be found.</exception>
+        /// <exception cref="T:System.UnauthorizedAccessException"><paramref name="path" /> specified a file that is read-only.
+        /// -or-
+        /// This operation is not supported on the current platform.
+        /// -or-
+        /// <paramref name="path" /> specified a directory.
+        /// -or-
+        /// The caller does not have the required permission.</exception>
         [UnsupportedOSPlatform("windows")]
         public static void SetUnixFileMode(string path, UnixFileMode mode)
-            => FileSystem.SetUnixFileMode(Path.GetFullPath(path), mode);
+        {
+            if ((mode & ~FileSystem.ValidUnixFileModes) != 0)
+            {
+                ThrowHelper.ArgumentOutOfRangeException_Enum_Value();
+            }
 
+            FileSystem.SetUnixFileMode(Path.GetFullPath(path), mode);
+        }
+
+        /// <summary>Sets the specified <see cref="T:System.IO.UnixFileMode" /> of the specified file handle.</summary>
+        /// <param name="fileHandle">The file handle.</param>
+        /// <param name="mode">The unix file mode.</param>
+        /// <exception cref="T:System.ArgumentException">The file mode is invalid.</exception>
         [UnsupportedOSPlatform("windows")]
         public static void SetUnixFileMode(SafeFileHandle fileHandle, UnixFileMode mode)
-            => FileSystem.SetUnixFileMode(fileHandle, mode);
+        {
+            if ((mode & ~FileSystem.ValidUnixFileModes) != 0)
+            {
+                ThrowHelper.ArgumentOutOfRangeException_Enum_Value();
+            }
+
+            FileSystem.SetUnixFileMode(fileHandle, mode);
+        }
 
         public static FileStream OpenRead(string path)
             => new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);

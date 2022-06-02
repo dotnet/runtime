@@ -116,6 +116,7 @@ namespace System.IO
         /// <summary>
         /// Unix file mode used when a new file is created.
         /// </summary>
+        /// <exception cref="T:System.ArgumentOutOfRangeException">When <paramref name="value" /> contains an invalid value.</exception>
         public UnixFileMode? UnixCreateMode
         {
             get
