@@ -77,14 +77,14 @@ namespace System.Data.Common
             {
                 if (!ConvertValueToIntegratedSecurity())
                 {
-                    if (_parsetable.ContainsKey(KEY.Password))
+                    if (_parsetable.TryGetValue(KEY.Password, out var value))
                     {
-                        return string.IsNullOrEmpty(_parsetable[KEY.Password]);
+                        return string.IsNullOrEmpty(value);
                     }
                     else
-                    if (_parsetable.ContainsKey(SYNONYM.Pwd))
+                    if (_parsetable.TryGetValue(SYNONYM.Pwd, out var val))
                     {
-                        return string.IsNullOrEmpty(_parsetable[SYNONYM.Pwd]); // MDAC 83097
+                        return string.IsNullOrEmpty(val); // MDAC 83097
                     }
                     else
                     {
