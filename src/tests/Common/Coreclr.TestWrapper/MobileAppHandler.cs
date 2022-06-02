@@ -190,13 +190,15 @@ namespace CoreclrTestLib
             // See https://github.com/dotnet/xharness/blob/main/src/Microsoft.DotNet.XHarness.Common/CLI/ExitCode.cs
             // 78 - PACKAGE_INSTALLATION_FAILURE
             // 81 - DEVICE_NOT_FOUND
-            // 85 - ADB_DEVICE_ENUMERATION_FAILURE
+            // 82 - RETURN_CODE_NOT_SET
+            // 83 - APP_LAUNCH_FAILURE
+            // 84 - DEVICE_FILE_COPY_FAILURE
             // 86 - PACKAGE_INSTALLATION_TIMEOUT
             // 88 - SIMULATOR_FAILURE
             // 89 - DEVICE_FAILURE
             // 90 - APP_LAUNCH_TIMEOUT
             // 91 - ADB_FAILURE
-            return new[] { 78, 81, 85, 86, 88, 89, 90, 91 };
+            return new[] { 78, 81, 82, 83, 84, 86, 88, 89, 90, 91 };
         }
     }
 }
