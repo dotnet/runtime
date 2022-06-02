@@ -1324,7 +1324,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                     expression = "assembly_name_str + '|' + entrypoint_method_token",
                 });
                 Result assemblyAndMethodToken = await SendCommand(sessionId, "Debugger.evaluateOnCallFrame", argsNew, token);
-
+                if (!assemblyAndMethodToken.IsOk)
+                    return;
                 var assemblyAndMethodTokenArr = assemblyAndMethodToken.Value["result"]["value"].Value<string>().Split('|');
                 var assemblyName = assemblyAndMethodTokenArr[0];
                 var methodToken = Convert.ToInt32(assemblyAndMethodTokenArr[1]) & 0xffffff;
@@ -1339,6 +1340,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (method == null)
                     return;
                 var sourceFile = assembly.Sources.Single(sf => sf.SourceId == method.SourceId);
+                if (sourceFile == null)
+                    return;
                 string bpId = $"auto:{method.StartLocation.Line}:{method.StartLocation.Column}:{sourceFile.DotNetUrl}";
                 BreakpointRequest request = new(bpId, JObject.FromObject(new
                 {
@@ -1348,7 +1351,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }));
                 context.BreakpointRequests[bpId] = request;
                 if (request.TryResolve(sourceFile))
-                    await SetBreakpoint(sessionId, context.store, request, true, true, token);
+                    await SetBreakpoint(sessionId, context.store, request, sendResolvedEvent: false, fromEnC: false, token);
                 logger.LogInformation($"Adding bp req {request}");
             }
             catch (Exception)
