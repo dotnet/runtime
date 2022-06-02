@@ -311,7 +311,10 @@ namespace System.Formats.Tar
             byte[] emptyRecord = new byte[TarHelpers.RecordSize];
             _archiveStream.Write(emptyRecord);
             _archiveStream.Write(emptyRecord);
-            _archiveStream.SetLength(_archiveStream.Position);
+            if (_archiveStream.CanSeek)
+            {
+                _archiveStream.SetLength(_archiveStream.Position);
+            }
         }
 
         // Partial method for reading an entry from disk and writing it into the archive stream.
