@@ -91,14 +91,15 @@ namespace System.Formats.Tar.Tests
                 writer.WriteEntry(paxEntry);
             } // The final records should get written, and the length should not be set because position cannot be read
 
-            stream.Seek(0, SeekOrigin.Begin); // Rewind the base stream (wrapped cannot be rewinded)
+            stream.Seek(0, SeekOrigin.Begin); // Rewind the base stream (wrapped cannot be rewound)
 
-            using TarReader reader = new TarReader(wrapped);
-            TarEntry entry = reader.GetNextEntry();
-            Assert.NotNull(entry);
-            Assert.Equal(TarFormat.Pax, reader.Format);
-            Assert.Equal(TarEntryType.RegularFile, entry.EntryType);
-            Assert.Null(reader.GetNextEntry());
+            using (TarReader reader = new TarReader(wrapped))
+            {
+                TarEntry entry = reader.GetNextEntry();
+                Assert.Equal(TarFormat.Pax, reader.Format);
+                Assert.Equal(TarEntryType.RegularFile, entry.EntryType);
+                Assert.Null(reader.GetNextEntry());
+            }
         }
 
         [Fact]
