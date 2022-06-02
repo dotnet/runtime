@@ -2243,7 +2243,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     return sum(1, sum(_left.EstimateSafeSize(), _right.EstimateSafeSize()));
 
                 case SymbolicRegexNodeKind.Loop:
-                    Debug.Assert(_left is not null);
+                    Debug.Assert(_left is not null && _right is null);
                     Debug.Assert(_lower >= 0 && _upper > 0 && _upper >= _lower);
                     if (IsStar)
                     {
