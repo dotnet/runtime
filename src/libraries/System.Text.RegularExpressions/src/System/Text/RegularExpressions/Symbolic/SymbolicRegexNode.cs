@@ -2288,13 +2288,19 @@ namespace System.Text.RegularExpressions.Symbolic
                     return 1;
             }
 
-            //In case of overflow in m+n return int.MaxValue
-            static int sum(int m, int n) => avoidOverflow(m + n);
+            // In case of overflow in m+n, return int.MaxValue
+            static int Sum(int m, int n)
+            {
+                Debug.Assert(m >= 0 && n >= 0);
+                return (int)Math.Min((long)m + n, int.MaxValue);
+            }
 
-            //In case of overflow in m*n return int.MaxValue
-            static int times(int m, int n) => avoidOverflow(m * n);
-
-            static int avoidOverflow(int m) => m < 0 ? int.MaxValue : m;
+            // In case of overflow in m*n return int.MaxValue
+            static int Times(int m, int n)
+            {
+                Debug.Assert(m >= 0 && n >= 0);
+                return (int)Math.Min((long)m * n, int.MaxValue);
+            }
         }
     }
 }
