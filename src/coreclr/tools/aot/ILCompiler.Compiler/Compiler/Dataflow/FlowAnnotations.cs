@@ -371,7 +371,7 @@ namespace ILCompiler.Dataflow
 
                             if (!IsTypeInterestingForDataflow(signature[parameter.SequenceNumber - 1]))
                             {
-                                _logger.LogWarning(method, DiagnosticId.DynamicallyAccessedMembersOnMethodParameterCanOnlyApplyToTypesOrStrings, $"#{parameter.SequenceNumber}", method.GetDisplayName());
+                                _logger.LogWarning(method, DiagnosticId.DynamicallyAccessedMembersOnMethodParameterCanOnlyApplyToTypesOrStrings, DiagnosticUtilities.GetParameterNameForErrorMessage(method, parameter.SequenceNumber - 1), method.GetDisplayName());
                                 continue;
                             }
 
@@ -714,8 +714,8 @@ namespace ILCompiler.Dataflow
             {
                 case int parameterNumber:
                     _logger.LogWarning(origin, DiagnosticId.DynamicallyAccessedMembersMismatchOnMethodParameterBetweenOverrides,
-                        $"#{parameterNumber}", DiagnosticUtilities.GetMethodSignatureDisplayName(origin),
-                        $"#{parameterNumber}", DiagnosticUtilities.GetMethodSignatureDisplayName((MethodDesc)baseProvider));
+                        DiagnosticUtilities.GetParameterNameForErrorMessage(origin, parameterNumber), DiagnosticUtilities.GetMethodSignatureDisplayName(origin),
+                        DiagnosticUtilities.GetParameterNameForErrorMessage((MethodDesc)baseProvider, parameterNumber), DiagnosticUtilities.GetMethodSignatureDisplayName((MethodDesc)baseProvider));
                     break;
                 case GenericParameterDesc genericParameterOverride:
                     _logger.LogWarning(origin, DiagnosticId.DynamicallyAccessedMembersMismatchOnGenericParameterBetweenOverrides,
