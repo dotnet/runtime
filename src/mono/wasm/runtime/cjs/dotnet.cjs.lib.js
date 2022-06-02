@@ -59,6 +59,7 @@ const linked_functions = [
     "mono_wasm_invoke_js_blazor",
     "mono_wasm_trace_logger",
     "mono_wasm_set_entrypoint_breakpoint",
+    "mono_wasm_event_pipe_early_startup_callback",
 
     // corebindings.c
     "mono_wasm_invoke_js_with_args_ref",

@@ -47,6 +47,9 @@ extern void mono_wasm_set_entrypoint_breakpoint (const char* assembly_name, int 
 // Blazor specific custom routines - see dotnet_support.js for backing code
 extern void* mono_wasm_invoke_js_blazor (MonoString **exceptionMessage, void *callInfo, void* arg0, void* arg1, void* arg2);
 
+// JS callback to invoke early during runtime initialization once eventpipe is functional but before too much of the rest of the runtime is loaded.
+extern void mono_wasm_event_pipe_early_startup_callback (void);
+
 void mono_wasm_enable_debugging (int);
 
 static int _marshal_type_from_mono_type (int mono_type, MonoClass *klass, MonoType *type);
@@ -67,6 +70,10 @@ int32_t monoeg_g_hasenv(const char *variable);
 void mono_free (void*);
 int32_t mini_parse_debug_option (const char *option);
 char *mono_method_get_full_name (MonoMethod *method);
+
+typedef void (*mono_wasm_event_pipe_early_startup_cb)(void);
+
+void mono_wasm_event_pipe_set_early_startup_callback (mono_wasm_event_pipe_early_startup_cb callback);
 
 static void mono_wasm_init_finalizer_thread (void);
 
@@ -529,6 +536,8 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 	} else {
 		free (file_path);
 	}
+
+	mono_wasm_event_pipe_set_early_startup_callback (mono_wasm_event_pipe_early_startup_callback);
 
 	monovm_initialize (2, appctx_keys, appctx_values);
 

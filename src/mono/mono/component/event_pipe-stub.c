@@ -553,7 +553,7 @@ mono_wasm_event_pipe_session_disable (MonoWasmEventPipeSessionID session_id)
 }
 
 void
-mono_wasm_event_pipe_session_set_startup_sessions (uint32_t count, const char **provider_configs)
+mono_wasm_event_pipe_session_set_startup_sessions (uint32_t count, const char **provider_configs, mono_wasm_event_pipe_startup_session_prestreaming_cb callback)
 {
 }
 

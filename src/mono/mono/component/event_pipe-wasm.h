@@ -25,6 +25,10 @@ typedef uint32_t MonoWasmEventPipeSessionID;
 #error "EventPipeSessionID is 64-bits, update the JS side to work with it"
 #endif
 
+typedef void (*mono_wasm_event_pipe_early_startup_cb)(void);
+
+typedef void (*mono_wasm_event_pipe_startup_session_prestreaming_cb)(uint32_t i, MonoWasmEventPipeSessionID session);
+
 EMSCRIPTEN_KEEPALIVE gboolean
 mono_wasm_event_pipe_enable (const ep_char8_t *output_path,
 			     uint32_t circular_buffer_size_in_mb,
@@ -43,8 +47,11 @@ mono_wasm_event_pipe_session_start_streaming (MonoWasmEventPipeSessionID session
 EMSCRIPTEN_KEEPALIVE gboolean
 mono_wasm_event_pipe_session_disable (MonoWasmEventPipeSessionID session_id);
 
+void
+mono_wasm_event_pipe_set_early_startup_callback (mono_wasm_event_pipe_early_startup_cb callback);
+
 EMSCRIPTEN_KEEPALIVE void
-mono_wasm_event_pipe_session_set_startup_sessions (uint32_t count, const char **provider_configs);
+mono_wasm_event_pipe_session_set_startup_sessions (uint32_t count, const char **provider_configs, mono_wasm_event_pipe_startup_session_prestreaming_cb callback);
 
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_event_pipe_session_get_startup_session_ids (uint32_t count, uint32_t *session_id_dest);

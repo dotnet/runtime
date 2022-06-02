@@ -3,7 +3,7 @@
 
 import { Module } from "./imports";
 import cwraps from "./cwraps";
-import type { EventPipeSessionID, DiagnosticOptions, EventPipeSession, EventPipeSessionOptions } from "./types";
+import type { EventPipeSessionID, DiagnosticOptions, EventPipeSession, EventPipeSessionOptions, EventPipeSessionAutoStopOptions } from "./types";
 import type { VoidPtr } from "./types/emscripten";
 import * as memory from "./memory";
 
@@ -229,8 +229,34 @@ export interface Diagnostics {
     SessionOptionsBuilder: typeof SessionOptionsBuilder;
 
     createEventPipeSession(options?: EventPipeSessionOptions): EventPipeSession | null;
+    getStartupSessions(): (EventPipeSession | null)[];
 }
 
+let startup_session_configs: (EventPipeSessionOptions & EventPipeSessionAutoStopOptions)[] | null = null;
+let startup_sessions: (EventPipeSession | null)[] | null = null;
+
+export function mono_wasm_event_pipe_early_startup_callback(): void {
+    if (startup_session_configs === null || startup_session_configs.length == 0) {
+        return;
+    }
+    startup_sessions = startup_session_configs.map(config => createEventPipeSession(config));
+    startup_session_configs = null;
+}
+
+function createEventPipeSession(options?: EventPipeSessionOptions): EventPipeSession | null {
+    // The session trace is saved to a file in the VFS. The file name doesn't matter,
+    // but we'd like it to be distinct from other traces.
+    const tracePath = `/trace-${totalSessions++}.nettrace`;
+
+    const success = memory.withStackAlloc(sizeOfInt32, createSessionWithPtrCB, options, tracePath);
+
+    if (success === false)
+        return null;
+    const sessionID = success;
+
+    const session = new EventPipeFileSession(sessionID, tracePath);
+    return session;
+}
 
 /// APIs for working with .NET diagnostics from JavaScript.
 export const diagnostics: Diagnostics = {
@@ -247,32 +273,15 @@ export const diagnostics: Diagnostics = {
     /// Creates a new EventPipe session that will collect trace events from the runtime and managed libraries.
     /// Use the options to control the kinds of events to be collected.
     /// Multiple sessions may be created and started at the same time.
-    createEventPipeSession(options?: EventPipeSessionOptions): EventPipeSession | null {
-        // The session trace is saved to a file in the VFS. The file name doesn't matter,
-        // but we'd like it to be distinct from other traces.
-        const tracePath = `/trace-${totalSessions++}.nettrace`;
-
-        const success = memory.withStackAlloc(sizeOfInt32, createSessionWithPtrCB, options, tracePath);
-
-        if (success === false)
-            return null;
-        const sessionID = success;
-
-        const session = new EventPipeFileSession(sessionID, tracePath);
-        return session;
+    createEventPipeSession: createEventPipeSession,
+    getStartupSessions(): (EventPipeSession | null)[] {
+        return Array.from(startup_sessions || []);
     },
 };
 
 export function mono_wasm_init_diagnostics(config?: DiagnosticOptions): void {
     const sessions = config?.sessions ?? [];
-    const count = sessions.length;
-    const sessionConfigs = Module._malloc(sizeOfInt32 * count);
-    for (let i = 0; i < count; ++i) {
-        const session = sessions[i];
-        const sessionPtr = <VoidPtr>(<any>sessionConfigs + i * sizeOfInt32);
-        memory.setI32(sessionPtr, cwraps.mono_wasm_strdup(session.providers));
-    }
-    cwraps.mono_wasm_event_pipe_session_set_startup_sessions(count, sessionConfigs);
+    startup_session_configs = sessions;
 }
 
 export default diagnostics;

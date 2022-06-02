@@ -53,6 +53,9 @@ import {
     mono_wasm_invoke_js_blazor,
     mono_wasm_invoke_js_with_args_ref, mono_wasm_set_by_index_ref, mono_wasm_set_object_property_ref
 } from "./method-calls";
+import {
+    mono_wasm_event_pipe_early_startup_callback
+} from "./diagnostics";
 import { mono_wasm_typed_array_copy_to_ref, mono_wasm_typed_array_from_ref, mono_wasm_typed_array_copy_from_ref, mono_wasm_load_bytes_into_heap } from "./buffers";
 import { mono_wasm_release_cs_owned_object } from "./gc-handles";
 import cwraps from "./cwraps";
@@ -382,6 +385,7 @@ export const __linker_exports: any = {
     mono_wasm_invoke_js_blazor,
     mono_wasm_trace_logger,
     mono_wasm_set_entrypoint_breakpoint,
+    mono_wasm_event_pipe_early_startup_callback,
 
     // also keep in sync with corebindings.c
     mono_wasm_invoke_js_with_args_ref,
