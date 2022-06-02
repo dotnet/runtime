@@ -5154,7 +5154,7 @@ void CodeGen::genLoadIndTypeSIMD12(GenTree* treeNode)
 //
 void CodeGen::genStoreLclTypeSIMD12(GenTree* treeNode)
 {
-    assert((treeNode->OperGet() == GT_STORE_LCL_FLD) || (treeNode->OperGet() == GT_STORE_LCL_VAR));
+    assert(treeNode->OperIs(GT_STORE_LCL_FLD, GT_STORE_LCL_VAR));
 
     GenTreeLclVarCommon* lclVar = treeNode->AsLclVarCommon();
 
@@ -5177,12 +5177,24 @@ void CodeGen::genStoreLclTypeSIMD12(GenTree* treeNode)
 
         return;
     }
+
+    regNumber targetReg  = treeNode->GetRegNum();
     regNumber operandReg = genConsumeReg(op1);
 
-    // Need an additional integer register to extract upper 4 bytes from data.
-    regNumber tmpReg = lclVar->GetSingleTempReg();
+    if (targetReg != REG_NA)
+    {
+        assert(GetEmitter()->isVectorRegister(targetReg));
 
-    GetEmitter()->emitStoreSIMD12ToLclOffset(varNum, offs, operandReg, tmpReg);
+        // Simply use mov if we move a SIMD12 reg to another SIMD12 reg
+        inst_Mov(treeNode->TypeGet(), targetReg, operandReg, /* canSkip */ true);
+        genProduceReg(treeNode);
+    }
+    else
+    {
+        // Need an additional integer register to extract upper 4 bytes from data.
+        regNumber tmpReg = lclVar->GetSingleTempReg();
+        GetEmitter()->emitStoreSIMD12ToLclOffset(varNum, offs, operandReg, tmpReg);
+    }
 }
 
 #endif // FEATURE_SIMD
