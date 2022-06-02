@@ -2415,7 +2415,7 @@ namespace System.Data.Common
         protected virtual System.Data.Common.DbBatch CreateDbBatch() { throw null; }
         public System.Data.Common.DbConnection CreateConnection() { throw null; }
         public System.Data.Common.DbConnection OpenConnection() { throw null; }
-        public System.Threading.Tasks.ValueTask<System.Data.Common.DbConnection> OpenConnectionAsync() { throw null; }
+        public System.Threading.Tasks.ValueTask<System.Data.Common.DbConnection> OpenConnectionAsync(System.Threading.CancellationToken cancellationToken = default) { throw null; }
         public System.Data.Common.DbCommand CreateCommand(string? commandText = null) { throw null; }
         public System.Data.Common.DbBatch CreateBatch() { throw null; }
         public void Dispose() { throw null; }

@@ -57,11 +57,20 @@ namespace System.Data.Common
         protected virtual DbBatch CreateDbBatch()
             => new DbBatchWrapper(CreateDbConnection().CreateBatch());
 
-        public DbConnection CreateConnection() => CreateDbConnection();
-        public DbConnection OpenConnection() => OpenDbConnection();
-        public ValueTask<DbConnection> OpenConnectionAsync() => OpenDbConnectionAsync();
-        public DbCommand CreateCommand(string? commandText = null) => CreateDbCommand();
-        public DbBatch CreateBatch() => CreateDbBatch();
+        public DbConnection CreateConnection()
+            => CreateDbConnection();
+
+        public DbConnection OpenConnection()
+            => OpenDbConnection();
+
+        public ValueTask<DbConnection> OpenConnectionAsync(CancellationToken cancellationToken = default)
+            => OpenDbConnectionAsync(cancellationToken);
+
+        public DbCommand CreateCommand(string? commandText = null)
+            => CreateDbCommand();
+
+        public DbBatch CreateBatch()
+            => CreateDbBatch();
 
         public void Dispose()
         {
