@@ -640,6 +640,7 @@
              TaskFactory="JsonToItemsTaskFactory.JsonToItemsTaskFactory">
     <ParameterGroup>
       <EmccProperties ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
+      <WasmOptConfigurationFlags ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
     </ParameterGroup>
   </UsingTask>
 </Project>
