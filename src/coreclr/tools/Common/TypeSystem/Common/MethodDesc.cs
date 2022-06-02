@@ -329,16 +329,6 @@ namespace Internal.TypeSystem
             return found;
         }
 
-        private static MethodSignatureFlags? GetCallingConventionForCallConvType(DefType defType) =>
-            // Look for a recognized calling convention in metadata.
-            defType.Name switch
-            {
-                "CallConvCdecl" => MethodSignatureFlags.UnmanagedCallingConventionCdecl,
-                "CallConvStdcall" => MethodSignatureFlags.UnmanagedCallingConventionStdCall,
-                "CallConvThiscall" => MethodSignatureFlags.UnmanagedCallingConventionThisCall,
-                _ => null
-            };
-
         public override bool Equals(object obj)
         {
             return obj is MethodSignature && Equals((MethodSignature)obj);
