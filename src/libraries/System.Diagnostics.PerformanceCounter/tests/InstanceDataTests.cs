@@ -128,10 +128,7 @@ namespace System.Diagnostics.Tests
             return Helpers.RetryOnAllPlatforms(() =>
             {
                 var idcc = pcc.ReadCategory();
-                if (idcc.Values.Count == 0)
-                {
-                    Assert.InRange(idcc.Values.Count, 1, int.MaxValue);
-                }
+                Assert.InRange(idcc.Values.Count, 1, int.MaxValue);
                 return idcc;
             });
         }
