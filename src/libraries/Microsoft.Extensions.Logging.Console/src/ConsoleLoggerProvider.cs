@@ -43,10 +43,6 @@ namespace Microsoft.Extensions.Logging.Console
             _options = options;
             _loggers = new ConcurrentDictionary<string, ConsoleLogger>();
             SetFormatters(formatters);
-
-            ReloadLoggerOptions(options.CurrentValue);
-            _optionsReloadToken = _options.OnChange(ReloadLoggerOptions);
-
             IConsole? console;
             IConsole? errorConsole;
             if (DoesConsoleSupportAnsi())
@@ -59,7 +55,15 @@ namespace Microsoft.Extensions.Logging.Console
                 console = new AnsiParsingLogConsole();
                 errorConsole = new AnsiParsingLogConsole(stdErr: true);
             }
-            _messageQueue = new ConsoleLoggerProcessor(console, errorConsole);
+            _messageQueue = new ConsoleLoggerProcessor(
+                "LoggingConsoleQueue",
+                console,
+                errorConsole,
+                options.CurrentValue.BufferFullMode,
+                options.CurrentValue.MaxQueueLength);
+
+            ReloadLoggerOptions(options.CurrentValue);
+            _optionsReloadToken = _options.OnChange(ReloadLoggerOptions);
         }
 
         [UnsupportedOSPlatformGuard("windows")]
@@ -122,6 +126,9 @@ namespace Microsoft.Extensions.Logging.Console
                 }
 #pragma warning restore CS0618
             }
+
+            _messageQueue.FullMode = options.BufferFullMode;
+            _messageQueue.MaxQueueLength = options.MaxQueueLength;
 
             foreach (KeyValuePair<string, ConsoleLogger> logger in _loggers)
             {

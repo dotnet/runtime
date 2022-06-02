@@ -2,8 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.Metrics;
 using System.Runtime.Versioning;
 using System.Threading;
 
@@ -12,16 +13,41 @@ namespace Microsoft.Extensions.Logging.Console
     [UnsupportedOSPlatform("browser")]
     internal class ConsoleLoggerProcessor : IDisposable
     {
-        private const int _maxQueuedMessages = 1024;
+        private static Meter _meter = new Meter("Microsoft-Extension-Logging-Console-Queue", "1.0.0");
+        private readonly Queue<LogMessageEntry> _messageQueue;
+        private int _messagesDropped;
+        private bool _isAddingCompleted;
+        private int _maxQueuedMessages = 1048576;
+        public int MaxQueueLength
+        {
+            get => _maxQueuedMessages;
+            set
+            {
+                if (value <= 0)
+                {
+                    throw new ArgumentException(nameof(MaxQueueLength));
+                }
 
-        private readonly BlockingCollection<LogMessageEntry> _messageQueue = new BlockingCollection<LogMessageEntry>(_maxQueuedMessages);
+                lock (_messageQueue)
+                {
+                    _maxQueuedMessages = value;
+                    Monitor.PulseAll(_messageQueue);
+                }
+            }
+        }
+        public ConsoleLoggerBufferFullMode FullMode { get; set; }
+        private readonly string _queueName;
         private readonly Thread _outputThread;
 
         public IConsole Console { get; }
         public IConsole ErrorConsole { get; }
 
-        public ConsoleLoggerProcessor(IConsole console, IConsole errorConsole)
+        public ConsoleLoggerProcessor(string queueName, IConsole console, IConsole errorConsole, ConsoleLoggerBufferFullMode fullMode, int maxQueueLength)
         {
+            _queueName = queueName;
+            _messageQueue = new Queue<LogMessageEntry>();
+            FullMode = fullMode;
+            MaxQueueLength = maxQueueLength;
             Console = console;
             ErrorConsole = errorConsole;
             // Start Console message queue processor
@@ -31,63 +57,133 @@ namespace Microsoft.Extensions.Logging.Console
                 Name = "Console logger queue processing thread"
             };
             _outputThread.Start();
+            _meter.CreateObservableGauge<long>("queue-size", GetQueueSize);
         }
 
         public virtual void EnqueueMessage(LogMessageEntry message)
         {
-            if (!_messageQueue.IsAddingCompleted)
-            {
-                try
-                {
-                    _messageQueue.Add(message);
-                    return;
-                }
-                catch (InvalidOperationException) { }
-            }
-
-            // Adding is completed so just log the message
-            try
+            // cannot enqueue when adding is completed
+            if (!Enqueue(message))
             {
                 WriteMessage(message);
             }
-            catch (Exception) { }
         }
 
         // for testing
         internal void WriteMessage(LogMessageEntry entry)
         {
-            IConsole console = entry.LogAsError ? ErrorConsole : Console;
-            console.Write(entry.Message);
+            try
+            {
+                var messagesDropped = Interlocked.Exchange(ref _messagesDropped, 0);
+                if (messagesDropped != 0)
+                {
+                    System.Console.Error.WriteLine($"{messagesDropped} message(s) dropped because of queue size limit. Increase the queue size or decrease logging verbosity to avoid this.{Environment.NewLine}");
+                }
+
+                IConsole console = entry.LogAsError ? ErrorConsole : Console;
+                console.Write(entry.Message);
+            }
+            catch (Exception)
+            {
+                CompleteAdding();
+            }
         }
 
         private void ProcessLogQueue()
         {
-            try
+            while (!_isAddingCompleted || _messageQueue.Count > 0)
             {
-                foreach (LogMessageEntry message in _messageQueue.GetConsumingEnumerable())
+                if (TryDequeue(out LogMessageEntry message))
                 {
                     WriteMessage(message);
                 }
             }
-            catch
+        }
+
+        public bool Enqueue(LogMessageEntry item)
+        {
+            lock (_messageQueue)
             {
-                try
+                while (_messageQueue.Count >= MaxQueueLength && !_isAddingCompleted)
                 {
-                    _messageQueue.CompleteAdding();
+                    if (FullMode == ConsoleLoggerBufferFullMode.DropWrite)
+                    {
+                        Interlocked.Increment(ref _messagesDropped);
+                        return true;
+                    }
+
+                    Monitor.Wait(_messageQueue);
                 }
-                catch { }
+
+                if (!_isAddingCompleted)
+                {
+                    _messageQueue.Enqueue(item);
+
+                    if (_messageQueue.Count == 1)
+                    {
+                        // pulse for wait in Dequeue
+                        Monitor.PulseAll(_messageQueue);
+                    }
+
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public bool TryDequeue(out LogMessageEntry item)
+        {
+            lock (_messageQueue)
+            {
+                while (_messageQueue.Count == 0 && !_isAddingCompleted)
+                {
+                    Monitor.Wait(_messageQueue);
+                }
+
+                if (!_isAddingCompleted)
+                {
+                    item = _messageQueue.Dequeue();
+                    if (_messageQueue.Count == MaxQueueLength - 1)
+                    {
+                        // pulse for wait in Enqueue
+                        Monitor.PulseAll(_messageQueue);
+                    }
+
+                    return true;
+                }
+
+                item = default;
+                return false;
             }
         }
 
         public void Dispose()
         {
-            _messageQueue.CompleteAdding();
+            CompleteAdding();
 
             try
             {
                 _outputThread.Join(1500); // with timeout in-case Console is locked by user input
             }
             catch (ThreadStateException) { }
+        }
+
+        private void CompleteAdding()
+        {
+            lock (_messageQueue)
+            {
+                Monitor.PulseAll(_messageQueue);
+                _isAddingCompleted = true;
+            }
+        }
+
+        private IEnumerable<Measurement<long>> GetQueueSize()
+        {
+            return new Measurement<long>[]
+            {
+                new Measurement<long>(_messageQueue.Count, new KeyValuePair<string, object?>("queue-name", _queueName)),
+            };
         }
     }
 }

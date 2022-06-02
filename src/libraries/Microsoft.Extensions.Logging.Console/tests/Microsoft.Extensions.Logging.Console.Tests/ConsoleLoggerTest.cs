@@ -47,12 +47,12 @@ namespace Microsoft.Extensions.Logging.Console.Test
             var errorSink = new ConsoleSink();
             var console = new TestConsole(sink);
             var errorConsole = new TestConsole(errorSink);
-            var consoleLoggerProcessor = new TestLoggerProcessor(console, errorConsole);
 
             var formatters = new ConcurrentDictionary<string, ConsoleFormatter>(GetFormatters().ToDictionary(f => f.Name));
 
             ConsoleFormatter? formatter = null;
             var loggerOptions = options ?? new ConsoleLoggerOptions();
+            var consoleLoggerProcessor = new TestLoggerProcessor(console, errorConsole, loggerOptions.BufferFullMode, loggerOptions.MaxQueueLength);
             Func<LogLevel, string> levelAsString;
             int writesPerMsg;
             switch (loggerOptions.Format)
@@ -1140,26 +1140,6 @@ namespace Microsoft.Extensions.Logging.Console.Test
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public void LogAfterDisposeWritesLog()
-        {
-            // Arrange
-            var sink = new ConsoleSink();
-            var console = new TestConsole(sink);
-            var processor = new ConsoleLoggerProcessor(console, null!);
-            var formatters = new ConcurrentDictionary<string, ConsoleFormatter>(GetFormatters().ToDictionary(f => f.Name));
-
-            var logger = new ConsoleLogger(_loggerName, loggerProcessor: processor, formatters[ConsoleFormatterNames.Simple], null, new ConsoleLoggerOptions());
-            Assert.Null(logger.Options.FormatterName);
-            UpdateFormatterOptions(logger.Formatter, logger.Options);
-            // Act
-            processor.Dispose();
-            logger.LogInformation("Logging after dispose");
-
-            // Assert
-            Assert.True(sink.Writes.Count == 2);
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void IsEnabledReturnsCorrectValue()
         {
             var logger = SetUp().Logger;
@@ -1301,6 +1281,25 @@ namespace Microsoft.Extensions.Logging.Console.Test
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public void ConsoleLoggerOptions_UpdateQueueOptions_UpdatesConsoleLoggerProcessorProperties()
+        {
+            // Arrange
+            var monitor = new TestOptionsMonitor(new ConsoleLoggerOptions());
+            var loggerProvider = new ConsoleLoggerProvider(monitor);
+            var logger = (ConsoleLogger)loggerProvider.CreateLogger("Name");
+
+            // Act & Assert
+            Assert.Equal(ConsoleLoggerBufferFullMode.Wait, logger.Options.BufferFullMode);
+            Assert.Equal(ConsoleLoggerProcessorTests.DefaultMaxQueueLengthValue, logger.Options.MaxQueueLength);
+            monitor.Set(new ConsoleLoggerOptions() {
+                BufferFullMode = ConsoleLoggerBufferFullMode.DropWrite,
+                MaxQueueLength = 10
+            });
+            Assert.Equal(ConsoleLoggerBufferFullMode.DropWrite, logger.Options.BufferFullMode);
+            Assert.Equal(10, logger.Options.MaxQueueLength);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void ConsoleLoggerOptions_UseUtcTimestamp_IsAppliedToLoggers()
         {
             // Arrange
@@ -1404,7 +1403,8 @@ namespace Microsoft.Extensions.Logging.Console.Test
 
     internal class TestLoggerProcessor : ConsoleLoggerProcessor
     {
-        public TestLoggerProcessor(IConsole console, IConsole errorConsole) : base(console, errorConsole)
+        public TestLoggerProcessor(IConsole console, IConsole errorConsole, ConsoleLoggerBufferFullMode fullMode, int maxQueueLength)
+            : base(nameof(TestLoggerProcessor), console, errorConsole, fullMode, maxQueueLength)
         {
         }
 
