@@ -5949,6 +5949,13 @@ protected:
             return m_pHoistedInCurLoop;
         }
 
+        // Return the so far collected VNs in cache for current loop and reset it.
+        void ResetHoistedInCurLoop()
+        {
+            m_pHoistedInCurLoop = nullptr;
+            JITDUMP("Resetting m_pHoistedInCurLoop\n");
+        }
+
         LoopHoistContext(Compiler* comp)
             : m_pHoistedInCurLoop(nullptr), m_curLoopVnInvariantCache(comp->getAllocatorLoopHoist())
         {
