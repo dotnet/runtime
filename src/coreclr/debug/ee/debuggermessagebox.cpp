@@ -122,7 +122,7 @@ static int UtilMessageBoxNonLocalized(
             0,                      // category zero
             1024,                   // event identifier
             NULL,                   // no user security identifier
-            message.GetUnicode());
+            message);
 
         WszOutputDebugString(lpTitle);
         WszOutputDebugString(lpText);
