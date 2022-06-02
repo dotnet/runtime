@@ -521,6 +521,9 @@ namespace DebuggerTests
             top_frame = pause_location["callFrames"]?[0];
             AssertEqual("InstanceMethod", top_frame?["functionName"]?.Value<string>(), top_frame?.ToString());
             CheckLocation("dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 102, 12, scripts, top_frame["location"]);
+
+            await EvaluateOnCallFrameAndCheck(pause_location["callFrames"]?[0]["callFrameId"].Value<string>(),
+            ("ApplyUpdateReferencedAssembly.MethodBody8.staticField", TNumber(80)));
         }
     }
 }

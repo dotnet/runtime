@@ -678,7 +678,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public Dictionary<string, DebuggerBrowsableState?> DebuggerBrowsableFields = new();
         public Dictionary<string, DebuggerBrowsableState?> DebuggerBrowsableProperties = new();
 
-        public TypeInfo(AssemblyInfo assembly, TypeDefinitionHandle typeHandle, TypeDefinition type, MetadataReader metadataReader, bool fromEnC, ILogger logger)
+        public TypeInfo(AssemblyInfo assembly, TypeDefinitionHandle typeHandle, TypeDefinition type, MetadataReader metadataReader, ILogger logger)
         {
             this.logger = logger;
             this.assembly = assembly;
@@ -899,8 +899,9 @@ namespace Microsoft.WebAssembly.Diagnostics
             int i = 0;
             while (strIdx > asmMetadataReaderLocal.GetHeapSize(HeapIndex.String))
             {
-                strIdx = strIdx - asmMetadataReaderLocal.GetHeapSize(HeapIndex.String);
+                strIdx -= asmMetadataReaderLocal.GetHeapSize(HeapIndex.String);
                 asmMetadataReaderLocal = enCMetadataReader[i];
+                i+=2; //skipping 2 because we have metadata and pdb in the same list
             }
             return asmMetadataReaderLocal.GetString(MetadataTokens.StringHandle(strIdx));
         }
@@ -920,7 +921,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         int typeDefIdx = GetTypeDefIdx(asmMetadataReaderParm, asmMetadataReaderParm.GetRowNumber(entry.Handle));
                         var typeDefinition = asmMetadataReaderParm.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle(typeDefIdx));
                         StringHandle name = MetadataTokens.StringHandle(typeDefinition.Name.GetHashCode() & 127);
-                        typeInfo = new TypeInfo(this, typeHandle, typeDefinition, asmMetadataReaderParm, true, logger);
+                        typeInfo = new TypeInfo(this, typeHandle, typeDefinition, asmMetadataReaderParm, logger);
                         TypesByName[typeInfo.FullName] = typeInfo;
                         TypesByToken[typeInfo.Token] = typeInfo;
                     }
@@ -988,7 +989,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 var typeDefinition = asmMetadataReader.GetTypeDefinition(type);
 
-                var typeInfo = new TypeInfo(this, type, typeDefinition, asmMetadataReader, false, logger);
+                var typeInfo = new TypeInfo(this, type, typeDefinition, asmMetadataReader, logger);
                 TypesByName[typeInfo.FullName] = typeInfo;
                 TypesByToken[typeInfo.Token] = typeInfo;
                 if (pdbMetadataReader != null)
@@ -1319,10 +1320,14 @@ namespace Microsoft.WebAssembly.Diagnostics
             public string Url { get; set; }
             public Task<byte[][]> Data { get; set; }
         }
-
         public static IEnumerable<MethodInfo> EnC(AssemblyInfo asm, byte[] meta_data, byte[] pdb_data)
         {
             asm.EnC(meta_data, pdb_data);
+            return GetEnCMethods(asm);
+        }
+
+        public static IEnumerable<MethodInfo> GetEnCMethods(AssemblyInfo asm)
+        {
             foreach (var method in asm.Methods)
             {
                 if (method.Value.IsEnCMethod)
