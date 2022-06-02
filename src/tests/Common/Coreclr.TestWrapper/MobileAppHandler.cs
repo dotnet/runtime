@@ -5,7 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace MobileTestLib
+namespace CoreclrTestLib
 {
     public class MobileAppHandler
     {
@@ -35,9 +35,9 @@ namespace MobileTestLib
             using (var outputWriter = new StreamWriter(outputStream))
             using (var errorWriter = new StreamWriter(errorStream))
             {
-                if (File.Exists($"{testBinaryBase}/.retry"))
+                if (IsRetryRequested(testBinaryBase))
                 {
-                    outputWriter.WriteLine("\nretry file was found, quit mobile app installation/uninstallation...");
+                    outputWriter.WriteLine("\nWork item retry had been requested earlier, skipping mobile app installation/uninstallation...");
                 }
                 else
                 {
@@ -119,15 +119,7 @@ namespace MobileTestLib
                             {
                                 // Process completed.
                                 exitCode = process.ExitCode;
-
-                                
-                                var retriableCodes = GetKnownExitCodes();
-                                if (retriableCodes.Contains(exitCode))
-                                {
-                                    CreateRetryFile($"{testBinaryBase}/.retry", exitCode, category);
-                                    outputWriter.WriteLine("\nretry file has been created.");
-                                }
-
+                                CheckExitCode(exitCode, testBinaryBase, category, outputWriter);
                                 Task.WaitAll(copyOutput, copyError);
                             }
                             else
@@ -177,7 +169,7 @@ namespace MobileTestLib
             return $"{cmdPrefix} \"{cmd}\"";
         }
 
-        public static void CreateRetryFile(string fileName, int exitCode, string appName)
+        private static void CreateRetryFile(string fileName, int exitCode, string appName)
         {
             using (StreamWriter writer = new StreamWriter(fileName))  
             {
@@ -185,7 +177,7 @@ namespace MobileTestLib
             }
         }
 
-        public static int[] GetKnownExitCodes()
+        private static int[] GetKnownExitCodes()
         {
             // See https://github.com/dotnet/xharness/blob/main/src/Microsoft.DotNet.XHarness.Common/CLI/ExitCode.cs
             // 78 - PACKAGE_INSTALLATION_FAILURE
@@ -199,6 +191,21 @@ namespace MobileTestLib
             // 90 - APP_LAUNCH_TIMEOUT
             // 91 - ADB_FAILURE
             return new[] { 78, 81, 82, 83, 84, 86, 88, 89, 90, 91 };
+        }
+
+        public static void CheckExitCode(int exitCode, string testBinaryBase, string category, StreamWriter outputWriter)
+        {
+            var retriableCodes = GetKnownExitCodes();
+            if (retriableCodes.Contains(exitCode))
+            {
+                CreateRetryFile($"{testBinaryBase}/.retry", exitCode, category);
+                outputWriter.WriteLine("\nInfra issue was detected and a work item retry was requested");
+            }
+        }
+
+        public static bool IsRetryRequested(string testBinaryBase)
+        {
+            return File.Exists($"{testBinaryBase}/.retry");
         }
     }
 }

@@ -14,7 +14,6 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
-using MobileTestLib;
 
 namespace CoreclrTestLib
 {
@@ -306,7 +305,7 @@ namespace CoreclrTestLib
             using (var errorWriter = new StreamWriter(errorStream))
             using (Process process = new Process())
             {
-                if (File.Exists($"{testBinaryBase}/.retry"))
+                if (MobileAppHandler.IsRetryRequested(testBinaryBase))
                 {
                     outputWriter.WriteLine("\nWork item retry had been requested earlier - skipping test...");
                 }
@@ -342,14 +341,7 @@ namespace CoreclrTestLib
                     {
                         // Process completed. Check process.ExitCode here.
                         exitCode = process.ExitCode;
-
-                        var retriableCodes = MobileAppHandler.GetKnownExitCodes();
-                        if (retriableCodes.Contains(exitCode))
-                        {
-                            MobileAppHandler.CreateRetryFile($"{testBinaryBase}/.retry", exitCode, category);
-                            outputWriter.WriteLine("\nInfra issue was detected and a work item retry was requested");
-                        }
-
+                        MobileAppHandler.CheckExitCode(exitCode, testBinaryBase, category, outputWriter);
                         Task.WaitAll(copyOutput, copyError);
                     }
                     else
