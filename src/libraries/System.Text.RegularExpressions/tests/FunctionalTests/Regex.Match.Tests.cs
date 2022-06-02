@@ -1924,8 +1924,16 @@ namespace System.Text.RegularExpressions.Tests
             string fullinput = string.Concat(Enumerable.Repeat(input, input_repetition));
 
             RegexHelpers.SetSafeSizeThreshold(10_000);
-            Regex re = await RegexHelpers.GetRegexAsync(engine, fullpattern);
-            RegexHelpers.RestoreSafeSizeThresholdToDefault();
+            Regex re;
+            try
+            {
+                re = await RegexHelpers.GetRegexAsync(engine, fullpattern);
+            }
+            finally
+            {
+                RegexHelpers.RestoreSafeSizeThresholdToDefault();
+            }
+
             Assert.True(re.Match(fullinput).Success);
         }
 
@@ -1948,8 +1956,16 @@ namespace System.Text.RegularExpressions.Tests
             string fullinput = string.Concat(Enumerable.Repeat(input, input_repetition));
 
             RegexHelpers.SetSafeSizeThreshold(10_000);
-            var re = await RegexHelpers.GetRegexAsync(engine, fullpattern, options);
-            RegexHelpers.RestoreSafeSizeThresholdToDefault();
+            Regex re;
+            try
+            {
+                re = await RegexHelpers.GetRegexAsync(engine, fullpattern, options);
+            }
+            finally
+            {
+                RegexHelpers.RestoreSafeSizeThresholdToDefault();
+            }
+
             Assert.True(re.Match(fullinput).Success);
         }
 
