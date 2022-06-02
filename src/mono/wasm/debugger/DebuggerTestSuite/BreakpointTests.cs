@@ -588,10 +588,10 @@ namespace DebuggerTests
         [InlineData(true, "RunNonUserCode", "DebuggerAttribute", 1, 867, 8)]
         [InlineData(false, "RunStepThroughWithNonUserCode", "DebuggerAttribute", 1, 933, 8)]
         [InlineData(true, "RunStepThroughWithNonUserCode", "DebuggerAttribute", 1, 933, 8)]
-        [InlineData(false, "Evaluate", "DefaultInterfaceMethod", 7, 1052, 8)] // stepThrough
-        [InlineData(true, "Evaluate", "DefaultInterfaceMethod", 7, 1052, 8)] // stepThrough
-        [InlineData(false, "Evaluate", "DefaultInterfaceMethod", 8, 1027, 4, "NonUserCodeDefaultMethod")] // nonUserCode
-        [InlineData(true, "Evaluate", "DefaultInterfaceMethod", 8, 1053, 8)] // nonUserCode
+        [InlineData(false, "EvaluateStepThroughAttr", "DefaultInterfaceMethod", 2, 1091, 4)]
+        [InlineData(true, "EvaluateStepThroughAttr", "DefaultInterfaceMethod", 2, 1091, 4)]
+        [InlineData(false, "EvaluateNonUserCodeAttr", "DefaultInterfaceMethod", 2, 1048, 4, "NonUserCodeDefaultMethod")]
+        [InlineData(true, "EvaluateNonUserCodeAttr", "DefaultInterfaceMethod", 2, 1097, 4)]
         public async Task StepThroughOrNonUserCodeAttributeStepInNoBp(bool justMyCodeEnabled, string evalFunName, string evalClassName, int bpLine, int line, int col, string funcName="")
         {
             var bp_init = await SetBreakpointInMethod("debugger-test.dll", evalClassName, evalFunName, bpLine);
@@ -717,9 +717,9 @@ namespace DebuggerTests
         [InlineData("DebuggerAttribute", "RunNoBoundary", "DebuggerAttribute", "Debugger.resume", 1, 2, true)]
         [InlineData("DebuggerAttribute", "RunNoBoundary", "DebuggerAttribute", "Debugger.stepInto", 2, 3, false, true)]
         [InlineData("DebuggerAttribute", "RunNoBoundary", "DebuggerAttribute", "Debugger.resume", 2, 3, false, true)]
-        [InlineData("DefaultInterfaceMethod", "Evaluate", "IOverrideDefaultInterface", "Debugger.stepInto", 10, 11, false)]
-        [InlineData("DefaultInterfaceMethod", "Evaluate", "IOverrideDefaultInterface", "Debugger.stepInto", 10, 11, true)]
-        [InlineData("DefaultInterfaceMethod", "Evaluate", "IOverrideDefaultInterface", "Debugger.resume", 10, 11, true)]
+        [InlineData("DefaultInterfaceMethod", "EvaluateStepperBoundaryAttr", "IExtendIDefaultInterface", "Debugger.stepInto", 2, 3, false)]
+        [InlineData("DefaultInterfaceMethod", "EvaluateStepperBoundaryAttr", "IExtendIDefaultInterface", "Debugger.stepInto", 2, 3, true)]
+        [InlineData("DefaultInterfaceMethod", "EvaluateStepperBoundaryAttr", "IExtendIDefaultInterface", "Debugger.resume", 2, 3, true)]
         public async Task StepperBoundary(
             string className, string evalFunName, string decoratedMethodClassName, string debuggingAction, int lineBpInit, int lineBpFinal, bool hasBpInDecoratedFun, bool isTestingUserBp = false)
         {
@@ -820,46 +820,62 @@ namespace DebuggerTests
             );
         }
 
-        [Fact]
-        public async Task BreakInDefaultInterfaceMethod()
+        [Theory]
+        [InlineData("IDefaultInterface", "DefaultMethod", "Evaluate", 1070, 1001, 999, 1003)]
+        [InlineData("IExtendIDefaultInterface", "IDefaultInterface.DefaultMethodToOverride", "Evaluate", 1071, 1030, 1028, 1032)]
+        [InlineData("IDefaultInterface", "DefaultMethodAsync", "EvaluateAsync", 37, 1014, 1012, 1016, true, "Start<IDefaultInterface/<DefaultMethodAsync>d__2>")]
+        public async Task BreakInDefaultInterfaceMethod(
+            string dimClassName, string dimName, string entryMethod,  int evaluateAsPrevFrameLine, int dimAsPrevFrameLine, int functionLocationLine, int functionEndLine, bool isAsync = false, string asyncPrevFrameInDim = "")
         {
-            string methodName = "DefaultMethod";
             string assembly = "dotnet://debugger-test.dll/debugger-test.cs";
-            var bp_dim = await SetBreakpointInMethod("debugger-test.dll", "IDefaultInterface", methodName, 1);
-            var init_location = await EvaluateAndCheck(
-                $"window.setTimeout(function() {{ invoke_static_method('[debugger-test] DefaultInterfaceMethod:Evaluate'); }}, 1);",
+            var bpDim = await SetBreakpointInMethod("debugger-test.dll", dimClassName, dimName, 1);
+            var pauseInDim = await EvaluateAndCheck(
+                $"window.setTimeout(function() {{ invoke_static_method('[debugger-test] DefaultInterfaceMethod:{entryMethod}'); }}, 1);",
                 assembly,
-                bp_dim.Value["locations"][0]["lineNumber"].Value<int>(),
-                bp_dim.Value["locations"][0]["columnNumber"].Value<int>(),
-                methodName,
-                wait_for_event_fn: async (pause_location) => { await CheckDefaultMethod(pause_location); }
-            );
-            await SendCommandAndCheck(null, "Debugger.resume",
-                assembly,
-                bp_dim.Value["locations"][0]["lineNumber"].Value<int>(),
-                bp_dim.Value["locations"][0]["columnNumber"].Value<int>(),
-                methodName,
-                wait_for_event_fn: async (pause_location) => { await CheckDefaultMethod(pause_location); }
+                bpDim.Value["locations"][0]["lineNumber"].Value<int>(),
+                bpDim.Value["locations"][0]["columnNumber"].Value<int>(),
+                isAsync ? "MoveNext" : dimName,
+                wait_for_event_fn: async (pause_location) => { await CheckDefaultMethod(pause_location, isAsync ? "MoveNext" : dimName); }
             );
 
-            async Task CheckDefaultMethod(JObject pause_location)
+            // check prev frame in DIM
+            string prevFrameInDim = isAsync ? asyncPrevFrameInDim : entryMethod;
+            Assert.Equal(pauseInDim["callFrames"][1]["functionName"].Value<string>(), prevFrameInDim);
+            Assert.Equal(pauseInDim["callFrames"][1]["location"]["lineNumber"].Value<int>(), evaluateAsPrevFrameLine);
+
+            string funCalledFromDim = "MethodForCallingFromDIM";
+            var bpFunCalledFromDim = await SetBreakpointInMethod("debugger-test.dll", "DefaultInterfaceMethod", funCalledFromDim, 1);
+
+            // check prev frame in method called from DIM
+            var pauseInFunCalledFromDim = await SendCommandAndCheck(null, "Debugger.resume",
+                null,
+                bpFunCalledFromDim.Value["locations"][0]["lineNumber"].Value<int>(),
+                bpFunCalledFromDim.Value["locations"][0]["columnNumber"].Value<int>(),
+                funCalledFromDim);
+            
+            string prevFrameFromDim = isAsync ? "MoveNext" : dimName;
+            Assert.Equal(pauseInFunCalledFromDim["callFrames"][1]["functionName"].Value<string>(), prevFrameFromDim);
+            Assert.Equal(pauseInFunCalledFromDim["callFrames"][1]["location"]["lineNumber"].Value<int>(), dimAsPrevFrameLine);
+
+
+            async Task CheckDefaultMethod(JObject pause_location, string methodName)
             {
                 Assert.Equal("other", pause_location["reason"]?.Value<string>());
-                Assert.Equal(bp_dim.Value["breakpointId"]?.ToString(), pause_location["hitBreakpoints"]?[0]?.Value<string>());
+                Assert.Equal(bpDim.Value["breakpointId"]?.ToString(), pause_location["hitBreakpoints"]?[0]?.Value<string>());
 
                 var top_frame = pause_location["callFrames"][0];
                 Assert.Equal(methodName, top_frame["functionName"].Value<string>());
                 Assert.Contains("debugger-test.cs", top_frame["url"].Value<string>());
 
-                CheckLocation(assembly, 999, 4, scripts, top_frame["functionLocation"]);
+                CheckLocation(assembly, functionLocationLine, 4, scripts, top_frame["functionLocation"]);
 
                 var scope = top_frame["scopeChain"][0];
                 Assert.Equal("local", scope["type"]);
                 Assert.Equal(methodName, scope["name"]);
 
                 Assert.Equal("object", scope["object"]["type"]);
-                CheckLocation(assembly, 999, 4, scripts, scope["startLocation"]);
-                CheckLocation(assembly, 1002, 4, scripts, scope["endLocation"]);
+                CheckLocation(assembly, functionLocationLine, 4, scripts, scope["startLocation"]);
+                CheckLocation(assembly, functionEndLine, 4, scripts, scope["endLocation"]);
                 await Task.CompletedTask;
             }
         }
@@ -867,12 +883,12 @@ namespace DebuggerTests
         [Fact]
         public async Task CheckDefaultInterfaceMethodHiddenAttribute()
         {
-            string methodName = "Evaluate";
+            string methodName = "EvaluateHiddenAttr";
             string assembly = "dotnet://debugger-test.dll/debugger-test.cs";
-            var hidden_bp = await SetBreakpointInMethod("debugger-test.dll", "IOverrideDefaultInterface", "HiddenDefaultMethod", 1);
-            var final_bp = await SetBreakpointInMethod("debugger-test.dll", "DefaultInterfaceMethod", methodName, 7);
+            var hidden_bp = await SetBreakpointInMethod("debugger-test.dll", "IExtendIDefaultInterface", "HiddenDefaultMethod", 1);
+            var final_bp = await SetBreakpointInMethod("debugger-test.dll", "DefaultInterfaceMethod", methodName, 3);
             // check if bp in hidden DIM was ignored:
-            await EvaluateAndCheck(
+            var final_location = await EvaluateAndCheck(
                 $"window.setTimeout(function() {{ invoke_static_method('[debugger-test] DefaultInterfaceMethod:{methodName}'); }}, 1);",
                 assembly,
                 final_bp.Value["locations"][0]["lineNumber"].Value<int>(),

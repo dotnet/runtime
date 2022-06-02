@@ -1221,33 +1221,21 @@ namespace DebuggerTests
                 await CheckProps(props, expected_props, "props#2");
              });
 
-        [Fact]
-        public async Task EvaluateDefaultInterfaceMethod() =>  
-            await CheckInspectLocalsAtBreakpointSite(
-            "DefaultInterfaceMethod", "Evaluate", 7, "Evaluate",
-            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DefaultInterfaceMethod:Evaluate'); })",
-            wait_for_event_fn: async (pause_location) =>
-            {
-                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
-
-                await EvaluateOnCallFrameAndCheck(id,
-                    ("defaultFromIDefault", TString("DefaultMethod() from IDefaultInterface")),
-                    ("defaultFromIOverride", TString("DefaultMethod() from IDefaultInterface")),
-                    ("default2FromIOverride", TString("DefaultMethod2() from IOverrideDefaultInterface"))
-                );
-            });
-
         [Theory]
-        [InlineData("DefaultMethod", "IDefaultInterface")]
-        [InlineData("DefaultMethod2", "IOverrideDefaultInterface")]
-        public async Task EvaluateLocalsInDefaultInterfaceMethod(string pauseMethod, string methodInterface) =>  
+        [InlineData("DefaultMethod", "IDefaultInterface", "Evaluate")]
+        [InlineData("DefaultMethod2", "IExtendIDefaultInterface", "Evaluate")]
+        [InlineData("DefaultMethodAsync", "IDefaultInterface", "EvaluateAsync", true)]
+        public async Task EvaluateLocalsInDefaultInterfaceMethod(string pauseMethod, string methodInterface, string entryMethod, bool isAsync = false) =>
             await CheckInspectLocalsAtBreakpointSite(
-            methodInterface, pauseMethod, 2, pauseMethod,
-            $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DefaultInterfaceMethod:Evaluate'); }})",
+            methodInterface, pauseMethod, 2, isAsync ? "MoveNext" : pauseMethod,
+            $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DefaultInterfaceMethod:{entryMethod}'); }})",
             wait_for_event_fn: async (pause_location) =>
             {
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
-                await EvaluateOnCallFrameAndCheck(id, ("localString", TString($"{pauseMethod}()")));
+                await EvaluateOnCallFrameAndCheck(id,
+                    ("localString", TString($"{pauseMethod}()")),
+                    ("this", TObject("DIMClass")),
+                    ("this.dimClassMember", TNumber(123)));
             });
     }
 }

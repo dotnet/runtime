@@ -999,16 +999,37 @@ public interface IDefaultInterface
     string DefaultMethod()
     {
         string localString = "DefaultMethod()";
+        DefaultInterfaceMethod.MethodForCallingFromDIM();
         return $"{localString} from IDefaultInterface";
+    }
+    
+    int DefaultMethodToOverride()
+    {
+        int retValue = 10;
+        return retValue;
+    }
+
+    async System.Threading.Tasks.Task DefaultMethodAsync()
+    {
+        string localString = "DefaultMethodAsync()";
+        DefaultInterfaceMethod.MethodForCallingFromDIM();
+        await System.Threading.Tasks.Task.FromResult(0);
     }
 }
 
-public interface IOverrideDefaultInterface : IDefaultInterface
+public interface IExtendIDefaultInterface : IDefaultInterface
 {
     void DefaultMethod2(out string t)
     {
         string localString = "DefaultMethod2()";
-        t = $"{localString} from IOverrideDefaultInterface";
+        t = $"{localString} from IExtendIDefaultInterface";
+    }
+
+    int IDefaultInterface.DefaultMethodToOverride()
+    {
+        int retValue = 110;
+        DefaultInterfaceMethod.MethodForCallingFromDIM();
+        return retValue;
     }
 
     [System.Diagnostics.DebuggerHidden]
@@ -1037,22 +1058,54 @@ public interface IOverrideDefaultInterface : IDefaultInterface
     }
 }
 
-public class DIMClass : IOverrideDefaultInterface { }
+public class DIMClass : IExtendIDefaultInterface
+{
+    public int dimClassMember = 123;
+}
 
 public static class DefaultInterfaceMethod
 {
     public static void Evaluate()
     {
+        IExtendIDefaultInterface extendDefaultInter = new DIMClass();
+        string defaultFromIDefault = extendDefaultInter.DefaultMethod();
+        int overrideFromIExtend = extendDefaultInter.DefaultMethodToOverride();
+        extendDefaultInter.DefaultMethod2(out string default2FromIExtend);
+    }
+    
+    public static async void EvaluateAsync()
+    {
         IDefaultInterface defaultInter = new DIMClass();
-        IOverrideDefaultInterface overrideDefaultInter = new DIMClass();
+        await defaultInter.DefaultMethodAsync();
+    }
 
-        string defaultFromIDefault = defaultInter.DefaultMethod();
-        string defaultFromIOverride = overrideDefaultInter.DefaultMethod();
-        overrideDefaultInter.DefaultMethod2(out string default2FromIOverride);
-        overrideDefaultInter.StepThroughDefaultMethod();
-        overrideDefaultInter.NonUserCodeDefaultMethod();
-        overrideDefaultInter.HiddenDefaultMethod();
-        overrideDefaultInter.NonUserCodeDefaultMethod(overrideDefaultInter.BoundaryBp);
+    public static void EvaluateHiddenAttr()
+    {
+        IExtendIDefaultInterface extendDefaultInter = new DIMClass();
+        extendDefaultInter.HiddenDefaultMethod();
+    }
+
+    public static void EvaluateStepThroughAttr()
+    {
+        IExtendIDefaultInterface extendDefaultInter = new DIMClass();
+        extendDefaultInter.StepThroughDefaultMethod();
+    }
+
+    public static void EvaluateNonUserCodeAttr()
+    {
+        IExtendIDefaultInterface extendDefaultInter = new DIMClass();
+        extendDefaultInter.NonUserCodeDefaultMethod();
+    }
+
+    public static void EvaluateStepperBoundaryAttr()
+    {
+        IExtendIDefaultInterface extendDefaultInter = new DIMClass();
+        extendDefaultInter.NonUserCodeDefaultMethod(extendDefaultInter.BoundaryBp);
+    }
+
+    public static void MethodForCallingFromDIM()
+    {
+        string text = "a place for pausing and inspecting DIM";
     }
 }
 #endregion
