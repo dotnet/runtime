@@ -1328,7 +1328,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     return;
                 var assemblyAndMethodTokenArr = assemblyAndMethodToken.Value["result"]["value"].Value<string>().Split('|');
                 var assemblyName = assemblyAndMethodTokenArr[0];
-                var methodToken = Convert.ToInt32(assemblyAndMethodTokenArr[1]) & 0xffffff;
+                var methodToken = Convert.ToInt32(assemblyAndMethodTokenArr[1]) & 0xffffff; //token
 
                 var store = await LoadStore(sessionId, token);
                 AssemblyInfo assembly = store.GetAssemblyByName(assemblyName);
@@ -1336,7 +1336,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     return;
                 var method = assembly.GetMethodByToken(methodToken);
                 if (method.StartLocation == null) //It's an async method and we need to get the MoveNext method to add the breakpoint
-                    method = assembly.Methods.FirstOrDefault(m => m.Value.KickOffMethod == methodToken).Value;
+                    method = assembly.Methods.FirstOrDefault(m => m.Value.KickOffMethod == methodToken)?.Value;
                 if (method == null)
                     return;
                 var sourceFile = assembly.Sources.Single(sf => sf.SourceId == method.SourceId);
