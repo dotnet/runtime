@@ -26,7 +26,7 @@ namespace System.Diagnostics.Tracing
 
         [NonEvent]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void LogThreadPoolMinMaxThreads(short MinWorkerThreads, short MaxWorkerThreads, short MinIOCompletionThreads, short MaxIOCompletionThreads, ushort ClrInstanceID);
+        internal static extern void LogThreadPoolMinMaxThreads(ushort MinWorkerThreads, ushort MaxWorkerThreads, ushort MinIOCompletionThreads, ushort MaxIOCompletionThreads, ushort ClrInstanceID);
 
         [NonEvent]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

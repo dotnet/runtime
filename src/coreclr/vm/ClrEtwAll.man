@@ -1586,11 +1586,10 @@
                     </template>
 
                     <template tid="ThreadPoolMinMaxThreads">
-                        <!-- This is actually the first time win:Int16 is being used in this file -->
-                        <data name="MinWorkerThreads" inType="win:Int16" />
-                        <data name="MaxWorkerThreads" inType="win:Int16" />
-                        <data name="MinIOCompletionThreads" inType="win:Int16" />
-                        <data name="MaxIOCompletionThreads" inType="win:Int16" />
+                        <data name="MinWorkerThreads" inType="win:UInt16" />
+                        <data name="MaxWorkerThreads" inType="win:UInt16" />
+                        <data name="MinIOCompletionThreads" inType="win:UInt16" />
+                        <data name="MaxIOCompletionThreads" inType="win:UInt16" />
                         <data name="ClrInstanceID" inType="win:UInt16" />
 
                         <UserData>

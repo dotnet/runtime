@@ -408,10 +408,10 @@ namespace System.Diagnostics.Tracing
 #endif
         [Event(59, Level = EventLevel.Informational, Message = Messages.MinMaxThreads, Task = Tasks.ThreadPoolMinMaxThreads, Opcode = EventOpcode.Info, Version = 0, Keywords = Keywords.ThreadingKeyword)]
         public unsafe void ThreadPoolMinMaxThreads(
-            short MinWorkerThreads,
-            short MaxWorkerThreads,
-            short MinIOCompletionThreads,
-            short MaxIOCompletionThreads,
+            ushort MinWorkerThreads,
+            ushort MaxWorkerThreads,
+            ushort MinIOCompletionThreads,
+            ushort MaxIOCompletionThreads,
             ushort ClrInstanceID = DefaultClrInstanceId)
         {
             if (!IsEnabled(EventLevel.Informational, Keywords.ThreadingKeyword))
@@ -420,16 +420,16 @@ namespace System.Diagnostics.Tracing
             }
             EventData* data = stackalloc EventData[5];
             data[0].DataPointer = (IntPtr)(&MinWorkerThreads);
-            data[0].Size = sizeof(short);
+            data[0].Size = sizeof(ushort);
             data[0].Reserved = 0;
             data[1].DataPointer = (IntPtr)(&MaxWorkerThreads);
-            data[1].Size = sizeof(short);
+            data[1].Size = sizeof(ushort);
             data[1].Reserved = 0;
             data[2].DataPointer = (IntPtr)(&MinIOCompletionThreads);
-            data[2].Size = sizeof(short);
+            data[2].Size = sizeof(ushort);
             data[2].Reserved = 0;
             data[3].DataPointer = (IntPtr)(&MaxIOCompletionThreads);
-            data[3].Size = sizeof(short);
+            data[3].Size = sizeof(ushort);
             data[3].Reserved = 0;
             data[4].DataPointer = (IntPtr)(&ClrInstanceID);
             data[4].Size = sizeof(ushort);

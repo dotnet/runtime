@@ -26,7 +26,7 @@ namespace System.Diagnostics.Tracing
 
         [NonEvent]
         [LibraryImport(RuntimeHelpers.QCall)]
-        internal static partial void LogThreadPoolMinMaxThreads(short MinWorkerThreads, short MaxWorkerThreads, short MinIOCompletionThreads, short MaxIOCompletionThreads, ushort ClrInstanceID);
+        internal static partial void LogThreadPoolMinMaxThreads(ushort MinWorkerThreads, ushort MaxWorkerThreads, ushort MinIOCompletionThreads, ushort MaxIOCompletionThreads, ushort ClrInstanceID);
 
         [NonEvent]
         [LibraryImport(RuntimeHelpers.QCall)]

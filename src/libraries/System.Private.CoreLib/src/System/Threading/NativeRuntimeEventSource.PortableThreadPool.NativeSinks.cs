@@ -254,10 +254,10 @@ namespace System.Diagnostics.Tracing
 
         [Event(59, Level = EventLevel.Informational, Message = Messages.MinMaxThreads, Task = Tasks.ThreadPoolMinMaxThreads, Opcode = EventOpcode.Info, Version = 0, Keywords = Keywords.ThreadingKeyword)]
         public unsafe void ThreadPoolMinMaxThreads(
-            short MinWorkerThreads,
-            short MaxWorkerThreads,
-            short MinIOCompletionThreads,
-            short MaxIOCompletionThreads,
+            ushort MinWorkerThreads,
+            ushort MaxWorkerThreads,
+            ushort MinIOCompletionThreads,
+            ushort MaxIOCompletionThreads,
             ushort ClrInstanceID = DefaultClrInstanceId)
         {
             if (IsEnabled(EventLevel.Informational, Keywords.ThreadingKeyword))
