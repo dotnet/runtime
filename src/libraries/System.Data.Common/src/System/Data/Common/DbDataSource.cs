@@ -221,9 +221,6 @@ namespace System.Data.Common
                     catch
                     {
                         // Swallow to allow the original exception to bubble up
-                        // Also, refrain from bubbling up the close exception even if there's no original exception,
-                        // since it's not relevant to the user - execution did complete successfully, and the connection
-                        // close is just an internal detail that shouldn't cause user code to fail.
                     }
 
                     throw;
@@ -252,9 +249,6 @@ namespace System.Data.Common
                     catch
                     {
                         // Swallow to allow the original exception to bubble up
-                        // Also, refrain from bubbling up the close exception even if there's no original exception,
-                        // since it's not relevant to the user - execution did complete successfully, and the connection
-                        // close is just an internal detail that shouldn't cause user code to fail.
                     }
 
                     throw;
@@ -368,6 +362,9 @@ namespace System.Data.Common
                     catch
                     {
                         // Swallow to allow the original exception to bubble up
+                        // Also, refrain from bubbling up the close exception even if there's no original exception,
+                        // since it's not relevant to the user - execution did complete successfully, and the connection
+                        // close is just an internal detail that shouldn't cause user code to fail.
                     }
                 }
             }
@@ -390,6 +387,9 @@ namespace System.Data.Common
                     catch
                     {
                         // Swallow to allow the original exception to bubble up
+                        // Also, refrain from bubbling up the close exception even if there's no original exception,
+                        // since it's not relevant to the user - execution did complete successfully, and the connection
+                        // close is just an internal detail that shouldn't cause user code to fail.
                     }
                 }
             }
@@ -411,6 +411,9 @@ namespace System.Data.Common
                     catch
                     {
                         // Swallow to allow the original exception to bubble up
+                        // Also, refrain from bubbling up the close exception even if there's no original exception,
+                        // since it's not relevant to the user - execution did complete successfully, and the connection
+                        // close is just an internal detail that shouldn't cause user code to fail.
                     }
                 }
             }
@@ -433,6 +436,9 @@ namespace System.Data.Common
                     catch
                     {
                         // Swallow to allow the original exception to bubble up
+                        // Also, refrain from bubbling up the close exception even if there's no original exception,
+                        // since it's not relevant to the user - execution did complete successfully, and the connection
+                        // close is just an internal detail that shouldn't cause user code to fail.
                     }
                 }
             }
