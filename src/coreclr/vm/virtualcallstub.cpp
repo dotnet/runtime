@@ -1179,8 +1179,9 @@ VTableCallHolder* VirtualCallStubManager::GenerateVTableCallStub(DWORD slot)
     } CONTRACT_END;
 
     //allocate from the requisite heap and copy the template over it.
-    VTableCallHolder * pHolder = (VTableCallHolder*)(void*)vtable_heap->AllocAlignedMem(VTableCallHolder::GetHolderSize(slot), CODE_SIZE_ALIGN);
-    ExecutableWriterHolder<VTableCallHolder> vtableWriterHolder(pHolder, sizeof(VTableCallHolder));
+    size_t vtableHolderSize = VTableCallHolder::GetHolderSize(slot);
+    VTableCallHolder * pHolder = (VTableCallHolder*)(void*)vtable_heap->AllocAlignedMem(vtableHolderSize, CODE_SIZE_ALIGN);
+    ExecutableWriterHolder<VTableCallHolder> vtableWriterHolder(pHolder, vtableHolderSize);
     vtableWriterHolder.GetRW()->Initialize(slot);
 
     ClrFlushInstructionCache(pHolder->stub(), pHolder->stub()->size());
