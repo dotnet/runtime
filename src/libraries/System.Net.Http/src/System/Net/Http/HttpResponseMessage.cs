@@ -92,7 +92,7 @@ namespace System.Net.Http
             }
             set
             {
-                if ((value != null) && ContainsNewLineCharacter(value))
+                if ((value != null) && HttpRuleParser.ContainsNewLine(value))
                 {
                     throw new FormatException(SR.net_http_reasonphrase_format_error);
                 }
@@ -206,9 +206,6 @@ namespace System.Net.Http
 
             return sb.ToString();
         }
-
-        private static bool ContainsNewLineCharacter(string value) =>
-            value.AsSpan().IndexOfAny(HttpRuleParser.CR, HttpRuleParser.LF) >= 0;
 
         #region IDisposable Members
 

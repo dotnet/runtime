@@ -384,7 +384,7 @@ namespace System.Net.Mime
             c == Tab || c == Space || c == CR || c == LF;
 
         internal static bool HasCROrLF(string data) =>
-            data.AsSpan().IndexOfAny('\r', '\n') >= 0;
+            data.AsSpan().IndexOfAny(CR, LF) >= 0;
 
         // Is there a FWS ("\r\n " or "\r\n\t") starting at the given index?
         internal static bool IsFWSAt(string data, int index)
