@@ -481,16 +481,28 @@ namespace Microsoft.Extensions.Configuration
         }
 
         private static bool DoAllParametersHaveEquivalentProperties(ParameterInfo[] parameters,
-            List<PropertyInfo> properties, out string s)
+            List<PropertyInfo> properties, out string missing)
         {
-            var parameterNames = parameters.Select(param => param.Name).ToList();
-            var propertyNames = properties.Select(prop => prop.Name).ToList();
+            HashSet<string> propertyNames = new(StringComparer.OrdinalIgnoreCase);
+            foreach (PropertyInfo prop in properties)
+            {
+                propertyNames.Add(prop.Name);
+            }
 
-            var missingProperties = parameterNames.Where(pn => !propertyNames.Contains(pn!, StringComparer.OrdinalIgnoreCase));
+            List<string> missingParameters = new();
 
-            s = string.Join(",", missingProperties);
+            foreach (ParameterInfo parameter in parameters)
+            {
+                string name = parameter.Name!;
+                if (!propertyNames.Contains(name))
+                {
+                    missingParameters.Add(name);
+                }
+            }
 
-            return s.Length == 0;
+            missing = string.Join(",", missingParameters);
+
+            return missing.Length == 0;
         }
 
         private static bool CanBindToTheseConstructorParameters(ParameterInfo[] constructorParameters, out string nameOfInvalidParameter)
