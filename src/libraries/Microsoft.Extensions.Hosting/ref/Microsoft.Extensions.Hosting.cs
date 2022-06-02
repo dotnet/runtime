@@ -30,6 +30,12 @@ namespace Microsoft.Extensions.Hosting
         public static Microsoft.Extensions.Hosting.IHostBuilder CreateDefaultBuilder() { throw null; }
         public static Microsoft.Extensions.Hosting.IHostBuilder CreateDefaultBuilder(string[]? args) { throw null; }
     }
+    public sealed partial class HostAbortedException : System.Exception
+    {
+        public HostAbortedException() { }
+        public HostAbortedException(string? message) { }
+        public HostAbortedException(string? message, System.Exception? innerException) { }
+    }
     public sealed partial class HostApplicationBuilder
     {
         public HostApplicationBuilder() { }

@@ -39,13 +39,26 @@ bool IntegralRange::Contains(int64_t value) const
 //    value - the symbolic value in question
 //
 // Return Value:
-//    Integer correspoding to the symbolic value.
+//    Integer corresponding to the symbolic value.
 //
 /* static */ int64_t IntegralRange::SymbolicToRealValue(SymbolicIntegerValue value)
 {
-    static const int64_t SymbolicToRealMap[]{INT64_MIN, INT32_MIN,  INT16_MIN, INT8_MIN,  0,
-                                             1,         INT8_MAX,   UINT8_MAX, INT16_MAX, UINT16_MAX,
-                                             INT32_MAX, UINT32_MAX, INT64_MAX};
+    static const int64_t SymbolicToRealMap[]{
+        INT64_MIN,               // SymbolicIntegerValue::LongMin
+        INT32_MIN,               // SymbolicIntegerValue::IntMin
+        INT16_MIN,               // SymbolicIntegerValue::ShortMin
+        INT8_MIN,                // SymbolicIntegerValue::ByteMin
+        0,                       // SymbolicIntegerValue::Zero
+        1,                       // SymbolicIntegerValue::One
+        INT8_MAX,                // SymbolicIntegerValue::ByteMax
+        UINT8_MAX,               // SymbolicIntegerValue::UByteMax
+        INT16_MAX,               // SymbolicIntegerValue::ShortMax
+        UINT16_MAX,              // SymbolicIntegerValue::UShortMax
+        CORINFO_Array_MaxLength, // SymbolicIntegerValue::ArrayLenMax
+        INT32_MAX,               // SymbolicIntegerValue::IntMax
+        UINT32_MAX,              // SymbolicIntegerValue::UIntMax
+        INT64_MAX                // SymbolicIntegerValue::LongMax
+    };
 
     assert(sizeof(SymbolicIntegerValue) == sizeof(int32_t));
     assert(SymbolicToRealMap[static_cast<int32_t>(SymbolicIntegerValue::LongMin)] == INT64_MIN);
@@ -145,7 +158,7 @@ bool IntegralRange::Contains(int64_t value) const
             return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::One};
 
         case GT_ARR_LENGTH:
-            return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::IntMax};
+            return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::ArrayLenMax};
 
         case GT_CALL:
             if (node->AsCall()->NormalizesSmallTypesOnReturn())
@@ -2945,8 +2958,8 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
     ValueNumPair vnPair = tree->gtVNPair;
     ValueNum     vnCns  = vnStore->VNConservativeNormalValue(vnPair);
 
-    // Check if node evaluates to a constant or Vector.Zero.
-    if (!vnStore->IsVNConstant(vnCns) && !vnStore->IsVNVectorZero(vnCns))
+    // Check if node evaluates to a constant
+    if (!vnStore->IsVNConstant(vnCns))
     {
         return nullptr;
     }
@@ -3105,23 +3118,52 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
         }
         break;
 
-#if FEATURE_HW_INTRINSICS
+#if FEATURE_SIMD
         case TYP_SIMD8:
+        {
+            simd8_t value = vnStore->ConstantValue<simd8_t>(vnCns);
+
+            GenTreeVecCon* vecCon = gtNewVconNode(tree->TypeGet(), CORINFO_TYPE_FLOAT);
+            vecCon->gtSimd8Val    = value;
+
+            conValTree = vecCon;
+            break;
+        }
+
         case TYP_SIMD12:
+        {
+            simd12_t value = vnStore->ConstantValue<simd12_t>(vnCns);
+
+            GenTreeVecCon* vecCon = gtNewVconNode(tree->TypeGet(), CORINFO_TYPE_FLOAT);
+            vecCon->gtSimd12Val   = value;
+
+            conValTree = vecCon;
+            break;
+        }
+
         case TYP_SIMD16:
+        {
+            simd16_t value = vnStore->ConstantValue<simd16_t>(vnCns);
+
+            GenTreeVecCon* vecCon = gtNewVconNode(tree->TypeGet(), CORINFO_TYPE_FLOAT);
+            vecCon->gtSimd16Val   = value;
+
+            conValTree = vecCon;
+            break;
+        }
+
         case TYP_SIMD32:
         {
-            assert(vnStore->IsVNVectorZero(vnCns));
-            VNSimdTypeInfo vnInfo = vnStore->GetVectorZeroSimdTypeOfVN(vnCns);
+            simd32_t value = vnStore->ConstantValue<simd32_t>(vnCns);
 
-            assert(vnInfo.m_simdBaseJitType != CORINFO_TYPE_UNDEF);
-            assert(vnInfo.m_simdSize != 0);
-            assert(getSIMDTypeForSize(vnInfo.m_simdSize) == vnStore->TypeOfVN(vnCns));
+            GenTreeVecCon* vecCon = gtNewVconNode(tree->TypeGet(), CORINFO_TYPE_FLOAT);
+            vecCon->gtSimd32Val   = value;
 
-            conValTree = gtNewSimdZeroNode(tree->TypeGet(), vnInfo.m_simdBaseJitType, vnInfo.m_simdSize, true);
+            conValTree = vecCon;
+            break;
         }
         break;
-#endif
+#endif // FEATURE_SIMD
 
         case TYP_BYREF:
             // Do not support const byref optimization.
@@ -5595,8 +5637,7 @@ struct VNAssertionPropVisitorInfo
 //
 GenTree* Compiler::optExtractSideEffListFromConst(GenTree* tree)
 {
-    assert(vnStore->IsVNConstant(vnStore->VNConservativeNormalValue(tree->gtVNPair)) ||
-           vnStore->IsVNVectorZero(vnStore->VNConservativeNormalValue(tree->gtVNPair)));
+    assert(vnStore->IsVNConstant(vnStore->VNConservativeNormalValue(tree->gtVNPair)));
 
     GenTree* sideEffList = nullptr;
 

@@ -503,6 +503,24 @@ mono_class_has_dim_conflicts (MonoClass *klass)
 	return FALSE;
 }
 
+gboolean
+mono_class_is_method_ambiguous (MonoClass *klass, MonoMethod *method)
+{
+	GSList *l = mono_class_get_dim_conflicts (klass);
+	MonoMethod *decl = method;
+
+	if (decl->is_inflated)
+		decl = ((MonoMethodInflated*)decl)->declaring;
+
+	while (l) {
+		if (decl == l->data)
+			return TRUE;
+		l = l->next;
+	}
+
+	return FALSE;
+}
+
 typedef struct {
 	MonoPropertyBagItem head;
 

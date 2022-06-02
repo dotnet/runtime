@@ -713,13 +713,8 @@ namespace System.Formats.Tar.Tests
             Assert.True(blockDevice.ModificationTime > DateTimeOffset.UnixEpoch);
             Assert.Equal(expectedFileName, blockDevice.Name);
             Assert.Equal(AssetUid, blockDevice.Uid);
-
-            // TODO: Figure out why the numbers don't match https://github.com/dotnet/runtime/issues/68230
-            // Assert.Equal(AssetBlockDeviceMajor, blockDevice.DeviceMajor);
-            // Assert.Equal(AssetBlockDeviceMinor, blockDevice.DeviceMinor);
-            // Remove these two temporary checks when the above is fixed
-            Assert.True(blockDevice.DeviceMajor > 0);
-            Assert.True(blockDevice.DeviceMinor > 0);
+            Assert.Equal(AssetBlockDeviceMajor, blockDevice.DeviceMajor);
+            Assert.Equal(AssetBlockDeviceMinor, blockDevice.DeviceMinor);
             Assert.Equal(AssetGName, blockDevice.GroupName);
             Assert.Equal(AssetUName, blockDevice.UserName);
 
@@ -749,13 +744,8 @@ namespace System.Formats.Tar.Tests
             Assert.True(characterDevice.ModificationTime > DateTimeOffset.UnixEpoch);
             Assert.Equal(expectedFileName, characterDevice.Name);
             Assert.Equal(AssetUid, characterDevice.Uid);
-
-            // TODO: Figure out why the numbers don't match https://github.com/dotnet/runtime/issues/68230
-            //Assert.Equal(AssetBlockDeviceMajor, characterDevice.DeviceMajor);
-            //Assert.Equal(AssetBlockDeviceMinor, characterDevice.DeviceMinor);
-            // Remove these two temporary checks when the above is fixed
-            Assert.True(characterDevice.DeviceMajor > 0);
-            Assert.True(characterDevice.DeviceMinor > 0);
+            Assert.Equal(AssetCharacterDeviceMajor, characterDevice.DeviceMajor);
+            Assert.Equal(AssetCharacterDeviceMinor, characterDevice.DeviceMinor);
             Assert.Equal(AssetGName, characterDevice.GroupName);
             Assert.Equal(AssetUName, characterDevice.UserName);
 

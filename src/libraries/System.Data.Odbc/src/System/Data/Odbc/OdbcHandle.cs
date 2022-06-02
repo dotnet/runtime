@@ -201,8 +201,9 @@ namespace System.Data.Odbc
 
         internal ODBC32.SQLRETURN GetDiagnosticRecord(short record, out string sqlState, StringBuilder messageBuilder, out int nativeError, out short cchActual)
         {
-            // ODBC (MSDN) documents it expects a buffer large enough to hold 4(+L'\0') unicode characters
-            char[] buffer = new char[5];
+            // SQLGetDiagRecW expects a buffer large enough to hold a five-character state code plus a null-terminator
+            // See https://docs.microsoft.com/sql/odbc/reference/syntax/sqlgetdiagrec-function
+            char[] buffer = new char[6];
             char[] message = new char[1024];
             ODBC32.SQLRETURN retcode = Interop.Odbc.SQLGetDiagRecW(HandleType, this, record, buffer, out nativeError, message, checked((short)message.Length), out cchActual);
             ODBC.TraceODBC(3, "SQLGetDiagRecW", retcode);

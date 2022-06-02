@@ -1213,21 +1213,11 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                                 pushedStack.PushConstant();
                                 // TODO: check if it's a loop condition - we unroll such loops.
                                 break;
-                            case NI_Vector256_get_Zero:
-                            case NI_Vector256_get_AllBitsSet:
-                                foldableIntrinsic = true;
-                                pushedStack.PushUnknown();
-                                break;
 #elif defined(TARGET_ARM64) && defined(FEATURE_HW_INTRINSICS)
                             case NI_Vector64_get_Count:
                             case NI_Vector128_get_Count:
                                 foldableIntrinsic = true;
                                 pushedStack.PushConstant();
-                                break;
-                            case NI_Vector128_get_Zero:
-                            case NI_Vector128_get_AllBitsSet:
-                                foldableIntrinsic = true;
-                                pushedStack.PushUnknown();
                                 break;
 #endif
 
