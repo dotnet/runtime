@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
+using Microsoft.Extensions.Internal;
 
 namespace Microsoft.Extensions.Configuration
 {
@@ -788,9 +789,9 @@ namespace Microsoft.Extensions.Configuration
 
             if (propertyBindingPoint.Value is null)
             {
-                if (parameter.HasDefaultValue)
+                if (ParameterDefaultValue.TryGetDefaultValue(parameter, out object? defaultValue))
                 {
-                    propertyBindingPoint.SetValue(parameter.DefaultValue);
+                    propertyBindingPoint.SetValue(defaultValue);
                 }
                 else
                 {
