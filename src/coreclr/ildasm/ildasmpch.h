@@ -14,7 +14,6 @@
 #include <string.h>
 #include <limits.h>
 #include <winuser.h>
-#include <shellapi.h>
 #include <conio.h>
 
 #ifndef Debug_ReportError
