@@ -1335,7 +1335,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     return;
                 var method = assembly.GetMethodByToken(methodToken);
                 if (method.StartLocation == null) //It's an async method and we need to get the MoveNext method to add the breakpoint
-                    method = assembly.Methods.FirstOrDefault(m => m.Value.KickOffMethod == methodToken).Value;
+                    method = assembly.Methods.FirstOrDefault(m => m.Value.KickOffMethod == methodToken)?.Value;
                 if (method == null)
                     return;
                 var sourceFile = assembly.Sources.Single(sf => sf.SourceId == method.SourceId);
