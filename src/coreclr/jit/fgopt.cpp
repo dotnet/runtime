@@ -4639,14 +4639,22 @@ bool Compiler::fgExpandRarelyRunBlocks()
 
 //-----------------------------------------------------------------------------
 // fgReorderBlocks: reorder blocks to favor frequent fall through paths,
-//     move rare blocks to the end of the method/eh region, and move
-//     funclets to the ends of methods.
+//   move rare blocks to the end of the method/eh region, and move
+//   funclets to the ends of methods.
+//
+// Arguments:
+//   useProfile - if true, use profile data (if available) to more aggressively
+//     reorder the blocks.
 //
 // Returns:
-//    True if anything got reordered. Reordering blocks may require changing
-//    IR to reverse branch conditions.
+//   True if anything got reordered. Reordering blocks may require changing
+//   IR to reverse branch conditions.
 //
-bool Compiler::fgReorderBlocks()
+// Notes:
+//   We currently allow profile-driven switch opts even when useProfile is false,
+//   as they are unlikely to lead to reordering..
+//
+bool Compiler::fgReorderBlocks(bool useProfile)
 {
     noway_assert(opts.compDbgCode == false);
 
@@ -4726,7 +4734,7 @@ bool Compiler::fgReorderBlocks()
             continue;
         }
 
-        bool        reorderBlock   = true; // This is set to false if we decide not to reorder 'block'
+        bool        reorderBlock   = useProfile;
         bool        isRare         = block->isRunRarely();
         BasicBlock* bDest          = nullptr;
         bool        forwardBranch  = false;
@@ -4752,7 +4760,8 @@ bool Compiler::fgReorderBlocks()
 
         weight_t profHotWeight = -1;
 
-        if (bPrev->hasProfileWeight() && block->hasProfileWeight() && ((bDest == nullptr) || bDest->hasProfileWeight()))
+        if (useProfile && bPrev->hasProfileWeight() && block->hasProfileWeight() &&
+            ((bDest == nullptr) || bDest->hasProfileWeight()))
         {
             //
             // All blocks have profile information
@@ -5682,12 +5691,20 @@ bool Compiler::fgReorderBlocks()
         if (bPrev->bbJumpKind == BBJ_COND)
         {
             /* Reverse the bPrev jump condition */
-            Statement* condTestStmt = bPrev->lastStmt();
+            Statement* const condTestStmt = bPrev->lastStmt();
+            GenTree* const   condTest     = condTestStmt->GetRootNode();
 
-            GenTree* condTest = condTestStmt->GetRootNode();
             noway_assert(condTest->gtOper == GT_JTRUE);
-
             condTest->AsOp()->gtOp1 = gtReverseCond(condTest->AsOp()->gtOp1);
+
+            // may need to rethread
+            //
+            if (fgStmtListThreaded)
+            {
+                JITDUMP("Rethreading " FMT_STMT "\n", condTestStmt->GetID());
+                gtSetStmtInfo(condTestStmt);
+                fgSetStmtSeq(condTestStmt);
+            }
 
             if (bStart2 == nullptr)
             {

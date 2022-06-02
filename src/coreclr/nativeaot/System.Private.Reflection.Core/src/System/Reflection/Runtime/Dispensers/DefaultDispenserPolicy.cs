@@ -29,7 +29,7 @@ namespace System.Reflection.Runtime.Dispensers
 
                 // Scope definition handle to RuntimeAssembly
                 case DispenserScenario.Scope_Assembly:
-                    return DispenserAlgorithm.ReuseAsLongAsValueIsAlive;
+                    return DispenserAlgorithm.ReuseAlways; // Match policy used for runtime Assembly instances in other runtime flavors.
 
                 default:
                     return DispenserAlgorithm.CreateAlways;

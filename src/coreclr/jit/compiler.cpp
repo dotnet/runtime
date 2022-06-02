@@ -4796,9 +4796,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_INVERT_LOOPS, &Compiler::optInvertLoops);
 
-        // Optimize block order
+        // Run some flow graph optimizations (but don't reorder)
         //
-        DoPhase(this, PHASE_OPTIMIZE_LAYOUT, &Compiler::optOptimizeLayout);
+        DoPhase(this, PHASE_OPTIMIZE_FLOW, &Compiler::optOptimizeFlow);
 
         // Compute reachability sets and dominators.
         //
@@ -4987,6 +4987,13 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Insert GC Polls
     DoPhase(this, PHASE_INSERT_GC_POLLS, &Compiler::fgInsertGCPolls);
+
+    // Optimize block order
+    //
+    if (opts.OptimizationEnabled())
+    {
+        DoPhase(this, PHASE_OPTIMIZE_LAYOUT, &Compiler::optOptimizeLayout);
+    }
 
     // Determine start of cold region if we are hot/cold splitting
     //

@@ -30,7 +30,9 @@ namespace Internal.Runtime.TypeLoader
     using DefTypeBasedGenericTypeLookup = TypeLoaderEnvironment.DefTypeBasedGenericTypeLookup;
     using HandleBasedGenericMethodLookup = TypeLoaderEnvironment.HandleBasedGenericMethodLookup;
     using MethodDescBasedGenericMethodLookup = TypeLoaderEnvironment.MethodDescBasedGenericMethodLookup;
+#if FEATURE_UNIVERSAL_GENERICS
     using ThunkKind = CallConverterThunk.ThunkKind;
+#endif
     using VTableSlotMapper = TypeBuilderState.VTableSlotMapper;
 
     internal static class LowLevelListExtensions

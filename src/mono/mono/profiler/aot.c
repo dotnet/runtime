@@ -53,7 +53,7 @@ struct _MonoProfiler {
 	gboolean disable;
 	int buf_pos, buf_len;
 	int command_port;
-	int server_socket;
+	SOCKET server_socket;
 };
 
 static MonoProfiler aot_profiler;
@@ -248,7 +248,7 @@ helper_thread (void *arg)
 			struct timeval tv = { .tv_sec = 1, .tv_usec = 0 };
 
 			// Sleep for 1sec or until a file descriptor has data.
-			if (select (max_fd + 1, &rfds, NULL, NULL, &tv) == -1) {
+			if (select (max_fd + 1, &rfds, NULL, NULL, &tv) == SOCKET_ERROR) {
 				if (errno == EINTR)
 					continue;
 
@@ -265,14 +265,14 @@ helper_thread (void *arg)
 				char buf [64];
 				int len = read (fd, buf, sizeof (buf) - 1);
 
-				if (len == -1)
+				if (len == SOCKET_ERROR)
 					continue;
 
 				if (!len) {
 					// The other end disconnected.
 					g_array_remove_index (command_sockets, i);
 					i--;
-					close (fd);
+					mono_profhelper_close_socket_fd (fd);
 
 					continue;
 				}
@@ -301,11 +301,11 @@ helper_thread (void *arg)
 				break;
 
 			if (FD_ISSET (aot_profiler.server_socket, &rfds)) {
-				int fd = accept (aot_profiler.server_socket, NULL, NULL);
+				SOCKET fd = accept (aot_profiler.server_socket, NULL, NULL);
 
-				if (fd != -1) {
+				if (fd != INVALID_SOCKET) {
 					if (fd >= FD_SETSIZE)
-						close (fd);
+						mono_profhelper_close_socket_fd (fd);
 					else
 						g_array_append_val (command_sockets, fd);
 				}
@@ -313,7 +313,7 @@ helper_thread (void *arg)
 		}
 
 		for (gint i = 0; i < command_sockets->len; i++)
-			close (g_array_index (command_sockets, int, i));
+			mono_profhelper_close_socket_fd (g_array_index (command_sockets, int, i));
 
 		g_array_free (command_sockets, TRUE);
 	}
@@ -436,7 +436,7 @@ static void
 emit_int32 (MonoProfiler *prof, gint32 value)
 {
 	for (int i = 0; i < sizeof (gint32); ++i) {
-		guint8 b = value;
+		guint8 b = GINT32_TO_UINT8 (value);
 		emit_bytes (prof, &b, 1);
 		value >>= 8;
 	}

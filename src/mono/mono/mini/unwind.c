@@ -434,7 +434,7 @@ mono_unwind_ops_encode_full (GSList *unwind_ops, guint32 *out_len, gboolean enab
 				p += 1;
 				loc = op->when;
 			} else if (op->when - loc < 32) {
-				*p ++ = DW_CFA_advance_loc | (op->when - loc);
+				*p ++ = GUINT32_TO_UINT8 (DW_CFA_advance_loc | (op->when - loc));
 				loc = op->when;
 			} else {
 				*p ++ = DW_CFA_advance_loc | (30);
@@ -466,7 +466,7 @@ mono_unwind_ops_encode_full (GSList *unwind_ops, guint32 *out_len, gboolean enab
 				encode_uleb128 (reg, p, &p);
 				encode_sleb128 (op->val / DWARF_DATA_ALIGN, p, &p);
 			} else {
-				*p ++ = DW_CFA_offset | reg;
+				*p ++ = GINT_TO_UINT8 (DW_CFA_offset | reg);
 				encode_uleb128 (op->val / DWARF_DATA_ALIGN, p, &p);
 			}
 			break;
@@ -495,7 +495,7 @@ mono_unwind_ops_encode_full (GSList *unwind_ops, guint32 *out_len, gboolean enab
 	}
 
 	g_assert (p - buf < 4096);
-	*out_len = p - buf;
+	*out_len = GPTRDIFF_TO_UINT32 (p - buf);
 	res = (guint8 *)g_malloc (p - buf);
 	memcpy (res, buf, p - buf);
 	return res;
@@ -668,7 +668,7 @@ mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len,
 					mono_runtime_printf_err ("Unwind failure. Assertion at %s %d\n.", __FILE__, __LINE__);
 					return FALSE;
 				}
-				pos = mark_locations [0] - start_ip;
+				pos = GPTRDIFF_TO_INT (mark_locations [0] - start_ip);
 				break;
 			default:
 				mono_runtime_printf_err ("Unwind failure. Illegal value for switch statement, assertion at %s %d\n.", __FILE__, __LINE__);
@@ -699,7 +699,7 @@ mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len,
 				return FALSE;
 			}
 			if (IS_DOUBLE_REG (dwarfreg))
-				regs [hwreg] = *(guint64*)(cfa_val + locations [hwreg].offset);
+				regs [hwreg] = GUINT64_TO_HMREG (*(guint64*)(cfa_val + locations [hwreg].offset));
 			else
 				regs [hwreg] = *(host_mgreg_t*)(cfa_val + locations [hwreg].offset);
 			if (save_locations && hwreg < save_locations_len)
@@ -1136,7 +1136,7 @@ mono_unwind_decode_fde (guint8 *fde, guint32 *out_len, guint32 *code_len, MonoJi
 		if (aug_len == 4)
 			lsda_offset = read32 (fde_aug);
 		else if (aug_len == 8)
-			lsda_offset = *(gint64*)fde_aug;
+			lsda_offset = GINT64_TO_INT32 (*(gint64*)fde_aug);
 		else
 			g_assert_not_reached ();
 		if (lsda_offset != 0) {
@@ -1160,7 +1160,7 @@ mono_unwind_decode_fde (guint8 *fde, guint32 *out_len, guint32 *code_len, MonoJi
 	g_assert (data_align == DWARF_DATA_ALIGN);
 	g_assert (return_reg == DWARF_PC_REG);
 
-	buf_len = (cie + cie_len + 4 - cie_cfi) + (fde + fde_len + 4 - fde_cfi);
+	buf_len = GPTRDIFF_TO_INT32 ((cie + cie_len + 4 - cie_cfi) + (fde + fde_len + 4 - fde_cfi));
 	buf = (guint8 *)g_malloc0 (buf_len);
 
 	i = 0;
@@ -1171,7 +1171,7 @@ mono_unwind_decode_fde (guint8 *fde, guint32 *out_len, guint32 *code_len, MonoJi
 		decode_cie_op (p, &p);
 	}
 	memcpy (buf + i, cie_cfi, p - cie_cfi);
-	i += p - cie_cfi;
+	i += GPTRDIFF_TO_INT32 (p - cie_cfi);
 
 	p = fde_cfi;
 	while (p < fde + fde_len + 4) {
@@ -1180,7 +1180,7 @@ mono_unwind_decode_fde (guint8 *fde, guint32 *out_len, guint32 *code_len, MonoJi
 		decode_cie_op (p, &p);
 	}
 	memcpy (buf + i, fde_cfi, p - fde_cfi);
-	i += p - fde_cfi;
+	i += GPTRDIFF_TO_INT32 (p - fde_cfi);
 	g_assert (i <= buf_len);
 
 	*out_len = i;
@@ -1258,8 +1258,8 @@ mono_unwind_decode_llvm_mono_fde (guint8 *fde, int fde_len, guint8 *cie, guint8 
 	while (*p != DW_CFA_nop) {
 	    decode_cie_op (p, &p);
 	}
-	cie_cfi_len = p - cie_cfi;
-	fde_cfi_len = (fde + fde_len - fde_cfi);
+	cie_cfi_len = GPTRDIFF_TO_INT (p - cie_cfi);
+	fde_cfi_len = GPTRDIFF_TO_INT (fde + fde_len - fde_cfi);
 
 	buf = unw_info;
 	if (buf) {
