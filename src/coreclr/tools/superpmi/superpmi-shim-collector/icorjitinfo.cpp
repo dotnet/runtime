@@ -1937,6 +1937,12 @@ bool interceptor_ICJI::logMsg(unsigned level, const char* fmt, va_list args)
 int interceptor_ICJI::doAssert(const char* szFile, int iLine, const char* szExpr)
 {
     mc->cr->AddCall("doAssert");
+
+    m_compiler->finalizeAndCommitCollection(mc, CORJIT_INTERNALERROR, nullptr, 0);
+    // The following assert may not always fail fast, so make sure we do not
+    // save the collection twice if it throws an unwindable exception.
+    m_savedCollectionEarly = true;
+
     return original_ICorJitInfo->doAssert(szFile, iLine, szExpr);
 }
 

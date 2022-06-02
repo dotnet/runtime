@@ -1994,7 +1994,7 @@ TypeHandle DacDbiInterfaceImpl::TypeDataWalk::ReadLoadedInstantiation(TypeHandle
 {
     WRAPPER_NO_CONTRACT;
 
-    NewHolder<TypeHandle> pInst(new TypeHandle[nTypeArgs]);
+    NewArrayHolder<TypeHandle> pInst(new TypeHandle[nTypeArgs]);
 
     // get the type handle for each of the type parameters
     if (!ReadLoadedTypeHandles(retrieveWhich, nTypeArgs, pInst))

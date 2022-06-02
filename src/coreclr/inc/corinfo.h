@@ -646,6 +646,8 @@ enum CorInfoHelpFunc
     CORINFO_HELP_VALIDATE_INDIRECT_CALL,    // CFG: Validate function pointer
     CORINFO_HELP_DISPATCH_INDIRECT_CALL,    // CFG: Validate and dispatch to pointer
 
+    CORINFO_HELP_STATIC_VIRTUAL_AMBIGUOUS_RESOLUTION, // Throw AmbiguousResolutionException for failed static virtual method resolution
+
     CORINFO_HELP_COUNT,
 };
 

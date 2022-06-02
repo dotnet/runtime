@@ -158,7 +158,7 @@ namespace System.Diagnostics.Tracing
 #if ES_BUILD_STANDALONE
                         s_pollingThread.Start();
 #else
-                        s_pollingThread.UnsafeStart();
+                        s_pollingThread.InternalUnsafeStart();
 #endif
                     }
 

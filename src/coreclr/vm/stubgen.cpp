@@ -34,11 +34,23 @@ void DumpIL_RemoveFullPath(EString<EncodingUTF8> &strTokenFormatting)
     auto end = strTokenFormatting.End();
     auto leftBracket = strTokenFormatting.Begin();
 
-    if (strTokenFormatting.Find(leftBracket, '['))
+    // Find the first '[' in the string.
+    while ((leftBracket != end) && (*leftBracket != '['))
+    {
+        ++leftBracket;
+    }
+
+    if (leftBracket != end)
     {
         auto lastSlash = strTokenFormatting.End() - 1;
 
-        if (strTokenFormatting.FindBack(lastSlash, '\\') && leftBracket < lastSlash)
+        // Find the last '\\' in the string.
+        while ((lastSlash != leftBracket) && (*lastSlash != '\\'))
+        {
+            --lastSlash;
+        }
+
+        if (leftBracket != lastSlash)
         {
             strTokenFormatting.Delete(leftBracket + 1, lastSlash - leftBracket);
         }
@@ -68,7 +80,6 @@ void ILStubLinker::DumpIL_FormatToken(mdToken token, EString<EncodingUTF8> &strT
             pvLookupRetVal = typeHnd.AsPtr();
             CONSISTENCY_CHECK(!typeHnd.IsNull());
 
-            SString typeName;
             MethodTable *pMT = NULL;
             if (typeHnd.IsTypeDesc())
             {
@@ -81,6 +92,7 @@ void ILStubLinker::DumpIL_FormatToken(mdToken token, EString<EncodingUTF8> &strT
             }
 
             // AppendType handles NULL correctly
+            SString typeName;
             TypeString::AppendType(typeName, TypeHandle(pMT));
 
             if (pMT && typeHnd.IsNativeValueType())
@@ -95,11 +107,8 @@ void ILStubLinker::DumpIL_FormatToken(mdToken token, EString<EncodingUTF8> &strT
 
             SString typeName;
             TypeString::AppendType(typeName, TypeHandle(pFD->GetApproxEnclosingMethodTable()));
-
             EString<EncodingUTF8> strFieldName(pFD->GetName());
-            EString<EncodingUTF8> typeNameUTF8;
-            typeName.ConvertToUTF8(typeNameUTF8);
-            strTokenFormatting.Append(typeNameUTF8);
+            strTokenFormatting.Append(typeName.MoveToUTF8());
             strTokenFormatting.Append("::");
             strTokenFormatting.Append(strFieldName);
         }
@@ -460,7 +469,7 @@ ILStubLinker::LogILInstruction(
 
     if (isLabeled)
     {
-        strLabel.Printf("IL_%04Ix:", curOffset);
+        strLabel.Printf("IL_%04x:", curOffset);
     }
     else
     {
@@ -473,12 +482,8 @@ ILStubLinker::LogILInstruction(
     EString<EncodingUTF8> strOpcode;
 
     ILCodeStream::ILInstrEnum instr = (ILCodeStream::ILInstrEnum)pInstruction->uInstruction;
-    size_t      cbOpcodeName = strlen(s_rgOpcodeNames[instr]);
-    EString<EncodingUTF8> strOpcodeName;
-    strOpcodeName.Set(s_rgOpcodeNames[instr]);
     // Set the width of the opcode to 15.
-    strOpcode.Set("               ");
-    strOpcode.Replace(strOpcode.Begin(), (COUNT_T)cbOpcodeName, strOpcodeName);
+    strOpcode.Printf("%-15s", s_rgOpcodeNames[instr]);
 
     //
     // format argument
@@ -496,13 +501,11 @@ ILStubLinker::LogILInstruction(
     {
         size_t branchDistance = (size_t)pInstruction->uArg;
         size_t targetOffset = curOffset + s_rgbOpcodeSizes[instr] + branchDistance;
-        strArgument.Printf("IL_%04Ix", targetOffset);
+        strArgument.Printf("IL_%04x", (uint32_t)targetOffset);
     }
     else if ((ILCodeStream::ILInstrEnum)CEE_NOP == instr)
     {
-        EString<EncodingUTF8> strInstruction;
-        strInstruction.Printf("%s", (char *)pInstruction->uArg);
-        strArgument.Set(strInstruction);
+        strArgument.Printf("%s", (char *)pInstruction->uArg);
     }
     else
     {
@@ -514,11 +517,11 @@ ILStubLinker::LogILInstruction(
         case ShortInlineVar:
         case ShortInlineI:
         case InlineI:
-            strArgument.Printf("0x%Ix", pInstruction->uArg);
+            strArgument.Printf("0x%p", pInstruction->uArg);
             break;
 
         case InlineI8:
-            strArgument.Printf("0x%p", (void *)pInstruction->uArg);
+            strArgument.Printf("0x%llx", (uint64_t)pInstruction->uArg);
             break;
 
         case InlineMethod:
@@ -530,7 +533,7 @@ ILStubLinker::LogILInstruction(
         case InlineTok:
             // No token value when we dump IL for ETW
             if (pDumpILStubCode == NULL)
-                strArgument.Printf("0x%08Ix", pInstruction->uArg);
+                strArgument.Printf("0x%08p", pInstruction->uArg);
 
             // Dump to szTokenNameBuffer if logging, otherwise dump to szArgumentBuffer to avoid an extra space because we are omitting the token
             _ASSERTE(FitsIn<mdToken>(pInstruction->uArg));
@@ -610,11 +613,11 @@ ILStubLinker::LogILStubWorker(
     {
         if (pDumpILStubCode)
         {
-            pDumpILStubCode->AppendPrintf("IL_%04Ix:\n", *pcbCode);
+            pDumpILStubCode->AppendPrintf("IL_%04x:\n", (uint32_t)*pcbCode);
         }
         else
         {
-            LOG((LF_STUBS, LL_INFO1000, "IL_%04Ix:\n", *pcbCode));
+            LOG((LF_STUBS, LL_INFO1000, "IL_%04zx:\n", *pcbCode));
         }
     }
 }

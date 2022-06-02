@@ -163,24 +163,23 @@ static X86_Reg_No return_regs [] = { X86_EAX, X86_EDX };
 static void inline
 add_general (guint32 *gr, const guint32 *param_regs, guint32 *stack_size, ArgInfo *ainfo)
 {
-    ainfo->offset = *stack_size;
+	ainfo->offset = GUINT32_TO_INT16 (*stack_size);
 
-    if (!param_regs || param_regs [*gr] == X86_NREG) {
+	if (!param_regs || param_regs [*gr] == X86_NREG) {
 		ainfo->storage = ArgOnStack;
 		ainfo->nslots = 1;
 		(*stack_size) += sizeof (target_mgreg_t);
-    }
-    else {
+	} else {
 		ainfo->storage = ArgInIReg;
-		ainfo->reg = param_regs [*gr];
+		ainfo->reg = GUINT32_TO_UINT8 (param_regs [*gr]);
 		(*gr) ++;
-    }
+	}
 }
 
 static void inline
 add_general_pair (guint32 *gr, const guint32 *param_regs , guint32 *stack_size, ArgInfo *ainfo)
 {
-	ainfo->offset = *stack_size;
+	ainfo->offset = GUINT32_TO_INT16 (*stack_size);
 
 	g_assert(!param_regs || param_regs[*gr] == X86_NREG);
 
@@ -192,24 +191,22 @@ add_general_pair (guint32 *gr, const guint32 *param_regs , guint32 *stack_size, 
 static void inline
 add_float (guint32 *gr, guint32 *stack_size, ArgInfo *ainfo, gboolean is_double)
 {
-    ainfo->offset = *stack_size;
+	ainfo->offset = GUINT32_TO_INT16 (*stack_size);
 
-    if (*gr >= FLOAT_PARAM_REGS) {
+	if (*gr >= FLOAT_PARAM_REGS) {
 		ainfo->storage = ArgOnStack;
 		(*stack_size) += is_double ? 8 : 4;
 		ainfo->nslots = is_double ? 2 : 1;
-    }
-    else {
+	} else {
 		/* A double register */
 		if (is_double)
 			ainfo->storage = ArgInDoubleSSEReg;
 		else
 			ainfo->storage = ArgInFloatSSEReg;
-		ainfo->reg = *gr;
+		ainfo->reg = GUINT32_TO_UINT8 (*gr);
 		(*gr) += 1;
-    }
+	}
 }
-
 
 static void
 add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
@@ -297,12 +294,12 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 	if (param_regs && param_regs [*gr] != X86_NREG && !is_return) {
 		g_assert (size <= 4);
 		ainfo->storage = ArgValuetypeInReg;
-		ainfo->reg = param_regs [*gr];
+		ainfo->reg = GUINT32_TO_UINT8 (param_regs [*gr]);
 		(*gr)++;
 		return;
 	}
 
-	ainfo->offset = *stack_size;
+	ainfo->offset = GUINT32_TO_INT16 (*stack_size);
 	ainfo->storage = ArgOnStack;
 	*stack_size += ALIGN_TO (size, sizeof (target_mgreg_t));
 	ainfo->nslots = ALIGN_TO (size, sizeof (target_mgreg_t)) / sizeof (target_mgreg_t);
@@ -700,7 +697,7 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 
 	cinfo = get_call_info_internal (cinfo, csig);
 
-	arg_info [0].offset = offset;
+	arg_info [0].offset = GINT_TO_UINT16 (offset);
 
 	if (cinfo->vtype_retaddr && cinfo->vret_arg_index == 0) {
 		args_size += sizeof (target_mgreg_t);
@@ -718,7 +715,7 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 		offset += 4;
 	}
 
-	arg_info [0].size = args_size;
+	arg_info [0].size = GINT_TO_UINT16 (args_size);
 	prev_stackarg = 0;
 
 	for (k = 0; k < param_count; k++) {
@@ -727,18 +724,18 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 		if (storage_in_ireg (cinfo->args [csig->hasthis + k].storage)) {
 			/* not in stack, we'll give it an offset at the end */
 			arg_info [k + 1].pad = 0;
-			arg_info [k + 1].size = size;
+			arg_info [k + 1].size = GINT_TO_UINT16 (size);
 		} else {
 			/* ignore alignment for now */
 			align = 1;
 
 			args_size += pad = (align - (args_size & (align - 1))) & (align - 1);
-			arg_info [prev_stackarg].pad = pad;
+			arg_info [prev_stackarg].pad = GINT_TO_UINT8 (pad);
 			args_size += size;
 			arg_info [k + 1].pad = 0;
-			arg_info [k + 1].size = size;
+			arg_info [k + 1].size = GINT_TO_UINT16 (size);
 			offset += pad;
-			arg_info [k + 1].offset = offset;
+			arg_info [k + 1].offset = GINT_TO_UINT16 (offset);
 			offset += size;
 			prev_stackarg = k + 1;
 		}
@@ -755,15 +752,15 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 	else
 		align = 4;
 	args_size += pad = (align - (args_size & (align - 1))) & (align - 1);
-	arg_info [k].pad = pad;
+	arg_info [k].pad = GINT_TO_UINT8 (pad);
 
 	/* Add offsets for any reg parameters */
 	num_regs = 0;
 	if (csig->hasthis && storage_in_ireg (cinfo->args [0].storage))
-		arg_info [0].offset = args_size + 4 * num_regs++;
+		arg_info [0].offset = GINT_TO_UINT16 (args_size + 4 * num_regs++);
 	for (k=0; k < param_count; k++) {
 		if (storage_in_ireg (cinfo->args[csig->hasthis + k].storage)) {
-			arg_info [k + 1].offset = args_size + 4 * num_regs++;
+			arg_info [k + 1].offset = GINT_TO_UINT16 (args_size + 4 * num_regs++);
 		}
 	}
 

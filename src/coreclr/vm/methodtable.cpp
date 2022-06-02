@@ -5510,58 +5510,65 @@ namespace
                     MethodDesc *pMD = methodIt.GetMethodDesc();
                     int targetSlot = interfaceMD->GetSlot();
 
-                    // If this is not a MethodImpl, it can't be implementing the method we're looking for
-                    if (!pMD->IsMethodImpl())
-                        continue;
-
-                    // We have a MethodImpl - iterate over all the declarations it's implementing,
-                    // looking for the interface method we need.
-                    MethodImpl::Iterator it(pMD);
-                    for (; it.IsValid() && candidateMaybe == NULL; it.Next())
+                    if (pMD->IsMethodImpl())
                     {
-                        MethodDesc *pDeclMD = it.GetMethodDesc();
-
-                        // Is this the right slot?
-                        if (pDeclMD->GetSlot() != targetSlot)
-                            continue;
-
-                        // Is this the right interface?
-                        if (!pDeclMD->HasSameMethodDefAs(interfaceMD))
-                            continue;
-
-                        if (interfaceMD->HasClassInstantiation())
+                        // We have a MethodImpl with slots - iterate over all the declarations it's implementing,
+                        // looking for the interface method we need.
+                        MethodImpl::Iterator it(pMD);
+                        for (; it.IsValid() && candidateMaybe == NULL; it.Next())
                         {
-                            // pInterfaceMD will be in the canonical form, so we need to check the specific
-                            // instantiation against pInterfaceMT.
-                            //
-                            // The parent of pDeclMD is unreliable for this purpose because it may or
-                            // may not be canonicalized. Let's go from the metadata.
-
-                            SigTypeContext typeContext = SigTypeContext(pMT);
-
-                            mdTypeRef tkParent;
-                            IfFailThrow(pMD->GetModule()->GetMDImport()->GetParentToken(it.GetToken(), &tkParent));
-
-                            MethodTable *pDeclMT = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(
-                                pMD->GetModule(),
-                                tkParent,
-                                &typeContext).AsMethodTable();
-
-                            // We do CanCastToInterface to also cover variance.
-                            // We already know this is a method on the same type definition as the (generic)
-                            // interface but we need to make sure the instantiations match.
-                            if ((allowVariance && pDeclMT->CanCastToInterface(interfaceMT))
-                                || pDeclMT == interfaceMT)
+                            MethodDesc *pDeclMD = it.GetMethodDesc();
+    
+                            // Is this the right slot?
+                            if (pDeclMD->GetSlot() != targetSlot)
+                                continue;
+    
+                            // Is this the right interface?
+                            if (!pDeclMD->HasSameMethodDefAs(interfaceMD))
+                                continue;
+    
+                            if (interfaceMD->HasClassInstantiation())
                             {
-                                // We have a match
+                                // pInterfaceMD will be in the canonical form, so we need to check the specific
+                                // instantiation against pInterfaceMT.
+                                //
+                                // The parent of pDeclMD is unreliable for this purpose because it may or
+                                // may not be canonicalized. Let's go from the metadata.
+    
+                                SigTypeContext typeContext = SigTypeContext(pMT);
+    
+                                mdTypeRef tkParent;
+                                IfFailThrow(pMD->GetModule()->GetMDImport()->GetParentToken(it.GetToken(), &tkParent));
+    
+                                MethodTable *pDeclMT = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(
+                                    pMD->GetModule(),
+                                    tkParent,
+                                    &typeContext).AsMethodTable();
+    
+                                // We do CanCastToInterface to also cover variance.
+                                // We already know this is a method on the same type definition as the (generic)
+                                // interface but we need to make sure the instantiations match.
+                                if ((allowVariance && pDeclMT->CanCastToInterface(interfaceMT))
+                                    || pDeclMT == interfaceMT)
+                                {
+                                    // We have a match
+                                    candidateMaybe = pMD;
+                                }
+                            }
+                            else
+                            {
+                                // No generics involved. If the method definitions match, it's a match.
                                 candidateMaybe = pMD;
                             }
                         }
-                        else
-                        {
-                            // No generics involved. If the method definitions match, it's a match.
-                            candidateMaybe = pMD;
-                        }
+                    }
+                    else if (pMD->IsStatic() && pMD->HasMethodImplSlot())
+                    {
+                        // Static virtual methods don't record MethodImpl slots so they need special handling
+                        candidateMaybe = pMT->TryResolveVirtualStaticMethodOnThisType(
+                            interfaceMT,
+                            interfaceMD,
+                            /* verifyImplemented */ FALSE);
                     }
                 }
             }
@@ -5750,8 +5757,8 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
             pBestCandidateMD = candidates[i].pMD;
 
             // If this is a second pass lookup, we know this is a variant match. As such
-            // we pick the first result as the winner and don't look for a conflict.
-            if (allowVariance)
+            // we pick the first result as the winner and don't look for a conflict for instance methods.
+            if (allowVariance && !pInterfaceMD->IsStatic())
                 break;
         }
         else if (pBestCandidateMT != candidates[i].pMT)
@@ -5759,7 +5766,7 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
             if (throwOnConflict)
                 ThrowExceptionForConflictingOverride(this, pInterfaceMT, pInterfaceMD);
 
-            *ppDefaultMethod = NULL;
+            *ppDefaultMethod = pBestCandidateMD;
             RETURN(FALSE);
         }
     }
@@ -7767,7 +7774,6 @@ BOOL MethodTable::ContainsGenericMethodVariables()
     Instantiation inst = GetInstantiation();
     for (DWORD i = 0; i < inst.GetNumArgs(); i++)
     {
-        CONSISTENCY_CHECK(!inst[i].IsEncodedFixup());
         if (inst[i].ContainsGenericVariables(TRUE))
             return TRUE;
     }
@@ -7793,13 +7799,9 @@ Module *MethodTable::GetDefiningModuleForOpenType()
         Instantiation inst = GetInstantiation();
         for (DWORD i = 0; i < inst.GetNumArgs(); i++)
         {
-            // Encoded fixups are never open types
-            if (!inst[i].IsEncodedFixup())
-            {
-                Module *pModule = inst[i].GetDefiningModuleForOpenType();
-                if (pModule != NULL)
-                    RETURN pModule;
-            }
+            Module *pModule = inst[i].GetDefiningModuleForOpenType();
+            if (pModule != NULL)
+                RETURN pModule;
         }
     }
 
@@ -7983,8 +7985,18 @@ MethodDesc *MethodTable::GetDefaultConstructor(BOOL forceBoxedEntryPoint /* = FA
 //==========================================================================================
 // Finds the (non-unboxing) MethodDesc that implements the interface virtual static method pInterfaceMD.
 MethodDesc *
-MethodTable::ResolveVirtualStaticMethod(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, BOOL allowNullResult, BOOL verifyImplemented, BOOL allowVariantMatches)
+MethodTable::ResolveVirtualStaticMethod(
+    MethodTable* pInterfaceType,
+    MethodDesc* pInterfaceMD,
+    BOOL allowNullResult,
+    BOOL verifyImplemented,
+    BOOL allowVariantMatches,
+    BOOL* uniqueResolution)
 {
+    if (uniqueResolution != nullptr)
+    {
+        *uniqueResolution = TRUE;
+    }
     if (!pInterfaceMD->IsSharedByGenericMethodInstantiations() && !pInterfaceType->IsSharedByGenericInstantiations())
     {
         // Check that there is no implementation of the interface on this type which is the canonical interface for a shared generic. If so, that indicates that
@@ -8064,10 +8076,26 @@ MethodTable::ResolveVirtualStaticMethod(MethodTable* pInterfaceType, MethodDesc*
                         }
                     }
                 }
+
+                BOOL haveUniqueDefaultImplementation = pMT->FindDefaultInterfaceImplementation(
+                    pInterfaceMD,
+                    pInterfaceType,
+                    &pMD,
+                    /* allowVariance */ allowVariantMatches,
+                    /* throwOnConflict */ uniqueResolution == nullptr);
+                if (haveUniqueDefaultImplementation || (pMD != nullptr && (verifyImplemented || uniqueResolution != nullptr)))
+                {
+                    // We tolerate conflicts upon verification of implemented SVMs so that they only blow up when actually called at execution time.
+                    if (uniqueResolution != nullptr)
+                    {
+                        *uniqueResolution = haveUniqueDefaultImplementation;
+                    }
+                    return pMD;
+                }
             }
         }
 
-        // Default implementation logic, which only kicks in for default implementations when lookin up on an exact interface target
+        // Default implementation logic, which only kicks in for default implementations when looking up on an exact interface target
         if (!pInterfaceMD->IsAbstract() && !(this == g_pCanonMethodTableClass) && !IsSharedByGenericInstantiations())
         {
             return pInterfaceMD->FindOrCreateAssociatedMethodDesc(pInterfaceMD, pInterfaceType, FALSE, pInterfaceMD->GetMethodInstantiation(), FALSE);
@@ -8244,9 +8272,20 @@ MethodTable::VerifyThatAllVirtualStaticMethodsAreImplemented()
             for (MethodIterator it(pInterfaceMT); it.IsValid(); it.Next())
             {
                 MethodDesc *pMD = it.GetMethodDesc();
+                // This flag is not really used, passing its address to ResolveVirtualStaticMethod just suppresses
+                // the ambiguous resolution exception throw as we should delay the exception until we actually hit
+                // the ambiguity at execution time.
+                BOOL uniqueResolution;
                 if (pMD->IsVirtual() &&
                     pMD->IsStatic() &&
-                    (pMD->IsAbstract() && !ResolveVirtualStaticMethod(pInterfaceMT, pMD, /* allowNullResult */ TRUE, /* verifyImplemented */ TRUE, /* allowVariantMatches */ FALSE)))
+                    (pMD->IsAbstract() &&
+                    !ResolveVirtualStaticMethod(
+                        pInterfaceMT,
+                        pMD,
+                        /* allowNullResult */ TRUE,
+                        /* verifyImplemented */ TRUE,
+                        /* allowVariantMatches */ FALSE,
+                        /* uniqueResolution */ &uniqueResolution)))
                 {
                     IMDInternalImport* pInternalImport = GetModule()->GetMDImport();
                     GetModule()->GetAssembly()->ThrowTypeLoadException(pInternalImport, GetCl(), pMD->GetName(), IDS_CLASSLOAD_STATICVIRTUAL_NOTIMPL);
@@ -8279,10 +8318,18 @@ MethodTable::TryResolveConstraintMethodApprox(
     {
         _ASSERTE(!thInterfaceType.IsTypeDesc());
         _ASSERTE(thInterfaceType.IsInterface());
-        MethodDesc *result = ResolveVirtualStaticMethod(thInterfaceType.GetMethodTable(), pInterfaceMD, pfForceUseRuntimeLookup != NULL);
-        if (result == NULL)
+        BOOL uniqueResolution;
+        MethodDesc *result = ResolveVirtualStaticMethod(
+            thInterfaceType.GetMethodTable(),
+            pInterfaceMD,
+            /* allowNullResult */pfForceUseRuntimeLookup != NULL,
+            /* verifyImplemented */ FALSE,
+            /* allowVariantMatches */ TRUE,
+            &uniqueResolution);
+        if (result == NULL || !uniqueResolution)
         {
             *pfForceUseRuntimeLookup = TRUE;
+            result = NULL;
         }
         return result;
     }

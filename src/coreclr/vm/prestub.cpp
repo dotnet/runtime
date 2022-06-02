@@ -2298,7 +2298,7 @@ PCODE TheVarargNDirectStub(BOOL hasRetBuffArg)
     }
 }
 
-static PCODE PatchNonVirtualExternalMethod(MethodDesc * pMD, PCODE pCode, PTR_CORCOMPILE_IMPORT_SECTION pImportSection, TADDR pIndirection)
+static PCODE PatchNonVirtualExternalMethod(MethodDesc * pMD, PCODE pCode, PTR_READYTORUN_IMPORT_SECTION pImportSection, TADDR pIndirection)
 {
     STANDARD_VM_CONTRACT;
 
@@ -2316,7 +2316,6 @@ static PCODE PatchNonVirtualExternalMethod(MethodDesc * pMD, PCODE pCode, PTR_CO
     }
 #endif //HAS_FIXUP_PRECODE
 
-    _ASSERTE((pImportSection->Flags & CORCOMPILE_IMPORT_FLAGS_CODE) == 0);
     *(TADDR *)pIndirection = pCode;
 
     return pCode;
@@ -2410,7 +2409,7 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
 
         RVA rva = pNativeImage->GetDataRva(pIndirection);
 
-        PTR_CORCOMPILE_IMPORT_SECTION pImportSection;
+        PTR_READYTORUN_IMPORT_SECTION pImportSection;
         if (sectionIndex != (DWORD)-1)
         {
             pImportSection = pModule->GetImportSectionFromIndex(sectionIndex);
@@ -2422,7 +2421,6 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
         }
         _ASSERTE(pImportSection != NULL);
 
-        _ASSERTE((pImportSection->Flags & CORCOMPILE_IMPORT_FLAGS_CODE) == 0);
         _ASSERTE(pImportSection->EntrySize == sizeof(TADDR));
         COUNT_T index = (rva - pImportSection->Section.VirtualAddress) / sizeof(TADDR);
 
@@ -2968,7 +2966,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
 
     RVA rva = pNativeImage->GetDataRva((TADDR)pCell);
 
-    PTR_CORCOMPILE_IMPORT_SECTION pImportSection = pModule->GetImportSectionFromIndex(sectionIndex);
+    PTR_READYTORUN_IMPORT_SECTION pImportSection = pModule->GetImportSectionFromIndex(sectionIndex);
     _ASSERTE(pImportSection == pModule->GetImportSectionForRVA(rva));
 
     _ASSERTE(pImportSection->EntrySize == sizeof(TADDR));

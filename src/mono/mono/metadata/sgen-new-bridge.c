@@ -747,7 +747,7 @@ processing_build_callback_data (int generation)
 	int i, j;
 	int num_sccs, num_xrefs;
 	int max_entries, max_xrefs;
-	MonoObject *obj = NULL;
+	MonoObject *obj G_GNUC_UNUSED;
 	HashEntry *entry;
 	HashEntry **all_entries;
 	MonoGCBridgeSCC **api_sccs;

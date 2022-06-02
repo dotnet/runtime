@@ -232,7 +232,7 @@ CRITSEC_COOKIE ProfilingAPIUtility::s_csStatus = NULL;
 //
 
 // static
-void ProfilingAPIUtility::AppendSupplementaryInformation(int iStringResource, SString * pString)
+void ProfilingAPIUtility::AppendSupplementaryInformation(int iStringResource, EString<EncodingUTF8> * pString)
 {
     CONTRACTL
     {
@@ -257,9 +257,12 @@ void ProfilingAPIUtility::AppendSupplementaryInformation(int iStringResource, SS
         return;
     }
 
-    pString->Append(W("  "));
+    EString<EncodingUTF8> supplementaryInformationUtf8;
+    supplementaryInformation.ConvertToUTF8(supplementaryInformationUtf8);
+
+    pString->Append("  ");
     pString->AppendPrintf(
-        supplementaryInformation,
+        supplementaryInformationUtf8,
         GetCurrentProcessId(),
         iStringResource);
 }
@@ -297,7 +300,6 @@ void ProfilingAPIUtility::LogProfEventVA(
     CONTRACTL_END;
 
     StackSString messageFromResource;
-    StackSString messageToLog;
 
     if (!LoadResource(
         messageFromResource,
@@ -309,15 +311,21 @@ void ProfilingAPIUtility::LogProfEventVA(
         return;
     }
 
-    messageToLog.VPrintf(messageFromResource, insertionArgs);
+    StackEString<EncodingUTF8> messageFromResourceUtf8(messageFromResource.MoveToUTF8());
 
-    AppendSupplementaryInformation(iStringResourceID, &messageToLog);
+    EString<EncodingUTF8> messageToLogUTF8;
+    messageToLogUTF8.VPrintf(messageFromResourceUtf8, insertionArgs);
+
+    AppendSupplementaryInformation(iStringResourceID, &messageToLogUTF8);
+
+    StackSString messageToLog;
+    messageToLogUTF8.ConvertToUnicode(messageToLog);
 
     // Write to ETW and EventPipe with the message
     FireEtwProfilerMessage(GetClrInstanceId(), (LPCWSTR)messageToLog);
 
     // Ouput debug strings for diagnostic messages.
-    WszOutputDebugString(messageToLog);
+    OutputDebugStringUtf8(messageToLogUTF8);
 }
 
 // See code:ProfilingAPIUtility.LogProfEventVA for description of arguments.
@@ -559,13 +567,15 @@ HRESULT ProfilingAPIUtility::ProfilerCLSIDFromString(
 
     if (FAILED(hr))
     {
+        MAKE_UTF8PTR_FROMWIDE(badClsid, wszClsid);
         LOG((
             LF_CORPROF,
             LL_INFO10,
-            "**PROF: Invalid CLSID or ProgID (%S).  hr=0x%x.\n",
-            wszClsid,
+            "**PROF: Invalid CLSID or ProgID (%s).  hr=0x%x.\n",
+            badClsid,
             hr));
-        ProfilingAPIUtility::LogProfError(IDS_E_PROF_BAD_CLSID, wszClsid, hr);
+
+        ProfilingAPIUtility::LogProfError(IDS_E_PROF_BAD_CLSID, badClsid, hr);
         return hr;
     }
 
@@ -622,7 +632,6 @@ HRESULT ProfilingAPIUtility::AttemptLoadProfilerForStartup()
 
     NewArrayHolder<WCHAR> wszClsid(NULL);
     NewArrayHolder<WCHAR> wszProfilerDLL(NULL);
-    CLSID *pClsid;
     CLSID clsid;
 
     if (fProfEnabled == 0)
@@ -693,12 +702,12 @@ HRESULT ProfilingAPIUtility::AttemptLoadProfilerForStartup()
         return hr;
     }
 
-    pClsid = &clsid;
-
+    GuidString clsidUtf8;
+    GuidString::Create(clsid, clsidUtf8);
     hr = LoadProfiler(
         kStartupLoad,
-        pClsid,
-        wszClsid,
+        &clsid,
+        (LPCSTR)clsidUtf8,
         wszProfilerDLL,
         NULL,               // No client data for startup load
         0);                 // No client data for startup load
@@ -727,20 +736,12 @@ HRESULT ProfilingAPIUtility::AttemptLoadDelayedStartupProfilers()
         LOG((LF_CORPROF, LL_INFO10, "**PROF: Profiler loading from GUID/Path stored from the IPC channel."));
         CLSID *pClsid = &(item->guid);
 
-        // Convert to string for logging
-        constexpr size_t guidStringSize = 39;
-        NewArrayHolder<WCHAR> wszClsid(new (nothrow) WCHAR[guidStringSize]);
-        // GUIDs should always be the same number of characters...
-        _ASSERTE(wszClsid != NULL);
-        if (wszClsid != NULL)
-        {
-            StringFromGUID2(*pClsid, wszClsid, guidStringSize);
-        }
-
+        GuidString clsidUtf8;
+        GuidString::Create(*pClsid, clsidUtf8);
         HRESULT hr = LoadProfiler(
             kStartupLoad,
             pClsid,
-            wszClsid,
+            clsidUtf8,
             item->path,
             NULL,               // No client data for startup load
             0);                 // No client data for startup load
@@ -800,7 +801,7 @@ HRESULT ProfilingAPIUtility::AttemptLoadProfilerList()
     HRESULT storedHr = S_OK;
     // Get each semicolon delimited config
     currentSection = wcstok_s(wszProfilerList, W(";"), &pOuter);
-    while (currentSection != NULL)
+    for (;currentSection != NULL; currentSection = wcstok_s(NULL, W(";"), &pOuter))
     {
         // Parse this config "path={guid}"
         currentPath = wcstok_s(currentSection, W("="), &pInner);
@@ -812,13 +813,15 @@ HRESULT ProfilingAPIUtility::AttemptLoadProfilerList()
         {
             // ProfilerCLSIDFromString already logged an event if there was a failure
             storedHr = hr;
-            goto NextSection;
+            continue;
         }
 
+        GuidString clsidUtf8;
+        GuidString::Create(clsid, clsidUtf8);
         hr = LoadProfiler(
             kStartupLoad,
             &clsid,
-            currentGuid,
+            (LPCSTR)clsidUtf8,
             currentPath,
             NULL,               // No client data for startup load
             0);                 // No client data for startup load
@@ -826,12 +829,8 @@ HRESULT ProfilingAPIUtility::AttemptLoadProfilerList()
         {
             // LoadProfiler already logged if there was an error
             storedHr = hr;
-            goto NextSection;
+            continue;
         }
-
-NextSection:
-        // Get next config
-        currentSection = wcstok_s(NULL, W(";"), &pOuter);
     }
 
     return storedHr;
@@ -889,7 +888,7 @@ HRESULT ProfilingAPIUtility::PerformDeferredInit()
 HRESULT ProfilingAPIUtility::DoPreInitialization(
         EEToProfInterfaceImpl *pEEProf,
         const CLSID *pClsid,
-        LPCWSTR wszClsid,
+        LPCSTR szClsid,
         LPCWSTR wszProfilerDLL,
         LoadType loadType,
         DWORD dwConcurrentGCWaitTimeoutInMs)
@@ -906,7 +905,7 @@ HRESULT ProfilingAPIUtility::DoPreInitialization(
         MODE_ANY;
         PRECONDITION(pEEProf != NULL);
         PRECONDITION(pClsid != NULL);
-        PRECONDITION(wszClsid != NULL);
+        PRECONDITION(szClsid != NULL);
     }
     CONTRACTL_END;
 
@@ -935,10 +934,12 @@ HRESULT ProfilingAPIUtility::DoPreInitialization(
             LOG((LF_CORPROF, LL_INFO10, "**PROF: COMPlus_ProfAPI_ProfilerCompatibilitySetting is set to PreventLoad. "
                  "Profiler will not be loaded.\n"));
 
+            MAKE_UTF8PTR_FROMWIDE(szEnvVarName, CLRConfig::EXTERNAL_ProfAPI_ProfilerCompatibilitySetting.name);
+            MAKE_UTF8PTR_FROMWIDE(szEnvVarValue, wszProfilerCompatibilitySetting.GetValue());
             LogProfInfo(IDS_PROF_PROFILER_DISABLED,
-                        CLRConfig::EXTERNAL_ProfAPI_ProfilerCompatibilitySetting.name,
-                        wszProfilerCompatibilitySetting.GetValue(),
-                        wszClsid);
+                        szEnvVarName,
+                        szEnvVarValue,
+                        szClsid);
 
             return S_OK;
         }
@@ -950,7 +951,7 @@ HRESULT ProfilingAPIUtility::DoPreInitialization(
     if (pProfEE == NULL)
     {
         LOG((LF_CORPROF, LL_ERROR, "**PROF: Unable to allocate ProfToEEInterfaceImpl.\n"));
-        LogProfError(IDS_E_PROF_INTERNAL_INIT, wszClsid, E_OUTOFMEMORY);
+        LogProfError(IDS_E_PROF_INTERNAL_INIT, szClsid, E_OUTOFMEMORY);
         return E_OUTOFMEMORY;
     }
 
@@ -959,7 +960,7 @@ HRESULT ProfilingAPIUtility::DoPreInitialization(
     if (FAILED(hr))
     {
         LOG((LF_CORPROF, LL_ERROR, "**PROF: ProfToEEInterface::Init failed.\n"));
-        LogProfError(IDS_E_PROF_INTERNAL_INIT, wszClsid, hr);
+        LogProfError(IDS_E_PROF_INTERNAL_INIT, szClsid, hr);
         return hr;
     }
 
@@ -978,14 +979,14 @@ HRESULT ProfilingAPIUtility::DoPreInitialization(
             LL_ERROR,
             "**PROF: Unable to create DetachThread. hr=0x%x.\n",
             hr));
-        ProfilingAPIUtility::LogProfError(IDS_E_PROF_INTERNAL_INIT, wszClsid, hr);
+        ProfilingAPIUtility::LogProfError(IDS_E_PROF_INTERNAL_INIT, szClsid, hr);
         return hr;
     }
 #endif // FEATURE_PROFAPI_ATTACH_DETACH
 
     // Initialize internal state of our EEToProfInterfaceImpl.  This also loads the
     // profiler itself, but does not yet call its Initialize() callback
-    hr = pEEProf->Init(pProfEE, pClsid, wszClsid, wszProfilerDLL, (loadType == kAttachLoad), dwConcurrentGCWaitTimeoutInMs);
+    hr = pEEProf->Init(pProfEE, pClsid, szClsid, wszProfilerDLL, (loadType == kAttachLoad), dwConcurrentGCWaitTimeoutInMs);
     if (FAILED(hr))
     {
         LOG((LF_CORPROF, LL_ERROR, "**PROF: EEToProfInterfaceImpl::Init failed.\n"));
@@ -1005,7 +1006,7 @@ HRESULT ProfilingAPIUtility::DoPreInitialization(
         // Profiler must support ICorProfilerCallback3 to be attachable
         if (!pEEProf->IsCallback3Supported())
         {
-            LogProfError(IDS_E_PROF_NOT_ATTACHABLE, wszClsid);
+            LogProfError(IDS_E_PROF_NOT_ATTACHABLE, szClsid);
             return CORPROF_E_PROFILER_NOT_ATTACHABLE;
         }
     }
@@ -1016,7 +1017,7 @@ HRESULT ProfilingAPIUtility::DoPreInitialization(
             LOG((LF_CORPROF, LL_INFO10, "**PROF: COMPlus_ProfAPI_ProfilerCompatibilitySetting is set to DisableV2Profiler (the default). "
                  "V2 profilers are not allowed, so that the configured V2 profiler is going to be unloaded.\n"));
 
-            LogProfInfo(IDS_PROF_V2PROFILER_DISABLED, wszClsid);
+            LogProfInfo(IDS_PROF_V2PROFILER_DISABLED, szClsid);
             return S_OK;
         }
 
@@ -1025,10 +1026,12 @@ HRESULT ProfilingAPIUtility::DoPreInitialization(
         LOG((LF_CORPROF, LL_INFO10, "**PROF: COMPlus_ProfAPI_ProfilerCompatibilitySetting is set to EnableV2Profiler. "
              "The configured V2 profiler is going to be initialized.\n"));
 
+        MAKE_UTF8PTR_FROMWIDE(szEnvVarName, CLRConfig::EXTERNAL_ProfAPI_ProfilerCompatibilitySetting.name);
+        MAKE_UTF8PTR_FROMWIDE(szEnvVarValue, wszProfilerCompatibilitySetting.GetValue());
         LogProfInfo(IDS_PROF_V2PROFILER_ENABLED,
-                    CLRConfig::EXTERNAL_ProfAPI_ProfilerCompatibilitySetting.name,
-                    wszProfilerCompatibilitySetting.GetValue(),
-                    wszClsid);
+                    szEnvVarName,
+                    szEnvVarValue,
+                    szClsid);
     }
 
     return hr;
@@ -1044,7 +1047,7 @@ HRESULT ProfilingAPIUtility::DoPreInitialization(
 // Arguments:
 //    * loadType - Startup load or attach load?
 //    * pClsid - Profiler's CLSID
-//    * wszClsid - Profiler's CLSID (or progid) in string form, for event log messages
+//    * szClsid - Profiler's CLSID (or progid) in string form, for event log messages
 //    * wszProfilerDLL - Profiler's DLL path
 //    * pvClientData - For attach loads, this is the client data the trigger wants to
 //        pass to the profiler DLL
@@ -1062,7 +1065,7 @@ HRESULT ProfilingAPIUtility::DoPreInitialization(
 HRESULT ProfilingAPIUtility::LoadProfiler(
         LoadType loadType,
         const CLSID * pClsid,
-        LPCWSTR wszClsid,
+        LPCSTR szClsid,
         LPCWSTR wszProfilerDLL,
         LPVOID pvClientData,
         UINT cbClientData,
@@ -1107,7 +1110,7 @@ HRESULT ProfilingAPIUtility::LoadProfiler(
             LL_ERROR,
             "**PROF: ProfilingAPIUtility::PerformDeferredInit failed. hr=0x%x.\n",
             hr));
-        LogProfError(IDS_E_PROF_INTERNAL_INIT, wszClsid, hr);
+        LogProfError(IDS_E_PROF_INTERNAL_INIT, szClsid, hr);
         return hr;
     }
 
@@ -1122,12 +1125,12 @@ HRESULT ProfilingAPIUtility::LoadProfiler(
     if (pEEProf == NULL)
     {
         LOG((LF_CORPROF, LL_ERROR, "**PROF: Unable to allocate EEToProfInterfaceImpl.\n"));
-        LogProfError(IDS_E_PROF_INTERNAL_INIT, wszClsid, E_OUTOFMEMORY);
+        LogProfError(IDS_E_PROF_INTERNAL_INIT, szClsid, E_OUTOFMEMORY);
         return E_OUTOFMEMORY;
     }
 
     // Create the ProfToEE interface to provide to the profiling services
-    hr = DoPreInitialization(pEEProf, pClsid, wszClsid, wszProfilerDLL, loadType, dwConcurrentGCWaitTimeoutInMs);
+    hr = DoPreInitialization(pEEProf, pClsid, szClsid, wszProfilerDLL, loadType, dwConcurrentGCWaitTimeoutInMs);
     if (FAILED(hr))
     {
         return hr;
@@ -1246,7 +1249,7 @@ HRESULT ProfilingAPIUtility::LoadProfiler(
         // The best we can do in this case is to report this failure anyway.
         if (pProfilerInfo->pProfInterface->HasTimedOutWaitingForConcurrentGC())
         {
-            ProfilingAPIUtility::LogProfError(IDS_E_PROF_TIMEOUT_WAITING_FOR_CONCURRENT_GC, dwConcurrentGCWaitTimeoutInMs, wszClsid);
+            ProfilingAPIUtility::LogProfError(IDS_E_PROF_TIMEOUT_WAITING_FOR_CONCURRENT_GC, dwConcurrentGCWaitTimeoutInMs, szClsid);
         }
 
         // Check for known failure types, to customize the event we log
@@ -1257,7 +1260,7 @@ HRESULT ProfilingAPIUtility::LoadProfiler(
 
             // Profiler supports ICorProfilerCallback3, but explicitly doesn't support
             // Attach loading.  So log specialized event
-            LogProfError(IDS_E_PROF_NOT_ATTACHABLE, wszClsid);
+            LogProfError(IDS_E_PROF_NOT_ATTACHABLE, szClsid);
 
             // Normalize (CORPROF_E_PROFILER_NOT_ATTACHABLE || E_NOTIMPL) down to
             // CORPROF_E_PROFILER_NOT_ATTACHABLE
@@ -1269,11 +1272,11 @@ HRESULT ProfilingAPIUtility::LoadProfiler(
             // profile this runtime.  Profilers that need to set system environment
             // variables to be able to profile services may use this HRESULT to avoid
             // profiling all the other managed apps on the box.
-            LogProfInfo(IDS_PROF_CANCEL_ACTIVATION, wszClsid);
+            LogProfInfo(IDS_PROF_CANCEL_ACTIVATION, szClsid);
         }
         else
         {
-            LogProfError(IDS_E_PROF_INIT_CALLBACK_FAILED, wszClsid, hr);
+            LogProfError(IDS_E_PROF_INIT_CALLBACK_FAILED, szClsid, hr);
         }
 
         // Profiler failed; reset everything. This will automatically reset
@@ -1302,7 +1305,7 @@ HRESULT ProfilingAPIUtility::LoadProfiler(
         LL_INFO10,
         "**PROF: Profiler successfully loaded and initialized.\n"));
 
-    LogProfInfo(IDS_PROF_LOAD_COMPLETE, wszClsid);
+    LogProfInfo(IDS_PROF_LOAD_COMPLETE, szClsid);
 
     LOG((LF_CORPROF, LL_INFO10, "**PROF: Profiler created and enabled.\n"));
 

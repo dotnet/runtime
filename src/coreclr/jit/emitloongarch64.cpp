@@ -628,14 +628,18 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
 #ifdef DEBUG
     switch (ins)
     {
+        case INS_st_d:
+        case INS_stx_d:
+        case INS_st_w:
+        case INS_stx_w:
+        case INS_fst_s:
+        case INS_fst_d:
+        case INS_fstx_s:
+        case INS_fstx_d:
         case INS_st_b:
         case INS_st_h:
-
-        case INS_st_w:
-        case INS_fst_s:
-
-        case INS_st_d:
-        case INS_fst_d:
+        case INS_stx_b:
+        case INS_stx_h:
             break;
 
         default:
@@ -652,8 +656,8 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
     base = emitComp->lvaFrameAddress(varx, &FPbased);
     imm  = offs < 0 ? -offs - 8 : base + offs;
 
-    regNumber reg2 = FPbased ? REG_FPBASE : REG_SPBASE;
-    reg2           = offs < 0 ? REG_R21 : reg2;
+    regNumber reg3 = FPbased ? REG_FPBASE : REG_SPBASE;
+    regNumber reg2 = offs < 0 ? REG_R21 : reg3;
     offs           = offs < 0 ? -offs - 8 : offs;
 
     if ((-2048 <= imm) && (imm < 2048))
@@ -686,7 +690,15 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
     code_t code = emitInsCode(ins);
     code |= (code_t)(reg1 & 0x1f);
     code |= (code_t)reg2 << 5;
-    code |= (code_t)(imm & 0xfff) << 10;
+    if ((ins == INS_stx_d) || (ins == INS_stx_w) || (ins == INS_stx_h) || (ins == INS_stx_b) || (ins == INS_fstx_d) ||
+        (ins == INS_fstx_s))
+    {
+        code |= (code_t)reg3 << 10;
+    }
+    else
+    {
+        code |= (code_t)(imm & 0xfff) << 10;
+    }
 
     id->idAddr()->iiaSetInstrEncode(code);
     id->idAddr()->iiaLclVar.initLclVarAddr(varx, offs);
@@ -2534,7 +2546,7 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
         code |= (code_t)id->idReg4();
         code |= (code_t)id->idReg3() << 5;
         // the offset default is 0;
-        *(code_t*)dst = code;
+        emitOutput_Instr(dst, code);
     }
     else if (id->idIsReloc())
     {
@@ -2543,7 +2555,7 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
         //   pcaddu18i  t2, addr-hi20
         //   jilr r0/1,t2,addr-lo18
 
-        *(code_t*)dst = 0x1e00000e;
+        emitOutput_Instr(dst, 0x1e00000e);
 
         size_t addr = (size_t)(id->idAddr()->iiaAddr); // get addr.
 
@@ -2561,7 +2573,7 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
         code = emitInsCode(INS_jirl);
         assert(code == 0x4c000000);
 #endif
-        *(code_t*)dst = 0x4c000000 | (14 << 5) | reg2;
+        emitOutput_Instr(dst, 0x4c000000 | (14 << 5) | reg2);
 
         emitRecordRelocation(dst - 4, (BYTE*)addr, IMAGE_REL_LOONGARCH64_JIR);
     }
@@ -2582,28 +2594,28 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
         code |= (code_t)REG_T2;
         code |= ((code_t)(imm >> 12) & 0xfffff) << 5;
 
-        *(code_t*)dst = code;
+        emitOutput_Instr(dst, code);
         dst += 4;
 
         code = emitInsCode(INS_ori);
         code |= (code_t)REG_T2;
         code |= (code_t)REG_T2 << 5;
         code |= (code_t)(imm & 0xfff) << 10;
-        *(code_t*)dst = code;
+        emitOutput_Instr(dst, code);
         dst += 4;
 
         code = emitInsCode(INS_lu32i_d);
         code |= (code_t)REG_T2;
         code |= 0xff << 5;
 
-        *(code_t*)dst = code;
+        emitOutput_Instr(dst, code);
         dst += 4;
 
         code = emitInsCode(INS_jirl);
         code |= (code_t)reg2;
         code |= (code_t)REG_T2 << 5;
         // the offset default is 0;
-        *(code_t*)dst = code;
+        emitOutput_Instr(dst, code);
     }
 
     dst += 4;
@@ -3133,9 +3145,9 @@ AGAIN:
 
 size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 {
-    BYTE*       dst  = *dp;
-    BYTE*       dst2 = dst; // addr for updating gc info if needed.
-    code_t      code = 0;
+    BYTE*       dstRW  = *dp + writeableOffset;
+    BYTE*       dstRW2 = dstRW; // addr for updating gc info if needed.
+    code_t      code   = 0;
     instruction ins;
     size_t      sz; // = emitSizeOfInsDsc(id);
 
@@ -3164,10 +3176,10 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
             regNumber reg1 = id->idReg1();
 
-            *(code_t*)dst = 0x1c000000 | (code_t)reg1;
+            *(code_t*)dstRW = 0x1c000000 | (code_t)reg1;
 
-            dst2 = dst;
-            dst += 4;
+            dstRW2 = dstRW;
+            dstRW += 4;
 
 #ifdef DEBUG
             code = emitInsCode(INS_pcaddu12i);
@@ -3180,30 +3192,30 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
             if (id->idIsCnsReloc())
             {
-                ins           = INS_addi_d;
-                *(code_t*)dst = 0x02c00000 | (code_t)reg1 | (code_t)(reg1 << 5);
+                ins             = INS_addi_d;
+                *(code_t*)dstRW = 0x02c00000 | (code_t)reg1 | (code_t)(reg1 << 5);
             }
             else
             {
                 assert(id->idIsDspReloc());
-                ins           = INS_ld_d;
-                *(code_t*)dst = 0x28c00000 | (code_t)reg1 | (code_t)(reg1 << 5);
+                ins             = INS_ld_d;
+                *(code_t*)dstRW = 0x28c00000 | (code_t)reg1 | (code_t)(reg1 << 5);
             }
 
             if (id->idGCref() != GCT_NONE)
             {
-                emitGCregLiveUpd(id->idGCref(), reg1, dst);
+                emitGCregLiveUpd(id->idGCref(), reg1, dstRW);
             }
             else
             {
-                emitGCregDeadUpd(reg1, dst);
+                emitGCregDeadUpd(reg1, dstRW);
             }
 
-            dst += 4;
+            dstRW += 4;
 
-            emitRecordRelocation(dst2, id->idAddr()->iiaAddr, IMAGE_REL_LOONGARCH64_PC);
+            emitRecordRelocation(dstRW2, id->idAddr()->iiaAddr, IMAGE_REL_LOONGARCH64_PC);
 
-            dst2 += 4;
+            dstRW2 += 4;
 
             sz = sizeof(instrDesc);
         }
@@ -3212,7 +3224,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         {
             ssize_t   imm  = (ssize_t)(id->idAddr()->iiaAddr);
             regNumber reg1 = id->idReg1();
-            dst2 += 4;
+            dstRW2 += 4;
 
             switch (id->idCodeSize())
             {
@@ -3225,13 +3237,13 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                         code |= (code_t)REG_R0;
                         code |= 0xfff << 10;
 
-                        *(code_t*)dst = code;
-                        dst += 4;
+                        *(code_t*)dstRW = code;
+                        dstRW += 4;
 
                         ssize_t ui6 = (imm == INT64_MAX) ? 1 : 32;
                         code        = emitInsCode(INS_srli_d);
                         code |= ((code_t)reg1 | ((code_t)reg1 << 5) | (ui6 << 10));
-                        *(code_t*)dst = code;
+                        *(code_t*)dstRW = code;
                     }
                     else
                     {
@@ -3239,14 +3251,14 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                         code |= (code_t)reg1;
                         code |= ((code_t)(imm >> 12) & 0xfffff) << 5;
 
-                        *(code_t*)dst = code;
-                        dst += 4;
+                        *(code_t*)dstRW = code;
+                        dstRW += 4;
 
                         code = emitInsCode(INS_ori);
                         code |= (code_t)reg1;
                         code |= (code_t)reg1 << 5;
                         code |= (code_t)(imm & 0xfff) << 10;
-                        *(code_t*)dst = code;
+                        *(code_t*)dstRW = code;
                     }
                     break;
                 }
@@ -3256,21 +3268,21 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     code |= (code_t)reg1;
                     code |= ((code_t)(imm >> 12) & 0xfffff) << 5;
 
-                    *(code_t*)dst = code;
-                    dst += 4;
+                    *(code_t*)dstRW = code;
+                    dstRW += 4;
 
                     code = emitInsCode(INS_ori);
                     code |= (code_t)reg1;
                     code |= (code_t)reg1 << 5;
                     code |= (code_t)(imm & 0xfff) << 10;
-                    *(code_t*)dst = code;
-                    dst += 4;
+                    *(code_t*)dstRW = code;
+                    dstRW += 4;
 
                     code = emitInsCode(INS_lu32i_d);
                     code |= (code_t)reg1;
                     code |= ((code_t)(imm >> 32) & 0xfffff) << 5;
 
-                    *(code_t*)dst = code;
+                    *(code_t*)dstRW = code;
 
                     break;
                 }
@@ -3280,29 +3292,29 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     code |= (code_t)reg1;
                     code |= ((code_t)(imm >> 12) & 0xfffff) << 5;
 
-                    *(code_t*)dst = code;
-                    dst += 4;
+                    *(code_t*)dstRW = code;
+                    dstRW += 4;
 
                     code = emitInsCode(INS_ori);
                     code |= (code_t)reg1;
                     code |= (code_t)reg1 << 5;
                     code |= (code_t)(imm & 0xfff) << 10;
-                    *(code_t*)dst = code;
-                    dst += 4;
+                    *(code_t*)dstRW = code;
+                    dstRW += 4;
 
                     code = emitInsCode(INS_lu32i_d);
                     code |= (code_t)reg1;
                     code |= (code_t)((imm >> 32) & 0xfffff) << 5;
 
-                    *(code_t*)dst = code;
-                    dst += 4;
+                    *(code_t*)dstRW = code;
+                    dstRW += 4;
 
                     code = emitInsCode(INS_lu52i_d);
                     code |= (code_t)reg1;
                     code |= (code_t)(reg1) << 5;
                     code |= ((code_t)(imm >> 52) & 0xfff) << 10;
 
-                    *(code_t*)dst = code;
+                    *(code_t*)dstRW = code;
 
                     break;
                 }
@@ -3312,7 +3324,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             }
 
             ins = INS_ori;
-            dst += 4;
+            dstRW += 4;
 
             sz = sizeof(instrDesc);
         }
@@ -3356,7 +3368,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             if (id->idIsReloc())
             {
                 // get the addr-offset of the data.
-                imm = (ssize_t)emitConsBlock - (ssize_t)dst + dataOffs;
+                imm = (ssize_t)emitConsBlock - (ssize_t)(dstRW - writeableOffset) + dataOffs;
                 assert(imm > 0);
                 assert(!(imm & 3));
 
@@ -3370,9 +3382,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 code = emitInsCode(INS_pcaddu12i);
                 assert(code == 0x1c000000);
 #endif
-                code          = 0x1c000000 | 21;
-                *(code_t*)dst = code | (((code_t)imm & 0xfffff000) >> 7);
-                dst += 4;
+                code            = 0x1c000000 | 21;
+                *(code_t*)dstRW = code | (((code_t)imm & 0xfffff000) >> 7);
+                dstRW += 4;
 
                 if (ins == INS_bl)
                 {
@@ -3382,8 +3394,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     code = emitInsCode(INS_addi_d);
                     assert(code == 0x02c00000);
 #endif
-                    code          = 0x02c00000 | (21 << 5);
-                    *(code_t*)dst = code | (code_t)reg1 | (((code_t)doff & 0xfff) << 10);
+                    code            = 0x02c00000 | (21 << 5);
+                    *(code_t*)dstRW = code | (code_t)reg1 | (((code_t)doff & 0xfff) << 10);
                 }
                 else
                 {
@@ -3391,10 +3403,10 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     code |= (code_t)(reg1 & 0x1f);
                     code |= (code_t)REG_R21 << 5; // NOTE:here must be REG_R21 !!!
                     code |= (code_t)(doff & 0xfff) << 10;
-                    *(code_t*)dst = code;
+                    *(code_t*)dstRW = code;
                 }
-                dst += 4;
-                dst2 = dst;
+                dstRW += 4;
+                dstRW2 = dstRW;
             }
             else
             {
@@ -3410,24 +3422,24 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     code |= (code_t)REG_R21;
                     code |= ((code_t)doff & 0xfffff) << 5;
 
-                    *(code_t*)dst = code;
-                    dst += 4;
+                    *(code_t*)dstRW = code;
+                    dstRW += 4;
 
                     code = emitInsCode(INS_ori);
                     code |= (code_t)reg1;
                     code |= (code_t)REG_R21 << 5;
                     code |= (code_t)(imm & 0xfff) << 10;
-                    *(code_t*)dst = code;
-                    dst += 4;
-                    dst2 = dst;
+                    *(code_t*)dstRW = code;
+                    dstRW += 4;
+                    dstRW2 = dstRW;
 
                     ins  = INS_lu32i_d;
                     code = emitInsCode(INS_lu32i_d);
                     code |= (code_t)reg1;
                     code |= 0xff << 5;
 
-                    *(code_t*)dst = code;
-                    dst += 4;
+                    *(code_t*)dstRW = code;
+                    dstRW += 4;
                 }
                 else
                 {
@@ -3441,24 +3453,24 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     code |= (code_t)REG_R21;
                     code |= ((code_t)dataOffs & 0xfffff) << 5;
 
-                    *(code_t*)dst = code;
-                    dst += 4;
+                    *(code_t*)dstRW = code;
+                    dstRW += 4;
 
                     code = emitInsCode(INS_lu32i_d);
                     code |= (code_t)REG_R21;
                     code |= 0xff << 5;
 
-                    *(code_t*)dst = code;
-                    dst += 4;
+                    *(code_t*)dstRW = code;
+                    dstRW += 4;
 
                     code = emitInsCode(ins);
                     code |= (code_t)(reg1 & 0x1f);
                     code |= (code_t)REG_R21 << 5;
                     code |= (code_t)(doff & 0xfff) << 10;
 
-                    *(code_t*)dst = code;
-                    dst += 4;
-                    dst2 = dst;
+                    *(code_t*)dstRW = code;
+                    dstRW += 4;
+                    dstRW2 = dstRW;
                 }
             }
 
@@ -3473,9 +3485,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             //   addi_d  reg, reg, offset-lo12
             //
             // else:       // TODO-LoongArch64:optimize.
-            //   lu12i_w reg, dst-hi-12bits
-            //   ori reg, reg, dst-lo-12bits
-            //   lu32i_d reg, dst-hi-32bits
+            //   lu12i_w reg, dstRW-hi-12bits
+            //   ori reg, reg, dstRW-lo-12bits
+            //   lu32i_d reg, dstRW-hi-32bits
 
             insGroup* tgtIG          = (insGroup*)emitCodeGetCookie(id->idAddr()->iiaBBlabel);
             id->idAddr()->iiaIGlabel = tgtIG;
@@ -3486,7 +3498,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             if (id->idIsReloc())
             {
                 ssize_t imm = (ssize_t)tgtIG->igOffs;
-                imm         = (ssize_t)emitCodeBlock + imm - (ssize_t)dst;
+                imm         = (ssize_t)emitCodeBlock + imm - (ssize_t)dstRW;
                 assert((imm & 3) == 0);
 
                 int doff = (int)(imm & 0x800);
@@ -3495,18 +3507,18 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
                 doff = (int)(imm & 0x7ff) - doff; // addr-lo-12bit.
 
-                code          = 0x1c000000;
-                *(code_t*)dst = code | (code_t)reg1 | ((imm & 0xfffff000) >> 7);
-                dst += 4;
-                dst2 = dst;
+                code            = 0x1c000000;
+                *(code_t*)dstRW = code | (code_t)reg1 | ((imm & 0xfffff000) >> 7);
+                dstRW += 4;
+                dstRW2 = dstRW;
 #ifdef DEBUG
                 code = emitInsCode(INS_pcaddu12i);
                 assert(code == 0x1c000000);
                 code = emitInsCode(INS_addi_d);
                 assert(code == 0x02c00000);
 #endif
-                *(code_t*)dst = 0x02c00000 | (code_t)reg1 | ((code_t)reg1 << 5) | ((doff & 0xfff) << 10);
-                ins           = INS_addi_d;
+                ins             = INS_addi_d;
+                *(code_t*)dstRW = 0x02c00000 | (code_t)reg1 | ((code_t)reg1 << 5) | ((doff & 0xfff) << 10);
             }
             else
             {
@@ -3517,26 +3529,26 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 code |= (code_t)REG_R21;
                 code |= ((code_t)(imm >> 12) & 0xfffff) << 5;
 
-                *(code_t*)dst = code;
-                dst += 4;
+                *(code_t*)dstRW = code;
+                dstRW += 4;
 
                 code = emitInsCode(INS_ori);
                 code |= (code_t)reg1;
                 code |= (code_t)REG_R21 << 5;
                 code |= (code_t)(imm & 0xfff) << 10;
-                *(code_t*)dst = code;
-                dst += 4;
-                dst2 = dst;
+                *(code_t*)dstRW = code;
+                dstRW += 4;
+                dstRW2 = dstRW;
 
                 ins  = INS_lu32i_d;
                 code = emitInsCode(INS_lu32i_d);
                 code |= (code_t)reg1;
                 code |= 0xff << 5;
 
-                *(code_t*)dst = code;
+                *(code_t*)dstRW = code;
             }
 
-            dst += 4;
+            dstRW += 4;
 
             sz = sizeof(instrDesc);
         }
@@ -3544,7 +3556,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case INS_OPTS_JIRL:
             //  case_1:           <----------from INS_OPTS_J:
             //   xor r21,reg1,reg2   |   bne/beq  _next   |    bcnez/bceqz  _next
-            //   bnez/beqz  dst      |   b  dst           |    b  dst
+            //   bnez/beqz  dstRW      |   b  dstRW           |    b  dstRW
             //_next:
             //
             //  case_2:           <---------- TODO-LoongArch64: from INS_OPTS_J:
@@ -3554,7 +3566,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             //_next:
             //
             //  case_3:           <----------INS_OPTS_JIRL:   //not used by now !!!
-            //   b dst
+            //   b dstRW
             //
             //  case_4:           <----------INS_OPTS_JIRL:   //not used by now !!!
             //   pcaddi r21,off-hi
@@ -3588,16 +3600,16 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                                     code |= (code_t)reg1 << 5;
                                     code |= (code_t)reg2 << 10;
 
-                                    *(code_t*)dst = code;
-                                    dst += 4;
+                                    *(code_t*)dstRW = code;
+                                    dstRW += 4;
 
                                     code = emitInsCode(ins == INS_beq ? INS_beqz : INS_bnez);
                                     code |= (code_t)REG_R21 << 5;
                                     code |= (((code_t)imm << 8) & 0x3fffc00);
                                     code |= (((code_t)imm >> 18) & 0x1f);
 
-                                    *(code_t*)dst = code;
-                                    dst += 4;
+                                    *(code_t*)dstRW = code;
+                                    dstRW += 4;
                                 }
                                 else
                                 {
@@ -3608,15 +3620,15 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                                     code |= ((code_t)(reg1) /*& 0x1f */) << 5; /* rj */
                                     code |= ((code_t)(reg2) /*& 0x1f */);      /* rd */
                                     code |= 0x800;
-                                    *(code_t*)dst = code;
-                                    dst += 4;
+                                    *(code_t*)dstRW = code;
+                                    dstRW += 4;
 
                                     code = emitInsCode(INS_b);
                                     code |= ((code_t)imm >> 18) & 0x3ff;
                                     code |= ((code_t)imm << 8) & 0x3fffc00;
 
-                                    *(code_t*)dst = code;
-                                    dst += 4;
+                                    *(code_t*)dstRW = code;
+                                    dstRW += 4;
                                 }
                             }
                             else if ((INS_bceqz == ins) || (INS_bcnez == ins))
@@ -3627,15 +3639,15 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                                 code = emitInsCode((instruction)((int)ins ^ 0x1));
                                 code |= ((code_t)reg1) << 5;
                                 code |= 0x800;
-                                *(code_t*)dst = code;
-                                dst += 4;
+                                *(code_t*)dstRW = code;
+                                dstRW += 4;
 
                                 code = emitInsCode(INS_b);
                                 code |= ((code_t)imm >> 18) & 0x3ff;
                                 code |= ((code_t)imm << 8) & 0x3fffc00;
 
-                                *(code_t*)dst = code;
-                                dst += 4;
+                                *(code_t*)dstRW = code;
+                                dstRW += 4;
                             }
                             else if ((INS_blt <= ins) && (ins <= INS_bgeu))
                             {
@@ -3647,15 +3659,15 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                                 code |= ((code_t)(reg1) /*& 0x1f */) << 5; /* rj */
                                 code |= ((code_t)(reg2) /*& 0x1f */);      /* rd */
                                 code |= 0x800;
-                                *(code_t*)dst = code;
-                                dst += 4;
+                                *(code_t*)dstRW = code;
+                                dstRW += 4;
 
                                 code = emitInsCode(INS_b);
                                 code |= ((code_t)imm >> 18) & 0x3ff;
                                 code |= ((code_t)imm << 8) & 0x3fffc00;
 
-                                *(code_t*)dst = code;
-                                dst += 4;
+                                *(code_t*)dstRW = code;
+                                dstRW += 4;
                             }
                             break;
                         }
@@ -3669,7 +3681,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             }
             break;
         case INS_OPTS_J_cond:
-            //   b_cond  dst-relative.
+            //   b_cond  dstRW-relative.
             //
             // NOTE:
             //  the case "imm > 0x7fff" not supported.
@@ -3685,14 +3697,14 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 code |= ((code_t)id->idReg2());
                 code |= (((code_t)imm << 8) & 0x3fffc00);
 
-                *(code_t*)dst = code;
-                dst += 4;
+                *(code_t*)dstRW = code;
+                dstRW += 4;
 
                 sz = sizeof(instrDescJmp);
             }
             break;
         case INS_OPTS_J:
-            //   bceqz/bcnez/beq/bne/blt/bltu/bge/bgeu/beqz/bnez/b/bl  dst-relative.
+            //   bceqz/bcnez/beq/bne/blt/bltu/bge/bgeu/beqz/bnez/b/bl  dstRW-relative.
             {
                 ssize_t imm = (ssize_t)id->idAddr()->iiaGetJmpOffset(); // get jmp's offset relative delay-slot.
                 assert((imm & 3) == 0);
@@ -3728,8 +3740,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     assert(!"unimplemented on LOONGARCH yet");
                 }
 
-                *(code_t*)dst = code;
-                dst += 4;
+                *(code_t*)dstRW = code;
+                dstRW += 4;
 
                 sz = sizeof(instrDescJmp);
             }
@@ -3747,17 +3759,17 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 assert(!id->idIsLargeCns());
                 sz = sizeof(instrDesc);
             }
-            dst += emitOutputCall(ig, dst, id, 0);
+            dstRW += emitOutputCall(ig, *dp, id, 0);
             ins = INS_nop;
             break;
 
         // case INS_OPTS_NONE:
         default:
-            *(code_t*)dst = id->idAddr()->iiaGetInstrEncode();
-            dst += 4;
-            dst2 = dst;
-            ins  = id->idIns();
-            sz   = emitSizeOfInsDsc(id);
+            *(code_t*)dstRW = id->idAddr()->iiaGetInstrEncode();
+            dstRW += 4;
+            dstRW2 = dstRW;
+            ins    = id->idIns();
+            sz     = emitSizeOfInsDsc(id);
             break;
     }
 
@@ -3770,11 +3782,11 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         // We assume that "idReg1" is the primary destination register for all instructions
         if (id->idGCref() != GCT_NONE)
         {
-            emitGCregLiveUpd(id->idGCref(), id->idReg1(), dst2);
+            emitGCregLiveUpd(id->idGCref(), id->idReg1(), dstRW2 - writeableOffset);
         }
         else
         {
-            emitGCregDeadUpd(id->idReg1(), dst2);
+            emitGCregDeadUpd(id->idReg1(), dstRW2 - writeableOffset);
         }
     }
 
@@ -3788,7 +3800,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         int      adr = emitComp->lvaFrameAddress(varNum, &FPbased);
         if (id->idGCref() != GCT_NONE)
         {
-            emitGCvarLiveUpd(adr + ofs, varNum, id->idGCref(), dst2 DEBUG_ARG(varNum));
+            emitGCvarLiveUpd(adr + ofs, varNum, id->idGCref(), dstRW2 - writeableOffset DEBUG_ARG(varNum));
         }
         else
         {
@@ -3805,7 +3817,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 vt              = tmpDsc->tdTempType();
             }
             if (vt == TYP_REF || vt == TYP_BYREF)
-                emitGCvarDeadUpd(adr + ofs, dst2 DEBUG_ARG(varNum));
+                emitGCvarDeadUpd(adr + ofs, dstRW2 - writeableOffset DEBUG_ARG(varNum));
         }
         // if (emitInsWritesToLclVarStackLocPair(id))
         //{
@@ -3842,8 +3854,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
     if (emitComp->opts.disAsm || emitComp->verbose)
     {
-        code_t* cp = (code_t*)*dp;
-        while ((BYTE*)cp != dst)
+        code_t* cp = (code_t*)(*dp + writeableOffset);
+        while ((BYTE*)cp != dstRW)
         {
             emitDisInsName(*cp, (BYTE*)cp, id);
             cp++;
@@ -3863,9 +3875,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
     /* All instructions are expected to generate code */
 
-    assert(*dp != dst);
+    assert(*dp != (dstRW - writeableOffset));
 
-    *dp = dst;
+    *dp = dstRW - writeableOffset;
 
     return sz;
 }
@@ -6633,7 +6645,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                 else
                 {
                     tempReg1 = REG_RA;
-                    tempReg2 = dst->GetSingleTempReg();
+                    tempReg2 = codeGen->rsGetRsvdReg();
                     assert(tempReg1 != tempReg2);
                     assert(tempReg1 != saveOperReg1);
                     assert(tempReg2 != saveOperReg2);

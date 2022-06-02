@@ -1079,7 +1079,12 @@ extern "C" MethodDesc* QCALLTYPE RuntimeTypeHandle_GetInterfaceMethodImplementat
 
     if (pMD->IsStatic())
     {
-        pResult = typeHandle.GetMethodTable()->ResolveVirtualStaticMethod(thOwnerOfMD.GetMethodTable(), pMD, /* allowNullResult */ TRUE, /* verifyImplemented*/ FALSE, /*allowVariantMatches */ TRUE);
+        pResult = typeHandle.GetMethodTable()->ResolveVirtualStaticMethod(
+            thOwnerOfMD.GetMethodTable(),
+            pMD,
+            /* allowNullResult */ TRUE,
+            /* verifyImplemented*/ FALSE,
+            /*allowVariantMatches */ TRUE);
     }
     else
     {
