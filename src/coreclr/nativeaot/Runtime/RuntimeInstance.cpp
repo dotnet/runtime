@@ -72,18 +72,17 @@ PTR_UInt8 RuntimeInstance::FindMethodStartAddress(PTR_VOID ControlPC)
 //          Please ensure that all methods called by this one also have this warning.
 bool RuntimeInstance::IsManaged(PTR_VOID pvAddress)
 {
-    return m_CodeManager->IsManaged(pvAddress);
+    return (dac_cast<TADDR>(pvAddress) - dac_cast<TADDR>(m_pvManagedCodeStartRange) < m_cbManagedCodeRange);
 }
 
 ICodeManager * RuntimeInstance::GetCodeManagerForAddress(PTR_VOID pvAddress)
 {
-    ICodeManager* cm = m_CodeManager;
-    if (cm->IsManaged(pvAddress))
+    if (!IsManaged(pvAddress))
     {
-        return cm;
+        return NULL;
     }
 
-    return NULL;
+    return m_CodeManager;
 }
 
 #ifndef DACCESS_COMPILE
@@ -197,17 +196,19 @@ void RuntimeInstance::EnableConservativeStackReporting()
     m_conservativeStackReportingEnabled = true;
 }
 
-void RuntimeInstance::RegisterCodeManager(ICodeManager * pCodeManager)
+void RuntimeInstance::RegisterCodeManager(ICodeManager * pCodeManager, PTR_VOID pvStartRange, uint32_t cbRange)
 {
     _ASSERTE(m_CodeManager == NULL);
     _ASSERTE(pCodeManager != NULL);
 
     m_CodeManager = pCodeManager;
+    m_pvManagedCodeStartRange = pvStartRange;
+    m_cbManagedCodeRange = cbRange;
 }
 
-extern "C" void __stdcall RegisterCodeManager(ICodeManager * pCodeManager)
+extern "C" void __stdcall RegisterCodeManager(ICodeManager * pCodeManager, PTR_VOID pvStartRange, uint32_t cbRange)
 {
-    GetRuntimeInstance()->RegisterCodeManager(pCodeManager);
+    GetRuntimeInstance()->RegisterCodeManager(pCodeManager, pvStartRange, cbRange);
 }
 
 bool RuntimeInstance::RegisterUnboxingStubs(PTR_VOID pvStartRange, uint32_t cbRange)

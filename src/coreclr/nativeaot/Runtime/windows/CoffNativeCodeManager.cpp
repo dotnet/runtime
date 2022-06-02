@@ -246,8 +246,9 @@ static_assert(sizeof(CoffNativeMethodInfo) <= sizeof(MethodInfo), "CoffNativeMet
 bool CoffNativeCodeManager::FindMethodInfo(PTR_VOID        ControlPC,
                                            MethodInfo *    pMethodInfoOut)
 {
-    // Stackwalker may call this with ControlPC that does not managed
-    if (!IsManaged(ControlPC))
+    // Stackwalker may call this with ControlPC that does not belong to this code manager
+    if (dac_cast<TADDR>(ControlPC) < dac_cast<TADDR>(m_pvManagedCodeStartRange) ||
+        dac_cast<TADDR>(m_pvManagedCodeStartRange) + m_cbManagedCodeRange <= dac_cast<TADDR>(ControlPC))
     {
         return false;
     }
@@ -284,15 +285,6 @@ bool CoffNativeCodeManager::FindMethodInfo(PTR_VOID        ControlPC,
     pMethodInfo->executionAborted = false;
 
     return true;
-}
-
-// WARNING: This method is called by suspension while one thread is interrupted
-//          in a random location, possibly holding random locks.
-//          It is unsafe to use blocking APIs or allocate in this method.
-//          Please ensure that all methods called by this one also have this warning.
-bool CoffNativeCodeManager::IsManaged(PTR_VOID pvAddress)
-{
-     return (dac_cast<TADDR>(pvAddress) - dac_cast<TADDR>(m_pvManagedCodeStartRange) < m_cbManagedCodeRange);
 }
 
 bool CoffNativeCodeManager::IsFunclet(MethodInfo * pMethInfo)
@@ -879,7 +871,7 @@ PTR_VOID CoffNativeCodeManager::GetAssociatedData(PTR_VOID ControlPC)
     return dac_cast<PTR_VOID>(m_moduleBase + dataRVA);
 }
 
-extern "C" void __stdcall RegisterCodeManager(ICodeManager * pCodeManager);
+extern "C" void __stdcall RegisterCodeManager(ICodeManager * pCodeManager, PTR_VOID pvStartRange, uint32_t cbRange);
 extern "C" bool __stdcall RegisterUnboxingStubs(PTR_VOID pvStartRange, uint32_t cbRange);
 
 extern "C"
@@ -902,7 +894,7 @@ bool RhRegisterOSModule(void * pModule,
     if (pCoffNativeCodeManager == nullptr)
         return false;
 
-    RegisterCodeManager(pCoffNativeCodeManager);
+    RegisterCodeManager(pCoffNativeCodeManager, pvManagedCodeStartRange, cbManagedCodeRange);
 
     if (!RegisterUnboxingStubs(pvUnboxingStubsStartRange, cbUnboxingStubsRange))
     {

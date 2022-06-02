@@ -42,6 +42,10 @@ private:
 
     ICodeManager*               m_CodeManager;
 
+    // we support only one code manager for now, so we just record the range.
+    void*                       m_pvManagedCodeStartRange;
+    uint32_t                    m_cbManagedCodeRange;
+
 public:
     struct TypeManagerEntry
     {
@@ -87,7 +91,7 @@ public:
     void EnableConservativeStackReporting();
     bool IsConservativeStackReportingEnabled() { return m_conservativeStackReportingEnabled; }
 
-    void RegisterCodeManager(ICodeManager * pCodeManager);
+    void RegisterCodeManager(ICodeManager * pCodeManager, PTR_VOID pvStartRange, uint32_t cbRange);
 
     ICodeManager * GetCodeManagerForAddress(PTR_VOID ControlPC);
     PTR_VOID GetClasslibFunctionFromCodeAddress(PTR_VOID address, ClasslibFunctionId functionId);

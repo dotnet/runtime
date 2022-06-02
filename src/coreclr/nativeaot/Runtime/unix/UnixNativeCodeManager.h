@@ -24,8 +24,6 @@ public:
     // Code manager methods
     //
 
-    bool IsManaged(PTR_VOID pvAddress);
-
     bool FindMethodInfo(PTR_VOID        ControlPC,
                         MethodInfo *    pMethodInfoOut);
 

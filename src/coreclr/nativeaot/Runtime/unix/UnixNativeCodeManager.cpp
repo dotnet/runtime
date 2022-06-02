@@ -55,8 +55,9 @@ UnixNativeCodeManager::~UnixNativeCodeManager()
 bool UnixNativeCodeManager::FindMethodInfo(PTR_VOID        ControlPC,
                                            MethodInfo *    pMethodInfoOut)
 {
-    // Stackwalker may call this with ControlPC that is not in managed code
-    if (!IsManaged(ControlPC))
+    // Stackwalker may call this with ControlPC that does not belong to this code manager
+    if (dac_cast<TADDR>(ControlPC) < dac_cast<TADDR>(m_pvManagedCodeStartRange) ||
+        dac_cast<TADDR>(m_pvManagedCodeStartRange) + m_cbManagedCodeRange <= dac_cast<TADDR>(ControlPC))
     {
         return false;
     }
@@ -93,15 +94,6 @@ bool UnixNativeCodeManager::FindMethodInfo(PTR_VOID        ControlPC,
     pMethodInfo->executionAborted = false;
 
     return true;
-}
-
-// WARNING: This method is called by suspension while one thread is interrupted
-//          in a random location, possibly holding random locks.
-//          It is unsafe to use blocking APIs or allocate in this method.
-//          Please ensure that all methods called by this one also have this warning.
-bool UnixNativeCodeManager::IsManaged(PTR_VOID pvAddress)
-{
-     return (dac_cast<TADDR>(pvAddress) - dac_cast<TADDR>(m_pvManagedCodeStartRange) < m_cbManagedCodeRange);
 }
 
 bool UnixNativeCodeManager::IsFunclet(MethodInfo * pMethodInfo)
@@ -453,7 +445,7 @@ PTR_VOID UnixNativeCodeManager::GetAssociatedData(PTR_VOID ControlPC)
     return dac_cast<PTR_VOID>(p + *dac_cast<PTR_Int32>(p));
 }
 
-extern "C" void RegisterCodeManager(ICodeManager * pCodeManager);
+extern "C" void RegisterCodeManager(ICodeManager * pCodeManager, PTR_VOID pvStartRange, uint32_t cbRange);
 extern "C" bool RegisterUnboxingStubs(PTR_VOID pvStartRange, uint32_t cbRange);
 
 extern "C"
@@ -469,7 +461,7 @@ bool RhRegisterOSModule(void * pModule,
     if (pUnixNativeCodeManager == nullptr)
         return false;
 
-    RegisterCodeManager(pUnixNativeCodeManager);
+    RegisterCodeManager(pUnixNativeCodeManager, pvManagedCodeStartRange, cbManagedCodeRange);
 
     if (!RegisterUnboxingStubs(pvUnboxingStubsStartRange, cbUnboxingStubsRange))
     {
