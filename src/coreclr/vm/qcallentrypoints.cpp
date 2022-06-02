@@ -274,6 +274,7 @@ static const Entry s_QCall[] =
     DllImportEntry(LogThreadPoolWorkerThreadStart)
     DllImportEntry(LogThreadPoolWorkerThreadStop)
     DllImportEntry(LogThreadPoolWorkerThreadWait)
+    DllImportEntry(LogThreadPoolMinMaxThreads)
     DllImportEntry(LogThreadPoolWorkerThreadAdjustmentSample)
     DllImportEntry(LogThreadPoolWorkerThreadAdjustmentAdjustment)
     DllImportEntry(LogThreadPoolWorkerThreadAdjustmentStats)
