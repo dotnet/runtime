@@ -306,6 +306,12 @@ namespace PInvokeTests
         [DllImport("PInvokeNative", CallingConvention = CallingConvention.StdCall)]
         internal static extern decimal DecimalTest(decimal value);
 
+		[UnmanagedCallersOnly]
+		internal static void UnmanagedMethod(byte* address, byte value) => *address = value;
+
+		[UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvStdcall)})]
+		internal static void StdcallMethod(byte* address, byte value) => *address = value;
+
         internal enum MagicEnum
         {
             MagicResult = 42,
@@ -334,6 +340,7 @@ namespace PInvokeTests
             TestWithoutPreserveSig();
             TestForwardDelegateWithUnmanagedCallersOnly();
             TestDecimal();
+            TestDifferentModopts();
 
             return 100;
         }
@@ -1102,6 +1109,31 @@ namespace PInvokeTests
             Action a = Marshal.GetDelegateForFunctionPointer<Action>((IntPtr)(void*)(delegate* unmanaged<void>)&UnmanagedCallback);
             a();
         }
+		
+        public static unsafe void TestDifferentModopts()
+		{
+			byte storage;
+
+			delegate* unmanaged<byte*, byte, void> unmanagedMethod = &UnmanagedMethod;
+
+			var outUnmanagedMethod = (delegate* unmanaged<out byte, byte, void>)unmanagedMethod;
+			outUnmanagedMethod(out storage, 12);
+			ThrowIfNotEquals(storage, 12, "Out unmanaged call failed.");
+
+			var refUnmanagedMethod = (delegate* unmanaged<ref byte, byte, void>)unmanagedMethod;
+			refUnmanagedMethod(ref storage, 34);
+			ThrowIfNotEquals(storage, 34, "Ref unmanaged call failed.");
+
+			delegate* unmanaged[Stdcall]<byte*, byte, void> stdcallMethod = &StdcallMethod;
+
+			var outStdcallMethod = (delegate* unmanaged[Stdcall]<out byte, byte, void>)stdcallMethod;
+			outStdcallMethod(out storage, 12);
+			ThrowIfNotEquals(storage, 12, "Out unmanaged stdcall failed.");
+
+			var refStdcallMethod = (delegate* unmanaged[Stdcall]<ref byte, byte, void>)stdcallMethod;
+			refStdcallMethod(ref storage, 34);
+			ThrowIfNotEquals(storage, 34, "Ref unmanaged stdcall failed.");
+		}
     }
 
     public class SafeMemoryHandle : SafeHandle //SafeHandle subclass
