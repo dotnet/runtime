@@ -666,4 +666,33 @@ namespace System.Runtime.CompilerServices
         public PortableTailCallFrame* Frame;
         public IntPtr ArgBuffer;
     }
+
+    // See src/vm/argslot.h
+    internal static class ArgSlot
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe byte* EndianessFixup(long* pArg, uint cbSize)
+        {
+#if BIGENDIAN
+            byte* pBuf = (byte*)pArg;
+
+            switch (cbSize)
+            {
+                case 1:
+                    pBuf += 7;
+                    break;
+                case 2:
+                    pBuf += 6;
+                    break;
+                case 4:
+                    pBuf += 4;
+                    break;
+            }
+
+            return pBuf;
+#else
+            return (byte*)pArg;
+#endif
+        }
+    }
 }
