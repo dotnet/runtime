@@ -173,7 +173,7 @@ namespace ILCompiler
             return category;
         }
 
-        protected override bool AllMethodsCanBeReflectable => (_generationOptions & UsageBasedMetadataGenerationOptions.ReflectedMembersOnly) == 0;
+        protected override bool AllMethodsCanBeReflectable => (_generationOptions & UsageBasedMetadataGenerationOptions.CreateReflectableArtifacts) != 0;
 
         protected override void ComputeMetadata(NodeFactory factory,
             out byte[] metadataBlob,
@@ -494,7 +494,7 @@ namespace ILCompiler
             }
 
             // Presence of code might trigger the reflectability dependencies.
-            if ((_generationOptions & UsageBasedMetadataGenerationOptions.ReflectedMembersOnly) == 0)
+            if ((_generationOptions & UsageBasedMetadataGenerationOptions.CreateReflectableArtifacts) != 0)
             {
                 GetDependenciesDueToReflectability(ref dependencies, factory, method);
             }
@@ -505,7 +505,7 @@ namespace ILCompiler
             MethodDesc typicalMethod = method.GetTypicalMethodDefinition();
 
             // Ensure methods with genericness have the same reflectability by injecting a conditional dependency.
-            if ((_generationOptions & UsageBasedMetadataGenerationOptions.ReflectedMembersOnly) != 0
+            if ((_generationOptions & UsageBasedMetadataGenerationOptions.CreateReflectableArtifacts) == 0
                 && method != typicalMethod)
             {
                 dependencies ??= new CombinedDependencyList();
@@ -516,7 +516,7 @@ namespace ILCompiler
 
         public override void GetDependenciesDueToVirtualMethodReflectability(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
         {
-            if ((_generationOptions & UsageBasedMetadataGenerationOptions.ReflectedMembersOnly) == 0)
+            if ((_generationOptions & UsageBasedMetadataGenerationOptions.CreateReflectableArtifacts) != 0)
             {
                 // If we have a use of an abstract method, GetDependenciesDueToReflectability is not going to see the method
                 // as being used since there's no body. We inject a dependency on a new node that serves as a logical method body
@@ -1028,9 +1028,9 @@ namespace ILCompiler
         ReflectionILScanning = 4,
 
         /// <summary>
-        /// Only members that were seen as reflected on will be reflectable.
+        /// Consider all native artifacts (native method bodies, etc) visible from reflection.
         /// </summary>
-        ReflectedMembersOnly = 8,
+        CreateReflectableArtifacts = 8,
 
         /// <summary>
         /// Fully root used assemblies that are not marked IsTrimmable in metadata.

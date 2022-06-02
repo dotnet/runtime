@@ -389,7 +389,10 @@ class Program
             Assert.Equal(1, typeof(TypeWithSpecificMethodKept).CountMethods());
             Assert.Equal(1, typeof(TypeWithSpecificOverloadKept).CountMethods());
             Assert.Equal(2, typeof(TypeWithAllOverloadsKept).CountMethods());
-            Assert.Equal(2, typeof(TestDynamicDependency).CountMethods());
+
+            // We only expect DependentMethod. We specifically don't expect to see the Run method (current method).
+            Assert.Equal(1, typeof(TestDynamicDependency).CountMethods());
+
             Assert.Equal(1, typeof(TypeWithPublicPropertiesKept).CountProperties());
         }
     }
@@ -577,7 +580,8 @@ class Program
         {
             // Check we detect these as intrinsics
             IntPtr pBytes = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(ClassWithLayout1)));
-            object o = Marshal.PtrToStructure(pBytes, typeof(ClassWithLayout2));
+            // https://github.com/dotnet/runtime/issues/70072
+            //object o = Marshal.PtrToStructure(pBytes, typeof(ClassWithLayout2));
             Marshal.DestroyStructure(pBytes, typeof(ClassWithLayout3));
             Marshal.OffsetOf(typeof(ClassWithLayout4), "Field");
 
