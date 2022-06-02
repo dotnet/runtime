@@ -30,7 +30,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// after the AST has been anlayzed for safe handling.
         /// <remarks>
         /// If the AST exceeds this threshold then <see cref="NotSupportedException"/> is thrown.
-        /// This default value may be overridden with the environment variable
+        /// This default value may be overridden with the AppContext data
         /// whose name is given by  <see cref="SymbolicRegexSafeSizeThreshold_ConfigKeyName"/>.
         /// </remarks>
         /// </summary>
