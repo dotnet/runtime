@@ -3636,10 +3636,9 @@ void CodeGen::genStructPutArgPartialRepMovs(GenTreePutArgStk* putArgNode)
     // They may now contain gc pointers (depending on their type; gcMarkRegPtrVal will "do the right thing").
     genConsumePutStructArgStk(putArgNode, REG_RDI, REG_RSI, REG_NA);
 
-    GenTreeObj*    src         = putArgNode->gtGetOp1()->AsObj();
-    ClassLayout*   layout      = src->GetLayout();
-    const bool     srcIsLocal  = src->Addr()->OperIsLocalAddr();
-    const emitAttr srcAddrAttr = srcIsLocal ? EA_PTRSIZE : EA_BYREF;
+    GenTree*       src         = putArgNode->Data();
+    ClassLayout*   layout      = src->GetLayout(compiler);
+    const emitAttr srcAddrAttr = src->OperIsLocalRead() ? EA_PTRSIZE : EA_BYREF;
 
 #if DEBUG
     unsigned numGCSlotsCopied = 0;
