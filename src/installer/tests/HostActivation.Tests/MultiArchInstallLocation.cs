@@ -4,6 +4,7 @@
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
+using Microsoft.DotNet.Cli.Build;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.DotNet.CoreSetup.Test;
 using Microsoft.DotNet.CoreSetup.Test.HostActivation;
@@ -238,6 +239,48 @@ namespace HostActivation.Tests
                     .DotNetRoot(null)
                     .Execute()
                     .Should().NotHaveStdErrContaining("The install_location file");
+            }
+        }
+
+        [Fact]
+        public void RegisteredInstallLocation_DotNetInfo_ListOtherArchitectures()
+        {
+            var dotnet = new DotNetCli(sharedTestState.RepoDirectories.BuiltDotnet);
+            using (var registeredInstallLocationOverride = new RegisteredInstallLocationOverride(dotnet.GreatestVersionHostFxrFilePath))
+            {
+                var installLocations = new (string, string)[] {
+                    ("arm64", "/arm64/install/path"),
+                    ("x64", "/x64/install/path"),
+                    ("x86", "/x86/install/path")
+                };
+                (string Architecture, string Path) unknownArchInstall = ("unknownArch", "/unknown/install/path");
+                registeredInstallLocationOverride.SetInstallLocation(installLocations);
+                registeredInstallLocationOverride.SetInstallLocation(unknownArchInstall);
+
+                var result = dotnet.Exec("--info")
+                    .CaptureStdOut()
+                    .CaptureStdErr()
+                    .EnableHostTracing()
+                    .ApplyRegisteredInstallLocationOverride(registeredInstallLocationOverride)
+                    .Execute();
+
+                result.Should().Pass()
+                    .And.HaveStdOutContaining("Other architectures found:")
+                    .And.NotHaveStdOutContaining(unknownArchInstall.Architecture)
+                    .And.NotHaveStdOutContaining($"[{unknownArchInstall.Path}]");
+
+                string pathOverride = OperatingSystem.IsWindows() // Host uses short form of base key for Windows
+                    ? registeredInstallLocationOverride.PathValueOverride.Replace(Microsoft.Win32.Registry.CurrentUser.Name, "HKCU")
+                    : registeredInstallLocationOverride.PathValueOverride;
+                pathOverride = System.Text.RegularExpressions.Regex.Escape(pathOverride);
+                foreach ((string arch, string path) in installLocations)
+                {
+                    if (arch == sharedTestState.RepoDirectories.BuildArchitecture)
+                        continue;
+
+                    result.Should()
+                        .HaveStdOutMatching($@"{arch}\s*\[{path}\]\r?$\s*registered at \[{pathOverride}.*{arch}.*\]", System.Text.RegularExpressions.RegexOptions.Multiline);
+                }
             }
         }
 

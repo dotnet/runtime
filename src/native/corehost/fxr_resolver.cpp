@@ -100,7 +100,7 @@ bool fxr_resolver::try_get_path(const pal::string_t& root_path, pal::string_t* o
             pal::get_default_installation_dir(&default_install_location);
         }
 
-        pal::string_t self_registered_config_location = pal::get_dotnet_self_registered_config_location();
+        pal::string_t self_registered_config_location = pal::get_dotnet_self_registered_config_location(get_current_arch());
         trace::verbose(_X("The required library %s could not be found. Searched with root path [%s], environment variable [%s], default install location [%s], self-registered config location [%s]"),
             LIBFXR_NAME,
             root_path.c_str(),

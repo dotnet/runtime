@@ -194,25 +194,51 @@ pal::string_t get_replaced_char(const pal::string_t& path, pal::char_t match, pa
     return out;
 }
 
-const pal::char_t* get_arch()
+namespace
+{
+
+    const pal::char_t* s_all_architectures[] =
+    {
+        _X("arm"),
+        _X("arm64"),
+        _X("armv6"),
+        _X("loongarch64"),
+        _X("s390x"),
+        _X("x64"),
+        _X("x86")
+    };
+    static_assert((sizeof(s_all_architectures) / sizeof(*s_all_architectures)) == static_cast<size_t>(pal::known_architecture::__last), "Invalid known architectures count");
+}
+
+pal::known_architecture get_current_arch()
 {
 #if defined(TARGET_AMD64)
-    return _X("x64");
+    return pal::known_architecture::x64;
 #elif defined(TARGET_X86)
-    return _X("x86");
+    return pal::known_architecture::x86;
 #elif defined(TARGET_ARMV6)
-    return _X("armv6");
+    return pal::known_architecture::armv6;
 #elif defined(TARGET_ARM)
-    return _X("arm");
+    return pal::known_architecture::arm;
 #elif defined(TARGET_ARM64)
-    return _X("arm64");
+    return pal::known_architecture::arm64;
 #elif defined(TARGET_LOONGARCH64)
-    return _X("loongarch64");
+    return pal::known_architecture::loongarch64;
 #elif defined(TARGET_S390X)
-    return _X("s390x");
+    return pal::known_architecture::s390X;
 #else
 #error "Unknown target"
 #endif
+}
+
+const pal::char_t* get_arch_name(pal::known_architecture arch)
+{
+    return s_all_architectures[static_cast<uint32_t>(arch)];
+}
+
+const pal::char_t* get_arch()
+{
+    return s_all_architectures[static_cast<uint32_t>(get_current_arch())];
 }
 
 pal::string_t get_current_runtime_id(bool use_fallback)

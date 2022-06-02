@@ -4,6 +4,7 @@
 #include "command_line.h"
 #include <error_codes.h>
 #include "framework_info.h"
+#include "install_info.h"
 #include <pal.h>
 #include "sdk_info.h"
 #include <trace.h>
@@ -301,6 +302,13 @@ void command_line::print_muxer_info(const pal::string_t &dotnet_root)
     if (!framework_info::print_all_frameworks(dotnet_root, _X("  ")))
     {
         trace::println(_X("  No runtimes were found."));
+    }
+
+    trace::println();
+    trace::println(_X("Other architectures found:"));
+    if (!install_info::print_installs(_X("  "), /*skip_current_arch*/ true))
+    {
+        trace::println(_X("  None"));
     }
 
     trace::println();
