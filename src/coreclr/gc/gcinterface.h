@@ -275,7 +275,8 @@ enum collection_mode
     collection_non_blocking = 0x00000001,
     collection_blocking = 0x00000002,
     collection_optimized = 0x00000004,
-    collection_compacting = 0x00000008
+    collection_compacting = 0x00000008,
+    collection_aggressive = 0x00000010
 #ifdef STRESS_HEAP
     , collection_gcstress = 0x80000000
 #endif // STRESS_HEAP

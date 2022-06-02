@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 
@@ -9,6 +10,9 @@ namespace System.Formats.Tar
     // Unix specific methods for the TarWriter class.
     public sealed partial class TarWriter : IDisposable
     {
+        private readonly Dictionary<uint, string> _userIdentifiers = new Dictionary<uint, string>();
+        private readonly Dictionary<uint, string> _groupIdentifiers = new Dictionary<uint, string>();
+
         // Unix specific implementation of the method that reads an entry from disk and writes it into the archive stream.
         partial void ReadFileFromDiskAndWriteToArchiveStreamAsEntry(string fullPath, string entryName)
         {
@@ -41,13 +45,13 @@ namespace System.Formats.Tar
                 _ => throw new FormatException(string.Format(SR.TarInvalidFormat, Format)),
             };
 
-            if ((entryType is TarEntryType.BlockDevice or TarEntryType.CharacterDevice) && status.Dev > 0)
+            if (entryType is TarEntryType.BlockDevice or TarEntryType.CharacterDevice)
             {
                 uint major;
                 uint minor;
                 unsafe
                 {
-                    Interop.CheckIo(Interop.Sys.GetDeviceIdentifiers((ulong)status.Dev, &major, &minor));
+                    Interop.Sys.GetDeviceIdentifiers((ulong)status.RDev, &major, &minor);
                 }
 
                 entry._header._devMajor = (int)major;
@@ -60,12 +64,23 @@ namespace System.Formats.Tar
 
             entry._header._mode = (status.Mode & 4095); // First 12 bits
 
-            entry.Uid = (int)status.Uid;
-            entry.Gid = (int)status.Gid;
+            // Uid and UName
+            entry._header._uid = (int)status.Uid;
+            if (!_userIdentifiers.TryGetValue(status.Uid, out string? uName))
+            {
+                uName = Interop.Sys.GetUserNameFromPasswd(status.Uid);
+                _userIdentifiers.Add(status.Uid, uName);
+            }
+            entry._header._uName = uName;
 
-            // TODO: Add these p/invokes https://github.com/dotnet/runtime/issues/68230
-            entry._header._uName = "";// Interop.Sys.GetUName();
-            entry._header._gName = "";// Interop.Sys.GetGName();
+            // Gid and GName
+            entry._header._gid = (int)status.Gid;
+            if (!_groupIdentifiers.TryGetValue(status.Gid, out string? gName))
+            {
+                gName = Interop.Sys.GetGroupName(status.Gid);
+                _groupIdentifiers.Add(status.Gid, gName);
+            }
+            entry._header._gName = gName;
 
             if (entry.EntryType == TarEntryType.SymbolicLink)
             {
@@ -74,16 +89,8 @@ namespace System.Formats.Tar
 
             if (entry.EntryType is TarEntryType.RegularFile or TarEntryType.V7RegularFile)
             {
-                FileStreamOptions options = new()
-                {
-                    Mode = FileMode.Open,
-                    Access = FileAccess.Read,
-                    Share = FileShare.Read,
-                    Options = FileOptions.None
-                };
-
                 Debug.Assert(entry._header._dataStream == null);
-                entry._header._dataStream = File.Open(fullPath, options);
+                entry._header._dataStream = File.OpenRead(fullPath);
             }
 
             WriteEntry(entry);

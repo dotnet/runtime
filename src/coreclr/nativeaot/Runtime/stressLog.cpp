@@ -263,7 +263,7 @@ void StressLog::ThreadDetach(ThreadStressLog *msgs) {
 
 bool StressLog::AllowNewChunk (long numChunksInCurThread)
 {
-    Thread* pCurrentThread = ThreadStore::GetCurrentThread();
+    Thread* pCurrentThread = ThreadStore::RawGetCurrentThread();
     if (pCurrentThread->IsInCantAllocStressLogRegion())
     {
         return FALSE;
@@ -345,7 +345,8 @@ void ThreadStressLog::LogMsg ( uint32_t facility, int cArgs, const char* format,
     msg->timeStamp = getTimeStamp();
     msg->facility = facility;
     msg->formatOffset = offs;
-    msg->numberOfArgs = cArgs;
+    msg->numberOfArgs = cArgs & 0x7;
+    msg->numberOfArgsX = cArgs >> 3;
 
     for ( int i = 0; i < cArgs; ++i )
     {
@@ -367,7 +368,6 @@ void ThreadStressLog::Activate (Thread * pThread)
     curPtr = (StressMsg *)curWriteChunk->EndPtr ();
     writeHasWrapped = FALSE;
     this->pThread = pThread;
-    ASSERT(pThread->IsCurrentThread());
 }
 
 /* static */
@@ -378,7 +378,7 @@ void StressLog::LogMsg (unsigned facility, int cArgs, const char* format, ... )
     va_list Args;
     va_start(Args, format);
 
-    Thread *pThread = ThreadStore::GetCurrentThread();
+    Thread *pThread = ThreadStore::RawGetCurrentThread();
     if (pThread == NULL)
         return;
 

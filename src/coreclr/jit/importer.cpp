@@ -9448,7 +9448,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
         switch (callInfo->kind)
         {
-
             case CORINFO_VIRTUALCALL_STUB:
             {
                 assert(!(mflags & CORINFO_FLG_STATIC)); // can't call a static method

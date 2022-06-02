@@ -327,7 +327,7 @@ namespace System.Net.Http.Headers
             else
             {
                 // Must always be quoted.
-                string dateString = "\"" + HttpDateParser.DateToString(date.Value) + "\"";
+                string dateString = $"\"{date.GetValueOrDefault():r}\"";
                 if (dateParameter != null)
                 {
                     dateParameter.Value = dateString;

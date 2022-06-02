@@ -5188,23 +5188,18 @@ MONO_RESTORE_WARNING
 					exit (1);
 				}
 
-				gpointer *typed_args = NULL;
-				gpointer *named_args = NULL;
-				CattrNamedArg *named_arg_info = NULL;
-				int num_named_args = 0;
-				mono_reflection_create_custom_attr_data_args_noalloc (acfg->image, e->ctor, e->data, e->data_size, &typed_args, &named_args, &num_named_args, &named_arg_info, error);
+				MonoDecodeCustomAttr *decoded_args = mono_reflection_create_custom_attr_data_args_noalloc (acfg->image, e->ctor, e->data, e->data_size, error);
 				mono_error_assert_ok (error);
-				for (j = 0; j < num_named_args; ++j) {
-					if (named_arg_info [j].field && !strcmp (named_arg_info [j].field->name, "EntryPoint")) {
-						named = named_args [j];
+				for (j = 0; j < decoded_args->named_args_num; ++j) {
+					if (decoded_args->named_args_info [j].field && !strcmp (decoded_args->named_args_info [j].field->name, "EntryPoint")) {
+						named = (const char *)decoded_args->named_args[j]->value.primitive;
 						slen = mono_metadata_decode_value (named, &named);
 						export_name = (char *)g_malloc (slen + 1);
 						memcpy (export_name, named, slen);
 						export_name [slen] = 0;
 					}
 				}
-				g_free (named_args);
-				g_free (named_arg_info);
+				mono_reflection_free_custom_attr_data_args_noalloc (decoded_args);
 
 				wrapper = mono_marshal_get_managed_wrapper (method, NULL, 0, error);
 				mono_error_assert_ok (error);
