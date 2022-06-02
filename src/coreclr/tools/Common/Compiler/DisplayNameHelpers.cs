@@ -4,6 +4,7 @@
 using System;
 using System.Reflection.Metadata;
 using System.Text;
+
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -11,7 +12,7 @@ using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler
 {
-    public static class DisplayNameHelpers
+    internal static class DisplayNameHelpers
     {
         public static string GetDisplayName(this TypeSystemEntity entity)
         {
