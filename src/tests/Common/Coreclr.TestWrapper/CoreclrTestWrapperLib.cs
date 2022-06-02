@@ -346,7 +346,7 @@ namespace CoreclrTestLib
                         if (retriableCodes.Contains(exitCode))
                         {
                             CoreclrTestLib.MobileAppHandler.CreateRetryFile($"{testBinaryBase}/.retry", exitCode, category);
-                            outputWriter.WriteLine("\nretry file has been created.");
+                            outputWriter.WriteLine("\nInfra issue was detected and a work item retry was requested");
                         }
 
                         Task.WaitAll(copyOutput, copyError);
