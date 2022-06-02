@@ -154,6 +154,22 @@ namespace System.Text.RegularExpressions.Tests
             RegexEngine.NonBacktrackingSourceGenerated => RegexOptionNonBacktracking | RegexOptions.Compiled,
             _ => throw new ArgumentException($"Unknown engine: {engine}"),
         };
+
+        /// <summary>Set the environment variable to the max value that effectively removes the check. Only used with Nonbacktracking engine.</summary>
+        public static void RemoveSafeSizeThresholdCheck()
+        {
+#if NET7_0_OR_GREATER
+            AppContext.SetData("SYMBOLIC_REGEX_SAFE_SIZE_THRESHOLD", int.MaxValue);
+#endif
+        }
+
+        /// <summary>Remove the environment variable that affects the limit by setting its value to null. Only used with Nonbacktracking engine.</summary>
+        public static void RestoreSafeSizeThresholdCheck()
+        {
+#if NET7_0_OR_GREATER
+            AppContext.SetData("SYMBOLIC_REGEX_SAFE_SIZE_THRESHOLD", null);
+#endif
+        }
     }
 
     public enum RegexEngine

@@ -124,7 +124,10 @@ namespace System.Text.RegularExpressions.Tests
         [MemberData(nameof(Replace_String_TestData))]
         public async Task Replace(RegexEngine engine, string pattern, string input, string replacement, RegexOptions options, int count, int start, string expected)
         {
+            // 2 tests exceed the 1000 limit, they reach 6003
+            RegexHelpers.RemoveSafeSizeThresholdCheck();
             Regex r = await RegexHelpers.GetRegexAsync(engine, pattern, options);
+            RegexHelpers.RestoreSafeSizeThresholdCheck();
 
             bool isDefaultStart = RegexHelpers.IsDefaultStart(input, options, start);
             bool isDefaultCount = RegexHelpers.IsDefaultCount(input, options, count);

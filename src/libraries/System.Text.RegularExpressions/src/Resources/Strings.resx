@@ -261,6 +261,10 @@
     <value>RegexOptions.NonBacktracking is not supported in conjunction with expressions containing: '{0}'.</value>
     <comment>{Locked="RegexOptions.NonBacktracking"}</comment>
   </data>
+  <data name="NotSupported_NonBacktrackingUnsafeSize" xml:space="preserve">
+    <value>RegexOptions.NonBacktracking is not supported for expressions of potential expanded size: '{0}', that exceeds the safe size threshold: '{1}'.</value>
+    <comment>{Locked="RegexOptions.NonBacktracking"}</comment>
+  </data>
   <data name="ExpressionDescription_Backreference" xml:space="preserve">
     <value>backreference (\\ number)</value>
   </data>

@@ -1923,7 +1923,9 @@ namespace System.Text.RegularExpressions.Tests
             string fullpattern = string.Concat(string.Concat(Enumerable.Repeat($"({pattern}", pattern_repetition).Concat(Enumerable.Repeat(")", pattern_repetition))), anchor);
             string fullinput = string.Concat(Enumerable.Repeat(input, input_repetition));
 
+            RegexHelpers.RemoveSafeSizeThresholdCheck();
             Regex re = await RegexHelpers.GetRegexAsync(engine, fullpattern);
+            RegexHelpers.RestoreSafeSizeThresholdCheck();
             Assert.True(re.Match(fullinput).Success);
         }
 
@@ -1945,7 +1947,9 @@ namespace System.Text.RegularExpressions.Tests
             string fullpattern = string.Concat(Enumerable.Repeat(begin, pattern_repetition)) + inner + string.Concat(Enumerable.Repeat(end, pattern_repetition));
             string fullinput = string.Concat(Enumerable.Repeat(input, input_repetition));
 
+            RegexHelpers.RemoveSafeSizeThresholdCheck();
             var re = await RegexHelpers.GetRegexAsync(engine, fullpattern, options);
+            RegexHelpers.RestoreSafeSizeThresholdCheck();
             Assert.True(re.Match(fullinput).Success);
         }
 

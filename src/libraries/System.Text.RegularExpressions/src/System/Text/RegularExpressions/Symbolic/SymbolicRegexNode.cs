@@ -1288,7 +1288,8 @@ namespace System.Text.RegularExpressions.Symbolic
                             // so d(R{m,n}) = d(R)R{max(0,m-1),n-1}. Note that n is guaranteed to be greater than zero, since otherwise the
                             // loop would have been simplified to nothing, and int.MaxValue is treated as infinity.
                             int newupper = _upper == int.MaxValue ? int.MaxValue : _upper - 1;
-                            int newlower = _lower == 0 ? 0 : _lower - 1;
+                            // do not decrement the lower bound if it equals int.MaxValue
+                            int newlower = _lower == 0 || _lower == int.MaxValue ? _lower : _lower - 1;
                             // the continued loop becomes epsilon when newlower == newupper == 0
                             // in which case the returned concatenation will be just bodyDerivative
                             derivative = _builder.CreateConcat(bodyDerivative, _builder.CreateLoop(_left, IsLazy, newlower, newupper));
@@ -2211,6 +2212,89 @@ namespace System.Text.RegularExpressions.Symbolic
                     yield return this;
                     break;
             }
+        }
+
+        /// <summary>
+        /// Estimates the number of Regex AST nodes, if all loops with explicit counters
+        /// were eliminated from the node, i.e., as if the repetitions were explicitly unfolded.
+        /// <remarks>
+        /// Let node.EstimateSafeSize() be abbreviated by #(node).
+        /// Ex: #(a{6}) = 6*#(a)+5 = 11.
+        /// In general #(..) may overestimate the size:
+        /// Ex: #(a+|()) = 1+#(a{1,})+#(()) = 1+(1+1)+(1+1)*#(a)+1 = 6,
+        /// while a+|() simpifies to a* and #(a*) = 1+#(a) = 2.
+        /// </remarks>
+        /// </summary>
+        internal int EstimateSafeSize()
+        {
+            // Guard against stack overflow due to deep recursion
+            if (!StackHelper.TryEnsureSufficientExecutionStack())
+            {
+                return StackHelper.CallOnEmptyStack(EstimateSafeSize);
+            }
+
+            switch (_kind)
+            {
+                case SymbolicRegexNodeKind.Concat:
+                case SymbolicRegexNodeKind.Alternate:
+                    Debug.Assert(_left is not null && _right is not null);
+                    // Count 1 for the concat or alternation node
+                    // #(this) = 1 + #(_left) + #(_right)
+                    return sum(1, sum(_left.EstimateSafeSize(), _right.EstimateSafeSize()));
+
+                case SymbolicRegexNodeKind.Loop:
+                    Debug.Assert(_left is not null);
+                    Debug.Assert(_lower >= 0 && _upper > 0 && _upper >= _lower);
+                    if (IsStar)
+                    {
+                        // Counters are not being used, add 1 for the loop node + #(_left) for the body
+                        // #(this) = 1 + #(_left)
+                        return sum(1, _left.EstimateSafeSize());
+                    }
+
+                    if (_upper == int.MaxValue)
+                    {
+                        // the upper bound is not being used, so the lower must be non-zero
+                        Debug.Assert(_lower > 0);
+
+                        if (_lower == int.MaxValue)
+                        {
+                            //infinite loop has the same size as a *-loop
+                            return sum(1, _left.EstimateSafeSize());
+                        }
+
+                        // The case is R{m,} with R = _left and m = _lower.
+                        // Unfolding R m times followed by R* creates m concatentation nodes with 1 *-node around the final R
+                        // #(this) = #(R{m,}) = (m+1)+(m+1)*#(R) = (m+1)*(1+#(R))
+                        // Ex: suppose R has no counters, then Unfold(R{4,}) = RRRRR* so #(R{4,}) = 5*(1+#(R))
+                        return times(sum(_lower, 1), sum(1, _left.EstimateSafeSize()));
+                    }
+
+                    // The general case with both upper and lower bounds is R{m,n} with m =_lower and n = _upper
+                    // This creates in total n*#(R) nodes + n-1 concatenations + n-m ?-nodes
+                    // #(this) = #(R{m,n}) = n*#(R) + n-1 + n-m
+                    // Ex: suppose R has no counters, then Unfold(R{3,7}) = RRRR?R?R?R? so #(R{3,7}) = 7*#(R) + 6 + 4
+                    return sum(sum(times(_upper, _left.EstimateSafeSize()), _upper - 1), _upper - _lower);
+
+                case SymbolicRegexNodeKind.DisableBacktrackingSimulation:
+                case SymbolicRegexNodeKind.Effect:
+                    Debug.Assert(_left is not null);
+                    return sum(1, _left.EstimateSafeSize());
+
+                default:
+                    Debug.Assert(_left is null && _right is null);
+                    // All the other nodes contribute 1 to the overall size as they have no children
+                    // #(this) = 1
+                    return 1;
+            }
+
+            //In case of overflow in m+n return int.MaxValue
+            static int sum(int m, int n) => avoidOverflow(m + n);
+
+            //In case of overflow in m*n return int.MaxValue
+            static int times(int m, int n) => avoidOverflow(m * n);
+
+            static int avoidOverflow(int m) => m < 0 ? int.MaxValue : m;
         }
     }
 }
