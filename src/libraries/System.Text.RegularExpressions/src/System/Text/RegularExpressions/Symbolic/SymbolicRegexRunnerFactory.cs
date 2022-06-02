@@ -24,14 +24,15 @@ namespace System.Text.RegularExpressions.Symbolic
             SymbolicRegexNode<BDD> rootNode = converter.ConvertToSymbolicRegexNode(regexTree.Root);
             // Determine if the root node is supported for safe handling
             int threshold = SymbolicRegexThresholds.GetSymbolicRegexSafeSizeThreshold();
-            Debug.Assert(0 < threshold);
+            Debug.Assert(threshold > 0);
+            
             // Skip the threshold check if the threshold equals int.MaxValue
             if (threshold != int.MaxValue)
             {
-                int rootNodeEstimatedSafeSize = rootNode.EstimateSafeSize();
-                if (rootNodeEstimatedSafeSize > threshold)
+                int size = rootNode.EstimateSafeSize();
+                if (size > threshold)
                 {
-                    throw new NotSupportedException(SR.Format(SR.NotSupported_NonBacktrackingUnsafeSize, rootNodeEstimatedSafeSize, threshold));
+                    throw new NotSupportedException(SR.Format(SR.NotSupported_NonBacktrackingUnsafeSize, size, threshold));
                 }
             }
 
