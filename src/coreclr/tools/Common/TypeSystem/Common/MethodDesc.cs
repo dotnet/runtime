@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Internal.NativeFormat;
@@ -269,16 +270,22 @@ namespace Internal.TypeSystem
             }
             else
             {
-                if (this.TryGetUnmanagedCallingConventionFromModOpt(out MethodSignatureFlags thisCallConv, out bool thisSuppressGCTransition)
-                    == otherSignature.TryGetUnmanagedCallingConventionFromModOpt(out MethodSignatureFlags otherCallConv, out bool otherSuppressGCTransition))
+                if (this.TryGetCallConvModOpts(out EmbeddedSignatureData[] thisModoptData)
+                    == otherSignature.TryGetCallConvModOpts(out EmbeddedSignatureData[] otherModoptData))
                 {
-                    if (thisCallConv == otherCallConv && thisSuppressGCTransition == otherSuppressGCTransition)
+                    if (thisModoptData == null && otherModoptData == null)
                     {
                         return true;
                     }
-                    else
+
+                    for (int i = 0; i < thisModoptData.Length; i++)
                     {
-                        return false;
+                        if (thisModoptData[i].index != otherModoptData[i].index)
+                            return false;
+                        if (thisModoptData[i].kind != otherModoptData[i].kind)
+                            return false;
+                        if (thisModoptData[i].type != otherModoptData[i].type)
+                            return false;
                     }
                 }
             }
@@ -286,12 +293,10 @@ namespace Internal.TypeSystem
             return false;
         }
 
-        private bool TryGetUnmanagedCallingConventionFromModOpt(out MethodSignatureFlags callConv, out bool suppressGCTransition)
+        private bool TryGetCallConvModOpts(out EmbeddedSignatureData[] modoptData)
         {
-            suppressGCTransition = false;
-            // Default to managed since in the modopt case we need to differentiate explicitly using a calling convention that matches the default
-            // and not specifying a calling convention at all and using the implicit default case in P/Invoke stub inlining.
-            callConv = MethodSignatureFlags.None;
+            ArrayBuilder<EmbeddedSignatureData> builder = new ArrayBuilder<EmbeddedSignatureData>();
+            modoptData = null;
             if (!HasEmbeddedSignatureData)
                 return false;
 
@@ -312,16 +317,11 @@ namespace Internal.TypeSystem
                 if (defType.Namespace != "System.Runtime.CompilerServices")
                     continue;
 
-                if (defType.Name == "CallConvSuppressGCTransition")
+                // Anything which starts with CallConv is related to call convention
+                // CallConvMemberFunction, CallConvSuppressGCTransition and some other unknown future call conventions.
+                if (defType.Name.StartsWith("CallConv"))
                 {
-                    suppressGCTransition = true;
-                    continue;
-                }
-
-                MethodSignatureFlags? callConvLocal = GetCallingConventionForCallConvType(defType);
-                if (callConvLocal.HasValue && !found)
-                {
-                    callConv = callConvLocal.Value;
+                    builder.Add(data);
                     found = true;
                 }
             }
