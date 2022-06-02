@@ -2398,7 +2398,8 @@ AGAIN:
 
             case GT_LCL_FLD:
                 if ((op1->AsLclFld()->GetLclNum() != op2->AsLclFld()->GetLclNum()) ||
-                    (op1->AsLclFld()->GetLclOffs() != op2->AsLclFld()->GetLclOffs()))
+                    (op1->AsLclFld()->GetLclOffs() != op2->AsLclFld()->GetLclOffs()) ||
+                    (op1->AsLclFld()->GetLayout() != op2->AsLclFld()->GetLayout()))
                 {
                     break;
                 }
@@ -2800,6 +2801,7 @@ AGAIN:
                 break;
             case GT_LCL_FLD:
                 hash = genTreeHashAdd(hash, tree->AsLclFld()->GetLclNum());
+                hash = genTreeHashAdd(hash, tree->AsLclFld()->GetLayout());
                 add  = tree->AsLclFld()->GetLclOffs();
                 break;
 
