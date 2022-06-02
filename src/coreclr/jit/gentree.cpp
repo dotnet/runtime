@@ -4999,20 +4999,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         {
                             doAddrMode = false;
                         }
-                        else if (varTypeIsStruct(tree))
-                        {
-                            // This is a heuristic attempting to match prior behavior when indirections
-                            // under a struct assignment would not be considered for addressing modes.
-                            if (compCurStmt != nullptr)
-                            {
-                                GenTree* expr = compCurStmt->GetRootNode();
-                                if ((expr->OperGet() == GT_ASG) &&
-                                    ((expr->gtGetOp1() == tree) || (expr->gtGetOp2() == tree)))
-                                {
-                                    doAddrMode = false;
-                                }
-                            }
-                        }
+
 #ifdef TARGET_ARM64
                         if (tree->gtFlags & GTF_IND_VOLATILE)
                         {
