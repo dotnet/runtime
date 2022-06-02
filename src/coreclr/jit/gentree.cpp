@@ -17230,7 +17230,11 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleIfPresent(GenTree* tree)
                     }
 #endif
                 }
+                else
 #endif
+                {
+                    structHnd = tree->AsLclFld()->GetLayout()->GetClassHandle();
+                }
                 break;
             case GT_LCL_VAR:
             {
