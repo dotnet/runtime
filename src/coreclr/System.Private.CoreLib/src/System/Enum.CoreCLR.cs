@@ -15,23 +15,7 @@ namespace System
 
         private static unsafe object InternalBoxEnum(RuntimeType enumType, long value)
         {
-            // RuntimeType is an instance of ReflectClassBaseObject, which inherits from Object.
-            // Its type layout is as follows (following the method table inherited from Object);
-            //
-            //   OBJECTREF m_keepalive;
-            //   OBJECTREF m_cache;
-            //   TypeHandle m_typeHandle;
-            //
-            // For more details, see src\vm\object.h.
-            // We need to get the type handle, so first we get a data reference, which gives us a
-            // reference to the start of the first data field (so m_keepalive), then shift
-            // by sizeof(void*) * 2. This gets us to the start of the m_typeHandle field.
-            ref byte dataRef = ref Unsafe.As<RawData>(enumType).Data;
-            ref byte typeHandleRef = ref Unsafe.AddByteOffset(ref dataRef, (nuint)(uint)sizeof(void*) * 2);
-            TypeHandle typeHandle = Unsafe.As<byte, TypeHandle>(ref typeHandleRef);
-
-            // The type here will never be a type desc, so we can just reinterpret
-            MethodTable* pMethodTable = typeHandle.AsMethodTable();
+            MethodTable* pMethodTable = (MethodTable*)enumType.m_handle;
 
             uint numInstanceFieldBytes = pMethodTable->GetNumInstanceFieldBytes();
             byte* rawValue = ArgSlot.EndianessFixup(&value, numInstanceFieldBytes);
