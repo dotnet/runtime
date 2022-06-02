@@ -1325,7 +1325,10 @@ namespace Microsoft.WebAssembly.Diagnostics
                 });
                 Result assemblyAndMethodToken = await SendCommand(sessionId, "Debugger.evaluateOnCallFrame", argsNew, token);
                 if (!assemblyAndMethodToken.IsOk)
+                {
+                    logger.LogDebug("Failure evaluating assembly_name_str + '|' + entrypoint_method_token");
                     return;
+                }
                 logger.LogDebug($"Entrypoint assembly and method token {assemblyAndMethodToken.Value["result"]["value"].Value<string>()}");
 
                 var assemblyAndMethodTokenArr = assemblyAndMethodToken.Value["result"]["value"].Value<string>().Split('|', StringSplitOptions.TrimEntries);
@@ -1335,15 +1338,24 @@ namespace Microsoft.WebAssembly.Diagnostics
                 var store = await LoadStore(sessionId, token);
                 AssemblyInfo assembly = store.GetAssemblyByName(assemblyName);
                 if (assembly == null)
+                {
+                    logger.LogDebug($"Could not find assembly {assemblyName}");
                     return;
+                }
                 var method = assembly.GetMethodByToken(methodToken);
                 if (method.StartLocation == null) //It's an async method and we need to get the MoveNext method to add the breakpoint
                     method = assembly.Methods.FirstOrDefault(m => m.Value.KickOffMethod == methodToken).Value;
                 if (method == null)
+                {
+                    logger.LogDebug($"Could not find method {methodToken}");
                     return;
-                var sourceFile = assembly.Sources.Single(sf => sf.SourceId == method.SourceId);
+                }
+                var sourceFile = assembly.Sources.FirstOrDefault(sf => sf.SourceId == method.SourceId);
                 if (sourceFile == null)
+                {
+                    logger.LogDebug($"Could not source file {method.SourceName}");
                     return;
+                }
                 string bpId = $"auto:{method.StartLocation.Line}:{method.StartLocation.Column}:{sourceFile.DotNetUrl}";
                 BreakpointRequest request = new(bpId, JObject.FromObject(new
                 {
@@ -1356,9 +1368,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                     await SetBreakpoint(sessionId, context.store, request, sendResolvedEvent: false, fromEnC: false, token);
                 logger.LogInformation($"Adding bp req {request}");
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                logger.LogDebug($"Unable to set entrypoint breakpoint.");
+                logger.LogDebug($"Unable to set entrypoint breakpoint. {e}");
             }
             finally
             {
