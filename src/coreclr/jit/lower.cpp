@@ -1023,7 +1023,6 @@ bool Lowering::TryLowerSwitchToBitTest(
     GenTree*  bitTest      = comp->gtNewOperNode(GT_BT, TYP_VOID, bitTableIcon, switchValue);
     bitTest->gtFlags |= GTF_SET_FLAGS;
     GenTreeCC* jcc = new (comp, GT_JCC) GenTreeCC(GT_JCC, bbSwitchCondition);
-    jcc->gtFlags |= GTF_USE_FLAGS;
 
     LIR::AsRange(bbSwitch).InsertAfter(switchValue, bitTableIcon, bitTest, jcc);
 
@@ -2727,7 +2726,6 @@ GenTree* Lowering::DecomposeLongCompare(GenTree* cmp)
         GenTree* jcc       = cmpUse.User();
         jcc->AsOp()->gtOp1 = nullptr;
         jcc->ChangeOper(GT_JCC);
-        jcc->gtFlags |= GTF_USE_FLAGS;
         jcc->AsCC()->gtCondition = GenCondition::FromIntegralRelop(condition, cmp->IsUnsigned());
     }
     else
@@ -2735,7 +2733,6 @@ GenTree* Lowering::DecomposeLongCompare(GenTree* cmp)
         cmp->AsOp()->gtOp1 = nullptr;
         cmp->AsOp()->gtOp2 = nullptr;
         cmp->ChangeOper(GT_SETCC);
-        cmp->gtFlags |= GTF_USE_FLAGS;
         cmp->AsCC()->gtCondition = GenCondition::FromIntegralRelop(condition, cmp->IsUnsigned());
     }
 
@@ -2983,8 +2980,6 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
                 cmpUse.ReplaceWith(cc);
             }
 
-            cc->gtFlags |= GTF_USE_FLAGS;
-
             return cmp->gtNext;
         }
 #endif // TARGET_XARCH
@@ -3052,7 +3047,6 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
             GenCondition condition = GenCondition::FromIntegralRelop(cmp);
             cc->ChangeOper(ccOp);
             cc->AsCC()->gtCondition = condition;
-            cc->gtFlags |= GTF_USE_FLAGS;
 
             return next;
         }
@@ -3270,7 +3264,6 @@ GenTreeCC* Lowering::LowerNodeCC(GenTree* node, GenCondition condition)
     if (cc != nullptr)
     {
         node->gtFlags |= GTF_SET_FLAGS;
-        cc->gtFlags |= GTF_USE_FLAGS;
     }
 
     // Remove the chain of EQ/NE(x, 0) relop nodes, if any. Note that if a SETCC was

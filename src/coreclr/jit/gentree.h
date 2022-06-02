@@ -408,7 +408,7 @@ enum GenTreeFlags : unsigned int
     GTF_NOREG_AT_USE = 0x00000100, // tree node is in memory at the point of use
 
     GTF_SET_FLAGS   = 0x00000200, // Requires that codegen for this node set the flags. Use gtSetFlags() to check this flag.
-    GTF_USE_FLAGS   = 0x00000400, // Indicates that this node uses the flags bits.
+//  GTF_UNUSED      = 0x00000400,
 
     GTF_MAKE_CSE    = 0x00000800, // Hoisted expression: try hard to make this into CSE (see optPerformHoistExpr)
     GTF_DONT_CSE    = 0x00001000, // Don't bother CSE'ing this expr
