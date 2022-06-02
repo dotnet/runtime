@@ -1705,17 +1705,12 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
     }
 
     // Slow down if there are already too many locals
-    if (m_RootCompiler->lvaCount >= 32)
+    if (m_RootCompiler->lvaTableCnt > 64)
     {
-        // We don't expect to be here in case if we already have more than we can track
-        assert(!m_RootCompiler->lvaHaveManyLocals());
-
-        // E.g. MaxLocalsToTrack = 1024 and lvaCount = 512 -> multiplier *= 0.5;
-        const double lclFullness = (double)m_RootCompiler->lvaCount / JitConfig.JitMaxLocalsToTrack();
-        assert(lclFullness >= 0.0 && lclFullness <= 1.0);
-
-        multiplier *= 1.0 - lclFullness;
-        JITDUMP("\nCaller has lots of locals (%d).  Multiplier decreased to %g.", m_RootCompiler->lvaCount, multiplier);
+        // E.g. MaxLocalsToTrack = 1024 and lvaTableCnt = 512 -> multiplier *= 0.5;
+        const double lclFullness = min(1.0, (double)m_RootCompiler->lvaTableCnt / JitConfig.JitMaxLocalsToTrack());
+        multiplier *= (1.0 - lclFullness);
+        JITDUMP("\nCaller has %d locals.  Multiplier decreased to %g.", m_RootCompiler->lvaTableCnt, multiplier);
     }
 
     if (m_BackwardJump)
