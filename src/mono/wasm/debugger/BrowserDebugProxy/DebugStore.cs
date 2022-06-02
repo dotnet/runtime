@@ -901,8 +901,6 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 strIdx = strIdx - asmMetadataReaderLocal.GetHeapSize(HeapIndex.String);
                 asmMetadataReaderLocal = enCMetadataReader[i];
-                if (strIdx < asmMetadataReaderLocal.GetHeapSize(HeapIndex.String))
-                    break;
             }
             return asmMetadataReaderLocal.GetString(MetadataTokens.StringHandle(strIdx));
         }
