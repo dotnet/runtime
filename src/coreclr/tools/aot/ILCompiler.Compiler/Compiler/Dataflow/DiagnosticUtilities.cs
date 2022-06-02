@@ -37,7 +37,7 @@ namespace ILCompiler.Dataflow
 
         internal static string GetParameterNameForErrorMessage(MethodDesc method, int parameterIndex)
         {
-            if (method is EcmaMethod ecmaMethod)
+            if (method.GetTypicalMethodDefinition() is EcmaMethod ecmaMethod)
                 return ecmaMethod.GetParameterDisplayName(parameterIndex);
 
             return $"#{parameterIndex}";

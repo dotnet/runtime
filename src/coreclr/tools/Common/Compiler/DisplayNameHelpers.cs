@@ -43,7 +43,7 @@ namespace ILCompiler
             {
                 sb.Append(property.Name);
                 sb.Append('.');
-                sb.Append(property.GetMethod.Name == method.Name ? "get" : "set");
+                sb.Append(property.GetMethod == method ? "get" : "set");
             }
             else
             {
