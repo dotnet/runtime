@@ -9573,28 +9573,6 @@ MONO_RESTORE_WARNING
 			break;
 		}
 #endif
-#if defined(TARGET_WASM)
-		case OP_WASM_SIMD_V128_CONST: {
-			values [ins->dreg] = values [ins->sreg1];
-			break;
-		}
-		case OP_WASM_SIMD_SHUFFLE: {
-			/* FIXME: this crashes 'WebAssembly Instruction Selection' pass in some cases
-			   https://github.com/llvm/llvm-project/issues/55559
-			 */
-			LLVMValueRef args [18] = { lhs, rhs };
-			for (int i = 0; i < 16; i++) {
-				args[2 + i] = LLVMBuildZExt (builder, LLVMBuildExtractElement (builder, arg3, const_int32 (i), ""), LLVMInt32Type (), "");
-			}
-			values [ins->dreg] = call_intrins (ctx, INTRINS_WASM_SHUFFLE, args, "i8x16.shuffle");
-			break;
-		}
-		case OP_WASM_SIMD_SWIZZLE: {
-			LLVMValueRef args [] = { lhs, rhs };
-			values [ins->dreg] = call_intrins (ctx, INTRINS_WASM_SWIZZLE, args, "");
-			break;
-		}
-#endif
 #if defined(TARGET_ARM64) || defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_WASM)
 		case OP_XEQUAL: {
 			LLVMTypeRef t;
