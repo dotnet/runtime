@@ -218,20 +218,14 @@ mono_marshal_shared_get_fixed_buffer_attr (MonoClassField *field, MonoType **out
 		}
 	}
 	if (attr) {
-		gpointer *typed_args, *named_args;
-		CattrNamedArg *arginfo;
-		int num_named_args;
-
-		mono_reflection_create_custom_attr_data_args_noalloc (mono_defaults.corlib, attr->ctor, attr->data, attr->data_size,
-															  &typed_args, &named_args, &num_named_args, &arginfo, error);
+		MonoDecodeCustomAttr *decoded_args = mono_reflection_create_custom_attr_data_args_noalloc (mono_defaults.corlib, attr->ctor, attr->data, attr->data_size, error);
 		if (!is_ok (error))
 			return FALSE;
-		*out_etype = (MonoType*)typed_args [0];
-		*out_len = *(gint32*)typed_args [1];
-		g_free (typed_args [1]);
-		g_free (typed_args);
-		g_free (named_args);
-		g_free (arginfo);
+
+		*out_etype = (MonoType*)decoded_args->typed_args[0]->value.primitive;
+		*out_len = *(gint32*)decoded_args->typed_args[1]->value.primitive;
+
+		mono_reflection_free_custom_attr_data_args_noalloc (decoded_args);
 	}
 	if (cinfo && !cinfo->cached)
 		mono_custom_attrs_free (cinfo);

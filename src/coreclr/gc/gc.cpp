@@ -211,6 +211,7 @@ BOOL is_induced (gc_reason reason)
             (reason == reason_lowmemory) ||
             (reason == reason_lowmemory_blocking) ||
             (reason == reason_induced_compacting) ||
+            (reason == reason_induced_aggressive) ||
             (reason == reason_lowmemory_host) ||
             (reason == reason_lowmemory_host_blocking));
 }
@@ -221,6 +222,7 @@ BOOL is_induced_blocking (gc_reason reason)
     return ((reason == reason_induced) ||
             (reason == reason_lowmemory_blocking) ||
             (reason == reason_induced_compacting) ||
+            (reason == reason_induced_aggressive) ||
             (reason == reason_lowmemory_host_blocking));
 }
 
@@ -12297,6 +12299,56 @@ void gc_heap::distribute_free_regions()
 {
 #ifdef USE_REGIONS
     const int kind_count = large_free_region + 1;
+    if (settings.reason == reason_induced_aggressive)
+    {
+#ifdef MULTIPLE_HEAPS
+        for (int i = 0; i < n_heaps; i++)
+        {
+            gc_heap* hp = g_heaps[i];
+#else //MULTIPLE_HEAPS
+        {
+            gc_heap* hp = pGenGCHeap;
+#endif //MULTIPLE_HEAPS
+            for (int kind = basic_free_region; kind < count_free_region_kinds; kind++)
+            {
+                global_regions_to_decommit[kind].transfer_regions (&hp->free_regions[kind]);
+            }
+        }
+        while (decommit_step())
+        {
+        }
+#ifdef MULTIPLE_HEAPS
+        for (int i = 0; i < n_heaps; i++)
+        {
+            gc_heap* hp = g_heaps[i];
+            int hn = i;
+#else //MULTIPLE_HEAPS
+        {
+            gc_heap* hp = pGenGCHeap;
+            int hn  = 0;
+#endif //MULTIPLE_HEAPS
+            for (int i = 0; i < total_generation_count; i++)
+            {
+                generation* generation = hp->generation_of (i);
+                heap_segment* region = heap_segment_rw (generation_start_segment (generation));
+                while (region != nullptr)
+                {
+                    uint8_t* aligned_allocated = align_on_page (heap_segment_allocated (region));
+                    size_t end_space = heap_segment_committed (region) - aligned_allocated;
+                    if (end_space > 0)
+                    {
+                        virtual_decommit (aligned_allocated, end_space, gen_to_oh (i), hn);
+                        heap_segment_committed (region) = aligned_allocated;
+                        heap_segment_used (region) = min (heap_segment_used (region), heap_segment_committed (region));
+                        assert (heap_segment_committed (region) > heap_segment_mem (region));
+                    }
+                    region = heap_segment_next_rw (region);
+                }
+            }
+        }
+
+        return;
+    }
 
     // first step: accumulate the number of free regions and the budget over all heaps
     // and move huge regions to global free list
@@ -30568,6 +30620,10 @@ void gc_heap::update_start_tail_regions (generation* gen,
 inline
 bool gc_heap::should_sweep_in_plan (heap_segment* region)
 {
+    if (settings.reason == reason_induced_aggressive)
+    {
+        return false;
+    }
     bool sip_p = false;
     int gen_num = get_region_gen_num (region);
     int new_gen_num = get_plan_gen_num (gen_num);
@@ -40218,6 +40274,13 @@ BOOL gc_heap::decide_on_compacting (int condemned_gen_number,
         get_gc_data_per_heap()->set_mechanism (gc_heap_compact, compact_induced_compacting);
     }
 
+    if (settings.reason == reason_induced_aggressive)
+    {
+        dprintf (2, ("aggressive compacting GC"));
+        should_compact = TRUE;
+        get_gc_data_per_heap()->set_mechanism (gc_heap_compact, compact_aggressive_compacting);
+    }
+
     if (settings.reason == reason_pm_full_gc)
     {
         assert (condemned_gen_number == max_generation);
@@ -45232,7 +45295,11 @@ GCHeap::GarbageCollectTry (int generation, BOOL low_memory_p, int mode)
 
     if (reason == reason_induced)
     {
-        if (mode & collection_compacting)
+        if (mode & collection_aggressive)
+        {
+            reason = reason_induced_aggressive;
+        }
+        else if (mode & collection_compacting)
         {
             reason = reason_induced_compacting;
         }

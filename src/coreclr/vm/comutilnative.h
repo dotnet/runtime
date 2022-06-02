@@ -226,6 +226,8 @@ public:
     static FCDECL1(UINT32, GetNumInstanceFieldBytes, MethodTable* mt);
 };
 
+extern "C" BOOL QCALLTYPE MethodTable_AreTypesEquivalent(MethodTable* mta, MethodTable* mtb);
+
 class StreamNative {
 public:
     static FCDECL1(FC_BOOL_RET, HasOverriddenBeginEndRead, Object *stream);

@@ -1864,7 +1864,7 @@ namespace Internal.JitInterface
                 }
                 else
                 {
-                    *pCookieVal = (IntPtr)0x216D6F6D202C6948;
+                    *pCookieVal = unchecked((IntPtr)0x216D6F6D202C6948);
                 }
                 *ppCookieVal = null;
             }
