@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
@@ -25,8 +26,17 @@ namespace Microsoft.Interop
         {
             if (IsPinningPathSupported(info, context))
             {
-                return ValueBoundaryBehavior.NativeIdentifier;
+                if (AsNativeType(info) is PointerTypeSyntax pointerType
+                    && pointerType.ElementType is PredefinedTypeSyntax predefinedType
+                    && predefinedType.Keyword.IsKind(SyntaxKind.VoidKeyword))
+                {
+                    return ValueBoundaryBehavior.NativeIdentifier;
+                }
+
+                // Cast to native type if it is not void*
+                return ValueBoundaryBehavior.CastNativeIdentifier;
             }
+
             return _innerMarshallingGenerator.GetValueBoundaryBehavior(info, context);
         }
 
@@ -46,6 +56,7 @@ namespace Microsoft.Interop
             {
                 return GeneratePinningPath(info, context);
             }
+
             return _innerMarshallingGenerator.Generate(info, context);
         }
 
@@ -60,6 +71,7 @@ namespace Microsoft.Interop
             {
                 return false;
             }
+
             return _innerMarshallingGenerator.UsesNativeIdentifier(info, context);
         }
         private static bool IsPinningPathSupported(TypePositionInfo info, StubCodeContext context)
@@ -67,32 +79,24 @@ namespace Microsoft.Interop
             return context.SingleFrameSpansNativeContext && !info.IsByRef && !info.IsManagedReturnPosition;
         }
 
-        private IEnumerable<StatementSyntax> GeneratePinningPath(TypePositionInfo info, StubCodeContext context)
+        private static IEnumerable<StatementSyntax> GeneratePinningPath(TypePositionInfo info, StubCodeContext context)
         {
             if (context.CurrentStage == StubCodeContext.Stage.Pin)
             {
                 (string managedIdentifier, string nativeIdentifier) = context.GetIdentifiers(info);
-                string pinnedIdentifier = context.GetAdditionalIdentifier(info, "pinned");
+
+                // fixed (void* <nativeIdentifier> = <managedIdentifier>)
                 yield return FixedStatement(
                     VariableDeclaration(
                         PointerType(PredefinedType(Token(SyntaxKind.VoidKeyword))),
                         SingletonSeparatedList(
-                            VariableDeclarator(Identifier(pinnedIdentifier))
+                            VariableDeclarator(Identifier(nativeIdentifier))
                                 .WithInitializer(EqualsValueClause(
                                     IdentifierName(managedIdentifier)
                                 ))
                         )
                     ),
-                    // <nativeType> <native> = (<nativeType>)<pinned>;
-                    LocalDeclarationStatement(
-                        VariableDeclaration(AsNativeType(info),
-                            SingletonSeparatedList(
-                                VariableDeclarator(nativeIdentifier)
-                                    .WithInitializer(EqualsValueClause(
-                                        CastExpression(
-                                            AsNativeType(info),
-                                            IdentifierName(pinnedIdentifier)))))))
-                );
+                    EmptyStatement());
             }
         }
     }

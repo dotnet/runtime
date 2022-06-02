@@ -208,7 +208,7 @@ enum
 void InitializeCrashDump();
 void CreateCrashDumpIfEnabled(bool stackoverflow = false);
 #endif
-bool GenerateDump(LPCWSTR dumpName, INT dumpType, ULONG32 flags);
+bool GenerateDump(LPCWSTR dumpName, INT dumpType, ULONG32 flags, LPSTR errorMessageBuffer, INT cbErrorMessageBuffer);
 
 // Generates crash dumps if enabled for both Windows and Linux
 void CrashDumpAndTerminateProcess(UINT exitCode);
@@ -580,8 +580,6 @@ VOID DECLSPEC_NORETURN ThrowFieldLayoutError(mdTypeDef cl,                // cl 
                            DWORD   dwID);
 
 UINT GetResourceIDForFileLoadExceptionHR(HRESULT hr);
-
-FCDECL1(Object*, MissingMemberException_FormatSignature, I1Array* pPersistedSigUNSAFE);
 
 #define EXCEPTION_NONCONTINUABLE 0x1    // Noncontinuable exception
 #define EXCEPTION_UNWINDING 0x2         // Unwind is in progress

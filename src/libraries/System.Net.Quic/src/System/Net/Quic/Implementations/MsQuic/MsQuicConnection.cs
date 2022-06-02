@@ -140,11 +140,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             try
             {
                 Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
-                delegate* unmanaged[Cdecl]<QUIC_HANDLE*, void*, QUIC_CONNECTION_EVENT*, int> nativeCallback = &NativeCallback;
-                MsQuicApi.Api.ApiTable->SetCallbackHandler(
-                    _state.Handle.QuicHandle,
-                    nativeCallback,
-                    (void*)GCHandle.ToIntPtr(_state.StateGCHandle));
+                MsQuicApi.Api.ApiTable->SetConnectionCallback(_state.Handle.QuicHandle, &NativeCallback, (void*)GCHandle.ToIntPtr(_state.StateGCHandle));
             }
             catch
             {
@@ -351,19 +347,19 @@ namespace System.Net.Quic.Implementations.MsQuic
                     {
                         unsafe
                         {
-                            ReadOnlySpan<QUIC_BUFFER> quicBuffer = new ReadOnlySpan<QUIC_BUFFER>((void*)certificateHandle, sizeof(QUIC_BUFFER));
-                            certificate = new X509Certificate2(new ReadOnlySpan<byte>(quicBuffer[0].Buffer, (int)quicBuffer[0].Length));
-                            certificateBuffer = (IntPtr)quicBuffer[0].Buffer;
-                            certificateLength = (int)quicBuffer[0].Length;
+                            QUIC_BUFFER* certBuffer = (QUIC_BUFFER*)certificateHandle;
+                            certificate = new X509Certificate2(new ReadOnlySpan<byte>(certBuffer->Buffer, (int)certBuffer->Length));
+                            certificateBuffer = (IntPtr)certBuffer->Buffer;
+                            certificateLength = (int)certBuffer->Length;
 
                             IntPtr chainHandle = (IntPtr)connectionEvent.PEER_CERTIFICATE_RECEIVED.Chain;
                             if (chainHandle != IntPtr.Zero)
                             {
-                                quicBuffer = new ReadOnlySpan<QUIC_BUFFER>((void*)chainHandle, sizeof(QUIC_BUFFER));
-                                if (quicBuffer[0].Length != 0 && quicBuffer[0].Buffer != null)
+                                QUIC_BUFFER* chainBuffer = (QUIC_BUFFER*)chainHandle;
+                                if (chainBuffer->Length != 0 && chainBuffer->Buffer != null)
                                 {
                                     additionalCertificates = new X509Certificate2Collection();
-                                    additionalCertificates.Import(new ReadOnlySpan<byte>(quicBuffer[0].Buffer, (int)quicBuffer[0].Length));
+                                    additionalCertificates.Import(new ReadOnlySpan<byte>(chainBuffer->Buffer, (int)chainBuffer->Length));
                                 }
                             }
                         }

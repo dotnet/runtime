@@ -2491,6 +2491,13 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 
 		lainfo->storage = LLVMArgNone;
 
+		MonoType *t;
+		if (i >= sig->hasthis)
+			t = sig->params [i - sig->hasthis];
+		else
+			t = mono_get_int_type ();
+		t = mini_type_get_underlying_type (t);
+
 		switch (ainfo->storage) {
 		case ArgInIReg:
 		case ArgInFReg:
@@ -2515,6 +2522,14 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 			break;
 		}
 		case ArgVtypeInIRegs:
+			if ((t->type == MONO_TYPE_GENERICINST) && !cfg->full_aot && !sig->pinvoke) {
+				MonoClass *klass = mono_class_from_mono_type_internal (t);
+				if (m_class_is_simd_type (klass)) {
+					lainfo->storage = LLVMArgVtypeInSIMDReg;
+					break;
+				}
+			}
+
 			lainfo->storage = LLVMArgAsIArgs;
 			lainfo->nslots = ainfo->nregs;
 			break;

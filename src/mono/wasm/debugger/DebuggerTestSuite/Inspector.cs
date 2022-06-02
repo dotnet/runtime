@@ -176,7 +176,7 @@ namespace DebuggerTests
             }
             else
             {
-                if (output.Length > 0 && output[^1] == '\n')
+                if (output.EndsWith('\n'))
                     output = output[..^1];
             }
 
@@ -365,7 +365,7 @@ namespace DebuggerTests
             try
             {
                 TestHarnessProxy.ShutdownProxy(Id.ToString());
-                await Client.Shutdown(_cancellationTokenSource.Token).ConfigureAwait(false);
+                await Client.ShutdownAsync(_cancellationTokenSource.Token).ConfigureAwait(false);
             }
             catch (Exception ex)
             {

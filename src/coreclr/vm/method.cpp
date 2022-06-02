@@ -754,13 +754,9 @@ Module *MethodDesc::GetDefiningModuleForOpenMethod()
     Instantiation inst = GetMethodInstantiation();
     for (DWORD i = 0; i < inst.GetNumArgs(); i++)
     {
-        // Encoded types are never open
-        if (!inst[i].IsEncodedFixup())
-        {
-            pModule = inst[i].GetDefiningModuleForOpenType();
-            if (pModule != NULL)
-                return pModule;
-        }
+        pModule = inst[i].GetDefiningModuleForOpenType();
+        if (pModule != NULL)
+            return pModule;
     }
 
     return NULL;

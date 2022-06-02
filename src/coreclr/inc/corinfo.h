@@ -141,7 +141,7 @@ The first 4 options are mutually exclusive
         have managed thread local statics, which work through the HELPER. Support for this is considered
         legacy, and going forward, the EE should
 
-    * <NONE> This is a normal static field. Its address in in memory is determined by getFieldAddress. (see
+    * <NONE> This is a normal static field. Its address in memory is determined by getFieldAddress. (see
         also CORINFO_FLG_STATIC_IN_HEAP).
 
 
@@ -645,6 +645,8 @@ enum CorInfoHelpFunc
 
     CORINFO_HELP_VALIDATE_INDIRECT_CALL,    // CFG: Validate function pointer
     CORINFO_HELP_DISPATCH_INDIRECT_CALL,    // CFG: Validate and dispatch to pointer
+
+    CORINFO_HELP_STATIC_VIRTUAL_AMBIGUOUS_RESOLUTION, // Throw AmbiguousResolutionException for failed static virtual method resolution
 
     CORINFO_HELP_COUNT,
 };

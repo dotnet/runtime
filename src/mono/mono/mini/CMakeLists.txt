@@ -12,13 +12,13 @@ include_directories(
   ${PROJECT_SOURCE_DIR}/../sgen)
 
 if(HOST_DARWIN)
-  set(OS_LIBS "-framework CoreFoundation" "-framework Foundation" "-lcompression")
+  set(OS_LIBS "-framework CoreFoundation" "-framework Foundation")
 
   if(CMAKE_SYSTEM_VARIANT STREQUAL "MacCatalyst")
     set(OS_LIBS ${OS_LIBS} "-lobjc" "-lc++")
   endif()
 elseif(HOST_IOS)
-set(OS_LIBS "-framework CoreFoundation" "-lcompression" "-lobjc" "-lc++")
+set(OS_LIBS "-framework CoreFoundation" "-lobjc" "-lc++")
 elseif(HOST_ANDROID)
 set(OS_LIBS m dl log)
 elseif(HOST_LINUX)
@@ -220,7 +220,6 @@ set(wasm_sources
     mini-wasm.c
     tramp-wasm.c
     exceptions-wasm.c
-    wasm_m2n_invoke.g.h
     cpu-wasm.h)
 
 if(TARGET_AMD64)
@@ -265,7 +264,9 @@ set(interp_sources
     interp/interp-intrins.c
     interp/mintops.h
     interp/mintops.c
-    interp/transform.c)
+    interp/transform.c
+    interp/tiering.h
+    interp/tiering.c)
 set(interp_stub_sources
     interp-stubs.c)
 
@@ -300,7 +301,7 @@ else()
 set(llvm_runtime_sources)
 endif()
 
-set(mini_sources "${CMAKE_CURRENT_BINARY_DIR}/buildver-sgen.h;main-core.c;${mini_common_sources};${arch_sources};${os_sources};${mini_interp_sources};${llvm_sources};${debugger_sources};${llvm_runtime_sources}")
+set(mini_sources "main-core.c;${mini_common_sources};${arch_sources};${os_sources};${mini_interp_sources};${llvm_sources};${debugger_sources};${llvm_runtime_sources}")
 
 if(LLVM_INCLUDEDIR)
   include_directories(BEFORE SYSTEM "${LLVM_INCLUDEDIR}")
@@ -437,9 +438,6 @@ endif()
 
 find_package(Python3 COMPONENTS Interpreter)
 
-# don't set build_date, it creates non-deterministic builds
-file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/buildver-sgen.h CONTENT [=[const char *build_date = "";]=])
-
 add_custom_command(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cpu-amd64.h
   COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_AMD64 ${CMAKE_CURRENT_SOURCE_DIR} cpu-amd64.h amd64_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-amd64.mdesc
@@ -483,11 +481,11 @@ add_custom_command(
 )
 
 if(NOT DISABLE_EXECUTABLES)
-  set(sgen_sources "main-sgen.c")
+  set(main_sources "main.c")
   if(HOST_WIN32)
-    set(sgen_sources "${sgen_sources};${VERSION_FILE_RC_PATH}")
+    set(sgen_sources "${main_sources};${VERSION_FILE_RC_PATH}")
   endif()
-  add_executable(mono-sgen "${sgen_sources}")
+  add_executable(mono-sgen "${main_sources}")
   if(MONO_CROSS_COMPILE_EXECUTABLE_NAME)
     set_target_properties(mono-sgen PROPERTIES OUTPUT_NAME mono-aot-cross)
   endif()

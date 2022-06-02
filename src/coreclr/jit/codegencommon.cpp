@@ -1841,6 +1841,10 @@ void CodeGen::genGenerateMachineCode()
         {
             printf("; optimized code\n");
         }
+        else if (compiler->opts.compDbgEnC)
+        {
+            printf("; EnC code\n");
+        }
         else if (compiler->opts.compDbgCode)
         {
             printf("; debuggable code\n");
@@ -5308,15 +5312,17 @@ void CodeGen::genFinalizeFrame()
     {
         // We always save FP.
         noway_assert(isFramePointerUsed());
-#ifdef TARGET_AMD64
-        // On x64 we always save exactly RBP, RSI and RDI for EnC.
-        regMaskTP okRegs = (RBM_CALLEE_TRASH | RBM_FPBASE | RBM_RSI | RBM_RDI);
-        regSet.rsSetRegsModified(RBM_RSI | RBM_RDI);
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+        regMaskTP okRegs = (RBM_CALLEE_TRASH | RBM_FPBASE | RBM_ENC_CALLEE_SAVED);
+        if (RBM_ENC_CALLEE_SAVED != 0)
+        {
+            regSet.rsSetRegsModified(RBM_ENC_CALLEE_SAVED);
+        }
         noway_assert((regSet.rsGetModifiedRegsMask() & ~okRegs) == 0);
-#else  // !TARGET_AMD64
+#else  // !TARGET_AMD64 && !TARGET_ARM64
         // On x86 we save all callee saved regs so the saved reg area size is consistent
         regSet.rsSetRegsModified(RBM_INT_CALLEE_SAVED & ~RBM_FPBASE);
-#endif // !TARGET_AMD64
+#endif // !TARGET_AMD64 && !TARGET_ARM64
     }
 
     /* If we have any pinvoke calls, we might potentially trash everything */
@@ -8245,6 +8251,10 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
         }
         else
         {
+#ifdef TARGET_LOONGARCH64
+            // should consider the pading field within a struct.
+            offset = (offset % genTypeSize(srcType)) ? AlignUp(offset, genTypeSize(srcType)) : offset;
+#endif
             // Several fields could be passed in one register, copy using the register type.
             // It could rewrite memory outside of the fields but local on the stack are rounded to POINTER_SIZE so
             // it is safe to store a long register into a byte field as it is known that we have enough padding after.

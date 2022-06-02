@@ -28,8 +28,6 @@ Abstract:
     If you want to add a PAL_ wrapper function to a native function in
     here, you also need to edit palinternal.h and win32pal.h.
 
-
-
 --*/
 
 #ifndef __PAL_H__
@@ -453,7 +451,9 @@ PALAPI
 PAL_GenerateCoreDump(
     IN LPCSTR dumpName,
     IN INT dumpType,
-    IN ULONG32 flags);
+    IN ULONG32 flags,
+    LPSTR errorMessageBuffer,
+    INT cbErrorMessageBuffer);
 
 typedef VOID (*PPAL_STARTUP_CALLBACK)(
     char *modulePath,
@@ -1596,7 +1596,7 @@ typedef struct _XMM_SAVE_AREA32 {
 //
 // If the context record is used as an input parameter, then for each
 // portion of the context record controlled by a flag whose value is
-// set, it is assumed that that portion of the context record contains
+// set, it is assumed that such portion of the context record contains
 // valid context. If the context record is being used to modify a threads
 // context, then only that portion of the threads context is modified.
 //
@@ -1842,7 +1842,7 @@ typedef struct _NEON128 {
 //
 // If the context record is used as an input parameter, then for each
 // portion of the context record controlled by a flag whose value is
-// set, it is assumed that that portion of the context record contains
+// set, it is assumed that such portion of the context record contains
 // valid context. If the context record is being used to modify a threads
 // context, then only that portion of the threads context is modified.
 //
@@ -2024,7 +2024,7 @@ typedef struct _IMAGE_ARM_RUNTIME_FUNCTION_ENTRY {
 //
 // If the context record is used as an input parameter, then for each
 // portion of the context record controlled by a flag whose value is
-// set, it is assumed that that portion of the context record contains
+// set, it is assumed that such portion of the context record contains
 // valid context. If the context record is being used to modify a threads
 // context, then only that portion of the threads context is modified.
 //
@@ -2201,7 +2201,7 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 //
 // If the context record is used as an input parameter, then for each
 // portion of the context record controlled by a flag whose value is
-// set, it is assumed that that portion of the context record contains
+// set, it is assumed that such portion of the context record contains
 // valid context. If the context record is being used to modify a threads
 // context, then only that portion of the threads context is modified.
 //
@@ -2834,7 +2834,8 @@ PALAPI
 PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(
     IN LPCVOID lpBeginAddress,
     IN LPCVOID lpEndAddress,
-    IN SIZE_T dwSize);
+    IN SIZE_T dwSize,
+    IN BOOL storeAllocationInfo);
 
 PALIMPORT
 void
@@ -4525,6 +4526,7 @@ private:
         ExceptionPointers.ContextRecord = ex.ExceptionPointers.ContextRecord;
         TargetFrameSp = ex.TargetFrameSp;
         RecordsOnStack = ex.RecordsOnStack;
+        IsExternal = ex.IsExternal;
         ManagedToNativeExceptionCallback = ex.ManagedToNativeExceptionCallback;
         ManagedToNativeExceptionCallbackContext = ex.ManagedToNativeExceptionCallbackContext;
 
@@ -4546,6 +4548,9 @@ public:
     // Target frame stack pointer set before the 2nd pass.
     SIZE_T TargetFrameSp;
     bool RecordsOnStack;
+    // The exception is a hardware exception coming from a native code out of
+    // the well known runtime helpers
+    bool IsExternal;
 
     void(*ManagedToNativeExceptionCallback)(void* context);
     void* ManagedToNativeExceptionCallbackContext;
@@ -4556,6 +4561,7 @@ public:
         ExceptionPointers.ContextRecord = pContextRecord;
         TargetFrameSp = NoTargetFrameSp;
         RecordsOnStack = onStack;
+        IsExternal = false;
         ManagedToNativeExceptionCallback = NULL;
         ManagedToNativeExceptionCallbackContext = NULL;
     }
@@ -4594,6 +4600,7 @@ public:
         ExceptionPointers.ContextRecord = NULL;
         TargetFrameSp = NoTargetFrameSp;
         RecordsOnStack = false;
+        IsExternal = false;
         ManagedToNativeExceptionCallback = NULL;
         ManagedToNativeExceptionCallbackContext = NULL;
     }
@@ -4900,6 +4907,7 @@ public:
     {                                   \
         try                             \
         {                               \
+            HardwareExceptionHolder     \
             tryBlock(__param);          \
         }                               \
         catch (...)                     \

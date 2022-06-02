@@ -561,7 +561,7 @@ private:
 public:
     //#LoaderModule
     // LoaderModule determines in which module an item gets placed.
-    // For everything except paramaterized types and methods the choice is easy.
+    // For everything except parameterized types and methods the choice is easy.
     //
     // If NGEN'ing we may choose to place the item into the current module (which is different from runtime behavior).
     //

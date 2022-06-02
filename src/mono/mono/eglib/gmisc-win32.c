@@ -84,44 +84,6 @@ g_setenv(const gchar *variable, const gchar *value, gboolean overwrite)
 	return result;
 }
 
-#if HAVE_API_SUPPORT_WIN32_LOCAL_INFO || HAVE_API_SUPPORT_WIN32_LOCAL_INFO_EX
-gchar*
-g_win32_getlocale(void)
-{
-	gunichar2 buf[19];
-	gint ccBuf = 0;
-#if HAVE_API_SUPPORT_WIN32_LOCAL_INFO_EX
-	ccBuf = GetLocaleInfoEx (LOCALE_NAME_USER_DEFAULT, LOCALE_SISO639LANGNAME, buf, 9);
-#elif HAVE_API_SUPPORT_WIN32_LOCAL_INFO
-	LCID lcid = GetThreadLocale();
-	ccBuf = GetLocaleInfoW(lcid, LOCALE_SISO639LANGNAME, buf, 9);
-#endif
-	if (ccBuf != 0) {
-		buf[ccBuf - 1] = L'-';
-#if HAVE_API_SUPPORT_WIN32_LOCAL_INFO_EX
-	ccBuf = GetLocaleInfoEx (LOCALE_NAME_USER_DEFAULT, LOCALE_SISO3166CTRYNAME, buf + ccBuf, 9);
-#elif HAVE_API_SUPPORT_WIN32_LOCAL_INFO
-	ccBuf = GetLocaleInfoW(lcid, LOCALE_SISO3166CTRYNAME, buf + ccBuf, 9);
-#endif
-		assert (ccBuf <= 9);
-	}
-
-	// Check for failure.
-	if (ccBuf == 0)
-		buf[0] = L'\0';
-
-	return u16to8 (buf);
-}
-#elif !HAVE_EXTERN_DEFINED_WIN32_LOCAL_INFO && !HAVE_EXTERN_DEFINED_WIN32_LOCAL_INFO_EX
-gchar*
-g_win32_getlocale(void)
-{
-	g_unsupported_api ("GetLocaleInfo, GetLocaleInfoEx");
-	SetLastError (ERROR_NOT_SUPPORTED);
-	return NULL;
-}
-#endif /* HAVE_API_SUPPORT_WIN32_LOCAL_INFO || HAVE_API_SUPPORT_WIN32_LOCAL_INFO_EX */
-
 gboolean
 g_path_is_absolute (const char *filename)
 {
@@ -138,69 +100,6 @@ g_path_is_absolute (const char *filename)
 	}
 
 	return FALSE;
-}
-
-#if _MSC_VER && HAVE_API_SUPPORT_WIN32_SH_GET_FOLDER_PATH
-#include <shlobj.h>
-static gchar*
-g_get_known_folder_path (void)
-{
-	gchar *folder_path = NULL;
-	PWSTR profile_path = NULL;
-#ifdef __cplusplus
-	REFGUID folderid = FOLDERID_Profile;
-#else
-	REFGUID folderid = &FOLDERID_Profile;
-#endif
-	HRESULT hr = SHGetKnownFolderPath (folderid, KF_FLAG_DEFAULT, NULL, &profile_path);
-	if (SUCCEEDED(hr)) {
-		folder_path = u16to8 (profile_path);
-		CoTaskMemFree (profile_path);
-	}
-
-	return folder_path;
-}
-#elif !HAVE_EXTERN_DEFINED_WIN32_SH_GET_FOLDER_PATH
-static inline gchar *
-g_get_known_folder_path (void)
-{
-	return NULL;
-}
-#endif /* HAVE_API_SUPPORT_WIN32_SH_GET_FOLDER_PATH */
-
-const gchar *
-g_get_home_dir (void)
-{
-	gchar *home_dir = g_get_known_folder_path ();
-
-	if (!home_dir) {
-		home_dir = (gchar *) g_getenv ("USERPROFILE");
-	}
-
-	if (!home_dir) {
-		const gchar *drive = g_getenv ("HOMEDRIVE");
-		const gchar *path = g_getenv ("HOMEPATH");
-
-		if (drive && path) {
-			home_dir = g_malloc (strlen (drive) + strlen (path) + 1);
-			if (home_dir) {
-				sprintf (home_dir, "%s%s", drive, path);
-			}
-		}
-		g_free ((void*)drive);
-		g_free ((void*)path);
-	}
-
-	return home_dir;
-}
-
-const gchar *
-g_get_user_name (void)
-{
-	const char * retName = g_getenv ("USER");
-	if (!retName)
-		retName = g_getenv ("USERNAME");
-	return retName;
 }
 
 static const char *tmp_dir;

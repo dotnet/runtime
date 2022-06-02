@@ -46,6 +46,9 @@ declare interface EmscriptenModule {
     FS_readFile(filename: string, opts: any): any;
     removeRunDependency(id: string): void;
     addRunDependency(id: string): void;
+    stackSave(): VoidPtr;
+    stackRestore(stack: VoidPtr): void;
+    stackAlloc(size: number): VoidPtr;
     ready: Promise<unknown>;
     preInit?: (() => any)[];
     preRun?: (() => any)[];
@@ -205,6 +208,10 @@ declare type CoverageProfilerOptions = {
     write_at?: string;
     send_to?: string;
 };
+interface EventPipeSessionOptions {
+    collectRundownEvents?: boolean;
+    providers: string;
+}
 declare type DotnetModuleConfig = {
     disableDotnet6Compatibility?: boolean;
     config?: MonoConfig | MonoConfigError;
@@ -235,6 +242,49 @@ declare type DotnetModuleConfigImports = {
     };
     url?: any;
 };
+
+declare type EventPipeSessionID = bigint;
+interface EventPipeSession {
+    get sessionID(): EventPipeSessionID;
+    start(): void;
+    stop(): void;
+    getTraceBlob(): Blob;
+}
+declare const eventLevel: {
+    readonly LogAlways: 0;
+    readonly Critical: 1;
+    readonly Error: 2;
+    readonly Warning: 3;
+    readonly Informational: 4;
+    readonly Verbose: 5;
+};
+declare type EventLevel = typeof eventLevel;
+declare type UnnamedProviderConfiguration = Partial<{
+    keyword_mask: string | 0;
+    level: number;
+    args: string;
+}>;
+interface ProviderConfiguration extends UnnamedProviderConfiguration {
+    name: string;
+}
+declare class SessionOptionsBuilder {
+    private _rundown?;
+    private _providers;
+    constructor();
+    static get Empty(): SessionOptionsBuilder;
+    static get DefaultProviders(): SessionOptionsBuilder;
+    setRundownEnabled(enabled: boolean): SessionOptionsBuilder;
+    addProvider(provider: ProviderConfiguration): SessionOptionsBuilder;
+    addRuntimeProvider(overrideOptions?: UnnamedProviderConfiguration): SessionOptionsBuilder;
+    addRuntimePrivateProvider(overrideOptions?: UnnamedProviderConfiguration): SessionOptionsBuilder;
+    addSampleProfilerProvider(overrideOptions?: UnnamedProviderConfiguration): SessionOptionsBuilder;
+    build(): EventPipeSessionOptions;
+}
+interface Diagnostics {
+    EventLevel: EventLevel;
+    SessionOptionsBuilder: typeof SessionOptionsBuilder;
+    createEventPipeSession(options?: EventPipeSessionOptions): EventPipeSession | null;
+}
 
 declare function mono_wasm_runtime_ready(): void;
 
@@ -286,22 +336,40 @@ declare function mono_wasm_load_bytes_into_heap(bytes: Uint8Array): VoidPtr;
 
 declare type _MemOffset = number | VoidPtr | NativePointer | ManagedPointer;
 declare type _NumberOrPointer = number | VoidPtr | NativePointer | ManagedPointer;
+declare function setB32(offset: _MemOffset, value: number | boolean): void;
 declare function setU8(offset: _MemOffset, value: number): void;
 declare function setU16(offset: _MemOffset, value: number): void;
 declare function setU32(offset: _MemOffset, value: _NumberOrPointer): void;
 declare function setI8(offset: _MemOffset, value: number): void;
 declare function setI16(offset: _MemOffset, value: number): void;
-declare function setI32(offset: _MemOffset, value: _NumberOrPointer): void;
-declare function setI64(offset: _MemOffset, value: number): void;
+declare function setI32(offset: _MemOffset, value: number): void;
+/**
+ * Throws for values which are not 52 bit integer. See Number.isSafeInteger()
+ */
+declare function setI52(offset: _MemOffset, value: number): void;
+/**
+ * Throws for values which are not 52 bit integer or are negative. See Number.isSafeInteger().
+ */
+declare function setU52(offset: _MemOffset, value: number): void;
+declare function setI64Big(offset: _MemOffset, value: bigint): void;
 declare function setF32(offset: _MemOffset, value: number): void;
 declare function setF64(offset: _MemOffset, value: number): void;
+declare function getB32(offset: _MemOffset): boolean;
 declare function getU8(offset: _MemOffset): number;
 declare function getU16(offset: _MemOffset): number;
 declare function getU32(offset: _MemOffset): number;
 declare function getI8(offset: _MemOffset): number;
 declare function getI16(offset: _MemOffset): number;
 declare function getI32(offset: _MemOffset): number;
-declare function getI64(offset: _MemOffset): number;
+/**
+ * Throws for Number.MIN_SAFE_INTEGER > value > Number.MAX_SAFE_INTEGER
+ */
+declare function getI52(offset: _MemOffset): number;
+/**
+ * Throws for 0 > value > Number.MAX_SAFE_INTEGER
+ */
+declare function getU52(offset: _MemOffset): number;
+declare function getI64Big(offset: _MemOffset): bigint;
 declare function getF32(offset: _MemOffset): number;
 declare function getF64(offset: _MemOffset): number;
 
@@ -326,24 +394,31 @@ declare const MONO: {
     mono_wasm_load_runtime: (unused: string, debug_level: number) => void;
     config: MonoConfig | MonoConfigError;
     loaded_files: string[];
+    setB32: typeof setB32;
     setI8: typeof setI8;
     setI16: typeof setI16;
     setI32: typeof setI32;
-    setI64: typeof setI64;
+    setI52: typeof setI52;
+    setU52: typeof setU52;
+    setI64Big: typeof setI64Big;
     setU8: typeof setU8;
     setU16: typeof setU16;
     setU32: typeof setU32;
     setF32: typeof setF32;
     setF64: typeof setF64;
+    getB32: typeof getB32;
     getI8: typeof getI8;
     getI16: typeof getI16;
     getI32: typeof getI32;
-    getI64: typeof getI64;
+    getI52: typeof getI52;
+    getU52: typeof getU52;
+    getI64Big: typeof getI64Big;
     getU8: typeof getU8;
     getU16: typeof getU16;
     getU32: typeof getU32;
     getF32: typeof getF32;
     getF64: typeof getF64;
+    diagnostics: Diagnostics;
 };
 declare type MONOType = typeof MONO;
 declare const BINDING: {

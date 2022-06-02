@@ -250,7 +250,7 @@ public:
     bool MatchWith(ModuleVersion & version, bool & gotVersion, Module * pModule);
 
 #ifdef MULTICOREJIT_LOGGING
-    void Dump(const WCHAR * prefix, int index);
+    void Dump(const CHAR * prefix, int index);
 #endif
 
 };
@@ -285,7 +285,7 @@ bool PlayerModuleInfo::MatchWith(ModuleVersion & version, bool & gotVersion, Mod
 
 #ifdef MULTICOREJIT_LOGGING
 
-void PlayerModuleInfo::Dump(const WCHAR * prefix, int index)
+void PlayerModuleInfo::Dump(const CHAR * prefix, int index)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -296,31 +296,29 @@ void PlayerModuleInfo::Dump(const WCHAR * prefix, int index)
     DEBUG_ONLY_FUNCTION;
 #endif
 
-    StackSString ssBuff;
-
-    ssBuff.Append(prefix);
-    ssBuff.AppendPrintf(W("[%2d]: "), index);
+    StackSString ssBuff(SString::Utf8, prefix);
+    ssBuff.AppendPrintf("[%2d]: ", index);
 
     const ModuleVersion & ver = m_pRecord->version;
 
-    ssBuff.AppendPrintf(W(" %d.%d.%05d.%04d.%d level %2d, need %2d"), ver.major, ver.minor, ver.build, ver.revision, ver.versionFlags, m_curLevel, m_needLevel);
+    ssBuff.AppendPrintf(" %d.%d.%05d.%04d.%d level %2d, need %2d", ver.major, ver.minor, ver.build, ver.revision, ver.versionFlags, m_curLevel, m_needLevel);
 
-    ssBuff.AppendPrintf(W(" pModule: %p "), m_pModule);
+    ssBuff.AppendPrintf(" pModule: %p ", m_pModule);
 
     unsigned i;
 
     for (i = 0; i < m_pRecord->ModuleNameLen(); i ++)
     {
-        ssBuff.Append((WCHAR) m_pRecord->GetModuleName()[i]);
+        ssBuff.AppendUTF8(m_pRecord->GetModuleName()[i]);
     }
 
     while (i < 32)
     {
-        ssBuff.Append(' ');
+        ssBuff.AppendUTF8(' ');
         i ++;
     }
 
-    MulticoreJitTrace(("%S", ssBuff.GetUnicode()));
+    MulticoreJitTrace(("%s", ssBuff.GetUTF8NoConvert()));
 }
 
 #endif
@@ -501,7 +499,7 @@ HRESULT MulticoreJitProfilePlayer::HandleModuleRecord(const ModuleRecord * pMod)
     info.m_pRecord = pMod;
 
 #ifdef MULTICOREJIT_LOGGING
-    info.Dump(W("ModuleRecord"), m_moduleCount);
+    info.Dump("ModuleRecord", m_moduleCount);
 #endif
 
     m_moduleCount ++;
@@ -700,7 +698,7 @@ HRESULT MulticoreJitProfilePlayer::UpdateModuleInfo()
             if (info.IsLowerLevel())
             {
 #ifdef MULTICOREJIT_LOGGING
-                info.Dump(W("    BlockingModule"), i);
+                info.Dump("    BlockingModule", i);
 #endif
 
                 if (ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context, TRACE_LEVEL_VERBOSE, CLR_PRIVATEMULTICOREJIT_KEYWORD))

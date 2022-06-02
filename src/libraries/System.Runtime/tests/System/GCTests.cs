@@ -69,7 +69,7 @@ namespace System.Tests
 
         [Theory]
         [InlineData(GCCollectionMode.Default - 1)]
-        [InlineData(GCCollectionMode.Optimized + 1)]
+        [InlineData(GCCollectionMode.Aggressive + 1)]
         public static void Collection_InvalidCollectionMode_ThrowsArgumentOutOfRangeException(GCCollectionMode mode)
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("mode", null, () => GC.Collect(2, mode));
