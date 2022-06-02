@@ -1006,6 +1006,15 @@ insGroup* emitter::emitSavIG(bool emitAdd)
         assert(emitLastIns != nullptr);
         assert(emitCurIGfreeBase <= (BYTE*)emitLastIns);
         assert((BYTE*)emitLastIns < emitCurIGfreeBase + sz);
+
+#if defined(TARGET_XARCH)
+        assert(emitLastIns != nullptr);
+        if (emitLastIns->idIns() == INS_jmp && (((instrDescJmp*)emitLastIns)->idjIsRemovableJmpCandidate))
+        {
+            ig->igFlags |= IGF_HAS_REMOVABLE_JMP;
+        }
+#endif
+
         emitLastIns = (instrDesc*)((BYTE*)id + ((BYTE*)emitLastIns - (BYTE*)emitCurIGfreeBase));
     }
 
@@ -4182,7 +4191,8 @@ void emitter::emitRemoveJumpToNextInst()
             // target group is not bound yet so use the cookie to fetch it
             insGroup* targetGroup = (insGroup*)emitCodeGetCookie(jmp->idAddr()->iiaBBlabel);
 
-            if ((targetGroup != nullptr) && (jmpGroup->igNext == targetGroup))
+            if ((targetGroup != nullptr) && (jmpGroup->igNext == targetGroup) &&
+                ((jmpGroup->igFlags & IGF_HAS_REMOVABLE_JMP) != 0))
             {
                 // the last instruction in the group is the jmp we're looking for
                 // and it jumps to the next instruction group so we don't need it
@@ -4206,9 +4216,9 @@ void emitter::emitRemoveJumpToNextInst()
                 {
                     printf("jmp != id, dumping context information\n");
                     printf("method: %s\n", emitComp->impInlineRoot()->info.compMethodName);
-                    printf("  jmp: %x3: ", jmp->idDebugOnlyInfo()->idNum);
+                    printf("  jmp: %u: ", jmp->idDebugOnlyInfo()->idNum);
                     emitDispIns(jmp, false, true, false, 0, nullptr, 0, jmpGroup);
-                    printf("  id: %x3: ", id->idDebugOnlyInfo()->idNum);
+                    printf("   id: %u: ", id->idDebugOnlyInfo()->idNum);
                     emitDispIns(id, false, true, false, 0, nullptr, 0, jmpGroup);
                     printf("jump group:\n");
                     emitDispIG(jmpGroup, nullptr, true);
@@ -4266,6 +4276,12 @@ void emitter::emitRemoveJumpToNextInst()
                 {
                     JITDUMP("IG%02u IN%04x does not jump to the next instruction group, keeping.\n", jmpGroup->igNum,
                             jmp->idDebugOnlyInfo()->idNum);
+                }
+                else if ((jmpGroup->igFlags & IGF_HAS_REMOVABLE_JMP) == 0)
+                {
+                    JITDUMP("IG%02u IN%04x containing instruction group is not marked with IGF_HAS_REMOVABLE_JMP, "
+                            "keeping.\n",
+                            jmpGroup->igNum, jmp->idDebugOnlyInfo()->idNum);
                 }
 #endif // DEBUG
             }
