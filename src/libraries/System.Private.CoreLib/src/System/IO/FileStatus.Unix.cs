@@ -441,17 +441,27 @@ namespace System.IO
             InvalidateCaches();
         }
 
+        internal void RefreshCaches(ReadOnlySpan<char> path)
+            => RefreshCaches(handle: null, path);
+
         // Tries to refresh the lstat cache (_fileCache).
         // This method should not throw. Instead, we store the results, and we will throw when the user attempts to access any of the properties when there was a failure
-        internal void RefreshCaches(ReadOnlySpan<char> path)
+        internal void RefreshCaches(SafeFileHandle? handle, ReadOnlySpan<char> path)
         {
-            path = Path.TrimEndingDirectorySeparator(path);
-
 #if !TARGET_BROWSER
             _isReadOnlyCache = -1;
 #endif
+            int rv;
+            if (handle is not null)
+            {
+                rv = Interop.Sys.FStat(handle, out _fileCache);
+            }
+            else
+            {
+                path = Path.TrimEndingDirectorySeparator(path);
+                rv = Interop.Sys.LStat(path, out _fileCache);
+            }
 
-            int rv = Interop.Sys.LStat(path, out _fileCache);
             if (rv < 0)
             {
                 Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
@@ -473,20 +483,24 @@ namespace System.IO
             // Check if the main path is a directory, or a link to a directory.
             int fileType = _fileCache.Mode & Interop.Sys.FileTypes.S_IFMT;
             bool isDirectory = fileType == Interop.Sys.FileTypes.S_IFDIR ||
-                               (fileType == Interop.Sys.FileTypes.S_IFLNK
-                                && Interop.Sys.Stat(path, out Interop.Sys.FileStatus target) == 0
-                                && (target.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR);
+                               (handle is null && // Don't follow links for SafeHandle APIs.
+                                fileType == Interop.Sys.FileTypes.S_IFLNK &&
+                                Interop.Sys.Stat(path, out Interop.Sys.FileStatus target) == 0 &&
+                                (target.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR);
 
             _state = isDirectory ? InitializedExistsDir : InitializedExistsFile;
         }
 
+        internal void EnsureCachesInitialized(ReadOnlySpan<char> path, bool continueOnError = false)
+            => EnsureCachesInitialized(handle: null, path, continueOnError);
+
         // Checks if the file cache is uninitialized and refreshes it's value.
         // If it failed, and continueOnError is set to true, this method will throw.
-        internal void EnsureCachesInitialized(ReadOnlySpan<char> path, bool continueOnError = false)
+        internal void EnsureCachesInitialized(SafeFileHandle? handle, ReadOnlySpan<char> path, bool continueOnError = false)
         {
             if (_state == Uninitialized)
             {
-                RefreshCaches(path);
+                RefreshCaches(handle, path);
             }
 
             if (!continueOnError)
