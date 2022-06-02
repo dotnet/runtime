@@ -55,9 +55,8 @@ namespace ILCompiler.Dataflow
 				case EventPseudoDesc @event:
 					MarkEvent (origin, @event, memberWithRequirements);
 					break;
-				//case InterfaceImplementation interfaceImplementation:
-				//	MarkInterfaceImplementation (origin, interfaceImplementation, dependencyKind);
-				//	break;
+                // case InterfaceImplementation
+                //  Nothing to do currently as Native AOT will presere all interfaces on a preserved type
 				}
 			}
 		}
@@ -181,15 +180,18 @@ namespace ILCompiler.Dataflow
             }
             else
             {
-                if (entity is FieldDesc && !ReflectionMethodBodyScanner.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, RequiresUnreferencedCodeAttribute))
+                if (!ReflectionMethodBodyScanner.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, RequiresUnreferencedCodeAttribute))
                 {
-                    _logger.LogWarning(origin, DiagnosticId.DynamicallyAccessedMembersFieldAccessedViaReflection, entity.GetDisplayName());
-                }
-                else
-                {
-                    Debug.Assert(entity is MethodDesc);
+                    if (entity is FieldDesc)
+                    {
+                        _logger.LogWarning(origin, DiagnosticId.DynamicallyAccessedMembersFieldAccessedViaReflection, entity.GetDisplayName());
+                    }
+                    else
+                    {
+                        Debug.Assert(entity is MethodDesc);
 
-                    _logger.LogWarning(origin, DiagnosticId.DynamicallyAccessedMembersMethodAccessedViaReflection, entity.GetDisplayName());
+                        _logger.LogWarning(origin, DiagnosticId.DynamicallyAccessedMembersMethodAccessedViaReflection, entity.GetDisplayName());
+                    }
                 }
             }
         }

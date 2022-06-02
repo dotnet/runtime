@@ -285,9 +285,8 @@ namespace ILCompiler.Dataflow
 
             MultiValue genericArgumentValue = scanner.GetTypeValueNodeFromGenericArgument(genericArgument);
 
-            // TODO: This should use ShouldEnableReflectionPatternReporting to conditionally disable the diagnostics - but we don't have the right
-            // context to do so yet.
-            var diagnosticContext = new DiagnosticContext(new MessageOrigin(source), diagnosticsEnabled: true, logger);
+            bool enableDiagnostics = ShouldSuppressAnalysisWarningsForRequires(source, RequiresUnreferencedCodeAttribute);
+            var diagnosticContext = new DiagnosticContext(new MessageOrigin(source), diagnosticsEnabled: enableDiagnostics, logger);
             var origin = new GenericParameterOrigin(genericParameter);
             scanner.RequireDynamicallyAccessedMembers(diagnosticContext, genericArgumentValue, genericParameterValue, origin);
 
