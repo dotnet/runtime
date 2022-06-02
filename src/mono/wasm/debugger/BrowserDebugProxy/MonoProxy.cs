@@ -1339,7 +1339,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 AssemblyInfo assembly = store.GetAssemblyByName(assemblyName);
                 if (assembly == null)
                 {
-                    logger.LogDebug($"Could not find assembly {assemblyName}");
+                    logger.LogDebug($"Could not find entrypoint assembly {assemblyName} in the store");
                     return;
                 }
                 var method = assembly.GetMethodByToken(methodToken);
@@ -1347,13 +1347,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                     method = assembly.Methods.FirstOrDefault(m => m.Value.KickOffMethod == methodToken).Value;
                 if (method == null)
                 {
-                    logger.LogDebug($"Could not find method {methodToken}");
+                    logger.LogDebug($"Could not find entrypoint method {methodToken} in assembly {assemblyName}");
                     return;
                 }
                 var sourceFile = assembly.Sources.FirstOrDefault(sf => sf.SourceId == method.SourceId);
                 if (sourceFile == null)
                 {
-                    logger.LogDebug($"Could not source file {method.SourceName}");
+                    logger.LogDebug($"Could not source file {method.SourceName} for method {method.Name} in assembly {assemblyName}");
                     return;
                 }
                 string bpId = $"auto:{method.StartLocation.Line}:{method.StartLocation.Column}:{sourceFile.DotNetUrl}";
