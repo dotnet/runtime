@@ -310,6 +310,11 @@ void Rationalizer::RewriteSubLshDiv(GenTree** use)
                 GenTree* const insertionPoint = treeFirstNode->gtPrev;
                 BlockRange().Remove(treeFirstNode, node);
 
+                // Remove var use so that the var is only used
+                // once; if we did not do this, there would be
+                // extra 'mov' operations.
+                BlockRange().Remove(a);
+
                 node->ChangeOper(GT_MOD);
                 node->AsOp()->gtOp2 = cns;
 
