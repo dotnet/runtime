@@ -803,7 +803,7 @@ namespace System.Security.Cryptography.Xml
                 throw new ArgumentNullException(nameof(decryptedData));
             }
 
-            XmlNode parent = inputElement.ParentNode;
+            XmlNode parent = inputElement.ParentNode!;
             if (parent.NodeType == XmlNodeType.Document)
             {
                 // We're replacing the root element, but we can't just wholesale replace the owner

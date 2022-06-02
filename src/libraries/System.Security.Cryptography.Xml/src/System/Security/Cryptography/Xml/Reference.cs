@@ -270,10 +270,10 @@ namespace System.Security.Cryptography.Xml
                             XmlNode? signatureTag = transformElement.SelectSingleNode("ancestor::ds:Signature[1]", nsm);
 
                             // Resolve the reference to get starting point for position calculation.
-                            XmlNode referenceTarget =
+                            XmlNode? referenceTarget =
                                 _uri.Length == 0
                                 ? transformElement.OwnerDocument
-                                : SignedXml.GetIdElement(transformElement.OwnerDocument, Utils.GetIdFromLocalUri(_uri, out bool _));
+                                : SignedXml!.GetIdElement(transformElement.OwnerDocument, Utils.GetIdFromLocalUri(_uri, out bool _));
 
                             XmlNodeList? signatureList = referenceTarget?.SelectNodes(".//ds:Signature", nsm);
                             if (signatureList != null)
