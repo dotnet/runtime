@@ -451,7 +451,6 @@ namespace Microsoft.Extensions.Configuration
 
 
                 List<PropertyInfo> properties = GetAllProperties(type);
-                List<FieldInfo> fields = GetAllFields(type);
 
                 if (!DoAllParametersHaveEquivalentProperties(parameters, properties, out string nameOfInvalidParameters))
                 {
@@ -755,23 +754,6 @@ namespace Microsoft.Extensions.Configuration
             while (baseType != typeof(object));
 
             return allProperties;
-        }
-
-        private static List<FieldInfo> GetAllFields(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-            Type type)
-        {
-            var allFields = new List<FieldInfo>();
-
-            Type? baseType = type;
-            do
-            {
-                allFields.AddRange(baseType!.GetFields(DeclaredOnlyLookup));
-                baseType = baseType.BaseType;
-            }
-            while (baseType != typeof(object));
-
-            return allFields;
         }
 
         [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
