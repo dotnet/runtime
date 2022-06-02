@@ -4,6 +4,8 @@
 using ILCompiler;
 using ILCompiler.Logging;
 
+#nullable enable
+
 namespace ILLink.Shared.TrimAnalysis
 {
 	readonly partial struct DiagnosticContext

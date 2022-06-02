@@ -17,6 +17,8 @@ using ILLink.Shared.TypeSystemProxy;
 using Debug = System.Diagnostics.Debug;
 using WellKnownType = Internal.TypeSystem.WellKnownType;
 
+#nullable enable
+
 namespace ILLink.Shared.TrimAnalysis
 {
     /// <summary>
@@ -304,7 +306,7 @@ namespace ILLink.Shared.TrimAnalysis
                 // Next go over all methods with an explicit annotation
                 foreach (EcmaMethod method in ecmaType.GetMethods())
                 {
-                    DynamicallyAccessedMemberTypes[] paramAnnotations = null;
+                    DynamicallyAccessedMemberTypes[]? paramAnnotations = null;
 
                     // We convert indices from metadata space to IL space here.
                     // IL space assigns index 0 to the `this` parameter on instance methods.
@@ -386,7 +388,7 @@ namespace ILLink.Shared.TrimAnalysis
                         }
                     }
 
-                    DynamicallyAccessedMemberTypes[] genericParameterAnnotations = null;
+                    DynamicallyAccessedMemberTypes[]? genericParameterAnnotations = null;
                     foreach (EcmaGenericParameter genericParameter in method.Instantiation)
                     {
                         GenericParameter genericParameterDef = reader.GetGenericParameter(genericParameter.Handle);
@@ -434,7 +436,7 @@ namespace ILLink.Shared.TrimAnalysis
                         continue;
                     }
 
-                    FieldDesc backingFieldFromSetter = null;
+                    FieldDesc? backingFieldFromSetter = null;
 
                     // Propagate the annotation to the setter method
                     MethodDesc setMethod = property.SetMethod;
@@ -469,7 +471,7 @@ namespace ILLink.Shared.TrimAnalysis
                         }
                     }
 
-                    FieldDesc backingFieldFromGetter = null;
+                    FieldDesc? backingFieldFromGetter = null;
 
                     // Propagate the annotation to the getter method
                     MethodDesc getMethod = property.GetMethod;
@@ -497,7 +499,7 @@ namespace ILLink.Shared.TrimAnalysis
                         }
                     }
 
-                    FieldDesc backingField;
+                    FieldDesc? backingField;
                     if (backingFieldFromGetter != null && backingFieldFromSetter != null &&
                         backingFieldFromGetter != backingFieldFromSetter)
                     {
@@ -522,7 +524,7 @@ namespace ILLink.Shared.TrimAnalysis
                     }
                 }
 
-                DynamicallyAccessedMemberTypes[] typeGenericParameterAnnotations = null;
+                DynamicallyAccessedMemberTypes[]? typeGenericParameterAnnotations = null;
                 foreach (EcmaGenericParameter genericParameter in ecmaType.Instantiation)
                 {
                     GenericParameter genericParameterDef = reader.GetGenericParameter(genericParameter.Handle);
@@ -539,7 +541,7 @@ namespace ILLink.Shared.TrimAnalysis
                 return new TypeAnnotations(ecmaType, typeAnnotation, annotatedMethods.ToArray(), annotatedFields.ToArray(), typeGenericParameterAnnotations);
             }
 
-            private static bool ScanMethodBodyForFieldAccess(MethodIL body, bool write, out FieldDesc found)
+            private static bool ScanMethodBodyForFieldAccess(MethodIL body, bool write, out FieldDesc? found)
             {
                 // Tries to find the backing field for a property getter/setter.
                 // Returns true if this is a method body that we can unambiguously analyze.
@@ -640,7 +642,7 @@ namespace ILLink.Shared.TrimAnalysis
             if (methodAnnotations.ParameterAnnotations != null || baseMethodAnnotations.ParameterAnnotations != null)
             {
                 if (methodAnnotations.ParameterAnnotations == null)
-                    ValidateMethodParametersHaveNoAnnotations(baseMethodAnnotations.ParameterAnnotations, method, baseMethod, method);
+                    ValidateMethodParametersHaveNoAnnotations(baseMethodAnnotations.ParameterAnnotations!, method, baseMethod, method);
                 else if (baseMethodAnnotations.ParameterAnnotations == null)
                     ValidateMethodParametersHaveNoAnnotations(methodAnnotations.ParameterAnnotations, method, baseMethod, method);
                 else
@@ -662,7 +664,7 @@ namespace ILLink.Shared.TrimAnalysis
             if (methodAnnotations.GenericParameterAnnotations != null || baseMethodAnnotations.GenericParameterAnnotations != null)
             {
                 if (methodAnnotations.GenericParameterAnnotations == null)
-                    ValidateMethodGenericParametersHaveNoAnnotations(baseMethodAnnotations.GenericParameterAnnotations, method, baseMethod, method);
+                    ValidateMethodGenericParametersHaveNoAnnotations(baseMethodAnnotations.GenericParameterAnnotations!, method, baseMethod, method);
                 else if (baseMethodAnnotations.GenericParameterAnnotations == null)
                     ValidateMethodGenericParametersHaveNoAnnotations(methodAnnotations.GenericParameterAnnotations, method, baseMethod, method);
                 else
@@ -743,18 +745,18 @@ namespace ILLink.Shared.TrimAnalysis
         {
             public readonly TypeDesc Type;
             public readonly DynamicallyAccessedMemberTypes TypeAnnotation;
-            private readonly MethodAnnotations[] _annotatedMethods;
-            private readonly FieldAnnotation[] _annotatedFields;
-            private readonly DynamicallyAccessedMemberTypes[] _genericParameterAnnotations;
+            private readonly MethodAnnotations[]? _annotatedMethods;
+            private readonly FieldAnnotation[]? _annotatedFields;
+            private readonly DynamicallyAccessedMemberTypes[]? _genericParameterAnnotations;
 
             public bool IsDefault => _annotatedMethods == null && _annotatedFields == null && _genericParameterAnnotations == null;
 
             public TypeAnnotations(
                 TypeDesc type,
                 DynamicallyAccessedMemberTypes typeAnnotations,
-                MethodAnnotations[] annotatedMethods,
-                FieldAnnotation[] annotatedFields,
-                DynamicallyAccessedMemberTypes[] genericParameterAnnotations)
+                MethodAnnotations[]? annotatedMethods,
+                FieldAnnotation[]? annotatedFields,
+                DynamicallyAccessedMemberTypes[]? genericParameterAnnotations)
                 => (Type, TypeAnnotation, _annotatedMethods, _annotatedFields, _genericParameterAnnotations)
                  = (type, typeAnnotations, annotatedMethods, annotatedFields, genericParameterAnnotations);
 
@@ -823,15 +825,15 @@ namespace ILLink.Shared.TrimAnalysis
         private readonly struct MethodAnnotations
         {
             public readonly MethodDesc Method;
-            public readonly DynamicallyAccessedMemberTypes[] ParameterAnnotations;
+            public readonly DynamicallyAccessedMemberTypes[]? ParameterAnnotations;
             public readonly DynamicallyAccessedMemberTypes ReturnParameterAnnotation;
-            public readonly DynamicallyAccessedMemberTypes[] GenericParameterAnnotations;
+            public readonly DynamicallyAccessedMemberTypes[]? GenericParameterAnnotations;
 
             public MethodAnnotations(
                 MethodDesc method,
-                DynamicallyAccessedMemberTypes[] paramAnnotations,
+                DynamicallyAccessedMemberTypes[]? paramAnnotations,
                 DynamicallyAccessedMemberTypes returnParamAnnotations,
-                DynamicallyAccessedMemberTypes[] genericParameterAnnotations)
+                DynamicallyAccessedMemberTypes[]? genericParameterAnnotations)
                 => (Method, ParameterAnnotations, ReturnParameterAnnotation, GenericParameterAnnotations) =
                     (method, paramAnnotations, returnParamAnnotations, genericParameterAnnotations);
 
