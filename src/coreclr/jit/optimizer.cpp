@@ -932,23 +932,32 @@ bool Compiler::optCheckIterInLoopTest(unsigned loopInd, GenTree* test, unsigned 
             {
                 optLoopTable[loopInd].lpFlags |= LPFLG_ARRLEN_LIMIT;
             }
+            else
+            {
+                JITDUMP("Array limit var %V02u modifiable in " FMT_LP "\n", array->AsLclVarCommon()->GetLclNum(),
+                        loopInd);
+            }
+        }
+        else
+        {
+            JITDUMP("Array limit tree [%06u] not analyzable in " FMT_LP "\n", dspTreeID(limitOp), loopInd);
         }
     }
     else
     {
-        // Not clear why we return false here. We know the loop exit test
-        // is comparing iterVar to something; we just don't know what.
-        //
-        // No real difference between this case and the cases above where
-        // we don't set some kind of limit flag.
-        //
-        return false;
+        JITDUMP("Loop limit tree [%06u] not analyzable in " FMT_LP "\n", dspTreeID(limitOp), loopInd);
     }
+
+    // Were we able to successfully analyze the limit?
+    //
+    const bool analyzedLimit =
+        (optLoopTable[loopInd].lpFlags & (LPFLG_CONST_LIMIT | LPFLG_VAR_LIMIT | LPFLG_ARRLEN_LIMIT)) != 0;
 
     // Save the type of the comparison between the iterator and the limit.
     //
     optLoopTable[loopInd].lpTestTree = relop;
-    return true;
+
+    return analyzedLimit;
 }
 
 //----------------------------------------------------------------------------------
@@ -1001,8 +1010,8 @@ unsigned Compiler::optIsLoopIncrTree(GenTree* incr)
 // optComputeIterInfo: Check tree is loop increment of a lcl that is loop-invariant.
 //
 // Arguments:
-//      lnum        - loop in question
 //      incr        - tree that increments the loop iterator. v+=1 or v=v+1.
+//      from, to    - range of blocks that comprise the loop body
 //      pIterVar    - see return value.
 //
 //  Return Value:
@@ -5824,7 +5833,7 @@ bool Compiler::optIsVarAssgLoop(unsigned lnum, unsigned var)
     LclVarDsc* const varDsc = lvaGetDesc(var);
     if (varDsc->IsAddressExposed())
     {
-        // Assume the worst
+        // Assume the worst (that var is possibly modified in the loop)
         //
         return true;
     }
@@ -5850,7 +5859,7 @@ bool Compiler::optIsVarAssgLoop(unsigned lnum, unsigned var)
             {
                 // Parent var index is too large, assume the worst.
                 //
-                return false;
+                return true;
             }
         }
 
@@ -5860,7 +5869,7 @@ bool Compiler::optIsVarAssgLoop(unsigned lnum, unsigned var)
     {
         if (varDsc->lvIsStructField)
         {
-            return false;
+            return true;
         }
 
         return optIsVarAssigned(optLoopTable[lnum].lpHead->bbNext, optLoopTable[lnum].lpBottom, nullptr, var);
