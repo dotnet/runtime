@@ -120,8 +120,10 @@ namespace System.Data.Common
                     {
                         _connection.Close();
                     }
-                    catch
+                    catch (Exception e)
                     {
+                        ExceptionBuilder.TraceExceptionWithoutRethrow(e);
+
                         // Swallow to allow the original exception to bubble up.
                         // Also, refrain from bubbling up the close exception even if there's no original exception,
                         // since it's not relevant to the user - execution did complete successfully, and the connection
@@ -145,8 +147,10 @@ namespace System.Data.Common
                     {
                         await _connection.CloseAsync().ConfigureAwait(false);
                     }
-                    catch
+                    catch (Exception e)
                     {
+                        ExceptionBuilder.TraceExceptionWithoutRethrow(e);
+
                         // Swallow to allow the original exception to bubble up
                         // Also, refrain from bubbling up the close exception even if there's no original exception,
                         // since it's not relevant to the user - execution did complete successfully, and the connection
@@ -169,8 +173,10 @@ namespace System.Data.Common
                     {
                         _connection.Close();
                     }
-                    catch
+                    catch (Exception e)
                     {
+                        ExceptionBuilder.TraceExceptionWithoutRethrow(e);
+
                         // Swallow to allow the original exception to bubble up
                         // Also, refrain from bubbling up the close exception even if there's no original exception,
                         // since it's not relevant to the user - execution did complete successfully, and the connection
@@ -194,8 +200,10 @@ namespace System.Data.Common
                     {
                         await _connection.CloseAsync().ConfigureAwait(false);
                     }
-                    catch
+                    catch (Exception e)
                     {
+                        ExceptionBuilder.TraceExceptionWithoutRethrow(e);
+
                         // Swallow to allow the original exception to bubble up
                         // Also, refrain from bubbling up the close exception even if there's no original exception,
                         // since it's not relevant to the user - execution did complete successfully, and the connection
@@ -218,8 +226,10 @@ namespace System.Data.Common
                     {
                         _connection.Close();
                     }
-                    catch
+                    catch (Exception e)
                     {
+                        ExceptionBuilder.TraceExceptionWithoutRethrow(e);
+
                         // Swallow to allow the original exception to bubble up
                     }
 
@@ -246,8 +256,10 @@ namespace System.Data.Common
                     {
                         await _connection.CloseAsync().ConfigureAwait(false);
                     }
-                    catch
+                    catch (Exception e)
                     {
+                        ExceptionBuilder.TraceExceptionWithoutRethrow(e);
+
                         // Swallow to allow the original exception to bubble up
                     }
 
@@ -359,8 +371,10 @@ namespace System.Data.Common
                     {
                         _connection.Close();
                     }
-                    catch
+                    catch (Exception e)
                     {
+                        ExceptionBuilder.TraceExceptionWithoutRethrow(e);
+
                         // Swallow to allow the original exception to bubble up
                         // Also, refrain from bubbling up the close exception even if there's no original exception,
                         // since it's not relevant to the user - execution did complete successfully, and the connection
@@ -384,8 +398,10 @@ namespace System.Data.Common
                     {
                         await _connection.CloseAsync().ConfigureAwait(false);
                     }
-                    catch
+                    catch (Exception e)
                     {
+                        ExceptionBuilder.TraceExceptionWithoutRethrow(e);
+
                         // Swallow to allow the original exception to bubble up
                         // Also, refrain from bubbling up the close exception even if there's no original exception,
                         // since it's not relevant to the user - execution did complete successfully, and the connection
@@ -408,8 +424,10 @@ namespace System.Data.Common
                     {
                         _connection.Close();
                     }
-                    catch
+                    catch (Exception e)
                     {
+                        ExceptionBuilder.TraceExceptionWithoutRethrow(e);
+
                         // Swallow to allow the original exception to bubble up
                         // Also, refrain from bubbling up the close exception even if there's no original exception,
                         // since it's not relevant to the user - execution did complete successfully, and the connection
@@ -433,8 +451,10 @@ namespace System.Data.Common
                     {
                         await _connection.CloseAsync().ConfigureAwait(false);
                     }
-                    catch
+                    catch (Exception e)
                     {
+                        ExceptionBuilder.TraceExceptionWithoutRethrow(e);
+
                         // Swallow to allow the original exception to bubble up
                         // Also, refrain from bubbling up the close exception even if there's no original exception,
                         // since it's not relevant to the user - execution did complete successfully, and the connection
@@ -457,8 +477,10 @@ namespace System.Data.Common
                     {
                         _connection.Close();
                     }
-                    catch
+                    catch (Exception e)
                     {
+                        ExceptionBuilder.TraceExceptionWithoutRethrow(e);
+
                         // Swallow to allow the original exception to bubble up
                     }
 
@@ -485,8 +507,10 @@ namespace System.Data.Common
                     {
                         await _connection.CloseAsync().ConfigureAwait(false);
                     }
-                    catch
+                    catch (Exception e)
                     {
+                        ExceptionBuilder.TraceExceptionWithoutRethrow(e);
+
                         // Swallow to allow the original exception to bubble up
                     }
 
