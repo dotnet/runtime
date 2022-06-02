@@ -2307,7 +2307,7 @@ bool FloatingPointUtils::isNaN(double val)
 bool FloatingPointUtils::isNegativeZero(double val)
 {
     UINT64 bits = *reinterpret_cast<UINT64*>(&val);
-    return (bits >> 63) == 1;
+    return bits == 0x8000000000000000ULL;
 }
 
 //------------------------------------------------------------------------

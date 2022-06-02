@@ -4503,7 +4503,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Math_Log:
             case NI_System_Math_Log2:
             case NI_System_Math_Log10:
-#if defined TARGET_ARM64
+#if defined(TARGET_ARM64)
             // ARM64 has fmax/fmin which are IEEE754:2019 minimum/maximum compatible
             // TODO-XARCH-CQ: Enable this for XARCH when one of the arguments is a constant
             // so we can then emit maxss/minss and avoid NaN/-0.0 handling
@@ -4511,7 +4511,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Math_Min:
 #endif
 
-#if defined FEATURE_HW_INTRINSICS && defined TARGET_XARCH
+#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
             case NI_System_Math_Max:
             case NI_System_Math_Min:
             {
@@ -4522,32 +4522,101 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     GenTree* op2 = impPopStack().val;
                     GenTree* op1 = impPopStack().val;
 
-                    unsigned int insSimdSize = (callType == TYP_DOUBLE) ? 32 : 16;
+                    unsigned int insSimdSize = 16; //(callType == TYP_DOUBLE) ? 32 : 16;
 
-                    // IEEE 754 spec requires:
-                    // 1. If both operands are 0 of either sign
-                    // IsFloatPositiveZero is used for both operands, because the sign doesn't matter
-                    // 2. If either of operands is NaN (handles if both operands are NaN too)
-                    // 3. If either of operands is (-0.0) and an instruction is Math.Min
-                    // 3. If either of operands is (+0.0) and an instruction is Math.Max
-                    // Then op2 is returned;
-                    if ((op1->IsFloatPositiveZero() && op2->IsFloatPositiveZero()) ||
-                        (op1->IsFloatNaN() || op2->IsFloatNaN()) ||
-                        (ni == NI_System_Math_Min && (op1->IsFloatNegativeZero() || op2->IsFloatNegativeZero())) ||
-                        (ni == NI_System_Math_Max && (op1->IsFloatPositiveZero() || op2->IsFloatPositiveZero())))
+                    // 1. NaN is propagated if either input is NaN
+                    if (op1->IsFloatNaN() || op2->IsFloatNaN())
                     {
+                        GenTree* ret = op1->IsFloatNaN() ? op1 : op2;
                         retNode =
-                            gtNewSimdHWIntrinsicNode(callType, op2, NI_Vector128_ToScalar, callJitType, insSimdSize);
+                            gtNewSimdHWIntrinsicNode(callType, ret, NI_Vector128_ToScalar, callJitType, insSimdSize);
                         break;
                     }
 
-                    // If it's any other constant then it needs to be op1 for both (Math.Min/Math.Max).
-                    retNode = gtNewSimdHWIntrinsicNode(callType, op1, NI_Vector128_ToScalar, callJitType, insSimdSize);
+                    if (ni == NI_System_Math_Max)
+                    {
+                        // 2. if both inputs are zero
+                        if (op1->IsFloatPositiveZero() && op2->IsFloatPositiveZero())
+                        {
+                            // IsFloatPositiveZero doesn't gurantee that we don't have op1 = -0.0 op2 = -0.0,
+                            // so we check the sign.
+                            // Ensuring +0.0 is returned if both inputs are zero since both inputs being zero,
+                            // of either sign, means the second argument is returned
+                            //
+                            // 2.1 if op1 is +0.0 and op2 is either sign then take op1
+                            if (op1->IsFloatPositiveZero() && !op1->IsFloatNegativeZero())
+                            {
+                                retNode = gtNewSimdHWIntrinsicNode(callType, op1, NI_Vector128_ToScalar, callJitType,
+                                                                   insSimdSize);
+                                break;
+                            }
+                            // 2.2 if op2 is +0.0 and op1 is either sign then take op2
+                            else if (op2->IsFloatPositiveZero() && !op2->IsFloatNegativeZero())
+                            {
+                                retNode = gtNewSimdHWIntrinsicNode(callType, op2, NI_Vector128_ToScalar, callJitType,
+                                                                   insSimdSize);
+                                break;
+                            }
+                        }
+
+                        //  2.3. if op1 is +0.0 then take op2
+                        //  2.4. if op2 is +0.0 then take op2
+                        if ((op1->IsFloatPositiveZero() && !op1->IsFloatNegativeZero()) ||
+                            (op2->IsFloatPositiveZero() && !op2->IsFloatNegativeZero()))
+                        {
+                            retNode = gtNewSimdHWIntrinsicNode(callType, op2, NI_Vector128_ToScalar, callJitType,
+                                                               insSimdSize);
+                            break;
+                        }
+                    }
+
+                    if (ni == NI_System_Math_Min)
+                    {
+                        // 3. if both inputs are zero
+                        if (op1->IsFloatPositiveZero() && op2->IsFloatPositiveZero())
+                        {
+                            // IsFloatPositiveZero doesn't gurantee that we don't have op1 = -0.0 op2 = -0.0,
+                            // so we check the sign.
+                            // Ensuring -0.0 is returned if both inputs are zero since both inputs being zero,
+                            // of either sign, means the second argument is returned
+                            //
+                            // 3.1 if op1 is -0.0 and op2 is either sign then take op1
+                            if (op1->IsFloatNegativeZero())
+                            {
+                                retNode = gtNewSimdHWIntrinsicNode(callType, op1, NI_Vector128_ToScalar, callJitType,
+                                                                   insSimdSize);
+                                break;
+                            }
+                            // 3.2 if op2 is -0.0 and op1 is either sign then take op2
+                            else if (op2->IsFloatNegativeZero())
+                            {
+                                retNode = gtNewSimdHWIntrinsicNode(callType, op2, NI_Vector128_ToScalar, callJitType,
+                                                                   insSimdSize);
+                                break;
+                            }
+                        }
+
+                        //  3.3. if op1 is -0.0 then take op2
+                        //  3.4. if op2 is -0.0 then take op2
+                        if (op1->IsFloatNegativeZero() || op2->IsFloatNegativeZero())
+                        {
+                            retNode = gtNewSimdHWIntrinsicNode(callType, op2, NI_Vector128_ToScalar, callJitType,
+                                                               insSimdSize);
+                            break;
+                        }
+                    }
+
+                    impPushOnStack(op1, callType);
+                    impPushOnStack(op2, callType);
                     break;
+                    //// If it's any other constant then it needs to be op1 for both (Math.Min/Math.Max).
+                    // retNode = gtNewSimdHWIntrinsicNode(callType, op1, NI_Vector128_ToScalar, callJitType,
+                    // insSimdSize);
+                    // break;
                 }
 
                 // Go down to the direct Math.Min/Math.Max call
-                break;
+                // break;
             }
 #endif
 
