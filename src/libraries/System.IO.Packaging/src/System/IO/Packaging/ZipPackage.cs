@@ -606,7 +606,7 @@ namespace System.IO.Packaging
 
                 // Need to create an override entry?
                 if (extension.Length == 0
-                    || (_defaultDictionary.TryGetValue(extension, out var value)
+                    || (_defaultDictionary.TryGetValue(extension, out ContentType? value)
                         && !(foundMatchingDefault = value.AreTypeAndSubTypeEqual(contentType))))
                 {
                     AddOverrideElement(partUri, contentType);
@@ -628,7 +628,7 @@ namespace System.IO.Packaging
                 //partUri provided. Override takes precedence over the default entries
                 if (_overrideDictionary != null)
                 {
-                    if (_overrideDictionary.TryGetValue(partUri, out var val))
+                    if (_overrideDictionary.TryGetValue(partUri, out ContentType? val))
                         return val;
                 }
 
@@ -636,7 +636,7 @@ namespace System.IO.Packaging
                 //extension of the partUri provided.
                 string extension = partUri.PartUriExtension;
 
-                if (_defaultDictionary.TryGetValue(extension, out var value))
+                if (_defaultDictionary.TryGetValue(extension, out ContentType? value))
                     return value;
 
                 //Step 3: If we did not find an entry in the override and the default

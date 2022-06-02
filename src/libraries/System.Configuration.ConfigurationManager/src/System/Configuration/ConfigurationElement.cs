@@ -835,7 +835,7 @@ namespace System.Configuration
         {
             Debug.Assert(elem != null);
 
-            if ((s_perTypeValidators != null) && s_perTypeValidators.TryGetValue(elem.GetType(), out var value))
+            if ((s_perTypeValidators != null) && s_perTypeValidators.TryGetValue(elem.GetType(), out ConfigurationValidatorBase value))
                 elem._elementProperty = new ConfigurationElementProperty(value);
         }
 

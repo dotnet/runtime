@@ -44,7 +44,7 @@ namespace System.DirectoryServices.AccountManagement
 
         protected void BuildPropertySet(Type p, StringCollection propertySet)
         {
-            if (TypeToLdapPropListMap[this.MappingTableIndex].TryGetValue(p, out var value))
+            if (TypeToLdapPropListMap[this.MappingTableIndex].TryGetValue(p, out StringCollection value))
             {
                 string[] props = new string[value.Count];
                 value.CopyTo(props, 0);

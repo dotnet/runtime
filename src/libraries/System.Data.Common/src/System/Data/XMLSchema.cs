@@ -1349,7 +1349,7 @@ namespace System.Data
 
                     if (FromInference && relation.Nested)
                     {
-                        if (_tableDictionary!.TryGetValue(relation.ParentTable, out var value))
+                        if (_tableDictionary!.TryGetValue(relation.ParentTable, out List<DataTable>? value))
                         {
                             value.Add(relation.ChildTable);
                         }
@@ -1762,7 +1762,7 @@ namespace System.Data
                 _tableChild.DataSet!.Relations.Add(relation);
                 if (FromInference && relation.Nested)
                 {
-                    if (_tableDictionary!.TryGetValue(relation.ParentTable, out var value))
+                    if (_tableDictionary!.TryGetValue(relation.ParentTable, out List<DataTable>? value))
                     {
                         value.Add(relation.ChildTable);
                     }

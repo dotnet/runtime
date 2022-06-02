@@ -316,7 +316,7 @@ namespace System.IO.Packaging
 
             PackUriHelper.ValidatedPartUri validatedPartUri = (PackUriHelper.ValidatedPartUri)PackUriHelper.ValidatePartUri(partUri);
 
-            if (_partList.TryGetValue(validatedPartUri, out var value))
+            if (_partList.TryGetValue(validatedPartUri, out PackagePart? value))
             {
                 //This will get the actual casing of the part that
                 //is stored in the partList which is equivalent to the
@@ -1125,7 +1125,7 @@ namespace System.IO.Packaging
 
             PackUriHelper.ValidatedPartUri validatePartUri = PackUriHelper.ValidatePartUri(partUri);
 
-            if (_partList.TryGetValue(validatePartUri, out var value))
+            if (_partList.TryGetValue(validatePartUri, out PackagePart? value))
             {
                 return value;
             }

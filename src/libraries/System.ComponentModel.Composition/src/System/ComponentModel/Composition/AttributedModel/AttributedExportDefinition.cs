@@ -46,7 +46,7 @@ namespace System.ComponentModel.Composition.AttributedModel
                     metadata.Add(CompositionConstants.ExportTypeIdentityMetadataName, typeIdentity);
 
                     var partMetadata = _partCreationInfo.GetMetadata();
-                    if (partMetadata != null && partMetadata.TryGetValue(CompositionConstants.PartCreationPolicyMetadataName, out var value))
+                    if (partMetadata != null && partMetadata.TryGetValue(CompositionConstants.PartCreationPolicyMetadataName, out object? value))
                     {
                         metadata.Add(CompositionConstants.PartCreationPolicyMetadataName, value);
                     }
