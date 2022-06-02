@@ -1395,6 +1395,7 @@ typedef struct {
 
 	/* Points to the call to mini_init_method_rgctx () */
 	MonoInst *init_method_rgctx_ins;
+	MonoInst *init_method_rgctx_ins_arg;
 
 	MonoInst *lmf_var;
 	MonoInst *lmf_addr_var;
