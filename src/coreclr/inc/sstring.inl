@@ -570,7 +570,6 @@ inline void EString<TEncoding>::Preallocate(COUNT_T characters) const
 {
     WRAPPER_NO_CONTRACT;
 
-    // Assume unicode since we may get converted
     SBuffer::Preallocate(characters * sizeof(char_t));
 }
 
