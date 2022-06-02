@@ -25,7 +25,7 @@ namespace System.Text.RegularExpressions.Symbolic
             // Determine if the root node is supported for safe handling
             int threshold = SymbolicRegexThresholds.GetSymbolicRegexSafeSizeThreshold();
             Debug.Assert(threshold > 0);
-            
+
             // Skip the threshold check if the threshold equals int.MaxValue
             if (threshold != int.MaxValue)
             {

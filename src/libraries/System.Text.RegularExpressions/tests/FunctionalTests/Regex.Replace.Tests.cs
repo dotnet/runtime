@@ -125,7 +125,7 @@ namespace System.Text.RegularExpressions.Tests
         public async Task Replace(RegexEngine engine, string pattern, string input, string replacement, RegexOptions options, int count, int start, string expected)
         {
             // A few tests exceed the 1000 limit, they reach 6003
-            RegexHelpers.RemoveSafeSizeThresholdCheck();
+            RegexHelpers.SetSafeSizeThreshold(6005);
             Regex r;
             try
             {
@@ -133,7 +133,7 @@ namespace System.Text.RegularExpressions.Tests
             }
             finally
             {
-                RegexHelpers.RestoreSafeSizeThresholdCheck();
+                RegexHelpers.RestoreSafeSizeThresholdToDefault();
             }
 
             bool isDefaultStart = RegexHelpers.IsDefaultStart(input, options, start);

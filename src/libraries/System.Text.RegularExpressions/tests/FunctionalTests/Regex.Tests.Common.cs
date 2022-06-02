@@ -155,16 +155,16 @@ namespace System.Text.RegularExpressions.Tests
             _ => throw new ArgumentException($"Unknown engine: {engine}"),
         };
 
-        /// <summary>Set the environment variable to the max value that effectively removes the check. Only used with Nonbacktracking engine.</summary>
-        public static void RemoveSafeSizeThresholdCheck()
+        /// <summary>Set the AppContext variable SYMBOLIC_REGEX_SAFE_SIZE_THRESHOLD to the given max value. Only used with Nonbacktracking engine.</summary>
+        public static void SetSafeSizeThreshold(int maxSize)
         {
 #if NET7_0_OR_GREATER
-            AppContext.SetData("SYMBOLIC_REGEX_SAFE_SIZE_THRESHOLD", int.MaxValue);
+            AppContext.SetData("SYMBOLIC_REGEX_SAFE_SIZE_THRESHOLD", maxSize);
 #endif
         }
 
-        /// <summary>Remove the environment variable that affects the limit by setting its value to null. Only used with Nonbacktracking engine.</summary>
-        public static void RestoreSafeSizeThresholdCheck()
+        /// <summary>Remove the AppContext variable SYMBOLIC_REGEX_SAFE_SIZE_THRESHOLD value. Only used with Nonbacktracking engine.</summary>
+        public static void RestoreSafeSizeThresholdToDefault()
         {
 #if NET7_0_OR_GREATER
             AppContext.SetData("SYMBOLIC_REGEX_SAFE_SIZE_THRESHOLD", null);

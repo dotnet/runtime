@@ -13,13 +13,13 @@ namespace System.Text.RegularExpressions.Tests
         [Theory]
         [InlineData(UnicodeCategory.DecimalDigitNumber, 370)] //37 different kinds of decimal digits
         [InlineData(UnicodeCategory.Surrogate, 2048)]         //1024 low surrogates and 1024 high surrogates
-        public void BDDCardinalityTests(UnicodeCategory category, uint expectedCardinality)
+        public void BDDNumberOfRepresentedCharactersTests(UnicodeCategory category, uint expectedCardinality)
         {
             BDD digits = UnicodeCategoryConditions.GetCategory(category);
-            Assert.Equal(expectedCardinality, ComputeCardinality(digits));
+            Assert.Equal(expectedCardinality, ComputeNumberOfRepresentedCharacters(digits));
 
             // Returns how many characters this BDD represents
-            static uint ComputeCardinality(BDD bdd)
+            static uint ComputeNumberOfRepresentedCharacters(BDD bdd)
             {
                 if (bdd.IsEmpty)
                 {
