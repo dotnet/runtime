@@ -16,7 +16,12 @@ namespace System.Net.Http.Functional.Tests
     {
         public HttpClientHandlerTest_Url(ITestOutputHelper output) : base(output) { }
 
-        private async Task<string> RunGetAndReturnServerPathAsync(string path)
+        [Theory]
+        [InlineData("/test%20", "/test%20")]
+        [InlineData("/test ", "/test")]
+        [InlineData("/test%20?a=1", "/test%20?a=1")]
+        [InlineData("/test ?a=1", "/test%20?a=1")]
+        public async Task TrimmingTrailingWhiteSpace(string requestPath, string expectedServerPath)
         {
             string serverPath = null;
 
@@ -26,7 +31,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     client.BaseAddress = url;
 
-                    var getTask = client.GetAsync(path);
+                    var getTask = client.GetAsync(requestPath);
 
                     var response = await server.HandleRequestAsync();
                     serverPath = response.Path;
@@ -35,21 +40,7 @@ namespace System.Net.Http.Functional.Tests
                 }
             });
 
-            return serverPath;
-        }
-
-        [Fact]
-        public async Task TrailingWhitespace_Escaped()
-        {
-            string path = await RunGetAndReturnServerPathAsync("/test%20");
-            Assert.Equal("/test%20", path);
-        }
-
-        [Fact]
-        public async Task TrailingWhitespace_NotEscaped()
-        {
-            string path = await RunGetAndReturnServerPathAsync("/test ");
-            Assert.Equal("/test", path);
+            Assert.Equal(expectedServerPath, serverPath);
         }
     }
 }
