@@ -13,6 +13,9 @@ using ILLink.Shared.DataFlow;
 using ILLink.Shared.TypeSystemProxy;
 using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.SingleValue>;
 
+// This is needed due to NativeAOT which doesn't enable nullable globally yet
+#nullable enable
+
 namespace ILLink.Shared.TrimAnalysis
 {
 	[StructLayout (LayoutKind.Auto)] // A good way to avoid CS0282, we don't really care about field order
@@ -1161,6 +1164,10 @@ namespace ILLink.Shared.TrimAnalysis
 			// Disable warnings for all unimplemented intrinsics. Some intrinsic methods have annotations, but analyzing them
 			// would produce unnecessary warnings even for cases that are intrinsically handled. So we disable handling these calls
 			// until a proper intrinsic handling is made
+			// NOTE: Currently this is done "for the analyzer" and it relies on linker/NativeAOT to not call HandleCallAction
+			// for intrinsics which linker/NativeAOT need special handling for or those which are not implemented here and only there.
+			// Ideally we would run everything through HandleCallAction and it would return "false" for intrinsics it doesn't handle
+			// like it already does for Activator.CreateInstance<T> for example.
 			default:
 				methodReturnValue = MultiValueLattice.Top;
 				return true;

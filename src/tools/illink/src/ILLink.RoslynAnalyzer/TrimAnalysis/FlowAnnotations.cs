@@ -1,6 +1,7 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using ILLink.RoslynAnalyzer;
@@ -9,8 +10,17 @@ using Microsoft.CodeAnalysis;
 
 namespace ILLink.Shared.TrimAnalysis
 {
-	readonly partial struct FlowAnnotations
+	partial class FlowAnnotations
 	{
+		// In the analyzer there's no stateful data the flow annotations need to store
+		// so we just create a singleton on demand.
+		static readonly Lazy<FlowAnnotations> _instance = new (() => new FlowAnnotations (), isThreadSafe: true);
+
+		public static FlowAnnotations Instance { get => _instance.Value; }
+
+		// Hide the default .ctor so that only the one singleton instance can be created
+		private FlowAnnotations () { }
+
 		public static bool RequiresDataFlowAnalysis (IMethodSymbol method)
 		{
 			if (method.GetDynamicallyAccessedMemberTypes () != DynamicallyAccessedMemberTypes.None)
@@ -72,13 +82,13 @@ namespace ILLink.Shared.TrimAnalysis
 		// In linker this is an optimization to avoid the heavy lifting of analysis if there's no point
 		// it's unclear if the same optimization makes sense for the analyzer.
 		internal partial bool MethodRequiresDataFlowAnalysis (MethodProxy method)
-			=> FlowAnnotations.RequiresDataFlowAnalysis (method.Method);
+			=> RequiresDataFlowAnalysis (method.Method);
 
 		internal partial MethodReturnValue GetMethodReturnValue (MethodProxy method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
 			=> new MethodReturnValue (method.Method, dynamicallyAccessedMemberTypes);
 
 		internal partial MethodReturnValue GetMethodReturnValue (MethodProxy method)
-			=> GetMethodReturnValue (method, FlowAnnotations.GetMethodReturnValueAnnotation (method.Method));
+			=> GetMethodReturnValue (method, GetMethodReturnValueAnnotation (method.Method));
 
 		internal partial GenericParameterValue GetGenericParameterValue (GenericParameterProxy genericParameter)
 			=> new GenericParameterValue (genericParameter.TypeParameterSymbol);
@@ -94,7 +104,7 @@ namespace ILLink.Shared.TrimAnalysis
 
 		internal partial MethodParameterValue GetMethodParameterValue (MethodProxy method, int parameterIndex)
 		{
-			var annotation = FlowAnnotations.GetMethodParameterAnnotation (method.Method.Parameters[parameterIndex]);
+			var annotation = GetMethodParameterAnnotation (method.Method.Parameters[parameterIndex]);
 			return GetMethodParameterValue (method, parameterIndex, annotation);
 		}
 #pragma warning restore CA1822

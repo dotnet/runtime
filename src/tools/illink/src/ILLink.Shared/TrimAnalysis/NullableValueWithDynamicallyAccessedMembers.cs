@@ -7,6 +7,9 @@ using System.Diagnostics.CodeAnalysis;
 using ILLink.Shared.DataFlow;
 using ILLink.Shared.TypeSystemProxy;
 
+// This is needed due to NativeAOT which doesn't enable nullable globally yet
+#nullable enable
+
 namespace ILLink.Shared.TrimAnalysis
 {
 	/// <summary>

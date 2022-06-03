@@ -5,6 +5,9 @@
 using System;
 #endif
 
+// This is needed due to NativeAOT which doesn't enable nullable globally yet
+#nullable enable
+
 namespace ILLink.Shared
 {
 	static class HashUtils

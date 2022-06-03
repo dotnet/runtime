@@ -275,6 +275,15 @@ namespace Mono.Linker.Dataflow
 				}
 				break;
 
+			case IntrinsicId.Enum_GetValues:
+			case IntrinsicId.Marshal_SizeOf:
+			case IntrinsicId.Marshal_OffsetOf:
+			case IntrinsicId.Marshal_PtrToStructure:
+			case IntrinsicId.Marshal_DestroyStructure:
+			case IntrinsicId.Marshal_GetDelegateForFunctionPointer:
+				// These intrinsics are not interesting for trimmer (they are interesting for AOT and that's why they are recognized)
+				break;
+
 			//
 			// System.Object
 			//

@@ -3,6 +3,9 @@
 
 using System;
 
+// This is needed due to NativeAOT which doesn't enable nullable globally yet
+#nullable enable
+
 namespace ILLink.Shared.DataFlow
 {
 	// A lattice over dictionaries where the stored values are also from a lattice.

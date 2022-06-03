@@ -3,6 +3,9 @@
 
 using System;
 
+// This is needed due to NativeAOT which doesn't enable nullable globally yet
+#nullable enable
+
 namespace ILLink.Shared
 {
 	public readonly struct DiagnosticString

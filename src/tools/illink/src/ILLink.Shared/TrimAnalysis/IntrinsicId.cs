@@ -1,6 +1,9 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+// This is needed due to NativeAOT which doesn't enable nullable globally yet
+#nullable enable
+
 namespace ILLink.Shared.TrimAnalysis
 {
 	enum IntrinsicId
@@ -43,6 +46,12 @@ namespace ILLink.Shared.TrimAnalysis
 		Expression_Field,
 		Expression_Property,
 		Expression_New,
+		Enum_GetValues,
+		Marshal_SizeOf,
+		Marshal_OffsetOf,
+		Marshal_PtrToStructure,
+		Marshal_DestroyStructure,
+		Marshal_GetDelegateForFunctionPointer,
 		Activator_CreateInstance_Type,
 		Activator_CreateInstance_AssemblyName_TypeName,
 		Activator_CreateInstanceFrom,

@@ -8,6 +8,9 @@ using System.Runtime.InteropServices;
 using ILLink.Shared.TypeSystemProxy;
 using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.SingleValue>;
 
+// This is needed due to NativeAOT which doesn't enable nullable globally yet
+#nullable enable
+
 namespace ILLink.Shared.TrimAnalysis
 {
 	[StructLayout (LayoutKind.Auto)]
