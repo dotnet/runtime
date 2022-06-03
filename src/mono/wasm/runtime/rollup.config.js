@@ -59,6 +59,8 @@ const inlineAssert = [
         pattern: /^\s*mono_assert/gm,
         failure: "previous regexp didn't inline all mono_assert statements"
     }];
+const outputCodePlugins = [regexReplace(inlineAssert), consts({ productVersion, configuration }), typescript()];
+
 const iffeConfig = {
     treeshake: !isDebug,
     input: "exports.ts",
@@ -85,7 +87,7 @@ const iffeConfig = {
 
         handler(warning);
     },
-    plugins: [regexReplace(inlineAssert), consts({ productVersion, configuration }), typescript()]
+    plugins: outputCodePlugins
 };
 const typesConfig = {
     input: "./export-types.ts",
@@ -111,10 +113,30 @@ if (isDebug) {
     });
 }
 
-export default defineConfig([
+/* Web Workers */
+function makeWorkerConfig(workerName, workerInputSourcePath) {
+    const workerConfig = {
+        input: workerInputSourcePath,
+        output: [
+            {
+                file: nativeBinDir + `/src/dotnet-${workerName}-worker.js`,
+                format: "iife",
+                banner,
+                plugins
+            },
+        ],
+        plugins: outputCodePlugins,
+    };
+    return workerConfig;
+}
+
+const workerConfigs = findWebWorkerInputs ("./workers").map ((workerInput) => makeWorkerConfig (workerInput.workerName, workerInput.path));
+
+const allConfigs = [
     iffeConfig,
-    typesConfig
-]);
+    typesConfig,
+].concat(workerConfigs);
+export default defineConfig(allConfigs);
 
 // this would create .sha256 file next to the output file, so that we do not touch datetime of the file if it's same -> faster incremental build.
 function writeOnChangePlugin() {
@@ -215,4 +237,22 @@ function regexReplace(replacements = []) {
 
         return { code: fixed };
     }
+}
+
+// Finds all files that look like a webworker toplevel input file in the given path.
+// Does not look recursively in subdirectories.
+// Returns an array of objects {"workerName": "foo", "path": "/path/dotnet-foo-worker.ts"}
+//
+// A file looks like a webworker toplevel input if it's `dotnet-{name}-worker.ts` or `.js`
+function findWebWorkerInputs(basePath) {
+    const re = /^dotnet-(.*)-worker\.[tj]s$/;
+    const files = fs.readdirSync(basePath);
+    let results = [];
+    for (const file of files) {
+        const match = file.match(re);
+        if (match) {
+            results.push ({"workerName": match[1], "path": path.join (basePath, file) });
+        }
+    }
+    return results;
 }
