@@ -142,7 +142,6 @@ namespace System.IO
         /// <exception cref="T:System.IO.IOException"><see cref="M:System.IO.FileSystemInfo.Refresh" /> cannot initialize the data.</exception>
         public UnixFileMode UnixFileMode
         {
-            [UnsupportedOSPlatform("windows")]
             get => UnixFileModeCore;
             [UnsupportedOSPlatform("windows")]
             set => UnixFileModeCore = value;

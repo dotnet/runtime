@@ -9629,7 +9629,7 @@ namespace System.IO
         public System.DateTime LastWriteTimeUtc { get { throw null; } set { } }
         public string? LinkTarget { get { throw null; } }
         public abstract string Name { get; }
-        public System.IO.UnixFileMode UnixFileMode { [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")] get { throw null; } [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")] set { } }
+        public System.IO.UnixFileMode UnixFileMode { get { throw null; } [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")] set { } }
         public void CreateAsSymbolicLink(string pathToTarget) { }
         public abstract void Delete();
         public virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
