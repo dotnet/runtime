@@ -686,9 +686,9 @@ namespace System.Threading
             if (s_assignableWorkItemQueueCount > 0)
             {
                 int queueIndex = tl.queueIndex;
-                for (int c = s_assignableWorkItemQueueCount, maxIndex = c - 1, i = (int)(randomValue % (uint)c);
-                    c > 0;
-                    i = i < maxIndex ? i + 1 : 0, c--)
+                int c = s_assignableWorkItemQueueCount;
+                int maxIndex = c - 1;
+                for (int i = (int)(randomValue % (uint)c); c > 0; i = i < maxIndex ? i + 1 : 0, c--)
                 {
                     if (i != queueIndex && _assignableWorkItemQueues[i].TryDequeue(out workItem))
                     {
@@ -698,20 +698,22 @@ namespace System.Threading
             }
 
             // Try to steal from other threads' local work items
-            WorkStealingQueue localWsq = tl.workStealingQueue;
-            WorkStealingQueue[] queues = WorkStealingQueueList.Queues;
-            Debug.Assert(queues.Length > 0, "There must at least be a queue for this thread.");
-            for (int c = queues.Length, maxIndex = c - 1, i = (int)(randomValue % (uint)c);
-                c > 0;
-                i = i < maxIndex ? i + 1 : 0, c--)
             {
-                WorkStealingQueue otherQueue = queues[i];
-                if (otherQueue != localWsq && otherQueue.CanSteal)
+                WorkStealingQueue localWsq = tl.workStealingQueue;
+                WorkStealingQueue[] queues = WorkStealingQueueList.Queues;
+                int c = queues.Length;
+                Debug.Assert(c > 0, "There must at least be a queue for this thread.");
+                int maxIndex = c - 1;
+                for (int i = (int)(randomValue % (uint)c); c > 0; i = i < maxIndex ? i + 1 : 0, c--)
                 {
-                    workItem = otherQueue.TrySteal(ref missedSteal);
-                    if (workItem != null)
+                    WorkStealingQueue otherQueue = queues[i];
+                    if (otherQueue != localWsq && otherQueue.CanSteal)
                     {
-                        return workItem;
+                        workItem = otherQueue.TrySteal(ref missedSteal);
+                        if (workItem != null)
+                        {
+                            return workItem;
+                        }
                     }
                 }
             }
