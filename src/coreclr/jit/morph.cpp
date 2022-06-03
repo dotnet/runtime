@@ -14640,7 +14640,10 @@ GenTree* Compiler::fgRootCommas(GenTree* tree)
             comma->ChangeType(tree->TypeGet());
             tree = comma;
             tree->gtFlags &= ~GTF_ALL_EFFECT;
-            tree->gtFlags |= GTF_CAN_SPLIT_COMMA;
+
+            // TODO: We should only split commas for GT_RETURN nodes.
+            //tree->gtFlags |= GTF_CAN_SPLIT_COMMA;
+
             gtUpdateNodeSideEffects(tree);
         }
     }
