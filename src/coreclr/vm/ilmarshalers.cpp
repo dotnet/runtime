@@ -4371,7 +4371,7 @@ FCIMPL3(void, MngdNativeArrayMarshaler::ConvertContentsToNative, MngdNativeArray
     if (*pArrayRef != NULL)
     {
         const OleVariant::Marshaler* pMarshaler = OleVariant::GetMarshalerForVarType(pThis->m_vt, TRUE);
-        SIZE_T cElements;
+        SIZE_T cElements = 0;
         if (pMarshaler == NULL || pMarshaler->ComToOleArray == NULL)
         {
             if ( (!ClrSafeInt<SIZE_T>::multiply((*pArrayRef)->GetNumComponents(), OleVariant::GetElementSizeForVarType(pThis->m_vt, pThis->m_pElementMT), cElements)) || cElements > MAX_SIZE_FOR_INTEROP)
