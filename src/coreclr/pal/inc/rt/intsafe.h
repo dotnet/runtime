@@ -37,3 +37,5 @@
 C_ASSERT(sizeof(unsigned short) == 2);
 C_ASSERT(sizeof(unsigned int) == 4);
 C_ASSERT(sizeof(ULONG) == 4);
+
+#endif // _INTSAFE_H_INCLUDED_
