@@ -820,7 +820,7 @@ namespace DebuggerTests
             );
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData("IDefaultInterface", "DefaultMethod", "Evaluate", 1070, 1001, 999, 1003)]
         [InlineData("IExtendIDefaultInterface", "IDefaultInterface.DefaultMethodToOverride", "Evaluate", 1071, 1030, 1028, 1032)]
         [InlineData("IDefaultInterface", "DefaultMethodAsync", "EvaluateAsync", 37, 1014, 1012, 1016, true, "Start<IDefaultInterface/<DefaultMethodAsync>d__2>")]
