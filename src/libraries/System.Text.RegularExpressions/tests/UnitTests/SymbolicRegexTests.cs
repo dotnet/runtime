@@ -66,6 +66,7 @@ namespace System.Text.RegularExpressions.Tests
                 ("(abc)", 4),
                 ("ab|c", 4),
                 // simple counters
+                ("(a{3,6})", 7),                            // 6x#(a) + 1
                 ("((ab){10})", 21),
                 ("((ab){10,})", 23),
                 ("((ab){0,10})", 21),

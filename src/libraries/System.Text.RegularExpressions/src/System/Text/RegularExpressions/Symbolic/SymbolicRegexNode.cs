@@ -2217,10 +2217,10 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>
         /// Let #(this) denote the number of singletons in this node.
         /// Then the NFA size estimation in terms of state count
-        /// is #(this) if there are no anchors else 5x#(this).
+        /// is #(this) if there are no anchors else <see cref="CharKind.CharKindCount"/>x#(this).
         /// Add 1 for the initial state also.
         /// </summary>
-        internal int EstimateNfaSize() => Times(_info.ContainsSomeAnchor ? 5 : 1, Sum(1, CountSingletons()));
+        internal int EstimateNfaSize() => Times(_info.ContainsSomeAnchor ? CharKind.CharKindCount : 1, Sum(1, CountSingletons()));
 
         /// <summary>
         /// Count the number of Regex Singletons, if all loops with explicit counters
@@ -2228,7 +2228,9 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <remarks>
         /// Let node.CountSingletons() be abbreviated by #(node).
         /// Ex: #(a{6}) = 6*#(a) = 6
-        /// Ex: #(a+|()) = #(aa*) = 2.
+        /// Ex: #(a+|()) = #(aa*) = 2
+        /// Ex: #(a{3,6}) = 6
+        /// Ex: #(a{6,}) = #(a{6}a*)= 7
         /// </remarks>
         /// </summary>
         internal int CountSingletons()
