@@ -3822,7 +3822,7 @@ void emitter::emitDispIG(insGroup* ig, insGroup* igPrev, bool verbose)
                     instrDesc* id = (instrDesc*)ins;
 
 #if defined(TARGET_XARCH)
-                    if (emitInstHasNoCode(id))
+                    if ((id->idIns() != INS_jmp) && emitInstHasNoCode(id))
                     {
                         // an instruction with no code prevents us being able to iterate to the
                         // next instructions so we must be certain that when we find one it is
@@ -6863,7 +6863,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 #ifdef DEBUG
         if (emitComp->opts.disAsm || emitComp->verbose)
         {
-            printf("\t\t\t\t\t\t;; size=%d bbWeight=%s PerfScore %.2f", ig->igSize, refCntWtd2str(ig->igWeight),
+            printf("\t\t\t\t\t\t;; size=%d bbWeight=%s PerfScore %.2f", (cp - bp), refCntWtd2str(ig->igWeight),
                    ig->igPerfScore);
         }
         *instrCount += ig->igInsCnt;
