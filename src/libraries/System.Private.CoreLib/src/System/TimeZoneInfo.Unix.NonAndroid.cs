@@ -415,7 +415,7 @@ namespace System
             }
 
             // If it's empty, use UTC (TryGetLocalTzFile() should return false).
-            if (tzVariable!.Length == 0)
+            if (string.IsNullOrEmpty(tzVariable))
             {
                 return false;
             }

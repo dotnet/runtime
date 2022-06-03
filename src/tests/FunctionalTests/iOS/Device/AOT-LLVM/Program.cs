@@ -17,23 +17,6 @@ public static class Program
         Console.WriteLine("Done!");
         await Task.Delay(5000);
 
-        DateTimeOffset utcNow = DateTimeOffset.UtcNow;
-            
-        string utcTime = utcNow.ToString();
-        string localTime = utcNow.ToLocalTime().ToString();
-
-        Console.WriteLine("UTCNOW: " + utcTime);
-        Console.WriteLine("LocalTime: " + localTime);
-
-        if (utcTime != localTime)
-        {
-            Console.WriteLine("NOT EQUAL");
-        }
-        else
-        {
-            Console.WriteLine("EQUAL");
-        }
-
         return 42;
     }
 }
