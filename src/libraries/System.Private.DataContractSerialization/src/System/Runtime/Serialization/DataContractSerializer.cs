@@ -192,11 +192,14 @@ namespace System.Runtime.Serialization
             get { return _maxItemsInObjectGraph; }
         }
 
-        // TODO: rename to "SurrogateProvider"
+        /// <summary>
+        ///  Gets or sets a serialization surrogate provider.
+        /// </summary>
+        // TODO: I propose to rename this to "SurrogateProvider".
         // This change cannot break API compatibility because the accessibility was internal.
         public ISerializationSurrogateProvider? SerializationSurrogateProvider
         {
-            // TODO: convert to the auto-implemented property.
+            // TODO: I propose to convert to the auto-implemented property.
             get { return _serializationSurrogateProvider; }
             set { _serializationSurrogateProvider = value; }
         }

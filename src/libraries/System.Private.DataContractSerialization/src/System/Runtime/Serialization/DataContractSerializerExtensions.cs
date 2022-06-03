@@ -5,7 +5,7 @@ namespace System.Runtime.Serialization
 {
     public static class DataContractSerializerExtensions
     {
-        // TODO: add an Obsolete attribute to the below two methods.
+        // TODO: I propose to add an Obsolete attribute to the below two methods.
 
         public static ISerializationSurrogateProvider? GetSerializationSurrogateProvider(this DataContractSerializer serializer)
         {
