@@ -129,7 +129,7 @@ namespace Microsoft.Extensions.Logging.Console
                     Monitor.Wait(_messageQueue);
                 }
 
-                if (_messageQueue.Count < MaxQueueLength)
+                if (_messageQueue.Count < MaxQueueLength && !_isAddingCompleted)
                 {
                     _messageQueue.Enqueue(item);
 
