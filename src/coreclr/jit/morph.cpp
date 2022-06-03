@@ -14627,6 +14627,11 @@ GenTree* Compiler::fgRootCommas(GenTree* tree)
             tree->AsOp()->gtOp1 = comma->gtGetOp2();
             tree->gtFlags &= ~GTF_ALL_EFFECT;
             gtUpdateNodeSideEffects(tree);
+
+#ifdef DEBUG
+            /* Mark this node as being morphed */
+            tree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
+#endif
         }
     }
 
@@ -14640,11 +14645,12 @@ GenTree* Compiler::fgRootCommas(GenTree* tree)
             comma->ChangeType(tree->TypeGet());
             tree = comma;
             tree->gtFlags &= ~GTF_ALL_EFFECT;
-
-            // TODO: We should only split commas for GT_RETURN nodes.
-            //tree->gtFlags |= GTF_CAN_SPLIT_COMMA;
-
             gtUpdateNodeSideEffects(tree);
+
+#ifdef DEBUG
+            /* Mark this node as being morphed */
+            tree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
+#endif
         }
     }
 
