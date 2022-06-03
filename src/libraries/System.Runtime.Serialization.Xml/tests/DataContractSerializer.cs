@@ -793,7 +793,7 @@ public static partial class DataContractSerializerTests
         Assert.True(y.RO1.Count == 1);
         Assert.True((char)y.RO1[0] == 'x');
     }
-	
+
     [Fact]
     public static void DCS_EnumerableMemberConcreteTypeWithoutDefaultContructor()
     {
@@ -3943,6 +3943,42 @@ public static partial class DataContractSerializerTests
                 }
             }
         }
+    }
+
+    [Fact]
+    public static void DCS_SurrogateProvider()
+    {
+        DataContractSerializer dcs = new DataContractSerializer(typeof(object));
+
+        // When the property 'SerializationSurrogateProvider' is updated,
+        // the extension method 'GetSerializationSurrogateProvider()' returns same as it.
+        dcs.SerializationSurrogateProvider = null;
+        Assert.Equal(null, dcs.SerializationSurrogateProvider);
+        Assert.Equal(null, dcs.GetSerializationSurrogateProvider());
+
+        var mpsp = new MyPersonSurrogateProvider();
+        dcs.SerializationSurrogateProvider = mpsp;
+        Assert.Equal(mpsp, dcs.SerializationSurrogateProvider);
+        Assert.Equal(mpsp, dcs.GetSerializationSurrogateProvider());
+
+        var mfssp = MyFileStreamSurrogateProvider.Singleton;
+        dcs.SerializationSurrogateProvider = mfssp;
+        Assert.Equal(mfssp, dcs.SerializationSurrogateProvider);
+        Assert.Equal(mfssp, dcs.GetSerializationSurrogateProvider());
+
+        // The value of the property 'SerializationSurrogateProvider' may modified by
+        // the extension method 'SetSerializationSurrogateProvider()'.
+        dcs.SetSerializationSurrogateProvider(null);
+        Assert.Equal(null, dcs.SerializationSurrogateProvider);
+        Assert.Equal(null, dcs.GetSerializationSurrogateProvider());
+
+        dcs.SetSerializationSurrogateProvider(mpsp);
+        Assert.Equal(mpsp, dcs.SerializationSurrogateProvider);
+        Assert.Equal(mpsp, dcs.GetSerializationSurrogateProvider());
+
+        dcs.SetSerializationSurrogateProvider(mfssp);
+        Assert.Equal(mfssp, dcs.SerializationSurrogateProvider);
+        Assert.Equal(mfssp, dcs.GetSerializationSurrogateProvider());
     }
 
     [Fact]

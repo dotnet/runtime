@@ -29,6 +29,7 @@ namespace System.Runtime.Serialization
         public int MaxItemsInObjectGraph { get { throw null; } }
         public bool PreserveObjectReferences { get { throw null; } }
         public bool SerializeReadOnlyTypes { get { throw null; } }
+        public ISerializationSurrogateProvider? SerializationSurrogateProvider { get { throw null; } set { } }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public override bool IsStartObject(System.Xml.XmlDictionaryReader reader) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
