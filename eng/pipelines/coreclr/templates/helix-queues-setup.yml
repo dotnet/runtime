@@ -12,7 +12,7 @@ parameters:
   jobParameters: {}
 - name: debian_10_arm64_img
   type: string
-  default: (Debian.10.Arm64.Open)Ubuntu.1804.Armarch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-10-helix-arm64v8-20210304164340-56c6673
+  default: "(Debian.10.Arm64.Open)Ubuntu.1804.Armarch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-10-helix-arm64v8-20210304164340-56c6673"
 
 jobs:
 - template: ${{ parameters.jobTemplate }}
