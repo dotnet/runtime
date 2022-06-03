@@ -2230,7 +2230,6 @@ namespace System.Text.RegularExpressions.Symbolic
         /// Ex: #(a{6}) = 6*#(a) = 6
         /// Ex: #(a+|()) = #(aa*) = 2.
         /// </remarks>
-        /// </summary>
         internal int CountSingletons()
         {
             // Guard against stack overflow due to deep recursion
