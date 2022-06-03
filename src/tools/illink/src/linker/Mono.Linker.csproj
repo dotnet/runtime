@@ -25,6 +25,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="StaticCs" Version="$(StaticCsVersion)">
+      <PrivateAssets>all</PrivateAssets>
+      <ExcludeAssets>runtime</ExcludeAssets>
+    </PackageReference>
     <PackageReference Condition="'$(UseCecilPackage)' == 'true'" Include="Mono.Cecil" Version="$(MonoCecilVersion)" />
     <ProjectReference Condition="'$(UseCecilPackage)' != 'true'" Include="..\..\external\cecil\Mono.Cecil.csproj" />
     <ProjectReference Condition="'$(UseCecilPackage)' != 'true'" Include="..\..\external\cecil\symbols\pdb\Mono.Cecil.Pdb.csproj" PrivateAssets="all" />

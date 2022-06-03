@@ -28,6 +28,7 @@
          when we build the cecil submodule. The reference assembly package will depend on this version of cecil.
          Keep this in sync with ProjectInfo.cs in the submodule. -->
     <MonoCecilVersion>0.11.4</MonoCecilVersion>
+    <StaticCsVersion>0.1.0</StaticCsVersion>
     <UseVSTestRunner>true</UseVSTestRunner>
   </PropertyGroup>
 </Project>
