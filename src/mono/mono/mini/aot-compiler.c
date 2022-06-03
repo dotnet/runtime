@@ -43,11 +43,13 @@
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/assembly-internals.h>
+#include <mono/metadata/image-internals.h>
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/reflection-internals.h>
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/mempool-internals.h>
+#include <mono/metadata/mono-basic-block.h>
 #include <mono/metadata/mono-endian.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/custom-attrs-internals.h>
@@ -186,6 +188,7 @@ typedef struct MonoAotOptions {
 	char *llvm_outfile;
 	char *data_outfile;
 	GList *profile_files;
+	GList *mibc_profile_files;
 	gboolean save_temps;
 	gboolean write_symbols;
 	gboolean metadata_only;
@@ -8522,6 +8525,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->profile_files = g_list_append (opts->profile_files, g_strdup (arg + strlen ("profile=")));
 		} else if (!strcmp (arg, "profile-only")) {
 			opts->profile_only = TRUE;
+		} else if (str_begins_with (arg, "mibc-profile=")) {
+			opts->mibc_profile_files = g_list_append (opts->mibc_profile_files, g_strdup (arg + strlen ("mibc-profile=")));
 		} else if (!strcmp (arg, "verbose")) {
 			opts->verbose = TRUE;
 		} else if (!strcmp (arg, "allow-errors")) {
@@ -13215,6 +13220,124 @@ add_profile_instances (MonoAotCompile *acfg, ProfileData *data)
 	printf ("Added %d methods from profile.\n", count);
 }
 
+static int
+add_single_mibc_profile_method (MonoAotCompile *acfg, MonoMethod *method)
+{
+	if (!method->is_inflated || mono_method_is_generic_sharable_full (method, FALSE, FALSE, FALSE)) {
+		if (!acfg->aot_opts.profile_only)
+			return 0;
+		if (m_class_get_image (method->klass) != acfg->image)
+			return 0;
+		add_profile_method (acfg, method);
+		return 1;
+	}
+
+	if (acfg->aot_opts.dedup_include) {
+		add_profile_method (acfg, method);
+		return 1;
+	}
+
+	MonoGenericContext *ctx = mono_method_get_context (method);
+	if ((ctx->class_inst && inst_references_image (ctx->class_inst, acfg->image)) ||
+		(ctx->method_inst && inst_references_image (ctx->method_inst, acfg->image))) {
+		add_profile_method (acfg, method);
+		return 1;
+	}
+
+	if (m_class_get_image (method->klass) == acfg->image &&
+		((ctx->class_inst && is_local_inst (ctx->class_inst, acfg->image)) ||
+		(ctx->method_inst && is_local_inst (ctx->method_inst, acfg->image)))) {
+		add_profile_method (acfg, method);
+		return 1;
+	}
+
+	return 0;
+}
+
+static int
+add_mibc_group_method_methods (MonoAotCompile *acfg, MonoMethod *mibcGroupMethod, MonoImage *image, MonoClass *mibcModuleClass, MonoGenericContext *context)
+{
+	ERROR_DECL (error);
+
+	MonoMethodHeader *mibcGroupMethodHeader = mono_method_get_header_internal (mibcGroupMethod, error);
+	mono_error_assert_ok (error);
+
+	int count = 0;
+	uint8_t *cur = (uint8_t*)mibcGroupMethodHeader->code;
+	uint8_t *end = (uint8_t*)mibcGroupMethodHeader->code + mibcGroupMethodHeader->code_size;
+	while (cur < end) {
+		MonoOpcodeEnum il_op;
+		const unsigned char *opcodeIp = (unsigned char*)cur;
+		const unsigned char *opcodeEnd = (unsigned char*)end;
+		cur += mono_opcode_value_and_size (&opcodeIp, opcodeEnd, &il_op);
+		if (il_op != MONO_CEE_LDTOKEN)
+			continue;
+
+		g_assert (opcodeIp + 4 < opcodeEnd);
+		guint32 mibcGroupMethodEntryToken = *(guint32 *)(opcodeIp + 1);
+
+		MonoMethod *methodEntry = mono_get_method_checked (image, mibcGroupMethodEntryToken, mibcModuleClass, context, error);
+		mono_error_assert_ok (error);
+
+		MonoClass *method_class = mono_method_get_class (methodEntry);
+		if (!method_class)
+			continue;
+
+		MonoImage *method_image = mono_class_get_image (method_class);
+		if (!method_image)
+			continue;
+
+		count += add_single_mibc_profile_method (acfg, methodEntry);
+	}
+	return count;
+}
+
+static void
+add_mibc_profile_methods (MonoAotCompile *acfg, char *filename)
+{
+	MonoImageOpenStatus status = MONO_IMAGE_OK;
+	MonoImage *image = mono_image_open_mibc (mono_alc_get_default (), filename, &status);
+	g_assert (image != NULL);
+	g_assert (status == MONO_IMAGE_OK);
+
+	ERROR_DECL (error);
+
+	MonoClass *mibcModuleClass = mono_class_from_name_checked (image, "", "<Module>", error);
+	mono_error_assert_ok (error);
+
+	MonoMethod *assemblyDictionary = mono_class_get_method_from_name_checked (mibcModuleClass, "AssemblyDictionary", 0, 0, error);
+	MonoGenericContext *context = mono_method_get_context (assemblyDictionary);
+	mono_error_assert_ok (error);
+
+	MonoMethodHeader *header = mono_method_get_header_internal (assemblyDictionary, error);
+	mono_error_assert_ok (error);
+
+	int count = 0;
+	uint8_t *cur = (uint8_t*)header->code;
+	uint8_t *end = (uint8_t*)header->code + header->code_size;
+	while (cur < end) {
+		MonoOpcodeEnum il_op;
+		const unsigned char *opcodeIp = (unsigned char*)cur;
+		const unsigned char *opcodeEnd = (unsigned char*)end;
+		cur += mono_opcode_value_and_size (&opcodeIp, opcodeEnd, &il_op);
+		// opcodeIp gets moved to point at end of opcode
+		// il opcode arg is opcodeIp + 1
+		// we only care about args of ldtoken's, which are 32bits/4bytes
+		if (il_op != MONO_CEE_LDTOKEN)
+			continue;
+
+		g_assert (opcodeIp + 4 < opcodeEnd);
+		guint32 token = *(guint32 *)(opcodeIp + 1);
+
+		MonoMethod *mibcGroupMethod = mono_get_method_checked (image, token, mibcModuleClass, context, error);
+		mono_error_assert_ok (error);
+
+		count += add_mibc_group_method_methods (acfg, mibcGroupMethod, image, mibcModuleClass, context);
+	}
+
+	printf ("Added %d methods from mibc profile.\n", count);
+}
+
 static void
 init_got_info (GotInfo *info)
 {
@@ -14199,6 +14322,14 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options,
 			resolve_profile_data (acfg, (ProfileData*)l->data, ass);
 		for (l = acfg->profile_data; l; l = l->next)
 			add_profile_instances (acfg, (ProfileData*)l->data);
+	}
+
+	if (acfg->aot_opts.mibc_profile_files) {
+		GList *l;
+
+		for (l = acfg->aot_opts.mibc_profile_files; l; l = l->next) {
+			add_mibc_profile_methods (acfg, (char*)l->data);
+		}
 	}
 
 	/* PLT offset 0 is reserved for the PLT trampoline */
