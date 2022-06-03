@@ -100,6 +100,23 @@ namespace System
             number.DigitsCount = length;
         }
 
+        private unsafe ref struct Dragon4State
+        {
+            public BigInteger scale;           // positive scale applied to value and margin such that they can be represented as whole numbers
+            public BigInteger scaledValue;     // scale * mantissa
+            public BigInteger scaledMarginLow; // scale * 0.5 * (distance between this floating-point number and its immediate lower value)
+
+            // For normalized IEEE floating-point values, each time the exponent is incremented the margin also doubles.
+            // That creates a subset of transition numbers where the high margin is twice the size of the low margin.
+            public BigInteger* pScaledMarginHigh;
+            public BigInteger optionalMarginHigh;
+
+            // Other state set by Dragon4GetScaleValueMargin that is used by the second half of the algorithm
+            public int digitExponent;
+            public bool isEven;
+            public int cutoffExponent;
+        }
+
         // This is an implementation of the Dragon4 algorithm to convert a binary number in floating-point format to a decimal number in string format.
         // The function returns the number of digits written to the output buffer and the output is not NUL terminated.
         //
@@ -125,212 +142,17 @@ namespace System
             // require that the DoubleToNumber handle zero itself.
             Debug.Assert(mantissa != 0);
 
-            // Compute the initial state in integral form such that
-            //      value     = scaledValue / scale
-            //      marginLow = scaledMarginLow / scale
-
-            BigInteger scale;           // positive scale applied to value and margin such that they can be represented as whole numbers
-            BigInteger scaledValue;     // scale * mantissa
-            BigInteger scaledMarginLow; // scale * 0.5 * (distance between this floating-point number and its immediate lower value)
-
-            // For normalized IEEE floating-point values, each time the exponent is incremented the margin also doubles.
-            // That creates a subset of transition numbers where the high margin is twice the size of the low margin.
-            BigInteger* pScaledMarginHigh;
-            BigInteger optionalMarginHigh;
-
-            if (hasUnequalMargins)
-            {
-                if (exponent > 0)   // We have no fractional component
-                {
-                    // 1) Expand the input value by multiplying out the mantissa and exponent.
-                    //    This represents the input value in its whole number representation.
-                    // 2) Apply an additional scale of 2 such that later comparisons against the margin values are simplified.
-                    // 3) Set the margin value to the loweset mantissa bit's scale.
-
-                    // scaledValue      = 2 * 2 * mantissa * 2^exponent
-                    BigInteger.SetUInt64(out scaledValue, 4 * mantissa);
-                    scaledValue.ShiftLeft((uint)(exponent));
-
-                    // scale            = 2 * 2 * 1
-                    BigInteger.SetUInt32(out scale, 4);
-
-                    // scaledMarginLow  = 2 * 2^(exponent - 1)
-                    BigInteger.Pow2((uint)(exponent), out scaledMarginLow);
-
-                    // scaledMarginHigh = 2 * 2 * 2^(exponent + 1)
-                    BigInteger.Pow2((uint)(exponent + 1), out optionalMarginHigh);
-                }
-                else                // We have a fractional exponent
-                {
-                    // In order to track the mantissa data as an integer, we store it as is with a large scale
-
-                    // scaledValue      = 2 * 2 * mantissa
-                    BigInteger.SetUInt64(out scaledValue, 4 * mantissa);
-
-                    // scale            = 2 * 2 * 2^(-exponent)
-                    BigInteger.Pow2((uint)(-exponent + 2), out scale);
-
-                    // scaledMarginLow  = 2 * 2^(-1)
-                    BigInteger.SetUInt32(out scaledMarginLow, 1);
-
-                    // scaledMarginHigh = 2 * 2 * 2^(-1)
-                    BigInteger.SetUInt32(out optionalMarginHigh, 2);
-                }
-
-                // The high and low margins are different
-                pScaledMarginHigh = &optionalMarginHigh;
-            }
-            else
-            {
-                if (exponent > 0)   // We have no fractional component
-                {
-                    // 1) Expand the input value by multiplying out the mantissa and exponent.
-                    //    This represents the input value in its whole number representation.
-                    // 2) Apply an additional scale of 2 such that later comparisons against the margin values are simplified.
-                    // 3) Set the margin value to the lowest mantissa bit's scale.
-
-                    // scaledValue     = 2 * mantissa*2^exponent
-                    BigInteger.SetUInt64(out scaledValue, 2 * mantissa);
-                    scaledValue.ShiftLeft((uint)(exponent));
-
-                    // scale           = 2 * 1
-                    BigInteger.SetUInt32(out scale, 2);
-
-                    // scaledMarginLow = 2 * 2^(exponent-1)
-                    BigInteger.Pow2((uint)(exponent), out scaledMarginLow);
-                }
-                else                // We have a fractional exponent
-                {
-                    // In order to track the mantissa data as an integer, we store it as is with a large scale
-
-                    // scaledValue     = 2 * mantissa
-                    BigInteger.SetUInt64(out scaledValue, 2 * mantissa);
-
-                    // scale           = 2 * 2^(-exponent)
-                    BigInteger.Pow2((uint)(-exponent + 1), out scale);
-
-                    // scaledMarginLow = 2 * 2^(-1)
-                    BigInteger.SetUInt32(out scaledMarginLow, 1);
-                }
-
-                // The high and low margins are equal
-                pScaledMarginHigh = &scaledMarginLow;
-            }
-
-            // Compute an estimate for digitExponent that will be correct or undershoot by one.
-            //
-            // This optimization is based on the paper "Printing Floating-Point Numbers Quickly and Accurately" by Burger and Dybvig http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.72.4656&rep=rep1&type=pdf
-            //
-            // We perform an additional subtraction of 0.69 to increase the frequency of a failed estimate because that lets us take a faster branch in the code.
-            // 0.69 is chosen because 0.69 + log10(2) is less than one by a reasonable epsilon that will account for any floating point error.
-            //
-            // We want to set digitExponent to floor(log10(v)) + 1
-            //      v = mantissa * 2^exponent
-            //      log2(v) = log2(mantissa) + exponent;
-            //      log10(v) = log2(v) * log10(2)
-            //      floor(log2(v)) = mantissaHighBitIdx + exponent;
-            //      log10(v) - log10(2) < (mantissaHighBitIdx + exponent) * log10(2) <= log10(v)
-            //      log10(v) < (mantissaHighBitIdx + exponent) * log10(2) + log10(2) <= log10(v) + log10(2)
-            //      floor(log10(v)) < ceil((mantissaHighBitIdx + exponent) * log10(2)) <= floor(log10(v)) + 1
-            const double Log10V2 = 0.30102999566398119521373889472449;
-            int digitExponent = (int)(Math.Ceiling(((int)(mantissaHighBitIdx) + exponent) * Log10V2 - 0.69));
-
-            // Divide value by 10^digitExponent.
-            if (digitExponent > 0)
-            {
-                // The exponent is positive creating a division so we multiply up the scale.
-                scale.MultiplyPow10((uint)(digitExponent));
-            }
-            else if (digitExponent < 0)
-            {
-                // The exponent is negative creating a multiplication so we multiply up the scaledValue, scaledMarginLow and scaledMarginHigh.
-
-                BigInteger.Pow10((uint)(-digitExponent), out BigInteger pow10);
-
-                scaledValue.Multiply(ref pow10);
-                scaledMarginLow.Multiply(ref pow10);
-
-                if (pScaledMarginHigh != &scaledMarginLow)
-                {
-                    BigInteger.Multiply(ref scaledMarginLow, 2, out *pScaledMarginHigh);
-                }
-            }
-
-            bool isEven = (mantissa % 2) == 0;
-            bool estimateTooLow = false;
-
-            if (cutoffNumber == -1)
-            {
-                // When printing the shortest possible string, we want to
-                // take IEEE unbiased rounding into account so we can return
-                // shorter strings for various edge case values like 1.23E+22
-
-                BigInteger.Add(ref scaledValue, ref *pScaledMarginHigh, out BigInteger scaledValueHigh);
-                int cmpHigh = BigInteger.Compare(ref scaledValueHigh, ref scale);
-                estimateTooLow = isEven ? (cmpHigh >= 0) : (cmpHigh > 0);
-            }
-            else
-            {
-                estimateTooLow = BigInteger.Compare(ref scaledValue, ref scale) >= 0;
-            }
-
-            // Was our estimate for digitExponent was too low?
-            if (estimateTooLow)
-            {
-                // The exponent estimate was incorrect.
-                // Increment the exponent and don't perform the premultiply needed for the first loop iteration.
-                digitExponent++;
-            }
-            else
-            {
-                // The exponent estimate was correct.
-                // Multiply larger by the output base to prepare for the first loop iteration.
-                scaledValue.Multiply10();
-                scaledMarginLow.Multiply10();
-
-                if (pScaledMarginHigh != &scaledMarginLow)
-                {
-                    BigInteger.Multiply(ref scaledMarginLow, 2, out *pScaledMarginHigh);
-                }
-            }
-
-            // Compute the cutoff exponent (the exponent of the final digit to print).
-            // Default to the maximum size of the output buffer.
-            int cutoffExponent = digitExponent - buffer.Length;
-
-            if (cutoffNumber != -1)
-            {
-                int desiredCutoffExponent = 0;
-
-                if (isSignificantDigits)
-                {
-                    // We asked for a specific number of significant digits.
-                    Debug.Assert(cutoffNumber > 0);
-                    desiredCutoffExponent = digitExponent - cutoffNumber;
-                }
-                else
-                {
-                    // We asked for a specific number of fractional digits.
-                    Debug.Assert(cutoffNumber >= 0);
-                    desiredCutoffExponent = -cutoffNumber;
-                }
-
-                if (desiredCutoffExponent > cutoffExponent)
-                {
-                    // Only select the new cutoffExponent if it won't overflow the destination buffer.
-                    cutoffExponent = desiredCutoffExponent;
-                }
-            }
+            Dragon4State state = Dragon4GetScaleValueMargin(mantissa, exponent, mantissaHighBitIdx, hasUnequalMargins, cutoffNumber, isSignificantDigits, buffer.Length);
 
             // Output the exponent of the first digit we will print
-            decimalExponent = --digitExponent;
+            decimalExponent = --state.digitExponent;
 
-            // In preparation for calling BigInteger.HeuristicDivie(), we need to scale up our values such that the highest block of the denominator is greater than or equal to 8.
+            // In preparation for calling BigInteger.HeuristicDivide(), we need to scale up our values such that the highest block of the denominator is greater than or equal to 8.
             // We also need to guarantee that the numerator can never have a length greater than the denominator after each loop iteration.
             // This requires the highest block of the denominator to be less than or equal to 429496729 which is the highest number that can be multiplied by 10 without overflowing to a new block.
 
-            Debug.Assert(scale.GetLength() > 0);
-            uint hiBlock = scale.GetBlock((uint)(scale.GetLength() - 1));
+            Debug.Assert(state.scale.GetLength() > 0);
+            uint hiBlock = state.scale.GetBlock((uint)(state.scale.GetLength() - 1));
 
             if ((hiBlock < 8) || (hiBlock > 429496729))
             {
@@ -343,13 +165,13 @@ namespace System
                 Debug.Assert((hiBlockLog2 < 3) || (hiBlockLog2 > 27));
                 uint shift = (32 + 27 - hiBlockLog2) % 32;
 
-                scale.ShiftLeft(shift);
-                scaledValue.ShiftLeft(shift);
-                scaledMarginLow.ShiftLeft(shift);
+                state.scale.ShiftLeft(shift);
+                state.scaledValue.ShiftLeft(shift);
+                state.scaledMarginLow.ShiftLeft(shift);
 
-                if (pScaledMarginHigh != &scaledMarginLow)
+                if (state.pScaledMarginHigh != &state.scaledMarginLow)
                 {
-                    BigInteger.Multiply(ref scaledMarginLow, 2, out *pScaledMarginHigh);
+                    BigInteger.Multiply(ref state.scaledMarginLow, 2, out *state.pScaledMarginHigh);
                 }
             }
 
@@ -361,7 +183,7 @@ namespace System
             if (cutoffNumber == -1)
             {
                 Debug.Assert(isSignificantDigits);
-                Debug.Assert(digitExponent >= cutoffExponent);
+                Debug.Assert(state.digitExponent >= state.cutoffExponent);
 
                 // For the unique cutoff mode, we will try to print until we have reached a level of precision that uniquely distinguishes this value from its neighbors.
                 // If we run out of space in the output buffer, we terminate early.
@@ -369,17 +191,17 @@ namespace System
                 while (true)
                 {
                     // divide out the scale to extract the digit
-                    outputDigit = BigInteger.HeuristicDivide(ref scaledValue, ref scale);
+                    outputDigit = BigInteger.HeuristicDivide(ref state.scaledValue, ref state.scale);
                     Debug.Assert(outputDigit < 10);
 
                     // update the high end of the value
-                    BigInteger.Add(ref scaledValue, ref *pScaledMarginHigh, out BigInteger scaledValueHigh);
+                    BigInteger.Add(ref state.scaledValue, ref *state.pScaledMarginHigh, out BigInteger scaledValueHigh);
 
                     // stop looping if we are far enough away from our neighboring values or if we have reached the cutoff digit
-                    int cmpLow = BigInteger.Compare(ref scaledValue, ref scaledMarginLow);
-                    int cmpHigh = BigInteger.Compare(ref scaledValueHigh, ref scale);
+                    int cmpLow = BigInteger.Compare(ref state.scaledValue, ref state.scaledMarginLow);
+                    int cmpHigh = BigInteger.Compare(ref scaledValueHigh, ref state.scale);
 
-                    if (isEven)
+                    if (state.isEven)
                     {
                         low = (cmpLow <= 0);
                         high = (cmpHigh >= 0);
@@ -390,7 +212,7 @@ namespace System
                         high = (cmpHigh > 0);
                     }
 
-                    if (low || high || (digitExponent == cutoffExponent))
+                    if (low || high || (state.digitExponent == state.cutoffExponent))
                     {
                         break;
                     }
@@ -400,18 +222,18 @@ namespace System
                     curDigit++;
 
                     // multiply larger by the output base
-                    scaledValue.Multiply10();
-                    scaledMarginLow.Multiply10();
+                    state.scaledValue.Multiply10();
+                    state.scaledMarginLow.Multiply10();
 
-                    if (pScaledMarginHigh != &scaledMarginLow)
+                    if (state.pScaledMarginHigh != &state.scaledMarginLow)
                     {
-                        BigInteger.Multiply(ref scaledMarginLow, 2, out *pScaledMarginHigh);
+                        BigInteger.Multiply(ref state.scaledMarginLow, 2, out *state.pScaledMarginHigh);
                     }
 
-                    digitExponent--;
+                    state.digitExponent--;
                 }
             }
-            else if (digitExponent >= cutoffExponent)
+            else if (state.digitExponent >= state.cutoffExponent)
             {
                 Debug.Assert((cutoffNumber > 0) || ((cutoffNumber == 0) && !isSignificantDigits));
 
@@ -422,10 +244,10 @@ namespace System
                 while (true)
                 {
                     // divide out the scale to extract the digit
-                    outputDigit = BigInteger.HeuristicDivide(ref scaledValue, ref scale);
+                    outputDigit = BigInteger.HeuristicDivide(ref state.scaledValue, ref state.scale);
                     Debug.Assert(outputDigit < 10);
 
-                    if (scaledValue.IsZero() || (digitExponent <= cutoffExponent))
+                    if (state.scaledValue.IsZero() || (state.digitExponent <= state.cutoffExponent))
                     {
                         break;
                     }
@@ -435,8 +257,8 @@ namespace System
                     curDigit++;
 
                     // multiply larger by the output base
-                    scaledValue.Multiply10();
-                    digitExponent--;
+                    state.scaledValue.Multiply10();
+                    state.digitExponent--;
                 }
             }
             else
@@ -450,10 +272,10 @@ namespace System
                 // would not cause the next one to round, we preserve that digit as is.
 
                 // divide out the scale to extract the digit
-                outputDigit = BigInteger.HeuristicDivide(ref scaledValue, ref scale);
+                outputDigit = BigInteger.HeuristicDivide(ref state.scaledValue, ref state.scale);
                 Debug.Assert((0 < outputDigit) && (outputDigit < 10));
 
-                if ((outputDigit > 5) || ((outputDigit == 5) && !scaledValue.IsZero()))
+                if ((outputDigit > 5) || ((outputDigit == 5) && !state.scaledValue.IsZero()))
                 {
                     decimalExponent++;
                     outputDigit = 1;
@@ -478,8 +300,8 @@ namespace System
                 //      compare(value, 0.5)
                 //      compare(scale * value, scale * 0.5)
                 //      compare(2 * scale * value, scale)
-                scaledValue.ShiftLeft(1); // Multiply by 2
-                int compare = BigInteger.Compare(ref scaledValue, ref scale);
+                state.scaledValue.ShiftLeft(1); // Multiply by 2
+                int compare = BigInteger.Compare(ref state.scaledValue, ref state.scale);
                 roundDown = compare < 0;
 
                 // if we are directly in the middle, round towards the even digit (i.e. IEEE rouding rules)
@@ -536,6 +358,200 @@ namespace System
             uint outputLen = (uint)curDigit;
             Debug.Assert(outputLen <= buffer.Length);
             return outputLen;
+        }
+
+        private static unsafe Dragon4State Dragon4GetScaleValueMargin(ulong mantissa, int exponent, uint mantissaHighBitIdx, bool hasUnequalMargins, int cutoffNumber, bool isSignificantDigits, int bufferLength)
+        {
+            // Compute the initial state in integral form such that
+            //      value     = scaledValue / scale
+            //      marginLow = scaledMarginLow / scale
+            Dragon4State state = default(Dragon4State);
+
+            if (hasUnequalMargins)
+            {
+                if (exponent > 0)   // We have no fractional component
+                {
+                    // 1) Expand the input value by multiplying out the mantissa and exponent.
+                    //    This represents the input value in its whole number representation.
+                    // 2) Apply an additional scale of 2 such that later comparisons against the margin values are simplified.
+                    // 3) Set the margin value to the loweset mantissa bit's scale.
+
+                    // scaledValue      = 2 * 2 * mantissa * 2^exponent
+                    BigInteger.SetUInt64(out state.scaledValue, 4 * mantissa);
+                    state.scaledValue.ShiftLeft((uint)(exponent));
+
+                    // scale            = 2 * 2 * 1
+                    BigInteger.SetUInt32(out state.scale, 4);
+
+                    // scaledMarginLow  = 2 * 2^(exponent - 1)
+                    BigInteger.Pow2((uint)(exponent), out state.scaledMarginLow);
+
+                    // scaledMarginHigh = 2 * 2 * 2^(exponent + 1)
+                    BigInteger.Pow2((uint)(exponent + 1), out state.optionalMarginHigh);
+                }
+                else                // We have a fractional exponent
+                {
+                    // In order to track the mantissa data as an integer, we store it as is with a large scale
+
+                    // scaledValue      = 2 * 2 * mantissa
+                    BigInteger.SetUInt64(out state.scaledValue, 4 * mantissa);
+
+                    // scale            = 2 * 2 * 2^(-exponent)
+                    BigInteger.Pow2((uint)(-exponent + 2), out state.scale);
+
+                    // scaledMarginLow  = 2 * 2^(-1)
+                    BigInteger.SetUInt32(out state.scaledMarginLow, 1);
+
+                    // scaledMarginHigh = 2 * 2 * 2^(-1)
+                    BigInteger.SetUInt32(out state.optionalMarginHigh, 2);
+                }
+
+                // The high and low margins are different
+                state.pScaledMarginHigh = &state.optionalMarginHigh;
+            }
+            else
+            {
+                if (exponent > 0)   // We have no fractional component
+                {
+                    // 1) Expand the input value by multiplying out the mantissa and exponent.
+                    //    This represents the input value in its whole number representation.
+                    // 2) Apply an additional scale of 2 such that later comparisons against the margin values are simplified.
+                    // 3) Set the margin value to the lowest mantissa bit's scale.
+
+                    // scaledValue     = 2 * mantissa*2^exponent
+                    BigInteger.SetUInt64(out state.scaledValue, 2 * mantissa);
+                    state.scaledValue.ShiftLeft((uint)(exponent));
+
+                    // scale           = 2 * 1
+                    BigInteger.SetUInt32(out state.scale, 2);
+
+                    // scaledMarginLow = 2 * 2^(exponent-1)
+                    BigInteger.Pow2((uint)(exponent), out state.scaledMarginLow);
+                }
+                else                // We have a fractional exponent
+                {
+                    // In order to track the mantissa data as an integer, we store it as is with a large scale
+
+                    // scaledValue     = 2 * mantissa
+                    BigInteger.SetUInt64(out state.scaledValue, 2 * mantissa);
+
+                    // scale           = 2 * 2^(-exponent)
+                    BigInteger.Pow2((uint)(-exponent + 1), out state.scale);
+
+                    // scaledMarginLow = 2 * 2^(-1)
+                    BigInteger.SetUInt32(out state.scaledMarginLow, 1);
+                }
+
+                // The high and low margins are equal
+                state.pScaledMarginHigh = &state.scaledMarginLow;
+            }
+
+            // Compute an estimate for digitExponent that will be correct or undershoot by one.
+            //
+            // This optimization is based on the paper "Printing Floating-Point Numbers Quickly and Accurately" by Burger and Dybvig http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.72.4656&rep=rep1&type=pdf
+            //
+            // We perform an additional subtraction of 0.69 to increase the frequency of a failed estimate because that lets us take a faster branch in the code.
+            // 0.69 is chosen because 0.69 + log10(2) is less than one by a reasonable epsilon that will account for any floating point error.
+            //
+            // We want to set digitExponent to floor(log10(v)) + 1
+            //      v = mantissa * 2^exponent
+            //      log2(v) = log2(mantissa) + exponent;
+            //      log10(v) = log2(v) * log10(2)
+            //      floor(log2(v)) = mantissaHighBitIdx + exponent;
+            //      log10(v) - log10(2) < (mantissaHighBitIdx + exponent) * log10(2) <= log10(v)
+            //      log10(v) < (mantissaHighBitIdx + exponent) * log10(2) + log10(2) <= log10(v) + log10(2)
+            //      floor(log10(v)) < ceil((mantissaHighBitIdx + exponent) * log10(2)) <= floor(log10(v)) + 1
+            const double Log10V2 = 0.30102999566398119521373889472449;
+            state.digitExponent = (int)(Math.Ceiling(((int)(mantissaHighBitIdx) + exponent) * Log10V2 - 0.69));
+
+            // Divide value by 10^digitExponent.
+            if (state.digitExponent > 0)
+            {
+                // The exponent is positive creating a division so we multiply up the scale.
+                state.scale.MultiplyPow10((uint)(state.digitExponent));
+            }
+            else if (state.digitExponent < 0)
+            {
+                // The exponent is negative creating a multiplication so we multiply up the scaledValue, scaledMarginLow and scaledMarginHigh.
+
+                BigInteger.Pow10((uint)(-state.digitExponent), out BigInteger pow10);
+
+                state.scaledValue.Multiply(ref pow10);
+                state.scaledMarginLow.Multiply(ref pow10);
+
+                if (state.pScaledMarginHigh != &state.scaledMarginLow)
+                {
+                    BigInteger.Multiply(ref state.scaledMarginLow, 2, out *state.pScaledMarginHigh);
+                }
+            }
+
+            state.isEven = (mantissa % 2) == 0;
+            bool estimateTooLow = false;
+
+            if (cutoffNumber == -1)
+            {
+                // When printing the shortest possible string, we want to
+                // take IEEE unbiased rounding into account so we can return
+                // shorter strings for various edge case values like 1.23E+22
+
+                BigInteger.Add(ref state.scaledValue, ref *state.pScaledMarginHigh, out BigInteger scaledValueHigh);
+                int cmpHigh = BigInteger.Compare(ref scaledValueHigh, ref state.scale);
+                estimateTooLow = state.isEven ? (cmpHigh >= 0) : (cmpHigh > 0);
+            }
+            else
+            {
+                estimateTooLow = BigInteger.Compare(ref state.scaledValue, ref state.scale) >= 0;
+            }
+
+            // Was our estimate for digitExponent was too low?
+            if (estimateTooLow)
+            {
+                // The exponent estimate was incorrect.
+                // Increment the exponent and don't perform the premultiply needed for the first loop iteration.
+                state.digitExponent++;
+            }
+            else
+            {
+                // The exponent estimate was correct.
+                // Multiply larger by the output base to prepare for the first loop iteration.
+                state.scaledValue.Multiply10();
+                state.scaledMarginLow.Multiply10();
+
+                if (state.pScaledMarginHigh != &state.scaledMarginLow)
+                {
+                    BigInteger.Multiply(ref state.scaledMarginLow, 2, out *state.pScaledMarginHigh);
+                }
+            }
+
+            // Compute the cutoff exponent (the exponent of the final digit to print).
+            // Default to the maximum size of the output buffer.
+            state.cutoffExponent = state.digitExponent - bufferLength;
+
+            if (cutoffNumber != -1)
+            {
+                int desiredCutoffExponent = 0;
+
+                if (isSignificantDigits)
+                {
+                    // We asked for a specific number of significant digits.
+                    Debug.Assert(cutoffNumber > 0);
+                    desiredCutoffExponent = state.digitExponent - cutoffNumber;
+                }
+                else
+                {
+                    // We asked for a specific number of fractional digits.
+                    Debug.Assert(cutoffNumber >= 0);
+                    desiredCutoffExponent = -cutoffNumber;
+                }
+
+                if (desiredCutoffExponent > state.cutoffExponent)
+                {
+                    // Only select the new cutoffExponent if it won't overflow the destination buffer.
+                    state.cutoffExponent = desiredCutoffExponent;
+                }
+            }
+
+            return state;
         }
     }
 }
