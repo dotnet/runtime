@@ -1009,7 +1009,7 @@ insGroup* emitter::emitSavIG(bool emitAdd)
 
 #if defined(TARGET_XARCH)
         assert(emitLastIns != nullptr);
-        if (emitLastIns->idIns() == INS_jmp && (((instrDescJmp*)emitLastIns)->idjIsRemovableJmpCandidate))
+        if (emitLastIns->idIns() == INS_jmp)
         {
             ig->igFlags |= IGF_HAS_REMOVABLE_JMP;
         }
@@ -4191,8 +4191,9 @@ void emitter::emitRemoveJumpToNextInst()
             // target group is not bound yet so use the cookie to fetch it
             insGroup* targetGroup = (insGroup*)emitCodeGetCookie(jmp->idAddr()->iiaBBlabel);
 
-            if ((targetGroup != nullptr) && (jmpGroup->igNext == targetGroup) &&
-                ((jmpGroup->igFlags & IGF_HAS_REMOVABLE_JMP) != 0))
+            assert(targetGroup != nullptr);
+
+            if ((jmpGroup->igNext == targetGroup) && ((jmpGroup->igFlags & IGF_HAS_REMOVABLE_JMP) != 0))
             {
                 // the last instruction in the group is the jmp we're looking for
                 // and it jumps to the next instruction group so we don't need it
