@@ -53,6 +53,9 @@ namespace System.Text.RegularExpressions.Tests
             // 0-end-capture node ⁰⌉ and thus also two extra cocatenation nodes
             // let the safe size of a pattern X be denoted by #(X)
             (string, int)[] patternData = new (string, int)[]{
+                // no singletons
+                ("()", 1),
+                ("()*", 1),
                 // no counters
                 ("(a)", 1),
                 ("(a|b)", 1),                               // (a|b) becomes [ab]
