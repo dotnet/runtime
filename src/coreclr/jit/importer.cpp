@@ -4517,7 +4517,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             {
                 assert(varTypeIsFloating(callType));
 
-                if ((impStackTop().val->IsCnsFltOrDbl() || impStackTop(1).val->IsCnsFltOrDbl()))
+                if (sig->numArgs == 2 && (impStackTop().val->IsCnsFltOrDbl() || impStackTop(1).val->IsCnsFltOrDbl()))
                 {
                     GenTree* op2 = impPopStack().val;
                     GenTree* op1 = impPopStack().val;
