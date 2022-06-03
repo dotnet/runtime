@@ -306,7 +306,7 @@ struct _MonoImage {
 	guint8 dynamic : 1;
 
 	/* Whenever this image is not an executable, such as .mibc */
-	gboolean not_executable;
+	guint8 not_executable : 1;
 
 	/* Whenever this image contains uncompressed metadata */
 	guint8 uncompressed_metadata : 1;
