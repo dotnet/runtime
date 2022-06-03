@@ -9,6 +9,19 @@ namespace CoreclrTestLib
 {
     public class MobileAppHandler
     {
+        // See https://github.com/dotnet/xharness/blob/main/src/Microsoft.DotNet.XHarness.Common/CLI/ExitCode.cs
+        // 78 - PACKAGE_INSTALLATION_FAILURE
+        // 81 - DEVICE_NOT_FOUND
+        // 82 - RETURN_CODE_NOT_SET
+        // 83 - APP_LAUNCH_FAILURE
+        // 84 - DEVICE_FILE_COPY_FAILURE
+        // 86 - PACKAGE_INSTALLATION_TIMEOUT
+        // 88 - SIMULATOR_FAILURE
+        // 89 - DEVICE_FAILURE
+        // 90 - APP_LAUNCH_TIMEOUT
+        // 91 - ADB_FAILURE
+        private static readonly int[] _knownExitCodes = new int[] { 78, 81, 82, 83, 84, 86, 88, 89, 90, 91 };
+
         public int InstallMobileApp(string platform, string category, string testBinaryBase, string reportBase)
         {
             return HandleMobileApp("install", platform, category, testBinaryBase, reportBase);
@@ -170,26 +183,9 @@ namespace CoreclrTestLib
             }
         }
 
-        private static int[] GetKnownExitCodes()
-        {
-            // See https://github.com/dotnet/xharness/blob/main/src/Microsoft.DotNet.XHarness.Common/CLI/ExitCode.cs
-            // 78 - PACKAGE_INSTALLATION_FAILURE
-            // 81 - DEVICE_NOT_FOUND
-            // 82 - RETURN_CODE_NOT_SET
-            // 83 - APP_LAUNCH_FAILURE
-            // 84 - DEVICE_FILE_COPY_FAILURE
-            // 86 - PACKAGE_INSTALLATION_TIMEOUT
-            // 88 - SIMULATOR_FAILURE
-            // 89 - DEVICE_FAILURE
-            // 90 - APP_LAUNCH_TIMEOUT
-            // 91 - ADB_FAILURE
-            return new[] { 78, 81, 82, 83, 84, 86, 88, 89, 90, 91 };
-        }
-
         public static void CheckExitCode(int exitCode, string testBinaryBase, string category, StreamWriter outputWriter)
         {
-            var retriableCodes = GetKnownExitCodes();
-            if (retriableCodes.Contains(exitCode))
+            if (_knownExitCodes.Contains(exitCode))
             {
                 CreateRetryFile($"{testBinaryBase}/.retry", exitCode, category);
                 outputWriter.WriteLine("\nInfra issue was detected and a work item retry was requested");
