@@ -3532,13 +3532,13 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
                     // Do it now.
                     GenTreeIndir* indir = src->AsIndir();
                     LowerIndir(indir);
-#if defined(TARGET_XARCH)
-                    if (varTypeIsSmall(lclRegType))
-                    {
-                        indir->SetDontExtend();
-                    }
-#endif // TARGET_XARCH
                 }
+#if defined(TARGET_XARCH)
+                if (varTypeIsSmall(lclRegType))
+                {
+                    src->SetDontExtend();
+                }
+#endif // TARGET_XARCH
             }
             convertToStoreObj = false;
 #else  // TARGET_ARM64
@@ -7368,9 +7368,9 @@ bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
     }
 
 #if defined(TARGET_XARCH)
-    if (varTypeIsSmall(regType) && src->OperIs(GT_IND))
+    if (varTypeIsSmall(regType) && src->OperIs(GT_IND, GT_LCL_FLD))
     {
-        src->AsIndir()->SetDontExtend();
+        src->SetDontExtend();
     }
 #endif // TARGET_XARCH
 
