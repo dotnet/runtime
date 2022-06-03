@@ -307,10 +307,10 @@ namespace PInvokeTests
         internal static extern decimal DecimalTest(decimal value);
 
 		[UnmanagedCallersOnly]
-		internal static void UnmanagedMethod(byte* address, byte value) => *address = value;
+		internal unsafe static void UnmanagedMethod(byte* address, byte value) => *address = value;
 
 		[UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvStdcall)})]
-		internal static void StdcallMethod(byte* address, byte value) => *address = value;
+		internal unsafe static void StdcallMethod(byte* address, byte value) => *address = value;
 
         internal enum MagicEnum
         {
