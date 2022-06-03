@@ -782,7 +782,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         internal PEReader peReader;
         internal MetadataReader asmMetadataReader { get; }
         internal MetadataReader pdbMetadataReader { get; set; }
-        internal List<MetadataReader> enCMetadataReader  = new List<MetadataReader>();
+        internal List<Tuple<MetadataReader, MetadataReader>> enCMetadataReader  = new List<Tuple<MetadataReader, MetadataReader>>();
         private int debugId;
         internal int PdbAge { get; }
         internal System.Guid PdbGuid { get; }
@@ -857,8 +857,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             MetadataReader asmMetadataReader = MetadataReaderProvider.FromMetadataStream(asmStream).GetMetadataReader();
             var pdbStream = new MemoryStream(pdb);
             MetadataReader pdbMetadataReader = MetadataReaderProvider.FromPortablePdbStream(pdbStream).GetMetadataReader();
-            enCMetadataReader.Add(asmMetadataReader);
-            enCMetadataReader.Add(pdbMetadataReader);
+            enCMetadataReader.Add(new (asmMetadataReader, pdbMetadataReader));
             PopulateEnC(asmMetadataReader, pdbMetadataReader);
             return true;
         }
@@ -900,8 +899,8 @@ namespace Microsoft.WebAssembly.Diagnostics
             while (strIdx > asmMetadataReaderLocal.GetHeapSize(HeapIndex.String))
             {
                 strIdx -= asmMetadataReaderLocal.GetHeapSize(HeapIndex.String);
-                asmMetadataReaderLocal = enCMetadataReader[i];
-                i+=2; //skipping 2 because we have metadata and pdb in the same list
+                asmMetadataReaderLocal = enCMetadataReader[i].Item1;
+                i+=1;
             }
             return asmMetadataReaderLocal.GetString(MetadataTokens.StringHandle(strIdx));
         }
