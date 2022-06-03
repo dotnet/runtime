@@ -23,8 +23,6 @@ namespace System.Text.RegularExpressions.Symbolic
 
         internal int Id { get; set; }
 
-        internal bool IsInitialState { get; set; }
-
         /// <summary>This is a deadend state</summary>
         internal bool IsDeadend => Node.IsNothing;
 
@@ -129,8 +127,12 @@ namespace System.Text.RegularExpressions.Symbolic
             return list;
         }
 
+        internal bool IsNullable => Node.IsNullable;
+
+        internal bool CanBeNullable => Node.CanBeNullable;
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal bool IsNullable(uint nextCharKind)
+        internal bool IsNullableFor(uint nextCharKind)
         {
             Debug.Assert(nextCharKind is 0 or CharKind.BeginningEnd or CharKind.Newline or CharKind.WordLetter or CharKind.NewLineS);
             uint context = CharKind.Context(PrevCharKind, nextCharKind);
