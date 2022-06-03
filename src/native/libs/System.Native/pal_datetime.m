@@ -8,5 +8,5 @@ char* SystemNative_GetDefaultTimeZone()
 {
     NSTimeZone *tz = [NSTimeZone localTimeZone];
     NSString *name = [tz name];
-    return (name != nil) ? strdup([name UTF8String]) : strdup("Local");
+    return (name != nil) ? strdup([name UTF8String]) : NULL;
 }

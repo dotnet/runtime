@@ -423,7 +423,7 @@ namespace System
             // Otherwise, use the path from the env var.  If it's not absolute, make it relative
             // to the system timezone directory
             string tzFilePath;
-            if (tzVariable![0] != '/')
+            if (tzVariable[0] != '/')
             {
                 id = tzVariable;
                 tzFilePath = Path.Combine(GetTimeZoneDirectory(), tzVariable);
