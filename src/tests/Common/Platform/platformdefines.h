@@ -88,8 +88,6 @@ typedef unsigned int ULONG, *PULONG;
 #define __int64     long long
 #endif // HOST_64BIT
 
-#define UInt32x32To64(a, b) ((unsigned __int64)((ULONG)(a)) * (unsigned __int64)((ULONG)(b)))
-
 #ifndef TRUE
 #define TRUE 1
 #endif
