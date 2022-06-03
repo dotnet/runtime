@@ -1732,7 +1732,7 @@ protected:
     void emitDispIG(insGroup* ig, insGroup* igPrev = nullptr, bool verbose = false);
     void emitDispIGlist(bool verbose = false);
     void emitDispGCinfo();
-    void emitDispJumpList(bool showJumpRemovalCndidates = false);
+    void emitDispJumpList();
     void emitDispClsVar(CORINFO_FIELD_HANDLE fldHnd, ssize_t offs, bool reloc = false);
     void emitDispFrameRef(int varx, int disp, int offs, bool asmfm);
     void emitDispInsAddr(BYTE* code);

@@ -3888,7 +3888,7 @@ void emitter::emitDispGCinfo()
 //------------------------------------------------------------------------
 // emitDispJumpList: displays the current emitter jump list
 //
-void emitter::emitDispJumpList(bool showJumpRemovalCndidates)
+void emitter::emitDispJumpList()
 {
     printf("Emitter Jump List:\n");
     unsigned int jmpCount = 0;
@@ -3898,7 +3898,7 @@ void emitter::emitDispJumpList(bool showJumpRemovalCndidates)
                codeGen->genInsDisplayName(jmp), jmp->idCodeSize(),
                ((insGroup*)emitCodeGetCookie(jmp->idAddr()->iiaBBlabel))->igNum,
 #if defined(TARGET_XARCH)
-               (showJumpRemovalCndidates && jmp->idjIsRemovableJmpCandidate) ? " ; removal candidate" : ""
+               jmp->idjIsRemovableJmpCandidate ? " ; removal candidate" : ""
 #else
                ""
 #endif
@@ -4172,7 +4172,7 @@ void emitter::emitRemoveJumpToNextInst()
     }
     if (EMITVERBOSE)
     {
-        emitDispJumpList(/*showJumpRemovalCndidates = */ true);
+        emitDispJumpList();
     }
 #endif // DEBUG
 
@@ -4332,7 +4332,7 @@ void emitter::emitRemoveJumpToNextInst()
         }
         if (EMITVERBOSE)
         {
-            emitDispJumpList(/*showJumpRemovalCndidates = */ true);
+            emitDispJumpList();
         }
 #endif // DEBUG
         JITDUMP("emitRemoveJumpToNextInst removed %u bytes of unconditional jumps\n", totalRemovedSize);
