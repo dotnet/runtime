@@ -941,7 +941,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             {
                                 var document = pdbMetadataReaderParm.GetDocument(methodDebugInformation.Document);
                                 var documentName = pdbMetadataReaderParm.GetString(document.Name);
-                                SourceFile source = FindSource(methodDebugInformation.Document, asmMetadataReaderParm.GetRowNumber(methodDebugInformation.Document), documentName);
+                                SourceFile source = GetOrAddSourceFile(methodDebugInformation.Document, asmMetadataReaderParm.GetRowNumber(methodDebugInformation.Document), documentName);
                                 var methodDef = asmMetadataReaderParm.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle(methodIdxAsm));
                                 var methodInfo = new MethodInfo(this, MetadataTokens.MethodDefinitionHandle(methodIdxAsm), asmMetadataReader.GetRowNumber(entry.Handle), source, typeInfo, asmMetadataReaderParm, pdbMetadataReaderParm);
                                 methods[asmMetadataReader.GetRowNumber(entry.Handle)] = methodInfo;
@@ -959,7 +959,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
             }
         }
-        private SourceFile FindSource(DocumentHandle doc, int rowid, string documentName)
+        private SourceFile GetOrAddSourceFile(DocumentHandle doc, int rowid, string documentName)
         {
             if (_documentIdToSourceFileTable.TryGetValue(rowid, out SourceFile source))
                 return source;
@@ -1003,7 +1003,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             {
                                 var document = pdbMetadataReader.GetDocument(methodDebugInformation.Document);
                                 var documentName = pdbMetadataReader.GetString(document.Name);
-                                SourceFile source = FindSource(methodDebugInformation.Document, asmMetadataReader.GetRowNumber(methodDebugInformation.Document), documentName);
+                                SourceFile source = GetOrAddSourceFile(methodDebugInformation.Document, asmMetadataReader.GetRowNumber(methodDebugInformation.Document), documentName);
                                 var methodInfo = new MethodInfo(this, method, asmMetadataReader.GetRowNumber(method), source, typeInfo, asmMetadataReader, pdbMetadataReader);
                                 methods[asmMetadataReader.GetRowNumber(method)] = methodInfo;
 
