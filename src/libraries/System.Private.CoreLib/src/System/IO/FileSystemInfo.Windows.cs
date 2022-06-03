@@ -134,10 +134,7 @@ namespace System.IO
         internal UnixFileMode UnixFileModeCore
         {
             get => (UnixFileMode)(-1);
-            set
-            {
-                throw new PlatformNotSupportedException(SR.PlatformNotSupported_UnixFileMode);
-            }
+            set => throw new PlatformNotSupportedException(SR.PlatformNotSupported_UnixFileMode);
         }
 #pragma warning restore CA1822
 
