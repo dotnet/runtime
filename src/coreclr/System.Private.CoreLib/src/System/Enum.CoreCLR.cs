@@ -30,9 +30,11 @@ namespace System
                 case 4:
                     Unsafe.As<byte, uint>(ref dataRef) = (uint)value;
                     break;
-                default:
-                    Debug.Assert(pMethodTable->GetNumInstanceFieldBytes() == 8);
+                case 8:
                     Unsafe.As<byte, ulong>(ref dataRef) = (ulong)value;
+                    break;
+                default:
+                    Debug.Fail("Unexpected enum size");
                     break;
             }
 
