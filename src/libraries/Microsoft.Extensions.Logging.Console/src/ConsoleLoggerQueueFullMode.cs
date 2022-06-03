@@ -9,7 +9,7 @@ namespace Microsoft.Extensions.Logging.Console
     public enum ConsoleLoggerBufferFullMode
     {
         /// <summary>
-        /// Blocks the console thread once the buffer limit is reached
+        /// Blocks the logging threads once the buffer limit is reached.
         /// </summary>
         Wait,
         /// <summary>
