@@ -291,6 +291,34 @@ namespace System.Drawing
             }
         }
 
+        public unsafe void ToLogFont<T>(T logFont, Graphics graphics)
+        {
+            ArgumentNullException.ThrowIfNull(logFont);
+
+            Type type = logFont.GetType();
+            int nativeSize = sizeof(Interop.User32.LOGFONT);
+            if (Marshal.SizeOf<T>() != nativeSize)
+            {
+                // If we don't actually have an object that is LOGFONT in size, trying to pass
+                // it to GDI+ is likely to cause an AV.
+                throw new ArgumentException(null, nameof(logFont));
+            }
+
+            Interop.User32.LOGFONT nativeLogFont = ToLogFontInternal(graphics);
+
+            // PtrToStructure requires that the passed in object not be a value type.
+            if (!type.IsValueType)
+            {
+                Marshal.PtrToStructure<T>(new IntPtr(&nativeLogFont), logFont);
+            }
+            else
+            {
+                GCHandle handle = GCHandle.Alloc(logFont, GCHandleType.Pinned);
+                Buffer.MemoryCopy(&nativeLogFont, (byte*)handle.AddrOfPinnedObject(), nativeSize, nativeSize);
+                handle.Free();
+            }
+        }
+
         private unsafe Interop.User32.LOGFONT ToLogFontInternal(Graphics graphics)
         {
             ArgumentNullException.ThrowIfNull(graphics);
@@ -551,6 +579,19 @@ namespace System.Drawing
             }
         }
 
+        /// <summary>
+        /// Creates a <see cref="Font"/> from the given LOGFONT using the screen device context.
+        /// </summary>
+        /// <param name="lf">A boxed LOGFONT.</param>
+        /// <returns>The newly created <see cref="Font"/>.</returns>
+        public static Font FromLogFont<T>(T lf)
+        {
+            using (ScreenDC dc = ScreenDC.Create())
+            {
+                return FromLogFont(lf, dc);
+            }
+        }
+
         internal static Font FromLogFont(ref Interop.User32.LOGFONT logFont)
         {
             using (ScreenDC dc = ScreenDC.Create())
@@ -617,6 +658,38 @@ namespace System.Drawing
         }
 
         /// <summary>
+        /// Creates a <see cref="Font"/> from the given LOGFONT using the given device context.
+        /// </summary>
+        /// <param name="lf">A boxed LOGFONT.</param>
+        /// <param name="hdc">Handle to a device context (HDC).</param>
+        /// <returns>The newly created <see cref="Font"/>.</returns>
+        public static unsafe Font FromLogFont<T>(T lf, IntPtr hdc)
+        {
+            ArgumentNullException.ThrowIfNull(lf);
+
+            if (lf is Interop.User32.LOGFONT logFont)
+            {
+                // A boxed LOGFONT, just use it to create the font
+                return FromLogFontInternal(ref logFont, hdc);
+            }
+
+            int nativeSize = sizeof(Interop.User32.LOGFONT);
+            if (Marshal.SizeOf<T>() != nativeSize)
+            {
+                // If we don't actually have an object that is LOGFONT in size, trying to pass
+                // it to GDI+ is likely to cause an AV.
+                throw new ArgumentException(null, nameof(lf));
+            }
+
+            // Now that we know the marshalled size is the same as LOGFONT, copy in the data
+            logFont = default;
+
+            Marshal.StructureToPtr<T>(lf, new IntPtr(&logFont), fDeleteOld: false);
+
+            return FromLogFontInternal(ref logFont, hdc);
+        }
+
+        /// <summary>
         /// Creates a <see cref="Font"/> from the specified handle to a device context (HDC).
         /// </summary>
         /// <returns>The newly created <see cref="Font"/>.</returns>
@@ -673,6 +746,15 @@ namespace System.Drawing
         }
 
         public void ToLogFont(object logFont)
+        {
+            using (ScreenDC dc = ScreenDC.Create())
+            using (Graphics graphics = Graphics.FromHdcInternal(dc))
+            {
+                ToLogFont(logFont, graphics);
+            }
+        }
+
+        public void ToLogFont<T>(T logFont)
         {
             using (ScreenDC dc = ScreenDC.Create())
             using (Graphics graphics = Graphics.FromHdcInternal(dc))
