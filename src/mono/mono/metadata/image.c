@@ -1881,6 +1881,14 @@ mono_image_open_a_lot (MonoAssemblyLoadContext *alc, const char *fname, MonoImag
 	return mono_image_open_a_lot_parameterized (li, alc, fname, status);
 }
 
+MonoImage *
+mono_image_open_mibc (MonoAssemblyLoadContext *alc, const char *fname, MonoImageOpenStatus *status)
+{
+	MonoImage *mibcImage = mono_image_open_a_lot (alc, fname, status);
+	mibcImage->not_executable = TRUE;
+	return mibcImage;
+}
+
 /**
  * mono_image_open:
  * \param fname filename that points to the module we want to open

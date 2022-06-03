@@ -969,7 +969,7 @@ mono_assembly_load_reference (MonoImage *image, int index)
 		goto commit_reference;
 	}
 
-	if (image->assembly) {
+	if (image->assembly || image->not_executable) {
 		if (mono_trace_is_traced (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY)) {
 			char *aname_str = mono_stringify_assembly_name (&aname);
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Loading reference %d of %s (%s), looking for %s",

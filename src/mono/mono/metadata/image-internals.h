@@ -21,4 +21,7 @@ mono_image_load_module_checked (MonoImage *image, int idx, MonoError *error);
 MonoImage *
 mono_image_open_a_lot (MonoAssemblyLoadContext *alc, const char *fname, MonoImageOpenStatus *status);
 
+MonoImage *
+mono_image_open_mibc (MonoAssemblyLoadContext *alc, const char *fname, MonoImageOpenStatus *status);
+
 #endif /* __MONO_METADATA_IMAGE_INTERNALS_H__ */
