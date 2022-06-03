@@ -14,7 +14,6 @@ namespace Microsoft.Extensions.Logging.Console.Test
 {
     public class ConsoleLoggerProcessorTests
     {
-        internal const int DefaultMaxQueueLengthValue = ConsoleLoggerOptions.DefaultMaxQueueLengthValue;
         private const string _loggerName = "test";
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]

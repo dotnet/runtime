@@ -1304,7 +1304,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
 
             // Act & Assert
             Assert.Equal(ConsoleLoggerBufferFullMode.Wait, logger.Options.BufferFullMode);
-            Assert.Equal(ConsoleLoggerProcessorTests.DefaultMaxQueueLengthValue, logger.Options.MaxQueueLength);
+            Assert.Equal(ConsoleLoggerOptions.DefaultMaxQueueLengthValue, logger.Options.MaxQueueLength);
             monitor.Set(new ConsoleLoggerOptions() {
                 BufferFullMode = ConsoleLoggerBufferFullMode.DropWrite,
                 MaxQueueLength = 10
