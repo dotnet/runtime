@@ -2215,41 +2215,48 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         /// <summary>
-        /// Estimates the number of Regex AST nodes, if all loops with explicit counters
+        /// Let #(this) denote the number of singletons in this node.
+        /// Then the NFA size estimation in terms of state count
+        /// is #(this) if there are no anchors else 5x#(this).
+        /// If there are no singletons at all the size is 1.
+        /// </summary>
+        internal int EstimateNfaSize() => int.Max(1, _info.ContainsSomeAnchor ? Times(5, CountSingletons()) : CountSingletons());
+
+        /// <summary>
+        /// Count the number of Regex Singletons, if all loops with explicit counters
         /// were eliminated from the node, i.e., as if the repetitions were explicitly unfolded.
         /// <remarks>
-        /// Let node.EstimateSafeSize() be abbreviated by #(node).
-        /// Ex: #(a{6}) = 6*#(a)+5 = 11.
-        /// In general #(..) may overestimate the size:
-        /// Ex: #(a+|()) = 1+#(a{1,})+#(()) = 1+(1+1)+(1+1)*#(a)+1 = 6,
-        /// while a+|() simpifies to a* and #(a*) = 1+#(a) = 2.
+        /// Let node.CountSingletons() be abbreviated by #(node).
+        /// Ex: #(a{6}) = 6*#(a) = 6
+        /// Ex: #(a+|()) = #(aa*) = 2.
         /// </remarks>
         /// </summary>
-        internal int EstimateSafeSize()
+        internal int CountSingletons()
         {
             // Guard against stack overflow due to deep recursion
             if (!StackHelper.TryEnsureSufficientExecutionStack())
             {
-                return StackHelper.CallOnEmptyStack(EstimateSafeSize);
+                return StackHelper.CallOnEmptyStack(CountSingletons);
             }
 
             switch (_kind)
             {
+                case SymbolicRegexNodeKind.Singleton:
+                    return 1;
+
                 case SymbolicRegexNodeKind.Concat:
                 case SymbolicRegexNodeKind.Alternate:
                     Debug.Assert(_left is not null && _right is not null);
-                    // Count 1 for the concat or alternation node
-                    // #(this) = 1 + #(_left) + #(_right)
-                    return Sum(1, Sum(_left.EstimateSafeSize(), _right.EstimateSafeSize()));
+                    // #(this) = #(_left) + #(_right)
+                    return Sum(_left.CountSingletons(), _right.CountSingletons());
 
                 case SymbolicRegexNodeKind.Loop:
                     Debug.Assert(_left is not null && _right is null);
                     Debug.Assert(_lower >= 0 && _upper > 0 && _upper >= _lower);
                     if (IsStar)
                     {
-                        // Counters are not being used, add 1 for the loop node + #(_left) for the body
-                        // #(this) = 1 + #(_left)
-                        return Sum(1, _left.EstimateSafeSize());
+                        // #(this) = #(_left)
+                        return _left.CountSingletons();
                     }
 
                     if (_upper == int.MaxValue)
@@ -2260,32 +2267,30 @@ namespace System.Text.RegularExpressions.Symbolic
                         if (_lower == int.MaxValue)
                         {
                             //infinite loop has the same size as a *-loop
-                            return Sum(1, _left.EstimateSafeSize());
+                            return _left.CountSingletons();
                         }
 
                         // The case is R{m,} with R = _left and m = _lower.
-                        // Unfolding R m times followed by R* creates m concatentation nodes with 1 *-node around the final R
-                        // #(this) = #(R{m,}) = (m+1)+(m+1)*#(R) = (m+1)*(1+#(R))
-                        // Ex: suppose R has no counters, then Unfold(R{4,}) = RRRRR* so #(R{4,}) = 5*(1+#(R))
-                        return Times(Sum(_lower, 1), Sum(1, _left.EstimateSafeSize()));
+                        // #(this) = (m+1) x #(R)
+                        // Ex: #((ab){4,}) = #((ab)(ab)(ab)(ab)(ab)*) = 5x2 = 10
+                        return Times(_lower + 1, _left.CountSingletons());
                     }
 
                     // The general case with both upper and lower bounds is R{m,n} with m =_lower and n = _upper
-                    // This creates in total n*#(R) nodes + n-1 concatenations + n-m ?-nodes
-                    // #(this) = #(R{m,n}) = n*#(R) + n-1 + n-m
-                    // Ex: suppose R has no counters, then Unfold(R{3,7}) = RRRR?R?R?R? so #(R{3,7}) = 7*#(R) + 6 + 4
-                    return Sum(Sum(Times(_upper, _left.EstimateSafeSize()), _upper - 1), _upper - _lower);
+                    // #(this) = n x #(R)
+                    // Ex: #((ab){4,6}) = #((ab)(ab)(ab)(ab)(ab)?(ab)?) = 6x2 = 12
+                    return Times(_upper, _left.CountSingletons());
 
                 case SymbolicRegexNodeKind.DisableBacktrackingSimulation:
                 case SymbolicRegexNodeKind.Effect:
                     Debug.Assert(_left is not null);
-                    return Sum(1, _left.EstimateSafeSize());
+                    return _left.CountSingletons();
 
                 default:
                     Debug.Assert(_left is null && _right is null);
-                    // All the other nodes contribute 1 to the overall size as they have no children
-                    // #(this) = 1
-                    return 1;
+                    // All the other nodes contribute 0 to the overall count
+                    // because they contain no children and therefore no singletons
+                    return 0;
             }
 
             // In case of overflow in m+n, return int.MaxValue
@@ -2294,13 +2299,13 @@ namespace System.Text.RegularExpressions.Symbolic
                 Debug.Assert(m >= 0 && n >= 0);
                 return (int)Math.Min((long)m + n, int.MaxValue);
             }
+        }
 
-            // In case of overflow in m*n return int.MaxValue
-            static int Times(int m, int n)
-            {
-                Debug.Assert(m >= 0 && n >= 0);
-                return (int)Math.Min((long)m * n, int.MaxValue);
-            }
+        // In case of overflow in m*n return int.MaxValue
+        private static int Times(int m, int n)
+        {
+            Debug.Assert(m >= 0 && n >= 0);
+            return (int)Math.Min((long)m * n, int.MaxValue);
         }
     }
 }

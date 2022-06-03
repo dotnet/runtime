@@ -46,8 +46,7 @@ namespace System.Text.RegularExpressions.Tests
             var bddBuilder = new SymbolicRegexBuilder<BDD>(charSetSolver, charSetSolver);
             var converter = new RegexNodeConverter(bddBuilder, null);
 
-            // all patterns are considered with RegexOptions.ExplicitCapture
-            RegexOptions options = RegexOptions.NonBacktracking | RegexOptions.ExplicitCapture;
+            RegexOptions options = RegexOptions.NonBacktracking;
 
             // pattern and its expected safe size
             // all patterns have an implicit 0-start-capture node ⌊₀ and
@@ -55,25 +54,44 @@ namespace System.Text.RegularExpressions.Tests
             // let the safe size of a pattern X be denoted by #(X)
             (string, int)[] patternData = new (string, int)[]{
                 // no counters
-                ("a", 5),                                  // #(a) + 4 = 5
-                ("a|b", 5),                                // #[ab] + 1 + 4 = 5
-                ("a*", 6),                                 // #(a) + 1 + 4 = 6
-                ("a?", 6),
-                ("ab", 7),
-                ("a+", 8),                                 // #(a+) = #(aa*) = #(a)x2 + 2 + 4 = 8
-                ("(abc)", 9),                              // #(abc) = 5 nodes and 4 concatenations
+                ("(a)", 1),
+                ("(a|b)", 1),                               // (a|b) becomes [ab]
+                ("(a*)", 1),
+                ("(a?)", 1),
+                ("(ab)", 2),
+                ("(a+)", 2),                                // #(a+) = #(aa*) = 2
+                ("(abc)", 3),
+                ("ab|c", 3),
                 // simple counters
-                ("((ab){10})", 43),                        // #((ab){10}) = (#(ab) + 1)x10 + 3 = 4x10 + 3
-                ("((ab){10,})", 48),                       // #((ab){10,}) = 4x10 + 3 (for a*) + 2 + 3 = 48
-                ("((ab){0,10})", 53),                      // #((ab){0,10}) = (#(ab) + 2)x10 + 3, there are 10 ?-nodes also
+                ("((ab){10})", 20),
+                ("((ab){10,})", 22),
+                ("((ab){0,10})", 20),
                 // nested counters
-                ("(((ab){10}){10})", 403),                 // #(((ab){10}){10}) = ((#(ab) + 1)x10)x10 + 3 = 4x10x10 + 3
-                ("(((ab){10}){0,10})", 413),               // 400 + 10 (for the ?-nodes) + 3
-                ("(((ab){10}){10})|((cd){10})", 443),      // 400 + 40 + 3
-                ("(((ab){10}){10})|((cd){0,10})", 453),    // 400 + 50 + 3
-                ("(((ab){0,10}){10})|((cd){0,10})", 553),  // 500 + 50 + 3
+                ("(((ab){10}){10})", 200),
+                ("(((ab){10}){0,10})", 200),
+                ("(((ab){10}){10})|((cd){10})", 220),       // 200 + 20
+                ("(((ab){10,}c){10})|((cd){9,})", 250),     // (2x11+1)x10 + 20
+                ("(((ab){10,}c){10,})|((cd){0,10})", 273),  // (2x11+1)x11 + 20
+                // lower bound int.MaxValue is never unfolded and treated as infinity
+                ("(a{2147483647,})", 1),
             };
 
+            foreach ((string Pattern, int ExpectedSafeSize) in patternData)
+            {
+                RegexNode tree = RegexParser.Parse(Pattern, options | RegexOptions.ExplicitCapture, CultureInfo.CurrentCulture).Root;
+                SymbolicRegexNode<BDD> rootNode = converter.ConvertToSymbolicRegexNode(tree);
+                yield return new object[] { rootNode, ExpectedSafeSize };
+            }
+
+            // use of anchors increases the estimate by 5x in general
+            foreach ((string Pattern, int ExpectedSafeSize) in patternData)
+            {
+                RegexNode tree = RegexParser.Parse(Pattern + "$", options | RegexOptions.ExplicitCapture, CultureInfo.CurrentCulture).Root;
+                SymbolicRegexNode<BDD> rootNode = converter.ConvertToSymbolicRegexNode(tree);
+                yield return new object[] { rootNode, 5 * ExpectedSafeSize };
+            }
+
+            // use of captures has no effect on the estimations
             foreach ((string Pattern, int ExpectedSafeSize) in patternData)
             {
                 RegexNode tree = RegexParser.Parse(Pattern, options, CultureInfo.CurrentCulture).Root;
@@ -86,7 +104,7 @@ namespace System.Text.RegularExpressions.Tests
         [MemberData(nameof(SafeThresholdTests_MemberData))]
         public void SafeThresholdTests(object node, int expectedSafeSize)
         {
-            int safeSize = ((SymbolicRegexNode<BDD>)node).EstimateSafeSize();
+            int safeSize = ((SymbolicRegexNode<BDD>)node).EstimateNfaSize();
             Assert.Equal(expectedSafeSize, safeSize);
         }
 
@@ -104,14 +122,16 @@ namespace System.Text.RegularExpressions.Tests
                 // simple counters that are too large
                 "((ab){0,9000})",
                 "((ab){1000})",
-                "((ab){100,500})", 
+                "((ab){100,5000})",
+                // almost infinite lower bound
+                "a{2147483646,}",              // 2147483646 = int.MaxValue-1
                 // nested small counters causing unsafe blowup through multiplicative nature of counter nesting
                 "(((ab){10}){10}){10}",        // more than 10^3
-                "((((ab){4}){4}){4}){4}",      // exponential: more than 4^5 = 1024
+                "((((abcd){4}){4}){4}){4}",    // exponential: more than 4^5 = 1024
                 // combined large counters
                 "((ab){1000}){1000}",          // more than 1000^2
                 "((ab){99999999}){99999999}",  // multiply: much more than int.MaxValue
-                "(ab){0,1234567890}|(cd){1234567890,}" // sum: more than int.MaxValue
+                "(ab){0,1234567890}|(cd){1234567890,}",// sum: more than int.MaxValue
             };
 
             foreach (string Pattern in patternData)
@@ -126,7 +146,7 @@ namespace System.Text.RegularExpressions.Tests
         [MemberData(nameof(UnsafeThresholdTests_MemberData))]
         public void UnsafeThresholdTests(object node)
         {
-            int size = ((SymbolicRegexNode<BDD>)node).EstimateSafeSize();
+            int size = ((SymbolicRegexNode<BDD>)node).EstimateNfaSize();
             Assert.True(size > SymbolicRegexThresholds.GetSymbolicRegexSafeSizeThreshold());
         }
 

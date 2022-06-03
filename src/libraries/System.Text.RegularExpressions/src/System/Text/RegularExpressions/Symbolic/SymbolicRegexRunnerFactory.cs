@@ -29,7 +29,7 @@ namespace System.Text.RegularExpressions.Symbolic
             // Skip the threshold check if the threshold equals int.MaxValue
             if (threshold != int.MaxValue)
             {
-                int size = rootNode.EstimateSafeSize();
+                int size = rootNode.EstimateNfaSize();
                 if (size > threshold)
                 {
                     throw new NotSupportedException(SR.Format(SR.NotSupported_NonBacktrackingUnsafeSize, size, threshold));
