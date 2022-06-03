@@ -17,7 +17,7 @@ namespace System.IO
 {
     // Class for creating FileStream objects, and some basic file management
     // routines such as Delete, etc.
-    public static class File
+    public static partial class File
     {
         private const int ChunkSize = 8192;
         private static Encoding? s_UTF8NoBOM;
@@ -225,7 +225,7 @@ namespace System.IO
         /// <returns>The <see cref="T:System.IO.UnixFileMode" /> of the file on the path.</returns>
         [UnsupportedOSPlatform("windows")]
         public static UnixFileMode GetUnixFileMode(string path)
-            => FileSystem.GetUnixFileMode(Path.GetFullPath(path));
+            => GetUnixFileModeCore(path);
 
         /// <summary>Gets the <see cref="T:System.IO.UnixFileMode" /> of the specified file handle.</summary>
         /// <param name="fileHandle">The file handle.</param>
@@ -233,7 +233,7 @@ namespace System.IO
         /// <exception cref="T:System.UnauthorizedAccessException">The caller does not have the required permission.</exception>
         [UnsupportedOSPlatform("windows")]
         public static UnixFileMode GetUnixFileMode(SafeFileHandle fileHandle)
-            => FileSystem.GetUnixFileMode(fileHandle);
+            => GetUnixFileModeCore(fileHandle);
 
         /// <summary>Sets the specified <see cref="T:System.IO.UnixFileMode" /> of the file on the specified path.</summary>
         /// <param name="path">The path to the file.</param>
@@ -252,14 +252,7 @@ namespace System.IO
         /// The caller does not have the required permission.</exception>
         [UnsupportedOSPlatform("windows")]
         public static void SetUnixFileMode(string path, UnixFileMode mode)
-        {
-            if ((mode & ~FileSystem.ValidUnixFileModes) != 0)
-            {
-                ThrowHelper.ArgumentOutOfRangeException_Enum_Value();
-            }
-
-            FileSystem.SetUnixFileMode(Path.GetFullPath(path), mode);
-        }
+            => SetUnixFileModeCore(path, mode);
 
         /// <summary>Sets the specified <see cref="T:System.IO.UnixFileMode" /> of the specified file handle.</summary>
         /// <param name="fileHandle">The file handle.</param>
@@ -267,14 +260,7 @@ namespace System.IO
         /// <exception cref="T:System.ArgumentException">The file mode is invalid.</exception>
         [UnsupportedOSPlatform("windows")]
         public static void SetUnixFileMode(SafeFileHandle fileHandle, UnixFileMode mode)
-        {
-            if ((mode & ~FileSystem.ValidUnixFileModes) != 0)
-            {
-                ThrowHelper.ArgumentOutOfRangeException_Enum_Value();
-            }
-
-            FileSystem.SetUnixFileMode(fileHandle, mode);
-        }
+            => SetUnixFileModeCore(fileHandle, mode);
 
         public static FileStream OpenRead(string path)
             => new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);

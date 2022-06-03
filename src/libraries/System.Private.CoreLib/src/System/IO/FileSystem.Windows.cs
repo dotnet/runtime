@@ -10,11 +10,6 @@ namespace System.IO
 {
     internal static partial class FileSystem
     {
-        public static void CreateDirectory(string fullPath, UnixFileMode unixCreateMode)
-        {
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_UnixFileMode);
-        }
-
         public static void Encrypt(string path)
         {
             string fullPath = Path.GetFullPath(path);
@@ -463,18 +458,6 @@ namespace System.IO
 
         public static void SetLastWriteTime(string fullPath, DateTimeOffset time, bool asDirectory)
            => SetFileTime(fullPath, asDirectory, lastWriteTime: time.ToFileTime());
-
-        public static UnixFileMode GetUnixFileMode(string fullPath)
-            => throw new PlatformNotSupportedException(SR.PlatformNotSupported_UnixFileMode);
-
-        public static UnixFileMode GetUnixFileMode(SafeFileHandle fileHandle)
-            => throw new PlatformNotSupportedException(SR.PlatformNotSupported_UnixFileMode);
-
-        public static void SetUnixFileMode(string fullPath, UnixFileMode mode)
-            => throw new PlatformNotSupportedException(SR.PlatformNotSupported_UnixFileMode);
-
-        public static void SetUnixFileMode(SafeFileHandle fileHandle, UnixFileMode mode)
-            => throw new PlatformNotSupportedException(SR.PlatformNotSupported_UnixFileMode);
 
         public static string[] GetLogicalDrives()
             => DriveInfoInternal.GetLogicalDrives();

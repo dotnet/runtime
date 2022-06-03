@@ -55,20 +55,7 @@ namespace System.IO
         /// <exception cref="T:System.ArgumentException">The caller attempts use an invalid file mode.</exception>
         [UnsupportedOSPlatform("windows")]
         public static DirectoryInfo CreateDirectory(string path, UnixFileMode unixCreateMode)
-        {
-            ArgumentException.ThrowIfNullOrEmpty(path);
-
-            if ((unixCreateMode & ~FileSystem.ValidUnixFileModes) != 0)
-            {
-                ThrowHelper.ArgumentOutOfRangeException_Enum_Value();
-            }
-
-            string fullPath = Path.GetFullPath(path);
-
-            FileSystem.CreateDirectory(fullPath, unixCreateMode);
-
-            return new DirectoryInfo(path, fullPath, isNormalized: true);
-        }
+            => CreateDirectoryCore(path, unixCreateMode);
 
         // Tests if the given path refers to an existing DirectoryInfo on disk.
         public static bool Exists([NotNullWhen(true)] string? path)
