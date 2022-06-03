@@ -371,12 +371,12 @@ namespace System.Text.RegularExpressions.Symbolic
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             int SpecializedFindEndPosition(ReadOnlySpan<char> input, int pos, long timeoutOccursAt, RegexRunnerMode mode, out int initialStatePos, out int matchLength, PerThreadData perThreadData) =>
                 _findOpts is null ?
-                    SpecializedFindEndPosition2<NoFindOptimizationsHandler>(input, pos, timeoutOccursAt, mode, out initialStatePos, out matchLength, perThreadData) :
+                    SpecializedFindEndPosition2<NoOptimizationsInitialStateHandler>(input, pos, timeoutOccursAt, mode, out initialStatePos, out matchLength, perThreadData) :
                     SpecializedFindEndPosition2<InitialStateFindOptimizationsHandler>(input, pos, timeoutOccursAt, mode, out initialStatePos, out matchLength, perThreadData);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             int SpecializedFindEndPosition2<TFindOptimizationsHandler>(ReadOnlySpan<char> input, int pos, long timeoutOccursAt, RegexRunnerMode mode, out int initialStatePos, out int matchLength, PerThreadData perThreadData)
-                where TFindOptimizationsHandler : struct, IFindOptimizationsHandler =>
+                where TFindOptimizationsHandler : struct, IInitialStateHandler =>
                 _pattern._info.ContainsSomeAnchor ?
                     FindEndPosition<TFindOptimizationsHandler, FullNullabilityHandler>(input, pos, timeoutOccursAt, mode, out initialStatePos, out matchLength, perThreadData) :
                     FindEndPosition<TFindOptimizationsHandler, NoAnchorsNullabilityHandler>(input, pos, timeoutOccursAt, mode, out initialStatePos, out matchLength, perThreadData);
@@ -400,7 +400,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// A one-past-the-end index into input for the preferred match, or first final state position if isMatch is true, or NoMatchExists if no match exists.
         /// </returns>
         private int FindEndPosition<TFindOptimizationsHandler, TNullabilityHandler>(ReadOnlySpan<char> input, int pos, long timeoutOccursAt, RegexRunnerMode mode, out int initialStatePos, out int matchLength, PerThreadData perThreadData)
-            where TFindOptimizationsHandler : struct, IFindOptimizationsHandler
+            where TFindOptimizationsHandler : struct, IInitialStateHandler
             where TNullabilityHandler : struct, INullabilityHandler
         {
             int endPos = NoMatchExists;
@@ -409,6 +409,7 @@ namespace System.Text.RegularExpressions.Symbolic
             int initialStatePosCandidate = pos;
 
             var currentState = new CurrentState(_dotstarredInitialStates[GetCharKind(input, pos - 1)]);
+            SymbolicRegexBuilder<TSet> builder = _builder;
 
             while (true)
             {
@@ -423,7 +424,9 @@ namespace System.Text.RegularExpressions.Symbolic
                     input.Slice(0, pos + CharsPerTimeoutCheck) :
                     input;
 
-                bool done = SpecializedFindEndPositionDeltas(this, inputForInnerLoop, mode, ref pos, ref currentState, ref endPos, ref initialStatePos, ref initialStatePosCandidate);
+                bool done = currentState.NfaState is not null ?
+                    FindEndPositionDeltas<NfaStateHandler, TFindOptimizationsHandler, TNullabilityHandler>(builder, input, mode, ref pos, ref currentState, ref endPos, ref initialStatePos, ref initialStatePosCandidate) :
+                    FindEndPositionDeltas<DfaStateHandler, TFindOptimizationsHandler, TNullabilityHandler>(builder, input, mode, ref pos, ref currentState, ref endPos, ref initialStatePos, ref initialStatePosCandidate);
 
                 if (done)
                 {
@@ -465,15 +468,6 @@ namespace System.Text.RegularExpressions.Symbolic
                 NfaStateHandler.FixedLength(_builder, ref currentState, GetCharKind(input, endPos)) :
                 DfaStateHandler.FixedLength(_builder, ref currentState, GetCharKind(input, endPos));
             return endPos;
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static bool SpecializedFindEndPositionDeltas(SymbolicRegexMatcher<TSet> matcher, ReadOnlySpan<char> input, RegexRunnerMode mode,
-                    ref int pos, ref CurrentState state, ref int endPos, ref int initialStatePos, ref int initialStatePosCandidate)
-            {
-                return state.NfaState is not null ?
-                    matcher.FindEndPositionDeltas<NfaStateHandler, TFindOptimizationsHandler, TNullabilityHandler>(matcher._builder, input, mode, ref pos, ref state, ref endPos, ref initialStatePos, ref initialStatePosCandidate) :
-                    matcher.FindEndPositionDeltas<DfaStateHandler, TFindOptimizationsHandler, TNullabilityHandler>(matcher._builder, input, mode, ref pos, ref state, ref endPos, ref initialStatePos, ref initialStatePosCandidate);
-            }
         }
 
         /// <summary>
@@ -496,7 +490,7 @@ namespace System.Text.RegularExpressions.Symbolic
         private bool FindEndPositionDeltas<TStateHandler, TFindOptimizationsHandler, TNullabilityHandler>(SymbolicRegexBuilder<TSet> builder, ReadOnlySpan<char> input, RegexRunnerMode mode,
                 ref int posRef, ref CurrentState stateRef, ref int endPosRef, ref int initialStatePosRef, ref int initialStatePosCandidateRef)
             where TStateHandler : struct, IStateHandler
-            where TFindOptimizationsHandler : struct, IFindOptimizationsHandler
+            where TFindOptimizationsHandler : struct, IInitialStateHandler
             where TNullabilityHandler : struct, INullabilityHandler
         {
             // To avoid frequent reads/writes to ref and out values, make and operate on local copies, which we then copy back once before returning.
@@ -511,9 +505,8 @@ namespace System.Text.RegularExpressions.Symbolic
                 while (true)
                 {
                     var (isInitial, isDeadend, isNullable, canBeNullable) = TStateHandler.GetStateInfo(builder, ref state);
-                    // Now that currentState and our position are coherent, check if currentState represents an initial state.
-                    // If it does, we exit out in order to allow our find optimizations to kick in to hopefully more quickly
-                    // find the next possible starting location.
+                    // Check if currentState represents an initial state. If it does, call into any possible find optimizations
+                    // to hopefully more quickly find the next possible starting location.
                     if (isInitial)
                     {
                         if (!TFindOptimizationsHandler.TryFindNextStartingPosition(this, input, ref state, ref pos))
@@ -543,13 +536,8 @@ namespace System.Text.RegularExpressions.Symbolic
                         }
                     }
 
-                    if ((uint)pos >= (uint)input.Length)
-                    {
-                        return false;
-                    }
-
                     // If there is more input available try to transition with the next character.
-                    if (!TryTakeTransition<TStateHandler>(builder, input, pos, ref state))
+                    if ((uint)pos >= (uint)input.Length || !TryTakeTransition<TStateHandler>(builder, input, pos, ref state))
                     {
                         return false;
                     }
@@ -660,7 +648,6 @@ namespace System.Text.RegularExpressions.Symbolic
                     }
 
                     // Try to transition with the next character, the one before the current position.
-                    //int mintermId = GenericMintermHandler.GetMintermId<TStateHandler>(this, ref state, input, pos - 1);
                     if (!TryTakeTransition<TStateHandler>(builder, input, pos - 1, ref state))
                     {
                         // Return false to indicate the search didn't finish.
@@ -804,17 +791,17 @@ namespace System.Text.RegularExpressions.Symbolic
                 char nextChar = input[i];
                 if (nextChar == '\n')
                 {
-                    return _builder._newLineSet.Equals(_builder._solver.Empty) ? 0 : // ignore \n
+                    return
+                        _builder._newLineSet.Equals(_builder._solver.Empty) ? 0 : // ignore \n
                         i == 0 || i == input.Length - 1 ? CharKind.NewLineS : // very first or very last \n. Detection of very first \n is needed for rev(\Z).
                         CharKind.Newline;
                 }
 
                 uint[] asciiCharKinds = _asciiCharKinds;
-                return nextChar < (uint)asciiCharKinds.Length ?
-                    asciiCharKinds[nextChar] :
-                    _builder._solver.And(GetMinterm(nextChar), _builder._wordLetterForBoundariesSet).Equals(_builder._solver.Empty) ? // intersect with the wordletter set to compute the kind of the next character
-                        CharKind.General :
-                        CharKind.WordLetter;
+                return
+                    nextChar < (uint)asciiCharKinds.Length ? asciiCharKinds[nextChar] :
+                    _builder._solver.And(GetMinterm(nextChar), _builder._wordLetterForBoundariesSet).Equals(_builder._solver.Empty) ? 0 : // intersect with the wordletter set to compute the kind of the next character
+                    CharKind.WordLetter;
             }
         }
 
@@ -1033,6 +1020,8 @@ namespace System.Text.RegularExpressions.Symbolic
             /// Gets context independent state information:
             /// - whether this is an initial state
             /// - whether this is a dead-end state, meaning there are no transitions possible out of the state
+            /// - whether this state is unconditionally nullable
+            /// - whether this state may be contextually nullable
             /// </summary>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static (bool IsInitial, bool IsDeadend, bool IsNullable, bool CanBeNullable) GetStateInfo(SymbolicRegexBuilder<TSet> builder, ref CurrentState state)
@@ -1134,6 +1123,8 @@ namespace System.Text.RegularExpressions.Symbolic
             /// Gets context independent state information:
             /// - whether this is an initial state
             /// - whether this is a dead-end state, meaning there are no transitions possible out of the state
+            /// - whether this state is unconditionally nullable
+            /// - whether this state may be contextually nullable
             /// </summary>
             /// <remarks>
             /// In NFA mode:
@@ -1151,7 +1142,7 @@ namespace System.Text.RegularExpressions.Symbolic
             {
                 foreach (ref KeyValuePair<int, int> nfaState in CollectionsMarshal.AsSpan(state.NfaState!.NfaStateSet.Values))
                 {
-                    if (builder.GetCoreState(nfaState.Key).IsNullable)
+                    if (builder._stateInfo![builder.GetCoreStateId(nfaState.Key)].IsNullable)
                     {
                         return true;
                     }
@@ -1165,7 +1156,7 @@ namespace System.Text.RegularExpressions.Symbolic
             {
                 foreach (ref KeyValuePair<int, int> nfaState in CollectionsMarshal.AsSpan(state.NfaState!.NfaStateSet.Values))
                 {
-                    if (builder.GetCoreState(nfaState.Key).CanBeNullable)
+                    if (builder._stateInfo![builder.GetCoreStateId(nfaState.Key)].CanBeNullable)
                     {
                         return true;
                     }
@@ -1225,12 +1216,18 @@ namespace System.Text.RegularExpressions.Symbolic
 #endif
         }
 
-        private interface IFindOptimizationsHandler
+        /// <summary>
+        /// Interface for optimizations to accelerate search from initial states.
+        /// </summary>
+        private interface IInitialStateHandler
         {
             public static abstract bool TryFindNextStartingPosition(SymbolicRegexMatcher<TSet> matcher, ReadOnlySpan<char> input, ref CurrentState state, ref int pos);
         }
 
-        private readonly struct NoFindOptimizationsHandler : IFindOptimizationsHandler
+        /// <summary>
+        /// No-op handler for when there are no initial state optimizations to apply.
+        /// </summary>
+        private readonly struct NoOptimizationsInitialStateHandler : IInitialStateHandler
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static bool TryFindNextStartingPosition(SymbolicRegexMatcher<TSet> matcher, ReadOnlySpan<char> input, ref CurrentState state, ref int pos)
@@ -1240,7 +1237,10 @@ namespace System.Text.RegularExpressions.Symbolic
             }
         }
 
-        private readonly struct InitialStateFindOptimizationsHandler : IFindOptimizationsHandler
+        /// <summary>
+        /// Handler for when a <see cref="RegexFindOptimizations"/> instance is available.
+        /// </summary>
+        private readonly struct InitialStateFindOptimizationsHandler : IInitialStateHandler
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static bool TryFindNextStartingPosition(SymbolicRegexMatcher<TSet> matcher, ReadOnlySpan<char> input, ref CurrentState state, ref int pos)
@@ -1259,12 +1259,18 @@ namespace System.Text.RegularExpressions.Symbolic
             }
         }
 
+        /// <summary>
+        /// Interface for evaluating nullability of states.
+        /// </summary>
         private interface INullabilityHandler
         {
             public static abstract bool IsNullableAt<TStateHandler>(SymbolicRegexMatcher<TSet> matcher, ref CurrentState state, ReadOnlySpan<char> input, int pos, bool isNullable, bool canBeNullable)
                     where TStateHandler : struct, IStateHandler;
         }
 
+        /// <summary>
+        /// Specialized nullability handler for patterns without any anchors.
+        /// </summary>
         private readonly struct NoAnchorsNullabilityHandler : INullabilityHandler
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1276,6 +1282,9 @@ namespace System.Text.RegularExpressions.Symbolic
             }
         }
 
+        /// <summary>
+        /// Nullability handler that will work for any pattern.
+        /// </summary>
         private readonly struct FullNullabilityHandler : INullabilityHandler
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]

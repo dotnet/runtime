@@ -127,10 +127,6 @@ namespace System.Text.RegularExpressions.Symbolic
             return list;
         }
 
-        internal bool IsNullable => Node.IsNullable;
-
-        internal bool CanBeNullable => Node.CanBeNullable;
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal bool IsNullableFor(uint nextCharKind)
         {

@@ -114,6 +114,10 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </summary>
         internal DfaMatchingState<TSet>[]? _stateArray;
         internal DfaMatchingState<TSet>[]? _capturingStateArray;
+        /// <summary>
+        /// Maps state IDs to context-independent information for all states in <see cref="_stateArray"/>.
+        /// </summary>
+        internal (bool IsInitial, bool IsDeadend, bool IsNullable, bool CanBeNullable)[]? _stateInfo;
         /// <remarks>
         /// For these "delta" arrays, technically Volatile.Read should be used to read out an element,
         /// but in practice that's not needed on the runtimes in use (though that needs to be documented
@@ -123,8 +127,6 @@ namespace System.Text.RegularExpressions.Symbolic
         internal int[]? _delta;
         internal List<(DfaMatchingState<TSet>, DerivativeEffect[])>?[]? _capturingDelta;
         private const int InitialStateLimit = 1024;
-
-        internal (bool IsInitial, bool IsDeadend, bool IsNullable, bool CanBeNullable)[]? _stateInfo;
 
         /// <summary>1 + Log2(_minterms.Length), the smallest k s.t. 2^k >= minterms.Length + 1</summary>
         internal int _mintermsLog;
@@ -172,13 +174,12 @@ namespace System.Text.RegularExpressions.Symbolic
             {
                 _stateArray = new DfaMatchingState<TSet>[InitialStateLimit];
                 _capturingStateArray = new DfaMatchingState<TSet>[InitialStateLimit];
+                _stateInfo = new (bool, bool, bool, bool)[InitialStateLimit];
 
                 // the extra +1 slot with id minterms.Length is reserved for \Z (last occurrence of \n)
                 _mintermsLog = BitOperations.Log2((uint)_minterms.Length) + 1;
                 _delta = new int[InitialStateLimit << _mintermsLog];
                 _capturingDelta = new List<(DfaMatchingState<TSet>, DerivativeEffect[])>[InitialStateLimit << _mintermsLog];
-
-                _stateInfo = new (bool, bool, bool, bool)[InitialStateLimit];
             }
 
             // initialized to False but updated later to the actual condition ony if \b or \B occurs anywhere in the regex
@@ -511,7 +512,7 @@ namespace System.Text.RegularExpressions.Symbolic
                         Array.Resize(ref _stateInfo, newsize);
                     }
                     _stateArray[state.Id] = state;
-                    _stateInfo[state.Id] = (isInitialState, state.IsDeadend, state.IsNullable, state.CanBeNullable);
+                    _stateInfo[state.Id] = (isInitialState, state.IsDeadend, state.Node.IsNullable, state.Node.CanBeNullable);
                 }
                 return state;
             }
