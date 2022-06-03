@@ -14714,7 +14714,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     assert(*dp != dst || emitInstHasNoCode(id));
 
 #ifdef DEBUG
-    if (emitComp->opts.disAsm || emitComp->verbose)
+    if ((emitComp->opts.disAsm || emitComp->verbose) && !emitInstHasNoCode(id))
     {
         emitDispIns(id, false, dspOffs, true, emitCurCodeOffs(*dp), *dp, (dst - *dp));
     }
@@ -15487,6 +15487,20 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
 
         case INS_jmp:
+            if (emitInstHasNoCode(id))
+            {
+                // a removed jmp to the next instruction
+                result.insThroughput = PERFSCORE_THROUGHPUT_ZERO;
+                result.insLatency    = PERFSCORE_LATENCY_ZERO;
+            }
+            else
+            {
+                // branch to a constant address
+                result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                result.insLatency    = PERFSCORE_LATENCY_BRANCH_DIRECT;
+            }
+            break;
+
         case INS_l_jmp:
             // branch to a constant address
             result.insThroughput = PERFSCORE_THROUGHPUT_2C;

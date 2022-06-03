@@ -3821,10 +3821,21 @@ void emitter::emitDispIG(insGroup* ig, insGroup* igPrev, bool verbose)
                 {
                     instrDesc* id = (instrDesc*)ins;
 
+#if defined(TARGET_XARCH)
+                    if (emitInstHasNoCode(id))
+                    {
+                        // an instruction with no code prevents us being able to iterate to the
+                        // next instructions so we must be certain that when we find one it is
+                        // the last instruction in a group
+                        assert(cnt == 1);
+                        break;
+                    }
+#endif
                     emitDispIns(id, false, true, false, ofs, nullptr, 0, ig);
 
                     ins += emitSizeOfInsDsc(id);
                     ofs += id->idCodeSize();
+
                 } while (--cnt);
 
                 printf("\n");
@@ -3877,7 +3888,7 @@ void emitter::emitDispGCinfo()
 //------------------------------------------------------------------------
 // emitDispJumpList: displays the current emitter jump list
 //
-void emitter::emitDispJumpList()
+void emitter::emitDispJumpList(bool showJumpRemovalCndidates)
 {
     printf("Emitter Jump List:\n");
     unsigned int jmpCount = 0;
@@ -3887,7 +3898,7 @@ void emitter::emitDispJumpList()
                codeGen->genInsDisplayName(jmp), jmp->idCodeSize(),
                ((insGroup*)emitCodeGetCookie(jmp->idAddr()->iiaBBlabel))->igNum,
 #if defined(TARGET_XARCH)
-               jmp->idjIsRemovableJmpCandidate ? " ; removal candidate" : ""
+               (showJumpRemovalCndidates && jmp->idjIsRemovableJmpCandidate) ? " ; removal candidate" : ""
 #else
                ""
 #endif
@@ -4161,7 +4172,7 @@ void emitter::emitRemoveJumpToNextInst()
     }
     if (EMITVERBOSE)
     {
-        emitDispJumpList();
+        emitDispJumpList(/*showJumpRemovalCndidates = */ true);
     }
 #endif // DEBUG
 
@@ -4321,7 +4332,7 @@ void emitter::emitRemoveJumpToNextInst()
         }
         if (EMITVERBOSE)
         {
-            emitDispJumpList();
+            emitDispJumpList(/*showJumpRemovalCndidates = */ true);
         }
 #endif // DEBUG
         JITDUMP("emitRemoveJumpToNextInst removed %u bytes of unconditional jumps\n", totalRemovedSize);
