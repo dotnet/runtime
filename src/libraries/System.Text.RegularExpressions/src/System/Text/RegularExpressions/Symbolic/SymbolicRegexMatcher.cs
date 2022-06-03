@@ -403,13 +403,14 @@ namespace System.Text.RegularExpressions.Symbolic
             where TFindOptimizationsHandler : struct, IInitialStateHandler
             where TNullabilityHandler : struct, INullabilityHandler
         {
-            int endPos = NoMatchExists;
-
             initialStatePos = pos;
             int initialStatePosCandidate = pos;
 
             var currentState = new CurrentState(_dotstarredInitialStates[GetCharKind(input, pos - 1)]);
             SymbolicRegexBuilder<TSet> builder = _builder;
+
+            int endPos = NoMatchExists;
+            CurrentState endState = default;
 
             while (true)
             {
@@ -425,8 +426,8 @@ namespace System.Text.RegularExpressions.Symbolic
                     input;
 
                 bool done = currentState.NfaState is not null ?
-                    FindEndPositionDeltas<NfaStateHandler, TFindOptimizationsHandler, TNullabilityHandler>(builder, input, mode, ref pos, ref currentState, ref endPos, ref initialStatePos, ref initialStatePosCandidate) :
-                    FindEndPositionDeltas<DfaStateHandler, TFindOptimizationsHandler, TNullabilityHandler>(builder, input, mode, ref pos, ref currentState, ref endPos, ref initialStatePos, ref initialStatePosCandidate);
+                    FindEndPositionDeltas<NfaStateHandler, TFindOptimizationsHandler, TNullabilityHandler>(builder, input, mode, ref pos, ref currentState, ref endPos, ref endState, ref initialStatePos, ref initialStatePosCandidate) :
+                    FindEndPositionDeltas<DfaStateHandler, TFindOptimizationsHandler, TNullabilityHandler>(builder, input, mode, ref pos, ref currentState, ref endPos, ref endState, ref initialStatePos, ref initialStatePosCandidate);
 
                 if (done)
                 {
@@ -464,9 +465,10 @@ namespace System.Text.RegularExpressions.Symbolic
 
             // Check whether there's a fixed-length marker for the current state.  If there is, we can
             // use that length to optimize subsequent matching phases.
-            matchLength = currentState.NfaState is not null ?
-                NfaStateHandler.FixedLength(_builder, ref currentState, GetCharKind(input, endPos)) :
-                DfaStateHandler.FixedLength(_builder, ref currentState, GetCharKind(input, endPos));
+            matchLength = endPos != NoMatchExists ?
+                -1 : currentState.NfaState is not null ?
+                    NfaStateHandler.FixedLength(_builder, ref currentState, GetCharKind(input, endPos)) :
+                    DfaStateHandler.FixedLength(_builder, ref currentState, GetCharKind(input, endPos));
             return endPos;
         }
 
@@ -488,7 +490,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// A negative value if iteration completed because we ran out of input or we failed to transition.
         /// </returns>
         private bool FindEndPositionDeltas<TStateHandler, TFindOptimizationsHandler, TNullabilityHandler>(SymbolicRegexBuilder<TSet> builder, ReadOnlySpan<char> input, RegexRunnerMode mode,
-                ref int posRef, ref CurrentState stateRef, ref int endPosRef, ref int initialStatePosRef, ref int initialStatePosCandidateRef)
+                ref int posRef, ref CurrentState stateRef, ref int endPosRef, ref CurrentState endStateRef, ref int initialStatePosRef, ref int initialStatePosCandidateRef)
             where TStateHandler : struct, IStateHandler
             where TFindOptimizationsHandler : struct, IInitialStateHandler
             where TNullabilityHandler : struct, INullabilityHandler
@@ -497,6 +499,7 @@ namespace System.Text.RegularExpressions.Symbolic
             int pos = posRef;
             CurrentState state = stateRef;
             int endPos = endPosRef;
+            CurrentState endState = endStateRef;
             int initialStatePos = initialStatePosRef;
             int initialStatePosCandidate = initialStatePosCandidateRef;
             try
@@ -527,6 +530,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     if (TNullabilityHandler.IsNullableAt<TStateHandler>(this, ref state, input, pos, isNullable, canBeNullable))
                     {
                         endPos = pos;
+                        endState = state;
                         initialStatePos = initialStatePosCandidate;
 
                         // A match is known to exist.  If that's all we need to know, we're done.
@@ -552,6 +556,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 posRef = pos;
                 stateRef = state;
                 endPosRef = endPos;
+                endStateRef = endState;
                 initialStatePosRef = initialStatePos;
                 initialStatePosCandidateRef = initialStatePosCandidate;
             }
@@ -1063,8 +1068,19 @@ namespace System.Text.RegularExpressions.Symbolic
             }
 
             /// <summary>Gets the length of any fixed-length marker that exists for this state, or -1 if there is none.</summary>
-            /// <summary>In NFA mode, there are no fixed-length markers.</summary>
-            public static int FixedLength(SymbolicRegexBuilder<TSet> builder, ref CurrentState state, uint nextCharKind) => -1;
+            public static int FixedLength(SymbolicRegexBuilder<TSet> builder, ref CurrentState state, uint nextCharKind)
+            {
+                foreach (ref KeyValuePair<int, int> nfaState in CollectionsMarshal.AsSpan(state.NfaState!.NfaStateSet.Values))
+                {
+                    DfaMatchingState<TSet> coreState = builder.GetCoreState(nfaState.Key);
+                    if (coreState.IsNullableFor(nextCharKind))
+                    {
+                        return coreState.FixedLength(nextCharKind);
+                    }
+                }
+                Debug.Fail("FixedLength should only be called in nullable state/context.");
+                return -1;
+            }
 
             /// <summary>Take the transition to the next NFA state.</summary>
             public static bool TakeTransition(SymbolicRegexBuilder<TSet> builder, ref CurrentState state, int mintermId)
