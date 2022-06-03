@@ -791,7 +791,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public bool TriedToLoadSymbolsOnDemand { get; set; }
         public MethodInfo EntryPoint { get; private set; }
 
-        private readonly Dictionary<int, SourceFile> d2s = new Dictionary<int, SourceFile>();
+        private readonly Dictionary<int, SourceFile> _documentIdToSourceFileTable = new Dictionary<int, SourceFile>();
 
         public unsafe AssemblyInfo(MonoProxy monoProxy, SessionId sessionId, string url, byte[] assembly, byte[] pdb, ILogger logger, CancellationToken token)
         {
@@ -961,12 +961,11 @@ namespace Microsoft.WebAssembly.Diagnostics
         }
         private SourceFile FindSource(DocumentHandle doc, int rowid, string documentName)
         {
-            if (d2s.TryGetValue(rowid, out SourceFile source))
+            if (_documentIdToSourceFileTable.TryGetValue(rowid, out SourceFile source))
                 return source;
 
-            var src = new SourceFile(this, sources.Count, doc, GetSourceLinkUrl(documentName), documentName);
-            sources.Add(src);
-            d2s[rowid] = src;
+            var src = new SourceFile(this, _documentIdToSourceFileTable.Count, doc, GetSourceLinkUrl(documentName), documentName);
+            _documentIdToSourceFileTable[rowid] = src;
             return src;
         }
 
@@ -1070,7 +1069,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return null;
         }
 
-        public IEnumerable<SourceFile> Sources => this.sources;
+        public IEnumerable<SourceFile> Sources => this._documentIdToSourceFileTable.Values;
         public Dictionary<int, MethodInfo> Methods => this.methods;
 
         public Dictionary<string, TypeInfo> TypesByName { get; } = new();
