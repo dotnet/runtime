@@ -29,5 +29,10 @@ namespace System.Net.Security
         {
             throw new PlatformNotSupportedException();
         }
+
+        internal static Win32Exception CreateExceptionFromError(SecurityStatusPal statusCode)
+        {
+            throw new PlatformNotSupportedException();
+        }
     }
 }

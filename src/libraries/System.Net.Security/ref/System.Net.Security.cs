@@ -35,6 +35,88 @@ namespace System.Net.Security
         NoEncryption = 2,
     }
     public delegate System.Security.Cryptography.X509Certificates.X509Certificate LocalCertificateSelectionCallback(object sender, string targetHost, System.Security.Cryptography.X509Certificates.X509CertificateCollection localCertificates, System.Security.Cryptography.X509Certificates.X509Certificate? remoteCertificate, string[] acceptableIssuers);
+    public sealed partial class NegotiateAuthentication : System.IDisposable
+    {
+        public NegotiateAuthentication(System.Net.Security.NegotiateAuthenticationClientOptions clientOptions) { }
+        public NegotiateAuthentication(System.Net.Security.NegotiateAuthenticationServerOptions serverOptions) { }
+        public bool IsAuthenticated { get { throw null; } }
+        public bool IsEncrypted { get { throw null; } }
+        public bool IsMutuallyAuthenticated { get { throw null; } }
+        public bool IsServer { get { throw null; } }
+        public bool IsSigned { get { throw null; } }
+        public string Package { get { throw null; } }
+        public System.Net.Security.ProtectionLevel ProtectionLevel { get { throw null; } }
+        public System.Security.Principal.IIdentity RemoteIdentity { get { throw null; } }
+        public string? TargetName { get { throw null; } }
+        public void Dispose() { }
+        public byte[]? GetOutgoingBlob(System.ReadOnlySpan<byte> incomingBlob, out System.Net.Security.NegotiateAuthenticationStatusCode statusCode) { throw null; }
+        public string? GetOutgoingBlob(string? incomingBlob, out System.Net.Security.NegotiateAuthenticationStatusCode statusCode) { throw null; }
+    }
+    public partial class NegotiateAuthenticationClientOptions
+    {
+        public NegotiateAuthenticationClientOptions() { }
+        public System.Security.Authentication.ExtendedProtection.ChannelBinding? Binding { get { throw null; } set { } }
+        public System.Net.NetworkCredential Credential { get { throw null; } set { } }
+        public string Package { get { throw null; } set { } }
+        public System.Net.Security.ProtectionLevel RequiredProtectionLevel { get { throw null; } set { } }
+        public string? TargetName { get { throw null; } set { } }
+    }
+    public partial class NegotiateAuthenticationServerOptions
+    {
+        public NegotiateAuthenticationServerOptions() { }
+        public System.Security.Authentication.ExtendedProtection.ChannelBinding? Binding { get { throw null; } set { } }
+        public System.Net.NetworkCredential Credential { get { throw null; } set { } }
+        public string Package { get { throw null; } set { } }
+        public System.Net.Security.ProtectionLevel RequiredProtectionLevel { get { throw null; } set { } }
+    }
+    public enum NegotiateAuthenticationStatusCode
+    {
+        NotSet = 0,
+        OK = 1,
+        ContinueNeeded = 2,
+        CompleteNeeded = 3,
+        CompleteAndContinue = 4,
+        ContextExpired = 5,
+        CredentialsNeeded = 6,
+        Renegotiate = 7,
+        TryAgain = 8,
+        OutOfMemory = 9,
+        InvalidHandle = 10,
+        Unsupported = 11,
+        TargetUnknown = 12,
+        InternalError = 13,
+        PackageNotFound = 14,
+        NotOwner = 15,
+        CannotInstall = 16,
+        InvalidToken = 17,
+        CannotPack = 18,
+        QopNotSupported = 19,
+        NoImpersonation = 20,
+        LogonDenied = 21,
+        UnknownCredentials = 22,
+        NoCredentials = 23,
+        MessageAltered = 24,
+        OutOfSequence = 25,
+        NoAuthenticatingAuthority = 26,
+        IncompleteMessage = 27,
+        IncompleteCredentials = 28,
+        BufferNotEnough = 29,
+        WrongPrincipal = 30,
+        TimeSkew = 31,
+        UntrustedRoot = 32,
+        IllegalMessage = 33,
+        CertUnknown = 34,
+        CertExpired = 35,
+        DecryptFailure = 36,
+        AlgorithmMismatch = 37,
+        SecurityQosFailed = 38,
+        SmartcardLogonRequired = 39,
+        UnsupportedPreauth = 40,
+        BadBinding = 41,
+        DowngradeDetected = 42,
+        ApplicationProtocolMismatch = 43,
+        NoRenegotiation = 44,
+    }
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
     public partial class NegotiateStream : System.Net.Security.AuthenticatedStream
     {

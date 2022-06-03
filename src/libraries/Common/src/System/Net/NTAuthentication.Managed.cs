@@ -7,7 +7,6 @@ using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
-using System.Net.Http.Headers;
 using System.Net.Security;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
@@ -27,6 +26,7 @@ namespace System.Net
         private readonly NetworkCredential _credential;
         private readonly string? _spn;
         private readonly ChannelBinding? _channelBinding;
+        private readonly ContextFlagsPal _contextFlags;
 
         // State parameters
         private byte[]? _spnegoMechList;
@@ -278,10 +278,10 @@ namespace System.Net
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"package={package}, spn={spn}, requestedContextFlags={requestedContextFlags}");
 
-            // TODO: requestedContextFlags
             _credential = credential;
             _spn = spn;
             _channelBinding = channelBinding;
+            _contextFlags = requestedContextFlags;
         }
 
         internal void CloseContext()
@@ -313,34 +313,7 @@ namespace System.Net
             {
                 decodedIncomingBlob = Convert.FromBase64String(incomingBlob);
             }
-            byte[]? decodedOutgoingBlob;
-
-            // TODO: Logging, validation
-            if (_negotiateMessage == null)
-            {
-                Debug.Assert(decodedIncomingBlob == null);
-
-                _negotiateMessage = new byte[sizeof(NegotiateMessage)];
-                CreateNtlmNegotiateMessage(_negotiateMessage);
-
-                decodedOutgoingBlob = _isSpNego ? CreateSpNegoNegotiateMessage(_negotiateMessage) : _negotiateMessage;
-                statusCode = SecurityStatusPalContinueNeeded;
-            }
-            else
-            {
-                Debug.Assert(decodedIncomingBlob != null);
-
-                if (!_isSpNego)
-                {
-                    IsCompleted = true;
-                    decodedOutgoingBlob = ProcessChallenge(decodedIncomingBlob, out statusCode);
-                }
-                else
-                {
-                    decodedOutgoingBlob = ProcessSpNegoChallenge(decodedIncomingBlob, out statusCode);
-                }
-            }
-
+            byte[]? decodedOutgoingBlob = GetOutgoingBlob(decodedIncomingBlob, true);
             string? outgoingBlob = null;
             if (decodedOutgoingBlob != null && decodedOutgoingBlob.Length > 0)
             {
@@ -350,6 +323,50 @@ namespace System.Net
             if (IsCompleted)
             {
                 CloseContext();
+            }
+
+            return outgoingBlob;
+        }
+
+        internal byte[]? GetOutgoingBlob(byte[]? incomingBlob, bool throwOnError)
+        {
+            return GetOutgoingBlob(incomingBlob, throwOnError, out _);
+        }
+
+        // Accepts an incoming binary security blob and returns an outgoing binary security blob.
+        internal unsafe byte[]? GetOutgoingBlob(byte[]? incomingBlob, bool throwOnError, out SecurityStatusPal statusCode)
+        {
+            byte[]? outgoingBlob;
+
+            // TODO: Logging, validation
+            if (_negotiateMessage == null)
+            {
+                Debug.Assert(incomingBlob == null);
+
+                _negotiateMessage = new byte[sizeof(NegotiateMessage)];
+                CreateNtlmNegotiateMessage(_negotiateMessage);
+
+                outgoingBlob = _isSpNego ? CreateSpNegoNegotiateMessage(_negotiateMessage) : _negotiateMessage;
+                statusCode = SecurityStatusPalContinueNeeded;
+            }
+            else
+            {
+                Debug.Assert(incomingBlob != null);
+
+                if (!_isSpNego)
+                {
+                    IsCompleted = true;
+                    outgoingBlob = ProcessChallenge(incomingBlob, out statusCode);
+                }
+                else
+                {
+                    outgoingBlob = ProcessSpNegoChallenge(incomingBlob, out statusCode);
+                }
+            }
+
+            if (statusCode.ErrorCode >= SecurityStatusPalErrorCode.OutOfMemory && throwOnError)
+            {
+                throw new Win32Exception(NTE_FAIL, statusCode.ErrorCode.ToString());
             }
 
             return outgoingBlob;
@@ -917,8 +934,13 @@ namespace System.Net
             }
             catch (AsnContentException)
             {
+<<<<<<< HEAD
                 statusCode = SecurityStatusPalInvalidToken;
                 return null;
+=======
+                statusCode = new SecurityStatusPal(SecurityStatusPalErrorCode.IllegalMessage, e);
+                return Array.Empty<byte>();
+>>>>>>> WIP: Add implementation of NegotiateAuthentication
             }
 
             if (blob?.Length > 0)
@@ -927,9 +949,14 @@ namespace System.Net
                 // message with the challenge blob.
                 if (!NtlmOid.Equals(mech))
                 {
+<<<<<<< HEAD
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Server requested unknown mechanism {mech}");
                     statusCode = SecurityStatusPalPackageNotFound;
                     return null;
+=======
+                    statusCode = new SecurityStatusPal(SecurityStatusPalErrorCode.PackageNotFound);
+                    return Array.Empty<byte>();
+>>>>>>> WIP: Add implementation of NegotiateAuthentication
                 }
 
                 // Process decoded NTLM blob.
@@ -960,7 +987,11 @@ namespace System.Net
                         }
                     }
 
+<<<<<<< HEAD
                     statusCode = state == NegState.RequestMic ? SecurityStatusPalContinueNeeded : SecurityStatusPalOk;
+=======
+                    statusCode = SecurityStatusPalContinueNeeded;
+>>>>>>> WIP: Add implementation of NegotiateAuthentication
                     return writer.Encode();
                 }
             }
@@ -969,6 +1000,7 @@ namespace System.Net
             {
                 if (_spnegoMechList == null || state != NegState.AcceptCompleted)
                 {
+<<<<<<< HEAD
                     statusCode = SecurityStatusPalInternalError;
                     return null;
                 }
@@ -977,10 +1009,15 @@ namespace System.Net
                 {
                     statusCode = SecurityStatusPalMessageAltered;
                     return null;
+=======
+                    statusCode = new SecurityStatusPal(SecurityStatusPalErrorCode.MessageAltered);
+                    return Array.Empty<byte>();
+>>>>>>> WIP: Add implementation of NegotiateAuthentication
                 }
             }
 
             IsCompleted = state == NegState.AcceptCompleted || state == NegState.Reject;
+<<<<<<< HEAD
             statusCode = state switch {
                 NegState.AcceptCompleted => SecurityStatusPalOk,
                 NegState.AcceptIncomplete => SecurityStatusPalContinueNeeded,
@@ -989,6 +1026,35 @@ namespace System.Net
             };
 
             return null;
+=======
+
+            statusCode = IsCompleted ? SecurityStatusPalOk : new SecurityStatusPal(SecurityStatusPalErrorCode.LogonDenied);
+            return Array.Empty<byte>();
+>>>>>>> WIP: Add implementation of NegotiateAuthentication
         }
+
+#pragma warning disable CA1822
+        internal int Encrypt(ReadOnlySpan<byte> buffer, [NotNull] ref byte[]? output, uint sequenceNumber)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        internal int Decrypt(byte[] payload, int offset, int count, out int newOffset, uint expectedSeqNumber)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        internal string ProtocolName => _isSpNego ? NegotiationInfoClass.Negotiate : NegotiationInfoClass.NTLM;
+
+        internal bool IsNTLM => true;
+
+        internal bool IsKerberos => false;
+
+        internal bool IsServer => false;
+
+        internal bool IsValidContext => true;
+
+        internal string? ClientSpecifiedSpn => _spn;
+#pragma warning restore CA1822
     }
 }

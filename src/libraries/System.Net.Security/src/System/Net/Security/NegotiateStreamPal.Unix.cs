@@ -29,7 +29,6 @@ namespace System.Net.Security
             }
 
             return new GenericIdentity(name, protocol);
-
         }
 
         internal static string QueryContextAssociatedName(SafeDeleteContext? securityContext)

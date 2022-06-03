@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Security;
@@ -87,6 +88,34 @@ namespace System.Net
                 }
 
                 return (object)_lastProtocolName == (object)NegotiationInfoClass.Kerberos;
+            }
+        }
+
+        internal bool IsNTLM
+        {
+            get
+            {
+                if (_lastProtocolName == null)
+                {
+                    _lastProtocolName = ProtocolName;
+                }
+
+                return (object)_lastProtocolName == (object)NegotiationInfoClass.NTLM;
+            }
+        }
+
+        internal string? AssociatedName
+        {
+            get
+            {
+                if (!(IsValidContext && IsCompleted))
+                {
+                    throw new Win32Exception((int)SecurityStatusPalErrorCode.InvalidHandle);
+                }
+
+                string? name = NegotiateStreamPal.QueryContextAssociatedName(_securityContext!);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"NTAuthentication: The context is associated with [{name}]");
+                return name;
             }
         }
 
@@ -311,6 +340,22 @@ namespace System.Net
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"The client specified SPN is [{spn}]");
 
             return spn;
+        }
+
+        internal int Encrypt(ReadOnlySpan<byte> buffer, [NotNull] ref byte[]? output, uint sequenceNumber)
+        {
+            return NegotiateStreamPal.Encrypt(
+                _securityContext!,
+                buffer,
+                IsConfidentialityFlag,
+                IsNTLM,
+                ref output,
+                sequenceNumber);
+        }
+
+        internal int Decrypt(byte[] payload, int offset, int count, out int newOffset, uint expectedSeqNumber)
+        {
+            return NegotiateStreamPal.Decrypt(_securityContext!, payload, offset, count, IsConfidentialityFlag, IsNTLM, out newOffset, expectedSeqNumber);
         }
     }
 }

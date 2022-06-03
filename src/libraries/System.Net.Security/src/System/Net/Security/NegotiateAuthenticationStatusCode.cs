@@ -1,35 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-namespace System.Net
+namespace System.Net.Security
 {
-    internal readonly struct SecurityStatusPal
-    {
-        public readonly SecurityStatusPalErrorCode ErrorCode;
-        public readonly Exception? Exception;
-
-        public SecurityStatusPal(SecurityStatusPalErrorCode errorCode, Exception? exception = null)
-        {
-            ErrorCode = errorCode;
-            Exception = exception;
-        }
-
-        public override string ToString()
-        {
-            return Exception == null ?
-                $"{nameof(ErrorCode)}={ErrorCode}" :
-                $"{nameof(ErrorCode)}={ErrorCode}, {nameof(Exception)}={Exception}";
-        }
-    }
-
-    // Matches NegotiateAuthenticationStatusCode
-    internal enum SecurityStatusPalErrorCode
+    // Matches SecurityStatusPalErrorCode
+    public enum NegotiateAuthenticationStatusCode
     {
         NotSet = 0,
         OK,
         ContinueNeeded,
         CompleteNeeded,
-        CompAndContinue,
+        CompleteAndContinue,
         ContextExpired,
         CredentialsNeeded,
         Renegotiate,
@@ -71,7 +52,6 @@ namespace System.Net
         BadBinding,
         DowngradeDetected,
         ApplicationProtocolMismatch,
-        NoRenegotiation,
-        KeySetDoesNotExist
+        NoRenegotiation
     }
 }
