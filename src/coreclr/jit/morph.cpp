@@ -14608,7 +14608,7 @@ GenTree* Compiler::fgRootCommas(GenTree* tree)
     GenTree*  commas[maxCommaCount]{};
     int       commaCount = 0;
 
-    while (tree->gtGetOp1()->OperIs(GT_COMMA) && commaCount < maxCommaCount)
+    while (tree->gtGetOp1()->OperIs(GT_COMMA) && !tree->gtGetOp1()->IsReverseOp() && commaCount < maxCommaCount)
     {
         GenTree* comma = tree->gtGetOp1();
 
