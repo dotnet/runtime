@@ -117,31 +117,7 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="ApplicationNameChangeNotSupported" xml:space="preserve">
-    <value>The application name changed from "{0}" to "{1}". Changing host configuration is not supported.</value>
-  </data>
-  <data name="BackgroundServiceExceptionStoppedHost" xml:space="preserve">
-    <value>The HostOptions.BackgroundServiceExceptionBehavior is configured to StopHost. A BackgroundService has thrown an unhandled exception, and the IHost instance is stopping. To avoid this behavior, configure this to Ignore; however the BackgroundService will not be restarted.</value>
-  </data>
-  <data name="BuildCalled" xml:space="preserve">
-    <value>Build can only be called once.</value>
-  </data>
-  <data name="ContentRootChangeNotSupported" xml:space="preserve">
-    <value>The content root changed from "{0}" to "{1}". Changing host configuration is not supported.</value>
-  </data>
-  <data name="CreateBuilderCallBeforeCreateServiceProvider" xml:space="preserve">
-    <value>CreateBuilder must be called before CreateServiceProvider</value>
-  </data>
-  <data name="EnvironmentNameChangeNotSupoprted" xml:space="preserve">
-    <value>The environment name changed from "{0}" to "{1}". Changing host configuration is not supported.</value>
-  </data>
-  <data name="IHostApplicationLifetimeReplacementNotSupported" xml:space="preserve">
-    <value>Replacing IHostApplicationLifetime is not supported.</value>
-  </data>
-  <data name="NullIServiceProvider" xml:space="preserve">
-    <value>The IServiceProviderFactory returned a null IServiceProvider</value>
-  </data>
-  <data name="ResolverReturnedNull" xml:space="preserve">
-    <value>The resolver returned a null IServiceProviderFactory</value>
+  <data name="HostAbortedExceptionMessage" xml:space="preserve">
+    <value>The host was aborted.</value>
   </data>
 </root>
