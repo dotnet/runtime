@@ -2610,9 +2610,9 @@ public:
 
     GenTreeArrLen* gtNewArrLen(var_types typ, GenTree* arrayOp, int lenOffset, BasicBlock* block);
 
-    GenTreeMDArrLen* gtNewMDArrLen(var_types typ, GenTree* arrayOp, int dim, int rank, BasicBlock* block);
+    GenTreeMDArrLen* gtNewMDArrLen(GenTree* arrayOp, unsigned dim, unsigned rank, BasicBlock* block);
 
-    GenTreeMDArrLowerBound* gtNewMDArrLowerBound(var_types typ, GenTree* arrayOp, int dim, int rank, BasicBlock* block);
+    GenTreeMDArrLowerBound* gtNewMDArrLowerBound(GenTree* arrayOp, unsigned dim, unsigned rank, BasicBlock* block);
 
     GenTreeIndir* gtNewIndir(var_types typ, GenTree* addr);
 
@@ -4546,7 +4546,7 @@ public:
 
     bool fgMorphBlockStmt(BasicBlock* block, Statement* stmt DEBUGARG(const char* msg));
 
-    static fgWalkResult fgMorphArrayOpsTreeCB(GenTree** pTree, Compiler::fgWalkData* pWalkData);
+    bool fgMorphArrayOpsStmt(BasicBlock* block, Statement* stmt);
     PhaseStatus fgMorphArrayOps();
 
     void fgSetOptions();

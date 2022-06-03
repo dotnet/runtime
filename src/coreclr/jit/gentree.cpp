@@ -34,8 +34,8 @@ const GenTreeDebugOperKind GenTree::gtDebugOperKindTable[] = {
 
 /*****************************************************************************/
 
-GenTreeMDArrLen::GenTreeMDArrLen(var_types type, GenTree* arrRef, int dim, int rank)
-    : GenTreeArrLen(GT_MDARR_LENGTH, type, arrRef, Compiler::eeGetMDArrayLengthOffset(rank, dim))
+GenTreeMDArrLen::GenTreeMDArrLen(GenTree* arrRef, unsigned dim, unsigned rank)
+    : GenTreeArrLen(GT_MDARR_LENGTH, TYP_INT, arrRef, Compiler::eeGetMDArrayLengthOffset(rank, dim))
     , gtDim(dim)
     , gtRank(rank)
 {
@@ -8477,14 +8477,13 @@ GenTree* Compiler::gtCloneExpr(
                 break;
 
             case GT_MDARR_LENGTH:
-                copy = gtNewMDArrLen(tree->TypeGet(), tree->AsMDArrLen()->ArrRef(), tree->AsMDArrLen()->Dim(),
+                copy = gtNewMDArrLen(tree->AsMDArrLen()->ArrRef(), tree->AsMDArrLen()->Dim(),
                                      tree->AsMDArrLen()->Rank(), nullptr);
                 break;
 
             case GT_MDARR_LOWER_BOUND:
-                copy =
-                    gtNewMDArrLowerBound(tree->TypeGet(), tree->AsMDArrLowerBound()->ArrRef(),
-                                         tree->AsMDArrLowerBound()->Dim(), tree->AsMDArrLowerBound()->Rank(), nullptr);
+                copy = gtNewMDArrLowerBound(tree->AsMDArrLowerBound()->ArrRef(), tree->AsMDArrLowerBound()->Dim(),
+                                            tree->AsMDArrLowerBound()->Rank(), nullptr);
                 break;
 
             case GT_ARR_INDEX:
@@ -10689,6 +10688,19 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
                         printf(" unknown");
                         break;
                 }
+            }
+
+            if (tree->OperIs(GT_MDARR_LENGTH))
+            {
+                GenTreeMDArrLen* arrLen = tree->AsMDArrLen();
+                unsigned         dim    = arrLen->Dim();
+                printf(" (%u)", dim);
+            }
+            else if (tree->OperIs(GT_MDARR_LOWER_BOUND))
+            {
+                GenTreeMDArrLowerBound* arrOp = tree->AsMDArrLowerBound();
+                unsigned                dim   = arrOp->Dim();
+                printf(" (%u)", dim);
             }
         }
 

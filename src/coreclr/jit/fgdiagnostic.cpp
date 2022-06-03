@@ -406,17 +406,17 @@ void Compiler::fgDumpTree(FILE* fgxFile, GenTree* const tree)
     {
         GenTreeMDArrLen* arrLen = tree->AsMDArrLen();
         GenTree*         arr    = arrLen->ArrRef();
-        int              dim    = arrLen->Dim();
+        unsigned         dim    = arrLen->Dim();
         fgDumpTree(fgxFile, arr);
-        fprintf(fgxFile, ".GetLength(%d)", dim);
+        fprintf(fgxFile, ".GetLength(%u)", dim);
     }
     else if (tree->OperIs(GT_MDARR_LOWER_BOUND))
     {
         GenTreeMDArrLowerBound* arrOp = tree->AsMDArrLowerBound();
         GenTree*                arr   = arrOp->ArrRef();
-        int                     dim   = arrOp->Dim();
+        unsigned                dim   = arrOp->Dim();
         fgDumpTree(fgxFile, arr);
-        fprintf(fgxFile, ".GetLowerBound(%d)", dim);
+        fprintf(fgxFile, ".GetLowerBound(%u)", dim);
     }
     else
     {

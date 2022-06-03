@@ -8749,6 +8749,16 @@ void Compiler::fgValueNumberTree(GenTree* tree)
         {
             fgValueNumberIntrinsic(tree);
         }
+        else if (tree->OperIs(GT_MDARR_LENGTH, GT_MDARR_LOWER_BOUND))
+        {
+            tree->gtVNPair =
+                vnStore->VNPUniqueWithExc(tree->TypeGet(), vnStore->VNPExceptionSet(tree->gtGetOp1()->gtVNPair));
+            // need to distinguish different 'dim' values.
+            // Make VNFuncIsLegal() return false for these, then handle them specially by creating new
+            // VNF_MDArrLength/VNF_MDArrLowerBound VNs?
+            //*****
+            // assert(!"NYI");
+        }
         else // Look up the VNFunc for the node
         {
             VNFunc vnf = GetVNFuncForNode(tree);

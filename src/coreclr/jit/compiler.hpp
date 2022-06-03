@@ -1229,7 +1229,6 @@ inline GenTreeArrLen* Compiler::gtNewArrLen(var_types typ, GenTree* arrayOp, int
 // gtNewMDArrLen : Helper to create an MD array length node.
 //
 // Arguments:
-//    typ       - Type of the node
 //    arrayOp   - Array node
 //    dim       - MD array dimension of interest
 //    rank      - MD array rank
@@ -1238,9 +1237,9 @@ inline GenTreeArrLen* Compiler::gtNewArrLen(var_types typ, GenTree* arrayOp, int
 // Return Value:
 //    New GT_MDARR_LENGTH node
 //
-inline GenTreeMDArrLen* Compiler::gtNewMDArrLen(var_types typ, GenTree* arrayOp, int dim, int rank, BasicBlock* block)
+inline GenTreeMDArrLen* Compiler::gtNewMDArrLen(GenTree* arrayOp, unsigned dim, unsigned rank, BasicBlock* block)
 {
-    GenTreeMDArrLen* arrLen = new (this, GT_MDARR_LENGTH) GenTreeMDArrLen(typ, arrayOp, dim, rank);
+    GenTreeMDArrLen* arrLen = new (this, GT_MDARR_LENGTH) GenTreeMDArrLen(arrayOp, dim, rank);
     gtAnnotateNewArrLen(arrLen, block);
     return arrLen;
 }
@@ -1249,7 +1248,6 @@ inline GenTreeMDArrLen* Compiler::gtNewMDArrLen(var_types typ, GenTree* arrayOp,
 // gtNewMDArrLowerBound : Helper to create an MD array lower bound node.
 //
 // Arguments:
-//    typ       - Type of the node
 //    arrayOp   - Array node
 //    dim       - MD array dimension of interest
 //    rank      - MD array rank
@@ -1258,10 +1256,12 @@ inline GenTreeMDArrLen* Compiler::gtNewMDArrLen(var_types typ, GenTree* arrayOp,
 // Return Value:
 //    New GT_MDARR_LOWER_BOUND node
 //
-inline GenTreeMDArrLowerBound* Compiler::gtNewMDArrLowerBound(
-    var_types typ, GenTree* arrayOp, int dim, int rank, BasicBlock* block)
+inline GenTreeMDArrLowerBound* Compiler::gtNewMDArrLowerBound(GenTree*    arrayOp,
+                                                              unsigned    dim,
+                                                              unsigned    rank,
+                                                              BasicBlock* block)
 {
-    GenTreeMDArrLowerBound* arrOp = new (this, GT_MDARR_LOWER_BOUND) GenTreeMDArrLowerBound(typ, arrayOp, dim, rank);
+    GenTreeMDArrLowerBound* arrOp = new (this, GT_MDARR_LOWER_BOUND) GenTreeMDArrLowerBound(arrayOp, dim, rank);
 
     static_assert_no_msg(GTF_MDARRLOWERBOUND_NONFAULTING == GTF_IND_NONFAULTING);
     arrOp->SetIndirExceptionFlags(this);
@@ -4226,6 +4226,7 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_RELOAD:
         case GT_ARR_LENGTH:
         case GT_MDARR_LENGTH:
+        case GT_MDARR_LOWER_BOUND:
         case GT_CAST:
         case GT_BITCAST:
         case GT_CKFINITE:
