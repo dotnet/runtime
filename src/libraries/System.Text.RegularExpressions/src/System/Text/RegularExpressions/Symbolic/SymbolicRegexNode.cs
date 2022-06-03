@@ -2225,6 +2225,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>
         /// Count the number of Regex Singletons, if all loops with explicit counters
         /// were eliminated from the node, i.e., as if the repetitions were explicitly unfolded.
+        /// </summary>
         /// <remarks>
         /// Let node.CountSingletons() be abbreviated by #(node).
         /// Ex: #(a{6}) = 6*#(a) = 6
