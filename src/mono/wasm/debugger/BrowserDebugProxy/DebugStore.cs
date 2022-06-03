@@ -886,8 +886,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                 {
                     if (pdbMetadataReaderParm.GetRowNumber(encMapHandle) == number)
                         return i;
+                    i++;
                 }
-                i++;
             }
             return -1;
         }
