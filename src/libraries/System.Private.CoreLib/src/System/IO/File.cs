@@ -231,6 +231,7 @@ namespace System.IO
         /// <param name="fileHandle">The file handle.</param>
         /// <returns>The <see cref="T:System.IO.UnixFileMode" /> of the file handle.</returns>
         /// <exception cref="T:System.UnauthorizedAccessException">The caller does not have the required permission.</exception>
+        /// <exception cref="T:System.ObjectDisposedException">The file is closed.</exception>
         [UnsupportedOSPlatform("windows")]
         public static UnixFileMode GetUnixFileMode(SafeFileHandle fileHandle)
             => GetUnixFileModeCore(fileHandle);
@@ -258,6 +259,7 @@ namespace System.IO
         /// <param name="fileHandle">The file handle.</param>
         /// <param name="mode">The unix file mode.</param>
         /// <exception cref="T:System.ArgumentException">The file mode is invalid.</exception>
+        /// <exception cref="T:System.ObjectDisposedException">The file is closed.</exception>
         [UnsupportedOSPlatform("windows")]
         public static void SetUnixFileMode(SafeFileHandle fileHandle, UnixFileMode mode)
             => SetUnixFileModeCore(fileHandle, mode);
