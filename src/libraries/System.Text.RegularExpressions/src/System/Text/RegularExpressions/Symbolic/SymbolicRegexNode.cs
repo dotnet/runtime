@@ -2218,9 +2218,9 @@ namespace System.Text.RegularExpressions.Symbolic
         /// Let #(this) denote the number of singletons in this node.
         /// Then the NFA size estimation in terms of state count
         /// is #(this) if there are no anchors else 5x#(this).
-        /// If there are no singletons at all then size is 1, or 5 if anchors are present.
+        /// Add 1 for the initial state also.
         /// </summary>
-        internal int EstimateNfaSize() => Times(_info.ContainsSomeAnchor ? 5 : 1, int.Max(1, CountSingletons()));
+        internal int EstimateNfaSize() => Times(_info.ContainsSomeAnchor ? 5 : 1, Sum(1, CountSingletons()));
 
         /// <summary>
         /// Count the number of Regex Singletons, if all loops with explicit counters
@@ -2292,13 +2292,13 @@ namespace System.Text.RegularExpressions.Symbolic
                     // because they contain no children and therefore no singletons
                     return 0;
             }
+        }
 
-            // In case of overflow in m+n, return int.MaxValue
-            static int Sum(int m, int n)
-            {
-                Debug.Assert(m >= 0 && n >= 0);
-                return (int)Math.Min((long)m + n, int.MaxValue);
-            }
+        // In case of overflow in m+n, return int.MaxValue
+        private static int Sum(int m, int n)
+        {
+            Debug.Assert(m >= 0 && n >= 0);
+            return (int)Math.Min((long)m + n, int.MaxValue);
         }
 
         // In case of overflow in m*n return int.MaxValue

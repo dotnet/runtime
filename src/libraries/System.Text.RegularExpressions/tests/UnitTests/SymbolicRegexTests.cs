@@ -57,26 +57,28 @@ namespace System.Text.RegularExpressions.Tests
                 ("()", 1),
                 ("()*", 1),
                 // no counters
-                ("(a)", 1),
-                ("(a|b)", 1),                               // (a|b) becomes [ab]
-                ("(a*)", 1),
-                ("(a?)", 1),
-                ("(ab)", 2),
-                ("(a+)", 2),                                // #(a+) = #(aa*) = 2
-                ("(abc)", 3),
-                ("ab|c", 3),
+                ("(a)", 2),
+                ("(a|b)", 2),                               // (a|b) becomes [ab]
+                ("(a*)", 2),
+                ("(a?)", 2),
+                ("(ab)", 3),
+                ("(a+)", 3),                                // #(a+) = #(aa*) = 2 (1 is for the initial state)
+                ("(abc)", 4),
+                ("ab|c", 4),
                 // simple counters
-                ("((ab){10})", 20),
-                ("((ab){10,})", 22),
-                ("((ab){0,10})", 20),
+                ("((ab){10})", 21),
+                ("((ab){10,})", 23),
+                ("((ab){0,10})", 21),
                 // nested counters
-                ("(((ab){10}){10})", 200),
-                ("(((ab){10}){0,10})", 200),
-                ("(((ab){10}){10})|((cd){10})", 220),       // 200 + 20
-                ("(((ab){10,}c){10})|((cd){9,})", 250),     // (2x11+1)x10 + 20
-                ("(((ab){10,}c){10,})|((cd){0,10})", 273),  // (2x11+1)x11 + 20
+                ("(((ab){10}){10})", 201),
+                ("(((ab){10}){0,10})", 201),
+                ("(((ab){10}){10})|((cd){10})", 221),       // 200 + 20 + 1
+                ("(((ab){10,}c){10})|((cd){9,})", 251),     // (2x11+1)x10 + 20 + 1
+                ("(((ab){10,}c){10,})|((cd){0,10})", 274),  // (2x11+1)x11 + 20 + 1
                 // lower bound int.MaxValue is never unfolded and treated as infinity
-                ("(a{2147483647,})", 1),
+                ("(a{2147483647,})", 2),
+                // typical case that blows up the DFA size to 2^100 when .* is added at the beginnig (below)
+                ("a.{100}b", 103)
             };
 
             foreach ((string Pattern, int ExpectedSafeSize) in patternData)
@@ -86,7 +88,15 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { rootNode, ExpectedSafeSize };
             }
 
-            // use of anchors increases the estimate by 5x in general
+            // add .*? in front of the pattern, this adds 1 more NFA state
+            foreach ((string Pattern, int ExpectedSafeSize) in patternData)
+            {
+                RegexNode tree = RegexParser.Parse(".*?" + Pattern, options | RegexOptions.ExplicitCapture, CultureInfo.CurrentCulture).Root;
+                SymbolicRegexNode<BDD> rootNode = converter.ConvertToSymbolicRegexNode(tree);
+                yield return new object[] { rootNode, 1 + ExpectedSafeSize};
+            }
+
+            // use of anchors increases the estimate by 5x in general but in reality much less, at most 3x
             foreach ((string Pattern, int ExpectedSafeSize) in patternData)
             {
                 RegexNode tree = RegexParser.Parse(Pattern + "$", options | RegexOptions.ExplicitCapture, CultureInfo.CurrentCulture).Root;
@@ -105,10 +115,81 @@ namespace System.Text.RegularExpressions.Tests
 
         [Theory]
         [MemberData(nameof(SafeThresholdTests_MemberData))]
-        public void SafeThresholdTests(object node, int expectedSafeSize)
+        public void SafeThresholdTests(object obj, int expectedSafeSize)
         {
-            int safeSize = ((SymbolicRegexNode<BDD>)node).EstimateNfaSize();
+            SymbolicRegexNode<BDD> node = (SymbolicRegexNode<BDD>)obj;
+            int safeSize = node.EstimateNfaSize();
             Assert.Equal(expectedSafeSize, safeSize);
+            int nfaStateCount = CalculateNfaStateCount(node);
+            Assert.True(nfaStateCount <= expectedSafeSize);
+        }
+
+        /// <summary>
+        /// Compute the closure of all NFA states from root and return the size of the resulting state space.
+        /// </summary>
+        private static int CalculateNfaStateCount(SymbolicRegexNode<BDD> root)
+        {
+            // Here we are actually using the original BDD algebra (not converting to the BV or Uint64 algebra)
+            // because it does not matter which algebra we use here (this matters only for performance)
+            HashSet<(uint, SymbolicRegexNode<BDD>)> states = new();
+            Stack<(uint, SymbolicRegexNode<BDD>)> frontier = new();
+            List<BDD> minterms = root._builder._solver.GenerateMinterms(root.GetSets());
+
+            // Start from the initial state that has kind 'General' when no anchors are being used, else kind 'BeginningEnd'
+            (uint, SymbolicRegexNode<BDD>) initialState = (root._info.ContainsSomeAnchor ? CharKind.BeginningEnd : CharKind.General, root);
+
+            // Compute the closure of all NFA states from the given initial state
+            states.Add(initialState);
+            frontier.Push(initialState);
+            while (frontier.Count > 0)
+            {
+                (uint Kind, SymbolicRegexNode<BDD> Node) source = frontier.Pop();
+
+                // Iterate over all minterms to cover all possible inputs
+                foreach (BDD minterm in minterms)
+                {
+                    uint kind = GetCharKind(minterm);
+                    SymbolicRegexNode<BDD> target = source.Node.CreateDerivativeWithoutEffects(minterm, source.Kind);
+
+                    //In the case of an NFA all the different alternatives in the DFA state become individual states themselves
+                    foreach (SymbolicRegexNode<BDD> node in GetAlternatives(target))
+                    {
+                        (uint, SymbolicRegexNode<BDD>) state = (kind, node);
+                        // Add the state to the set of states
+                        if (states.Add(state))
+                        {
+                            // If state is new then it still needs to be explored
+                            frontier.Push(state);
+                        }
+                    }
+                }
+            }
+
+            return states.Count;
+
+            // Enumerates the alternatives from a node, for eaxmple (ab|(bc|cd)) has three alternatives
+            static IEnumerable<SymbolicRegexNode<BDD>> GetAlternatives(SymbolicRegexNode<BDD> node)
+            {
+                if (node._kind == SymbolicRegexNodeKind.Alternate)
+                {
+                    foreach (SymbolicRegexNode<BDD> elem in GetAlternatives(node._left!))
+                        yield return elem;
+                    foreach (SymbolicRegexNode<BDD> elem in GetAlternatives(node._right!))
+                        yield return elem;
+                }
+                else if (!node.IsNothing) // omit deadend states
+                {
+                    yield return node;
+                }
+            }
+
+            // Simplified character kind calculation that omits the special case that minterm can be the very last \n
+            // This omission has practically no effect of the size of the state space, but would complicate the logic
+            uint GetCharKind(BDD minterm) =>
+                minterm.Equals(root._builder._newLineSet) ? CharKind.Newline :  // is \n
+                (!root._builder._solver.IsEmpty(root._builder._solver.And(root._builder._wordLetterForBoundariesSet, minterm)) ?
+                CharKind.WordLetter : // in \w
+                CharKind.General);    // anything else, thus in particular in \W
         }
 
         public static IEnumerable<object[]> UnsafeThresholdTests_MemberData()
