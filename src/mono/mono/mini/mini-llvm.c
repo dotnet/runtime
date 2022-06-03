@@ -9573,6 +9573,7 @@ MONO_RESTORE_WARNING
 			break;
 		}
 #endif
+
 #if defined(TARGET_ARM64) || defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_WASM)
 		case OP_XEQUAL: {
 			LLVMTypeRef t;
