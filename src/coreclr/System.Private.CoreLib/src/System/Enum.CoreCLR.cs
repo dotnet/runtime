@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -16,15 +15,28 @@ namespace System
         private static unsafe object InternalBoxEnum(RuntimeType enumType, long value)
         {
             MethodTable* pMethodTable = (MethodTable*)enumType.m_handle;
+            object obj = RuntimeHelpers.AllocateUninitializedObject(pMethodTable);
+            ref byte dataRef = ref obj.GetRawData();
 
-            uint numInstanceFieldBytes = pMethodTable->GetNumInstanceFieldBytes();
-            byte* rawValue = ArgSlot.EndianessFixup(&value, numInstanceFieldBytes);
-
-            object result = RuntimeHelpers.Box(pMethodTable, ref *rawValue)!;
+            switch (pMethodTable->GetNumInstanceFieldBytes())
+            {
+                case 1:
+                    dataRef = (byte)value;
+                    break;
+                case 2:
+                    Unsafe.As<byte, ushort>(ref dataRef) = (ushort)value;
+                    break;
+                case 4:
+                    Unsafe.As<byte, uint>(ref dataRef) = (uint)value;
+                    break;
+                default:
+                    Unsafe.As<byte, ulong>(ref dataRef) = (ulong)value;
+                    break;
+            }
 
             GC.KeepAlive(enumType);
 
-            return result;
+            return obj;
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]

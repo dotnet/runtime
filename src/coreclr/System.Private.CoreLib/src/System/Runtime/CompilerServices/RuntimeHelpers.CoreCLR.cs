@@ -275,6 +275,14 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe object? Box(MethodTable* methodTable, ref byte data);
 
+        /// <summary>
+        /// Allocates a new uninitialized object using an input <see cref="MethodTable"/> to determine its type.
+        /// </summary>
+        /// <param name="methodTable">The <see cref="MethodTable"/> pointer to use to create the instance.</param>
+        /// <returns>An instance of the type specified by <paramref name="methodTable"/>.</returns>
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern unsafe object AllocateUninitializedObject(MethodTable* methodTable);
+
         // Given an object reference, returns its MethodTable*.
         //
         // WARNING: The caller has to ensure that MethodTable* does not get unloaded. The most robust way
@@ -665,34 +673,5 @@ namespace System.Runtime.CompilerServices
     {
         public PortableTailCallFrame* Frame;
         public IntPtr ArgBuffer;
-    }
-
-    // See src/vm/argslot.h
-    internal static class ArgSlot
-    {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe byte* EndianessFixup(long* pArg, uint cbSize)
-        {
-#if BIGENDIAN
-            byte* pBuf = (byte*)pArg;
-
-            switch (cbSize)
-            {
-                case 1:
-                    pBuf += 7;
-                    break;
-                case 2:
-                    pBuf += 6;
-                    break;
-                case 4:
-                    pBuf += 4;
-                    break;
-            }
-
-            return pBuf;
-#else
-            return (byte*)pArg;
-#endif
-        }
     }
 }
