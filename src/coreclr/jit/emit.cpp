@@ -3821,8 +3821,8 @@ void emitter::emitDispIG(insGroup* ig, insGroup* igPrev, bool verbose)
                 {
                     instrDesc* id = (instrDesc*)ins;
 
-#if defined(TARGET_XARCH)
-                    if ((id->idIns() != INS_jmp) && emitInstHasNoCode(id))
+#ifdef TARGET_XARCH
+                    if ((id->idIns() == INS_jmp) && emitInstHasNoCode(id))
                     {
                         // an instruction with no code prevents us being able to iterate to the
                         // next instructions so we must be certain that when we find one it is

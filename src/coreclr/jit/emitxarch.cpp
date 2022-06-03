@@ -2064,7 +2064,7 @@ const emitJumpKind emitReverseJumpKinds[] = {
  * but the target register need not be byte-addressable
  */
 
-inline bool emitter::emitInstHasNoCode(instrDesc* id)
+bool emitter::emitInstHasNoCode(instrDesc* id)
 {
     if (id->idIns() == INS_align)
     {
