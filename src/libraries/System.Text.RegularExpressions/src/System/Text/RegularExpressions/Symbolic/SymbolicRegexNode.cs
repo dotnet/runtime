@@ -2253,22 +2253,16 @@ namespace System.Text.RegularExpressions.Symbolic
                 case SymbolicRegexNodeKind.Loop:
                     Debug.Assert(_left is not null && _right is null);
                     Debug.Assert(_lower >= 0 && _upper > 0 && _upper >= _lower);
-                    if (IsStar)
-                    {
-                        // #(this) = #(_left)
-                        return _left.CountSingletons();
-                    }
-
                     if (_upper == int.MaxValue)
                     {
-                        // the upper bound is not being used, so the lower must be non-zero
-                        Debug.Assert(_lower > 0);
-
-                        if (_lower == int.MaxValue)
+                        if (_lower == 0 || _lower == int.MaxValue)
                         {
-                            //infinite loop has the same size as a *-loop
+                            // infinite loop has the same size as a *-loop
                             return _left.CountSingletons();
                         }
+
+                        // the upper bound is not being used, so the lower must be non-zero
+                        Debug.Assert(_lower > 0);
 
                         // The case is R{m,} with R = _left and m = _lower.
                         // #(this) = (m+1) x #(R)
