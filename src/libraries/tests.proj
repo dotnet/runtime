@@ -404,6 +404,13 @@
                        Condition="'$(TargetOS)' == 'windows'" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TestNativeAot)' == 'true' and '$(TestNativeAotAdditionalLibs)' == 'true'">
+    <!-- Run library tests that target console applications that were not run in the main PR run for NativeAOT -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj" />
+    <ProjectExclusions Remove="$(MSBuildThisFileDirectory)System.Globalization.Calendars\tests\System.Globalization.Calendars.Tests.csproj" />
+    <ProjectExclusions Remove="$(MSBuildThisFileDirectory)System.IO.IsolatedStorage\tests\System.IO.IsolatedStorage.Tests.csproj" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectExclusions Condition="'$(RunHighAOTResourceRequiringTestsOnly)' != 'true'"
                        Include="@(HighAOTResourceRequiringProject)" />
