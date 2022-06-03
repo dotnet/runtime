@@ -90,7 +90,7 @@ namespace Microsoft.Extensions.Logging.Console
                 var messagesDropped = Interlocked.Exchange(ref _messagesDropped, 0);
                 if (messagesDropped != 0)
                 {
-                    System.Console.Error.WriteLine($"{messagesDropped} message(s) dropped because of queue size limit. Increase the queue size or decrease logging verbosity to avoid this.{Environment.NewLine}");
+                    ErrorConsole.Write($"{messagesDropped} message(s) dropped because of queue size limit. Increase the queue size or decrease logging verbosity to avoid this.{Environment.NewLine}");
                 }
 
                 IConsole console = entry.LogAsError ? ErrorConsole : Console;

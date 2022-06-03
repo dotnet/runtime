@@ -5,7 +5,6 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.Extensions.Logging.Test.Console;
 using Xunit;
 #pragma warning disable CS0618
@@ -65,53 +64,43 @@ namespace Microsoft.Extensions.Logging.Console.Test
         }
 
         [OuterLoop]
-        [ConditionalTheory(nameof(IsThreadingAndRemoteExecutorSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(true)]
         [InlineData(false)]
-        public void CheckForNotificationWhenQueueIsFull(bool dropWrite)
+        public void CheckForNotificationWhenQueueIsFull(bool okToDrop)
         {
-            RemoteExecutor.Invoke((okToDropMessages) =>
+            // Arrange
+            var sink = new ConsoleSink();
+            var console = new TestConsole(sink);
+            var errorConsole = new TimesWriteCalledConsole();
+            string queueName = nameof(CheckForNotificationWhenQueueIsFull) + (okToDrop ? "InDropWriteMode" : "InWaitMode");
+            var processor = new ConsoleLoggerProcessor(queueName, console, errorConsole, ConsoleLoggerBufferFullMode.Wait, 1024);
+            var formatter = new SimpleConsoleFormatter(new TestFormatterOptionsMonitor<SimpleConsoleFormatterOptions>(
+                new SimpleConsoleFormatterOptions()));
+
+            var logger = new ConsoleLogger(_loggerName, processor, formatter, null, new ConsoleLoggerOptions());
+            Assert.Null(logger.Options.FormatterName);
+            UpdateFormatterOptions(logger.Formatter, logger.Options);
+            string messageTemplate = string.Join(", ", Enumerable.Range(1, 100).Select(x => "{A" + x + "}"));
+            object[] messageParams = Enumerable.Range(1, 100).Select(x => (object)x).ToArray();
+
+            // Act
+            processor.MaxQueueLength = 1;
+            processor.FullMode = okToDrop ? ConsoleLoggerBufferFullMode.DropWrite : ConsoleLoggerBufferFullMode.Wait;
+            for (int i = 0; i < 20000; i++)
             {
-                using (var stringWriter = new StringWriter())
-                {
-                    System.Console.SetError(stringWriter);
-                    bool okToDrop = bool.Parse(okToDropMessages);
-                    using (var listener = new ConsoleTraceListener(useErrorStream: true))
-                    {
-                        // Arrange
-                        var sink = new ConsoleSink();
-                        var console = new TestConsole(sink);
-                        string queueName = nameof(CheckForNotificationWhenQueueIsFull) + (okToDrop ? "InDropWriteMode" : "InWaitMode");
-                        var processor = new ConsoleLoggerProcessor(queueName, console, null!, ConsoleLoggerBufferFullMode.Wait, 1024);
-                        var formatter = new SimpleConsoleFormatter(new TestFormatterOptionsMonitor<SimpleConsoleFormatterOptions>(
-                            new SimpleConsoleFormatterOptions()));
+                logger.LogInformation(messageTemplate, messageParams);
+            }
 
-                        var logger = new ConsoleLogger(_loggerName, processor, formatter, null, new ConsoleLoggerOptions());
-                        Assert.Null(logger.Options.FormatterName);
-                        UpdateFormatterOptions(logger.Formatter, logger.Options);
-                        string messageTemplate = string.Join(", ", Enumerable.Range(1, 100).Select(x => "{A" + x + "}"));
-                        object[] messageParams = Enumerable.Range(1, 100).Select(x => (object)x).ToArray();
-
-                        // Act
-                        processor.MaxQueueLength = 1;
-                        processor.FullMode = okToDrop ? ConsoleLoggerBufferFullMode.DropWrite : ConsoleLoggerBufferFullMode.Wait;
-                        for (int i = 0; i < 20000; i++)
-                        {
-                            logger.LogInformation(messageTemplate, messageParams);
-                        }
-
-                        // Assert
-                        if (okToDrop)
-                        {
-                            Assert.Contains("dropped because of queue size limit", stringWriter.ToString());
-                        }
-                        else
-                        {
-                            Assert.DoesNotContain("dropped because of queue size limit", stringWriter.ToString());                        
-                        }
-                    }
-                }
-            }, dropWrite.ToString()).Dispose();
+            // Assert
+            if (okToDrop)
+            {
+                Assert.True(errorConsole.TimesWriteCalled > 0);
+            }
+            else
+            {
+                Assert.Equal(0, errorConsole.TimesWriteCalled);
+            }
         }
 
         private class TimesWriteCalledConsole : IConsole
@@ -132,7 +121,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
         }
 
         [OuterLoop]
-        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void ThrowDuringProcessLog_ShutsDownGracefully()
         {
             var console = new TimesWriteCalledConsole();
@@ -183,9 +172,6 @@ namespace Microsoft.Extensions.Logging.Console.Test
                 systemdFormatter.FormatterOptions.UseUtcTimestamp = deprecatedFromOptions.UseUtcTimestamp;
             }
         }
-
-        public static bool IsThreadingAndRemoteExecutorSupported =>
-            PlatformDetection.IsThreadingSupported && RemoteExecutor.IsSupported;
     }
 }
 #pragma warning restore CS0618
