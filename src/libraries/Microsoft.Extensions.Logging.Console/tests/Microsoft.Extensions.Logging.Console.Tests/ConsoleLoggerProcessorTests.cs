@@ -14,7 +14,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
 {
     public class ConsoleLoggerProcessorTests
     {
-        internal const int DefaultMaxQueueLengthValue = 1048576;
+        internal const int DefaultMaxQueueLengthValue = ConsoleLoggerOptions.DefaultMaxQueueLengthValue;
         private const string _loggerName = "test";
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
@@ -39,13 +39,15 @@ namespace Microsoft.Extensions.Logging.Console.Test
             Assert.Equal(2, sink.Writes.Count);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public static void SetNegativeMaxQueueLength_IgnoresWhenNotPositive()
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [InlineData(-1)]
+        [InlineData(0)]
+        public static void MaxQueueLength_SetInvalid_Throws(int invalidMaxQueueLength)
         {
             // Arrange
             var sink = new ConsoleSink();
             var console = new TestConsole(sink);
-            var processor = new ConsoleLoggerProcessor(nameof(SetNegativeMaxQueueLength_IgnoresWhenNotPositive), console, null!, ConsoleLoggerBufferFullMode.Wait, 1024);
+            var processor = new ConsoleLoggerProcessor(nameof(MaxQueueLength_SetInvalid_Throws), console, null!, ConsoleLoggerBufferFullMode.Wait, 1024);
             var formatter = new SimpleConsoleFormatter(new TestFormatterOptionsMonitor<SimpleConsoleFormatterOptions>(
                 new SimpleConsoleFormatterOptions()));
 
@@ -54,9 +56,28 @@ namespace Microsoft.Extensions.Logging.Console.Test
             UpdateFormatterOptions(logger.Formatter, logger.Options);
 
             // Act & Assert
-            Assert.Throws<ArgumentException>(() => processor.MaxQueueLength = -1);
+            Assert.Throws<ArgumentOutOfRangeException>(() => processor.MaxQueueLength = invalidMaxQueueLength);
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public static void FullMode_SetInvalid_Throws()
+        {
+            // Arrange
+            var sink = new ConsoleSink();
+            var console = new TestConsole(sink);
+            var processor = new ConsoleLoggerProcessor(nameof(FullMode_SetInvalid_Throws), console, null!, ConsoleLoggerBufferFullMode.Wait, 1024);
+            var formatter = new SimpleConsoleFormatter(new TestFormatterOptionsMonitor<SimpleConsoleFormatterOptions>(
+                new SimpleConsoleFormatterOptions()));
+
+            var logger = new ConsoleLogger(_loggerName, processor, formatter, null, new ConsoleLoggerOptions());
+            Assert.Null(logger.Options.FormatterName);
+            UpdateFormatterOptions(logger.Formatter, logger.Options);
+
+            // Act & Assert
+            Assert.Throws<ArgumentOutOfRangeException>(() => processor.FullMode = (ConsoleLoggerBufferFullMode)10);
+        }
+
+        [OuterLoop]
         [ConditionalTheory(nameof(IsThreadingAndRemoteExecutorSupported))]
         [InlineData(true)]
         [InlineData(false)]
@@ -87,7 +108,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
                         // Act
                         processor.MaxQueueLength = 1;
                         processor.FullMode = okToDrop ? ConsoleLoggerBufferFullMode.DropWrite : ConsoleLoggerBufferFullMode.Wait;
-                        for (int i = 0; i < 2000; i++)
+                        for (int i = 0; i < 20000; i++)
                         {
                             logger.LogInformation(messageTemplate, messageParams);
                         }

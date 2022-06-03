@@ -360,7 +360,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(-1)]
         [InlineData(0)]
-        public void AddConsole_MaxQueueLengthSetToNegativeOrZero_IgnoresValue(int invalidMaxQueueLength)
+        public void AddConsole_MaxQueueLengthSetToNegativeOrZero_Throws(int invalidMaxQueueLength)
         {
             var configs = new[] {
                 new KeyValuePair<string, string>("Console:MaxQueueLength", invalidMaxQueueLength.ToString()),

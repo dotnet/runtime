@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Metrics;
 using System.Runtime.Versioning;
@@ -13,11 +14,11 @@ namespace Microsoft.Extensions.Logging.Console
     [UnsupportedOSPlatform("browser")]
     internal class ConsoleLoggerProcessor : IDisposable
     {
-        private static Meter _meter = new Meter("Microsoft-Extension-Logging-Console-Queue", "1.0.0");
+        private static readonly Meter s_meter = new Meter("Microsoft-Extension-Logging-Console-Queue", "1.0.0");
         private readonly Queue<LogMessageEntry> _messageQueue;
         private int _messagesDropped;
         private bool _isAddingCompleted;
-        private int _maxQueuedMessages = 1048576;
+        private int _maxQueuedMessages = ConsoleLoggerOptions.DefaultMaxQueueLengthValue;
         public int MaxQueueLength
         {
             get => _maxQueuedMessages;
@@ -25,7 +26,7 @@ namespace Microsoft.Extensions.Logging.Console
             {
                 if (value <= 0)
                 {
-                    throw new ArgumentException(nameof(MaxQueueLength));
+                    throw new ArgumentOutOfRangeException(nameof(value), value, $"{nameof(value)} must be larger than zero.");
                 }
 
                 lock (_messageQueue)
@@ -35,7 +36,19 @@ namespace Microsoft.Extensions.Logging.Console
                 }
             }
         }
-        public ConsoleLoggerBufferFullMode FullMode { get; set; }
+        private ConsoleLoggerBufferFullMode _fullMode = ConsoleLoggerBufferFullMode.Wait;
+        public ConsoleLoggerBufferFullMode FullMode
+        {
+            get => _fullMode;
+            set
+            {
+                if (value != ConsoleLoggerBufferFullMode.Wait && value != ConsoleLoggerBufferFullMode.DropWrite)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value), value, $"{nameof(value)} is not a supported buffer mode value.");
+                }
+                _fullMode = value;
+            }
+        }
         private readonly string _queueName;
         private readonly Thread _outputThread;
 
@@ -57,7 +70,7 @@ namespace Microsoft.Extensions.Logging.Console
                 Name = "Console logger queue processing thread"
             };
             _outputThread.Start();
-            _meter.CreateObservableGauge<long>("queue-size", GetQueueSize);
+            s_meter.CreateObservableGauge<long>("queue-size", GetQueueSize);
         }
 
         public virtual void EnqueueMessage(LogMessageEntry message)
@@ -112,6 +125,7 @@ namespace Microsoft.Extensions.Logging.Console
                         return true;
                     }
 
+                    Debug.Assert(FullMode == ConsoleLoggerBufferFullMode.Wait);
                     Monitor.Wait(_messageQueue);
                 }
 

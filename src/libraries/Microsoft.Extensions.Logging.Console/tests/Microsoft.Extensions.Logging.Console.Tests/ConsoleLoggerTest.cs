@@ -1173,6 +1173,20 @@ namespace Microsoft.Extensions.Logging.Console.Test
             Assert.Throws<ArgumentOutOfRangeException>(() => new ConsoleLoggerOptions() { Format = (ConsoleLoggerFormat)10 });
         }
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [InlineData(-1)]
+        [InlineData(0)]
+        public void ConsoleLoggerOptions_SetInvalidMaxQueueLength_Throws(int invalidMaxQueueLength)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => new ConsoleLoggerOptions() { MaxQueueLength = invalidMaxQueueLength });
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public void ConsoleLoggerOptions_SetInvalidBufferMode_Throws()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => new ConsoleLoggerOptions() { BufferFullMode = (ConsoleLoggerBufferFullMode)10 });
+        }
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void ConsoleLoggerOptions_DisableColors_IsReadFromLoggingConfiguration()
         {

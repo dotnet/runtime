@@ -64,15 +64,28 @@ namespace Microsoft.Extensions.Logging.Console
         [System.ObsoleteAttribute("ConsoleLoggerOptions.UseUtcTimestamp has been deprecated. Use ConsoleFormatterOptions.UseUtcTimestamp instead.")]
         public bool UseUtcTimestamp { get; set; }
 
+        private ConsoleLoggerBufferFullMode _bufferFullMode = ConsoleLoggerBufferFullMode.Wait;
         /// <summary>
         /// Gets or sets the desired console logger behavior when buffer becomes full. Defaults to <c>Wait</c>.
         /// </summary>
-        public ConsoleLoggerBufferFullMode BufferFullMode { get; set; }
+        public ConsoleLoggerBufferFullMode BufferFullMode
+        {
+            get => _bufferFullMode;
+            set
+            {
+                if (value != ConsoleLoggerBufferFullMode.Wait && value != ConsoleLoggerBufferFullMode.DropWrite)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value), value, $"{nameof(value)} is not a supported buffer mode value.");
+                }
+                _bufferFullMode = value;
+            }
+        }
 
-        private int _maxQueuedMessages = 1048576;
+        internal const int DefaultMaxQueueLengthValue = 1024 * 1024;
+        private int _maxQueuedMessages = DefaultMaxQueueLengthValue;
 
         /// <summary>
-        /// Gets or sets the maximum number of enqueued messages. Defaults to 1048576.
+        /// Gets or sets the maximum number of enqueued messages. Defaults to 1024 * 1024.
         /// </summary>
         public int MaxQueueLength
         {
@@ -81,7 +94,7 @@ namespace Microsoft.Extensions.Logging.Console
             {
                 if (value <= 0)
                 {
-                    throw new ArgumentException(nameof(MaxQueueLength));
+                    throw new ArgumentOutOfRangeException(nameof(value), value, $"{nameof(value)} must be larger than zero.");
                 }
 
                 _maxQueuedMessages = value;
