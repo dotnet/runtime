@@ -11,6 +11,7 @@ parameters:
   dependOnEvaluatePaths: false
   jobParameters: {}
   debian_10_arm64_img: (Debian.10.Arm64.Open)Ubuntu.1804.Armarch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-10-helix-arm64v8-20210304164340-56c6673
+  alpine_arm64_img: (Alpine.314.Arm64.Open)Ubuntu.1804.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.14-helix-arm64v8-20210910135810-8a6f4f3
 
 jobs:
 - template: ${{ parameters.jobTemplate }}
@@ -80,7 +81,7 @@ jobs:
     # Linux musl arm64
     - ${{ if eq(parameters.platform, 'Linux_musl_arm64') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        - (Alpine.314.Arm64.Open)Ubuntu.1804.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.14-helix-arm64v8-20210910135810-8a6f4f3
+        - ${{ parameters.alpine_arm64_img }}
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
         - (Alpine.314.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.14-helix-arm64v8-20210910135810-8a6f4f3
 
