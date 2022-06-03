@@ -2225,6 +2225,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>
         /// Count the number of Regex Singletons, if all loops with explicit counters
         /// were eliminated from the node, i.e., as if the repetitions were explicitly unfolded.
+        /// </summary>
         /// <remarks>
         /// Let node.CountSingletons() be abbreviated by #(node).
         /// Ex: #(a{6}) = 6*#(a) = 6
@@ -2232,7 +2233,6 @@ namespace System.Text.RegularExpressions.Symbolic
         /// Ex: #(a{3,6}) = 6
         /// Ex: #(a{6,}) = #(a{6}a*)= 7
         /// </remarks>
-        /// </summary>
         internal int CountSingletons()
         {
             // Guard against stack overflow due to deep recursion
@@ -2255,22 +2255,16 @@ namespace System.Text.RegularExpressions.Symbolic
                 case SymbolicRegexNodeKind.Loop:
                     Debug.Assert(_left is not null && _right is null);
                     Debug.Assert(_lower >= 0 && _upper > 0 && _upper >= _lower);
-                    if (IsStar)
-                    {
-                        // #(this) = #(_left)
-                        return _left.CountSingletons();
-                    }
-
                     if (_upper == int.MaxValue)
                     {
-                        // the upper bound is not being used, so the lower must be non-zero
-                        Debug.Assert(_lower > 0);
-
-                        if (_lower == int.MaxValue)
+                        if (_lower == 0 || _lower == int.MaxValue)
                         {
-                            //infinite loop has the same size as a *-loop
+                            // infinite loop has the same size as a *-loop
                             return _left.CountSingletons();
                         }
+
+                        // the upper bound is not being used, so the lower must be non-zero
+                        Debug.Assert(_lower > 0);
 
                         // The case is R{m,} with R = _left and m = _lower.
                         // #(this) = (m+1) x #(R)
