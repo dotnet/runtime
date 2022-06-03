@@ -4632,7 +4632,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
             case GT_CNS_VEC:
             {
-                level  = 0;
+                level = 0;
 
                 if (tree->AsVecCon()->IsAllBitsSet() || tree->AsVecCon()->IsZero())
                 {
