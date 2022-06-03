@@ -14,6 +14,16 @@ using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler
 {
+    public class ReadyToRunCompilationModuleGroupConfig
+    {
+        public CompilerTypeSystemContext Context;
+        public bool IsCompositeBuildMode;
+        public bool IsInputBubble;
+        public IEnumerable<EcmaModule> CompilationModuleSet;
+        public IEnumerable<ModuleDesc> VersionBubbleModuleSet;
+        public bool CompileGenericDependenciesFromVersionBubbleModuleSet;
+    }
+
     public abstract class ReadyToRunCompilationModuleGroupBase : CompilationModuleGroup
     {
         protected readonly HashSet<EcmaModule> _compilationModuleSet;
@@ -30,26 +40,20 @@ namespace ILCompiler
         private CompilationUnitIndex _nextCompilationUnit = CompilationUnitIndex.FirstDynamicallyAssigned;
         private ModuleTokenResolver _tokenResolver = null;
 
-        public ReadyToRunCompilationModuleGroupBase(
-            CompilerTypeSystemContext context,
-            bool isCompositeBuildMode,
-            bool isInputBubble,
-            IEnumerable<EcmaModule> compilationModuleSet,
-            IEnumerable<ModuleDesc> versionBubbleModuleSet,
-            bool compileGenericDependenciesFromVersionBubbleModuleSet)
+        public ReadyToRunCompilationModuleGroupBase(ReadyToRunCompilationModuleGroupConfig config)
         {
-            _compilationModuleSet = new HashSet<EcmaModule>(compilationModuleSet);
-            _isCompositeBuildMode = isCompositeBuildMode;
-            _isInputBubble = isInputBubble;
+            _compilationModuleSet = new HashSet<EcmaModule>(config.CompilationModuleSet);
+            _isCompositeBuildMode = config.IsCompositeBuildMode;
+            _isInputBubble = config.IsInputBubble;
 
             Debug.Assert(_isCompositeBuildMode || _compilationModuleSet.Count == 1);
 
-            _versionBubbleModuleSet = new HashSet<ModuleDesc>(versionBubbleModuleSet);
+            _versionBubbleModuleSet = new HashSet<ModuleDesc>(config.VersionBubbleModuleSet);
             _versionBubbleModuleSet.UnionWith(_compilationModuleSet);
 
-            _compileGenericDependenciesFromVersionBubbleModuleSet = compileGenericDependenciesFromVersionBubbleModuleSet;
+            _compileGenericDependenciesFromVersionBubbleModuleSet = config.CompileGenericDependenciesFromVersionBubbleModuleSet;
 
-            _tokenResolver = new ModuleTokenResolver(this, context);
+            _tokenResolver = new ModuleTokenResolver(this, config.Context);
         }
 
         public ModuleTokenResolver Resolver => _tokenResolver;
