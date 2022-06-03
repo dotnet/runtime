@@ -6910,9 +6910,9 @@ VOID ETW::MethodLog::SendMethodILToNativeMapEvent(MethodDesc * pMethodDesc, DWOR
     //
     // (for an explanation of the parameters see the FireEtwMethodILToNativeMap call above)
     if ((dwEventOptions & ETW::EnumerationLog::EnumerationStructs::MethodDCStartILToNativeMap) != 0)
-        FireEtwMethodDCStartILToNativeMap(ullMethodIdentifier, 0, 0, cMap, rguiILOffset, rguiNativeOffset, GetClrInstanceId());
+        FireEtwMethodDCStartILToNativeMap(ullMethodIdentifier, ilCodeId, 0, cMap, rguiILOffset, rguiNativeOffset, GetClrInstanceId());
     if ((dwEventOptions & ETW::EnumerationLog::EnumerationStructs::MethodDCEndILToNativeMap) != 0)
-        FireEtwMethodDCEndILToNativeMap(ullMethodIdentifier, 0, 0, cMap, rguiILOffset, rguiNativeOffset, GetClrInstanceId());
+        FireEtwMethodDCEndILToNativeMap(ullMethodIdentifier, ilCodeId, 0, cMap, rguiILOffset, rguiNativeOffset, GetClrInstanceId());
 }
 
 
