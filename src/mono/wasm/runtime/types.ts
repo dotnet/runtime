@@ -314,6 +314,7 @@ export type EventPipeSessionID = bigint;
 export interface EventPipeSession {
     // session ID for debugging logging only
     get sessionID(): EventPipeSessionID;
+    get isIPCStreamingSession(): boolean;
     start(): void;
     stop(): void;
     getTraceBlob(): Blob;

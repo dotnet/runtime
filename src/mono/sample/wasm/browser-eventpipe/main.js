@@ -56,19 +56,32 @@ async function doWork(startWork, stopWork, getIterationsDone) {
 
 function getOnClickHandler(startWork, stopWork, getIterationsDone) {
     return async function () {
-        const options = MONO.diagnostics.SessionOptionsBuilder
-            .Empty
-            .setRundownEnabled(false)
-            .addProvider({ name: 'WasmHello', level: MONO.diagnostics.EventLevel.Verbose, args: 'EventCounterIntervalSec=1' })
-            .build();
-        console.log('starting providers', options.providers);
+        // const options = MONO.diagnostics.SessionOptionsBuilder
+        //     .Empty
+        //     .setRundownEnabled(false)
+        //     .addProvider({ name: 'WasmHello', level: MONO.diagnostics.EventLevel.Verbose, args: 'EventCounterIntervalSec=1' })
+        //     .build();
+        // console.log('starting providers', options.providers);
 
-        const eventSession = MONO.diagnostics.createEventPipeSession(options);
+	let sessions = MONO.diagnostics.getStartupSessions();
 
-        eventSession.start();
+	if (typeof(sessions) !== "object" || sessions.length === "undefined" || sessions.length == 0)
+	    console.error ("expected an array of sessions, got ", sessions);
+	if (sessions.length != 1)
+	    console.error ("expected one startup session, got ", sessions);
+	let eventSession = sessions[0];
+
+	console.debug ("eventSession state is ", eventSession._state); // ooh protected member access
+
+        // const eventSession = MONO.diagnostics.createEventPipeSession(options);
+
+        // eventSession.start();
         const ret = await doWork(startWork, stopWork, getIterationsDone);
-        eventSession.stop();
 
+
+	eventSession.stop();
+
+	
         const filename = "dotnet-wasm-" + makeTimestamp() + ".nettrace";
 
         const blob = eventSession.getTraceBlob();

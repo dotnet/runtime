@@ -253,6 +253,7 @@ declare type DotnetModuleConfigImports = {
 declare type EventPipeSessionID = bigint;
 interface EventPipeSession {
     get sessionID(): EventPipeSessionID;
+    get isIPCStreamingSession(): boolean;
     start(): void;
     stop(): void;
     getTraceBlob(): Blob;
@@ -292,6 +293,7 @@ interface Diagnostics {
     EventLevel: EventLevel;
     SessionOptionsBuilder: typeof SessionOptionsBuilder;
     createEventPipeSession(options?: EventPipeSessionOptions): EventPipeSession | null;
+    getStartupSessions(): (EventPipeSession | null)[];
 }
 
 declare function mono_wasm_runtime_ready(): void;

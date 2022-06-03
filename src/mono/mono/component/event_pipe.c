@@ -98,8 +98,10 @@ event_pipe_wait_for_session_signal (
 	EventPipeSessionID session_id,
 	uint32_t timeout);
 
+#ifdef HOST_WASM
 static void
-event_pipe_create_and_start_startup_sessions (void);
+invoke_wasm_early_startup_callback (void);
+#endif
 
 static MonoComponentEventPipe fn_table = {
 	{ MONO_COMPONENT_ITF_VERSION, &event_pipe_available },
@@ -231,8 +233,10 @@ event_pipe_add_rundown_execution_checkpoint_2 (
 	const ep_char8_t *name,
 	ep_timestamp_t timestamp)
 {
+#ifdef HOST_WASM
 	// If WASM installed any startup session provider configs, start those sessions and record the session IDs
-	event_pipe_create_and_start_startup_sessions();
+	invoke_wasm_early_startup_callback ();
+#endif
 	return ep_add_rundown_execution_checkpoint (name, timestamp);
 }
 
@@ -408,63 +412,19 @@ mono_wasm_event_pipe_session_disable (MonoWasmEventPipeSessionID session_id)
 	return TRUE;
 }
 
-static uint32_t startup_session_provider_configs_count;
-static const char **startup_session_provider_configs;
-static MonoWasmEventPipeSessionID *startup_session_ids;
-static mono_wasm_event_pipe_startup_session_prestreaming_cb startup_session_prestreaming_callback;
+static mono_wasm_event_pipe_early_startup_cb wasm_early_startup_callback;
 
 void
-event_pipe_create_and_start_startup_sessions (void)
+mono_wasm_event_pipe_set_early_startup_callback (mono_wasm_event_pipe_early_startup_cb callback)
 {
-	/* FIXME: what if we don't do this in C? */
-	
-	uint32_t count = startup_session_provider_configs_count;
-	const char **configs = startup_session_provider_configs;
-	if (!count)
-		return;
-	uint32_t *ids = g_new0 (MonoWasmEventPipeSessionID, count);
-	for (uint32_t i = 0; i < count; i++) {
-		EventPipeSessionID session;
-		EventPipeSerializationFormat format = EP_SERIALIZATION_FORMAT_NETTRACE_V4;
-		EventPipeSessionType session_type = EP_SESSION_TYPE_FILE;
-		char *output_path = NULL; /* FIXME for file sessions, set it to something */
-		
-		session = ep_enable_2 (output_path,
-			       circular_buffer_size_in_mb,
-			       providers,
-			       session_type,
-			       format,
-			       !!rundown_requested,
-			       /* stream */NULL,
-			       /* callback*/ NULL,
-			       /* callback_data*/ NULL);
-		ids[i] = ep_to_wasm_session_id (session);
-
-		/* FIXME: for streaming we need to send back a DS IPC reply before we start sending
-		 * the data, so enabling here is too early. */
-		g_assert (session_type != EP_SESSION_TYPE_IPCSTREAM);
-		if (startup_session_prestreaming_callback != NULL)
-			startup_session_prestreaming_callback (i, ids[i]);
-		ep_start_streaming (session);
-	}
-	startup_session_ids = ids;
+	wasm_early_startup_callback = callback;
 }
 
 void
-mono_wasm_event_pipe_session_set_startup_sessions (uint32_t count, const char **provider_configs, mono_wasm_event_pipe_startup_session_prestreaming_cb callback)
+invoke_wasm_early_startup_callback (void)
 {
-	g_assert (count == 0 || provider_configs != NULL);
-	startup_session_provider_configs_counts = count;
-	startup_session_provider_configs = provider_configs;
-	startup_session_prestreaming_callback = callback;
-}
-
-void
-mono_wasm_event_pipe_session_get_startup_session_ids (uint32_t count, MonoWasmEventPipeSessionID *session_id_dest)
-{
-	g_assert (session_id_dest);
-	g_assert (count <= startup_session_provider_configs_count);
-	memcpy (session_id_dest, startup_session_ids, count * sizeof (MonoWasmEventPipeSessionID));
+	if (wasm_early_startup_callback)
+		wasm_early_startup_callback ();
 }
 
 #endif /* HOST_WASM */

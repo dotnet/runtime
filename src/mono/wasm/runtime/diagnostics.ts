@@ -34,6 +34,9 @@ class EventPipeFileSession implements EventPipeSession {
     private _tracePath: string; // VFS file path to the trace file
 
     get sessionID(): bigint { return BigInt(this._sessionID); }
+    get isIPCStreamingSession(): boolean {
+        return false;
+    }
 
     constructor(sessionID: EventPipeSessionIDImpl, tracePath: string) {
         this._state = State.Initialized;
@@ -239,8 +242,25 @@ export function mono_wasm_event_pipe_early_startup_callback(): void {
     if (startup_session_configs === null || startup_session_configs.length == 0) {
         return;
     }
-    startup_sessions = startup_session_configs.map(config => createEventPipeSession(config));
+    startup_sessions = startup_session_configs.map(config => createAndStartEventPipeSession(config));
     startup_session_configs = null;
+}
+
+function postIPCStreamingSessionStarted(sessionID: EventPipeSessionID): void {
+    // TODO: For IPC streaming sessions this is the place to send back an acknowledgement with the session ID
+}
+
+function createAndStartEventPipeSession(options: (EventPipeSessionOptions & EventPipeSessionAutoStopOptions)): EventPipeSession | null {
+    const session = createEventPipeSession(options);
+    if (session === null) {
+        return null;
+    }
+
+    if (session.isIPCStreamingSession) {
+        postIPCStreamingSessionStarted(session.sessionID);
+    }
+    session.start();
+    return session;
 }
 
 function createEventPipeSession(options?: EventPipeSessionOptions): EventPipeSession | null {
