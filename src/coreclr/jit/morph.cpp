@@ -10790,6 +10790,38 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                         }
                     }
                 }
+
+                if (op1->OperIs(GT_LT))
+                {
+                    GenTree* lNode = op1->gtGetOp1();
+                    GenTree* rNode = op1->gtGetOp2();
+
+                    if ((lNode->TypeIs(TYP_UBYTE) && rNode->IsIntegralConst(0)) ||
+                        (lNode->TypeIs(TYP_INT) && rNode->IsIntegralConst(INT32_MIN)) ||
+                        (lNode->TypeIs(TYP_LONG) && rNode->IsIntegralConst(INT64_MIN)))
+                    {
+                        GenTree* ret = gtNewIconNode(1, TYP_INT);
+                        ret->SetVNsFromNode(tree);
+                        DEBUG_DESTROY_NODE(tree);
+                        return fgMorphTree(ret);
+                    }
+                }
+
+                if (op1->OperIs(GT_GT))
+                {
+                    GenTree* lNode = op1->gtGetOp1();
+                    GenTree* rNode = op1->gtGetOp2();
+
+                    if ((lNode->TypeIs(TYP_UBYTE) && rNode->IsIntegralConst(BYTE_MAX)) ||
+                        (lNode->TypeIs(TYP_INT) && rNode->IsIntegralConst(INT32_MAX)) ||
+                        (lNode->TypeIs(TYP_LONG) && rNode->IsIntegralConst(INT64_MAX)))
+                    {
+                        GenTree* ret = gtNewIconNode(1, TYP_INT);
+                        ret->SetVNsFromNode(tree);
+                        DEBUG_DESTROY_NODE(tree);
+                        return fgMorphTree(ret);
+                    }
+                }
             }
         }
 
