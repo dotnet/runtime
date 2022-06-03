@@ -48,12 +48,6 @@ namespace Microsoft.Extensions.Logging.Console.Test
             var sink = new ConsoleSink();
             var console = new TestConsole(sink);
             var processor = new ConsoleLoggerProcessor(nameof(MaxQueueLength_SetInvalid_Throws), console, null!, ConsoleLoggerBufferFullMode.Wait, 1024);
-            var formatter = new SimpleConsoleFormatter(new TestFormatterOptionsMonitor<SimpleConsoleFormatterOptions>(
-                new SimpleConsoleFormatterOptions()));
-
-            var logger = new ConsoleLogger(_loggerName, processor, formatter, null, new ConsoleLoggerOptions());
-            Assert.Null(logger.Options.FormatterName);
-            UpdateFormatterOptions(logger.Formatter, logger.Options);
 
             // Act & Assert
             Assert.Throws<ArgumentOutOfRangeException>(() => processor.MaxQueueLength = invalidMaxQueueLength);
@@ -66,12 +60,6 @@ namespace Microsoft.Extensions.Logging.Console.Test
             var sink = new ConsoleSink();
             var console = new TestConsole(sink);
             var processor = new ConsoleLoggerProcessor(nameof(FullMode_SetInvalid_Throws), console, null!, ConsoleLoggerBufferFullMode.Wait, 1024);
-            var formatter = new SimpleConsoleFormatter(new TestFormatterOptionsMonitor<SimpleConsoleFormatterOptions>(
-                new SimpleConsoleFormatterOptions()));
-
-            var logger = new ConsoleLogger(_loggerName, processor, formatter, null, new ConsoleLoggerOptions());
-            Assert.Null(logger.Options.FormatterName);
-            UpdateFormatterOptions(logger.Formatter, logger.Options);
 
             // Act & Assert
             Assert.Throws<ArgumentOutOfRangeException>(() => processor.FullMode = (ConsoleLoggerBufferFullMode)10);
