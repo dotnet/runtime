@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+
 using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.SingleValue>;
 
 #nullable enable

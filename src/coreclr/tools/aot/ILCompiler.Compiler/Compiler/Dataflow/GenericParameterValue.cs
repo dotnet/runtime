@@ -11,25 +11,25 @@ using Internal.TypeSystem;
 
 namespace ILLink.Shared.TrimAnalysis
 {
-	/// <summary>
-	/// This is a System.Type value which represents generic parameter (basically result of typeof(T))
-	/// Its actual type is unknown, but it can have annotations.
-	/// </summary>
-	partial record GenericParameterValue
-	{
-		public GenericParameterValue (GenericParameterDesc genericParameter, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
-		{
-			GenericParameter = new (genericParameter);
-			DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
-		}
+    /// <summary>
+    /// This is a System.Type value which represents generic parameter (basically result of typeof(T))
+    /// Its actual type is unknown, but it can have annotations.
+    /// </summary>
+    partial record GenericParameterValue
+    {
+        public GenericParameterValue (GenericParameterDesc genericParameter, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
+        {
+            GenericParameter = new (genericParameter);
+            DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
+        }
 
-		public override DynamicallyAccessedMemberTypes DynamicallyAccessedMemberTypes { get; }
+        public override DynamicallyAccessedMemberTypes DynamicallyAccessedMemberTypes { get; }
 
-		public override IEnumerable<string> GetDiagnosticArgumentsForAnnotationMismatch ()
-			=> new string[] { GenericParameter.GenericParameter.Name, DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName (new GenericParameterOrigin(GenericParameter.GenericParameter)) };
+        public override IEnumerable<string> GetDiagnosticArgumentsForAnnotationMismatch ()
+            => new string[] { GenericParameter.GenericParameter.Name, DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName (new GenericParameterOrigin(GenericParameter.GenericParameter)) };
 
-		public override SingleValue DeepCopy () => this; // This value is immutable
+        public override SingleValue DeepCopy () => this; // This value is immutable
 
-		public override string ToString () => this.ValueToString (GenericParameter, DynamicallyAccessedMemberTypes);
-	}
+        public override string ToString () => this.ValueToString (GenericParameter, DynamicallyAccessedMemberTypes);
+    }
 }

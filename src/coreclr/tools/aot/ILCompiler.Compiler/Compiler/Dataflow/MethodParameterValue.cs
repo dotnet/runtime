@@ -12,37 +12,37 @@ using Internal.TypeSystem;
 namespace ILLink.Shared.TrimAnalysis
 {
 
-	/// <summary>
-	/// A value that came from a method parameter - such as the result of a ldarg.
-	/// </summary>
-	partial record MethodParameterValue : IValueWithStaticType
-	{
-		public MethodParameterValue (MethodDesc method, int parameterIndex, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
-		{
-			StaticType = method.Signature[parameterIndex];
-			Method = method;
-			ParameterIndex = parameterIndex;
-			DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
-		}
+    /// <summary>
+    /// A value that came from a method parameter - such as the result of a ldarg.
+    /// </summary>
+    partial record MethodParameterValue : IValueWithStaticType
+    {
+        public MethodParameterValue (MethodDesc method, int parameterIndex, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
+        {
+            StaticType = method.Signature[parameterIndex];
+            Method = method;
+            ParameterIndex = parameterIndex;
+            DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
+        }
 
-		public readonly MethodDesc Method;
+        public readonly MethodDesc Method;
 
-		/// <summary>
-		/// This is the index of non-implicit parameter - so the index into MethodDesc.Signature array.
-		/// It's NOT the IL parameter index which could be offset by 1 if the method has an implicit this.
-		/// </summary>
-		public readonly int ParameterIndex;
+        /// <summary>
+        /// This is the index of non-implicit parameter - so the index into MethodDesc.Signature array.
+        /// It's NOT the IL parameter index which could be offset by 1 if the method has an implicit this.
+        /// </summary>
+        public readonly int ParameterIndex;
 
-		public override DynamicallyAccessedMemberTypes DynamicallyAccessedMemberTypes { get; }
+        public override DynamicallyAccessedMemberTypes DynamicallyAccessedMemberTypes { get; }
 
-		public override IEnumerable<string> GetDiagnosticArgumentsForAnnotationMismatch ()
-			=> new string[] { DiagnosticUtilities.GetParameterNameForErrorMessage (Method, ParameterIndex), DiagnosticUtilities.GetMethodSignatureDisplayName (Method) };
+        public override IEnumerable<string> GetDiagnosticArgumentsForAnnotationMismatch ()
+            => new string[] { DiagnosticUtilities.GetParameterNameForErrorMessage (Method, ParameterIndex), DiagnosticUtilities.GetMethodSignatureDisplayName (Method) };
 
-		public TypeDesc? StaticType { get; }
+        public TypeDesc? StaticType { get; }
 
-		public override SingleValue DeepCopy () => this; // This value is immutable
+        public override SingleValue DeepCopy () => this; // This value is immutable
 
-		public override string ToString () => this.ValueToString (Method, ParameterIndex, DynamicallyAccessedMemberTypes);
+        public override string ToString () => this.ValueToString (Method, ParameterIndex, DynamicallyAccessedMemberTypes);
 
         internal ParameterOrigin ParameterOrigin
         {
@@ -55,5 +55,5 @@ namespace ILLink.Shared.TrimAnalysis
                 return new ParameterOrigin(Method, index);
             }
         }
-	}
+    }
 }

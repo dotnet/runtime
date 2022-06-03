@@ -8,19 +8,19 @@ using ILCompiler.Logging;
 
 namespace ILLink.Shared.TrimAnalysis
 {
-	readonly partial struct DiagnosticContext
-	{
-		public readonly MessageOrigin Origin;
-		public readonly bool DiagnosticsEnabled;
-		readonly Logger _logger;
+    readonly partial struct DiagnosticContext
+    {
+        public readonly MessageOrigin Origin;
+        public readonly bool DiagnosticsEnabled;
+        readonly Logger _logger;
 
-		public DiagnosticContext (in MessageOrigin origin, bool diagnosticsEnabled, Logger logger)
-			=> (Origin, DiagnosticsEnabled, _logger) = (origin, diagnosticsEnabled, logger);
+        public DiagnosticContext (in MessageOrigin origin, bool diagnosticsEnabled, Logger logger)
+            => (Origin, DiagnosticsEnabled, _logger) = (origin, diagnosticsEnabled, logger);
 
-		public partial void AddDiagnostic (DiagnosticId id, params string[] args)
-		{
-			if (DiagnosticsEnabled)
-				_logger.LogWarning (Origin, id, args);
-		}
-	}
+        public partial void AddDiagnostic (DiagnosticId id, params string[] args)
+        {
+            if (DiagnosticsEnabled)
+                _logger.LogWarning (Origin, id, args);
+        }
+    }
 }

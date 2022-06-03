@@ -13,29 +13,29 @@ using Internal.TypeSystem;
 namespace ILLink.Shared.TrimAnalysis
 {
 
-	/// <summary>
-	/// A representation of a field. Typically a result of ldfld.
-	/// </summary>
-	sealed partial record FieldValue : IValueWithStaticType
-	{
-		public FieldValue (FieldDesc field, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
-		{
-			StaticType = field.FieldType;
-			Field = field;
-			DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
-		}
+    /// <summary>
+    /// A representation of a field. Typically a result of ldfld.
+    /// </summary>
+    sealed partial record FieldValue : IValueWithStaticType
+    {
+        public FieldValue (FieldDesc field, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
+        {
+            StaticType = field.FieldType;
+            Field = field;
+            DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
+        }
 
-		public readonly FieldDesc Field;
+        public readonly FieldDesc Field;
 
-		public override DynamicallyAccessedMemberTypes DynamicallyAccessedMemberTypes { get; }
+        public override DynamicallyAccessedMemberTypes DynamicallyAccessedMemberTypes { get; }
 
-		public override IEnumerable<string> GetDiagnosticArgumentsForAnnotationMismatch ()
-			=> new string[] { Field.GetDisplayName () };
+        public override IEnumerable<string> GetDiagnosticArgumentsForAnnotationMismatch ()
+            => new string[] { Field.GetDisplayName () };
 
-		public TypeDesc? StaticType { get; }
+        public TypeDesc? StaticType { get; }
 
-		public override SingleValue DeepCopy () => this; // This value is immutable
+        public override SingleValue DeepCopy () => this; // This value is immutable
 
-		public override string ToString () => this.ValueToString (Field, DynamicallyAccessedMemberTypes);
-	}
+        public override string ToString () => this.ValueToString (Field, DynamicallyAccessedMemberTypes);
+    }
 }

@@ -13,28 +13,28 @@ using Internal.TypeSystem;
 namespace ILLink.Shared.TrimAnalysis
 {
 
-	/// <summary>
-	/// A value that came from the implicit this parameter of a method
-	/// </summary>
-	partial record MethodThisParameterValue : IValueWithStaticType
-	{
-		public MethodThisParameterValue (MethodDesc method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
-		{
-			Method = method;
-			DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
-		}
+    /// <summary>
+    /// A value that came from the implicit this parameter of a method
+    /// </summary>
+    partial record MethodThisParameterValue : IValueWithStaticType
+    {
+        public MethodThisParameterValue (MethodDesc method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
+        {
+            Method = method;
+            DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
+        }
 
-		public readonly MethodDesc Method;
+        public readonly MethodDesc Method;
 
-		public override DynamicallyAccessedMemberTypes DynamicallyAccessedMemberTypes { get; }
+        public override DynamicallyAccessedMemberTypes DynamicallyAccessedMemberTypes { get; }
 
-		public override IEnumerable<string> GetDiagnosticArgumentsForAnnotationMismatch ()
-			=> new string[] { Method.GetDisplayName () };
+        public override IEnumerable<string> GetDiagnosticArgumentsForAnnotationMismatch ()
+            => new string[] { Method.GetDisplayName () };
 
-		public TypeDesc? StaticType => Method.OwningType;
+        public TypeDesc? StaticType => Method.OwningType;
 
-		public override SingleValue DeepCopy () => this; // This value is immutable
+        public override SingleValue DeepCopy () => this; // This value is immutable
 
-		public override string ToString () => this.ValueToString (Method, DynamicallyAccessedMemberTypes);
-	}
+        public override string ToString () => this.ValueToString (Method, DynamicallyAccessedMemberTypes);
+    }
 }

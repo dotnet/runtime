@@ -11,29 +11,29 @@ using Internal.TypeSystem;
 
 namespace ILLink.Shared.TrimAnalysis
 {
-	/// <summary>
-	/// Return value from a method
-	/// </summary>
-	partial record MethodReturnValue : IValueWithStaticType
-	{
-		public MethodReturnValue (MethodDesc method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
-		{
-			StaticType = method.Signature.ReturnType;
-			Method = method;
-			DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
-		}
+    /// <summary>
+    /// Return value from a method
+    /// </summary>
+    partial record MethodReturnValue : IValueWithStaticType
+    {
+        public MethodReturnValue (MethodDesc method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
+        {
+            StaticType = method.Signature.ReturnType;
+            Method = method;
+            DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
+        }
 
-		public readonly MethodDesc Method;
+        public readonly MethodDesc Method;
 
-		public override DynamicallyAccessedMemberTypes DynamicallyAccessedMemberTypes { get; }
+        public override DynamicallyAccessedMemberTypes DynamicallyAccessedMemberTypes { get; }
 
-		public override IEnumerable<string> GetDiagnosticArgumentsForAnnotationMismatch ()
-			=> new string[] { DiagnosticUtilities.GetMethodSignatureDisplayName (Method) };
+        public override IEnumerable<string> GetDiagnosticArgumentsForAnnotationMismatch ()
+            => new string[] { DiagnosticUtilities.GetMethodSignatureDisplayName (Method) };
 
-		public TypeDesc? StaticType { get; }
+        public TypeDesc? StaticType { get; }
 
-		public override SingleValue DeepCopy () => this; // This value is immutable
+        public override SingleValue DeepCopy () => this; // This value is immutable
 
-		public override string ToString () => this.ValueToString (Method, DynamicallyAccessedMemberTypes);
-	}
+        public override string ToString () => this.ValueToString (Method, DynamicallyAccessedMemberTypes);
+    }
 }

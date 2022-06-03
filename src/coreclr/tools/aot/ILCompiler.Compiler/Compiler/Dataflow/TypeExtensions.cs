@@ -48,19 +48,9 @@ namespace ILCompiler.Dataflow
                 _ => wellKnownType == WellKnownTypeExtensions.GetWellKnownType((type as MetadataType)?.Namespace ?? string.Empty, ((type as MetadataType)?.Name) ?? string.Empty)
             };
 
-        public static bool IsDeclaredOnType(this MethodDesc method, string ns, string name)
-        {
-            return method.OwningType.IsTypeOf(ns, name);
-        }
-
         public static bool IsDeclaredOnType(this MethodDesc method, string fullTypeName)
         {
             return method.OwningType.IsTypeOf(fullTypeName);
-        }
-
-        public static bool HasParameterOfType(this MethodDesc method, int index, string ns, string name)
-        {
-            return index < method.Signature.Length && method.Signature[index].IsTypeOf(ns, name);
         }
 
         public static bool HasParameterOfType(this MethodDesc method, int index, string fullTypeName)
