@@ -14,13 +14,13 @@ namespace ILLink.Shared.TrimAnalysis
         public readonly bool DiagnosticsEnabled;
         readonly Logger _logger;
 
-        public DiagnosticContext (in MessageOrigin origin, bool diagnosticsEnabled, Logger logger)
+        public DiagnosticContext(in MessageOrigin origin, bool diagnosticsEnabled, Logger logger)
             => (Origin, DiagnosticsEnabled, _logger) = (origin, diagnosticsEnabled, logger);
 
-        public partial void AddDiagnostic (DiagnosticId id, params string[] args)
+        public partial void AddDiagnostic(DiagnosticId id, params string[] args)
         {
             if (DiagnosticsEnabled)
-                _logger.LogWarning (Origin, id, args);
+                _logger.LogWarning(Origin, id, args);
         }
     }
 }

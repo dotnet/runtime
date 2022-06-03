@@ -594,7 +594,8 @@ namespace ILCompiler.Dataflow
                     case ILOpcode.stloc_1:
                     case ILOpcode.stloc_2:
                     case ILOpcode.stloc_3:
-                        ScanStloc(methodBody, offset, opcode switch {
+                        ScanStloc(methodBody, offset, opcode switch
+                        {
                             ILOpcode.stloc => reader.ReadILUInt16(),
                             ILOpcode.stloc_s => reader.ReadILByte(),
                             _ => opcode - ILOpcode.stloc_0,

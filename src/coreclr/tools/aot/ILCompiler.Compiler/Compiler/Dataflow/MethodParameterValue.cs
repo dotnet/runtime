@@ -17,7 +17,7 @@ namespace ILLink.Shared.TrimAnalysis
     /// </summary>
     partial record MethodParameterValue : IValueWithStaticType
     {
-        public MethodParameterValue (MethodDesc method, int parameterIndex, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
+        public MethodParameterValue(MethodDesc method, int parameterIndex, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
         {
             StaticType = method.Signature[parameterIndex];
             Method = method;
@@ -35,14 +35,14 @@ namespace ILLink.Shared.TrimAnalysis
 
         public override DynamicallyAccessedMemberTypes DynamicallyAccessedMemberTypes { get; }
 
-        public override IEnumerable<string> GetDiagnosticArgumentsForAnnotationMismatch ()
-            => new string[] { DiagnosticUtilities.GetParameterNameForErrorMessage (Method, ParameterIndex), DiagnosticUtilities.GetMethodSignatureDisplayName (Method) };
+        public override IEnumerable<string> GetDiagnosticArgumentsForAnnotationMismatch()
+            => new string[] { DiagnosticUtilities.GetParameterNameForErrorMessage(Method, ParameterIndex), DiagnosticUtilities.GetMethodSignatureDisplayName(Method) };
 
         public TypeDesc? StaticType { get; }
 
-        public override SingleValue DeepCopy () => this; // This value is immutable
+        public override SingleValue DeepCopy() => this; // This value is immutable
 
-        public override string ToString () => this.ValueToString (Method, ParameterIndex, DynamicallyAccessedMemberTypes);
+        public override string ToString() => this.ValueToString(Method, ParameterIndex, DynamicallyAccessedMemberTypes);
 
         internal ParameterOrigin ParameterOrigin
         {

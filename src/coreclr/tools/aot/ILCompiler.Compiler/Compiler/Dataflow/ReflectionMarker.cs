@@ -36,36 +36,39 @@ namespace ILCompiler.Dataflow
             _typeHierarchyDataFlow = typeHierarchyDataFlow;
         }
 
-        internal void MarkTypeForDynamicallyAccessedMembers (in MessageOrigin origin, TypeDesc typeDefinition, DynamicallyAccessedMemberTypes requiredMemberTypes, Origin memberWithRequirements, bool declaredOnly = false)
+        internal void MarkTypeForDynamicallyAccessedMembers(in MessageOrigin origin, TypeDesc typeDefinition, DynamicallyAccessedMemberTypes requiredMemberTypes, Origin memberWithRequirements, bool declaredOnly = false)
         {
-            foreach (var member in typeDefinition.GetDynamicallyAccessedMembers (requiredMemberTypes, declaredOnly)) {
-                switch (member) {
-                case MethodDesc method:
-                    MarkMethod (origin, method, memberWithRequirements);
-                    break;
-                case FieldDesc field:
-                    MarkField (origin, field, memberWithRequirements);
-                    break;
-                case MetadataType nestedType:
-                    MarkType (origin, nestedType, memberWithRequirements);
-                    break;
-                case PropertyPseudoDesc property:
-                    MarkProperty (origin, property, memberWithRequirements);
-                    break;
-                case EventPseudoDesc @event:
-                    MarkEvent (origin, @event, memberWithRequirements);
-                    break;
-                // case InterfaceImplementation
-                //  Nothing to do currently as Native AOT will presere all interfaces on a preserved type
+            foreach (var member in typeDefinition.GetDynamicallyAccessedMembers(requiredMemberTypes, declaredOnly))
+            {
+                switch (member)
+                {
+                    case MethodDesc method:
+                        MarkMethod(origin, method, memberWithRequirements);
+                        break;
+                    case FieldDesc field:
+                        MarkField(origin, field, memberWithRequirements);
+                        break;
+                    case MetadataType nestedType:
+                        MarkType(origin, nestedType, memberWithRequirements);
+                        break;
+                    case PropertyPseudoDesc property:
+                        MarkProperty(origin, property, memberWithRequirements);
+                        break;
+                    case EventPseudoDesc @event:
+                        MarkEvent(origin, @event, memberWithRequirements);
+                        break;
+                        // case InterfaceImplementation
+                        //  Nothing to do currently as Native AOT will presere all interfaces on a preserved type
                 }
             }
         }
 
-        internal bool TryResolveTypeNameAndMark (string typeName, MessageOrigin origin, bool needsAssemblyName, Origin memberWithRequirements, [NotNullWhen (true)] out TypeDesc? type)
+        internal bool TryResolveTypeNameAndMark(string typeName, MessageOrigin origin, bool needsAssemblyName, Origin memberWithRequirements, [NotNullWhen(true)] out TypeDesc? type)
         {
             ModuleDesc? callingModule = ((origin.MemberDefinition as MethodDesc)?.OwningType as MetadataType)?.Module;
 
-            if (!ILCompiler.DependencyAnalysis.ReflectionMethodBodyScanner.ResolveType(typeName, callingModule, origin.MemberDefinition.Context, out TypeDesc foundType, out ModuleDesc referenceModule)) {
+            if (!ILCompiler.DependencyAnalysis.ReflectionMethodBodyScanner.ResolveType(typeName, callingModule, origin.MemberDefinition.Context, out TypeDesc foundType, out ModuleDesc referenceModule))
+            {
                 type = default;
                 return false;
             }
@@ -80,12 +83,12 @@ namespace ILCompiler.Dataflow
             return true;
         }
 
-        internal void MarkType (in MessageOrigin origin, TypeDesc type, Origin memberWithRequirements)
+        internal void MarkType(in MessageOrigin origin, TypeDesc type, Origin memberWithRequirements)
         {
             RootingHelpers.TryGetDependenciesForReflectedType(ref _dependencies, _factory, type, memberWithRequirements.ToString());
         }
 
-        internal void MarkMethod (in MessageOrigin origin, MethodDesc method, Origin memberWithRequirements)
+        internal void MarkMethod(in MessageOrigin origin, MethodDesc method, Origin memberWithRequirements)
         {
             if (method.DoesMethodRequire(RequiresUnreferencedCodeAttribute, out _))
             {
@@ -104,7 +107,7 @@ namespace ILCompiler.Dataflow
             RootingHelpers.TryGetDependenciesForReflectedMethod(ref _dependencies, _factory, method, memberWithRequirements.ToString());
         }
 
-        void MarkField (in MessageOrigin origin, FieldDesc field, Origin memberWithRequirements)
+        void MarkField(in MessageOrigin origin, FieldDesc field, Origin memberWithRequirements)
         {
             if (_annotations.ShouldWarnWhenAccessedForReflection(field) && !ReflectionMethodBodyScanner.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, RequiresUnreferencedCodeAttribute))
             {
@@ -114,7 +117,7 @@ namespace ILCompiler.Dataflow
             RootingHelpers.TryGetDependenciesForReflectedField(ref _dependencies, _factory, field, memberWithRequirements.ToString());
         }
 
-        internal void MarkProperty (in MessageOrigin origin, PropertyPseudoDesc property, Origin memberWithRequirements)
+        internal void MarkProperty(in MessageOrigin origin, PropertyPseudoDesc property, Origin memberWithRequirements)
         {
             if (property.GetMethod != null)
                 MarkMethod(origin, property.GetMethod, memberWithRequirements);
@@ -122,7 +125,7 @@ namespace ILCompiler.Dataflow
                 MarkMethod(origin, property.SetMethod, memberWithRequirements);
         }
 
-        void MarkEvent (in MessageOrigin origin, EventPseudoDesc @event, Origin memberWithRequirements)
+        void MarkEvent(in MessageOrigin origin, EventPseudoDesc @event, Origin memberWithRequirements)
         {
             if (@event.AddMethod != null)
                 MarkMethod(origin, @event.AddMethod, memberWithRequirements);
@@ -130,36 +133,31 @@ namespace ILCompiler.Dataflow
                 MarkMethod(origin, @event.RemoveMethod, memberWithRequirements);
         }
 
-        //void MarkInterfaceImplementation (in MessageOrigin origin, InterfaceImplementation interfaceImplementation, DependencyKind dependencyKind = DependencyKind.AccessedViaReflection)
-        //{
-        //	_markStep.MarkInterfaceImplementation (interfaceImplementation, null, new DependencyInfo (dependencyKind, origin.Provider));
-        //}
-
-        internal void MarkConstructorsOnType (in MessageOrigin origin, TypeDesc type, Func<MethodDesc, bool>? filter, Origin memberWithRequirements, BindingFlags? bindingFlags = null)
+        internal void MarkConstructorsOnType(in MessageOrigin origin, TypeDesc type, Func<MethodDesc, bool>? filter, Origin memberWithRequirements, BindingFlags? bindingFlags = null)
         {
-            foreach (var ctor in type.GetConstructorsOnType (filter, bindingFlags))
-                MarkMethod (origin, ctor, memberWithRequirements);
+            foreach (var ctor in type.GetConstructorsOnType(filter, bindingFlags))
+                MarkMethod(origin, ctor, memberWithRequirements);
         }
 
-        internal void MarkFieldsOnTypeHierarchy (in MessageOrigin origin, TypeDesc type, Func<FieldDesc, bool> filter, Origin memberWithRequirements, BindingFlags? bindingFlags = BindingFlags.Default)
+        internal void MarkFieldsOnTypeHierarchy(in MessageOrigin origin, TypeDesc type, Func<FieldDesc, bool> filter, Origin memberWithRequirements, BindingFlags? bindingFlags = BindingFlags.Default)
         {
-            foreach (var field in type.GetFieldsOnTypeHierarchy (filter, bindingFlags))
-                MarkField (origin, field, memberWithRequirements);
+            foreach (var field in type.GetFieldsOnTypeHierarchy(filter, bindingFlags))
+                MarkField(origin, field, memberWithRequirements);
         }
 
-        internal void MarkPropertiesOnTypeHierarchy (in MessageOrigin origin, TypeDesc type, Func<PropertyPseudoDesc, bool> filter, Origin memberWithRequirements, BindingFlags? bindingFlags = BindingFlags.Default)
+        internal void MarkPropertiesOnTypeHierarchy(in MessageOrigin origin, TypeDesc type, Func<PropertyPseudoDesc, bool> filter, Origin memberWithRequirements, BindingFlags? bindingFlags = BindingFlags.Default)
         {
-            foreach (var property in type.GetPropertiesOnTypeHierarchy (filter, bindingFlags))
-                MarkProperty (origin, property, memberWithRequirements);
+            foreach (var property in type.GetPropertiesOnTypeHierarchy(filter, bindingFlags))
+                MarkProperty(origin, property, memberWithRequirements);
         }
 
-        internal void MarkEventsOnTypeHierarchy (in MessageOrigin origin, TypeDesc type, Func<EventPseudoDesc, bool> filter, Origin memberWithRequirements, BindingFlags? bindingFlags = BindingFlags.Default)
+        internal void MarkEventsOnTypeHierarchy(in MessageOrigin origin, TypeDesc type, Func<EventPseudoDesc, bool> filter, Origin memberWithRequirements, BindingFlags? bindingFlags = BindingFlags.Default)
         {
-            foreach (var @event in type.GetEventsOnTypeHierarchy (filter, bindingFlags))
-                MarkEvent (origin, @event, memberWithRequirements);
+            foreach (var @event in type.GetEventsOnTypeHierarchy(filter, bindingFlags))
+                MarkEvent(origin, @event, memberWithRequirements);
         }
 
-        internal void MarkStaticConstructor (in MessageOrigin origin, TypeDesc type)
+        internal void MarkStaticConstructor(in MessageOrigin origin, TypeDesc type)
         {
             if (!type.IsGenericDefinition && !type.ContainsSignatureVariables(treatGenericParameterLikeSignatureVariable: true) && type.HasStaticConstructor)
             {

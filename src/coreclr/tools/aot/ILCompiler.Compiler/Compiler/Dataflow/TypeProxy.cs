@@ -12,23 +12,24 @@ namespace ILLink.Shared.TypeSystemProxy
 {
     internal readonly partial struct TypeProxy
     {
-        public TypeProxy (TypeDesc type) => Type = type;
+        public TypeProxy(TypeDesc type) => Type = type;
 
-        public static implicit operator TypeProxy (TypeDesc type) => new (type);
+        public static implicit operator TypeProxy(TypeDesc type) => new(type);
 
-        internal partial ImmutableArray<GenericParameterProxy> GetGenericParameters ()
+        internal partial ImmutableArray<GenericParameterProxy> GetGenericParameters()
         {
             var typeDef = Type.GetTypeDefinition();
 
             if (!typeDef.HasInstantiation)
                 return ImmutableArray<GenericParameterProxy>.Empty;
 
-            var builder = ImmutableArray.CreateBuilder<GenericParameterProxy> (typeDef.Instantiation.Length);
-            foreach (var genericParameter in typeDef.Instantiation) {
-                builder.Add (new GenericParameterProxy ((GenericParameterDesc)genericParameter));
+            var builder = ImmutableArray.CreateBuilder<GenericParameterProxy>(typeDef.Instantiation.Length);
+            foreach (var genericParameter in typeDef.Instantiation)
+            {
+                builder.Add(new GenericParameterProxy((GenericParameterDesc)genericParameter));
             }
 
-            return builder.ToImmutableArray ();
+            return builder.ToImmutableArray();
         }
 
         public TypeDesc Type { get; }
@@ -37,12 +38,12 @@ namespace ILLink.Shared.TypeSystemProxy
 
         public string? Namespace { get => Type is MetadataType metadataType ? metadataType.Namespace : null; }
 
-        public bool IsTypeOf (string @namespace, string name) => Type.IsTypeOf (@namespace, name);
+        public bool IsTypeOf(string @namespace, string name) => Type.IsTypeOf(@namespace, name);
 
-        public bool IsTypeOf (WellKnownType wellKnownType) => Type.IsTypeOf (wellKnownType);
+        public bool IsTypeOf(WellKnownType wellKnownType) => Type.IsTypeOf(wellKnownType);
 
-        public string GetDisplayName () => Type.GetDisplayName ();
+        public string GetDisplayName() => Type.GetDisplayName();
 
-        public override string ToString () => Type.ToString ();
+        public override string ToString() => Type.ToString();
     }
 }

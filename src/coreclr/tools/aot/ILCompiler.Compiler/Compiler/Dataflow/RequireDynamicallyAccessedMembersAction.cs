@@ -15,7 +15,7 @@ namespace ILLink.Shared.TrimAnalysis
         readonly ReflectionMarker _reflectionMarker;
         readonly Origin _memberWithRequirements;
 
-        public RequireDynamicallyAccessedMembersAction (
+        public RequireDynamicallyAccessedMembersAction(
             ReflectionMarker reflectionMarker,
             in DiagnosticContext diagnosticContext,
             Origin memberWithRequirements)
@@ -25,20 +25,23 @@ namespace ILLink.Shared.TrimAnalysis
             _memberWithRequirements = memberWithRequirements;
         }
 
-        public partial bool TryResolveTypeNameAndMark (string typeName, bool needsAssemblyName, out TypeProxy type)
+        public partial bool TryResolveTypeNameAndMark(string typeName, bool needsAssemblyName, out TypeProxy type)
         {
-            if (_reflectionMarker.TryResolveTypeNameAndMark (typeName, _diagnosticContext.Origin, needsAssemblyName, _memberWithRequirements, out TypeDesc? foundType)) {
-                type = new (foundType);
+            if (_reflectionMarker.TryResolveTypeNameAndMark(typeName, _diagnosticContext.Origin, needsAssemblyName, _memberWithRequirements, out TypeDesc? foundType))
+            {
+                type = new(foundType);
                 return true;
-            } else {
+            }
+            else
+            {
                 type = default;
                 return false;
             }
         }
 
-        private partial void MarkTypeForDynamicallyAccessedMembers (in TypeProxy type, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
+        private partial void MarkTypeForDynamicallyAccessedMembers(in TypeProxy type, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
         {
-            _reflectionMarker.MarkTypeForDynamicallyAccessedMembers (_diagnosticContext.Origin, type.Type, dynamicallyAccessedMemberTypes, _memberWithRequirements);
+            _reflectionMarker.MarkTypeForDynamicallyAccessedMembers(_diagnosticContext.Origin, type.Type, dynamicallyAccessedMemberTypes, _memberWithRequirements);
         }
     }
 }

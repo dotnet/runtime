@@ -181,7 +181,7 @@ namespace ILCompiler.Dataflow
                     var parameterValue = annotations.GetMethodParameterValue(method, i);
                     if (parameterValue.DynamicallyAccessedMemberTypes != DynamicallyAccessedMemberTypes.None)
                     {
-                        MultiValue value = GetValueNodeForCustomAttributeArgument(arguments.FixedArguments[i].Value);
+                        MultiValue value = GetValueForCustomAttributeArgument(arguments.FixedArguments[i].Value);
                         var diagnosticContext = new DiagnosticContext(new MessageOrigin(method), diagnosticsEnabled: true, logger);
                         var scanner = new ReflectionMethodBodyScanner(factory, annotations, logger);
                         scanner.RequireDynamicallyAccessedMembers(diagnosticContext, value, parameterValue, parameterValue.ParameterOrigin);
@@ -223,7 +223,7 @@ namespace ILCompiler.Dataflow
                         targetValue.DynamicallyAccessedMemberTypes == DynamicallyAccessedMemberTypes.None)
                         continue;
 
-                    MultiValue valueNode = GetValueNodeForCustomAttributeArgument(namedArgument.Value);
+                    MultiValue valueNode = GetValueForCustomAttributeArgument(namedArgument.Value);
                     var diagnosticContext = new DiagnosticContext(new MessageOrigin(method), diagnosticsEnabled: true, logger);
                     var scanner = new ReflectionMethodBodyScanner(factory, annotations, logger);
                     scanner.RequireDynamicallyAccessedMembers(diagnosticContext, valueNode, targetValue, targetContext!);
@@ -255,7 +255,7 @@ namespace ILCompiler.Dataflow
             return reflectionMarker.Dependencies;
         }
 
-        static MultiValue GetValueNodeForCustomAttributeArgument(object? argument)
+        static MultiValue GetValueForCustomAttributeArgument(object? argument)
         {
             SingleValue? result = null;
             if (argument is TypeDesc td)
@@ -531,7 +531,7 @@ namespace ILCompiler.Dataflow
                     {
                         // This is an identity function for analysis purposes
                         if (operation == ILOpcode.newobj)
-                            AddReturnValue (methodParams[1]);
+                            AddReturnValue(methodParams[1]);
                     }
                     break;
 
@@ -658,7 +658,7 @@ namespace ILCompiler.Dataflow
                             if (staticType is null || (!staticType.IsDefType && !staticType.IsArray))
                             {
                                 // We don't know anything about the type GetType was called on. Track this as a usual "result of a method call without any annotations"
-                                AddReturnValue (_annotations.GetMethodReturnValue (calledMethod));
+                                AddReturnValue(_annotations.GetMethodReturnValue(calledMethod));
                             }
                             else if (staticType.IsSealed() || staticType.IsTypeOf("System", "Delegate"))
                             {
@@ -675,7 +675,7 @@ namespace ILCompiler.Dataflow
                                 // This can be seen a little bit as a violation of the annotation, but we already have similar cases
                                 // where a parameter is annotated and if something in the method sets a specific known type to it
                                 // we will also make it just work, even if the annotation doesn't match the usage.
-                                AddReturnValue (new SystemTypeValue(staticType));
+                                AddReturnValue(new SystemTypeValue(staticType));
                             }
                             else
                             {

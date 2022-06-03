@@ -18,7 +18,7 @@ namespace ILLink.Shared.TrimAnalysis
     /// </summary>
     partial record MethodThisParameterValue : IValueWithStaticType
     {
-        public MethodThisParameterValue (MethodDesc method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
+        public MethodThisParameterValue(MethodDesc method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
         {
             Method = method;
             DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
@@ -28,13 +28,13 @@ namespace ILLink.Shared.TrimAnalysis
 
         public override DynamicallyAccessedMemberTypes DynamicallyAccessedMemberTypes { get; }
 
-        public override IEnumerable<string> GetDiagnosticArgumentsForAnnotationMismatch ()
-            => new string[] { Method.GetDisplayName () };
+        public override IEnumerable<string> GetDiagnosticArgumentsForAnnotationMismatch()
+            => new string[] { Method.GetDisplayName() };
 
         public TypeDesc? StaticType => Method.OwningType;
 
-        public override SingleValue DeepCopy () => this; // This value is immutable
+        public override SingleValue DeepCopy() => this; // This value is immutable
 
-        public override string ToString () => this.ValueToString (Method, DynamicallyAccessedMemberTypes);
+        public override string ToString() => this.ValueToString(Method, DynamicallyAccessedMemberTypes);
     }
 }

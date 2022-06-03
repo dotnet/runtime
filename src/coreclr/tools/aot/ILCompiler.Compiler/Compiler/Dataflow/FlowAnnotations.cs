@@ -150,7 +150,7 @@ namespace ILLink.Shared.TrimAnalysis
         public bool ShouldWarnWhenAccessedForReflection(MethodDesc method)
         {
             method = method.GetTypicalMethodDefinition();
-            
+
             if (!GetAnnotations(method.OwningType).TryGetAnnotation(method, out var annotation))
                 return false;
 
@@ -254,7 +254,7 @@ namespace ILLink.Shared.TrimAnalysis
                 // class, interface, struct can have annotations
                 TypeDefinition typeDef = reader.GetTypeDefinition(ecmaType.Handle);
                 DynamicallyAccessedMemberTypes typeAnnotation = GetMemberTypesForDynamicallyAccessedMembersAttribute(reader, typeDef.GetCustomAttributes());
-                
+
                 try
                 {
                     // Also inherit annotation from bases
@@ -313,7 +313,7 @@ namespace ILLink.Shared.TrimAnalysis
 
                     DynamicallyAccessedMemberTypes methodMemberTypes =
                         GetMemberTypesForDynamicallyAccessedMembersAttribute(reader, reader.GetMethodDefinition(method.Handle).GetCustomAttributes());
-                    
+
                     MethodSignature signature;
                     try
                     {
@@ -456,7 +456,7 @@ namespace ILLink.Shared.TrimAnalysis
 
                         if (annotatedMethods.Any(a => a.Method == setMethod))
                         {
-                            
+
                             _logger.LogWarning(setMethod, DiagnosticId.DynamicallyAccessedMembersConflictsBetweenPropertyAndAccessor, property.GetDisplayName(), setMethod.GetDisplayName());
                         }
                         else
