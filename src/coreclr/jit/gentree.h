@@ -6507,21 +6507,21 @@ public:
 struct GenTreeMDArrLen : public GenTreeArrLen
 {
 private:
-    int gtDim;  // array dimension of this array length
-    int gtRank; // array rank of the array
+    unsigned gtDim;  // array dimension of this array length
+    unsigned gtRank; // array rank of the array
 
 public:
-    int Dim() const
+    unsigned Dim() const
     {
         return gtDim;
     }
 
-    int Rank() const
+    unsigned Rank() const
     {
         return gtRank;
     }
 
-    GenTreeMDArrLen(var_types type, GenTree* arrRef, int dim, int rank);
+    GenTreeMDArrLen(GenTree* arrRef, unsigned dim, unsigned rank);
 
 #if DEBUGGABLE_GENTREE
     GenTreeMDArrLen() : GenTreeArrLen()
@@ -6536,8 +6536,8 @@ public:
 struct GenTreeMDArrLowerBound : public GenTreeUnOp
 {
 private:
-    int gtDim;  // array dimension of this array lower bound
-    int gtRank; // array rank of the array
+    unsigned gtDim;  // array dimension of this array lower bound
+    unsigned gtRank; // array rank of the array
 
 public:
     GenTree*& ArrRef() // the array address node
@@ -6545,18 +6545,18 @@ public:
         return gtOp1;
     }
 
-    int Dim() const
+    unsigned Dim() const
     {
         return gtDim;
     }
 
-    int Rank() const
+    unsigned Rank() const
     {
         return gtRank;
     }
 
-    GenTreeMDArrLowerBound(var_types type, GenTree* arrRef, int dim, int rank)
-        : GenTreeUnOp(GT_MDARR_LOWER_BOUND, type, arrRef), gtDim(dim), gtRank(rank)
+    GenTreeMDArrLowerBound(GenTree* arrRef, unsigned dim, unsigned rank)
+        : GenTreeUnOp(GT_MDARR_LOWER_BOUND, TYP_INT, arrRef), gtDim(dim), gtRank(rank)
     {
     }
 
@@ -8674,13 +8674,13 @@ inline GenTree* GenTree::gtEffectiveVal(bool commaOnly /* = false */)
 }
 
 //-------------------------------------------------------------------------
-// gtCommaAssignVal - find value being assigned to a comma wrapped assigment
+// gtCommaAssignVal - find value being assigned to a comma wrapped assignment
 //
 // Returns:
 //    tree representing value being assigned if this tree represents a
 //    comma-wrapped local definition and use.
 //
-//    original tree, of not.
+//    original tree, if not.
 //
 inline GenTree* GenTree::gtCommaAssignVal()
 {
