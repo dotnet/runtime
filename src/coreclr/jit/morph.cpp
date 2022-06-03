@@ -14577,14 +14577,19 @@ DONE:
 
 GenTree* Compiler::fgRootCommas(GenTree* tree)
 {
-    if (!tree->OperIsUnary())
+    if (!(tree->OperIsUnary() || tree->OperIsBinary()))
         return tree;
 
     if (tree->AsOp()->gtOp1 == nullptr)
         return tree;
 
+    if (tree->IsReverseOp())
+        return tree;
+
     switch (tree->OperGet())
     {
+        case GT_NEG:
+            break;
         case GT_RETURN:
             if ((tree->gtFlags & GTF_RET_MERGED) != 0)
             {
@@ -14592,11 +14597,20 @@ GenTree* Compiler::fgRootCommas(GenTree* tree)
             }
             break;
 
+        case GT_ADD:
+        case GT_SUB:
+        case GT_MUL:
+        case GT_DIV:
+        case GT_UDIV:
+        case GT_MOD:
+        case GT_UMOD:
+            break;
+
         default:
             return tree;
     }
 
-    const int maxCommaCount = 1;
+    const int maxCommaCount = 4;
     GenTree*  commas[maxCommaCount]{};
     int       commaCount = 0;
 
@@ -14631,7 +14645,9 @@ GenTree* Compiler::fgRootCommas(GenTree* tree)
             comma->AsOp()->gtOp2 = tree;
             comma->ChangeType(tree->TypeGet());
             tree = comma;
+            tree->gtFlags &= ~GTF_ALL_EFFECT;
             tree->gtFlags |= GTF_CAN_SPLIT_COMMA;
+            gtUpdateNodeSideEffects(tree);
         }
     }
 
