@@ -114,7 +114,6 @@ namespace System
             // Other state set by Dragon4GetScaleValueMargin that is used by the second half of the algorithm
             public int digitExponent;
             public bool isEven;
-            public int cutoffExponent;
         }
 
         // This is an implementation of the Dragon4 algorithm to convert a binary number in floating-point format to a decimal number in string format.
@@ -142,7 +141,35 @@ namespace System
             // require that the DoubleToNumber handle zero itself.
             Debug.Assert(mantissa != 0);
 
-            Dragon4State state = Dragon4GetScaleValueMargin(mantissa, exponent, mantissaHighBitIdx, hasUnequalMargins, cutoffNumber, isSignificantDigits, buffer.Length);
+            Dragon4State state = Dragon4GetScaleValueMargin(mantissa, exponent, mantissaHighBitIdx, hasUnequalMargins, cutoffNumber, isSignificantDigits);
+
+            // Compute the cutoff exponent (the exponent of the final digit to print).
+            // Default to the maximum size of the output buffer.
+            int cutoffExponent = state.digitExponent - buffer.Length;
+
+            if (cutoffNumber != -1)
+            {
+                int desiredCutoffExponent = 0;
+
+                if (isSignificantDigits)
+                {
+                    // We asked for a specific number of significant digits.
+                    Debug.Assert(cutoffNumber > 0);
+                    desiredCutoffExponent = state.digitExponent - cutoffNumber;
+                }
+                else
+                {
+                    // We asked for a specific number of fractional digits.
+                    Debug.Assert(cutoffNumber >= 0);
+                    desiredCutoffExponent = -cutoffNumber;
+                }
+
+                if (desiredCutoffExponent > cutoffExponent)
+                {
+                    // Only select the new cutoffExponent if it won't overflow the destination buffer.
+                    cutoffExponent = desiredCutoffExponent;
+                }
+            }
 
             // Output the exponent of the first digit we will print
             decimalExponent = --state.digitExponent;
@@ -183,7 +210,7 @@ namespace System
             if (cutoffNumber == -1)
             {
                 Debug.Assert(isSignificantDigits);
-                Debug.Assert(state.digitExponent >= state.cutoffExponent);
+                Debug.Assert(state.digitExponent >= cutoffExponent);
 
                 // For the unique cutoff mode, we will try to print until we have reached a level of precision that uniquely distinguishes this value from its neighbors.
                 // If we run out of space in the output buffer, we terminate early.
@@ -212,7 +239,7 @@ namespace System
                         high = (cmpHigh > 0);
                     }
 
-                    if (low || high || (state.digitExponent == state.cutoffExponent))
+                    if (low || high || (state.digitExponent == cutoffExponent))
                     {
                         break;
                     }
@@ -233,7 +260,7 @@ namespace System
                     state.digitExponent--;
                 }
             }
-            else if (state.digitExponent >= state.cutoffExponent)
+            else if (state.digitExponent >= cutoffExponent)
             {
                 Debug.Assert((cutoffNumber > 0) || ((cutoffNumber == 0) && !isSignificantDigits));
 
@@ -247,7 +274,7 @@ namespace System
                     outputDigit = BigInteger.HeuristicDivide(ref state.scaledValue, ref state.scale);
                     Debug.Assert(outputDigit < 10);
 
-                    if (state.scaledValue.IsZero() || (state.digitExponent <= state.cutoffExponent))
+                    if (state.scaledValue.IsZero() || (state.digitExponent <= cutoffExponent))
                     {
                         break;
                     }
@@ -360,7 +387,7 @@ namespace System
             return outputLen;
         }
 
-        private static unsafe Dragon4State Dragon4GetScaleValueMargin(ulong mantissa, int exponent, uint mantissaHighBitIdx, bool hasUnequalMargins, int cutoffNumber, bool isSignificantDigits, int bufferLength)
+        private static unsafe Dragon4State Dragon4GetScaleValueMargin(ulong mantissa, int exponent, uint mantissaHighBitIdx, bool hasUnequalMargins, int cutoffNumber, bool isSignificantDigits)
         {
             // Compute the initial state in integral form such that
             //      value     = scaledValue / scale
@@ -520,34 +547,6 @@ namespace System
                 if (state.pScaledMarginHigh != &state.scaledMarginLow)
                 {
                     BigInteger.Multiply(ref state.scaledMarginLow, 2, out *state.pScaledMarginHigh);
-                }
-            }
-
-            // Compute the cutoff exponent (the exponent of the final digit to print).
-            // Default to the maximum size of the output buffer.
-            state.cutoffExponent = state.digitExponent - bufferLength;
-
-            if (cutoffNumber != -1)
-            {
-                int desiredCutoffExponent = 0;
-
-                if (isSignificantDigits)
-                {
-                    // We asked for a specific number of significant digits.
-                    Debug.Assert(cutoffNumber > 0);
-                    desiredCutoffExponent = state.digitExponent - cutoffNumber;
-                }
-                else
-                {
-                    // We asked for a specific number of fractional digits.
-                    Debug.Assert(cutoffNumber >= 0);
-                    desiredCutoffExponent = -cutoffNumber;
-                }
-
-                if (desiredCutoffExponent > state.cutoffExponent)
-                {
-                    // Only select the new cutoffExponent if it won't overflow the destination buffer.
-                    state.cutoffExponent = desiredCutoffExponent;
                 }
             }
 
