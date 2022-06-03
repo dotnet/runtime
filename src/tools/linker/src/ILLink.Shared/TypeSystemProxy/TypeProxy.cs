@@ -3,6 +3,9 @@
 
 using System.Collections.Immutable;
 
+// This is needed due to NativeAOT which doesn't enable nullable globally yet
+#nullable enable
+
 namespace ILLink.Shared.TypeSystemProxy
 {
 	internal readonly partial struct TypeProxy : IMemberProxy

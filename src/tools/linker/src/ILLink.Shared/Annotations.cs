@@ -8,6 +8,9 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using ILLink.Shared.TrimAnalysis;
 
+// This is needed due to NativeAOT which doesn't enable nullable globally yet
+#nullable enable
+
 namespace ILLink.Shared
 {
 	// Temporary workaround - should be removed once linker can be upgraded to build against
