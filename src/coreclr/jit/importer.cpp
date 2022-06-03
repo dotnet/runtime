@@ -4517,106 +4517,84 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             {
                 assert(varTypeIsFloating(callType));
 
-                if (sig->numArgs == 2 && (impStackTop().val->IsCnsFltOrDbl() || impStackTop(1).val->IsCnsFltOrDbl()))
+                if ((impStackTop().val->IsCnsFltOrDbl() || impStackTop(1).val->IsCnsFltOrDbl()))
                 {
                     GenTree* op2 = impPopStack().val;
                     GenTree* op1 = impPopStack().val;
-
-                    unsigned int insSimdSize = 16; //(callType == TYP_DOUBLE) ? 32 : 16;
 
                     // 1. NaN is propagated if either input is NaN
                     if (op1->IsFloatNaN() || op2->IsFloatNaN())
                     {
                         GenTree* ret = op1->IsFloatNaN() ? op1 : op2;
-                        retNode =
-                            gtNewSimdHWIntrinsicNode(callType, ret, NI_Vector128_ToScalar, callJitType, insSimdSize);
+                        retNode      = gtNewSimdHWIntrinsicNode(callType, ret, NI_Vector128_ToScalar, callJitType, 16);
                         break;
                     }
 
                     if (ni == NI_System_Math_Max)
                     {
-                        // 2. if both inputs are zero
-                        if (op1->IsFloatPositiveZero() && op2->IsFloatPositiveZero())
+                        // Ensuring +0.0 is returned if both inputs are zero since both inputs being zero,
+                        // of either sign, means the second argument is returned
+                        //
+                        // 2   if both are +0.0 then take op2
+                        // 2.1 if op2 is +0.0 and op1 is 0.0 of either sign then take op2
+                        if ((op1->IsFloatPositiveZero() && op2->IsFloatPositiveZero()) ||
+                            (op1->IsFloatNegativeZero() && op2->IsFloatPositiveZero()))
                         {
-                            // IsFloatPositiveZero doesn't gurantee that we don't have op1 = -0.0 op2 = -0.0,
-                            // so we check the sign.
-                            // Ensuring +0.0 is returned if both inputs are zero since both inputs being zero,
-                            // of either sign, means the second argument is returned
-                            //
-                            // 2.1 if op1 is +0.0 and op2 is either sign then take op1
-                            if (op1->IsFloatPositiveZero() && !op1->IsFloatNegativeZero())
-                            {
-                                retNode = gtNewSimdHWIntrinsicNode(callType, op1, NI_Vector128_ToScalar, callJitType,
-                                                                   insSimdSize);
-                                break;
-                            }
-                            // 2.2 if op2 is +0.0 and op1 is either sign then take op2
-                            else if (op2->IsFloatPositiveZero() && !op2->IsFloatNegativeZero())
-                            {
-                                retNode = gtNewSimdHWIntrinsicNode(callType, op2, NI_Vector128_ToScalar, callJitType,
-                                                                   insSimdSize);
-                                break;
-                            }
+                            retNode = gtNewSimdHWIntrinsicNode(callType, op2, NI_Vector128_ToScalar, callJitType, 16);
+                            break;
                         }
-
-                        //  2.3. if op1 is +0.0 then take op2
-                        //  2.4. if op2 is +0.0 then take op2
-                        if ((op1->IsFloatPositiveZero() && !op1->IsFloatNegativeZero()) ||
-                            (op2->IsFloatPositiveZero() && !op2->IsFloatNegativeZero()))
+                        // 2.2 if op1 is +0.0 and op2 is 0.0 of either sign then take op1
+                        else if (op1->IsFloatPositiveZero() && op2->IsFloatNegativeZero())
                         {
-                            retNode = gtNewSimdHWIntrinsicNode(callType, op2, NI_Vector128_ToScalar, callJitType,
-                                                               insSimdSize);
+                            retNode = gtNewSimdHWIntrinsicNode(callType, op1, NI_Vector128_ToScalar, callJitType, 16);
                             break;
                         }
                     }
 
                     if (ni == NI_System_Math_Min)
                     {
-                        // 3. if both inputs are zero
-                        if (op1->IsFloatPositiveZero() && op2->IsFloatPositiveZero())
+                        // Ensuring -0.0 is returned if both inputs are zero since both inputs being zero,
+                        // of either sign, means the second argument is returned
+                        //
+                        // 3   if both are -0.0 then take op2
+                        // 3.1 if op2 is -0.0 and op1 is 0.0 of either sign then take op2
+                        if ((op1->IsFloatNegativeZero() && op2->IsFloatNegativeZero()) ||
+                            (op1->IsFloatPositiveZero() && op2->IsFloatNegativeZero()))
                         {
-                            // IsFloatPositiveZero doesn't gurantee that we don't have op1 = -0.0 op2 = -0.0,
-                            // so we check the sign.
-                            // Ensuring -0.0 is returned if both inputs are zero since both inputs being zero,
-                            // of either sign, means the second argument is returned
-                            //
-                            // 3.1 if op1 is -0.0 and op2 is either sign then take op1
-                            if (op1->IsFloatNegativeZero())
-                            {
-                                retNode = gtNewSimdHWIntrinsicNode(callType, op1, NI_Vector128_ToScalar, callJitType,
-                                                                   insSimdSize);
-                                break;
-                            }
-                            // 3.2 if op2 is -0.0 and op1 is either sign then take op2
-                            else if (op2->IsFloatNegativeZero())
-                            {
-                                retNode = gtNewSimdHWIntrinsicNode(callType, op2, NI_Vector128_ToScalar, callJitType,
-                                                                   insSimdSize);
-                                break;
-                            }
+                            retNode = gtNewSimdHWIntrinsicNode(callType, op2, NI_Vector128_ToScalar, callJitType, 16);
+                            break;
                         }
-
-                        //  3.3. if op1 is -0.0 then take op2
-                        //  3.4. if op2 is -0.0 then take op2
-                        if (op1->IsFloatNegativeZero() || op2->IsFloatNegativeZero())
+                        // 3.2 if op1 is -0.0 and op2 is 0.0 of either sign then take op1
+                        else if (op1->IsFloatNegativeZero() && op2->IsFloatPositiveZero())
                         {
-                            retNode = gtNewSimdHWIntrinsicNode(callType, op2, NI_Vector128_ToScalar, callJitType,
-                                                               insSimdSize);
+                            retNode = gtNewSimdHWIntrinsicNode(callType, op1, NI_Vector128_ToScalar, callJitType, 16);
                             break;
                         }
                     }
 
-                    impPushOnStack(op1, callType);
-                    impPushOnStack(op2, callType);
+                    // 4. If none fits the conditions
+                    var_types      insType = TYP_SIMD16;
+                    NamedIntrinsic hwintrinsicName;
+
+                    if (callType == TYP_DOUBLE)
+                    {
+                        hwintrinsicName = (ni == NI_System_Math_Max) ? NI_SSE2_Max : NI_SSE2_Min;
+                    }
+                    else
+                    {
+                        hwintrinsicName = (ni == NI_System_Math_Max) ? NI_SSE_Max : NI_SSE_Min;
+                    }
+
+                    op2 = gtNewSimdHWIntrinsicNode(insType, op2, NI_Vector128_CreateScalarUnsafe, callJitType, 16);
+                    op1 = gtNewSimdHWIntrinsicNode(insType, op1, NI_Vector128_CreateScalarUnsafe, callJitType, 16);
+
+                    GenTree* res = gtNewSimdHWIntrinsicNode(insType, op1, op2, hwintrinsicName, callJitType, 16);
+                    retNode      = gtNewSimdHWIntrinsicNode(callType, res, NI_Vector128_ToScalar, callJitType, 16);
                     break;
-                    //// If it's any other constant then it needs to be op1 for both (Math.Min/Math.Max).
-                    // retNode = gtNewSimdHWIntrinsicNode(callType, op1, NI_Vector128_ToScalar, callJitType,
-                    // insSimdSize);
-                    // break;
                 }
 
                 // Go down to the direct Math.Min/Math.Max call
-                // break;
+                break;
             }
 #endif
 
