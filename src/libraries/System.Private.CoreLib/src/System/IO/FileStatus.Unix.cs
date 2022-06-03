@@ -54,9 +54,9 @@ namespace System.IO
                 }
 
 #if TARGET_BROWSER
-                var mode = (Interop.Sys.Permissions)(_fileCache.Mode & (int)Interop.Sys.Permissions.Mask);
-                bool isUserReadOnly = (mode & Interop.Sys.Permissions.S_IRUSR) != 0 && // has read permission
-                                      (mode & Interop.Sys.Permissions.S_IWUSR) == 0;   // but not write permission
+                var mode = (UnixFileMode)(_fileCache.Mode & (int)FileSystem.ValidUnixFileModes);
+                bool isUserReadOnly = (mode & UnixFileMode.UserRead) != 0 && // has read permission
+                                      (mode & UnixFileMode.UserWrite) == 0;  // but not write permission
                 return isUserReadOnly;
 #else
                 if (_isReadOnlyCache == 0)
@@ -84,14 +84,14 @@ namespace System.IO
 
         private bool IsModeReadOnlyCore()
         {
-            var mode = (Interop.Sys.Permissions)(_fileCache.Mode & (int)Interop.Sys.Permissions.Mask);
+            var mode = (UnixFileMode)(_fileCache.Mode & (int)FileSystem.ValidUnixFileModes);
 
-            bool isUserReadOnly = (mode & Interop.Sys.Permissions.S_IRUSR) != 0 && // has read permission
-                                  (mode & Interop.Sys.Permissions.S_IWUSR) == 0;   // but not write permission
-            bool isGroupReadOnly = (mode & Interop.Sys.Permissions.S_IRGRP) != 0 && // has read permission
-                                    (mode & Interop.Sys.Permissions.S_IWGRP) == 0;   // but not write permission
-            bool isOtherReadOnly = (mode & Interop.Sys.Permissions.S_IROTH) != 0 && // has read permission
-                                    (mode & Interop.Sys.Permissions.S_IWOTH) == 0;   // but not write permission
+            bool isUserReadOnly = (mode & UnixFileMode.UserRead) != 0 &&    // has read permission
+                                  (mode & UnixFileMode.UserWrite) == 0;     // but not write permission
+            bool isGroupReadOnly = (mode & UnixFileMode.GroupRead) != 0 &&  // has read permission
+                                   (mode & UnixFileMode.GroupWrite) == 0;   // but not write permission
+            bool isOtherReadOnly = (mode & UnixFileMode.OtherRead) != 0 &&  // has read permission
+                                   (mode & UnixFileMode.OtherWrite) == 0;   // but not write permission
 
             // If they are all the same, no need to check user/group.
             if ((isUserReadOnly == isGroupReadOnly) && (isGroupReadOnly == isOtherReadOnly))
@@ -242,20 +242,21 @@ namespace System.IO
 
             // The only thing we can reasonably change is whether the file object is readonly by changing permissions.
 
-            int newMode = _fileCache.Mode;
+            int oldMode = _fileCache.Mode & (int)FileSystem.ValidUnixFileModes;
+            int newMode = oldMode;
             if ((attributes & FileAttributes.ReadOnly) != 0)
             {
                 // Take away all write permissions from user/group/everyone
-                newMode &= ~(int)(Interop.Sys.Permissions.S_IWUSR | Interop.Sys.Permissions.S_IWGRP | Interop.Sys.Permissions.S_IWOTH);
+                newMode &= ~(int)(UnixFileMode.UserWrite | UnixFileMode.GroupWrite | UnixFileMode.OtherWrite);
             }
-            else if ((newMode & (int)Interop.Sys.Permissions.S_IRUSR) != 0)
+            else if ((newMode & (int)UnixFileMode.UserRead) != 0)
             {
                 // Give write permission to the owner if the owner has read permission
-                newMode |= (int)Interop.Sys.Permissions.S_IWUSR;
+                newMode |= (int)UnixFileMode.UserWrite;
             }
 
             // Change the permissions on the file
-            if (newMode != _fileCache.Mode)
+            if (newMode != oldMode)
             {
                 Interop.CheckIo(Interop.Sys.ChMod(path, newMode), path, asDirectory);
             }

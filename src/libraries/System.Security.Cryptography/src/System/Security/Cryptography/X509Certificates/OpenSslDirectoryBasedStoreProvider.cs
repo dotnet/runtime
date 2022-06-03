@@ -353,7 +353,8 @@ namespace System.Security.Cryptography.X509Certificates
                 throw new CryptographicException(SR.Format(SR.Cryptography_OwnerNotCurrentUser, path));
             }
 
-            if ((dirStat.Mode & (int)Interop.Sys.Permissions.S_IRWXU) != (int)Interop.Sys.Permissions.S_IRWXU)
+            const int userReadWriteExecute = (int)(UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+            if ((dirStat.Mode & userReadWriteExecute) != userReadWriteExecute)
             {
                 throw new CryptographicException(SR.Format(SR.Cryptography_InvalidDirectoryPermissions, path));
             }
@@ -371,12 +372,12 @@ namespace System.Security.Cryptography.X509Certificates
         private static void EnsureFilePermissions(FileStream stream, uint userId)
         {
             // Verify that we're creating files with u+rw and g-rw, o-rw.
-            const Interop.Sys.Permissions requiredPermissions =
-                Interop.Sys.Permissions.S_IRUSR | Interop.Sys.Permissions.S_IWUSR;
+            const UnixFileMode requiredPermissions =
+                UnixFileMode.UserRead | UnixFileMode.UserWrite;
 
-            const Interop.Sys.Permissions forbiddenPermissions =
-                Interop.Sys.Permissions.S_IRGRP | Interop.Sys.Permissions.S_IWGRP |
-                Interop.Sys.Permissions.S_IROTH | Interop.Sys.Permissions.S_IWOTH;
+            const UnixFileMode forbiddenPermissions =
+                UnixFileMode.GroupRead | UnixFileMode.GroupWrite |
+                UnixFileMode.OtherRead | UnixFileMode.OtherWrite;
 
             Interop.Sys.FileStatus stat;
             if (Interop.Sys.FStat(stream.SafeFileHandle, out stat) != 0)
