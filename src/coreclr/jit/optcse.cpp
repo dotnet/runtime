@@ -3276,9 +3276,9 @@ public:
             // Walk the statement 'stmt' and find the pointer
             // in the tree is pointing to 'exp'
             //
-            Compiler::FindLinkData linkData     = m_pCompiler->gtFindLink(stmt, exp);
-            GenTree**              link         = linkData.result;
-            GenTree* const         origParent   = linkData.parent;
+            Compiler::FindLinkData linkData   = m_pCompiler->gtFindLink(stmt, exp);
+            GenTree**              link       = linkData.result;
+            GenTree* const         origParent = linkData.parent;
 
 #ifdef DEBUG
             if (link == nullptr)
@@ -3307,8 +3307,8 @@ public:
                 Compiler::FindLinkData linkParentData = m_pCompiler->gtFindLink(stmt, origParent);
                 GenTree**              linkParent     = linkParentData.result;
 
-                *linkParent = cse;
-                cse         = cse->gtGetOp2();
+                *linkParent                  = cse;
+                cse                          = cse->gtGetOp2();
                 (*linkParent)->AsOp()->gtOp2 = origParent;
             }
 
