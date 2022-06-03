@@ -5201,8 +5201,8 @@ unsigned emitter::getLoopSize(insGroup* igLoopHeader, unsigned maxLoopSize DEBUG
                 JITDUMP(" -- loopSize exceeded the threshold of %u bytes.", maxLoopSize);
             }
             JITDUMP("\n");
-            break;
 #endif
+            break;
         }
         JITDUMP("\n");
     }
@@ -7292,6 +7292,90 @@ CORINFO_FIELD_HANDLE emitter::emitFltOrDblConst(double constValue, emitAttr attr
 
     UNATIVE_OFFSET cnum = emitDataConst(cnsAddr, cnsSize, cnsAlign, dataType);
     return emitComp->eeFindJitDataOffs(cnum);
+}
+
+//------------------------------------------------------------------------
+// emitSimd8Const: Create a simd8 data section constant.
+//
+// Arguments:
+//    constValue - constant value
+//
+// Return Value:
+//    A field handle representing the data offset to access the constant.
+//
+CORINFO_FIELD_HANDLE emitter::emitSimd8Const(simd8_t constValue)
+{
+    // Access to inline data is 'abstracted' by a special type of static member
+    // (produced by eeFindJitDataOffs) which the emitter recognizes as being a reference
+    // to constant data, not a real static field.
+    CLANG_FORMAT_COMMENT_ANCHOR;
+
+#if defined(FEATURE_SIMD)
+    unsigned cnsSize  = 8;
+    unsigned cnsAlign = cnsSize;
+
+#ifdef TARGET_XARCH
+    if (emitComp->compCodeOpt() == Compiler::SMALL_CODE)
+    {
+        cnsAlign = dataSection::MIN_DATA_ALIGN;
+    }
+#endif // TARGET_XARCH
+
+    UNATIVE_OFFSET cnum = emitDataConst(&constValue, cnsSize, cnsAlign, TYP_SIMD8);
+    return emitComp->eeFindJitDataOffs(cnum);
+#else
+    unreached();
+#endif // !FEATURE_SIMD
+}
+
+CORINFO_FIELD_HANDLE emitter::emitSimd16Const(simd16_t constValue)
+{
+    // Access to inline data is 'abstracted' by a special type of static member
+    // (produced by eeFindJitDataOffs) which the emitter recognizes as being a reference
+    // to constant data, not a real static field.
+    CLANG_FORMAT_COMMENT_ANCHOR;
+
+#if defined(FEATURE_SIMD)
+    unsigned cnsSize  = 16;
+    unsigned cnsAlign = cnsSize;
+
+#ifdef TARGET_XARCH
+    if (emitComp->compCodeOpt() == Compiler::SMALL_CODE)
+    {
+        cnsAlign = dataSection::MIN_DATA_ALIGN;
+    }
+#endif // TARGET_XARCH
+
+    UNATIVE_OFFSET cnum = emitDataConst(&constValue, cnsSize, cnsAlign, TYP_SIMD16);
+    return emitComp->eeFindJitDataOffs(cnum);
+#else
+    unreached();
+#endif // !FEATURE_SIMD
+}
+
+CORINFO_FIELD_HANDLE emitter::emitSimd32Const(simd32_t constValue)
+{
+    // Access to inline data is 'abstracted' by a special type of static member
+    // (produced by eeFindJitDataOffs) which the emitter recognizes as being a reference
+    // to constant data, not a real static field.
+    CLANG_FORMAT_COMMENT_ANCHOR;
+
+#if defined(FEATURE_SIMD)
+    unsigned cnsSize  = 32;
+    unsigned cnsAlign = cnsSize;
+
+#ifdef TARGET_XARCH
+    if (emitComp->compCodeOpt() == Compiler::SMALL_CODE)
+    {
+        cnsAlign = dataSection::MIN_DATA_ALIGN;
+    }
+#endif // TARGET_XARCH
+
+    UNATIVE_OFFSET cnum = emitDataConst(&constValue, cnsSize, cnsAlign, TYP_SIMD32);
+    return emitComp->eeFindJitDataOffs(cnum);
+#else
+    unreached();
+#endif // !FEATURE_SIMD
 }
 
 /*****************************************************************************

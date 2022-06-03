@@ -340,15 +340,10 @@ void MorphInitBlockHelper::MorphStructCases()
         m_result->gtFlags |= (m_dst->gtFlags & GTF_ALL_EFFECT);
 
 #if FEATURE_SIMD
-        if (varTypeIsSIMD(m_asg) && (m_dst == m_dstLclNode))
+        if (varTypeIsSIMD(m_asg) && (m_dst == m_dstLclNode) && m_src->IsIntegralConst(0))
         {
-            // For a SIMD local init we need to call SIMDIntrinsic init.
-            // We need this block becuase morph does not create SIMD init for promoted lclVars.
-            assert(m_src->IsIntegralConst(0) || m_src->IsFPZero());
             assert(m_dstVarDsc != nullptr);
-            const var_types asgType         = m_asg->TypeGet();
-            CorInfoType     simdBaseJitType = m_dstVarDsc->GetSimdBaseJitType();
-            m_src = m_comp->gtNewSIMDNode(asgType, m_src, SIMDIntrinsicInit, simdBaseJitType, m_blockSize);
+            m_src                   = m_comp->gtNewZeroConNode(m_asg->TypeGet(), CORINFO_TYPE_FLOAT);
             m_result->AsOp()->gtOp2 = m_src;
         }
 #endif // FEATURE_SIMD

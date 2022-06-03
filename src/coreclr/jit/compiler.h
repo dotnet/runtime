@@ -1651,6 +1651,12 @@ struct FuncInfoDsc
     // that isn't shared between the main function body and funclets.
 };
 
+struct TempInfo
+{
+    GenTree* asg;
+    GenTree* load;
+};
+
 #ifdef DEBUG
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // We have the ability to mark source expressions with "Test Labels."
@@ -2283,15 +2289,17 @@ public:
 
     GenTree* gtNewSconNode(int CPX, CORINFO_MODULE_HANDLE scpHandle);
 
+    GenTreeVecCon* gtNewVconNode(var_types type, CorInfoType simdBaseJitType);
+
+    GenTree* gtNewAllBitsSetConNode(var_types type);
+    GenTree* gtNewAllBitsSetConNode(var_types type, CorInfoType simdBaseJitType);
+
     GenTree* gtNewZeroConNode(var_types type);
+    GenTree* gtNewZeroConNode(var_types type, CorInfoType simdBaseJitType);
 
     GenTree* gtNewOneConNode(var_types type);
 
     GenTreeLclVar* gtNewStoreLclVar(unsigned dstLclNum, GenTree* src);
-
-#ifdef FEATURE_SIMD
-    GenTree* gtNewSIMDVectorZero(var_types simdType, CorInfoType simdBaseJitType, unsigned simdSize);
-#endif
 
     GenTree* gtNewBlkOpNode(GenTree* dst, GenTree* srcOrFillVal, bool isVolatile, bool isCopyBlock);
 
@@ -2556,11 +2564,6 @@ public:
                                       CorInfoType simdBaseJitType,
                                       unsigned    simdSize,
                                       bool        isSimdAsHWIntrinsic);
-
-    GenTree* gtNewSimdZeroNode(var_types   type,
-                               CorInfoType simdBaseJitType,
-                               unsigned    simdSize,
-                               bool        isSimdAsHWIntrinsic);
 
     GenTreeHWIntrinsic* gtNewScalarHWIntrinsicNode(var_types type, NamedIntrinsic hwIntrinsicID);
     GenTreeHWIntrinsic* gtNewScalarHWIntrinsicNode(var_types type, GenTree* op1, NamedIntrinsic hwIntrinsicID);
@@ -5493,6 +5496,8 @@ private:
     //                  Create a new temporary variable to hold the result of *ppTree,
     //                  and transform the graph accordingly.
     GenTree* fgInsertCommaFormTemp(GenTree** ppTree, CORINFO_CLASS_HANDLE structType = nullptr);
+    bool fgIsSafeToClone(GenTree* tree);
+    TempInfo fgMakeTemp(GenTree* rhs, CORINFO_CLASS_HANDLE structType = nullptr);
     GenTree* fgMakeMultiUse(GenTree** ppTree, CORINFO_CLASS_HANDLE structType = nullptr);
 
     //                  Recognize a bitwise rotation pattern and convert into a GT_ROL or a GT_ROR node.
@@ -5649,6 +5654,7 @@ private:
     GenTree* getTokenHandleTree(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool parent);
 
     GenTree* fgMorphPotentialTailCall(GenTreeCall* call);
+    void fgValidateIRForTailCall(GenTreeCall* call);
     GenTree* fgGetStubAddrArg(GenTreeCall* call);
     unsigned fgGetArgParameterLclNum(GenTreeCall* call, CallArg* arg);
     void fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCall* recursiveTailCall);
@@ -6306,7 +6312,7 @@ protected:
 
     bool optIsLoopTestEvalIntoTemp(Statement* testStmt, Statement** newTestStmt);
     unsigned optIsLoopIncrTree(GenTree* incr);
-    bool optCheckIterInLoopTest(unsigned loopInd, GenTree* test, BasicBlock* from, BasicBlock* to, unsigned iterVar);
+    bool optCheckIterInLoopTest(unsigned loopInd, GenTree* test, unsigned iterVar);
     bool optComputeIterInfo(GenTree* incr, BasicBlock* from, BasicBlock* to, unsigned* pIterVar);
     bool optPopulateInitInfo(unsigned loopInd, BasicBlock* initBlock, GenTree* init, unsigned iterVar);
     bool optExtractInitTestIncr(
@@ -6400,7 +6406,7 @@ protected:
 
     bool optIsVarAssgLoop(unsigned lnum, unsigned var);
 
-    int optIsSetAssgLoop(unsigned lnum, ALLVARSET_VALARG_TP vars, varRefKinds inds = VR_NONE);
+    bool optIsSetAssgLoop(unsigned lnum, ALLVARSET_VALARG_TP vars, varRefKinds inds = VR_NONE);
 
     bool optNarrowTree(GenTree* tree, var_types srct, var_types dstt, ValueNumPair vnpNarrow, bool doit);
 
@@ -8196,9 +8202,6 @@ private:
 
     SIMDHandlesCache* m_simdHandleCache;
 
-    // Get an appropriate "zero" for the given type and class handle.
-    GenTree* gtGetSIMDZero(var_types simdType, CorInfoType simdBaseJitType, CORINFO_CLASS_HANDLE simdHandle);
-
     // Get the handle for a SIMD type.
     CORINFO_CLASS_HANDLE gtGetStructHandleForSIMD(var_types simdType, CorInfoType simdBaseJitType)
     {
@@ -8279,7 +8282,6 @@ private:
             clsHnd = gtGetStructHandleForHWSIMD(simdType, simdBaseJitType);
         }
 
-        assert(clsHnd != NO_CLASS_HANDLE);
         return clsHnd;
     }
 #endif // FEATURE_HW_INTRINSICS
@@ -10664,6 +10666,7 @@ public:
             case GT_CNS_LNG:
             case GT_CNS_DBL:
             case GT_CNS_STR:
+            case GT_CNS_VEC:
             case GT_MEMORYBARRIER:
             case GT_JMP:
             case GT_JCC:

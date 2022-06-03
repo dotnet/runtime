@@ -3577,6 +3577,7 @@ bool Compiler::optIsCSEcandidate(GenTree* tree)
         case GT_CNS_INT:
         case GT_CNS_DBL:
         case GT_CNS_STR:
+        case GT_CNS_VEC:
             return true; // We reach here only when CSE_CONSTS is enabled
 
         case GT_ARR_ELEM:
