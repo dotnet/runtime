@@ -14590,12 +14590,6 @@ GenTree* Compiler::fgRootCommas(GenTree* tree)
     {
         case GT_NEG:
             break;
-        case GT_RETURN:
-            if ((tree->gtFlags & GTF_RET_MERGED) != 0)
-            {
-                return tree;
-            }
-            break;
 
         case GT_ADD:
         case GT_SUB:
