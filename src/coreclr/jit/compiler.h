@@ -614,6 +614,8 @@ public:
     unsigned char lvSingleDefDisqualifyReason = 'H';
 #endif
 
+    unsigned char lvAllDefsAreNoGc : 1; // True if all defs of this local are no-gc
+
 #if FEATURE_MULTIREG_ARGS
     regNumber lvRegNumForSlot(unsigned slotNum)
     {
