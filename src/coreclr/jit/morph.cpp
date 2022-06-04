@@ -17593,6 +17593,33 @@ bool Compiler::fgMorphArrayOpsStmt(BasicBlock* block, Statement* stmt)
                 assert(arrElem->gtArrInds[i]->TypeIs(TYP_INT));
             }
 
+            // The order of evaluation of a[i,j,k] is: i, j, k, a. That is, if any of the i, j, k throw an exception,
+            // it needs to happen before accessing `a`.
+            //
+            // First, we need to make temp copies of the index expressions that have side-effects.
+            GenTree* idxToUse[GT_ARR_MAX_RANK];
+            unsigned idxToCopy[GT_ARR_MAX_RANK];
+            bool     anyIdxWithSideEffects = false;
+            for (unsigned i = 0; i < arrElem->gtArrRank; i++)
+            {
+                GenTree* idx = arrElem->gtArrInds[i];
+                if ((idx->gtFlags & GTF_ALL_EFFECT) == 0)
+                {
+                    // No side-effect; just use it.
+                    idxToUse[i]  = idx;
+                    idxToCopy[i] = BAD_VAR_NUM;
+                }
+                else
+                {
+                    // Side-effect; create a temp.
+                    unsigned newIdxLcl    = m_compiler->lvaGrabTemp(true DEBUGARG("MD array index copy"));
+                    GenTree* newIdx       = m_compiler->gtNewLclvNode(newIdxLcl, idx->TypeGet());
+                    idxToUse[i]           = newIdx;
+                    idxToCopy[i]          = newIdxLcl;
+                    anyIdxWithSideEffects = true;
+                }
+            }
+
             // `newArrLcl` is set to the lclvar with a copy of the array object, if needed. The creation/copy of the
             // array object to this lcl is done as a top-level comma if needed.
             // We only single-use the index expressions, so we can use them directly.
@@ -17617,11 +17644,13 @@ bool Compiler::fgMorphArrayOpsStmt(BasicBlock* block, Statement* stmt)
             // tree.
             for (unsigned i = 0; i < arrElem->gtArrRank; i++)
             {
+                GenTree* idx = idxToUse[i];
+                assert((idx->gtFlags & GTF_ALL_EFFECT) == 0); // We should have taken care of side effects earlier.
+
                 GenTreeMDArrLowerBound* const mdArrLowerBound =
                     m_compiler->gtNewMDArrLowerBound(m_compiler->gtNewLclvNode(arrLcl, TYP_REF), i, rank, m_block);
                 unsigned       effIdxLcl = m_compiler->lvaGrabTemp(true DEBUGARG("MD array effective index"));
-                GenTree* const effIndex =
-                    m_compiler->gtNewOperNode(GT_SUB, TYP_INT, arrElem->gtArrInds[i], mdArrLowerBound);
+                GenTree* const effIndex  = m_compiler->gtNewOperNode(GT_SUB, TYP_INT, idx, mdArrLowerBound);
                 GenTree* const asgNode =
                     m_compiler->gtNewOperNode(GT_ASG, TYP_INT, m_compiler->gtNewLclvNode(effIdxLcl, TYP_INT), effIndex);
                 GenTreeMDArrLen* const mdArrLength =
@@ -17675,6 +17704,22 @@ bool Compiler::fgMorphArrayOpsStmt(BasicBlock* block, Statement* stmt)
             {
                 GenTree* const arrLclAsg = m_compiler->gtNewTempAssign(newArrLcl, arrObj);
                 fullExpansion = m_compiler->gtNewOperNode(GT_COMMA, fullExpansion->TypeGet(), arrLclAsg, fullExpansion);
+            }
+
+            // Add copies of the index expressions with side effects. Add them in reverse order, so the first index
+            // ends up at the top of the tree (so, first in execution order).
+            if (anyIdxWithSideEffects)
+            {
+                for (unsigned i = arrElem->gtArrRank; i > 0; i--)
+                {
+                    if (idxToCopy[i - 1] != BAD_VAR_NUM)
+                    {
+                        GenTree* const idxLclAsg =
+                            m_compiler->gtNewTempAssign(idxToCopy[i - 1], arrElem->gtArrInds[i - 1]);
+                        fullExpansion =
+                            m_compiler->gtNewOperNode(GT_COMMA, fullExpansion->TypeGet(), idxLclAsg, fullExpansion);
+                    }
+                }
             }
 
             // TODO: morph here? Or morph at the statement level if there are differences?

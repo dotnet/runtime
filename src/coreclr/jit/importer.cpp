@@ -6317,7 +6317,7 @@ GenTree* Compiler::impArrayAccessIntrinsic(
         // The indices should be converted to `int` type, as they would be if the intrinsic was not expanded.
         GenTree* argVal = impPopStack().val;
 #ifdef DEBUG
-        if (opts.compJitEarlyExpandMDArrays)
+        if (impInlineRoot()->opts.compJitEarlyExpandMDArrays)
         {
             // TODO-MDArray: this is only enabled when JitEarlyExpandMDArrays is set because it causes small
             // asm diffs (only in some test cases) otherwise. The GT_ARR_ELEM lowering code "accidentally" does
