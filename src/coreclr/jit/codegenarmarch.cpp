@@ -1306,14 +1306,8 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
         }
         else // addrNode is used
         {
-            assert(addrNode != nullptr);
-            // TODO-Cleanup: `Lowering::NewPutArg` marks only `LCL_VAR_ADDR` as contained nowadays,
-            // but we use `genConsumeAddress` as a precaution, use `genConsumeReg()` instead.
-            assert(!addrNode->isContained());
-
             // Generate code to load the address that we need into a register
-            genConsumeAddress(addrNode);
-            addrReg = addrNode->GetRegNum();
+            addrReg = genConsumeReg(addrNode);
 
             // If addrReg equal to baseReg, we use the last target register as alternative baseReg.
             // Because the candidate mask for the internal baseReg does not include any of the target register,
@@ -1327,21 +1321,40 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
         ClassLayout* layout = source->AsObj()->GetLayout();
 
         // Put on stack first
-        unsigned nextIndex     = treeNode->gtNumRegs;
-        unsigned structOffset  = nextIndex * TARGET_POINTER_SIZE;
-        int      remainingSize = treeNode->GetStackByteSize();
+        unsigned structOffset  = treeNode->gtNumRegs * TARGET_POINTER_SIZE;
+        unsigned remainingSize = layout->GetSize() - structOffset;
         unsigned argOffsetOut  = treeNode->getArgOffset();
 
-        // remainingSize is always multiple of TARGET_POINTER_SIZE
-        assert(remainingSize % TARGET_POINTER_SIZE == 0);
+        assert((remainingSize > 0) && (roundUp(remainingSize, TARGET_POINTER_SIZE) == treeNode->GetStackByteSize()));
         while (remainingSize > 0)
         {
-            var_types type = layout->GetGCPtrType(nextIndex);
+            var_types type;
+            if (remainingSize >= TARGET_POINTER_SIZE)
+            {
+                type = layout->GetGCPtrType(structOffset / TARGET_POINTER_SIZE);
+            }
+            else if (remainingSize >= 4)
+            {
+                type = TYP_INT;
+            }
+            else if (remainingSize >= 2)
+            {
+                type = TYP_USHORT;
+            }
+            else
+            {
+                assert(remainingSize == 1);
+                type = TYP_UBYTE;
+            }
 
+            emitAttr attr     = emitActualTypeSize(type);
+            unsigned moveSize = genTypeSize(type);
+
+            instruction loadIns = ins_Load(type);
             if (varNode != nullptr)
             {
-                // Load from our varNumImp source
-                emit->emitIns_R_S(INS_ldr, emitTypeSize(type), baseReg, srcVarNum, structOffset);
+                // Load from our local source
+                emit->emitIns_R_S(loadIns, attr, baseReg, srcVarNum, structOffset);
             }
             else
             {
@@ -1349,16 +1362,16 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
                 assert(baseReg != addrReg);
 
                 // Load from our address expression source
-                emit->emitIns_R_R_I(INS_ldr, emitTypeSize(type), baseReg, addrReg, structOffset);
+                emit->emitIns_R_R_I(loadIns, attr, baseReg, addrReg, structOffset);
             }
 
-            // Emit str instruction to store the register into the outgoing argument area
-            emit->emitIns_S_R(INS_str, emitTypeSize(type), baseReg, varNumOut, argOffsetOut);
-            argOffsetOut += TARGET_POINTER_SIZE;  // We stored 4-bytes of the struct
-            assert(argOffsetOut <= argOffsetMax); // We can't write beyond the outgoing arg area
-            remainingSize -= TARGET_POINTER_SIZE; // We loaded 4-bytes of the struct
-            structOffset += TARGET_POINTER_SIZE;
-            nextIndex += 1;
+            // Emit the instruction to store the register into the outgoing argument area
+            emit->emitIns_S_R(ins_Store(type), attr, baseReg, varNumOut, argOffsetOut);
+            argOffsetOut += moveSize;
+            assert(argOffsetOut <= argOffsetMax);
+
+            remainingSize -= moveSize;
+            structOffset += moveSize;
         }
 
         // We set up the registers in order, so that we assign the last target register `baseReg` is no longer in use,
@@ -1371,7 +1384,7 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
 
             if (varNode != nullptr)
             {
-                // Load from our varNumImp source
+                // Load from our local source
                 emit->emitIns_R_S(INS_ldr, emitTypeSize(type), targetReg, srcVarNum, structOffset);
             }
             else
