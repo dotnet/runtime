@@ -179,6 +179,12 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
                 _existingDictionary;
 
         }
+
+        public class ConfigWithNonInstantiatedReadOnlyDictionary
+        {
+            public IReadOnlyDictionary<string, int> Dictionary { get; set; } = null!;
+        }
+
         public class ConfigWithInstantiatedConcreteDictionary
         {
             public static Dictionary<string, int> _existingDictionary = new()
@@ -768,6 +774,27 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         }
 
         [Fact]
+        public void BindNonInstantiatedIReadOnlyDictionary()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Dictionary:item1", "1"},
+                {"Dictionary:item2", "2"}
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ConfigWithNonInstantiatedReadOnlyDictionary>()!;
+
+            Assert.Equal(2, options.Dictionary.Count);
+
+            Assert.Equal(1, options.Dictionary["item1"]);
+            Assert.Equal(2, options.Dictionary["item2"]);
+        }
+
+        [Fact]
         public void BindInstantiatedConcreteDictionary_OverwritesOriginal()
         {
             var dic = new Dictionary<string, string>
@@ -812,8 +839,6 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal(2, resultingDictionary["existing-item2"]);
             Assert.Equal(3, resultingDictionary["item3"]);
             Assert.Equal(4, resultingDictionary["item4"]);
-
-            
         }
 
         [Fact]
@@ -834,8 +859,6 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal(2, options.NonInstantiatedReadOnlyDictionary.Count);
             Assert.Equal(3, options.NonInstantiatedReadOnlyDictionary["item3"]);
             Assert.Equal(4, options.NonInstantiatedReadOnlyDictionary["item4"]);
-
-            
         }
         
 
