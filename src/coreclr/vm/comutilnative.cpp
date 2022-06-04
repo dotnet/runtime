@@ -41,69 +41,6 @@
 
 #include "arraynative.inl"
 
-/*===================================IsDigit====================================
-**Returns a bool indicating whether the character passed in represents a   **
-**digit.
-==============================================================================*/
-bool IsDigit(WCHAR c, int radix, int *result)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(result));
-    }
-    CONTRACTL_END;
-
-    if (IS_DIGIT(c)) {
-        *result = DIGIT_TO_INT(c);
-    }
-    else if (c>='A' && c<='Z') {
-        //+10 is necessary because A is actually 10, etc.
-        *result = c-'A'+10;
-    }
-    else if (c>='a' && c<='z') {
-        //+10 is necessary because a is actually 10, etc.
-        *result = c-'a'+10;
-    }
-    else {
-        *result = -1;
-    }
-
-    if ((*result >=0) && (*result < radix))
-        return true;
-
-    return false;
-}
-
-INT32 wtoi(_In_reads_(length) WCHAR* wstr, DWORD length)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(wstr));
-        PRECONDITION(length >= 0);
-    }
-    CONTRACTL_END;
-
-    DWORD i = 0;
-    int value;
-    INT32 result = 0;
-
-    while ( (i < length) && (IsDigit(wstr[i], 10 ,&value)) ) {
-        //Read all of the digits and convert to a number
-        result = result*10 + value;
-        i++;
-    }
-
-    return result;
-}
-
-
-
 //
 //
 // EXCEPTION NATIVE
