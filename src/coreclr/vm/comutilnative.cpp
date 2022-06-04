@@ -369,79 +369,17 @@ static void GetExceptionHelp(OBJECTREF objException, BSTR *pbstrHelpFile, DWORD 
 
     GCPROTECT_BEGIN(objException);
 
-    // read Exception.HelpLink property
-    MethodDescCallSite getHelpLink(METHOD__EXCEPTION__GET_HELP_LINK, &objException);
+    // call managed code to parse help context
+    MethodDescCallSite getHelpContext(METHOD__EXCEPTION__GET_HELP_CONTEXT, &objException);
 
-    ARG_SLOT GetHelpLinkArgs[] = { ObjToArgSlot(objException)};
-    *pbstrHelpFile = BStrFromString(getHelpLink.Call_RetSTRINGREF(GetHelpLinkArgs));
+    ARG_SLOT GetHelpContextArgs[] =
+    {
+        ObjToArgSlot(objException),
+        PtrToArgSlot(pdwHelpContext)
+    };
+    *pbstrHelpFile = BStrFromString(getHelpContext.Call_RetSTRINGREF(GetHelpContextArgs));
 
     GCPROTECT_END();
-
-    // parse the help file to check for the presence of helpcontext
-    int len = SysStringLen(*pbstrHelpFile);
-    int pos = len;
-    WCHAR *pwstr = *pbstrHelpFile;
-    if (pwstr) {
-        BOOL fFoundPound = FALSE;
-
-        for (pos = len - 1; pos >= 0; pos--) {
-            if (pwstr[pos] == W('#')) {
-                fFoundPound = TRUE;
-                break;
-            }
-        }
-
-        if (fFoundPound) {
-            int PoundPos = pos;
-            int NumberStartPos = -1;
-            BOOL bNumberStarted = FALSE;
-            BOOL bNumberFinished = FALSE;
-            BOOL bInvalidDigitsFound = FALSE;
-
-            _ASSERTE(pwstr[pos] == W('#'));
-
-            // Check to see if the string to the right of the pound a valid number.
-            for (pos++; pos < len; pos++) {
-                if (bNumberFinished) {
-                    if (!COMCharacter::nativeIsWhiteSpace(pwstr[pos])) {
-                        bInvalidDigitsFound = TRUE;
-                        break;
-                    }
-                }
-                else if (bNumberStarted) {
-                    if (COMCharacter::nativeIsWhiteSpace(pwstr[pos])) {
-                        bNumberFinished = TRUE;
-                    }
-                    else if (!COMCharacter::nativeIsDigit(pwstr[pos])) {
-                        bInvalidDigitsFound = TRUE;
-                        break;
-                    }
-                }
-                else {
-                    if (COMCharacter::nativeIsDigit(pwstr[pos])) {
-                        NumberStartPos = pos;
-                        bNumberStarted = TRUE;
-                    }
-                    else if (!COMCharacter::nativeIsWhiteSpace(pwstr[pos])) {
-                        bInvalidDigitsFound = TRUE;
-                        break;
-                    }
-                }
-            }
-
-            if (bNumberStarted && !bInvalidDigitsFound) {
-                // Grab the help context and remove it from the help file.
-                *pdwHelpContext = (DWORD)wtoi(&pwstr[NumberStartPos], len - NumberStartPos);
-
-                // Allocate a new help file string of the right length.
-                BSTR strOld = *pbstrHelpFile;
-                *pbstrHelpFile = SysAllocStringLen(strOld, PoundPos);
-                SysFreeString(strOld);
-                if (!*pbstrHelpFile)
-                    COMPlusThrowOM();
-            }
-        }
-    }
 }
 
 // NOTE: caller cleans up any partially initialized BSTRs in pED

@@ -335,6 +335,7 @@ DEFINE_PROPERTY(EXCEPTION,          MESSAGE,                Message,            
 DEFINE_PROPERTY(EXCEPTION,          SOURCE,                 Source,                     Str)
 DEFINE_PROPERTY(EXCEPTION,          HELP_LINK,              HelpLink,                   Str)
 DEFINE_METHOD(EXCEPTION,            INTERNAL_PRESERVE_STACK_TRACE, InternalPreserveStackTrace, IM_RetVoid)
+DEFINE_METHOD(EXCEPTION,            GET_HELP_CONTEXT,       GetHelpContext,             IM_RefInt_RetStr)
 
 
 DEFINE_CLASS(SYSTEM_EXCEPTION,      System,                 SystemException)
