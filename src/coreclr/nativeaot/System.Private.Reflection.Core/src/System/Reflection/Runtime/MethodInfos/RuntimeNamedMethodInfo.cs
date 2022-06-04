@@ -14,8 +14,6 @@ using System.Reflection.Runtime.CustomAttributes;
 
 using Internal.Reflection.Core.Execution;
 
-using Internal.Reflection.Tracing;
-
 namespace System.Reflection.Runtime.MethodInfos
 {
     internal abstract class RuntimeNamedMethodInfo : RuntimeMethodInfo
@@ -77,11 +75,6 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             get
             {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.MethodBase_CustomAttributes(this);
-#endif
-
                 foreach (CustomAttributeData cad in _common.TrueCustomAttributes)
                 {
                     yield return cad;
@@ -130,11 +123,6 @@ namespace System.Reflection.Runtime.MethodInfos
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public sealed override MethodInfo MakeGenericMethod(params Type[] typeArguments)
         {
-#if ENABLE_REFLECTION_TRACE
-            if (ReflectionTrace.Enabled)
-                ReflectionTrace.MethodInfo_MakeGenericMethod(this, typeArguments);
-#endif
-
             if (typeArguments == null)
                 throw new ArgumentNullException(nameof(typeArguments));
             if (GenericTypeParameters.Length == 0)
@@ -157,7 +145,7 @@ namespace System.Reflection.Runtime.MethodInfos
             if (typeArguments.Length != GenericTypeParameters.Length)
                 throw new ArgumentException(SR.Format(SR.Argument_NotEnoughGenArguments, typeArguments.Length, GenericTypeParameters.Length));
             RuntimeMethodInfo methodInfo = (RuntimeMethodInfo)RuntimeConstructedGenericMethodInfo.GetRuntimeConstructedGenericMethodInfo(this, genericTypeArguments);
-            MethodInvoker methodInvoker = methodInfo.MethodInvoker; // For compatibility with other Make* apis, trigger any MissingMetadataExceptions now rather than later.
+            MethodInvoker _ = methodInfo.MethodInvoker; // For compatibility with other Make* apis, trigger any MissingMetadataExceptions now rather than later.
             return methodInfo;
         }
 
