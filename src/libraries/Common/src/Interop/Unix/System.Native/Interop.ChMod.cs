@@ -10,8 +10,5 @@ internal static partial class Interop
     {
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_ChMod", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
         internal static partial int ChMod(string path, int mode);
-
-        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_FChMod", SetLastError = true)]
-        internal static partial int FChMod(SafeHandle fd, int mode);
     }
 }

@@ -139,11 +139,11 @@ namespace System.IO
         public static DateTimeOffset GetLastWriteTime(SafeFileHandle fileHandle) =>
             GetAttributeData(fileHandle).ftLastWriteTime.ToDateTimeOffset();
 
-        internal static Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA GetAttributeData(string? fullPath, bool returnErrorOnNotFound = false)
+        internal static Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA GetAttributeData(string fullPath, bool returnErrorOnNotFound = false)
         {
             Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = default;
             int errorCode = FillAttributeInfo(fullPath, ref data, returnErrorOnNotFound);
-            return errorCode != 0
+            return errorCode != Interop.Errors.ERROR_SUCCESS
                 ? throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath)
                 : data;
         }
@@ -151,10 +151,8 @@ namespace System.IO
         internal static Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA GetAttributeData(SafeFileHandle fileHandle)
         {
             Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = default;
-            int errorCode = FillAttributeInfo(fileHandle, ref data);
-            return errorCode != 0
-                ? throw Win32Marshal.GetExceptionForWin32Error(errorCode, fileHandle.Path)
-                : data;
+            FillAttributeInfo(fileHandle, default, ref data);
+            return data;
         }
 
         private static void MoveDirectory(string sourceFullPath, string destFullPath, bool isCaseSensitiveRename)
@@ -455,11 +453,12 @@ namespace System.IO
             uint fileAttributes = 0)
         {
             using SafeFileHandle handle = OpenHandleToWriteAttributes(fullPath, asDirectory);
-            SetFileTime(handle, creationTime, lastAccessTime, lastWriteTime, changeTime, fileAttributes);
+            SetFileTime(handle, fullPath, creationTime, lastAccessTime, lastWriteTime, changeTime, fileAttributes);
         }
 
         private static unsafe void SetFileTime(
             SafeFileHandle fileHandle,
+            string? fullPath = null,
             long creationTime = -1,
             long lastAccessTime = -1,
             long lastWriteTime = -1,
@@ -477,7 +476,7 @@ namespace System.IO
 
             if (!Interop.Kernel32.SetFileInformationByHandle(fileHandle, Interop.Kernel32.FileBasicInfo, &basicInfo, (uint)sizeof(Interop.Kernel32.FILE_BASIC_INFO)))
             {
-                throw Win32Marshal.GetExceptionForLastWin32Error(fileHandle.Path);
+                throw Win32Marshal.GetExceptionForLastWin32Error(fullPath ?? fileHandle.Path);
             }
         }
 
