@@ -2242,7 +2242,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.FreeBSD.cs" Condition="'$(TargetsFreeBSD)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.Linux.cs" Condition="'$(TargetsLinux)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.OSX.cs" Condition="'$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Environment.iOS.cs" Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Environment.iOS.cs" Condition="'$(IsiOSLike)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.OSVersion.Unix.cs" Condition="'$(IsOSXLike)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.SunOS.cs" Condition="'$(Targetsillumos)' == 'true' or '$(TargetsSolaris)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.FullGlobalizationData.Unix.cs" Condition="'$(UseMinimalGlobalizationData)' != 'true'" />
@@ -2273,6 +2273,14 @@
       <Link>Common\Interop\OSX\Interop.libc.cs</Link>
     </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStatus.SetTimes.OSX.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(IsiOSLike)' == 'true'">
+    <Compile Include="$(CommonPath)Interop\OSX\System.Native\Interop.SearchPath.cs">
+      <Link>Common\Interop\OSX\Interop.SearchPath.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\OSX\System.Native\Interop.SearchPathTempDirectory.cs">
+      <Link>Common\Interop\OSX\Interop.SearchPathTempDirectory.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsMacCatalyst)' == 'true'">
     <Compile Include="$(CommonPath)Interop\OSX\System.Native\Interop.iOSSupportVersion.cs" Link="Common\Interop\OSX\System.Native\Interop.iOSSupportVersion.cs" />
