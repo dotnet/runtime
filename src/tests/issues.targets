@@ -233,9 +233,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_35821/GitHub_35821/*">
             <Issue>https://github.com/dotnet/runtime/issues/66921</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_56953/Runtime_56953/*">
-            <Issue>https://github.com/dotnet/runtime/issues/57515</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Generics/GenericsTest/*">
             <Issue>https://github.com/dotnet/runtime/issues/60036</Issue>
         </ExcludeList>
