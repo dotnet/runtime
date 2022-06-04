@@ -126,6 +126,17 @@ namespace System
             _length = length;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private ReadOnlySpan(ref T reference, int start, int length)
+        {
+            Debug.Assert(start >= 0);
+            Debug.Assert(length >= 0);
+            Debug.Assert(length - start >= 0);
+
+            _reference = new ByReference<T>(ref Unsafe.Add(ref reference, (nint)(uint)start /* force zero-extension */));
+            _length = length;
+        }
+
         /// <summary>
         /// Returns the specified element of the read-only span.
         /// </summary>
@@ -345,7 +356,7 @@ namespace System
             if ((uint)start > (uint)_length)
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 
-            return new ReadOnlySpan<T>(ref Unsafe.Add(ref _reference.Value, (nint)(uint)start /* force zero-extension */), _length - start);
+            return new ReadOnlySpan<T>(ref _reference.Value, start, _length - start);
         }
 
         /// <summary>
@@ -368,7 +379,7 @@ namespace System
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 #endif
 
-            return new ReadOnlySpan<T>(ref Unsafe.Add(ref _reference.Value, (nint)(uint)start /* force zero-extension */), length);
+            return new ReadOnlySpan<T>(ref _reference.Value, start, length);
         }
 
         /// <summary>
