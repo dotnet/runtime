@@ -586,14 +586,28 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
 
     if (src->TypeIs(TYP_STRUCT))
     {
-        // STRUCT args (FIELD_LIST / OBJ) will always be contained.
+        // STRUCT args (FIELD_LIST / OBJ / LCL_VAR / LCL_FLD) will always be contained.
         MakeSrcContained(putArgStk, src);
 
-        // Additionally, codegen supports containment of local addresses under OBJs.
-        if (src->OperIs(GT_OBJ) && src->AsObj()->Addr()->OperIs(GT_LCL_VAR_ADDR))
+        // TODO-ADDR: always perform this transformation in local morph and delete this code.
+        if (src->OperIs(GT_OBJ) && src->AsObj()->Addr()->OperIsLocalAddr())
         {
-            // TODO-ARMARCH-CQ: support containment of LCL_FLD_ADDR too.
-            MakeSrcContained(src, src->AsObj()->Addr());
+            GenTreeLclVarCommon* lclAddrNode = src->AsObj()->Addr()->AsLclVarCommon();
+            unsigned             lclNum      = lclAddrNode->GetLclNum();
+            unsigned             lclOffs     = lclAddrNode->GetLclOffs();
+            ClassLayout*         layout      = src->AsObj()->GetLayout();
+
+            src->ChangeOper(GT_LCL_FLD);
+            src->AsLclFld()->SetLclNum(lclNum);
+            src->AsLclFld()->SetLclOffs(lclOffs);
+            src->AsLclFld()->SetLayout(layout);
+
+            BlockRange().Remove(lclAddrNode);
+        }
+        else if (src->OperIs(GT_LCL_VAR))
+        {
+            // TODO-1stClassStructs: support struct enregistration here by retyping "src" to its register type.
+            comp->lvaSetVarDoNotEnregister(src->AsLclVar()->GetLclNum() DEBUGARG(DoNotEnregisterReason::IsStructArg));
         }
     }
 }
