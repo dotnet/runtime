@@ -191,7 +191,6 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
                 _existingDictionary;
 
         }
-        
 
         public interface ICustomDictionary<T, T1> : IDictionary<T, T1>
         {
@@ -749,8 +748,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             var dic = new Dictionary<string, string>
             {
                 {"Dictionary:existing-item1", "666"},
-                {"Dictionary:item3", "3"},
-                {"Dictionary:item4", "4"}
+                {"Dictionary:item3", "3"}
             };
             var configurationBuilder = new ConfigurationBuilder();
             configurationBuilder.AddInMemoryCollection(dic);
@@ -759,7 +757,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
 
             var options = config.Get<ConfigWithInstantiatedIReadOnlyDictionary>()!;
 
-            Assert.Equal(4, options.Dictionary.Count);
+            Assert.Equal(3, options.Dictionary.Count);
 
             // does not overwrite original
             Assert.Equal(1, ConfigWithInstantiatedIReadOnlyDictionary._existingDictionary["existing-item1"]);
@@ -767,9 +765,6 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal(666, options.Dictionary["existing-item1"]);
             Assert.Equal(2, options.Dictionary["existing-item2"]);
             Assert.Equal(3, options.Dictionary["item3"]);
-            Assert.Equal(4, options.Dictionary["item4"]);
-
-            
         }
 
         [Fact]
@@ -778,8 +773,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             var dic = new Dictionary<string, string>
             {
                 {"Dictionary:existing-item1", "666"},
-                {"Dictionary:item3", "3"},
-                {"Dictionary:item4", "4"}
+                {"Dictionary:item3", "3"}
             };
             var configurationBuilder = new ConfigurationBuilder();
             configurationBuilder.AddInMemoryCollection(dic);
@@ -788,16 +782,13 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
 
             var options = config.Get<ConfigWithInstantiatedConcreteDictionary>()!;
 
-            Assert.Equal(4, options.Dictionary.Count);
+            Assert.Equal(3, options.Dictionary.Count);
 
             // overwrites original
             Assert.Equal(666, ConfigWithInstantiatedConcreteDictionary._existingDictionary["existing-item1"]);
             Assert.Equal(666, options.Dictionary["existing-item1"]);
             Assert.Equal(2, options.Dictionary["existing-item2"]);
             Assert.Equal(3, options.Dictionary["item3"]);
-            Assert.Equal(4, options.Dictionary["item4"]);
-
-            
         }
 
         [Fact]
@@ -815,11 +806,12 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
 
             var options = config.Get<ComplexOptions>()!;
 
-            Assert.Equal(4, options.InstantiatedReadOnlyDictionaryWithWithSomeValues.Count);
-            Assert.Equal(1, options.InstantiatedReadOnlyDictionaryWithWithSomeValues["existing-item1"]);
-            Assert.Equal(2, options.InstantiatedReadOnlyDictionaryWithWithSomeValues["existing-item2"]);
-            Assert.Equal(3, options.InstantiatedReadOnlyDictionaryWithWithSomeValues["item3"]);
-            Assert.Equal(4, options.InstantiatedReadOnlyDictionaryWithWithSomeValues["item4"]);
+            var resultingDictionary = options.InstantiatedReadOnlyDictionaryWithWithSomeValues;
+            Assert.Equal(4, resultingDictionary.Count);
+            Assert.Equal(1, resultingDictionary["existing-item1"]);
+            Assert.Equal(2, resultingDictionary["existing-item2"]);
+            Assert.Equal(3, resultingDictionary["item3"]);
+            Assert.Equal(4, resultingDictionary["item4"]);
 
             
         }
