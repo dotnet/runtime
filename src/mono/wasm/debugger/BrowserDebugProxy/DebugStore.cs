@@ -891,7 +891,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return -1;
         }
 
-        internal string EnCGetString(StringHandle strHandle)
+        public string EnCGetString(StringHandle strHandle)
         {
             var asmMetadataReaderLocal = asmMetadataReader;
             var strIdx = strHandle.GetHashCode();
@@ -932,7 +932,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                         var methodDefinition = asmMetadataReaderParm.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle(methodIdxAsm));
                         int methodIdx = GetMethodDebugInformationIdx(pdbMetadataReaderParm, asmMetadataReader.GetRowNumber(entry.Handle));
                         if (methods.TryGetValue(asmMetadataReader.GetRowNumber(entry.Handle), out MethodInfo method))
+                        {
                             method.UpdateEnC(asmMetadataReaderParm, pdbMetadataReaderParm, methodIdx);
+                        }
                         else if (typeInfo != null)
                         {
                             var methodDebugInformation = pdbMetadataReaderParm.GetMethodDebugInformation(MetadataTokens.MethodDebugInformationHandle(methodIdx));
