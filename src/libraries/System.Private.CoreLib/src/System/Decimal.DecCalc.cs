@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Internal;
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -1691,9 +1692,27 @@ ReturnZero:
             internal static void VarDecFromR8(double input, out DecCalc result)
             {
                 result = default;
-                result.Low64 = 12345;
 
-            // DREW NOTE: Early Exit if the float is too small, we could keep a version of this
+                (result.Low, result.Mid, result.High, uint scale) = Number.Dragon4DoubleToDecimal(input, 29, true);
+
+                uint flags = 0;
+                if (input < 0)
+                {
+                    flags = SignMask;
+                }
+
+                flags |= scale << ScaleShift;
+                result.uflags = flags;
+                // Span<char> destination = new Span<char>(new char[100]);
+                // input.TryFormat(destination, out int charsWritten);
+                // Debug.Assert(charsWritten != 0);
+                // string s = destination.ToString();
+                // Console.WriteLine(s);
+                // //Number.TryFormatDouble(input);
+                //Console.WriteLine(dec.ToString());
+                //result = AsMutable(ref dec);
+
+                // DREW NOTE: Early Exit if the float is too small, we could keep a version of this
                 // // The most we can scale by is 10^28, which is just slightly more
                 // // than 2^93.  So a float with an exponent of -94 could just
                 // // barely reach 0.5, but smaller exponents will always round to zero.
@@ -1702,7 +1721,7 @@ ReturnZero:
                 // int exp = (int)(GetExponent(input) - DBLBIAS);
                 // if (exp < -94)
                 //     return; // result should be zeroed out
-            //
+                //
                 // if (exp > 96)
                 //     Number.ThrowOverflowException(TypeCode.Decimal);
                 return;
