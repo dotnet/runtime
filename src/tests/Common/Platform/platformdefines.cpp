@@ -4,8 +4,6 @@
 
 
 #include "platformdefines.h"
-#include "safemath.h"
-
 
 LPWSTR HackyConvertToWSTR(const char* pszInput)
 {
@@ -330,7 +328,45 @@ DWORD TP_GetFullPathName(LPWSTR fileName, DWORD nBufferLength, LPWSTR lpBuffer)
 }
 
 #define INTSAFE_E_ARITHMETIC_OVERFLOW       ((HRESULT)0x80070216L)  // 0x216 = 534 = ERROR_ARITHMETIC_OVERFLOW
+#define ULONG_ERROR     (0xffffffffUL)
 #define WIN32_ALLOC_ALIGN (16 - 1)
+//
+// ULONGLONG -> ULONG conversion
+//
+HRESULT ULongLongToULong(ULONGLONG ullOperand, ULONG* pulResult)
+{
+    HRESULT hr = INTSAFE_E_ARITHMETIC_OVERFLOW;
+    *pulResult = ULONG_ERROR;
+    
+    if (ullOperand <= UINT32_MAX)
+    {
+        *pulResult = (ULONG)ullOperand;
+        hr = S_OK;
+    }
+    
+    return hr;
+}
+
+HRESULT ULongAdd(ULONG ulAugend, ULONG ulAddend,ULONG* pulResult)
+{
+    HRESULT hr = INTSAFE_E_ARITHMETIC_OVERFLOW;
+    *pulResult = ULONG_ERROR;
+
+    if ((ulAugend + ulAddend) >= ulAugend)
+    {
+        *pulResult = (ulAugend + ulAddend);
+        hr = S_OK;
+    }
+    
+    return hr;
+}
+
+HRESULT ULongMult(ULONG ulMultiplicand, ULONG ulMultiplier, ULONG* pulResult)
+{
+    ULONGLONG ull64Result = UInt32x32To64(ulMultiplicand, ulMultiplier);
+    
+    return ULongLongToULong(ull64Result, pulResult);
+}     
 
 HRESULT CbSysStringSize(ULONG cchSize, BOOL isByteLen, ULONG *result)
 {
@@ -339,24 +375,24 @@ HRESULT CbSysStringSize(ULONG cchSize, BOOL isByteLen, ULONG *result)
 
     // +2 for the null terminator
     // + DWORD_PTR to store the byte length of the string
-    ULONG constant = sizeof(WCHAR) + sizeof(DWORD_PTR) + WIN32_ALLOC_ALIGN;
+    int constant = sizeof(WCHAR) + sizeof(DWORD_PTR) + WIN32_ALLOC_ALIGN;
 
     if (isByteLen)
     {
-        if (ClrSafeInt<ULONG>::addition(constant, cchSize, *result))
+        if (SUCCEEDED(ULongAdd(constant, cchSize, result)))
         {
             *result = *result & ~WIN32_ALLOC_ALIGN;
-            return NOERROR;
+            return S_OK;
         }
     }
     else
     {
-        ULONG temp = 0;
-        if (ClrSafeInt<ULONG>::multiply(cchSize, sizeof(WCHAR), temp) &&
-            ClrSafeInt<ULONG>::addition(temp, constant, *result))
+        ULONG temp = 0; // should not use in-place addition in ULongAdd
+        if (SUCCEEDED(ULongMult(cchSize, sizeof(WCHAR), &temp)) &
+            SUCCEEDED(ULongAdd(temp, constant, result)))
         {
             *result = *result & ~WIN32_ALLOC_ALIGN;
-            return NOERROR;
+            return S_OK;
         }
     }
     return INTSAFE_E_ARITHMETIC_OVERFLOW;
