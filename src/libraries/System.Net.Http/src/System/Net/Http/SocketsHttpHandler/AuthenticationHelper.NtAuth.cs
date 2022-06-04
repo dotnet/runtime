@@ -182,9 +182,9 @@ namespace System.Net.Http
                         NegotiateAuthenticationStatusCode statusCode;
                         while (true)
                         {
-                            SecurityStatusPal statusCode;
-                            string? challengeResponse = authContext.GetOutgoingBlob(challengeData, throwOnError: false, out statusCode);
-                            if (statusCode.ErrorCode > SecurityStatusPalErrorCode.TryAgain || challengeResponse == null)
+                            NegotiateAuthenticationStatusCode statusCode;
+                            string? challengeResponse = authContext.GetOutgoingBlob(challengeData, out statusCode);
+                            if (statusCode > NegotiateAuthenticationStatusCode.ContinueNeeded || challengeResponse == null)
                             {
                                 // Response indicated denial even after login, so stop processing and return current response.
                                 break;
@@ -206,12 +206,12 @@ namespace System.Net.Http
                             if (!IsAuthenticationChallenge(response, isProxyAuth))
                             {
                                 // Tail response for Negoatiate on successful authentication. Validate it before we proceed.
-                                authContext.GetOutgoingBlob(challengeData, throwOnError: false, out statusCode);
-                                if (statusCode.ErrorCode != SecurityStatusPalErrorCode.OK)
+                                authContext.GetOutgoingBlob(challengeData,  out statusCode);
+                                if (statusCode > NegotiateAuthenticationStatusCode.ContinueNeeded)
                                 {
                                     isNewConnection = false;
                                     connection.Dispose();
-                                    throw new HttpRequestException(SR.Format(SR.net_http_authvalidationfailure, statusCode.ErrorCode), null, HttpStatusCode.Unauthorized);
+                                    throw new HttpRequestException(SR.Format(SR.net_http_authvalidationfailure, statusCode), null, HttpStatusCode.Unauthorized);
                                 }
                                 break;
                             }
