@@ -214,7 +214,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 ZippedETLReader etlReader = new ZippedETLReader(inputFileName, log);
                 etlReader.EtlFileName = unzipedEtlFile;
 
-                // Figure out where to put the symbols.  
+                // Figure out where to put the symbols.
                 var inputDir = Path.GetDirectoryName(inputFileName);
                 if (inputDir.Length == 0)
                 {
@@ -1692,7 +1692,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
                 methodPrepareInstruction.Clear();
                 instantiationBuilder.Clear();
-                // Format is FriendlyNameOfMethod~typeIndex~ArgCount~GenericParameterCount:genericParamsSeperatedByColons~MethodName
+                // Format is FriendlyNameOfMethod~typeIndex~ArgCount~GenericParameterCount:genericParamsSeparatedByColons~MethodName
                 // This format is not sufficient to exactly describe methods, so the runtime component may compile similar methods
                 // In the various strings \ is escaped to \\ and in the outer ~ csv the ~ character is escaped to \s. In the inner csv : is escaped to \s
                 try

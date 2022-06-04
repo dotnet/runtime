@@ -62,7 +62,7 @@ namespace System
                     break;
                 }
 
-                if (c >= '0' && c <= '9')
+                if (char.IsAsciiDigit(c))
                 {
                     hour = hour * 10 + c - '0';
                 }
@@ -77,7 +77,7 @@ namespace System
             {
                 char c = name [where];
 
-                if (c >= '0' && c <= '9')
+                if (char.IsAsciiDigit(c))
                 {
                     min = min * 10 + c - '0';
                 }

@@ -182,7 +182,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowOM();
 
 
 //==========================================================================
-// Helpful macros to declare exception handlers, their implementaiton,
+// Helpful macros to declare exception handlers, their implementation,
 // and to call them.
 //==========================================================================
 

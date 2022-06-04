@@ -177,7 +177,7 @@ exit /b %ERRORLEVEL%
 
 :: Note: We've disabled node reuse because it causes file locking issues.
 ::       The issue is that we extend the build with our own targets which
-::       means that that rebuilding cannot successfully delete the task
+::       means that rebuilding cannot successfully delete the task
 ::       assembly.
 set __msbuildCommonArgs=/nologo /nodeReuse:false %__msbuildExtraArgs% /p:Platform=%__MSBuildBuildArch%
 

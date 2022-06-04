@@ -954,7 +954,7 @@ BOOL AssemblySpecBindingCache::StoreAssembly(AssemblySpec *pSpec, DomainAssembly
             }
             else
             {
-                // OK if we have have a matching PEAssembly
+                // OK if we have a matching PEAssembly
                 if (entry->GetFile() != NULL
                     && pAssembly->GetPEAssembly()->Equals(entry->GetFile()))
                 {

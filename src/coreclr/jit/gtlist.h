@@ -46,6 +46,7 @@ GTNODE(CNS_INT          , GenTreeIntCon      ,0,GTK_LEAF)
 GTNODE(CNS_LNG          , GenTreeLngCon      ,0,GTK_LEAF)
 GTNODE(CNS_DBL          , GenTreeDblCon      ,0,GTK_LEAF)
 GTNODE(CNS_STR          , GenTreeStrCon      ,0,GTK_LEAF)
+GTNODE(CNS_VEC          , GenTreeVecCon      ,0,GTK_LEAF)
 
 //-----------------------------------------------------------------------------
 //  Unary  operators (1 operand):
@@ -217,10 +218,6 @@ GTNODE(MUL_LONG         , GenTreeOp          ,1,GTK_BINOP|DBK_NOTHIR)
 GTNODE(AND_NOT          , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR)
 
 #ifdef TARGET_ARM64
-GTNODE(MADD             , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR) // Generates the Multiply-Add instruction. In the future, we might consider
-                                                                      // enabling it for both armarch and xarch for floating-point MADD "unsafe" math.
-GTNODE(MSUB             , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR) // Generates the Multiply-Subtract instruction. In the future, we might consider
-                                                                      // enabling it for both armarch and xarch for floating-point MSUB "unsafe" math.
 GTNODE(ADDEX,             GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR) // Add with sign/zero extension.
 GTNODE(BFIZ             , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR) // Bitfield Insert in Zero.
 GTNODE(CSNEG_MI         , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR) // Conditional select, negate, minus result

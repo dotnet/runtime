@@ -5,6 +5,8 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+
 using static System.Runtime.CompilerServices.RuntimeHelpers;
 
 namespace System.Reflection
@@ -203,7 +205,7 @@ namespace System.Reflection
             // We don't check a max stack size since we are invoking a method which
             // naturally requires a stack size that is dependent on the arg count\size.
             IntPtr* pByRefStorage = stackalloc IntPtr[argCount];
-            Buffer.ZeroMemory((byte*)pByRefStorage, (uint)(argCount * sizeof(IntPtr)));
+            NativeMemory.Clear(pByRefStorage, (uint)(argCount * sizeof(IntPtr)));
 
             ParameterCopyBackAction* copyBackActions = stackalloc ParameterCopyBackAction[argCount];
             Span<ParameterCopyBackAction> shouldCopyBackParameters = new(copyBackActions, argCount);

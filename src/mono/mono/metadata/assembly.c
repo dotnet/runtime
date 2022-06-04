@@ -999,6 +999,7 @@ mono_assembly_load_reference (MonoImage *image, int index)
 		} else if (status == MONO_IMAGE_IMAGE_INVALID) {
 			extra_msg = g_strdup ("The file exists but is not a valid assembly.\n");
 		} else {
+			g_assert (status != MONO_IMAGE_NOT_SUPPORTED); // runtime should not use unsupported APIs
 			extra_msg = g_strdup ("");
 		}
 
@@ -1554,7 +1555,7 @@ mono_assembly_open_full (const char *filename, MonoImageOpenStatus *status, gboo
 {
 	if (refonly) {
 		if (status)
-			*status = MONO_IMAGE_IMAGE_INVALID;
+			*status = MONO_IMAGE_NOT_SUPPORTED;
 		return NULL;
 	}
 	MonoAssembly *res;
@@ -1865,7 +1866,7 @@ mono_assembly_load_from_full (MonoImage *image, const char*fname,
 {
 	if (refonly) {
 		if (status)
-			*status = MONO_IMAGE_IMAGE_INVALID;
+			*status = MONO_IMAGE_NOT_SUPPORTED;
 		return NULL;
 	}
 	MonoAssembly *res;
@@ -1922,7 +1923,7 @@ mono_assembly_request_load_from (MonoImage *image, const char *fname,
 	 */
 	ass = g_new0 (MonoAssembly, 1);
 	ass->basedir = base_dir;
-	ass->context.no_managed_load_event = req->no_managed_load_event;
+	ass->context.no_managed_load_event = !!req->no_managed_load_event;
 	ass->image = image;
 
 	MONO_PROFILER_RAISE (assembly_loading, (ass));
@@ -2111,14 +2112,14 @@ parse_public_key (const gchar *key, gchar** pubkey, gboolean *is_ecma)
 		return TRUE;
 	}
 	*is_ecma = FALSE;
-	val = g_ascii_xdigit_value (key [0]) << 4;
-	val |= g_ascii_xdigit_value (key [1]);
+	val = GINT_TO_CHAR (g_ascii_xdigit_value (key [0]) << 4);
+	val |= GINT_TO_CHAR (g_ascii_xdigit_value (key [1]));
 	switch (val) {
 		case 0x00:
 			if (keylen < 13)
 				return FALSE;
-			val = g_ascii_xdigit_value (key [24]);
-			val |= g_ascii_xdigit_value (key [25]);
+			val = GINT_TO_CHAR (g_ascii_xdigit_value (key [24]));
+			val |= GINT_TO_CHAR (g_ascii_xdigit_value (key [25]));
 			if (val != 0x06)
 				return FALSE;
 			pkey = key + 24;
@@ -2137,8 +2138,8 @@ parse_public_key (const gchar *key, gchar** pubkey, gboolean *is_ecma)
 		return FALSE;
 
 	for (i = 0, j = 0; i < 16; i++) {
-		header [i] = g_ascii_xdigit_value (pkey [j++]) << 4;
-		header [i] |= g_ascii_xdigit_value (pkey [j++]);
+		header [i] = GINT_TO_CHAR (g_ascii_xdigit_value (pkey [j++]) << 4);
+		header [i] |= GINT_TO_CHAR (g_ascii_xdigit_value (pkey [j++]));
 	}
 
 	if (header [0] != 0x06 || /* PUBLICKEYBLOB (0x06) */
@@ -2159,8 +2160,8 @@ parse_public_key (const gchar *key, gchar** pubkey, gboolean *is_ecma)
 	offset = (gint)(endp-arr);
 
 	for (i = offset, j = 0; i < keylen + offset; i++) {
-		arr [i] = g_ascii_xdigit_value (key [j++]) << 4;
-		arr [i] |= g_ascii_xdigit_value (key [j++]);
+		arr [i] = GINT_TO_CHAR (g_ascii_xdigit_value (key [j++]) << 4);
+		arr [i] |= GINT_TO_CHAR (g_ascii_xdigit_value (key [j++]));
 	}
 
 	*pubkey = arr;
@@ -2287,7 +2288,7 @@ split_key_value (const gchar *pair, gchar **key, guint32 *keylen, gchar **value)
 	}
 
 	*key = (gchar*)pair;
-	*keylen = eqsign - *key;
+	*keylen = GPTRDIFF_TO_UINT32 (eqsign - *key);
 	while (*keylen > 0 && g_ascii_isspace ((*key) [*keylen - 1]))
 		(*keylen)--;
 	*value = g_strstrip (eqsign + 1);
@@ -2588,12 +2589,12 @@ uint16_t
 mono_assembly_name_get_version (MonoAssemblyName *aname, uint16_t *minor, uint16_t *build, uint16_t *revision)
 {
 	if (minor)
-		*minor = aname->minor;
+		*minor = GINT32_TO_UINT16 (aname->minor);
 	if (build)
-		*build = aname->build;
+		*build = GINT32_TO_UINT16 (aname->build);
 	if (revision)
-		*revision = aname->revision;
-	return aname->major;
+		*revision = GINT32_TO_UINT16 (aname->revision);
+	return GINT32_TO_UINT16 (aname->major);
 }
 
 gboolean
@@ -2725,6 +2726,7 @@ mono_assembly_load_corlib ()
 			g_print ("Missing assembly reference in " MONO_ASSEMBLY_CORLIB_NAME ".dll\n");
 			break;
 		default:
+			g_assert (status != MONO_IMAGE_NOT_SUPPORTED); // runtime should not be using unsupported APIs
 			g_assertf(0, "Unexpected status %d while loading " MONO_ASSEMBLY_CORLIB_NAME ".dll", status);
 			break;
 		}
@@ -2817,7 +2819,7 @@ mono_assembly_load_full (MonoAssemblyName *aname, const char *basedir, MonoImage
 {
 	if (refonly) {
 		if (status)
-			*status = MONO_IMAGE_IMAGE_INVALID;
+			*status = MONO_IMAGE_NOT_SUPPORTED;
 		return NULL;
 	}
 	MonoAssembly *res;
@@ -3225,7 +3227,7 @@ mono_assembly_is_jit_optimizer_disabled (MonoAssembly *ass)
 		mono_custom_attrs_free (attrs);
 	}
 
-	ass->jit_optimizer_disabled = disable_opts;
+	ass->jit_optimizer_disabled = !!disable_opts;
 	mono_memory_barrier ();
 	ass->jit_optimizer_disabled_inited = TRUE;
 

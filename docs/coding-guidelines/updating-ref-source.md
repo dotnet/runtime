@@ -21,7 +21,7 @@ These steps can also be applied to some unique assemblies which depend on change
 For implementation assemblies that are "full facades" over another assembly but define types in the reference assembly (ex. System.Runtime.Serialization.Json or System.Xml.XDocument), use the following command to generate the reference source code instead:
 
 ```
-dotnet msbuild /t:GenerateReferenceAssemblySource /p:GenAPIAdditionalParameters=--follow-type-forwards
+dotnet msbuild /t:GenerateReferenceAssemblySource /p:GenAPIFollowTypeForwards=true
 ```
 
 ## For .NETFramework Facade Assemblies

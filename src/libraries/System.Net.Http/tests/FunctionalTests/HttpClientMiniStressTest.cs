@@ -33,6 +33,7 @@ namespace System.Net.Http.Functional.Tests
     }
 
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMsQuicSupported))]
+    [Collection(nameof(DisableParallelization))]
     public sealed class SocketsHttpHandler_HttpClientMiniStress_Http3_MsQuic : HttpClientMiniStress
     {
         public SocketsHttpHandler_HttpClientMiniStress_Http3_MsQuic(ITestOutputHelper output) : base(output) { }
@@ -85,7 +86,7 @@ namespace System.Net.Http.Functional.Tests
                 await server.AcceptConnectionAsync(async connection =>
                 {
                     byte[] postData = new byte[numBytes];
-                    while (!string.IsNullOrEmpty(await connection.ReadLineAsync().ConfigureAwait(false)));
+                    while (!string.IsNullOrEmpty(await connection.ReadLineAsync().ConfigureAwait(false))) ;
                     Assert.Equal(numBytes, await connection.ReadBlockAsync(postData, 0, numBytes));
 
                     await connection.WriteStringAsync(responseText).ConfigureAwait(false);

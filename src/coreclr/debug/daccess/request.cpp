@@ -33,7 +33,7 @@ typedef DPTR(InteropLib::ABI::ManagedObjectWrapperLayout) PTR_ManagedObjectWrapp
 #include <msodw.h>
 #endif // TARGET_UNIX
 
-// To include definiton of IsThrowableThreadAbortException
+// To include definition of IsThrowableThreadAbortException
 #include <exstatecommon.h>
 
 #include "rejit.h"
@@ -646,15 +646,34 @@ ClrDataAccess::GetRegisterName(int regNum, unsigned int count, _Inout_updates_z_
     if ((unsigned int)regNum >= ARRAY_SIZE(regs))
         return E_UNEXPECTED;
 
-
-    const WCHAR caller[] = W("caller.");
-    unsigned int needed = (callerFrame?(unsigned int)wcslen(caller):0) + (unsigned int)wcslen(regs[regNum]) + 1;
+    const WCHAR callerPrefix[] = W("caller.");
+    unsigned int prefixLen = (unsigned int)ARRAY_SIZE(callerPrefix) - 1;
+    unsigned int regLen = (unsigned int)wcslen(regs[regNum]);
+    unsigned int needed = (callerFrame?prefixLen:0) + regLen + 1;
     if (pNeeded)
         *pNeeded = needed;
 
     if (buffer)
     {
-        _snwprintf_s(buffer, count, _TRUNCATE, W("%s%s"), callerFrame ? caller : W(""), regs[regNum]);
+        WCHAR* curr = buffer;
+        WCHAR* end = buffer + count;
+        unsigned int destSize = count;
+        if (curr < end && callerFrame)
+        {
+            unsigned int toCopy = prefixLen < destSize ? prefixLen : destSize;
+            wcscpy_s(curr, toCopy, callerPrefix);
+            curr += toCopy;
+            destSize -= toCopy;
+        }
+
+        if (curr < end)
+        {
+            unsigned int toCopy = regLen < destSize ? regLen : destSize;
+            wcscpy_s(curr, toCopy, regs[regNum]);
+            curr += toCopy;
+            destSize -= toCopy;
+        }
+
         if (count < needed)
             return S_FALSE;
     }
@@ -2836,6 +2855,15 @@ ClrDataAccess::GetHeapSegmentData(CLRDATA_ADDRESS seg, struct DacpHeapSegmentDat
             heapSegment->flags = pSegment->flags;
             heapSegment->gc_heap = NULL;
             heapSegment->background_allocated = (CLRDATA_ADDRESS)(ULONG_PTR)pSegment->background_allocated;
+
+            if (seg == (CLRDATA_ADDRESS)*g_gcDacGlobals->ephemeral_heap_segment)
+            {
+                heapSegment->highAllocMark = (CLRDATA_ADDRESS)*g_gcDacGlobals->alloc_allocated;
+            }
+            else
+            {
+                heapSegment->highAllocMark = heapSegment->allocated;
+            }
         }
     }
 

@@ -6,8 +6,6 @@
 // Definitions of a Com+ Object
 //
 
-
-
 #include "common.h"
 
 #include "vars.hpp"
@@ -466,14 +464,6 @@ VOID Object::Validate(BOOL bDeep, BOOL bVerifyNextHeader, BOOL bVerifySyncBlock)
     STATIC_CONTRACT_MODE_COOPERATIVE;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
 
-    if (g_IBCLogger.InstrEnabled() && !GCStress<cfg_any>::IsEnabled())
-    {
-        // If we are instrumenting for IBC (and GCStress is not enabled)
-        // then skip these Object::Validate() as they slow down the
-        // instrument phase by an order of magnitude
-        return;
-    }
-
     if (g_fEEShutDown & ShutDown_Phase2)
     {
         // During second phase of shutdown the code below is not guaranteed to work.
@@ -885,7 +875,8 @@ BOOL StringObject::CaseInsensitiveCompHelper(_In_reads_(aLength) WCHAR *strAChar
     unsigned charA;
     unsigned charB;
 
-    for(;;) {
+    while (true)
+    {
         charA = *strAChars;
         charB = (unsigned) *strBChars;
 
@@ -1170,7 +1161,7 @@ int OBJECTREF::operator==(const OBJECTREF &objref) const
     {
         // REVISIT_TODO: Weakening the contract system a little bit here. We should really
         // add a special NULLOBJECTREF which can be used for these situations and have
-        // a seperate code path for that with the correct contract protections.
+        // a separate code path for that with the correct contract protections.
         STATIC_CONTRACT_VIOLATION(ModeViolation);
 
         VALIDATEOBJECT(objref.m_asObj);
@@ -1208,7 +1199,7 @@ int OBJECTREF::operator!=(const OBJECTREF &objref) const
     {
         // REVISIT_TODO: Weakening the contract system a little bit here. We should really
         // add a special NULLOBJECTREF which can be used for these situations and have
-        // a seperate code path for that with the correct contract protections.
+        // a separate code path for that with the correct contract protections.
         STATIC_CONTRACT_VIOLATION(ModeViolation);
 
         VALIDATEOBJECT(objref.m_asObj);

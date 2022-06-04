@@ -79,7 +79,7 @@ void VMToOSInterface::DestroyDoubleMemoryMapper(void *mapperHandle)
 #endif
 }
 
-extern "C" void* PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(const void* lpBeginAddress, const void* lpEndAddress, size_t dwSize);
+extern "C" void* PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(const void* lpBeginAddress, const void* lpEndAddress, size_t dwSize, int fStoreAllocationInfo);
 
 #ifdef TARGET_OSX
 bool IsMapJitFlagNeeded()
@@ -118,34 +118,42 @@ void* VMToOSInterface::ReserveDoubleMappedMemory(void *mapperHandle, size_t offs
 {
     int fd = (int)(size_t)mapperHandle;
 
-    if (rangeStart != NULL || rangeEnd != NULL)
+    bool isUnlimitedRange = (rangeStart == NULL) && (rangeEnd == NULL);
+
+    if (isUnlimitedRange)
     {
-        void* result = PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(rangeStart, rangeEnd, size);
+        rangeEnd = (void*)SIZE_MAX;
+    }
+
+    void* result = PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(rangeStart, rangeEnd, size, 0 /* fStoreAllocationInfo */);
 #ifndef TARGET_OSX
-        if (result != NULL)
+    if (result != NULL)
+    {
+        // Map the shared memory over the range reserved from the executable memory allocator.
+        result = mmap(result, size, PROT_NONE, MAP_SHARED | MAP_FIXED, fd, offset);
+        if (result == MAP_FAILED)
         {
-            // Map the shared memory over the range reserved from the executable memory allocator.
-            result = mmap(result, size, PROT_NONE, MAP_SHARED | MAP_FIXED, fd, offset);
-            if (result == MAP_FAILED)
-            {
-                assert(false);
-                result = NULL;
-            }
+            assert(false);
+            result = NULL;
         }
+    }
 #endif // TARGET_OSX
 
+    // For requests with limited range, don't try to fall back to reserving at any address
+    if ((result != NULL) || !isUnlimitedRange)
+    {
         return result;
     }
 
 #ifndef TARGET_OSX
-    void* result = mmap(NULL, size, PROT_NONE, MAP_SHARED, fd, offset);
+    result = mmap(NULL, size, PROT_NONE, MAP_SHARED, fd, offset);
 #else
     int mmapFlags = MAP_ANON | MAP_PRIVATE;
     if (IsMapJitFlagNeeded())
     {
         mmapFlags |= MAP_JIT;
     }
-    void* result = mmap(NULL, size, PROT_NONE, mmapFlags, -1, 0);
+    result = mmap(NULL, size, PROT_NONE, mmapFlags, -1, 0);
 #endif    
     if (result == MAP_FAILED)
     {

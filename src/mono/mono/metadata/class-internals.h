@@ -1226,7 +1226,7 @@ mono_class_get_fields_lazy (MonoClass* klass, gpointer *iter);
 gboolean
 mono_class_check_vtable_constraints (MonoClass *klass, GList *in_setup);
 
-gboolean
+MONO_COMPONENT_API gboolean
 mono_class_has_finalizer (MonoClass *klass);
 
 void
@@ -1392,6 +1392,9 @@ mono_class_get_weak_bitmap (MonoClass *klass, int *nbits);
 
 gboolean
 mono_class_has_dim_conflicts (MonoClass *klass);
+
+gboolean
+mono_class_is_method_ambiguous (MonoClass *klass, MonoMethod *method);
 
 void
 mono_class_set_dim_conflicts (MonoClass *klass, GSList *conflicts);

@@ -74,7 +74,7 @@ decompose_long_opcode (MonoCompile *cfg, MonoInst *ins, MonoInst **repl_ins)
 		NULLIFY_INS (ins);
 		break;
 	case OP_LADD_OVF: {
-		int opcode;
+		guint16 opcode;
 
 		if (COMPILE_LLVM (cfg))
 			break;
@@ -88,7 +88,7 @@ decompose_long_opcode (MonoCompile *cfg, MonoInst *ins, MonoInst **repl_ins)
 		break;
 	}
 	case OP_LADD_OVF_UN: {
-		int opcode;
+		guint16 opcode;
 
 		if (COMPILE_LLVM (cfg))
 			break;
@@ -103,7 +103,7 @@ decompose_long_opcode (MonoCompile *cfg, MonoInst *ins, MonoInst **repl_ins)
 	}
 #ifndef __mono_ppc64__
 	case OP_LSUB_OVF: {
-		int opcode;
+		guint16 opcode;
 
 		if (COMPILE_LLVM (cfg))
 			break;
@@ -117,7 +117,7 @@ decompose_long_opcode (MonoCompile *cfg, MonoInst *ins, MonoInst **repl_ins)
 		break;
 	}
 	case OP_LSUB_OVF_UN: {
-		int opcode;
+		guint16 opcode;
 
 		if (COMPILE_LLVM (cfg))
 			break;
@@ -306,7 +306,7 @@ MonoInst*
 mono_decompose_opcode (MonoCompile *cfg, MonoInst *ins)
 {
 	MonoInst *repl = NULL;
-	int type = ins->type;
+	guint8 type = ins->type;
 	int dreg = ins->dreg;
 	gboolean emulate = FALSE;
 
@@ -936,7 +936,7 @@ mono_decompose_long_opts (MonoCompile *cfg)
 				if (tree->inst_c1 == 32) {
 
 					/* The original code had this comment: */
-					/* special case that gives a nice speedup and happens to workaorund a ppc jit but (for the release)
+					/* special case that gives a nice speedup and happens to workaround a ppc jit but (for the release)
 					 * later apply the speedup to the left shift as well
 					 * See BUG# 57957.
 					 */

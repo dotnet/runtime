@@ -809,6 +809,8 @@ namespace System.Runtime.InteropServices
         public static void Free(void* ptr) { }
         [System.CLSCompliantAttribute(false)]
         public static void* Realloc(void* ptr, nuint byteCount) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static void Clear(void* ptr, nuint byteCount) { throw null; }
     }
     public readonly partial struct NFloat : System.IComparable, System.IComparable<System.Runtime.InteropServices.NFloat>, System.IEquatable<System.Runtime.InteropServices.NFloat>, System.IFormattable, System.IParsable<System.Runtime.InteropServices.NFloat>, System.ISpanFormattable, System.ISpanParsable<System.Runtime.InteropServices.NFloat>, System.Numerics.IAdditionOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IAdditiveIdentity<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IBinaryFloatingPointIeee754<System.Runtime.InteropServices.NFloat>, System.Numerics.IBinaryNumber<System.Runtime.InteropServices.NFloat>, System.Numerics.IBitwiseOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IComparisonOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IDecrementOperators<System.Runtime.InteropServices.NFloat>, System.Numerics.IDivisionOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IEqualityOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IExponentialFunctions<System.Runtime.InteropServices.NFloat>, System.Numerics.IFloatingPoint<System.Runtime.InteropServices.NFloat>, System.Numerics.IFloatingPointIeee754<System.Runtime.InteropServices.NFloat>, System.Numerics.IHyperbolicFunctions<System.Runtime.InteropServices.NFloat>, System.Numerics.IIncrementOperators<System.Runtime.InteropServices.NFloat>, System.Numerics.ILogarithmicFunctions<System.Runtime.InteropServices.NFloat>, System.Numerics.IMinMaxValue<System.Runtime.InteropServices.NFloat>, System.Numerics.IModulusOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IMultiplicativeIdentity<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IMultiplyOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.INumber<System.Runtime.InteropServices.NFloat>, System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>, System.Numerics.IPowerFunctions<System.Runtime.InteropServices.NFloat>, System.Numerics.IRootFunctions<System.Runtime.InteropServices.NFloat>, System.Numerics.ISignedNumber<System.Runtime.InteropServices.NFloat>, System.Numerics.ISubtractionOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.ITrigonometricFunctions<System.Runtime.InteropServices.NFloat>, System.Numerics.IUnaryNegationOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IUnaryPlusOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>
     {
@@ -824,13 +826,14 @@ namespace System.Runtime.InteropServices
         public static System.Runtime.InteropServices.NFloat NegativeZero { get { throw null; } }
         public static System.Runtime.InteropServices.NFloat Pi { get { throw null; } }
         public static System.Runtime.InteropServices.NFloat PositiveInfinity { get { throw null; } }
-        public static System.Runtime.InteropServices.NFloat Tau { get { throw null; } }
         public static int Size { get { throw null; } }
         static System.Runtime.InteropServices.NFloat System.Numerics.IAdditiveIdentity<System.Runtime.InteropServices.NFloat,System.Runtime.InteropServices.NFloat>.AdditiveIdentity { get { throw null; } }
         static System.Runtime.InteropServices.NFloat System.Numerics.IMultiplicativeIdentity<System.Runtime.InteropServices.NFloat,System.Runtime.InteropServices.NFloat>.MultiplicativeIdentity { get { throw null; } }
         static System.Runtime.InteropServices.NFloat System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>.One { get { throw null; } }
+        static int System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>.Radix { get { throw null; } }
         static System.Runtime.InteropServices.NFloat System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>.Zero { get { throw null; } }
         static System.Runtime.InteropServices.NFloat System.Numerics.ISignedNumber<System.Runtime.InteropServices.NFloat>.NegativeOne { get { throw null; } }
+        public static System.Runtime.InteropServices.NFloat Tau { get { throw null; } }
         public double Value { get { throw null; } }
         public static System.Runtime.InteropServices.NFloat Abs(System.Runtime.InteropServices.NFloat value) { throw null; }
         public static System.Runtime.InteropServices.NFloat Acos(System.Runtime.InteropServices.NFloat x) { throw null; }
@@ -850,9 +853,6 @@ namespace System.Runtime.InteropServices
         public static System.Runtime.InteropServices.NFloat CopySign(System.Runtime.InteropServices.NFloat x, System.Runtime.InteropServices.NFloat y) { throw null; }
         public static System.Runtime.InteropServices.NFloat Cos(System.Runtime.InteropServices.NFloat x) { throw null; }
         public static System.Runtime.InteropServices.NFloat Cosh(System.Runtime.InteropServices.NFloat x) { throw null; }
-        public static System.Runtime.InteropServices.NFloat CreateChecked<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
-        public static System.Runtime.InteropServices.NFloat CreateSaturating<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
-        public static System.Runtime.InteropServices.NFloat CreateTruncating<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(System.Runtime.InteropServices.NFloat other) { throw null; }
         public static System.Runtime.InteropServices.NFloat Exp(System.Runtime.InteropServices.NFloat x) { throw null; }
@@ -866,14 +866,19 @@ namespace System.Runtime.InteropServices
         public override int GetHashCode() { throw null; }
         public static System.Runtime.InteropServices.NFloat Ieee754Remainder(System.Runtime.InteropServices.NFloat left, System.Runtime.InteropServices.NFloat right) { throw null; }
         public static int ILogB(System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static bool IsEvenInteger(System.Runtime.InteropServices.NFloat value) { throw null; }
         public static bool IsFinite(System.Runtime.InteropServices.NFloat value) { throw null; }
         public static bool IsInfinity(System.Runtime.InteropServices.NFloat value) { throw null; }
+        public static bool IsInteger(System.Runtime.InteropServices.NFloat value) { throw null; }
         public static bool IsNaN(System.Runtime.InteropServices.NFloat value) { throw null; }
         public static bool IsNegative(System.Runtime.InteropServices.NFloat value) { throw null; }
         public static bool IsNegativeInfinity(System.Runtime.InteropServices.NFloat value) { throw null; }
         public static bool IsNormal(System.Runtime.InteropServices.NFloat value) { throw null; }
+        public static bool IsOddInteger(System.Runtime.InteropServices.NFloat value) { throw null; }
+        public static bool IsPositive(System.Runtime.InteropServices.NFloat value) { throw null; }
         public static bool IsPositiveInfinity(System.Runtime.InteropServices.NFloat value) { throw null; }
         public static bool IsPow2(System.Runtime.InteropServices.NFloat value) { throw null; }
+        public static bool IsRealNumber(System.Runtime.InteropServices.NFloat value) { throw null; }
         public static bool IsSubnormal(System.Runtime.InteropServices.NFloat value) { throw null; }
         public static System.Runtime.InteropServices.NFloat Log(System.Runtime.InteropServices.NFloat x) { throw null; }
         public static System.Runtime.InteropServices.NFloat Log(System.Runtime.InteropServices.NFloat x, System.Runtime.InteropServices.NFloat newBase) { throw null; }
@@ -891,14 +896,36 @@ namespace System.Runtime.InteropServices
         public static System.Runtime.InteropServices.NFloat MinMagnitudeNumber(System.Runtime.InteropServices.NFloat x, System.Runtime.InteropServices.NFloat y) { throw null; }
         public static System.Runtime.InteropServices.NFloat MinNumber(System.Runtime.InteropServices.NFloat x, System.Runtime.InteropServices.NFloat y) { throw null; }
         public static System.Runtime.InteropServices.NFloat operator +(System.Runtime.InteropServices.NFloat left, System.Runtime.InteropServices.NFloat right) { throw null; }
+        public static explicit operator checked byte (System.Runtime.InteropServices.NFloat value) { throw null; }
+        public static explicit operator checked char (System.Runtime.InteropServices.NFloat value) { throw null; }
+        public static explicit operator checked short (System.Runtime.InteropServices.NFloat value) { throw null; }
+        public static explicit operator checked int (System.Runtime.InteropServices.NFloat value) { throw null; }
+        public static explicit operator checked long (System.Runtime.InteropServices.NFloat value) { throw null; }
+        public static explicit operator checked System.Int128 (System.Runtime.InteropServices.NFloat value) { throw null; }
+        public static explicit operator checked nint (System.Runtime.InteropServices.NFloat value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator checked sbyte (System.Runtime.InteropServices.NFloat value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator checked ushort (System.Runtime.InteropServices.NFloat value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator checked uint (System.Runtime.InteropServices.NFloat value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator checked ulong (System.Runtime.InteropServices.NFloat value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator checked System.UInt128 (System.Runtime.InteropServices.NFloat value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator checked nuint (System.Runtime.InteropServices.NFloat value) { throw null; }
         public static System.Runtime.InteropServices.NFloat operator --(System.Runtime.InteropServices.NFloat value) { throw null; }
         public static System.Runtime.InteropServices.NFloat operator /(System.Runtime.InteropServices.NFloat left, System.Runtime.InteropServices.NFloat right) { throw null; }
         public static bool operator ==(System.Runtime.InteropServices.NFloat left, System.Runtime.InteropServices.NFloat right) { throw null; }
         public static explicit operator System.Runtime.InteropServices.NFloat (decimal value) { throw null; }
         public static explicit operator System.Runtime.InteropServices.NFloat (double value) { throw null; }
+        public static explicit operator System.Runtime.InteropServices.NFloat (System.Int128 value) { throw null; }
         public static explicit operator byte (System.Runtime.InteropServices.NFloat value) { throw null; }
         public static explicit operator char (System.Runtime.InteropServices.NFloat value) { throw null; }
         public static explicit operator decimal (System.Runtime.InteropServices.NFloat value) { throw null; }
+        public static explicit operator System.Half (System.Runtime.InteropServices.NFloat value) { throw null; }
+        public static explicit operator System.Int128 (System.Runtime.InteropServices.NFloat value) { throw null; }
         public static explicit operator short (System.Runtime.InteropServices.NFloat value) { throw null; }
         public static explicit operator int (System.Runtime.InteropServices.NFloat value) { throw null; }
         public static explicit operator long (System.Runtime.InteropServices.NFloat value) { throw null; }
@@ -907,6 +934,8 @@ namespace System.Runtime.InteropServices
         public static explicit operator sbyte (System.Runtime.InteropServices.NFloat value) { throw null; }
         public static explicit operator float (System.Runtime.InteropServices.NFloat value) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        public static explicit operator System.UInt128 (System.Runtime.InteropServices.NFloat value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
         public static explicit operator ushort (System.Runtime.InteropServices.NFloat value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static explicit operator uint (System.Runtime.InteropServices.NFloat value) { throw null; }
@@ -914,6 +943,8 @@ namespace System.Runtime.InteropServices
         public static explicit operator ulong (System.Runtime.InteropServices.NFloat value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static explicit operator nuint (System.Runtime.InteropServices.NFloat value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator System.Runtime.InteropServices.NFloat (System.UInt128 value) { throw null; }
         public static bool operator >(System.Runtime.InteropServices.NFloat left, System.Runtime.InteropServices.NFloat right) { throw null; }
         public static bool operator >=(System.Runtime.InteropServices.NFloat left, System.Runtime.InteropServices.NFloat right) { throw null; }
         public static implicit operator System.Runtime.InteropServices.NFloat (byte value) { throw null; }
@@ -922,6 +953,7 @@ namespace System.Runtime.InteropServices
         public static implicit operator System.Runtime.InteropServices.NFloat (int value) { throw null; }
         public static implicit operator System.Runtime.InteropServices.NFloat (long value) { throw null; }
         public static implicit operator System.Runtime.InteropServices.NFloat (nint value) { throw null; }
+        public static implicit operator System.Runtime.InteropServices.NFloat (System.Half value) { throw null; }
         public static implicit operator double (System.Runtime.InteropServices.NFloat value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static implicit operator System.Runtime.InteropServices.NFloat (sbyte value) { throw null; }
@@ -970,13 +1002,25 @@ namespace System.Runtime.InteropServices
         static System.Runtime.InteropServices.NFloat System.Numerics.IDecrementOperators<System.Runtime.InteropServices.NFloat>.operator checked --(System.Runtime.InteropServices.NFloat value) { throw null; }
         static System.Runtime.InteropServices.NFloat System.Numerics.IDivisionOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>.operator checked /(System.Runtime.InteropServices.NFloat left, System.Runtime.InteropServices.NFloat right) { throw null; }
         int System.Numerics.IFloatingPoint<System.Runtime.InteropServices.NFloat>.GetExponentByteCount() { throw null; }
-        long System.Numerics.IFloatingPoint<System.Runtime.InteropServices.NFloat>.GetExponentShortestBitLength() { throw null; }
+        int System.Numerics.IFloatingPoint<System.Runtime.InteropServices.NFloat>.GetExponentShortestBitLength() { throw null; }
+        int System.Numerics.IFloatingPoint<System.Runtime.InteropServices.NFloat>.GetSignificandBitLength() { throw null; }
         int System.Numerics.IFloatingPoint<System.Runtime.InteropServices.NFloat>.GetSignificandByteCount() { throw null; }
-        long System.Numerics.IFloatingPoint<System.Runtime.InteropServices.NFloat>.GetSignificandBitLength() { throw null; }
-        bool System.Numerics.IFloatingPoint<System.Runtime.InteropServices.NFloat>.TryWriteExponentLittleEndian(Span<byte> destination, out int bytesWritten) { throw null; }
-        bool System.Numerics.IFloatingPoint<System.Runtime.InteropServices.NFloat>.TryWriteSignificandLittleEndian(Span<byte> destination, out int bytesWritten) { throw null; }
+        bool System.Numerics.IFloatingPoint<System.Runtime.InteropServices.NFloat>.TryWriteExponentBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
+        bool System.Numerics.IFloatingPoint<System.Runtime.InteropServices.NFloat>.TryWriteExponentLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
+        bool System.Numerics.IFloatingPoint<System.Runtime.InteropServices.NFloat>.TryWriteSignificandBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
+        bool System.Numerics.IFloatingPoint<System.Runtime.InteropServices.NFloat>.TryWriteSignificandLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         static System.Runtime.InteropServices.NFloat System.Numerics.IIncrementOperators<System.Runtime.InteropServices.NFloat>.operator checked ++(System.Runtime.InteropServices.NFloat value) { throw null; }
         static System.Runtime.InteropServices.NFloat System.Numerics.IMultiplyOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>.operator checked *(System.Runtime.InteropServices.NFloat left, System.Runtime.InteropServices.NFloat right) { throw null; }
+        static bool System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>.IsCanonical(System.Runtime.InteropServices.NFloat value) { throw null; }
+        static bool System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>.IsComplexNumber(System.Runtime.InteropServices.NFloat value) { throw null; }
+        static bool System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>.IsImaginaryNumber(System.Runtime.InteropServices.NFloat value) { throw null; }
+        static bool System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>.IsZero(System.Runtime.InteropServices.NFloat value) { throw null; }
+        static bool System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>.TryConvertFromChecked<TOther>(TOther value, out System.Runtime.InteropServices.NFloat result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>.TryConvertFromSaturating<TOther>(TOther value, out System.Runtime.InteropServices.NFloat result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>.TryConvertFromTruncating<TOther>(TOther value, out System.Runtime.InteropServices.NFloat result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>.TryConvertToChecked<TOther>(System.Runtime.InteropServices.NFloat value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>.TryConvertToSaturating<TOther>(System.Runtime.InteropServices.NFloat value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>.TryConvertToTruncating<TOther>(System.Runtime.InteropServices.NFloat value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
         static System.Runtime.InteropServices.NFloat System.Numerics.ISubtractionOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>.operator checked -(System.Runtime.InteropServices.NFloat left, System.Runtime.InteropServices.NFloat right) { throw null; }
         static System.Runtime.InteropServices.NFloat System.Numerics.IUnaryNegationOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>.operator checked -(System.Runtime.InteropServices.NFloat value) { throw null; }
         public static System.Runtime.InteropServices.NFloat Tan(System.Runtime.InteropServices.NFloat x) { throw null; }
@@ -986,7 +1030,6 @@ namespace System.Runtime.InteropServices
         public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format) { throw null; }
         public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format, System.IFormatProvider? provider) { throw null; }
         public static System.Runtime.InteropServices.NFloat Truncate(System.Runtime.InteropServices.NFloat x) { throw null; }
-        public static bool TryCreate<TOther>(TOther value, out System.Runtime.InteropServices.NFloat result) where TOther : System.Numerics.INumber<TOther> { throw null; }
         public bool TryFormat(System.Span<char> destination, out int charsWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Runtime.InteropServices.NFloat result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out System.Runtime.InteropServices.NFloat result) { throw null; }
@@ -2099,6 +2142,20 @@ namespace System.Runtime.InteropServices.Marshalling
         public T[]? ToManaged() { throw null; }
         public void FreeNative() { }
     }
+    [System.CLSCompliant(false)]
+    [System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerAttribute(typeof(string), BufferSize = 0x100,
+        Features = System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerFeatures.UnmanagedResources
+            | System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerFeatures.CallerAllocatedBuffer
+            | System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerFeatures.TwoStageMarshalling )]
+    public unsafe ref struct BStrStringMarshaller
+    {
+        public BStrStringMarshaller(string? str) { }
+        public BStrStringMarshaller(string? str, System.Span<ushort> buffer) { }
+        public void* ToNativeValue() { throw null; }
+        public void FromNativeValue(void* value) { }
+        public string? ToManaged() { throw null; }
+        public void FreeNative() { }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Struct)]
     public sealed partial class CustomTypeMarshallerAttribute : System.Attribute
     {
@@ -2187,17 +2244,14 @@ namespace System.Runtime.InteropServices.Marshalling
         public void FreeNative() { }
     }
     [System.CLSCompliant(false)]
-    [System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerAttribute(typeof(string), BufferSize = 0x100,
+    [System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerAttribute(typeof(string),
         Features = System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerFeatures.UnmanagedResources
-            | System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerFeatures.CallerAllocatedBuffer
             | System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerFeatures.TwoStageMarshalling )]
     public unsafe ref struct Utf16StringMarshaller
     {
         public Utf16StringMarshaller(string? str) { }
-        public Utf16StringMarshaller(string? str, System.Span<ushort> buffer) { }
-        public ref ushort GetPinnableReference() { throw null; }
-        public ushort* ToNativeValue() { throw null; }
-        public void FromNativeValue(ushort* value) { }
+        public void* ToNativeValue() { throw null; }
+        public void FromNativeValue(void* value) { }
         public string? ToManaged() { throw null; }
         public void FreeNative() { }
     }

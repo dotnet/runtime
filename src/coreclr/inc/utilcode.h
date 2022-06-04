@@ -384,6 +384,65 @@ typedef LPSTR   LPUTF8;
 #define MAKE_ANSIPTR_FROMWIDEN(ptrname, widestr, _nCharacters, _pCnt)        \
        MAKE_MULTIBYTE_FROMWIDEN(ptrname, widestr, _nCharacters, _pCnt, CP_ACP)
 
+const SIZE_T MaxSigned32BitDecString = ARRAY_SIZE("-2147483648") - 1;
+const SIZE_T MaxUnsigned32BitDecString = ARRAY_SIZE("4294967295") - 1;
+const SIZE_T MaxIntegerDecHexString = ARRAY_SIZE("-9223372036854775808") - 1;
+
+const SIZE_T Max16BitHexString = ARRAY_SIZE("1234") - 1;
+const SIZE_T Max32BitHexString = ARRAY_SIZE("12345678") - 1;
+const SIZE_T Max64BitHexString = ARRAY_SIZE("1234567812345678") - 1;
+
+template <typename I>
+inline WCHAR* FormatInteger(WCHAR* str, size_t strCount, const char* fmt, I v)
+{
+    static_assert(std::is_integral<I>::value, "Integral type required.");
+    assert(str != NULL && fmt != NULL);
+
+    // Represents the most amount of space needed to format
+    // an integral type (i.e., %d or %llx).
+    char tmp[MaxIntegerDecHexString + 1];
+    int cnt = sprintf_s(tmp, ARRAY_SIZE(tmp), fmt, v);
+    assert(0 <= cnt);
+
+    WCHAR* end = str + strCount;
+    for (int i = 0; i < cnt; ++i)
+    {
+        if (str == end)
+            return NULL;
+
+        *str++ = (WCHAR)tmp[i];
+    }
+
+    *str = W('\0');
+    return str;
+}
+
+class GuidString final
+{
+    char _buffer[ARRAY_SIZE("{12345678-1234-1234-1234-123456789abc}")];
+public:
+    static void Create(const GUID& g, GuidString& ret)
+    {
+        // Ensure we always have a null
+        ret._buffer[ARRAY_SIZE(ret._buffer) - 1] = '\0';
+        sprintf_s(ret._buffer, ARRAY_SIZE(ret._buffer), "{%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x}",
+            g.Data1, g.Data2, g.Data3,
+            g.Data4[0], g.Data4[1],
+            g.Data4[2], g.Data4[3],
+            g.Data4[4], g.Data4[5],
+            g.Data4[6], g.Data4[7]);
+    }
+
+    const char* AsString() const
+    {
+        return _buffer;
+    }
+
+    operator const char*() const
+    {
+        return _buffer;
+    }
+};
 
 inline
 LPWSTR DuplicateString(
@@ -954,7 +1013,7 @@ public:
     static BOOL CanEnableGCNumaAware();
     static void InitNumaNodeInfo();
 
-#if !defined(FEATURE_REDHAWK)
+#if !defined(FEATURE_NATIVEAOT)
 public: 	// functions
 
     static LPVOID VirtualAllocExNuma(HANDLE hProc, LPVOID lpAddr, SIZE_T size,
@@ -972,13 +1031,11 @@ public: 	// functions
 
 struct CPU_Group_Info
 {
-    WORD	nr_active;	// at most 64
-    WORD	reserved[1];
-    WORD	begin;
-    WORD	end;
-    DWORD_PTR	active_mask;
-    DWORD	groupWeight;
-    DWORD	activeThreadWeight;
+    DWORD_PTR   active_mask;
+    WORD        nr_active;  // at most 64
+    WORD        begin;
+    DWORD       groupWeight;
+    DWORD       activeThreadWeight;
 };
 
 class CPUGroupInfo
@@ -994,7 +1051,6 @@ private:
     static CPU_Group_Info *m_CPUGroupInfoArray;
 
     static BOOL InitCPUGroupInfoArray();
-    static BOOL InitCPUGroupInfoRange();
     static void InitCPUGroupInfo();
     static BOOL IsInitialized();
 
@@ -1010,7 +1066,7 @@ public:
     static bool GetCPUGroupInfo(PUSHORT total_groups, DWORD* max_procs_per_group);
     //static void PopulateCPUUsageArray(void * infoBuffer, ULONG infoSize);
 
-#if !defined(FEATURE_REDHAWK)
+#if !defined(FEATURE_NATIVEAOT)
 public:
     static BOOL GetLogicalProcessorInformationEx(LOGICAL_PROCESSOR_RELATIONSHIP relationship,
 		   SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX *slpiex, PDWORD count);
@@ -3793,6 +3849,7 @@ HRESULT GetDebuggerSettingInfoWorker(_Out_writes_to_opt_(*pcchDebuggerString, *p
 
 void TrimWhiteSpace(__inout_ecount(*pcch)  LPCWSTR *pwsz, __inout LPDWORD pcch);
 
+void OutputDebugStringUtf8(LPCUTF8 utf8str);
 
 //*****************************************************************************
 // Convert a UTF8 string to Unicode, into a CQuickArray<WCHAR>.

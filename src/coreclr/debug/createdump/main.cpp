@@ -34,7 +34,6 @@ const char* g_help = "createdump [options] pid\n"
 
 FILE *g_logfile = nullptr;
 FILE *g_stdout = stdout;
-FILE *g_stderr = stderr;
 bool g_diagnostics = false;
 bool g_diagnosticsVerbose = false;
 #ifdef HOST_UNIX
@@ -157,11 +156,10 @@ int __cdecl main(const int argc, const char* argv[])
                 g_logfile = fopen(logFilePath, "w");
                 if (g_logfile == nullptr)
                 {
-                    printf_error("Can not create log file %s: %d %s\n", logFilePath, errno, strerror(errno));
+                    printf_error("Can not create log file '%s': %s (%d)\n", logFilePath, strerror(errno), errno);
                     return errno;
                 }
                 g_stdout = g_logfile;
-                g_stderr = g_logfile;
             }
             else {
                 pid = atoi(*argv);
@@ -183,8 +181,8 @@ int __cdecl main(const int argc, const char* argv[])
         {
             if (::GetTempPathA(MAX_LONGPATH, tmpPath) == 0)
             {
-                printf_error("GetTempPath failed (0x%08x)", ::GetLastError());
-                return ::GetLastError();
+                printf_error("GetTempPath failed %s", GetLastErrorString().c_str());
+                return -1;
             }
             exitCode = strcat_s(tmpPath, MAX_LONGPATH, DEFAULT_DUMP_TEMPLATE);
             if (exitCode != 0)
@@ -205,10 +203,10 @@ int __cdecl main(const int argc, const char* argv[])
         }
 
         fflush(g_stdout);
-        fflush(g_stderr);
 
         if (g_logfile != nullptr)
         {
+            fflush(g_logfile);
             fclose(g_logfile);
         }
     }
@@ -222,6 +220,41 @@ int __cdecl main(const int argc, const char* argv[])
     PAL_TerminateEx(exitCode);
 #endif
     return exitCode;
+}
+
+std::string
+GetLastErrorString()
+{
+    DWORD error = GetLastError();
+    std::string result;
+#ifdef HOST_WINDOWS
+    LPSTR messageBuffer;
+    DWORD length = FormatMessage(
+        FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+        NULL,
+        error,
+        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+        (LPTSTR)&messageBuffer,
+        0,
+        NULL);
+    if (length > 0)
+    {
+        result.append(messageBuffer, length);
+        LocalFree(messageBuffer);
+
+        // Remove the \r\n at the end of the system message. Assumes that the \r is first.
+        size_t found = result.find_last_of('\r');
+        if (found != std::string::npos)
+        {
+            result.erase(found);
+        }
+        result.append(" ");
+    }
+#endif
+    char buffer[64];
+    sprintf(buffer, "(%d)", error);
+    result.append(buffer);
+    return result;
 }
 
 void
@@ -243,12 +276,19 @@ printf_error(const char* format, ...)
 {
     va_list args;
     va_start(args, format);
-    if (g_logfile == nullptr)
+
+    // Log error message to file
+    if (g_logfile != nullptr)
     {
-        fprintf(g_stderr, "[createdump] ");
+        va_list args2;
+        va_copy(args2, args);
+        vfprintf(g_logfile, format, args2);
+        fflush(g_logfile);
     }
-    vfprintf(g_stderr, format, args);
-    fflush(g_stderr);
+    // Always print errors on stderr
+    fprintf(stderr, "[createdump] ");
+    vfprintf(stderr, format, args);
+    fflush(stderr);
     va_end(args);
 }
 
