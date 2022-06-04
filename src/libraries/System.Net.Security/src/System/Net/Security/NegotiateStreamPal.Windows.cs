@@ -68,11 +68,6 @@ namespace System.Net.Security
             return result;
         }
 
-        internal static string? QueryContextAssociatedName(SafeDeleteContext securityContext)
-        {
-            return SSPIWrapper.QueryStringContextAttributes(GlobalSSPI.SSPIAuth, securityContext, Interop.SspiCli.ContextAttribute.SECPKG_ATTR_NAMES);
-        }
-
         internal static void ValidateImpersonationLevel(TokenImpersonationLevel impersonationLevel)
         {
             if (impersonationLevel != TokenImpersonationLevel.Identification &&

@@ -352,7 +352,7 @@ namespace System.Net
             return NegotiateStreamPal.Encrypt(
                 _securityContext!,
                 buffer,
-                IsConfidentialityFlag,
+                (_contextFlags & ContextFlagsPal.Confidentiality) != 0,
                 IsNTLM,
                 ref output,
                 sequenceNumber);
@@ -360,7 +360,15 @@ namespace System.Net
 
         internal int Decrypt(byte[] payload, int offset, int count, out int newOffset, uint expectedSeqNumber)
         {
-            return NegotiateStreamPal.Decrypt(_securityContext!, payload, offset, count, IsConfidentialityFlag, IsNTLM, out newOffset, expectedSeqNumber);
+            return NegotiateStreamPal.Decrypt(
+                _securityContext!,
+                payload,
+                offset,
+                count,
+                (_contextFlags & ContextFlagsPal.Confidentiality) != 0,
+                IsNTLM,
+                out newOffset,
+                expectedSeqNumber);
         }
     }
 }

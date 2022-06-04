@@ -55,6 +55,11 @@ namespace System.Net.Security
             }
         }
 
+        internal static string? QueryContextAssociatedName(SafeDeleteContext securityContext)
+        {
+            return SSPIWrapper.QueryStringContextAttributes(GlobalSSPI.SSPIAuth, securityContext, Interop.SspiCli.ContextAttribute.SECPKG_ATTR_NAMES);
+        }
+
         internal static string? QueryContextClientSpecifiedSpn(SafeDeleteContext securityContext)
         {
             return SSPIWrapper.QueryStringContextAttributes(GlobalSSPI.SSPIAuth, securityContext, Interop.SspiCli.ContextAttribute.SECPKG_ATTR_CLIENT_SPECIFIED_TARGET);
