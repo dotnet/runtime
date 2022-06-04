@@ -925,13 +925,14 @@ namespace Microsoft.WebAssembly.Diagnostics
                         TypesByToken[typeInfo.Token] = typeInfo;
                     }
                 }
-                else
+                else if (entry.Operation == EditAndContinueOperation.Default)
                 {
+                    var entryRow = asmMetadataReader.GetRowNumber(entry.Handle);
                     if (entry.Handle.Kind == HandleKind.MethodDefinition)
                     {
                         var methodDefinition = asmMetadataReaderParm.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle(methodIdxAsm));
-                        int methodIdx = GetMethodDebugInformationIdx(pdbMetadataReaderParm, asmMetadataReader.GetRowNumber(entry.Handle));
-                        if (methods.TryGetValue(asmMetadataReader.GetRowNumber(entry.Handle), out MethodInfo method))
+                        int methodIdx = GetMethodDebugInformationIdx(pdbMetadataReaderParm, entryRow);
+                        if (methods.TryGetValue(entryRow, out MethodInfo method))
                         {
                             method.UpdateEnC(asmMetadataReaderParm, pdbMetadataReaderParm, methodIdx);
                         }
@@ -944,10 +945,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                                 var documentName = pdbMetadataReaderParm.GetString(document.Name);
                                 SourceFile source = GetOrAddSourceFile(methodDebugInformation.Document, asmMetadataReaderParm.GetRowNumber(methodDebugInformation.Document), documentName);
                                 var methodDef = asmMetadataReaderParm.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle(methodIdxAsm));
-                                var methodInfo = new MethodInfo(this, MetadataTokens.MethodDefinitionHandle(methodIdxAsm), asmMetadataReader.GetRowNumber(entry.Handle), source, typeInfo, asmMetadataReaderParm, pdbMetadataReaderParm);
-                                methods[asmMetadataReader.GetRowNumber(entry.Handle)] = methodInfo;
-                                if (source != null)
-                                    source.AddMethod(methodInfo);
+                                var methodInfo = new MethodInfo(this, MetadataTokens.MethodDefinitionHandle(methodIdxAsm), entryRow, source, typeInfo, asmMetadataReaderParm, pdbMetadataReaderParm);
+                                methods[entryRow] = methodInfo;
+                                source.AddMethod(methodInfo);
                                 typeInfo.Methods.Add(methodInfo);
                             }
                         }
@@ -957,6 +957,10 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         //Implement new instance field when it's supported on runtime
                     }
+                }
+                else
+                {
+                    logger.LogError($"Not supported EnC operation {entry.Operation}");
                 }
             }
         }
