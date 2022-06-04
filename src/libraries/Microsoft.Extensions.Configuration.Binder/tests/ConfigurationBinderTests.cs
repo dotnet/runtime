@@ -13,6 +13,19 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
 {
     public class ConfigurationBinderTests
     {
+        public class Steve
+        {
+            private static Dictionary<string, int> _existingDictionary = new()
+            {
+                {"existing-item1", 1},
+                {"existing-item2", 2},
+            };
+
+            public IReadOnlyDictionary<string, int> Dictionary { get; set; } =
+                _existingDictionary;
+
+        }
+
         public class ComplexOptions
         {
             private static Dictionary<string, int> _existingDictionary = new()
@@ -713,6 +726,30 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal(2, options.Items["existing-item2"]);
             Assert.Equal(3, options.Items["item3"]);
             Assert.Equal(4, options.Items["item4"]);
+
+            
+        }
+
+        [Fact]
+        public void SteveCanBindInstantiatedReadOnlyDictionary()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Dictionary:item3", "3"},
+                {"Dictionary:item4", "4"}
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<Steve>()!;
+
+            Assert.Equal(4, options.Dictionary.Count);
+            Assert.Equal(1, options.Dictionary["existing-item1"]);
+            Assert.Equal(2, options.Dictionary["existing-item2"]);
+            Assert.Equal(3, options.Dictionary["item3"]);
+            Assert.Equal(4, options.Dictionary["item4"]);
 
             
         }

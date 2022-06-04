@@ -492,6 +492,30 @@ namespace Microsoft.Extensions.Configuration
                 // We only support string and enum keys
                 return;
             }
+
+            Type genericType = typeof(Dictionary<,>).MakeGenericType(keyType, valueType);
+            Type kvpType = typeof(KeyValuePair<,>).MakeGenericType(keyType, valueType);
+            MethodInfo addMethod = genericType.GetMethod("Add", DeclaredOnlyLookup)!;
+            PropertyInfo keyMethod = kvpType.GetProperty("Key", DeclaredOnlyLookup)!;
+            PropertyInfo valueMethod = kvpType.GetProperty("Value", DeclaredOnlyLookup)!;
+
+            object instance = Activator.CreateInstance(genericType)!;
+
+            var source = dictionary as IEnumerable;
+            object?[] arguments = new object?[2];
+
+            if (source != null)
+            {
+                foreach (object? item in source)
+                {
+                    object? k = keyMethod.GetMethod!.Invoke(item, null);
+                    object? v = valueMethod.GetMethod!.Invoke(item, null);
+                    arguments[0] = k;
+                    arguments[1] = v;
+                    addMethod.Invoke(instance, arguments);
+                }
+            }
+
             MethodInfo tryGetValue = dictionaryType.GetMethod("TryGetValue")!;
             PropertyInfo setter = dictionaryType.GetProperty("Item", DeclaredOnlyLookup)!;
             foreach (IConfigurationSection child in config.GetChildren())
