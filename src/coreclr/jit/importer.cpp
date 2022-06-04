@@ -22509,7 +22509,7 @@ void Compiler::pickGDV(GenTreeCall*           call,
 
     if (numberOfMethods > 0)
     {
-        unsigned likelihoodThreshold = 75;
+        unsigned likelihoodThreshold = 30;
         if (likelyMethods[0].likelihood >= likelihoodThreshold)
         {
             *methodGuess = (CORINFO_METHOD_HANDLE)likelyMethods[0].handle;
