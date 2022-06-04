@@ -1025,7 +1025,15 @@ namespace System.Text.RegularExpressions.Tests
         [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
         public async Task Match_VaryingLengthStrings_Huge(RegexEngine engine)
         {
-            await Match_VaryingLengthStrings(engine, RegexOptions.None, 100_000);
+            RegexHelpers.SetSafeSizeThreshold(100_002);
+            try
+            {
+                await Match_VaryingLengthStrings(engine, RegexOptions.None, 100_000);
+            }
+            finally
+            {
+                RegexHelpers.RestoreSafeSizeThresholdToDefault();
+            }
         }
 
         public static IEnumerable<object[]> Match_DeepNesting_MemberData()
@@ -1923,7 +1931,7 @@ namespace System.Text.RegularExpressions.Tests
             string fullpattern = string.Concat(string.Concat(Enumerable.Repeat($"({pattern}", pattern_repetition).Concat(Enumerable.Repeat(")", pattern_repetition))), anchor);
             string fullinput = string.Concat(Enumerable.Repeat(input, input_repetition));
 
-            RegexHelpers.SetSafeSizeThreshold(10_000);
+            RegexHelpers.SetSafeSizeThreshold(10_005);
             Regex re;
             try
             {
@@ -1955,7 +1963,7 @@ namespace System.Text.RegularExpressions.Tests
             string fullpattern = string.Concat(Enumerable.Repeat(begin, pattern_repetition)) + inner + string.Concat(Enumerable.Repeat(end, pattern_repetition));
             string fullinput = string.Concat(Enumerable.Repeat(input, input_repetition));
 
-            RegexHelpers.SetSafeSizeThreshold(10_000);
+            RegexHelpers.SetSafeSizeThreshold(int.MaxValue);
             Regex re;
             try
             {
