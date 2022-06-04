@@ -312,6 +312,23 @@ namespace Microsoft.Extensions.Configuration
                     return;
                 }
 
+                // For other mutable interfaces like ICollection<> and ISet<>, we prefer copying values and setting them
+                // on a new instance of the interface over populating the existing instance implementing the interface.
+                // This has already been done, so there's not need to check again. For dictionaries, we fill the existing
+                // instance if there is one (which hasn't happened yet), and only create a new instance if necessary.
+                if (TypeIsADictionaryInterface(type))
+                {
+                    if (!bindingPoint.IsReadOnly)
+                    {
+                        object? newValue = BindDictionary(bindingPoint.Value, type, config, options);
+                        if (newValue != null)
+                        {
+                            bindingPoint.SetValue(newValue);
+                        }
+                    }
+                    return;
+                }
+
                 // If we don't have an instance, try to create one
                 if (bindingPoint.Value is null)
                 {
@@ -346,7 +363,7 @@ namespace Microsoft.Extensions.Configuration
                 Type? di = dictionaryInterface ?? dictionaryInterface2;
                 if (di != null)
                 {
-                    BindDictionary(bindingPoint.Value!, di, config, options);
+                    BindExistingDictionary(bindingPoint.Value!, di, config, options);
                 }
                 else
                 {
@@ -476,8 +493,8 @@ namespace Microsoft.Extensions.Configuration
         }
 
         [RequiresUnreferencedCode("Cannot statically analyze what the element type is of the value objects in the dictionary so its members may be trimmed.")]
-        private static void BindDictionary(
-            object dictionary,
+        private static object? BindDictionary(
+            object? source,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
             Type dictionaryType,
             IConfiguration config, BinderOptions options)
@@ -490,7 +507,7 @@ namespace Microsoft.Extensions.Configuration
             if (keyType != typeof(string) && !keyTypeIsEnum)
             {
                 // We only support string and enum keys
-                return;
+                return null;
             }
 
             Type genericType = typeof(Dictionary<,>).MakeGenericType(keyType, valueType);
@@ -499,25 +516,25 @@ namespace Microsoft.Extensions.Configuration
             PropertyInfo keyMethod = kvpType.GetProperty("Key", DeclaredOnlyLookup)!;
             PropertyInfo valueMethod = kvpType.GetProperty("Value", DeclaredOnlyLookup)!;
 
-            object instance = Activator.CreateInstance(genericType)!;
+            object dictionary = Activator.CreateInstance(genericType)!;
 
-            var source = dictionary as IEnumerable;
+            var orig = source as IEnumerable;
             object?[] arguments = new object?[2];
 
-            if (source != null)
+            if (orig != null)
             {
-                foreach (object? item in source)
+                foreach (object? item in orig)
                 {
                     object? k = keyMethod.GetMethod!.Invoke(item, null);
                     object? v = valueMethod.GetMethod!.Invoke(item, null);
                     arguments[0] = k;
                     arguments[1] = v;
-                    addMethod.Invoke(instance, arguments);
+                    addMethod.Invoke(dictionary, arguments);
                 }
             }
 
             MethodInfo tryGetValue = dictionaryType.GetMethod("TryGetValue")!;
-            PropertyInfo setter = dictionaryType.GetProperty("Item", DeclaredOnlyLookup)!;
+            PropertyInfo setter = genericType.GetProperty("Item", DeclaredOnlyLookup)!;
             foreach (IConfigurationSection child in config.GetChildren())
             {
                 try
@@ -527,6 +544,57 @@ namespace Microsoft.Extensions.Configuration
                         initialValueProvider: () =>
                         {
                             var tryGetValueArgs = new object?[] { key, null };
+                            return (bool)tryGetValue.Invoke(dictionary, tryGetValueArgs)! ? tryGetValueArgs[1] : null;
+                        },
+                        isReadOnly: false);
+                    BindInstance(
+                        type: valueType,
+                        bindingPoint: valueBindingPoint,
+                        config: child,
+                        options: options);
+                    if (valueBindingPoint.HasNewValue)
+                    {
+                        setter.SetValue(dictionary, valueBindingPoint.Value, new object[] { key });
+                    }
+                }
+                catch
+                {
+                }
+            }
+
+            return dictionary;
+        }
+
+        [RequiresUnreferencedCode("Cannot statically analyze what the element type is of the value objects in the dictionary so its members may be trimmed.")]
+        private static void BindExistingDictionary(
+            object? dictionary,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
+            Type dictionaryType,
+            IConfiguration config, BinderOptions options)
+        {
+            Type keyType = dictionaryType.GenericTypeArguments[0];
+            Type valueType = dictionaryType.GenericTypeArguments[1];
+            bool keyTypeIsEnum = keyType.IsEnum;
+
+            if (keyType != typeof(string) && !keyTypeIsEnum)
+            {
+                // We only support string and enum keys
+                return;
+            }
+
+            Type genericType = typeof(Dictionary<,>).MakeGenericType(keyType, valueType);
+
+            MethodInfo tryGetValue = dictionaryType.GetMethod("TryGetValue")!;
+            PropertyInfo setter = genericType.GetProperty("Item", DeclaredOnlyLookup)!;
+            foreach (IConfigurationSection child in config.GetChildren())
+            {
+                try
+                {
+                    object key = keyTypeIsEnum ? Enum.Parse(keyType, child.Key) : child.Key;
+                    var valueBindingPoint = new BindingPoint(
+                        initialValueProvider: () =>
+                        {
+                            object?[] tryGetValueArgs = { key, null };
                             return (bool)tryGetValue.Invoke(dictionary, tryGetValueArgs)! ? tryGetValueArgs[1] : null;
                         },
                         isReadOnly: false);

@@ -15,7 +15,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
     {
         public class Steve
         {
-            private static Dictionary<string, int> _existingDictionary = new()
+            public static Dictionary<string, int> _existingDictionary = new()
             {
                 {"existing-item1", 1},
                 {"existing-item2", 2},
@@ -735,6 +735,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         {
             var dic = new Dictionary<string, string>
             {
+                {"Dictionary:existing-item1", "666"},
                 {"Dictionary:item3", "3"},
                 {"Dictionary:item4", "4"}
             };
@@ -746,7 +747,8 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             var options = config.Get<Steve>()!;
 
             Assert.Equal(4, options.Dictionary.Count);
-            Assert.Equal(1, options.Dictionary["existing-item1"]);
+            Assert.Equal(1, Steve._existingDictionary["existing-item1"]);
+            Assert.Equal(666, options.Dictionary["existing-item1"]);
             Assert.Equal(2, options.Dictionary["existing-item2"]);
             Assert.Equal(3, options.Dictionary["item3"]);
             Assert.Equal(4, options.Dictionary["item4"]);
