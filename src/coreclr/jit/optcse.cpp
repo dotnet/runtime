@@ -3308,8 +3308,11 @@ public:
                 Compiler::FindLinkData linkParentData = m_pCompiler->gtFindLink(stmt, origParent);
                 GenTree**              linkParent     = linkParentData.result;
 
-                *linkParent                  = cse;
-                cse                          = cse->gtGetOp2();
+                *linkParent = cse;
+                cse         = cse->gtGetOp2();
+
+                cse->CopyReg(*linkParent);
+                (*linkParent)->ClearRegNum();
                 (*linkParent)->AsOp()->gtOp2 = origParent;
                 (*linkParent)->ChangeType(origParent->TypeGet());
             }
