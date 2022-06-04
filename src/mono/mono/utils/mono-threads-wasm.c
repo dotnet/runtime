@@ -8,6 +8,7 @@
 
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-mmap.h>
+#include <mono/utils/mono-threads-api.h>
 #include <mono/utils/mono-threads-debug.h>
 
 #include <glib.h>
@@ -28,6 +29,7 @@ EMSCRIPTEN_KEEPALIVE
 static int
 wasm_get_stack_base (void)
 {
+	// wasm-mt: add MONO_ENTER_GC_UNSAFE / MONO_EXIT_GC_UNSAFE if this function becomes more complex
 	return emscripten_stack_get_end ();
 }
 
@@ -35,6 +37,7 @@ EMSCRIPTEN_KEEPALIVE
 static int
 wasm_get_stack_size (void)
 {
+	// wasm-mt: add MONO_ENTER_GC_UNSAFE / MONO_EXIT_GC_UNSAFE if this function becomes more complex
 	return (guint8*)emscripten_stack_get_base () - (guint8*)emscripten_stack_get_end ();
 }
 
@@ -355,6 +358,7 @@ G_EXTERN_C
 EMSCRIPTEN_KEEPALIVE void
 mono_background_exec (void)
 {
+	MONO_ENTER_GC_UNSAFE;
 #ifndef DISABLE_THREADS
 	g_assert (mono_threads_wasm_is_browser_thread ());
 #endif
@@ -366,6 +370,7 @@ mono_background_exec (void)
 		cb ();
 	}
 	g_slist_free (j);
+	MONO_EXIT_GC_UNSAFE;
 }
 
 gboolean
@@ -386,6 +391,23 @@ mono_threads_wasm_is_browser_thread (void)
 #else
 	return emscripten_is_main_browser_thread ();
 #endif
+}
+
+MonoNativeThreadId
+mono_threads_wasm_browser_thread_tid (void)
+{
+#ifdef DISABLE_THREADS
+	return (MonoNativeThreadId)1;
+#else
+	return (MonoNativeThreadId)emscripten_main_browser_thread_id ();
+#endif
+}
+
+gboolean
+mono_threads_platform_stw_defer_initial_suspend (MonoThreadInfo *info)
+{
+	/* Suspend the browser thread after all the other threads are suspended already. */
+	return mono_native_thread_id_equals (mono_thread_info_get_tid (info), mono_threads_wasm_browser_thread_tid ());
 }
 
 #ifndef DISABLE_THREADS

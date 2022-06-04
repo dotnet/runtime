@@ -144,7 +144,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
     if (treeNode->IsReuseRegVal())
     {
         // For now, this is only used for constant nodes.
-        assert((treeNode->OperGet() == GT_CNS_INT) || (treeNode->OperGet() == GT_CNS_DBL));
+        assert(treeNode->OperIs(GT_CNS_INT, GT_CNS_DBL, GT_CNS_VEC));
         JITDUMP("  TreeNode is marked ReuseReg\n");
         return;
     }
@@ -188,6 +188,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_CNS_INT:
         case GT_CNS_DBL:
+        case GT_CNS_VEC:
             genSetRegToConst(targetReg, targetType, treeNode);
             genProduceReg(treeNode);
             break;
@@ -302,14 +303,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
 #ifdef TARGET_ARM64
-        case GT_MADD:
-            genCodeForMadd(treeNode->AsOp());
-            break;
-
-        case GT_MSUB:
-            genCodeForMsub(treeNode->AsOp());
-            break;
-
         case GT_INC_SATURATE:
             genCodeForIncSaturate(treeNode);
             break;
@@ -974,7 +967,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
             }
 
             // If we have an HFA we can't have any GC pointers,
-            // if not then the max size for the the struct is 16 bytes
+            // if not then the max size for the struct is 16 bytes
             if (isHfa)
             {
                 noway_assert(!layout->HasGCPtr());
@@ -1103,8 +1096,9 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
 
             while (remainingSize > 0)
             {
-                var_types type;
+                nextIndex = structOffset / TARGET_POINTER_SIZE;
 
+                var_types type;
                 if (remainingSize >= TARGET_POINTER_SIZE)
                 {
                     type = layout->GetGCPtrType(nextIndex);
@@ -1114,18 +1108,18 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                     // the left over size is smaller than a pointer and thus can never be a GC type
                     assert(!layout->IsGCPtr(nextIndex));
 
-                    if (remainingSize == 1)
+                    if (remainingSize >= 4)
                     {
-                        type = TYP_UBYTE;
+                        type = TYP_INT;
                     }
-                    else if (remainingSize == 2)
+                    else if (remainingSize >= 2)
                     {
                         type = TYP_USHORT;
                     }
                     else
                     {
-                        assert(remainingSize == 4);
-                        type = TYP_UINT;
+                        assert(remainingSize == 1);
+                        type = TYP_UBYTE;
                     }
                 }
 
@@ -1154,7 +1148,6 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                 assert(argOffsetOut <= argOffsetMax); // We can't write beyond the outgoing arg area
 
                 structOffset += moveSize;
-                nextIndex++;
             }
         }
     }
@@ -1304,18 +1297,12 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
         if (varNode != nullptr)
         {
             assert(varNode->isContained());
-            srcVarNum = varNode->GetLclNum();
-
-            // handle promote situation
+            srcVarNum         = varNode->GetLclNum();
             LclVarDsc* varDsc = compiler->lvaGetDesc(srcVarNum);
 
-            // This struct also must live in the stack frame
-            // And it can't live in a register (SIMD)
-            assert(varDsc->lvType == TYP_STRUCT);
+            // This struct also must live in the stack frame.
+            // And it can't live in a register.
             assert(varDsc->lvOnFrame && !varDsc->lvRegister);
-
-            // We don't split HFA struct
-            assert(!varDsc->lvIsHfa());
         }
         else // addrNode is used
         {
@@ -1804,7 +1791,7 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
     const regNumber tmpReg = node->GetSingleTempReg();
 
     // Generate the bounds check if necessary.
-    if ((node->gtFlags & GTF_INX_RNGCHK) != 0)
+    if (node->IsBoundsChecked())
     {
         GetEmitter()->emitIns_R_R_I(INS_ldr, EA_4BYTE, tmpReg, base->GetRegNum(), node->gtLenOffset);
         GetEmitter()->emitIns_R_R(INS_cmp, emitActualTypeSize(index->TypeGet()), index->GetRegNum(), tmpReg);
@@ -2821,7 +2808,6 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
         const int baseAddr = compiler->lvaFrameAddress(srcLclNum, &fpBased);
 
         srcReg = fpBased ? REG_FPBASE : REG_SPBASE;
-
         helper.SetSrcOffset(baseAddr + srcOffset);
     }
 
@@ -2833,7 +2819,6 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
         const int baseAddr = compiler->lvaFrameAddress(dstLclNum, &fpBased);
 
         dstReg = fpBased ? REG_FPBASE : REG_SPBASE;
-
         helper.SetDstOffset(baseAddr + dstOffset);
     }
 
@@ -2947,6 +2932,17 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
         assert(helper.CanEncodeAllOffsets(REGSIZE_BYTES));
     }
 #endif
+
+    if (!node->gtBlkOpGcUnsafe &&
+        ((srcOffsetAdjustment != 0) || (dstOffsetAdjustment != 0) || (node->GetLayout()->HasGCPtr())))
+    {
+        // If node is not already marked as non-interruptible, and if are about to generate code
+        // that produce GC references in temporary registers not reported, then mark the block
+        // as non-interruptible.
+        // Corresponding EnableGC() will be done by the caller of this method.
+        node->gtBlkOpGcUnsafe = true;
+        GetEmitter()->emitDisableGC();
+    }
 
     if ((srcOffsetAdjustment != 0) && (dstOffsetAdjustment != 0))
     {
@@ -4150,24 +4146,37 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned codeSize,
     {
         // what we have to preserve is called the "frame header" (see comments in VM\eetwain.cpp)
         // which is:
-        //  -return address
-        //  -saved off RBP
-        //  -saved 'this' pointer and bool for synchronized methods
+        //  -return address (saved lr)
+        //  -saved off FP
+        //  -all callee-preserved registers in case of varargs
+        //  -saved bool for synchronized methods
 
-        // 4 slots for RBP + return address + RSI + RDI
-        int preservedAreaSize = 4 * REGSIZE_BYTES;
+        int preservedAreaSize = (2 + genCountBits(RBM_ENC_CALLEE_SAVED)) * REGSIZE_BYTES;
+
+        if (compiler->info.compIsVarArgs)
+        {
+            // Varargs save all int registers between saved registers and PSP.
+            preservedAreaSize += MAX_REG_ARG * REGSIZE_BYTES;
+        }
 
         if (compiler->info.compFlags & CORINFO_FLG_SYNCH)
         {
-            if (!(compiler->info.compFlags & CORINFO_FLG_STATIC))
-                preservedAreaSize += REGSIZE_BYTES;
+            // bool in synchronized methods that tracks whether the lock has been taken (takes a full pointer sized
+            // slot)
+            preservedAreaSize += TARGET_POINTER_SIZE;
 
-            preservedAreaSize += 1; // bool for synchronized methods
+            // Verify that MonAcquired bool is at the bottom of the frame header
+            assert(compiler->lvaGetCallerSPRelativeOffset(compiler->lvaMonAcquired) == -preservedAreaSize);
         }
 
         // Used to signal both that the method is compiled for EnC, and also the size of the block at the top of the
         // frame
         gcInfoEncoder->SetSizeOfEditAndContinuePreservedArea(preservedAreaSize);
+        gcInfoEncoder->SetSizeOfEditAndContinueFixedStackFrame(genTotalFrameSize());
+
+        JITDUMP("EnC info:\n");
+        JITDUMP("  EnC preserved area size = %d\n", preservedAreaSize);
+        JITDUMP("  Fixed stack frame size = %d\n", genTotalFrameSize());
     }
 
 #endif // TARGET_ARM64
@@ -4685,7 +4694,9 @@ void CodeGen::genPushCalleeSavedRegisters()
     //      |-----------------------|
     //      |Callee saved registers | // not including FP/LR; multiple of 8 bytes
     //      |-----------------------|
-    //      |        PSP slot       | // 8 bytes (omitted in CoreRT ABI)
+    //      |    MonitorAcquired    |
+    //      |-----------------------|
+    //      |        PSP slot       | // 8 bytes (omitted in NativeAOT ABI)
     //      |-----------------------|
     //      | locals, temps, etc.   |
     //      |-----------------------|
@@ -4716,7 +4727,9 @@ void CodeGen::genPushCalleeSavedRegisters()
     //      |-----------------------|
     //      |Callee saved registers | // not including FP/LR; multiple of 8 bytes
     //      |-----------------------|
-    //      |        PSP slot       | // 8 bytes (omitted in CoreRT ABI)
+    //      |    MonitorAcquired    |
+    //      |-----------------------|
+    //      |        PSP slot       | // 8 bytes (omitted in NativeAOT ABI)
     //      |-----------------------|
     //      | locals, temps, etc.   |
     //      |-----------------------|
@@ -4813,7 +4826,7 @@ void CodeGen::genPushCalleeSavedRegisters()
             maskSaveRegsInt &= ~(RBM_FP | RBM_LR);                        // We've already saved FP/LR
             offset = (int)compiler->compLclFrameSize + 2 * REGSIZE_BYTES; // 2 for FP/LR
         }
-        else if (totalFrameSize <= 512)
+        else if ((totalFrameSize <= 512) && !compiler->opts.compDbgEnC)
         {
             // Case #2.
             //
@@ -4947,6 +4960,7 @@ void CodeGen::genPushCalleeSavedRegisters()
             }
             else
             {
+                assert(!compiler->opts.compDbgEnC);
                 JITDUMP("Frame type 3 (save FP/LR at bottom). #outsz=%d; #framesz=%d; LclFrameSize=%d\n",
                         unsigned(compiler->lvaOutgoingArgSpaceSize), totalFrameSize, compiler->compLclFrameSize);
 
@@ -5101,15 +5115,23 @@ void CodeGen::genPushCalleeSavedRegisters()
         establishFramePointer = false;
 
         int remainingFrameSz = totalFrameSize - calleeSaveSpDelta;
-        assert(remainingFrameSz > 0);
-        assert((remainingFrameSz % 16) == 0); // this is guaranteed to be 16-byte aligned because each component --
-                                              // totalFrameSize and calleeSaveSpDelta -- is 16-byte aligned.
+        if (remainingFrameSz > 0)
+        {
+            assert((remainingFrameSz % 16) == 0); // this is guaranteed to be 16-byte aligned because each component --
+                                                  // totalFrameSize and calleeSaveSpDelta -- is 16-byte aligned.
 
-        JITDUMP("    remainingFrameSz=%d\n", remainingFrameSz);
+            JITDUMP("    remainingFrameSz=%d\n", remainingFrameSz);
 
-        // We've already established the frame pointer, so no need to report the stack pointer change to unwind info.
-        genStackPointerAdjustment(-remainingFrameSz, initReg, pInitRegZeroed, /* reportUnwindData */ false);
-        offset += remainingFrameSz;
+            // We've already established the frame pointer, so no need to report the stack pointer change to unwind
+            // info.
+            genStackPointerAdjustment(-remainingFrameSz, initReg, pInitRegZeroed, /* reportUnwindData */ false);
+            offset += remainingFrameSz;
+        }
+        else
+        {
+            // Should only have picked this frame type for EnC.
+            assert(compiler->opts.compDbgEnC);
+        }
     }
     else
     {

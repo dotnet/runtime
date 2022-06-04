@@ -111,13 +111,16 @@ namespace Microsoft.Interop
     /// <summary>
     /// A context that redefines the 'native' identifier for a TypePositionInfo to be the marshaller identifier.
     /// </summary>
-    internal sealed class CustomNativeTypeWithToFromNativeValueContext : StubCodeContext
+    internal sealed record CustomNativeTypeWithToFromNativeValueContext : StubCodeContext
     {
         public CustomNativeTypeWithToFromNativeValueContext(StubCodeContext parentContext)
         {
             ParentContext = parentContext;
             CurrentStage = parentContext.CurrentStage;
         }
+
+        public override (TargetFramework framework, Version version) GetTargetFramework()
+            => ParentContext!.GetTargetFramework();
 
         public override bool SingleFrameSpansNativeContext => ParentContext!.SingleFrameSpansNativeContext;
 
@@ -481,12 +484,13 @@ namespace Microsoft.Interop
 
         public IEnumerable<StatementSyntax> GeneratePinStatements(TypePositionInfo info, StubCodeContext context)
         {
-            // fixed (<_nativeTypeSyntax> <ignoredIdentifier> = &<marshalerIdentifier>)
+            // The type of the ignored identifier isn't relevant, so we use void* for all.
+            // fixed (void* <ignoredIdentifier> = &<marshalerIdentifier>)
             //  <assignment to Value property>
             var subContext = new CustomNativeTypeWithToFromNativeValueContext(context);
             yield return FixedStatement(
                 VariableDeclaration(
-                _nativeValueType,
+                PointerType(PredefinedType(Token(SyntaxKind.VoidKeyword))),
                 SingletonSeparatedList(
                     VariableDeclarator(Identifier(context.GetAdditionalIdentifier(info, "ignored")))
                         .WithInitializer(EqualsValueClause(
@@ -683,6 +687,19 @@ namespace Microsoft.Interop
             if (!info.IsByRef && info.ByValueContentsMarshalKind == ByValueContentsMarshalKind.Out)
             {
                 // If the parameter is marshalled by-value [Out], then we don't marshal the contents of the collection.
+                // We do clear the span, so that if the invoke target doesn't fill it, we aren't left with undefined content.
+                // <nativeIdentifier>.GetNativeValuesDestination().Clear();
+                yield return ExpressionStatement(
+                    InvocationExpression(
+                        MemberAccessExpression(
+                            SyntaxKind.SimpleMemberAccessExpression,
+                            InvocationExpression(
+                                MemberAccessExpression(
+                                    SyntaxKind.SimpleMemberAccessExpression,
+                                    IdentifierName(nativeIdentifier),
+                                    IdentifierName(ShapeMemberNames.LinearCollection.GetNativeValuesDestination)),
+                                ArgumentList()),
+                            IdentifierName("Clear"))));
                 yield break;
             }
 
@@ -738,12 +755,76 @@ namespace Microsoft.Interop
         {
             string nativeIdentifier = context.GetIdentifiers(info).native;
             string numElementsIdentifier = context.GetAdditionalIdentifier(info, "numElements");
-            yield return LocalDeclarationStatement(
-                VariableDeclaration(
-                    PredefinedType(Token(SyntaxKind.IntKeyword)),
-                    SingletonSeparatedList(
-                        VariableDeclarator(numElementsIdentifier).WithInitializer(EqualsValueClause(_numElementsExpression)))));
-            // MemoryMarshal.Cast<byte, <elementType>>(<nativeIdentifier>.GetNativeValuesSource(<numElements>)).CopyTo(<nativeIdentifier>.GetManagedValuesDestination(<numElements>));
+
+            ExpressionSyntax copySource;
+            ExpressionSyntax copyDestination;
+            if (!info.IsByRef && info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out))
+            {
+                // <nativeIdentifier>.GetNativeValuesDestination()
+                copySource = InvocationExpression(
+                    MemberAccessExpression(
+                        SyntaxKind.SimpleMemberAccessExpression,
+                        IdentifierName(nativeIdentifier),
+                        IdentifierName(ShapeMemberNames.LinearCollection.GetNativeValuesDestination)));
+
+                // MemoryMarshal.CreateSpan(ref MemoryMarshal.GetReference(<nativeIdentifier>.GetManagedValuesSource()), <nativeIdentifier>.GetManagedValuesSource().Length)
+                copyDestination = InvocationExpression(
+                    MemberAccessExpression(
+                        SyntaxKind.SimpleMemberAccessExpression,
+                        ParseName(TypeNames.System_Runtime_InteropServices_MemoryMarshal),
+                        IdentifierName("CreateSpan")),
+                    ArgumentList(
+                        SeparatedList(new[]
+                        {
+                            Argument(
+                                InvocationExpression(
+                                    MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                                        ParseName(TypeNames.System_Runtime_InteropServices_MemoryMarshal),
+                                        IdentifierName("GetReference")),
+                                    ArgumentList(SingletonSeparatedList(
+                                        Argument(
+                                            InvocationExpression(
+                                                MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                                                    IdentifierName(nativeIdentifier),
+                                                    IdentifierName(ShapeMemberNames.LinearCollection.GetManagedValuesSource))))))))
+                                .WithRefKindKeyword(
+                                    Token(SyntaxKind.RefKeyword)),
+                            Argument(
+                                MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                                    InvocationExpression(
+                                        MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                                            IdentifierName(nativeIdentifier),
+                                            IdentifierName(ShapeMemberNames.LinearCollection.GetManagedValuesSource))),
+                                    IdentifierName("Length")))
+                        })));
+
+            }
+            else
+            {
+                yield return LocalDeclarationStatement(
+                    VariableDeclaration(
+                        PredefinedType(Token(SyntaxKind.IntKeyword)),
+                        SingletonSeparatedList(
+                            VariableDeclarator(numElementsIdentifier).WithInitializer(EqualsValueClause(_numElementsExpression)))));
+
+                // <nativeIdentifier>.GetNativeValuesSource(<numElements>)
+                copySource = InvocationExpression(
+                    MemberAccessExpression(
+                        SyntaxKind.SimpleMemberAccessExpression,
+                        IdentifierName(nativeIdentifier),
+                        IdentifierName(ShapeMemberNames.LinearCollection.GetNativeValuesSource)),
+                    ArgumentList(SingletonSeparatedList(Argument(IdentifierName(numElementsIdentifier)))));
+
+                // <nativeIdentifier>.GetManagedValuesDestination(<numElements>)
+                copyDestination = InvocationExpression(
+                    MemberAccessExpression(
+                        SyntaxKind.SimpleMemberAccessExpression,
+                        IdentifierName(nativeIdentifier),
+                        IdentifierName(ShapeMemberNames.LinearCollection.GetManagedValuesDestination)),
+                    ArgumentList(SingletonSeparatedList(Argument(IdentifierName(numElementsIdentifier)))));
+            }
+
+            // MemoryMarshal.Cast<byte, <elementType>>(<copySource>).CopyTo(<copyDestination>);
             yield return ExpressionStatement(
                 InvocationExpression(
                     MemberAccessExpression(
@@ -763,22 +844,10 @@ namespace Microsoft.Interop
                                                     _elementType
                                                 })))))
                             .AddArgumentListArguments(
-                                Argument(
-                                    InvocationExpression(
-                                        MemberAccessExpression(
-                                            SyntaxKind.SimpleMemberAccessExpression,
-                                            IdentifierName(nativeIdentifier),
-                                            IdentifierName(ShapeMemberNames.LinearCollection.GetNativeValuesSource)),
-                                        ArgumentList(SingletonSeparatedList(Argument(IdentifierName(numElementsIdentifier))))))),
+                                Argument(copySource)),
                         IdentifierName("CopyTo")))
                 .AddArgumentListArguments(
-                    Argument(
-                        InvocationExpression(
-                                        MemberAccessExpression(
-                                            SyntaxKind.SimpleMemberAccessExpression,
-                                            IdentifierName(nativeIdentifier),
-                                            IdentifierName(ShapeMemberNames.LinearCollection.GetManagedValuesDestination)),
-                                        ArgumentList(SingletonSeparatedList(Argument(IdentifierName(numElementsIdentifier))))))));
+                    Argument(copyDestination)));
 
             foreach (StatementSyntax statement in _innerMarshaller.GenerateUnmarshalStatements(info, context))
             {

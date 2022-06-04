@@ -11,8 +11,6 @@
 *                                                                     *
 *                                                                             *
 \*****************************************************************************/
-// See code:CorProfileData for information on Hot Cold splitting using profile data.
-
 
 #ifndef _COR_COMPILE_H_
 #define _COR_COMPILE_H_
@@ -24,8 +22,8 @@
 #include <sstring.h>
 #include <shash.h>
 #include <daccess.h>
-#include <corbbtprof.h>
 #include <clrtypes.h>
+#include <readytorun.h>
 
 typedef DPTR(struct CORCOMPILE_EXCEPTION_LOOKUP_TABLE)
     PTR_CORCOMPILE_EXCEPTION_LOOKUP_TABLE;
@@ -35,8 +33,18 @@ typedef DPTR(struct CORCOMPILE_EXCEPTION_CLAUSE)
    PTR_CORCOMPILE_EXCEPTION_CLAUSE;
 typedef DPTR(struct CORCOMPILE_EXTERNAL_METHOD_DATA_ENTRY)
     PTR_CORCOMPILE_EXTERNAL_METHOD_DATA_ENTRY;
-typedef DPTR(struct CORCOMPILE_IMPORT_SECTION)
-    PTR_CORCOMPILE_IMPORT_SECTION;
+typedef DPTR(struct READYTORUN_IMPORT_SECTION)
+    PTR_READYTORUN_IMPORT_SECTION;
+
+inline ReadyToRunImportSectionFlags operator |( const ReadyToRunImportSectionFlags left, const ReadyToRunImportSectionFlags right)
+{
+    return static_cast<ReadyToRunImportSectionFlags>(static_cast<uint16_t>(left) | static_cast<uint16_t>(right));
+}
+
+inline ReadyToRunImportSectionFlags operator &( const ReadyToRunImportSectionFlags left, const ReadyToRunImportSectionFlags right)
+{
+    return static_cast<ReadyToRunImportSectionFlags>(static_cast<uint16_t>(left) & static_cast<uint16_t>(right));
+}
 
 #ifdef TARGET_X86
 
@@ -55,87 +63,9 @@ typedef DPTR(RUNTIME_FUNCTION) PTR_RUNTIME_FUNCTION;
 
 #endif // TARGET_X86
 
-
-typedef DPTR(struct CORCOMPILE_METHOD_PROFILE_LIST)
-    PTR_CORCOMPILE_METHOD_PROFILE_LIST;
 typedef DPTR(struct CORCOMPILE_RUNTIME_DLL_INFO)
     PTR_CORCOMPILE_RUNTIME_DLL_INFO;
 typedef DPTR(struct COR_ILMETHOD) PTR_COR_ILMETHOD;
-
-//
-// CORCOMPILE_IMPORT_SECTION describes image range with references to other assemblies or runtime data structures
-//
-// There is number of different types of these ranges: eagerly initialized at image load vs. lazily initialized at method entry
-// vs. lazily initialized on first use; hot vs. cold, handles vs. code pointers, etc.
-//
-struct CORCOMPILE_IMPORT_SECTION
-{
-    IMAGE_DATA_DIRECTORY    Section;            // Section containing values to be fixed up
-    USHORT                  Flags;              // One or more of CorCompileImportFlags
-    BYTE                    Type;               // One of CorCompileImportType
-    BYTE                    EntrySize;
-    DWORD                   Signatures;         // RVA of optional signature descriptors
-    DWORD                   AuxiliaryData;      // RVA of optional auxiliary data (typically GC info)
-};
-
-enum CorCompileImportType
-{
-    CORCOMPILE_IMPORT_TYPE_UNKNOWN          = 0,
-    CORCOMPILE_IMPORT_TYPE_EXTERNAL_METHOD  = 1,
-    CORCOMPILE_IMPORT_TYPE_STUB_DISPATCH    = 2,
-    CORCOMPILE_IMPORT_TYPE_STRING_HANDLE    = 3,
-    CORCOMPILE_IMPORT_TYPE_TYPE_HANDLE      = 4,
-    CORCOMPILE_IMPORT_TYPE_METHOD_HANDLE    = 5,
-    CORCOMPILE_IMPORT_TYPE_VIRTUAL_METHOD   = 6,
-};
-
-enum CorCompileImportFlags
-{
-    CORCOMPILE_IMPORT_FLAGS_EAGER           = 0x0001,   // Section at module load time.
-    CORCOMPILE_IMPORT_FLAGS_CODE            = 0x0002,   // Section contains code.
-    CORCOMPILE_IMPORT_FLAGS_PCODE           = 0x0004,   // Section contains pointers to code.
-};
-
-// ================================================================================
-// Portable tagged union of a pointer field with a 30 bit scalar value
-// ================================================================================
-
-// The lowest bit of the tag will be set for tagged pointers. We also set the highest bit for convenience.
-// It makes dereferences of tagged pointers to crash under normal circumstances.
-// The highest bit of the tag will be set for tagged indexes (e.g. classid).
-
-#define CORCOMPILE_TOKEN_TAG 0x80000001
-
-// These two macros are mostly used just for debug-only checks to ensure that we have either tagged pointer (lowest bit is set)
-// or tagged index (highest bit is set).
-#define CORCOMPILE_IS_POINTER_TAGGED(token)     ((((SIZE_T)(token)) & 0x00000001) != 0)
-#define CORCOMPILE_IS_INDEX_TAGGED(token)       ((((SIZE_T)(token)) & 0x80000000) != 0)
-
-// The token (RVA of the fixup in most cases) is stored in the mid 30 bits of DWORD
-#define CORCOMPILE_TAG_TOKEN(token)             ((SIZE_T)(((token)<<1)|CORCOMPILE_TOKEN_TAG))
-#define CORCOMPILE_UNTAG_TOKEN(token)           ((((SIZE_T)(token))&~CORCOMPILE_TOKEN_TAG)>>1)
-
-#ifdef TARGET_ARM
-// Tagging of code pointers on ARM uses inverse logic because of the thumb bit.
-#define CORCOMPILE_IS_PCODE_TAGGED(token)       ((((SIZE_T)(token)) & 0x00000001) == 0x00000000)
-#define CORCOMPILE_TAG_PCODE(token)             ((SIZE_T)(((token)<<1)|0x80000000))
-#else
-#define CORCOMPILE_IS_PCODE_TAGGED(token)       CORCOMPILE_IS_POINTER_TAGGED(token)
-#define CORCOMPILE_TAG_PCODE(token)             CORCOMPILE_TAG_TOKEN(token)
-#endif
-
-inline BOOL CORCOMPILE_IS_FIXUP_TAGGED(SIZE_T fixup, PTR_CORCOMPILE_IMPORT_SECTION pSection)
-{
-#ifdef TARGET_ARM
-    // Tagging of code pointers on ARM has to use inverse logic because of the thumb bit
-    if (pSection->Flags & CORCOMPILE_IMPORT_FLAGS_PCODE)
-    {
-        return CORCOMPILE_IS_PCODE_TAGGED(fixup);
-    }
-#endif
-
-    return ((((SIZE_T)(fixup)) & CORCOMPILE_TOKEN_TAG) == CORCOMPILE_TOKEN_TAG);
-}
 
 //
 // GCRefMap blob starts with DWORDs lookup index of relative offsets into the blob. This lookup index is used to limit amount
@@ -288,167 +218,6 @@ struct CORCOMPILE_EXCEPTION_CLAUSE
         mdToken         ClassToken;
         DWORD           FilterOffset;
     };
-};
-
-
-/*********************************************************************************/
-// The layout of this struct is required to be
-// a 'next' pointer followed by a CORBBTPROF_METHOD_HEADER
-//
-struct CORCOMPILE_METHOD_PROFILE_LIST
-{
-    CORCOMPILE_METHOD_PROFILE_LIST *       next;
-//  CORBBTPROF_METHOD_HEADER               info;
-
-    CORBBTPROF_METHOD_HEADER * GetInfo()
-    { return (CORBBTPROF_METHOD_HEADER *) (this+1); }
-};
-
-class CorProfileData
-{
-public:
-    CorProfileData(void *  rawProfileData);  // really of type ZapImage::ProfileDataSection*
-
-    struct CORBBTPROF_TOKEN_INFO *  GetTokenFlagsData(SectionFormat section)
-    {
-        return this->profilingTokenFlagsData[section].data;
-    }
-
-    DWORD GetTokenFlagsCount(SectionFormat section)
-    {
-        return this->profilingTokenFlagsData[section].count;
-    }
-
-    CORBBTPROF_BLOB_ENTRY *  GetBlobStream()
-    {
-        return this->blobStream;
-    }
-
-    //
-    //  Token lookup methods
-    //
-    ULONG GetTypeProfilingFlagsOfToken(mdToken token)
-    {
-        _ASSERTE(TypeFromToken(token) == mdtTypeDef);
-        return  GetProfilingFlagsOfToken(token);
-    }
-
-    CORBBTPROF_BLOB_PARAM_SIG_ENTRY *GetBlobSigEntry(mdToken token)
-    {
-        _ASSERTE((TypeFromToken(token) == ibcTypeSpec) || (TypeFromToken(token) == ibcMethodSpec));
-
-        CORBBTPROF_BLOB_ENTRY *  pBlobEntry = GetBlobEntry(token);
-        if (pBlobEntry == NULL)
-            return NULL;
-
-        _ASSERTE(pBlobEntry->token == token);
-        _ASSERTE((pBlobEntry->type == ParamTypeSpec) || (pBlobEntry->type == ParamMethodSpec));
-
-        return (CORBBTPROF_BLOB_PARAM_SIG_ENTRY *) pBlobEntry;
-    }
-
-    CORBBTPROF_BLOB_NAMESPACE_DEF_ENTRY *GetBlobExternalNamespaceDef(mdToken token)
-    {
-        _ASSERTE(TypeFromToken(token) == ibcExternalNamespace);
-
-        CORBBTPROF_BLOB_ENTRY *  pBlobEntry = GetBlobEntry(token);
-        if (pBlobEntry == NULL)
-            return NULL;
-
-        _ASSERTE(pBlobEntry->token == token);
-        _ASSERTE(pBlobEntry->type == ExternalNamespaceDef);
-
-        return (CORBBTPROF_BLOB_NAMESPACE_DEF_ENTRY *) pBlobEntry;
-    }
-
-    CORBBTPROF_BLOB_TYPE_DEF_ENTRY *GetBlobExternalTypeDef(mdToken token)
-    {
-        _ASSERTE(TypeFromToken(token) == ibcExternalType);
-
-        CORBBTPROF_BLOB_ENTRY *  pBlobEntry = GetBlobEntry(token);
-        if (pBlobEntry == NULL)
-            return NULL;
-
-        _ASSERTE(pBlobEntry->token == token);
-        _ASSERTE(pBlobEntry->type == ExternalTypeDef);
-
-        return (CORBBTPROF_BLOB_TYPE_DEF_ENTRY *) pBlobEntry;
-    }
-
-    CORBBTPROF_BLOB_SIGNATURE_DEF_ENTRY *GetBlobExternalSignatureDef(mdToken token)
-    {
-        _ASSERTE(TypeFromToken(token) == ibcExternalSignature);
-
-        CORBBTPROF_BLOB_ENTRY *  pBlobEntry = GetBlobEntry(token);
-        if (pBlobEntry == NULL)
-            return NULL;
-
-        _ASSERTE(pBlobEntry->token == token);
-        _ASSERTE(pBlobEntry->type == ExternalSignatureDef);
-
-        return (CORBBTPROF_BLOB_SIGNATURE_DEF_ENTRY *) pBlobEntry;
-    }
-
-    CORBBTPROF_BLOB_METHOD_DEF_ENTRY *GetBlobExternalMethodDef(mdToken token)
-    {
-        _ASSERTE(TypeFromToken(token) == ibcExternalMethod);
-
-        CORBBTPROF_BLOB_ENTRY *  pBlobEntry = GetBlobEntry(token);
-        if (pBlobEntry == NULL)
-            return NULL;
-
-        _ASSERTE(pBlobEntry->token == token);
-        _ASSERTE(pBlobEntry->type == ExternalMethodDef);
-
-        return (CORBBTPROF_BLOB_METHOD_DEF_ENTRY *) pBlobEntry;
-    }
-
-private:
-    ULONG GetProfilingFlagsOfToken(mdToken token)
-    {
-        SectionFormat section = (SectionFormat)((TypeFromToken(token) >> 24) + FirstTokenFlagSection);
-
-        CORBBTPROF_TOKEN_INFO *profilingData = this->profilingTokenFlagsData[section].data;
-        DWORD cProfilingData = this->profilingTokenFlagsData[section].count;
-
-        if (profilingData != NULL)
-        {
-            for (DWORD i = 0; i < cProfilingData; i++)
-            {
-                if (profilingData[i].token == token)
-                    return profilingData[i].flags;
-            }
-        }
-        return 0;
-    }
-
-    CORBBTPROF_BLOB_ENTRY *GetBlobEntry(idTypeSpec token)
-    {
-        CORBBTPROF_BLOB_ENTRY *  pBlobEntry = this->GetBlobStream();
-        if (pBlobEntry == NULL)
-            return NULL;
-
-        while (pBlobEntry->TypeIsValid())
-        {
-            if (pBlobEntry->token == token)
-            {
-                return pBlobEntry;
-            }
-            pBlobEntry = pBlobEntry->GetNextEntry();
-        }
-
-        return NULL;
-    }
-
-private:
-    struct
-    {
-        struct CORBBTPROF_TOKEN_INFO *data;
-        DWORD   count;
-    }
-    profilingTokenFlagsData[SectionFormatCount];
-
-    CORBBTPROF_BLOB_ENTRY* blobStream;
 };
 
 /*********************************************************************************/

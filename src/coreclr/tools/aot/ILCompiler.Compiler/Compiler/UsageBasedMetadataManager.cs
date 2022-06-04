@@ -27,6 +27,7 @@ using EcmaType = Internal.TypeSystem.Ecma.EcmaType;
 using CustomAttributeHandle = System.Reflection.Metadata.CustomAttributeHandle;
 using CustomAttributeTypeProvider = Internal.TypeSystem.Ecma.CustomAttributeTypeProvider;
 using MetadataExtensions = Internal.TypeSystem.Ecma.MetadataExtensions;
+using ILCompiler.Dataflow;
 
 namespace ILCompiler
 {
@@ -455,6 +456,46 @@ namespace ILCompiler
                 dependencies.Add(factory.ReflectableMethod(method), "LDTOKEN method");
         }
 
+        public override void GetDependenciesDueToDelegateCreation(ref DependencyList dependencies, NodeFactory factory, MethodDesc target)
+        {
+            if (!IsReflectionBlocked(target))
+            {
+                dependencies = dependencies ?? new DependencyList();
+                dependencies.Add(factory.ReflectableMethod(target), "Target of a delegate");
+            }
+        }
+
+        public override void GetDependenciesForOverridingMethod(ref CombinedDependencyList dependencies, NodeFactory factory, MethodDesc decl, MethodDesc impl)
+        {
+            Debug.Assert(decl.IsVirtual && MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(decl) == decl);
+
+            // If a virtual method slot is reflection visible, all implementations become reflection visible.
+            //
+            // We could technically come up with a weaker position on this because the code below just needs to
+            // to ensure that delegates to virtual methods can have their GetMethodInfo() called.
+            // Delegate construction introduces a ReflectableMethod for the slot defining method; it doesn't need to.
+            // We could have a specialized node type to track that specific thing and introduce a conditional dependency
+            // on that.
+            //
+            // class Base { abstract Boo(); }
+            // class Derived1 : Base { override Boo() { } }
+            // class Derived2 : Base { override Boo() { } }
+            //
+            // typeof(Derived2).GetMethods(...)
+            //
+            // In the above case, we don't really need Derived1.Boo to become reflection visible
+            // but the below code will do that because ReflectableMethodNode tracks all reflectable methods,
+            // without keeping information about subtleities like "reflectable delegate".
+            if (!IsReflectionBlocked(decl) && !IsReflectionBlocked(impl))
+            {
+                dependencies ??= new CombinedDependencyList();
+                dependencies.Add(new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(
+                    factory.ReflectableMethod(impl.GetCanonMethodTarget(CanonicalFormKind.Specific)),
+                    factory.ReflectableMethod(decl.GetCanonMethodTarget(CanonicalFormKind.Specific)),
+                    "Virtual method declaration is reflectable"));
+            }
+        }
+
         protected override void GetDependenciesDueToMethodCodePresenceInternal(ref DependencyList dependencies, NodeFactory factory, MethodDesc method, MethodIL methodIL)
         {
             bool scanReflection = (_generationOptions & UsageBasedMetadataGenerationOptions.ReflectionILScanning) != 0;
@@ -671,30 +712,31 @@ namespace ILCompiler
         public override void NoteOverridingMethod(MethodDesc baseMethod, MethodDesc overridingMethod)
         {
             // We validate that the various dataflow/Requires* annotations are consistent across virtual method overrides
-
-            bool baseMethodRequiresUnreferencedCode = baseMethod.HasCustomAttribute("System.Diagnostics.CodeAnalysis", "RequiresUnreferencedCodeAttribute");
-            bool overridingMethodRequiresUnreferencedCode = overridingMethod.HasCustomAttribute("System.Diagnostics.CodeAnalysis", "RequiresUnreferencedCodeAttribute");
-
-            bool baseMethodRequiresDynamicCode = baseMethod.HasCustomAttribute("System.Diagnostics.CodeAnalysis", "RequiresDynamicCodeAttribute");
-            bool overridingMethodRequiresDynamicCode = overridingMethod.HasCustomAttribute("System.Diagnostics.CodeAnalysis", "RequiresDynamicCodeAttribute");
-
-            bool baseMethodRequiresDataflow = FlowAnnotations.RequiresDataflowAnalysis(baseMethod);
-            bool overridingMethodRequiresDataflow = FlowAnnotations.RequiresDataflowAnalysis(overridingMethod);
-
-            if (baseMethodRequiresUnreferencedCode != overridingMethodRequiresUnreferencedCode)
+            if (HasMismatchingAttributes(baseMethod, overridingMethod, "RequiresUnreferencedCodeAttribute"))
             {
                 Logger.LogWarning(overridingMethod, DiagnosticId.RequiresUnreferencedCodeAttributeMismatch, overridingMethod.GetDisplayName(), baseMethod.GetDisplayName());
             }
 
-            if (baseMethodRequiresDynamicCode != overridingMethodRequiresDynamicCode)
+            if (HasMismatchingAttributes(baseMethod, overridingMethod, "RequiresDynamicCodeAttribute"))
             {
                 Logger.LogWarning(overridingMethod, DiagnosticId.RequiresDynamicCodeAttributeMismatch, overridingMethod.GetDisplayName(), baseMethod.GetDisplayName());
             }
 
+            bool baseMethodRequiresDataflow = FlowAnnotations.RequiresDataflowAnalysis(baseMethod);
+            bool overridingMethodRequiresDataflow = FlowAnnotations.RequiresDataflowAnalysis(overridingMethod);
             if (baseMethodRequiresDataflow || overridingMethodRequiresDataflow)
             {
                 FlowAnnotations.ValidateMethodAnnotationsAreSame(overridingMethod, baseMethod);
             }
+        }
+
+        public static bool HasMismatchingAttributes (MethodDesc baseMethod, MethodDesc overridingMethod, string requiresAttributeName)
+        {
+            bool baseMethodCreatesRequirement = baseMethod.DoesMethodRequire(requiresAttributeName, out _);
+            bool overridingMethodCreatesRequirement = overridingMethod.DoesMethodRequire(requiresAttributeName, out _);
+            bool baseMethodFulfillsRequirement = baseMethod.IsOverrideInRequiresScope(requiresAttributeName);
+            bool overridingMethodFulfillsRequirement = overridingMethod.IsOverrideInRequiresScope(requiresAttributeName);
+            return (baseMethodCreatesRequirement && !overridingMethodFulfillsRequirement) || (overridingMethodCreatesRequirement && !baseMethodFulfillsRequirement);
         }
 
         public MetadataManager ToAnalysisBasedMetadataManager()
@@ -883,19 +925,16 @@ namespace ILCompiler
 
             public bool GeneratesMetadata(EcmaModule module, ExportedTypeHandle exportedTypeHandle)
             {
-                try
-                {
-                    // Generate the forwarder only if we generated the target type.
-                    // If the target type is in a different compilation group, assume we generated it there.
-                    var targetType = (MetadataType)module.GetObject(exportedTypeHandle);
-                    return GeneratesMetadata(targetType) || !_factory.CompilationModuleGroup.ContainsType(targetType);
-                }
-                catch (TypeSystemException)
+                // Generate the forwarder only if we generated the target type.
+                // If the target type is in a different compilation group, assume we generated it there.
+                var targetType = (MetadataType)module.GetObject(exportedTypeHandle, NotFoundBehavior.ReturnNull);
+                if (targetType == null)
                 {
                     // No harm in generating a forwarder that didn't resolve.
                     // We'll get matching behavior at runtime.
                     return true;
                 }
+                return GeneratesMetadata(targetType) || !_factory.CompilationModuleGroup.ContainsType(targetType);
             }
 
             public bool IsBlocked(MetadataType typeDef)

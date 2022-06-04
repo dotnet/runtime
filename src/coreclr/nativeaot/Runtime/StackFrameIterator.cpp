@@ -30,7 +30,7 @@
 // warning C4061: enumerator '{blah}' in switch of enum '{blarg}' is not explicitly handled by a case label
 #pragma warning(disable:4061)
 
-#if !defined(USE_PORTABLE_HELPERS) // @TODO: CORERT: these are (currently) only implemented in assembly helpers
+#if !defined(USE_PORTABLE_HELPERS) // @TODO: these are (currently) only implemented in assembly helpers
 
 #if defined(FEATURE_DYNAMIC_CODE)
 EXTERN_C void * RhpUniversalTransition();
@@ -88,16 +88,11 @@ GVAL_IMPL_INIT(PTR_VOID, g_RhpRethrow2Addr, PointerToRhpRethrow2);
 #define FAILFAST_OR_DAC_FAIL_UNCONDITIONALLY(msg) { ASSERT_UNCONDITIONALLY(msg); RhFailFast(); }
 #endif
 
-PTR_PInvokeTransitionFrame GetPInvokeTransitionFrame(PTR_VOID pTransitionFrame)
-{
-    return static_cast<PTR_PInvokeTransitionFrame>(pTransitionFrame);
-}
-
-StackFrameIterator::StackFrameIterator(Thread * pThreadToWalk, PTR_VOID pInitialTransitionFrame)
+StackFrameIterator::StackFrameIterator(Thread * pThreadToWalk, PInvokeTransitionFrame* pInitialTransitionFrame)
 {
     STRESS_LOG0(LF_STACKWALK, LL_INFO10000, "----Init---- [ GC ]\n");
     ASSERT(!pThreadToWalk->DangerousCrossThreadIsHijacked());
-    InternalInit(pThreadToWalk, GetPInvokeTransitionFrame(pInitialTransitionFrame), GcStackWalkFlags);
+    InternalInit(pThreadToWalk, pInitialTransitionFrame, GcStackWalkFlags);
     PrepareToYieldFrame();
 }
 
@@ -140,7 +135,7 @@ void StackFrameIterator::EnterInitialInvalidState(Thread * pThreadToWalk)
 // NOTE: When the PC is in an assembly thunk, this function will unwind to the next managed
 // frame and may publish a conservative stack range (if and only if any of the unwound
 // thunks report a conservative range).
-void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PInvokeTransitionFrame pFrame, uint32_t dwFlags)
+void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PInvokeTransitionFrame* pFrame, uint32_t dwFlags)
 {
     // EH stackwalks are always required to unwind non-volatile floating point state.  This
     // state is never carried by PInvokeTransitionFrames, implying that they can never be used
@@ -163,7 +158,7 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PInvokeTransit
     // properly walk it in parallel.
     ResetNextExInfoForSP((uintptr_t)dac_cast<TADDR>(pFrame));
 
-#if !defined(USE_PORTABLE_HELPERS) // @TODO: CORERT: no portable version of regdisplay
+#if !defined(USE_PORTABLE_HELPERS) // @TODO: no portable version of regdisplay
     memset(&m_RegDisplay, 0, sizeof(m_RegDisplay));
     m_RegDisplay.SetIP((PCODE)pFrame->m_RIP);
     m_RegDisplay.SetAddrOfIP((PTR_PCODE)PTR_HOST_MEMBER(PInvokeTransitionFrame, pFrame, m_RIP));
@@ -306,12 +301,12 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PInvokeTransit
 
     if (category == InManagedCode)
     {
-        ASSERT(m_pInstance->FindCodeManagerByAddress(m_ControlPC));
+        ASSERT(m_pInstance->IsManaged(m_ControlPC));
     }
     else if (IsNonEHThunk(category))
     {
         UnwindNonEHThunkSequence();
-        ASSERT(m_pInstance->FindCodeManagerByAddress(m_ControlPC));
+        ASSERT(m_pInstance->IsManaged(m_ControlPC));
     }
     else
     {
@@ -349,8 +344,8 @@ void StackFrameIterator::InternalInitForStackTrace()
 {
     STRESS_LOG0(LF_STACKWALK, LL_INFO10000, "----Init---- [ StackTrace ]\n");
     Thread * pThreadToWalk = ThreadStore::GetCurrentThread();
-    PTR_VOID pFrame = pThreadToWalk->GetTransitionFrameForStackTrace();
-    InternalInit(pThreadToWalk, GetPInvokeTransitionFrame(pFrame), StackTraceStackWalkFlags);
+    PInvokeTransitionFrame* pFrame = pThreadToWalk->GetTransitionFrameForStackTrace();
+    InternalInit(pThreadToWalk, pFrame, StackTraceStackWalkFlags);
     PrepareToYieldFrame();
 }
 
@@ -374,7 +369,7 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PAL_LIMITED_CO
 
     // This codepath is used by the hijack stackwalk and we can get arbitrary ControlPCs from there.  If this
     // context has a non-managed control PC, then we're done.
-    if (!m_pInstance->FindCodeManagerByAddress(dac_cast<PTR_VOID>(pCtx->GetIp())))
+    if (!m_pInstance->IsManaged(dac_cast<PTR_VOID>(pCtx->GetIp())))
         return;
 
     //
@@ -652,7 +647,7 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
 {
     ASSERT((m_dwFlags & MethodStateCalculated) == 0);
 
-#if defined(USE_PORTABLE_HELPERS) // @TODO: CORERT: Currently no funclet invoke defined in a portable way
+#if defined(USE_PORTABLE_HELPERS) // @TODO: Currently no funclet invoke defined in a portable way
     return;
 #else // defined(USE_PORTABLE_HELPERS)
     ASSERT(CategorizeUnadjustedReturnAddress(m_ControlPC) == InFuncletInvokeThunk);
@@ -878,7 +873,7 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
 
     // We expect to be called by the runtime's C# EH implementation, and since this function's notion of how
     // to unwind through the stub is brittle relative to the stub itself, we want to check as soon as we can.
-    ASSERT(m_pInstance->FindCodeManagerByAddress(m_ControlPC) && "unwind from funclet invoke stub failed");
+    ASSERT(m_pInstance->IsManaged(m_ControlPC) && "unwind from funclet invoke stub failed");
 #endif // defined(USE_PORTABLE_HELPERS)
 }
 
@@ -1041,7 +1036,7 @@ void StackFrameIterator::UnwindUniversalTransitionThunk()
 {
     ASSERT((m_dwFlags & MethodStateCalculated) == 0);
 
-#if defined(USE_PORTABLE_HELPERS) // @TODO: CORERT: Corresponding helper code is only defined in assembly code
+#if defined(USE_PORTABLE_HELPERS) // @TODO: Corresponding helper code is only defined in assembly code
     return;
 #else // defined(USE_PORTABLE_HELPERS)
     ASSERT(CategorizeUnadjustedReturnAddress(m_ControlPC) == InUniversalTransitionThunk);
@@ -1126,7 +1121,7 @@ void StackFrameIterator::UnwindCallDescrThunk()
 {
     ASSERT((m_dwFlags & MethodStateCalculated) == 0);
 
-#if defined(USE_PORTABLE_HELPERS) // @TODO: CORERT: Corresponding helper code is only defined in assembly code
+#if defined(USE_PORTABLE_HELPERS) // @TODO: Corresponding helper code is only defined in assembly code
     return;
 #else // defined(USE_PORTABLE_HELPERS)
     ASSERT(CategorizeUnadjustedReturnAddress(m_ControlPC) == InCallDescrThunk);
@@ -1208,7 +1203,7 @@ void StackFrameIterator::UnwindThrowSiteThunk()
 {
     ASSERT((m_dwFlags & MethodStateCalculated) == 0);
 
-#if defined(USE_PORTABLE_HELPERS) // @TODO: CORERT: no portable version of throw helpers
+#if defined(USE_PORTABLE_HELPERS) // @TODO: no portable version of throw helpers
     return;
 #else // defined(USE_PORTABLE_HELPERS)
     ASSERT(CategorizeUnadjustedReturnAddress(m_ControlPC) == InThrowSiteThunk);
@@ -1276,7 +1271,7 @@ void StackFrameIterator::UnwindThrowSiteThunk()
 
     // We expect the throw site to be in managed code, and since this function's notion of how to unwind
     // through the stub is brittle relative to the stub itself, we want to check as soon as we can.
-    ASSERT(m_pInstance->FindCodeManagerByAddress(m_ControlPC) && "unwind from throw site stub failed");
+    ASSERT(m_pInstance->IsManaged(m_ControlPC) && "unwind from throw site stub failed");
 #endif // defined(USE_PORTABLE_HELPERS)
 }
 
@@ -1314,7 +1309,7 @@ UnwindOutOfCurrentManagedFrame:
     uintptr_t DEBUG_preUnwindSP = m_RegDisplay.GetSP();
 #endif
 
-    PTR_VOID pPreviousTransitionFrame;
+    PInvokeTransitionFrame* pPreviousTransitionFrame;
     FAILFAST_OR_DAC_FAIL(GetCodeManager()->UnwindStackFrame(&m_methodInfo, &m_RegDisplay, &pPreviousTransitionFrame));
 
     bool doingFuncletUnwind = GetCodeManager()->IsFunclet(&m_methodInfo);
@@ -1337,8 +1332,8 @@ UnwindOutOfCurrentManagedFrame:
             // will unwind through the thunk and back to the nearest managed frame, and therefore may
             // see a conservative range reported by one of the thunks encountered during this "nested"
             // unwind.
-            InternalInit(m_pThread, GetPInvokeTransitionFrame(pPreviousTransitionFrame), GcStackWalkFlags);
-            ASSERT(m_pInstance->FindCodeManagerByAddress(m_ControlPC));
+            InternalInit(m_pThread, pPreviousTransitionFrame, GcStackWalkFlags);
+            ASSERT(m_pInstance->IsManaged(m_ControlPC));
         }
         m_dwFlags |= UnwoundReversePInvoke;
     }
@@ -1465,7 +1460,7 @@ UnwindOutOfCurrentManagedFrame:
         // from the iterator with the one and only exception being cases where a managed frame must
         // be skipped due to funclet collapsing.
 
-        ASSERT(m_pInstance->FindCodeManagerByAddress(m_ControlPC));
+        ASSERT(m_pInstance->IsManaged(m_ControlPC));
 
         if (collapsingTargetFrame != NULL)
         {
@@ -1574,7 +1569,7 @@ void StackFrameIterator::PrepareToYieldFrame()
     if (!IsValid())
         return;
 
-    ASSERT(m_pInstance->FindCodeManagerByAddress(m_ControlPC));
+    ASSERT(m_pInstance->IsManaged(m_ControlPC));
 
     if (m_dwFlags & ApplyReturnAddressAdjustment)
     {
@@ -1659,7 +1654,7 @@ void StackFrameIterator::CalculateCurrentMethodState()
     // Assume that the caller is likely to be in the same module
     if (m_pCodeManager == NULL || !m_pCodeManager->FindMethodInfo(m_ControlPC, &m_methodInfo))
     {
-        m_pCodeManager = dac_cast<PTR_ICodeManager>(m_pInstance->FindCodeManagerByAddress(m_ControlPC));
+        m_pCodeManager = dac_cast<PTR_ICodeManager>(m_pInstance->GetCodeManagerForAddress(m_ControlPC));
         FAILFAST_OR_DAC_FAIL(m_pCodeManager);
 
         FAILFAST_OR_DAC_FAIL(m_pCodeManager->FindMethodInfo(m_ControlPC, &m_methodInfo));
@@ -1717,7 +1712,7 @@ bool StackFrameIterator::IsValidReturnAddress(PTR_VOID pvAddress)
     if (category == InThrowSiteThunk)
         return true;
 
-    return (NULL != GetRuntimeInstance()->FindCodeManagerByAddress(pvAddress));
+    return GetRuntimeInstance()->IsManaged(pvAddress);
 }
 
 // Support for conservatively reporting GC references in a stack range. This is used when managed methods with
@@ -1758,7 +1753,7 @@ PTR_VOID StackFrameIterator::AdjustReturnAddressBackward(PTR_VOID controlPC)
 // static
 StackFrameIterator::ReturnAddressCategory StackFrameIterator::CategorizeUnadjustedReturnAddress(PTR_VOID returnAddress)
 {
-#if defined(USE_PORTABLE_HELPERS) // @TODO: CORERT: no portable thunks are defined
+#if defined(USE_PORTABLE_HELPERS) // @TODO: no portable thunks are defined
 
     return InManagedCode;
 

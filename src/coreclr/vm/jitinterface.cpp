@@ -303,7 +303,7 @@ CorInfoType CEEInfo::asCorInfoType(CorElementType eeType,
 
         // Zap the typeHnd when the type _really_ is a primitive
         // as far as verification is concerned. Returning a null class
-        // handle means it is is a primitive.
+        // handle means it is a primitive.
         //
         // Enums are exactly like primitives, even from a verification standpoint,
         // so we zap the type handle in this case.
@@ -2741,7 +2741,7 @@ void CEEInfo::ScanToken(Module * pModule, CORINFO_RESOLVED_TOKEN * pResolvedToke
     //
     // Scan chain of parent types
     //
-    for (;;)
+    while (true)
     {
         Module * pDefModule = pMT->GetModule();
         if (pDefModule->IsSystem())
@@ -2910,6 +2910,7 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
 
     MethodDesc* pContextMD = GetMethodFromContext(pResolvedToken->tokenContext);
     MethodTable* pContextMT = pContextMD->GetMethodTable();
+    bool isStaticVirtual = (pConstrainedResolvedToken != nullptr && pContextMD != nullptr && pContextMD->IsStatic());
 
     // There is a pathological case where invalid IL refereces __Canon type directly, but there is no dictionary availabled to store the lookup.
     if (!pContextMD->IsSharedByGenericInstantiations())
@@ -3569,7 +3570,7 @@ uint32_t CEEInfo::getClassAttribs (CORINFO_CLASS_HANDLE clsHnd)
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    // <REVISIT_TODO>@todo FIX need to really fetch the class atributes.  at present
+    // <REVISIT_TODO>@todo FIX need to really fetch the class attributes.  at present
     // we don't need to because the JIT only cares in the case of COM classes</REVISIT_TODO>
     uint32_t ret = 0;
 
@@ -4375,9 +4376,8 @@ CORINFO_CLASS_HANDLE CEEInfo::mergeClasses(
             _ASSERTE(merged == reflexive);
         }
 
-        //If both sides are arrays, then the result is either an array or g_pArrayClass.  The above is
-        //actually true about the element type for references types, but I think that that is a little
-        //excessive for sanity.
+        // If both sides are arrays, then the result is either an array or g_pArrayClass.  The above is
+        // actually true for reference types as well, but it is a little excessive to deal with.
         if (hnd1.IsArray() && hnd2.IsArray())
         {
             _ASSERTE((merged.IsArray() && reflexive.IsArray())
@@ -4843,6 +4843,8 @@ void CEEInfo::getCallInfo(
         constrainedType = TypeHandle(pConstrainedResolvedToken->hClass);
     }
 
+    BOOL fIsStaticVirtualMethod = (pConstrainedResolvedToken != NULL && pMD->IsInterface() && pMD->IsStatic());
+
     BOOL fResolvedConstraint = FALSE;
     BOOL fForceUseRuntimeLookup = FALSE;
 
@@ -4913,7 +4915,7 @@ void CEEInfo::getCallInfo(
             // Either
             //    1. no constraint resolution at compile time (!directMethod)
             // OR 2. no code sharing lookup in call
-            // OR 3. we have have resolved to an instantiating stub
+            // OR 3. we have resolved to an instantiating stub
 
             pMDAfterConstraintResolution = directMethod;
             _ASSERTE(!pMDAfterConstraintResolution->IsInterface());
@@ -4922,13 +4924,27 @@ void CEEInfo::getCallInfo(
 
             exactType = constrainedType;
         }
+#ifdef FEATURE_DEFAULT_INTERFACES
+        else if (directMethod && pMD->IsStatic())
+        {
+            // Default interface implementation of static virtual method
+            pMDAfterConstraintResolution = directMethod;
+            fResolvedConstraint = TRUE;
+            pResult->thisTransform = CORINFO_NO_THIS_TRANSFORM;
+            exactType = directMethod->GetMethodTable();
+        }
+#endif
         else  if (constrainedType.IsValueType())
         {
             pResult->thisTransform = CORINFO_BOX_THIS;
         }
-        else
+        else if (!fIsStaticVirtualMethod)
         {
             pResult->thisTransform = CORINFO_DEREF_THIS;
+        }
+        else
+        {
+            pResult->thisTransform = CORINFO_NO_THIS_TRANSFORM;
         }
     }
 
@@ -4939,10 +4955,15 @@ void CEEInfo::getCallInfo(
     MethodDesc * pTargetMD = pMDAfterConstraintResolution;
     DWORD dwTargetMethodAttrs = pTargetMD->GetAttrs();
 
+    pResult->exactContextNeedsRuntimeLookup = (!constrainedType.IsNull() && constrainedType.IsCanonicalSubtype());
+
     if (pTargetMD->HasMethodInstantiation())
     {
         pResult->contextHandle = MAKE_METHODCONTEXT(pTargetMD);
-        pResult->exactContextNeedsRuntimeLookup = pTargetMD->GetMethodTable()->IsSharedByGenericInstantiations() || TypeHandle::IsCanonicalSubtypeInstantiation(pTargetMD->GetMethodInstantiation());
+        if (pTargetMD->GetMethodTable()->IsSharedByGenericInstantiations() || TypeHandle::IsCanonicalSubtypeInstantiation(pTargetMD->GetMethodInstantiation()))
+        {
+            pResult->exactContextNeedsRuntimeLookup = TRUE;
+        }
     }
     else
     {
@@ -4956,7 +4977,10 @@ void CEEInfo::getCallInfo(
         }
 
         pResult->contextHandle = MAKE_CLASSCONTEXT(exactType.AsPtr());
-        pResult->exactContextNeedsRuntimeLookup = exactType.IsSharedByGenericInstantiations();
+        if (exactType.IsSharedByGenericInstantiations())
+        {
+            pResult->exactContextNeedsRuntimeLookup = TRUE;
+        }
 
         // Use main method as the context as long as the methods are called on the same type
         if (pResult->exactContextNeedsRuntimeLookup &&
@@ -4979,7 +5003,7 @@ void CEEInfo::getCallInfo(
     bool directCall = false;
     bool resolvedCallVirt = false;
 
-    if (flags & CORINFO_CALLINFO_LDFTN)
+    if ((flags & CORINFO_CALLINFO_LDFTN) && (!fIsStaticVirtualMethod || fResolvedConstraint))
     {
         // Since the ldvirtftn instruction resolves types
         // at run-time we do this earlier than ldftn. The
@@ -5004,12 +5028,12 @@ void CEEInfo::getCallInfo(
     }
     else
     // Static methods are always direct calls
-    if (pTargetMD->IsStatic())
+    if (pTargetMD->IsStatic() && (!fIsStaticVirtualMethod || fResolvedConstraint))
     {
         directCall = true;
     }
     else
-    if (!(flags & CORINFO_CALLINFO_CALLVIRT) || fResolvedConstraint)
+    if ((!fIsStaticVirtualMethod && !(flags & CORINFO_CALLINFO_CALLVIRT)) || fResolvedConstraint)
     {
         directCall = true;
     }
@@ -5137,13 +5161,13 @@ void CEEInfo::getCallInfo(
     // All virtual calls which take method instantiations must
     // currently be implemented by an indirect call via a runtime-lookup
     // function pointer
-    else if (pTargetMD->HasMethodInstantiation())
+    else if (pTargetMD->HasMethodInstantiation() && !fIsStaticVirtualMethod)
     {
         pResult->kind = CORINFO_VIRTUALCALL_LDVIRTFTN;  // stub dispatch can't handle generic method calls yet
         pResult->nullInstanceCheck = TRUE;
     }
     // Non-interface dispatches go through the vtable.
-    else if (!pTargetMD->IsInterface())
+    else if (!pTargetMD->IsInterface() && !fIsStaticVirtualMethod)
     {
         pResult->kind = CORINFO_VIRTUALCALL_VTABLE;
         pResult->nullInstanceCheck = TRUE;
@@ -5156,6 +5180,10 @@ void CEEInfo::getCallInfo(
         pResult->kind = CORINFO_VIRTUALCALL_LDVIRTFTN;
 #else // STUB_DISPATCH_PORTABLE
         pResult->kind = CORINFO_VIRTUALCALL_STUB;
+        if (fIsStaticVirtualMethod)
+        {
+            pResult->kind = CORINFO_CALL_CODE_POINTER;
+        }
 
         // We can't make stub calls when we need exact information
         // for interface calls from shared code.
@@ -5164,9 +5192,9 @@ void CEEInfo::getCallInfo(
         {
             _ASSERTE(!m_pMethodBeingCompiled->IsDynamicMethod());
 
-            ComputeRuntimeLookupForSharedGenericToken(DispatchStubAddrSlot,
+            ComputeRuntimeLookupForSharedGenericToken(fIsStaticVirtualMethod ? ConstrainedMethodEntrySlot : DispatchStubAddrSlot,
                                                         pResolvedToken,
-                                                        NULL,
+                                                        pConstrainedResolvedToken,
                                                         pMD,
                                                         &pResult->stubLookup);
         }
@@ -5391,6 +5419,30 @@ void CEEInfo::getCallInfo(
         signatureKind = SK_CALLSITE;
     }
     getMethodSigInternal(pResult->hMethod, &pResult->sig, (pResult->hMethod == pResolvedToken->hMethod) ? pResolvedToken->hClass : NULL, signatureKind);
+    if (fIsStaticVirtualMethod && !fResolvedConstraint)
+    {
+        if (pResult->exactContextNeedsRuntimeLookup)
+        {
+            // Runtime lookup for static virtual methods always returns exact call addresses not requiring the instantiation argument
+            pResult->sig.callConv = (CorInfoCallConv)(pResult->sig.callConv & ~CORINFO_CALLCONV_PARAMTYPE);
+        }
+        else
+        {
+            // Unresolved static virtual method in the absence of shared generics means
+            // that the runtime needs to throw when reaching the call. SVM resolution within
+            // shared generics is covered by the ConstrainedMethodEntrySlot dictionary entry.
+            pResult->kind = CORINFO_CALL;
+            pResult->accessAllowed = CORINFO_ACCESS_ILLEGAL;
+            pResult->callsiteCalloutHelper.helperNum = CORINFO_HELP_STATIC_VIRTUAL_AMBIGUOUS_RESOLUTION;
+            pResult->callsiteCalloutHelper.numArgs = 3;
+            pResult->callsiteCalloutHelper.args[0].methodHandle = (CORINFO_METHOD_HANDLE)pMD;
+            pResult->callsiteCalloutHelper.args[0].argType = CORINFO_HELPER_ARG_TYPE_Method;
+            pResult->callsiteCalloutHelper.args[1].classHandle = (CORINFO_CLASS_HANDLE)th.AsMethodTable();
+            pResult->callsiteCalloutHelper.args[1].argType = CORINFO_HELPER_ARG_TYPE_Class;
+            pResult->callsiteCalloutHelper.args[2].classHandle = (CORINFO_CLASS_HANDLE)constrainedType.AsMethodTable();
+            pResult->callsiteCalloutHelper.args[2].argType = CORINFO_HELPER_ARG_TYPE_Class;
+        }
+    }
 
     if (flags & CORINFO_CALLINFO_VERIFICATION)
     {
@@ -5594,7 +5646,7 @@ bool __stdcall TrackAllocationsEnabled()
     CONTRACTL_END;
 
     return (
-        (g_IBCLogger.InstrEnabled() != FALSE)
+        FALSE
 #ifdef PROFILING_SUPPORTED
         || CORProfilerTrackAllocationsEnabled()
 #endif // PROFILING_SUPPORTED
@@ -5715,7 +5767,7 @@ CorInfoHelpFunc CEEInfo::getNewHelperStatic(MethodTable * pMT, bool * pHasSideEf
     }
 
 #ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
-    // If we are use the the fast allocator we also may need the
+    // If we are use the fast allocator we also may need the
     // specialized varion for align8
     if (pMT->GetClass()->IsAlign8Candidate() &&
         (helper == CORINFO_HELP_NEWSFAST))
@@ -7325,7 +7377,7 @@ bool getILIntrinsicImplementationForRuntimeHelpers(MethodDesc * ftn,
     }
     else if (tk == CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__ENUM_COMPARE_TO)->GetMemberDef())
     {
-        // The the comment above on why this is is not an unconditional replacement.  This case handles
+        // The comment above on why this is not an unconditional replacement.  This case handles
         // Enums backed by 8 byte values.
 
         _ASSERTE(ftn->HasMethodInstantiation());
@@ -8648,7 +8700,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     {
         // Virtual call devirtualization.
         //
-        // The derived class should be a subclass of the the base class.
+        // The derived class should be a subclass of the base class.
         MethodTable* pCheckMT = pObjMT;
 
         while (pCheckMT != nullptr)
@@ -8781,7 +8833,7 @@ void CEEInfo::expandRawHandleIntrinsic(
     CORINFO_GENERICHANDLE_RESULT *  pResult)
 {
     LIMITED_METHOD_CONTRACT;
-    UNREACHABLE();      // only called with CoreRT.
+    UNREACHABLE();      // only called with NativeAOT.
 }
 
 /*********************************************************************/
@@ -8932,12 +8984,8 @@ CORINFO_CLASS_HANDLE CEEInfo::getDefaultEqualityComparerClassHelper(CORINFO_CLAS
     if (Nullable::IsNullableType(elemTypeHnd))
     {
         Instantiation nullableInst = elemTypeHnd.AsMethodTable()->GetInstantiation();
-        TypeHandle iequatable = TypeHandle(CoreLibBinder::GetClass(CLASS__IEQUATABLEGENERIC)).Instantiate(nullableInst);
-        if (nullableInst[0].CanCastTo(iequatable))
-        {
-            TypeHandle resultTh = ((TypeHandle)CoreLibBinder::GetClass(CLASS__NULLABLE_EQUALITYCOMPARER)).Instantiate(nullableInst);
-            return CORINFO_CLASS_HANDLE(resultTh.GetMethodTable());
-        }
+        TypeHandle resultTh = ((TypeHandle)CoreLibBinder::GetClass(CLASS__NULLABLE_EQUALITYCOMPARER)).Instantiate(nullableInst);
+        return CORINFO_CLASS_HANDLE(resultTh.GetMethodTable());
     }
 
     // Enum
@@ -9126,7 +9174,7 @@ CORINFO_CLASS_HANDLE CEEInfo::getFieldClass (CORINFO_FIELD_HANDLE fieldHnd)
 }
 
 /*********************************************************************/
-// Returns the basic type of the field (not the the type that declares the field)
+// Returns the basic type of the field (not the type that declares the field)
 //
 // pTypeHnd - Optional. If not null then on return, for reference and value types,
 //            *pTypeHnd will contain the normalized type of the field.
@@ -10694,14 +10742,15 @@ void* CEEJitInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
         // the direct call instead goes to a jump stub which jumps to the jit helper.
         // However in this process the jump stub will corrupt RAX.
         //
-        // The set of helpers for which RAX must be preserved are the profiler probes
+        // The set of helpers for which RAX must be preserved are profiler probes, CFG dispatcher
         // and the STOP_FOR_GC helper which maps to JIT_RareDisableHelper.
         // In the case of the STOP_FOR_GC helper RAX can be holding a function return value.
         //
         if (dynamicFtnNum == DYNAMIC_CORINFO_HELP_STOP_FOR_GC    ||
             dynamicFtnNum == DYNAMIC_CORINFO_HELP_PROF_FCN_ENTER ||
             dynamicFtnNum == DYNAMIC_CORINFO_HELP_PROF_FCN_LEAVE ||
-            dynamicFtnNum == DYNAMIC_CORINFO_HELP_PROF_FCN_TAILCALL)
+            dynamicFtnNum == DYNAMIC_CORINFO_HELP_PROF_FCN_TAILCALL ||
+            dynamicFtnNum == DYNAMIC_CORINFO_HELP_DISPATCH_INDIRECT_CALL)
         {
             _ASSERTE(ppIndirection != NULL);
             *ppIndirection = &hlpDynamicFuncTable[dynamicFtnNum].pfnHelper;
@@ -11251,7 +11300,7 @@ void CEEJitInfo::allocUnwindInfo (
 #ifdef _DEBUG
     if (funcKind != CORJIT_FUNC_ROOT)
     {
-        // Check the the new funclet doesn't overlap any existing funclet.
+        // Check the new funclet doesn't overlap any existing funclet.
 
         for (ULONG iUnwindInfo = 0; iUnwindInfo < m_usedUnwindInfos - 1; iUnwindInfo++)
         {
@@ -12815,7 +12864,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
 
 #endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
 
-    for (;;)
+    while (true)
     {
         CEEJitInfo jitInfo(ftn, ILHeader, jitMgr, !flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_NO_INLINING));
 
@@ -12924,15 +12973,19 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
             {
                 LARGE_INTEGER methodJitTimeStop;
                 QueryPerformanceCounter(&methodJitTimeStop);
+
+                SString moduleName;
+                ftn->GetModule()->GetDomainAssembly()->GetPEAssembly()->GetPathOrCodeBase(moduleName);
+                MAKE_UTF8PTR_FROMWIDE(moduleNameUtf8, moduleName.GetUnicode());
+
                 SString codeBase;
-                ftn->GetModule()->GetDomainAssembly()->GetPEAssembly()->GetPathOrCodeBase(codeBase);
-                codeBase.AppendPrintf(W(",0x%x,%d,%d\n"),
-                                 //(const WCHAR *)codeBase, //module name
+                codeBase.AppendPrintf("%s,0x%x,%d,%d\n",
+                                 moduleNameUtf8, //module name
                                  ftn->GetMemberDef(), //method token
                                  (unsigned)(methodJitTimeStop.QuadPart - methodJitTimeStart.QuadPart), //cycle count
                                  methodInfo.ILCodeSize //il size
                                 );
-                WszOutputDebugString((const WCHAR*)codeBase);
+                OutputDebugStringUtf8(codeBase.GetUTF8NoConvert());
             }
 #endif // PERF_TRACK_METHOD_JITTIMES
 
@@ -13137,9 +13190,9 @@ BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob, BOOL printDiff)
         {
             result = FALSE;
 
-            DefineFullyQualifiedNameForClassW();
-            wprintf(W("Type %s: expected size 0x%08x, actual size 0x%08x\n"),
-                GetFullyQualifiedNameForClassW(pMT), dwExpectedSize, dwActualSize);
+            DefineFullyQualifiedNameForClass();
+            printf("Type %s: expected size 0x%08x, actual size 0x%08x\n",
+                GetFullyQualifiedNameForClass(pMT), dwExpectedSize, dwActualSize);
         }
         else
         {
@@ -13160,9 +13213,9 @@ BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob, BOOL printDiff)
             {
                 result = FALSE;
 
-                DefineFullyQualifiedNameForClassW();
-                wprintf(W("Type %s: expected HFA type %08x, actual %08x\n"),
-                    GetFullyQualifiedNameForClassW(pMT), dwExpectedHFAType, dwActualHFAType);
+                DefineFullyQualifiedNameForClass();
+                printf("Type %s: expected HFA type %08x, actual %08x\n",
+                    GetFullyQualifiedNameForClass(pMT), dwExpectedHFAType, dwActualHFAType);
             }
             else
             {
@@ -13178,9 +13231,9 @@ BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob, BOOL printDiff)
             {
                 result = FALSE;
 
-                DefineFullyQualifiedNameForClassW();
-                wprintf(W("Type %s: type is HFA but READYTORUN_LAYOUT_HFA flag is not set\n"),
-                    GetFullyQualifiedNameForClassW(pMT));
+                DefineFullyQualifiedNameForClass();
+                printf("Type %s: type is HFA but READYTORUN_LAYOUT_HFA flag is not set\n",
+                    GetFullyQualifiedNameForClass(pMT));
             }
             else
             {
@@ -13207,9 +13260,9 @@ BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob, BOOL printDiff)
             {
                 result = FALSE;
 
-                DefineFullyQualifiedNameForClassW();
-                wprintf(W("Type %s: expected alignment 0x%08x, actual 0x%08x\n"),
-                    GetFullyQualifiedNameForClassW(pMT), dwExpectedAlignment, dwActualAlignment);
+                DefineFullyQualifiedNameForClass();
+                printf("Type %s: expected alignment 0x%08x, actual 0x%08x\n",
+                    GetFullyQualifiedNameForClass(pMT), dwExpectedAlignment, dwActualAlignment);
             }
             else
             {
@@ -13229,9 +13282,9 @@ BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob, BOOL printDiff)
                 {
                     result = FALSE;
 
-                    DefineFullyQualifiedNameForClassW();
-                    wprintf(W("Type %s contains pointers but READYTORUN_LAYOUT_GCLayout_Empty is set\n"),
-                        GetFullyQualifiedNameForClassW(pMT));
+                    DefineFullyQualifiedNameForClass();
+                    printf("Type %s contains pointers but READYTORUN_LAYOUT_GCLayout_Empty is set\n",
+                        GetFullyQualifiedNameForClass(pMT));
                 }
                 else
                 {
@@ -13254,9 +13307,9 @@ BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob, BOOL printDiff)
                 {
                     result = FALSE;
 
-                    DefineFullyQualifiedNameForClassW();
-                    wprintf(W("Type %s: GC refmap content doesn't match\n"),
-                        GetFullyQualifiedNameForClassW(pMT));
+                    DefineFullyQualifiedNameForClass();
+                    printf("Type %s: GC refmap content doesn't match\n",
+                        GetFullyQualifiedNameForClass(pMT));
                 }
                 else
                 {
@@ -13365,7 +13418,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             {
                 CrstHolder ch(pInfoModule->GetFixupCrst());
 
-                if (!CORCOMPILE_IS_POINTER_TAGGED(*entry) && (*entry != NULL))
+                if (*entry != NULL)
                 {
                     // We lost the race, just return
                     return TRUE;
@@ -13464,19 +13517,6 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
         MethodEntry:
             result = pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY);
-
-        #ifndef TARGET_ARM
-            if (CORCOMPILE_IS_PCODE_TAGGED(result))
-            {
-                // There is a rare case where the function entrypoint may not be aligned. This could happen only for FCalls,
-                // only on x86 and only if we failed to hardbind the fcall (e.g. ngen image for CoreLib does not exist
-                // and /nodependencies flag for ngen was used). The function entrypoints should be aligned in all other cases.
-                //
-                // We will wrap the unaligned method entrypoint by funcptr stub with aligned entrypoint.
-                _ASSERTE(pMD->IsFCall());
-                result = pMD->GetLoaderAllocator()->GetFuncPtrStubs()->GetFuncPtrStub(pMD);
-            }
-        #endif
         }
         break;
 
@@ -14548,8 +14588,8 @@ ULONG EECodeInfo::GetFixedStackSize()
 
 #define kRBP    5
 // The information returned by this method is only valid if we are not in a prolog or an epilog.
-// Since this method is only used for the security stackwalk cache, this assumption is valid, since
-// we cannot make a call in a prolog or an epilog.
+// Since this method is only used for the security stackwalk cache and EnC transition, this assumption is
+// valid, since we cannot see these in a prolog or an epilog.
 //
 // The next assumption is that only rbp is used as a frame register in jitted code.  There is an
 // assert below to guard this assumption.

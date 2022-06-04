@@ -4,7 +4,7 @@
 using System;
 using System.Collections.Generic;
 
-using Internal.CorConstants;
+using Internal.ReadyToRunConstants;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -26,8 +26,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private readonly List<Signature> _signatureList;
         private readonly GCRefMapNode _gcRefMap;
 
-        private readonly CorCompileImportType _type;
-        private readonly CorCompileImportFlags _flags;
+        private readonly ReadyToRunImportSectionType _type;
+        private readonly ReadyToRunImportSectionFlags _flags;
         private readonly byte _entrySize;
         private readonly string _name;
         private readonly bool _emitPrecode;
@@ -35,7 +35,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private bool _materializedSignature;
 
-        public ImportSectionNode(string name, CorCompileImportType importType, CorCompileImportFlags flags, byte entrySize, bool emitPrecode, bool emitGCRefMap)
+        public ImportSectionNode(string name, ReadyToRunImportSectionType importType, ReadyToRunImportSectionFlags flags, byte entrySize, bool emitPrecode, bool emitGCRefMap)
         {
             _name = name;
             _type = importType;
@@ -87,7 +87,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public bool EmitPrecode => _emitPrecode;
 
-        public bool IsEager => (_flags & CorCompileImportFlags.CORCOMPILE_IMPORT_FLAGS_EAGER) != 0;
+        public bool IsEager => (_flags & ReadyToRunImportSectionFlags.Eager) != 0;
 
         public override bool StaticDependenciesAreComputed => true;
 

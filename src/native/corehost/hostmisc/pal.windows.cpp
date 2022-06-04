@@ -415,13 +415,13 @@ bool pal::get_global_dotnet_dirs(std::vector<pal::string_t>* dirs)
     bool dir_found = false;
     if (pal::get_dotnet_self_registered_dir(&custom_dir))
     {
-        remove_trailing_dir_seperator(&custom_dir);
+        remove_trailing_dir_separator(&custom_dir);
         dirs->push_back(custom_dir);
         dir_found = true;
     }
     if (get_default_installation_dir(&default_dir))
     {
-        remove_trailing_dir_seperator(&default_dir);
+        remove_trailing_dir_separator(&default_dir);
 
         // Avoid duplicate global dirs.
         if (!dir_found || !are_paths_equal_with_normalized_casing(custom_dir, default_dir))

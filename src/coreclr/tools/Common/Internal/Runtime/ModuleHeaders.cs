@@ -69,7 +69,7 @@ namespace Internal.Runtime
         ManifestAssemblyMvids = 118, // Added in 5.3
 
         //
-        // CoreRT ReadyToRun sections
+        // NativeAOT ReadyToRun sections
         //
         StringTable = 200, // Unused
         GCStaticRegion = 201,
@@ -82,7 +82,7 @@ namespace Internal.Runtime
         ThreadStaticOffsetRegion = 208,
         ThreadStaticGCDescRegion = 209,
         ThreadStaticIndex = 210,
-        LoopHijackFlag = 211,
+        // 211 is unused - it was used by LoopHijackFlag
         ImportAddressTables = 212,
         ModuleInitializerList = 213,
 

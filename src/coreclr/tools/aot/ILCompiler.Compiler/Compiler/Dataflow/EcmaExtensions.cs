@@ -63,24 +63,5 @@ namespace ILCompiler.Dataflow
 
             return null;
         }
-
-        public static PropertyPseudoDesc GetPropertyForAccessor(this MethodDesc accessor)
-        {
-            var ecmaAccessor = (EcmaMethod)accessor.GetTypicalMethodDefinition();
-            var type = (EcmaType)ecmaAccessor.OwningType;
-            var reader = type.MetadataReader;
-            var module = type.EcmaModule;
-            foreach (var propertyHandle in reader.GetTypeDefinition(type.Handle).GetProperties())
-            {
-                var accessors = reader.GetPropertyDefinition(propertyHandle).GetAccessors();
-                if (ecmaAccessor.Handle == accessors.Getter
-                    || ecmaAccessor.Handle == accessors.Setter)
-                {
-                    return new PropertyPseudoDesc(type, propertyHandle);
-                }
-            }
-
-            return null;
-        }
     }
 }

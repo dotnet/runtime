@@ -41,7 +41,7 @@ public:
 
     bool UnwindStackFrame(MethodInfo *    pMethodInfo,
                           REGDISPLAY *    pRegisterSet,                 // in/out
-                          PTR_VOID *      ppPreviousTransitionFrame);   // out
+                          PInvokeTransitionFrame**      ppPreviousTransitionFrame);   // out
 
     uintptr_t GetConservativeUpperBoundForOutgoingArgs(MethodInfo *   pMethodInfo,
                                                         REGDISPLAY *   pRegisterSet);
@@ -50,8 +50,6 @@ public:
                                     REGDISPLAY *    pRegisterSet,       // in
                                     PTR_PTR_VOID *  ppvRetAddrLocation, // out
                                     GCRefKind *     pRetValueKind);     // out
-
-    void UnsynchronizedHijackMethodLoops(MethodInfo * pMethodInfo);
 
     PTR_VOID RemapHardwareFaultToGCSafePoint(MethodInfo * pMethodInfo, PTR_VOID controlPC);
 

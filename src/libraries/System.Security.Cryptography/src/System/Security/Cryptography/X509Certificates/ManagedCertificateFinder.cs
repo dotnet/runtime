@@ -39,7 +39,27 @@ namespace System.Security.Cryptography.X509Certificates
 
         public void FindByThumbprint(byte[] thumbprint)
         {
-            FindCore(thumbprint, static (thumbprint, cert) => cert.GetCertHash().ContentsEqual(thumbprint));
+            static bool FindPredicate(byte[] thumbprint, X509Certificate2 certificate)
+            {
+                // Bail up front if the length is incorrect to avoid any hash work.
+                if (thumbprint.Length != SHA1.HashSizeInBytes)
+                {
+                    return false;
+                }
+
+                Span<byte> hashBuffer = stackalloc byte[SHA1.HashSizeInBytes];
+
+                if (!certificate.TryGetCertHash(HashAlgorithmName.SHA1, hashBuffer, out int hashBytesWritten) ||
+                    hashBytesWritten != SHA1.HashSizeInBytes)
+                {
+                    Debug.Fail("Presized hash buffer was not the correct size.");
+                    throw new CryptographicException();
+                }
+
+                return hashBuffer.SequenceEqual(thumbprint);
+            }
+
+            FindCore(thumbprint, FindPredicate);
         }
 
         public void FindBySubjectName(string subjectName)
@@ -83,7 +103,7 @@ namespace System.Security.Cryptography.X509Certificates
                 static (state, cert) =>
                 {
                     byte[] serialBytes = cert.GetSerialNumber();
-                    BigInteger serialNumber = FindPal.PositiveBigIntegerFromByteArray(serialBytes);
+                    BigInteger serialNumber = new BigInteger(serialBytes, isUnsigned: true);
                     bool match = state.hexValue.Equals(serialNumber) || state.decimalValue.Equals(serialNumber);
 
                     return match;
@@ -255,7 +275,7 @@ namespace System.Security.Cryptography.X509Certificates
                 (keyIdentifier, cert) =>
                 {
                     X509Extension? ext = FindExtension(cert, Oids.SubjectKeyIdentifier);
-                    byte[] certKeyId;
+                    Span<byte> certKeyId = stackalloc byte[0];
 
                     if (ext != null)
                     {
@@ -272,11 +292,13 @@ namespace System.Security.Cryptography.X509Certificates
                         // SubjectPublicKeyInfo block, and returns that.
                         //
                         // https://msdn.microsoft.com/en-us/library/windows/desktop/aa376079%28v=vs.85%29.aspx
+                        certKeyId = stackalloc byte[SHA1.HashSizeInBytes];
                         byte[] publicKeyInfoBytes = GetSubjectPublicKeyInfo(cert);
-                        certKeyId = SHA1.HashData(publicKeyInfoBytes);
+                        int written = SHA1.HashData(publicKeyInfoBytes, certKeyId);
+                        Debug.Assert(written == SHA1.HashSizeInBytes);
                     }
 
-                    return keyIdentifier.ContentsEqual(certKeyId);
+                    return certKeyId.SequenceEqual(keyIdentifier);
                 });
         }
 

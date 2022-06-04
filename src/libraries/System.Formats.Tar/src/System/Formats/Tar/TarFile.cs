@@ -72,18 +72,14 @@ namespace System.Formats.Tar
                 throw new DirectoryNotFoundException(string.Format(SR.IO_PathNotFound_Path, sourceDirectoryName));
             }
 
-            if (Path.Exists(destinationFileName))
-            {
-                throw new IOException(string.Format(SR.IO_FileExists_Name, destinationFileName));
-            }
-
-            using FileStream fs = File.Create(destinationFileName, bufferSize: 0x1000, FileOptions.None);
+            // Throws if the destination file exists
+            using FileStream fs = new(destinationFileName, FileMode.CreateNew, FileAccess.Write);
 
             CreateFromDirectoryInternal(sourceDirectoryName, fs, includeBaseDirectory, leaveOpen: false);
         }
 
         // /// <summary>
-        // /// Asynchronously creates a tar archive from the contents of the specified directory, and outputs them into the specified path. Can optionally include the base directory as the prefix for the the entry names.
+        // /// Asynchronously creates a tar archive from the contents of the specified directory, and outputs them into the specified path. Can optionally include the base directory as the prefix for the entry names.
         // /// </summary>
         // /// <param name="sourceDirectoryName">The path of the directory to archive.</param>
         // /// <param name="destinationFileName">The path of the destination archive file.</param>
@@ -170,15 +166,7 @@ namespace System.Formats.Tar
                 throw new DirectoryNotFoundException(string.Format(SR.IO_PathNotFound_Path, destinationDirectoryName));
             }
 
-            FileStreamOptions fileStreamOptions = new()
-            {
-                Access = FileAccess.Read,
-                BufferSize = 0x1000,
-                Mode = FileMode.Open,
-                Share = FileShare.Read
-            };
-
-            using FileStream archive = File.Open(sourceFileName, fileStreamOptions);
+            using FileStream archive = File.OpenRead(sourceFileName);
 
             ExtractToDirectoryInternal(archive, destinationDirectoryName, overwriteFiles, leaveOpen: false);
         }

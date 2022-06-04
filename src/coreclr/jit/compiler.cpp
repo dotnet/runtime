@@ -457,7 +457,7 @@ bool Compiler::isNativePrimitiveStructType(CORINFO_CLASS_HANDLE clsHnd)
 
 //-----------------------------------------------------------------------------
 // getPrimitiveTypeForStruct:
-//     Get the "primitive" type that is is used for a struct
+//     Get the "primitive" type that is used for a struct
 //     of size 'structSize'.
 //     We examine 'clsHnd' to check the GC layout of the struct and
 //     return TYP_REF for structs that simply wrap an object.
@@ -3186,14 +3186,18 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
     opts.compReloc = jitFlags->IsSet(JitFlags::JIT_FLAG_RELOC);
 
+    bool enableFakeSplitting = false;
+
 #ifdef DEBUG
+    enableFakeSplitting = JitConfig.JitFakeProcedureSplitting();
+
 #if defined(TARGET_XARCH)
     // Whether encoding of absolute addr as PC-rel offset is enabled
     opts.compEnablePCRelAddr = (JitConfig.EnablePCRelAddr() != 0);
 #endif
 #endif // DEBUG
 
-    opts.compProcedureSplitting = jitFlags->IsSet(JitFlags::JIT_FLAG_PROCSPLIT);
+    opts.compProcedureSplitting = jitFlags->IsSet(JitFlags::JIT_FLAG_PROCSPLIT) || enableFakeSplitting;
 
 #ifdef TARGET_ARM64
     // TODO-ARM64-NYI: enable hot/cold splitting
@@ -3207,7 +3211,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     if (opts.compProcedureSplitting)
     {
         // Note that opts.compdbgCode is true under ngen for checked assemblies!
-        opts.compProcedureSplitting = !opts.compDbgCode;
+        opts.compProcedureSplitting = !opts.compDbgCode || enableFakeSplitting;
 
 #ifdef DEBUG
         // JitForceProcedureSplitting is used to force procedure splitting on checked assemblies.
@@ -3236,6 +3240,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     }
 
 #ifdef DEBUG
+
     // Now, set compMaxUncheckedOffsetForNullObject for STRESS_NULL_OBJECT_CHECK
     if (compStressCompile(STRESS_NULL_OBJECT_CHECK, 30))
     {
@@ -4791,9 +4796,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_INVERT_LOOPS, &Compiler::optInvertLoops);
 
-        // Optimize block order
+        // Run some flow graph optimizations (but don't reorder)
         //
-        DoPhase(this, PHASE_OPTIMIZE_LAYOUT, &Compiler::optOptimizeLayout);
+        DoPhase(this, PHASE_OPTIMIZE_FLOW, &Compiler::optOptimizeFlow);
 
         // Compute reachability sets and dominators.
         //
@@ -4977,14 +4982,18 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     fgDebugCheckLinks(compStressCompile(STRESS_REMORPH_TREES, 50));
 #endif
 
-    // Remove dead blocks
-    DoPhase(this, PHASE_REMOVE_DEAD_BLOCKS, &Compiler::fgRemoveDeadBlocks);
-
     // Dominator and reachability sets are no longer valid.
     fgDomsComputed = false;
 
     // Insert GC Polls
     DoPhase(this, PHASE_INSERT_GC_POLLS, &Compiler::fgInsertGCPolls);
+
+    // Optimize block order
+    //
+    if (opts.OptimizationEnabled())
+    {
+        DoPhase(this, PHASE_OPTIMIZE_LAYOUT, &Compiler::optOptimizeLayout);
+    }
 
     // Determine start of cold region if we are hot/cold splitting
     //
@@ -5142,7 +5151,6 @@ void Compiler::placeLoopAlignInstructions()
         return;
     }
 
-    int loopsToProcess = loopAlignCandidates;
     JITDUMP("Inside placeLoopAlignInstructions for %d loops.\n", loopAlignCandidates);
 
     // Add align only if there were any loops that needed alignment
@@ -5154,8 +5162,10 @@ void Compiler::placeLoopAlignInstructions()
     {
         // Adding align instruction in prolog is not supported
         // hence just remove that loop from our list.
-        loopsToProcess--;
+        fgFirstBB->unmarkLoopAlign(this DEBUG_ARG("prolog block"));
     }
+
+    int loopsToProcess = loopAlignCandidates;
 
     for (BasicBlock* const block : Blocks())
     {
@@ -5187,6 +5197,9 @@ void Compiler::placeLoopAlignInstructions()
 
         if ((block->bbNext != nullptr) && (block->bbNext->isLoopAlign()))
         {
+            // Loop alignment is disabled for cold blocks
+            assert((block->bbFlags & BBF_COLD) == 0);
+
             // If jmp was not found, then block before the loop start is where align instruction will be added.
             if (bbHavingAlign == nullptr)
             {
@@ -5536,7 +5549,7 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
     compFrameInfo = {0};
 #endif
 
-    virtualStubParamInfo = new (this, CMK_Unknown) VirtualStubParamInfo(IsTargetAbi(CORINFO_CORERT_ABI));
+    virtualStubParamInfo = new (this, CMK_Unknown) VirtualStubParamInfo(IsTargetAbi(CORINFO_NATIVEAOT_ABI));
 
     // compMatchedVM is set to true if both CPU/ABI and OS are matching the execution engine requirements
     //
@@ -5979,7 +5992,7 @@ void Compiler::compCompileFinish()
     if ((info.compILCodeSize <= 32) &&     // Is it a reasonably small method?
         (info.compNativeCodeSize < 512) && // Some trivial methods generate huge native code. eg. pushing a single huge
                                            // struct
-        (impInlinedCodeSize <= 128) &&     // Is the the inlining reasonably bounded?
+        (impInlinedCodeSize <= 128) &&     // Is the inlining reasonably bounded?
                                            // Small methods cannot meaningfully have a big number of locals
                                            // or arguments. We always track arguments at the start of
                                            // the prolog which requires memory

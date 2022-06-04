@@ -16,19 +16,17 @@ namespace Wasm.Build.Tests
         {
         }
 
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsNotUsingWorkloads))]
+        [Theory, TestCategory("no-workload")]
         [InlineData("Debug")]
         [InlineData("Release")]
         public void NativeRef_EmitsWarningBecauseItRequiresWorkload(string config)
         {
             CommandResult res = PublishForRequiresWorkloadTest(config, extraItems: "<NativeFileReference Include=\"native-lib.o\" />");
             res.EnsureSuccessful();
-            AssertBlazorBundle(config, isPublish: true, dotnetWasmFromRuntimePack: true);
-
-            Assert.Contains("but the native references won't be linked in", res.Output);
+            Assert.Matches("warning : .*but the native references won't be linked in", res.Output);
         }
 
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsNotUsingWorkloads))]
+        [Theory, TestCategory("no-workload")]
         [InlineData("Debug")]
         [InlineData("Release")]
         public void AOT_FailsBecauseItRequiresWorkload(string config)
@@ -38,7 +36,7 @@ namespace Wasm.Build.Tests
             Assert.Contains("following workloads must be installed: wasm-tools", res.Output);
         }
 
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsNotUsingWorkloads))]
+        [Theory, TestCategory("no-workload")]
         [InlineData("Debug")]
         [InlineData("Release")]
         public void AOT_And_NativeRef_FailBecauseTheyRequireWorkload(string config)
@@ -56,24 +54,16 @@ namespace Wasm.Build.Tests
             string id = $"needs_workload_{config}_{Path.GetRandomFileName()}";
             CreateBlazorWasmTemplateProject(id);
 
-            if (IsNotUsingWorkloads)
-            {
-                // no packs installed, so no need to update the paths for runtime pack etc
-                File.Copy(Path.Combine(BuildEnvironment.TestDataPath, "Blazor.Local.Directory.Build.props"), Path.Combine(_projectDir!, "Directory.Build.props"), overwrite: true);
-                File.Copy(Path.Combine(BuildEnvironment.TestDataPath, "Blazor.Local.Directory.Build.targets"), Path.Combine(_projectDir!, "Directory.Build.targets"), overwrite: true);
-            }
-
             AddItemsPropertiesToProject(Path.Combine(_projectDir!, $"{id}.csproj"),
                                         extraProperties: extraProperties,
                                         extraItems: extraItems);
 
             string publishLogPath = Path.Combine(s_buildEnv.LogRootPath, id, $"{id}.binlog");
-            return new DotNetCommand(s_buildEnv)
+            return new DotNetCommand(s_buildEnv, _testOutput)
                             .WithWorkingDirectory(_projectDir!)
                             .ExecuteWithCapturedOutput("publish",
                                                         $"-bl:{publishLogPath}",
-                                                        $"-p:Configuration={config}",
-                                                        "-p:MSBuildEnableWorkloadResolver=true"); // WasmApp.LocalBuild.* disables this, but it is needed for this test
+                                                        $"-p:Configuration={config}");
         }
 
         [Theory]
@@ -116,7 +106,7 @@ namespace Wasm.Build.Tests
             AddItemsPropertiesToProject(projectFile, extraItems: extraItems);
 
             string publishLogPath = Path.Combine(logPath, $"{id}.binlog");
-            CommandResult result = new DotNetCommand(s_buildEnv)
+            CommandResult result = new DotNetCommand(s_buildEnv, _testOutput)
                                             .WithWorkingDirectory(_projectDir!)
                                             .ExecuteWithCapturedOutput("publish",
                                                                        $"-bl:{publishLogPath}",

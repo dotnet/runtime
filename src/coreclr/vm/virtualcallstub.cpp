@@ -137,7 +137,7 @@ void VirtualCallStubManager::StartupLogging()
     {
         FAULT_NOT_FATAL(); // We handle filecreation problems locally
         SString str;
-        str.Printf(W("StubLog_%d.log"), GetCurrentProcessId());
+        str.Printf("StubLog_%d.log", GetCurrentProcessId());
         g_hStubLogFile = WszCreateFile (str.GetUnicode(),
                                         GENERIC_WRITE,
                                         0,
@@ -1179,8 +1179,9 @@ VTableCallHolder* VirtualCallStubManager::GenerateVTableCallStub(DWORD slot)
     } CONTRACT_END;
 
     //allocate from the requisite heap and copy the template over it.
-    VTableCallHolder * pHolder = (VTableCallHolder*)(void*)vtable_heap->AllocAlignedMem(VTableCallHolder::GetHolderSize(slot), CODE_SIZE_ALIGN);
-    ExecutableWriterHolder<VTableCallHolder> vtableWriterHolder(pHolder, sizeof(VTableCallHolder));
+    size_t vtableHolderSize = VTableCallHolder::GetHolderSize(slot);
+    VTableCallHolder * pHolder = (VTableCallHolder*)(void*)vtable_heap->AllocAlignedMem(vtableHolderSize, CODE_SIZE_ALIGN);
+    ExecutableWriterHolder<VTableCallHolder> vtableWriterHolder(pHolder, vtableHolderSize);
     vtableWriterHolder.GetRW()->Initialize(slot);
 
     ClrFlushInstructionCache(pHolder->stub(), pHolder->stub()->size());
@@ -1765,7 +1766,7 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
 #ifdef CHAIN_LOOKUP
                     pResolverFcn  = (PCODE) GetEEFuncEntryPoint(ResolveWorkerChainLookupAsmStub);
 #else // CHAIN_LOOKUP
-                    // Use the the slow resolver
+                    // Use the slow resolver
                     pResolverFcn = (PCODE) GetEEFuncEntryPoint(ResolveWorkerAsmStub);
 #endif
 
@@ -2029,8 +2030,6 @@ VirtualCallStubManager::Resolver(
     }
 #endif // _DEBUG
 
-    g_IBCLogger.LogMethodTableAccess(pMT);
-
     // NOTE: CERs are not hardened against transparent proxy types,
     // so no need to worry about throwing an exception from here.
 
@@ -2046,7 +2045,6 @@ VirtualCallStubManager::Resolver(
     // this target and backpatch the callsite.
     if (!implSlot.IsNull())
     {
-        g_IBCLogger.LogDispatchTableSlotAccess(&implSlot);
 #if defined(LOGGING) || defined(_DEBUG)
         {
             pMD = implSlot.GetMethodDesc();
@@ -2112,10 +2110,6 @@ VirtualCallStubManager::Resolver(
                     //           every time. If the way we call generic virtual methods changes, this will also need
                     //           to change.
                     fShouldPatch = TRUE;
-                }
-                else
-                {
-                    g_IBCLogger.LogMethodDescAccess(pMD);
                 }
             }
         }
@@ -3378,7 +3372,7 @@ BOOL BucketTable::SetUpProber(size_t keyA, size_t keyB, Prober *prober)
     // scenario each processor could see old memory values that would cause us to
     // leak memory.
     //
-    // Since this a a fairly hot code path and it is very rare for buckets[index]
+    // Since this is a fairly hot code path and it is very rare for buckets[index]
     // to be CALL_STUB_EMPTY_ENTRY, we can first try a non-volatile read and then
     // if it looks like we need to create a new FastTable we double check by doing
     // a volatile read.

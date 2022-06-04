@@ -180,11 +180,11 @@ namespace Internal.JitInterface
             _unmanagedCallbacks = GetUnmanagedCallbacks();
         }
 
-        public TextWriter Log
+        private Logger Logger
         {
             get
             {
-                return _compilation.Logger.Writer;
+                return _compilation.Logger;
             }
         }
 
@@ -475,8 +475,6 @@ namespace Internal.JitInterface
 
             _methodCodeNode.InitializeLocalTypes(localTypes);
 #endif
-
-            PublishProfileData();
         }
 
         private void PublishROData()
@@ -495,8 +493,6 @@ namespace Internal.JitInterface
 
             _roDataBlob.InitializeData(objectData);
         }
-
-        partial void PublishProfileData();
 
         private MethodDesc MethodBeingCompiled
         {
@@ -570,7 +566,6 @@ namespace Internal.JitInterface
             _lastException = null;
 
 #if READYTORUN
-            _profileDataNode = null;
             _inlinedMethods = new ArrayBuilder<MethodDesc>();
             _actualInstructionSetSupported = default(InstructionSetFlags);
             _actualInstructionSetUnsupported = default(InstructionSetFlags);
@@ -2712,8 +2707,7 @@ namespace Internal.JitInterface
             }
 
             // If both sides are arrays, then the result is either an array or g_pArrayClass.  The above is
-            // actually true about the element type for references types, but I think that that is a little
-            // excessive for sanity.
+            // actually true for reference types as well, but it is a little excessive to deal with.
             if (type1.IsArray && type2.IsArray)
             {
                 TypeDesc arrayClass = _compilation.TypeSystemContext.GetWellKnownType(WellKnownType.Array);
@@ -3471,8 +3465,8 @@ namespace Internal.JitInterface
 
         private int doAssert(byte* szFile, int iLine, byte* szExpr)
         {
-            Log.WriteLine(Marshal.PtrToStringAnsi((IntPtr)szFile) + ":" + iLine);
-            Log.WriteLine(Marshal.PtrToStringAnsi((IntPtr)szExpr));
+            Logger.LogMessage(Marshal.PtrToStringAnsi((IntPtr)szFile) + ":" + iLine);
+            Logger.LogMessage(Marshal.PtrToStringAnsi((IntPtr)szExpr));
 
             return 1;
         }
@@ -3628,7 +3622,7 @@ namespace Internal.JitInterface
 
 #if READYTORUN
                 case BlockType.BBCounts:
-                    relocTarget = _profileDataNode;
+                    relocTarget = null;
                     break;
 #endif
 
@@ -3809,7 +3803,7 @@ namespace Internal.JitInterface
                 flags.Set(CorJitFlag.CORJIT_FLAG_MIN_OPT);
             }
 
-            if (this.MethodBeingCompiled.Context.Target.Abi == TargetAbi.CoreRTArmel)
+            if (this.MethodBeingCompiled.Context.Target.Abi == TargetAbi.NativeAotArmel)
             {
                 flags.Set(CorJitFlag.CORJIT_FLAG_SOFTFP_ABI);
             }

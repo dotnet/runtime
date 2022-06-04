@@ -60,7 +60,7 @@
 //         code:Frame which marks the location on the stack where the last managed method frame is. This
 //         allows the GC to start crawling the stack from there (essentially skip over the unmanaged frames).
 //     * That the thread will not reenter managed code if the global variable code:g_TrapReturningThreads is
-//         set (it will call code:Thread.RareDisablePreemptiveGC first which will block if a a suspension is
+//         set (it will call code:Thread.RareDisablePreemptiveGC first which will block if a suspension is
 //         in progress)
 //
 // The basic idea is that the suspension logic in code:Thread.SuspendRuntime first sets the global variable
@@ -135,7 +135,6 @@ class     LoadLevelLimiter;
 class     DomainAssembly;
 class     DeadlockAwareLock;
 struct    HelperMethodFrameCallerList;
-class     ThreadLocalIBCInfo;
 class     EECodeInfo;
 class     DebuggerPatchSkip;
 class     FaultingExceptionFrame;
@@ -2652,36 +2651,7 @@ public:
     }
 #endif
 
-    private:
-
-    ThreadLocalIBCInfo* m_pIBCInfo;
-
     public:
-
-#ifndef DACCESS_COMPILE
-
-    ThreadLocalIBCInfo* GetIBCInfo()
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(g_IBCLogger.InstrEnabled());
-        return m_pIBCInfo;
-    }
-
-    void SetIBCInfo(ThreadLocalIBCInfo* pInfo)
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(g_IBCLogger.InstrEnabled());
-        m_pIBCInfo = pInfo;
-    }
-
-    void FlushIBCInfo()
-    {
-        WRAPPER_NO_CONTRACT;
-        if (m_pIBCInfo != NULL)
-            m_pIBCInfo->FlushDelayedCallbacks();
-    }
-
-#endif // #ifndef DACCESS_COMPILE
 
     // Indicate whether this thread should run in the background.  Background threads
     // don't interfere with the EE shutting down.  Whereas a running non-background
@@ -3816,7 +3786,7 @@ public:
         }
 
         // Clears the table.  Useful to do when crossing the managed-code - EE boundary
-        // as you ususally only care about OBJECTREFS that have been created after that
+        // as you usually only care about OBJECTREFS that have been created after that
         static void STDCALL ObjectRefFlush(Thread* thread);
 
 

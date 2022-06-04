@@ -50,6 +50,7 @@ UNATIVE_OFFSET emitInsSizeAM(instrDesc* id, code_t code, int val);
 UNATIVE_OFFSET emitInsSizeCV(instrDesc* id, code_t code);
 UNATIVE_OFFSET emitInsSizeCV(instrDesc* id, code_t code, int val);
 
+BYTE* emitOutputNOP(BYTE* dst, size_t nBytes);
 BYTE* emitOutputAlign(insGroup* ig, instrDesc* id, BYTE* dst);
 BYTE* emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc = nullptr);
 BYTE* emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc = nullptr);
@@ -549,7 +550,7 @@ void emitIns_Call(EmitCallType          callType,
 // Is the last instruction emitted a call instruction?
 bool emitIsLastInsCall();
 
-// Insert a NOP at the end of the the current instruction group if the last emitted instruction was a 'call',
+// Insert a NOP at the end of the current instruction group if the last emitted instruction was a 'call',
 // because the next instruction group will be an epilog.
 void emitOutputPreEpilogNOP();
 #endif // TARGET_AMD64

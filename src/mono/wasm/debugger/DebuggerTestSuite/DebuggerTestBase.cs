@@ -386,6 +386,16 @@ namespace DebuggerTests
             Assert.Equal(value, val);
         }
 
+        internal void CheckContainsJObject(JToken locals, JToken comparedTo, string name)
+        {
+            var val = GetAndAssertObjectWithName(locals, name);
+            JObject refValue = (JObject)val["value"];
+            refValue?.Property("objectId")?.Remove();
+            JObject comparedToValue = (JObject)comparedTo["value"];
+            comparedToValue?.Property("objectId")?.Remove();
+            Assert.Equal(val, comparedTo);
+        }
+
         internal async Task<JToken> CheckValueType(JToken locals, string name, string class_name, string description=null)
         {
             var l = GetAndAssertObjectWithName(locals, name);
@@ -722,7 +732,20 @@ namespace DebuggerTests
             if (!skip_num_fields_check)
             {
                 num_fields = num_fields < 0 ? exp.Values<JToken>().Count() : num_fields;
-                Assert.True(num_fields == actual.Count(), $"[{label}] Number of fields don't match, Expected: {num_fields}, Actual: {actual.Count()}");
+                var expected_str = string.Join(", ",
+                    exp.Children()
+                    .Select(e => e is JProperty jprop ? jprop.Name : e["name"]?.Value<string>())
+                    .Where(e => !string.IsNullOrEmpty(e))
+                    .OrderBy(e => e));
+
+                var actual_str = string.Join(", ",
+                    actual.Children()
+                    .Select(e => e["name"]?.Value<string>())
+                    .Where(e => !string.IsNullOrEmpty(e))
+                    .OrderBy(e => e));
+                Assert.True(num_fields == actual.Count(), $"[{label}] Number of fields don't match, Expected: {num_fields}, Actual: {actual.Count()}.{Environment.NewLine}"
+                    + $"  Expected: {expected_str}{Environment.NewLine}"
+                    + $"  Actual:   {actual_str}");
             }
 
             foreach (var kvp in exp)
@@ -738,10 +761,9 @@ namespace DebuggerTests
 
                 Assert.True(actual_obj != null, $"[{label}] not value found for property named '{exp_name}'");
 
-                var actual_val = actual_obj["value"];
                 if (exp_val.Type == JTokenType.Array)
                 {
-                    var actual_props = await GetProperties(actual_val["objectId"]?.Value<string>());
+                    var actual_props = await GetProperties(actual_obj["value"]["objectId"]?.Value<string>());
                     await CheckProps(actual_props, exp_val, $"{label}-{exp_name}");
                 }
                 else if (exp_val["__custom_type"] != null && exp_val["__custom_type"]?.Value<string>() == "getter")
@@ -751,7 +773,7 @@ namespace DebuggerTests
                 }
                 else
                 {
-                    await CheckValue(actual_val, exp_val, $"{label}#{exp_name}");
+                    await CheckValue(actual_obj["value"], exp_val, $"{label}#{exp_name}");
                 }
             }
         }
@@ -1141,8 +1163,12 @@ namespace DebuggerTests
         internal static JObject TNumber(uint value) =>
             JObject.FromObject(new { type = "number", value = @value.ToString(), description = value.ToString() });
 
-        internal static JObject TNumber(string value) =>
-            JObject.FromObject(new { type = "number", value = @value.ToString(), description = value });
+        // If is decimal, skip description due to culture-specific separators.
+        // They depend on user's settings and we are not able to detect them here
+        internal static JObject TNumber(string value, bool isDecimal = false) =>
+            isDecimal ?
+            JObject.FromObject(new { type = "number", value = @value.ToString() }) :
+            JObject.FromObject(new { type = "number", value = @value.ToString(), description = double.Parse(value, System.Globalization.CultureInfo.InvariantCulture).ToString() });
 
         internal static JObject TValueType(string className, string description = null, object members = null) =>
             JObject.FromObject(new { type = "object", isValueType = true, className = className, description = description ?? className });

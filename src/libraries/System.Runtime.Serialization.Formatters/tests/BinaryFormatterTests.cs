@@ -566,10 +566,23 @@ namespace System.Runtime.Serialization.Formatters.Tests
         private static void SanityCheckBlob(object obj, TypeSerializableValue[] blobs)
         {
             // These types are unstable during serialization and produce different blobs.
+            string name = obj.GetType().FullName;
             if (obj is WeakReference<Point> ||
                 obj is Collections.Specialized.HybridDictionary ||
                 obj is Color ||
-                obj.GetType().FullName == "System.Collections.SortedList+SyncSortedList")
+                name  == "System.Collections.SortedList+SyncSortedList" ||
+                // Due to non-deterministic field ordering the types below will fail when using IL Emit-based Invoke.
+                // The types above may also be failing for the same reason.
+                // Remove these cases once https://github.com/dotnet/runtime/issues/46272 is fixed.
+                name == "System.Collections.Comparer" ||
+                name == "System.Collections.Hashtable" ||
+                name == "System.Collections.SortedList" ||
+                name == "System.Collections.Specialized.ListDictionary" ||
+                name == "System.CultureAwareComparer" ||
+                name == "System.Globalization.CompareInfo" ||
+                name == "System.Net.Cookie" ||
+                name == "System.Net.CookieCollection" ||
+                name == "System.Net.CookieContainer")
             {
                 return;
             }
@@ -687,8 +700,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 }
 
                 Regex regex = new Regex(pattern);
-                Match match = regex.Match(testDataLine);
-                if (match.Success)
+                if (regex.IsMatch(testDataLine))
                 {
                     numberOfFoundBlobs++;
                 }
@@ -714,6 +726,38 @@ namespace System.Runtime.Serialization.Formatters.Tests
         {
             public Func<string, string, Type> BindToTypeDelegate = null;
             public override Type BindToType(string assemblyName, string typeName) => BindToTypeDelegate?.Invoke(assemblyName, typeName);
+        }
+
+        public struct MyStruct
+        {
+            public int A;
+        }
+
+        public static IEnumerable<object[]> NullableComparersTestData()
+        {
+            yield return new object[] { "NullableEqualityComparer`1", EqualityComparer<byte?>.Default };
+            yield return new object[] { "NullableEqualityComparer`1", EqualityComparer<int?>.Default };
+            yield return new object[] { "NullableEqualityComparer`1", EqualityComparer<float?>.Default };
+            yield return new object[] { "NullableEqualityComparer`1", EqualityComparer<Guid?>.Default }; // implements IEquatable<>
+
+            yield return new object[] { "ObjectEqualityComparer`1", EqualityComparer<MyStruct?>.Default };  // doesn't implement IEquatable<>
+            yield return new object[] { "ObjectEqualityComparer`1", EqualityComparer<DayOfWeek?>.Default };
+
+            yield return new object[] { "NullableComparer`1", Comparer<byte?>.Default };
+            yield return new object[] { "NullableComparer`1", Comparer<int?>.Default };
+            yield return new object[] { "NullableComparer`1", Comparer<float?>.Default };
+            yield return new object[] { "NullableComparer`1", Comparer<Guid?>.Default };
+
+            yield return new object[] { "ObjectComparer`1", Comparer<MyStruct?>.Default };
+            yield return new object[] { "ObjectComparer`1", Comparer<DayOfWeek?>.Default };
+        }
+
+        [Theory]
+        [MemberData(nameof(NullableComparersTestData))]
+        public void NullableComparersRoundtrip(string expectedType, object obj)
+        {
+            string serialized = BinaryFormatterHelpers.ToBase64String(obj);
+            Assert.Equal(expectedType, BinaryFormatterHelpers.FromBase64String(serialized).GetType().Name);
         }
     }
 }

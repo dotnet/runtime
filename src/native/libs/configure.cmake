@@ -434,32 +434,35 @@ check_struct_has_member(
     "sys/select.h"
     HAVE_PRIVATE_FDS_BITS)
 
-check_c_source_compiles(
-    "
-    #include <sys/sendfile.h>
-    int main(void) { int i = sendfile(0, 0, 0, 0); return 0; }
-    "
-    HAVE_SENDFILE_4)
+# do not use sendfile() on iOS/tvOS, it causes SIGSYS at runtime on devices
+if(NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)
+    check_c_source_compiles(
+        "
+        #include <sys/sendfile.h>
+        int main(void) { int i = sendfile(0, 0, 0, 0); return 0; }
+        "
+        HAVE_SENDFILE_4)
 
-check_c_source_compiles(
-    "
-    #include <stdlib.h>
-    #include <sys/types.h>
-    #include <sys/socket.h>
-    #include <sys/uio.h>
-    int main(void) { int i = sendfile(0, 0, 0, NULL, NULL, 0); return 0; }
-    "
-    HAVE_SENDFILE_6)
+    check_c_source_compiles(
+        "
+        #include <stdlib.h>
+        #include <sys/types.h>
+        #include <sys/socket.h>
+        #include <sys/uio.h>
+        int main(void) { int i = sendfile(0, 0, 0, NULL, NULL, 0); return 0; }
+        "
+        HAVE_SENDFILE_6)
 
-check_c_source_compiles(
-    "
-    #include <stdlib.h>
-    #include <sys/types.h>
-    #include <sys/socket.h>
-    #include <sys/uio.h>
-    int main(void) { int i = sendfile(0, 0, 0, 0, NULL, NULL, 0); return 0; }
-    "
-    HAVE_SENDFILE_7)
+    check_c_source_compiles(
+        "
+        #include <stdlib.h>
+        #include <sys/types.h>
+        #include <sys/socket.h>
+        #include <sys/uio.h>
+        int main(void) { int i = sendfile(0, 0, 0, 0, NULL, NULL, 0); return 0; }
+        "
+        HAVE_SENDFILE_7)
+endif()
 
 check_symbol_exists(
     fcopyfile
@@ -1111,6 +1114,11 @@ check_symbol_exists(
 if (NOT HAVE_MAKEDEV_FILEH AND NOT HAVE_MAKEDEV_SYSMACROSH)
   message(FATAL_ERROR "Cannot find the makedev function on this platform.")
 endif()
+
+check_symbol_exists(
+    getgrgid_r
+    grp.h
+    HAVE_GETGRGID_R)
 
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/Common/pal_config.h.in

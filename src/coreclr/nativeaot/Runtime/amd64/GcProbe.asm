@@ -46,7 +46,7 @@ PUSH_PROBE_FRAME macro threadReg, trashReg, extraStack, BITMASK
     movdqa          [rsp + 20h], xmm0
 
     ; link the frame into the Thread
-    mov             [threadReg + OFFSETOF__Thread__m_pHackPInvokeTunnel], trashReg
+    mov             [threadReg + OFFSETOF__Thread__m_pDeferredTransitionFrame], trashReg
 endm
 
 ;;
@@ -132,7 +132,7 @@ WaitForGCCompletion macro
         test        dword ptr [rbx + OFFSETOF__Thread__m_ThreadStateFlags], TSF_SuppressGcStress + TSF_DoNotTriggerGc
         jnz         @F
 
-        mov         rcx, [rbx + OFFSETOF__Thread__m_pHackPInvokeTunnel]
+        mov         rcx, [rbx + OFFSETOF__Thread__m_pDeferredTransitionFrame]
         call        RhpWaitForGCNoAbort
 @@:
 
@@ -230,7 +230,7 @@ NESTED_ENTRY RhpGcProbe, _TEXT
         mov         rbx, rdx
         WaitForGCCompletion
 
-        mov         rax, [rbx + OFFSETOF__Thread__m_pHackPInvokeTunnel]
+        mov         rax, [rbx + OFFSETOF__Thread__m_pDeferredTransitionFrame]
         test        dword ptr [rax + OFFSETOF__PInvokeTransitionFrame__m_Flags], PTFF_THREAD_ABORT
         jnz         Abort
         POP_PROBE_FRAME 0
@@ -318,7 +318,7 @@ NESTED_ENTRY RhpHijackForGcStress, _TEXT
         lea         rcx, [rsp + 20h + 6*10h + 2*8h]   ;; address of PAL_LIMITED_CONTEXT
         call        THREAD__HIJACKFORGCSTRESS
 
-        ;; Note: we only restore the scratch registers here. No GC has occured, so restoring
+        ;; Note: we only restore the scratch registers here. No GC has occurred, so restoring
         ;; the callee saved ones is unnecessary.
         mov         rax, [rsp + 20h + 6*10h + 2*8h + OFFSETOF__PAL_LIMITED_CONTEXT__Rax]
         mov         rcx, [rsp + 20h + 6*10h + 0*8h]
@@ -687,7 +687,7 @@ DontSaveXmmAgain:
         mov         [rsp +  20h], rax       ; save return address into PInvokeTransitionFrame
 
         ; Early out if GC stress is currently suppressed. Do this after we have computed the real address to
-        ; return to but before we link the transition frame onto m_pHackPInvokeTunnel (because hitting this
+        ; return to but before we link the transition frame onto m_pDeferredTransitionFrame (because hitting this
         ; condition implies we're running restricted callouts during a GC itself and we could end up
         ; overwriting a co-op frame set by the code that caused the GC in the first place, e.g. a GC.Collect
         ; call).
@@ -696,7 +696,7 @@ DontSaveXmmAgain:
 
         ; link the frame into the Thread
         lea         rcx, [rsp + sizeof_OutgoingScratchSpace]    ; rcx <- PInvokeTransitionFrame*
-        mov         [rsi + OFFSETOF__Thread__m_pHackPInvokeTunnel], rcx
+        mov         [rsi + OFFSETOF__Thread__m_pDeferredTransitionFrame], rcx
 
         ;;
         ;; Unhijack this thread, if necessary.

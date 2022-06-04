@@ -1646,7 +1646,7 @@ void CodeGen::genConsumeRegs(GenTree* tree)
         }
 #endif // FEATURE_HW_INTRINSICS
 #endif // TARGET_XARCH
-        else if (tree->OperIs(GT_BITCAST, GT_NEG, GT_CAST, GT_LSH))
+        else if (tree->OperIs(GT_BITCAST, GT_NEG, GT_CAST, GT_LSH, GT_BSWAP, GT_BSWAP16))
         {
             genConsumeRegs(tree->gtGetOp1());
         }
@@ -1660,7 +1660,7 @@ void CodeGen::genConsumeRegs(GenTree* tree)
 #ifdef FEATURE_SIMD
             // (In)Equality operation that produces bool result, when compared
             // against Vector zero, marks its Vector Zero operand as contained.
-            assert(tree->OperIsLeaf() || tree->IsSIMDZero() || tree->IsVectorZero());
+            assert(tree->OperIsLeaf() || tree->IsVectorZero());
 #else
             assert(tree->OperIsLeaf());
 #endif

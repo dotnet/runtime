@@ -36,7 +36,7 @@ export class Queue<T> {
     dequeue(): T | undefined {
 
         // if the queue is empty, return immediately
-        if (this.queue.length == 0) return undefined;
+        if (this.queue.length === 0) return undefined;
 
         // store the item at the front of the queue
         const item = this.queue[this.offset];

@@ -17,6 +17,7 @@ namespace System.IO.Compression
         private const int MinWindowBits = -15;              // WindowBits must be between -8..-15 to ignore the header, 8..15 for
         private const int MaxWindowBits = 47;               // zlib headers, 24..31 for GZip headers, or 40..47 for either Zlib or GZip
 
+        private bool _nonEmptyInput;                        // Whether there is any non empty input
         private bool _finished;                             // Whether the end of the stream has been reached
         private bool _isDisposed;                           // Prevents multiple disposals
         private readonly int _windowBits;                   // The WindowBits parameter passed to Inflater construction
@@ -34,6 +35,7 @@ namespace System.IO.Compression
         {
             Debug.Assert(windowBits >= MinWindowBits && windowBits <= MaxWindowBits);
             _finished = false;
+            _nonEmptyInput = false;
             _isDisposed = false;
             _windowBits = windowBits;
             InflateInit(windowBits);
@@ -176,6 +178,8 @@ namespace System.IO.Compression
 
         public bool NeedsInput() => _zlibStream.AvailIn == 0;
 
+        public bool NonEmptyInput() => _nonEmptyInput;
+
         public void SetInput(byte[] inputBuffer, int startIndex, int count)
         {
             Debug.Assert(NeedsInput(), "We have something left in previous input!");
@@ -200,6 +204,7 @@ namespace System.IO.Compression
                 _zlibStream.NextIn = (IntPtr)_inputBufferHandle.Pointer;
                 _zlibStream.AvailIn = (uint)inputBuffer.Length;
                 _finished = false;
+                _nonEmptyInput = true;
             }
         }
 

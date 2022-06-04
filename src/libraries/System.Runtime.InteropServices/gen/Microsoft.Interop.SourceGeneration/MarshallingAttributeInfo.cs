@@ -11,7 +11,6 @@ using System.Runtime.InteropServices;
 
 namespace Microsoft.Interop
 {
-
     /// <summary>
     /// Type used to pass on default marshalling details.
     /// </summary>
@@ -72,7 +71,6 @@ namespace Microsoft.Interop
         Undefined,
         Utf8,
         Utf16,
-        Ansi,
         Custom
     }
 
@@ -98,7 +96,10 @@ namespace Microsoft.Interop
     /// <summary>
     /// The provided type was determined to be an "unmanaged" type that can be passed as-is to native code.
     /// </summary>
-    public sealed record UnmanagedBlittableMarshallingInfo : MarshallingInfo;
+    /// <param name="IsStrictlyBlittable">Indicates if the type is blittable as defined by the built-in .NET marshallers.</param>
+    public sealed record UnmanagedBlittableMarshallingInfo(
+        bool IsStrictlyBlittable
+    ) : MarshallingInfo;
 
     [Flags]
     public enum CustomTypeMarshallerPinning
@@ -146,15 +147,9 @@ namespace Microsoft.Interop
         CustomTypeMarshallerFeatures MarshallingFeatures,
         CustomTypeMarshallerPinning PinningFeatures,
         bool UseDefaultMarshalling,
+        bool IsStrictlyBlittable,
         ManagedTypeInfo? BufferElementType,
         int? BufferSize) : MarshallingInfo;
-
-    /// <summary>
-    /// User-applied System.Runtime.InteropServices.GeneratedMarshallingAttribute
-    /// on a non-blittable type in source in this compilation.
-    /// </summary>
-    public sealed record GeneratedNativeMarshallingAttributeInfo(
-        string NativeMarshallingFullyQualifiedTypeName) : MarshallingInfo;
 
     /// <summary>
     /// The type of the element is a SafeHandle-derived type with no marshalling attributes.
@@ -182,6 +177,7 @@ namespace Microsoft.Interop
             MarshallingFeatures,
             PinningFeatures,
             UseDefaultMarshalling,
+            IsStrictlyBlittable: false,
             SpecialTypeInfo.Byte,
             BufferSize
         );
@@ -329,10 +325,6 @@ namespace Microsoft.Interop
                         useSiteAttributes,
                         inspectedElements,
                         ref maxIndirectionDepthUsed);
-                }
-                else if (attributeClass.ToDisplayString() == TypeNames.GeneratedMarshallingAttribute)
-                {
-                    return type.IsConsideredBlittable() ? GetBlittableMarshallingInfo(type) : new GeneratedNativeMarshallingAttributeInfo(null! /* TODO: determine naming convention */);
                 }
             }
 
@@ -696,6 +688,7 @@ namespace Microsoft.Interop
                 customTypeMarshallerData.Features,
                 pinning,
                 useDefaultMarshalling,
+                nativeType.IsStrictlyBlittable(),
                 bufferElementTypeInfo,
                 customTypeMarshallerData.BufferSize);
         }
@@ -745,31 +738,41 @@ namespace Microsoft.Interop
 
             // No marshalling info was computed, but a character encoding was provided.
             // If the type is a character or string then pass on these details.
-            if (type.SpecialType == SpecialType.System_Char || type.SpecialType == SpecialType.System_String)
+            if (type.SpecialType == SpecialType.System_Char && _defaultInfo.CharEncoding != CharEncoding.Undefined)
             {
-                if (_defaultInfo.CharEncoding != CharEncoding.Undefined)
+                marshallingInfo = new MarshallingInfoStringSupport(_defaultInfo.CharEncoding);
+                return true;
+            }
+
+            if (type.SpecialType == SpecialType.System_String && _defaultInfo.CharEncoding != CharEncoding.Undefined)
+            {
+                if (_defaultInfo.CharEncoding == CharEncoding.Custom)
                 {
-                    if (_defaultInfo.CharEncoding == CharEncoding.Custom)
+                    if (_defaultInfo.StringMarshallingCustomType is not null)
                     {
-                        if (_defaultInfo.StringMarshallingCustomType is not null)
-                        {
-                            AttributeData attrData = _contextSymbol is IMethodSymbol
-                                ? _contextSymbol.GetAttributes().FirstOrDefault(a => a.AttributeClass.ToDisplayString() == TypeNames.LibraryImportAttribute)
-                                : default;
-                            marshallingInfo = CreateNativeMarshallingInfo(type, _defaultInfo.StringMarshallingCustomType, attrData, true, indirectionLevel, parsedCountInfo, useSiteAttributes, inspectedElements, ref maxIndirectionDepthUsed);
-                            return true;
-                        }
-                    }
-                    else if (type.SpecialType == SpecialType.System_String)
-                    {
-                        marshallingInfo = CreateStringMarshallingInfo(type, _defaultInfo.CharEncoding);
+                        AttributeData attrData = _contextSymbol is IMethodSymbol
+                            ? _contextSymbol.GetAttributes().FirstOrDefault(a => a.AttributeClass.ToDisplayString() == TypeNames.LibraryImportAttribute)
+                            : default;
+                        marshallingInfo = CreateNativeMarshallingInfo(type, _defaultInfo.StringMarshallingCustomType, attrData, true, indirectionLevel, parsedCountInfo, useSiteAttributes, inspectedElements, ref maxIndirectionDepthUsed);
                         return true;
                     }
+                }
+                else
+                {
+                    marshallingInfo = _defaultInfo.CharEncoding switch
+                    {
+                        CharEncoding.Utf16 => CreateStringMarshallingInfo(type, TypeNames.Utf16StringMarshaller),
+                        CharEncoding.Utf8 => CreateStringMarshallingInfo(type, TypeNames.Utf8StringMarshaller),
+                        _ => throw new InvalidOperationException()
+                    };
 
-                    marshallingInfo = new MarshallingInfoStringSupport(_defaultInfo.CharEncoding);
                     return true;
                 }
+
+                marshallingInfo = new MarshallingInfoStringSupport(_defaultInfo.CharEncoding);
+                return true;
             }
+
 
             if (type.SpecialType == SpecialType.System_Boolean)
             {
@@ -843,30 +846,25 @@ namespace Microsoft.Interop
             ITypeSymbol type,
             UnmanagedType unmanagedType)
         {
-            CharEncoding charEncoding = unmanagedType switch
+            string? marshallerName = unmanagedType switch
             {
-                UnmanagedType.LPStr => CharEncoding.Ansi,
-                UnmanagedType.LPTStr or UnmanagedType.LPWStr => CharEncoding.Utf16,
-                MarshalAsInfo.UnmanagedType_LPUTF8Str => CharEncoding.Utf8,
-                _ => CharEncoding.Undefined
+                UnmanagedType.BStr => TypeNames.BStrStringMarshaller,
+                UnmanagedType.LPStr => TypeNames.AnsiStringMarshaller,
+                UnmanagedType.LPTStr or UnmanagedType.LPWStr => TypeNames.Utf16StringMarshaller,
+                MarshalAsInfo.UnmanagedType_LPUTF8Str => TypeNames.Utf8StringMarshaller,
+                _ => null
             };
-            if (charEncoding == CharEncoding.Undefined)
+
+            if (marshallerName is null)
                 return new MarshalAsInfo(unmanagedType, _defaultInfo.CharEncoding);
 
-            return CreateStringMarshallingInfo(type, charEncoding);
+            return CreateStringMarshallingInfo(type, marshallerName);
         }
 
         private MarshallingInfo CreateStringMarshallingInfo(
             ITypeSymbol type,
-            CharEncoding charEncoding)
+            string marshallerName)
         {
-            string? marshallerName = charEncoding switch
-            {
-                CharEncoding.Ansi => TypeNames.AnsiStringMarshaller,
-                CharEncoding.Utf16 => TypeNames.Utf16StringMarshaller,
-                CharEncoding.Utf8 => TypeNames.Utf8StringMarshaller,
-                _ => throw new InvalidOperationException()
-            };
             INamedTypeSymbol? stringMarshaller = _compilation.GetTypeByMetadataName(marshallerName);
             if (stringMarshaller is null)
                 return new MissingSupportMarshallingInfo();
@@ -877,9 +875,9 @@ namespace Microsoft.Interop
             return CreateNativeMarshallingInfoForValue(
                 type,
                 stringMarshaller,
-                default,
+                null,
                 customTypeMarshallerData.Value,
-                allowPinningManagedType: charEncoding == CharEncoding.Utf16,
+                allowPinningManagedType: marshallerName is TypeNames.Utf16StringMarshaller,
                 useDefaultMarshalling: false);
         }
 
@@ -899,7 +897,7 @@ namespace Microsoft.Interop
             }
             else
             {
-                return new UnmanagedBlittableMarshallingInfo();
+                return new UnmanagedBlittableMarshallingInfo(type.IsStrictlyBlittable());
             }
         }
 

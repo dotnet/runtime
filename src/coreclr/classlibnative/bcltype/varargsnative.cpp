@@ -91,7 +91,7 @@ static void InitCommon(VARARGS *data, VASigCookie** cookie)
     //                              += sizeOfArgs
     //                             /
     //   <arg1>                   /
-    // * <this>            ;; if an instance method (note: <this> is usally passed in
+    // * <this>            ;; if an instance method (note: <this> is usually passed in
     //                     ;; a register and wouldn't appear on the stack frame)
     //                     ;; higher memory
     //

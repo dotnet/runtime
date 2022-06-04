@@ -490,7 +490,7 @@ uintptr_t CoffNativeCodeManager::GetConservativeUpperBoundForOutgoingArgs(Method
 
 bool CoffNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
                                       REGDISPLAY *    pRegisterSet,                 // in/out
-                                      PTR_VOID *      ppPreviousTransitionFrame)    // out
+                                      PInvokeTransitionFrame**      ppPreviousTransitionFrame)    // out
 {
     CoffNativeMethodInfo * pNativeMethodInfo = (CoffNativeMethodInfo *)pMethodInfo;
 
@@ -526,7 +526,8 @@ bool CoffNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
         {
             basePointer = dac_cast<TADDR>(pRegisterSet->GetFP());
         }
-        *ppPreviousTransitionFrame = *(void**)(basePointer + slot);
+
+        *ppPreviousTransitionFrame = *(PInvokeTransitionFrame**)(basePointer + slot);
         return true;
     }
 
@@ -630,7 +631,7 @@ bool CoffNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
 }
 
 // Convert the return kind that was encoded by RyuJIT to the
-// value that CoreRT runtime can understand and support.
+// enum used by the runtime.
 GCRefKind GetGcRefKind(ReturnKind returnKind)
 {
     static_assert((GCRefKind)ReturnKind::RT_Scalar == GCRK_Scalar, "ReturnKind::RT_Scalar does not match GCRK_Scalar");
@@ -704,11 +705,6 @@ bool CoffNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
 #else
     return false;
 #endif // defined(TARGET_AMD64)
-}
-
-void CoffNativeCodeManager::UnsynchronizedHijackMethodLoops(MethodInfo * pMethodInfo)
-{
-    // @TODO: CORERT: UnsynchronizedHijackMethodLoops
 }
 
 PTR_VOID CoffNativeCodeManager::RemapHardwareFaultToGCSafePoint(MethodInfo * pMethodInfo, PTR_VOID controlPC)
@@ -805,7 +801,7 @@ bool CoffNativeCodeManager::EHEnumNext(EHEnumState * pEHEnumState, EHClause * pE
 
         // Read target type
         {
-            // @TODO: CORERT: Compress EHInfo using type table index scheme
+            // @TODO: Compress EHInfo using type table index scheme
             // https://github.com/dotnet/corert/issues/972
             uint32_t typeRVA = *((PTR_UInt32&)pEnumState->pEHInfo)++;
             pEHClauseOut->m_pTargetType = dac_cast<PTR_VOID>(m_moduleBase + typeRVA);
@@ -875,8 +871,7 @@ PTR_VOID CoffNativeCodeManager::GetAssociatedData(PTR_VOID ControlPC)
     return dac_cast<PTR_VOID>(m_moduleBase + dataRVA);
 }
 
-extern "C" bool __stdcall RegisterCodeManager(ICodeManager * pCodeManager, PTR_VOID pvStartRange, uint32_t cbRange);
-extern "C" void __stdcall UnregisterCodeManager(ICodeManager * pCodeManager);
+extern "C" void __stdcall RegisterCodeManager(ICodeManager * pCodeManager, PTR_VOID pvStartRange, uint32_t cbRange);
 extern "C" bool __stdcall RegisterUnboxingStubs(PTR_VOID pvStartRange, uint32_t cbRange);
 
 extern "C"
@@ -899,12 +894,10 @@ bool RhRegisterOSModule(void * pModule,
     if (pCoffNativeCodeManager == nullptr)
         return false;
 
-    if (!RegisterCodeManager(pCoffNativeCodeManager, pvManagedCodeStartRange, cbManagedCodeRange))
-        return false;
+    RegisterCodeManager(pCoffNativeCodeManager, pvManagedCodeStartRange, cbManagedCodeRange);
 
     if (!RegisterUnboxingStubs(pvUnboxingStubsStartRange, cbUnboxingStubsRange))
     {
-        UnregisterCodeManager(pCoffNativeCodeManager);
         return false;
     }
 
