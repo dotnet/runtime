@@ -151,8 +151,10 @@ namespace System.IO
         internal static Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA GetAttributeData(SafeFileHandle fileHandle)
         {
             Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = default;
-            FillAttributeInfo(fileHandle, default, ref data);
-            return data;
+            int errorCode = FillAttributeInfo(fullPath, ref data, returnErrorOnNotFound);
+            return errorCode != Interop.Errors.ERROR_SUCCESS
+                ? throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath)
+                : data;
         }
 
         private static void MoveDirectory(string sourceFullPath, string destFullPath, bool isCaseSensitiveRename)
