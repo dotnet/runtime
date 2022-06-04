@@ -917,7 +917,7 @@ bool Compiler::optCheckIterInLoopTest(unsigned loopInd, GenTree* test, unsigned 
         }
         else
         {
-            JITDUMP("Limit var %V02u modifiable in " FMT_LP "\n", limitOp->AsLclVarCommon()->GetLclNum(), loopInd);
+            JITDUMP("Limit var V%02u modifiable in " FMT_LP "\n", limitOp->AsLclVarCommon()->GetLclNum(), loopInd);
         }
     }
     else if (limitOp->gtOper == GT_ARR_LENGTH)
@@ -934,7 +934,7 @@ bool Compiler::optCheckIterInLoopTest(unsigned loopInd, GenTree* test, unsigned 
             }
             else
             {
-                JITDUMP("Array limit var %V02u modifiable in " FMT_LP "\n", array->AsLclVarCommon()->GetLclNum(),
+                JITDUMP("Array limit var V%02u modifiable in " FMT_LP "\n", array->AsLclVarCommon()->GetLclNum(),
                         loopInd);
             }
         }
