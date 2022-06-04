@@ -754,7 +754,7 @@ void CodeGen::genCodeForBBlist()
 
             case BBJ_ALWAYS:
                 inst_JMP(EJ_jmp, block->bbJumpDest
-#ifdef TARGET_XARCH
+#ifdef TARGET_AMD64
                          // AMD64 and requires an instruction after a call instruction for unwinding
                          // inside an EH region so if the last instruction generated was a call instruction
                          // do not allow this jump to be marked for possible later removal.
@@ -762,9 +762,14 @@ void CodeGen::genCodeForBBlist()
                          // If a block has alignment the jump before the alignment can prevent the need
                          // to decode the instructions used for alignment so we want to keep the jump
                          // and it should not be marked for posible later removal.
-
                          ,
                          /* isRemovableJmpCandidate */ !GetEmitter()->emitIsLastInsCall() && !block->hasAlign()
+#else
+#ifdef TARGET_XARCH
+                         ,
+                         /* isRemovableJmpCandidate */ !block->hasAlign()
+#endif
+
 #endif
                              );
                 FALLTHROUGH;

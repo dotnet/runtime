@@ -6735,11 +6735,6 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 
         emitCurIG = ig;
 
-        if (ig->igNum == 5)
-        {
-            printf("hammer time\n");
-        }
-
         for (unsigned cnt = ig->igInsCnt; cnt > 0; cnt--)
         {
 #ifdef DEBUG
