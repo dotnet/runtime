@@ -99,7 +99,7 @@ namespace System.Net.Security
 
         public byte[]? GetOutgoingBlob(ReadOnlySpan<byte> incomingBlob, out NegotiateAuthenticationStatusCode statusCode)
         {
-            byte[]? blob = _ntAuthentication.GetOutgoingBlob(incomingBlob.ToArray(), false, out SecurityStatusPal securityStatus);
+            byte[]? blob = _ntAuthentication.GetOutgoingBlob(incomingBlob, false, out SecurityStatusPal securityStatus);
 
             // Map error codes
             statusCode = securityStatus.ErrorCode switch

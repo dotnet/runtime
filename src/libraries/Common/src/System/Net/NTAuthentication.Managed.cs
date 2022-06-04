@@ -330,18 +330,23 @@ namespace System.Net
 
         internal byte[]? GetOutgoingBlob(byte[]? incomingBlob, bool throwOnError)
         {
-            return GetOutgoingBlob(incomingBlob, throwOnError, out _);
+            return GetOutgoingBlob(incomingBlob != null ? incomingBlob.AsSpan() : default, throwOnError, out _);
         }
 
         // Accepts an incoming binary security blob and returns an outgoing binary security blob.
-        internal unsafe byte[]? GetOutgoingBlob(byte[]? incomingBlob, bool throwOnError, out SecurityStatusPal statusCode)
+        internal byte[]? GetOutgoingBlob(byte[]? incomingBlob, bool throwOnError, out SecurityStatusPal statusCode)
+        {
+            return GetOutgoingBlob(incomingBlob != null ? incomingBlob.AsSpan() : default, throwOnError, out statusCode);
+        }
+
+        internal unsafe byte[]? GetOutgoingBlob(ReadOnlySpan<byte> incomingBlob, bool throwOnError, out SecurityStatusPal statusCode)
         {
             byte[]? outgoingBlob;
 
             // TODO: Logging, validation
             if (_negotiateMessage == null)
             {
-                Debug.Assert(incomingBlob == null);
+                Debug.Assert(incomingBlob.IsEmpty);
 
                 _negotiateMessage = new byte[sizeof(NegotiateMessage)];
                 CreateNtlmNegotiateMessage(_negotiateMessage);
@@ -351,7 +356,7 @@ namespace System.Net
             }
             else
             {
-                Debug.Assert(incomingBlob != null);
+                Debug.Assert(!incomingBlob.IsEmpty);
 
                 if (!_isSpNego)
                 {
@@ -638,23 +643,22 @@ namespace System.Net
         }
 
         // This gets decoded byte blob and returns response in binary form.
-        private unsafe byte[]? ProcessChallenge(byte[] blob, out SecurityStatusPal statusCode)
+        private unsafe byte[]? ProcessChallenge(ReadOnlySpan<byte> blob, out SecurityStatusPal statusCode)
         {
             // TODO: Validate size and offsets
 
-            ReadOnlySpan<byte> asBytes = new ReadOnlySpan<byte>(blob);
-            ref readonly ChallengeMessage challengeMessage = ref MemoryMarshal.AsRef<ChallengeMessage>(asBytes.Slice(0, sizeof(ChallengeMessage)));
+            ref readonly ChallengeMessage challengeMessage = ref MemoryMarshal.AsRef<ChallengeMessage>(blob.Slice(0, sizeof(ChallengeMessage)));
 
             // Verify message type and signature
             if (challengeMessage.Header.MessageType != MessageType.Challenge ||
-                !NtlmHeader.SequenceEqual(asBytes.Slice(0, NtlmHeader.Length)))
+                !NtlmHeader.SequenceEqual(blob.Slice(0, NtlmHeader.Length)))
             {
                 statusCode = SecurityStatusPalInvalidToken;
                 return null;
             }
 
             Flags flags = BitConverter.IsLittleEndian ? challengeMessage.Flags : (Flags)BinaryPrimitives.ReverseEndianness((uint)challengeMessage.Flags);
-            ReadOnlySpan<byte> targetName = GetField(challengeMessage.TargetName, asBytes);
+            ReadOnlySpan<byte> targetName = GetField(challengeMessage.TargetName, blob);
 
             // Only NTLMv2 with MIC is supported
             //
@@ -666,7 +670,7 @@ namespace System.Net
                 return null;
             }
 
-            ReadOnlySpan<byte> targetInfo = GetField(challengeMessage.TargetInfo, asBytes);
+            ReadOnlySpan<byte> targetInfo = GetField(challengeMessage.TargetInfo, blob);
             byte[] targetInfoBuffer = ProcessTargetInfo(targetInfo, out DateTime time, out bool hasNbNames);
 
             // If NTLM v2 authentication is used and the CHALLENGE_MESSAGE does not contain both
@@ -717,7 +721,7 @@ namespace System.Net
             payloadOffset += ChallengeResponseLength;
 
             // Create NTLM2 response
-            ReadOnlySpan<byte> serverChallenge = asBytes.Slice(24, 8);
+            ReadOnlySpan<byte> serverChallenge = blob.Slice(24, 8);
             makeNtlm2ChallengeResponse(time, ntlm2hash, serverChallenge, clientChallenge, targetInfoBuffer, ref response.NtChallengeResponse, payload, ref payloadOffset);
             Debug.Assert(payloadOffset == sizeof(AuthenticateMessage) + ChallengeResponseLength + sizeof(NtChallengeResponse) + targetInfoBuffer.Length);
 
@@ -872,7 +876,7 @@ namespace System.Net
             return writer.Encode();
         }
 
-        private unsafe byte[]? ProcessSpNegoChallenge(byte[] challenge, out SecurityStatusPal statusCode)
+        private unsafe byte[]? ProcessSpNegoChallenge(ReadOnlySpan<byte> challenge, out SecurityStatusPal statusCode)
         {
             NegState state = NegState.Unknown;
             string? mech = null;
@@ -881,8 +885,8 @@ namespace System.Net
 
             try
             {
-                AsnReader reader = new AsnReader(challenge, AsnEncodingRules.DER);
-                AsnReader challengeReader = reader.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, (int)NegotiationToken.NegTokenResp));
+                AsnValueReader reader = new AsnValueReader(challenge, AsnEncodingRules.DER);
+                AsnValueReader challengeReader = reader.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, (int)NegotiationToken.NegTokenResp));
                 reader.ThrowIfNotEmpty();
 
                 // NegTokenResp ::= SEQUENCE {
@@ -904,28 +908,28 @@ namespace System.Net
 
                 if (challengeReader.HasData && challengeReader.PeekTag().HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, (int)NegTokenResp.NegState)))
                 {
-                    AsnReader valueReader = challengeReader.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, (int)NegTokenResp.NegState));
+                    AsnValueReader valueReader = challengeReader.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, (int)NegTokenResp.NegState));
                     state = valueReader.ReadEnumeratedValue<NegState>();
                     valueReader.ThrowIfNotEmpty();
                 }
 
                 if (challengeReader.HasData && challengeReader.PeekTag().HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, (int)NegTokenResp.SupportedMech)))
                 {
-                    AsnReader valueReader = challengeReader.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, (int)NegTokenResp.SupportedMech));
+                    AsnValueReader valueReader = challengeReader.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, (int)NegTokenResp.SupportedMech));
                     mech = valueReader.ReadObjectIdentifier();
                     valueReader.ThrowIfNotEmpty();
                 }
 
                 if (challengeReader.HasData && challengeReader.PeekTag().HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, (int)NegTokenResp.ResponseToken)))
                 {
-                    AsnReader valueReader = challengeReader.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, (int)NegTokenResp.ResponseToken));
+                    AsnValueReader valueReader = challengeReader.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, (int)NegTokenResp.ResponseToken));
                     blob = valueReader.ReadOctetString();
                     valueReader.ThrowIfNotEmpty();
                 }
 
                 if (challengeReader.HasData && challengeReader.PeekTag().HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, (int)NegTokenResp.MechListMIC)))
                 {
-                    AsnReader valueReader = challengeReader.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, (int)NegTokenResp.MechListMIC));
+                    AsnValueReader valueReader = challengeReader.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, (int)NegTokenResp.MechListMIC));
                     mechListMIC = valueReader.ReadOctetString();
                     valueReader.ThrowIfNotEmpty();
                 }
@@ -934,13 +938,8 @@ namespace System.Net
             }
             catch (AsnContentException)
             {
-<<<<<<< HEAD
                 statusCode = SecurityStatusPalInvalidToken;
                 return null;
-=======
-                statusCode = new SecurityStatusPal(SecurityStatusPalErrorCode.IllegalMessage, e);
-                return Array.Empty<byte>();
->>>>>>> WIP: Add implementation of NegotiateAuthentication
             }
 
             if (blob?.Length > 0)
@@ -949,14 +948,9 @@ namespace System.Net
                 // message with the challenge blob.
                 if (!NtlmOid.Equals(mech))
                 {
-<<<<<<< HEAD
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Server requested unknown mechanism {mech}");
                     statusCode = SecurityStatusPalPackageNotFound;
                     return null;
-=======
-                    statusCode = new SecurityStatusPal(SecurityStatusPalErrorCode.PackageNotFound);
-                    return Array.Empty<byte>();
->>>>>>> WIP: Add implementation of NegotiateAuthentication
                 }
 
                 // Process decoded NTLM blob.
@@ -987,11 +981,7 @@ namespace System.Net
                         }
                     }
 
-<<<<<<< HEAD
                     statusCode = state == NegState.RequestMic ? SecurityStatusPalContinueNeeded : SecurityStatusPalOk;
-=======
-                    statusCode = SecurityStatusPalContinueNeeded;
->>>>>>> WIP: Add implementation of NegotiateAuthentication
                     return writer.Encode();
                 }
             }
@@ -1000,7 +990,6 @@ namespace System.Net
             {
                 if (_spnegoMechList == null || state != NegState.AcceptCompleted)
                 {
-<<<<<<< HEAD
                     statusCode = SecurityStatusPalInternalError;
                     return null;
                 }
@@ -1009,15 +998,10 @@ namespace System.Net
                 {
                     statusCode = SecurityStatusPalMessageAltered;
                     return null;
-=======
-                    statusCode = new SecurityStatusPal(SecurityStatusPalErrorCode.MessageAltered);
-                    return Array.Empty<byte>();
->>>>>>> WIP: Add implementation of NegotiateAuthentication
                 }
             }
 
             IsCompleted = state == NegState.AcceptCompleted || state == NegState.Reject;
-<<<<<<< HEAD
             statusCode = state switch {
                 NegState.AcceptCompleted => SecurityStatusPalOk,
                 NegState.AcceptIncomplete => SecurityStatusPalContinueNeeded,
@@ -1026,11 +1010,6 @@ namespace System.Net
             };
 
             return null;
-=======
-
-            statusCode = IsCompleted ? SecurityStatusPalOk : new SecurityStatusPal(SecurityStatusPalErrorCode.LogonDenied);
-            return Array.Empty<byte>();
->>>>>>> WIP: Add implementation of NegotiateAuthentication
         }
 
 #pragma warning disable CA1822

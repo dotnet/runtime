@@ -75,14 +75,14 @@ namespace System.Net.Security
             ref SafeDeleteContext? securityContext,
             string? spn,
             ContextFlagsPal requestedContextFlags,
-            byte[]? incomingBlob,
+            ReadOnlySpan<byte> incomingBlob,
             ChannelBinding? channelBinding,
             ref byte[]? resultBlob,
             ref ContextFlagsPal contextFlags)
         {
 
             InputSecurityBuffers inputBuffers = default;
-            if (incomingBlob != null)
+            if (!incomingBlob.IsEmpty)
             {
                 inputBuffers.SetNextBuffer(new InputSecurityBuffer(incomingBlob, SecurityBufferType.SECBUFFER_TOKEN));
             }
@@ -132,13 +132,13 @@ namespace System.Net.Security
             SafeFreeCredentials? credentialsHandle,
             ref SafeDeleteContext? securityContext,
             ContextFlagsPal requestedContextFlags,
-            byte[]? incomingBlob,
+            ReadOnlySpan<byte> incomingBlob,
             ChannelBinding? channelBinding,
             ref byte[]? resultBlob,
             ref ContextFlagsPal contextFlags)
         {
             InputSecurityBuffers inputBuffers = default;
-            if (incomingBlob != null)
+            if (incomingBlob.IsEmpty)
             {
                 inputBuffers.SetNextBuffer(new InputSecurityBuffer(incomingBlob, SecurityBufferType.SECBUFFER_TOKEN));
             }
