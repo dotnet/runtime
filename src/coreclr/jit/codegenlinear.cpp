@@ -754,7 +754,7 @@ void CodeGen::genCodeForBBlist()
 
             case BBJ_ALWAYS:
                 inst_JMP(EJ_jmp, block->bbJumpDest
-#ifdef TARGET_AMD64
+#ifdef TARGET_XARCH
                          // AMD64 and requires an instruction after a call instruction for unwinding
                          // inside an EH region so if the last instruction generated was a call instruction
                          // do not allow this jump to be marked for possible later removal.

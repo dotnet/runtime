@@ -2059,24 +2059,47 @@ const emitJumpKind emitReverseJumpKinds[] = {
     return emitReverseJumpKinds[jumpKind];
 }
 
-/*****************************************************************************
- * The size for these instructions is less than EA_4BYTE,
- * but the target register need not be byte-addressable
- */
-
-bool emitter::emitInstHasNoCode(instrDesc* id)
+//------------------------------------------------------------------------
+// emitAlignInstHasNoCode: Returns true if the 'id' is an align instruction
+//      that was later removed and hence has codeSize==0.
+//
+// Arguments:
+//    id   -- The instruction to check
+//
+/* static */ bool emitter::emitAlignInstHasNoCode(instrDesc* id)
 {
-    if (id->idIns() == INS_align)
-    {
-        return true;
-    }
+    return (id->idIns() == INS_align) && (id->idCodeSize() == 0);
+}
 
-    if ((id->idCodeSize() == 0) && emitIsUncondJump(id) && (((instrDescJmp*)id)->idjIsRemovableJmpCandidate))
-    {
-        return true;
-    }
+//------------------------------------------------------------------------
+// emitJmpInstHasNoCode: Returns true if the 'id' is a jump instruction
+//      that was later removed and hence has codeSize==0.
+//
+// Arguments:
+//    id   -- The instruction to check
+//
+/* static */ bool emitter::emitJmpInstHasNoCode(instrDesc* id)
+{
+    bool result = (id->idIns() == INS_jmp) && (id->idCodeSize() == 0);
 
-    return false;
+    // A zero size jump instruction can only be the one that is marked
+    // as removable candidate.
+    assert(!result || ((instrDescJmp*)id)->idjIsRemovableJmpCandidate);
+
+    return result;
+}
+
+//------------------------------------------------------------------------
+// emitInstHasNoCode: Returns true if the 'id' is an instruction
+//      that was later removed and hence has codeSize==0.
+//      Currently it is one of `align` or `jmp`.
+//
+// Arguments:
+//    id   -- The instruction to check
+//
+/* static */ bool emitter::emitInstHasNoCode(instrDesc* id)
+{
+    return emitAlignInstHasNoCode(id) || emitJmpInstHasNoCode(id);
 }
 
 /*****************************************************************************
@@ -13681,7 +13704,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_RWR_LABEL:
         case IF_SWR_LABEL:
             assert(id->idGCref() == GCT_NONE);
-            assert(id->idIsBound() || emitInstHasNoCode(id));
+            assert(id->idIsBound() || emitJmpInstHasNoCode(id));
 
             // TODO-XArch-Cleanup: handle IF_RWR_LABEL in emitOutputLJ() or change it to emitOutputAM()?
             if (id->idCodeSize() != 0)
@@ -14714,7 +14737,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     assert(*dp != dst || emitInstHasNoCode(id));
 
 #ifdef DEBUG
-    if ((emitComp->opts.disAsm || emitComp->verbose) && !emitInstHasNoCode(id))
+    if ((emitComp->opts.disAsm || emitComp->verbose) && !emitJmpInstHasNoCode(id))
     {
         emitDispIns(id, false, dspOffs, true, emitCurCodeOffs(*dp), *dp, (dst - *dp));
     }

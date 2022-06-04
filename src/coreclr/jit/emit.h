@@ -2142,7 +2142,9 @@ private:
 #endif // !defined(JIT32_GCENCODER)
 
 #if defined(TARGET_XARCH)
-    bool emitInstHasNoCode(instrDesc* id);
+    static bool emitAlignInstHasNoCode(instrDesc* id);
+    static bool emitInstHasNoCode(instrDesc* id);
+    static bool emitJmpInstHasNoCode(instrDesc* id);
 #endif
 
     void emitGenIG(insGroup* ig);

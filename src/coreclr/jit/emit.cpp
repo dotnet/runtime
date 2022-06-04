@@ -3822,7 +3822,7 @@ void emitter::emitDispIG(insGroup* ig, insGroup* igPrev, bool verbose)
                     instrDesc* id = (instrDesc*)ins;
 
 #ifdef TARGET_XARCH
-                    if ((id->idIns() == INS_jmp) && emitInstHasNoCode(id))
+                    if (emitJmpInstHasNoCode(id))
                     {
                         // an instruction with no code prevents us being able to iterate to the
                         // next instructions so we must be certain that when we find one it is
@@ -6734,6 +6734,11 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
         /* Issue each instruction in order */
 
         emitCurIG = ig;
+
+        if (ig->igNum == 5)
+        {
+            printf("hammer time\n");
+        }
 
         for (unsigned cnt = ig->igInsCnt; cnt > 0; cnt--)
         {
