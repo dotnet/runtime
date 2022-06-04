@@ -3301,8 +3301,9 @@ public:
 
             // Mutate this link, thus replacing the old exp with the new CSE representation
             //
-            if (cse->OperIs(GT_COMMA) && !cse->IsReverseOp() && origParent && origParent->OperIs(GT_ADD) &&
-                origParent->TypeIs(TYP_BYREF) && !origParent->IsReverseOp() && origParent->gtGetOp1() == exp)
+            if (cse->OperIs(GT_COMMA) && !cse->IsReverseOp() && origParent &&
+                origParent->OperIs(GT_ADD, GT_SUB, GT_DIV, GT_UDIV, GT_MOD, GT_UMOD, GT_NEG, GT_IND) &&
+                !origParent->IsReverseOp() && origParent->gtGetOp1() == exp)
             {
                 Compiler::FindLinkData linkParentData = m_pCompiler->gtFindLink(stmt, origParent);
                 GenTree**              linkParent     = linkParentData.result;
@@ -3310,6 +3311,7 @@ public:
                 *linkParent                  = cse;
                 cse                          = cse->gtGetOp2();
                 (*linkParent)->AsOp()->gtOp2 = origParent;
+                (*linkParent)->ChangeType(origParent->TypeGet());
             }
 
             *link = cse;
