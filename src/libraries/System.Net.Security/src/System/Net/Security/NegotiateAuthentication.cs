@@ -99,9 +99,44 @@ namespace System.Net.Security
 
         public byte[]? GetOutgoingBlob(ReadOnlySpan<byte> incomingBlob, out NegotiateAuthenticationStatusCode statusCode)
         {
-            SecurityStatusPal securityStatus;
-            byte[]? blob = _ntAuthentication.GetOutgoingBlob(incomingBlob.ToArray(), false, out securityStatus);
-            statusCode = (NegotiateAuthenticationStatusCode)securityStatus.ErrorCode;
+            byte[]? blob = _ntAuthentication.GetOutgoingBlob(incomingBlob.ToArray(), false, out SecurityStatusPal securityStatus);
+
+            // Map error codes
+            statusCode = securityStatus.ErrorCode switch
+            {
+                SecurityStatusPalErrorCode.OK => NegotiateAuthenticationStatusCode.Completed,
+                SecurityStatusPalErrorCode.ContinueNeeded => NegotiateAuthenticationStatusCode.ContinueNeeded,
+
+                // These code should never be returned and they should be handled internally
+                SecurityStatusPalErrorCode.CompleteNeeded => NegotiateAuthenticationStatusCode.Completed,
+                SecurityStatusPalErrorCode.CompAndContinue => NegotiateAuthenticationStatusCode.ContinueNeeded,
+
+                SecurityStatusPalErrorCode.ContextExpired => NegotiateAuthenticationStatusCode.ContextExpired,
+                SecurityStatusPalErrorCode.Unsupported => NegotiateAuthenticationStatusCode.Unsupported,
+                SecurityStatusPalErrorCode.PackageNotFound => NegotiateAuthenticationStatusCode.Unsupported,
+                SecurityStatusPalErrorCode.CannotInstall => NegotiateAuthenticationStatusCode.Unsupported,
+                SecurityStatusPalErrorCode.InvalidToken => NegotiateAuthenticationStatusCode.InvalidToken,
+                SecurityStatusPalErrorCode.QopNotSupported => NegotiateAuthenticationStatusCode.QopNotSupported,
+                SecurityStatusPalErrorCode.NoImpersonation => NegotiateAuthenticationStatusCode.UnknownCredentials,
+                SecurityStatusPalErrorCode.LogonDenied => NegotiateAuthenticationStatusCode.UnknownCredentials,
+                SecurityStatusPalErrorCode.UnknownCredentials => NegotiateAuthenticationStatusCode.UnknownCredentials,
+                SecurityStatusPalErrorCode.NoCredentials => NegotiateAuthenticationStatusCode.UnknownCredentials,
+                SecurityStatusPalErrorCode.MessageAltered => NegotiateAuthenticationStatusCode.MessageAltered,
+                SecurityStatusPalErrorCode.OutOfSequence => NegotiateAuthenticationStatusCode.OutOfSequence,
+                SecurityStatusPalErrorCode.NoAuthenticatingAuthority => NegotiateAuthenticationStatusCode.InvalidCredentials,
+                SecurityStatusPalErrorCode.IncompleteCredentials => NegotiateAuthenticationStatusCode.InvalidCredentials,
+                SecurityStatusPalErrorCode.IllegalMessage => NegotiateAuthenticationStatusCode.InvalidToken,
+                SecurityStatusPalErrorCode.CertExpired => NegotiateAuthenticationStatusCode.CredentialsExpired,
+                SecurityStatusPalErrorCode.SecurityQosFailed => NegotiateAuthenticationStatusCode.QopNotSupported,
+                SecurityStatusPalErrorCode.UnsupportedPreauth => NegotiateAuthenticationStatusCode.Unsupported,
+                SecurityStatusPalErrorCode.BadBinding => NegotiateAuthenticationStatusCode.BadBinding,
+
+                // Processing partial inputs is not supported, so this is result of incorrect input
+                SecurityStatusPalErrorCode.IncompleteMessage => NegotiateAuthenticationStatusCode.InvalidToken,
+
+                _ => NegotiateAuthenticationStatusCode.GenericFailure,
+            };
+
             return blob;
         }
 

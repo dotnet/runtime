@@ -22,7 +22,6 @@ namespace System.Net
         }
     }
 
-    // Matches NegotiateAuthenticationStatusCode
     internal enum SecurityStatusPalErrorCode
     {
         NotSet = 0,
