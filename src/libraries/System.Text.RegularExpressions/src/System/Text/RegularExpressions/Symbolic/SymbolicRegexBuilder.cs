@@ -579,7 +579,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 DfaMatchingState<TSet>? targetState = _delta[offset];
                 if (targetState is null)
                 {
-                    if (checkThreshold && _stateCache.Count >= SymbolicRegexMatcher<TSet>.NfaThreshold)
+                    if (checkThreshold && _stateCache.Count >= SymbolicRegexThresholds.NfaThreshold)
                     {
                         nextState = null;
                         return false;
