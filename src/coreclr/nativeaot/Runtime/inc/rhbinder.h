@@ -456,7 +456,7 @@ enum PInvokeTransitionFrameFlags
     PTFF_SAVE_R15       = 0x00000080,
 
     PTFF_SAVE_RSP       = 0x00008000,   // Used for 'coop pinvokes' in runtime helper routines.  Methods with
-                                        // PInvokes are required to have a frame pointers, but methods which
+                                        // PInvokes are required to have frame pointers, but methods which
                                         // call runtime helpers are not.  Therefore, methods that call runtime
                                         // helpers may need RSP to seed the stackwalk.
                                         //

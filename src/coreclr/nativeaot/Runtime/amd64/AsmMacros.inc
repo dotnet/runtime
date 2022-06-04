@@ -283,7 +283,7 @@ DEFAULT_FRAME_SAVE_FLAGS equ PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_RSP
 ;; into pre-emptive mode but may cause a GC and thus requires the stack is crawlable. This is typically the
 ;; case for helpers that meddle in GC state (e.g. allocation helpers) where the code must remain in
 ;; cooperative mode since it handles object references and internal GC state directly but a garbage collection
-;; may be inevitable. In these cases we need to be able to transition to pre-meptive mode deep within the
+;; may be inevitable. In these cases we need to be able to transition to pre-emptive mode deep within the
 ;; unmanaged code but still be able to initialize the stack iterator at the first stack frame which may hold
 ;; interesting GC references. In all our helper cases this corresponds to the most recent managed frame (e.g.
 ;; the helper's caller).
@@ -403,6 +403,8 @@ EXTERN RhThrowHwEx                              : PROC
 EXTERN RhThrowEx                                : PROC
 EXTERN RhRethrow                                : PROC
 EXTERN RhpGcPoll2                               : PROC
+EXTERN RhpSuspendRedirected                     : PROC
+
 ifdef FEATURE_GC_STRESS
 EXTERN REDHAWKGCINTERFACE__STRESSGC             : PROC
 EXTERN THREAD__HIJACKFORGCSTRESS                : PROC

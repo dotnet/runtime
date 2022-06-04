@@ -305,6 +305,9 @@ void Thread::Construct()
 #endif // STRESS_LOG
 
     m_threadAbortException = NULL;
+
+    m_redirectedContextBuffer = NULL;
+    m_redirectedContext = NULL;
 }
 
 bool Thread::IsInitialized()
@@ -391,6 +394,11 @@ void Thread::Destroy()
     ThreadStressLog* ptsl = reinterpret_cast<ThreadStressLog*>(GetThreadStressLog());
     StressLog::ThreadDetach(ptsl);
 #endif // STRESS_LOG
+
+    if (m_redirectedContextBuffer != NULL)
+    {
+        delete[] m_redirectedContextBuffer;
+    }
 }
 
 #ifdef HOST_WASM
@@ -562,6 +570,8 @@ void Thread::GcScanRootsWorker(void * pfnEnumCallback, void * pvCallbackData, St
 
 #ifndef DACCESS_COMPILE
 
+EXTERN_C void FASTCALL RhpGcRedirect();
+
 #ifndef TARGET_ARM64
 EXTERN_C void FASTCALL RhpGcProbeHijackScalar();
 EXTERN_C void FASTCALL RhpGcProbeHijackObject();
@@ -655,14 +665,23 @@ UInt32_BOOL Thread::HijackCallback(HANDLE /*hThread*/, PAL_LIMITED_CONTEXT* pThr
         return true;
     }
 
-    if (!GetRuntimeInstance()->IsManaged((PTR_VOID)pThreadContext->IP))
+    void* pvAddress = (void*)pThreadContext->IP;
+    RuntimeInstance* runtime = GetRuntimeInstance();
+    if (!runtime->IsManaged(pvAddress))
     {
         // Running in cooperative mode, but not managed.
         // We cannot continue.
         return false;
     }
 
-    // TODO: attempt to redirect 
+    ICodeManager* codeManager = runtime->GetCodeManagerForAddress(pvAddress);
+    if (codeManager->IsSafePoint(pvAddress))
+    {
+        if (pThread->InternalRedirect(pThreadContext))
+        {
+            return true;
+        }
+    }
 
     return pThread->InternalHijack(pThreadContext, NormalHijackTargets);
 }
@@ -767,6 +786,44 @@ bool Thread::InternalHijack(PAL_LIMITED_CONTEXT * pSuspendCtx, void * pvHijackTa
         GetPalThreadIdForLogging(), pSuspendCtx->GetIp(), fSuccess);
 
     return fSuccess;
+}
+
+bool Thread::InternalRedirect(PAL_LIMITED_CONTEXT * pSuspendCtx)
+{
+    if (IsDoNotTriggerGcSet())
+        return false;
+
+    if (m_redirectedContextBuffer == NULL)
+    {
+        m_redirectedContextBuffer = new (nothrow) uint8_t[sizeof(CONTEXT)];
+        if (m_redirectedContextBuffer == NULL)
+            return false;
+
+        m_redirectedContext = (CONTEXT*)m_redirectedContextBuffer;
+    }
+
+    StackFrameIterator frameIterator(this, pSuspendCtx);
+
+    if (!frameIterator.IsValid())
+        return false;
+
+    frameIterator.CalculateCurrentMethodState();
+
+    if (!PalGetFullThreadContext(m_hPalThread, m_redirectedContext))
+        return false;
+
+    uintptr_t origIP = m_redirectedContext->GetIp();
+    m_redirectedContext->SetIp((uintptr_t)RhpGcRedirect);
+
+    if (!PalSetThreadContext(m_hPalThread, m_redirectedContext))
+        return false;
+
+    m_redirectedContext->SetIp(origIP);
+
+    STRESS_LOG2(LF_STACKWALK, LL_INFO10000, "InternalRedirect: TgtThread = %llx, IP = %p\n",
+        GetPalThreadIdForLogging(), pSuspendCtx->GetIp());
+
+    return true;
 }
 
 // This is the standard Unhijack, which is only allowed to be called on your own thread.
@@ -972,6 +1029,34 @@ EXTERN_C NOINLINE void FASTCALL RhpGcPoll2(PInvokeTransitionFrame* pFrame)
     pFrame->m_pThread = pThread;
 
     RhpWaitForGC2(pFrame);
+}
+
+// Standard calling convention variant and actual implementation for RhpSuspendRedirected
+EXTERN_C NOINLINE void FASTCALL RhpSuspendRedirected(PInvokeTransitionFrame * pFrame)
+{
+    Thread* pThread = ThreadStore::GetCurrentThread();
+    CONTEXT* pCtx = pThread->GetRedirectContext();
+
+    pFrame->m_pThread = pThread;
+    pFrame->m_RIP = (void*)pCtx->Rip;
+
+    // The wait operation below may trash the last win32 error. We save the error here so that it can be
+    // restored after the wait operation;
+    int32_t lastErrorOnEntry = PalGetLastError();
+
+    pThread->WaitForGC(pFrame);
+
+    // Restore the saved error
+    PalSetLastError(lastErrorOnEntry);
+
+    // restore execution at interrupted location
+    PalRestoreContext(pCtx);
+    UNREACHABLE();
+}
+
+CONTEXT* Thread::GetRedirectContext()
+{
+    return m_redirectedContext;
 }
 
 void Thread::PushExInfo(ExInfo * pExInfo)

@@ -312,6 +312,22 @@ REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalCreateEventW(_In_opt_ LPSECURITY_ATTR
     return CreateEventW(pEventAttributes, manualReset, initialState, pName);
 }
 
+REDHAWK_PALEXPORT _Success_(return) bool REDHAWK_PALAPI PalGetFullThreadContext(HANDLE hThread, _Out_ CONTEXT * pCtx)
+{
+    pCtx->ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_EXCEPTION_REQUEST;
+    return GetThreadContext(hThread, pCtx);
+}
+
+REDHAWK_PALEXPORT _Success_(return) bool REDHAWK_PALAPI PalSetThreadContext(HANDLE hThread, _Out_ CONTEXT * pCtx)
+{
+    return SetThreadContext(hThread, pCtx);
+}
+
+REDHAWK_PALEXPORT void REDHAWK_PALAPI PalRestoreContext(CONTEXT * pCtx)
+{
+    RtlRestoreContext(pCtx, NULL);
+}
+
 REDHAWK_PALEXPORT _Success_(return) bool REDHAWK_PALAPI PalGetThreadContext(HANDLE hThread, _Out_ PAL_LIMITED_CONTEXT * pCtx)
 {
     CONTEXT win32ctx;
