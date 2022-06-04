@@ -100,6 +100,108 @@ namespace System
             number.DigitsCount = length;
         }
 
+        public static (uint low, uint mid, uint high, uint decimalScale) Dragon4DoubleToDecimal(double value, int cutoffNumber, bool isSignificantDigits) // TODO I don't think we need cutoff number, maybe even isSignificantDigits
+        {
+            double v = double.IsNegative(value) ? -value : value;
+
+            Debug.Assert(v > 0);
+            Debug.Assert(double.IsFinite(v)); // TODO do we need to validate this somewhere?
+
+            ulong mantissa = ExtractFractionAndBiasedExponent(value, out int exponent);
+
+            uint mantissaHighBitIdx;
+            bool hasUnequalMargins = false;
+
+            if ((mantissa >> DiyFp.DoubleImplicitBitIndex) != 0)
+            {
+                mantissaHighBitIdx = DiyFp.DoubleImplicitBitIndex;
+                hasUnequalMargins = (mantissa == (1UL << DiyFp.DoubleImplicitBitIndex));
+            }
+            else
+            {
+                Debug.Assert(mantissa != 0);
+                mantissaHighBitIdx = (uint)BitOperations.Log2(mantissa);
+            }
+
+
+
+            Dragon4State state = Dragon4GetScaleValueMargin(mantissa, exponent, mantissaHighBitIdx, hasUnequalMargins, cutoffNumber, isSignificantDigits);
+
+            // At this point, this is the state that we are working with
+            //      value     = scaledValue / scale
+            //      marginLow = scaledMarginLow / scale (TODO what is this, do we even need this for our purpose)
+            //
+            // The finite set of values of type Decimal are of the form m / 10^e,
+            // where m is an integer such that -2^96 <; m <; 2^96,
+            // and e is an integer between 0 and 28 inclusive.
+            //
+            // To convert our state into a decimal, we do the following:
+            //      1. verify that -2^96 <; scaledValue <; 2^96, so that scaledValue can be directly cast to our mantissa
+            //      2. convert scale to e, by taking log10(scale) (TODO do we lose precision here?)
+            //      3. verify that it is between 0 and 28
+            //      4. build a decimal with scaledValue and our calculated exponent
+
+            /*            if ((state.scaledValue > (2 << 96)) || (state.scaledValue < -(2 << 96)))
+                        {
+                            throw;
+                        }
+
+                        state.scale.*/
+
+            var lenScale = state.scale.GetLength();
+
+            uint lowScale = 0;
+            uint midScale = 0;
+            uint highScale = 0;
+            uint idkScale = 0;
+            //UInt128
+
+            if (lenScale > 0)
+            {
+                lowScale = state.scale.GetBlock(0);
+            }
+            if (lenScale > 1)
+            {
+                midScale = state.scale.GetBlock(1);
+            }
+            if (lenScale > 2)
+            {
+                highScale = state.scale.GetBlock(2);
+            }
+            if (lenScale > 3)
+            {
+                idkScale = state.scale.GetBlock(3);
+            }
+
+            var len = state.scaledValue.GetLength();
+
+            uint low = 0;
+            uint mid = 0;
+            uint high = 0;
+
+            if (len > 0)
+            {
+                low = state.scaledValue.GetBlock(0);
+            }
+            if (len > 1)
+            {
+                mid = state.scaledValue.GetBlock(1);
+            }
+            if (len > 2)
+            {
+                high = state.scaledValue.GetBlock(2);
+            }
+            if (len > 3)
+            {
+                uint idk = state.scaledValue.GetBlock(3);
+                throw new Exception("TODO handle this somehow" + idk + lowScale + midScale + highScale + idkScale);
+            }
+
+            uint decimalScale = (uint)state.digitExponent - 1;
+            return (low, mid, high, decimalScale);
+
+        }
+
         private unsafe ref struct Dragon4State
         {
             public BigInteger scale;           // positive scale applied to value and margin such that they can be represented as whole numbers
