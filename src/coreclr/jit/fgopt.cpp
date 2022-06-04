@@ -654,7 +654,6 @@ bool Compiler::fgRemoveDeadBlocks()
     JITDUMP("\n*************** In fgRemoveDeadBlocks()");
 
     jitstd::list<BasicBlock*> worklist(jitstd::allocator<void>(getAllocator(CMK_Reachability)));
-    jitstd::list<BasicBlock*> visitedlist(jitstd::allocator<void>(getAllocator(CMK_Reachability)));
 
     worklist.push_back(fgFirstBB);
 
@@ -708,7 +707,6 @@ bool Compiler::fgRemoveDeadBlocks()
         }
 
         BlockSetOps::AddElemD(this, visitedBlocks, block->bbNum);
-        visitedlist.push_back(block);
 
         for (BasicBlock* succ : block->Succs(this))
         {
@@ -726,40 +724,26 @@ bool Compiler::fgRemoveDeadBlocks()
     // any of the fgFirstBB, handler, filter or BBJ_ALWAYS (Arm) blocks.
     auto isBlockRemovable = [&](BasicBlock* block) -> bool {
         bool isVisited = BlockSetOps::IsMember(this, visitedBlocks, block->bbNum);
-        hasUnreachableBlock |= !isVisited;
-        return !isVisited;
+        bool isRemovable = (!isVisited || block->bbRefs == 0);
+
+        hasUnreachableBlock |= isRemovable;
+
+        return isRemovable;
     };
 
-    bool changed        = false;
-    int  iterationCount = 0;
+    bool     changed        = false;
+    unsigned iterationCount = 1;
     do
     {
-        changed = false;
-        if (fgRemoveUnreachableBlocks(isBlockRemovable))
+        JITDUMP("\nRemoving unreachable blocks for fgRemoveDeadBlocks iteration #%u\n", iterationCount);
+
+        // Just to be paranoid, avoid infinite loops; fall back to minopts.
+        if (iterationCount++ > 10)
         {
-            // If we produced more unreachable blocks, remove them as well.
-            // Note: We skip recalculating all the visited blocks and instead just remove them from
-            // the visited list because of two reasons - We won't have to recreate the visited list
-            // and it is rare scenario .
-            //
-            // TODO-CQ: Ideally, we should have a PriorityQueue that sorts the blocks based on bbRefs
-            // and remove them as they become unreachable.
-            for (auto reachableBlock : visitedlist)
-            {
-                if (reachableBlock->bbRefs == 0)
-                {
-                    if (BlockSetOps::IsMember(this, visitedBlocks, reachableBlock->bbNum) &&
-                        ((reachableBlock->bbFlags & BBF_REMOVED) == 0))
-                    {
-                        changed = true;
-                        BlockSetOps::RemoveElemD(this, visitedBlocks, reachableBlock->bbNum);
-                        JITDUMP("Found a reachable block " FMT_BB " that now has zero refs\n", reachableBlock->bbNum);
-                    }
-                }
-            }
+            noway_assert(!"Too many unreachable block removal loops");
         }
-        iterationCount++;
-    } while (changed && iterationCount < 3);
+        changed = fgRemoveUnreachableBlocks(isBlockRemovable);
+    } while (changed);
 
 #ifdef DEBUG
     if (verbose && hasUnreachableBlock)
