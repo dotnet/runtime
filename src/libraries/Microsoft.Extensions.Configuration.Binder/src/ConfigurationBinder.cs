@@ -320,7 +320,7 @@ namespace Microsoft.Extensions.Configuration
                 {
                     if (!bindingPoint.IsReadOnly)
                     {
-                        object? newValue = BindDictionary(bindingPoint.Value, type, config, options);
+                        object? newValue = BindDictionaryInterface(bindingPoint.Value, type, config, options);
                         if (newValue != null)
                         {
                             bindingPoint.SetValue(newValue);
@@ -363,7 +363,7 @@ namespace Microsoft.Extensions.Configuration
                 Type? di = dictionaryInterface ?? dictionaryInterface2;
                 if (di != null)
                 {
-                    BindExistingDictionary(bindingPoint.Value!, di, config, options);
+                    BindConcreteDictionary(bindingPoint.Value!, di, config, options);
                 }
                 else
                 {
@@ -493,7 +493,7 @@ namespace Microsoft.Extensions.Configuration
         }
 
         [RequiresUnreferencedCode("Cannot statically analyze what the element type is of the value objects in the dictionary so its members may be trimmed.")]
-        private static object? BindDictionary(
+        private static object? BindDictionaryInterface(
             object? source,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
             Type dictionaryType,
@@ -511,8 +511,9 @@ namespace Microsoft.Extensions.Configuration
             }
 
             Type genericType = typeof(Dictionary<,>).MakeGenericType(keyType, valueType);
-            Type kvpType = typeof(KeyValuePair<,>).MakeGenericType(keyType, valueType);
             MethodInfo addMethod = genericType.GetMethod("Add", DeclaredOnlyLookup)!;
+
+            Type kvpType = typeof(KeyValuePair<,>).MakeGenericType(keyType, valueType);
             PropertyInfo keyMethod = kvpType.GetProperty("Key", DeclaredOnlyLookup)!;
             PropertyInfo valueMethod = kvpType.GetProperty("Value", DeclaredOnlyLookup)!;
 
@@ -533,40 +534,19 @@ namespace Microsoft.Extensions.Configuration
                 }
             }
 
-            MethodInfo tryGetValue = dictionaryType.GetMethod("TryGetValue")!;
-            PropertyInfo setter = genericType.GetProperty("Item", DeclaredOnlyLookup)!;
-            foreach (IConfigurationSection child in config.GetChildren())
-            {
-                try
-                {
-                    object key = keyTypeIsEnum ? Enum.Parse(keyType, child.Key) : child.Key;
-                    var valueBindingPoint = new BindingPoint(
-                        initialValueProvider: () =>
-                        {
-                            var tryGetValueArgs = new object?[] { key, null };
-                            return (bool)tryGetValue.Invoke(dictionary, tryGetValueArgs)! ? tryGetValueArgs[1] : null;
-                        },
-                        isReadOnly: false);
-                    BindInstance(
-                        type: valueType,
-                        bindingPoint: valueBindingPoint,
-                        config: child,
-                        options: options);
-                    if (valueBindingPoint.HasNewValue)
-                    {
-                        setter.SetValue(dictionary, valueBindingPoint.Value, new object[] { key });
-                    }
-                }
-                catch
-                {
-                }
-            }
+            BindConcreteDictionary(dictionary, dictionaryType, config, options);
 
             return dictionary;
         }
 
+        // Binds and potentially overwrites a concrete dictionary.
+        // This differs from BindDictionaryInterface because this method doesn't clone
+        // the dictionary; it sets and/or overwrites values directly.
+        // When a user specifies a concrete dictionary in their config class, then that
+        // value is used as-us. When a user specifies an interface (instantiated) in their config class,
+        // then it is cloned to a new dictionary, the same way as other collections.
         [RequiresUnreferencedCode("Cannot statically analyze what the element type is of the value objects in the dictionary so its members may be trimmed.")]
-        private static void BindExistingDictionary(
+        private static void BindConcreteDictionary(
             object? dictionary,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
             Type dictionaryType,

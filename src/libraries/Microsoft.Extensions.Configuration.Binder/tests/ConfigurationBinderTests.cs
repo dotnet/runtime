@@ -13,19 +13,6 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
 {
     public class ConfigurationBinderTests
     {
-        public class Steve
-        {
-            public static Dictionary<string, int> _existingDictionary = new()
-            {
-                {"existing-item1", 1},
-                {"existing-item2", 2},
-            };
-
-            public IReadOnlyDictionary<string, int> Dictionary { get; set; } =
-                _existingDictionary;
-
-        }
-
         public class ComplexOptions
         {
             private static Dictionary<string, int> _existingDictionary = new()
@@ -179,6 +166,32 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         {
             public ICustomDictionary<string, int> CustomDictionary { get; set; }
         }
+
+        public class ConfigWithInstantiatedIReadOnlyDictionary
+        {
+            public static Dictionary<string, int> _existingDictionary = new()
+            {
+                {"existing-item1", 1},
+                {"existing-item2", 2},
+            };
+
+            public IReadOnlyDictionary<string, int> Dictionary { get; set; } =
+                _existingDictionary;
+
+        }
+        public class ConfigWithInstantiatedConcreteDictionary
+        {
+            public static Dictionary<string, int> _existingDictionary = new()
+            {
+                {"existing-item1", 1},
+                {"existing-item2", 2},
+            };
+
+            public Dictionary<string, int> Dictionary { get; set; } =
+                _existingDictionary;
+
+        }
+        
 
         public interface ICustomDictionary<T, T1> : IDictionary<T, T1>
         {
@@ -731,7 +744,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         }
 
         [Fact]
-        public void SteveCanBindInstantiatedReadOnlyDictionary()
+        public void BindInstantiatedIReadOnlyDictionary_CreatesCopyOfOriginal()
         {
             var dic = new Dictionary<string, string>
             {
@@ -744,10 +757,41 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
 
             var config = configurationBuilder.Build();
 
-            var options = config.Get<Steve>()!;
+            var options = config.Get<ConfigWithInstantiatedIReadOnlyDictionary>()!;
 
             Assert.Equal(4, options.Dictionary.Count);
-            Assert.Equal(1, Steve._existingDictionary["existing-item1"]);
+
+            // does not overwrite original
+            Assert.Equal(1, ConfigWithInstantiatedIReadOnlyDictionary._existingDictionary["existing-item1"]);
+
+            Assert.Equal(666, options.Dictionary["existing-item1"]);
+            Assert.Equal(2, options.Dictionary["existing-item2"]);
+            Assert.Equal(3, options.Dictionary["item3"]);
+            Assert.Equal(4, options.Dictionary["item4"]);
+
+            
+        }
+
+        [Fact]
+        public void BindInstantiatedConcreteDictionary_OverwritesOriginal()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Dictionary:existing-item1", "666"},
+                {"Dictionary:item3", "3"},
+                {"Dictionary:item4", "4"}
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ConfigWithInstantiatedConcreteDictionary>()!;
+
+            Assert.Equal(4, options.Dictionary.Count);
+
+            // overwrites original
+            Assert.Equal(666, ConfigWithInstantiatedConcreteDictionary._existingDictionary["existing-item1"]);
             Assert.Equal(666, options.Dictionary["existing-item1"]);
             Assert.Equal(2, options.Dictionary["existing-item2"]);
             Assert.Equal(3, options.Dictionary["item3"]);
