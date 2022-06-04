@@ -11,7 +11,7 @@ namespace System.Net.Security
         GenericFailure, // GSS_S_FAILURE/GSS_S_NO_CONTEXT
         BadBinding, // GSS_S_BAD_BINDINGS
         Unsupported, // GSS_S_BAD_MECH (Unsupported mechanism)
-        MessageAltered, // GSS_S_BAD_SIG = GSS_S_BAD_MIC
+        MessageAltered, // GSS_S_BAD_SIG/GSS_S_BAD_MIC
         ContextExpired, // GSS_S_CONTEXT_EXPIRED
         CredentialsExpired, // GSS_S_CREDENTIALS_EXPIRED
         InvalidCredentials, // GSS_S_DEFECTIVE_CREDENTIAL

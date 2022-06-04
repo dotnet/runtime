@@ -7,6 +7,10 @@ using System.Runtime.Versioning;
 
 namespace System.Net.Security
 {
+    /// <summary>
+    /// Represents a stateful authentication exchange that uses the Negotiate, NTLM or Kerberos security protocols
+    /// to authenticate the client or server, in client-server communication.
+    /// </summary>
     public sealed class NegotiateAuthentication : IDisposable
     {
         private NTAuthentication _ntAuthentication;
