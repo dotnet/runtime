@@ -132,8 +132,15 @@ namespace System.Net.Security
                 SecurityStatusPalErrorCode.IllegalMessage => NegotiateAuthenticationStatusCode.InvalidToken,
                 SecurityStatusPalErrorCode.CertExpired => NegotiateAuthenticationStatusCode.CredentialsExpired,
                 SecurityStatusPalErrorCode.SecurityQosFailed => NegotiateAuthenticationStatusCode.QopNotSupported,
-                SecurityStatusPalErrorCode.UnsupportedPreauth => NegotiateAuthenticationStatusCode.Unsupported,
+                SecurityStatusPalErrorCode.UnsupportedPreauth => NegotiateAuthenticationStatusCode.InvalidToken,
                 SecurityStatusPalErrorCode.BadBinding => NegotiateAuthenticationStatusCode.BadBinding,
+                SecurityStatusPalErrorCode.UntrustedRoot => NegotiateAuthenticationStatusCode.UnknownCredentials,
+                SecurityStatusPalErrorCode.SmartcardLogonRequired => NegotiateAuthenticationStatusCode.UnknownCredentials,
+                SecurityStatusPalErrorCode.WrongPrincipal => NegotiateAuthenticationStatusCode.UnknownCredentials,
+                SecurityStatusPalErrorCode.CannotPack => NegotiateAuthenticationStatusCode.InvalidToken,
+                SecurityStatusPalErrorCode.TimeSkew => NegotiateAuthenticationStatusCode.InvalidToken,
+                SecurityStatusPalErrorCode.AlgorithmMismatch => NegotiateAuthenticationStatusCode.InvalidToken,
+                SecurityStatusPalErrorCode.CertUnknown => NegotiateAuthenticationStatusCode.UnknownCredentials,
 
                 // Processing partial inputs is not supported, so this is result of incorrect input
                 SecurityStatusPalErrorCode.IncompleteMessage => NegotiateAuthenticationStatusCode.InvalidToken,
