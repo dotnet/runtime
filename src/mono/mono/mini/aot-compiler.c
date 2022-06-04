@@ -13137,6 +13137,20 @@ add_profile_method (MonoAotCompile *acfg, MonoMethod *m)
 	add_extra_method (acfg, m);
 }
 
+//---------------------------------------------------------------------------------------
+//
+// add_single_profile_method filters MonoMethods to be added for AOT compilation.
+// The filter logic is extracted from add_profile_instances and comments are retained
+// from there.
+//
+// Arguments:
+// 	* acfg - MonoAotCompiler instance
+//	* method - MonoMethod to attempt to add for AOT compilation
+//
+// Return Value:
+//	int pertaining whether or not the method was added to be AOT'd
+//
+
 static int
 add_single_profile_method (MonoAotCompile *acfg, MonoMethod *method)
 {
@@ -13212,6 +13226,38 @@ typedef enum {
 	FIND_METHOD_TYPE_ENTRY_END,
 } MibcGroupMethodEntryState;
 
+//---------------------------------------------------------------------------------------
+//
+// add_mibc_group_method_methods iterates over a mibcGroupMethod MonoMethod to obtain
+// each method/type entry in that group. Each entry begins with LDTOKEN opcode, followed
+// by a series of instructions including another LDTOKEN opcode but excluding a POP opcode
+// ending with a POP opcode to denote the end of the entry. To iterate over entries,
+// a MibcGroupMethodEntryState state is tracked, identifying whether we are looking for
+// an entry starting LDTOKEN opcode or entry ending POP opcode. Each LDTOKEN opcode's
+// argument denotes a methodref or methodspec. Before ultimately adding the entry's method
+// for AOT compilation, checks for the method's class and image are used to skip methods
+// whose class and images cannot be resolved.
+//
+// Sample mibcGroupMethod format
+//
+// Method 'Assemblies_HelloWorld;_1' (#11b) (0x06000001)
+// {
+//   IL_0000:  ldtoken    0x0A0002B5 // Method/Type Entry token
+//   IL_0005:  pop
+// }
+//
+// Arguments:
+// 	* acfg - MonoAotCompiler instance
+//	* mibcGroupMethod - MonoMethod representing the group of assemblies that
+//				describes each Method/Type entry with the .mibc file
+//	* image - MonoImage representing the .mibc file
+//	* mibcModuleClass - MonoClass containing the AssemblyDictionary
+//	* context - MonoGenericContext of the AssemblyDictionary MonoMethod
+//
+// Return Value:
+//	int pertaining to the number of methods added within the mibcGroupMethod
+//
+
 static int
 add_mibc_group_method_methods (MonoAotCompile *acfg, MonoMethod *mibcGroupMethod, MonoImage *image, MonoClass *mibcModuleClass, MonoGenericContext *context)
 {
@@ -13256,6 +13302,30 @@ add_mibc_group_method_methods (MonoAotCompile *acfg, MonoMethod *mibcGroupMethod
 	}
 	return count;
 }
+
+//---------------------------------------------------------------------------------------
+//
+// add_mibc_profile_methods is the overarching method that adds methods within a .mibc
+// profile file to be compiled ahead of time. .mibc is a portable executable with
+// methods grouped under mibcGroupMethods, which are summarized within the global
+// function AssemblyDictionary. This method obtains the AssemblyDictionary and iterates
+// over il opcodes and arguments to retrieve mibcGroupMethods and thereafter calls
+// add_mibc_group_method_methods.
+//
+// Sample AssemblyDictionary format
+//
+// Method 'AssemblyDictionary' (#2f67) (0x06000006)
+// {
+//   IL_0000:  ldstr      0x70000001
+//   IL_0005:  ldtoken    0x06000001 // mibcGroupMethod
+//   IL_000a:  pop
+//   ...
+// }
+//
+// Arguments:
+// 	* acfg - MonoAotCompiler instance
+//	* filename - the .mibc profile file containing the methods to AOT compile
+//
 
 static void
 add_mibc_profile_methods (MonoAotCompile *acfg, char *filename)
