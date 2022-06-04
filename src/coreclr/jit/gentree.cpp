@@ -23109,6 +23109,29 @@ uint16_t GenTreeLclVarCommon::GetLclOffs() const
     }
 }
 
+//------------------------------------------------------------------------
+// GetLayout: get the struct layout for a local node of struct type.
+//
+// Arguments:
+//    compiler - the compiler instance
+//
+// Return Value:
+//    If "this" is a local field node, the layout stored in the node,
+//    otherwise the layout of local itself.
+//
+ClassLayout* GenTreeLclVarCommon::GetLayout(Compiler* compiler) const
+{
+    assert(varTypeIsStruct(TypeGet()));
+
+    if (OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR))
+    {
+        return compiler->lvaGetDesc(GetLclNum())->GetLayout();
+    }
+
+    assert(OperIs(GT_LCL_FLD, GT_STORE_LCL_FLD));
+    return AsLclFld()->GetLayout();
+}
+
 #if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
 //------------------------------------------------------------------------
 // GetResultOpNumForFMA: check if the result is written into one of the operands.
