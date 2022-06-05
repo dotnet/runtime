@@ -28,9 +28,9 @@ namespace System.Drawing
     }
     public sealed partial class Font
     {
-        public unsafe void ToLogFont<T>(ref T logFont, Graphics graphics) where T: struct  { throw null; }
+        public void ToLogFont<T>(ref T logFont, Graphics graphics) where T: struct  { throw null; }
         public static Font FromLogFont<T>(in T logFont) where T: struct { throw null; }
-        public static unsafe Font FromLogFont<T>(in T logFont, IntPtr hdc) where T: struct { throw null; }
+        public static Font FromLogFont<T>(in T logFont, IntPtr hdc) where T: struct { throw null; }
         public void ToLogFont<T>(ref T logFont) where T: struct { throw null; }
     }
 }
