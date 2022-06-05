@@ -158,11 +158,6 @@ typedef LPSTR   LPUTF8;
 #define DIGIT_TO_INT(ch) ((ch) - W('0'))
 #define INT_TO_DIGIT(i) ((WCHAR)(W('0') + (i)))
 
-#define IS_HEXDIGIT(ch) ((((ch) >= W('a')) && ((ch) <= W('f'))) || \
-                         (((ch) >= W('A')) && ((ch) <= W('F'))))
-#define HEXDIGIT_TO_INT(ch) ((towlower(ch) - W('a')) + 10)
-#define INT_TO_HEXDIGIT(i) ((WCHAR)(W('a') + ((i) - 10)))
-
 
 // Helper will 4 byte align a value, rounding up.
 #define ALIGN4BYTE(val) (((val) + 3) & ~0x3)
