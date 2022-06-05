@@ -3276,9 +3276,8 @@ public:
             // Walk the statement 'stmt' and find the pointer
             // in the tree is pointing to 'exp'
             //
-            Compiler::FindLinkData linkData   = m_pCompiler->gtFindLink(stmt, exp);
-            GenTree**              link       = linkData.result;
-            GenTree* const         origParent = linkData.parent;
+            Compiler::FindLinkData linkData = m_pCompiler->gtFindLink(stmt, exp);
+            GenTree**              link     = linkData.result;
 
 #ifdef DEBUG
             if (link == nullptr)
@@ -3300,22 +3299,7 @@ public:
             noway_assert(link);
 
             // Mutate this link, thus replacing the old exp with the new CSE representation
-            if (cse->OperIs(GT_COMMA) && !cse->IsReverseOp() && origParent &&
-                origParent->OperIs(GT_ADD, GT_SUB, GT_DIV, GT_UDIV, GT_MOD, GT_UMOD, GT_NEG, GT_IND) &&
-                !origParent->IsReverseOp() && origParent->gtGetOp1() == exp)
-            {
-                Compiler::FindLinkData linkParentData = m_pCompiler->gtFindLink(stmt, origParent);
-                GenTree**              linkParent     = linkParentData.result;
-
-                *linkParent = cse;
-                cse         = cse->gtGetOp2();
-
-                cse->CopyReg(*linkParent);
-                (*linkParent)->ClearRegNum();
-                (*linkParent)->AsOp()->gtOp2 = origParent;
-                (*linkParent)->ChangeType(origParent->TypeGet());
-            }
-
+            //
             *link = cse;
 
             // If it has a zero-offset field seq, copy annotation.
