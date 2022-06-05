@@ -3270,7 +3270,6 @@ private:
     // size should be `gtType` and the handle should be looked up at callsites where required
 
     unsigned char gtSimdBaseJitType; // SIMD vector base JIT type
-    unsigned char gtSimdSize;        // SIMD vector size in bytes
 
 public:
     CorInfoType GetSimdBaseJitType() const
@@ -3286,17 +3285,6 @@ public:
 
     var_types GetSimdBaseType() const;
 
-    unsigned char GetSimdSize() const
-    {
-        return gtSimdSize;
-    }
-
-    void SetSimdSize(unsigned simdSize)
-    {
-        gtSimdSize = (unsigned char)simdSize;
-        assert(gtSimdSize == simdSize);
-    }
-
 #if defined(FEATURE_HW_INTRINSICS)
     static bool IsHWIntrinsicCreateConstant(GenTreeHWIntrinsic* node, simd32_t& simd32Val);
 
@@ -3308,11 +3296,8 @@ public:
         switch (gtType)
         {
 #if defined(FEATURE_SIMD)
-            case TYP_LONG:
-            case TYP_DOUBLE:
             case TYP_SIMD8:
             {
-                // TODO-1stClassStructs: do not retype SIMD nodes
                 return (gtSimd8Val.u64[0] == 0xFFFFFFFFFFFFFFFF);
             }
 
@@ -3353,11 +3338,8 @@ public:
         switch (gtType)
         {
 #if defined(FEATURE_SIMD)
-            case TYP_LONG:
-            case TYP_DOUBLE:
             case TYP_SIMD8:
             {
-                // TODO-1stClassStructs: do not retype SIMD nodes
                 return (left->gtSimd8Val.u64[0] == right->gtSimd8Val.u64[0]);
             }
 
@@ -3395,11 +3377,8 @@ public:
         switch (gtType)
         {
 #if defined(FEATURE_SIMD)
-            case TYP_LONG:
-            case TYP_DOUBLE:
             case TYP_SIMD8:
             {
-                // TODO-1stClassStructs: do not retype SIMD nodes
                 return (gtSimd8Val.u64[0] == 0x0000000000000000);
             }
 
@@ -3428,14 +3407,11 @@ public:
         }
     }
 
-    GenTreeVecCon(var_types type, CorInfoType simdBaseJitType, unsigned simdSize)
-        : GenTree(GT_CNS_VEC, type)
-        , gtSimdBaseJitType((unsigned char)simdBaseJitType)
-        , gtSimdSize((unsigned char)simdSize)
+    GenTreeVecCon(var_types type, CorInfoType simdBaseJitType)
+        : GenTree(GT_CNS_VEC, type), gtSimdBaseJitType((unsigned char)simdBaseJitType)
     {
         assert(varTypeIsSIMD(type));
         assert(gtSimdBaseJitType == simdBaseJitType);
-        assert(gtSimdSize == simdSize);
     }
 
 #if DEBUGGABLE_GENTREE

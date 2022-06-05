@@ -3404,11 +3404,24 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                             argObj->gtType = structBaseType;
                         }
                     }
-                    else
+                    else if (argObj->OperIs(GT_LCL_FLD, GT_IND))
                     {
-                        // Not a GT_LCL_VAR, so we can just change the type on the node
+                        // We can just change the type on the node
                         argObj->gtType = structBaseType;
                     }
+                    else
+                    {
+#ifdef FEATURE_SIMD
+                        // We leave the SIMD8 <-> LONG (Windows x64) case to lowering. For SIMD8 <-> DOUBLE (Unix x64),
+                        // we do not need to do anything as both types already use floating-point registers.
+                        assert((argObj->TypeIs(TYP_SIMD8) &&
+                                ((structBaseType == TYP_LONG) || (structBaseType == TYP_DOUBLE))) ||
+                               argObj->TypeIs(structBaseType));
+#else  // !FEATURE_SIMD
+                        unreached();
+#endif // !FEATURE_SIMD
+                    }
+
                     assert(varTypeIsEnregisterable(argObj->TypeGet()) ||
                            (makeOutArgCopy && varTypeIsEnregisterable(structBaseType)));
                 }
@@ -9922,7 +9935,7 @@ GenTree* Compiler::getSIMDStructFromField(GenTree*     tree,
             {
                 ret                   = obj;
                 GenTreeVecCon* vecCon = obj->AsVecCon();
-                *simdSizeOut          = vecCon->GetSimdSize();
+                *simdSizeOut          = genTypeSize(vecCon);
                 *simdBaseJitTypeOut   = vecCon->GetSimdBaseJitType();
             }
         }

@@ -7959,16 +7959,6 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
                 tree->gtVNPair.SetBoth(
                     vnStore->VNForHandle(ssize_t(tree->AsIntConCommon()->IconValue()), tree->GetIconHandleFlag()));
             }
-#ifdef FEATURE_SIMD
-            else if (tree->IsCnsVec())
-            {
-                // TODO-1stClassStructs: do not retype SIMD nodes
-                assert(varTypeIsLong(typ));
-
-                simd8_t simd8Val = tree->AsVecCon()->gtSimd8Val;
-                tree->gtVNPair.SetBoth(vnStore->VNForSimd8Con(simd8Val));
-            }
-#endif // FEATURE_SIMD
             else if ((typ == TYP_LONG) || (typ == TYP_ULONG))
             {
                 tree->gtVNPair.SetBoth(vnStore->VNForLongCon(INT64(tree->AsIntConCommon()->LngValue())));
@@ -8061,18 +8051,7 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
 
         case TYP_DOUBLE:
         {
-#ifdef FEATURE_SIMD
-            if (tree->IsCnsVec())
-            {
-                // TODO-1stClassStructs: do not retype SIMD nodes
-                simd8_t simd8Val = tree->AsVecCon()->gtSimd8Val;
-                tree->gtVNPair.SetBoth(vnStore->VNForSimd8Con(simd8Val));
-            }
-            else
-#endif // FEATURE_SIMD
-            {
-                tree->gtVNPair.SetBoth(vnStore->VNForDoubleCon(tree->AsDblCon()->gtDconVal));
-            }
+            tree->gtVNPair.SetBoth(vnStore->VNForDoubleCon(tree->AsDblCon()->gtDconVal));
             break;
         }
 
