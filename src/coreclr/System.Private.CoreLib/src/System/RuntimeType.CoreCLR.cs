@@ -3897,6 +3897,23 @@ namespace System
         }
 
         /// <summary>
+        /// Creates an uninitialized object of the current type.
+        /// </summary>
+        /// <returns>An uninitalized instance of the object of the specified type.</returns>
+        [DebuggerStepThrough]
+        [DebuggerHidden]
+        internal object? CreateUninitializedInstance()
+        {
+            if (GenericCache is not ActivatorCache cache)
+            {
+                cache = new ActivatorCache(this);
+                GenericCache = cache;
+            }
+
+            return cache.CreateUninitializedObject(this);
+        }
+
+        /// <summary>
         /// Helper to invoke the default (parameterless) constructor.
         /// </summary>
         [DebuggerStepThrough]

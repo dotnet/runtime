@@ -597,7 +597,6 @@ FCFuncStart(gRuntimeHelpers)
     FCFuncElement("RegisterForGCReporting", GCReporting::Register)
     FCFuncElement("UnregisterForGCReporting", GCReporting::Unregister)
     FCFuncElement("Box", JIT_Box)
-    FCFuncElement("AllocateUninitializedObject", JIT_NewS_MP_FastPortable)
 FCFuncEnd()
 
 FCFuncStart(gMethodTableFuncs)
