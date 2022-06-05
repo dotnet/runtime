@@ -851,7 +851,7 @@ public:
     // Check if "vn" is "a.Length" or "a.GetLength(n)"
     bool IsVNArrLen(ValueNum vn);
 
-    // If "vn" is VN(a.Length) then return VN(a); NoVN if VN(a) can't be determined.
+    // If "vn" is VN(a.Length) or VN(a.GetLength(n)) then return VN(a); NoVN if VN(a) can't be determined.
     ValueNum GetArrForLenVn(ValueNum vn);
 
     // Return true with any Relop except for == and !=  and one operand has to be a 32-bit integer constant.

@@ -2897,7 +2897,7 @@ ValueNum ValueNumStore::EvalFuncForConstantArgs(var_types typ, VNFunc func, Valu
             assert(arg0VN == VNForNull()); // Only other REF constant.
 
             // Only functions we can apply to a REF constant!
-            assert((func == VNFunc(GT_ARR_LENGTH)) || (func == VNFunc(GT_MDARR_LENGTH)) ||
+            assert((func == VNFunc(GT_ARR_LENGTH)) || (func == VNF_MDArrLength) ||
                    (func == VNFunc(GT_MDARR_LOWER_BOUND)));
             return VNWithExc(VNForVoid(), VNExcSetSingleton(VNForFunc(TYP_REF, VNF_NullPtrExc, VNForNull())));
         }
@@ -5695,7 +5695,7 @@ ValueNum ValueNumStore::GetArrForLenVn(ValueNum vn)
 
     VNFuncApp funcAttr;
     if (GetVNFunc(vn, &funcAttr) &&
-        ((funcAttr.m_func == (VNFunc)GT_ARR_LENGTH) || (funcAttr.m_func == (VNFunc)GT_MDARR_LENGTH)))
+        ((funcAttr.m_func == (VNFunc)GT_ARR_LENGTH) || (funcAttr.m_func == VNF_MDArrLength)))
     {
         return funcAttr.m_args[0];
     }
@@ -5741,7 +5741,7 @@ bool ValueNumStore::IsVNArrLen(ValueNum vn)
     }
     VNFuncApp funcAttr;
     return GetVNFunc(vn, &funcAttr) &&
-           ((funcAttr.m_func == (VNFunc)GT_ARR_LENGTH) || (funcAttr.m_func == (VNFunc)GT_MDARR_LENGTH));
+           ((funcAttr.m_func == (VNFunc)GT_ARR_LENGTH) || (funcAttr.m_func == VNF_MDArrLength));
 }
 
 bool ValueNumStore::IsVNCheckedBound(ValueNum vn)
@@ -9669,6 +9669,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
 
         case VNF_JitNewMdArr:
         {
+            // TODO-MDArray: support value numbering new MD array helper
             generateUniqueVN = true;
         }
         break;
