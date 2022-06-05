@@ -668,9 +668,9 @@ namespace System.Drawing
         public static unsafe Font FromLogFont<T>(in T logFont, IntPtr hdc)
             where T: struct
         {
-            ArgumentNullException.ThrowIfNull(lf);
+            ArgumentNullException.ThrowIfNull(logFont);
 
-            if (lf is Interop.User32.LOGFONT nativeLogFont)
+            if (logFont is Interop.User32.LOGFONT nativeLogFont)
             {
                 // A boxed LOGFONT, just use it to create the font
                 return FromLogFontInternal(ref nativeLogFont, hdc);
@@ -681,13 +681,13 @@ namespace System.Drawing
             {
                 // If we don't actually have an object that is LOGFONT in size, trying to pass
                 // it to GDI+ is likely to cause an AV.
-                throw new ArgumentException(null, nameof(lf));
+                throw new ArgumentException(null, nameof(logFont));
             }
 
             // Now that we know the marshalled size is the same as LOGFONT, copy in the data
             nativeLogFont = default;
 
-            Marshal.StructureToPtr<T>(lf, (IntPtr)&nativeLogFont, fDeleteOld: false);
+            Marshal.StructureToPtr<T>(logFont, (IntPtr)&nativeLogFont, fDeleteOld: false);
 
             return FromLogFontInternal(ref nativeLogFont, hdc);
         }
