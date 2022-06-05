@@ -2783,7 +2783,7 @@ interp_inline_newobj (TransformData *td, MonoMethod *target_method, MonoMethodSi
 		else
 			vtsize = MINT_STACK_SLOT_SIZE;
 
-		dreg = create_interp_stack_local (td, stack_type [ret_mt], klass, vtsize);
+		dreg = create_interp_local (td, get_type_from_stack (stack_type [ret_mt], klass));
 
 		// For valuetypes, we need to control the lifetime of the valuetype.
 		// MINT_NEWOBJ_VT_INLINED takes the address of this reg and we should keep
@@ -2791,7 +2791,7 @@ interp_inline_newobj (TransformData *td, MonoMethod *target_method, MonoMethodSi
 		interp_add_ins (td, MINT_DEF);
 		interp_ins_set_dreg (td->last_ins, dreg);
 	} else {
-		dreg = create_interp_stack_local (td, stack_type [ret_mt], klass, MINT_STACK_SLOT_SIZE);
+		dreg = create_interp_local (td, get_type_from_stack (stack_type [ret_mt], klass));
 	}
 
 	// Allocate `this` pointer
@@ -5537,7 +5537,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				td->sp -= csignature->param_count;
 
 				// First arg is dummy var, it is null when passed to the ctor
-				call_args [0] = create_interp_stack_local (td, stack_type [ret_mt], NULL, MINT_STACK_SLOT_SIZE);
+				call_args [0] = create_interp_local (td, get_type_from_stack (stack_type [ret_mt], NULL));
 				for (int i = 0; i < csignature->param_count; i++) {
 					call_args [i + 1] = td->sp [i].local;
 				}
