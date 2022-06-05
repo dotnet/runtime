@@ -3300,7 +3300,6 @@ public:
             noway_assert(link);
 
             // Mutate this link, thus replacing the old exp with the new CSE representation
-            //
             if (cse->OperIs(GT_COMMA) && !cse->IsReverseOp() && origParent &&
                 origParent->OperIs(GT_ADD, GT_SUB, GT_DIV, GT_UDIV, GT_MOD, GT_UMOD, GT_NEG, GT_IND) &&
                 !origParent->IsReverseOp() && origParent->gtGetOp1() == exp)
