@@ -6806,6 +6806,8 @@ static genTreeOps genTreeOpsIllegalAsVNFunc[] = {GT_IND, // When we do heap memo
                                                  GT_OBJ,      // May reference heap memory.
                                                  GT_BLK,      // May reference heap memory.
                                                  GT_INIT_VAL, // Not strictly a pass-through.
+                                                 GT_MDARR_LENGTH,
+                                                 GT_MDARR_LOWER_BOUND, // 'dim' value must be considered
 
                                                  // These control-flow operations need no values.
                                                  GT_JTRUE, GT_RETURN, GT_SWITCH, GT_RETFILT, GT_CKFINITE};
@@ -8749,16 +8751,6 @@ void Compiler::fgValueNumberTree(GenTree* tree)
         {
             fgValueNumberIntrinsic(tree);
         }
-        else if (tree->OperIs(GT_MDARR_LENGTH, GT_MDARR_LOWER_BOUND))
-        {
-            tree->gtVNPair =
-                vnStore->VNPUniqueWithExc(tree->TypeGet(), vnStore->VNPExceptionSet(tree->gtGetOp1()->gtVNPair));
-            // need to distinguish different 'dim' values.
-            // Make VNFuncIsLegal() return false for these, then handle them specially by creating new
-            // VNF_MDArrLength/VNF_MDArrLowerBound VNs?
-            //*****
-            // assert(!"NYI");
-        }
         else // Look up the VNFunc for the node
         {
             VNFunc vnf = GetVNFuncForNode(tree);
@@ -8861,6 +8853,50 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     case GT_ARR_ADDR:
                         fgValueNumberArrIndexAddr(tree->AsArrAddr());
                         break;
+
+                    case GT_MDARR_LENGTH:
+                    case GT_MDARR_LOWER_BOUND:
+                    {
+                        VNFunc   mdarrVnf = VNF_Boundary; // An illegal value...
+                        GenTree* arrRef   = nullptr;
+                        unsigned dim      = 0;
+
+                        switch (oper)
+                        {
+                            case GT_MDARR_LENGTH:
+                                mdarrVnf = VNF_MDArrLength;
+                                arrRef   = tree->AsMDArrLen()->ArrRef();
+                                dim      = tree->AsMDArrLen()->Dim();
+                                break;
+                            case GT_MDARR_LOWER_BOUND:
+                                mdarrVnf = VNF_MDArrLowerBound;
+                                arrRef   = tree->AsMDArrLowerBound()->ArrRef();
+                                dim      = tree->AsMDArrLowerBound()->Dim();
+                                break;
+                            default:
+                                unreached();
+                        }
+
+                        ValueNumPair arrVNP;
+                        ValueNumPair arrVNPx;
+                        vnStore->VNPUnpackExc(arrRef->gtVNPair, &arrVNP, &arrVNPx);
+
+                        // If we are fetching the array length for an array ref that came from global memory
+                        // then for CSE safety we must use the conservative value number for both.
+                        //
+                        if ((arrRef->gtFlags & GTF_GLOB_REF) != 0)
+                        {
+                            arrVNP.SetBoth(arrVNP.GetConservative());
+                        }
+
+                        ValueNumPair intPair;
+                        intPair.SetBoth(vnStore->VNForIntCon(dim));
+
+                        ValueNumPair normalPair = vnStore->VNPairForFunc(tree->TypeGet(), mdarrVnf, arrVNP, intPair);
+
+                        tree->gtVNPair = vnStore->VNPWithExc(normalPair, arrVNPx);
+                        break;
+                    }
 
                     case GT_BOUNDS_CHECK:
                     {
