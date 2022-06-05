@@ -4371,10 +4371,10 @@ FCIMPL3(void, MngdNativeArrayMarshaler::ConvertContentsToNative, MngdNativeArray
     if (*pArrayRef != NULL)
     {
         const OleVariant::Marshaler* pMarshaler = OleVariant::GetMarshalerForVarType(pThis->m_vt, TRUE);
-        SIZE_T cElements = 0;
+        SIZE_T cElements = (*pArrayRef)->GetNumComponents();
         if (pMarshaler == NULL || pMarshaler->ComToOleArray == NULL)
         {
-            if ( (!ClrSafeInt<SIZE_T>::multiply((*pArrayRef)->GetNumComponents(), OleVariant::GetElementSizeForVarType(pThis->m_vt, pThis->m_pElementMT), cElements)) || cElements > MAX_SIZE_FOR_INTEROP)
+            if ( (!ClrSafeInt<SIZE_T>::multiply(cElements, OleVariant::GetElementSizeForVarType(pThis->m_vt, pThis->m_pElementMT), cElements)) || cElements > MAX_SIZE_FOR_INTEROP)
                 COMPlusThrow(kArgumentException, IDS_EE_STRUCTARRAYTOOLARGE);
 
             _ASSERTE(!GetTypeHandleForCVType(OleVariant::GetCVTypeForVarType(pThis->m_vt)).GetMethodTable()->ContainsPointers());
