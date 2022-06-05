@@ -14,6 +14,11 @@
 #include "utilcode.h"
 #include "ex.h"
 
+#ifndef TARGET_UNIX
+#include <windows.h>
+#include <versionhelpers.h>
+#endif
+
 #if !defined(FEATURE_UTILCODE_NO_DEPENDENCIES) || defined(_DEBUG)
 
 RunningOnStatusEnum gRunningOnStatus = RUNNING_ON_STATUS_UNINITED;
@@ -30,54 +35,15 @@ void InitRunningOnVersionStatus ()
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
 
-    BOOL fSupportedPlatform = FALSE;
-    OSVERSIONINFOEX sVer;
-    DWORDLONG dwlConditionMask;
-
-    ZeroMemory(&sVer, sizeof(OSVERSIONINFOEX));
-    sVer.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
-
-    sVer.dwMajorVersion = 6;
-    sVer.dwMinorVersion = 2;
-    sVer.dwPlatformId = VER_PLATFORM_WIN32_NT;
-
-
-    dwlConditionMask = 0;
-    dwlConditionMask = VER_SET_CONDITION(dwlConditionMask, VER_PLATFORMID, VER_EQUAL);
-    dwlConditionMask = VER_SET_CONDITION(dwlConditionMask, VER_MAJORVERSION, VER_GREATER_EQUAL);
-    dwlConditionMask = VER_SET_CONDITION(dwlConditionMask, VER_MINORVERSION, VER_GREATER_EQUAL);
-
-    if(VerifyVersionInfo(&sVer, VER_MAJORVERSION | VER_PLATFORMID | VER_MINORVERSION, dwlConditionMask))
+    if(IsWindows8OrGreater())
     {
         gRunningOnStatus = RUNNING_ON_WIN8;
-        fSupportedPlatform = TRUE;
-        goto CHECK_SUPPORTED;
     }
-
-
-    ZeroMemory(&sVer, sizeof(OSVERSIONINFOEX));
-    sVer.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
-
-    sVer.dwMajorVersion = 6;
-    sVer.dwMinorVersion = 1;
-    sVer.dwPlatformId = VER_PLATFORM_WIN32_NT;
-
-
-    dwlConditionMask = 0;
-    dwlConditionMask = VER_SET_CONDITION(dwlConditionMask, VER_PLATFORMID, VER_EQUAL);
-    dwlConditionMask = VER_SET_CONDITION(dwlConditionMask, VER_MAJORVERSION, VER_GREATER_EQUAL);
-    dwlConditionMask = VER_SET_CONDITION(dwlConditionMask, VER_MINORVERSION, VER_GREATER_EQUAL);
-
-    if(VerifyVersionInfo(&sVer, VER_MAJORVERSION | VER_PLATFORMID | VER_MINORVERSION, dwlConditionMask))
+    else if(IsWindows7OrGreater())
     {
         gRunningOnStatus = RUNNING_ON_WIN7;
-        fSupportedPlatform = TRUE;
-        goto CHECK_SUPPORTED;
     }
-
-CHECK_SUPPORTED:
-
-    if (!fSupportedPlatform)
+    else
     {
         // The current platform isn't supported. Display a message to this effect and exit.
         fprintf(stderr, "Platform not supported: The minimum supported platform is Windows 7\n");
