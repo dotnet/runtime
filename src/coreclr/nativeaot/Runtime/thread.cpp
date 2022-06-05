@@ -799,12 +799,7 @@ CONTEXT* Thread::GetRedirectionContext()
 {
     if (m_redirectionContext == NULL)
     {
-        // UNDONE: AVX/XSTATE stuff
-        m_redirectionContextBuffer = new (nothrow) uint8_t[sizeof(CONTEXT)];
-        if (m_redirectionContextBuffer == NULL)
-            return false;
-
-        m_redirectionContext = (CONTEXT*)m_redirectionContextBuffer;
+        m_redirectionContext = PalAllocateCompleteOSContext(&m_redirectionContextBuffer);
     }
 
     return m_redirectionContext;
@@ -826,7 +821,7 @@ bool Thread::Redirect(PAL_LIMITED_CONTEXT * pSuspendCtx)
 
     frameIterator.CalculateCurrentMethodState();
 
-    if (!PalGetFullThreadContext(m_hPalThread, redirectionContext))
+    if (!PalGetCompleteThreadContext(m_hPalThread, redirectionContext))
         return false;
 
     uintptr_t origIP = redirectionContext->GetIp();
