@@ -528,16 +528,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForArrOffset(treeNode->AsArrOffs());
             break;
 
-#if 0  // TODO-MDArray
-        case GT_MDARR_LENGTH:
-            genCodeForMDArrLen(treeNode->AsMDArrLen());
-            break;
-
-        case GT_MDARR_LOWER_BOUND:
-            genCodeForMDArrLowerBound(treeNode->AsMDArrLowerBound());
-            break;
-#endif // TODO-MDArray
-
 #ifdef TARGET_ARM
 
         case GT_CLS_VAR_ADDR:
