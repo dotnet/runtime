@@ -6200,6 +6200,10 @@ GenTree* Compiler::impArrayAccessIntrinsic(
                (elemType == TYP_DOUBLE && val->gtType == TYP_FLOAT));
     }
 
+    // Here, we're committed to expanding the intrinsic and creating a GT_ARR_ELEM node.
+    optMethodFlags |= OMF_HAS_MDARRAYREF;
+    compCurBB->bbFlags |= BBF_HAS_MDARRAYREF;
+
     noway_assert((unsigned char)GT_ARR_MAX_RANK == GT_ARR_MAX_RANK);
 
     GenTree* inds[GT_ARR_MAX_RANK];
@@ -8091,8 +8095,8 @@ void Compiler::impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORI
 
     node->AsCall()->compileTimeHelperArgumentHandle = (CORINFO_GENERIC_HANDLE)pResolvedToken->hClass;
 
-    // Remember that this basic block contains 'new' of a md array
-    compCurBB->bbFlags |= BBF_HAS_NEWARRAY;
+    // Remember that this function contains 'new' of a MD array.
+    optMethodFlags |= OMF_HAS_MDNEWARRAY;
 
     impPushOnStack(node, typeInfo(TI_REF, pResolvedToken->hClass));
 }
@@ -13605,7 +13609,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     {
                         lclTyp = JITtype2varType(cit);
                     }
-                    goto ARR_LD_POST_VERIFY;
+                    goto ARR_LD;
                 }
 
                 // Similarly, if its a readonly access, we can do a simple address-of
@@ -13613,7 +13617,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 if (prefixFlags & PREFIX_READONLY)
                 {
                     lclTyp = TYP_REF;
-                    goto ARR_LD_POST_VERIFY;
+                    goto ARR_LD;
                 }
 
                 // Otherwise we need the full helper function with run-time type check
@@ -13657,7 +13661,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     tiRetVal           = verMakeTypeInfo(ldelemClsHnd); // precise type always needed for struct
                     tiRetVal.NormaliseForStack();
                 }
-                goto ARR_LD_POST_VERIFY;
+                goto ARR_LD;
 
             case CEE_LDELEM_I1:
                 lclTyp = TYP_BYTE;
@@ -13698,7 +13702,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 goto ARR_LD;
 
             ARR_LD:
-            ARR_LD_POST_VERIFY:
 
                 /* Pull the index value and array address */
                 op2 = impPopStack().val;
@@ -13802,7 +13805,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 {
                     CorInfoType jitTyp = info.compCompHnd->asCorInfoType(stelemClsHnd);
                     lclTyp             = JITtype2varType(jitTyp);
-                    goto ARR_ST_POST_VERIFY;
+                    goto ARR_ST;
                 }
 
             case CEE_STELEM_REF:
@@ -13819,7 +13822,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     if (impCanSkipCovariantStoreCheck(value, array))
                     {
                         lclTyp = TYP_REF;
-                        goto ARR_ST_POST_VERIFY;
+                        goto ARR_ST;
                     }
                 }
 
@@ -13853,7 +13856,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 goto ARR_ST;
 
             ARR_ST:
-            ARR_ST_POST_VERIFY:
+
                 /* The strict order of evaluation is LHS-operands, RHS-operands,
                    range-check, and then assignment. However, codegen currently
                    does the range-check before evaluation the RHS-operands. So to
@@ -16432,9 +16435,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 op1->AsCall()->compileTimeHelperArgumentHandle = (CORINFO_GENERIC_HANDLE)resolvedToken.hClass;
 
-                /* Remember that this basic block contains 'new' of an sd array */
-
-                block->bbFlags |= BBF_HAS_NEWARRAY;
+                // Remember that this function contains 'new' of an SD array.
                 optMethodFlags |= OMF_HAS_NEWARRAY;
 
                 /* Push the result of the call on the stack */

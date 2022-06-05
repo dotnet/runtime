@@ -17,6 +17,8 @@
 
 bool Compiler::optDoEarlyPropForFunc()
 {
+    // TODO-MDArray: bool propMDArrayLen = (optMethodFlags & OMF_HAS_MDNEWARRAY) && (optMethodFlags &
+    // OMF_HAS_MDARRAYREF);
     bool propArrayLen  = (optMethodFlags & OMF_HAS_NEWARRAY) && (optMethodFlags & OMF_HAS_ARRAYREF);
     bool propNullCheck = (optMethodFlags & OMF_HAS_NULLCHECK) != 0;
     return propArrayLen || propNullCheck;
@@ -24,6 +26,7 @@ bool Compiler::optDoEarlyPropForFunc()
 
 bool Compiler::optDoEarlyPropForBlock(BasicBlock* block)
 {
+    // TODO-MDArray: bool bbHasMDArrayRef = (block->bbFlags & BBF_HAS_MD_IDX_LEN) != 0;
     bool bbHasArrayRef  = (block->bbFlags & BBF_HAS_IDX_LEN) != 0;
     bool bbHasNullCheck = (block->bbFlags & BBF_HAS_NULLCHECK) != 0;
     return bbHasArrayRef || bbHasNullCheck;

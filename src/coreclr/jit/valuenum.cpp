@@ -10784,6 +10784,7 @@ void Compiler::fgValueNumberAddExceptionSet(GenTree* tree)
                 break;
 
             case GT_ARR_ELEM:
+                assert(!opts.compJitEarlyExpandMDArrays);
                 fgValueNumberAddExceptionSetForIndirection(tree, tree->AsArrElem()->gtArrObj);
                 break;
 
