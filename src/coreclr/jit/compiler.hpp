@@ -1199,11 +1199,6 @@ inline void Compiler::gtAnnotateNewArrLen(GenTree* arrLen, BasicBlock* block)
     static_assert_no_msg(GTF_ARRLEN_NONFAULTING == GTF_IND_NONFAULTING);
     static_assert_no_msg(GTF_MDARRLEN_NONFAULTING == GTF_IND_NONFAULTING);
     arrLen->SetIndirExceptionFlags(this);
-    if (block != nullptr)
-    {
-        block->bbFlags |= BBF_HAS_IDX_LEN;
-    }
-    optMethodFlags |= OMF_HAS_ARRAYREF;
 }
 
 //------------------------------------------------------------------------------
@@ -1222,6 +1217,11 @@ inline GenTreeArrLen* Compiler::gtNewArrLen(var_types typ, GenTree* arrayOp, int
 {
     GenTreeArrLen* arrLen = new (this, GT_ARR_LENGTH) GenTreeArrLen(typ, arrayOp, lenOffset);
     gtAnnotateNewArrLen(arrLen, block);
+    if (block != nullptr)
+    {
+        block->bbFlags |= BBF_HAS_IDX_LEN;
+    }
+    optMethodFlags |= OMF_HAS_ARRAYREF;
     return arrLen;
 }
 
@@ -1241,6 +1241,11 @@ inline GenTreeMDArrLen* Compiler::gtNewMDArrLen(GenTree* arrayOp, unsigned dim, 
 {
     GenTreeMDArrLen* arrLen = new (this, GT_MDARR_LENGTH) GenTreeMDArrLen(arrayOp, dim, rank);
     gtAnnotateNewArrLen(arrLen, block);
+    if (block != nullptr)
+    {
+        block->bbFlags |= BBF_HAS_MD_IDX_LEN;
+    }
+    assert((optMethodFlags & OMF_HAS_MDARRAYREF) != 0); // Should have been set in the importer.
     return arrLen;
 }
 
@@ -1265,10 +1270,11 @@ inline GenTreeMDArrLowerBound* Compiler::gtNewMDArrLowerBound(GenTree*    arrayO
 
     static_assert_no_msg(GTF_MDARRLOWERBOUND_NONFAULTING == GTF_IND_NONFAULTING);
     arrOp->SetIndirExceptionFlags(this);
-
-    // TODO: implement early prop of MD array lower bound. E.g., add OMF_HAS_ARRAYLOWERBOUND,
-    // and a corresponding BBF_HAS_MD_LOWER_BOUND.
-
+    if (block != nullptr)
+    {
+        block->bbFlags |= BBF_HAS_MD_IDX_LEN;
+    }
+    assert((optMethodFlags & OMF_HAS_MDARRAYREF) != 0); // Should have been set in the importer.
     return arrOp;
 }
 

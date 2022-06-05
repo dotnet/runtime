@@ -17586,17 +17586,21 @@ bool Compiler::fgMorphArrayOpsStmt(BasicBlock* block, Statement* stmt)
             {
                 assert(arrElem->gtArrInds[i] != nullptr);
 
-                /// We cast the index operands to TYP_INT in the importer.
+                // We cast the index operands to TYP_INT in the importer.
                 // Note that the offset calculcation needs to be TYP_I_IMPL, as multiplying the linearized index
                 // by the array element scale might overflow (although does .NET support array objects larger than
                 // 2GB in size?).
-                assert(arrElem->gtArrInds[i]->TypeIs(TYP_INT));
+                assert(genActualType(arrElem->gtArrInds[i]->TypeGet()) == TYP_INT);
             }
 
-            // The order of evaluation of a[i,j,k] is: i, j, k, a. That is, if any of the i, j, k throw an exception,
-            // it needs to happen before accessing `a`.
+            // The order of evaluation of a[i,j,k] is: a, i, j, k. That is, if any of the i, j, k throw an
+            // exception, it needs to happen before accessing `a`. For example, `a` could be null, but `i`
+            // could be an expresssion throwing an exception, and that exception needs to be thrown before
+            // indirecting using `a` (such as reading a dimension length or lower bound).
             //
-            // First, we need to make temp copies of the index expressions that have side-effects.
+            // First, we need to make temp copies of the index expressions that have side-effects. We
+            // always make a copy of the array object (below) so we can multi-use it.
+            //
             GenTree* idxToUse[GT_ARR_MAX_RANK];
             unsigned idxToCopy[GT_ARR_MAX_RANK];
             bool     anyIdxWithSideEffects = false;
@@ -17622,7 +17626,6 @@ bool Compiler::fgMorphArrayOpsStmt(BasicBlock* block, Statement* stmt)
 
             // `newArrLcl` is set to the lclvar with a copy of the array object, if needed. The creation/copy of the
             // array object to this lcl is done as a top-level comma if needed.
-            // We only single-use the index expressions, so we can use them directly.
             unsigned arrLcl    = BAD_VAR_NUM;
             unsigned newArrLcl = BAD_VAR_NUM;
             GenTree* arrObj    = arrElem->gtArrObj;
@@ -17680,13 +17683,13 @@ bool Compiler::fgMorphArrayOpsStmt(BasicBlock* block, Statement* stmt)
                 }
             }
 
-// Now scale by element size and add offset from array object to array data base.
-
 #ifdef TARGET_64BIT
             // Widen the linearized index on 64-bit targets; subsequent math will be done in TYP_I_IMPL.
             assert(fullTree->TypeIs(TYP_INT));
             fullTree = m_compiler->gtNewCastNode(TYP_I_IMPL, fullTree, true, TYP_I_IMPL);
 #endif // TARGET_64BIT
+
+            // Now scale by element size and add offset from array object to array data base.
 
             unsigned       elemScale  = arrElem->gtArrElemSize;
             unsigned       dataOffset = m_compiler->eeGetMDArrayDataOffset(arrElem->gtArrRank);
@@ -17698,13 +17701,6 @@ bool Compiler::fgMorphArrayOpsStmt(BasicBlock* block, Statement* stmt)
                                           m_compiler->gtNewIconNode(static_cast<ssize_t>(dataOffset), TYP_I_IMPL));
             GenTree* fullExpansion = m_compiler->gtNewOperNode(GT_ADD, TYP_BYREF, scalePlusOffset,
                                                                m_compiler->gtNewLclvNode(arrLcl, TYP_REF));
-
-            // If we needed to create a new local for the array object, copy that before everything.
-            if (newArrLcl != BAD_VAR_NUM)
-            {
-                GenTree* const arrLclAsg = m_compiler->gtNewTempAssign(newArrLcl, arrObj);
-                fullExpansion = m_compiler->gtNewOperNode(GT_COMMA, fullExpansion->TypeGet(), arrLclAsg, fullExpansion);
-            }
 
             // Add copies of the index expressions with side effects. Add them in reverse order, so the first index
             // ends up at the top of the tree (so, first in execution order).
@@ -17720,6 +17716,13 @@ bool Compiler::fgMorphArrayOpsStmt(BasicBlock* block, Statement* stmt)
                             m_compiler->gtNewOperNode(GT_COMMA, fullExpansion->TypeGet(), idxLclAsg, fullExpansion);
                     }
                 }
+            }
+
+            // If we needed to create a new local for the array object, copy that before everything.
+            if (newArrLcl != BAD_VAR_NUM)
+            {
+                GenTree* const arrLclAsg = m_compiler->gtNewTempAssign(newArrLcl, arrObj);
+                fullExpansion = m_compiler->gtNewOperNode(GT_COMMA, fullExpansion->TypeGet(), arrLclAsg, fullExpansion);
             }
 
             // TODO: morph here? Or morph at the statement level if there are differences?
@@ -17756,12 +17759,11 @@ bool Compiler::fgMorphArrayOpsStmt(BasicBlock* block, Statement* stmt)
 //
 // GT_ARR_ELEM nodes are morphed to appropriate trees.
 //
-// TODO: including look of trees, e.g., from https://github.com/dotnet/runtime/issues/60785.
+// TODO: include comments for look of trees, e.g., from https://github.com/dotnet/runtime/issues/60785.
 //
 // Returns:
 //   suitable phase status
 //
-// TODO: only morph when there are MD Array ops in the function / block / statement
 PhaseStatus Compiler::fgMorphArrayOps()
 {
 #ifdef DEBUG
@@ -17775,10 +17777,22 @@ PhaseStatus Compiler::fgMorphArrayOps()
     }
 #endif
 
+    if ((optMethodFlags & OMF_HAS_MDARRAYREF) == 0)
+    {
+        JITDUMP("No multi-dimensional array references in the function\n");
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
     bool changed = false;
 
     for (BasicBlock* const block : Blocks())
     {
+        if ((block->bbFlags & BBF_HAS_MDARRAYREF) == 0)
+        {
+            // No MD array references in this block
+            continue;
+        }
+
         // Publish current block (needed for various morphing functions).
         compCurBB = block;
 

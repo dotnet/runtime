@@ -261,6 +261,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
 #endif // TARGET_XARCH
 
         case GT_ARR_ELEM:
+            assert(!comp->opts.compJitEarlyExpandMDArrays);
             return LowerArrElem(node->AsArrElem());
 
         case GT_ARR_OFFSET:
