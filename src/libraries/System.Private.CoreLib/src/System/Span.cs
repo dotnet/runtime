@@ -131,8 +131,9 @@ namespace System
             _length = length;
         }
 
+        // Constructor for internal use only.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private Span(ref T reference, int start, int length)
+        internal Span(ref T reference, int start, int length)
         {
             Debug.Assert(start >= 0);
             Debug.Assert(length >= 0);

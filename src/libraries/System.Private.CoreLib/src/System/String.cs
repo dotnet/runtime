@@ -361,7 +361,7 @@ namespace System
             }
 #endif
 
-            slice = new ReadOnlySpan<char>(ref Unsafe.Add(ref _firstChar, (nint)(uint)startIndex /* force zero-extension */), count);
+            slice = new ReadOnlySpan<char>(ref _firstChar, startIndex, count);
             return true;
         }
 

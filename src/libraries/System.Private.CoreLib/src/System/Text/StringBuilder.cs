@@ -2062,7 +2062,7 @@ namespace System.Text
             Debug.Assert(m_ChunkLength == 0, "A new block was not created.");
 
             // Copy the second chunk
-            new ReadOnlySpan<char>(ref Unsafe.Add(ref value, firstLength), restLength).CopyTo(m_ChunkChars);
+            new ReadOnlySpan<char>(ref value, firstLength, restLength).CopyTo(m_ChunkChars);
             m_ChunkLength = restLength;
 
             AssertInvariants();

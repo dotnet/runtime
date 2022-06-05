@@ -126,8 +126,9 @@ namespace System
             _length = length;
         }
 
+        // Constructor for internal use only.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private ReadOnlySpan(ref T reference, int start, int length)
+        internal ReadOnlySpan(ref T reference, int start, int length)
         {
             Debug.Assert(start >= 0);
             Debug.Assert(length >= 0);
