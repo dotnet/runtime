@@ -177,7 +177,7 @@ typedef struct
 	const unsigned char *il_code;
 	const unsigned char *ip;
 	const unsigned char *in_start;
-	InterpInst *last_ins, *first_ins;
+	InterpInst *last_ins;
 	int code_size;
 	int *in_offsets;
 	int current_il_offset;

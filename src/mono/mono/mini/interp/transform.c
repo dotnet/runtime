@@ -1490,12 +1490,15 @@ dump_interp_inst (InterpInst *ins)
 	g_string_free (str, TRUE);
 }
 
-static G_GNUC_UNUSED void
+static void
 dump_interp_bb (InterpBasicBlock *bb)
 {
 	g_print ("BB%d:\n", bb->index);
-	for (InterpInst *ins = bb->first_ins; ins != NULL; ins = ins->next)
-		dump_interp_inst (ins);
+	for (InterpInst *ins = bb->first_ins; ins != NULL; ins = ins->next) {
+		// Avoid some noise
+		if (ins->opcode != MINT_NOP && ins->opcode != MINT_IL_SEQ_POINT)
+			dump_interp_inst (ins);
+	}
 }
 
 
@@ -1521,15 +1524,9 @@ mono_interp_print_code (InterpMethod *imethod)
 void
 mono_interp_print_td_code (TransformData *td)
 {
-	InterpInst *ins = td->first_ins;
-
-	char *name = mono_method_full_name (td->method, TRUE);
-	g_print ("IR for \"%s\"\n", name);
-	g_free (name);
-	while (ins) {
-		dump_interp_inst (ins);
-		ins = ins->next;
-	}
+	g_print ("Unoptimized IR:\n");
+	for (InterpBasicBlock *bb = td->entry_bb; bb != NULL; bb = bb->next_bb)
+		dump_interp_bb (bb);
 }
 
 
@@ -8333,7 +8330,7 @@ retry:
 			gint32 *sregs = &ins->sregs [0];
 			gint32 dreg = ins->dreg;
 
-			if (td->verbose_level && ins->opcode != MINT_NOP)
+			if (td->verbose_level && ins->opcode != MINT_NOP && ins->opcode != MINT_IL_SEQ_POINT)
 				dump_interp_inst (ins);
 
 			for (int i = 0; i < num_sregs; i++) {
@@ -9514,6 +9511,9 @@ retry:
 
 	if (td->has_localloc)
 		interp_fix_localloc_ret (td);
+
+	if (td->verbose_level)
+		mono_interp_print_td_code (td);
 
 	if (td->optimized)
 		interp_optimize_code (td);
