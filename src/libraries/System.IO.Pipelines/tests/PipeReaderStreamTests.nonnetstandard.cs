@@ -284,8 +284,7 @@ namespace System.IO.Pipelines.Tests
         {
             var pipeReader = new BuggyAndNotCompletedPipeReader();
             Stream stream = pipeReader.AsStream();
-
-            Assert.Throws<InvalidOperationException>(() => stream.Read(new byte[3], 0, 3));
+            AssertExtensions.Throws<InvalidOperationException>(() => stream.Read(new byte[3], 0, 3), "error occured during reading");
         }
 
         [Fact]
