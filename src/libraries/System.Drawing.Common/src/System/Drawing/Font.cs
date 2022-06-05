@@ -687,7 +687,7 @@ namespace System.Drawing
             // Now that we know the marshalled size is the same as LOGFONT, copy in the data
             nativeLogFont = default;
 
-            Marshal.StructureToPtr<T>(logFont, (IntPtr)&nativeLogFont, fDeleteOld: false);
+            Marshal.StructureToPtr<T>(logFont, new IntPtr(&nativeLogFont), fDeleteOld: false);
 
             return FromLogFontInternal(ref nativeLogFont, hdc);
         }
