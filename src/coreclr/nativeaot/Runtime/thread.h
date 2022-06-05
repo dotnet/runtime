@@ -90,8 +90,10 @@ struct ThreadBuffer
     uint64_t                m_uPalThreadIdForLogging;               // @TODO: likely debug-only
     EEThreadId              m_threadId;
     PTR_VOID                m_pThreadStressLog;                     // pointer to head of thread's StressLogChunks
-    uint8_t*                m_redirectedContextBuffer;              // storage for redirection context, allocated on demand
-    CONTEXT*                m_redirectedContext;                    // legacy context somewhere inside the context buffer
+#ifdef FEATURE_SUSPEND_REDIRECTION
+    uint8_t*                m_redirectionContextBuffer;              // storage for redirection context, allocated on demand
+    CONTEXT*                m_redirectionContext;                    // legacy context somewhere inside the context buffer
+#endif //FEATURE_SUSPEND_REDIRECTION
 #ifdef FEATURE_GC_STRESS
     uint32_t                m_uRand;                                // current per-thread random number
 #endif // FEATURE_GC_STRESS
@@ -140,7 +142,10 @@ private:
 
     static UInt32_BOOL HijackCallback(HANDLE hThread, PAL_LIMITED_CONTEXT* pThreadContext, void* pCallbackContext);
     bool InternalHijack(PAL_LIMITED_CONTEXT * pSuspendCtx, void * pvHijackTargets[]);
-    bool InternalRedirect(PAL_LIMITED_CONTEXT * pSuspendCtx);
+
+#ifdef FEATURE_SUSPEND_REDIRECTION
+    bool Redirect(PAL_LIMITED_CONTEXT * pSuspendCtx);
+#endif //FEATURE_SUSPEND_REDIRECTION
 
     bool CacheTransitionFrameForSuspend();
     void ResetCachedTransitionFrame();
@@ -268,7 +273,9 @@ public:
     Object* GetThreadStaticStorageForModule(uint32_t moduleIndex);
     bool SetThreadStaticStorageForModule(Object* pStorage, uint32_t moduleIndex);
 
-    CONTEXT* GetRedirectContext();
+#ifdef FEATURE_SUSPEND_REDIRECTION
+    CONTEXT* GetRedirectionContext();
+#endif //FEATURE_SUSPEND_REDIRECTION
 };
 
 #ifndef __GCENV_BASE_INCLUDED__
