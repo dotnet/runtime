@@ -765,7 +765,7 @@ namespace System.Diagnostics
 
             const UnixFileMode allExecute = UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute;
 
-            UnixFileMode permissions = (UnixFileMode)(fileinfo.Mode & (int)allExecute);
+            UnixFileMode permissions = ((UnixFileMode)fileinfo.Mode) & allExecute;
 
             // Avoid checking user/group when permission.
             if (permissions == allExecute)

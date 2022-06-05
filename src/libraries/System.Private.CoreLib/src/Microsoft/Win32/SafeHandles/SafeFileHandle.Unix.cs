@@ -345,7 +345,7 @@ namespace Microsoft.Win32.SafeHandles
                 }
 
                 fileLength = status.Size;
-                filePermissions = (UnixFileMode)(status.Mode & (int)PermissionMask);
+                filePermissions = ((UnixFileMode)status.Mode) & PermissionMask;
             }
 
             IsAsync = (options & FileOptions.Asynchronous) != 0;
