@@ -2839,7 +2839,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.compLongAddress = false;
     opts.optRepeat       = false;
 
-    opts.compJitEarlyExpandMDArrays = false;
+    opts.compJitEarlyExpandMDArrays = true; // TESTING ONLY
 
 #ifdef LATE_DISASM
     opts.doLateDisasm = false;
