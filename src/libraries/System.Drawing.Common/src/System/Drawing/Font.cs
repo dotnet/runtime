@@ -313,7 +313,7 @@ namespace System.Drawing
             Interop.User32.LOGFONT nativeLogFont = ToLogFontInternal(graphics);
 
             // PtrToStructure requires that the passed in object not be a value type.
-            Marshal.PtrToStructure<T>((IntPtr)&nativeLogFont, logFont);
+            Marshal.PtrToStructure<T>(new IntPtr(&nativeLogFont), logFont);
         }
 #endif
 
@@ -588,7 +588,7 @@ namespace System.Drawing
         {
             using (ScreenDC dc = ScreenDC.Create())
             {
-                return FromLogFont<T>(in logfont, dc);
+                return FromLogFont<T>(in logFont, dc);
             }
         }
 #endif
@@ -662,7 +662,7 @@ namespace System.Drawing
         /// <summary>
         /// Creates a <see cref="Font"/> from the given LOGFONT using the given device context.
         /// </summary>
-        /// <param name="lf">A structure holding LOGFONT data.</param>
+        /// <param name="logFont">A structure holding LOGFONT data.</param>
         /// <param name="hdc">Handle to a device context (HDC).</param>
         /// <returns>The newly created <see cref="Font"/>.</returns>
         public static unsafe Font FromLogFont<T>(in T logFont, IntPtr hdc)
