@@ -1607,48 +1607,6 @@ typedef CDynArray<ULONG> ULONGARRAY;
 typedef CDynArray<BYTE> BYTEARRAY;
 typedef CDynArray<mdToken> TOKENARRAY;
 
-template <class T> class CStackArray : public CStructArray
-{
-public:
-    CStackArray(short iGrowInc=4) :
-        CStructArray(sizeof(T), iGrowInc),
-        m_curPos(0)
-    {
-        LIMITED_METHOD_CONTRACT;
-    }
-
-    void Push(T p)
-    {
-        WRAPPER_NO_CONTRACT;
-        // We should only inc m_curPos after we grow the array.
-        T *pT = (T *)CStructArray::InsertThrowing(m_curPos);
-        m_curPos ++;
-        *pT = p;
-    }
-
-    T * Pop()
-    {
-        WRAPPER_NO_CONTRACT;
-        T * retPtr;
-
-        _ASSERTE(m_curPos > 0);
-
-        retPtr = (T *)CStructArray::Get(m_curPos-1);
-        CStructArray::Delete(m_curPos--);
-
-        return (retPtr);
-    }
-
-    int Count()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return(m_curPos);
-    }
-
-private:
-    int m_curPos;
-};
-
 
 //*****************************************************************************
 // This template manages a list of free entries by their 0 based offset.  By
