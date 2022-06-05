@@ -67,7 +67,7 @@ namespace System.Data.Common
             => OpenDbConnectionAsync(cancellationToken);
 
         public DbCommand CreateCommand(string? commandText = null)
-            => CreateDbCommand();
+            => CreateDbCommand(commandText);
 
         public DbBatch CreateBatch()
             => CreateDbBatch();
@@ -273,12 +273,6 @@ namespace System.Data.Common
             public override void Cancel()
                 => _wrappedCommand.Cancel();
 
-            public override void Prepare()
-                => _wrappedCommand.Prepare();
-
-            public override Task PrepareAsync(CancellationToken cancellationToken = default)
-                => _wrappedCommand.PrepareAsync(cancellationToken);
-
             [AllowNull]
             public override string CommandText
             {
@@ -315,10 +309,13 @@ namespace System.Data.Common
 
             protected override void Dispose(bool disposing)
             {
-                var connection = _wrappedCommand.Connection;
+                if (disposing)
+                {
+                    var connection = _wrappedCommand.Connection;
 
-                _wrappedCommand.Dispose();
-                connection!.Dispose();
+                    _wrappedCommand.Dispose();
+                    connection!.Dispose();
+                }
             }
 
             public override async ValueTask DisposeAsync()
@@ -328,6 +325,17 @@ namespace System.Data.Common
                 await _wrappedCommand.DisposeAsync().ConfigureAwait(false);
                 await connection!.DisposeAsync().ConfigureAwait(false);
             }
+
+            // In most case, preparation doesn't make sense on a connectionless command since prepared statements are
+            // usually bound to specific physical connections.
+            // When prepared statements are global (not bound to a specific connection), providers would need to
+            // provide their own connection-less implementation anyway (i.e. interacting with the originating
+            // DbDataSource), so they'd have to override this in any case.
+            public override void Prepare()
+                => throw ExceptionBuilder.NotSupportedOnDataSourceCommand();
+
+            public override Task PrepareAsync(CancellationToken cancellationToken = default)
+                => Task.FromException(ExceptionBuilder.NotSupportedOnDataSourceCommand());
 
             // The below are incompatible with commands executed directly against DbDataSource, since no DbConnection
             // is involved at the user API level and the DbCommandWrapper owns the DbConnection.
@@ -523,11 +531,6 @@ namespace System.Data.Common
             public override void Cancel()
                 => _wrappedBatch.Cancel();
 
-            public override void Prepare()
-                => _wrappedBatch.Prepare();
-
-            public override Task PrepareAsync(CancellationToken cancellationToken = default) => throw new NotImplementedException();
-
             protected override DbBatchCommandCollection DbBatchCommands => _wrappedBatch.BatchCommands;
 
             public override int Timeout
@@ -551,6 +554,17 @@ namespace System.Data.Common
                 await _wrappedBatch.DisposeAsync().ConfigureAwait(false);
                 await connection!.DisposeAsync().ConfigureAwait(false);
             }
+
+            // In most case, preparation doesn't make sense on a connectionless command since prepared statements are
+            // usually bound to specific physical connections.
+            // When prepared statements are global (not bound to a specific connection), providers would need to
+            // provide their own connection-less implementation anyway (i.e. interacting with the originating
+            // DbDataSource), so they'd have to override this in any case.
+            public override void Prepare()
+                => throw ExceptionBuilder.NotSupportedOnDataSourceCommand();
+
+            public override Task PrepareAsync(CancellationToken cancellationToken = default)
+                => Task.FromException(ExceptionBuilder.NotSupportedOnDataSourceCommand());
 
             // The below are incompatible with batches executed directly against DbDataSource, since no DbConnection
             // is involved at the user API level and the DbBatchWrapper owns the DbConnection.
