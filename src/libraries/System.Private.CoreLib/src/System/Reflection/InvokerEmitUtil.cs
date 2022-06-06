@@ -12,7 +12,7 @@ namespace System.Reflection
         // If changed, update native stack walking code that also uses this prefix to ignore reflection frames.
         private const string InvokeStubPrefix = "InvokeStub_";
 
-        internal unsafe delegate object? InvokeFunc(object? target, IntPtr* arguments);
+        internal unsafe delegate object? InvokeFunc(object? target, nint* arguments);
 
         public static unsafe InvokeFunc CreateInvokeDelegate(MethodBase method)
         {
@@ -22,7 +22,7 @@ namespace System.Reflection
             bool hasThis = !(emitNew || method.IsStatic);
 
             // The first parameter is unused but supports treating the DynamicMethod as an instance method which is slightly faster than a static.
-            Type[] delegateParameters = new Type[3] { typeof(object), typeof(object), typeof(IntPtr*) };
+            Type[] delegateParameters = new Type[3] { typeof(object), typeof(object), typeof(nint*) };
 
             string declaringTypeName = method.DeclaringType != null ? method.DeclaringType.Name + "." : string.Empty;
             var dm = new DynamicMethod(
@@ -51,7 +51,7 @@ namespace System.Reflection
                 il.Emit(OpCodes.Ldarg_2);
                 if (i != 0)
                 {
-                    il.Emit(OpCodes.Ldc_I4, i * IntPtr.Size);
+                    il.Emit(OpCodes.Ldc_I4, i * sizeof(nint));
                     il.Emit(OpCodes.Add);
                 }
 
@@ -60,7 +60,7 @@ namespace System.Reflection
                 RuntimeType parameterType = (RuntimeType)parameters[i].ParameterType;
                 if (!parameterType.IsByRef)
                 {
-                    il.Emit(OpCodes.Ldobj, parameterType.IsPointer ? typeof(IntPtr) : parameterType);
+                    il.Emit(OpCodes.Ldobj, parameterType.IsPointer ? typeof(nint) : parameterType);
                 }
             }
 

@@ -22,13 +22,13 @@ namespace System.Diagnostics
         // DynamicMethodDescs AND collectible LoaderAllocators alive for the lifetime of StackFrameHelper.
         private object? dynamicMethods; // Field is not used from managed.
 
-        private IntPtr[]? rgMethodHandle;
+        private nint[]? rgMethodHandle;
         private string[]? rgAssemblyPath;
         private Assembly?[]? rgAssembly;
-        private IntPtr[]? rgLoadedPeAddress;
+        private nint[]? rgLoadedPeAddress;
         private int[]? rgiLoadedPeSize;
         private bool[]? rgiIsFileLayout;
-        private IntPtr[]? rgInMemoryPdbAddress;
+        private nint[]? rgInMemoryPdbAddress;
         private int[]? rgiInMemoryPdbSize;
         // if rgiMethodToken[i] == 0, then don't attempt to get the portable PDB source/info
         private int[]? rgiMethodToken;
@@ -39,8 +39,8 @@ namespace System.Diagnostics
         private int iFrameCount;
 #pragma warning restore 414
 
-        private delegate void GetSourceLineInfoDelegate(Assembly? assembly, string assemblyPath, IntPtr loadedPeAddress,
-            int loadedPeSize, bool isFileLayout, IntPtr inMemoryPdbAddress, int inMemoryPdbSize, int methodToken, int ilOffset,
+        private delegate void GetSourceLineInfoDelegate(Assembly? assembly, string assemblyPath, nint loadedPeAddress,
+            int loadedPeSize, bool isFileLayout, nint inMemoryPdbAddress, int inMemoryPdbSize, int methodToken, int ilOffset,
             out string? sourceFile, out int sourceLine, out int sourceColumn);
 
         private static GetSourceLineInfoDelegate? s_getSourceLineInfo;
@@ -112,7 +112,7 @@ namespace System.Diagnostics
 
                     Type[] parameterTypes = new Type[]
                     {
-                        typeof(Assembly), typeof(string), typeof(IntPtr), typeof(int), typeof(bool), typeof(IntPtr),
+                        typeof(Assembly), typeof(string), typeof(nint), typeof(int), typeof(bool), typeof(nint),
                         typeof(int), typeof(int), typeof(int),
                         typeof(string).MakeByRefType(), typeof(int).MakeByRefType(), typeof(int).MakeByRefType()
                     };
@@ -161,9 +161,9 @@ namespace System.Diagnostics
             // but we don't know whether the reflection info has been initialized
             // or not. So we call GetMethods and GetConstructors on the type
             // and then we fetch the proper MethodBase!!
-            IntPtr mh = rgMethodHandle![i];
+            nint mh = rgMethodHandle![i];
 
-            if (mh == IntPtr.Zero)
+            if (mh == 0)
                 return null;
 
             IRuntimeMethodInfo? mhReal = RuntimeMethodHandle.GetTypicalMethodDefinition(new RuntimeMethodInfoStub(mh, this));

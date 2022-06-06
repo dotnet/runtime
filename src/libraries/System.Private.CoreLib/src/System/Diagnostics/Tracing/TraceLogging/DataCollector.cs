@@ -138,7 +138,7 @@ namespace System.Diagnostics.Tracing
 
                     fixed (void* p = value)
                     {
-                        Marshal.Copy((IntPtr)p, buffer, oldPos, size);
+                        Marshal.Copy((nint)p, buffer, oldPos, size);
                     }
                 }
             }
@@ -180,7 +180,7 @@ namespace System.Diagnostics.Tracing
 
                 fixed (void* p = value)
                 {
-                    Marshal.Copy((IntPtr)p, buffer, oldPos, size);
+                    Marshal.Copy((nint)p, buffer, oldPos, size);
                 }
             }
         }
@@ -345,7 +345,7 @@ namespace System.Diagnostics.Tracing
                     throw new IndexOutOfRangeException(SR.EventSource_DataDescriptorsOutOfRange);
                 }
 
-                datasTemp->DataPointer = (IntPtr)this.scratch;
+                datasTemp->DataPointer = (nint)this.scratch;
                 this.writingScalars = true;
             }
         }

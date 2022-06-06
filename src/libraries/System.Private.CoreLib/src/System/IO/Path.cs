@@ -284,7 +284,7 @@ namespace System.IO
             Interop.GetRandomBytes(pKey, KeyLength);
 
             return string.Create(
-                    12, (IntPtr)pKey, (span, key) => // 12 == 8 + 1 (for period) + 3
+                    12, (nint)pKey, (span, key) => // 12 == 8 + 1 (for period) + 3
                          Populate83FileNameFromRandomBytes((byte*)key, KeyLength, span));
         }
 
@@ -735,7 +735,7 @@ namespace System.IO
 
                 return string.Create(
                     first.Length + second.Length + third.Length + firstNeedsSeparator + secondNeedsSeparator,
-                    (IntPtr)(&payload),
+                    (nint)(&payload),
                     static (destination, statePtr) =>
                     {
                         ref Join3Payload state = ref *(Join3Payload*)statePtr;
@@ -795,7 +795,7 @@ namespace System.IO
 
                 return string.Create(
                     first.Length + second.Length + third.Length + fourth.Length + firstNeedsSeparator + secondNeedsSeparator + thirdNeedsSeparator,
-                    (IntPtr)(&payload),
+                    (nint)(&payload),
                     static (destination, statePtr) =>
                     {
                         ref Join4Payload state = ref *(Join4Payload*)statePtr;

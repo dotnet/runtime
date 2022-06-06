@@ -50,22 +50,22 @@ namespace System.Diagnostics.Tracing
                 fixed (char* string3Bytes = arg3)
                 {
                     EventSource.EventData* descrs = stackalloc EventSource.EventData[6];
-                    descrs[0].DataPointer = (IntPtr)(&arg1);
+                    descrs[0].DataPointer = (nint)(&arg1);
                     descrs[0].Size = 8;
                     descrs[0].Reserved = 0;
-                    descrs[1].DataPointer = (IntPtr)(&arg2);
+                    descrs[1].DataPointer = (nint)(&arg2);
                     descrs[1].Size = 4;
                     descrs[1].Reserved = 0;
-                    descrs[2].DataPointer = (IntPtr)string3Bytes;
+                    descrs[2].DataPointer = (nint)string3Bytes;
                     descrs[2].Size = ((arg3.Length + 1) * 2);
                     descrs[2].Reserved = 0;
-                    descrs[3].DataPointer = (IntPtr)(&arg4);
+                    descrs[3].DataPointer = (nint)(&arg4);
                     descrs[3].Size = 4;
                     descrs[3].Reserved = 0;
-                    descrs[4].DataPointer = (IntPtr)(&arg5);
+                    descrs[4].DataPointer = (nint)(&arg5);
                     descrs[4].Size = 4;
                     descrs[4].Reserved = 0;
-                    descrs[5].DataPointer = (IntPtr)(&arg6);
+                    descrs[5].DataPointer = (nint)(&arg6);
                     descrs[5].Size = 4;
                     descrs[5].Reserved = 0;
                     WriteEventCore(eventId, 6, descrs);
@@ -87,13 +87,13 @@ namespace System.Diagnostics.Tracing
                 fixed (char* string3Bytes = arg3)
                 {
                     EventSource.EventData* descrs = stackalloc EventSource.EventData[3];
-                    descrs[0].DataPointer = (IntPtr)(&arg1);
+                    descrs[0].DataPointer = (nint)(&arg1);
                     descrs[0].Size = 8;
                     descrs[0].Reserved = 0;
-                    descrs[1].DataPointer = (IntPtr)(&arg2);
+                    descrs[1].DataPointer = (nint)(&arg2);
                     descrs[1].Size = 4;
                     descrs[1].Reserved = 0;
-                    descrs[2].DataPointer = (IntPtr)string3Bytes;
+                    descrs[2].DataPointer = (nint)string3Bytes;
                     descrs[2].Size = ((arg3.Length + 1) * 2);
                     descrs[2].Reserved = 0;
                     WriteEventCore(eventId, 3, descrs);

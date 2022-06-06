@@ -10,11 +10,11 @@ namespace System.Runtime.InteropServices
         // ILLinker marks all methods of this type equaly so the attribute can be on any of them
         [System.Diagnostics.CodeAnalysis.DynamicDependency(nameof(Marshal.GetCustomMarshalerInstance), typeof(Marshal))]
 #endif
-        object MarshalNativeToManaged(IntPtr pNativeData);
+        object MarshalNativeToManaged(nint pNativeData);
 
-        IntPtr MarshalManagedToNative(object ManagedObj);
+        nint MarshalManagedToNative(object ManagedObj);
 
-        void CleanUpNativeData(IntPtr pNativeData);
+        void CleanUpNativeData(nint pNativeData);
 
         void CleanUpManagedData(object ManagedObj);
 

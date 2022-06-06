@@ -37,9 +37,9 @@ namespace System
             return str.IsInterned();
         }
 
-        // Copies the source String (byte buffer) to the destination IntPtr memory allocated with len bytes.
+        // Copies the source String (byte buffer) to the destination nint memory allocated with len bytes.
         // Used by ilmarshalers.cpp
-        internal static unsafe void InternalCopy(string src, IntPtr dest, int len)
+        internal static unsafe void InternalCopy(string src, nint dest, int len)
         {
             if (len != 0)
             {

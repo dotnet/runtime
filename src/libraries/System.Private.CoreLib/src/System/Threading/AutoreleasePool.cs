@@ -29,13 +29,13 @@ namespace System.Threading
         public static bool EnableAutoreleasePool { get; } = CheckEnableAutoreleasePool();
 
         [ThreadStatic]
-        private static IntPtr s_AutoreleasePoolInstance;
+        private static nint s_AutoreleasePoolInstance;
 
         internal static void CreateAutoreleasePool()
         {
             if (EnableAutoreleasePool)
             {
-                Debug.Assert(s_AutoreleasePoolInstance == IntPtr.Zero);
+                Debug.Assert(s_AutoreleasePoolInstance == 0);
                 s_AutoreleasePoolInstance = Interop.Sys.CreateAutoreleasePool();
             }
         }
@@ -43,10 +43,10 @@ namespace System.Threading
         internal static void DrainAutoreleasePool()
         {
             if (EnableAutoreleasePool
-                && s_AutoreleasePoolInstance != IntPtr.Zero)
+                && s_AutoreleasePoolInstance != 0)
             {
                 Interop.Sys.DrainAutoreleasePool(s_AutoreleasePoolInstance);
-                s_AutoreleasePoolInstance = IntPtr.Zero;
+                s_AutoreleasePoolInstance = 0;
             }
         }
     }

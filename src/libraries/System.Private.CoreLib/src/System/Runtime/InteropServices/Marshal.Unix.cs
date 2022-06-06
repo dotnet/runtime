@@ -8,29 +8,29 @@ namespace System.Runtime.InteropServices
 {
     public static partial class Marshal
     {
-        public static string? PtrToStringAuto(IntPtr ptr, int len)
+        public static string? PtrToStringAuto(nint ptr, int len)
         {
             return PtrToStringUTF8(ptr, len);
         }
 
-        public static string? PtrToStringAuto(IntPtr ptr)
+        public static string? PtrToStringAuto(nint ptr)
         {
             return PtrToStringUTF8(ptr);
         }
 
-        public static IntPtr StringToHGlobalAuto(string? s)
+        public static nint StringToHGlobalAuto(string? s)
         {
             return StringToHGlobalUTF8(s);
         }
 
-        public static IntPtr StringToCoTaskMemAuto(string? s)
+        public static nint StringToCoTaskMemAuto(string? s)
         {
             return StringToCoTaskMemUTF8(s);
         }
 
         private static int GetSystemMaxDBCSCharSize() => 3;
 
-        private static bool IsNullOrWin32Atom(IntPtr ptr) => ptr == IntPtr.Zero;
+        private static bool IsNullOrWin32Atom(nint ptr) => ptr == 0;
 
         internal static unsafe int StringToAnsiString(string s, byte* buffer, int bufferLength, bool bestFit = false, bool throwOnUnmappableChar = false)
         {
@@ -62,26 +62,26 @@ namespace System.Runtime.InteropServices
             bytes[actualByteLength] = 0;
         }
 
-        public static unsafe IntPtr AllocHGlobal(IntPtr cb)
+        public static unsafe nint AllocHGlobal(nint cb)
         {
             return (nint)NativeMemory.Alloc((nuint)(nint)cb);
         }
 
-        public static unsafe void FreeHGlobal(IntPtr hglobal)
+        public static unsafe void FreeHGlobal(nint hglobal)
         {
             NativeMemory.Free((void*)(nint)hglobal);
         }
 
-        public static unsafe IntPtr ReAllocHGlobal(IntPtr pv, IntPtr cb)
+        public static unsafe nint ReAllocHGlobal(nint pv, nint cb)
         {
             return (nint)NativeMemory.Realloc((void*)(nint)pv, (nuint)(nint)cb);
         }
 
-        public static IntPtr AllocCoTaskMem(int cb) => AllocHGlobal((nint)(uint)cb);
+        public static nint AllocCoTaskMem(int cb) => AllocHGlobal((nint)(uint)cb);
 
-        public static void FreeCoTaskMem(IntPtr ptr) => FreeHGlobal(ptr);
+        public static void FreeCoTaskMem(nint ptr) => FreeHGlobal(ptr);
 
-        public static unsafe IntPtr ReAllocCoTaskMem(IntPtr pv, int cb)
+        public static unsafe nint ReAllocCoTaskMem(nint pv, int cb)
         {
             nuint cbNative = (nuint)(uint)cb;
             void* pvNative = (void*)(nint)pv;
@@ -89,18 +89,18 @@ namespace System.Runtime.InteropServices
             if ((cbNative == 0) && (pvNative != null))
             {
                 Interop.Sys.Free(pvNative);
-                return IntPtr.Zero;
+                return 0;
             }
 
             return (nint)NativeMemory.Realloc((void*)(nint)pv, cbNative);
         }
 
-        internal static unsafe IntPtr AllocBSTR(int length)
+        internal static unsafe nint AllocBSTR(int length)
         {
             // SysAllocString on Windows aligns the memory block size up
             const nuint WIN32_ALLOC_ALIGN = 15;
 
-            ulong cbNative = 2 * (ulong)(uint)length + (uint)sizeof(IntPtr) + (uint)sizeof(char) + WIN32_ALLOC_ALIGN;
+            ulong cbNative = 2 * (ulong)(uint)length + (uint)sizeof(nint) + (uint)sizeof(char) + WIN32_ALLOC_ALIGN;
 
             if (cbNative > uint.MaxValue)
             {
@@ -121,12 +121,12 @@ namespace System.Runtime.InteropServices
             return (nint)s;
         }
 
-        internal static unsafe IntPtr AllocBSTRByteLen(uint length)
+        internal static unsafe nint AllocBSTRByteLen(uint length)
         {
             // SysAllocString on Windows aligns the memory block size up
             const nuint WIN32_ALLOC_ALIGN = 15;
 
-            ulong cbNative = (ulong)(uint)length + (uint)sizeof(IntPtr) + (uint)sizeof(char) + WIN32_ALLOC_ALIGN;
+            ulong cbNative = (ulong)(uint)length + (uint)sizeof(nint) + (uint)sizeof(char) + WIN32_ALLOC_ALIGN;
 
             if (cbNative > uint.MaxValue)
             {
@@ -150,7 +150,7 @@ namespace System.Runtime.InteropServices
             return (nint)s;
         }
 
-        public static unsafe void FreeBSTR(IntPtr ptr)
+        public static unsafe void FreeBSTR(nint ptr)
         {
             void* ptrNative = (void*)(nint)ptr;
 

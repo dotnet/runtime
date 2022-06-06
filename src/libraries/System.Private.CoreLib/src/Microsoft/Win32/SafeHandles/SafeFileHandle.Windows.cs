@@ -92,7 +92,7 @@ namespace Microsoft.Win32.SafeHandles
             // (note that this is the effective default on CreateFile2)
             flagsAndAttributes |= (Interop.Kernel32.SecurityOptions.SECURITY_SQOS_PRESENT | Interop.Kernel32.SecurityOptions.SECURITY_ANONYMOUS);
 
-            SafeFileHandle fileHandle = Interop.Kernel32.CreateFile(fullPath, fAccess, share, &secAttrs, mode, flagsAndAttributes, IntPtr.Zero);
+            SafeFileHandle fileHandle = Interop.Kernel32.CreateFile(fullPath, fAccess, share, &secAttrs, mode, flagsAndAttributes, 0);
             if (fileHandle.IsInvalid)
             {
                 // Return a meaningful exception with the full path.

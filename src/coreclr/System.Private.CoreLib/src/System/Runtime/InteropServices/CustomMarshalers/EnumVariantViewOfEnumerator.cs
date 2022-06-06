@@ -29,7 +29,7 @@ namespace System.Runtime.InteropServices.CustomMarshalers
             }
         }
 
-        public int Next(int celt, object?[] rgVar, IntPtr pceltFetched)
+        public int Next(int celt, object?[] rgVar, nint pceltFetched)
         {
             int numElements = 0;
 
@@ -45,7 +45,7 @@ namespace System.Runtime.InteropServices.CustomMarshalers
                     rgVar[numElements++] = Enumerator.Current;
                 }
 
-                if (pceltFetched != IntPtr.Zero)
+                if (pceltFetched != 0)
                 {
                     Marshal.WriteInt32(pceltFetched, numElements);
                 }

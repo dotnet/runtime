@@ -21,7 +21,7 @@ namespace System.Runtime.InteropServices.CustomMarshalers
         {
         }
 
-        public void CleanUpNativeData(IntPtr pNativeData)
+        public void CleanUpNativeData(nint pNativeData)
         {
             Marshal.Release(pNativeData);
         }
@@ -32,14 +32,14 @@ namespace System.Runtime.InteropServices.CustomMarshalers
             return -1;
         }
 
-        public IntPtr MarshalManagedToNative(object ManagedObj)
+        public nint MarshalManagedToNative(object ManagedObj)
         {
             ArgumentNullException.ThrowIfNull(ManagedObj);
 
             return Marshal.GetComInterfaceForObject<object, IEnumerable>(ManagedObj);
         }
 
-        public object MarshalNativeToManaged(IntPtr pNativeData)
+        public object MarshalNativeToManaged(nint pNativeData)
         {
             ArgumentNullException.ThrowIfNull(pNativeData);
 

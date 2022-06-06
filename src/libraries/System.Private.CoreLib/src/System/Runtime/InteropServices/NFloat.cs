@@ -337,16 +337,16 @@ namespace System.Runtime.InteropServices
         [NonVersionable]
         public static explicit operator checked Int128(NFloat value) => checked((Int128)(value._value));
 
-        /// <summary>Explicitly converts a native-sized floating-point value to its nearest representable <see cref="IntPtr" /> value.</summary>
+        /// <summary>Explicitly converts a native-sized floating-point value to its nearest representable <see cref="nint" /> value.</summary>
         /// <param name="value">The value to convert.</param>
-        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="IntPtr" /> value.</returns>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="nint" /> value.</returns>
         [NonVersionable]
         public static explicit operator nint(NFloat value) => (nint)(value._value);
 
-        /// <summary>Explicitly converts a native-sized floating-point value to its nearest representable <see cref="IntPtr" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <summary>Explicitly converts a native-sized floating-point value to its nearest representable <see cref="nint" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
         /// <param name="value">The value to convert.</param>
-        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="IntPtr" /> value.</returns>
-        /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="IntPtr" />.</exception>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="nint" /> value.</returns>
+        /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="nint" />.</exception>
         [NonVersionable]
         public static explicit operator checked nint(NFloat value) => checked((nint)(value._value));
 
@@ -500,7 +500,7 @@ namespace System.Runtime.InteropServices
             return (NFloat)(UInt128)(value);
         }
 
-        /// <summary>Implicitly converts a <see cref="System.IntPtr" /> value to its nearest representable native-sized floating-point value.</summary>
+        /// <summary>Implicitly converts a <see cref="nint" /> value to its nearest representable native-sized floating-point value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable native-sized floating-point value.</returns>
         [NonVersionable]

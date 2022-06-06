@@ -445,7 +445,7 @@ namespace System.Text.Unicode
 
                 SuccessfullyProcessedThreeByteSequence:
 
-                    if (IntPtr.Size >= 8 && BitConverter.IsLittleEndian)
+                    if (sizeof(nint) >= 8 && BitConverter.IsLittleEndian)
                     {
                         // x64 little-endian optimization: A three-byte character could indicate CJK text,
                         // which makes it likely that the character following this one is also CJK.

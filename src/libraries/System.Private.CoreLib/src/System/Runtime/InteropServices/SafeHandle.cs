@@ -21,7 +21,7 @@ namespace System.Runtime.InteropServices
         //   manipulating _state.
 
         /// <summary>Specifies the handle to be wrapped.</summary>
-        protected IntPtr handle;
+        protected nint handle;
         /// <summary>Combined ref count and closed/disposed flags (so we can atomically modify them).</summary>
         private volatile int _state;
         /// <summary>Whether we can release this handle.</summary>
@@ -50,7 +50,7 @@ namespace System.Runtime.InteropServices
         }
 
         /// <summary>Creates a SafeHandle class.</summary>
-        protected SafeHandle(IntPtr invalidHandleValue, bool ownsHandle)
+        protected SafeHandle(nint invalidHandleValue, bool ownsHandle)
         {
             handle = invalidHandleValue;
             _state = StateBits.RefCountOne; // Ref count 1 and not closed or disposed.
@@ -76,9 +76,9 @@ namespace System.Runtime.InteropServices
 
         internal bool OwnsHandle => _ownsHandle;
 
-        protected internal void SetHandle(IntPtr handle) => this.handle = handle;
+        protected internal void SetHandle(nint handle) => this.handle = handle;
 
-        public IntPtr DangerousGetHandle() => handle;
+        public nint DangerousGetHandle() => handle;
 
         public bool IsClosed => (_state & StateBits.Closed) == StateBits.Closed;
 

@@ -40,7 +40,7 @@ namespace System
         internal static extern bool IsInstanceOfType(RuntimeType type, [NotNullWhen(true)] object? o);
 
         [RequiresUnreferencedCode("MakeGenericType cannot be statically analyzed. It's not possible to guarantee the availability of requirements of the generic type.")]
-        internal static Type GetTypeHelper(Type typeStart, Type[]? genericArgs, IntPtr pModifiers, int cModifiers) // called by VM
+        internal static Type GetTypeHelper(Type typeStart, Type[]? genericArgs, nint pModifiers, int cModifiers) // called by VM
             => GetTypeHelper(typeStart, genericArgs, new ReadOnlySpan<int>((void*)pModifiers, cModifiers));
 
         [RequiresUnreferencedCode("MakeGenericType cannot be statically analyzed. It's not possible to guarantee the availability of requirements of the generic type.")]
@@ -70,16 +70,16 @@ namespace System
         /// <summary>
         /// Returns a new <see cref="RuntimeTypeHandle"/> object created from a handle to a RuntimeType.
         /// </summary>
-        /// <param name="value">An IntPtr handle to a RuntimeType to create a <see cref="RuntimeTypeHandle"/> object from.</param>
+        /// <param name="value">An nint handle to a RuntimeType to create a <see cref="RuntimeTypeHandle"/> object from.</param>
         /// <returns>A new <see cref="RuntimeTypeHandle"/> object that corresponds to the value parameter.</returns>
-        public static RuntimeTypeHandle FromIntPtr(IntPtr value) => new RuntimeTypeHandle(Type.GetTypeFromHandleUnsafe(value));
+        public static RuntimeTypeHandle FromIntPtr(nint value) => new RuntimeTypeHandle(Type.GetTypeFromHandleUnsafe(value));
 
         /// <summary>
         /// Returns the internal pointer representation of a <see cref="RuntimeTypeHandle"/> object.
         /// </summary>
         /// <param name="value">A <see cref="RuntimeTypeHandle"/> object to retrieve an internal pointer representation from.</param>
-        /// <returns>An <see cref="IntPtr"/> object that represents a <see cref="RuntimeTypeHandle"/> object.</returns>
-        public static IntPtr ToIntPtr(RuntimeTypeHandle value) => value.Value;
+        /// <returns>An <see cref="nint"/> object that represents a <see cref="RuntimeTypeHandle"/> object.</returns>
+        public static nint ToIntPtr(RuntimeTypeHandle value) => value.Value;
 
         public static bool operator ==(RuntimeTypeHandle left, object? right) => left.Equals(right);
 
@@ -111,11 +111,11 @@ namespace System
             return handle.m_type == m_type;
         }
 
-        public IntPtr Value => m_type != null ? m_type.m_handle : IntPtr.Zero;
+        public nint Value => m_type != null ? m_type.m_handle : 0;
 
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr GetValueInternal(RuntimeTypeHandle handle);
+        internal static extern nint GetValueInternal(RuntimeTypeHandle handle);
 
         internal RuntimeTypeHandle(RuntimeType type)
         {
@@ -197,16 +197,16 @@ namespace System
         // may need to make a defensive copy of the input array to ensure it's not
         // mutated by another thread, and this defensive copy should be passed to
         // a KeepAlive routine.
-        internal static ReadOnlySpan<IntPtr> CopyRuntimeTypeHandles(RuntimeTypeHandle[]? inHandles, Span<IntPtr> stackScratch)
+        internal static ReadOnlySpan<nint> CopyRuntimeTypeHandles(RuntimeTypeHandle[]? inHandles, Span<nint> stackScratch)
         {
             if (inHandles == null || inHandles.Length == 0)
             {
                 return default;
             }
 
-            Span<IntPtr> outHandles = inHandles.Length <= stackScratch.Length ?
+            Span<nint> outHandles = inHandles.Length <= stackScratch.Length ?
                 stackScratch.Slice(0, inHandles.Length) :
-                new IntPtr[inHandles.Length];
+                new nint[inHandles.Length];
             for (int i = 0; i < inHandles.Length; i++)
             {
                 outHandles[i] = inHandles[i].Value;
@@ -220,7 +220,7 @@ namespace System
         // may need to make a defensive copy of the input array to ensure it's not
         // mutated by another thread, and this defensive copy should be passed to
         // a KeepAlive routine.
-        internal static IntPtr[]? CopyRuntimeTypeHandles(Type[]? inHandles, out int length)
+        internal static nint[]? CopyRuntimeTypeHandles(Type[]? inHandles, out int length)
         {
             if (inHandles == null || inHandles.Length == 0)
             {
@@ -228,7 +228,7 @@ namespace System
                 return null;
             }
 
-            IntPtr[] outHandles = new IntPtr[inHandles.Length];
+            nint[] outHandles = new nint[inHandles.Length];
             for (int i = 0; i < inHandles.Length; i++)
             {
                 outHandles[i] = inHandles[i].TypeHandle.Value;
@@ -246,7 +246,7 @@ namespace System
 
             object? instantiatedObject = null;
 
-            IntPtr typeHandle = genericParameter.TypeHandle.Value;
+            nint typeHandle = genericParameter.TypeHandle.Value;
             CreateInstanceForAnotherGenericParameter(
                 new QCallTypeHandle(ref type),
                 &typeHandle,
@@ -267,7 +267,7 @@ namespace System
 
             object? instantiatedObject = null;
 
-            IntPtr* pTypeHandles = stackalloc IntPtr[]
+            nint* pTypeHandles = stackalloc nint[]
             {
                 genericParameter1.TypeHandle.Value,
                 genericParameter2.TypeHandle.Value
@@ -288,7 +288,7 @@ namespace System
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_CreateInstanceForAnotherGenericParameter")]
         private static partial void CreateInstanceForAnotherGenericParameter(
             QCallTypeHandle baseType,
-            IntPtr* pTypeHandles,
+            nint* pTypeHandles,
             int cTypeHandles,
             ObjectHandleOnStack instantiatedObject);
 
@@ -395,11 +395,11 @@ namespace System
                 {
                     _firstCall = false;
                 }
-                else if (_handle.Value != IntPtr.Zero)
+                else if (_handle.Value != 0)
                 {
                     RuntimeTypeHandle.GetNextIntroducedMethod(ref _handle);
                 }
-                return !(_handle.Value == IntPtr.Zero);
+                return !(_handle.Value == 0);
             }
 
             public RuntimeMethodHandleInternal Current => _handle;
@@ -423,7 +423,7 @@ namespace System
         private static extern void GetNextIntroducedMethod(ref RuntimeMethodHandleInternal method);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool GetFields(RuntimeType type, IntPtr* result, int* count);
+        internal static extern bool GetFields(RuntimeType type, nint* result, int* count);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern Type[]? GetInterfaces(RuntimeType type);
@@ -442,18 +442,18 @@ namespace System
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "QCall_GetGCHandleForTypeHandle")]
-        private static partial IntPtr GetGCHandle(QCallTypeHandle handle, GCHandleType type);
+        private static partial nint GetGCHandle(QCallTypeHandle handle, GCHandleType type);
 
-        internal IntPtr GetGCHandle(GCHandleType type)
+        internal nint GetGCHandle(GCHandleType type)
         {
             RuntimeTypeHandle nativeHandle = GetNativeHandle();
             return GetGCHandle(new QCallTypeHandle(ref nativeHandle), type);
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "QCall_FreeGCHandleForTypeHandle")]
-        private static partial IntPtr FreeGCHandle(QCallTypeHandle typeHandle, IntPtr objHandle);
+        private static partial nint FreeGCHandle(QCallTypeHandle typeHandle, nint objHandle);
 
-        internal IntPtr FreeGCHandle(IntPtr objHandle)
+        internal nint FreeGCHandle(nint objHandle)
         {
             RuntimeTypeHandle nativeHandle = GetNativeHandle();
             return FreeGCHandle(new QCallTypeHandle(ref nativeHandle), objHandle);
@@ -611,11 +611,11 @@ namespace System
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_Instantiate")]
-        private static partial void Instantiate(QCallTypeHandle handle, IntPtr* pInst, int numGenericArgs, ObjectHandleOnStack type);
+        private static partial void Instantiate(QCallTypeHandle handle, nint* pInst, int numGenericArgs, ObjectHandleOnStack type);
 
         internal RuntimeType Instantiate(RuntimeType inst)
         {
-            IntPtr ptr = inst.TypeHandle.Value;
+            nint ptr = inst.TypeHandle.Value;
 
             RuntimeType? type = null;
             RuntimeTypeHandle nativeHandle = GetNativeHandle();
@@ -626,9 +626,9 @@ namespace System
 
         internal RuntimeType Instantiate(Type[]? inst)
         {
-            IntPtr[]? instHandles = CopyRuntimeTypeHandles(inst, out int instCount);
+            nint[]? instHandles = CopyRuntimeTypeHandles(inst, out int instCount);
 
-            fixed (IntPtr* pInst = instHandles)
+            fixed (nint* pInst = instHandles)
             {
                 RuntimeType? type = null;
                 RuntimeTypeHandle nativeHandle = GetNativeHandle();
@@ -732,14 +732,14 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern bool SatisfiesConstraints(RuntimeType paramType, IntPtr* pTypeContext, int typeContextLength, IntPtr* pMethodContext, int methodContextLength, RuntimeType toType);
+        private static extern bool SatisfiesConstraints(RuntimeType paramType, nint* pTypeContext, int typeContextLength, nint* pMethodContext, int methodContextLength, RuntimeType toType);
 
         internal static bool SatisfiesConstraints(RuntimeType paramType, RuntimeType[]? typeContext, RuntimeType[]? methodContext, RuntimeType toType)
         {
-            IntPtr[]? typeContextHandles = CopyRuntimeTypeHandles(typeContext, out int typeContextLength);
-            IntPtr[]? methodContextHandles = CopyRuntimeTypeHandles(methodContext, out int methodContextLength);
+            nint[]? typeContextHandles = CopyRuntimeTypeHandles(typeContext, out int typeContextLength);
+            nint[]? methodContextHandles = CopyRuntimeTypeHandles(methodContext, out int methodContextLength);
 
-            fixed (IntPtr* pTypeContextHandles = typeContextHandles, pMethodContextHandles = methodContextHandles)
+            fixed (nint* pTypeContextHandles = typeContextHandles, pMethodContextHandles = methodContextHandles)
             {
                 bool result = SatisfiesConstraints(paramType, pTypeContextHandles, typeContextLength, pMethodContextHandles, methodContextLength, toType);
 
@@ -751,7 +751,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern IntPtr _GetMetadataImport(RuntimeType type);
+        private static extern nint _GetMetadataImport(RuntimeType type);
 
         internal static MetadataImport GetMetadataImport(RuntimeType type)
         {
@@ -784,17 +784,17 @@ namespace System
 
         internal bool IsNullHandle()
         {
-            return m_handle == IntPtr.Zero;
+            return m_handle == 0;
         }
 
-        internal IntPtr Value => m_handle;
+        internal nint Value => m_handle;
 
-        internal RuntimeMethodHandleInternal(IntPtr value)
+        internal RuntimeMethodHandleInternal(nint value)
         {
             m_handle = value;
         }
 
-        internal IntPtr m_handle;
+        internal nint m_handle;
     }
 
     internal sealed class RuntimeMethodInfoStub : IRuntimeMethodInfo
@@ -805,7 +805,7 @@ namespace System
             m_value = methodHandleValue;
         }
 
-        public RuntimeMethodInfoStub(IntPtr methodHandleValue, object keepalive)
+        public RuntimeMethodInfoStub(nint methodHandleValue, object keepalive)
         {
             m_keepalive = keepalive;
             m_value = new RuntimeMethodHandleInternal(methodHandleValue);
@@ -862,7 +862,7 @@ namespace System
         }
 
         // Used by EE
-        private static IntPtr GetValueInternal(RuntimeMethodHandle rmh)
+        private static nint GetValueInternal(RuntimeMethodHandle rmh)
         {
             return rmh.Value;
         }
@@ -873,7 +873,7 @@ namespace System
             throw new PlatformNotSupportedException();
         }
 
-        public IntPtr Value => m_value != null ? m_value.Value.Value : IntPtr.Zero;
+        public nint Value => m_value != null ? m_value.Value.Value : 0;
 
         public override int GetHashCode()
         {
@@ -893,9 +893,9 @@ namespace System
         /// <summary>
         /// Returns a new <see cref="RuntimeMethodHandle"/> object created from a handle to a RuntimeMethodInfo.
         /// </summary>
-        /// <param name="value">An IntPtr handle to a RuntimeMethodInfo to create a <see cref="RuntimeMethodHandle"/> object from.</param>
+        /// <param name="value">An nint handle to a RuntimeMethodInfo to create a <see cref="RuntimeMethodHandle"/> object from.</param>
         /// <returns>A new <see cref="RuntimeMethodHandle"/> object that corresponds to the value parameter.</returns>
-        public static RuntimeMethodHandle FromIntPtr(IntPtr value)
+        public static RuntimeMethodHandle FromIntPtr(nint value)
         {
             var handle = new RuntimeMethodHandleInternal(value);
             var methodInfo = new RuntimeMethodInfoStub(handle, RuntimeMethodHandle.GetLoaderAllocator(handle));
@@ -906,8 +906,8 @@ namespace System
         /// Returns the internal pointer representation of a <see cref="RuntimeMethodHandle"/> object.
         /// </summary>
         /// <param name="value">A <see cref="RuntimeMethodHandle"/> object to retrieve an internal pointer representation from.</param>
-        /// <returns>An <see cref="IntPtr"/> object that represents a <see cref="RuntimeMethodHandle"/> object.</returns>
-        public static IntPtr ToIntPtr(RuntimeMethodHandle value) => value.Value;
+        /// <returns>An <see cref="nint"/> object that represents a <see cref="RuntimeMethodHandle"/> object.</returns>
+        public static nint ToIntPtr(RuntimeMethodHandle value) => value.Value;
 
         public static bool operator ==(RuntimeMethodHandle left, RuntimeMethodHandle right) => left.Equals(right);
 
@@ -924,11 +924,11 @@ namespace System
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeMethodHandle_GetFunctionPointer")]
-        internal static partial IntPtr GetFunctionPointer(RuntimeMethodHandleInternal handle);
+        internal static partial nint GetFunctionPointer(RuntimeMethodHandleInternal handle);
 
-        public IntPtr GetFunctionPointer()
+        public nint GetFunctionPointer()
         {
-            IntPtr ptr = GetFunctionPointer(EnsureNonNullMethodInfo(m_value!).Value);
+            nint ptr = GetFunctionPointer(EnsureNonNullMethodInfo(m_value!).Value);
             GC.KeepAlive(m_value);
             return ptr;
         }
@@ -1151,17 +1151,17 @@ namespace System
     {
         internal bool IsNullHandle()
         {
-            return m_handle == IntPtr.Zero;
+            return m_handle == 0;
         }
 
-        internal IntPtr Value => m_handle;
+        internal nint Value => m_handle;
 
-        internal RuntimeFieldHandleInternal(IntPtr value)
+        internal RuntimeFieldHandleInternal(nint value)
         {
             m_handle = value;
         }
 
-        internal IntPtr m_handle;
+        internal nint m_handle;
     }
 
     internal interface IRuntimeFieldInfo
@@ -1221,7 +1221,7 @@ namespace System
             return m_ptr;
         }
 
-        public IntPtr Value => m_ptr != null ? m_ptr.Value.Value : IntPtr.Zero;
+        public nint Value => m_ptr != null ? m_ptr.Value.Value : 0;
 
         internal bool IsNullHandle()
         {
@@ -1251,9 +1251,9 @@ namespace System
         /// <summary>
         /// Returns a new <see cref="RuntimeFieldHandle"/> object created from a handle to a RuntimeFieldInfo.
         /// </summary>
-        /// <param name="value">An IntPtr handle to a RuntimeFieldInfo to create a <see cref="RuntimeFieldHandle"/> object from.</param>
+        /// <param name="value">An nint handle to a RuntimeFieldInfo to create a <see cref="RuntimeFieldHandle"/> object from.</param>
         /// <returns>A new <see cref="RuntimeFieldHandle"/> object that corresponds to the value parameter.</returns>
-        public static RuntimeFieldHandle FromIntPtr(IntPtr value)
+        public static RuntimeFieldHandle FromIntPtr(nint value)
         {
             var handle = new RuntimeFieldHandleInternal(value);
             var fieldInfo = new RuntimeFieldInfoStub(handle, RuntimeFieldHandle.GetLoaderAllocator(handle));
@@ -1264,8 +1264,8 @@ namespace System
         /// Returns the internal pointer representation of a <see cref="RuntimeFieldHandle"/> object.
         /// </summary>
         /// <param name="value">A <see cref="RuntimeFieldHandle"/> object to retrieve an internal pointer representation from.</param>
-        /// <returns>An <see cref="IntPtr"/> object that represents a <see cref="RuntimeFieldHandle"/> object.</returns>
-        public static IntPtr ToIntPtr(RuntimeFieldHandle value) => value.Value;
+        /// <returns>An <see cref="nint"/> object that represents a <see cref="RuntimeFieldHandle"/> object.</returns>
+        public static nint ToIntPtr(RuntimeFieldHandle value) => value.Value;
 
         public static bool operator ==(RuntimeFieldHandle left, RuntimeFieldHandle right) => left.Equals(right);
 
@@ -1405,22 +1405,22 @@ namespace System
             RuntimeModule module = GetRuntimeModule();
             ValidateModulePointer(module);
 
-            ReadOnlySpan<IntPtr> typeInstantiationContextHandles = stackalloc IntPtr[0];
-            ReadOnlySpan<IntPtr> methodInstantiationContextHandles = stackalloc IntPtr[0];
+            ReadOnlySpan<nint> typeInstantiationContextHandles = stackalloc nint[0];
+            ReadOnlySpan<nint> methodInstantiationContextHandles = stackalloc nint[0];
 
             // defensive copy of user-provided array, per CopyRuntimeTypeHandles contract
             if (typeInstantiationContext?.Length > 0)
             {
                 typeInstantiationContext = (RuntimeTypeHandle[]?)typeInstantiationContext.Clone();
-                typeInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(typeInstantiationContext, stackScratch: stackalloc IntPtr[8]);
+                typeInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(typeInstantiationContext, stackScratch: stackalloc nint[8]);
             }
             if (methodInstantiationContext?.Length > 0)
             {
                 methodInstantiationContext = (RuntimeTypeHandle[]?)methodInstantiationContext.Clone();
-                methodInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(methodInstantiationContext, stackScratch: stackalloc IntPtr[8]);
+                methodInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(methodInstantiationContext, stackScratch: stackalloc nint[8]);
             }
 
-            fixed (IntPtr* typeInstArgs = typeInstantiationContextHandles, methodInstArgs = methodInstantiationContextHandles)
+            fixed (nint* typeInstArgs = typeInstantiationContextHandles, methodInstArgs = methodInstantiationContextHandles)
             {
                 try
                 {
@@ -1443,9 +1443,9 @@ namespace System
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ModuleHandle_ResolveType")]
         private static partial void ResolveType(QCallModule module,
                                                             int typeToken,
-                                                            IntPtr* typeInstArgs,
+                                                            nint* typeInstArgs,
                                                             int typeInstCount,
-                                                            IntPtr* methodInstArgs,
+                                                            nint* methodInstArgs,
                                                             int methodInstCount,
                                                             ObjectHandleOnStack type);
 
@@ -1462,8 +1462,8 @@ namespace System
             typeInstantiationContext = (RuntimeTypeHandle[]?)typeInstantiationContext?.Clone();
             methodInstantiationContext = (RuntimeTypeHandle[]?)methodInstantiationContext?.Clone();
 
-            ReadOnlySpan<IntPtr> typeInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(typeInstantiationContext, stackScratch: stackalloc IntPtr[8]);
-            ReadOnlySpan<IntPtr> methodInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(methodInstantiationContext, stackScratch: stackalloc IntPtr[8]);
+            ReadOnlySpan<nint> typeInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(typeInstantiationContext, stackScratch: stackalloc nint[8]);
+            ReadOnlySpan<nint> methodInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(methodInstantiationContext, stackScratch: stackalloc nint[8]);
 
             RuntimeMethodHandleInternal handle = ResolveMethodHandleInternal(module, methodToken, typeInstantiationContextHandles, methodInstantiationContextHandles);
             IRuntimeMethodInfo retVal = new RuntimeMethodInfoStub(handle, RuntimeMethodHandle.GetLoaderAllocator(handle));
@@ -1472,13 +1472,13 @@ namespace System
             return new RuntimeMethodHandle(retVal);
         }
 
-        internal static RuntimeMethodHandleInternal ResolveMethodHandleInternal(RuntimeModule module, int methodToken, ReadOnlySpan<IntPtr> typeInstantiationContext, ReadOnlySpan<IntPtr> methodInstantiationContext)
+        internal static RuntimeMethodHandleInternal ResolveMethodHandleInternal(RuntimeModule module, int methodToken, ReadOnlySpan<nint> typeInstantiationContext, ReadOnlySpan<nint> methodInstantiationContext)
         {
             ValidateModulePointer(module);
 
             try
             {
-                fixed (IntPtr* typeInstArgs = typeInstantiationContext, methodInstArgs = methodInstantiationContext)
+                fixed (nint* typeInstArgs = typeInstantiationContext, methodInstArgs = methodInstantiationContext)
                 {
                     return ResolveMethod(new QCallModule(ref module), methodToken, typeInstArgs, typeInstantiationContext.Length, methodInstArgs, methodInstantiationContext.Length);
                 }
@@ -1495,9 +1495,9 @@ namespace System
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ModuleHandle_ResolveMethod")]
         private static partial RuntimeMethodHandleInternal ResolveMethod(QCallModule module,
                                                         int methodToken,
-                                                        IntPtr* typeInstArgs,
+                                                        nint* typeInstArgs,
                                                         int typeInstCount,
-                                                        IntPtr* methodInstArgs,
+                                                        nint* methodInstArgs,
                                                         int methodInstCount);
 
         // SQL-CLR LKG9 Compiler dependency
@@ -1511,22 +1511,22 @@ namespace System
             RuntimeModule module = GetRuntimeModule();
             ValidateModulePointer(module);
 
-            ReadOnlySpan<IntPtr> typeInstantiationContextHandles = stackalloc IntPtr[0];
-            ReadOnlySpan<IntPtr> methodInstantiationContextHandles = stackalloc IntPtr[0];
+            ReadOnlySpan<nint> typeInstantiationContextHandles = stackalloc nint[0];
+            ReadOnlySpan<nint> methodInstantiationContextHandles = stackalloc nint[0];
 
             // defensive copy of user-provided array, per CopyRuntimeTypeHandles contract
             if (typeInstantiationContext?.Length > 0)
             {
                 typeInstantiationContext = (RuntimeTypeHandle[]?)typeInstantiationContext.Clone();
-                typeInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(typeInstantiationContext, stackScratch: stackalloc IntPtr[8]);
+                typeInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(typeInstantiationContext, stackScratch: stackalloc nint[8]);
             }
             if (methodInstantiationContext?.Length > 0)
             {
                 methodInstantiationContext = (RuntimeTypeHandle[]?)methodInstantiationContext.Clone();
-                methodInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(methodInstantiationContext, stackScratch: stackalloc IntPtr[8]);
+                methodInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(methodInstantiationContext, stackScratch: stackalloc nint[8]);
             }
 
-            fixed (IntPtr* typeInstArgs = typeInstantiationContextHandles, methodInstArgs = methodInstantiationContextHandles)
+            fixed (nint* typeInstArgs = typeInstantiationContextHandles, methodInstArgs = methodInstantiationContextHandles)
             {
                 try
                 {
@@ -1549,9 +1549,9 @@ namespace System
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ModuleHandle_ResolveField")]
         private static partial void ResolveField(QCallModule module,
                                                       int fieldToken,
-                                                      IntPtr* typeInstArgs,
+                                                      nint* typeInstArgs,
                                                       int typeInstCount,
-                                                      IntPtr* methodInstArgs,
+                                                      nint* methodInstArgs,
                                                       int methodInstCount,
                                                       ObjectHandleOnStack retField);
 
@@ -1583,7 +1583,7 @@ namespace System
         public int MDStreamVersion => GetMDStreamVersion(GetRuntimeModule());
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern IntPtr _GetMetadataImport(RuntimeModule module);
+        private static extern nint _GetMetadataImport(RuntimeModule module);
 
         internal static MetadataImport GetMetadataImport(RuntimeModule module)
         {
@@ -1707,7 +1707,7 @@ namespace System
         internal abstract byte[]? GetRawEHInfo();
         // token resolution
         internal abstract string? GetStringLiteral(int token);
-        internal abstract void ResolveToken(int token, out IntPtr typeHandle, out IntPtr methodHandle, out IntPtr fieldHandle);
+        internal abstract void ResolveToken(int token, out nint typeHandle, out nint methodHandle, out nint fieldHandle);
         internal abstract byte[]? ResolveSignature(int token, int fromMethod);
         //
         internal abstract MethodInfo GetDynamicMethod();

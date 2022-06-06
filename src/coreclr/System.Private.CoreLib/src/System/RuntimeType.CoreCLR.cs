@@ -890,12 +890,12 @@ namespace System
 
                 private unsafe void PopulateRtFields(Filter filter, RuntimeType declaringType, ref ListBuilder<RuntimeFieldInfo> list)
                 {
-                    IntPtr* pResult = stackalloc IntPtr[64];
+                    nint* pResult = stackalloc nint[64];
                     int count = 64;
 
                     if (!RuntimeTypeHandle.GetFields(declaringType, pResult, &count))
                     {
-                        fixed (IntPtr* pBigResult = new IntPtr[count])
+                        fixed (nint* pBigResult = new nint[count])
                         {
                             RuntimeTypeHandle.GetFields(declaringType, pBigResult, &count);
                             PopulateRtFields(filter, pBigResult, count, declaringType, ref list);
@@ -908,7 +908,7 @@ namespace System
                 }
 
                 private unsafe void PopulateRtFields(Filter filter,
-                    IntPtr* ppFieldHandles, int count, RuntimeType declaringType, ref ListBuilder<RuntimeFieldInfo> list)
+                    nint* ppFieldHandles, int count, RuntimeType declaringType, ref ListBuilder<RuntimeFieldInfo> list)
                 {
                     Debug.Assert(declaringType != null);
                     Debug.Assert(ReflectedType != null);
@@ -2386,8 +2386,8 @@ namespace System
 #pragma warning disable CA1823
         private readonly object m_keepalive; // This will be filled with a LoaderAllocator reference when this RuntimeType represents a collectible type
 #pragma warning restore CA1823
-        private IntPtr m_cache;
-        internal IntPtr m_handle;
+        private nint m_cache;
+        internal nint m_handle;
 
         internal static readonly RuntimeType ValueType = (RuntimeType)typeof(System.ValueType);
 
@@ -2403,7 +2403,7 @@ namespace System
 
         #region Private\Internal Members
 
-        internal IntPtr GetUnderlyingNativeHandle()
+        internal nint GetUnderlyingNativeHandle()
         {
             return m_handle;
         }
@@ -2418,7 +2418,7 @@ namespace System
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                if (m_cache != IntPtr.Zero)
+                if (m_cache != 0)
                 {
                     object? cache = GCHandle.InternalGet(m_cache);
                     Debug.Assert(cache == null || cache is RuntimeTypeCache);
@@ -2433,7 +2433,7 @@ namespace System
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                if (m_cache != IntPtr.Zero)
+                if (m_cache != 0)
                 {
                     object? cache = GCHandle.InternalGet(m_cache);
                     if (cache != null)
@@ -2449,12 +2449,12 @@ namespace System
         [MethodImpl(MethodImplOptions.NoInlining)]
         private RuntimeTypeCache InitializeCache()
         {
-            if (m_cache == IntPtr.Zero)
+            if (m_cache == 0)
             {
                 RuntimeTypeHandle th = new RuntimeTypeHandle(this);
-                IntPtr newgcHandle = th.GetGCHandle(GCHandleType.WeakTrackResurrection);
-                IntPtr gcHandle = Interlocked.CompareExchange(ref m_cache, newgcHandle, IntPtr.Zero);
-                if (gcHandle != IntPtr.Zero)
+                nint newgcHandle = th.GetGCHandle(GCHandleType.WeakTrackResurrection);
+                nint gcHandle = Interlocked.CompareExchange(ref m_cache, newgcHandle, 0);
+                if (gcHandle != 0)
                     th.FreeGCHandle(newgcHandle);
             }
 
@@ -2474,7 +2474,7 @@ namespace System
         internal void ClearCache()
         {
             // If there isn't a GCHandle yet, there's nothing more to do.
-            if (Volatile.Read(ref m_cache) == IntPtr.Zero)
+            if (Volatile.Read(ref m_cache) == 0)
             {
                 return;
             }
@@ -3698,7 +3698,7 @@ namespace System
             // Check the strange ones courtesy of reflection:
             // - Implicit cast between primitives
             // - Enum treated as underlying type
-            // - Pointer (*) types to IntPtr (if dest is IntPtr)
+            // - Pointer (*) types to nint (if dest is nint)
             // - System.Reflection.Pointer to appropriate pointer (*) type (if dest is pointer type)
             if (IsPointer || IsEnum || IsPrimitive)
             {
@@ -3714,7 +3714,7 @@ namespace System
 
                 if (pointer != null)
                 {
-                    value = pointer.GetPointerValue(); // Convert source pointer to IntPtr
+                    value = pointer.GetPointerValue(); // Convert source pointer to nint
                 }
                 else
                 {

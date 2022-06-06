@@ -17,7 +17,7 @@ namespace Internal.Runtime.InteropServices
         /// </summary>
         /// <param name="moduleHandle">The native module handle for the assembly.</param>
         /// <param name="assemblyPath">The path to the assembly (as a pointer to a UTF-16 C string).</param>
-        public static unsafe void LoadInMemoryAssembly(IntPtr moduleHandle, IntPtr assemblyPath)
+        public static unsafe void LoadInMemoryAssembly(nint moduleHandle, nint assemblyPath)
             => throw new PlatformNotSupportedException();
     }
 }

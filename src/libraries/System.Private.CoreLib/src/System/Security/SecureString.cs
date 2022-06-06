@@ -309,7 +309,7 @@ namespace System.Security
             ObjectDisposedException.ThrowIf(_buffer == null, this);
         }
 
-        internal unsafe IntPtr MarshalToBSTR()
+        internal unsafe nint MarshalToBSTR()
         {
             lock (_methodLock)
             {
@@ -318,7 +318,7 @@ namespace System.Security
                 UnprotectMemory();
 
                 SafeBuffer? bufferToRelease = null;
-                IntPtr ptr = IntPtr.Zero;
+                nint ptr = 0;
                 int length = 0;
                 try
                 {
@@ -328,14 +328,14 @@ namespace System.Security
                     ptr = Marshal.AllocBSTR(length);
                     span.Slice(0, length).CopyTo(new Span<char>((void*)ptr, length));
 
-                    IntPtr result = ptr;
-                    ptr = IntPtr.Zero;
+                    nint result = ptr;
+                    ptr = 0;
                     return result;
                 }
                 finally
                 {
                     // If we failed for any reason, free the new buffer
-                    if (ptr != IntPtr.Zero)
+                    if (ptr != 0)
                     {
                         new Span<char>((void*)ptr, length).Clear();
                         Marshal.FreeBSTR(ptr);
@@ -347,7 +347,7 @@ namespace System.Security
             }
         }
 
-        internal unsafe IntPtr MarshalToString(bool globalAlloc, bool unicode)
+        internal unsafe nint MarshalToString(bool globalAlloc, bool unicode)
         {
             lock (_methodLock)
             {
@@ -356,7 +356,7 @@ namespace System.Security
                 UnprotectMemory();
 
                 SafeBuffer? bufferToRelease = null;
-                IntPtr ptr = IntPtr.Zero;
+                nint ptr = 0;
                 int byteLength = 0;
                 try
                 {
@@ -391,14 +391,14 @@ namespace System.Security
                         Marshal.GetAnsiStringBytes(span, new Span<byte>((void*)ptr, byteLength));
                     }
 
-                    IntPtr result = ptr;
-                    ptr = IntPtr.Zero;
+                    nint result = ptr;
+                    ptr = 0;
                     return result;
                 }
                 finally
                 {
                     // If we failed for any reason, free the new buffer
-                    if (ptr != IntPtr.Zero)
+                    if (ptr != 0)
                     {
                         new Span<byte>((void*)ptr, byteLength).Clear();
 

@@ -131,7 +131,7 @@ namespace System.IO.Strategies
             {
                 r = overlapped == null
                     ? Interop.Kernel32.ReadFile(handle, p, bytes.Length, out numBytesRead, overlapped)
-                    : Interop.Kernel32.ReadFile(handle, p, bytes.Length, IntPtr.Zero, overlapped);
+                    : Interop.Kernel32.ReadFile(handle, p, bytes.Length, 0, overlapped);
             }
 
             if (r == 0)

@@ -31,12 +31,12 @@ namespace System.IO.Enumeration
         private Interop.NtDll.FILE_FULL_DIR_INFORMATION* _entry;
         private TResult? _current;
 
-        private IntPtr _buffer;
+        private nint _buffer;
         private int _bufferLength;
-        private IntPtr _directoryHandle;
+        private nint _directoryHandle;
         private string? _currentPath;
         private bool _lastEntryFound;
-        private Queue<(IntPtr Handle, string Path, int RemainingDepth)>? _pending;
+        private Queue<(nint Handle, string Path, int RemainingDepth)>? _pending;
 
         private void Init()
         {
@@ -48,7 +48,7 @@ namespace System.IO.Enumeration
                 // We need to initialize the directory handle up front to ensure
                 // we immediately throw IO exceptions for missing directory/etc.
                 _directoryHandle = CreateDirectoryHandle(_rootDirectory);
-                if (_directoryHandle == IntPtr.Zero)
+                if (_directoryHandle == 0)
                     _lastEntryFound = true;
             }
 
@@ -80,14 +80,14 @@ namespace System.IO.Enumeration
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private unsafe bool GetData()
         {
-            Debug.Assert(_directoryHandle != (IntPtr)(-1) && _directoryHandle != IntPtr.Zero && !_lastEntryFound);
+            Debug.Assert(_directoryHandle != (nint)(-1) && _directoryHandle != 0 && !_lastEntryFound);
 
             Interop.NtDll.IO_STATUS_BLOCK statusBlock;
             int status = Interop.NtDll.NtQueryDirectoryFile(
                 FileHandle: _directoryHandle,
-                Event: IntPtr.Zero,
-                ApcRoutine: IntPtr.Zero,
-                ApcContext: IntPtr.Zero,
+                Event: 0,
+                ApcRoutine: 0,
+                ApcContext: 0,
                 IoStatusBlock: &statusBlock,
                 FileInformation: _buffer,
                 Length: (uint)_bufferLength,
@@ -102,7 +102,7 @@ namespace System.IO.Enumeration
                     DirectoryFinished();
                     return false;
                 case Interop.StatusOptions.STATUS_SUCCESS:
-                    Debug.Assert(statusBlock.Information.ToInt64() != 0);
+                    Debug.Assert(statusBlock.Information != 0);
                     return true;
                 // FILE_NOT_FOUND can occur when there are NO files in a volume root (usually there are hidden system files).
                 case Interop.StatusOptions.STATUS_FILE_NOT_FOUND:
@@ -121,9 +121,9 @@ namespace System.IO.Enumeration
             }
         }
 
-        private unsafe IntPtr CreateRelativeDirectoryHandle(ReadOnlySpan<char> relativePath, string fullPath)
+        private unsafe nint CreateRelativeDirectoryHandle(ReadOnlySpan<char> relativePath, string fullPath)
         {
-            (uint status, IntPtr handle) = Interop.NtDll.CreateFile(
+            (uint status, nint handle) = Interop.NtDll.CreateFile(
                 relativePath,
                 _directoryHandle,
                 Interop.NtDll.CreateDisposition.FILE_OPEN,
@@ -144,7 +144,7 @@ namespace System.IO.Enumeration
 
                     if (ContinueOnDirectoryError(error, ignoreNotFound: true))
                     {
-                        return IntPtr.Zero;
+                        return 0;
                     }
 
                     throw Win32Marshal.GetExceptionForWin32Error(error, fullPath);
@@ -154,30 +154,30 @@ namespace System.IO.Enumeration
         private void CloseDirectoryHandle()
         {
             // As handles can be reused we want to be extra careful to close handles only once
-            IntPtr handle = Interlocked.Exchange(ref _directoryHandle, IntPtr.Zero);
-            if (handle != IntPtr.Zero)
+            nint handle = Interlocked.Exchange(ref _directoryHandle, 0);
+            if (handle != 0)
                 Interop.Kernel32.CloseHandle(handle);
         }
 
         /// <summary>
         /// Simple wrapper to allow creating a file handle for an existing directory.
         /// </summary>
-        private IntPtr CreateDirectoryHandle(string path, bool ignoreNotFound = false)
+        private nint CreateDirectoryHandle(string path, bool ignoreNotFound = false)
         {
-            IntPtr handle = Interop.Kernel32.CreateFile_IntPtr(
+            nint handle = Interop.Kernel32.CreateFile_IntPtr(
                 path,
                 Interop.Kernel32.FileOperations.FILE_LIST_DIRECTORY,
                 FileShare.ReadWrite | FileShare.Delete,
                 FileMode.Open,
                 Interop.Kernel32.FileOperations.FILE_FLAG_BACKUP_SEMANTICS);
 
-            if (handle == IntPtr.Zero || handle == (IntPtr)(-1))
+            if (handle == 0 || handle == (nint)(-1))
             {
                 int error = Marshal.GetLastWin32Error();
 
                 if (ContinueOnDirectoryError(error, ignoreNotFound))
                 {
-                    return IntPtr.Zero;
+                    return 0;
                 }
 
                 if (error == Interop.Errors.ERROR_FILE_NOT_FOUND)
@@ -243,13 +243,13 @@ namespace System.IO.Enumeration
                         {
                             // Recursion is on and the directory was accepted, Queue it
                             string subDirectory = Path.Join(_currentPath.AsSpan(), _entry->FileName);
-                            IntPtr subDirectoryHandle = CreateRelativeDirectoryHandle(_entry->FileName, subDirectory);
-                            if (subDirectoryHandle != IntPtr.Zero)
+                            nint subDirectoryHandle = CreateRelativeDirectoryHandle(_entry->FileName, subDirectory);
+                            if (subDirectoryHandle != 0)
                             {
                                 try
                                 {
                                     if (_pending == null)
-                                        _pending = new Queue<(IntPtr, string, int)>();
+                                        _pending = new Queue<(nint, string, int)>();
                                     _pending.Enqueue((subDirectoryHandle, subDirectory, _remainingRecursionDepth - 1));
                                 }
                                 catch

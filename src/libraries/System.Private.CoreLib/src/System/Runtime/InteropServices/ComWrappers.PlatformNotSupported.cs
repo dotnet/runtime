@@ -16,22 +16,22 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        public IntPtr GetOrCreateComInterfaceForObject(object instance, CreateComInterfaceFlags flags)
+        public nint GetOrCreateComInterfaceForObject(object instance, CreateComInterfaceFlags flags)
         {
             throw new PlatformNotSupportedException();
         }
 
-        public object GetOrCreateObjectForComInstance(IntPtr externalComObject, CreateObjectFlags flags)
+        public object GetOrCreateObjectForComInstance(nint externalComObject, CreateObjectFlags flags)
         {
             throw new PlatformNotSupportedException();
         }
 
-        public object GetOrRegisterObjectForComInstance(IntPtr externalComObject, CreateObjectFlags flags, object wrapper)
+        public object GetOrRegisterObjectForComInstance(nint externalComObject, CreateObjectFlags flags, object wrapper)
         {
             throw new PlatformNotSupportedException();
         }
 
-        public object GetOrRegisterObjectForComInstance(IntPtr externalComObject, CreateObjectFlags flags, object wrapper, IntPtr inner)
+        public object GetOrRegisterObjectForComInstance(nint externalComObject, CreateObjectFlags flags, object wrapper, nint inner)
         {
             throw new PlatformNotSupportedException();
         }
@@ -47,7 +47,7 @@ namespace System.Runtime.InteropServices
             throw new PlatformNotSupportedException();
         }
 
-        protected static void GetIUnknownImpl(out IntPtr fpQueryInterface, out IntPtr fpAddRef, out IntPtr fpRelease)
+        protected static void GetIUnknownImpl(out nint fpQueryInterface, out nint fpAddRef, out nint fpRelease)
         {
             throw new PlatformNotSupportedException();
         }

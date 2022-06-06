@@ -5260,7 +5260,7 @@ namespace System.Threading.Tasks
                     (typeof(TResult) == typeof(ulong) && default == (ulong)(object)result!) ||
                     (typeof(TResult) == typeof(short) && default(short) == (short)(object)result!) ||
                     (typeof(TResult) == typeof(ushort) && default(ushort) == (ushort)(object)result!) ||
-                    (typeof(TResult) == typeof(IntPtr) && default == (IntPtr)(object)result!) ||
+                    (typeof(TResult) == typeof(nint) && default == (nint)(object)result!) ||
                     (typeof(TResult) == typeof(nuint) && default == (nuint)(object)result!))
                 {
                     return Task<TResult>.s_defaultResultTask;

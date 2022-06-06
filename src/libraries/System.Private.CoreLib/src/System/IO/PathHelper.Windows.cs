@@ -74,7 +74,7 @@ namespace System.IO
             Debug.Assert(PathInternal.IsPartiallyQualified(path) || !PathInternal.IsExtended(path));
 
             uint result;
-            while ((result = Interop.Kernel32.GetFullPathNameW(ref MemoryMarshal.GetReference(path), (uint)builder.Capacity, ref builder.GetPinnableReference(), IntPtr.Zero)) > builder.Capacity)
+            while ((result = Interop.Kernel32.GetFullPathNameW(ref MemoryMarshal.GetReference(path), (uint)builder.Capacity, ref builder.GetPinnableReference(), 0)) > builder.Capacity)
             {
                 // Reported size is greater than the buffer size. Increase the capacity.
                 builder.EnsureCapacity(checked((int)result));

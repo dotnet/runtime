@@ -59,16 +59,16 @@ namespace System.Buffers
         {
             EventData* payload = stackalloc EventData[4];
             payload[0].Size = sizeof(int);
-            payload[0].DataPointer = ((IntPtr)(&bufferId));
+            payload[0].DataPointer = ((nint)(&bufferId));
             payload[0].Reserved = 0;
             payload[1].Size = sizeof(int);
-            payload[1].DataPointer = ((IntPtr)(&bufferSize));
+            payload[1].DataPointer = ((nint)(&bufferSize));
             payload[1].Reserved = 0;
             payload[2].Size = sizeof(int);
-            payload[2].DataPointer = ((IntPtr)(&poolId));
+            payload[2].DataPointer = ((nint)(&poolId));
             payload[2].Reserved = 0;
             payload[3].Size = sizeof(int);
-            payload[3].DataPointer = ((IntPtr)(&bucketId));
+            payload[3].DataPointer = ((nint)(&bucketId));
             payload[3].Reserved = 0;
             WriteEventCore(1, 4, payload);
         }
@@ -87,19 +87,19 @@ namespace System.Buffers
         {
             EventData* payload = stackalloc EventData[5];
             payload[0].Size = sizeof(int);
-            payload[0].DataPointer = ((IntPtr)(&bufferId));
+            payload[0].DataPointer = ((nint)(&bufferId));
             payload[0].Reserved = 0;
             payload[1].Size = sizeof(int);
-            payload[1].DataPointer = ((IntPtr)(&bufferSize));
+            payload[1].DataPointer = ((nint)(&bufferSize));
             payload[1].Reserved = 0;
             payload[2].Size = sizeof(int);
-            payload[2].DataPointer = ((IntPtr)(&poolId));
+            payload[2].DataPointer = ((nint)(&poolId));
             payload[2].Reserved = 0;
             payload[3].Size = sizeof(int);
-            payload[3].DataPointer = ((IntPtr)(&bucketId));
+            payload[3].DataPointer = ((nint)(&bucketId));
             payload[3].Reserved = 0;
             payload[4].Size = sizeof(BufferAllocatedReason);
-            payload[4].DataPointer = ((IntPtr)(&reason));
+            payload[4].DataPointer = ((nint)(&reason));
             payload[4].Reserved = 0;
             WriteEventCore(2, 5, payload);
         }
@@ -138,19 +138,19 @@ namespace System.Buffers
         {
             EventData* payload = stackalloc EventData[5];
             payload[0].Size = sizeof(int);
-            payload[0].DataPointer = ((IntPtr)(&bufferId));
+            payload[0].DataPointer = ((nint)(&bufferId));
             payload[0].Reserved = 0;
             payload[1].Size = sizeof(int);
-            payload[1].DataPointer = ((IntPtr)(&bufferSize));
+            payload[1].DataPointer = ((nint)(&bufferSize));
             payload[1].Reserved = 0;
             payload[2].Size = sizeof(int);
-            payload[2].DataPointer = ((IntPtr)(&poolId));
+            payload[2].DataPointer = ((nint)(&poolId));
             payload[2].Reserved = 0;
             payload[3].Size = sizeof(int);
-            payload[3].DataPointer = ((IntPtr)(&bucketId));
+            payload[3].DataPointer = ((nint)(&bucketId));
             payload[3].Reserved = 0;
             payload[4].Size = sizeof(BufferDroppedReason);
-            payload[4].DataPointer = ((IntPtr)(&reason));
+            payload[4].DataPointer = ((nint)(&reason));
             payload[4].Reserved = 0;
             WriteEventCore(6, 5, payload);
         }

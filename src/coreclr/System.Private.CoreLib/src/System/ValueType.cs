@@ -86,7 +86,7 @@ namespace System
 
         private static int s_seed;
 
-        internal static int GetHashCodeOfPtr(IntPtr ptr)
+        internal static int GetHashCodeOfPtr(nint ptr)
         {
             int hashCode = (int)ptr;
 

@@ -19,7 +19,7 @@ namespace System.Runtime.InteropServices.Marshalling
         private readonly int _sizeOfNativeElement;
 
         private T[]? _managedArray;
-        private IntPtr _allocatedMemory;
+        private nint _allocatedMemory;
         private Span<byte> _span;
 
         /// <summary>
@@ -96,7 +96,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <remarks>
         /// <seealso cref="CustomTypeMarshallerDirection.Out"/>
         /// </remarks>
-        public Span<T> GetManagedValuesDestination(int length) => _allocatedMemory == IntPtr.Zero ? null : _managedArray = new T[length];
+        public Span<T> GetManagedValuesDestination(int length) => _allocatedMemory == 0 ? null : _managedArray = new T[length];
 
         /// <summary>
         /// Returns a span that points to the memory where the native values of the array are stored after the native call.
@@ -108,7 +108,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// </remarks>
         public ReadOnlySpan<byte> GetNativeValuesSource(int length)
         {
-            if (_allocatedMemory == IntPtr.Zero)
+            if (_allocatedMemory == 0)
                 return default;
 
             int allocatedSize = checked(length * _sizeOfNativeElement);
@@ -147,7 +147,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// </remarks>
         public void FromNativeValue(byte* value)
         {
-            _allocatedMemory = (IntPtr)value;
+            _allocatedMemory = (nint)value;
         }
 
         /// <summary>

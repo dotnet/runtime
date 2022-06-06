@@ -22,7 +22,7 @@ namespace System.Runtime.InteropServices
 
         [SupportedOSPlatform("windows")]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static IntPtr CreateAggregatedObject(IntPtr pOuter, object o)
+        public static nint CreateAggregatedObject(nint pOuter, object o)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
@@ -39,7 +39,7 @@ namespace System.Runtime.InteropServices
         }
 
         [SupportedOSPlatform("windows")]
-        public static IntPtr CreateAggregatedObject<T>(IntPtr pOuter, T o) where T : notnull
+        public static nint CreateAggregatedObject<T>(nint pOuter, T o) where T : notnull
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
@@ -71,20 +71,20 @@ namespace System.Runtime.InteropServices
 
         [SupportedOSPlatform("windows")]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static IntPtr GetComInterfaceForObject(object o, Type T)
+        public static nint GetComInterfaceForObject(object o, Type T)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
         [SupportedOSPlatform("windows")]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static IntPtr GetComInterfaceForObject(object o, Type T, CustomQueryInterfaceMode mode)
+        public static nint GetComInterfaceForObject(object o, Type T, CustomQueryInterfaceMode mode)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
         [SupportedOSPlatform("windows")]
-        public static IntPtr GetComInterfaceForObject<T, TInterface>([DisallowNull] T o)
+        public static nint GetComInterfaceForObject<T, TInterface>([DisallowNull] T o)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
@@ -96,67 +96,67 @@ namespace System.Runtime.InteropServices
         }
 
         [SupportedOSPlatform("windows")]
-        public static IntPtr GetIDispatchForObject(object o)
+        public static nint GetIDispatchForObject(object o)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
         [SupportedOSPlatform("windows")]
-        public static IntPtr GetIUnknownForObject(object o)
-        {
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
-        }
-
-        [SupportedOSPlatform("windows")]
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        public static void GetNativeVariantForObject(object? obj, IntPtr pDstNativeVariant)
+        public static nint GetIUnknownForObject(object o)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
         [SupportedOSPlatform("windows")]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static void GetNativeVariantForObject<T>(T? obj, IntPtr pDstNativeVariant)
-        {
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
-        }
-
-        [SupportedOSPlatform("windows")]
-        public static object GetTypedObjectForIUnknown(IntPtr pUnk, Type t)
-        {
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
-        }
-
-        [SupportedOSPlatform("windows")]
-        public static object GetObjectForIUnknown(IntPtr pUnk)
+        public static void GetNativeVariantForObject(object? obj, nint pDstNativeVariant)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
         [SupportedOSPlatform("windows")]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static object? GetObjectForNativeVariant(IntPtr pSrcNativeVariant)
+        public static void GetNativeVariantForObject<T>(T? obj, nint pDstNativeVariant)
+        {
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
+        }
+
+        [SupportedOSPlatform("windows")]
+        public static object GetTypedObjectForIUnknown(nint pUnk, Type t)
+        {
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
+        }
+
+        [SupportedOSPlatform("windows")]
+        public static object GetObjectForIUnknown(nint pUnk)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
         [SupportedOSPlatform("windows")]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static T? GetObjectForNativeVariant<T>(IntPtr pSrcNativeVariant)
+        public static object? GetObjectForNativeVariant(nint pSrcNativeVariant)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
         [SupportedOSPlatform("windows")]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static object?[] GetObjectsForNativeVariants(IntPtr aSrcNativeVariant, int cVars)
+        public static T? GetObjectForNativeVariant<T>(nint pSrcNativeVariant)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
         [SupportedOSPlatform("windows")]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static T[] GetObjectsForNativeVariants<T>(IntPtr aSrcNativeVariant, int cVars)
+        public static object?[] GetObjectsForNativeVariants(nint aSrcNativeVariant, int cVars)
+        {
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
+        }
+
+        [SupportedOSPlatform("windows")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public static T[] GetObjectsForNativeVariants<T>(nint aSrcNativeVariant, int cVars)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
@@ -190,7 +190,7 @@ namespace System.Runtime.InteropServices
         }
 
         [SupportedOSPlatform("windows")]
-        public static object GetUniqueObjectForIUnknown(IntPtr unknown)
+        public static object GetUniqueObjectForIUnknown(nint unknown)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }

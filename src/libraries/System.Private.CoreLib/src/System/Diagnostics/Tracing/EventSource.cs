@@ -776,7 +776,7 @@ namespace System.Diagnostics.Tracing
 
                 fixed (byte *pMetadata = metadata)
                 {
-                    IntPtr eventHandle = m_eventPipeProvider.m_eventProvider.DefineEventHandle(
+                    nint eventHandle = m_eventPipeProvider.m_eventProvider.DefineEventHandle(
                         eventID,
                         eventName,
                         keywords,
@@ -785,7 +785,7 @@ namespace System.Diagnostics.Tracing
                         pMetadata,
                         metadataLength);
 
-                    Debug.Assert(eventHandle != IntPtr.Zero);
+                    Debug.Assert(eventHandle != 0);
                     m_eventData[i].EventHandle = eventHandle;
                 }
             }
@@ -818,7 +818,7 @@ namespace System.Diagnostics.Tracing
             if (IsEnabled())
             {
                 EventSource.EventData* descrs = stackalloc EventSource.EventData[1];
-                descrs[0].DataPointer = (IntPtr)(&arg1);
+                descrs[0].DataPointer = (nint)(&arg1);
                 descrs[0].Size = 4;
                 descrs[0].Reserved = 0;
                 WriteEventCore(eventId, 1, descrs);
@@ -834,10 +834,10 @@ namespace System.Diagnostics.Tracing
             if (IsEnabled())
             {
                 EventSource.EventData* descrs = stackalloc EventSource.EventData[2];
-                descrs[0].DataPointer = (IntPtr)(&arg1);
+                descrs[0].DataPointer = (nint)(&arg1);
                 descrs[0].Size = 4;
                 descrs[0].Reserved = 0;
-                descrs[1].DataPointer = (IntPtr)(&arg2);
+                descrs[1].DataPointer = (nint)(&arg2);
                 descrs[1].Size = 4;
                 descrs[1].Reserved = 0;
                 WriteEventCore(eventId, 2, descrs);
@@ -853,13 +853,13 @@ namespace System.Diagnostics.Tracing
             if (IsEnabled())
             {
                 EventSource.EventData* descrs = stackalloc EventSource.EventData[3];
-                descrs[0].DataPointer = (IntPtr)(&arg1);
+                descrs[0].DataPointer = (nint)(&arg1);
                 descrs[0].Size = 4;
                 descrs[0].Reserved = 0;
-                descrs[1].DataPointer = (IntPtr)(&arg2);
+                descrs[1].DataPointer = (nint)(&arg2);
                 descrs[1].Size = 4;
                 descrs[1].Reserved = 0;
-                descrs[2].DataPointer = (IntPtr)(&arg3);
+                descrs[2].DataPointer = (nint)(&arg3);
                 descrs[2].Size = 4;
                 descrs[2].Reserved = 0;
                 WriteEventCore(eventId, 3, descrs);
@@ -876,7 +876,7 @@ namespace System.Diagnostics.Tracing
             if (IsEnabled())
             {
                 EventSource.EventData* descrs = stackalloc EventSource.EventData[1];
-                descrs[0].DataPointer = (IntPtr)(&arg1);
+                descrs[0].DataPointer = (nint)(&arg1);
                 descrs[0].Size = 8;
                 descrs[0].Reserved = 0;
                 WriteEventCore(eventId, 1, descrs);
@@ -892,10 +892,10 @@ namespace System.Diagnostics.Tracing
             if (IsEnabled())
             {
                 EventSource.EventData* descrs = stackalloc EventSource.EventData[2];
-                descrs[0].DataPointer = (IntPtr)(&arg1);
+                descrs[0].DataPointer = (nint)(&arg1);
                 descrs[0].Size = 8;
                 descrs[0].Reserved = 0;
-                descrs[1].DataPointer = (IntPtr)(&arg2);
+                descrs[1].DataPointer = (nint)(&arg2);
                 descrs[1].Size = 8;
                 descrs[1].Reserved = 0;
                 WriteEventCore(eventId, 2, descrs);
@@ -911,13 +911,13 @@ namespace System.Diagnostics.Tracing
             if (IsEnabled())
             {
                 EventSource.EventData* descrs = stackalloc EventSource.EventData[3];
-                descrs[0].DataPointer = (IntPtr)(&arg1);
+                descrs[0].DataPointer = (nint)(&arg1);
                 descrs[0].Size = 8;
                 descrs[0].Reserved = 0;
-                descrs[1].DataPointer = (IntPtr)(&arg2);
+                descrs[1].DataPointer = (nint)(&arg2);
                 descrs[1].Size = 8;
                 descrs[1].Reserved = 0;
-                descrs[2].DataPointer = (IntPtr)(&arg3);
+                descrs[2].DataPointer = (nint)(&arg3);
                 descrs[2].Size = 8;
                 descrs[2].Reserved = 0;
                 WriteEventCore(eventId, 3, descrs);
@@ -937,7 +937,7 @@ namespace System.Diagnostics.Tracing
                 fixed (char* string1Bytes = arg1)
                 {
                     EventSource.EventData* descrs = stackalloc EventSource.EventData[1];
-                    descrs[0].DataPointer = (IntPtr)string1Bytes;
+                    descrs[0].DataPointer = (nint)string1Bytes;
                     descrs[0].Size = ((arg1.Length + 1) * 2);
                     descrs[0].Reserved = 0;
                     WriteEventCore(eventId, 1, descrs);
@@ -959,10 +959,10 @@ namespace System.Diagnostics.Tracing
                 fixed (char* string2Bytes = arg2)
                 {
                     EventSource.EventData* descrs = stackalloc EventSource.EventData[2];
-                    descrs[0].DataPointer = (IntPtr)string1Bytes;
+                    descrs[0].DataPointer = (nint)string1Bytes;
                     descrs[0].Size = ((arg1.Length + 1) * 2);
                     descrs[0].Reserved = 0;
-                    descrs[1].DataPointer = (IntPtr)string2Bytes;
+                    descrs[1].DataPointer = (nint)string2Bytes;
                     descrs[1].Size = ((arg2.Length + 1) * 2);
                     descrs[1].Reserved = 0;
                     WriteEventCore(eventId, 2, descrs);
@@ -986,13 +986,13 @@ namespace System.Diagnostics.Tracing
                 fixed (char* string3Bytes = arg3)
                 {
                     EventSource.EventData* descrs = stackalloc EventSource.EventData[3];
-                    descrs[0].DataPointer = (IntPtr)string1Bytes;
+                    descrs[0].DataPointer = (nint)string1Bytes;
                     descrs[0].Size = ((arg1.Length + 1) * 2);
                     descrs[0].Reserved = 0;
-                    descrs[1].DataPointer = (IntPtr)string2Bytes;
+                    descrs[1].DataPointer = (nint)string2Bytes;
                     descrs[1].Size = ((arg2.Length + 1) * 2);
                     descrs[1].Reserved = 0;
-                    descrs[2].DataPointer = (IntPtr)string3Bytes;
+                    descrs[2].DataPointer = (nint)string3Bytes;
                     descrs[2].Size = ((arg3.Length + 1) * 2);
                     descrs[2].Reserved = 0;
                     WriteEventCore(eventId, 3, descrs);
@@ -1013,10 +1013,10 @@ namespace System.Diagnostics.Tracing
                 fixed (char* string1Bytes = arg1)
                 {
                     EventSource.EventData* descrs = stackalloc EventSource.EventData[2];
-                    descrs[0].DataPointer = (IntPtr)string1Bytes;
+                    descrs[0].DataPointer = (nint)string1Bytes;
                     descrs[0].Size = ((arg1.Length + 1) * 2);
                     descrs[0].Reserved = 0;
-                    descrs[1].DataPointer = (IntPtr)(&arg2);
+                    descrs[1].DataPointer = (nint)(&arg2);
                     descrs[1].Size = 4;
                     descrs[1].Reserved = 0;
                     WriteEventCore(eventId, 2, descrs);
@@ -1036,13 +1036,13 @@ namespace System.Diagnostics.Tracing
                 fixed (char* string1Bytes = arg1)
                 {
                     EventSource.EventData* descrs = stackalloc EventSource.EventData[3];
-                    descrs[0].DataPointer = (IntPtr)string1Bytes;
+                    descrs[0].DataPointer = (nint)string1Bytes;
                     descrs[0].Size = ((arg1.Length + 1) * 2);
                     descrs[0].Reserved = 0;
-                    descrs[1].DataPointer = (IntPtr)(&arg2);
+                    descrs[1].DataPointer = (nint)(&arg2);
                     descrs[1].Size = 4;
                     descrs[1].Reserved = 0;
-                    descrs[2].DataPointer = (IntPtr)(&arg3);
+                    descrs[2].DataPointer = (nint)(&arg3);
                     descrs[2].Size = 4;
                     descrs[2].Reserved = 0;
                     WriteEventCore(eventId, 3, descrs);
@@ -1063,10 +1063,10 @@ namespace System.Diagnostics.Tracing
                 fixed (char* string1Bytes = arg1)
                 {
                     EventSource.EventData* descrs = stackalloc EventSource.EventData[2];
-                    descrs[0].DataPointer = (IntPtr)string1Bytes;
+                    descrs[0].DataPointer = (nint)string1Bytes;
                     descrs[0].Size = ((arg1.Length + 1) * 2);
                     descrs[0].Reserved = 0;
-                    descrs[1].DataPointer = (IntPtr)(&arg2);
+                    descrs[1].DataPointer = (nint)(&arg2);
                     descrs[1].Size = 8;
                     descrs[1].Reserved = 0;
                     WriteEventCore(eventId, 2, descrs);
@@ -1087,10 +1087,10 @@ namespace System.Diagnostics.Tracing
                 fixed (char* string2Bytes = arg2)
                 {
                     EventSource.EventData* descrs = stackalloc EventSource.EventData[2];
-                    descrs[0].DataPointer = (IntPtr)(&arg1);
+                    descrs[0].DataPointer = (nint)(&arg1);
                     descrs[0].Size = 8;
                     descrs[0].Reserved = 0;
-                    descrs[1].DataPointer = (IntPtr)string2Bytes;
+                    descrs[1].DataPointer = (nint)string2Bytes;
                     descrs[1].Size = ((arg2.Length + 1) * 2);
                     descrs[1].Reserved = 0;
                     WriteEventCore(eventId, 2, descrs);
@@ -1111,10 +1111,10 @@ namespace System.Diagnostics.Tracing
                 fixed (char* string2Bytes = arg2)
                 {
                     EventSource.EventData* descrs = stackalloc EventSource.EventData[2];
-                    descrs[0].DataPointer = (IntPtr)(&arg1);
+                    descrs[0].DataPointer = (nint)(&arg1);
                     descrs[0].Size = 4;
                     descrs[0].Reserved = 0;
-                    descrs[1].DataPointer = (IntPtr)string2Bytes;
+                    descrs[1].DataPointer = (nint)string2Bytes;
                     descrs[1].Size = ((arg2.Length + 1) * 2);
                     descrs[1].Reserved = 0;
                     WriteEventCore(eventId, 2, descrs);
@@ -1134,10 +1134,10 @@ namespace System.Diagnostics.Tracing
                 if (arg1 == null || arg1.Length == 0)
                 {
                     int blobSize = 0;
-                    descrs[0].DataPointer = (IntPtr)(&blobSize);
+                    descrs[0].DataPointer = (nint)(&blobSize);
                     descrs[0].Size = 4;
                     descrs[0].Reserved = 0;
-                    descrs[1].DataPointer = (IntPtr)(&blobSize); // valid address instead of empty content
+                    descrs[1].DataPointer = (nint)(&blobSize); // valid address instead of empty content
                     descrs[1].Size = 0;
                     descrs[1].Reserved = 0;
                     WriteEventCore(eventId, 2, descrs);
@@ -1147,10 +1147,10 @@ namespace System.Diagnostics.Tracing
                     int blobSize = arg1.Length;
                     fixed (byte* blob = &arg1[0])
                     {
-                        descrs[0].DataPointer = (IntPtr)(&blobSize);
+                        descrs[0].DataPointer = (nint)(&blobSize);
                         descrs[0].Size = 4;
                         descrs[0].Reserved = 0;
-                        descrs[1].DataPointer = (IntPtr)blob;
+                        descrs[1].DataPointer = (nint)blob;
                         descrs[1].Size = blobSize;
                         descrs[1].Reserved = 0;
                         WriteEventCore(eventId, 2, descrs);
@@ -1168,16 +1168,16 @@ namespace System.Diagnostics.Tracing
             if (IsEnabled())
             {
                 EventSource.EventData* descrs = stackalloc EventSource.EventData[3];
-                descrs[0].DataPointer = (IntPtr)(&arg1);
+                descrs[0].DataPointer = (nint)(&arg1);
                 descrs[0].Size = 8;
                 descrs[0].Reserved = 0;
                 if (arg2 == null || arg2.Length == 0)
                 {
                     int blobSize = 0;
-                    descrs[1].DataPointer = (IntPtr)(&blobSize);
+                    descrs[1].DataPointer = (nint)(&blobSize);
                     descrs[1].Size = 4;
                     descrs[1].Reserved = 0;
-                    descrs[2].DataPointer = (IntPtr)(&blobSize); // valid address instead of empty contents
+                    descrs[2].DataPointer = (nint)(&blobSize); // valid address instead of empty contents
                     descrs[2].Size = 0;
                     descrs[2].Reserved = 0;
                     WriteEventCore(eventId, 3, descrs);
@@ -1187,10 +1187,10 @@ namespace System.Diagnostics.Tracing
                     int blobSize = arg2.Length;
                     fixed (byte* blob = &arg2[0])
                     {
-                        descrs[1].DataPointer = (IntPtr)(&blobSize);
+                        descrs[1].DataPointer = (nint)(&blobSize);
                         descrs[1].Size = 4;
                         descrs[1].Reserved = 0;
-                        descrs[2].DataPointer = (IntPtr)blob;
+                        descrs[2].DataPointer = (nint)blob;
                         descrs[2].Size = blobSize;
                         descrs[2].Reserved = 0;
                         WriteEventCore(eventId, 3, descrs);
@@ -1210,9 +1210,9 @@ namespace System.Diagnostics.Tracing
             /// Address where the one argument lives (if this points to managed memory you must ensure the
             /// managed object is pinned.
             /// </summary>
-            public unsafe IntPtr DataPointer
+            public unsafe nint DataPointer
             {
-                get => (IntPtr)(void*)m_Ptr;
+                get => (nint)(void*)m_Ptr;
                 set => m_Ptr = unchecked((ulong)(void*)value);
             }
 
@@ -1274,10 +1274,10 @@ namespace System.Diagnostics.Tracing
         ///            fixed (char* string2Bytes = arg2)
         ///            {
         ///                EventSource.EventData* descrs = stackalloc EventSource.EventData[2];
-        ///                descrs[0].DataPointer = (IntPtr)(&amp;arg1);
+        ///                descrs[0].DataPointer = (nint)(&amp;arg1);
         ///                descrs[0].Size = 8;
         ///                descrs[0].Reserved = 0;
-        ///                descrs[1].DataPointer = (IntPtr)string2Bytes;
+        ///                descrs[1].DataPointer = (nint)string2Bytes;
         ///                descrs[1].Size = ((arg2.Length + 1) * 2);
         ///                descrs[1].Reserved = 0;
         ///                WriteEventCore(eventId, 2, descrs);
@@ -1313,9 +1313,9 @@ namespace System.Diagnostics.Tracing
         ///            fixed (char* string2Bytes = arg2)
         ///            {
         ///                EventSource.EventData* descrs = stackalloc EventSource.EventData[2];
-        ///                descrs[0].DataPointer = (IntPtr)(&amp;arg1);
+        ///                descrs[0].DataPointer = (nint)(&amp;arg1);
         ///                descrs[0].Size = 8;
-        ///                descrs[1].DataPointer = (IntPtr)string2Bytes;
+        ///                descrs[1].DataPointer = (nint)string2Bytes;
         ///                descrs[1].Size = ((arg2.Length + 1) * 2);
         ///                WriteEventWithRelatedActivityIdCore(eventId, relatedActivityId, 2, descrs);
         ///            }
@@ -1365,10 +1365,10 @@ namespace System.Diagnostics.Tracing
 #if FEATURE_MANAGED_ETW
                     if (!SelfDescribingEvents)
                     {
-                        if (metadata.EnabledForETW && !m_etwProvider.WriteEvent(ref metadata.Descriptor, metadata.EventHandle, pActivityId, relatedActivityId, eventDataCount, (IntPtr)data))
+                        if (metadata.EnabledForETW && !m_etwProvider.WriteEvent(ref metadata.Descriptor, metadata.EventHandle, pActivityId, relatedActivityId, eventDataCount, (nint)data))
                             ThrowEventSourceException(metadata.Name);
 #if FEATURE_PERFTRACING
-                        if (metadata.EnabledForEventPipe && !m_eventPipeProvider.WriteEvent(ref metadata.Descriptor, metadata.EventHandle, pActivityId, relatedActivityId, eventDataCount, (IntPtr)data))
+                        if (metadata.EnabledForEventPipe && !m_eventPipeProvider.WriteEvent(ref metadata.Descriptor, metadata.EventHandle, pActivityId, relatedActivityId, eventDataCount, (nint)data))
                             ThrowEventSourceException(metadata.Name);
 #endif // FEATURE_PERFTRACING
                     }
@@ -1528,11 +1528,11 @@ namespace System.Diagnostics.Tracing
         private unsafe void WriteEventRaw(
             string? eventName,
             ref EventDescriptor eventDescriptor,
-            IntPtr eventHandle,
+            nint eventHandle,
             Guid* activityID,
             Guid* relatedActivityID,
             int dataCount,
-            IntPtr data)
+            nint data)
         {
 #if FEATURE_MANAGED_ETW || FEATURE_PERFTRACING
             bool allAreNull = true;
@@ -1737,7 +1737,7 @@ namespace System.Diagnostics.Tracing
         {
             for (int i = 0; i < decodedObjects.Length; i++, data++)
             {
-                IntPtr dataPointer = data->DataPointer;
+                nint dataPointer = data->DataPointer;
                 Type dataType = parameterTypes[i];
                 object? decoded;
 
@@ -1783,9 +1783,9 @@ namespace System.Diagnostics.Tracing
                             data++;
                             goto BytePtr;
                         }
-                        else if (IntPtr.Size == 4 && dataType == typeof(IntPtr))
+                        else if (sizeof(nint) == 4 && dataType == typeof(nint))
                         {
-                            decoded = *(IntPtr*)dataPointer;
+                            decoded = *(nint*)dataPointer;
                         }
                         else
                         {
@@ -1843,9 +1843,9 @@ namespace System.Diagnostics.Tracing
                         {
                             decoded = DateTime.FromFileTimeUtc(*(long*)dataPointer);
                         }
-                        else if (IntPtr.Size == 8 && dataType == typeof(IntPtr))
+                        else if (sizeof(nint) == 8 && dataType == typeof(nint))
                         {
-                            decoded = *(IntPtr*)dataPointer;
+                            decoded = *(nint*)dataPointer;
                         }
                         else
                         {
@@ -1893,7 +1893,7 @@ namespace System.Diagnostics.Tracing
             String:
                 // ETW strings are NULL-terminated, so marshal everything up to the first null in the string.
                 AssertValidString(data);
-                decoded = dataPointer == IntPtr.Zero ? null : new string((char*)dataPointer, 0, (data->Size >> 1) - 1);
+                decoded = dataPointer == 0 ? null : new string((char*)dataPointer, 0, (data->Size >> 1) - 1);
 
             Store:
                 decodedObjects[i] = decoded;
@@ -2120,8 +2120,8 @@ namespace System.Diagnostics.Tracing
                     for (int i = 0; i < args.Length; i++, data++)
                     {
                         AssertValidString(data);
-                        IntPtr dataPointer = data->DataPointer;
-                        args[i] = dataPointer == IntPtr.Zero ? null : new string((char*)dataPointer, 0, (data->Size >> 1) - 1);
+                        nint dataPointer = data->DataPointer;
+                        args[i] = dataPointer == 0 ? null : new string((char*)dataPointer, 0, (data->Size >> 1) - 1);
                     }
                 }
                 else if (metadata.AllParametersAreInt32)
@@ -2237,13 +2237,13 @@ namespace System.Diagnostics.Tracing
 #if FEATURE_MANAGED_ETW
                     if (m_etwProvider != null)
                     {
-                        m_etwProvider.WriteEvent(ref descr, IntPtr.Zero, null, null, 1, (IntPtr)((void*)&data));
+                        m_etwProvider.WriteEvent(ref descr, 0, null, null, 1, (nint)((void*)&data));
                     }
 #endif // FEATURE_MANAGED_ETW
 #if FEATURE_PERFTRACING
                     if (m_eventPipeProvider != null)
                     {
-                        if (m_writeEventStringEventHandle == IntPtr.Zero)
+                        if (m_writeEventStringEventHandle == 0)
                         {
                             if (m_createEventLock is null)
                             {
@@ -2252,7 +2252,7 @@ namespace System.Diagnostics.Tracing
 
                             lock (m_createEventLock)
                             {
-                                if (m_writeEventStringEventHandle == IntPtr.Zero)
+                                if (m_writeEventStringEventHandle == 0)
                                 {
                                     string eventName = "EventSourceMessage";
                                     EventParameterInfo paramInfo = default(EventParameterInfo);
@@ -2269,7 +2269,7 @@ namespace System.Diagnostics.Tracing
                             }
                         }
 
-                        m_eventPipeProvider.WriteEvent(ref descr, m_writeEventStringEventHandle, null, null, 1, (IntPtr)((void*)&data));
+                        m_eventPipeProvider.WriteEvent(ref descr, m_writeEventStringEventHandle, null, null, 1, (nint)((void*)&data));
                     }
 #endif // FEATURE_PERFTRACING
                 }
@@ -2483,7 +2483,7 @@ namespace System.Diagnostics.Tracing
         internal partial struct EventMetadata
         {
             public EventDescriptor Descriptor;
-            public IntPtr EventHandle;              // EventPipeEvent handle.
+            public nint EventHandle;              // EventPipeEvent handle.
             public EventTags Tags;
             public bool EnabledForAnyListener;      // true if any dispatcher has this event turned on
             public bool EnabledForETW;              // is this event on for ETW?
@@ -2936,7 +2936,7 @@ namespace System.Diagnostics.Tracing
                     dataDescrs[1].Size = (uint)Math.Min(dataLeft, chunkSize);
                     if (m_etwProvider != null)
                     {
-                        if (!m_etwProvider.WriteEvent(ref manifestDescr, IntPtr.Zero, null, null, 2, (IntPtr)dataDescrs))
+                        if (!m_etwProvider.WriteEvent(ref manifestDescr, 0, null, null, 2, (nint)dataDescrs))
                         {
                             // Turns out that if users set the BufferSize to something less than 64K then WriteEvent
                             // can fail.   If we get this failure on the first chunk try again with something smaller
@@ -3544,7 +3544,7 @@ namespace System.Diagnostics.Tracing
             metadata.Message = eventAttribute.Message;
             metadata.ActivityOptions = eventAttribute.ActivityOptions;
             metadata.HasRelatedActivityID = hasRelatedActivityID;
-            metadata.EventHandle = IntPtr.Zero;
+            metadata.EventHandle = 0;
 
             // We represent a byte[] with 2 EventData entries: an integer denoting the length and a blob of bytes in the data pointer.
             // This causes a spurious warning because eventDataCount is off by one for the byte[] case.
@@ -3918,7 +3918,7 @@ namespace System.Diagnostics.Tracing
 #endif
 #if FEATURE_PERFTRACING
         private object? m_createEventLock;
-        private IntPtr m_writeEventStringEventHandle = IntPtr.Zero;
+        private nint m_writeEventStringEventHandle = 0;
         private volatile OverrideEventProvider m_eventPipeProvider = null!;
 #endif
         private bool m_completelyInited;                // The EventSource constructor has returned without exception.
@@ -6070,7 +6070,7 @@ namespace System.Diagnostics.Tracing
                 default:
                     if (type == typeof(Guid))
                         return "win:GUID";
-                    else if (type == typeof(IntPtr))
+                    else if (type == typeof(nint))
                         return "win:Pointer";
                     else if ((type.IsArray || type.IsPointer) && type.GetElementType() == typeof(byte))
                         return "win:Binary";

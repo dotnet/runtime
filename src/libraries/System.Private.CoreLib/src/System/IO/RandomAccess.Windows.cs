@@ -84,7 +84,7 @@ namespace System.IO
 
                 fixed (byte* pinned = &MemoryMarshal.GetReference(buffer))
                 {
-                    Interop.Kernel32.ReadFile(handle, pinned, buffer.Length, IntPtr.Zero, overlapped);
+                    Interop.Kernel32.ReadFile(handle, pinned, buffer.Length, 0, overlapped);
 
                     int errorCode = FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
                     if (errorCode == Interop.Errors.ERROR_IO_PENDING)
@@ -113,7 +113,7 @@ namespace System.IO
                             // EOF on a pipe. Callback will not be called.
                             // We clear the overlapped status bit for this special case (failure
                             // to do so looks like we are freeing a pending overlapped later).
-                            overlapped->InternalLow = IntPtr.Zero;
+                            overlapped->InternalLow = 0;
                             return 0;
 
                         default:
@@ -183,7 +183,7 @@ namespace System.IO
 
                 fixed (byte* pinned = &MemoryMarshal.GetReference(buffer))
                 {
-                    Interop.Kernel32.WriteFile(handle, pinned, buffer.Length, IntPtr.Zero, overlapped);
+                    Interop.Kernel32.WriteFile(handle, pinned, buffer.Length, 0, overlapped);
 
                     int errorCode = FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
                     if (errorCode == Interop.Errors.ERROR_IO_PENDING)
@@ -268,7 +268,7 @@ namespace System.IO
                 Debug.Assert(vts._memoryHandle.Pointer != null);
 
                 // Queue an async ReadFile operation.
-                if (Interop.Kernel32.ReadFile(handle, (byte*)vts._memoryHandle.Pointer, buffer.Length, IntPtr.Zero, nativeOverlapped) == 0)
+                if (Interop.Kernel32.ReadFile(handle, (byte*)vts._memoryHandle.Pointer, buffer.Length, 0, nativeOverlapped) == 0)
                 {
                     // The operation failed, or it's pending.
                     errorCode = FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
@@ -286,7 +286,7 @@ namespace System.IO
                             // EOF on a pipe. Callback will not be called.
                             // We clear the overlapped status bit for this special case (failure
                             // to do so looks like we are freeing a pending overlapped later).
-                            nativeOverlapped->InternalLow = IntPtr.Zero;
+                            nativeOverlapped->InternalLow = 0;
                             vts.Dispose();
                             return (null, 0);
 
@@ -351,7 +351,7 @@ namespace System.IO
                 Debug.Assert(vts._memoryHandle.Pointer != null);
 
                 // Queue an async WriteFile operation.
-                if (Interop.Kernel32.WriteFile(handle, (byte*)vts._memoryHandle.Pointer, buffer.Length, IntPtr.Zero, nativeOverlapped) == 0)
+                if (Interop.Kernel32.WriteFile(handle, (byte*)vts._memoryHandle.Pointer, buffer.Length, 0, nativeOverlapped) == 0)
                 {
                     // The operation failed, or it's pending.
                     errorCode = FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
@@ -446,7 +446,7 @@ namespace System.IO
         // The pinned MemoryHandles and the pointer to the segments must be cleaned-up
         // with the CleanupScatterGatherBuffers method.
         private static unsafe bool TryPrepareScatterGatherBuffers<T, THandler>(IReadOnlyList<T> buffers,
-            [NotNullWhen(true)] out MemoryHandle[]? handlesToDispose, out IntPtr segmentsPtr, out int totalBytes)
+            [NotNullWhen(true)] out MemoryHandle[]? handlesToDispose, out nint segmentsPtr, out int totalBytes)
             where T : struct
             where THandler : struct, IMemoryHandler<T>
         {
@@ -458,7 +458,7 @@ namespace System.IO
 
             int buffersCount = buffers.Count;
             handlesToDispose = null;
-            segmentsPtr = IntPtr.Zero;
+            segmentsPtr = 0;
             totalBytes = 0;
 
             long* segments = null;
@@ -498,7 +498,7 @@ namespace System.IO
                     segments[i] = ptr;
                 }
 
-                segmentsPtr = (IntPtr)segments;
+                segmentsPtr = (nint)segments;
                 totalBytes = (int)totalBytes64;
                 success = true;
                 return handlesToDispose != null;
@@ -507,12 +507,12 @@ namespace System.IO
             {
                 if (!success)
                 {
-                    CleanupScatterGatherBuffers(handlesToDispose, (IntPtr)segments);
+                    CleanupScatterGatherBuffers(handlesToDispose, (nint)segments);
                 }
             }
         }
 
-        private static unsafe void CleanupScatterGatherBuffers(MemoryHandle[]? handlesToDispose, IntPtr segmentsPtr)
+        private static unsafe void CleanupScatterGatherBuffers(MemoryHandle[]? handlesToDispose, nint segmentsPtr)
         {
             if (handlesToDispose != null)
             {
@@ -522,7 +522,7 @@ namespace System.IO
                 }
             }
 
-            if (segmentsPtr != IntPtr.Zero)
+            if (segmentsPtr != 0)
             {
                 NativeMemory.Free((void*)segmentsPtr);
             }
@@ -537,7 +537,7 @@ namespace System.IO
             }
 
             if (CanUseScatterGatherWindowsAPIs(handle)
-                && TryPrepareScatterGatherBuffers<Memory<byte>, MemoryHandler>(buffers, out MemoryHandle[]? handlesToDispose, out IntPtr segmentsPtr, out int totalBytes))
+                && TryPrepareScatterGatherBuffers<Memory<byte>, MemoryHandler>(buffers, out MemoryHandle[]? handlesToDispose, out nint segmentsPtr, out int totalBytes))
             {
                 return ReadScatterAtOffsetSingleSyscallAsync(handle, handlesToDispose, segmentsPtr, fileOffset, totalBytes, cancellationToken);
             }
@@ -545,7 +545,7 @@ namespace System.IO
             return ReadScatterAtOffsetMultipleSyscallsAsync(handle, buffers, fileOffset, cancellationToken);
         }
 
-        private static async ValueTask<long> ReadScatterAtOffsetSingleSyscallAsync(SafeFileHandle handle, MemoryHandle[] handlesToDispose, IntPtr segmentsPtr, long fileOffset, int totalBytes, CancellationToken cancellationToken)
+        private static async ValueTask<long> ReadScatterAtOffsetSingleSyscallAsync(SafeFileHandle handle, MemoryHandle[] handlesToDispose, nint segmentsPtr, long fileOffset, int totalBytes, CancellationToken cancellationToken)
         {
             try
             {
@@ -557,7 +557,7 @@ namespace System.IO
             }
         }
 
-        private static unsafe ValueTask<int> ReadFileScatterAsync(SafeFileHandle handle, IntPtr segmentsPtr, int bytesToRead, long fileOffset, CancellationToken cancellationToken)
+        private static unsafe ValueTask<int> ReadFileScatterAsync(SafeFileHandle handle, nint segmentsPtr, int bytesToRead, long fileOffset, CancellationToken cancellationToken)
         {
             handle.EnsureThreadPoolBindingInitialized();
 
@@ -565,9 +565,9 @@ namespace System.IO
             try
             {
                 NativeOverlapped* nativeOverlapped = vts.PrepareForOperation(Memory<byte>.Empty, fileOffset);
-                Debug.Assert(segmentsPtr != IntPtr.Zero);
+                Debug.Assert(segmentsPtr != 0);
 
-                if (Interop.Kernel32.ReadFileScatter(handle, (long*)segmentsPtr, bytesToRead, IntPtr.Zero, nativeOverlapped) == 0)
+                if (Interop.Kernel32.ReadFileScatter(handle, (long*)segmentsPtr, bytesToRead, 0, nativeOverlapped) == 0)
                 {
                     // The operation failed, or it's pending.
                     int errorCode = FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
@@ -584,7 +584,7 @@ namespace System.IO
                             // EOF on a pipe. Callback will not be called.
                             // We clear the overlapped status bit for this special case (failure
                             // to do so looks like we are freeing a pending overlapped later).
-                            nativeOverlapped->InternalLow = IntPtr.Zero;
+                            nativeOverlapped->InternalLow = 0;
                             vts.Dispose();
                             return ValueTask.FromResult(0);
 
@@ -634,7 +634,7 @@ namespace System.IO
             }
 
             if (CanUseScatterGatherWindowsAPIs(handle)
-                && TryPrepareScatterGatherBuffers<ReadOnlyMemory<byte>, ReadOnlyMemoryHandler>(buffers, out MemoryHandle[]? handlesToDispose, out IntPtr segmentsPtr, out int totalBytes))
+                && TryPrepareScatterGatherBuffers<ReadOnlyMemory<byte>, ReadOnlyMemoryHandler>(buffers, out MemoryHandle[]? handlesToDispose, out nint segmentsPtr, out int totalBytes))
             {
                 return WriteGatherAtOffsetSingleSyscallAsync(handle, handlesToDispose, segmentsPtr, fileOffset, totalBytes, cancellationToken);
             }
@@ -642,7 +642,7 @@ namespace System.IO
             return WriteGatherAtOffsetMultipleSyscallsAsync(handle, buffers, fileOffset, cancellationToken);
         }
 
-        private static async ValueTask WriteGatherAtOffsetSingleSyscallAsync(SafeFileHandle handle, MemoryHandle[] handlesToDispose, IntPtr segmentsPtr, long fileOffset, int totalBytes, CancellationToken cancellationToken)
+        private static async ValueTask WriteGatherAtOffsetSingleSyscallAsync(SafeFileHandle handle, MemoryHandle[] handlesToDispose, nint segmentsPtr, long fileOffset, int totalBytes, CancellationToken cancellationToken)
         {
             try
             {
@@ -654,7 +654,7 @@ namespace System.IO
             }
         }
 
-        private static unsafe ValueTask WriteFileGatherAsync(SafeFileHandle handle, IntPtr segmentsPtr, int bytesToWrite, long fileOffset, CancellationToken cancellationToken)
+        private static unsafe ValueTask WriteFileGatherAsync(SafeFileHandle handle, nint segmentsPtr, int bytesToWrite, long fileOffset, CancellationToken cancellationToken)
         {
             handle.EnsureThreadPoolBindingInitialized();
 
@@ -662,10 +662,10 @@ namespace System.IO
             try
             {
                 NativeOverlapped* nativeOverlapped = vts.PrepareForOperation(ReadOnlyMemory<byte>.Empty, fileOffset);
-                Debug.Assert(segmentsPtr != IntPtr.Zero);
+                Debug.Assert(segmentsPtr != 0);
 
                 // Queue an async WriteFile operation.
-                if (Interop.Kernel32.WriteFileGather(handle, (long*)segmentsPtr, bytesToWrite, IntPtr.Zero, nativeOverlapped) == 0)
+                if (Interop.Kernel32.WriteFileGather(handle, (long*)segmentsPtr, bytesToWrite, 0, nativeOverlapped) == 0)
                 {
                     // The operation failed, or it's pending.
                     int errorCode = FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);

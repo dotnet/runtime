@@ -12,7 +12,7 @@ namespace System.Reflection
     {
         #region Private Data Members
         // aggressive caching
-        private IntPtr m_fieldHandle;
+        private nint m_fieldHandle;
         private FieldAttributes m_fieldAttributes;
         // lazy caching
         private string? m_name;
@@ -266,7 +266,7 @@ namespace System.Reflection
 
         public override RuntimeFieldHandle FieldHandle => new RuntimeFieldHandle(this);
 
-        internal IntPtr GetFieldHandle()
+        internal nint GetFieldHandle()
         {
             return m_fieldHandle;
         }

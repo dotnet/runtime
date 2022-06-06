@@ -94,10 +94,10 @@ namespace System
         };
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern Array AllocateNewArray(IntPtr typeHandle, int length, GC_ALLOC_FLAGS flags);
+        internal static extern Array AllocateNewArray(nint typeHandle, int length, GC_ALLOC_FLAGS flags);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern int GetGenerationWR(IntPtr handle);
+        private static extern int GetGenerationWR(nint handle);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_GetTotalMemory")]
         private static partial long GetTotalMemory();
@@ -126,7 +126,7 @@ namespace System
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_RemoveMemoryPressure")]
         private static partial void _RemoveMemoryPressure(ulong bytesAllocated);
 
-        public static void AddMemoryPressure(long bytesAllocated)
+        public static unsafe void AddMemoryPressure(long bytesAllocated)
         {
             if (bytesAllocated <= 0)
             {
@@ -134,7 +134,7 @@ namespace System
                         SR.ArgumentOutOfRange_NeedPosNum);
             }
 
-            if ((4 == IntPtr.Size) && (bytesAllocated > int.MaxValue))
+            if ((4 == sizeof(nint)) && (bytesAllocated > int.MaxValue))
             {
                 throw new ArgumentOutOfRangeException(nameof(bytesAllocated),
                     SR.ArgumentOutOfRange_MustBeNonNegInt32);
@@ -143,7 +143,7 @@ namespace System
             _AddMemoryPressure((ulong)bytesAllocated);
         }
 
-        public static void RemoveMemoryPressure(long bytesAllocated)
+        public static unsafe void RemoveMemoryPressure(long bytesAllocated)
         {
             if (bytesAllocated <= 0)
             {
@@ -151,7 +151,7 @@ namespace System
                     SR.ArgumentOutOfRange_NeedPosNum);
             }
 
-            if ((4 == IntPtr.Size) && (bytesAllocated > int.MaxValue))
+            if ((4 == sizeof(nint)) && (bytesAllocated > int.MaxValue))
             {
                 throw new ArgumentOutOfRangeException(nameof(bytesAllocated),
                     SR.ArgumentOutOfRange_MustBeNonNegInt32);
@@ -370,10 +370,10 @@ namespace System
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_RegisterFrozenSegment")]
-        private static partial IntPtr _RegisterFrozenSegment(IntPtr sectionAddress, nint sectionSize);
+        private static partial nint _RegisterFrozenSegment(nint sectionAddress, nint sectionSize);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_UnregisterFrozenSegment")]
-        private static partial void _UnregisterFrozenSegment(IntPtr segmentHandle);
+        private static partial void _UnregisterFrozenSegment(nint segmentHandle);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern long GetAllocatedBytesForCurrentThread();

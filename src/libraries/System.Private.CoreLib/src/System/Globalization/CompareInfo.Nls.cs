@@ -15,15 +15,15 @@ namespace System.Globalization
             _sortHandle = NlsGetSortHandle(_sortName);
         }
 
-        internal static unsafe IntPtr NlsGetSortHandle(string cultureName)
+        internal static unsafe nint NlsGetSortHandle(string cultureName)
         {
             if (GlobalizationMode.Invariant)
             {
-                return IntPtr.Zero;
+                return 0;
             }
 
-            IntPtr handle;
-            int ret = Interop.Kernel32.LCMapStringEx(cultureName, Interop.Kernel32.LCMAP_SORTHANDLE, null, 0, &handle, IntPtr.Size, null, null, IntPtr.Zero);
+            nint handle;
+            int ret = Interop.Kernel32.LCMapStringEx(cultureName, Interop.Kernel32.LCMAP_SORTHANDLE, null, 0, &handle, sizeof(nint), null, null, 0);
             if (ret > 0)
             {
                 // Even if we can get the sort handle, it is not guaranteed to work when Windows compatibility shim is applied
@@ -38,7 +38,7 @@ namespace System.Globalization
                 }
             }
 
-            return IntPtr.Zero;
+            return 0;
         }
 
         private static unsafe int FindStringOrdinal(
@@ -137,7 +137,7 @@ namespace System.Globalization
 
             fixed (char* pSource = &MemoryMarshal.GetReference(source))
             {
-                int sortKeyLength = Interop.Kernel32.LCMapStringEx(_sortHandle != IntPtr.Zero ? null : _sortName,
+                int sortKeyLength = Interop.Kernel32.LCMapStringEx(_sortHandle != 0 ? null : _sortName,
                                                   flags,
                                                   pSource, sourceLength /* in chars */,
                                                   null, 0,
@@ -159,7 +159,7 @@ namespace System.Globalization
 
                 fixed (byte* pSortKey = &MemoryMarshal.GetReference(span))
                 {
-                    if (Interop.Kernel32.LCMapStringEx(_sortHandle != IntPtr.Zero ? null : _sortName,
+                    if (Interop.Kernel32.LCMapStringEx(_sortHandle != 0 ? null : _sortName,
                                                       flags,
                                                       pSource, sourceLength /* in chars */,
                                                       pSortKey, sortKeyLength,
@@ -211,7 +211,7 @@ namespace System.Globalization
             Debug.Assert(GlobalizationMode.UseNls);
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
-            string? localeName = _sortHandle != IntPtr.Zero ? null : _sortName;
+            string? localeName = _sortHandle != 0 ? null : _sortName;
 
             // CompareStringEx may try to dereference the first character of its input, even if an explicit
             // length of 0 is specified. To work around potential AVs we'll always ensure zero-length inputs
@@ -264,7 +264,7 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(!lpStringValue.IsEmpty);
 
-            string? localeName = _sortHandle != IntPtr.Zero ? null : _sortName;
+            string? localeName = _sortHandle != 0 ? null : _sortName;
 
             // FindNLSStringEx disallows passing an explicit 0 for cchSource or cchValue.
             // The caller should've already checked that 'lpStringValue' isn't empty,
@@ -392,7 +392,7 @@ namespace System.Globalization
 
             fixed (char* pSource = source)
             {
-                int sortKeyLength = Interop.Kernel32.LCMapStringEx(_sortHandle != IntPtr.Zero ? null : _sortName,
+                int sortKeyLength = Interop.Kernel32.LCMapStringEx(_sortHandle != 0 ? null : _sortName,
                                             flags,
                                             pSource, sourceLength,
                                             null, 0,
@@ -406,7 +406,7 @@ namespace System.Globalization
 
                 fixed (byte* pBytes = keyData)
                 {
-                    if (Interop.Kernel32.LCMapStringEx(_sortHandle != IntPtr.Zero ? null : _sortName,
+                    if (Interop.Kernel32.LCMapStringEx(_sortHandle != 0 ? null : _sortName,
                                             flags,
                                             pSource, sourceLength,
                                             pBytes, keyData.Length,
@@ -473,7 +473,7 @@ namespace System.Globalization
                     // Manually check that the destination buffer is large enough to hold the full output.
                     // See earlier comment for reasoning.
 
-                    int requiredSortKeyLength = Interop.Kernel32.LCMapStringEx(_sortHandle != IntPtr.Zero ? null : _sortName,
+                    int requiredSortKeyLength = Interop.Kernel32.LCMapStringEx(_sortHandle != 0 ? null : _sortName,
                                                                                flags,
                                                                                pSource, sourceLength,
                                                                                null, 0,
@@ -491,7 +491,7 @@ namespace System.Globalization
                 }
 #endif
 
-                actualSortKeyLength = Interop.Kernel32.LCMapStringEx(_sortHandle != IntPtr.Zero ? null : _sortName,
+                actualSortKeyLength = Interop.Kernel32.LCMapStringEx(_sortHandle != 0 ? null : _sortName,
                                                                      flags,
                                                                      pSource, sourceLength,
                                                                      pSortKey, destination.Length,
@@ -543,7 +543,7 @@ namespace System.Globalization
             fixed (char* pSource = &MemoryMarshal.GetReference(source))
             {
                 Debug.Assert(pSource != null);
-                sortKeyLength = Interop.Kernel32.LCMapStringEx(_sortHandle != IntPtr.Zero ? null : _sortName,
+                sortKeyLength = Interop.Kernel32.LCMapStringEx(_sortHandle != 0 ? null : _sortName,
                                                                flags,
                                                                pSource, sourceLength,
                                                                null, 0,
@@ -571,7 +571,7 @@ namespace System.Globalization
 
             fixed (char* pText = &MemoryMarshal.GetReference(text))
             {
-                return Interop.Kernel32.IsNLSDefinedString(Interop.Kernel32.COMPARE_STRING, 0, IntPtr.Zero, pText, text.Length);
+                return Interop.Kernel32.IsNLSDefinedString(Interop.Kernel32.COMPARE_STRING, 0, 0, pText, text.Length);
             }
         }
 

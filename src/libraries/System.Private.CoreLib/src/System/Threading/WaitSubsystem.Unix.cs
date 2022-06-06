@@ -122,7 +122,7 @@ namespace System.Threading
 
         private static SafeWaitHandle NewHandle(WaitableObject waitableObject)
         {
-            IntPtr handle = HandleManager.NewHandle(waitableObject);
+            nint handle = HandleManager.NewHandle(waitableObject);
             SafeWaitHandle? safeWaitHandle = null;
             try
             {
@@ -213,12 +213,12 @@ namespace System.Threading
             return status;
         }
 
-        public static void DeleteHandle(IntPtr handle)
+        public static void DeleteHandle(nint handle)
         {
             HandleManager.DeleteHandle(handle);
         }
 
-        public static void SetEvent(IntPtr handle)
+        public static void SetEvent(nint handle)
         {
             SetEvent(HandleManager.FromHandle(handle));
         }
@@ -238,7 +238,7 @@ namespace System.Threading
             }
         }
 
-        public static void ResetEvent(IntPtr handle)
+        public static void ResetEvent(nint handle)
         {
             ResetEvent(HandleManager.FromHandle(handle));
         }
@@ -258,7 +258,7 @@ namespace System.Threading
             }
         }
 
-        public static int ReleaseSemaphore(IntPtr handle, int count)
+        public static int ReleaseSemaphore(nint handle, int count)
         {
             Debug.Assert(count > 0);
             return ReleaseSemaphore(HandleManager.FromHandle(handle), count);
@@ -280,7 +280,7 @@ namespace System.Threading
             }
         }
 
-        public static void ReleaseMutex(IntPtr handle)
+        public static void ReleaseMutex(nint handle)
         {
             ReleaseMutex(HandleManager.FromHandle(handle));
         }
@@ -300,7 +300,7 @@ namespace System.Threading
             }
         }
 
-        public static int Wait(IntPtr handle, int timeoutMilliseconds, bool interruptible)
+        public static int Wait(nint handle, int timeoutMilliseconds, bool interruptible)
         {
             Debug.Assert(timeoutMilliseconds >= -1);
             return Wait(HandleManager.FromHandle(handle), timeoutMilliseconds, interruptible);
@@ -319,7 +319,7 @@ namespace System.Threading
         }
 
         public static int Wait(
-            Span<IntPtr> waitHandles,
+            Span<nint> waitHandles,
             bool waitForAll,
             int timeoutMilliseconds)
         {
@@ -335,7 +335,7 @@ namespace System.Threading
             {
                 for (int i = 0; i < waitHandles.Length; ++i)
                 {
-                    Debug.Assert(waitHandles[i] != IntPtr.Zero);
+                    Debug.Assert(waitHandles[i] != 0);
                     WaitableObject waitableObject = HandleManager.FromHandle(waitHandles[i]);
                     if (waitForAll)
                     {
@@ -387,8 +387,8 @@ namespace System.Threading
         }
 
         public static int SignalAndWait(
-            IntPtr handleToSignal,
-            IntPtr handleToWaitOn,
+            nint handleToSignal,
+            nint handleToWaitOn,
             int timeoutMilliseconds)
         {
             Debug.Assert(timeoutMilliseconds >= -1);

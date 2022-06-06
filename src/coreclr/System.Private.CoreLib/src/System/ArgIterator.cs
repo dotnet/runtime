@@ -12,21 +12,21 @@ namespace System
     [StructLayout(LayoutKind.Sequential)]
     public ref struct ArgIterator
     {
-        private IntPtr ArgCookie;               // Cookie from the EE.
+        private nint ArgCookie;               // Cookie from the EE.
 
         // The SigPointer structure consists of the following members.  (Note: this is an inline native SigPointer data type)
-        private IntPtr sigPtr;                  // Pointer to remaining signature.
-        private IntPtr sigPtrLen;               // Remaining length of the pointer
+        private nint sigPtr;                  // Pointer to remaining signature.
+        private nint sigPtrLen;               // Remaining length of the pointer
 
         // Note, sigPtrLen is actually a DWORD, but on 64bit systems this structure becomes
         // 8-byte aligned, which requires us to pad it.
 
-        private IntPtr ArgPtr;                  // Pointer to remaining args.
+        private nint ArgPtr;                  // Pointer to remaining args.
         private int RemainingArgs;           // # of remaining args.
 
 #if (TARGET_WINDOWS && !TARGET_ARM)   // Native Varargs are not supported on Unix (all architectures) and Windows ARM
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern ArgIterator(IntPtr arglist);
+        private extern ArgIterator(nint arglist);
 
         // create an arg iterator that points at the first argument that
         // is not statically declared (that is the first ... arg)
@@ -36,7 +36,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern unsafe ArgIterator(IntPtr arglist, void* ptr);
+        private extern unsafe ArgIterator(nint arglist, void* ptr);
 
         // create an arg iterator that points just past 'firstArg'.
         // 'arglist' is the value returned by the ARGLIST instruction
@@ -70,7 +70,7 @@ namespace System
         [CLSCompliant(false)]
         public TypedReference GetNextArg(RuntimeTypeHandle rth)
         {
-            if (sigPtr != IntPtr.Zero)
+            if (sigPtr != 0)
             {
                 // This is an ordinary ArgIterator capable of determining
                 // types from a signature. Just do a regular GetNextArg.
@@ -83,7 +83,7 @@ namespace System
                 // type). Check that ArgPtr isn't zero or this API will allow a
                 // malicious caller to increment the pointer to an arbitrary
                 // location in memory and read the contents.
-                if (ArgPtr == IntPtr.Zero)
+                if (ArgPtr == 0)
 #pragma warning disable CA2208 // Instantiate argument exceptions correctly, the argument not applicable
                     throw new ArgumentNullException();
 #pragma warning restore CA2208
@@ -118,7 +118,7 @@ namespace System
 
         public unsafe RuntimeTypeHandle GetNextArgType()
         {
-            return new RuntimeTypeHandle(Type.GetTypeFromHandleUnsafe((IntPtr)_GetNextArgType()));
+            return new RuntimeTypeHandle(Type.GetTypeFromHandleUnsafe((nint)_GetNextArgType()));
         }
 
         public override int GetHashCode()

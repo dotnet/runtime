@@ -36,13 +36,13 @@ namespace System.Threading
         }
 
         [CLSCompliant(false)]
-        public virtual int Wait(IntPtr[] waitHandles, bool waitAll, int millisecondsTimeout)
+        public virtual int Wait(nint[] waitHandles, bool waitAll, int millisecondsTimeout)
         {
             return WaitHelper(waitHandles, waitAll, millisecondsTimeout);
         }
 
         [CLSCompliant(false)]
-        protected static int WaitHelper(IntPtr[] waitHandles, bool waitAll, int millisecondsTimeout)
+        protected static int WaitHelper(nint[] waitHandles, bool waitAll, int millisecondsTimeout)
         {
             ArgumentNullException.ThrowIfNull(waitHandles);
 

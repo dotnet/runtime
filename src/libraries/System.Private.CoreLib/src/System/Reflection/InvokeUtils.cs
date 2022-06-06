@@ -16,7 +16,7 @@ namespace System.Reflection
 
             if (dstType.IsPointer)
             {
-                if (TryConvertPointer(srcObject, out IntPtr dstIntPtr))
+                if (TryConvertPointer(srcObject, out nint dstIntPtr))
                 {
                     return dstIntPtr;
                 }
@@ -109,18 +109,18 @@ namespace System.Reflection
             return dstObject;
         }
 
-        private static bool TryConvertPointer(object srcObject, out IntPtr dstIntPtr)
+        private static bool TryConvertPointer(object srcObject, out nint dstIntPtr)
         {
-            if (srcObject is IntPtr srcIntPtr)
+            if (srcObject is nint srcIntPtr)
             {
                 dstIntPtr = srcIntPtr;
                 return true;
             }
 
-            // The source pointer should already have been converted to an IntPtr.
+            // The source pointer should already have been converted to an nint.
             Debug.Assert(srcObject is not Pointer);
 
-            dstIntPtr = IntPtr.Zero;
+            dstIntPtr = 0;
             return false;
         }
     }

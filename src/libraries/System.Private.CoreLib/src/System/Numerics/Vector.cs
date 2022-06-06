@@ -151,10 +151,10 @@ namespace System.Numerics
         public static Vector<long> AsVectorInt64<T>(Vector<T> value)
             where T : struct => value.As<T, long>();
 
-        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{IntPtr}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{nint}" />.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
         /// <param name="value">The vector to reinterpret.</param>
-        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{IntPtr}" />.</returns>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{nint}" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<nint> AsVectorNInt<T>(Vector<T> value)

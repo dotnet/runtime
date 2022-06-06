@@ -427,11 +427,11 @@ namespace System.Globalization
 
         private static unsafe bool EnumCalendarInfo(string localeName, CalendarId calendarId, CalendarDataType dataType, ref IcuEnumCalendarsData callbackContext)
         {
-            return Interop.Globalization.EnumCalendarInfo(&EnumCalendarInfoCallback, localeName, calendarId, dataType, (IntPtr)Unsafe.AsPointer(ref callbackContext));
+            return Interop.Globalization.EnumCalendarInfo(&EnumCalendarInfoCallback, localeName, calendarId, dataType, (nint)Unsafe.AsPointer(ref callbackContext));
         }
 
         [UnmanagedCallersOnly]
-        private static unsafe void EnumCalendarInfoCallback(char* calendarStringPtr, IntPtr context)
+        private static unsafe void EnumCalendarInfoCallback(char* calendarStringPtr, nint context)
         {
             try
             {

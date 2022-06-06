@@ -71,7 +71,7 @@ namespace System.Threading
         internal readonly Overlapped _overlapped;
         private object? _userObject;
         private readonly NativeOverlapped* _pNativeOverlapped;
-        private IntPtr _eventHandle;
+        private nint _eventHandle;
         private int _offsetLow;
         private int _offsetHigh;
 
@@ -79,7 +79,7 @@ namespace System.Threading
 
         internal ref int OffsetLow => ref (_pNativeOverlapped != null) ? ref _pNativeOverlapped->OffsetLow : ref _offsetLow;
         internal ref int OffsetHigh => ref (_pNativeOverlapped != null) ? ref _pNativeOverlapped->OffsetHigh : ref _offsetHigh;
-        internal ref IntPtr EventHandle => ref (_pNativeOverlapped != null) ? ref _pNativeOverlapped->EventHandle : ref _eventHandle;
+        internal ref nint EventHandle => ref (_pNativeOverlapped != null) ? ref _pNativeOverlapped->EventHandle : ref _eventHandle;
 
         internal NativeOverlapped* Pack(IOCompletionCallback? iocb, object? userData)
         {
@@ -140,7 +140,7 @@ namespace System.Threading
             _overlappedData = new OverlappedData(this);
         }
 
-        public Overlapped(int offsetLo, int offsetHi, IntPtr hEvent, IAsyncResult? ar) : this()
+        public Overlapped(int offsetLo, int offsetHi, nint hEvent, IAsyncResult? ar) : this()
         {
             Debug.Assert(_overlappedData != null, "Initialized in delegated ctor");
             _overlappedData.OffsetLow = offsetLo;
@@ -149,8 +149,8 @@ namespace System.Threading
             _overlappedData._asyncResult = ar;
         }
 
-        [Obsolete("This constructor is not 64-bit compatible and has been deprecated. Use the constructor that accepts an IntPtr for the event handle instead.")]
-        public Overlapped(int offsetLo, int offsetHi, int hEvent, IAsyncResult? ar) : this(offsetLo, offsetHi, new IntPtr(hEvent), ar)
+        [Obsolete("This constructor is not 64-bit compatible and has been deprecated. Use the constructor that accepts an nint for the event handle instead.")]
+        public Overlapped(int offsetLo, int offsetHi, int hEvent, IAsyncResult? ar) : this(offsetLo, offsetHi, (nint)hEvent, ar)
         {
         }
 
@@ -175,11 +175,11 @@ namespace System.Threading
         [Obsolete("Overlapped.EventHandle is not 64-bit compatible and has been deprecated. Use EventHandleIntPtr instead.")]
         public int EventHandle
         {
-            get => EventHandleIntPtr.ToInt32();
-            set => EventHandleIntPtr = new IntPtr(value);
+            get => checked((int)EventHandleIntPtr);
+            set => EventHandleIntPtr = (nint)value;
         }
 
-        public IntPtr EventHandleIntPtr
+        public nint EventHandleIntPtr
         {
             get => _overlappedData!.EventHandle;
             set => _overlappedData!.EventHandle = value;

@@ -286,7 +286,7 @@ namespace System.Text.Unicode
                             // pair is in reality only encoded as 4 UTF-8 code units, we need to
                             // perform this adjustment now.
 
-                            if (IntPtr.Size == 8)
+                            if (sizeof(nint) == 8)
                             {
                                 // Since we've already zero-extended surrogatePairsCountNuint, we can directly
                                 // sub + sub. It's more efficient than shl + sub.
@@ -354,7 +354,7 @@ namespace System.Text.Unicode
                         }
 
                         uint popcnt32 = (uint)popcnt;
-                        if (IntPtr.Size == 8)
+                        if (sizeof(nint) == 8)
                         {
                             popcnt32 += (uint)(popcnt >> 32);
                         }

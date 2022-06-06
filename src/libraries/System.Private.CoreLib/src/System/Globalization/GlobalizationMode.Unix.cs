@@ -71,8 +71,8 @@ namespace System.Globalization
             LoadLibrary(CreateLibraryName("libicudata", suffixAndSeparator, extension, version, versionAtEnd), failOnLoadFailure: true);
 #endif
 
-            IntPtr icuucLib = LoadLibrary(CreateLibraryName("libicuuc", suffixAndSeparator, extension, version, versionAtEnd), failOnLoadFailure: true);
-            IntPtr icuinLib = LoadLibrary(CreateLibraryName("libicui18n", suffixAndSeparator, extension, version, versionAtEnd), failOnLoadFailure: true);
+            nint icuucLib = LoadLibrary(CreateLibraryName("libicuuc", suffixAndSeparator, extension, version, versionAtEnd), failOnLoadFailure: true);
+            nint icuinLib = LoadLibrary(CreateLibraryName("libicui18n", suffixAndSeparator, extension, version, versionAtEnd), failOnLoadFailure: true);
 
             Interop.Globalization.InitICUFunctions(icuucLib, icuinLib, version, suffix);
         }

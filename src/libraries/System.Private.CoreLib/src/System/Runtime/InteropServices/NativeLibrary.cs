@@ -19,7 +19,7 @@ namespace System.Runtime.InteropServices
     ///     Otherwise null.
     /// </param>
     /// <returns>The handle for the loaded native library on success, null on failure</returns>
-    public delegate IntPtr DllImportResolver(string libraryName,
+    public delegate nint DllImportResolver(string libraryName,
                                              Assembly assembly,
                                              DllImportSearchPath? searchPath);
 
@@ -37,7 +37,7 @@ namespace System.Runtime.InteropServices
         /// <exception cref="System.ArgumentNullException">If libraryPath is null</exception>
         /// <exception cref="System.DllNotFoundException ">If the library can't be found.</exception>
         /// <exception cref="System.BadImageFormatException">If the library is not valid.</exception>
-        public static IntPtr Load(string libraryPath)
+        public static nint Load(string libraryPath)
         {
             ArgumentNullException.ThrowIfNull(libraryPath);
 
@@ -51,12 +51,12 @@ namespace System.Runtime.InteropServices
         /// <param name="handle">The out-parameter for the loaded native library handle</param>
         /// <returns>True on successful load, false otherwise</returns>
         /// <exception cref="System.ArgumentNullException">If libraryPath is null</exception>
-        public static bool TryLoad(string libraryPath, out IntPtr handle)
+        public static bool TryLoad(string libraryPath, out nint handle)
         {
             ArgumentNullException.ThrowIfNull(libraryPath);
 
             handle = LoadFromPath(libraryPath, throwOnError: false);
-            return handle != IntPtr.Zero;
+            return handle != 0;
         }
 
         /// <summary>
@@ -81,7 +81,7 @@ namespace System.Runtime.InteropServices
         /// <exception cref="System.ArgumentException">If assembly is not a RuntimeAssembly</exception>
         /// <exception cref="System.DllNotFoundException">If the library can't be found.</exception>
         /// <exception cref="System.BadImageFormatException">If the library is not valid.</exception>
-        public static IntPtr Load(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
+        public static nint Load(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
         {
             ArgumentNullException.ThrowIfNull(libraryName);
             ArgumentNullException.ThrowIfNull(assembly);
@@ -116,7 +116,7 @@ namespace System.Runtime.InteropServices
         /// <returns>True on successful load, false otherwise</returns>
         /// <exception cref="System.ArgumentNullException">If libraryPath or assembly is null</exception>
         /// <exception cref="System.ArgumentException">If assembly is not a RuntimeAssembly</exception>
-        public static bool TryLoad(string libraryName, Assembly assembly, DllImportSearchPath? searchPath, out IntPtr handle)
+        public static bool TryLoad(string libraryName, Assembly assembly, DllImportSearchPath? searchPath, out nint handle)
         {
             ArgumentNullException.ThrowIfNull(libraryName);
             ArgumentNullException.ThrowIfNull(assembly);
@@ -128,7 +128,7 @@ namespace System.Runtime.InteropServices
                                 assembly,
                                 searchPath,
                                 throwOnError: false);
-            return handle != IntPtr.Zero;
+            return handle != 0;
         }
 
         /// <summary>
@@ -137,9 +137,9 @@ namespace System.Runtime.InteropServices
         /// No action if the input handle is null.
         /// </summary>
         /// <param name="handle">The native library handle to be freed</param>
-        public static void Free(IntPtr handle)
+        public static void Free(nint handle)
         {
-            if (handle == IntPtr.Zero)
+            if (handle == 0)
                 return;
             FreeLib(handle);
         }
@@ -153,7 +153,7 @@ namespace System.Runtime.InteropServices
         /// <returns>The address of the symbol</returns>
         /// <exception cref="System.ArgumentNullException">If handle or name is null</exception>
         /// <exception cref="System.EntryPointNotFoundException">If the symbol is not found</exception>
-        public static IntPtr GetExport(IntPtr handle, string name)
+        public static nint GetExport(nint handle, string name)
         {
             ArgumentNullException.ThrowIfNull(handle);
             ArgumentNullException.ThrowIfNull(name);
@@ -169,13 +169,13 @@ namespace System.Runtime.InteropServices
         /// <param name="address"> The out-parameter for the symbol address, if it exists</param>
         /// <returns>True on success, false otherwise</returns>
         /// <exception cref="System.ArgumentNullException">If handle or name is null</exception>
-        public static bool TryGetExport(IntPtr handle, string name, out IntPtr address)
+        public static bool TryGetExport(nint handle, string name, out nint address)
         {
             ArgumentNullException.ThrowIfNull(handle);
             ArgumentNullException.ThrowIfNull(name);
 
             address = GetSymbol(handle, name, throwOnError: false);
-            return address != IntPtr.Zero;
+            return address != 0;
         }
 
         /// <summary>
@@ -228,17 +228,17 @@ namespace System.Runtime.InteropServices
         /// <param name="dllImportSearchPathFlags">If hasdllImportSearchPathFlags is true, the flags in
         ///                                       DefaultDllImportSearchPathAttribute; meaningless otherwise </param>
         /// <returns>The handle for the loaded library on success. Null on failure.</returns>
-        internal static IntPtr LoadLibraryCallbackStub(string libraryName, Assembly assembly,
+        internal static nint LoadLibraryCallbackStub(string libraryName, Assembly assembly,
                                                        bool hasDllImportSearchPathFlags, uint dllImportSearchPathFlags)
         {
             if (s_nativeDllResolveMap == null)
             {
-                return IntPtr.Zero;
+                return 0;
             }
 
             if (!s_nativeDllResolveMap.TryGetValue(assembly, out DllImportResolver? resolver))
             {
-                return IntPtr.Zero;
+                return 0;
             }
 
             return resolver(libraryName, assembly, hasDllImportSearchPathFlags ? (DllImportSearchPath?)dllImportSearchPathFlags : null);
@@ -248,9 +248,9 @@ namespace System.Runtime.InteropServices
         /// Get a handle that can be used with <see cref="GetExport" /> or <see cref="TryGetExport" /> to resolve exports from the entry point module.
         /// </summary>
         /// <returns> The handle that can be used to resolve exports from the entry point module.</returns>
-        public static IntPtr GetMainProgramHandle()
+        public static nint GetMainProgramHandle()
         {
-            IntPtr result = IntPtr.Zero;
+            nint result = 0;
 #if TARGET_WINDOWS
             result = Interop.Kernel32.GetModuleHandle(null);
 #else
@@ -258,7 +258,7 @@ namespace System.Runtime.InteropServices
 #endif
             // I don't know when a failure case can occur here, but checking for it and throwing an exception
             // if we encounter it.
-            if (result == IntPtr.Zero)
+            if (result == 0)
             {
                 throw new Win32Exception(Marshal.GetLastPInvokeError());
             }

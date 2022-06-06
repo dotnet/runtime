@@ -143,7 +143,7 @@ namespace System.Reflection
                     Span<ParameterCopyBackAction> shouldCopyBackParameters = new(ref argStorage._copyBack0, argCount);
 
                     StackAllocatedByRefs byrefStorage = default;
-                    IntPtr* pByRefStorage = (IntPtr*)&byrefStorage;
+                    nint* pByRefStorage = (nint*)&byrefStorage;
 
                     CheckArguments(
                         copyOfParameters,
@@ -204,8 +204,8 @@ namespace System.Reflection
 
             // We don't check a max stack size since we are invoking a method which
             // naturally requires a stack size that is dependent on the arg count\size.
-            IntPtr* pByRefStorage = stackalloc IntPtr[argCount];
-            NativeMemory.Clear(pByRefStorage, (uint)(argCount * sizeof(IntPtr)));
+            nint* pByRefStorage = stackalloc nint[argCount];
+            NativeMemory.Clear(pByRefStorage, (uint)(argCount * sizeof(nint)));
 
             ParameterCopyBackAction* copyBackActions = stackalloc ParameterCopyBackAction[argCount];
             Span<ParameterCopyBackAction> shouldCopyBackParameters = new(copyBackActions, argCount);

@@ -16,7 +16,7 @@ namespace Internal.Runtime.InteropServices
         public char* AssemblyPathBuffer;
         public char* AssemblyNameBuffer;
         public char* TypeNameBuffer;
-        public IntPtr ClassFactoryDest;
+        public nint ClassFactoryDest;
     }
 
     //
@@ -44,7 +44,7 @@ namespace Internal.Runtime.InteropServices
         void CreateInstance(
             [MarshalAs(UnmanagedType.Interface)] object? pUnkOuter,
             ref Guid riid,
-            out IntPtr ppvObject);
+            out nint ppvObject);
 
         void LockServer([MarshalAs(UnmanagedType.Bool)] bool fLock);
     }

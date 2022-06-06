@@ -179,8 +179,8 @@ namespace System
             }
             else
             {
-                Debug.Assert(totalByteLength % (nuint)sizeof(IntPtr) == 0);
-                SpanHelpers.ClearWithReferences(ref Unsafe.As<byte, IntPtr>(ref pStart), totalByteLength / (nuint)sizeof(IntPtr));
+                Debug.Assert(totalByteLength % (nuint)sizeof(nint) == 0);
+                SpanHelpers.ClearWithReferences(ref Unsafe.As<byte, nint>(ref pStart), totalByteLength / (nuint)sizeof(nint));
             }
 
             // GC.KeepAlive(array) not required. pMT kept alive via `pStart`
@@ -216,7 +216,7 @@ namespace System
             nuint byteLength = (uint)length * elementSize;
 
             if (pMT->ContainsGCPointers)
-                SpanHelpers.ClearWithReferences(ref Unsafe.As<byte, IntPtr>(ref ptr), byteLength / (uint)sizeof(IntPtr));
+                SpanHelpers.ClearWithReferences(ref Unsafe.As<byte, nint>(ref ptr), byteLength / (uint)sizeof(nint));
             else
                 SpanHelpers.ClearWithoutReferences(ref ptr, byteLength);
 
@@ -375,7 +375,7 @@ namespace System
         private unsafe bool IsValueOfElementType(object value)
         {
             MethodTable* thisMT = RuntimeHelpers.GetMethodTable(this);
-            return (IntPtr)thisMT->ElementType == (IntPtr)RuntimeHelpers.GetMethodTable(value);
+            return (nint)thisMT->ElementType == (nint)RuntimeHelpers.GetMethodTable(value);
         }
 
         // if this is an array of value classes and that value class has a default constructor

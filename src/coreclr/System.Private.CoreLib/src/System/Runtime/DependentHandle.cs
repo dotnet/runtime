@@ -30,7 +30,7 @@ namespace System.Runtime
     {
         // =========================================================================================
         // This struct collects all operations on native DependentHandles. The DependentHandle
-        // merely wraps an IntPtr so this struct serves mainly as a "managed typedef."
+        // merely wraps an nint so this struct serves mainly as a "managed typedef."
         //
         // DependentHandles exist in one of two states:
         //
@@ -40,7 +40,7 @@ namespace System.Runtime
         //
         //        Initializing a DependentHandle using the nullary ctor creates a DependentHandle
         //        that's in the !IsAllocated state.
-        //        (! Right now, we get this guarantee for free because (IntPtr)0 == NULL unmanaged handle.
+        //        (! Right now, we get this guarantee for free because 0 == NULL unmanaged handle.
         //         ! If that assertion ever becomes false, we'll have to add an _isAllocated field
         //         ! to compensate.)
         //
@@ -53,7 +53,7 @@ namespace System.Runtime
         // to use DependentHandles in a thread-safe way.
         // =========================================================================================
 
-        private IntPtr _handle;
+        private nint _handle;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DependentHandle"/> struct with the specified arguments.
@@ -85,7 +85,7 @@ namespace System.Runtime
         {
             get
             {
-                IntPtr handle = _handle;
+                nint handle = _handle;
 
                 if ((nint)handle == 0)
                 {
@@ -96,7 +96,7 @@ namespace System.Runtime
             }
             set
             {
-                IntPtr handle = _handle;
+                nint handle = _handle;
 
                 if ((nint)handle == 0 || value is not null)
                 {
@@ -122,7 +122,7 @@ namespace System.Runtime
         {
             get
             {
-                IntPtr handle = _handle;
+                nint handle = _handle;
 
                 if ((nint)handle == 0)
                 {
@@ -133,7 +133,7 @@ namespace System.Runtime
             }
             set
             {
-                IntPtr handle = _handle;
+                nint handle = _handle;
 
                 if ((nint)handle == 0)
                 {
@@ -158,7 +158,7 @@ namespace System.Runtime
         {
             get
             {
-                IntPtr handle = _handle;
+                nint handle = _handle;
 
                 if ((nint)handle == 0)
                 {
@@ -220,45 +220,45 @@ namespace System.Runtime
         {
             // Forces the DependentHandle back to non-allocated state
             // (if not already there) and frees the handle if needed.
-            IntPtr handle = _handle;
+            nint handle = _handle;
 
-            if ((nint)handle != 0)
+            if (handle != 0)
             {
-                _handle = IntPtr.Zero;
+                _handle = 0;
 
                 InternalFree(handle);
             }
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern IntPtr InternalInitialize(object? target, object? dependent);
+        private static extern nint InternalInitialize(object? target, object? dependent);
 
 #if DEBUG
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern object? InternalGetTarget(IntPtr dependentHandle);
+        private static extern object? InternalGetTarget(nint dependentHandle);
 #else
-        private static unsafe object? InternalGetTarget(IntPtr dependentHandle)
+        private static unsafe object? InternalGetTarget(nint dependentHandle)
         {
             // This optimization is the same that is used in GCHandle in RELEASE mode.
             // This is not used in DEBUG builds as the runtime performs additional checks.
             // The logic below is the inlined copy of ObjectFromHandle in the unmanaged runtime.
-            return Unsafe.As<IntPtr, object>(ref *(IntPtr*)(nint)dependentHandle);
+            return Unsafe.As<nint, object>(ref *(nint*)(nint)dependentHandle);
         }
 #endif
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern object? InternalGetDependent(IntPtr dependentHandle);
+        private static extern object? InternalGetDependent(nint dependentHandle);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern object? InternalGetTargetAndDependent(IntPtr dependentHandle, out object? dependent);
+        private static extern object? InternalGetTargetAndDependent(nint dependentHandle, out object? dependent);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void InternalSetDependent(IntPtr dependentHandle, object? dependent);
+        private static extern void InternalSetDependent(nint dependentHandle, object? dependent);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void InternalSetTargetToNull(IntPtr dependentHandle);
+        private static extern void InternalSetTargetToNull(nint dependentHandle);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void InternalFree(IntPtr dependentHandle);
+        private static extern void InternalFree(nint dependentHandle);
     }
 }

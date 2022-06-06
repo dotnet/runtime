@@ -366,9 +366,9 @@ namespace System.Numerics
         public static explicit operator Vector<long>(Vector<T> value)
             => value.As<T, long>();
 
-        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{IntPtr}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{nint}" />.</summary>
         /// <param name="value">The vector to reinterpret.</param>
-        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{IntPtr}" />.</returns>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{nint}" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static explicit operator Vector<nint>(Vector<T> value)

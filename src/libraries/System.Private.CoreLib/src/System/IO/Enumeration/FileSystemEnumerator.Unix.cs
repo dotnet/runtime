@@ -20,7 +20,7 @@ namespace System.IO.Enumeration
         private readonly object _lock = new object();
 
         private string? _currentPath;
-        private IntPtr _directoryHandle;
+        private nint _directoryHandle;
         private bool _lastEntryFound;
         private Queue<(string Path, int RemainingDepth)>? _pending;
 
@@ -37,7 +37,7 @@ namespace System.IO.Enumeration
             // We need to initialize the directory handle up front to ensure
             // we immediately throw IO exceptions for missing directory/etc.
             _directoryHandle = CreateDirectoryHandle(_rootDirectory);
-            if (_directoryHandle == IntPtr.Zero)
+            if (_directoryHandle == 0)
                 _lastEntryFound = true;
 
             _currentPath = _rootDirectory;
@@ -66,15 +66,15 @@ namespace System.IO.Enumeration
             => info.Error == Interop.Error.EACCES || info.Error == Interop.Error.EBADF
                 || info.Error == Interop.Error.EPERM;
 
-        private IntPtr CreateDirectoryHandle(string path, bool ignoreNotFound = false)
+        private nint CreateDirectoryHandle(string path, bool ignoreNotFound = false)
         {
-            IntPtr handle = Interop.Sys.OpenDir(path);
-            if (handle == IntPtr.Zero)
+            nint handle = Interop.Sys.OpenDir(path);
+            if (handle == 0)
             {
                 Interop.ErrorInfo info = Interop.Sys.GetLastErrorInfo();
                 if (InternalContinueOnError(info, ignoreNotFound))
                 {
-                    return IntPtr.Zero;
+                    return 0;
                 }
                 throw Interop.GetExceptionForIoErrno(info, path, isDirectory: true);
             }
@@ -83,8 +83,8 @@ namespace System.IO.Enumeration
 
         private void CloseDirectoryHandle()
         {
-            IntPtr handle = Interlocked.Exchange(ref _directoryHandle, IntPtr.Zero);
-            if (handle != IntPtr.Zero)
+            nint handle = Interlocked.Exchange(ref _directoryHandle, 0);
+            if (handle != 0)
                 Interop.Sys.CloseDir(handle);
         }
 
@@ -207,7 +207,7 @@ namespace System.IO.Enumeration
         private bool DequeueNextDirectory()
         {
             // In Windows we open handles before we queue them, not after. If we fail to create the handle
-            // but are ok with it (IntPtr.Zero), we don't queue them. Unix can't handle having a lot of
+            // but are ok with it (0), we don't queue them. Unix can't handle having a lot of
             // open handles, so we open after the fact.
             //
             // Doing the same on Windows would create a performance hit as we would no longer have the context
@@ -215,9 +215,9 @@ namespace System.IO.Enumeration
             // data we're maintaining, the number of active handles (they're not infinite), and the length
             // of time we have handles open (preventing some actions such as renaming/deleting/etc.).
 
-            _directoryHandle = IntPtr.Zero;
+            _directoryHandle = 0;
 
-            while (_directoryHandle == IntPtr.Zero)
+            while (_directoryHandle == 0)
             {
                 if (_pending == null || _pending.Count == 0)
                     return false;

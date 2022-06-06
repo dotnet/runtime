@@ -69,7 +69,7 @@ namespace System.Reflection
                     GetRuntimeModule().MetadataImport.GetPropertyProps(
                         m_token, out _, out _, out ConstArray sig);
 
-                    m_signature = new Signature(sig.Signature.ToPointer(), sig.Length, m_declaringType);
+                    m_signature = new Signature((void*)sig.Signature, sig.Length, m_declaringType);
                 }
 
                 return m_signature;

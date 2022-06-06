@@ -70,7 +70,7 @@ namespace Internal.Win32
             Debug.Assert(errorCode == 0, $"RegDeleteValue failed.  Here's your error code: {errorCode}");
         }
 
-        internal static RegistryKey OpenBaseKey(IntPtr hKey)
+        internal static RegistryKey OpenBaseKey(nint hKey)
         {
             return new RegistryKey(new SafeRegistryHandle(hKey, false));
         }
@@ -174,7 +174,7 @@ namespace Internal.Win32
                     names.Count,
                     name,
                     ref nameLength,
-                    IntPtr.Zero,
+                    0,
                     null,
                     null,
                     null)) != Interop.Errors.ERROR_NO_MORE_ITEMS)
@@ -477,9 +477,9 @@ namespace Internal.Win32
     internal static class Registry
     {
         /// <summary>Current User Key. This key should be used as the root for all user specific settings.</summary>
-        public static readonly RegistryKey CurrentUser = RegistryKey.OpenBaseKey(unchecked((IntPtr)(int)0x80000001));
+        public static readonly RegistryKey CurrentUser = RegistryKey.OpenBaseKey(unchecked((nint)(int)0x80000001));
 
         /// <summary>Local Machine key. This key should be used as the root for all machine specific settings.</summary>
-        public static readonly RegistryKey LocalMachine = RegistryKey.OpenBaseKey(unchecked((IntPtr)(int)0x80000002));
+        public static readonly RegistryKey LocalMachine = RegistryKey.OpenBaseKey(unchecked((nint)(int)0x80000002));
     }
 }

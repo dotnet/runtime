@@ -78,14 +78,14 @@ namespace System.Diagnostics.Tracing
         }
 
 #if FEATURE_PERFTRACING
-        public IntPtr GetOrCreateEventHandle(EventProvider provider, TraceLoggingEventHandleTable eventHandleTable, EventDescriptor descriptor, TraceLoggingEventTypes eventTypes)
+        public nint GetOrCreateEventHandle(EventProvider provider, TraceLoggingEventHandleTable eventHandleTable, EventDescriptor descriptor, TraceLoggingEventTypes eventTypes)
         {
-            IntPtr eventHandle;
-            if ((eventHandle = eventHandleTable[descriptor.EventId]) == IntPtr.Zero)
+            nint eventHandle;
+            if ((eventHandle = eventHandleTable[descriptor.EventId]) == 0)
             {
                 lock (eventHandleTable)
                 {
-                    if ((eventHandle = eventHandleTable[descriptor.EventId]) == IntPtr.Zero)
+                    if ((eventHandle = eventHandleTable[descriptor.EventId]) == 0)
                     {
                         byte[]? metadata = EventPipeMetadataGenerator.Instance.GenerateEventMetadata(
                             descriptor.EventId,

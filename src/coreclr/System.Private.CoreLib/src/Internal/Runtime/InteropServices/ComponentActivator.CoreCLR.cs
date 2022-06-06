@@ -10,7 +10,7 @@ namespace Internal.Runtime.InteropServices
     {
         // This hook for when GetFunctionPointer is called when the feature is disabled allows us to
         // provide error messages for known hosting scenarios such as C++/CLI.
-        private static void OnDisabledGetFunctionPointerCall(IntPtr typeNameNative, IntPtr methodNameNative)
+        private static void OnDisabledGetFunctionPointerCall(nint typeNameNative, nint methodNameNative)
         {
             if (!OperatingSystem.IsWindows())
                 return;

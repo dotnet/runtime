@@ -338,14 +338,14 @@ namespace System
             return checked((long)value._lower);
         }
 
-        /// <summary>Explicitly converts a 128-bit signed integer to a <see cref="IntPtr" /> value.</summary>
+        /// <summary>Explicitly converts a 128-bit signed integer to a <see cref="nint" /> value.</summary>
         /// <param name="value">The value to convert.</param>
-        /// <returns><paramref name="value" /> converted to a <see cref="IntPtr" />.</returns>
+        /// <returns><paramref name="value" /> converted to a <see cref="nint" />.</returns>
         public static explicit operator nint(Int128 value) => (nint)value._lower;
 
-        /// <summary>Explicitly converts a 128-bit signed integer to a <see cref="IntPtr" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <summary>Explicitly converts a 128-bit signed integer to a <see cref="nint" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
         /// <param name="value">The value to convert.</param>
-        /// <returns><paramref name="value" /> converted to a <see cref="IntPtr" />.</returns>
+        /// <returns><paramref name="value" /> converted to a <see cref="nint" />.</returns>
         /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="Int128" />.</exception>
         public static explicit operator checked nint(Int128 value)
         {
@@ -656,7 +656,7 @@ namespace System
             return new Int128((ulong)(lower >> 63), (ulong)lower);
         }
 
-        /// <summary>Implicitly converts a <see cref="IntPtr" /> value to a 128-bit signed integer.</summary>
+        /// <summary>Implicitly converts a <see cref="nint" /> value to a 128-bit signed integer.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to a 128-bit signed integer.</returns>
         public static implicit operator Int128(nint value)

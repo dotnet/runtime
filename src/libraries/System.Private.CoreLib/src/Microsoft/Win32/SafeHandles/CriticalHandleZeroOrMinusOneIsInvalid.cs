@@ -10,10 +10,10 @@ namespace Microsoft.Win32.SafeHandles
     public abstract class CriticalHandleZeroOrMinusOneIsInvalid : CriticalHandle
     {
         protected CriticalHandleZeroOrMinusOneIsInvalid()
-            : base(IntPtr.Zero)
+            : base(0)
         {
         }
 
-        public override bool IsInvalid => handle == IntPtr.Zero || handle == new IntPtr(-1);
+        public override bool IsInvalid => handle == 0 || handle == -1;
     }
 }

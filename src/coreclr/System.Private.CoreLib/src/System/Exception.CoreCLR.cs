@@ -182,7 +182,7 @@ namespace System
         private readonly object[]? _dynamicMethods;
         private string? _source;         // Mainly used by VB.
         private nuint _ipForWatsonBuckets; // Used to persist the IP for Watson Bucketing
-        private readonly IntPtr _xptrs;             // Internal EE stuff
+        private readonly nint _xptrs;             // Internal EE stuff
         private readonly int _xcode = _COMPlusExceptionCode;             // Internal EE stuff
 #pragma warning restore CA1823, 414
 

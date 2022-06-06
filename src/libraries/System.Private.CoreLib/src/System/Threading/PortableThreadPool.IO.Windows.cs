@@ -46,7 +46,7 @@ namespace System.Threading
         private static nint CreateIOCompletionPort()
         {
             nint port =
-                Interop.Kernel32.CreateIoCompletionPort(new IntPtr(-1), IntPtr.Zero, 0, IOCompletionPollerCount);
+                Interop.Kernel32.CreateIoCompletionPort(-1, 0, 0, IOCompletionPollerCount);
             if (port == 0)
             {
                 int hr = Marshal.GetHRForLastWin32Error();
@@ -89,7 +89,7 @@ namespace System.Threading
                 NativeRuntimeEventSource.Log.ThreadPoolIOEnqueue(nativeOverlapped);
             }
 
-            if (!Interop.Kernel32.PostQueuedCompletionStatus(_ioPort, 0, 0, (IntPtr)nativeOverlapped))
+            if (!Interop.Kernel32.PostQueuedCompletionStatus(_ioPort, 0, 0, (nint)nativeOverlapped))
             {
                 ThrowHelper.ThrowApplicationException(Marshal.GetHRForLastWin32Error());
             }
@@ -255,7 +255,7 @@ namespace System.Threading
                     }
 
                     // The NtStatus code for the operation is in the InternalLow field
-                    uint ntStatus = (uint)(nint)e.nativeOverlapped->InternalLow;
+                    uint ntStatus = (uint)e.nativeOverlapped->InternalLow;
                     uint errorCode = Interop.Errors.ERROR_SUCCESS;
                     if (ntStatus != Interop.StatusOptions.STATUS_SUCCESS)
                     {

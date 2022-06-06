@@ -63,7 +63,7 @@ namespace System.Runtime.InteropServices.ComTypes
         public int dwReserved;
         public int memidConstructor;
         public int memidDestructor;
-        public IntPtr lpstrSchema;
+        public nint lpstrSchema;
         public int cbSizeInstance;
         public TYPEKIND typekind;
         public short cFuncs;
@@ -83,8 +83,8 @@ namespace System.Runtime.InteropServices.ComTypes
     public struct FUNCDESC
     {
         public int memid;                   // MEMBERID memid;
-        public IntPtr lprgscode;            // /* [size_is(cScodes)] */ SCODE RPC_FAR *lprgscode;
-        public IntPtr lprgelemdescParam;    // /* [size_is(cParams)] */ ELEMDESC __RPC_FAR *lprgelemdescParam;
+        public nint lprgscode;            // /* [size_is(cScodes)] */ SCODE RPC_FAR *lprgscode;
+        public nint lprgelemdescParam;    // /* [size_is(cParams)] */ ELEMDESC __RPC_FAR *lprgelemdescParam;
         public FUNCKIND funckind;           // FUNCKIND funckind;
         public INVOKEKIND invkind;          // INVOKEKIND invkind;
         public CALLCONV callconv;           // CALLCONV callconv;
@@ -111,7 +111,7 @@ namespace System.Runtime.InteropServices.ComTypes
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     public struct IDLDESC
     {
-        public IntPtr dwReserved;
+        public nint dwReserved;
         public IDLFLAG wIDLFlags;
     }
 
@@ -133,7 +133,7 @@ namespace System.Runtime.InteropServices.ComTypes
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     public struct PARAMDESC
     {
-        public IntPtr lpVarValue;
+        public nint lpVarValue;
         public PARAMFLAG wParamFlags;
     }
 
@@ -141,7 +141,7 @@ namespace System.Runtime.InteropServices.ComTypes
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     public struct TYPEDESC
     {
-        public IntPtr lpValue;
+        public nint lpValue;
         public short vt;
     }
 
@@ -184,7 +184,7 @@ namespace System.Runtime.InteropServices.ComTypes
             [FieldOffset(0)]
             public int oInst;
             [FieldOffset(0)]
-            public IntPtr lpvarValue;
+            public nint lpvarValue;
         }
 
         public DESCUNION desc;
@@ -198,8 +198,8 @@ namespace System.Runtime.InteropServices.ComTypes
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     public struct DISPPARAMS
     {
-        public IntPtr rgvarg;
-        public IntPtr rgdispidNamedArgs;
+        public nint rgvarg;
+        public nint rgdispidNamedArgs;
         public int cArgs;
         public int cNamedArgs;
     }
@@ -214,8 +214,8 @@ namespace System.Runtime.InteropServices.ComTypes
         [MarshalAs(UnmanagedType.BStr)] public string bstrDescription;
         [MarshalAs(UnmanagedType.BStr)] public string bstrHelpFile;
         public int dwHelpContext;
-        public IntPtr pvReserved;
-        public IntPtr pfnDeferredFillIn;
+        public nint pvReserved;
+        public nint pfnDeferredFillIn;
         public int scode;
     }
 
@@ -298,27 +298,27 @@ namespace System.Runtime.InteropServices.ComTypes
     [ComImport]
     public interface ITypeInfo
     {
-        void GetTypeAttr(out IntPtr ppTypeAttr);
+        void GetTypeAttr(out nint ppTypeAttr);
         void GetTypeComp(out ITypeComp ppTComp);
-        void GetFuncDesc(int index, out IntPtr ppFuncDesc);
-        void GetVarDesc(int index, out IntPtr ppVarDesc);
+        void GetFuncDesc(int index, out nint ppFuncDesc);
+        void GetVarDesc(int index, out nint ppVarDesc);
         void GetNames(int memid, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2), Out] string[] rgBstrNames, int cMaxNames, out int pcNames);
         void GetRefTypeOfImplType(int index, out int href);
         void GetImplTypeFlags(int index, out IMPLTYPEFLAGS pImplTypeFlags);
         void GetIDsOfNames([MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPWStr, SizeParamIndex = 1), In] string[] rgszNames, int cNames, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1), Out] int[] pMemId);
-        void Invoke([MarshalAs(UnmanagedType.IUnknown)] object pvInstance, int memid, short wFlags, ref DISPPARAMS pDispParams, IntPtr pVarResult, IntPtr pExcepInfo, out int puArgErr);
+        void Invoke([MarshalAs(UnmanagedType.IUnknown)] object pvInstance, int memid, short wFlags, ref DISPPARAMS pDispParams, nint pVarResult, nint pExcepInfo, out int puArgErr);
         void GetDocumentation(int index, out string strName, out string strDocString, out int dwHelpContext, out string strHelpFile);
-        void GetDllEntry(int memid, INVOKEKIND invKind, IntPtr pBstrDllName, IntPtr pBstrName, IntPtr pwOrdinal);
+        void GetDllEntry(int memid, INVOKEKIND invKind, nint pBstrDllName, nint pBstrName, nint pwOrdinal);
         void GetRefTypeInfo(int hRef, out ITypeInfo ppTI);
-        void AddressOfMember(int memid, INVOKEKIND invKind, out IntPtr ppv);
+        void AddressOfMember(int memid, INVOKEKIND invKind, out nint ppv);
         void CreateInstance([MarshalAs(UnmanagedType.IUnknown)] object? pUnkOuter, [In] ref Guid riid, [MarshalAs(UnmanagedType.IUnknown), Out] out object ppvObj);
         void GetMops(int memid, out string? pBstrMops);
         void GetContainingTypeLib(out ITypeLib ppTLB, out int pIndex);
         [PreserveSig]
-        void ReleaseTypeAttr(IntPtr pTypeAttr);
+        void ReleaseTypeAttr(nint pTypeAttr);
         [PreserveSig]
-        void ReleaseFuncDesc(IntPtr pFuncDesc);
+        void ReleaseFuncDesc(nint pFuncDesc);
         [PreserveSig]
-        void ReleaseVarDesc(IntPtr pVarDesc);
+        void ReleaseVarDesc(nint pVarDesc);
     }
 }

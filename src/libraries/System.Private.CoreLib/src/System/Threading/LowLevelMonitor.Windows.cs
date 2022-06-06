@@ -36,7 +36,7 @@ namespace System.Threading
             }
 
             Interop.Kernel32.DeleteCriticalSection(&_pMonitor->_criticalSection);
-            Marshal.FreeHGlobal((IntPtr)_pMonitor);
+            Marshal.FreeHGlobal((nint)_pMonitor);
             _pMonitor = null;
         }
 

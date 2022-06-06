@@ -533,9 +533,9 @@ namespace System.Diagnostics.Tracing
                 typeInfo = ScalarTypeInfo.UInt64();
                 return true;
             }
-            else if (type == typeof(IntPtr))
+            else if (type == typeof(nint))
             {
-                typeInfo = ScalarTypeInfo.IntPtr();
+                typeInfo = ScalarTypeInfo.nint();
                 return true;
             }
             else if (type == typeof(nuint))
@@ -658,9 +658,9 @@ namespace System.Diagnostics.Tracing
             if (parameterType == typeof(Guid)) // Guid is not a part of TypeCode enum
                 return GuidTypeCode;
 
-            // IntPtr and UIntPtr are converted to their non-pointer types.
-            if (parameterType == typeof(IntPtr))
-                return IntPtr.Size == 4 ? TypeCode.Int32 : TypeCode.Int64;
+            // nint and UIntPtr are converted to their non-pointer types.
+            if (parameterType == typeof(nint))
+                return sizeof(nint) == 4 ? TypeCode.Int32 : TypeCode.Int64;
 
             if (parameterType == typeof(nuint))
                 return sizeof(nuint) == 4 ? TypeCode.UInt32 : TypeCode.UInt64;

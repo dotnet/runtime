@@ -12,24 +12,24 @@ namespace System.Runtime.Loader
     public partial class AssemblyLoadContext
     {
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_InitializeAssemblyLoadContext")]
-        private static partial IntPtr InitializeAssemblyLoadContext(IntPtr ptrAssemblyLoadContext, [MarshalAs(UnmanagedType.Bool)] bool fRepresentsTPALoadContext, [MarshalAs(UnmanagedType.Bool)] bool isCollectible);
+        private static partial nint InitializeAssemblyLoadContext(nint ptrAssemblyLoadContext, [MarshalAs(UnmanagedType.Bool)] bool fRepresentsTPALoadContext, [MarshalAs(UnmanagedType.Bool)] bool isCollectible);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_PrepareForAssemblyLoadContextRelease")]
-        private static partial void PrepareForAssemblyLoadContextRelease(IntPtr ptrNativeAssemblyBinder, IntPtr ptrAssemblyLoadContextStrong);
+        private static partial void PrepareForAssemblyLoadContextRelease(nint ptrNativeAssemblyBinder, nint ptrAssemblyLoadContextStrong);
 
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_LoadFromStream")]
-        private static partial void LoadFromStream(IntPtr ptrNativeAssemblyBinder, IntPtr ptrAssemblyArray, int iAssemblyArrayLen, IntPtr ptrSymbols, int iSymbolArrayLen, ObjectHandleOnStack retAssembly);
+        private static partial void LoadFromStream(nint ptrNativeAssemblyBinder, nint ptrAssemblyArray, int iAssemblyArrayLen, nint ptrSymbols, int iSymbolArrayLen, ObjectHandleOnStack retAssembly);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MultiCoreJIT_InternalSetProfileRoot", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial void InternalSetProfileRoot(string directoryPath);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MultiCoreJIT_InternalStartProfile", StringMarshalling = StringMarshalling.Utf16)]
-        internal static partial void InternalStartProfile(string? profile, IntPtr ptrNativeAssemblyBinder);
+        internal static partial void InternalStartProfile(string? profile, nint ptrNativeAssemblyBinder);
 
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_LoadFromPath", StringMarshalling = StringMarshalling.Utf16)]
-        private static partial void LoadFromPath(IntPtr ptrNativeAssemblyBinder, string? ilPath, string? niPath, ObjectHandleOnStack retAssembly);
+        private static partial void LoadFromPath(nint ptrNativeAssemblyBinder, string? ilPath, string? niPath, ObjectHandleOnStack retAssembly);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern Assembly[] GetLoadedAssemblies();
@@ -68,8 +68,8 @@ namespace System.Runtime.Loader
 
             fixed (byte* ptrAssembly = arrAssembly, ptrSymbols = arrSymbols)
             {
-                LoadFromStream(_nativeAssemblyLoadContext, new IntPtr(ptrAssembly), arrAssembly.Length,
-                    new IntPtr(ptrSymbols), arrSymbols.Length, ObjectHandleOnStack.Create(ref loadedAssembly));
+                LoadFromStream(_nativeAssemblyLoadContext, (nint)ptrAssembly, arrAssembly.Length,
+                    (nint)ptrSymbols, arrSymbols.Length, ObjectHandleOnStack.Create(ref loadedAssembly));
             }
 
             return loadedAssembly!;
@@ -77,13 +77,13 @@ namespace System.Runtime.Loader
 
 #if TARGET_WINDOWS
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_LoadFromInMemoryModule")]
-        private static partial IntPtr LoadFromInMemoryModuleInternal(IntPtr ptrNativeAssemblyBinder, IntPtr hModule, ObjectHandleOnStack retAssembly);
+        private static partial nint LoadFromInMemoryModuleInternal(nint ptrNativeAssemblyBinder, nint hModule, ObjectHandleOnStack retAssembly);
 
 
         /// <summary>
         /// Load a module that has already been loaded into memory by the OS loader as a .NET assembly.
         /// </summary>
-        internal Assembly LoadFromInMemoryModule(IntPtr moduleHandle)
+        internal Assembly LoadFromInMemoryModule(nint moduleHandle)
         {
             ArgumentNullException.ThrowIfNull(moduleHandle);
 
@@ -103,7 +103,7 @@ namespace System.Runtime.Loader
 
         // This method is invoked by the VM to resolve a satellite assembly reference
         // after trying assembly resolution via Load override without success.
-        private static Assembly? ResolveSatelliteAssembly(IntPtr gchManagedAssemblyLoadContext, AssemblyName assemblyName)
+        private static Assembly? ResolveSatelliteAssembly(nint gchManagedAssemblyLoadContext, AssemblyName assemblyName)
         {
             AssemblyLoadContext context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchManagedAssemblyLoadContext).Target)!;
 
@@ -113,7 +113,7 @@ namespace System.Runtime.Loader
 
         // This method is invoked by the VM when using the host-provided assembly load context
         // implementation.
-        private static IntPtr ResolveUnmanagedDll(string unmanagedDllName, IntPtr gchManagedAssemblyLoadContext)
+        private static nint ResolveUnmanagedDll(string unmanagedDllName, nint gchManagedAssemblyLoadContext)
         {
             AssemblyLoadContext context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchManagedAssemblyLoadContext).Target)!;
             return context.LoadUnmanagedDll(unmanagedDllName);
@@ -121,7 +121,7 @@ namespace System.Runtime.Loader
 
         // This method is invoked by the VM to resolve a native library using the ResolvingUnmanagedDll event
         // after trying all other means of resolution.
-        private static IntPtr ResolveUnmanagedDllUsingEvent(string unmanagedDllName, Assembly assembly, IntPtr gchManagedAssemblyLoadContext)
+        private static nint ResolveUnmanagedDllUsingEvent(string unmanagedDllName, Assembly assembly, nint gchManagedAssemblyLoadContext)
         {
             AssemblyLoadContext context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchManagedAssemblyLoadContext).Target)!;
             return context.GetResolvedUnmanagedDll(assembly, unmanagedDllName);
@@ -129,7 +129,7 @@ namespace System.Runtime.Loader
 
         // This method is invoked by the VM to resolve an assembly reference using the Resolving event
         // after trying assembly resolution via Load override and TPA load context without success.
-        private static Assembly? ResolveUsingResolvingEvent(IntPtr gchManagedAssemblyLoadContext, AssemblyName assemblyName)
+        private static Assembly? ResolveUsingResolvingEvent(nint gchManagedAssemblyLoadContext, AssemblyName assemblyName)
         {
             AssemblyLoadContext context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchManagedAssemblyLoadContext).Target)!;
             // Invoke the AssemblyResolve event callbacks if wired up
@@ -137,7 +137,7 @@ namespace System.Runtime.Loader
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetLoadContextForAssembly")]
-        private static partial IntPtr GetLoadContextForAssembly(QCallAssembly assembly);
+        private static partial nint GetLoadContextForAssembly(QCallAssembly assembly);
 
         // Returns the load context in which the specified assembly has been loaded
         public static AssemblyLoadContext? GetLoadContext(Assembly assembly)
@@ -151,8 +151,8 @@ namespace System.Runtime.Loader
             if (rtAsm != null)
             {
                 RuntimeAssembly runtimeAssembly = rtAsm;
-                IntPtr ptrAssemblyLoadContext = GetLoadContextForAssembly(new QCallAssembly(ref runtimeAssembly));
-                if (ptrAssemblyLoadContext == IntPtr.Zero)
+                nint ptrAssemblyLoadContext = GetLoadContextForAssembly(new QCallAssembly(ref runtimeAssembly));
+                if (ptrAssemblyLoadContext == 0)
                 {
                     // If the load context is returned null, then the assembly was bound using the TPA binder
                     // and we shall return reference to the "Default" binder.

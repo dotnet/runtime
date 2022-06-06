@@ -44,7 +44,7 @@ namespace System.Reflection
 
         #region Internal Members
         // used by EE
-        private IntPtr GetMethodDesc() { return MethodHandle.Value; }
+        private nint GetMethodDesc() { return MethodHandle.Value; }
 
         internal virtual ParameterInfo[] GetParametersNoCopy() { return GetParameters(); }
         #endregion

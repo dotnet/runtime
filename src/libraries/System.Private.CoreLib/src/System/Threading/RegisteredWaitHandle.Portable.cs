@@ -77,9 +77,9 @@ namespace System.Threading
         /// </summary>
         private SafeWaitHandle? UserUnregisterWaitHandle { get; set; }
 
-        private IntPtr UserUnregisterWaitHandleValue { get; set; }
+        private nint UserUnregisterWaitHandleValue { get; set; }
 
-        private static IntPtr InvalidHandleValue => new IntPtr(-1);
+        private static nint InvalidHandleValue => -1;
 
         internal bool IsBlocking => UserUnregisterWaitHandleValue == InvalidHandleValue;
 
@@ -128,7 +128,7 @@ namespace System.Threading
                 UserUnregisterWaitHandle = waitObject?.SafeWaitHandle;
                 UserUnregisterWaitHandle?.DangerousAddRef(ref needToRollBackRefCountOnException);
 
-                UserUnregisterWaitHandleValue = UserUnregisterWaitHandle?.DangerousGetHandle() ?? IntPtr.Zero;
+                UserUnregisterWaitHandleValue = UserUnregisterWaitHandle?.DangerousGetHandle() ?? 0;
 
                 if (_unregistered)
                 {
@@ -158,7 +158,7 @@ namespace System.Threading
                     _callbacksComplete = null;
                 }
 
-                UserUnregisterWaitHandleValue = IntPtr.Zero;
+                UserUnregisterWaitHandleValue = 0;
 
                 if (needToRollBackRefCountOnException)
                 {
@@ -185,10 +185,10 @@ namespace System.Threading
         {
             s_callbackLock.VerifyIsLocked();
             SafeWaitHandle? handle = UserUnregisterWaitHandle;
-            IntPtr handleValue = UserUnregisterWaitHandleValue;
+            nint handleValue = UserUnregisterWaitHandleValue;
             try
             {
-                if (handleValue != IntPtr.Zero && handleValue != InvalidHandleValue)
+                if (handleValue != 0 && handleValue != InvalidHandleValue)
                 {
                     Debug.Assert(handleValue == handle!.DangerousGetHandle());
                     EventWaitHandle.Set(handle);

@@ -27,7 +27,7 @@ namespace System.Threading
             if (name != null)
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_NamedSynchronizationPrimitives);
 #endif
-            SafeWaitHandle myHandle = Interop.Kernel32.CreateSemaphoreEx(IntPtr.Zero, initialCount, maximumCount, name, 0, AccessRights);
+            SafeWaitHandle myHandle = Interop.Kernel32.CreateSemaphoreEx(0, initialCount, maximumCount, name, 0, AccessRights);
 
             int errorCode = Marshal.GetLastPInvokeError();
             if (myHandle.IsInvalid)

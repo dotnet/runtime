@@ -28,9 +28,9 @@ namespace System.Runtime.InteropServices
         /// </summary>
         public static readonly int SystemMaxDBCSCharSize = GetSystemMaxDBCSCharSize();
 
-        public static IntPtr AllocHGlobal(int cb) => AllocHGlobal((nint)cb);
+        public static nint AllocHGlobal(int cb) => AllocHGlobal((nint)cb);
 
-        public static unsafe string? PtrToStringAnsi(IntPtr ptr)
+        public static unsafe string? PtrToStringAnsi(nint ptr)
         {
             if (IsNullOrWin32Atom(ptr))
             {
@@ -40,7 +40,7 @@ namespace System.Runtime.InteropServices
             return new string((sbyte*)ptr);
         }
 
-        public static unsafe string PtrToStringAnsi(IntPtr ptr, int len)
+        public static unsafe string PtrToStringAnsi(nint ptr, int len)
         {
             ArgumentNullException.ThrowIfNull(ptr);
             if (len < 0)
@@ -51,7 +51,7 @@ namespace System.Runtime.InteropServices
             return new string((sbyte*)ptr, 0, len);
         }
 
-        public static unsafe string? PtrToStringUni(IntPtr ptr)
+        public static unsafe string? PtrToStringUni(nint ptr)
         {
             if (IsNullOrWin32Atom(ptr))
             {
@@ -61,7 +61,7 @@ namespace System.Runtime.InteropServices
             return new string((char*)ptr);
         }
 
-        public static unsafe string PtrToStringUni(IntPtr ptr, int len)
+        public static unsafe string PtrToStringUni(nint ptr, int len)
         {
             ArgumentNullException.ThrowIfNull(ptr);
             if (len < 0)
@@ -72,7 +72,7 @@ namespace System.Runtime.InteropServices
             return new string((char*)ptr, 0, len);
         }
 
-        public static unsafe string? PtrToStringUTF8(IntPtr ptr)
+        public static unsafe string? PtrToStringUTF8(nint ptr)
         {
             if (IsNullOrWin32Atom(ptr))
             {
@@ -83,7 +83,7 @@ namespace System.Runtime.InteropServices
             return string.CreateStringFromEncoding((byte*)ptr, nbBytes, Encoding.UTF8);
         }
 
-        public static unsafe string PtrToStringUTF8(IntPtr ptr, int byteLen)
+        public static unsafe string PtrToStringUTF8(nint ptr, int byteLen)
         {
             ArgumentNullException.ThrowIfNull(ptr);
             if (byteLen < 0)
@@ -139,29 +139,29 @@ namespace System.Runtime.InteropServices
             return SizeOfHelper(t, throwIfNotMarshalable: true);
         }
 
-        public static unsafe int QueryInterface(IntPtr pUnk, ref Guid iid, out IntPtr ppv)
+        public static unsafe int QueryInterface(nint pUnk, ref Guid iid, out nint ppv)
         {
             ArgumentNullException.ThrowIfNull(pUnk);
 
             fixed (Guid* pIID = &iid)
-            fixed (IntPtr* p = &ppv)
+            fixed (nint* p = &ppv)
             {
-                return ((delegate* unmanaged<IntPtr, Guid*, IntPtr*, int>)(*(*(void***)pUnk + 0 /* IUnknown.QueryInterface slot */)))(pUnk, pIID, p);
+                return ((delegate* unmanaged<nint, Guid*, nint*, int>)(*(*(void***)pUnk + 0 /* IUnknown.QueryInterface slot */)))(pUnk, pIID, p);
             }
         }
 
-        public static unsafe int AddRef(IntPtr pUnk)
+        public static unsafe int AddRef(nint pUnk)
         {
             ArgumentNullException.ThrowIfNull(pUnk);
 
-            return ((delegate* unmanaged<IntPtr, int>)(*(*(void***)pUnk + 1 /* IUnknown.AddRef slot */)))(pUnk);
+            return ((delegate* unmanaged<nint, int>)(*(*(void***)pUnk + 1 /* IUnknown.AddRef slot */)))(pUnk);
         }
 
-        public static unsafe int Release(IntPtr pUnk)
+        public static unsafe int Release(nint pUnk)
         {
             ArgumentNullException.ThrowIfNull(pUnk);
 
-            return ((delegate* unmanaged<IntPtr, int>)(*(*(void***)pUnk + 2 /* IUnknown.Release slot */)))(pUnk);
+            return ((delegate* unmanaged<nint, int>)(*(*(void***)pUnk + 2 /* IUnknown.Release slot */)))(pUnk);
         }
 
         /// <summary>
@@ -170,65 +170,65 @@ namespace System.Runtime.InteropServices
         /// an array that is not pinned can cause unexpected results.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static unsafe IntPtr UnsafeAddrOfPinnedArrayElement(Array arr, int index)
+        public static unsafe nint UnsafeAddrOfPinnedArrayElement(Array arr, int index)
         {
             ArgumentNullException.ThrowIfNull(arr);
 
             void* pRawData = Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(arr));
-            return (IntPtr)((byte*)pRawData + (uint)index * (nuint)arr.GetElementSize());
+            return (nint)((byte*)pRawData + (uint)index * (nuint)arr.GetElementSize());
         }
 
-        public static unsafe IntPtr UnsafeAddrOfPinnedArrayElement<T>(T[] arr, int index)
+        public static unsafe nint UnsafeAddrOfPinnedArrayElement<T>(T[] arr, int index)
         {
             ArgumentNullException.ThrowIfNull(arr);
 
             void* pRawData = Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(arr));
-            return (IntPtr)((byte*)pRawData + (uint)index * (nuint)Unsafe.SizeOf<T>());
+            return (nint)((byte*)pRawData + (uint)index * (nuint)Unsafe.SizeOf<T>());
         }
 
-        public static IntPtr OffsetOf<T>(string fieldName) => OffsetOf(typeof(T), fieldName);
+        public static nint OffsetOf<T>(string fieldName) => OffsetOf(typeof(T), fieldName);
 
-        public static void Copy(int[] source, int startIndex, IntPtr destination, int length)
+        public static void Copy(int[] source, int startIndex, nint destination, int length)
         {
             CopyToNative(source, startIndex, destination, length);
         }
 
-        public static void Copy(char[] source, int startIndex, IntPtr destination, int length)
+        public static void Copy(char[] source, int startIndex, nint destination, int length)
         {
             CopyToNative(source, startIndex, destination, length);
         }
 
-        public static void Copy(short[] source, int startIndex, IntPtr destination, int length)
+        public static void Copy(short[] source, int startIndex, nint destination, int length)
         {
             CopyToNative(source, startIndex, destination, length);
         }
 
-        public static void Copy(long[] source, int startIndex, IntPtr destination, int length)
+        public static void Copy(long[] source, int startIndex, nint destination, int length)
         {
             CopyToNative(source, startIndex, destination, length);
         }
 
-        public static void Copy(float[] source, int startIndex, IntPtr destination, int length)
+        public static void Copy(float[] source, int startIndex, nint destination, int length)
         {
             CopyToNative(source, startIndex, destination, length);
         }
 
-        public static void Copy(double[] source, int startIndex, IntPtr destination, int length)
+        public static void Copy(double[] source, int startIndex, nint destination, int length)
         {
             CopyToNative(source, startIndex, destination, length);
         }
 
-        public static void Copy(byte[] source, int startIndex, IntPtr destination, int length)
+        public static void Copy(byte[] source, int startIndex, nint destination, int length)
         {
             CopyToNative(source, startIndex, destination, length);
         }
 
-        public static void Copy(IntPtr[] source, int startIndex, IntPtr destination, int length)
+        public static void Copy(nint[] source, int startIndex, nint destination, int length)
         {
             CopyToNative(source, startIndex, destination, length);
         }
 
-        private static unsafe void CopyToNative<T>(T[] source, int startIndex, IntPtr destination, int length)
+        private static unsafe void CopyToNative<T>(T[] source, int startIndex, nint destination, int length)
         {
             ArgumentNullException.ThrowIfNull(source);
 
@@ -238,47 +238,47 @@ namespace System.Runtime.InteropServices
             new Span<T>(source, startIndex, length).CopyTo(new Span<T>((void*)destination, length));
         }
 
-        public static void Copy(IntPtr source, int[] destination, int startIndex, int length)
+        public static void Copy(nint source, int[] destination, int startIndex, int length)
         {
             CopyToManaged(source, destination, startIndex, length);
         }
 
-        public static void Copy(IntPtr source, char[] destination, int startIndex, int length)
+        public static void Copy(nint source, char[] destination, int startIndex, int length)
         {
             CopyToManaged(source, destination, startIndex, length);
         }
 
-        public static void Copy(IntPtr source, short[] destination, int startIndex, int length)
+        public static void Copy(nint source, short[] destination, int startIndex, int length)
         {
             CopyToManaged(source, destination, startIndex, length);
         }
 
-        public static void Copy(IntPtr source, long[] destination, int startIndex, int length)
+        public static void Copy(nint source, long[] destination, int startIndex, int length)
         {
             CopyToManaged(source, destination, startIndex, length);
         }
 
-        public static void Copy(IntPtr source, float[] destination, int startIndex, int length)
+        public static void Copy(nint source, float[] destination, int startIndex, int length)
         {
             CopyToManaged(source, destination, startIndex, length);
         }
 
-        public static void Copy(IntPtr source, double[] destination, int startIndex, int length)
+        public static void Copy(nint source, double[] destination, int startIndex, int length)
         {
             CopyToManaged(source, destination, startIndex, length);
         }
 
-        public static void Copy(IntPtr source, byte[] destination, int startIndex, int length)
+        public static void Copy(nint source, byte[] destination, int startIndex, int length)
         {
             CopyToManaged(source, destination, startIndex, length);
         }
 
-        public static void Copy(IntPtr source, IntPtr[] destination, int startIndex, int length)
+        public static void Copy(nint source, nint[] destination, int startIndex, int length)
         {
             CopyToManaged(source, destination, startIndex, length);
         }
 
-        private static unsafe void CopyToManaged<T>(IntPtr source, T[] destination, int startIndex, int length)
+        private static unsafe void CopyToManaged<T>(nint source, T[] destination, int startIndex, int length)
         {
             ArgumentNullException.ThrowIfNull(destination);
 
@@ -293,7 +293,7 @@ namespace System.Runtime.InteropServices
             new Span<T>((void*)source, length).CopyTo(new Span<T>(destination, startIndex, length));
         }
 
-        public static unsafe byte ReadByte(IntPtr ptr, int ofs)
+        public static unsafe byte ReadByte(nint ptr, int ofs)
         {
             try
             {
@@ -307,9 +307,9 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        public static byte ReadByte(IntPtr ptr) => ReadByte(ptr, 0);
+        public static byte ReadByte(nint ptr) => ReadByte(ptr, 0);
 
-        public static unsafe short ReadInt16(IntPtr ptr, int ofs)
+        public static unsafe short ReadInt16(nint ptr, int ofs)
         {
             try
             {
@@ -331,9 +331,9 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        public static short ReadInt16(IntPtr ptr) => ReadInt16(ptr, 0);
+        public static short ReadInt16(nint ptr) => ReadInt16(ptr, 0);
 
-        public static unsafe int ReadInt32(IntPtr ptr, int ofs)
+        public static unsafe int ReadInt32(nint ptr, int ofs)
         {
             try
             {
@@ -355,32 +355,32 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        public static int ReadInt32(IntPtr ptr) => ReadInt32(ptr, 0);
+        public static int ReadInt32(nint ptr) => ReadInt32(ptr, 0);
 
         [RequiresDynamicCode("Marshalling code for the object might not be available")]
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("ReadIntPtr(Object, Int32) may be unavailable in future releases.")]
-        public static IntPtr ReadIntPtr(object ptr, int ofs)
+        public static nint ReadIntPtr(object ptr, int ofs)
         {
 #if TARGET_64BIT
-            return (IntPtr)ReadInt64(ptr, ofs);
+            return (nint)ReadInt64(ptr, ofs);
 #else // 32
-            return (IntPtr)ReadInt32(ptr, ofs);
+            return (nint)ReadInt32(ptr, ofs);
 #endif
         }
 
-        public static IntPtr ReadIntPtr(IntPtr ptr, int ofs)
+        public static nint ReadIntPtr(nint ptr, int ofs)
         {
 #if TARGET_64BIT
-            return (IntPtr)ReadInt64(ptr, ofs);
+            return (nint)ReadInt64(ptr, ofs);
 #else // 32
-            return (IntPtr)ReadInt32(ptr, ofs);
+            return (nint)ReadInt32(ptr, ofs);
 #endif
         }
 
-        public static IntPtr ReadIntPtr(IntPtr ptr) => ReadIntPtr(ptr, 0);
+        public static nint ReadIntPtr(nint ptr) => ReadIntPtr(ptr, 0);
 
-        public static unsafe long ReadInt64(IntPtr ptr, int ofs)
+        public static unsafe long ReadInt64(nint ptr, int ofs)
         {
             try
             {
@@ -402,9 +402,9 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        public static long ReadInt64(IntPtr ptr) => ReadInt64(ptr, 0);
+        public static long ReadInt64(nint ptr) => ReadInt64(ptr, 0);
 
-        public static unsafe void WriteByte(IntPtr ptr, int ofs, byte val)
+        public static unsafe void WriteByte(nint ptr, int ofs, byte val)
         {
             try
             {
@@ -418,9 +418,9 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        public static void WriteByte(IntPtr ptr, byte val) => WriteByte(ptr, 0, val);
+        public static void WriteByte(nint ptr, byte val) => WriteByte(ptr, 0, val);
 
-        public static unsafe void WriteInt16(IntPtr ptr, int ofs, short val)
+        public static unsafe void WriteInt16(nint ptr, int ofs, short val)
         {
             try
             {
@@ -442,18 +442,18 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        public static void WriteInt16(IntPtr ptr, short val) => WriteInt16(ptr, 0, val);
+        public static void WriteInt16(nint ptr, short val) => WriteInt16(ptr, 0, val);
 
-        public static void WriteInt16(IntPtr ptr, int ofs, char val) => WriteInt16(ptr, ofs, (short)val);
+        public static void WriteInt16(nint ptr, int ofs, char val) => WriteInt16(ptr, ofs, (short)val);
 
         [RequiresDynamicCode("Marshalling code for the object might not be available")]
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("WriteInt16(Object, Int32, Char) may be unavailable in future releases.")]
         public static void WriteInt16([In, Out]object ptr, int ofs, char val) => WriteInt16(ptr, ofs, (short)val);
 
-        public static void WriteInt16(IntPtr ptr, char val) => WriteInt16(ptr, 0, (short)val);
+        public static void WriteInt16(nint ptr, char val) => WriteInt16(ptr, 0, (short)val);
 
-        public static unsafe void WriteInt32(IntPtr ptr, int ofs, int val)
+        public static unsafe void WriteInt32(nint ptr, int ofs, int val)
         {
             try
             {
@@ -475,9 +475,9 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        public static void WriteInt32(IntPtr ptr, int val) => WriteInt32(ptr, 0, val);
+        public static void WriteInt32(nint ptr, int val) => WriteInt32(ptr, 0, val);
 
-        public static void WriteIntPtr(IntPtr ptr, int ofs, IntPtr val)
+        public static void WriteIntPtr(nint ptr, int ofs, nint val)
         {
 #if TARGET_64BIT
             WriteInt64(ptr, ofs, (long)val);
@@ -488,8 +488,8 @@ namespace System.Runtime.InteropServices
 
         [RequiresDynamicCode("Marshalling code for the object might not be available")]
         [EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("WriteIntPtr(Object, Int32, IntPtr) may be unavailable in future releases.")]
-        public static void WriteIntPtr(object ptr, int ofs, IntPtr val)
+        [Obsolete("WriteIntPtr(Object, Int32, nint) may be unavailable in future releases.")]
+        public static void WriteIntPtr(object ptr, int ofs, nint val)
         {
 #if TARGET_64BIT
             WriteInt64(ptr, ofs, (long)val);
@@ -498,9 +498,9 @@ namespace System.Runtime.InteropServices
 #endif
         }
 
-        public static void WriteIntPtr(IntPtr ptr, IntPtr val) => WriteIntPtr(ptr, 0, val);
+        public static void WriteIntPtr(nint ptr, nint val) => WriteIntPtr(ptr, 0, val);
 
-        public static unsafe void WriteInt64(IntPtr ptr, int ofs, long val)
+        public static unsafe void WriteInt64(nint ptr, int ofs, long val)
         {
             try
             {
@@ -522,7 +522,7 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        public static void WriteInt64(IntPtr ptr, long val) => WriteInt64(ptr, 0, val);
+        public static void WriteInt64(nint ptr, long val) => WriteInt64(ptr, 0, val);
 
         public static void Prelink(MethodInfo m)
         {
@@ -547,7 +547,7 @@ namespace System.Runtime.InteropServices
 
         [UnconditionalSuppressMessage("AotAnalysis", "IL3050:AotUnfriendlyApi",
             Justification = "AOT compilers can see the T.")]
-        public static void StructureToPtr<T>([DisallowNull] T structure, IntPtr ptr, bool fDeleteOld)
+        public static void StructureToPtr<T>([DisallowNull] T structure, nint ptr, bool fDeleteOld)
         {
             StructureToPtr((object)structure!, ptr, fDeleteOld);
         }
@@ -558,13 +558,13 @@ namespace System.Runtime.InteropServices
         /// </summary>
         [RequiresDynamicCode("Marshalling code for the object might not be available")]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static object? PtrToStructure(IntPtr ptr,
+        public static object? PtrToStructure(nint ptr,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
             Type structureType)
         {
             ArgumentNullException.ThrowIfNull(structureType);
 
-            if (ptr == IntPtr.Zero)
+            if (ptr == 0)
             {
                 return null;
             }
@@ -588,19 +588,19 @@ namespace System.Runtime.InteropServices
         /// </summary>
         [RequiresDynamicCode("Marshalling code for the object might not be available")]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static void PtrToStructure(IntPtr ptr, object structure)
+        public static void PtrToStructure(nint ptr, object structure)
         {
             PtrToStructureHelper(ptr, structure, allowValueClasses: false);
         }
 
-        public static void PtrToStructure<T>(IntPtr ptr, [DisallowNull] T structure)
+        public static void PtrToStructure<T>(nint ptr, [DisallowNull] T structure)
         {
             PtrToStructureHelper(ptr, structure, allowValueClasses: false);
         }
 
-        public static T? PtrToStructure<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]T>(IntPtr ptr)
+        public static T? PtrToStructure<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]T>(nint ptr)
         {
-            if (ptr == IntPtr.Zero)
+            if (ptr == 0)
             {
                 // Compat: this was originally implemented as a call to the non-generic version+cast.
                 // It would throw for non-nullable valuetypes here and return null for Nullable<T> even
@@ -621,24 +621,24 @@ namespace System.Runtime.InteropServices
 
         [UnconditionalSuppressMessage("AotAnalysis", "IL3050:AotUnfriendlyApi",
             Justification = "AOT compilers can see the T.")]
-        public static void DestroyStructure<T>(IntPtr ptr) => DestroyStructure(ptr, typeof(T));
+        public static void DestroyStructure<T>(nint ptr) => DestroyStructure(ptr, typeof(T));
 
         // CoreCLR has a different implementation for Windows only
 #if !CORECLR || !TARGET_WINDOWS
-        public static IntPtr GetHINSTANCE(Module m)
+        public static nint GetHINSTANCE(Module m)
         {
             ArgumentNullException.ThrowIfNull(m);
 
-            return (IntPtr)(-1);
+            return (nint)(-1);
         }
 #endif
 
         /// <summary>
         /// Converts the HRESULT to a CLR exception.
         /// </summary>
-        public static Exception? GetExceptionForHR(int errorCode) => GetExceptionForHR(errorCode, IntPtr.Zero);
+        public static Exception? GetExceptionForHR(int errorCode) => GetExceptionForHR(errorCode, 0);
 
-        public static Exception? GetExceptionForHR(int errorCode, IntPtr errorInfo)
+        public static Exception? GetExceptionForHR(int errorCode, nint errorInfo)
         {
             if (errorCode >= 0)
             {
@@ -650,7 +650,7 @@ namespace System.Runtime.InteropServices
 
 #if !CORECLR
 #pragma warning disable IDE0060
-        private static Exception? GetExceptionForHRInternal(int errorCode, IntPtr errorInfo)
+        private static Exception? GetExceptionForHRInternal(int errorCode, nint errorInfo)
         {
             switch (errorCode)
             {
@@ -881,7 +881,7 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        public static void ThrowExceptionForHR(int errorCode, IntPtr errorInfo)
+        public static void ThrowExceptionForHR(int errorCode, nint errorInfo)
         {
             if (errorCode < 0)
             {
@@ -889,7 +889,7 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        public static IntPtr SecureStringToBSTR(SecureString s)
+        public static nint SecureStringToBSTR(SecureString s)
         {
             if (s is null)
             {
@@ -899,7 +899,7 @@ namespace System.Runtime.InteropServices
             return s.MarshalToBSTR();
         }
 
-        public static IntPtr SecureStringToCoTaskMemAnsi(SecureString s)
+        public static nint SecureStringToCoTaskMemAnsi(SecureString s)
         {
             if (s is null)
             {
@@ -909,7 +909,7 @@ namespace System.Runtime.InteropServices
             return s.MarshalToString(globalAlloc: false, unicode: false);
         }
 
-        public static IntPtr SecureStringToCoTaskMemUnicode(SecureString s)
+        public static nint SecureStringToCoTaskMemUnicode(SecureString s)
         {
             if (s is null)
             {
@@ -919,7 +919,7 @@ namespace System.Runtime.InteropServices
             return s.MarshalToString(globalAlloc: false, unicode: true);
         }
 
-        public static IntPtr SecureStringToGlobalAllocAnsi(SecureString s)
+        public static nint SecureStringToGlobalAllocAnsi(SecureString s)
         {
             if (s is null)
             {
@@ -929,7 +929,7 @@ namespace System.Runtime.InteropServices
             return s.MarshalToString(globalAlloc: true, unicode: false);
         }
 
-        public static IntPtr SecureStringToGlobalAllocUnicode(SecureString s)
+        public static nint SecureStringToGlobalAllocUnicode(SecureString s)
         {
             if (s is null)
             {
@@ -939,11 +939,11 @@ namespace System.Runtime.InteropServices
             return s.MarshalToString(globalAlloc: true, unicode: true);
         }
 
-        public static unsafe IntPtr StringToHGlobalAnsi(string? s)
+        public static unsafe nint StringToHGlobalAnsi(string? s)
         {
             if (s is null)
             {
-                return IntPtr.Zero;
+                return 0;
             }
 
             long lnb = (s.Length + 1) * (long)SystemMaxDBCSCharSize;
@@ -955,17 +955,17 @@ namespace System.Runtime.InteropServices
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.s);
             }
 
-            IntPtr ptr = AllocHGlobal((IntPtr)nb);
+            nint ptr = AllocHGlobal((nint)nb);
 
             StringToAnsiString(s, (byte*)ptr, nb);
             return ptr;
         }
 
-        public static unsafe IntPtr StringToHGlobalUni(string? s)
+        public static unsafe nint StringToHGlobalUni(string? s)
         {
             if (s is null)
             {
-                return IntPtr.Zero;
+                return 0;
             }
 
             int nb = (s.Length + 1) * 2;
@@ -976,7 +976,7 @@ namespace System.Runtime.InteropServices
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.s);
             }
 
-            IntPtr ptr = AllocHGlobal((IntPtr)nb);
+            nint ptr = AllocHGlobal((nint)nb);
 
             s.CopyTo(new Span<char>((char*)ptr, s.Length));
             ((char*)ptr)[s.Length] = '\0';
@@ -984,16 +984,16 @@ namespace System.Runtime.InteropServices
             return ptr;
         }
 
-        private static unsafe IntPtr StringToHGlobalUTF8(string? s)
+        private static unsafe nint StringToHGlobalUTF8(string? s)
         {
             if (s is null)
             {
-                return IntPtr.Zero;
+                return 0;
             }
 
             int nb = Encoding.UTF8.GetMaxByteCount(s.Length);
 
-            IntPtr ptr = AllocHGlobal(checked(nb + 1));
+            nint ptr = AllocHGlobal(checked(nb + 1));
 
             int nbWritten;
             byte* pbMem = (byte*)ptr;
@@ -1008,11 +1008,11 @@ namespace System.Runtime.InteropServices
             return ptr;
         }
 
-        public static unsafe IntPtr StringToCoTaskMemUni(string? s)
+        public static unsafe nint StringToCoTaskMemUni(string? s)
         {
             if (s is null)
             {
-                return IntPtr.Zero;
+                return 0;
             }
 
             int nb = (s.Length + 1) * 2;
@@ -1023,7 +1023,7 @@ namespace System.Runtime.InteropServices
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.s);
             }
 
-            IntPtr ptr = AllocCoTaskMem(nb);
+            nint ptr = AllocCoTaskMem(nb);
 
             s.CopyTo(new Span<char>((char*)ptr, s.Length));
             ((char*)ptr)[s.Length] = '\0';
@@ -1031,16 +1031,16 @@ namespace System.Runtime.InteropServices
             return ptr;
         }
 
-        public static unsafe IntPtr StringToCoTaskMemUTF8(string? s)
+        public static unsafe nint StringToCoTaskMemUTF8(string? s)
         {
             if (s is null)
             {
-                return IntPtr.Zero;
+                return 0;
             }
 
             int nb = Encoding.UTF8.GetMaxByteCount(s.Length);
 
-            IntPtr ptr = AllocCoTaskMem(checked(nb + 1));
+            nint ptr = AllocCoTaskMem(checked(nb + 1));
 
             int nbWritten;
             byte* pbMem = (byte*)ptr;
@@ -1055,11 +1055,11 @@ namespace System.Runtime.InteropServices
             return ptr;
         }
 
-        public static unsafe IntPtr StringToCoTaskMemAnsi(string? s)
+        public static unsafe nint StringToCoTaskMemAnsi(string? s)
         {
             if (s is null)
             {
-                return IntPtr.Zero;
+                return 0;
             }
 
             long lnb = (s.Length + 1) * (long)SystemMaxDBCSCharSize;
@@ -1071,7 +1071,7 @@ namespace System.Runtime.InteropServices
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.s);
             }
 
-            IntPtr ptr = AllocCoTaskMem(nb);
+            nint ptr = AllocCoTaskMem(nb);
 
             StringToAnsiString(s, (byte*)ptr, nb);
             return ptr;
@@ -1124,7 +1124,7 @@ namespace System.Runtime.InteropServices
 
         [RequiresDynamicCode("Marshalling code for the delegate might not be available. Use the GetDelegateForFunctionPointer<TDelegate> overload instead.")]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static Delegate GetDelegateForFunctionPointer(IntPtr ptr, Type t)
+        public static Delegate GetDelegateForFunctionPointer(nint ptr, Type t)
         {
             ArgumentNullException.ThrowIfNull(t);
 
@@ -1149,7 +1149,7 @@ namespace System.Runtime.InteropServices
             return GetDelegateForFunctionPointerInternal(ptr, t);
         }
 
-        public static TDelegate GetDelegateForFunctionPointer<TDelegate>(IntPtr ptr)
+        public static TDelegate GetDelegateForFunctionPointer<TDelegate>(nint ptr)
         {
             ArgumentNullException.ThrowIfNull(ptr);
 
@@ -1172,7 +1172,7 @@ namespace System.Runtime.InteropServices
 
         [RequiresDynamicCode("Marshalling code for the delegate might not be available. Use the GetFunctionPointerForDelegate<TDelegate> overload instead.")]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static IntPtr GetFunctionPointerForDelegate(Delegate d)
+        public static nint GetFunctionPointerForDelegate(Delegate d)
         {
             ArgumentNullException.ThrowIfNull(d);
 
@@ -1181,7 +1181,7 @@ namespace System.Runtime.InteropServices
 
         [UnconditionalSuppressMessage("AotAnalysis", "IL3050:AotUnfriendlyApi",
             Justification = "AOT compilers can see the T.")]
-        public static IntPtr GetFunctionPointerForDelegate<TDelegate>(TDelegate d) where TDelegate : notnull
+        public static nint GetFunctionPointerForDelegate<TDelegate>(TDelegate d) where TDelegate : notnull
         {
             return GetFunctionPointerForDelegate((Delegate)(object)d);
         }
@@ -1197,9 +1197,9 @@ namespace System.Runtime.InteropServices
             return (dwLastError & 0x0000FFFF) | unchecked((int)0x80070000);
         }
 
-        public static unsafe void ZeroFreeBSTR(IntPtr s)
+        public static unsafe void ZeroFreeBSTR(nint s)
         {
-            if (s == IntPtr.Zero)
+            if (s == 0)
             {
                 return;
             }
@@ -1207,14 +1207,14 @@ namespace System.Runtime.InteropServices
             FreeBSTR(s);
         }
 
-        public static unsafe void ZeroFreeCoTaskMemAnsi(IntPtr s)
+        public static unsafe void ZeroFreeCoTaskMemAnsi(nint s)
         {
             ZeroFreeCoTaskMemUTF8(s);
         }
 
-        public static unsafe void ZeroFreeCoTaskMemUnicode(IntPtr s)
+        public static unsafe void ZeroFreeCoTaskMemUnicode(nint s)
         {
-            if (s == IntPtr.Zero)
+            if (s == 0)
             {
                 return;
             }
@@ -1222,9 +1222,9 @@ namespace System.Runtime.InteropServices
             FreeCoTaskMem(s);
         }
 
-        public static unsafe void ZeroFreeCoTaskMemUTF8(IntPtr s)
+        public static unsafe void ZeroFreeCoTaskMemUTF8(nint s)
         {
-            if (s == IntPtr.Zero)
+            if (s == 0)
             {
                 return;
             }
@@ -1232,9 +1232,9 @@ namespace System.Runtime.InteropServices
             FreeCoTaskMem(s);
         }
 
-        public static unsafe void ZeroFreeGlobalAllocAnsi(IntPtr s)
+        public static unsafe void ZeroFreeGlobalAllocAnsi(nint s)
         {
-            if (s == IntPtr.Zero)
+            if (s == 0)
             {
                 return;
             }
@@ -1242,9 +1242,9 @@ namespace System.Runtime.InteropServices
             FreeHGlobal(s);
         }
 
-        public static unsafe void ZeroFreeGlobalAllocUnicode(IntPtr s)
+        public static unsafe void ZeroFreeGlobalAllocUnicode(nint s)
         {
-            if (s == IntPtr.Zero)
+            if (s == 0)
             {
                 return;
             }
@@ -1252,28 +1252,28 @@ namespace System.Runtime.InteropServices
             FreeHGlobal(s);
         }
 
-        public static unsafe IntPtr StringToBSTR(string? s)
+        public static unsafe nint StringToBSTR(string? s)
         {
             if (s is null)
             {
-                return IntPtr.Zero;
+                return 0;
             }
 
-            IntPtr bstr = AllocBSTR(s.Length);
+            nint bstr = AllocBSTR(s.Length);
 
             s.CopyTo(new Span<char>((char*)bstr, s.Length)); // AllocBSTR already included the null terminator
 
             return bstr;
         }
 
-        public static string PtrToStringBSTR(IntPtr ptr)
+        public static string PtrToStringBSTR(nint ptr)
         {
             ArgumentNullException.ThrowIfNull(ptr);
 
             return PtrToStringUni(ptr, (int)(SysStringByteLen(ptr) / sizeof(char)));
         }
 
-        internal static unsafe uint SysStringByteLen(IntPtr s)
+        internal static unsafe uint SysStringByteLen(nint s)
         {
             return *(((uint*)s) - 1);
         }
@@ -1286,7 +1286,7 @@ namespace System.Runtime.InteropServices
         /// </summary>
         /// <param name="safeHandle"><see cref="SafeHandle"/> instance to update</param>
         /// <param name="handle">Pre-existing handle</param>
-        public static void InitHandle(SafeHandle safeHandle, IntPtr handle)
+        public static void InitHandle(SafeHandle safeHandle, nint handle)
         {
             // To help maximize performance of P/Invokes, don't check if safeHandle is null.
             safeHandle.SetHandle(handle);

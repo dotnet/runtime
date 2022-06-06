@@ -47,13 +47,13 @@ namespace System.Runtime.InteropServices.ComTypes
         void GetTypeInfo(int index, out ITypeInfo ppTI);
         void GetTypeInfoType(int index, out TYPEKIND pTKind);
         void GetTypeInfoOfGuid(ref Guid guid, out ITypeInfo ppTInfo);
-        void GetLibAttr(out IntPtr ppTLibAttr);
+        void GetLibAttr(out nint ppTLibAttr);
         void GetTypeComp(out ITypeComp ppTComp);
         void GetDocumentation(int index, out string strName, out string strDocString, out int dwHelpContext, out string strHelpFile);
         [return: MarshalAs(UnmanagedType.Bool)]
         bool IsName([MarshalAs(UnmanagedType.LPWStr)] string szNameBuf, int lHashVal);
         void FindName([MarshalAs(UnmanagedType.LPWStr)] string szNameBuf, int lHashVal, [MarshalAs(UnmanagedType.LPArray), Out] ITypeInfo[] ppTInfo, [MarshalAs(UnmanagedType.LPArray), Out] int[] rgMemId, ref short pcFound);
         [PreserveSig]
-        void ReleaseTLibAttr(IntPtr pTLibAttr);
+        void ReleaseTLibAttr(nint pTLibAttr);
     }
 }

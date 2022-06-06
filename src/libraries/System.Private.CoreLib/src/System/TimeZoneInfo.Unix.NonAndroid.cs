@@ -191,8 +191,8 @@ namespace System
                 {
                     while (true)
                     {
-                        IntPtr dirHandle = Interop.Sys.OpenDir(currentPath);
-                        if (dirHandle == IntPtr.Zero)
+                        nint dirHandle = Interop.Sys.OpenDir(currentPath);
+                        if (dirHandle == 0)
                         {
                             throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo(), currentPath, isDirectory: true);
                         }
@@ -252,7 +252,7 @@ namespace System
                         }
                         finally
                         {
-                            if (dirHandle != IntPtr.Zero)
+                            if (dirHandle != 0)
                                 Interop.Sys.CloseDir(dirHandle);
                         }
 

@@ -13,7 +13,7 @@ namespace System.Diagnostics.Tracing
         /// <summary>
         /// Given the metadata for an event and an event payload, decode and deserialize the event payload.
         /// </summary>
-        internal static object[] DecodePayload(ref EventSource.EventMetadata metadata, ReadOnlySpan<byte> payload)
+        internal static unsafe object[] DecodePayload(ref EventSource.EventMetadata metadata, ReadOnlySpan<byte> payload)
         {
             ParameterInfo[] parameters = metadata.Parameters;
             object[] decodedFields = new object[parameters.Length];
@@ -29,17 +29,17 @@ namespace System.Diagnostics.Tracing
 
                 Type parameterType = parameters[i].ParameterType;
                 Type? enumType = parameterType.IsEnum ? Enum.GetUnderlyingType(parameterType) : null;
-                if (parameterType == typeof(IntPtr))
+                if (parameterType == typeof(nint))
                 {
-                    if (IntPtr.Size == 8)
+                    if (sizeof(nint) == 8)
                     {
-                        decodedFields[i] = (IntPtr)BinaryPrimitives.ReadInt64LittleEndian(payload);
+                        decodedFields[i] = (nint)BinaryPrimitives.ReadInt64LittleEndian(payload);
                     }
                     else
                     {
-                        decodedFields[i] = (IntPtr)BinaryPrimitives.ReadInt32LittleEndian(payload);
+                        decodedFields[i] = (nint)BinaryPrimitives.ReadInt32LittleEndian(payload);
                     }
-                    payload = payload.Slice(IntPtr.Size);
+                    payload = payload.Slice(sizeof(nint));
                 }
                 else if (parameterType == typeof(int) || enumType == typeof(int))
                 {

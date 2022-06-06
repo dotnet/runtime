@@ -243,7 +243,7 @@ namespace System
 
             IntAligned:
 
-            // On 64-bit IntPtr.Size == 8, so we want to advance to the next 8-aligned address. If
+            // On 64-bit sizeof(nint) == 8, so we want to advance to the next 8-aligned address. If
             // (int)b % 8 is 0, 5, 6, or 7, we will already have advanced by 0, 3, 2, or 1
             // bytes to the next aligned address (respectively), so do nothing. On the other hand,
             // if it is 1, 2, 3, or 4 we will want to copy-and-advance another 4 bytes until
@@ -332,9 +332,9 @@ namespace System
             Buffer._ZeroMemory(ref b, byteLength);
         }
 
-        public static unsafe void ClearWithReferences(ref IntPtr ip, nuint pointerSizeLength)
+        public static unsafe void ClearWithReferences(ref nint ip, nuint pointerSizeLength)
         {
-            Debug.Assert((int)Unsafe.AsPointer(ref ip) % sizeof(IntPtr) == 0, "Should've been aligned on natural word boundary.");
+            Debug.Assert((int)Unsafe.AsPointer(ref ip) % sizeof(nint) == 0, "Should've been aligned on natural word boundary.");
 
             // First write backward 8 natural words at a time.
             // Writing backward allows us to get away with only simple modifications to the

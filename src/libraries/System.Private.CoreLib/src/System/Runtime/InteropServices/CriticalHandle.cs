@@ -52,7 +52,7 @@ using System.Runtime.ConstrainedExecution;
      without running truly arbitrary & unbounded amounts of managed code.
   2) Reduced graph promotion - during finalization, keep object graph small
   3) GC.KeepAlive behavior - P/Invoke vs. finalizer thread race condition (HandleRef)
-  4) Enforcement of the above via the type system - Don't use IntPtr anymore.
+  4) Enforcement of the above via the type system - Don't use nint anymore.
 
   Subclasses of CriticalHandle will implement the ReleaseHandle
   abstract method used to execute any code required to free the
@@ -83,7 +83,7 @@ using System.Runtime.ConstrainedExecution;
 
   internal sealed MyCriticalHandleSubclass : CriticalHandle {
       // Called by P/Invoke when returning CriticalHandles
-      private MyCriticalHandleSubclass() : base(IntPtr.Zero)
+      private MyCriticalHandleSubclass() : base(0)
       {
       }
 
@@ -91,11 +91,11 @@ using System.Runtime.ConstrainedExecution;
       // call ReleaseHandle for you.
 
       public override bool IsInvalid {
-          get { return handle == IntPtr.Zero; }
+          get { return handle == 0; }
       }
 
       [DllImport(Interop.Libraries.Kernel32), ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
-      private static extern bool CloseHandle(IntPtr handle);
+      private static extern bool CloseHandle(nint handle);
 
       override protected bool ReleaseHandle()
       {
@@ -120,11 +120,11 @@ namespace System.Runtime.InteropServices
     {
         // ! Do not add or rearrange fields as the EE depends on this layout.
         //------------------------------------------------------------------
-        protected IntPtr handle;    // This must be protected so derived classes can use out params.
+        protected nint handle;    // This must be protected so derived classes can use out params.
         private bool _isClosed;     // Set by SetHandleAsInvalid or Close/Dispose/finalization.
 
         // Creates a CriticalHandle class.  Users must then set the Handle property or allow P/Invoke marshaling to set it implicitly.
-        protected CriticalHandle(IntPtr invalidHandleValue)
+        protected CriticalHandle(nint invalidHandleValue)
         {
             handle = invalidHandleValue;
         }
@@ -154,7 +154,7 @@ namespace System.Runtime.InteropServices
             GC.SuppressFinalize(this);
         }
 
-        protected void SetHandle(IntPtr handle)
+        protected void SetHandle(nint handle)
         {
             this.handle = handle;
         }

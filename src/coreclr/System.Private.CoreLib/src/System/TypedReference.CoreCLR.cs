@@ -13,7 +13,7 @@ namespace System
     public ref partial struct TypedReference
     {
         private readonly ByReference<byte> _value;
-        private readonly IntPtr _type;
+        private readonly nint _type;
 
         public static unsafe object? ToObject(TypedReference value)
         {

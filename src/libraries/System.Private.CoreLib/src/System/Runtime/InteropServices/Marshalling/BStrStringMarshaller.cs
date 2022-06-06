@@ -67,7 +67,7 @@ namespace System.Runtime.InteropServices.Marshalling
             }
 
             // Confirm the size is properly set for the allocated BSTR.
-            Debug.Assert(lengthInBytes == Marshal.SysStringByteLen((IntPtr)ptrToFirstChar));
+            Debug.Assert(lengthInBytes == Marshal.SysStringByteLen((nint)ptrToFirstChar));
 
             // Copy characters from the managed string
             str.CopyTo(new Span<char>(ptrToFirstChar, str.Length));
@@ -107,7 +107,7 @@ namespace System.Runtime.InteropServices.Marshalling
             if (_ptrToFirstChar is null)
                 return null;
 
-            return Marshal.PtrToStringBSTR((IntPtr)_ptrToFirstChar);
+            return Marshal.PtrToStringBSTR((nint)_ptrToFirstChar);
         }
 
         /// <summary>
@@ -119,7 +119,7 @@ namespace System.Runtime.InteropServices.Marshalling
         public void FreeNative()
         {
             if (_allocated)
-                Marshal.FreeBSTR((IntPtr)_ptrToFirstChar);
+                Marshal.FreeBSTR((nint)_ptrToFirstChar);
         }
     }
 }

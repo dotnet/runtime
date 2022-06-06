@@ -539,7 +539,7 @@ namespace System.Threading
         public static short VolatileRead(ref short address) => Volatile.Read(ref address);
         public static int VolatileRead(ref int address) => Volatile.Read(ref address);
         public static long VolatileRead(ref long address) => Volatile.Read(ref address);
-        public static IntPtr VolatileRead(ref IntPtr address) => Volatile.Read(ref address);
+        public static nint VolatileRead(ref nint address) => Volatile.Read(ref address);
         [return: NotNullIfNotNull("address")]
         public static object? VolatileRead([NotNullIfNotNull("address")] ref object? address) => Volatile.Read(ref address);
         [CLSCompliant(false)]
@@ -558,7 +558,7 @@ namespace System.Threading
         public static void VolatileWrite(ref short address, short value) => Volatile.Write(ref address, value);
         public static void VolatileWrite(ref int address, int value) => Volatile.Write(ref address, value);
         public static void VolatileWrite(ref long address, long value) => Volatile.Write(ref address, value);
-        public static void VolatileWrite(ref IntPtr address, IntPtr value) => Volatile.Write(ref address, value);
+        public static void VolatileWrite(ref nint address, nint value) => Volatile.Write(ref address, value);
         public static void VolatileWrite([NotNullIfNotNull("value")] ref object? address, object? value) => Volatile.Write(ref address, value);
         [CLSCompliant(false)]
         public static void VolatileWrite(ref sbyte address, sbyte value) => Volatile.Write(ref address, value);

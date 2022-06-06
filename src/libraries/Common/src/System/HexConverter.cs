@@ -217,7 +217,7 @@ namespace System
 #else
             fixed (byte* bytesPtr = bytes)
             {
-                return string.Create(bytes.Length * 2, (Ptr: (IntPtr)bytesPtr, bytes.Length, casing), static (chars, args) =>
+                return string.Create(bytes.Length * 2, (Ptr: (nint)bytesPtr, bytes.Length, casing), static (chars, args) =>
                 {
                     var ros = new ReadOnlySpan<byte>((byte*)args.Ptr, args.Length);
                     EncodeToUtf16(ros, chars, args.casing);
@@ -314,9 +314,9 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsHexChar(int c)
+        public static unsafe bool IsHexChar(int c)
         {
-            if (IntPtr.Size == 8)
+            if (sizeof(nint) == 8)
             {
                 // This code path, when used, has no branches and doesn't depend on cache hits,
                 // so it's faster and does not vary in speed depending on input data distribution.

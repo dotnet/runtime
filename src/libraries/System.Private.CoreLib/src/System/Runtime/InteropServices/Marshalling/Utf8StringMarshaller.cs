@@ -93,7 +93,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <remarks>
         /// <seealso cref="CustomTypeMarshallerDirection.Out"/>
         /// </remarks>
-        public string? ToManaged() => Marshal.PtrToStringUTF8((IntPtr)_nativeValue);
+        public string? ToManaged() => Marshal.PtrToStringUTF8((nint)_nativeValue);
 
         /// <summary>
         /// Frees native resources.
@@ -104,7 +104,7 @@ namespace System.Runtime.InteropServices.Marshalling
         public void FreeNative()
         {
             if (_allocated)
-                Marshal.FreeCoTaskMem((IntPtr)_nativeValue);
+                Marshal.FreeCoTaskMem((nint)_nativeValue);
         }
     }
 }

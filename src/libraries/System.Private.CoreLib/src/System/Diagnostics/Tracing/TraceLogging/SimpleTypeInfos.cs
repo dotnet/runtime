@@ -97,7 +97,7 @@ namespace System.Diagnostics.Tracing
         public static TraceLoggingTypeInfo UInt32() => s_uint32 ??= new ScalarTypeInfo(typeof(uint), TraceLoggingDataType.UInt32);
         public static TraceLoggingTypeInfo Int64() => s_int64 ??= new ScalarTypeInfo(typeof(long), TraceLoggingDataType.Int64);
         public static TraceLoggingTypeInfo UInt64() => s_uint64 ??= new ScalarTypeInfo(typeof(ulong), TraceLoggingDataType.UInt64);
-        public static TraceLoggingTypeInfo IntPtr() => s_intptr ??= new ScalarTypeInfo(typeof(IntPtr), Statics.IntPtrType);
+        public static TraceLoggingTypeInfo nint() => s_intptr ??= new ScalarTypeInfo(typeof(nint), Statics.IntPtrType);
         public static TraceLoggingTypeInfo UIntPtr() => s_uintptr ??= new ScalarTypeInfo(typeof(nuint), Statics.UIntPtrType);
         public static TraceLoggingTypeInfo Single() => s_single ??= new ScalarTypeInfo(typeof(float), TraceLoggingDataType.Float);
         public static TraceLoggingTypeInfo Double() => s_double ??= new ScalarTypeInfo(typeof(double), TraceLoggingDataType.Double);
@@ -158,7 +158,7 @@ namespace System.Diagnostics.Tracing
         public static TraceLoggingTypeInfo UInt32() => s_uint32 ??= new ScalarArrayTypeInfo(typeof(uint[]), TraceLoggingDataType.UInt32, sizeof(uint));
         public static TraceLoggingTypeInfo Int64() => s_int64 ??= new ScalarArrayTypeInfo(typeof(long[]), TraceLoggingDataType.Int64, sizeof(long));
         public static TraceLoggingTypeInfo UInt64() => s_uint64 ??= new ScalarArrayTypeInfo(typeof(ulong[]), TraceLoggingDataType.UInt64, sizeof(ulong));
-        public static TraceLoggingTypeInfo IntPtr() => s_intptr ??= new ScalarArrayTypeInfo(typeof(IntPtr[]), Statics.IntPtrType, System.IntPtr.Size);
+        public static unsafe TraceLoggingTypeInfo nint() => s_intptr ??= new ScalarArrayTypeInfo(typeof(nint[]), Statics.IntPtrType, sizeof(nint));
         public static unsafe TraceLoggingTypeInfo UIntPtr() => s_uintptr ??= new ScalarArrayTypeInfo(typeof(nuint[]), Statics.UIntPtrType, sizeof(nuint));
         public static TraceLoggingTypeInfo Single() => s_single ??= new ScalarArrayTypeInfo(typeof(float[]), TraceLoggingDataType.Float, sizeof(float));
         public static TraceLoggingTypeInfo Double() => s_double ??= new ScalarArrayTypeInfo(typeof(double[]), TraceLoggingDataType.Double, sizeof(double));

@@ -25,20 +25,20 @@ namespace System.Runtime.InteropServices.ObjectiveC
         [return:MarshalAs(UnmanagedType.Bool)]
         private static partial bool TrySetGlobalMessageSendCallback(
             MessageSendFunction msgSendFunction,
-            IntPtr func);
+            nint func);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjCMarshal_TryInitializeReferenceTracker")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static unsafe partial bool TryInitializeReferenceTracker(
             delegate* unmanaged<void> beginEndCallback,
-            delegate* unmanaged<IntPtr, int> isReferencedCallback,
-            delegate* unmanaged<IntPtr, void> trackedObjectEnteredFinalization);
+            delegate* unmanaged<nint, int> isReferencedCallback,
+            delegate* unmanaged<nint, void> trackedObjectEnteredFinalization);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjCMarshal_CreateReferenceTrackingHandle")]
-        private static partial IntPtr CreateReferenceTrackingHandleInternal(
+        private static partial nint CreateReferenceTrackingHandleInternal(
             ObjectHandleOnStack obj,
             out int memInSizeT,
-            out IntPtr mem);
+            out nint mem);
 
         internal static bool AvailableUnhandledExceptionPropagation()
         {
@@ -48,9 +48,9 @@ namespace System.Runtime.InteropServices.ObjectiveC
         internal static unsafe void* InvokeUnhandledExceptionPropagation(
             Exception exception,
             object methodInfoStub,
-            out IntPtr context)
+            out nint context)
         {
-            context = IntPtr.Zero;
+            context = 0;
             if (s_unhandledExceptionPropagationHandler == null)
                 return null;
 

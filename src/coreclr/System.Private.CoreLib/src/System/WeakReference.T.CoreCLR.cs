@@ -11,7 +11,7 @@ namespace System
         where T : class?
     {
         // This field is not a regular GC handle. It can have a special values that are used to prevent a race condition between setting the target and finalization.
-        internal IntPtr m_handle;
+        internal nint m_handle;
 
         public void SetTarget(T target)
         {

@@ -49,7 +49,7 @@ namespace System.Runtime.CompilerServices
     internal unsafe ref struct QCallModule
     {
         private void* _ptr;
-        private IntPtr _module;
+        private nint _module;
 
         internal QCallModule(ref System.Reflection.RuntimeModule module)
         {
@@ -68,12 +68,12 @@ namespace System.Runtime.CompilerServices
     internal unsafe ref struct QCallAssembly
     {
         private void* _ptr;
-        private IntPtr _assembly;
+        private nint _assembly;
 
         internal QCallAssembly(ref System.Reflection.RuntimeAssembly assembly)
         {
             _ptr = Unsafe.AsPointer(ref assembly);
-            _assembly = assembly?.GetUnderlyingNativeHandle() ?? IntPtr.Zero;
+            _assembly = assembly?.GetUnderlyingNativeHandle() ?? 0;
         }
     }
 
@@ -81,12 +81,12 @@ namespace System.Runtime.CompilerServices
     internal unsafe ref struct QCallTypeHandle
     {
         private void* _ptr;
-        private IntPtr _handle;
+        private nint _handle;
 
         internal QCallTypeHandle(ref System.RuntimeType type)
         {
             _ptr = Unsafe.AsPointer(ref type);
-            _handle = type?.GetUnderlyingNativeHandle() ?? IntPtr.Zero;
+            _handle = type?.GetUnderlyingNativeHandle() ?? 0;
         }
 
         internal QCallTypeHandle(ref System.RuntimeTypeHandle rth)

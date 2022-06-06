@@ -19,7 +19,7 @@ namespace System.Runtime.InteropServices.Marshalling
         private readonly int _sizeOfNativeElement;
 
         private T*[]? _managedArray;
-        private IntPtr _allocatedMemory;
+        private nint _allocatedMemory;
         private Span<byte> _span;
 
         /// <summary>
@@ -86,7 +86,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <remarks>
         /// <seealso cref="CustomTypeMarshallerDirection.In"/>
         /// </remarks>
-        public ReadOnlySpan<IntPtr> GetManagedValuesSource() => Unsafe.As<IntPtr[]>(_managedArray);
+        public ReadOnlySpan<nint> GetManagedValuesSource() => Unsafe.As<nint[]>(_managedArray);
 
         /// <summary>
         /// Gets a span that points to the memory where the unmarshalled managed values of the array should be stored.
@@ -96,13 +96,13 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <remarks>
         /// <seealso cref="CustomTypeMarshallerDirection.Out"/>
         /// </remarks>
-        public Span<IntPtr> GetManagedValuesDestination(int length)
+        public Span<nint> GetManagedValuesDestination(int length)
         {
-            if (_allocatedMemory == IntPtr.Zero)
+            if (_allocatedMemory == 0)
                 return null;
 
             _managedArray = new T*[length];
-            return Unsafe.As<IntPtr[]>(_managedArray);
+            return Unsafe.As<nint[]>(_managedArray);
         }
 
         /// <summary>
@@ -115,7 +115,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// </remarks>
         public ReadOnlySpan<byte> GetNativeValuesSource(int length)
         {
-            if (_allocatedMemory == IntPtr.Zero)
+            if (_allocatedMemory == 0)
                 return default;
 
             int allocatedSize = checked(length * _sizeOfNativeElement);
@@ -152,7 +152,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <remarks>
         /// <seealso cref="CustomTypeMarshallerFeatures.TwoStageMarshalling"/>
         /// </remarks>
-        public void FromNativeValue(byte* value) => _allocatedMemory = (IntPtr)value;
+        public void FromNativeValue(byte* value) => _allocatedMemory = (nint)value;
 
         /// <summary>
         /// Returns the managed array.

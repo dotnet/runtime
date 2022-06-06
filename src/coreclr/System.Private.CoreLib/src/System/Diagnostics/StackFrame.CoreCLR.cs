@@ -57,7 +57,7 @@ namespace System.Diagnostics
 #pragma warning restore IDE0060
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StackFrame_GetMethodDescFromNativeIP")]
-        private static partial RuntimeMethodHandleInternal GetMethodDescFromNativeIP(IntPtr ip);
+        private static partial RuntimeMethodHandleInternal GetMethodDescFromNativeIP(nint ip);
 
         /// <summary>
         /// Returns the MethodBase instance for the managed code IP address.
@@ -66,11 +66,11 @@ namespace System.Diagnostics
         /// </summary>
         /// <param name="ip">code address</param>
         /// <returns>MethodBase instance for the method or null if IP not found</returns>
-        internal static MethodBase? GetMethodFromNativeIP(IntPtr ip)
+        internal static MethodBase? GetMethodFromNativeIP(nint ip)
         {
             RuntimeMethodHandleInternal method = GetMethodDescFromNativeIP(ip);
 
-            if (method.Value == IntPtr.Zero)
+            if (method.Value == 0)
                 return null;
 
             return RuntimeType.GetMethodBase(null, method);

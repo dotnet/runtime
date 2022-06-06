@@ -81,13 +81,13 @@ namespace System.Diagnostics.Tracing
             ushort clrInstanceId = DefaultClrInstanceId;
 
             EventData* data = stackalloc EventData[3];
-            data[0].DataPointer = (IntPtr)(&numExistingThreads);
+            data[0].DataPointer = (nint)(&numExistingThreads);
             data[0].Size = sizeof(uint);
             data[0].Reserved = 0;
-            data[1].DataPointer = (IntPtr)(&retiredWorkerThreadCount);
+            data[1].DataPointer = (nint)(&retiredWorkerThreadCount);
             data[1].Size = sizeof(uint);
             data[1].Reserved = 0;
-            data[2].DataPointer = (IntPtr)(&clrInstanceId);
+            data[2].DataPointer = (nint)(&clrInstanceId);
             data[2].Size = sizeof(ushort);
             data[2].Reserved = 0;
             WriteEventCore(eventId, 3, data);
@@ -144,10 +144,10 @@ namespace System.Diagnostics.Tracing
                 return;
             }
             EventData* data = stackalloc EventData[2];
-            data[0].DataPointer = (IntPtr)(&Throughput);
+            data[0].DataPointer = (nint)(&Throughput);
             data[0].Size = sizeof(double);
             data[0].Reserved = 0;
-            data[1].DataPointer = (IntPtr)(&ClrInstanceID);
+            data[1].DataPointer = (nint)(&ClrInstanceID);
             data[1].Size = sizeof(ushort);
             data[1].Reserved = 0;
             WriteEventCore(54, 2, data);
@@ -169,16 +169,16 @@ namespace System.Diagnostics.Tracing
                 return;
             }
             EventData* data = stackalloc EventData[4];
-            data[0].DataPointer = (IntPtr)(&AverageThroughput);
+            data[0].DataPointer = (nint)(&AverageThroughput);
             data[0].Size = sizeof(double);
             data[0].Reserved = 0;
-            data[1].DataPointer = (IntPtr)(&NewWorkerThreadCount);
+            data[1].DataPointer = (nint)(&NewWorkerThreadCount);
             data[1].Size = sizeof(uint);
             data[1].Reserved = 0;
-            data[2].DataPointer = (IntPtr)(&Reason);
+            data[2].DataPointer = (nint)(&Reason);
             data[2].Size = sizeof(ThreadAdjustmentReasonMap);
             data[2].Reserved = 0;
-            data[3].DataPointer = (IntPtr)(&ClrInstanceID);
+            data[3].DataPointer = (nint)(&ClrInstanceID);
             data[3].Size = sizeof(ushort);
             data[3].Reserved = 0;
             WriteEventCore(55, 4, data);
@@ -207,37 +207,37 @@ namespace System.Diagnostics.Tracing
                 return;
             }
             EventData* data = stackalloc EventData[11];
-            data[0].DataPointer = (IntPtr)(&Duration);
+            data[0].DataPointer = (nint)(&Duration);
             data[0].Size = sizeof(double);
             data[0].Reserved = 0;
-            data[1].DataPointer = (IntPtr)(&Throughput);
+            data[1].DataPointer = (nint)(&Throughput);
             data[1].Size = sizeof(double);
             data[1].Reserved = 0;
-            data[2].DataPointer = (IntPtr)(&ThreadWave);
+            data[2].DataPointer = (nint)(&ThreadWave);
             data[2].Size = sizeof(double);
             data[2].Reserved = 0;
-            data[3].DataPointer = (IntPtr)(&ThroughputWave);
+            data[3].DataPointer = (nint)(&ThroughputWave);
             data[3].Size = sizeof(double);
             data[3].Reserved = 0;
-            data[4].DataPointer = (IntPtr)(&ThroughputErrorEstimate);
+            data[4].DataPointer = (nint)(&ThroughputErrorEstimate);
             data[4].Size = sizeof(double);
             data[4].Reserved = 0;
-            data[5].DataPointer = (IntPtr)(&AverageThroughputErrorEstimate);
+            data[5].DataPointer = (nint)(&AverageThroughputErrorEstimate);
             data[5].Size = sizeof(double);
             data[5].Reserved = 0;
-            data[6].DataPointer = (IntPtr)(&ThroughputRatio);
+            data[6].DataPointer = (nint)(&ThroughputRatio);
             data[6].Size = sizeof(double);
             data[6].Reserved = 0;
-            data[7].DataPointer = (IntPtr)(&Confidence);
+            data[7].DataPointer = (nint)(&Confidence);
             data[7].Size = sizeof(double);
             data[7].Reserved = 0;
-            data[8].DataPointer = (IntPtr)(&NewControlSetting);
+            data[8].DataPointer = (nint)(&NewControlSetting);
             data[8].Size = sizeof(double);
             data[8].Reserved = 0;
-            data[9].DataPointer = (IntPtr)(&NewThreadWaveMagnitude);
+            data[9].DataPointer = (nint)(&NewThreadWaveMagnitude);
             data[9].Size = sizeof(ushort);
             data[9].Reserved = 0;
-            data[10].DataPointer = (IntPtr)(&ClrInstanceID);
+            data[10].DataPointer = (nint)(&ClrInstanceID);
             data[10].Size = sizeof(ushort);
             data[10].Reserved = 0;
             WriteEventCore(56, 11, data);
@@ -249,23 +249,23 @@ namespace System.Diagnostics.Tracing
 #endif
         [Event(63, Level = EventLevel.Verbose, Message = Messages.IOEnqueue, Task = Tasks.ThreadPool, Opcode = Opcodes.IOEnqueue, Version = 0, Keywords = Keywords.ThreadingKeyword | Keywords.ThreadTransferKeyword)]
         private unsafe void ThreadPoolIOEnqueue(
-            IntPtr NativeOverlapped,
-            IntPtr Overlapped,
+            nint NativeOverlapped,
+            nint Overlapped,
             bool MultiDequeues,
             ushort ClrInstanceID = DefaultClrInstanceId)
         {
             int multiDequeuesInt = Convert.ToInt32(MultiDequeues); // bool maps to "win:Boolean", a 4-byte boolean
             EventData* data = stackalloc EventData[4];
-            data[0].DataPointer = (IntPtr)(&NativeOverlapped);
-            data[0].Size = IntPtr.Size;
+            data[0].DataPointer = (nint)(&NativeOverlapped);
+            data[0].Size = sizeof(nint);
             data[0].Reserved = 0;
-            data[1].DataPointer = (IntPtr)(&Overlapped);
-            data[1].Size = IntPtr.Size;
+            data[1].DataPointer = (nint)(&Overlapped);
+            data[1].Size = sizeof(nint);
             data[1].Reserved = 0;
-            data[2].DataPointer = (IntPtr)(&multiDequeuesInt);
+            data[2].DataPointer = (nint)(&multiDequeuesInt);
             data[2].Size = sizeof(int);
             data[2].Reserved = 0;
-            data[3].DataPointer = (IntPtr)(&ClrInstanceID);
+            data[3].DataPointer = (nint)(&ClrInstanceID);
             data[3].Size = sizeof(ushort);
             data[3].Reserved = 0;
             WriteEventCore(63, 4, data);
@@ -278,8 +278,8 @@ namespace System.Diagnostics.Tracing
             if (IsEnabled(EventLevel.Verbose, Keywords.ThreadingKeyword | Keywords.ThreadTransferKeyword))
             {
                 ThreadPoolIOEnqueue(
-                    (IntPtr)nativeOverlapped,
-                    (IntPtr)OverlappedData.GetOverlappedFromNative(nativeOverlapped).GetHashCode(),
+                    (nint)nativeOverlapped,
+                    (nint)OverlappedData.GetOverlappedFromNative(nativeOverlapped).GetHashCode(),
                     false);
             }
         }
@@ -292,7 +292,7 @@ namespace System.Diagnostics.Tracing
         {
             if (IsEnabled(EventLevel.Verbose, Keywords.ThreadingKeyword | Keywords.ThreadTransferKeyword))
             {
-                ThreadPoolIOEnqueue((IntPtr)registeredWaitHandle.GetHashCode(), IntPtr.Zero, registeredWaitHandle.Repeating);
+                ThreadPoolIOEnqueue((nint)registeredWaitHandle.GetHashCode(), 0, registeredWaitHandle.Repeating);
             }
         }
 
@@ -302,18 +302,18 @@ namespace System.Diagnostics.Tracing
 #endif
         [Event(64, Level = EventLevel.Verbose, Message = Messages.IO, Task = Tasks.ThreadPool, Opcode = Opcodes.IODequeue, Version = 0, Keywords = Keywords.ThreadingKeyword | Keywords.ThreadTransferKeyword)]
         private unsafe void ThreadPoolIODequeue(
-            IntPtr NativeOverlapped,
-            IntPtr Overlapped,
+            nint NativeOverlapped,
+            nint Overlapped,
             ushort ClrInstanceID = DefaultClrInstanceId)
         {
             EventData* data = stackalloc EventData[3];
-            data[0].DataPointer = (IntPtr)(&NativeOverlapped);
-            data[0].Size = IntPtr.Size;
+            data[0].DataPointer = (nint)(&NativeOverlapped);
+            data[0].Size = sizeof(nint);
             data[0].Reserved = 0;
-            data[1].DataPointer = (IntPtr)(&Overlapped);
-            data[1].Size = IntPtr.Size;
+            data[1].DataPointer = (nint)(&Overlapped);
+            data[1].Size = sizeof(nint);
             data[1].Reserved = 0;
-            data[2].DataPointer = (IntPtr)(&ClrInstanceID);
+            data[2].DataPointer = (nint)(&ClrInstanceID);
             data[2].Size = sizeof(ushort);
             data[2].Reserved = 0;
             WriteEventCore(64, 3, data);
@@ -326,8 +326,8 @@ namespace System.Diagnostics.Tracing
             if (IsEnabled(EventLevel.Verbose, Keywords.ThreadingKeyword | Keywords.ThreadTransferKeyword))
             {
                 ThreadPoolIODequeue(
-                    (IntPtr)nativeOverlapped,
-                    (IntPtr)OverlappedData.GetOverlappedFromNative(nativeOverlapped).GetHashCode());
+                    (nint)nativeOverlapped,
+                    (nint)OverlappedData.GetOverlappedFromNative(nativeOverlapped).GetHashCode());
             }
         }
 
@@ -339,7 +339,7 @@ namespace System.Diagnostics.Tracing
         {
             if (IsEnabled(EventLevel.Verbose, Keywords.ThreadingKeyword | Keywords.ThreadTransferKeyword))
             {
-                ThreadPoolIODequeue((IntPtr)registeredWaitHandle.GetHashCode(), IntPtr.Zero);
+                ThreadPoolIODequeue((nint)registeredWaitHandle.GetHashCode(), 0);
             }
         }
 
@@ -355,10 +355,10 @@ namespace System.Diagnostics.Tracing
                 return;
             }
             EventData* data = stackalloc EventData[2];
-            data[0].DataPointer = (IntPtr)(&Count);
+            data[0].DataPointer = (nint)(&Count);
             data[0].Size = sizeof(uint);
             data[0].Reserved = 0;
-            data[1].DataPointer = (IntPtr)(&ClrInstanceID);
+            data[1].DataPointer = (nint)(&ClrInstanceID);
             data[1].Size = sizeof(ushort);
             data[1].Reserved = 0;
             WriteEventCore(60, 2, data);
@@ -371,8 +371,8 @@ namespace System.Diagnostics.Tracing
             if (IsEnabled(EventLevel.Verbose, Keywords.ThreadingKeyword))
             {
                 ThreadPoolIOPack(
-                    (IntPtr)nativeOverlapped,
-                    (IntPtr)OverlappedData.GetOverlappedFromNative(nativeOverlapped).GetHashCode());
+                    (nint)nativeOverlapped,
+                    (nint)OverlappedData.GetOverlappedFromNative(nativeOverlapped).GetHashCode());
             }
         }
 
@@ -382,18 +382,18 @@ namespace System.Diagnostics.Tracing
 #endif
         [Event(65, Level = EventLevel.Verbose, Message = Messages.IO, Task = Tasks.ThreadPool, Opcode = Opcodes.IOPack, Version = 0, Keywords = Keywords.ThreadingKeyword)]
         private unsafe void ThreadPoolIOPack(
-            IntPtr NativeOverlapped,
-            IntPtr Overlapped,
+            nint NativeOverlapped,
+            nint Overlapped,
             ushort ClrInstanceID = DefaultClrInstanceId)
         {
             EventData* data = stackalloc EventData[3];
             data[0].DataPointer = NativeOverlapped;
-            data[0].Size        = sizeof(IntPtr);
+            data[0].Size        = sizeof(nint);
             data[0].Reserved    = 0;
             data[1].DataPointer = Overlapped;
-            data[1].Size        = sizeof(IntPtr);
+            data[1].Size        = sizeof(nint);
             data[1].Reserved    = 0;
-            data[2].DataPointer = (IntPtr)(&ClrInstanceID);
+            data[2].DataPointer = (nint)(&ClrInstanceID);
             data[2].Size        = sizeof(ushort);
             data[2].Reserved    = 0;
             WriteEventCore(65, 3, data);

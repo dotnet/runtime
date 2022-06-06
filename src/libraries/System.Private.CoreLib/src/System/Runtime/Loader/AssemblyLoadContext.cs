@@ -44,13 +44,13 @@ namespace System.Runtime.Loader
         // and MonoManagedAssemblyLoadContext in object-internals.h
 
         // Contains the reference to VM's representation of the AssemblyLoadContext
-        private readonly IntPtr _nativeAssemblyLoadContext;
+        private readonly nint _nativeAssemblyLoadContext;
 #endregion
 
         // synchronization primitive to protect against usage of this instance while unloading
         private readonly object _unloadLock;
 
-        private event Func<Assembly, string, IntPtr>? _resolvingUnmanagedDll;
+        private event Func<Assembly, string, nint>? _resolvingUnmanagedDll;
 
         private event Func<AssemblyLoadContext, AssemblyName, Assembly>? _resolving;
 
@@ -178,7 +178,7 @@ namespace System.Runtime.Loader
         //
         // Inputs: Invoking assembly, and library name to resolve
         // Returns: A handle to the loaded native library
-        public event Func<Assembly, string, IntPtr>? ResolvingUnmanagedDll
+        public event Func<Assembly, string, nint>? ResolvingUnmanagedDll
         {
 #if MONO
             [DynamicDependency(nameof(MonoResolveUnmanagedDllUsingEvent))]
@@ -407,7 +407,7 @@ namespace System.Runtime.Loader
 
         // This method provides a way for overriders of LoadUnmanagedDll() to load an unmanaged DLL from a specific path in a
         // platform-independent way. The DLL is loaded with default load flags.
-        protected IntPtr LoadUnmanagedDllFromPath(string unmanagedDllPath)
+        protected nint LoadUnmanagedDllFromPath(string unmanagedDllPath)
         {
             ArgumentException.ThrowIfNullOrEmpty(unmanagedDllPath);
 
@@ -422,10 +422,10 @@ namespace System.Runtime.Loader
         // Custom AssemblyLoadContext implementations can override this
         // method to perform the load of unmanaged native dll
         // This function needs to return the HMODULE of the dll it loads
-        protected virtual IntPtr LoadUnmanagedDll(string unmanagedDllName)
+        protected virtual nint LoadUnmanagedDll(string unmanagedDllName)
         {
             // defer to default coreclr policy of loading unmanaged dll
-            return IntPtr.Zero;
+            return 0;
         }
 
         public void Unload()
@@ -581,7 +581,7 @@ namespace System.Runtime.Loader
 #if !NATIVEAOT
         // This method is invoked by the VM when using the host-provided assembly load context
         // implementation.
-        private static Assembly? Resolve(IntPtr gchManagedAssemblyLoadContext, AssemblyName assemblyName)
+        private static Assembly? Resolve(nint gchManagedAssemblyLoadContext, AssemblyName assemblyName)
         {
             AssemblyLoadContext context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchManagedAssemblyLoadContext).Target)!;
 
@@ -783,26 +783,26 @@ namespace System.Runtime.Loader
             return asm;
         }
 
-        internal IntPtr GetResolvedUnmanagedDll(Assembly assembly, string unmanagedDllName)
+        internal nint GetResolvedUnmanagedDll(Assembly assembly, string unmanagedDllName)
         {
-            IntPtr resolvedDll = IntPtr.Zero;
+            nint resolvedDll = 0;
 
-            Func<Assembly, string, IntPtr>? dllResolveHandler = _resolvingUnmanagedDll;
+            Func<Assembly, string, nint>? dllResolveHandler = _resolvingUnmanagedDll;
 
             if (dllResolveHandler != null)
             {
                 // Loop through the event subscribers and return the first non-null native library handle
-                foreach (Func<Assembly, string, IntPtr> handler in dllResolveHandler.GetInvocationList())
+                foreach (Func<Assembly, string, nint> handler in dllResolveHandler.GetInvocationList())
                 {
                     resolvedDll = handler(assembly, unmanagedDllName);
-                    if (resolvedDll != IntPtr.Zero)
+                    if (resolvedDll != 0)
                     {
                         return resolvedDll;
                     }
                 }
             }
 
-            return IntPtr.Zero;
+            return 0;
         }
     }
 

@@ -24,7 +24,7 @@ namespace Internal.Runtime.InteropServices
         /// </summary>
         /// <param name="moduleHandle">The native module handle for the assembly.</param>
         /// <param name="assemblyPath">The path to the assembly (as a pointer to a UTF-16 C string).</param>
-        public static unsafe void LoadInMemoryAssembly(IntPtr moduleHandle, IntPtr assemblyPath)
+        public static unsafe void LoadInMemoryAssembly(nint moduleHandle, nint assemblyPath)
         {
             if (!IsSupported)
                 throw new NotSupportedException(SR.NotSupported_CppCli);
@@ -40,23 +40,23 @@ namespace Internal.Runtime.InteropServices
         /// </summary>
         /// <param name="moduleHandle">The native module handle for the assembly.</param>
         /// <param name="assemblyPath">The path to the assembly (as a pointer to a UTF-16 C string).</param>
-        /// <param name="loadContext">Load context (currently must be IntPtr.Zero)</param>
+        /// <param name="loadContext">Load context (currently must be 0)</param>
         [UnmanagedCallersOnly]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "The same C++/CLI feature switch applies to LoadInMemoryAssembly and this function. We rely on the warning from LoadInMemoryAssembly.")]
-        public static unsafe void LoadInMemoryAssemblyInContext(IntPtr moduleHandle, IntPtr assemblyPath, IntPtr loadContext)
+        public static unsafe void LoadInMemoryAssemblyInContext(nint moduleHandle, nint assemblyPath, nint loadContext)
         {
             if (!IsSupported)
                 throw new NotSupportedException(SR.NotSupported_CppCli);
 
-            if (loadContext != IntPtr.Zero)
+            if (loadContext != 0)
                 throw new ArgumentOutOfRangeException(nameof(loadContext));
 
             LoadInMemoryAssemblyInContextImpl(moduleHandle, assemblyPath, AssemblyLoadContext.Default);
         }
 
         [RequiresUnreferencedCode("C++/CLI is not trim-compatible", Url = "https://aka.ms/dotnet-illink/nativehost")]
-        private static void LoadInMemoryAssemblyInContextImpl(IntPtr moduleHandle, IntPtr assemblyPath, AssemblyLoadContext? alc = null)
+        private static void LoadInMemoryAssemblyInContextImpl(nint moduleHandle, nint assemblyPath, AssemblyLoadContext? alc = null)
         {
             string? assemblyPathString = Marshal.PtrToStringUni(assemblyPath);
             if (assemblyPathString == null)

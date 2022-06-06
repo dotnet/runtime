@@ -63,7 +63,7 @@ internal static partial class Interop
                     int cchDest,
                     void* lpVersionInformation,
                     void* lpReserved,
-                    IntPtr sortHandle);
+                    nint sortHandle);
 
         [LibraryImport("kernel32.dll", EntryPoint = "FindNLSStringEx", SetLastError = SetLastErrorForDebug)]
         internal static unsafe partial int FindNLSStringEx(
@@ -76,7 +76,7 @@ internal static partial class Interop
                     int* pcchFound,
                     void* lpVersionInformation,
                     void* lpReserved,
-                    IntPtr sortHandle);
+                    nint sortHandle);
 
         [LibraryImport("kernel32.dll", EntryPoint = "CompareStringEx")]
         internal static unsafe partial int CompareStringEx(
@@ -88,7 +88,7 @@ internal static partial class Interop
                     int cchCount2,
                     void* lpVersionInformation,
                     void* lpReserved,
-                    IntPtr lParam);
+                    nint lParam);
 
         [LibraryImport("kernel32.dll", EntryPoint = "CompareStringOrdinal")]
         internal static unsafe partial int CompareStringOrdinal(
@@ -112,7 +112,7 @@ internal static partial class Interop
         internal static unsafe partial bool IsNLSDefinedString(
                     int Function,
                     uint dwFlags,
-                    IntPtr lpVersionInformation,
+                    nint lpVersionInformation,
                     char* lpString,
                     int cchStr);
 
@@ -124,17 +124,17 @@ internal static partial class Interop
 
         [LibraryImport("kernel32.dll", StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static unsafe partial bool EnumSystemLocalesEx(delegate* unmanaged<char*, uint, void*, BOOL> lpLocaleEnumProcEx, uint dwFlags, void* lParam, IntPtr reserved);
+        internal static unsafe partial bool EnumSystemLocalesEx(delegate* unmanaged<char*, uint, void*, BOOL> lpLocaleEnumProcEx, uint dwFlags, void* lParam, nint reserved);
 
         [LibraryImport("kernel32.dll", StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool EnumTimeFormatsEx(delegate* unmanaged<char*, void*, BOOL> lpTimeFmtEnumProcEx, string lpLocaleName, uint dwFlags, void* lParam);
 
         [LibraryImport("kernel32.dll", StringMarshalling = StringMarshalling.Utf16)]
-        internal static partial int GetCalendarInfoEx(string? lpLocaleName, uint Calendar, IntPtr lpReserved, uint CalType, IntPtr lpCalData, int cchData, out int lpValue);
+        internal static partial int GetCalendarInfoEx(string? lpLocaleName, uint Calendar, nint lpReserved, uint CalType, nint lpCalData, int cchData, out int lpValue);
 
         [LibraryImport("kernel32.dll", StringMarshalling = StringMarshalling.Utf16)]
-        internal static partial int GetCalendarInfoEx(string? lpLocaleName, uint Calendar, IntPtr lpReserved, uint CalType, IntPtr lpCalData, int cchData, IntPtr lpValue);
+        internal static partial int GetCalendarInfoEx(string? lpLocaleName, uint Calendar, nint lpReserved, uint CalType, nint lpCalData, int cchData, nint lpValue);
 
         [LibraryImport("kernel32.dll")]
         internal static partial int GetUserGeoID(int geoClass);
@@ -144,7 +144,7 @@ internal static partial class Interop
 
         [LibraryImport("kernel32.dll", StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static unsafe partial bool EnumCalendarInfoExEx(delegate* unmanaged<char*, uint, IntPtr, void*, BOOL> pCalInfoEnumProcExEx, string lpLocaleName, uint Calendar, string? lpReserved, uint CalType, void* lParam);
+        internal static unsafe partial bool EnumCalendarInfoExEx(delegate* unmanaged<char*, uint, nint, void*, BOOL> pCalInfoEnumProcExEx, string lpLocaleName, uint Calendar, string? lpReserved, uint CalType, void* lParam);
 
         [StructLayout(LayoutKind.Sequential)]
         internal struct NlsVersionInfoEx

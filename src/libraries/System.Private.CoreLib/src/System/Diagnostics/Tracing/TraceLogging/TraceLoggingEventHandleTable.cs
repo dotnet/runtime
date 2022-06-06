@@ -12,19 +12,19 @@ namespace System.Diagnostics.Tracing
     internal sealed class TraceLoggingEventHandleTable
     {
         private const int DefaultLength = 10;
-        private IntPtr[] m_innerTable;
+        private nint[] m_innerTable;
 
         internal TraceLoggingEventHandleTable()
         {
-            m_innerTable = new IntPtr[DefaultLength];
+            m_innerTable = new nint[DefaultLength];
         }
 
-        internal IntPtr this[int eventID]
+        internal nint this[int eventID]
         {
             get
             {
-                IntPtr ret = IntPtr.Zero;
-                IntPtr[] innerTable = Volatile.Read(ref m_innerTable);
+                nint ret = 0;
+                nint[] innerTable = Volatile.Read(ref m_innerTable);
 
                 if (eventID >= 0 && eventID < innerTable.Length)
                 {
@@ -35,7 +35,7 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        internal void SetEventHandle(int eventID, IntPtr eventHandle)
+        internal void SetEventHandle(int eventID, nint eventHandle)
         {
             // Set operations must be serialized to ensure that re-size operations don't lose concurrent writes.
             Debug.Assert(Monitor.IsEntered(this));
@@ -48,7 +48,7 @@ namespace System.Diagnostics.Tracing
                     newSize = eventID + 1;
                 }
 
-                IntPtr[] newTable = new IntPtr[newSize];
+                nint[] newTable = new nint[newSize];
                 Array.Copy(m_innerTable, newTable, m_innerTable.Length);
                 Volatile.Write(ref m_innerTable, newTable);
             }

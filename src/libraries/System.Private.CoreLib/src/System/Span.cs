@@ -278,7 +278,7 @@ namespace System
         {
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
-                SpanHelpers.ClearWithReferences(ref Unsafe.As<T, IntPtr>(ref _reference.Value), (uint)_length * (nuint)(Unsafe.SizeOf<T>() / sizeof(nuint)));
+                SpanHelpers.ClearWithReferences(ref Unsafe.As<T, nint>(ref _reference.Value), (uint)_length * (nuint)(Unsafe.SizeOf<T>() / sizeof(nuint)));
             }
             else
             {

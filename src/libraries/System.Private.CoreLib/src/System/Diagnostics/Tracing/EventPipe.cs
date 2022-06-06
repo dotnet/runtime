@@ -12,13 +12,13 @@ namespace System.Diagnostics.Tracing
     [StructLayout(LayoutKind.Sequential)]
     internal struct EventPipeEventInstanceData
     {
-        internal IntPtr ProviderID;
+        internal nint ProviderID;
         internal uint EventID;
         internal uint ThreadID;
         internal long TimeStamp;
         internal Guid ActivityId;
         internal Guid ChildActivityId;
-        internal IntPtr Payload;
+        internal nint Payload;
         internal uint PayloadLength;
     }
 
@@ -110,11 +110,11 @@ namespace System.Diagnostics.Tracing
             {
                 if (m_pProviderName != null)
                 {
-                    Marshal.FreeCoTaskMem((IntPtr)m_pProviderName);
+                    Marshal.FreeCoTaskMem((nint)m_pProviderName);
                 }
                 if (m_pFilterData != null)
                 {
-                    Marshal.FreeCoTaskMem((IntPtr)m_pFilterData);
+                    Marshal.FreeCoTaskMem((nint)m_pFilterData);
                 }
             }
         }
@@ -150,7 +150,7 @@ namespace System.Diagnostics.Tracing
 
                 fixed (EventPipeProviderConfigurationNative* providersNativePointer = providersNative)
                 {
-                    Marshal.FreeCoTaskMem((IntPtr)providersNativePointer);
+                    Marshal.FreeCoTaskMem((nint)providersNativePointer);
                 }
             }
         }

@@ -21,7 +21,7 @@ namespace System.Runtime.InteropServices.ComTypes
     public interface IEnumConnections
     {
         [PreserveSig]
-        int Next(int celt, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0), Out] CONNECTDATA[] rgelt, IntPtr pceltFetched);
+        int Next(int celt, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0), Out] CONNECTDATA[] rgelt, nint pceltFetched);
         [PreserveSig]
         int Skip(int celt);
         void Reset();

@@ -84,7 +84,7 @@ namespace System.Runtime.CompilerServices
         internal static partial void CompileMethod(RuntimeMethodHandleInternal method);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionInvocation_PrepareMethod")]
-        private static unsafe partial void PrepareMethod(RuntimeMethodHandleInternal method, IntPtr* pInstantiation, int cInstantiation);
+        private static unsafe partial void PrepareMethod(RuntimeMethodHandleInternal method, nint* pInstantiation, int cInstantiation);
 
         public static void PrepareMethod(RuntimeMethodHandle method) => PrepareMethod(method, null);
 
@@ -97,8 +97,8 @@ namespace System.Runtime.CompilerServices
             // defensive copy of user-provided array, per CopyRuntimeTypeHandles contract
             instantiation = (RuntimeTypeHandle[]?)instantiation?.Clone();
 
-            ReadOnlySpan<IntPtr> instantiationHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(instantiation, stackScratch: stackalloc IntPtr[8]);
-            fixed (IntPtr* pInstantiation = instantiationHandles)
+            ReadOnlySpan<nint> instantiationHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(instantiation, stackScratch: stackalloc nint[8]);
+            fixed (nint* pInstantiation = instantiationHandles)
             {
                 PrepareMethod(methodInfo.Value, pInstantiation, instantiationHandles.Length);
                 GC.KeepAlive(instantiation);
@@ -221,7 +221,7 @@ namespace System.Runtime.CompilerServices
             MethodTable* pMT = GetMethodTable(obj);
 
             // See comment on RawArrayData for details
-            nuint rawSize = pMT->BaseSize - (nuint)(2 * sizeof(IntPtr));
+            nuint rawSize = pMT->BaseSize - (nuint)(2 * sizeof(nint));
             if (pMT->HasComponentSize)
                 rawSize += (uint)Unsafe.As<RawArrayData>(obj).Length * (nuint)pMT->ComponentSize;
 
@@ -292,7 +292,7 @@ namespace System.Runtime.CompilerServices
             // The body of this function will be replaced by the EE with unsafe code
             // See getILIntrinsicImplementationForRuntimeHelpers for how this happens.
 
-            return (MethodTable *)Unsafe.Add(ref Unsafe.As<byte, IntPtr>(ref obj.GetRawData()), -1);
+            return (MethodTable *)Unsafe.Add(ref Unsafe.As<byte, nint>(ref obj.GetRawData()), -1);
         }
 
 
@@ -307,7 +307,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="type">Type associated with the allocated memory.</param>
         /// <param name="size">Amount of memory in bytes to allocate.</param>
         /// <returns>The allocated memory</returns>
-        public static IntPtr AllocateTypeAssociatedMemory(Type type, int size)
+        public static nint AllocateTypeAssociatedMemory(Type type, int size)
         {
             if (type is not RuntimeType rt)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(type));
@@ -319,21 +319,21 @@ namespace System.Runtime.CompilerServices
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_AllocateTypeAssociatedMemory")]
-        private static partial IntPtr AllocateTypeAssociatedMemory(QCallTypeHandle type, uint size);
+        private static partial nint AllocateTypeAssociatedMemory(QCallTypeHandle type, uint size);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern IntPtr AllocTailCallArgBuffer(int size, IntPtr gcDesc);
+        private static extern nint AllocTailCallArgBuffer(int size, nint gcDesc);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe TailCallTls* GetTailCallInfo(IntPtr retAddrSlot, IntPtr* retAddr);
+        private static extern unsafe TailCallTls* GetTailCallInfo(nint retAddrSlot, nint* retAddr);
 
         [StackTraceHidden]
         private static unsafe void DispatchTailCalls(
-            IntPtr callersRetAddrSlot,
-            delegate*<IntPtr, IntPtr, PortableTailCallFrame*, void> callTarget,
-            IntPtr retVal)
+            nint callersRetAddrSlot,
+            delegate*<nint, nint, PortableTailCallFrame*, void> callTarget,
+            nint retVal)
         {
-            IntPtr callersRetAddr;
+            nint callersRetAddr;
             TailCallTls* tls = GetTailCallInfo(callersRetAddrSlot, &callersRetAddr);
             PortableTailCallFrame* prevFrame = tls->Frame;
             if (callersRetAddr == prevFrame->TailCallAwareReturnAddress)
@@ -362,7 +362,7 @@ namespace System.Runtime.CompilerServices
                 tls->Frame = prevFrame;
 
                 // If the arg buffer is reporting inst argument, it is safe to abandon it now
-                if (tls->ArgBuffer != IntPtr.Zero && *(int*)tls->ArgBuffer == 1 /* TAILCALLARGBUFFER_INSTARG_ONLY */)
+                if (tls->ArgBuffer != 0 && *(int*)tls->ArgBuffer == 1 /* TAILCALLARGBUFFER_INSTARG_ONLY */)
                 {
                     *(int*)tls->ArgBuffer = 2 /* TAILCALLARGBUFFER_ABANDONED */;
                 }
@@ -414,7 +414,7 @@ namespace System.Runtime.CompilerServices
     // points at the number of components, skipping over these two pointer-sized fields.
     internal sealed class RawArrayData
     {
-        public uint Length; // Array._numComponents padded to IntPtr
+        public uint Length; // Array._numComponents padded to nint
 #if TARGET_64BIT
         public uint Padding;
 #endif
@@ -563,7 +563,7 @@ namespace System.Runtime.CompilerServices
             {
                 Debug.Assert(HasComponentSize);
                 // See comment on RawArrayData for details
-                return BaseSize > (uint)(3 * sizeof(IntPtr));
+                return BaseSize > (uint)(3 * sizeof(nint));
             }
         }
 
@@ -575,7 +575,7 @@ namespace System.Runtime.CompilerServices
             {
                 Debug.Assert(HasComponentSize);
                 // See comment on RawArrayData for details
-                return (int)((BaseSize - (uint)(3 * sizeof(IntPtr))) / (uint)(2 * sizeof(int)));
+                return (int)((BaseSize - (uint)(3 * sizeof(nint))) / (uint)(2 * sizeof(int)));
             }
         }
 
@@ -653,14 +653,14 @@ namespace System.Runtime.CompilerServices
     [StructLayout(LayoutKind.Sequential)]
     internal unsafe struct PortableTailCallFrame
     {
-        public IntPtr TailCallAwareReturnAddress;
-        public delegate*<IntPtr, IntPtr, PortableTailCallFrame*, void> NextCall;
+        public nint TailCallAwareReturnAddress;
+        public delegate*<nint, nint, PortableTailCallFrame*, void> NextCall;
     }
 
     [StructLayout(LayoutKind.Sequential)]
     internal unsafe struct TailCallTls
     {
         public PortableTailCallFrame* Frame;
-        public IntPtr ArgBuffer;
+        public nint ArgBuffer;
     }
 }

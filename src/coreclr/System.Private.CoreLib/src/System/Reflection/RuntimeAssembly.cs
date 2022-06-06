@@ -27,12 +27,12 @@ namespace System.Reflection
         private string? m_fullname;
         private object? m_syncRoot;   // Used to keep collectible types alive and as the syncroot for reflection.emit
 #pragma warning disable 169
-        private IntPtr m_assembly;    // slack for ptr datum on unmanaged side
+        private nint m_assembly;    // slack for ptr datum on unmanaged side
 #pragma warning restore 169
 
         #endregion
 
-        internal IntPtr GetUnderlyingNativeHandle() { return m_assembly; }
+        internal nint GetUnderlyingNativeHandle() { return m_assembly; }
 
         private sealed class ManifestResourceStream : UnmanagedMemoryStream
         {

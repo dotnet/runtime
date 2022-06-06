@@ -29,22 +29,22 @@ namespace System.Diagnostics.Tracing
         // These PInvokes are used by EventSource to interact with the EventPipe.
         //
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_CreateProvider", StringMarshalling = StringMarshalling.Utf16)]
-        internal static partial IntPtr CreateProvider(string providerName, Interop.Advapi32.EtwEnableCallback callbackFunc);
+        internal static partial nint CreateProvider(string providerName, Interop.Advapi32.EtwEnableCallback callbackFunc);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_DefineEvent")]
-        internal static unsafe partial IntPtr DefineEvent(IntPtr provHandle, uint eventID, long keywords, uint eventVersion, uint level, void *pMetadata, uint metadataLength);
+        internal static unsafe partial nint DefineEvent(nint provHandle, uint eventID, long keywords, uint eventVersion, uint level, void *pMetadata, uint metadataLength);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_GetProvider", StringMarshalling = StringMarshalling.Utf16)]
-        internal static partial IntPtr GetProvider(string providerName);
+        internal static partial nint GetProvider(string providerName);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_DeleteProvider")]
-        internal static partial void DeleteProvider(IntPtr provHandle);
+        internal static partial void DeleteProvider(nint provHandle);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_EventActivityIdControl")]
         internal static partial int EventActivityIdControl(uint controlCode, ref Guid activityId);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_WriteEventData")]
-        internal static unsafe partial void WriteEventData(IntPtr eventHandle, EventProvider.EventData* pEventData, uint dataCount, Guid* activityId, Guid* relatedActivityId);
+        internal static unsafe partial void WriteEventData(nint eventHandle, EventProvider.EventData* pEventData, uint dataCount, Guid* activityId, Guid* relatedActivityId);
 
         //
         // These PInvokes are used as part of the EventPipeEventDispatcher.

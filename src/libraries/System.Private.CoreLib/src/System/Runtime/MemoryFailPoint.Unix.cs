@@ -9,7 +9,7 @@ namespace System.Runtime
         {
             // These values are optimistic assumptions. In reality the value will
             // often be lower.
-            return IntPtr.Size == 4 ? uint.MaxValue : ulong.MaxValue;
+            return sizeof(nint) == 4 ? uint.MaxValue : ulong.MaxValue;
         }
 
         private static bool CheckForAvailableMemory(out ulong availPageFile, out ulong totalAddressSpaceFree)

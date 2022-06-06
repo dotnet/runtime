@@ -66,7 +66,7 @@ namespace System
             }
 
             // regionPtr will point at the region name encoded as ASCII.
-            IntPtr regionPtr = IntPtr.Zero;
+            nint regionPtr = 0;
 
              // Regions usually are 2 or 3 characters length.
             const int MaxRegionNameLength = 11;
@@ -84,7 +84,7 @@ namespace System
                 if (i >= region.Length)
                 {
                     regionInAscii[region.Length] = 0;
-                    regionPtr = new IntPtr(regionInAscii);
+                    regionPtr = (nint)regionInAscii;
                 }
 
                 // In case getting unexpected region names, we just fallback using the default region (pasing null region name to the ICU API).

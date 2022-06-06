@@ -13,8 +13,8 @@ namespace System
     // Cannot be serialized
     public ref struct RuntimeArgumentHandle
     {
-        private IntPtr m_ptr;
+        private nint m_ptr;
 
-        internal IntPtr Value => m_ptr;
+        internal nint Value => m_ptr;
     }
 }

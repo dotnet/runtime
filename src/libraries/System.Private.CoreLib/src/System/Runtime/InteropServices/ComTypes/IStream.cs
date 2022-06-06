@@ -29,13 +29,13 @@ namespace System.Runtime.InteropServices.ComTypes
     public interface IStream
     {
         // ISequentialStream portion
-        void Read([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1), Out] byte[] pv, int cb, IntPtr pcbRead);
-        void Write([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] byte[] pv, int cb, IntPtr pcbWritten);
+        void Read([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1), Out] byte[] pv, int cb, nint pcbRead);
+        void Write([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] byte[] pv, int cb, nint pcbWritten);
 
         // IStream portion
-        void Seek(long dlibMove, int dwOrigin, IntPtr plibNewPosition);
+        void Seek(long dlibMove, int dwOrigin, nint plibNewPosition);
         void SetSize(long libNewSize);
-        void CopyTo(IStream pstm, long cb, IntPtr pcbRead, IntPtr pcbWritten);
+        void CopyTo(IStream pstm, long cb, nint pcbRead, nint pcbWritten);
         void Commit(int grfCommitFlags);
         void Revert();
         void LockRegion(long libOffset, long cb, int dwLockType);

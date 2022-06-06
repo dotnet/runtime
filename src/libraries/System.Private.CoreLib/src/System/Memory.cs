@@ -343,7 +343,7 @@ namespace System
                     }
 #endif
 
-                    refToReturn = ref Unsafe.Add(ref refToReturn, (IntPtr)(void*)desiredStartIndex);
+                    refToReturn = ref Unsafe.Add(ref refToReturn, (nint)(void*)desiredStartIndex);
                     lengthOfUnderlyingSpan = desiredLength;
                 }
 

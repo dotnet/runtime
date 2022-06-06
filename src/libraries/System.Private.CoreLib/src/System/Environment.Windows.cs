@@ -97,7 +97,7 @@ namespace System
             var builder = new ValueStringBuilder(stackalloc char[Interop.Kernel32.MAX_PATH]);
 
             uint length;
-            while ((length = Interop.Kernel32.GetModuleFileName(IntPtr.Zero, ref builder.GetPinnableReference(), (uint)builder.Capacity)) >= builder.Capacity)
+            while ((length = Interop.Kernel32.GetModuleFileName(0, ref builder.GetPinnableReference(), (uint)builder.Capacity)) >= builder.Capacity)
             {
                 builder.EnsureCapacity((int)length);
             }
@@ -149,8 +149,8 @@ namespace System
             get
             {
                 // Per documentation of GetProcessWindowStation, this handle should not be closed
-                IntPtr handle = Interop.User32.GetProcessWindowStation();
-                if (handle != IntPtr.Zero)
+                nint handle = Interop.User32.GetProcessWindowStation();
+                if (handle != 0)
                 {
                     Interop.User32.USEROBJECTFLAGS flags = default;
                     uint dummy = 0;

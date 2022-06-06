@@ -28,7 +28,7 @@ namespace System.Diagnostics.Tracing
         unsafe EventProvider.WriteEventErrorCode EventWriteTransfer(
             long registrationHandle,
             in EventDescriptor eventDescriptor,
-            IntPtr eventHandle,
+            nint eventHandle,
             Guid* activityId,
             Guid* relatedActivityId,
             int userDataCount,
@@ -38,7 +38,7 @@ namespace System.Diagnostics.Tracing
         int EventActivityIdControl(Interop.Advapi32.ActivityControl controlCode, ref Guid activityId);
 
         // Define an EventPipeEvent handle.
-        unsafe IntPtr DefineEventHandle(uint eventID, string eventName, long keywords, uint eventVersion,
+        unsafe nint DefineEventHandle(uint eventID, string eventName, long keywords, uint eventVersion,
             uint level, byte *pMetadata, uint metadataLength);
     }
 }

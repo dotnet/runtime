@@ -492,7 +492,7 @@ namespace System.Diagnostics.Tracing
                     {
                         byte* toFree = buffer;
                         buffer = null;
-                        Marshal.FreeHGlobal((IntPtr)toFree);
+                        Marshal.FreeHGlobal((nint)toFree);
                     }
                     buffer = (byte*)Marshal.AllocHGlobal(buffSize);
                 }
@@ -521,7 +521,7 @@ namespace System.Diagnostics.Tracing
             {
                 if (buffer != null && buffer != stackSpace)
                 {
-                    Marshal.FreeHGlobal((IntPtr)buffer);
+                    Marshal.FreeHGlobal((nint)buffer);
                 }
             }
 #else
@@ -536,7 +536,7 @@ namespace System.Diagnostics.Tracing
 
             // Determine our session from what is in the registry.
             string regKey = @"\Microsoft\Windows\CurrentVersion\Winevt\Publishers\{" + m_providerName + "}";
-            if (IntPtr.Size == 8)
+            if (sizeof(nint) == 8)
                 regKey = @"Software" + @"\Wow6432Node" + regKey;
             else
                 regKey = @"Software" + regKey;
@@ -619,7 +619,7 @@ namespace System.Diagnostics.Tracing
             {
 #if TARGET_WINDOWS
                 string regKey = @"\Microsoft\Windows\CurrentVersion\Winevt\Publishers\{" + m_providerId + "}";
-                if (IntPtr.Size == 8)
+                if (sizeof(nint) == 8)
                     regKey = @"Software\Wow6432Node" + regKey;
                 else
                     regKey = "Software" + regKey;
@@ -650,7 +650,7 @@ namespace System.Diagnostics.Tracing
                 if (filterData->Ptr != 0 && 0 < filterData->Size && filterData->Size <= 100*1024)
                 {
                     data = new byte[filterData->Size];
-                    Marshal.Copy((IntPtr)(void*)filterData->Ptr, data, 0, data.Length);
+                    Marshal.Copy((nint)(void*)filterData->Ptr, data, 0, data.Length);
                 }
                 command = (ControllerCommand)filterData->Type;
                 return true;
@@ -720,7 +720,7 @@ namespace System.Diagnostics.Tracing
         }
 
         // <SecurityKernel Critical="True" Ring="0">
-        // <UsesUnsafeCode Name="Local intptrPtr of type: IntPtr*" />
+        // <UsesUnsafeCode Name="Local intptrPtr of type: nint*" />
         // <UsesUnsafeCode Name="Local intptrPtr of type: Int32*" />
         // <UsesUnsafeCode Name="Local longptr of type: Int64*" />
         // <UsesUnsafeCode Name="Local uintptr of type: UInt32*" />
@@ -785,11 +785,11 @@ namespace System.Diagnostics.Tracing
                 dataBuffer += BasicTypeAllocationBufferSize;
                 dataDescriptor->Size = (uint)blobRet.Length;
             }
-            else if (data is IntPtr)
+            else if (data is nint)
             {
-                dataDescriptor->Size = (uint)sizeof(IntPtr);
-                IntPtr* intptrPtr = (IntPtr*)dataBuffer;
-                *intptrPtr = (IntPtr)data;
+                dataDescriptor->Size = (uint)sizeof(nint);
+                nint* intptrPtr = (nint*)dataBuffer;
+                *intptrPtr = (nint)data;
                 dataDescriptor->Ptr = (ulong)intptrPtr;
             }
             else if (data is int)
@@ -981,7 +981,7 @@ namespace System.Diagnostics.Tracing
         // <UsesUnsafeCode Name="Local v7 of type: Char*" />
         // <ReferencesCritical Name="Method: EncodeObject(Object&, EventData*, Byte*):String" Ring="1" />
         // </SecurityKernel>
-        internal unsafe bool WriteEvent(ref EventDescriptor eventDescriptor, IntPtr eventHandle, Guid* activityID, Guid* childActivityID, object?[] eventPayload)
+        internal unsafe bool WriteEvent(ref EventDescriptor eventDescriptor, nint eventHandle, Guid* activityID, Guid* childActivityID, object?[] eventPayload)
         {
             WriteEventErrorCode status = WriteEventErrorCode.NoError;
 
@@ -1221,7 +1221,7 @@ namespace System.Diagnostics.Tracing
         // <SecurityKernel Critical="True" Ring="0">
         // <CallsSuppressUnmanagedCode Name="Interop.Advapi32.EventWrite(System.Int64,EventDescriptor&,System.UInt32,System.Void*):System.UInt32" />
         // </SecurityKernel>
-        protected internal unsafe bool WriteEvent(ref EventDescriptor eventDescriptor, IntPtr eventHandle, Guid* activityID, Guid* childActivityID, int dataCount, IntPtr data)
+        protected internal unsafe bool WriteEvent(ref EventDescriptor eventDescriptor, nint eventHandle, Guid* activityID, Guid* childActivityID, int dataCount, nint data)
         {
             if (childActivityID != null)
             {
@@ -1244,11 +1244,11 @@ namespace System.Diagnostics.Tracing
 
         internal unsafe bool WriteEventRaw(
             ref EventDescriptor eventDescriptor,
-            IntPtr eventHandle,
+            nint eventHandle,
             Guid* activityID,
             Guid* relatedActivityID,
             int dataCount,
-            IntPtr data)
+            nint data)
         {
             WriteEventErrorCode status = m_eventProvider.EventWriteTransfer(
                 m_regHandle,
@@ -1342,7 +1342,7 @@ namespace System.Diagnostics.Tracing
         unsafe EventProvider.WriteEventErrorCode IEventProvider.EventWriteTransfer(
             long registrationHandle,
             in EventDescriptor eventDescriptor,
-            IntPtr eventHandle,
+            nint eventHandle,
             Guid* activityId,
             Guid* relatedActivityId,
             int userDataCount,
@@ -1377,7 +1377,7 @@ namespace System.Diagnostics.Tracing
         }
 
         // Define an EventPipeEvent handle.
-        unsafe IntPtr IEventProvider.DefineEventHandle(uint eventID, string eventName, long keywords, uint eventVersion,
+        unsafe nint IEventProvider.DefineEventHandle(uint eventID, string eventName, long keywords, uint eventVersion,
             uint level, byte* pMetadata, uint metadataLength)
         {
             throw new System.NotSupportedException();
@@ -1404,7 +1404,7 @@ namespace System.Diagnostics.Tracing
         unsafe EventProvider.WriteEventErrorCode IEventProvider.EventWriteTransfer(
             long registrationHandle,
             in EventDescriptor eventDescriptor,
-            IntPtr eventHandle,
+            nint eventHandle,
             Guid* activityId,
             Guid* relatedActivityId,
             int userDataCount,
@@ -1419,10 +1419,10 @@ namespace System.Diagnostics.Tracing
         }
 
         // Define an EventPipeEvent handle.
-        unsafe IntPtr IEventProvider.DefineEventHandle(uint eventID, string eventName, long keywords, uint eventVersion,
+        unsafe nint IEventProvider.DefineEventHandle(uint eventID, string eventName, long keywords, uint eventVersion,
             uint level, byte* pMetadata, uint metadataLength)
         {
-            return IntPtr.Zero;
+            return 0;
         }
     }
 }

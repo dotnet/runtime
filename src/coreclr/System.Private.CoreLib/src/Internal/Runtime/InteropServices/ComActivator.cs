@@ -39,7 +39,7 @@ namespace Internal.Runtime.InteropServices
         new void CreateInstance(
             [MarshalAs(UnmanagedType.Interface)] object? pUnkOuter,
             ref Guid riid,
-            out IntPtr ppvObject);
+            out nint ppvObject);
 
         new void LockServer([MarshalAs(UnmanagedType.Bool)] bool fLock);
 
@@ -54,7 +54,7 @@ namespace Internal.Runtime.InteropServices
             [MarshalAs(UnmanagedType.Interface)] object? pUnkReserved,
             ref Guid riid,
             [MarshalAs(UnmanagedType.BStr)] string bstrKey,
-            out IntPtr ppvObject);
+            out nint ppvObject);
     }
 
     internal partial struct ComActivationContext
@@ -71,9 +71,9 @@ namespace Internal.Runtime.InteropServices
             {
                 ClassId = cxtInt.ClassId,
                 InterfaceId = cxtInt.InterfaceId,
-                AssemblyPath = Marshal.PtrToStringUni(new IntPtr(cxtInt.AssemblyPathBuffer))!,
-                AssemblyName = Marshal.PtrToStringUni(new IntPtr(cxtInt.AssemblyNameBuffer))!,
-                TypeName = Marshal.PtrToStringUni(new IntPtr(cxtInt.TypeNameBuffer))!
+                AssemblyPath = Marshal.PtrToStringUni((nint)cxtInt.AssemblyPathBuffer)!,
+                AssemblyName = Marshal.PtrToStringUni((nint)cxtInt.AssemblyNameBuffer)!,
+                TypeName = Marshal.PtrToStringUni((nint)cxtInt.TypeNameBuffer)!
             };
         }
     }
@@ -237,14 +237,14 @@ $@"{nameof(GetClassFactoryForTypeInternal)} arguments:
     0x{(ulong)cxtInt.AssemblyPathBuffer:x}
     0x{(ulong)cxtInt.AssemblyNameBuffer:x}
     0x{(ulong)cxtInt.TypeNameBuffer:x}
-    0x{cxtInt.ClassFactoryDest.ToInt64():x}");
+    0x{(ulong)cxtInt.ClassFactoryDest:x}");
             }
 
             try
             {
                 var cxt = ComActivationContext.Create(ref cxtInt);
                 object cf = GetClassFactoryForType(cxt);
-                IntPtr nativeIUnknown = Marshal.GetIUnknownForObject(cf);
+                nint nativeIUnknown = Marshal.GetIUnknownForObject(cf);
                 Marshal.WriteIntPtr(cxtInt.ClassFactoryDest, nativeIUnknown);
             }
             catch (Exception e)
@@ -279,11 +279,11 @@ $@"{nameof(RegisterClassForTypeInternal)} arguments:
     0x{(ulong)cxtInt.AssemblyPathBuffer:x}
     0x{(ulong)cxtInt.AssemblyNameBuffer:x}
     0x{(ulong)cxtInt.TypeNameBuffer:x}
-    0x{cxtInt.ClassFactoryDest.ToInt64():x}");
+    0x{(ulong)cxtInt.ClassFactoryDest:x}");
             }
 
             if (cxtInt.InterfaceId != Guid.Empty
-                || cxtInt.ClassFactoryDest != IntPtr.Zero)
+                || cxtInt.ClassFactoryDest != 0)
             {
                 throw new ArgumentException(null, nameof(pCxtInt));
             }
@@ -324,11 +324,11 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
     0x{(ulong)cxtInt.AssemblyPathBuffer:x}
     0x{(ulong)cxtInt.AssemblyNameBuffer:x}
     0x{(ulong)cxtInt.TypeNameBuffer:x}
-    0x{cxtInt.ClassFactoryDest.ToInt64():x}");
+    0x{(ulong)cxtInt.ClassFactoryDest:x}");
             }
 
             if (cxtInt.InterfaceId != Guid.Empty
-                || cxtInt.ClassFactoryDest != IntPtr.Zero)
+                || cxtInt.ClassFactoryDest != 0)
             {
                 throw new ArgumentException(null, nameof(pCxtInt));
             }
@@ -446,7 +446,7 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
                 throw new InvalidCastException();
             }
 
-            public static IntPtr GetObjectAsInterface(object obj, Type interfaceType)
+            public static nint GetObjectAsInterface(object obj, Type interfaceType)
             {
                 // If the requested "interface type" is type object then return as IUnknown
                 if (interfaceType == typeof(object))
@@ -462,9 +462,9 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
                 // Scenarios where this is relevant:
                 //  - Interfaces that use Generics
                 //  - Interfaces that define implementation
-                IntPtr interfaceMaybe = Marshal.GetComInterfaceForObject(obj, interfaceType, CustomQueryInterfaceMode.Ignore);
+                nint interfaceMaybe = Marshal.GetComInterfaceForObject(obj, interfaceType, CustomQueryInterfaceMode.Ignore);
 
-                if (interfaceMaybe == IntPtr.Zero)
+                if (interfaceMaybe == 0)
                 {
                     // E_NOINTERFACE
                     throw new InvalidCastException();
@@ -476,11 +476,11 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
             public static object CreateAggregatedObject(object pUnkOuter, object comObject)
             {
                 Debug.Assert(pUnkOuter != null && comObject != null);
-                IntPtr outerPtr = Marshal.GetIUnknownForObject(pUnkOuter);
+                nint outerPtr = Marshal.GetIUnknownForObject(pUnkOuter);
 
                 try
                 {
-                    IntPtr innerPtr = Marshal.CreateAggregatedObject(outerPtr, comObject);
+                    nint innerPtr = Marshal.CreateAggregatedObject(outerPtr, comObject);
                     return Marshal.GetObjectForIUnknown(innerPtr);
                 }
                 finally
@@ -494,7 +494,7 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
             public void CreateInstance(
                 [MarshalAs(UnmanagedType.Interface)] object? pUnkOuter,
                 ref Guid riid,
-                out IntPtr ppvObject)
+                out nint ppvObject)
             {
                 Type interfaceType = BasicClassFactory.GetValidatedInterfaceType(_classType, ref riid, pUnkOuter);
 
@@ -532,7 +532,7 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
             public void CreateInstance(
                 [MarshalAs(UnmanagedType.Interface)] object? pUnkOuter,
                 ref Guid riid,
-                out IntPtr ppvObject)
+                out nint ppvObject)
             {
                 CreateInstanceInner(pUnkOuter, ref riid, key: null, isDesignTime: true, out ppvObject);
             }
@@ -563,7 +563,7 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
                 [MarshalAs(UnmanagedType.Interface)] object? pUnkReserved,
                 ref Guid riid,
                 [MarshalAs(UnmanagedType.BStr)] string bstrKey,
-                out IntPtr ppvObject)
+                out nint ppvObject)
             {
                 Debug.Assert(pUnkReserved == null);
                 CreateInstanceInner(pUnkOuter, ref riid, bstrKey, isDesignTime: false, out ppvObject);
@@ -574,7 +574,7 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
                 ref Guid riid,
                 string? key,
                 bool isDesignTime,
-                out IntPtr ppvObject)
+                out nint ppvObject)
             {
                 Type interfaceType = BasicClassFactory.GetValidatedInterfaceType(_classType, ref riid, pUnkOuter);
 
@@ -769,7 +769,7 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
         }
 
         // See usage in native RCW code
-        public void GetCurrentContextInfo(RuntimeTypeHandle rth, out bool isDesignTime, out IntPtr bstrKey)
+        public void GetCurrentContextInfo(RuntimeTypeHandle rth, out bool isDesignTime, out nint bstrKey)
         {
             Type targetRcwTypeMaybe = Type.GetTypeFromHandle(rth)!;
 
@@ -787,9 +787,9 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
         // object inside a designtime license context.
         // It's purpose is to save away the license key that the CLR
         // retrieved using RequestLicKey().
-        public void SaveKeyInCurrentContext(IntPtr bstrKey)
+        public void SaveKeyInCurrentContext(nint bstrKey)
         {
-            if (bstrKey == IntPtr.Zero)
+            if (bstrKey == 0)
             {
                 return;
             }

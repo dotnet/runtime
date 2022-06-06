@@ -12,7 +12,7 @@ namespace System.Runtime.InteropServices.ComTypes
     public interface IEnumString
     {
         [PreserveSig]
-        int Next(int celt, [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPWStr, SizeParamIndex = 0), Out] string[] rgelt, IntPtr pceltFetched);
+        int Next(int celt, [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPWStr, SizeParamIndex = 0), Out] string[] rgelt, nint pceltFetched);
         [PreserveSig]
         int Skip(int celt);
         void Reset();

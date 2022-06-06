@@ -152,8 +152,8 @@ namespace System.Diagnostics.Tracing
 
         [Event(63, Level = EventLevel.Verbose, Message = Messages.IOEnqueue, Task = Tasks.ThreadPool, Opcode = Opcodes.IOEnqueue, Version = 0, Keywords = Keywords.ThreadingKeyword | Keywords.ThreadTransferKeyword)]
         private static unsafe void ThreadPoolIOEnqueue(
-            IntPtr NativeOverlapped,
-            IntPtr Overlapped,
+            nint NativeOverlapped,
+            nint Overlapped,
             bool MultiDequeues,
             ushort ClrInstanceID = DefaultClrInstanceId)
         {
@@ -167,8 +167,8 @@ namespace System.Diagnostics.Tracing
             if (IsEnabled(EventLevel.Verbose, Keywords.ThreadingKeyword | Keywords.ThreadTransferKeyword))
             {
                 ThreadPoolIOEnqueue(
-                    (IntPtr)nativeOverlapped,
-                    (IntPtr)OverlappedData.GetOverlappedFromNative(nativeOverlapped).GetHashCode(),
+                    (nint)nativeOverlapped,
+                    OverlappedData.GetOverlappedFromNative(nativeOverlapped).GetHashCode(),
                     false);
             }
         }
@@ -181,14 +181,14 @@ namespace System.Diagnostics.Tracing
         {
             if (IsEnabled(EventLevel.Verbose, Keywords.ThreadingKeyword | Keywords.ThreadTransferKeyword))
             {
-                ThreadPoolIOEnqueue((IntPtr)registeredWaitHandle.GetHashCode(), IntPtr.Zero, registeredWaitHandle.Repeating);
+                ThreadPoolIOEnqueue(registeredWaitHandle.GetHashCode(), 0, registeredWaitHandle.Repeating);
             }
         }
 
         [Event(64, Level = EventLevel.Verbose, Message = Messages.IO, Task = Tasks.ThreadPool, Opcode = Opcodes.IODequeue, Version = 0, Keywords = Keywords.ThreadingKeyword | Keywords.ThreadTransferKeyword)]
         private static unsafe void ThreadPoolIODequeue(
-            IntPtr NativeOverlapped,
-            IntPtr Overlapped,
+            nint NativeOverlapped,
+            nint Overlapped,
             ushort ClrInstanceID = DefaultClrInstanceId)
         {
             LogThreadPoolIODequeue(NativeOverlapped, Overlapped, ClrInstanceID);
@@ -201,8 +201,8 @@ namespace System.Diagnostics.Tracing
             if (IsEnabled(EventLevel.Verbose, Keywords.ThreadingKeyword | Keywords.ThreadTransferKeyword))
             {
                 ThreadPoolIODequeue(
-                    (IntPtr)nativeOverlapped,
-                    (IntPtr)OverlappedData.GetOverlappedFromNative(nativeOverlapped).GetHashCode());
+                    (nint)nativeOverlapped,
+                    OverlappedData.GetOverlappedFromNative(nativeOverlapped).GetHashCode());
             }
         }
 
@@ -214,7 +214,7 @@ namespace System.Diagnostics.Tracing
         {
             if (IsEnabled(EventLevel.Verbose, Keywords.ThreadingKeyword | Keywords.ThreadTransferKeyword))
             {
-                ThreadPoolIODequeue((IntPtr)registeredWaitHandle.GetHashCode(), IntPtr.Zero);
+                ThreadPoolIODequeue(registeredWaitHandle.GetHashCode(), 0);
             }
         }
 
@@ -235,15 +235,15 @@ namespace System.Diagnostics.Tracing
             if (IsEnabled(EventLevel.Verbose, Keywords.ThreadingKeyword))
             {
                 ThreadPoolIOPack(
-                    (IntPtr)nativeOverlapped,
-                    (IntPtr)OverlappedData.GetOverlappedFromNative(nativeOverlapped).GetHashCode());
+                    (nint)nativeOverlapped,
+                    OverlappedData.GetOverlappedFromNative(nativeOverlapped).GetHashCode());
             }
         }
 
         [Event(65, Level = EventLevel.Verbose, Message = Messages.IO, Task = Tasks.ThreadPool, Opcode = Opcodes.IOPack, Version = 0, Keywords = Keywords.ThreadingKeyword)]
         private unsafe void ThreadPoolIOPack(
-            IntPtr NativeOverlapped,
-            IntPtr Overlapped,
+            nint NativeOverlapped,
+            nint Overlapped,
             ushort ClrInstanceID = DefaultClrInstanceId)
         {
             LogThreadPoolIOPack(NativeOverlapped, Overlapped, ClrInstanceID);

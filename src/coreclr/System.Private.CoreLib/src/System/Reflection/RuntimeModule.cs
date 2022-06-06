@@ -340,10 +340,10 @@ namespace System.Reflection
         // If you add any data members, you need to update the native declaration ReflectModuleBaseObject.
         private RuntimeType m_runtimeType;
         private RuntimeAssembly m_runtimeAssembly;
-        private IntPtr m_pRefClass;
-        private IntPtr m_pData;
-        private IntPtr m_pGlobals;
-        private IntPtr m_pFields;
+        private nint m_pRefClass;
+        private nint m_pData;
+        private nint m_pGlobals;
+        private nint m_pFields;
 #pragma warning restore CA1823, 169
         #endregion
 
@@ -536,7 +536,7 @@ namespace System.Reflection
             return new ModuleHandle(this);
         }
 
-        internal IntPtr GetUnderlyingNativeHandle()
+        internal nint GetUnderlyingNativeHandle()
         {
             return m_pData;
         }

@@ -65,9 +65,9 @@ namespace System.Globalization
                 string.Concat(baseName, suffix, extension, version) :
                 string.Concat(baseName, suffix, version, extension);
 
-        private static IntPtr LoadLibrary(string library, bool failOnLoadFailure)
+        private static nint LoadLibrary(string library, bool failOnLoadFailure)
         {
-            if (!NativeLibrary.TryLoad(library, typeof(object).Assembly, DllImportSearchPath.ApplicationDirectory | DllImportSearchPath.System32, out IntPtr lib) && failOnLoadFailure)
+            if (!NativeLibrary.TryLoad(library, typeof(object).Assembly, DllImportSearchPath.ApplicationDirectory | DllImportSearchPath.System32, out nint lib) && failOnLoadFailure)
             {
                 Environment.FailFast($"Failed to load app-local ICU: {library}");
             }

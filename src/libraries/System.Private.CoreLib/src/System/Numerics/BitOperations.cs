@@ -388,8 +388,8 @@ namespace System.Numerics
             return Unsafe.AddByteOffset(
                 // Using deBruijn sequence, k=2, n=5 (2^5=32) : 0b_0000_0111_1100_0100_1010_1100_1101_1101u
                 ref MemoryMarshal.GetReference(Log2DeBruijn),
-                // uint|long -> IntPtr cast on 32-bit platforms does expensive overflow checks not needed here
-                (IntPtr)(int)((value * 0x07C4ACDDu) >> 27));
+                // uint|long -> nint cast on 32-bit platforms does expensive overflow checks not needed here
+                (nint)(int)((value * 0x07C4ACDDu) >> 27));
         }
 
         /// <summary>Returns the integer (ceiling) log of the specified value, base 2.</summary>
@@ -564,8 +564,8 @@ namespace System.Numerics
             return Unsafe.AddByteOffset(
                 // Using deBruijn sequence, k=2, n=5 (2^5=32) : 0b_0000_0111_0111_1100_1011_0101_0011_0001u
                 ref MemoryMarshal.GetReference(TrailingZeroCountDeBruijn),
-                // uint|long -> IntPtr cast on 32-bit platforms does expensive overflow checks not needed here
-                (IntPtr)(int)(((value & (uint)-(int)value) * 0x077CB531u) >> 27)); // Multi-cast mitigates redundant conv.u8
+                // uint|long -> nint cast on 32-bit platforms does expensive overflow checks not needed here
+                (nint)(int)(((value & (uint)-(int)value) * 0x077CB531u) >> 27)); // Multi-cast mitigates redundant conv.u8
         }
 
         /// <summary>

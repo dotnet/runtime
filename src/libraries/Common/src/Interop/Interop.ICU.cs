@@ -12,16 +12,16 @@ internal static partial class Interop
         [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_LoadICU")]
         internal static partial int LoadICU();
 
-        internal static void InitICUFunctions(IntPtr icuuc, IntPtr icuin, ReadOnlySpan<char> version, ReadOnlySpan<char> suffix)
+        internal static void InitICUFunctions(nint icuuc, nint icuin, ReadOnlySpan<char> version, ReadOnlySpan<char> suffix)
         {
-            Debug.Assert(icuuc != IntPtr.Zero);
-            Debug.Assert(icuin != IntPtr.Zero);
+            Debug.Assert(icuuc != 0);
+            Debug.Assert(icuin != 0);
 
             InitICUFunctions(icuuc, icuin, version.ToString(), suffix.Length > 0 ? suffix.ToString() : null);
         }
 
         [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_InitICUFunctions", StringMarshalling = StringMarshalling.Utf8)]
-        internal static partial void InitICUFunctions(IntPtr icuuc, IntPtr icuin, string version, string? suffix);
+        internal static partial void InitICUFunctions(nint icuuc, nint icuin, string version, string? suffix);
 
         [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_GetICUVersion")]
         internal static partial int GetICUVersion();

@@ -8,7 +8,7 @@ namespace System.Runtime.InteropServices
 {
     public static partial class NativeLibrary
     {
-        internal static IntPtr LoadLibraryByName(string libraryName, Assembly assembly, DllImportSearchPath? searchPath, bool throwOnError)
+        internal static nint LoadLibraryByName(string libraryName, Assembly assembly, DllImportSearchPath? searchPath, bool throwOnError)
         {
             RuntimeAssembly rtAsm = (RuntimeAssembly)assembly;
             return LoadByName(libraryName,
@@ -21,17 +21,17 @@ namespace System.Runtime.InteropServices
         /// External functions that implement the NativeLibrary interface
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "NativeLibrary_LoadFromPath", StringMarshalling = StringMarshalling.Utf16)]
-        internal static partial IntPtr LoadFromPath(string libraryName, [MarshalAs(UnmanagedType.Bool)] bool throwOnError);
+        internal static partial nint LoadFromPath(string libraryName, [MarshalAs(UnmanagedType.Bool)] bool throwOnError);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "NativeLibrary_LoadByName", StringMarshalling = StringMarshalling.Utf16)]
-        internal static partial IntPtr LoadByName(string libraryName, QCallAssembly callingAssembly,
+        internal static partial nint LoadByName(string libraryName, QCallAssembly callingAssembly,
                                                  [MarshalAs(UnmanagedType.Bool)] bool hasDllImportSearchPathFlag, uint dllImportSearchPathFlag,
                                                  [MarshalAs(UnmanagedType.Bool)] bool throwOnError);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "NativeLibrary_FreeLib")]
-        internal static partial void FreeLib(IntPtr handle);
+        internal static partial void FreeLib(nint handle);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "NativeLibrary_GetSymbol", StringMarshalling = StringMarshalling.Utf16)]
-        internal static partial IntPtr GetSymbol(IntPtr handle, string symbolName, [MarshalAs(UnmanagedType.Bool)] bool throwOnError);
+        internal static partial nint GetSymbol(nint handle, string symbolName, [MarshalAs(UnmanagedType.Bool)] bool throwOnError);
     }
 }

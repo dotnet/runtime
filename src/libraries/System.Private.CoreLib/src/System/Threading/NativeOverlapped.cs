@@ -8,10 +8,10 @@ namespace System.Threading
     [StructLayout(LayoutKind.Sequential)]
     public struct NativeOverlapped
     {
-        public IntPtr InternalLow;
-        public IntPtr InternalHigh;
+        public nint InternalLow;
+        public nint InternalHigh;
         public int OffsetLow;
         public int OffsetHigh;
-        public IntPtr EventHandle;
+        public nint EventHandle;
     }
 }

@@ -457,10 +457,10 @@ namespace System.Diagnostics.Tracing
             EventDescriptor descriptor = new EventDescriptor(identity, level, opcode, (long)keywords);
 
 #if FEATURE_PERFTRACING
-            IntPtr eventHandle = nameInfo.GetOrCreateEventHandle(m_eventPipeProvider, m_eventHandleTable, descriptor, eventTypes);
-            Debug.Assert(eventHandle != IntPtr.Zero);
+            nint eventHandle = nameInfo.GetOrCreateEventHandle(m_eventPipeProvider, m_eventHandleTable, descriptor, eventTypes);
+            Debug.Assert(eventHandle != 0);
 #else
-            IntPtr eventHandle = IntPtr.Zero;
+            nint eventHandle = 0;
 #endif
 
             int pinCount = eventTypes.pinCount;
@@ -509,7 +509,7 @@ namespace System.Diagnostics.Tracing
                         activityID,
                         childActivityID,
                         (int)(DataCollector.ThreadInstance.Finish() - descriptors),
-                        (IntPtr)descriptors);
+                        (nint)descriptors);
                 }
                 finally
                 {
@@ -572,10 +572,10 @@ namespace System.Diagnostics.Tracing
                 }
 
 #if FEATURE_PERFTRACING
-                IntPtr eventHandle = nameInfo.GetOrCreateEventHandle(m_eventPipeProvider, m_eventHandleTable, descriptor, eventTypes);
-                Debug.Assert(eventHandle != IntPtr.Zero);
+                nint eventHandle = nameInfo.GetOrCreateEventHandle(m_eventPipeProvider, m_eventHandleTable, descriptor, eventTypes);
+                Debug.Assert(eventHandle != 0);
 #else
-                IntPtr eventHandle = IntPtr.Zero;
+                nint eventHandle = 0;
 #endif
 
                 // We make a descriptor for each EventData, and because we morph strings to counted strings
@@ -615,7 +615,7 @@ namespace System.Diagnostics.Tracing
                         activityID,
                         childActivityID,
                         numDescrs,
-                        (IntPtr)descriptors);
+                        (nint)descriptors);
                 }
             }
 #endif // FEATURE_MANAGED_ETW
@@ -641,10 +641,10 @@ namespace System.Diagnostics.Tracing
                     }
 
 #if FEATURE_PERFTRACING
-                    IntPtr eventHandle = nameInfo.GetOrCreateEventHandle(m_eventPipeProvider, m_eventHandleTable, descriptor, eventTypes);
-                    Debug.Assert(eventHandle != IntPtr.Zero);
+                    nint eventHandle = nameInfo.GetOrCreateEventHandle(m_eventPipeProvider, m_eventHandleTable, descriptor, eventTypes);
+                    Debug.Assert(eventHandle != 0);
 #else
-                    IntPtr eventHandle = IntPtr.Zero;
+                    nint eventHandle = 0;
 #endif
 
 #if FEATURE_MANAGED_ETW
@@ -716,7 +716,7 @@ namespace System.Diagnostics.Tracing
                                 pActivityId,
                                 pRelatedActivityId,
                                 (int)(DataCollector.ThreadInstance.Finish() - descriptors),
-                                (IntPtr)descriptors);
+                                (nint)descriptors);
 #endif // FEATURE_MANAGED_ETW
 
                             // TODO enable filtering for listeners.

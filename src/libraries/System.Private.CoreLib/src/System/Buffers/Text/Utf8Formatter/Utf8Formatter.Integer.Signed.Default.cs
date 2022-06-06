@@ -12,14 +12,14 @@ namespace System.Buffers.Text
     public static partial class Utf8Formatter
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool TryFormatInt64Default(long value, Span<byte> destination, out int bytesWritten)
+        private static unsafe bool TryFormatInt64Default(long value, Span<byte> destination, out int bytesWritten)
         {
             if ((ulong)value < 10)
             {
                 return TryFormatUInt32SingleDigit((uint)value, destination, out bytesWritten);
             }
 
-            if (IntPtr.Size == 8)    // x64
+            if (sizeof(nint) == 8)    // x64
             {
                 return TryFormatInt64MultipleDigits(value, destination, out bytesWritten);
             }

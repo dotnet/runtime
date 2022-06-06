@@ -13,7 +13,7 @@ namespace System
     internal readonly ref struct ByReference<T>
     {
 #pragma warning disable CA1823, 169 // private field '{blah}' is never used
-        private readonly IntPtr _value;
+        private readonly nint _value;
 #pragma warning restore CA1823, 169
 
 #pragma warning disable IDE0060

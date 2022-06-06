@@ -10,15 +10,15 @@ namespace System.Threading
 {
     public abstract partial class WaitHandle
     {
-        internal static unsafe int WaitMultipleIgnoringSyncContext(Span<IntPtr> handles, bool waitAll, int millisecondsTimeout)
+        internal static unsafe int WaitMultipleIgnoringSyncContext(Span<nint> handles, bool waitAll, int millisecondsTimeout)
         {
-            fixed (IntPtr* pHandles = &MemoryMarshal.GetReference(handles))
+            fixed (nint* pHandles = &MemoryMarshal.GetReference(handles))
             {
                 return WaitForMultipleObjectsIgnoringSyncContext(pHandles, handles.Length, waitAll, millisecondsTimeout);
             }
         }
 
-        private static unsafe int WaitForMultipleObjectsIgnoringSyncContext(IntPtr* pHandles, int numHandles, bool waitAll, int millisecondsTimeout)
+        private static unsafe int WaitForMultipleObjectsIgnoringSyncContext(nint* pHandles, int numHandles, bool waitAll, int millisecondsTimeout)
         {
             Debug.Assert(millisecondsTimeout >= -1);
 
@@ -57,10 +57,10 @@ namespace System.Threading
             }
             else
             {
-                result = (int)Interop.Kernel32.WaitForMultipleObjectsEx((uint)numHandles, (IntPtr)pHandles, waitAll ? Interop.BOOL.TRUE : Interop.BOOL.FALSE, (uint)millisecondsTimeout, Interop.BOOL.FALSE);
+                result = (int)Interop.Kernel32.WaitForMultipleObjectsEx((uint)numHandles, (nint)pHandles, waitAll ? Interop.BOOL.TRUE : Interop.BOOL.FALSE, (uint)millisecondsTimeout, Interop.BOOL.FALSE);
             }
 #else
-            int result = (int)Interop.Kernel32.WaitForMultipleObjectsEx((uint)numHandles, (IntPtr)pHandles, waitAll ? Interop.BOOL.TRUE : Interop.BOOL.FALSE, (uint)millisecondsTimeout, Interop.BOOL.FALSE);
+            int result = (int)Interop.Kernel32.WaitForMultipleObjectsEx((uint)numHandles, (nint)pHandles, waitAll ? Interop.BOOL.TRUE : Interop.BOOL.FALSE, (uint)millisecondsTimeout, Interop.BOOL.FALSE);
 #endif
             currentThread.ClearWaitSleepJoinState();
 
@@ -75,7 +75,7 @@ namespace System.Threading
                     // <see cref="WaitHandle.MaxWaitHandles"/>.
                     for (int i = 1; i < numHandles; ++i)
                     {
-                        IntPtr handle = pHandles[i];
+                        nint handle = pHandles[i];
                         for (int j = 0; j < i; ++j)
                         {
                             if (pHandles[j] == handle)
@@ -92,12 +92,12 @@ namespace System.Threading
             return result;
         }
 
-        internal static unsafe int WaitOneCore(IntPtr handle, int millisecondsTimeout)
+        internal static unsafe int WaitOneCore(nint handle, int millisecondsTimeout)
         {
             return WaitForMultipleObjectsIgnoringSyncContext(&handle, 1, false, millisecondsTimeout);
         }
 
-        private static int SignalAndWaitCore(IntPtr handleToSignal, IntPtr handleToWaitOn, int millisecondsTimeout)
+        private static int SignalAndWaitCore(nint handleToSignal, nint handleToWaitOn, int millisecondsTimeout)
         {
             Debug.Assert(millisecondsTimeout >= -1);
 

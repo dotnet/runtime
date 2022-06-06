@@ -31,12 +31,12 @@ namespace System.Threading
 
     public sealed partial class RegisteredWaitHandle : MarshalByRefObject
     {
-        private IntPtr _nativeRegisteredWaitHandle = InvalidHandleValue;
+        private nint _nativeRegisteredWaitHandle = InvalidHandleValue;
         private bool _releaseHandle;
 
-        private static bool IsValidHandle(IntPtr handle) => handle != InvalidHandleValue && handle != IntPtr.Zero;
+        private static bool IsValidHandle(nint handle) => handle != InvalidHandleValue && handle != 0;
 
-        internal void SetNativeRegisteredWaitHandle(IntPtr nativeRegisteredWaitHandle)
+        internal void SetNativeRegisteredWaitHandle(nint nativeRegisteredWaitHandle)
         {
             Debug.Assert(!ThreadPool.UsePortableThreadPool);
             Debug.Assert(IsValidHandle(nativeRegisteredWaitHandle));
@@ -128,10 +128,10 @@ namespace System.Threading
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void WaitHandleCleanupNative(IntPtr handle);
+        private static extern void WaitHandleCleanupNative(nint handle);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern bool UnregisterWaitNative(IntPtr handle, SafeHandle? waitObject);
+        private static extern bool UnregisterWaitNative(nint handle, SafeHandle? waitObject);
     }
 
     internal sealed partial class CompleteWaitThreadPoolWorkItem : IThreadPoolWorkItem
@@ -148,16 +148,16 @@ namespace System.Threading
 
     internal sealed class UnmanagedThreadPoolWorkItem : IThreadPoolWorkItem
     {
-        private readonly IntPtr _callback;
-        private readonly IntPtr _state;
+        private readonly nint _callback;
+        private readonly nint _state;
 
-        public UnmanagedThreadPoolWorkItem(IntPtr callback, IntPtr state)
+        public UnmanagedThreadPoolWorkItem(nint callback, nint state)
         {
             _callback = callback;
             _state = state;
         }
 
-        unsafe void IThreadPoolWorkItem.Execute() => ((delegate* unmanaged<IntPtr, int>)_callback)(_state);
+        unsafe void IThreadPoolWorkItem.Execute() => ((delegate* unmanaged<nint, int>)_callback)(_state);
     }
 
     public static partial class ThreadPool
@@ -416,7 +416,7 @@ namespace System.Threading
             }
             else
             {
-                IntPtr nativeRegisteredWaitHandle =
+                nint nativeRegisteredWaitHandle =
                     RegisterWaitForSingleObjectNative(
                         waitObject,
                         registeredWaitHandle.Callback,
@@ -473,7 +473,7 @@ namespace System.Threading
         private static partial Interop.BOOL PerformRuntimeSpecificGateActivitiesNative(int cpuUtilization);
 
         // Entry point from unmanaged code
-        private static void UnsafeQueueUnmanagedWorkItem(IntPtr callback, IntPtr state)
+        private static void UnsafeQueueUnmanagedWorkItem(nint callback, nint state)
         {
             Debug.Assert(UsePortableThreadPool);
             UnsafeQueueHighPriorityWorkItemInternal(new UnmanagedThreadPoolWorkItem(callback, state));
@@ -557,7 +557,7 @@ namespace System.Threading
         private static extern bool GetEnableWorkerTrackingNative();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern IntPtr RegisterWaitForSingleObjectNative(
+        private static extern nint RegisterWaitForSingleObjectNative(
              WaitHandle waitHandle,
              object state,
              uint timeOutInterval,

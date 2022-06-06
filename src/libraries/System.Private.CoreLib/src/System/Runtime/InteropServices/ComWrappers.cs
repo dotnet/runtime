@@ -34,7 +34,7 @@ namespace System.Runtime.InteropServices
     }
 
     /// <summary>
-    /// Enumeration of flags for <see cref="ComWrappers.GetOrCreateObjectForComInstance(IntPtr, CreateObjectFlags)"/>.
+    /// Enumeration of flags for <see cref="ComWrappers.GetOrCreateObjectForComInstance(nint, CreateObjectFlags)"/>.
     /// </summary>
     [Flags]
     public enum CreateObjectFlags
@@ -89,14 +89,14 @@ namespace System.Runtime.InteropServices
             /// <summary>
             /// Memory must have the same lifetime as the memory returned from the call to <see cref="ComputeVtables(object, CreateComInterfaceFlags, out int)"/>.
             /// </summary>
-            public IntPtr Vtable;
+            public nint Vtable;
         }
         /// <summary>
         /// ABI for function dispatch of a COM interface.
         /// </summary>
         public partial struct ComInterfaceDispatch
         {
-            public IntPtr Vtable;
+            public nint Vtable;
         }
 
         /// <summary>
@@ -122,9 +122,9 @@ namespace System.Runtime.InteropServices
         /// <param name="flags">Flags used to describe the external object.</param>
         /// <returns>Returns a managed object associated with the supplied external COM object.</returns>
         /// <remarks>
-        /// If the object cannot be created and <code>null</code> is returned, the call to <see cref="ComWrappers.GetOrCreateObjectForComInstance(IntPtr, CreateObjectFlags)"/> will throw a <see cref="System.ArgumentNullException"/>.
+        /// If the object cannot be created and <code>null</code> is returned, the call to <see cref="ComWrappers.GetOrCreateObjectForComInstance(nint, CreateObjectFlags)"/> will throw a <see cref="System.ArgumentNullException"/>.
         /// </remarks>
-        protected abstract object? CreateObject(IntPtr externalComObject, CreateObjectFlags flags);
+        protected abstract object? CreateObject(nint externalComObject, CreateObjectFlags flags);
 
         /// <summary>
         /// Called when a request is made for a collection of objects to be released outside of normal object or COM interface lifetime.

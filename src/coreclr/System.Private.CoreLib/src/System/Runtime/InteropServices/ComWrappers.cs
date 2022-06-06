@@ -30,7 +30,7 @@ namespace System.Runtime.InteropServices
         public partial struct ComInterfaceDispatch
         {
             /// <summary>
-            /// Given a <see cref="System.IntPtr"/> from a generated Vtable, convert to the target type.
+            /// Given a <see cref="nint"/> from a generated Vtable, convert to the target type.
             /// </summary>
             /// <typeparam name="T">Desired type.</typeparam>
             /// <param name="dispatchPtr">Pointer supplied to Vtable function entry.</param>
@@ -46,7 +46,7 @@ namespace System.Runtime.InteropServices
 
             private struct ComInterfaceInstance
             {
-                public IntPtr GcHandle;
+                public nint GcHandle;
             }
         }
 
@@ -74,9 +74,9 @@ namespace System.Runtime.InteropServices
         /// this <see cref="ComWrappers" /> instance, the previously created COM interface will be returned.
         /// If not, a new one will be created.
         /// </remarks>
-        public IntPtr GetOrCreateComInterfaceForObject(object instance, CreateComInterfaceFlags flags)
+        public nint GetOrCreateComInterfaceForObject(object instance, CreateComInterfaceFlags flags)
         {
-            IntPtr ptr;
+            nint ptr;
             if (!TryGetOrCreateComInterfaceForObjectInternal(this, instance, flags, out ptr))
                 throw new ArgumentException(null, nameof(instance));
 
@@ -89,12 +89,12 @@ namespace System.Runtime.InteropServices
         /// <param name="impl">The <see cref="ComWrappers" /> implementation to use when creating the COM representation.</param>
         /// <param name="instance">The managed object to expose outside the .NET runtime.</param>
         /// <param name="flags">Flags used to configure the generated interface.</param>
-        /// <param name="retValue">The generated COM interface that can be passed outside the .NET runtime or IntPtr.Zero if it could not be created.</param>
+        /// <param name="retValue">The generated COM interface that can be passed outside the .NET runtime or 0 if it could not be created.</param>
         /// <returns>Returns <c>true</c> if a COM representation could be created, <c>false</c> otherwise</returns>
         /// <remarks>
         /// If <paramref name="impl" /> is <c>null</c>, the global instance (if registered) will be used.
         /// </remarks>
-        private static bool TryGetOrCreateComInterfaceForObjectInternal(ComWrappers impl, object instance, CreateComInterfaceFlags flags, out IntPtr retValue)
+        private static bool TryGetOrCreateComInterfaceForObjectInternal(ComWrappers impl, object instance, CreateComInterfaceFlags flags, out nint retValue)
         {
             ArgumentNullException.ThrowIfNull(instance);
 
@@ -103,7 +103,7 @@ namespace System.Runtime.InteropServices
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ComWrappers_TryGetOrCreateComInterfaceForObject")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static partial bool TryGetOrCreateComInterfaceForObjectInternal(ObjectHandleOnStack comWrappersImpl, long wrapperId, ObjectHandleOnStack instance, CreateComInterfaceFlags flags, out IntPtr retValue);
+        private static partial bool TryGetOrCreateComInterfaceForObjectInternal(ObjectHandleOnStack comWrappersImpl, long wrapperId, ObjectHandleOnStack instance, CreateComInterfaceFlags flags, out nint retValue);
 
         // Called by the runtime to execute the abstract instance function
         internal static unsafe void* CallComputeVtables(ComWrappersScenario scenario, ComWrappers? comWrappersImpl, object obj, CreateComInterfaceFlags flags, out int count)
@@ -142,17 +142,17 @@ namespace System.Runtime.InteropServices
         /// using this <see cref="ComWrappers" /> instance, the previously created object will be returned.
         /// If not, a new one will be created.
         /// </remarks>
-        public object GetOrCreateObjectForComInstance(IntPtr externalComObject, CreateObjectFlags flags)
+        public object GetOrCreateObjectForComInstance(nint externalComObject, CreateObjectFlags flags)
         {
             object? obj;
-            if (!TryGetOrCreateObjectForComInstanceInternal(this, externalComObject, IntPtr.Zero, flags, null, out obj))
+            if (!TryGetOrCreateObjectForComInstanceInternal(this, externalComObject, 0, flags, null, out obj))
                 throw new ArgumentNullException(nameof(externalComObject));
 
             return obj!;
         }
 
         // Called by the runtime to execute the abstract instance function.
-        internal static object? CallCreateObject(ComWrappersScenario scenario, ComWrappers? comWrappersImpl, IntPtr externalComObject, CreateObjectFlags flags)
+        internal static object? CallCreateObject(ComWrappersScenario scenario, ComWrappers? comWrappersImpl, nint externalComObject, CreateObjectFlags flags)
         {
             ComWrappers? impl = null;
             switch (scenario)
@@ -184,9 +184,9 @@ namespace System.Runtime.InteropServices
         /// <remarks>
         /// If the <paramref name="wrapper"/> instance already has an associated external object a <see cref="System.NotSupportedException"/> will be thrown.
         /// </remarks>
-        public object GetOrRegisterObjectForComInstance(IntPtr externalComObject, CreateObjectFlags flags, object wrapper)
+        public object GetOrRegisterObjectForComInstance(nint externalComObject, CreateObjectFlags flags, object wrapper)
         {
-            return GetOrRegisterObjectForComInstance(externalComObject, flags, wrapper, IntPtr.Zero);
+            return GetOrRegisterObjectForComInstance(externalComObject, flags, wrapper, 0);
         }
 
         /// <summary>
@@ -205,7 +205,7 @@ namespace System.Runtime.InteropServices
         ///
         /// If the <paramref name="wrapper"/> instance already has an associated external object a <see cref="System.NotSupportedException"/> will be thrown.
         /// </remarks>
-        public object GetOrRegisterObjectForComInstance(IntPtr externalComObject, CreateObjectFlags flags, object wrapper, IntPtr inner)
+        public object GetOrRegisterObjectForComInstance(nint externalComObject, CreateObjectFlags flags, object wrapper, nint inner)
         {
             ArgumentNullException.ThrowIfNull(wrapper);
 
@@ -231,8 +231,8 @@ namespace System.Runtime.InteropServices
         /// </remarks>
         private static bool TryGetOrCreateObjectForComInstanceInternal(
             ComWrappers impl,
-            IntPtr externalComObject,
-            IntPtr innerMaybe,
+            nint externalComObject,
+            nint innerMaybe,
             CreateObjectFlags flags,
             object? wrapperMaybe,
             out object? retValue)
@@ -240,7 +240,7 @@ namespace System.Runtime.InteropServices
             ArgumentNullException.ThrowIfNull(externalComObject);
 
             // If the inner is supplied the Aggregation flag should be set.
-            if (innerMaybe != IntPtr.Zero && !flags.HasFlag(CreateObjectFlags.Aggregation))
+            if (innerMaybe != 0 && !flags.HasFlag(CreateObjectFlags.Aggregation))
                 throw new InvalidOperationException(SR.InvalidOperation_SuppliedInnerMustBeMarkedAggregation);
 
             object? wrapperMaybeLocal = wrapperMaybe;
@@ -250,7 +250,7 @@ namespace System.Runtime.InteropServices
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ComWrappers_TryGetOrCreateObjectForComInstance")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static partial bool TryGetOrCreateObjectForComInstanceInternal(ObjectHandleOnStack comWrappersImpl, long wrapperId, IntPtr externalComObject, IntPtr innerMaybe, CreateObjectFlags flags, ObjectHandleOnStack wrapper, ObjectHandleOnStack retValue);
+        private static partial bool TryGetOrCreateObjectForComInstanceInternal(ObjectHandleOnStack comWrappersImpl, long wrapperId, nint externalComObject, nint innerMaybe, CreateObjectFlags flags, ObjectHandleOnStack wrapper, ObjectHandleOnStack retValue);
 
         // Call to execute the virtual instance function
         internal static void CallReleaseObjects(ComWrappers? comWrappersImpl, IEnumerable objects)
@@ -323,18 +323,18 @@ namespace System.Runtime.InteropServices
         /// <param name="fpQueryInterface">Function pointer to QueryInterface.</param>
         /// <param name="fpAddRef">Function pointer to AddRef.</param>
         /// <param name="fpRelease">Function pointer to Release.</param>
-        protected static void GetIUnknownImpl(out IntPtr fpQueryInterface, out IntPtr fpAddRef, out IntPtr fpRelease)
+        protected static void GetIUnknownImpl(out nint fpQueryInterface, out nint fpAddRef, out nint fpRelease)
             => GetIUnknownImplInternal(out fpQueryInterface, out fpAddRef, out fpRelease);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ComWrappers_GetIUnknownImpl")]
-        private static partial void GetIUnknownImplInternal(out IntPtr fpQueryInterface, out IntPtr fpAddRef, out IntPtr fpRelease);
+        private static partial void GetIUnknownImplInternal(out nint fpQueryInterface, out nint fpAddRef, out nint fpRelease);
 
-        internal static int CallICustomQueryInterface(object customQueryInterfaceMaybe, ref Guid iid, out IntPtr ppObject)
+        internal static int CallICustomQueryInterface(object customQueryInterfaceMaybe, ref Guid iid, out nint ppObject)
         {
             var customQueryInterface = customQueryInterfaceMaybe as ICustomQueryInterface;
             if (customQueryInterface is null)
             {
-                ppObject = IntPtr.Zero;
+                ppObject = 0;
                 return -1; // See TryInvokeICustomQueryInterfaceResult
             }
 

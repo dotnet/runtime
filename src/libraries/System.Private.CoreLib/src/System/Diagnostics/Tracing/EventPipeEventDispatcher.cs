@@ -24,7 +24,7 @@ namespace System.Diagnostics.Tracing
 
         internal static readonly EventPipeEventDispatcher Instance = new EventPipeEventDispatcher();
 
-        private readonly IntPtr m_RuntimeProviderID;
+        private readonly nint m_RuntimeProviderID;
 
         private ulong m_sessionID;
         private DateTime m_syncTimeUtc;

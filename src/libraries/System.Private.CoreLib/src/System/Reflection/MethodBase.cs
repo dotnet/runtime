@@ -141,7 +141,7 @@ namespace System.Reflection
 
         private protected unsafe void CheckArguments(
             Span<object?> copyOfParameters,
-            IntPtr* byrefParameters,
+            nint* byrefParameters,
             Span<ParameterCopyBackAction> shouldCopyBack,
             ReadOnlySpan<object?> parameters,
             RuntimeType[] sigTypes,
@@ -230,7 +230,7 @@ namespace System.Reflection
                     Debug.Assert(arg != null);
                     Debug.Assert(
                         arg.GetType() == sigType ||
-                        (sigType.IsPointer && arg.GetType() == typeof(IntPtr)) ||
+                        (sigType.IsPointer && arg.GetType() == typeof(nint)) ||
                         (sigType.IsByRef && arg.GetType() == RuntimeTypeHandle.GetElementType(sigType)) ||
                         ((sigType.IsEnum || arg.GetType().IsEnum) && RuntimeType.GetUnderlyingType((RuntimeType)arg.GetType()) == RuntimeType.GetUnderlyingType(sigType)));
 #endif
@@ -269,7 +269,7 @@ namespace System.Reflection
 #pragma warning restore CA1823, CS0169, IDE0051
         }
 
-        // Helper struct to avoid intermediate IntPtr[] allocation and RegisterForGCReporting in calls to the native reflection stack.
+        // Helper struct to avoid intermediate nint[] allocation and RegisterForGCReporting in calls to the native reflection stack.
         [StructLayout(LayoutKind.Sequential)]
         private protected ref struct StackAllocatedByRefs
         {

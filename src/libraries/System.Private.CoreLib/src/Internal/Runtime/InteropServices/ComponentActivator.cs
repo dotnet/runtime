@@ -22,7 +22,7 @@ namespace Internal.Runtime.InteropServices
         [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
         private static readonly Dictionary<string, IsolatedComponentLoadContext> s_assemblyLoadContexts = new Dictionary<string, IsolatedComponentLoadContext>(StringComparer.InvariantCulture);
-        private static readonly Dictionary<IntPtr, Delegate> s_delegates = new Dictionary<IntPtr, Delegate>();
+        private static readonly Dictionary<nint, Delegate> s_delegates = new Dictionary<nint, Delegate>();
 
         // Use a value defined in https://github.com/dotnet/runtime/blob/main/docs/design/features/host-error-codes.md
         // To indicate the specific error when IsSupported is false
@@ -32,9 +32,9 @@ namespace Internal.Runtime.InteropServices
 
         private static bool InitializeIsSupported() => AppContext.TryGetSwitch("System.Runtime.InteropServices.EnableConsumingManagedCodeFromNativeHosting", out bool isSupported) ? isSupported : true;
 
-        public delegate int ComponentEntryPoint(IntPtr args, int sizeBytes);
+        public delegate int ComponentEntryPoint(nint args, int sizeBytes);
 
-        private static string MarshalToString(IntPtr arg, string argName)
+        private static string MarshalToString(nint arg, string argName)
         {
             string? result = Marshal.PtrToStringAuto(arg);
             ArgumentNullException.ThrowIfNull(result, argName);
@@ -58,12 +58,12 @@ namespace Internal.Runtime.InteropServices
         [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
         [UnmanagedCallersOnly]
-        public static unsafe int LoadAssemblyAndGetFunctionPointer(IntPtr assemblyPathNative,
-                                                                   IntPtr typeNameNative,
-                                                                   IntPtr methodNameNative,
-                                                                   IntPtr delegateTypeNative,
-                                                                   IntPtr reserved,
-                                                                   IntPtr functionHandle)
+        public static unsafe int LoadAssemblyAndGetFunctionPointer(nint assemblyPathNative,
+                                                                   nint typeNameNative,
+                                                                   nint methodNameNative,
+                                                                   nint delegateTypeNative,
+                                                                   nint reserved,
+                                                                   nint functionHandle)
         {
             if (!IsSupported)
                 return HostFeatureDisabled;
@@ -75,7 +75,7 @@ namespace Internal.Runtime.InteropServices
                 string typeName = MarshalToString(typeNameNative, nameof(typeNameNative));
                 string methodName = MarshalToString(methodNameNative, nameof(methodNameNative));
 
-                if (reserved != IntPtr.Zero)
+                if (reserved != 0)
                 {
                     throw new ArgumentOutOfRangeException(nameof(reserved));
                 }
@@ -86,7 +86,7 @@ namespace Internal.Runtime.InteropServices
                 AssemblyLoadContext alc = GetIsolatedComponentLoadContext(assemblyPath);
 
                 // Create the function pointer.
-                *(IntPtr*)functionHandle = InternalGetFunctionPointer(alc, typeName, methodName, delegateTypeNative);
+                *(nint*)functionHandle = InternalGetFunctionPointer(alc, typeName, methodName, delegateTypeNative);
             }
             catch (Exception e)
             {
@@ -107,12 +107,12 @@ namespace Internal.Runtime.InteropServices
         /// <param name="functionHandle">Pointer where to store the function pointer result</param>
         [RequiresDynamicCode(NativeAOTIncompatibleWarningMessage)]
         [UnmanagedCallersOnly]
-        public static unsafe int GetFunctionPointer(IntPtr typeNameNative,
-                                                    IntPtr methodNameNative,
-                                                    IntPtr delegateTypeNative,
-                                                    IntPtr loadContext,
-                                                    IntPtr reserved,
-                                                    IntPtr functionHandle)
+        public static unsafe int GetFunctionPointer(nint typeNameNative,
+                                                    nint methodNameNative,
+                                                    nint delegateTypeNative,
+                                                    nint loadContext,
+                                                    nint reserved,
+                                                    nint functionHandle)
         {
             if (!IsSupported)
             {
@@ -140,12 +140,12 @@ namespace Internal.Runtime.InteropServices
                 string typeName = MarshalToString(typeNameNative, nameof(typeNameNative));
                 string methodName = MarshalToString(methodNameNative, nameof(methodNameNative));
 
-                if (loadContext != IntPtr.Zero)
+                if (loadContext != 0)
                 {
                     throw new ArgumentOutOfRangeException(nameof(loadContext));
                 }
 
-                if (reserved != IntPtr.Zero)
+                if (reserved != 0)
                 {
                     throw new ArgumentOutOfRangeException(nameof(reserved));
                 }
@@ -154,7 +154,7 @@ namespace Internal.Runtime.InteropServices
 
 #pragma warning disable IL2026 // suppressed in ILLink.Suppressions.LibraryBuild.xml
                 // Create the function pointer.
-                *(IntPtr*)functionHandle = InternalGetFunctionPointer(AssemblyLoadContext.Default, typeName, methodName, delegateTypeNative);
+                *(nint*)functionHandle = InternalGetFunctionPointer(AssemblyLoadContext.Default, typeName, methodName, delegateTypeNative);
 #pragma warning restore IL2026
             }
             catch (Exception e)
@@ -188,10 +188,10 @@ namespace Internal.Runtime.InteropServices
 
         [RequiresDynamicCode(NativeAOTIncompatibleWarningMessage)]
         [RequiresUnreferencedCode(TrimIncompatibleWarningMessage, Url = "https://aka.ms/dotnet-illink/nativehost")]
-        private static IntPtr InternalGetFunctionPointer(AssemblyLoadContext alc,
+        private static nint InternalGetFunctionPointer(AssemblyLoadContext alc,
                                                          string typeName,
                                                          string methodName,
-                                                         IntPtr delegateTypeNative)
+                                                         nint delegateTypeNative)
         {
             // Create a resolver callback for types.
             Func<AssemblyName, Assembly> resolver = name => alc.LoadFromAssemblyName(name);
@@ -202,11 +202,11 @@ namespace Internal.Runtime.InteropServices
             //      a function pointer can be returned without creating a delegate.
             //  * A delegate type was supplied - Load the type and create a delegate for that method.
             Type? delegateType;
-            if (delegateTypeNative == IntPtr.Zero)
+            if (delegateTypeNative == 0)
             {
                 delegateType = typeof(ComponentEntryPoint);
             }
-            else if (delegateTypeNative == (IntPtr)(-1))
+            else if (delegateTypeNative == (nint)(-1))
             {
                 delegateType = null;
             }
@@ -219,7 +219,7 @@ namespace Internal.Runtime.InteropServices
             // Get the requested type.
             Type type = Type.GetType(typeName, resolver, null, throwOnError: true)!;
 
-            IntPtr functionPtr;
+            nint functionPtr;
             if (delegateType == null)
             {
                 // Match search semantics of the CreateDelegate() function below.

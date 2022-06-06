@@ -39,7 +39,7 @@ namespace System.Globalization
         private string m_name;  // The name used to construct this CompareInfo. Do not rename (binary serialization)
 
         [NonSerialized]
-        private IntPtr _sortHandle;
+        private nint _sortHandle;
 
         [NonSerialized]
         private string _sortName; // The name that defines our behavior

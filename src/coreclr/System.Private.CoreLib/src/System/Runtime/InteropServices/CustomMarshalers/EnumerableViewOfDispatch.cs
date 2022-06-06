@@ -34,13 +34,13 @@ namespace System.Runtime.InteropServices.CustomMarshalers
                     LCID_DEFAULT,
                     InvokeFlags.DISPATCH_METHOD | InvokeFlags.DISPATCH_PROPERTYGET,
                     ref dispParams,
-                    new IntPtr(resultLocal),
-                    IntPtr.Zero,
-                    IntPtr.Zero);
+                    (nint)resultLocal,
+                    0,
+                    0);
             }
 
             Debug.Assert(OperatingSystem.IsWindows());
-            IntPtr enumVariantPtr = IntPtr.Zero;
+            nint enumVariantPtr = 0;
             try
             {
                 object? resultAsObject = result.ToObject();
@@ -56,7 +56,7 @@ namespace System.Runtime.InteropServices.CustomMarshalers
             {
                 result.Clear();
 
-                if (enumVariantPtr != IntPtr.Zero)
+                if (enumVariantPtr != 0)
                     Marshal.Release(enumVariantPtr);
             }
         }

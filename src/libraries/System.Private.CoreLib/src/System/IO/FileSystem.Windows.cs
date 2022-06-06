@@ -88,7 +88,7 @@ namespace System.IO
         {
             int flags = ignoreMetadataErrors ? Interop.Kernel32.REPLACEFILE_IGNORE_MERGE_ERRORS : 0;
 
-            if (!Interop.Kernel32.ReplaceFile(destFullPath, sourceFullPath, destBackupFullPath, flags, IntPtr.Zero, IntPtr.Zero))
+            if (!Interop.Kernel32.ReplaceFile(destFullPath, sourceFullPath, destBackupFullPath, flags, 0, 0))
             {
                 throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
             }
@@ -513,12 +513,12 @@ namespace System.IO
                 bool success = Interop.Kernel32.DeviceIoControl(
                     handle,
                     dwIoControlCode: Interop.Kernel32.FSCTL_GET_REPARSE_POINT,
-                    lpInBuffer: IntPtr.Zero,
+                    lpInBuffer: 0,
                     nInBufferSize: 0,
                     lpOutBuffer: buffer,
                     nOutBufferSize: Interop.Kernel32.MAXIMUM_REPARSE_DATA_BUFFER_SIZE,
                     out _,
-                    IntPtr.Zero);
+                    0);
 
                 if (!success)
                 {
@@ -703,10 +703,10 @@ namespace System.IO
                 path,
                 dwDesiredAccess: 0,
                 FileShare.ReadWrite | FileShare.Delete,
-                lpSecurityAttributes: (Interop.Kernel32.SECURITY_ATTRIBUTES*)IntPtr.Zero,
+                lpSecurityAttributes: (Interop.Kernel32.SECURITY_ATTRIBUTES*)0,
                 FileMode.Open,
                 dwFlagsAndAttributes: flags,
-                hTemplateFile: IntPtr.Zero);
+                hTemplateFile: 0);
 
             return handle;
         }

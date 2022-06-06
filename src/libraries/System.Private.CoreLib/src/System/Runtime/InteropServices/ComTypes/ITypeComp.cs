@@ -21,11 +21,11 @@ namespace System.Runtime.InteropServices.ComTypes
     public struct BINDPTR
     {
         [FieldOffset(0)]
-        public IntPtr lpfuncdesc;
+        public nint lpfuncdesc;
         [FieldOffset(0)]
-        public IntPtr lpvardesc;
+        public nint lpvardesc;
         [FieldOffset(0)]
-        public IntPtr lptcomp;
+        public nint lptcomp;
     }
 
     [Guid("00020403-0000-0000-C000-000000000046")]

@@ -779,7 +779,7 @@ namespace System.Reflection.Emit
 
         internal override string? GetStringLiteral(int token) { return m_scope.GetString(token); }
 
-        internal override void ResolveToken(int token, out IntPtr typeHandle, out IntPtr methodHandle, out IntPtr fieldHandle)
+        internal override void ResolveToken(int token, out nint typeHandle, out nint methodHandle, out nint fieldHandle)
         {
             typeHandle = default;
             methodHandle = default;

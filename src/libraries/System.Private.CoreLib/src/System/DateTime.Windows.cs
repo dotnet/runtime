@@ -56,7 +56,7 @@ namespace System
             if (kind != DateTimeKind.Utc)
             {
                 Interop.Kernel32.SYSTEMTIME st;
-                if (Interop.Kernel32.TzSpecificLocalTimeToSystemTime(IntPtr.Zero, &time, &st) != Interop.BOOL.FALSE)
+                if (Interop.Kernel32.TzSpecificLocalTimeToSystemTime(0, &time, &st) != Interop.BOOL.FALSE)
                     return true;
             }
 
@@ -133,12 +133,12 @@ namespace System
 
         private static unsafe delegate* unmanaged[SuppressGCTransition]<ulong*, void> GetGetSystemTimeAsFileTimeFnPtr()
         {
-            IntPtr kernel32Lib = Interop.Kernel32.LoadLibraryEx(Interop.Libraries.Kernel32, IntPtr.Zero, Interop.Kernel32.LOAD_LIBRARY_SEARCH_SYSTEM32);
-            Debug.Assert(kernel32Lib != IntPtr.Zero);
+            nint kernel32Lib = Interop.Kernel32.LoadLibraryEx(Interop.Libraries.Kernel32, 0, Interop.Kernel32.LOAD_LIBRARY_SEARCH_SYSTEM32);
+            Debug.Assert(kernel32Lib != 0);
 
-            IntPtr pfnGetSystemTime = NativeLibrary.GetExport(kernel32Lib, "GetSystemTimeAsFileTime");
+            nint pfnGetSystemTime = NativeLibrary.GetExport(kernel32Lib, "GetSystemTimeAsFileTime");
 
-            if (NativeLibrary.TryGetExport(kernel32Lib, "GetSystemTimePreciseAsFileTime", out IntPtr pfnGetSystemTimePrecise))
+            if (NativeLibrary.TryGetExport(kernel32Lib, "GetSystemTimePreciseAsFileTime", out nint pfnGetSystemTimePrecise))
             {
                 // GetSystemTimePreciseAsFileTime exists and we'd like to use it.  However, on
                 // misconfigured systems, it's possible for the "precise" time to be inaccurate:

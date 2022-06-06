@@ -31,7 +31,7 @@ namespace System.Runtime.InteropServices.CustomMarshalers
 
             int numFetched = 0;
 
-            if (_enumVariantObject.Next(1, _nextArray, (IntPtr)(&numFetched)) == HResults.S_FALSE)
+            if (_enumVariantObject.Next(1, _nextArray, (nint)(&numFetched)) == HResults.S_FALSE)
             {
                 _fetchedLastObject = true;
 

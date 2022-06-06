@@ -1220,7 +1220,7 @@ namespace System.Text
                     // call into it after a quick probe to ensure the next immediate characters really are ASCII.
                     // If we see non-ASCII data, we'll jump immediately to the draining logic at the end of the method.
 
-                    if (IntPtr.Size >= 8)
+                    if (sizeof(nint) >= 8)
                     {
                         utf16Data64Bits = Unsafe.ReadUnaligned<ulong>(pUtf16Buffer);
                         if (!AllCharsInUInt64AreAscii(utf16Data64Bits))
@@ -1252,7 +1252,7 @@ namespace System.Text
                     // call into it after a quick probe to ensure the next immediate characters really are ASCII.
                     // If we see non-ASCII data, we'll jump immediately to the draining logic at the end of the method.
 
-                    if (IntPtr.Size >= 8)
+                    if (sizeof(nint) >= 8)
                     {
                         utf16Data64Bits = Unsafe.ReadUnaligned<ulong>(pUtf16Buffer);
                         if (!AllCharsInUInt64AreAscii(utf16Data64Bits))
@@ -1303,7 +1303,7 @@ namespace System.Text
                 nuint finalOffsetWhereCanLoop = currentOffset + remainingElementCount - 4;
                 do
                 {
-                    if (IntPtr.Size >= 8)
+                    if (sizeof(nint) >= 8)
                     {
                         // Only perform QWORD reads on a 64-bit platform.
                         utf16Data64Bits = Unsafe.ReadUnaligned<ulong>(pUtf16Buffer + currentOffset);
@@ -1363,7 +1363,7 @@ namespace System.Text
 
         FoundNonAsciiDataIn64BitRead:
 
-            if (IntPtr.Size >= 8)
+            if (sizeof(nint) >= 8)
             {
                 // Try checking the first 32 bits of the buffer for non-ASCII data.
                 // Regardless, we'll move the non-ASCII data into the utf16Data32BitsHigh local.

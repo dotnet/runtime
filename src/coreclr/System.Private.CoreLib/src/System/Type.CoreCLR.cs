@@ -83,7 +83,7 @@ namespace System
 
         // Given a class handle, this will return the class for that handle.
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern RuntimeType GetTypeFromHandleUnsafe(IntPtr handle);
+        internal static extern RuntimeType GetTypeFromHandleUnsafe(nint handle);
 
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]

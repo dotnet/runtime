@@ -18,7 +18,7 @@ namespace System
     {
         #region QCalls
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeName_ReleaseTypeNameParser")]
-        private static partial void Release(IntPtr pTypeNameParser);
+        private static partial void Release(nint pTypeNameParser);
         #endregion
 
         public SafeTypeNameParserHandle()
@@ -29,7 +29,7 @@ namespace System
         protected override bool ReleaseHandle()
         {
             Release(handle);
-            handle = IntPtr.Zero;
+            handle = 0;
             return true;
         }
     }

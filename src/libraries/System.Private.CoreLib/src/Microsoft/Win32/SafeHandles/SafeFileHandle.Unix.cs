@@ -27,7 +27,7 @@ namespace Microsoft.Win32.SafeHandles
         private SafeFileHandle(bool ownsHandle)
             : base(ownsHandle)
         {
-            SetHandle(new IntPtr(-1));
+            SetHandle(-1);
         }
 
         public bool IsAsync { get; private set; }

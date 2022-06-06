@@ -38,7 +38,7 @@ namespace System.Runtime.CompilerServices
         public const string VirtualStaticsInInterfaces = nameof(VirtualStaticsInInterfaces);
 
         /// <summary>
-        /// Indicates that this version of runtime supports <see cref="System.IntPtr" /> and <see cref="nuint" /> as numeric types.
+        /// Indicates that this version of runtime supports <see cref="nint" /> and <see cref="nuint" /> as numeric types.
         /// </summary>
         public const string NumericIntPtr = nameof(NumericIntPtr);
 

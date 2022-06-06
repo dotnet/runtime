@@ -103,7 +103,7 @@ namespace System.Reflection
                 {
                     ConstArray fieldMarshal = GetRuntimeModule().MetadataImport.GetSigOfFieldDef(m_tkField);
 
-                    m_fieldType = new Signature(fieldMarshal.Signature.ToPointer(),
+                    m_fieldType = new Signature((void*)fieldMarshal.Signature,
                         (int)fieldMarshal.Length, m_declaringType).FieldType;
                 }
 

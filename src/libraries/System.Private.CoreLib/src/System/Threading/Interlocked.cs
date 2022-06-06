@@ -75,12 +75,12 @@ namespace System.Threading
         /// <returns>The original value of <paramref name="location1"/>.</returns>
         /// <exception cref="NullReferenceException">The address of location1 is a null pointer.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static IntPtr Exchange(ref IntPtr location1, IntPtr value)
+        public static nint Exchange(ref nint location1, nint value)
         {
 #if TARGET_64BIT
-            return (IntPtr)Interlocked.Exchange(ref Unsafe.As<IntPtr, long>(ref location1), (long)value);
+            return (nint)Interlocked.Exchange(ref Unsafe.As<nint, long>(ref location1), (long)value);
 #else
-            return (IntPtr)Interlocked.Exchange(ref Unsafe.As<IntPtr, int>(ref location1), (int)value);
+            return (nint)Interlocked.Exchange(ref Unsafe.As<nint, int>(ref location1), (int)value);
 #endif
         }
 
@@ -125,18 +125,18 @@ namespace System.Threading
             (ulong)CompareExchange(ref Unsafe.As<ulong, long>(ref location1), (long)value, (long)comparand);
 
         /// <summary>Compares two platform-specific handles or pointers for equality and, if they are equal, replaces the first one.</summary>
-        /// <param name="location1">The destination <see cref="IntPtr"/>, whose value is compared with the value of <paramref name="comparand"/> and possibly replaced by <paramref name="value"/>.</param>
-        /// <param name="value">The <see cref="IntPtr"/> that replaces the destination value if the comparison results in equality.</param>
-        /// <param name="comparand">The <see cref="IntPtr"/> that is compared to the value at <paramref name="location1"/>.</param>
+        /// <param name="location1">The destination <see cref="nint"/>, whose value is compared with the value of <paramref name="comparand"/> and possibly replaced by <paramref name="value"/>.</param>
+        /// <param name="value">The <see cref="nint"/> that replaces the destination value if the comparison results in equality.</param>
+        /// <param name="comparand">The <see cref="nint"/> that is compared to the value at <paramref name="location1"/>.</param>
         /// <returns>The original value in <paramref name="location1"/>.</returns>
         /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static IntPtr CompareExchange(ref IntPtr location1, IntPtr value, IntPtr comparand)
+        public static nint CompareExchange(ref nint location1, nint value, nint comparand)
         {
 #if TARGET_64BIT
-            return (IntPtr)Interlocked.CompareExchange(ref Unsafe.As<IntPtr, long>(ref location1), (long)value, (long)comparand);
+            return (nint)Interlocked.CompareExchange(ref Unsafe.As<nint, long>(ref location1), (long)value, (long)comparand);
 #else
-            return (IntPtr)Interlocked.CompareExchange(ref Unsafe.As<IntPtr, int>(ref location1), (int)value, (int)comparand);
+            return (nint)Interlocked.CompareExchange(ref Unsafe.As<nint, int>(ref location1), (int)value, (int)comparand);
 #endif
         }
 

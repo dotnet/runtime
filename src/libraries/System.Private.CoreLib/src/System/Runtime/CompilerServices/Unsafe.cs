@@ -108,7 +108,7 @@ namespace System.Runtime.CompilerServices
             typeof(T).ToString(); // Type token used by the actual method body
             throw new PlatformNotSupportedException();
 #else
-            return ref AddByteOffset(ref source, (IntPtr)(elementOffset * (nint)SizeOf<T>()));
+            return ref AddByteOffset(ref source, (nint)(elementOffset * (nint)SizeOf<T>()));
 #endif
             // ldarg .0
             // ldarg .1
@@ -128,13 +128,13 @@ namespace System.Runtime.CompilerServices
         // Mono:Add
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ref T Add<T>(ref T source, IntPtr elementOffset)
+        public static ref T Add<T>(ref T source, nint elementOffset)
         {
 #if CORECLR
             typeof(T).ToString(); // Type token used by the actual method body
             throw new PlatformNotSupportedException();
 #else
-            return ref AddByteOffset(ref source, (IntPtr)((nint)elementOffset * (nint)SizeOf<T>()));
+            return ref AddByteOffset(ref source, (nint)((nint)elementOffset * (nint)SizeOf<T>()));
 #endif
 
             // ldarg .0
@@ -214,7 +214,7 @@ namespace System.Runtime.CompilerServices
             typeof(T).ToString();
             throw new PlatformNotSupportedException();
 #else
-            return ref AddByteOffset(ref source, (IntPtr)(void*)byteOffset);
+            return ref AddByteOffset(ref source, (nint)(void*)byteOffset);
 #endif
 
             // ldarg .0
@@ -598,7 +598,7 @@ namespace System.Runtime.CompilerServices
         // Mono:AddByteOffset
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ref T AddByteOffset<T>(ref T source, IntPtr byteOffset)
+        public static ref T AddByteOffset<T>(ref T source, nint byteOffset)
         {
             // This method is implemented by the toolchain
             throw new PlatformNotSupportedException();
@@ -688,7 +688,7 @@ namespace System.Runtime.CompilerServices
         // Mono:ByteOffset
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static IntPtr ByteOffset<T>([AllowNull] ref T origin, [AllowNull] ref T target)
+        public static nint ByteOffset<T>([AllowNull] ref T origin, [AllowNull] ref T target)
         {
             throw new PlatformNotSupportedException();
 
@@ -766,7 +766,7 @@ namespace System.Runtime.CompilerServices
             typeof(T).ToString();
             throw new PlatformNotSupportedException();
 #else
-            return ref SubtractByteOffset(ref source, (IntPtr)(elementOffset * (nint)SizeOf<T>()));
+            return ref SubtractByteOffset(ref source, (nint)(elementOffset * (nint)SizeOf<T>()));
 #endif
 
             // ldarg .0
@@ -811,13 +811,13 @@ namespace System.Runtime.CompilerServices
         // CoreCLR:METHOD__UNSAFE__BYREF_INTPTR_SUBTRACT
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ref T Subtract<T>(ref T source, IntPtr elementOffset)
+        public static ref T Subtract<T>(ref T source, nint elementOffset)
         {
 #if CORECLR
             typeof(T).ToString();
             throw new PlatformNotSupportedException();
 #else
-            return ref SubtractByteOffset(ref source, (IntPtr)((nint)elementOffset * (nint)SizeOf<T>()));
+            return ref SubtractByteOffset(ref source, (nint)((nint)elementOffset * (nint)SizeOf<T>()));
 #endif
 
             // ldarg .0
@@ -860,7 +860,7 @@ namespace System.Runtime.CompilerServices
         // CoreCLR:METHOD__UNSAFE__BYREF_INTPTR_SUBTRACT_BYTE_OFFSET
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ref T SubtractByteOffset<T>(ref T source, IntPtr byteOffset)
+        public static ref T SubtractByteOffset<T>(ref T source, nint byteOffset)
         {
             throw new PlatformNotSupportedException();
 
@@ -884,7 +884,7 @@ namespace System.Runtime.CompilerServices
             typeof(T).ToString();
             throw new PlatformNotSupportedException();
 #else
-            return ref SubtractByteOffset(ref source, (IntPtr)(void*)byteOffset);
+            return ref SubtractByteOffset(ref source, (nint)(void*)byteOffset);
 #endif
 
             // ldarg .0

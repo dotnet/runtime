@@ -79,9 +79,9 @@ namespace System
         /// <summary>Throws an <see cref="ArgumentNullException"/> if <paramref name="argument"/> is null.</summary>
         /// <param name="argument">The pointer argument to validate as non-null.</param>
         /// <param name="paramName">The name of the parameter with which <paramref name="argument"/> corresponds.</param>
-        internal static unsafe void ThrowIfNull(IntPtr argument, [CallerArgumentExpression("argument")] string? paramName = null)
+        internal static unsafe void ThrowIfNull(nint argument, [CallerArgumentExpression("argument")] string? paramName = null)
         {
-            if (argument == IntPtr.Zero)
+            if (argument == 0)
             {
                 Throw(paramName);
             }

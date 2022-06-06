@@ -138,10 +138,10 @@ namespace System
                 goto BuffersOverlap;
             }
 
-            // Use "(IntPtr)(nint)len" to avoid overflow checking on the explicit cast to IntPtr
+            // Use "(nint)(nint)len" to avoid overflow checking on the explicit cast to nint
 
-            ref byte srcEnd = ref Unsafe.Add(ref src, (IntPtr)(nint)len);
-            ref byte destEnd = ref Unsafe.Add(ref dest, (IntPtr)(nint)len);
+            ref byte srcEnd = ref Unsafe.Add(ref src, (nint)(nint)len);
+            ref byte destEnd = ref Unsafe.Add(ref dest, (nint)(nint)len);
 
             if (len <= 16)
                 goto MCPY02;

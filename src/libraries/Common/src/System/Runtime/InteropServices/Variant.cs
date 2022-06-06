@@ -16,19 +16,19 @@ namespace System.Runtime.InteropServices
     internal partial struct Variant
     {
 #if DEBUG
-        static Variant()
+        static unsafe Variant()
         {
             // Variant size is the size of 4 pointers (16 bytes) on a 32-bit processor,
             // and 3 pointers (24 bytes) on a 64-bit processor.
             int variantSize = Marshal.SizeOf<Variant>();
-            if (IntPtr.Size == 4)
+            if (sizeof(nint) == 4)
             {
-                Debug.Assert(variantSize == (4 * IntPtr.Size));
+                Debug.Assert(variantSize == (4 * sizeof(nint)));
             }
             else
             {
-                Debug.Assert(IntPtr.Size == 8);
-                Debug.Assert(variantSize == (3 * IntPtr.Size));
+                Debug.Assert(sizeof(nint) == 8);
+                Debug.Assert(variantSize == (3 * sizeof(nint)));
             }
         }
 #endif
@@ -55,8 +55,8 @@ namespace System.Runtime.InteropServices
         [StructLayout(LayoutKind.Sequential)]
         private struct Record
         {
-            public IntPtr _record;
-            public IntPtr _recordInfo;
+            public nint _record;
+            public nint _recordInfo;
         }
 
         [StructLayout(LayoutKind.Explicit)]
@@ -78,11 +78,11 @@ namespace System.Runtime.InteropServices
             [FieldOffset(0)] public double _r8;
             [FieldOffset(0)] public long _cy;
             [FieldOffset(0)] public double _date;
-            [FieldOffset(0)] public IntPtr _bstr;
-            [FieldOffset(0)] public IntPtr _unknown;
-            [FieldOffset(0)] public IntPtr _dispatch;
-            [FieldOffset(0)] public IntPtr _pvarVal;
-            [FieldOffset(0)] public IntPtr _byref;
+            [FieldOffset(0)] public nint _bstr;
+            [FieldOffset(0)] public nint _unknown;
+            [FieldOffset(0)] public nint _dispatch;
+            [FieldOffset(0)] public nint _pvarVal;
+            [FieldOffset(0)] public nint _byref;
             [FieldOffset(0)] public Record _record;
         }
 
@@ -126,7 +126,7 @@ namespace System.Runtime.InteropServices
             {
                 if (vt == VarEnum.VT_DISPATCH || vt == VarEnum.VT_UNKNOWN || vt == VarEnum.VT_BSTR)
                 {
-                    *(IntPtr*)this._typeUnion._unionTypes._byref = IntPtr.Zero;
+                    *(nint*)this._typeUnion._unionTypes._byref = 0;
                 }
                 return;
             }
@@ -134,8 +134,8 @@ namespace System.Runtime.InteropServices
             if ((vt & VarEnum.VT_ARRAY) != 0)
             {
                 Variant vArray;
-                Marshal.GetNativeVariantForObject(value, (IntPtr)(void*)&vArray);
-                *(IntPtr*)this._typeUnion._unionTypes._byref = vArray._typeUnion._unionTypes._byref;
+                Marshal.GetNativeVariantForObject(value, (nint)(void*)&vArray);
+                *(nint*)this._typeUnion._unionTypes._byref = vArray._typeUnion._unionTypes._byref;
                 return;
             }
 
@@ -198,15 +198,15 @@ namespace System.Runtime.InteropServices
                     break;
 
                 case VarEnum.VT_UNKNOWN:
-                    *(IntPtr*)this._typeUnion._unionTypes._byref = Marshal.GetIUnknownForObject(value);
+                    *(nint*)this._typeUnion._unionTypes._byref = Marshal.GetIUnknownForObject(value);
                     break;
 
                 case VarEnum.VT_DISPATCH:
-                    *(IntPtr*)this._typeUnion._unionTypes._byref = Marshal.GetIDispatchForObject(value);
+                    *(nint*)this._typeUnion._unionTypes._byref = Marshal.GetIDispatchForObject(value);
                     break;
 
                 case VarEnum.VT_BSTR:
-                    *(IntPtr*)this._typeUnion._unionTypes._byref = Marshal.StringToBSTR((string)value);
+                    *(nint*)this._typeUnion._unionTypes._byref = Marshal.StringToBSTR((string)value);
                     break;
 
                 case VarEnum.VT_CY:
@@ -269,7 +269,7 @@ namespace System.Runtime.InteropServices
                     {
                         fixed (void* pThis = &this)
                         {
-                            return Marshal.GetObjectForNativeVariant((System.IntPtr)pThis);
+                            return Marshal.GetObjectForNativeVariant((nint)pThis);
                         }
                     }
             }
@@ -302,7 +302,7 @@ namespace System.Runtime.InteropServices
                 {
                     fixed (void* pThis = &this)
                     {
-                        Interop.OleAut32.VariantClear((IntPtr)pThis);
+                        Interop.OleAut32.VariantClear((nint)pThis);
                     }
                 }
 
@@ -633,7 +633,7 @@ namespace System.Runtime.InteropServices
             get
             {
                 Debug.Assert(VariantType == VarEnum.VT_BSTR);
-                if (_typeUnion._unionTypes._bstr == IntPtr.Zero)
+                if (_typeUnion._unionTypes._bstr == 0)
                 {
                     return null;
                 }
@@ -654,7 +654,7 @@ namespace System.Runtime.InteropServices
             get
             {
                 Debug.Assert(VariantType == VarEnum.VT_UNKNOWN);
-                if (_typeUnion._unionTypes._unknown == IntPtr.Zero)
+                if (_typeUnion._unionTypes._unknown == 0)
                 {
                     return null;
                 }
@@ -666,7 +666,7 @@ namespace System.Runtime.InteropServices
                 VariantType = VarEnum.VT_UNKNOWN;
                 if (value == null)
                 {
-                    _typeUnion._unionTypes._unknown = IntPtr.Zero;
+                    _typeUnion._unionTypes._unknown = 0;
                 }
                 else
                 {
@@ -682,7 +682,7 @@ namespace System.Runtime.InteropServices
             get
             {
                 Debug.Assert(VariantType == VarEnum.VT_DISPATCH);
-                if (_typeUnion._unionTypes._dispatch == IntPtr.Zero)
+                if (_typeUnion._unionTypes._dispatch == 0)
                 {
                     return null;
                 }
@@ -694,7 +694,7 @@ namespace System.Runtime.InteropServices
                 VariantType = VarEnum.VT_DISPATCH;
                 if (value == null)
                 {
-                    _typeUnion._unionTypes._dispatch = IntPtr.Zero;
+                    _typeUnion._unionTypes._dispatch = 0;
                 }
                 else
                 {
@@ -703,7 +703,7 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        public IntPtr AsByRefVariant
+        public nint AsByRefVariant
         {
             get
             {

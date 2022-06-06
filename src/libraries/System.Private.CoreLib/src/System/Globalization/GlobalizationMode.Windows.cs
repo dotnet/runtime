@@ -25,8 +25,8 @@ namespace System.Globalization
             const string extension = ".dll";
             const string icuucBase = "icuuc";
             const string icuinBase = "icuin";
-            IntPtr icuucLib = IntPtr.Zero;
-            IntPtr icuinLib = IntPtr.Zero;
+            nint icuucLib = 0;
+            nint icuinLib = 0;
 
             int index = version.IndexOf('.');
             if (index > 0)
@@ -34,18 +34,18 @@ namespace System.Globalization
                 ReadOnlySpan<char> truncatedVersion = version.Slice(0, index);
                 icuucLib = LoadLibrary(CreateLibraryName(icuucBase, suffix, extension, truncatedVersion), failOnLoadFailure: false);
 
-                if (icuucLib != IntPtr.Zero)
+                if (icuucLib != 0)
                 {
                     icuinLib = LoadLibrary(CreateLibraryName(icuinBase, suffix, extension, truncatedVersion), failOnLoadFailure: false);
                 }
             }
 
-            if (icuucLib == IntPtr.Zero)
+            if (icuucLib == 0)
             {
                 icuucLib = LoadLibrary(CreateLibraryName(icuucBase, suffix, extension, version), failOnLoadFailure: true);
             }
 
-            if (icuinLib == IntPtr.Zero)
+            if (icuinLib == 0)
             {
                 icuinLib = LoadLibrary(CreateLibraryName(icuinBase, suffix, extension, version), failOnLoadFailure: true);
             }

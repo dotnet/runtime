@@ -1961,11 +1961,11 @@ namespace System
                 return false;
             }
 
-            IntPtr byteOffset = Unsafe.ByteOffset(
+            nint byteOffset = Unsafe.ByteOffset(
                 ref MemoryMarshal.GetReference(span),
                 ref MemoryMarshal.GetReference(other));
 
-            if (Unsafe.SizeOf<IntPtr>() == sizeof(int))
+            if (Unsafe.SizeOf<nint>() == sizeof(int))
             {
                 return (uint)byteOffset < (uint)(span.Length * Unsafe.SizeOf<T>()) ||
                        (uint)byteOffset > (uint)-(other.Length * Unsafe.SizeOf<T>());
@@ -1988,11 +1988,11 @@ namespace System
                 return false;
             }
 
-            IntPtr byteOffset = Unsafe.ByteOffset(
+            nint byteOffset = Unsafe.ByteOffset(
                 ref MemoryMarshal.GetReference(span),
                 ref MemoryMarshal.GetReference(other));
 
-            if (Unsafe.SizeOf<IntPtr>() == sizeof(int))
+            if (Unsafe.SizeOf<nint>() == sizeof(int))
             {
                 if ((uint)byteOffset < (uint)(span.Length * Unsafe.SizeOf<T>()) ||
                     (uint)byteOffset > (uint)-(other.Length * Unsafe.SizeOf<T>()))

@@ -21,7 +21,7 @@ namespace System.Threading
             if (UsePortableThreadPoolForIO)
             {
                 // OS doesn't signal handle, so do it here
-                overlapped->InternalLow = IntPtr.Zero;
+                overlapped->InternalLow = 0;
 
                 PortableThreadPool.ThreadPoolInstance.QueueNativeOverlapped(overlapped);
                 return true;
@@ -33,9 +33,9 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe bool PostQueuedCompletionStatus(NativeOverlapped* overlapped);
 
-        [Obsolete("ThreadPool.BindHandle(IntPtr) has been deprecated. Use ThreadPool.BindHandle(SafeHandle) instead.")]
+        [Obsolete("ThreadPool.BindHandle(nint) has been deprecated. Use ThreadPool.BindHandle(SafeHandle) instead.")]
         [SupportedOSPlatform("windows")]
-        public static bool BindHandle(IntPtr osHandle)
+        public static bool BindHandle(nint osHandle)
         {
             if (UsePortableThreadPoolForIO)
             {
@@ -72,6 +72,6 @@ namespace System.Threading
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern bool BindIOCompletionCallbackNative(IntPtr fileHandle);
+        private static extern bool BindIOCompletionCallbackNative(nint fileHandle);
     }
 }

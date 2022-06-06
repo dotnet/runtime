@@ -21,7 +21,7 @@ namespace System
             if (flds.Length == 0)
                 throw new ArgumentException(SR.Arg_ArrayZeroError, nameof(flds));
 
-            IntPtr[] fields = new IntPtr[flds.Length];
+            nint[] fields = new nint[flds.Length];
             // For proper handling of Nullable<T> don't change GetType() to something like 'IsAssignableFrom'
             // Currently we can't make a TypedReference to fields of Nullable<T>, which is fine.
             RuntimeType targetType = (RuntimeType)target.GetType();
@@ -60,11 +60,11 @@ namespace System
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         // reference to TypedReference is banned, so have to pass result as pointer
-        private static extern unsafe void InternalMakeTypedReference(void* result, object target, IntPtr[] flds, RuntimeType lastFieldType);
+        private static extern unsafe void InternalMakeTypedReference(void* result, object target, nint[] flds, RuntimeType lastFieldType);
 
         public override int GetHashCode()
         {
-            if (_type == IntPtr.Zero)
+            if (_type == 0)
                 return 0;
             else
                 return __reftype(this).GetHashCode();
@@ -75,7 +75,7 @@ namespace System
             throw new NotSupportedException(SR.NotSupported_NYI);
         }
 
-        internal bool IsNull => Unsafe.IsNullRef(ref _value.Value) && _type == IntPtr.Zero;
+        internal bool IsNull => Unsafe.IsNullRef(ref _value.Value) && _type == 0;
 
         public static Type GetTargetType(TypedReference value)
         {

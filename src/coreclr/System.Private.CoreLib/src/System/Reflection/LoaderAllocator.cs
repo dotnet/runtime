@@ -23,15 +23,15 @@ namespace System.Reflection
     internal sealed partial class LoaderAllocatorScout
     {
         // This field is set by the VM to atomically transfer the ownership to the managed loader allocator
-        internal IntPtr m_nativeLoaderAllocator;
+        internal nint m_nativeLoaderAllocator;
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "LoaderAllocator_Destroy")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static partial bool Destroy(IntPtr nativeLoaderAllocator);
+        private static partial bool Destroy(nint nativeLoaderAllocator);
 
         ~LoaderAllocatorScout()
         {
-            if (m_nativeLoaderAllocator == IntPtr.Zero)
+            if (m_nativeLoaderAllocator == 0)
                 return;
 
             // Destroy returns false if the managed LoaderAllocator is still alive.

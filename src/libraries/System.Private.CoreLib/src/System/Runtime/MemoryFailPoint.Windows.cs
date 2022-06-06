@@ -77,7 +77,7 @@ namespace System.Runtime
                 if (r == 0)
                     throw Win32Marshal.GetExceptionForLastWin32Error();
 
-                ulong regionSize = memInfo.RegionSize.ToUInt64();
+                ulong regionSize = memInfo.RegionSize;
                 if (memInfo.State == Interop.Kernel32.MemOptions.MEM_FREE)
                 {
                     if (regionSize >= size)

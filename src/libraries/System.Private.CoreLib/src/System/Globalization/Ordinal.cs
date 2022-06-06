@@ -77,7 +77,7 @@ namespace System.Globalization
 
         internal static bool EqualsIgnoreCase(ref char charA, ref char charB, int length)
         {
-            IntPtr byteOffset = IntPtr.Zero;
+            nint byteOffset = 0;
 
 #if TARGET_64BIT
             // Read 4 chars (64 bits) at a time from each string

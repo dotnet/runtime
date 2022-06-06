@@ -56,7 +56,7 @@ namespace System.Diagnostics.Tracing
             [FieldOffset(0)]
             public ulong AsUInt64;
             [FieldOffset(0)]
-            public IntPtr AsIntPtr;
+            public nint AsIntPtr;
             [FieldOffset(0)]
             public nuint AsUIntPtr;
             [FieldOffset(0)]
@@ -104,7 +104,7 @@ namespace System.Diagnostics.Tracing
         private PropertyValue(uint value) : this(new Scalar() { AsUInt32 = value }, sizeof(uint)) { }
         private PropertyValue(long value) : this(new Scalar() { AsInt64 = value }, sizeof(long)) { }
         private PropertyValue(ulong value) : this(new Scalar() { AsUInt64 = value }, sizeof(ulong)) { }
-        private PropertyValue(IntPtr value) : this(new Scalar() { AsIntPtr = value }, sizeof(IntPtr)) { }
+        private PropertyValue(nint value) : this(new Scalar() { AsIntPtr = value }, sizeof(nint)) { }
         private PropertyValue(nuint value) : this(new Scalar() { AsUIntPtr = value }, sizeof(nuint)) { }
         private PropertyValue(float value) : this(new Scalar() { AsSingle = value }, sizeof(float)) { }
         private PropertyValue(double value) : this(new Scalar() { AsDouble = value }, sizeof(double)) { }
@@ -126,7 +126,7 @@ namespace System.Diagnostics.Tracing
             if (type == typeof(uint)) return value => new PropertyValue((uint)value!);
             if (type == typeof(long)) return value => new PropertyValue((long)value!);
             if (type == typeof(ulong)) return value => new PropertyValue((ulong)value!);
-            if (type == typeof(IntPtr)) return value => new PropertyValue((IntPtr)value!);
+            if (type == typeof(nint)) return value => new PropertyValue((nint)value!);
             if (type == typeof(nuint)) return value => new PropertyValue((nuint)value!);
             if (type == typeof(float)) return value => new PropertyValue((float)value!);
             if (type == typeof(double)) return value => new PropertyValue((double)value!);
@@ -269,7 +269,7 @@ namespace System.Diagnostics.Tracing
                     if (type == typeof(uint)) { var f = GetGetMethod<uint>(property); return container => new PropertyValue(f((TContainer)container.ReferenceValue!)); }
                     if (type == typeof(long)) { var f = GetGetMethod<long>(property); return container => new PropertyValue(f((TContainer)container.ReferenceValue!)); }
                     if (type == typeof(ulong)) { var f = GetGetMethod<ulong>(property); return container => new PropertyValue(f((TContainer)container.ReferenceValue!)); }
-                    if (type == typeof(IntPtr)) { var f = GetGetMethod<IntPtr>(property); return container => new PropertyValue(f((TContainer)container.ReferenceValue!)); }
+                    if (type == typeof(nint)) { var f = GetGetMethod<nint>(property); return container => new PropertyValue(f((TContainer)container.ReferenceValue!)); }
                     if (type == typeof(nuint)) { var f = GetGetMethod<nuint>(property); return container => new PropertyValue(f((TContainer)container.ReferenceValue!)); }
                     if (type == typeof(float)) { var f = GetGetMethod<float>(property); return container => new PropertyValue(f((TContainer)container.ReferenceValue!)); }
                     if (type == typeof(double)) { var f = GetGetMethod<double>(property); return container => new PropertyValue(f((TContainer)container.ReferenceValue!)); }

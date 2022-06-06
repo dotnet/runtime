@@ -5,7 +5,7 @@ namespace System.Threading
 {
     public partial class SynchronizationContext
     {
-        private static int InvokeWaitMethodHelper(SynchronizationContext syncContext, IntPtr[] waitHandles, bool waitAll, int millisecondsTimeout)
+        private static int InvokeWaitMethodHelper(SynchronizationContext syncContext, nint[] waitHandles, bool waitAll, int millisecondsTimeout)
         {
             return syncContext.Wait(waitHandles, waitAll, millisecondsTimeout);
         }

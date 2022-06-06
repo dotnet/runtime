@@ -47,8 +47,8 @@ namespace System.Runtime.Loader
                 // to the writer specified. Have to store the previous writer to set it back once this is done.
                 var errorWriter = new Interop.HostPolicy.corehost_error_writer_fn(message => errorMessage.AppendLine(Marshal.PtrToStringAuto(message)));
 
-                IntPtr errorWriterPtr = Marshal.GetFunctionPointerForDelegate(errorWriter);
-                IntPtr previousErrorWriterPtr = Interop.HostPolicy.corehost_set_error_writer(errorWriterPtr);
+                nint errorWriterPtr = Marshal.GetFunctionPointerForDelegate(errorWriter);
+                nint previousErrorWriterPtr = Interop.HostPolicy.corehost_set_error_writer(errorWriterPtr);
 
                 try
                 {

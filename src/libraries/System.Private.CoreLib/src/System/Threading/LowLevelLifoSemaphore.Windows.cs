@@ -16,15 +16,15 @@ namespace System.Threading
     /// </remarks>
     internal sealed partial class LowLevelLifoSemaphore : IDisposable
     {
-        private IntPtr _completionPort;
+        private nint _completionPort;
 
         private void Create(int maximumSignalCount)
         {
             Debug.Assert(maximumSignalCount > 0);
 
             _completionPort =
-                Interop.Kernel32.CreateIoCompletionPort(new IntPtr(-1), IntPtr.Zero, 0, maximumSignalCount);
-            if (_completionPort == IntPtr.Zero)
+                Interop.Kernel32.CreateIoCompletionPort(-1, 0, 0, maximumSignalCount);
+            if (_completionPort == 0)
             {
                 int hr = Marshal.GetHRForLastWin32Error();
                 var exception = new OutOfMemoryException();
@@ -35,7 +35,7 @@ namespace System.Threading
 
         ~LowLevelLifoSemaphore()
         {
-            if (_completionPort != IntPtr.Zero)
+            if (_completionPort != 0)
             {
                 Dispose();
             }
@@ -56,7 +56,7 @@ namespace System.Threading
 
             for (int i = 0; i < count; i++)
             {
-                if (!Interop.Kernel32.PostQueuedCompletionStatus(_completionPort, 1, 0, IntPtr.Zero))
+                if (!Interop.Kernel32.PostQueuedCompletionStatus(_completionPort, 1, 0, 0))
                 {
                     int lastError = Marshal.GetLastPInvokeError();
                     var exception = new OutOfMemoryException();
@@ -68,10 +68,10 @@ namespace System.Threading
 
         public void Dispose()
         {
-            Debug.Assert(_completionPort != IntPtr.Zero);
+            Debug.Assert(_completionPort != 0);
 
             Interop.Kernel32.CloseHandle(_completionPort);
-            _completionPort = IntPtr.Zero;
+            _completionPort = 0;
             GC.SuppressFinalize(this);
         }
     }

@@ -30,10 +30,10 @@ namespace System.Runtime.InteropServices.ObjectiveC
         /// to manage. The handler must not return and is expected to propagate the exception (for example, throw a native exception)
         /// into the native environment or fail fast.
         /// </remarks>
-        public unsafe delegate delegate* unmanaged<IntPtr, void> UnhandledExceptionPropagationHandler(
+        public unsafe delegate delegate* unmanaged<nint, void> UnhandledExceptionPropagationHandler(
             Exception exception,
             RuntimeMethodHandle lastMethod,
-            out IntPtr context);
+            out nint context);
 
         /// <summary>
         /// Initialize the Objective-C marshalling API.
@@ -57,8 +57,8 @@ namespace System.Runtime.InteropServices.ObjectiveC
         /// </remarks>
         public static unsafe void Initialize(
             delegate* unmanaged<void> beginEndCallback,
-            delegate* unmanaged<IntPtr, int> isReferencedCallback,
-            delegate* unmanaged<IntPtr, void> trackedObjectEnteredFinalization,
+            delegate* unmanaged<nint, int> isReferencedCallback,
+            delegate* unmanaged<nint, void> trackedObjectEnteredFinalization,
             UnhandledExceptionPropagationHandler unhandledExceptionPropagationHandler)
             => throw new PlatformNotSupportedException();
 
@@ -77,7 +77,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
         ///
         /// The "Is Referenced" callback passed to Initialize()
         /// will be passed the <paramref name="taggedMemory"/> returned from this function.
-        /// The memory it points at is defined by the length in the <see cref="Span{IntPtr}"/> and
+        /// The memory it points at is defined by the length in the <see cref="Span{nint}"/> and
         /// will be zeroed out. It will be available until <paramref name="obj"/> is collected by the GC.
         /// The memory pointed to by <paramref name="taggedMemory"/> can be used for any purpose by the
         /// caller of this function and usable during the "Is Referenced" callback.
@@ -90,7 +90,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
         /// </remarks>
         public static GCHandle CreateReferenceTrackingHandle(
             object obj,
-            out Span<IntPtr> taggedMemory)
+            out Span<nint> taggedMemory)
             => throw new PlatformNotSupportedException();
 
         /// <summary>
@@ -129,7 +129,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
         /// <remarks>
         /// Providing an override can enable support for Objective-C variadic argument support.
         /// </remarks>
-        public static void SetMessageSendCallback(MessageSendFunction msgSendFunction, IntPtr func)
+        public static void SetMessageSendCallback(MessageSendFunction msgSendFunction, nint func)
             => throw new PlatformNotSupportedException();
 
         /// <summary>

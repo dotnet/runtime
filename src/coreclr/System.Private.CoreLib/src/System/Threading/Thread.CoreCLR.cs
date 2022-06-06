@@ -12,9 +12,9 @@ namespace System.Threading
 {
     internal readonly struct ThreadHandle
     {
-        private readonly IntPtr _ptr;
+        private readonly nint _ptr;
 
-        internal ThreadHandle(IntPtr pThread)
+        internal ThreadHandle(nint pThread)
         {
             _ptr = pThread;
         }
@@ -43,7 +43,7 @@ namespace System.Threading
         // IntPtrs need to be together, and before ints, because IntPtrs are 64-bit
         // fields on 64-bit platforms, where they will be sorted together.
 
-        private IntPtr _DONT_USE_InternalThread; // Pointer
+        private nint _DONT_USE_InternalThread; // Pointer
         private int _priority; // INT32
 
         // The following field is required for interop with the VS Debugger
@@ -70,10 +70,10 @@ namespace System.Threading
         /// <summary>Returns handle for interop with EE. The handle is guaranteed to be non-null.</summary>
         internal ThreadHandle GetNativeHandle()
         {
-            IntPtr thread = _DONT_USE_InternalThread;
+            nint thread = _DONT_USE_InternalThread;
 
             // This should never happen under normal circumstances.
-            if (thread == IntPtr.Zero)
+            if (thread == 0)
             {
                 throw new ArgumentException(null, SR.Argument_InvalidHandle);
             }
@@ -109,7 +109,7 @@ namespace System.Threading
         // correctness) and for FileStream's async code path (for perf, to avoid creating
         // a Thread instance).
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern IntPtr InternalGetCurrentThread();
+        private static extern nint InternalGetCurrentThread();
 
         /// <summary>
         /// Suspends the current thread for timeout milliseconds. If timeout == 0,

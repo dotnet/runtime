@@ -118,7 +118,7 @@ namespace Microsoft.Win32
         #region Private FCalls
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void ChangeTypeEx(ref Variant result, ref Variant source, int lcid, IntPtr typeHandle, int cvType, short flags);
+        private static extern void ChangeTypeEx(ref Variant result, ref Variant source, int lcid, nint typeHandle, int cvType, short flags);
 
         #endregion
     }

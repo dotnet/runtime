@@ -96,8 +96,8 @@ namespace System
         }
 
         /// <summary>Returns the absolute value of a native signed integer.</summary>
-        /// <param name="value">A number that is greater than <see cref="IntPtr.MinValue" />, but less than or equal to <see cref="IntPtr.MaxValue" />.</param>
-        /// <returns>A native signed integer, x, such that 0 ≤ x ≤ <see cref="IntPtr.MaxValue" />.</returns>
+        /// <param name="value">A number that is greater than <see cref="nint.MinValue" />, but less than or equal to <see cref="nint.MaxValue" />.</param>
+        /// <returns>A native signed integer, x, such that 0 ≤ x ≤ <see cref="nint.MaxValue" />.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static nint Abs(nint value)
         {

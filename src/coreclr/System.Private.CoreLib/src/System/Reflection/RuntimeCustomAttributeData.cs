@@ -667,7 +667,7 @@ namespace System.Reflection
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void ParseAttributeArguments(
-            IntPtr pCa,
+            nint pCa,
             int cCa,
             ref CustomAttributeCtorParameter[] CustomAttributeCtorParameters,
             ref CustomAttributeNamedParameter[] CustomAttributeTypedArgument,
@@ -1160,8 +1160,8 @@ namespace System.Reflection
             {
                 ref CustomAttributeRecord caRecord = ref car[i];
 
-                IntPtr blobStart = caRecord.blob.Signature;
-                IntPtr blobEnd = (IntPtr)((byte*)blobStart + caRecord.blob.Length);
+                nint blobStart = caRecord.blob.Signature;
+                nint blobEnd = (nint)((byte*)blobStart + caRecord.blob.Length);
 
                 if (!FilterCustomAttributeRecord(caRecord.tkCtor, in scope,
                                                  decoratedModule, decoratedMetadataToken, attributeFilterType!, mustBeInheritable,
@@ -1206,7 +1206,7 @@ namespace System.Reflection
                         }
                         cNamedArgs = data >> 16;
 
-                        blobStart = (IntPtr)((byte*)blobStart + 4); // skip version and namedArgs count
+                        blobStart = (nint)((byte*)blobStart + 4); // skip version and namedArgs count
                     }
                 }
 
@@ -1494,7 +1494,7 @@ namespace System.Reflection
         #region Private Static FCalls
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void _ParseAttributeUsageAttribute(
-            IntPtr pCa, int cCa, out int targets, out bool inherited, out bool allowMultiple);
+            nint pCa, int cCa, out int targets, out bool inherited, out bool allowMultiple);
         private static void ParseAttributeUsageAttribute(
             ConstArray ca, out AttributeTargets targets, out bool inherited, out bool allowMultiple)
         {
@@ -1504,13 +1504,13 @@ namespace System.Reflection
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern object _CreateCaObject(RuntimeModule pModule, RuntimeType type, IRuntimeMethodInfo pCtor, byte** ppBlob, byte* pEndBlob, int* pcNamedArgs);
-        private static object CreateCaObject(RuntimeModule module, RuntimeType type, IRuntimeMethodInfo ctor, ref IntPtr blob, IntPtr blobEnd, out int namedArgs)
+        private static object CreateCaObject(RuntimeModule module, RuntimeType type, IRuntimeMethodInfo ctor, ref nint blob, nint blobEnd, out int namedArgs)
         {
             byte* pBlob = (byte*)blob;
             byte* pBlobEnd = (byte*)blobEnd;
             int cNamedArgs;
             object ca = _CreateCaObject(module, type, ctor, &pBlob, pBlobEnd, &cNamedArgs);
-            blob = (IntPtr)pBlob;
+            blob = (nint)pBlob;
             namedArgs = cNamedArgs;
             return ca;
         }
@@ -1519,12 +1519,12 @@ namespace System.Reflection
         private static extern void _GetPropertyOrFieldData(
             RuntimeModule pModule, byte** ppBlobStart, byte* pBlobEnd, out string name, out bool bIsProperty, out RuntimeType type, out object value);
         private static void GetPropertyOrFieldData(
-            RuntimeModule module, ref IntPtr blobStart, IntPtr blobEnd, out string name, out bool isProperty, out RuntimeType? type, out object? value)
+            RuntimeModule module, ref nint blobStart, nint blobEnd, out string name, out bool isProperty, out RuntimeType? type, out object? value)
         {
             byte* pBlobStart = (byte*)blobStart;
             _GetPropertyOrFieldData(
                 module, &pBlobStart, (byte*)blobEnd, out name, out isProperty, out type, out value);
-            blobStart = (IntPtr)pBlobStart;
+            blobStart = (nint)pBlobStart;
         }
         #endregion
     }

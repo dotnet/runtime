@@ -38,7 +38,7 @@ namespace System.Globalization
 
         private static bool CallGetCalendarInfoEx(string? localeName, CalendarId calendar, uint calType, out int data)
         {
-            return Interop.Kernel32.GetCalendarInfoEx(localeName, (uint)calendar, IntPtr.Zero, calType | CAL_RETURN_NUMBER, IntPtr.Zero, 0, out data) != 0;
+            return Interop.Kernel32.GetCalendarInfoEx(localeName, (uint)calendar, 0, calType | CAL_RETURN_NUMBER, 0, 0, out data) != 0;
         }
 
         private static unsafe bool CallGetCalendarInfoEx(string localeName, CalendarId calendar, uint calType, out string data)
@@ -48,7 +48,7 @@ namespace System.Globalization
             // The maximum size for values returned from GetCalendarInfoEx is 80 characters.
             char* buffer = stackalloc char[BUFFER_LENGTH];
 
-            int ret = Interop.Kernel32.GetCalendarInfoEx(localeName, (uint)calendar, IntPtr.Zero, calType, (IntPtr)buffer, BUFFER_LENGTH, IntPtr.Zero);
+            int ret = Interop.Kernel32.GetCalendarInfoEx(localeName, (uint)calendar, 0, calType, (nint)buffer, BUFFER_LENGTH, 0);
             if (ret > 0)
             {
                 if (buffer[ret - 1] == '\0')
@@ -71,7 +71,7 @@ namespace System.Globalization
 
         // EnumCalendarInfoExEx callback itself.
         [UnmanagedCallersOnly]
-        private static unsafe Interop.BOOL EnumCalendarInfoCallback(char* lpCalendarInfoString, uint calendar, IntPtr pReserved, void* lParam)
+        private static unsafe Interop.BOOL EnumCalendarInfoCallback(char* lpCalendarInfoString, uint calendar, nint pReserved, void* lParam)
         {
             ref EnumData context = ref Unsafe.As<byte, EnumData>(ref *(byte*)lParam);
             try
@@ -103,7 +103,7 @@ namespace System.Globalization
         }
 
         [UnmanagedCallersOnly]
-        private static unsafe Interop.BOOL EnumCalendarsCallback(char* lpCalendarInfoString, uint calendar, IntPtr reserved, void* lParam)
+        private static unsafe Interop.BOOL EnumCalendarsCallback(char* lpCalendarInfoString, uint calendar, nint reserved, void* lParam)
         {
             ref NlsEnumCalendarsData context = ref Unsafe.As<byte, NlsEnumCalendarsData>(ref *(byte*)lParam);
             try

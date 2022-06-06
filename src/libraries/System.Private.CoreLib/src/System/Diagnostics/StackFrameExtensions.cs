@@ -10,7 +10,7 @@ namespace System.Diagnostics
     {
         public static bool HasNativeImage(this StackFrame stackFrame)
         {
-            return stackFrame.GetNativeImageBase() != IntPtr.Zero;
+            return stackFrame.GetNativeImageBase() != 0;
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
@@ -30,14 +30,14 @@ namespace System.Diagnostics
             return stackFrame.GetFileName() != null;
         }
 
-        public static IntPtr GetNativeIP(this StackFrame stackFrame)
+        public static nint GetNativeIP(this StackFrame stackFrame)
         {
-            return IntPtr.Zero;
+            return 0;
         }
 
-        public static IntPtr GetNativeImageBase(this StackFrame stackFrame)
+        public static nint GetNativeImageBase(this StackFrame stackFrame)
         {
-            return IntPtr.Zero;
+            return 0;
         }
     }
 }

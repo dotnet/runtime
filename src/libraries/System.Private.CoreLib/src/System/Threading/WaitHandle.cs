@@ -11,7 +11,7 @@ namespace System.Threading
     {
         internal const int MaxWaitHandles = 64;
 
-        protected static readonly IntPtr InvalidHandle = new IntPtr(-1);
+        protected static readonly nint InvalidHandle = -1;
 
         // IMPORTANT:
         // - Do not add or rearrange fields as the EE depends on this layout.
@@ -41,7 +41,7 @@ namespace System.Threading
         }
 
         [Obsolete("WaitHandle.Handle has been deprecated. Use the SafeWaitHandle property instead.")]
-        public virtual IntPtr Handle
+        public virtual nint Handle
         {
             get => _waitHandle == null ? InvalidHandle : _waitHandle.DangerousGetHandle();
             set
@@ -182,7 +182,7 @@ namespace System.Threading
         private static void ObtainSafeWaitHandles(
             ReadOnlySpan<WaitHandle> waitHandles,
             Span<SafeWaitHandle?> safeWaitHandles,
-            Span<IntPtr> unsafeWaitHandles)
+            Span<nint> unsafeWaitHandles)
         {
             Debug.Assert(waitHandles.Length > 0);
             Debug.Assert(waitHandles.Length <= MaxWaitHandles);
@@ -270,13 +270,13 @@ namespace System.Threading
 
                 if (useWaitContext)
                 {
-                    IntPtr[] unsafeWaitHandles = new IntPtr[waitHandles.Length];
+                    nint[] unsafeWaitHandles = new nint[waitHandles.Length];
                     ObtainSafeWaitHandles(waitHandles, safeWaitHandles, unsafeWaitHandles);
                     waitResult = context!.Wait(unsafeWaitHandles, waitAll, millisecondsTimeout);
                 }
                 else
                 {
-                    Span<IntPtr> unsafeWaitHandles = stackalloc IntPtr[waitHandles.Length];
+                    Span<nint> unsafeWaitHandles = stackalloc nint[waitHandles.Length];
                     ObtainSafeWaitHandles(waitHandles, safeWaitHandles, unsafeWaitHandles);
                     waitResult = WaitMultipleIgnoringSyncContext(unsafeWaitHandles, waitAll, millisecondsTimeout);
                 }
@@ -328,7 +328,7 @@ namespace System.Threading
             int waitResult;
             if (useWaitContext)
             {
-                IntPtr[] unsafeWaitHandles = new IntPtr[safeWaitHandles.Length];
+                nint[] unsafeWaitHandles = new nint[safeWaitHandles.Length];
                 for (int i = 0; i < safeWaitHandles.Length; ++i)
                 {
                     Debug.Assert(safeWaitHandles[i] != null);
@@ -338,7 +338,7 @@ namespace System.Threading
             }
             else
             {
-                Span<IntPtr> unsafeWaitHandles = stackalloc IntPtr[safeWaitHandles.Length];
+                Span<nint> unsafeWaitHandles = stackalloc nint[safeWaitHandles.Length];
                 for (int i = 0; i < safeWaitHandles.Length; ++i)
                 {
                     Debug.Assert(safeWaitHandles[i] != null);

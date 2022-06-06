@@ -106,7 +106,7 @@ namespace System.Text
         /// </summary>
         /// <param name="dest">The destination buffer.</param>
         /// <param name="charLen">The number of chars in the destination buffer.</param>
-        internal unsafe void InternalCopy(IntPtr dest, int charLen) =>
+        internal unsafe void InternalCopy(nint dest, int charLen) =>
             CopyTo(0, new Span<char>((char*)dest, charLen), charLen);
     }
 }

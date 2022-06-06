@@ -7,22 +7,22 @@ namespace System.Runtime.InteropServices
 {
     public static partial class Marshal
     {
-        public static string? PtrToStringAuto(IntPtr ptr, int len)
+        public static string? PtrToStringAuto(nint ptr, int len)
         {
             return PtrToStringUni(ptr, len);
         }
 
-        public static string? PtrToStringAuto(IntPtr ptr)
+        public static string? PtrToStringAuto(nint ptr)
         {
             return PtrToStringUni(ptr);
         }
 
-        public static IntPtr StringToHGlobalAuto(string? s)
+        public static nint StringToHGlobalAuto(string? s)
         {
             return StringToHGlobalUni(s);
         }
 
-        public static IntPtr StringToCoTaskMemAuto(string? s)
+        public static nint StringToCoTaskMemAuto(string? s)
         {
             return StringToCoTaskMemUni(s);
         }
@@ -41,7 +41,7 @@ namespace System.Runtime.InteropServices
         // or an int.  If it's less than 64K, this is guaranteed to NOT be a
         // pointer since the bottom 64K bytes are reserved in a process' page table.
         // We should be careful about deallocating this stuff.
-        private static bool IsNullOrWin32Atom(IntPtr ptr)
+        private static bool IsNullOrWin32Atom(nint ptr)
         {
             const long HIWORDMASK = unchecked((long)0xffffffffffff0000L);
 
@@ -127,17 +127,17 @@ namespace System.Runtime.InteropServices
             bytes[byteLength] = 0;
         }
 
-        public static IntPtr AllocHGlobal(IntPtr cb)
+        public static nint AllocHGlobal(nint cb)
         {
-            IntPtr pNewMem = Interop.Kernel32.LocalAlloc(Interop.Kernel32.LMEM_FIXED, (nuint)(nint)cb);
-            if (pNewMem == IntPtr.Zero)
+            nint pNewMem = Interop.Kernel32.LocalAlloc(Interop.Kernel32.LMEM_FIXED, (nuint)(nint)cb);
+            if (pNewMem == 0)
             {
                 throw new OutOfMemoryException();
             }
             return pNewMem;
         }
 
-        public static void FreeHGlobal(IntPtr hglobal)
+        public static void FreeHGlobal(nint hglobal)
         {
             if (!IsNullOrWin32Atom(hglobal))
             {
@@ -145,34 +145,34 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        public static IntPtr ReAllocHGlobal(IntPtr pv, IntPtr cb)
+        public static nint ReAllocHGlobal(nint pv, nint cb)
         {
-            if (pv == IntPtr.Zero)
+            if (pv == 0)
             {
-                // LocalReAlloc fails for pv == IntPtr.Zero. Call AllocHGlobal instead for better fidelity
+                // LocalReAlloc fails for pv == 0. Call AllocHGlobal instead for better fidelity
                 // with standard C/C++ realloc behavior.
                 return AllocHGlobal(cb);
             }
 
-            IntPtr pNewMem = Interop.Kernel32.LocalReAlloc(pv, (nuint)(nint)cb, Interop.Kernel32.LMEM_MOVEABLE);
-            if (pNewMem == IntPtr.Zero)
+            nint pNewMem = Interop.Kernel32.LocalReAlloc(pv, (nuint)(nint)cb, Interop.Kernel32.LMEM_MOVEABLE);
+            if (pNewMem == 0)
             {
                 throw new OutOfMemoryException();
             }
             return pNewMem;
         }
 
-        public static IntPtr AllocCoTaskMem(int cb)
+        public static nint AllocCoTaskMem(int cb)
         {
-            IntPtr pNewMem = Interop.Ole32.CoTaskMemAlloc((uint)cb);
-            if (pNewMem == IntPtr.Zero)
+            nint pNewMem = Interop.Ole32.CoTaskMemAlloc((uint)cb);
+            if (pNewMem == 0)
             {
                 throw new OutOfMemoryException();
             }
             return pNewMem;
         }
 
-        public static void FreeCoTaskMem(IntPtr ptr)
+        public static void FreeCoTaskMem(nint ptr)
         {
             if (!IsNullOrWin32Atom(ptr))
             {
@@ -180,37 +180,37 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        public static IntPtr ReAllocCoTaskMem(IntPtr pv, int cb)
+        public static nint ReAllocCoTaskMem(nint pv, int cb)
         {
-            IntPtr pNewMem = Interop.Ole32.CoTaskMemRealloc(pv, (uint)cb);
-            if (pNewMem == IntPtr.Zero && cb != 0)
+            nint pNewMem = Interop.Ole32.CoTaskMemRealloc(pv, (uint)cb);
+            if (pNewMem == 0 && cb != 0)
             {
                 throw new OutOfMemoryException();
             }
             return pNewMem;
         }
 
-        internal static IntPtr AllocBSTR(int length)
+        internal static nint AllocBSTR(int length)
         {
-            IntPtr bstr = Interop.OleAut32.SysAllocStringLen(IntPtr.Zero, (uint)length);
-            if (bstr == IntPtr.Zero)
+            nint bstr = Interop.OleAut32.SysAllocStringLen(0, (uint)length);
+            if (bstr == 0)
             {
                 throw new OutOfMemoryException();
             }
             return bstr;
         }
 
-        internal static unsafe IntPtr AllocBSTRByteLen(uint length)
+        internal static unsafe nint AllocBSTRByteLen(uint length)
         {
-            IntPtr bstr = Interop.OleAut32.SysAllocStringByteLen(null, length);
-            if (bstr == IntPtr.Zero)
+            nint bstr = Interop.OleAut32.SysAllocStringByteLen(null, length);
+            if (bstr == 0)
             {
                 throw new OutOfMemoryException();
             }
             return bstr;
         }
 
-        public static void FreeBSTR(IntPtr ptr)
+        public static void FreeBSTR(nint ptr)
         {
             if (!IsNullOrWin32Atom(ptr))
             {
@@ -226,7 +226,7 @@ namespace System.Runtime.InteropServices
             if (hr < 0)
             {
                 if (throwOnError)
-                    throw Marshal.GetExceptionForHR(hr, new IntPtr(-1))!;
+                    throw Marshal.GetExceptionForHR(hr, -1)!;
                 return null;
             }
 

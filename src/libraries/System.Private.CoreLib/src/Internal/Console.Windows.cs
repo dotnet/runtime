@@ -21,7 +21,7 @@ namespace Internal
             }
         }
 
-        private static unsafe void WriteCore(IntPtr handle, string s)
+        private static unsafe void WriteCore(nint handle, string s)
         {
             int bufferSize = s.Length * 4;
             Span<byte> bytes = bufferSize < 1024 ? stackalloc byte[bufferSize] : new byte[bufferSize];
@@ -37,7 +37,7 @@ namespace Internal
 
             fixed (byte* pBytes = bytes)
             {
-                Interop.Kernel32.WriteFile(handle, pBytes, cbytes, out _, IntPtr.Zero);
+                Interop.Kernel32.WriteFile(handle, pBytes, cbytes, out _, 0);
             }
         }
     }

@@ -57,6 +57,6 @@ namespace System.Reflection
         }
 
         internal RuntimeType GetPointerType() => _ptrType;
-        internal IntPtr GetPointerValue() => (IntPtr)_ptr;
+        internal nint GetPointerValue() => (nint)_ptr;
     }
 }

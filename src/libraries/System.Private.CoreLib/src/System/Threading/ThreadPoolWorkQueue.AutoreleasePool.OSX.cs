@@ -11,7 +11,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static void DispatchItemWithAutoreleasePool(object workItem, Thread currentThread)
         {
-            IntPtr autoreleasePool = Interop.Sys.CreateAutoreleasePool();
+            nint autoreleasePool = Interop.Sys.CreateAutoreleasePool();
             try
             {
 #pragma warning disable CS0162 // Unreachable code detected. EnableWorkerTracking may be a constant in some runtimes.

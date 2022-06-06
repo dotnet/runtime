@@ -68,7 +68,7 @@ namespace System.Threading
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AppDomainTimer_Delete")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static partial bool DeleteAppDomainTimer(IntPtr handle);
+        private static partial bool DeleteAppDomainTimer(nint handle);
 
         #endregion
     }

@@ -24,7 +24,7 @@ namespace System.Reflection
         private object? _empty2;
         private object? _empty3;
 #pragma warning restore CA1823, 414, 169
-        private IntPtr m_handle;
+        private nint m_handle;
         private MethodAttributes m_methodAttributes;
         private BindingFlags m_bindingFlags;
         private Signature? m_signature;

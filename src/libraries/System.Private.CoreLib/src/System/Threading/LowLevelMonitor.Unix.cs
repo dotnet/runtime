@@ -7,12 +7,12 @@ namespace System.Threading
 {
     internal partial struct LowLevelMonitor
     {
-        private IntPtr _nativeMonitor;
+        private nint _nativeMonitor;
 
         public void Initialize()
         {
             _nativeMonitor = Interop.Sys.LowLevelMonitor_Create();
-            if (_nativeMonitor == IntPtr.Zero)
+            if (_nativeMonitor == 0)
             {
                 throw new OutOfMemoryException();
             }
@@ -20,13 +20,13 @@ namespace System.Threading
 
         private void DisposeCore()
         {
-            if (_nativeMonitor == IntPtr.Zero)
+            if (_nativeMonitor == 0)
             {
                 return;
             }
 
             Interop.Sys.LowLevelMonitor_Destroy(_nativeMonitor);
-            _nativeMonitor = IntPtr.Zero;
+            _nativeMonitor = 0;
         }
 
         private void AcquireCore()

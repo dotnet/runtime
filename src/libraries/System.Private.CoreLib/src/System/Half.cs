@@ -597,7 +597,7 @@ namespace System
         /// <returns><paramref name="value" /> converted to its nearest representable half-precision floating-point value.</returns>
         public static explicit operator Half(long value) => (Half)(float)value;
 
-        /// <summary>Explicitly converts a <see cref="System.IntPtr" /> value to its nearest representable half-precision floating-point value.</summary>
+        /// <summary>Explicitly converts a <see cref="nint" /> value to its nearest representable half-precision floating-point value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable half-precision floating-point value.</returns>
         public static explicit operator Half(nint value) => (Half)(float)value;
@@ -732,15 +732,15 @@ namespace System
         /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="Int128" />.</exception>
         public static explicit operator checked Int128(Half value) => checked((Int128)(double)(value));
 
-        /// <summary>Explicitly converts a half-precision floating-point value to its nearest representable <see cref="IntPtr" /> value.</summary>
+        /// <summary>Explicitly converts a half-precision floating-point value to its nearest representable <see cref="nint" /> value.</summary>
         /// <param name="value">The value to convert.</param>
-        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="IntPtr" /> value.</returns>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="nint" /> value.</returns>
         public static explicit operator nint(Half value) => (nint)(float)value;
 
-        /// <summary>Explicitly converts a half-precision floating-point value to its nearest representable <see cref="IntPtr" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <summary>Explicitly converts a half-precision floating-point value to its nearest representable <see cref="nint" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
         /// <param name="value">The value to convert.</param>
-        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="IntPtr" /> value.</returns>
-        /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="IntPtr" />.</exception>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="nint" /> value.</returns>
+        /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="nint" />.</exception>
         public static explicit operator checked nint(Half value) => checked((nint)(float)value);
 
         /// <summary>Explicitly converts a half-precision floating-point value to its nearest representable <see cref="sbyte" /> value.</summary>

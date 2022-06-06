@@ -42,10 +42,10 @@ namespace System.Runtime.InteropServices
                     // If we are running an x64 process on a non-x64 windows machine, we will report x64 as OS architecutre.
                     //
                     // IsWow64Process2 is only available on Windows 10+, so we will perform run-time introspection via indirect load
-                    if (NativeLibrary.TryGetExport(NativeLibrary.Load(Interop.Libraries.Kernel32), "IsWow64Process2", out IntPtr isWow64Process2Ptr))
+                    if (NativeLibrary.TryGetExport(NativeLibrary.Load(Interop.Libraries.Kernel32), "IsWow64Process2", out nint isWow64Process2Ptr))
                     {
                         ushort processMachine, nativeMachine;
-                        var isWow64Process2 = (delegate* unmanaged<IntPtr, ushort*, ushort*, int>)isWow64Process2Ptr;
+                        var isWow64Process2 = (delegate* unmanaged<nint, ushort*, ushort*, int>)isWow64Process2Ptr;
                         if (isWow64Process2(Interop.Kernel32.GetCurrentProcess(), &processMachine, &nativeMachine) != 0)
                         {
                             osArch = (int)MapMachineConstant(nativeMachine);

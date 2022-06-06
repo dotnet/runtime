@@ -55,9 +55,9 @@ namespace System
                 // send a WM_SETTINGCHANGE message to all windows
                 fixed (char* lParam = "Environment")
                 {
-                    IntPtr unused;
-                    IntPtr r = Interop.User32.SendMessageTimeout(new IntPtr(Interop.User32.HWND_BROADCAST), Interop.User32.WM_SETTINGCHANGE, IntPtr.Zero, (IntPtr)lParam, 0, 1000, &unused);
-                    Debug.Assert(r != IntPtr.Zero, $"SetEnvironmentVariable failed: {Marshal.GetLastPInvokeError()}");
+                    nint unused;
+                    nint r = Interop.User32.SendMessageTimeout((nint)Interop.User32.HWND_BROADCAST, Interop.User32.WM_SETTINGCHANGE, 0, (nint)lParam, 0, 1000, &unused);
+                    Debug.Assert(r != 0, $"SetEnvironmentVariable failed: {Marshal.GetLastPInvokeError()}");
                 }
             }
         }
@@ -370,7 +370,7 @@ namespace System
         {
             Guid folderId = new Guid(folderGuid);
 
-            int hr = Interop.Shell32.SHGetKnownFolderPath(folderId, (uint)option, IntPtr.Zero, out string path);
+            int hr = Interop.Shell32.SHGetKnownFolderPath(folderId, (uint)option, 0, out string path);
             if (hr != 0) // Not S_OK
             {
                 return string.Empty;

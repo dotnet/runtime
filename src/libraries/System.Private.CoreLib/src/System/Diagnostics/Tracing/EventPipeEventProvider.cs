@@ -6,7 +6,7 @@ namespace System.Diagnostics.Tracing
     internal sealed class EventPipeEventProvider : IEventProvider
     {
         // The EventPipeProvider handle.
-        private IntPtr m_provHandle = IntPtr.Zero;
+        private nint m_provHandle = 0;
 
         // Register an event provider.
         unsafe uint IEventProvider.EventRegister(
@@ -17,7 +17,7 @@ namespace System.Diagnostics.Tracing
         {
             uint returnStatus = 0;
             m_provHandle = EventPipeInternal.CreateProvider(eventSource.Name, enableCallback);
-            if (m_provHandle != IntPtr.Zero)
+            if (m_provHandle != 0)
             {
                 // Fixed registration handle because a new EventPipeEventProvider
                 // will be created for each new EventSource.
@@ -43,13 +43,13 @@ namespace System.Diagnostics.Tracing
         unsafe EventProvider.WriteEventErrorCode IEventProvider.EventWriteTransfer(
             long registrationHandle,
             in EventDescriptor eventDescriptor,
-            IntPtr eventHandle,
+            nint eventHandle,
             Guid* activityId,
             Guid* relatedActivityId,
             int userDataCount,
             EventProvider.EventData* userData)
         {
-            if (eventHandle != IntPtr.Zero)
+            if (eventHandle != 0)
             {
                 if (userDataCount == 0)
                 {
@@ -79,10 +79,10 @@ namespace System.Diagnostics.Tracing
         }
 
         // Define an EventPipeEvent handle.
-        unsafe IntPtr IEventProvider.DefineEventHandle(uint eventID, string eventName, long keywords, uint eventVersion, uint level,
+        unsafe nint IEventProvider.DefineEventHandle(uint eventID, string eventName, long keywords, uint eventVersion, uint level,
             byte *pMetadata, uint metadataLength)
         {
-            IntPtr eventHandlePtr = EventPipeInternal.DefineEvent(m_provHandle, eventID, keywords, eventVersion, level, pMetadata, metadataLength);
+            nint eventHandlePtr = EventPipeInternal.DefineEvent(m_provHandle, eventID, keywords, eventVersion, level, pMetadata, metadataLength);
             return eventHandlePtr;
         }
 

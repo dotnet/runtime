@@ -9,11 +9,11 @@ internal static partial class Interop
     internal static partial class HostPolicy
     {
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        internal delegate void corehost_resolve_component_dependencies_result_fn(IntPtr assemblyPaths,
-            IntPtr nativeSearchPaths, IntPtr resourceSearchPaths);
+        internal delegate void corehost_resolve_component_dependencies_result_fn(nint assemblyPaths,
+            nint nativeSearchPaths, nint resourceSearchPaths);
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        internal delegate void corehost_error_writer_fn(IntPtr message);
+        internal delegate void corehost_error_writer_fn(nint message);
 
 #pragma warning disable CS3016 // Arrays as attribute arguments is not CLS-compliant
 #if TARGET_WINDOWS
@@ -27,7 +27,7 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.HostPolicy)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
-        internal static partial IntPtr corehost_set_error_writer(IntPtr errorWriter);
+        internal static partial nint corehost_set_error_writer(nint errorWriter);
 #pragma warning restore CS3016 // Arrays as attribute arguments is not CLS-compliant
     }
 }

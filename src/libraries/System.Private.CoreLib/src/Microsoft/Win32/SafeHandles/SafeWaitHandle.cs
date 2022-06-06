@@ -19,7 +19,7 @@ namespace Microsoft.Win32.SafeHandles
         /// </summary>
         /// <param name="existingHandle">Handle to wrap</param>
         /// <param name="ownsHandle">Whether to control the handle lifetime</param>
-        public SafeWaitHandle(IntPtr existingHandle, bool ownsHandle) : base(ownsHandle)
+        public SafeWaitHandle(nint existingHandle, bool ownsHandle) : base(ownsHandle)
         {
             SetHandle(existingHandle);
         }

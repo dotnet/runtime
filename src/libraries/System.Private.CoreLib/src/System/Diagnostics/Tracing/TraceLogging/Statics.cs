@@ -32,13 +32,13 @@ namespace System.Diagnostics.Tracing
         public const byte OutTypeChainFlag = 128;
         public const EventTags EventTagsMask = (EventTags)0xfffffff;
 
-        public static readonly TraceLoggingDataType IntPtrType = IntPtr.Size == 8
+        public static readonly unsafe TraceLoggingDataType IntPtrType = sizeof(nint) == 8
             ? TraceLoggingDataType.Int64
             : TraceLoggingDataType.Int32;
         public static readonly unsafe TraceLoggingDataType UIntPtrType = sizeof(nuint) == 8
             ? TraceLoggingDataType.UInt64
             : TraceLoggingDataType.UInt32;
-        public static readonly TraceLoggingDataType HexIntPtrType = IntPtr.Size == 8
+        public static readonly unsafe TraceLoggingDataType HexIntPtrType = sizeof(nint) == 8
             ? TraceLoggingDataType.HexInt64
             : TraceLoggingDataType.HexInt32;
 
@@ -470,9 +470,9 @@ namespace System.Diagnostics.Tracing
                 {
                     result = ScalarArrayTypeInfo.Single();
                 }
-                else if (elementType == typeof(IntPtr))
+                else if (elementType == typeof(nint))
                 {
-                    result = ScalarArrayTypeInfo.IntPtr();
+                    result = ScalarArrayTypeInfo.nint();
                 }
                 else if (elementType == typeof(nuint))
                 {
@@ -552,9 +552,9 @@ namespace System.Diagnostics.Tracing
                 {
                     result = DecimalTypeInfo.Instance();
                 }
-                else if (dataType == typeof(IntPtr))
+                else if (dataType == typeof(nint))
                 {
-                    result = ScalarTypeInfo.IntPtr();
+                    result = ScalarTypeInfo.nint();
                 }
                 else if (dataType == typeof(nuint))
                 {

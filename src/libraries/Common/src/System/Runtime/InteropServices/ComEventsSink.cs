@@ -128,7 +128,7 @@ namespace System.Runtime.InteropServices
                 // contains another VARIANT with VT_BYREF | VT_VARIANT, then we need to extract the
                 // inner VARIANT and use it instead of the outer one. Note that if the inner VARIANT
                 // is VT_BYREF | VT_VARIANT | VT_ARRAY, it will pass the below test too.
-                Span<Variant> pByRefVariant = new Span<Variant>(pSrc.AsByRefVariant.ToPointer(), 1);
+                Span<Variant> pByRefVariant = new Span<Variant>((void*)pSrc.AsByRefVariant, 1);
                 if ((pByRefVariant[0].VariantType & VT_BYREF_TYPEMASK) == VT_BYREF_VARIANT)
                 {
                     return ref pByRefVariant[0];
@@ -144,9 +144,9 @@ namespace System.Runtime.InteropServices
             int lcid,
             InvokeFlags wFlags,
             ref ComTypes.DISPPARAMS pDispParams,
-            IntPtr pVarResult,
-            IntPtr pExcepInfo,
-            IntPtr puArgErr)
+            nint pVarResult,
+            nint pExcepInfo,
+            nint puArgErr)
         {
             ComEventsMethod? method = FindMethod(dispid);
             if (method == null)
@@ -163,8 +163,8 @@ namespace System.Runtime.InteropServices
             bool[] usedArgs = new bool[pDispParams.cArgs];
 
             int totalCount = pDispParams.cNamedArgs + pDispParams.cArgs;
-            var vars = new Span<Variant>(pDispParams.rgvarg.ToPointer(), totalCount);
-            var namedArgs = new Span<int>(pDispParams.rgdispidNamedArgs.ToPointer(), totalCount);
+            var vars = new Span<Variant>((void*)pDispParams.rgvarg, totalCount);
+            var namedArgs = new Span<int>((void*)pDispParams.rgdispidNamedArgs, totalCount);
 
             // copy the named args (positional) as specified
             int i;
@@ -213,7 +213,7 @@ namespace System.Runtime.InteropServices
             object? result = method.Invoke(args);
 
             // convert result to VARIANT
-            if (pVarResult != IntPtr.Zero)
+            if (pVarResult != 0)
             {
                 Marshal.GetNativeVariantForObject(result, pVarResult);
             }
@@ -232,9 +232,9 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        CustomQueryInterfaceResult ICustomQueryInterface.GetInterface(ref Guid iid, out IntPtr ppv)
+        CustomQueryInterfaceResult ICustomQueryInterface.GetInterface(ref Guid iid, out nint ppv)
         {
-            ppv = IntPtr.Zero;
+            ppv = 0;
             if (iid == _iidSourceItf || iid == typeof(IDispatch).GUID)
             {
                 ppv = Marshal.GetComInterfaceForObject(this, typeof(IDispatch), CustomQueryInterfaceMode.Ignore);

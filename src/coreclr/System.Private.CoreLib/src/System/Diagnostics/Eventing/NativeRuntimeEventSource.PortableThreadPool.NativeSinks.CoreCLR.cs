@@ -50,16 +50,16 @@ namespace System.Diagnostics.Tracing
         [NonEvent]
         [LibraryImport(RuntimeHelpers.QCall)]
         internal static partial void LogThreadPoolIOEnqueue(
-            IntPtr NativeOverlapped,
-            IntPtr Overlapped,
+            nint NativeOverlapped,
+            nint Overlapped,
             [MarshalAs(UnmanagedType.Bool)] bool MultiDequeues,
             ushort ClrInstanceID);
 
         [NonEvent]
         [LibraryImport(RuntimeHelpers.QCall)]
         internal static partial void LogThreadPoolIODequeue(
-            IntPtr NativeOverlapped,
-            IntPtr Overlapped,
+            nint NativeOverlapped,
+            nint Overlapped,
             ushort ClrInstanceID);
 
         [NonEvent]
@@ -72,8 +72,8 @@ namespace System.Diagnostics.Tracing
         [NonEvent]
         [LibraryImport(RuntimeHelpers.QCall)]
         internal static partial void LogThreadPoolIOPack(
-            IntPtr NativeOverlapped,
-            IntPtr Overlapped,
+            nint NativeOverlapped,
+            nint Overlapped,
             ushort ClrInstanceID);
     }
 }

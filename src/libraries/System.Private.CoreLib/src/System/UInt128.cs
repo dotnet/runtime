@@ -375,14 +375,14 @@ namespace System
             return new Int128(value._upper, value._lower);
         }
 
-        /// <summary>Explicitly converts a 128-bit unsigned integer to a <see cref="IntPtr" /> value.</summary>
+        /// <summary>Explicitly converts a 128-bit unsigned integer to a <see cref="nint" /> value.</summary>
         /// <param name="value">The value to convert.</param>
-        /// <returns><paramref name="value" /> converted to a <see cref="IntPtr" />.</returns>
+        /// <returns><paramref name="value" /> converted to a <see cref="nint" />.</returns>
         public static explicit operator nint(UInt128 value) => (nint)value._lower;
 
-        /// <summary>Explicitly converts a 128-bit unsigned integer to a <see cref="IntPtr" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <summary>Explicitly converts a 128-bit unsigned integer to a <see cref="nint" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
         /// <param name="value">The value to convert.</param>
-        /// <returns><paramref name="value" /> converted to a <see cref="IntPtr" />.</returns>
+        /// <returns><paramref name="value" /> converted to a <see cref="nint" />.</returns>
         /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="UInt128" />.</exception>
         public static explicit operator checked nint(UInt128 value)
         {
@@ -653,7 +653,7 @@ namespace System
             return new UInt128(0, (ulong)value);
         }
 
-        /// <summary>Explicitly converts a <see cref="IntPtr" /> value to a 128-bit unsigned integer.</summary>
+        /// <summary>Explicitly converts a <see cref="nint" /> value to a 128-bit unsigned integer.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to a 128-bit unsigned integer.</returns>
         public static explicit operator UInt128(nint value)
@@ -662,7 +662,7 @@ namespace System
             return new UInt128((ulong)(lower >> 63), (ulong)lower);
         }
 
-        /// <summary>Explicitly converts a <see cref="IntPtr" /> value to a 128-bit unsigned integer, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <summary>Explicitly converts a <see cref="nint" /> value to a 128-bit unsigned integer, throwing an overflow exception for any values that fall outside the representable range.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to a 128-bit unsigned integer.</returns>
         /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="UInt128" />.</exception>

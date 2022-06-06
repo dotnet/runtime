@@ -99,25 +99,25 @@ namespace System.Threading
         [NonVersionable]
         public static void Write(ref long location, long value) =>
 #if TARGET_64BIT
-            Unsafe.As<long, VolatileIntPtr>(ref location).Value = (IntPtr)value;
+            Unsafe.As<long, VolatileIntPtr>(ref location).Value = (nint)value;
 #else
             // On 32-bit, we use Interlocked, since an ordinary volatile write would not be atomic.
             Interlocked.Exchange(ref location, value);
 #endif
         #endregion
 
-        #region IntPtr
-        private struct VolatileIntPtr { public volatile IntPtr Value; }
+        #region nint
+        private struct VolatileIntPtr { public volatile nint Value; }
 
         [Intrinsic]
         [NonVersionable]
-        public static IntPtr Read(ref IntPtr location) =>
-            Unsafe.As<IntPtr, VolatileIntPtr>(ref location).Value;
+        public static nint Read(ref nint location) =>
+            Unsafe.As<nint, VolatileIntPtr>(ref location).Value;
 
         [Intrinsic]
         [NonVersionable]
-        public static void Write(ref IntPtr location, IntPtr value) =>
-            Unsafe.As<IntPtr, VolatileIntPtr>(ref location).Value = value;
+        public static void Write(ref nint location, nint value) =>
+            Unsafe.As<nint, VolatileIntPtr>(ref location).Value = value;
         #endregion
 
         #region SByte

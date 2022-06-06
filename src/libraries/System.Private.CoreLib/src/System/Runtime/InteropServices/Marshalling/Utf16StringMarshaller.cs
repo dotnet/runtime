@@ -51,7 +51,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <remarks>
         /// <seealso cref="CustomTypeMarshallerDirection.Out"/>
         /// </remarks>
-        public string? ToManaged() => Marshal.PtrToStringUni((IntPtr)_nativeValue);
+        public string? ToManaged() => Marshal.PtrToStringUni((nint)_nativeValue);
 
         /// <summary>
         /// Frees native resources.
@@ -61,7 +61,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// </remarks>
         public void FreeNative()
         {
-            Marshal.FreeCoTaskMem((IntPtr)_nativeValue);
+            Marshal.FreeCoTaskMem((nint)_nativeValue);
         }
     }
 }

@@ -23,16 +23,16 @@ namespace System.Runtime.InteropServices
             [Out] int[] rgDispId);
 
         // The last 3 parameters of Invoke() are optional and must be defined
-        // as IntPtr in C#, since there is no language feature for optional ref/out.
+        // as nint in C#, since there is no language feature for optional ref/out.
         void Invoke(
             int dispIdMember,
             ref Guid riid,
             int lcid,
             InvokeFlags wFlags,
             ref ComTypes.DISPPARAMS pDispParams,
-            /* out/optional */ IntPtr pVarResult,
-            /* out/optional */ IntPtr pExcepInfo,
-            /* out/optional */ IntPtr puArgErr);
+            /* out/optional */ nint pVarResult,
+            /* out/optional */ nint pExcepInfo,
+            /* out/optional */ nint puArgErr);
     }
 
     [Flags]

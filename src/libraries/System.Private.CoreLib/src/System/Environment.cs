@@ -154,7 +154,7 @@ namespace System
             }
         }
 
-        public static bool Is64BitProcess => IntPtr.Size == 8;
+        public static unsafe bool Is64BitProcess => sizeof(nint) == 8;
 
         public static bool Is64BitOperatingSystem => Is64BitProcess || Is64BitOperatingSystemWhen32BitProcess;
 

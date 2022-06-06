@@ -16,18 +16,18 @@ namespace System.Runtime.InteropServices.ComTypes
         new void GetTypeInfo(int index, out ITypeInfo ppTI);
         new void GetTypeInfoType(int index, out TYPEKIND pTKind);
         new void GetTypeInfoOfGuid(ref Guid guid, out ITypeInfo ppTInfo);
-        new void GetLibAttr(out IntPtr ppTLibAttr);
+        new void GetLibAttr(out nint ppTLibAttr);
         new void GetTypeComp(out ITypeComp ppTComp);
         new void GetDocumentation(int index, out string strName, out string strDocString, out int dwHelpContext, out string strHelpFile);
         [return: MarshalAs(UnmanagedType.Bool)]
         new bool IsName([MarshalAs(UnmanagedType.LPWStr)] string szNameBuf, int lHashVal);
         new void FindName([MarshalAs(UnmanagedType.LPWStr)] string szNameBuf, int lHashVal, [MarshalAs(UnmanagedType.LPArray), Out] ITypeInfo[] ppTInfo, [MarshalAs(UnmanagedType.LPArray), Out] int[] rgMemId, ref short pcFound);
         [PreserveSig]
-        new void ReleaseTLibAttr(IntPtr pTLibAttr);
+        new void ReleaseTLibAttr(nint pTLibAttr);
         void GetCustData(ref Guid guid, out object pVarVal);
         [LCIDConversion(1)]
         void GetDocumentation2(int index, out string pbstrHelpString, out int pdwHelpStringContext, out string pbstrHelpStringDll);
-        void GetLibStatistics(IntPtr pcUniqueNames, out int pcchUniqueNames);
-        void GetAllCustData(IntPtr pCustData);
+        void GetLibStatistics(nint pcUniqueNames, out int pcchUniqueNames);
+        void GetAllCustData(nint pCustData);
     }
 }

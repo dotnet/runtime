@@ -16,7 +16,7 @@ namespace System.Reflection
     internal sealed partial class RuntimeMethodInfo : MethodInfo, IRuntimeMethodInfo
     {
         #region Private Data Members
-        private IntPtr m_handle;
+        private nint m_handle;
         private RuntimeTypeCache m_reflectedTypeCache;
         private string? m_name;
         private string? m_toString;
@@ -354,7 +354,7 @@ namespace System.Reflection
                 Span<ParameterCopyBackAction> shouldCopyBackParameters = new(ref argStorage._copyBack0, 1);
 
                 StackAllocatedByRefs byrefStorage = default;
-                IntPtr* pByRefStorage = (IntPtr*)&byrefStorage;
+                nint* pByRefStorage = (nint*)&byrefStorage;
 
                 CheckArguments(
                     copyOfParameters,

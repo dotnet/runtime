@@ -209,22 +209,22 @@ namespace System.Threading.Tasks
                 {
                     EventData* eventPayload = stackalloc EventData[6];
                     eventPayload[0].Size = sizeof(int);
-                    eventPayload[0].DataPointer = ((IntPtr)(&OriginatingTaskSchedulerID));
+                    eventPayload[0].DataPointer = ((nint)(&OriginatingTaskSchedulerID));
                     eventPayload[0].Reserved = 0;
                     eventPayload[1].Size = sizeof(int);
-                    eventPayload[1].DataPointer = ((IntPtr)(&OriginatingTaskID));
+                    eventPayload[1].DataPointer = ((nint)(&OriginatingTaskID));
                     eventPayload[1].Reserved = 0;
                     eventPayload[2].Size = sizeof(int);
-                    eventPayload[2].DataPointer = ((IntPtr)(&TaskID));
+                    eventPayload[2].DataPointer = ((nint)(&TaskID));
                     eventPayload[2].Reserved = 0;
                     eventPayload[3].Size = sizeof(int);
-                    eventPayload[3].DataPointer = ((IntPtr)(&CreatingTaskID));
+                    eventPayload[3].DataPointer = ((nint)(&CreatingTaskID));
                     eventPayload[3].Reserved = 0;
                     eventPayload[4].Size = sizeof(int);
-                    eventPayload[4].DataPointer = ((IntPtr)(&TaskCreationOptions));
+                    eventPayload[4].DataPointer = ((nint)(&TaskCreationOptions));
                     eventPayload[4].Reserved = 0;
                     eventPayload[5].Size = sizeof(int);
-                    eventPayload[5].DataPointer = ((IntPtr)(&appDomain));
+                    eventPayload[5].DataPointer = ((nint)(&appDomain));
                     eventPayload[5].Reserved = 0;
                     if (TasksSetActivityIds)
                     {
@@ -281,16 +281,16 @@ namespace System.Threading.Tasks
                     EventData* eventPayload = stackalloc EventData[4];
                     int isExceptionalInt = IsExceptional ? 1 : 0;
                     eventPayload[0].Size = sizeof(int);
-                    eventPayload[0].DataPointer = ((IntPtr)(&OriginatingTaskSchedulerID));
+                    eventPayload[0].DataPointer = ((nint)(&OriginatingTaskSchedulerID));
                     eventPayload[0].Reserved = 0;
                     eventPayload[1].Size = sizeof(int);
-                    eventPayload[1].DataPointer = ((IntPtr)(&OriginatingTaskID));
+                    eventPayload[1].DataPointer = ((nint)(&OriginatingTaskID));
                     eventPayload[1].Reserved = 0;
                     eventPayload[2].Size = sizeof(int);
-                    eventPayload[2].DataPointer = ((IntPtr)(&TaskID));
+                    eventPayload[2].DataPointer = ((nint)(&TaskID));
                     eventPayload[2].Reserved = 0;
                     eventPayload[3].Size = sizeof(int);
-                    eventPayload[3].DataPointer = ((IntPtr)(&isExceptionalInt));
+                    eventPayload[3].DataPointer = ((nint)(&isExceptionalInt));
                     eventPayload[3].Reserved = 0;
                     WriteEventCore(TASKCOMPLETED_ID, 4, eventPayload);
                 }
@@ -326,19 +326,19 @@ namespace System.Threading.Tasks
                 {
                     EventData* eventPayload = stackalloc EventData[5];
                     eventPayload[0].Size = sizeof(int);
-                    eventPayload[0].DataPointer = ((IntPtr)(&OriginatingTaskSchedulerID));
+                    eventPayload[0].DataPointer = ((nint)(&OriginatingTaskSchedulerID));
                     eventPayload[0].Reserved = 0;
                     eventPayload[1].Size = sizeof(int);
-                    eventPayload[1].DataPointer = ((IntPtr)(&OriginatingTaskID));
+                    eventPayload[1].DataPointer = ((nint)(&OriginatingTaskID));
                     eventPayload[1].Reserved = 0;
                     eventPayload[2].Size = sizeof(int);
-                    eventPayload[2].DataPointer = ((IntPtr)(&TaskID));
+                    eventPayload[2].DataPointer = ((nint)(&TaskID));
                     eventPayload[2].Reserved = 0;
                     eventPayload[3].Size = sizeof(int);
-                    eventPayload[3].DataPointer = ((IntPtr)(&Behavior));
+                    eventPayload[3].DataPointer = ((nint)(&Behavior));
                     eventPayload[3].Reserved = 0;
                     eventPayload[4].Size = sizeof(int);
-                    eventPayload[4].DataPointer = ((IntPtr)(&ContinueWithTaskID));
+                    eventPayload[4].DataPointer = ((nint)(&ContinueWithTaskID));
                     eventPayload[4].Reserved = 0;
                     if (TasksSetActivityIds)
                     {
@@ -419,13 +419,13 @@ namespace System.Threading.Tasks
                 {
                     EventData* eventPayload = stackalloc EventData[3];
                     eventPayload[0].Size = sizeof(int);
-                    eventPayload[0].DataPointer = ((IntPtr)(&OriginatingTaskSchedulerID));
+                    eventPayload[0].DataPointer = ((nint)(&OriginatingTaskSchedulerID));
                     eventPayload[0].Reserved = 0;
                     eventPayload[1].Size = sizeof(int);
-                    eventPayload[1].DataPointer = ((IntPtr)(&OriginatingTaskID));
+                    eventPayload[1].DataPointer = ((nint)(&OriginatingTaskID));
                     eventPayload[1].Reserved = 0;
                     eventPayload[2].Size = sizeof(int);
-                    eventPayload[2].DataPointer = ((IntPtr)(&ContinueWithTaskId));
+                    eventPayload[2].DataPointer = ((nint)(&ContinueWithTaskId));
                     eventPayload[2].Reserved = 0;
                     if (TasksSetActivityIds)
                     {
@@ -454,15 +454,15 @@ namespace System.Threading.Tasks
                     {
                         EventData* eventPayload = stackalloc EventData[3];
                         eventPayload[0].Size = sizeof(int);
-                        eventPayload[0].DataPointer = ((IntPtr)(&TaskID));
+                        eventPayload[0].DataPointer = ((nint)(&TaskID));
                         eventPayload[0].Reserved = 0;
 
                         eventPayload[1].Size = ((OperationName.Length + 1) * 2);
-                        eventPayload[1].DataPointer = ((IntPtr)operationNamePtr);
+                        eventPayload[1].DataPointer = ((nint)operationNamePtr);
                         eventPayload[1].Reserved = 0;
 
                         eventPayload[2].Size = sizeof(long);
-                        eventPayload[2].DataPointer = ((IntPtr)(&RelatedContext));
+                        eventPayload[2].DataPointer = ((nint)(&RelatedContext));
                         eventPayload[2].Reserved = 0;
                         WriteEventCore(TRACEOPERATIONSTART_ID, 3, eventPayload);
                     }
@@ -508,7 +508,7 @@ namespace System.Threading.Tasks
                 {
                     EventData* eventPayload = stackalloc EventData[1];
                     eventPayload[0].Size = sizeof(int);
-                    eventPayload[0].DataPointer = ((IntPtr)(&Work));
+                    eventPayload[0].DataPointer = ((nint)(&Work));
                     eventPayload[0].Reserved = 0;
 
                     WriteEventCore(TRACESYNCHRONOUSWORKSTOP_ID, 1, eventPayload);

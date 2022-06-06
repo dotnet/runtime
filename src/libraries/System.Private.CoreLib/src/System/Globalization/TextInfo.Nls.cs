@@ -22,7 +22,7 @@ namespace System.Globalization
             // right for Invariant.
             uint linguisticCasing = IsInvariantLocale(_textInfoName) ? 0 : LCMAP_LINGUISTIC_CASING;
 
-            int ret = Interop.Kernel32.LCMapStringEx(_sortHandle != IntPtr.Zero ? null : _textInfoName,
+            int ret = Interop.Kernel32.LCMapStringEx(_sortHandle != 0 ? null : _textInfoName,
                                                      linguisticCasing | (toUpper ? LCMAP_UPPERCASE : LCMAP_LOWERCASE),
                                                      pSource,
                                                      pSourceLen,
@@ -41,7 +41,7 @@ namespace System.Globalization
 
         // PAL Ends here
 
-        private IntPtr _sortHandle;
+        private nint _sortHandle;
 
         private const uint LCMAP_LINGUISTIC_CASING = 0x01000000;
         private const uint LCMAP_LOWERCASE = 0x00000100;

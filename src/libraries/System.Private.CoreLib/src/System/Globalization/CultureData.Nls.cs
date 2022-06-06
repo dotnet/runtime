@@ -123,7 +123,7 @@ namespace System.Globalization
 
             unsafe
             {
-                Interop.Kernel32.EnumSystemLocalesEx(&EnumSystemLocalesProc, Interop.Kernel32.LOCALE_SPECIFICDATA | Interop.Kernel32.LOCALE_SUPPLEMENTAL, Unsafe.AsPointer(ref context), IntPtr.Zero);
+                Interop.Kernel32.EnumSystemLocalesEx(&EnumSystemLocalesProc, Interop.Kernel32.LOCALE_SPECIFICDATA | Interop.Kernel32.LOCALE_SUPPLEMENTAL, Unsafe.AsPointer(ref context), 0);
             }
 
             if (context.cultureName != null)
@@ -496,7 +496,7 @@ namespace System.Globalization
 
             unsafe
             {
-                Interop.Kernel32.EnumSystemLocalesEx(&EnumAllSystemLocalesProc, flags, Unsafe.AsPointer(ref context), IntPtr.Zero);
+                Interop.Kernel32.EnumSystemLocalesEx(&EnumAllSystemLocalesProc, flags, Unsafe.AsPointer(ref context), 0);
             }
 
             CultureInfo[] cultures = new CultureInfo[context.strings.Count];
@@ -524,7 +524,7 @@ namespace System.Globalization
 
                 unsafe
                 {
-                    Interop.Kernel32.EnumSystemLocalesEx(&EnumAllSystemLocalesProc, Interop.Kernel32.LOCALE_REPLACEMENT, Unsafe.AsPointer(ref context), IntPtr.Zero);
+                    Interop.Kernel32.EnumSystemLocalesEx(&EnumAllSystemLocalesProc, Interop.Kernel32.LOCALE_REPLACEMENT, Unsafe.AsPointer(ref context), 0);
                 }
 
                 for (int i = 0; i < context.strings.Count; i++)

@@ -20,28 +20,28 @@ namespace System.IO
 
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("This constructor has been deprecated. Use FileStream(SafeFileHandle handle, FileAccess access) instead.")]
-        public FileStream(IntPtr handle, FileAccess access)
+        public FileStream(nint handle, FileAccess access)
             : this(handle, access, true, DefaultBufferSize, DefaultIsAsync)
         {
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("This constructor has been deprecated. Use FileStream(SafeFileHandle handle, FileAccess access) and optionally make a new SafeFileHandle with ownsHandle=false if needed instead.")]
-        public FileStream(IntPtr handle, FileAccess access, bool ownsHandle)
+        public FileStream(nint handle, FileAccess access, bool ownsHandle)
             : this(handle, access, ownsHandle, DefaultBufferSize, DefaultIsAsync)
         {
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("This constructor has been deprecated. Use FileStream(SafeFileHandle handle, FileAccess access, int bufferSize) and optionally make a new SafeFileHandle with ownsHandle=false if needed instead.")]
-        public FileStream(IntPtr handle, FileAccess access, bool ownsHandle, int bufferSize)
+        public FileStream(nint handle, FileAccess access, bool ownsHandle, int bufferSize)
             : this(handle, access, ownsHandle, bufferSize, DefaultIsAsync)
         {
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("This constructor has been deprecated. Use FileStream(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync) and optionally make a new SafeFileHandle with ownsHandle=false if needed instead.")]
-        public FileStream(IntPtr handle, FileAccess access, bool ownsHandle, int bufferSize, bool isAsync)
+        public FileStream(nint handle, FileAccess access, bool ownsHandle, int bufferSize, bool isAsync)
         {
             SafeFileHandle safeHandle = new SafeFileHandle(handle, ownsHandle: ownsHandle);
             try
@@ -214,7 +214,7 @@ namespace System.IO
         }
 
         [Obsolete("FileStream.Handle has been deprecated. Use FileStream's SafeFileHandle property instead.")]
-        public virtual IntPtr Handle => _strategy.Handle;
+        public virtual nint Handle => _strategy.Handle;
 
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("macos")]
