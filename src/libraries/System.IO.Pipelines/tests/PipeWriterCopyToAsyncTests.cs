@@ -40,7 +40,7 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public async Task CopyToAsyncWorks()
         {
-            var helloBytes = "Hello World"u8.ToArray();
+            byte[] helloBytes = "Hello World"u8.ToArray();
 
             var pipe = new Pipe();
             var stream = new MemoryStream(helloBytes);
@@ -79,7 +79,7 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public async Task StreamCopyToAsyncWorks()
         {
-            var helloBytes = "Hello World"u8.ToArray();
+            byte[] helloBytes = "Hello World"u8.ToArray();
 
             var pipe = new Pipe();
             var stream = new MemoryStream(helloBytes);
@@ -96,7 +96,7 @@ namespace System.IO.Pipelines.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task CancelingViaCancelPendingFlushThrows()
         {
-            var helloBytes = "Hello World"u8.ToArray();
+            byte[] helloBytes = "Hello World"u8.ToArray();
 
             var pipe = new Pipe(new PipeOptions(pauseWriterThreshold: helloBytes.Length - 1, resumeWriterThreshold: 0));
             var stream = new MemoryStream(helloBytes);
@@ -115,7 +115,7 @@ namespace System.IO.Pipelines.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task CancelingViaCancellationTokenThrows()
         {
-            var helloBytes = "Hello World"u8.ToArray();
+            byte[] helloBytes = "Hello World"u8.ToArray();
 
             var pipe = new Pipe(new PipeOptions(pauseWriterThreshold: helloBytes.Length - 1, resumeWriterThreshold: 0));
             var stream = new MemoryStream(helloBytes);

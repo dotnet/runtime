@@ -442,19 +442,19 @@ namespace System.Net.Http.Functional.Tests
             var mc = new MultipartContent("subtype", "fooBoundary");
 
             var stringContent = new StringContent("bar1");
-            stringContent.Headers.Add("latin1", "\uD83D\uDE00");
+            stringContent.Headers.Add("latin1", "\U0001F600");
             mc.Add(stringContent);
 
             var byteArrayContent = new ByteArrayContent("bar2"u8.ToArray());
-            byteArrayContent.Headers.Add("utf8", "\uD83D\uDE00");
+            byteArrayContent.Headers.Add("utf8", "\U0001F600");
             mc.Add(byteArrayContent);
 
             byteArrayContent = new ByteArrayContent("bar3"u8.ToArray());
-            byteArrayContent.Headers.Add("ascii", "\uD83D\uDE00");
+            byteArrayContent.Headers.Add("ascii", "\U0001F600");
             mc.Add(byteArrayContent);
 
             byteArrayContent = new ByteArrayContent("bar4"u8.ToArray());
-            byteArrayContent.Headers.Add("default", "\uD83D\uDE00");
+            byteArrayContent.Headers.Add("default", "\U0001F600");
             mc.Add(byteArrayContent);
 
             mc.HeaderEncodingSelector = (name, _) => name switch
@@ -479,22 +479,22 @@ namespace System.Net.Http.Functional.Tests
                 "--fooBoundary\r\n"u8.ToArray(),
                 "Content-Type: text/plain; charset=utf-8\r\n"u8.ToArray(),
                 "latin1: "u8.ToArray(),
-                Encoding.Latin1.GetBytes("\uD83D\uDE00"),
+                Encoding.Latin1.GetBytes("\U0001F600"),
                 "\r\n\r\n"u8.ToArray(),
                 "bar1"u8.ToArray(),
                 "\r\n--fooBoundary\r\n"u8.ToArray(),
                 "utf8: "u8.ToArray(),
-                "\uD83D\uDE00"u8.ToArray(),
+                "\U0001F600"u8.ToArray(),
                 "\r\n\r\n"u8.ToArray(),
                 "bar2"u8.ToArray(),
                 "\r\n--fooBoundary\r\n"u8.ToArray(),
                 "ascii: "u8.ToArray(),
-                Encoding.ASCII.GetBytes("\uD83D\uDE00"),
+                Encoding.ASCII.GetBytes("\U0001F600"),
                 "\r\n\r\n"u8.ToArray(),
                 "bar3"u8.ToArray(),
                 "\r\n--fooBoundary\r\n"u8.ToArray(),
                 "default: "u8.ToArray(),
-                Encoding.Latin1.GetBytes("\uD83D\uDE00"),
+                Encoding.Latin1.GetBytes("\U0001F600"),
                 "\r\n\r\n"u8.ToArray(),
                 "bar4"u8.ToArray(),
                 "\r\n--fooBoundary--\r\n"u8.ToArray());

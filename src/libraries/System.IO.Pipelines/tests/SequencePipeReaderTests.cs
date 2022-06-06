@@ -86,7 +86,7 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public async Task DataCanBeReadMultipleTimes()
         {
-            var helloBytes = "Hello World"u8.ToArray();
+            byte[] helloBytes = "Hello World"u8.ToArray();
             var sequence = new ReadOnlySequence<byte>(helloBytes);
             PipeReader reader = PipeReader.Create(sequence);
 

@@ -445,7 +445,7 @@ namespace System.Tests
         [Fact]
         public async Task CanRead()
         {
-            var buffer = "some data"u8.ToArray();
+            byte[] buffer = "some data"u8.ToArray();
             var stream = new BinaryData(buffer).ToStream();
 
             var read = new byte[buffer.Length];
@@ -465,7 +465,7 @@ namespace System.Tests
         [Fact]
         public async Task CanReadPartial()
         {
-            var buffer = "some data"u8.ToArray();
+            byte[] buffer = "some data"u8.ToArray();
             var stream = new BinaryData(buffer).ToStream();
             var length = 4;
             var read = new byte[length];
@@ -486,7 +486,7 @@ namespace System.Tests
         [Fact]
         public void ReadAsyncRespectsCancellation()
         {
-            var buffer = "some data"u8.ToArray();
+            byte[] buffer = "some data"u8.ToArray();
             var stream = new BinaryData(buffer).ToStream();
 
             var read = new byte[buffer.Length];
@@ -505,7 +505,7 @@ namespace System.Tests
         [Fact]
         public async Task CanSeek()
         {
-            var buffer = "some data"u8.ToArray();
+            byte[] buffer = "some data"u8.ToArray();
             var stream = new BinaryData(buffer).ToStream();
 
             stream.Seek(5, SeekOrigin.Begin);
@@ -526,7 +526,7 @@ namespace System.Tests
         [Fact]
         public void ValidatesSeekArguments()
         {
-            var buffer = "some data"u8.ToArray();
+            byte[] buffer = "some data"u8.ToArray();
             var stream = new BinaryData(buffer).ToStream();
 
             Assert.Throws<IOException>(() => stream.Seek(-1, SeekOrigin.Begin));
@@ -539,7 +539,7 @@ namespace System.Tests
         [Fact]
         public async Task ValidatesReadArguments()
         {
-            var buffer = "some data"u8.ToArray();
+            byte[] buffer = "some data"u8.ToArray();
             var stream = new BinaryData(buffer).ToStream();
             stream.Seek(3, SeekOrigin.Begin);
             var read = new byte[buffer.Length - stream.Position];
@@ -556,7 +556,7 @@ namespace System.Tests
         [Fact]
         public void ValidatesPositionValue()
         {
-            var buffer = "some data"u8.ToArray();
+            byte[] buffer = "some data"u8.ToArray();
             var stream = new BinaryData(buffer).ToStream();
             Assert.Throws<ArgumentOutOfRangeException>(() => stream.Position = -1);
             Assert.Throws<ArgumentOutOfRangeException>(() => stream.Position = (long)int.MaxValue + 1);

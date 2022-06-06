@@ -290,7 +290,7 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public async Task CopyToAsyncStreamCopiesRemainderAfterReadingSome()
         {
-            var buffer = "Hello World"u8.ToArray();
+            byte[] buffer = "Hello World"u8.ToArray();
             await Pipe.Writer.WriteAsync(buffer);
             Pipe.Writer.Complete();
 
@@ -308,7 +308,7 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public async Task CopyToAsyncPipeWriterCopiesRemainderAfterReadingSome()
         {
-            var buffer = "Hello World"u8.ToArray();
+            byte[] buffer = "Hello World"u8.ToArray();
             await Pipe.Writer.WriteAsync(buffer);
             Pipe.Writer.Complete();
 

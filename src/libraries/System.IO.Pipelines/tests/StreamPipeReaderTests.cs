@@ -168,7 +168,7 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public async Task BufferingDataPastEndOfStreamCanBeReadAgain()
         {
-            var helloBytes = "Hello World"u8.ToArray();
+            byte[] helloBytes = "Hello World"u8.ToArray();
             var stream = new ThrowAfterZeroByteReadStream(helloBytes);
             PipeReader reader = PipeReader.Create(stream);
 
