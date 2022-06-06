@@ -1037,11 +1037,9 @@ EXTERN_C NOINLINE void FASTCALL RhpWaitForGC2(PInvokeTransitionFrame * pFrame)
 EXTERN_C NOINLINE void FASTCALL RhpGcPoll2(PInvokeTransitionFrame* pFrame)
 {
     Thread* pThread = ThreadStore::GetCurrentThread();
-    if (pThread->IsDoNotTriggerGcSet())
-        return;
-
     pFrame->m_pThread = pThread;
-    pThread->WaitForGC(pFrame);
+
+    RhpWaitForGC2(pFrame);
 }
 
 #ifdef FEATURE_SUSPEND_REDIRECTION
