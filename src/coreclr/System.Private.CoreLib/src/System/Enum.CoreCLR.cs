@@ -16,7 +16,7 @@ namespace System
         private static unsafe object InternalBoxEnum(RuntimeType enumType, long value)
         {
             MethodTable* pMethodTable = (MethodTable*)enumType.m_handle;
-            object obj = GetEnumInfo(enumType, false).CreateUninitializedInstance(enumType);
+            object obj = GetEnumInfoForActivation(enumType).CreateUninitializedInstance(enumType);
             ref byte dataRef = ref obj.GetRawData();
 
             switch (pMethodTable->GetNumInstanceFieldBytes())
@@ -49,25 +49,36 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern RuntimeType InternalGetUnderlyingType(RuntimeType enumType);
 
+        /// <summary>
+        /// Gets an <see cref="EnumInfo"/> instance to use to create new boxed instances.
+        /// </summary>
+        /// <param name="enumType">The enum type to use.</param>
+        /// <remarks>
+        /// This is like <see cref="GetEnumInfo(RuntimeType, bool)"/>, but skips unnecessary initialization.
+        /// </remarks>
+        private static EnumInfo GetEnumInfoForActivation(RuntimeType enumType)
+        {
+            if (enumType.GenericCache is not EnumInfo entry)
+            {
+                enumType.GenericCache = entry = new EnumInfo();
+            }
+
+            return entry;
+        }
+
+        /// <summary>
+        /// Gets an <see cref="EnumInfo"/> instance to use to retrieve values, names and reflection info.
+        /// </summary>
+        /// <param name="enumType">The enum type to use.</param>
+        /// <param name="getNames">Whether or not to also retrieve the enum names.</param>
         private static EnumInfo GetEnumInfo(RuntimeType enumType, bool getNames = true)
         {
-            EnumInfo? entry = enumType.GenericCache as EnumInfo;
-
-            if (entry == null || (getNames && entry.Names == null))
+            if (enumType.GenericCache is not EnumInfo entry)
             {
-                ulong[]? values = null;
-                string[]? names = null;
-                RuntimeTypeHandle enumTypeHandle = enumType.TypeHandle;
-                GetEnumValuesAndNames(
-                    new QCallTypeHandle(ref enumTypeHandle),
-                    ObjectHandleOnStack.Create(ref values),
-                    ObjectHandleOnStack.Create(ref names),
-                    getNames ? Interop.BOOL.TRUE : Interop.BOOL.FALSE);
-                bool hasFlagsAttribute = enumType.IsDefined(typeof(FlagsAttribute), inherit: false);
-
-                entry = new EnumInfo(hasFlagsAttribute, values!, names!);
-                enumType.GenericCache = entry;
+                enumType.GenericCache = entry = new EnumInfo();
             }
+
+            entry.EnsureReflectionInfoIsInitialized(enumType, getNames);
 
             return entry;
         }
