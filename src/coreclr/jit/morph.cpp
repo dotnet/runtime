@@ -10791,30 +10791,43 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                     }
                 }
 
-                if (op1->OperIs(GT_LT))
+                if (op1->OperIs(GT_LT, GT_GT))
                 {
+                    bool     fold  = false;
                     GenTree* lNode = op1->gtGetOp1();
                     GenTree* rNode = op1->gtGetOp2();
-
-                    if ((lNode->TypeIs(TYP_UBYTE) && rNode->IsIntegralConst(0)) ||
-                        (lNode->TypeIs(TYP_INT) && rNode->IsIntegralConst(INT32_MIN)) ||
-                        (lNode->TypeIs(TYP_LONG) && rNode->IsIntegralConst(INT64_MIN)))
+#if defined(HOST_X86)
+                    ssize_t longMin = INT32_MIN;
+                    ssize_t longMax = INT32_MAX;
+#else
+                    ssize_t longMin     = INT64_MIN;
+                    ssize_t longMax     = INT64_MAX;
+#endif
+                    if (op1->OperIs(GT_LT))
                     {
-                        GenTree* ret = gtNewIconNode(1, TYP_INT);
-                        ret->SetVNsFromNode(tree);
-                        DEBUG_DESTROY_NODE(tree);
-                        return fgMorphTree(ret);
+                        // Folds:
+                        // 1. byte x >= 0 => true
+                        // 2. int  x >= int.MinValue => true
+                        // 3. long x >= long.MaxValue => true
+
+                        fold = (lNode->TypeIs(TYP_UBYTE) && rNode->IsIntegralConst(0)) ||
+                               (lNode->TypeIs(TYP_INT) && rNode->IsIntegralConst(INT32_MIN)) ||
+                               (lNode->TypeIs(TYP_LONG) && rNode->IsIntegralConst(longMin));
                     }
-                }
 
-                if (op1->OperIs(GT_GT))
-                {
-                    GenTree* lNode = op1->gtGetOp1();
-                    GenTree* rNode = op1->gtGetOp2();
+                    if (op1->OperIs(GT_GT))
+                    {
+                        // Folds:
+                        // 1. byte x <= byte.MaxValue => true
+                        // 2. int  x <= int.MaxValue => true
+                        // 3. long x <= long.MaxValue => true
 
-                    if ((lNode->TypeIs(TYP_UBYTE) && rNode->IsIntegralConst(BYTE_MAX)) ||
-                        (lNode->TypeIs(TYP_INT) && rNode->IsIntegralConst(INT32_MAX)) ||
-                        (lNode->TypeIs(TYP_LONG) && rNode->IsIntegralConst(INT64_MAX)))
+                        fold = (lNode->TypeIs(TYP_UBYTE) && rNode->IsIntegralConst(BYTE_MAX)) ||
+                               (lNode->TypeIs(TYP_INT) && rNode->IsIntegralConst(INT32_MAX)) ||
+                               (lNode->TypeIs(TYP_LONG) && rNode->IsIntegralConst(longMax));
+                    }
+
+                    if (fold)
                     {
                         GenTree* ret = gtNewIconNode(1, TYP_INT);
                         ret->SetVNsFromNode(tree);
