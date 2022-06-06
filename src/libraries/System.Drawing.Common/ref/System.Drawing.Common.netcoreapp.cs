@@ -26,6 +26,7 @@ namespace System.Drawing
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public void GetContextInfo(out PointF offset, out Region? clip) { throw null; }
     }
+#if NET7_0_OR_GREATER
     public sealed partial class Font
     {
         public void ToLogFont<T>(ref T logFont, Graphics graphics) where T: struct  { throw null; }
@@ -33,6 +34,7 @@ namespace System.Drawing
         public static Font FromLogFont<T>(in T logFont, IntPtr hdc) where T: struct { throw null; }
         public void ToLogFont<T>(ref T logFont) where T: struct { throw null; }
     }
+#endif
 }
 namespace System.Drawing.Drawing2D
 {
