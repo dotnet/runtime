@@ -943,17 +943,20 @@ namespace Microsoft.WebAssembly.Diagnostics
                         else if (typeInfo != null)
                         {
                             var methodDebugInformation = pdbMetadataReaderParm.GetMethodDebugInformation(MetadataTokens.MethodDebugInformationHandle(methodIdx));
-                            if (!methodDebugInformation.Document.IsNil) //fix this after entrypoint PR merged
+                            SourceFile source = null;
+                            if (!methodDebugInformation.Document.IsNil)
                             {
                                 var document = pdbMetadataReaderParm.GetDocument(methodDebugInformation.Document);
                                 var documentName = pdbMetadataReaderParm.GetString(document.Name);
-                                SourceFile source = GetOrAddSourceFile(methodDebugInformation.Document, asmMetadataReaderParm.GetRowNumber(methodDebugInformation.Document), documentName);
-                                var methodDef = asmMetadataReaderParm.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle(methodIdxAsm));
-                                var methodInfo = new MethodInfo(this, MetadataTokens.MethodDefinitionHandle(methodIdxAsm), entryRow, source, typeInfo, asmMetadataReaderParm, pdbMetadataReaderParm);
-                                methods[entryRow] = methodInfo;
-                                source.AddMethod(methodInfo);
-                                typeInfo.Methods.Add(methodInfo);
+                                source = GetOrAddSourceFile(methodDebugInformation.Document, asmMetadataReaderParm.GetRowNumber(methodDebugInformation.Document), documentName);
                             }
+                            var methodInfo = new MethodInfo(this, MetadataTokens.MethodDefinitionHandle(methodIdxAsm), entryRow, source, typeInfo, asmMetadataReaderParm, pdbMetadataReaderParm);
+                            methods[entryRow] = methodInfo;
+
+                            if (source != null)
+                                source.AddMethod(methodInfo);
+
+                            typeInfo.Methods.Add(methodInfo);
                         }
                         methodIdxAsm++;
                     }
