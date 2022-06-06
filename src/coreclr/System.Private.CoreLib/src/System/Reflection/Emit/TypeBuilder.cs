@@ -1880,7 +1880,7 @@ namespace System.Reflection.Emit
                     m_DeclaringType.m_bakedRuntimeType.InvalidateCachedNestedType();
                 }
 
-                return cls; // same here, but 2068
+                return cls;
             }
             else
             {
