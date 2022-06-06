@@ -183,7 +183,9 @@ export type CoverageProfilerOptions = {
 
 /// Options to configure EventPipe sessions that will be created and started at runtime startup
 export type DiagnosticOptions = {
-    sessions?: (EventPipeSessionOptions & EventPipeSessionAutoStopOptions)[]
+    sessions?: (EventPipeSessionOptions & EventPipeSessionAutoStopOptions)[],
+    /// If true, the diagnostic server will be started.  If "wait", the runtime will wait at startup until a diagnsotic session connects to the server
+    server?: boolean | "wait",
 }
 
 /// For EventPipe sessions that will be created and started at runtime startup
@@ -301,6 +303,8 @@ export const enum MarshalError {
 export function is_nullish<T>(value: T | null | undefined): value is null | undefined {
     return (value === undefined) || (value === null);
 }
+
+export type DiagnosticServerControlCommand = {};
 
 /// An identifier for an EventPipe session. The id is unique during the lifetime of the runtime.
 /// Primarily intended for debugging purposes.

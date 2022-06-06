@@ -3,8 +3,9 @@
 
 import { Module } from "./imports";
 import cwraps from "./cwraps";
-import type { EventPipeSessionID, DiagnosticOptions, EventPipeSession, EventPipeSessionOptions, EventPipeSessionAutoStopOptions } from "./types";
+import type { DiagnosticOptions, EventPipeSession, EventPipeSessionOptions, EventPipeSessionAutoStopOptions } from "./types";
 import type { VoidPtr } from "./types/emscripten";
+import serverController from "./diagnostic-server-controller";
 import * as memory from "./memory";
 
 const sizeOfInt32 = 4;
@@ -246,9 +247,7 @@ export function mono_wasm_event_pipe_early_startup_callback(): void {
     startup_session_configs = null;
 }
 
-function postIPCStreamingSessionStarted(sessionID: EventPipeSessionID): void {
-    // TODO: For IPC streaming sessions this is the place to send back an acknowledgement with the session ID
-}
+
 
 function createAndStartEventPipeSession(options: (EventPipeSessionOptions & EventPipeSessionAutoStopOptions)): EventPipeSession | null {
     const session = createEventPipeSession(options);
@@ -257,7 +256,7 @@ function createAndStartEventPipeSession(options: (EventPipeSessionOptions & Even
     }
 
     if (session.isIPCStreamingSession) {
-        postIPCStreamingSessionStarted(session.sessionID);
+        serverController.postIPCStreamingSessionStarted(session.sessionID);
     }
     session.start();
     return session;
@@ -298,6 +297,24 @@ export const diagnostics: Diagnostics = {
         return Array.from(startup_sessions || []);
     },
 };
+
+export async function conifigureDiagnostics(options: DiagnosticOptions): Promise<DiagnosticOptions> {
+    if (!options.server)
+        return options;
+    mono_assert(options.server !== undefined && (options.server === true || options.server === "wait"));
+    // serverController.startServer
+    // if diagnostic_options.await is true, wait for the server to get a connection
+    const q = await serverController.configureServer(options);
+    const wait = options.server == "wait";
+    if (q.serverStarted) {
+        if (wait && q.serverReady) {
+            // wait for the server to get a connection
+            await q.serverReady;
+            // TODO: get sessions from the server controller and add them to the list of startup sessions
+        }
+    }
+    return options;
+}
 
 export function mono_wasm_init_diagnostics(config?: DiagnosticOptions): void {
     const sessions = config?.sessions ?? [];

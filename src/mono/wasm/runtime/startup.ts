@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import MonoWasmThreads from "consts:monoWasmThreads";
-import { AllAssetEntryTypes, mono_assert, AssetEntry, CharPtrNull, DotnetModule, GlobalizationMode, MonoConfig, MonoConfigError, wasm_type_symbol, MonoObject } from "./types";
+import { AllAssetEntryTypes, mono_assert, AssetEntry, CharPtrNull, DotnetModule, GlobalizationMode, MonoConfig, MonoConfigError, wasm_type_symbol, MonoObject, is_nullish } from "./types";
 import { ENVIRONMENT_IS_ESM, ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_PTHREAD, ENVIRONMENT_IS_SHELL, INTERNAL, locateFile, Module, MONO, requirePromise, runtimeHelpers } from "./imports";
 import cwraps from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
@@ -23,6 +23,7 @@ import { mono_wasm_new_root } from "./roots";
 import { init_crypto } from "./crypto-worker";
 import { init_polyfills } from "./polyfills";
 import * as pthreads_worker from "./pthreads/worker";
+import { configure_diagnostics } from "./diagnostics";
 
 export let runtime_is_initialized_resolve: () => void;
 export let runtime_is_initialized_reject: (reason?: any) => void;
@@ -169,6 +170,13 @@ async function mono_wasm_pre_init(): Promise<void> {
     }
     if (!moduleExt.configSrc && !moduleExt.config) {
         Module.print("MONO_WASM: configSrc nor config was specified");
+    }
+
+    if (Module.config !== undefined && !Module.config.isError) {
+        const diagnostic_options = Module.config.diagnostic_options;
+        if (!is_nullish(diagnostic_options)) {
+            Module.config.diagnostic_options = await configure_diagnostics(diagnostic_options);
+        }
     }
 
     Module.removeRunDependency("mono_wasm_pre_init");
