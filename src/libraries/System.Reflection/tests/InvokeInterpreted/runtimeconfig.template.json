@@ -1,5 +1,5 @@
 {
     "configProperties": {
-        "Switches.System.Reflection.ForceInterpretedInvoke": true
+        "Switch.System.Reflection.ForceInterpretedInvoke": true
     }
 }

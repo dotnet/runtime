@@ -1,5 +1,5 @@
 {
     "configProperties": {
-        "Switches.System.Reflection.ForceEmitInvoke": true
+        "Switch.System.Reflection.ForceEmitInvoke": true
     }
 }
