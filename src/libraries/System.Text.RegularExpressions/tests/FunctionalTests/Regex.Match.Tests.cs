@@ -113,6 +113,7 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"(?<=\w?)\w{4}", "abcdefghijklmnop", RegexOptions.None, 0, 16, true, "abcd");
                 yield return (@"(?<=\d?)a{4}", "123aaaaaaaaa", RegexOptions.None, 0, 12, true, "aaaa");
                 yield return (@"(?<=a{3,5}[ab]*)1234", "aaaaaaa1234", RegexOptions.None, 0, 11, true, "1234");
+                yield return (@"(\w)*?3(?<=33)$", "1233", RegexOptions.None, 0, 4, true, "1233");
 
                 // Zero-width negative lookbehind assertion: Actual - "(\\w){6}(?<!XXX)def"
                 yield return (@"(\w){6}(?<!XXX)def", "XXXabcdef", RegexOptions.None, 0, 9, true, "XXXabcdef");
@@ -386,11 +387,15 @@ namespace System.Text.RegularExpressions.Tests
                     yield return (@"abc{1,4}d" + endAnchor, "1234567890abccccd", anchorOptions, 0, 17, true, "abccccd");
                 }
             }
+
             if (!RegexHelpers.IsNonBacktracking(engine))
             {
+                // \G means "end of last match if any, else point where matching started"
                 yield return (@"\Gabc", "abc", RegexOptions.None, 0, 3, true, "abc");
                 yield return (@"\Gabc", " abc", RegexOptions.None, 0, 4, false, "");
                 yield return (@"\Gabc", " abc", RegexOptions.None, 1, 3, true, "abc");
+                yield return (@"\Gabc", "  abc", RegexOptions.None, 1, 4, false, "");
+                yield return (@"\Gabc", "  abc", RegexOptions.None, 1, 3, false, "");
                 yield return (@"\Gabc|\Gdef", "def", RegexOptions.None, 0, 3, true, "def");
                 yield return (@"\Gabc|\Gdef", " abc", RegexOptions.None, 0, 4, false, "");
                 yield return (@"\Gabc|\Gdef", " def", RegexOptions.None, 0, 4, false, "");
@@ -1611,35 +1616,63 @@ namespace System.Text.RegularExpressions.Tests
 
         public static IEnumerable<object[]> Match_StartatDiffersFromBeginning_MemberData()
         {
+            // (RegexEngine engine, string pattern, string input, RegexOptions options,
+            // int startat, bool expectedSuccessStartAt, bool expectedSuccessBeginning,
+            // int expectedIndex)
             foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
             {
                 foreach (RegexOptions options in new[] { RegexOptions.None, RegexOptions.Singleline, RegexOptions.Multiline, RegexOptions.Singleline | RegexOptions.Multiline })
                 {
                     // Anchors
-                    yield return new object[] { engine, @"^.*", "abc", options, 0, true, true };
-                    yield return new object[] { engine, @"^.*", "abc", options, 1, false, true };
+                    yield return new object[] { engine, @"^.*", "abc", options, 0, 3, true, true, "abc", 0 };
+                    yield return new object[] { engine, @"^.*", "abc", options, 1, 2, false, true, "bc", 1 };
+                    yield return new object[] { engine, @"\Aabc\z", "1abc2", options, 1, 3, false, true, "abc", 1 };
+                    yield return new object[] { engine, @"\Aabc\z", "1abc2", options, 1, 4, false, false, "", 0 };
                 }
+
+                // When matching with (string, int, int), an input substring is
+                // used, so e.g, anchors such as ^ and \A will match at the start;
+                // when matching with (string, int) the input outside the range is not ignored,
+                // so e.g., anchors such as ^ and \A do not necessarily match at the start
+                yield return new object[] { engine, @"^abc$", "1abc2", RegexOptions.None, 1, 3, false, true, "abc", 1 };
+                yield return new object[] { engine, @"^abc2$", "1abc2", RegexOptions.None, 1, 4, false, true, "abc2", 1 };
 
                 if (!RegexHelpers.IsNonBacktracking(engine))
                 {
                     // Positive and negative lookbehinds
-                    yield return new object[] { engine, @"(?<=abc)def", "abcdef", RegexOptions.None, 3, true, false };
-                    yield return new object[] { engine, @"(?<!abc)def", "abcdef", RegexOptions.None, 3, false, true };
+                    yield return new object[] { engine, @"(?<=abc)def", "abcdef", RegexOptions.None, 3, 3, true, false, "def", 3 };
+                    yield return new object[] { engine, @"(?<!abc)def", "abcdef", RegexOptions.None, 3, 3, false, true, "def", 3 };
                 }
             }
         }
 
         [Theory]
         [MemberData(nameof(Match_StartatDiffersFromBeginning_MemberData))]
-        public async Task Match_StartatDiffersFromBeginning(RegexEngine engine, string pattern, string input, RegexOptions options, int startat, bool expectedSuccessStartAt, bool expectedSuccessBeginning)
+        public async Task Match_StartatDiffersFromBeginning(RegexEngine engine, string pattern, string input, RegexOptions options, int startat, int length, bool expectedSuccessStartAt, bool expectedSuccessBeginning, string expectedValue, int expectedIndex)
         {
             Regex r = await RegexHelpers.GetRegexAsync(engine, pattern, options);
 
             Assert.Equal(expectedSuccessStartAt, r.IsMatch(input, startat));
-            Assert.Equal(expectedSuccessStartAt, r.Match(input, startat).Success);
 
-            Assert.Equal(expectedSuccessBeginning, r.Match(input.Substring(startat)).Success);
-            Assert.Equal(expectedSuccessBeginning, r.Match(input, startat, input.Length - startat).Success);
+            // Normal matching, but any match before startat is ignored.
+            Match match = r.Match(input, startat);
+            Assert.Equal(expectedSuccessStartAt, match.Success);
+            Assert.Equal(expectedSuccessStartAt ? expectedValue : "", match.Value);
+            Assert.Equal(expectedSuccessStartAt ? expectedIndex : 0, match.Index);
+
+            // Substring means that anchors and assertions can't examine the string
+            // beyond the specified range
+            match = r.Match(input.Substring(startat, length));
+            Assert.Equal(expectedSuccessBeginning, match.Success);
+            Assert.Equal(expectedSuccessBeginning ? expectedValue : "", match.Value);
+            Assert.Equal(expectedSuccessBeginning ? expectedIndex - startat : 0, match.Index);
+
+            // (input, startat, length) behavior is identical to substring case,
+            // except that index of any match is relative to the original input.
+            match = r.Match(input, startat, length);
+            Assert.Equal(expectedSuccessBeginning, match.Success);
+            Assert.Equal(expectedSuccessBeginning ? expectedValue : "", match.Value);
+            Assert.Equal(expectedSuccessBeginning ? expectedIndex : 0, match.Index);
         }
 
         [Theory]
@@ -1876,6 +1909,7 @@ namespace System.Text.RegularExpressions.Tests
             {
                 yield return new object[] { engine, "[a-z]", "", "abcde", 2000, 400 };
                 yield return new object[] { engine, "[a-e]*", "$", "abcde", 2000, 20 };
+                yield return new object[] { engine, "[a-e]*?", "$", "abcde", 2000, 20 };
                 yield return new object[] { engine, "[a-d]?[a-e]?[a-f]?[a-g]?[a-h]?", "$", "abcda", 400, 4 };
                 yield return new object[] { engine, "(a|A)", "", "aAaAa", 2000, 400 };
             }
@@ -1886,12 +1920,6 @@ namespace System.Text.RegularExpressions.Tests
         [MemberData(nameof(StressTestDeepNestingOfConcat_TestData))]
         public async Task StressTestDeepNestingOfConcat(RegexEngine engine, string pattern, string anchor, string input, int pattern_repetition, int input_repetition)
         {
-            if (engine == RegexEngine.NonBacktracking)
-            {
-                // [ActiveIssue("https://github.com/dotnet/runtime/issues/60645")]
-                return;
-            }
-
             string fullpattern = string.Concat(string.Concat(Enumerable.Repeat($"({pattern}", pattern_repetition).Concat(Enumerable.Repeat(")", pattern_repetition))), anchor);
             string fullinput = string.Concat(Enumerable.Repeat(input, input_repetition));
 

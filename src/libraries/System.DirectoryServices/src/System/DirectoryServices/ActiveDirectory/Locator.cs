@@ -76,7 +76,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             //
             // this api obtains the list of DCs/GCs based on dns records. The DCs/GCs that have registered
-            // non site specific records for the domain/forest are returned. Additonally DCs/GCs that have registered site specific records
+            // non site specific records for the domain/forest are returned. Additionally DCs/GCs that have registered site specific records
             // (site is either specified or defaulted to the site of the local machine) are also returned in this list.
             //
 

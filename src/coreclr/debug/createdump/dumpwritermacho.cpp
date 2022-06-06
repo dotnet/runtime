@@ -4,6 +4,8 @@
 #include "createdump.h"
 #include "specialthreadinfo.h"
 
+extern int g_readProcessMemoryResult;
+
 //
 // Write the core dump file
 //
@@ -56,7 +58,7 @@ DumpWriter::WriteDump()
     if (alignment > 0)
     {
         if (alignment > sizeof(m_tempBuffer)) {
-            printf_error("Segment alignment %llu > sizeof(m_tempBuffer)\n", alignment);
+            printf_error("Internal error: segment alignment %llu > sizeof(m_tempBuffer)\n", alignment);
             return false;
         }
         memset(m_tempBuffer, 0, alignment);
@@ -264,13 +266,13 @@ DumpWriter::WriteSegments()
                 size_t read = 0;
 
                 if (!m_crashInfo.ReadProcessMemory((void*)address, m_tempBuffer, bytesToRead, &read)) {
-                    printf_error("ReadProcessMemory(%" PRIA PRIx64 ", %08zx) FAILED\n", address, bytesToRead);
+                    printf_error("Error reading memory at %" PRIA PRIx64 " size %08zx FAILED %s (%x)\n", address, bytesToRead, mach_error_string(g_readProcessMemoryResult), g_readProcessMemoryResult);
                     return false;
                 }
 
                 // This can happen if the target process dies before createdump is finished
                 if (read == 0) {
-                    printf_error("ReadProcessMemory(%" PRIA PRIx64 ", %08zx) returned 0 bytes read\n", address, bytesToRead);
+                    printf_error("Error reading memory at %" PRIA PRIx64 " size %08zx returned 0 bytes read: %s (%x)\n", address, bytesToRead, mach_error_string(g_readProcessMemoryResult), g_readProcessMemoryResult);
                     return false;
                 }
 

@@ -1999,13 +1999,26 @@ private:
             // This blocks is lexically between TOP and BOTTOM, but it does not
             // participate in the flow cycle.  Check for a run of consecutive
             // such blocks.
+            //
+            // If blocks have been reordered and bbNum no longer reflects bbNext ordering
+            // (say by a call to MakeCompactAndFindExits for an earlier loop or unsuccessful
+            // attempt to find a loop), the bottom block of this loop may now appear earlier
+            // in the bbNext chain than other loop blocks. So when the previous hasn't reached bottom
+            // and block is a non-loop block, and we walk the bbNext chain, we may reach the end.
+            // If so, give up on recognition of this loop.
+            //
             BasicBlock* lastNonLoopBlock = block;
             BasicBlock* nextLoopBlock    = block->bbNext;
-            while (!loopBlocks.IsMember(nextLoopBlock->bbNum))
+            while ((nextLoopBlock != nullptr) && !loopBlocks.IsMember(nextLoopBlock->bbNum))
             {
                 lastNonLoopBlock = nextLoopBlock;
                 nextLoopBlock    = nextLoopBlock->bbNext;
-                // This loop must terminate because we know BOTTOM is in loopBlocks.
+            }
+
+            if (nextLoopBlock == nullptr)
+            {
+                JITDUMP("Did not find expected loop block when walking from " FMT_BB "\n", lastNonLoopBlock->bbNum);
+                return false;
             }
 
             // Choose an insertion point for non-loop blocks if we haven't yet done so.
@@ -2316,6 +2329,51 @@ private:
                 // If optimizing away the goto-next failed for some reason, mark it KEEP_BBJ_ALWAYS to
                 // prevent assertions from complaining about it.
                 block->bbFlags |= BBF_KEEP_BBJ_ALWAYS;
+            }
+
+            // If block is newNext's only predcessor, move the IR from block to newNext,
+            // but keep the now-empty block around.
+            //
+            // We move the IR because loop recognition has a very limited search capability and
+            // won't walk from one block's statements to another, even if the blocks form
+            // a linear chain. So this IR move enhances counted loop recognition.
+            //
+            // The logic here is essentially echoing fgCompactBlocks... but we don't call
+            // that here because we don't want to delete block and do the necessary updates
+            // to all the other data in flight, and we'd also prefer that newNext be the
+            // survivor, not block.
+            //
+            if ((newNext->bbRefs == 1) && comp->fgCanCompactBlocks(block, newNext))
+            {
+                JITDUMP("Moving stmts from " FMT_BB " to " FMT_BB "\n", block->bbNum, newNext->bbNum);
+                Statement* stmtList1 = block->firstStmt();
+                Statement* stmtList2 = newNext->firstStmt();
+
+                // Is there anything to move?
+                //
+                if (stmtList1 != nullptr)
+                {
+                    // Append newNext stmts to block's stmts.
+                    //
+                    if (stmtList2 != nullptr)
+                    {
+                        Statement* stmtLast1 = block->lastStmt();
+                        Statement* stmtLast2 = newNext->lastStmt();
+
+                        stmtLast1->SetNextStmt(stmtList2);
+                        stmtList2->SetPrevStmt(stmtLast1);
+                        stmtList1->SetPrevStmt(stmtLast2);
+                    }
+
+                    // Move block's stmts to newNext
+                    //
+                    newNext->bbStmtList = stmtList1;
+                    block->bbStmtList   = nullptr;
+
+                    // Update newNext's block flags
+                    //
+                    newNext->bbFlags |= (block->bbFlags & BBF_COMPACT_UPD);
+                }
             }
         }
 
@@ -4785,21 +4843,55 @@ PhaseStatus Compiler::optInvertLoops()
 }
 
 //-----------------------------------------------------------------------------
+// optOptimizeFlow: simplify flow graph
+//
+// Returns:
+//   suitable phase status
+//
+// Notes:
+//   Does not do profile-based reordering to try and ensure that
+//   that we recognize and represent as many loops as possible.
+//
+PhaseStatus Compiler::optOptimizeFlow()
+{
+    noway_assert(opts.OptimizationEnabled());
+    noway_assert(fgModified == false);
+
+    bool madeChanges = false;
+
+    madeChanges |= fgUpdateFlowGraph(/* allowTailDuplication */ true);
+    madeChanges |= fgReorderBlocks(/* useProfileData */ false);
+    madeChanges |= fgUpdateFlowGraph();
+
+    // fgReorderBlocks can cause IR changes even if it does not modify
+    // the flow graph. It calls gtPrepareCost which can cause operand swapping.
+    // Work around this for now.
+    //
+    // Note phase status only impacts dumping and checking done post-phase,
+    // it has no impact on a release build.
+    //
+    madeChanges = true;
+
+    return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+}
+
+//-----------------------------------------------------------------------------
 // optOptimizeLayout: reorder blocks to reduce cost of control flow
 //
 // Returns:
 //   suitable phase status
 //
+// Notes:
+//   Reorders using profile data, if available.
+//
 PhaseStatus Compiler::optOptimizeLayout()
 {
     noway_assert(opts.OptimizationEnabled());
-    noway_assert(fgModified == false);
 
-    bool       madeChanges          = false;
-    const bool allowTailDuplication = true;
+    bool madeChanges = false;
 
-    madeChanges |= fgUpdateFlowGraph(allowTailDuplication);
-    madeChanges |= fgReorderBlocks();
+    madeChanges |= fgUpdateFlowGraph(/* allowTailDuplication */ false);
+    madeChanges |= fgReorderBlocks(/* useProfile */ true);
     madeChanges |= fgUpdateFlowGraph();
 
     // fgReorderBlocks can cause IR changes even if it does not modify
@@ -8094,10 +8186,12 @@ void Compiler::AddModifiedElemTypeAllContainingLoops(unsigned lnum, CORINFO_CLAS
 // Return Value:
 //    Rewritten "check" - no-op if it has no side effects or the tree that contains them.
 //
-// Assumptions:
-//    This method is capable of removing checks of two kinds: COMMA-based and standalone top-level ones.
-//    In case of a COMMA-based check, "check" must be a non-null first operand of a non-null COMMA.
-//    In case of a standalone check, "comma" must be null and "check" - "stmt"'s root.
+// Notes:
+//    This method is capable of removing checks of two kinds: COMMA-based and standalone top-level
+//    ones. In case of a COMMA-based check, "check" must be a non-null first operand of a non-null
+//    COMMA. In case of a standalone check, "comma" must be null and "check" - "stmt"'s root.
+//
+//    Does not keep costs or node threading up to date, but does update side effect flags.
 //
 GenTree* Compiler::optRemoveRangeCheck(GenTreeBoundsChk* check, GenTree* comma, Statement* stmt)
 {
@@ -8151,15 +8245,6 @@ GenTree* Compiler::optRemoveRangeCheck(GenTreeBoundsChk* check, GenTree* comma, 
     }
 
     gtUpdateSideEffects(stmt, tree);
-
-    // Recalculate the GetCostSz(), etc...
-    gtSetStmtInfo(stmt);
-
-    // Re-thread the nodes if necessary
-    if (fgStmtListThreaded)
-    {
-        fgSetStmtSeq(stmt);
-    }
 
 #ifdef DEBUG
     if (verbose)

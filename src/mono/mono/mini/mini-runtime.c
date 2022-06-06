@@ -424,14 +424,14 @@ mono_global_codeman_foreach (MonoCodeManagerFunc func, void *user_data)
  *   Create an unwind op with the given parameters.
  */
 MonoUnwindOp*
-mono_create_unwind_op (int when, int tag, int reg, int val)
+mono_create_unwind_op (gsize when, guint8 tag, guint16 reg, int val)
 {
 	MonoUnwindOp *op = g_new0 (MonoUnwindOp, 1);
 
 	op->op = tag;
 	op->reg = reg;
 	op->val = val;
-	op->when = when;
+	op->when = GSIZE_TO_UINT32 (when);
 
 	return op;
 }
@@ -1230,17 +1230,17 @@ mono_patch_info_hash (gconstpointer data)
 	case MONO_PATCH_INFO_AOT_JIT_INFO:
 	case MONO_PATCH_INFO_METHOD_PINVOKE_ADDR_CACHE:
 	case MONO_PATCH_INFO_GSHARED_METHOD_INFO:
-		return hash | (gssize)ji->data.target;
+		return hash | GPOINTER_TO_UINT (ji->data.target);
 	case MONO_PATCH_INFO_GSHAREDVT_CALL:
-		return hash | (gssize)ji->data.gsharedvt->method;
+		return hash | GPOINTER_TO_UINT (ji->data.gsharedvt->method);
 	case MONO_PATCH_INFO_RGCTX_FETCH:
 	case MONO_PATCH_INFO_RGCTX_SLOT_INDEX: {
 		MonoJumpInfoRgctxEntry *e = ji->data.rgctx_entry;
 		hash |= e->in_mrgctx | e->info_type | mono_patch_info_hash (e->data);
 		if (e->in_mrgctx)
-			return hash | (gssize)e->d.method;
+			return hash | GPOINTER_TO_UINT (e->d.method);
 		else
-			return hash | (gssize)e->d.klass;
+			return hash | GPOINTER_TO_UINT (e->d.klass);
 	}
 	case MONO_PATCH_INFO_INTERRUPTION_REQUEST_FLAG:
 	case MONO_PATCH_INFO_MSCORLIB_GOT_ADDR:
@@ -1261,17 +1261,17 @@ mono_patch_info_hash (gconstpointer data)
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL:
 	case MONO_PATCH_INFO_CASTCLASS_CACHE:
-		return hash | ji->data.index;
+		return hash | GSIZE_TO_UINT (ji->data.index);
 	case MONO_PATCH_INFO_SWITCH:
 		return hash | ji->data.table->table_size;
 	case MONO_PATCH_INFO_GSHAREDVT_METHOD:
-		return hash | (gssize)ji->data.gsharedvt_method->method;
+		return hash | GPOINTER_TO_UINT (ji->data.gsharedvt_method->method);
 	case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE:
 		return (guint)(hash | (gsize)ji->data.del_tramp->klass | (gsize)ji->data.del_tramp->method | (gsize)ji->data.del_tramp->is_virtual);
 	case MONO_PATCH_INFO_VIRT_METHOD: {
 		MonoJumpInfoVirtMethod *info = ji->data.virt_method;
 
-		return hash | (gssize)info->klass | (gssize)info->method;
+		return hash | GPOINTER_TO_UINT (info->klass) | GPOINTER_TO_UINT (info->method);
 	}
 	case MONO_PATCH_INFO_GSHAREDVT_IN_WRAPPER:
 		return hash | mono_signature_hash (ji->data.sig);
@@ -3870,7 +3870,7 @@ mini_get_vtable_trampoline (MonoVTable *vt, int slot_index)
 	}
 
 	if (!vtable_trampolines [index])
-		vtable_trampolines [index] = mono_create_specific_trampoline (get_default_mem_manager (), GUINT_TO_POINTER (slot_index), MONO_TRAMPOLINE_VCALL, NULL);
+		vtable_trampolines [index] = mono_create_specific_trampoline (get_default_mem_manager (), GINT_TO_POINTER (slot_index), MONO_TRAMPOLINE_VCALL, NULL);
 	return vtable_trampolines [index];
 }
 
@@ -4984,6 +4984,7 @@ register_icalls (void)
 	register_icall (mono_get_assembly_object, mono_icall_sig_object_ptr, TRUE);
 	register_icall (mono_get_method_object, mono_icall_sig_object_ptr, TRUE);
 	register_icall (mono_throw_method_access, mono_icall_sig_void_ptr_ptr, FALSE);
+	register_icall (mono_throw_ambiguous_implementation, mono_icall_sig_void, FALSE);
 	register_icall (mono_throw_bad_image, mono_icall_sig_void, FALSE);
 	register_icall (mono_throw_not_supported, mono_icall_sig_void, FALSE);
 	register_icall (mono_throw_platform_not_supported, mono_icall_sig_void, FALSE);
@@ -5141,16 +5142,13 @@ mono_get_runtime_build_version (void)
 /**
  * mono_get_runtime_build_info:
  * The returned string is owned by the caller. The returned string
- * format is <code>VERSION (FULL_VERSION BUILD_DATE)</code> and build date is optional.
- * \returns the runtime version + build date in string format.
+ * format is <code>VERSION (FULL_VERSION)</code>.
+ * \returns the runtime version in string format.
  */
 char*
 mono_get_runtime_build_info (void)
 {
-	if (mono_build_date)
-		return g_strdup_printf ("%s (%s %s)", VERSION, FULL_VERSION, mono_build_date);
-	else
-		return g_strdup_printf ("%s (%s)", VERSION, FULL_VERSION);
+	return g_strdup_printf ("%s (%s)", VERSION, FULL_VERSION);
 }
 
 static void

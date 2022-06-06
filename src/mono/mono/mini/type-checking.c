@@ -130,7 +130,7 @@ mini_emit_isninst_cast_inst (MonoCompile *cfg, int klass_reg, MonoClass *klass, 
 
 
 static void
-mini_emit_interface_bitmap_check (MonoCompile *cfg, int intf_bit_reg, int base_reg, int offset, MonoClass *klass)
+mini_emit_interface_bitmap_check (MonoCompile *cfg, int intf_bit_reg, int base_reg, intptr_t offset, MonoClass *klass)
 {
 	int ibitmap_reg = alloc_preg (cfg);
 #ifdef COMPRESSED_INTERFACE_BITMAP

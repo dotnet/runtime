@@ -1488,7 +1488,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 #endif
 				break;
 			case MONO_TYPE_R4:
-				ins->type = cfg->r4_stack_type;
+				ins->type = GINT_TO_UINT8 (cfg->r4_stack_type);
 				break;
 			case MONO_TYPE_R8:
 				ins->type = STACK_R8;
@@ -1626,7 +1626,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 #endif
 					break;
 				case MONO_TYPE_R4:
-					ins->type = cfg->r4_stack_type;
+					ins->type = GINT_TO_UINT8 (cfg->r4_stack_type);
 					break;
 				case MONO_TYPE_R8:
 					ins->type = STACK_R8;

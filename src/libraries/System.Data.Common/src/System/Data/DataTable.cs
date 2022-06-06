@@ -6503,12 +6503,12 @@ namespace System.Data
                 else
                 {
                     string CurrentTableNamespace = string.Empty;
-                    int nsSeperator = CurrentTableFullName.IndexOf(':');
-                    if (nsSeperator > -1)
+                    int nsSeparator = CurrentTableFullName.IndexOf(':');
+                    if (nsSeparator > -1)
                     {
-                        CurrentTableNamespace = CurrentTableFullName.Substring(0, nsSeperator);
+                        CurrentTableNamespace = CurrentTableFullName.Substring(0, nsSeparator);
                     }
-                    string CurrentTableName = CurrentTableFullName.Substring(nsSeperator + 1);
+                    string CurrentTableName = CurrentTableFullName.Substring(nsSeparator + 1);
 
                     currentTable = ds.Tables[CurrentTableName, CurrentTableNamespace];
                 }

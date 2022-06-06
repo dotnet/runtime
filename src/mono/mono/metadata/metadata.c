@@ -1739,15 +1739,15 @@ mono_metadata_parse_array_internal (MonoImage *m, MonoGenericContainer *containe
 
 	array = transient ? (MonoArrayType *)g_malloc0 (sizeof (MonoArrayType)) : (MonoArrayType *)mono_image_alloc0 (m, sizeof (MonoArrayType));
 	array->eklass = mono_class_from_mono_type_internal (etype);
-	array->rank = mono_metadata_decode_value (ptr, &ptr);
+	array->rank = GUINT32_TO_UINT8 (mono_metadata_decode_value (ptr, &ptr));
 
-	array->numsizes = mono_metadata_decode_value (ptr, &ptr);
+	array->numsizes = GUINT32_TO_UINT8 (mono_metadata_decode_value (ptr, &ptr));
 	if (array->numsizes)
 		array->sizes = transient ? (int *)g_malloc0 (sizeof (int) * array->numsizes) : (int *)mono_image_alloc0 (m, sizeof (int) * array->numsizes);
 	for (i = 0; i < array->numsizes; ++i)
 		array->sizes [i] = mono_metadata_decode_value (ptr, &ptr);
 
-	array->numlobounds = mono_metadata_decode_value (ptr, &ptr);
+	array->numlobounds = GUINT32_TO_UINT8 (mono_metadata_decode_value (ptr, &ptr));
 	if (array->numlobounds)
 		array->lobounds = transient ? (int *)g_malloc0 (sizeof (int) * array->numlobounds) : (int *)mono_image_alloc0 (m, sizeof (int) * array->numlobounds);
 	for (i = 0; i < array->numlobounds; ++i)
@@ -2040,14 +2040,16 @@ decode_custom_modifiers (MonoImage *m, MonoCustomModContainer *cmods, int count,
 static MonoType *
 alloc_type_with_cmods (MonoImage *m, gboolean transient, int count)
 {
-	g_assert (count > 0);
+	g_assert (count > 0 && count <= G_MAXUINT8);
+
 	MonoType *type;
-	size_t size = mono_sizeof_type_with_mods (count, FALSE);
+	uint8_t count8 = GINT_TO_UINT8 (count);
+	size_t size = mono_sizeof_type_with_mods (count8, FALSE);
 	type = transient ? (MonoType *)g_malloc0 (size) : (MonoType *)mono_image_alloc0 (m, (guint)size);
 	type->has_cmods = TRUE;
 
 	MonoCustomModContainer *cmods = mono_type_get_cmods (type);
-	cmods->count = count;
+	cmods->count = count8;
 	cmods->image = m;
 
 	return type;
@@ -2128,7 +2130,7 @@ try_get_canonical_type (MonoType *type, MonoType **canonical_type)
  */
 static gboolean
 do_mono_metadata_parse_type_with_cmods (MonoType *type, int cmod_count, MonoImage *m, MonoGenericContainer *container,
-					short opt_attrs, gboolean transient, const char *ptr, const char **rptr, MonoError *error)
+					guint32 opt_attrs, gboolean transient, const char *ptr, const char **rptr, MonoError *error)
 {
 	gboolean byref= FALSE;
 	gboolean pinned = FALSE;
@@ -2179,7 +2181,7 @@ MONO_DISABLE_WARNING(4701) /* potentially uninitialized local variable 'stype' u
  */
 static MonoType*
 mono_metadata_parse_type_internal (MonoImage *m, MonoGenericContainer *container,
-								   short opt_attrs, gboolean transient, const char *ptr, const char **rptr, MonoError *error)
+								   guint32 opt_attrs, gboolean transient, const char *ptr, const char **rptr, MonoError *error)
 {
 	MonoType *type;
 	MonoType stype;
@@ -2254,7 +2256,7 @@ MONO_RESTORE_WARNING
 
 MonoType*
 mono_metadata_parse_type_checked (MonoImage *m, MonoGenericContainer *container,
-							   short opt_attrs, gboolean transient, const char *ptr, const char **rptr, MonoError *error)
+							   guint32 opt_attrs, gboolean transient, const char *ptr, const char **rptr, MonoError *error)
 {
 	return mono_metadata_parse_type_internal (m, container, opt_attrs, transient, ptr, rptr, error);
 }
@@ -2419,7 +2421,7 @@ mono_metadata_signature_alloc (MonoImage *m, guint32 nparams)
 	MonoMethodSignature *sig;
 
 	sig = (MonoMethodSignature *)mono_image_alloc0 (m, MONO_SIZEOF_METHOD_SIGNATURE + ((gint32)nparams) * sizeof (MonoType*));
-	sig->param_count = nparams;
+	sig->param_count = GUINT32_TO_UINT16 (nparams);
 	sig->sentinelpos = -1;
 
 	return sig;
@@ -2622,7 +2624,7 @@ mono_metadata_parse_method_signature_full (MonoImage *m, MonoGenericContainer *c
 					   int def, const char *ptr, const char **rptr, MonoError *error)
 {
 	MonoMethodSignature *method;
-	int i, *pattrs = NULL;
+	int *pattrs = NULL;
 	guint32 hasthis = 0, explicit_this = 0, call_convention, param_count;
 	guint32 gen_param_count = 0;
 	gboolean is_open = FALSE;
@@ -2682,7 +2684,7 @@ mono_metadata_parse_method_signature_full (MonoImage *m, MonoGenericContainer *c
 		}
 	}
 
-	for (i = 0; i < method->param_count; ++i) {
+	for (guint16 i = 0; i < method->param_count; ++i) {
 		if (*ptr == MONO_TYPE_SENTINEL) {
 			if (method->call_convention != MONO_CALL_VARARG || def) {
 				mono_error_set_bad_image (error, m, "Found sentinel for methoddef or no vararg");
@@ -3732,7 +3734,7 @@ lookup_anon_gparam (MonoImage *image, MonoGenericContainer *container, gint32 pa
 		MonoGenericParam key;
 		memset (&key, 0, sizeof (key));
 		key.owner = container;
-		key.num = param_num;
+		key.num = GINT32_TO_UINT16 (param_num);
 		key.gshared_constraint = NULL;
 		MonoConcurrentHashTable *cache = is_mvar ? image->mvar_gparam_cache : image->var_gparam_cache;
 		if (!cache)
@@ -3750,7 +3752,7 @@ publish_anon_gparam_fast (MonoImage *image, MonoGenericContainer *container, gin
 		mono_image_lock (image);
 		if (!*cache) {
 			*cache = (MonoGenericParam*)mono_image_alloc0 (image, sizeof (MonoGenericParam) * FAST_GPARAM_CACHE_SIZE);
-			for (gint32 i = 0; i < FAST_GPARAM_CACHE_SIZE; ++i) {
+			for (guint16 i = 0; i < FAST_GPARAM_CACHE_SIZE; ++i) {
 				MonoGenericParam *param = &(*cache)[i];
 				param->owner = container;
 				param->num = i;
@@ -3811,7 +3813,7 @@ mono_metadata_create_anon_gparam (MonoImage *image, gint32 param_num, gboolean i
 		// will leak, but that's okay.
 		gparam = (MonoGenericParam*)mono_image_alloc0 (image, sizeof (MonoGenericParam));
 		gparam->owner = container;
-		gparam->num = param_num;
+		gparam->num = GINT32_TO_UINT16 (param_num);
 
 		return publish_anon_gparam_slow (image, gparam);
 	}
@@ -4332,7 +4334,8 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 	unsigned char flags = *(const unsigned char *) ptr;
 	unsigned char format = flags & METHOD_HEADER_FORMAT_MASK;
 	guint16 fat_flags;
-	guint32 local_var_sig_tok, max_stack, code_size, init_locals;
+	guint16 max_stack;
+	guint32 local_var_sig_tok, code_size, init_locals;
 	const unsigned char *code;
 	MonoExceptionClause* clauses = NULL;
 	int num_clauses = 0;
@@ -4401,14 +4404,14 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 	}
 	if (local_var_sig_tok) {
 		const char *locals_ptr;
-		int len=0, i;
+		guint16 len=0, i;
 
 		locals_ptr = mono_metadata_blob_heap (m, cols [MONO_STAND_ALONE_SIGNATURE]);
 		mono_metadata_decode_blob_size (locals_ptr, &locals_ptr);
 		if (*locals_ptr != 0x07)
 			g_warning ("wrong signature for locals blob");
 		locals_ptr++;
-		len = mono_metadata_decode_value (locals_ptr, &locals_ptr);
+		len = GUINT32_TO_UINT16 (mono_metadata_decode_value (locals_ptr, &locals_ptr));
 		mh = (MonoMethodHeader *)g_malloc0 (MONO_SIZEOF_METHOD_HEADER + len * sizeof (MonoType*) + num_clauses * sizeof (MonoExceptionClause));
 		mh->num_locals = len;
 		for (i = 0; i < len; ++i) {
@@ -4485,7 +4488,7 @@ mono_metadata_free_mh (MonoMethodHeader *mh)
  * \param code_size memory location for returning the code size
  * \param max_stack memory location for returning the max stack
  *
- * Method header accessor to retreive info about the IL code properties:
+ * Method header accessor to retrieve info about the IL code properties:
  * a pointer to the IL code itself, the size of the code and the max number
  * of stack slots used by the code.
  *
@@ -4507,7 +4510,7 @@ mono_method_header_get_code (MonoMethodHeader *header, guint32* code_size, guint
  * \param num_locals memory location for returning the number of local variables
  * \param init_locals memory location for returning the init_locals flag
  *
- * Method header accessor to retreive info about the local variables:
+ * Method header accessor to retrieve info about the local variables:
  * an array of local types, the number of locals and whether the locals
  * are supposed to be initialized to 0 on method entry
  *
@@ -4527,7 +4530,7 @@ mono_method_header_get_locals (MonoMethodHeader *header, guint32* num_locals, gb
  * mono_method_header_get_num_clauses:
  * @header: a MonoMethodHeader pointer
  *
- * Method header accessor to retreive the number of exception clauses.
+ * Method header accessor to retrieve the number of exception clauses.
  *
  * Returns: the number of exception clauses present
  */
@@ -4693,7 +4696,7 @@ typedef_locator (const void *a, const void *b)
 {
 	locator_t *loc = (locator_t *) a;
 	const char *bb = (const char *) b;
-	int typedef_index = (bb - loc->t->base) / loc->t->row_size;
+	int typedef_index = GPTRDIFF_TO_INT ((bb - loc->t->base) / loc->t->row_size);
 	guint32 col, col_next;
 
 	col = mono_metadata_decode_row_col (loc->t, typedef_index, loc->col_idx);
@@ -4723,7 +4726,7 @@ table_locator (const void *a, const void *b)
 {
 	locator_t *loc = (locator_t *) a;
 	const char *bb = (const char *) b;
-	guint32 table_index = (bb - loc->t->base) / loc->t->row_size;
+	guint32 table_index = GPTRDIFF_TO_INT ((bb - loc->t->base) / loc->t->row_size);
 	guint32 col;
 
 	col = mono_metadata_decode_row_col (loc->t, table_index, loc->col_idx);
@@ -4743,7 +4746,7 @@ declsec_locator (const void *a, const void *b)
 {
 	locator_t *loc = (locator_t *) a;
 	const char *bb = (const char *) b;
-	guint32 table_index = (bb - loc->t->base) / loc->t->row_size;
+	guint32 table_index = GPTRDIFF_TO_UINT32 ((bb - loc->t->base) / loc->t->row_size);
 	guint32 col;
 
 	col = mono_metadata_decode_row_col (loc->t, table_index, loc->col_idx);
@@ -5717,11 +5720,11 @@ mono_metadata_custom_modifiers_equal (MonoType *t1, MonoType *t2, gboolean signa
 	// The CLI itself shall treat required and optional modifiers in the same manner.
 	// Two signatures that differ only by the addition of a custom modifier
 	// (required or optional) shall not be considered to match.
-	int count = mono_type_custom_modifier_count (t1);
+	uint8_t count = mono_type_custom_modifier_count (t1);
 	if (count != mono_type_custom_modifier_count (t2))
 		return FALSE;
 
-	for (int i=0; i < count; i++) {
+	for (uint8_t i=0; i < count; i++) {
 		// FIXME: propagate error to caller
 		ERROR_DECL (error);
 		gboolean cm1_required, cm2_required;
@@ -6147,9 +6150,9 @@ mono_metadata_encode_value (guint32 value, char *buf, char **endbuf)
 	char *p = buf;
 
 	if (value < 0x80)
-		*p++ = value;
+		*p++ = GUINT32_TO_CHAR (value);
 	else if (value < 0x4000) {
-		p [0] = 0x80 | (value >> 8);
+		p [0] = GUINT32_TO_CHAR (0x80 | (value >> 8));
 		p [1] = value & 0xff;
 		p += 2;
 	} else {
@@ -6656,7 +6659,7 @@ mono_metadata_parse_marshal_spec_full (MonoImage *image, MonoImage *parent_image
 		if (ptr - start <= len)
 			res->data.array_data.elem_type = (MonoMarshalNative)*ptr++;
 		if (ptr - start <= len)
-			res->data.array_data.param_num = mono_metadata_decode_value (ptr, &ptr);
+			res->data.array_data.param_num = GUINT32_TO_INT16 (mono_metadata_decode_value (ptr, &ptr));
 		if (ptr - start <= len)
 			res->data.array_data.num_elem = mono_metadata_decode_value (ptr, &ptr);
 		if (ptr - start <= len) {
@@ -6669,7 +6672,7 @@ mono_metadata_parse_marshal_spec_full (MonoImage *image, MonoImage *parent_image
 			 * elem_mult == 0 -> the array size is num_elem
 			 * elem_mult == 1 -> the array size is @param_num + num_elem
 			 */
-			res->data.array_data.elem_mult = mono_metadata_decode_value (ptr, &ptr);
+			res->data.array_data.elem_mult = GUINT32_TO_INT16 (mono_metadata_decode_value (ptr, &ptr));
 		}
 	}
 
@@ -7291,9 +7294,9 @@ mono_metadata_load_generic_params (MonoImage *image, guint32 token, MonoGenericC
 	do {
 		n++;
 		params [n - 1].owner = container;
-		params [n - 1].num = cols [MONO_GENERICPARAM_NUMBER];
+		params [n - 1].num = GUINT32_TO_UINT16 (cols [MONO_GENERICPARAM_NUMBER]);
 		params [n - 1].info.token = i | MONO_TOKEN_GENERIC_PARAM;
-		params [n - 1].info.flags = cols [MONO_GENERICPARAM_FLAGS];
+		params [n - 1].info.flags = GUINT32_TO_UINT16 (cols [MONO_GENERICPARAM_FLAGS]);
 		params [n - 1].info.name = mono_metadata_string_heap (image, cols [MONO_GENERICPARAM_NAME]);
 		if (params [n - 1].num != n - 1)
 			g_warning ("GenericParam table unsorted or hole in generic param sequence: token %d", i);
@@ -7661,7 +7664,7 @@ MonoClassField*
 mono_metadata_get_corresponding_field_from_generic_type_definition (MonoClassField *field)
 {
 	MonoClass *gtd;
-	int offset;
+	ptrdiff_t offset;
 
 	if (!mono_class_is_ginst (m_field_get_parent (field)))
 		return field;
@@ -7683,7 +7686,7 @@ MonoEvent*
 mono_metadata_get_corresponding_event_from_generic_type_definition (MonoEvent *event)
 {
 	MonoClass *gtd;
-	int offset;
+	ptrdiff_t offset;
 
 	if (!mono_class_is_ginst (event->parent))
 		return event;
@@ -7702,7 +7705,7 @@ mono_metadata_get_corresponding_property_from_generic_type_definition (MonoPrope
 {
 	MonoClassPropertyInfo *info;
 	MonoClass *gtd;
-	int offset;
+	ptrdiff_t offset;
 
 	if (!mono_class_is_ginst (property->parent))
 		return property;
@@ -8078,7 +8081,7 @@ mono_string_to_guid (MonoString* string, guint8 *guid) {
 	static const guint8 indexes[16] = {7, 5, 3, 1, 12, 10, 17, 15, 20, 22, 25, 27, 29, 31, 33, 35};
 
 	for (i = 0; i < sizeof(indexes); i++)
-		guid [i] = mono_unichar_xdigit_value (chars [indexes [i]]) + (mono_unichar_xdigit_value (chars [indexes [i] - 1]) << 4);
+		guid [i] = GINT_TO_UINT8 (mono_unichar_xdigit_value (chars [indexes [i]]) + (mono_unichar_xdigit_value (chars [indexes [i] - 1]) << 4));
 }
 
 static GENERATE_GET_CLASS_WITH_CACHE (guid_attribute, "System.Runtime.InteropServices", "GuidAttribute")

@@ -37,7 +37,8 @@ namespace System.Text.RegularExpressions
         // so this is a convenient place to include them rather than needing a debug-only illink file.
         [DynamicDependency(nameof(SaveDGML))]
         [DynamicDependency(nameof(GenerateUnicodeTables))]
-        [DynamicDependency(nameof(GenerateRandomMembers))]
+        [DynamicDependency(nameof(SampleMatches))]
+        [DynamicDependency(nameof(Explore))]
 #endif
         protected Regex()
         {

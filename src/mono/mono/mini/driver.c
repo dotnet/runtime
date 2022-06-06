@@ -429,22 +429,14 @@ method_should_be_regression_tested (MonoMethod *method, gboolean interp)
 		if (strcmp (m_class_get_name (klass), "CategoryAttribute") || mono_method_signature_internal (centry->ctor)->param_count != 1)
 			continue;
 
-		gpointer *typed_args, *named_args;
-		int num_named_args;
-		CattrNamedArg *arginfo;
-
-		mono_reflection_create_custom_attr_data_args_noalloc (
-			mono_defaults.corlib, centry->ctor, centry->data, centry->data_size,
-			&typed_args, &named_args, &num_named_args, &arginfo, error);
+		MonoDecodeCustomAttr *decoded_args = mono_reflection_create_custom_attr_data_args_noalloc (mono_defaults.corlib, centry->ctor, centry->data, centry->data_size, error);
 		if (!is_ok (error))
 			continue;
 
-		const char *arg = (const char*)typed_args [0];
+		const char *arg = (const char*)decoded_args->typed_args[0]->value.primitive;
 		mono_metadata_decode_value (arg, &arg);
 		char *utf8_str = (char*)arg; //this points into image memory that is constant
-		g_free (typed_args);
-		g_free (named_args);
-		g_free (arginfo);
+		mono_reflection_free_custom_attr_data_args_noalloc (decoded_args);
 
 		if (interp && !strcmp (utf8_str, "!INTERPRETER")) {
 			g_print ("skip %s...\n", method->name);
@@ -1470,7 +1462,7 @@ load_agent (MonoDomain *domain, char *desc)
 	MonoImageOpenStatus open_status;
 
 	if (col) {
-		agent = (char *)g_memdup (desc, col - desc + 1);
+		agent = (char *)g_memdup (desc, GPTRDIFF_TO_UINT (col - desc + 1));
 		agent [col - desc] = '\0';
 		args = col + 1;
 	} else {
@@ -2518,10 +2510,6 @@ mono_main (int argc, char* argv[])
 	exit (1);
 #endif
 #endif
-
-	if (mono_compile_aot || action == DO_EXEC || action == DO_DEBUGGER) {
-		g_set_prgname (argv[i]);
-	}
 
 	mono_counters_init ();
 

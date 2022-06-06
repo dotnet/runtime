@@ -1452,9 +1452,9 @@ public:
 #endif
 
     PEImageLayout * GetReadyToRunImage();
-    PTR_CORCOMPILE_IMPORT_SECTION GetImportSections(COUNT_T *pCount);
-    PTR_CORCOMPILE_IMPORT_SECTION GetImportSectionFromIndex(COUNT_T index);
-    PTR_CORCOMPILE_IMPORT_SECTION GetImportSectionForRVA(RVA rva);
+    PTR_READYTORUN_IMPORT_SECTION GetImportSections(COUNT_T *pCount);
+    PTR_READYTORUN_IMPORT_SECTION GetImportSectionFromIndex(COUNT_T index);
+    PTR_READYTORUN_IMPORT_SECTION GetImportSectionForRVA(RVA rva);
 
     // These are overridden by reflection modules
     virtual TADDR GetIL(RVA il);
@@ -1509,7 +1509,7 @@ public:
     IMDInternalImport *GetNativeAssemblyImport(BOOL loadAllowed = TRUE);
     IMDInternalImport *GetNativeAssemblyImportIfLoaded();
 
-    BOOL FixupNativeEntry(CORCOMPILE_IMPORT_SECTION * pSection, SIZE_T fixupIndex, SIZE_T *fixup, BOOL mayUsePrecompiledNDirectMethods = TRUE);
+    BOOL FixupNativeEntry(READYTORUN_IMPORT_SECTION * pSection, SIZE_T fixupIndex, SIZE_T *fixup, BOOL mayUsePrecompiledNDirectMethods = TRUE);
 
     //this split exists to support new CLR Dump functionality in DAC.  The
     //template removes any indirections.
@@ -1518,7 +1518,7 @@ public:
     template<typename Ptr, typename FixupNativeEntryCallback>
     BOOL FixupDelayListAux(TADDR pFixupList,
                            Ptr pThis, FixupNativeEntryCallback pfnCB,
-                           PTR_CORCOMPILE_IMPORT_SECTION pImportSections, COUNT_T nImportSections,
+                           PTR_READYTORUN_IMPORT_SECTION pImportSections, COUNT_T nImportSections,
                            PEDecoder * pNativeImage, BOOL mayUsePrecompiledNDirectMethods = TRUE);
     void RunEagerFixups();
     void RunEagerFixupsUnlocked();

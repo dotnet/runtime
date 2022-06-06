@@ -1528,7 +1528,7 @@ namespace Internal.JitInterface
                     // Either
                     //    1. no constraint resolution at compile time (!directMethod)
                     // OR 2. no code sharing lookup in call
-                    // OR 3. we have have resolved to an instantiating stub
+                    // OR 3. we have resolved to an instantiating stub
 
                     // This check for introducing an instantiation stub comes from the logic in
                     // MethodTable::TryResolveConstraintMethodApprox at

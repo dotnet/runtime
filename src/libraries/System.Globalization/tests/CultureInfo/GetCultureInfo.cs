@@ -130,6 +130,7 @@ namespace System.Globalization.Tests
         }
 
         [ConditionalTheory(nameof(PlatformSupportsFakeCultureAndRemoteExecutor))]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "Remote executor has problems with exit codes")]
         [InlineData("1", "xx-XY")]
         [InlineData("1", "zx-ZY")]
         [InlineData("0", "xx-XY")]
@@ -156,6 +157,7 @@ namespace System.Globalization.Tests
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "Remote executor has problems with exit codes")]
         [InlineData(true, true, false)]
         [InlineData(true, true, true)]
         [InlineData(true, false, true)]
