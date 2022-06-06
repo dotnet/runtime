@@ -7700,11 +7700,11 @@ MONO_RESTORE_WARNING
 			break;
 		}
 		case OP_STOREX_MEMBASE: {
-			LLVMTypeRef t = LLVMTypeOf (values [ins->sreg1]);
+			LLVMTypeRef t = LLVMTypeOf (lhs);
 			LLVMValueRef dest;
 
 			dest = convert (ctx, LLVMBuildAdd (builder, convert (ctx, values [ins->inst_destbasereg], IntPtrType ()), LLVMConstInt (IntPtrType (), ins->inst_offset, FALSE), ""), pointer_type (t));
-			mono_llvm_build_aligned_store (builder, values [ins->sreg1], dest, FALSE, 1);
+			mono_llvm_build_aligned_store (builder, lhs, dest, FALSE, 1);
 			break;
 		}
 		case OP_XBINOP:
