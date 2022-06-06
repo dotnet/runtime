@@ -478,15 +478,15 @@ namespace System
             return value._lower;
         }
 
-        /// <summary>Explicitly converts a 128-bit unsigned integer to a <see cref="UIntPtr" /> value.</summary>
+        /// <summary>Explicitly converts a 128-bit unsigned integer to a <see cref="nuint" /> value.</summary>
         /// <param name="value">The value to convert.</param>
-        /// <returns><paramref name="value" /> converted to a <see cref="UIntPtr" />.</returns>
+        /// <returns><paramref name="value" /> converted to a <see cref="nuint" />.</returns>
         [CLSCompliant(false)]
         public static explicit operator nuint(UInt128 value) => (nuint)value._lower;
 
-        /// <summary>Explicitly converts a 128-bit unsigned integer to a <see cref="UIntPtr" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <summary>Explicitly converts a 128-bit unsigned integer to a <see cref="nuint" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
         /// <param name="value">The value to convert.</param>
-        /// <returns><paramref name="value" /> converted to a <see cref="UIntPtr" />.</returns>
+        /// <returns><paramref name="value" /> converted to a <see cref="nuint" />.</returns>
         /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="UInt128" />.</exception>
         [CLSCompliant(false)]
         public static explicit operator checked nuint(UInt128 value)
@@ -742,7 +742,7 @@ namespace System
         [CLSCompliant(false)]
         public static implicit operator UInt128(ulong value) => new UInt128(0, value);
 
-        /// <summary>Implicitly converts a <see cref="UIntPtr" /> value to a 128-bit unsigned integer.</summary>
+        /// <summary>Implicitly converts a <see cref="nuint" /> value to a 128-bit unsigned integer.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to a 128-bit unsigned integer.</returns>
         [CLSCompliant(false)]

@@ -552,7 +552,7 @@ namespace System.Threading
         [CLSCompliant(false)]
         public static ulong VolatileRead(ref ulong address) => Volatile.Read(ref address);
         [CLSCompliant(false)]
-        public static UIntPtr VolatileRead(ref UIntPtr address) => Volatile.Read(ref address);
+        public static nuint VolatileRead(ref nuint address) => Volatile.Read(ref address);
         public static void VolatileWrite(ref byte address, byte value) => Volatile.Write(ref address, value);
         public static void VolatileWrite(ref double address, double value) => Volatile.Write(ref address, value);
         public static void VolatileWrite(ref short address, short value) => Volatile.Write(ref address, value);
@@ -570,7 +570,7 @@ namespace System.Threading
         [CLSCompliant(false)]
         public static void VolatileWrite(ref ulong address, ulong value) => Volatile.Write(ref address, value);
         [CLSCompliant(false)]
-        public static void VolatileWrite(ref UIntPtr address, UIntPtr value) => Volatile.Write(ref address, value);
+        public static void VolatileWrite(ref nuint address, nuint value) => Volatile.Write(ref address, value);
 
         /// <summary>
         /// Manages functionality required to support members of <see cref="Thread"/> dealing with thread-local data

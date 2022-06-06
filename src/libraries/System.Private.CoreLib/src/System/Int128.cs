@@ -481,15 +481,15 @@ namespace System
             return new UInt128(value._upper, value._lower);
         }
 
-        /// <summary>Explicitly converts a 128-bit signed integer to a <see cref="UIntPtr" /> value.</summary>
+        /// <summary>Explicitly converts a 128-bit signed integer to a <see cref="nuint" /> value.</summary>
         /// <param name="value">The value to convert.</param>
-        /// <returns><paramref name="value" /> converted to a <see cref="UIntPtr" />.</returns>
+        /// <returns><paramref name="value" /> converted to a <see cref="nuint" />.</returns>
         [CLSCompliant(false)]
         public static explicit operator nuint(Int128 value) => (nuint)value._lower;
 
-        /// <summary>Explicitly converts a 128-bit signed integer to a <see cref="UIntPtr" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <summary>Explicitly converts a 128-bit signed integer to a <see cref="nuint" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
         /// <param name="value">The value to convert.</param>
-        /// <returns><paramref name="value" /> converted to a <see cref="UIntPtr" />.</returns>
+        /// <returns><paramref name="value" /> converted to a <see cref="nuint" />.</returns>
         /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="Int128" />.</exception>
         [CLSCompliant(false)]
         public static explicit operator checked nuint(Int128 value)
@@ -693,7 +693,7 @@ namespace System
         [CLSCompliant(false)]
         public static implicit operator Int128(ulong value) => new Int128(0, value);
 
-        /// <summary>Implicitly converts a <see cref="UIntPtr" /> value to a 128-bit signed integer.</summary>
+        /// <summary>Implicitly converts a <see cref="nuint" /> value to a 128-bit signed integer.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to a 128-bit signed integer.</returns>
         [CLSCompliant(false)]

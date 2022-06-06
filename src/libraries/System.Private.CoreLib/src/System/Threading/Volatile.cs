@@ -197,19 +197,19 @@ namespace System.Threading
         #endregion
 
         #region UIntPtr
-        private struct VolatileUIntPtr { public volatile UIntPtr Value; }
+        private struct VolatileUIntPtr { public volatile nuint Value; }
 
         [CLSCompliant(false)]
         [Intrinsic]
         [NonVersionable]
-        public static UIntPtr Read(ref UIntPtr location) =>
-            Unsafe.As<UIntPtr, VolatileUIntPtr>(ref location).Value;
+        public static nuint Read(ref nuint location) =>
+            Unsafe.As<nuint, VolatileUIntPtr>(ref location).Value;
 
         [CLSCompliant(false)]
         [Intrinsic]
         [NonVersionable]
-        public static void Write(ref UIntPtr location, UIntPtr value) =>
-            Unsafe.As<UIntPtr, VolatileUIntPtr>(ref location).Value = value;
+        public static void Write(ref nuint location, nuint value) =>
+            Unsafe.As<nuint, VolatileUIntPtr>(ref location).Value = value;
         #endregion
 
         #region T

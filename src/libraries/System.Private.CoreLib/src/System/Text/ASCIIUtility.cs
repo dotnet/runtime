@@ -520,7 +520,7 @@ namespace System.Text
 
             if ((bufferLength & 8) != 0)
             {
-                if (UIntPtr.Size == sizeof(ulong))
+                if (sizeof(nuint) == sizeof(ulong))
                 {
                     // If we can use 64-bit tzcnt to count the number of leading ASCII bytes, prefer it.
 
@@ -1046,7 +1046,7 @@ namespace System.Text
 
             if ((bufferLength & 4) != 0)
             {
-                if (UIntPtr.Size == sizeof(ulong))
+                if (sizeof(nuint) == sizeof(ulong))
                 {
                     // If we can use 64-bit tzcnt to count the number of leading ASCII chars, prefer it.
 

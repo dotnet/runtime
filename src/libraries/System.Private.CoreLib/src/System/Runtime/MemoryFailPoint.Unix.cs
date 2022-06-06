@@ -32,7 +32,7 @@ namespace System.Runtime
 
         // Allocate a specified number of bytes, commit them and free them. This should enlarge
         // page file if necessary and possible.
-        private static void GrowPageFileIfNecessaryAndPossible(UIntPtr numBytes)
+        private static void GrowPageFileIfNecessaryAndPossible(nuint numBytes)
         {
             // Unreachable until CheckForAvailableMemory is implemented
         }

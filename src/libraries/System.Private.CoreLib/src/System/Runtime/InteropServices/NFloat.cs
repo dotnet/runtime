@@ -431,17 +431,17 @@ namespace System.Runtime.InteropServices
         [CLSCompliant(false)]
         public static explicit operator checked UInt128(NFloat value) => checked((UInt128)(value._value));
 
-        /// <summary>Explicitly converts a native-sized floating-point value to its nearest representable <see cref="UIntPtr" /> value.</summary>
+        /// <summary>Explicitly converts a native-sized floating-point value to its nearest representable <see cref="nuint" /> value.</summary>
         /// <param name="value">The value to convert.</param>
-        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="UIntPtr" /> value.</returns>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="nuint" /> value.</returns>
         [NonVersionable]
         [CLSCompliant(false)]
         public static explicit operator nuint(NFloat value) => (nuint)(value._value);
 
-        /// <summary>Explicitly converts a native-sized floating-point value to its nearest representable <see cref="UIntPtr" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <summary>Explicitly converts a native-sized floating-point value to its nearest representable <see cref="nuint" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
         /// <param name="value">The value to convert.</param>
-        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="UIntPtr" /> value.</returns>
-        /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="UIntPtr" />.</exception>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="nuint" /> value.</returns>
+        /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="nuint" />.</exception>
         [NonVersionable]
         [CLSCompliant(false)]
         public static explicit operator checked nuint(NFloat value) => checked((nuint)(value._value));
@@ -547,7 +547,7 @@ namespace System.Runtime.InteropServices
         [CLSCompliant(false)]
         public static explicit operator NFloat(UInt128 value) => (NFloat)(double)(value);
 
-        /// <summary>Implicitly converts a <see cref="System.UIntPtr" /> value to its nearest representable native-sized floating-point value.</summary>
+        /// <summary>Implicitly converts a <see cref="nuint" /> value to its nearest representable native-sized floating-point value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable native-sized floating-point value.</returns>
         [NonVersionable]

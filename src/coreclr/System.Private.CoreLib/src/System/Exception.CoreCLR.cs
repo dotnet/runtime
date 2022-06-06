@@ -100,7 +100,7 @@ namespace System
             // in AV in the runtime.
             //
             // Hence, we set it to zero when deserialization takes place.
-            _ipForWatsonBuckets = UIntPtr.Zero;
+            _ipForWatsonBuckets = 0;
         }
 
         // This is used by the runtime when re-throwing a managed exception.  It will
@@ -181,7 +181,7 @@ namespace System
         // unless a System.Resolver object roots it.
         private readonly object[]? _dynamicMethods;
         private string? _source;         // Mainly used by VB.
-        private UIntPtr _ipForWatsonBuckets; // Used to persist the IP for Watson Bucketing
+        private nuint _ipForWatsonBuckets; // Used to persist the IP for Watson Bucketing
         private readonly IntPtr _xptrs;             // Internal EE stuff
         private readonly int _xcode = _COMPlusExceptionCode;             // Internal EE stuff
 #pragma warning restore CA1823, 414
@@ -228,14 +228,14 @@ namespace System
             public readonly byte[]? StackTrace;
             public readonly object[]? DynamicMethods;
             public readonly string? RemoteStackTrace;
-            public readonly UIntPtr IpForWatsonBuckets;
+            public readonly nuint IpForWatsonBuckets;
             public readonly byte[]? WatsonBuckets;
 
             public DispatchState(
                 byte[]? stackTrace,
                 object[]? dynamicMethods,
                 string? remoteStackTrace,
-                UIntPtr ipForWatsonBuckets,
+                nuint ipForWatsonBuckets,
                 byte[]? watsonBuckets)
             {
                 StackTrace = stackTrace;

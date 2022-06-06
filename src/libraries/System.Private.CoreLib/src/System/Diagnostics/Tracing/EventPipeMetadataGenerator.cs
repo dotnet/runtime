@@ -538,7 +538,7 @@ namespace System.Diagnostics.Tracing
                 typeInfo = ScalarTypeInfo.IntPtr();
                 return true;
             }
-            else if (type == typeof(UIntPtr))
+            else if (type == typeof(nuint))
             {
                 typeInfo = ScalarTypeInfo.UIntPtr();
                 return true;
@@ -649,7 +649,7 @@ namespace System.Diagnostics.Tracing
         // Array is not part of TypeCode, we decided to use 19 to represent it. (18 is the last type code value, string)
         private const int EventPipeTypeCodeArray = 19;
 
-        private static TypeCode GetTypeCodeExtended(Type parameterType)
+        private static unsafe TypeCode GetTypeCodeExtended(Type parameterType)
         {
             // Guid is not part of TypeCode, we decided to use 17 to represent it, as it's the "free slot"
             // see https://github.com/dotnet/runtime/issues/9629#issuecomment-361749750 for more
@@ -662,8 +662,8 @@ namespace System.Diagnostics.Tracing
             if (parameterType == typeof(IntPtr))
                 return IntPtr.Size == 4 ? TypeCode.Int32 : TypeCode.Int64;
 
-            if (parameterType == typeof(UIntPtr))
-                return UIntPtr.Size == 4 ? TypeCode.UInt32 : TypeCode.UInt64;
+            if (parameterType == typeof(nuint))
+                return sizeof(nuint) == 4 ? TypeCode.UInt32 : TypeCode.UInt64;
 
             return Type.GetTypeCode(parameterType);
         }

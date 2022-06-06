@@ -51,7 +51,7 @@ namespace System
                 CorElementType.ELEMENT_TYPE_U8 => Unsafe.As<byte, ulong>(ref data).ToString(),
                 CorElementType.ELEMENT_TYPE_R8 => Unsafe.As<byte, double>(ref data).ToString(),
                 CorElementType.ELEMENT_TYPE_I => Unsafe.As<byte, IntPtr>(ref data).ToString(),
-                CorElementType.ELEMENT_TYPE_U => Unsafe.As<byte, UIntPtr>(ref data).ToString(),
+                CorElementType.ELEMENT_TYPE_U => Unsafe.As<byte, nuint>(ref data).ToString(),
                 _ => throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType),
             };
         }
@@ -1107,7 +1107,7 @@ namespace System
                 CorElementType.ELEMENT_TYPE_U8 => Unsafe.As<byte, ulong>(ref data),
                 CorElementType.ELEMENT_TYPE_R8 => Unsafe.As<byte, double>(ref data),
                 CorElementType.ELEMENT_TYPE_I => Unsafe.As<byte, IntPtr>(ref data),
-                CorElementType.ELEMENT_TYPE_U => Unsafe.As<byte, UIntPtr>(ref data),
+                CorElementType.ELEMENT_TYPE_U => Unsafe.As<byte, nuint>(ref data),
                 _ => throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType),
             };
         }
@@ -1227,7 +1227,7 @@ namespace System
                 CorElementType.ELEMENT_TYPE_U8 => Unsafe.As<byte, ulong>(ref data).GetHashCode(),
                 CorElementType.ELEMENT_TYPE_R8 => Unsafe.As<byte, double>(ref data).GetHashCode(),
                 CorElementType.ELEMENT_TYPE_I => Unsafe.As<byte, IntPtr>(ref data).GetHashCode(),
-                CorElementType.ELEMENT_TYPE_U => Unsafe.As<byte, UIntPtr>(ref data).GetHashCode(),
+                CorElementType.ELEMENT_TYPE_U => Unsafe.As<byte, nuint>(ref data).GetHashCode(),
                 _ => throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType),
             };
         }

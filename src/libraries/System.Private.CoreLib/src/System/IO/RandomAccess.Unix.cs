@@ -71,7 +71,7 @@ namespace System.IO
                 {
                     Memory<byte> buffer = buffers[i];
                     MemoryHandle memoryHandle = buffer.Pin();
-                    vectors[i] = new Interop.Sys.IOVector { Base = (byte*)memoryHandle.Pointer, Count = (UIntPtr)buffer.Length };
+                    vectors[i] = new Interop.Sys.IOVector { Base = (byte*)memoryHandle.Pointer, Count = (nuint)buffer.Length };
                     handles[i] = memoryHandle;
                 }
 
@@ -185,7 +185,7 @@ namespace System.IO
                         totalBytesToWrite += buffer.Length;
 
                         MemoryHandle memoryHandle = buffer.Pin();
-                        vectors[i] = new Interop.Sys.IOVector { Base = firstBufferOffset + (byte*)memoryHandle.Pointer, Count = (UIntPtr)(buffer.Length - firstBufferOffset) };
+                        vectors[i] = new Interop.Sys.IOVector { Base = firstBufferOffset + (byte*)memoryHandle.Pointer, Count = (nuint)(buffer.Length - firstBufferOffset) };
                         handles[i] = memoryHandle;
 
                         firstBufferOffset = 0;

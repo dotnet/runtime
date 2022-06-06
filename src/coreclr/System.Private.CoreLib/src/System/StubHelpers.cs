@@ -709,7 +709,7 @@ namespace System.StubHelpers
                         {
                             vt = (IntPtr.Size == 4 ? VarEnum.VT_I4 : VarEnum.VT_I8);
                         }
-                        else if (elementType == typeof(UIntPtr))
+                        else if (elementType == typeof(nuint))
                         {
                             vt = (IntPtr.Size == 4 ? VarEnum.VT_UI4 : VarEnum.VT_UI8);
                         }

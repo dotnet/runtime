@@ -58,7 +58,7 @@ namespace System.Diagnostics.Tracing
             [FieldOffset(0)]
             public IntPtr AsIntPtr;
             [FieldOffset(0)]
-            public UIntPtr AsUIntPtr;
+            public nuint AsUIntPtr;
             [FieldOffset(0)]
             public float AsSingle;
             [FieldOffset(0)]
@@ -105,7 +105,7 @@ namespace System.Diagnostics.Tracing
         private PropertyValue(long value) : this(new Scalar() { AsInt64 = value }, sizeof(long)) { }
         private PropertyValue(ulong value) : this(new Scalar() { AsUInt64 = value }, sizeof(ulong)) { }
         private PropertyValue(IntPtr value) : this(new Scalar() { AsIntPtr = value }, sizeof(IntPtr)) { }
-        private PropertyValue(UIntPtr value) : this(new Scalar() { AsUIntPtr = value }, sizeof(UIntPtr)) { }
+        private PropertyValue(nuint value) : this(new Scalar() { AsUIntPtr = value }, sizeof(nuint)) { }
         private PropertyValue(float value) : this(new Scalar() { AsSingle = value }, sizeof(float)) { }
         private PropertyValue(double value) : this(new Scalar() { AsDouble = value }, sizeof(double)) { }
         private PropertyValue(Guid value) : this(new Scalar() { AsGuid = value }, sizeof(Guid)) { }
@@ -127,7 +127,7 @@ namespace System.Diagnostics.Tracing
             if (type == typeof(long)) return value => new PropertyValue((long)value!);
             if (type == typeof(ulong)) return value => new PropertyValue((ulong)value!);
             if (type == typeof(IntPtr)) return value => new PropertyValue((IntPtr)value!);
-            if (type == typeof(UIntPtr)) return value => new PropertyValue((UIntPtr)value!);
+            if (type == typeof(nuint)) return value => new PropertyValue((nuint)value!);
             if (type == typeof(float)) return value => new PropertyValue((float)value!);
             if (type == typeof(double)) return value => new PropertyValue((double)value!);
             if (type == typeof(Guid)) return value => new PropertyValue((Guid)value!);
@@ -270,7 +270,7 @@ namespace System.Diagnostics.Tracing
                     if (type == typeof(long)) { var f = GetGetMethod<long>(property); return container => new PropertyValue(f((TContainer)container.ReferenceValue!)); }
                     if (type == typeof(ulong)) { var f = GetGetMethod<ulong>(property); return container => new PropertyValue(f((TContainer)container.ReferenceValue!)); }
                     if (type == typeof(IntPtr)) { var f = GetGetMethod<IntPtr>(property); return container => new PropertyValue(f((TContainer)container.ReferenceValue!)); }
-                    if (type == typeof(UIntPtr)) { var f = GetGetMethod<UIntPtr>(property); return container => new PropertyValue(f((TContainer)container.ReferenceValue!)); }
+                    if (type == typeof(nuint)) { var f = GetGetMethod<nuint>(property); return container => new PropertyValue(f((TContainer)container.ReferenceValue!)); }
                     if (type == typeof(float)) { var f = GetGetMethod<float>(property); return container => new PropertyValue(f((TContainer)container.ReferenceValue!)); }
                     if (type == typeof(double)) { var f = GetGetMethod<double>(property); return container => new PropertyValue(f((TContainer)container.ReferenceValue!)); }
                     if (type == typeof(Guid)) { var f = GetGetMethod<Guid>(property); return container => new PropertyValue(f((TContainer)container.ReferenceValue!)); }

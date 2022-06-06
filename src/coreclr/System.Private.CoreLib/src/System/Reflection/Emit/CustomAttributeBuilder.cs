@@ -241,7 +241,7 @@ namespace System.Reflection.Emit
         {
             if (t.IsPrimitive)
             {
-                return t != typeof(IntPtr) && t != typeof(UIntPtr);
+                return t != typeof(IntPtr) && t != typeof(nuint);
             }
             if (t == typeof(string) || t == typeof(Type))
             {
@@ -277,7 +277,7 @@ namespace System.Reflection.Emit
             {
                 throw new ArgumentException(SR.Argument_ConstantDoesntMatch);
             }
-            if (passedType == typeof(IntPtr) || passedType == typeof(UIntPtr))
+            if (passedType == typeof(IntPtr) || passedType == typeof(nuint))
             {
                 throw new ArgumentException(SR.Format(SR.Argument_BadParameterTypeForCAB, passedType), paramName);
             }

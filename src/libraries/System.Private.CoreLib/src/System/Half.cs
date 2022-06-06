@@ -651,7 +651,7 @@ namespace System
         [CLSCompliant(false)]
         public static explicit operator Half(ulong value) => (Half)(float)value;
 
-        /// <summary>Explicitly converts a <see cref="System.UIntPtr" /> value to its nearest representable half-precision floating-point value.</summary>
+        /// <summary>Explicitly converts a <see cref="nuint" /> value to its nearest representable half-precision floating-point value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable half-precision floating-point value.</returns>
         [CLSCompliant(false)]
@@ -808,16 +808,16 @@ namespace System
         [CLSCompliant(false)]
         public static explicit operator checked UInt128(Half value) => checked((UInt128)(double)(value));
 
-        /// <summary>Explicitly converts a half-precision floating-point value to its nearest representable <see cref="UIntPtr" /> value.</summary>
+        /// <summary>Explicitly converts a half-precision floating-point value to its nearest representable <see cref="nuint" /> value.</summary>
         /// <param name="value">The value to convert.</param>
-        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="UIntPtr" /> value.</returns>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="nuint" /> value.</returns>
         [CLSCompliant(false)]
         public static explicit operator nuint(Half value) => (nuint)(float)value;
 
-        /// <summary>Explicitly converts a half-precision floating-point value to its nearest representable <see cref="UIntPtr" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <summary>Explicitly converts a half-precision floating-point value to its nearest representable <see cref="nuint" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
         /// <param name="value">The value to convert.</param>
-        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="UIntPtr" /> value.</returns>
-        /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="UIntPtr" />.</exception>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="nuint" /> value.</returns>
+        /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="nuint" />.</exception>
         [CLSCompliant(false)]
         public static explicit operator checked nuint(Half value) => checked((nuint)(float)value);
 

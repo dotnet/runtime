@@ -23,7 +23,7 @@ namespace System.Threading
             Debug.Assert(maximumSignalCount > 0);
 
             _completionPort =
-                Interop.Kernel32.CreateIoCompletionPort(new IntPtr(-1), IntPtr.Zero, UIntPtr.Zero, maximumSignalCount);
+                Interop.Kernel32.CreateIoCompletionPort(new IntPtr(-1), IntPtr.Zero, 0, maximumSignalCount);
             if (_completionPort == IntPtr.Zero)
             {
                 int hr = Marshal.GetHRForLastWin32Error();
@@ -56,7 +56,7 @@ namespace System.Threading
 
             for (int i = 0; i < count; i++)
             {
-                if (!Interop.Kernel32.PostQueuedCompletionStatus(_completionPort, 1, UIntPtr.Zero, IntPtr.Zero))
+                if (!Interop.Kernel32.PostQueuedCompletionStatus(_completionPort, 1, 0, IntPtr.Zero))
                 {
                     int lastError = Marshal.GetLastPInvokeError();
                     var exception = new OutOfMemoryException();

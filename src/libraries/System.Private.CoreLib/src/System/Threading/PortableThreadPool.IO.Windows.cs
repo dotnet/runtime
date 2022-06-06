@@ -46,7 +46,7 @@ namespace System.Threading
         private static nint CreateIOCompletionPort()
         {
             nint port =
-                Interop.Kernel32.CreateIoCompletionPort(new IntPtr(-1), IntPtr.Zero, UIntPtr.Zero, IOCompletionPollerCount);
+                Interop.Kernel32.CreateIoCompletionPort(new IntPtr(-1), IntPtr.Zero, 0, IOCompletionPollerCount);
             if (port == 0)
             {
                 int hr = Marshal.GetHRForLastWin32Error();
@@ -65,7 +65,7 @@ namespace System.Threading
                 EnsureIOCompletionPollers();
             }
 
-            nint port = Interop.Kernel32.CreateIoCompletionPort(handle, _ioPort, UIntPtr.Zero, 0);
+            nint port = Interop.Kernel32.CreateIoCompletionPort(handle, _ioPort, 0, 0);
             if (port == 0)
             {
                 ThrowHelper.ThrowApplicationException(Marshal.GetHRForLastWin32Error());
@@ -89,7 +89,7 @@ namespace System.Threading
                 NativeRuntimeEventSource.Log.ThreadPoolIOEnqueue(nativeOverlapped);
             }
 
-            if (!Interop.Kernel32.PostQueuedCompletionStatus(_ioPort, 0, UIntPtr.Zero, (IntPtr)nativeOverlapped))
+            if (!Interop.Kernel32.PostQueuedCompletionStatus(_ioPort, 0, 0, (IntPtr)nativeOverlapped))
             {
                 ThrowHelper.ThrowApplicationException(Marshal.GetHRForLastWin32Error());
             }

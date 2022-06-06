@@ -35,7 +35,7 @@ namespace System.Diagnostics.Tracing
         public static readonly TraceLoggingDataType IntPtrType = IntPtr.Size == 8
             ? TraceLoggingDataType.Int64
             : TraceLoggingDataType.Int32;
-        public static readonly TraceLoggingDataType UIntPtrType = IntPtr.Size == 8
+        public static readonly unsafe TraceLoggingDataType UIntPtrType = sizeof(nuint) == 8
             ? TraceLoggingDataType.UInt64
             : TraceLoggingDataType.UInt32;
         public static readonly TraceLoggingDataType HexIntPtrType = IntPtr.Size == 8
@@ -474,7 +474,7 @@ namespace System.Diagnostics.Tracing
                 {
                     result = ScalarArrayTypeInfo.IntPtr();
                 }
-                else if (elementType == typeof(UIntPtr))
+                else if (elementType == typeof(nuint))
                 {
                     result = ScalarArrayTypeInfo.UIntPtr();
                 }
@@ -556,7 +556,7 @@ namespace System.Diagnostics.Tracing
                 {
                     result = ScalarTypeInfo.IntPtr();
                 }
-                else if (dataType == typeof(UIntPtr))
+                else if (dataType == typeof(nuint))
                 {
                     result = ScalarTypeInfo.UIntPtr();
                 }
