@@ -2820,6 +2820,8 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.compJitSaveFpLrWithCalleeSavedRegisters = 0;
 #endif // defined(TARGET_ARM64)
 
+    opts.compJitEarlyExpandMDArrays = (JitConfig.JitEarlyExpandMDArrays() != 0);
+
 #ifdef DEBUG
     opts.dspInstrs       = false;
     opts.dspLines        = false;
@@ -2838,8 +2840,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.dspUnwind       = false;
     opts.compLongAddress = false;
     opts.optRepeat       = false;
-
-    opts.compJitEarlyExpandMDArrays = false;
 
 #ifdef LATE_DISASM
     opts.doLateDisasm = false;
@@ -2995,10 +2995,16 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
             opts.optRepeat = true;
         }
 
-        if (JitConfig.JitEarlyExpandMDArrays().contains(info.compMethodName, info.compClassName,
-                                                        &info.compMethodInfo->args))
+        // If JitEarlyExpandMDArrays is non-zero, then early MD expansion is enabled.
+        // If JitEarlyExpandMDArrays is zero, then conditionally enable it for functions specfied by
+        // JitEarlyExpandMDArraysFilter.
+        if (JitConfig.JitEarlyExpandMDArrays() == 0)
         {
-            opts.compJitEarlyExpandMDArrays = true;
+            if (JitConfig.JitEarlyExpandMDArraysFilter().contains(info.compMethodName, info.compClassName,
+                                                                  &info.compMethodInfo->args))
+            {
+                opts.compJitEarlyExpandMDArrays = true;
+            }
         }
     }
 

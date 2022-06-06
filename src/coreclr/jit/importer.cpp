@@ -6323,12 +6323,12 @@ GenTree* Compiler::impArrayAccessIntrinsic(
 #ifdef DEBUG
         if (impInlineRoot()->opts.compJitEarlyExpandMDArrays)
         {
-            // TODO-MDArray: this is only enabled when JitEarlyExpandMDArrays is set because it causes small
+            // This is only enabled when early MD expansion is set because it causes small
             // asm diffs (only in some test cases) otherwise. The GT_ARR_ELEM lowering code "accidentally" does
             // this cast, but the new code requires it to be explicit.
             argVal = impImplicitIorI4Cast(argVal, TYP_INT);
         }
-#endif
+#endif // DEBUG
         inds[k - 1] = argVal;
     }
 
