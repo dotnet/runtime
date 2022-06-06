@@ -14,10 +14,13 @@ The .NET Foundation licenses this file to you under the MIT license.
 -->
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <CppCompilerAndLinker Condition="'$(CppCompilerAndLinker)' == ''">clang</CppCompilerAndLinker>
+    <CustomToolchainSpecified Condition="'$(CppCompilerAndLinker)' != ''">true</CustomToolchainSpecified>
+    <CppCompilerAndLinker Condition="'$(CustomToolchainSpecified)' != 'true'">clang</CppCompilerAndLinker>
+    <CppCompilerAndLinkerAlternative Condition="'$(CustomToolchainSpecified)' != 'true' and '$(TargetOS)' != 'OSX'">gcc</CppCompilerAndLinkerAlternative>
     <CppCompiler>$(CppCompilerAndLinker)</CppCompiler>
     <CppLinker>$(CppCompilerAndLinker)</CppLinker>
     <CppLibCreator>ar</CppLibCreator>
+    <DsymUtilOptions Condition="'$(TargetOS)' == 'OSX'">--flat</DsymUtilOptions>
   </PropertyGroup>
 
   <Target Name="SetupOSSpecificProps" DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)">
@@ -79,6 +82,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <LinkerArg Include="-g" Condition="$(NativeDebugSymbols) == 'true'" />
       <LinkerArg Include="-Wl,--strip-debug" Condition="$(NativeDebugSymbols) != 'true' and '$(TargetOS)' != 'OSX'" />
       <LinkerArg Include="-Wl,-rpath,'$(IlcRPath)'" />
+      <LinkerArg Include="-Wl,--build-id=sha1" Condition="'$(TargetOS)' != 'OSX'" />
       <LinkerArg Include="-Wl,--as-needed" Condition="'$(TargetOS)' != 'OSX'" />
       <LinkerArg Include="-pthread" Condition="'$(TargetOS)' != 'OSX'" />
       <LinkerArg Include="-lstdc++" />
@@ -86,7 +90,6 @@ The .NET Foundation licenses this file to you under the MIT license.
       <LinkerArg Include="-lm" />
       <LinkerArg Include="-lz" />
       <LinkerArg Include="-static" Condition="'$(StaticallyLinked)' == 'true'" />
-      <LinkerArg Include="-lgssapi_krb5" Condition="'$(TargetOS)' != 'OSX' and '$(StaticallyLinked)' != 'true'" />
       <LinkerArg Include="-lrt" Condition="'$(TargetOS)' != 'OSX'" />
       <LinkerArg Include="-licucore" Condition="'$(TargetOS)' == 'OSX'" />
       <LinkerArg Include="-dynamiclib" Condition="'$(TargetOS)' == 'OSX' and '$(NativeLib)' == 'Shared'" />
@@ -97,8 +100,8 @@ The .NET Foundation licenses this file to you under the MIT license.
       <LinkerArg Include="-Wl,-z,relro" Condition="'$(TargetOS)' != 'OSX'" />
       <!-- binskim warning BA3011 The BIND_NOW flag is missing -->
       <LinkerArg Include="-Wl,-z,now" Condition="'$(TargetOS)' != 'OSX'" />
-      <LinkerArg Include="-Wl,-u,_CoreRT_StaticInitialization" Condition="'$(TargetOS)' == 'OSX' and '$(NativeLib)' == 'Shared'" />
-      <LinkerArg Include="-Wl,--require-defined,CoreRT_StaticInitialization" Condition="'$(TargetOS)' != 'OSX' and '$(NativeLib)' == 'Shared'" />
+      <LinkerArg Include="-Wl,-u,_NativeAOT_StaticInitialization" Condition="'$(TargetOS)' == 'OSX' and '$(NativeLib)' == 'Shared'" />
+      <LinkerArg Include="-Wl,--require-defined,NativeAOT_StaticInitialization" Condition="'$(TargetOS)' != 'OSX' and '$(NativeLib)' == 'Shared'" />
 
       <LinkerArg Include="@(NativeFramework->'-framework %(Identity)')" Condition="'$(TargetOS)' == 'OSX'" />
     </ItemGroup>
@@ -106,7 +109,42 @@ The .NET Foundation licenses this file to you under the MIT license.
     <Exec Command="command -v $(CppLinker)" IgnoreExitCode="true" StandardOutputImportance="Low">
       <Output TaskParameter="ExitCode" PropertyName="_WhereLinker" />
     </Exec>
-    <Error Condition="'$(_WhereLinker)' != '0' and '$(TargetOS)' == 'OSX'" Text="Platform linker ('$(CppLinker)') not found. Try installing Xcode to resolve the problem." />
-    <Error Condition="'$(_WhereLinker)' != '0' and '$(TargetOS)' != 'OSX'" Text="Platform linker ('$(CppLinker)') not found. Try installing $(CppLinker) or the appropriate package for your platform to resolve the problem." />
+
+    <Exec Command="command -v $(CppCompilerAndLinkerAlternative)" Condition="'$(CppCompilerAndLinkerAlternative)' != '' and '$(_WhereLinker)' != '0'" IgnoreExitCode="true" StandardOutputImportance="Low">
+      <Output TaskParameter="ExitCode" PropertyName="_WhereLinkerAlt" />
+    </Exec>
+
+    <PropertyGroup Condition="'$(CppCompilerAndLinkerAlternative)' != '' and '$(_WhereLinker)' != '0' and '$(_WhereLinkerAlt)' == '0'">
+      <CppCompilerAndLinker>$(CppCompilerAndLinkerAlternative)</CppCompilerAndLinker>
+      <CppCompiler>$(CppCompilerAndLinker)</CppCompiler>
+      <CppLinker>$(CppCompilerAndLinker)</CppLinker>
+      <_WhereLinker>0</_WhereLinker>
+    </PropertyGroup>
+
+    <Error Condition="'$(_WhereLinker)' != '0' and '$(TargetOS)' == 'OSX'" Text="Platform linker ('$(CppLinker)') not found in PATH. Try installing Xcode to resolve the problem." />
+    <Error Condition="'$(_WhereLinker)' != '0' and '$(CppCompilerAndLinkerAlternative)' != ''"
+      Text="Platform linker ('$(CppLinker)' or '$(CppCompilerAndLinkerAlternative)') not found in PATH. Try installing appropriate package for $(CppLinker) or $(CppCompilerAndLinkerAlternative) to resolve the problem." />
+    <Error Condition="'$(_WhereLinker)' != '0' and '$(CppCompilerAndLinkerAlternative)' == '' and '$(TargetOS)' != 'OSX'"
+      Text="Requested linker ('$(CppLinker)') not found in PATH." />
+
+    <Exec Command="command -v objcopy" IgnoreExitCode="true" StandardOutputImportance="Low" Condition="'$(TargetOS)' != 'OSX' and '$(StripSymbols)' == 'true'">
+      <Output TaskParameter="ExitCode" PropertyName="_WhereSymbolStripper" />
+    </Exec>
+    <Error Condition="'$(_WhereSymbolStripper)' != '0' and '$(StripSymbols)' == 'true' and '$(TargetOS)' != 'OSX'"
+      Text="Symbol stripping tool ('objcopy') not found in PATH. Make sure 'objcopy' is available in PATH" />
+
+    <Exec Command="command -v dsymutil &amp;&amp; command -v strip" IgnoreExitCode="true" StandardOutputImportance="Low" Condition="'$(TargetOS)' == 'OSX' and '$(StripSymbols)' == 'true'">
+      <Output TaskParameter="ExitCode" PropertyName="_WhereSymbolStripper" />
+    </Exec>
+    <Error Condition="'$(_WhereSymbolStripper)' != '0' and '$(StripSymbols)' == 'true' and '$(TargetOS)' != 'OSX'"
+      Text="Symbol stripping tools ('dsymutil' and 'strip') not found in PATH. Make sure 'dsymutil' and 'strip' are available in PATH" />
+
+    <Exec Command="dsymutil --help" IgnoreExitCode="true" StandardOutputImportance="Low" Condition="'$(TargetOS)' == 'OSX' and '$(StripSymbols)' == 'true'">
+      <Output TaskParameter="ExitCode" PropertyName="_DsymUtilOutput" />
+    </Exec>
+
+    <PropertyGroup Condition="'$(TargetOS)' == 'OSX' and '$(StripSymbols)' == 'true' and $(_DsymUtilOutput.Contains('--minimize'))">
+      <DsymUtilOptions>$(DsymUtilOptions) --minimize</DsymUtilOptions>
+    </PropertyGroup>
   </Target>
 </Project>

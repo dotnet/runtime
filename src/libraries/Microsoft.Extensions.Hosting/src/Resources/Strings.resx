@@ -135,6 +135,9 @@
   <data name="EnvironmentNameChangeNotSupoprted" xml:space="preserve">
     <value>The environment name changed from "{0}" to "{1}". Changing host configuration is not supported.</value>
   </data>
+  <data name="HostAbortedExceptionMessage" xml:space="preserve">
+    <value>The host was aborted.</value>
+  </data>
   <data name="IHostApplicationLifetimeReplacementNotSupported" xml:space="preserve">
     <value>Replacing IHostApplicationLifetime is not supported.</value>
   </data>
@@ -143,8 +146,5 @@
   </data>
   <data name="ResolverReturnedNull" xml:space="preserve">
     <value>The resolver returned a null IServiceProviderFactory</value>
-  </data>
-  <data name="ServiceCollectionModificationInvalidAfterBuild" xml:space="preserve">
-    <value>The service collection cannot be modified after the application is built.</value>
   </data>
 </root>

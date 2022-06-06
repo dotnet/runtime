@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-
-
 #include "common.h"
 #include "jitinterface.h"
 #include "codeman.h"
@@ -783,7 +781,7 @@ HCIMPL2(void*, JIT_GetFieldAddr, Object *obj, FieldDesc* pFD)
         PRECONDITION(CheckPointer(pFD));
     } CONTRACTL_END;
 
-    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL2(JIT_GetFieldAddr_Framed, obj, pFD);
@@ -827,7 +825,7 @@ HCIMPL2(INT8, JIT_GetField8, Object *obj, FieldDesc *pFD)
 {
     FCALL_CONTRACT;
 
-    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL2(JIT_GetField_Framed<INT8>, obj, pFD);
@@ -843,7 +841,7 @@ HCIMPL2(INT16, JIT_GetField16, Object *obj, FieldDesc *pFD)
 {
     FCALL_CONTRACT;
 
-    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL2(JIT_GetField_Framed<INT16>, obj, pFD);
@@ -859,7 +857,7 @@ HCIMPL2(INT32, JIT_GetField32, Object *obj, FieldDesc *pFD)
 {
     FCALL_CONTRACT;
 
-    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL2(JIT_GetField_Framed<INT32>, obj, pFD);
@@ -875,7 +873,7 @@ HCIMPL2(INT64, JIT_GetField64, Object *obj, FieldDesc *pFD)
 {
     FCALL_CONTRACT;
 
-    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL2(JIT_GetField_Framed<INT64>, obj, pFD);
@@ -891,7 +889,7 @@ HCIMPL2(FLOAT, JIT_GetFieldFloat, Object *obj, FieldDesc *pFD)
 {
     FCALL_CONTRACT;
 
-    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL2(JIT_GetField_Framed<FLOAT>, obj, pFD);
@@ -908,7 +906,7 @@ HCIMPL2(DOUBLE, JIT_GetFieldDouble, Object *obj, FieldDesc *pFD)
 {
     FCALL_CONTRACT;
 
-    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL2(JIT_GetField_Framed<DOUBLE>, obj, pFD);
@@ -952,7 +950,7 @@ HCIMPL3(VOID, JIT_SetField8, Object *obj, FieldDesc *pFD, INT8 val)
 {
     FCALL_CONTRACT;
 
-    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL3(JIT_SetField_Framed<INT8>, obj, pFD, val);
@@ -967,7 +965,7 @@ HCIMPL3(VOID, JIT_SetField16, Object *obj, FieldDesc *pFD, INT16 val)
 {
     FCALL_CONTRACT;
 
-    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL3(JIT_SetField_Framed<INT16>, obj, pFD, val);
@@ -982,7 +980,7 @@ HCIMPL3(VOID, JIT_SetField32, Object *obj, FieldDesc *pFD, INT32 val)
 {
     FCALL_CONTRACT;
 
-    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL3(JIT_SetField_Framed<INT32>, obj, pFD, val);
@@ -997,7 +995,7 @@ HCIMPL3(VOID, JIT_SetField64, Object *obj, FieldDesc *pFD, INT64 val)
 {
     FCALL_CONTRACT;
 
-    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL3(JIT_SetField_Framed<INT64>, obj, pFD, val);
@@ -1012,7 +1010,7 @@ HCIMPL3(VOID, JIT_SetFieldFloat, Object *obj, FieldDesc *pFD, FLOAT val)
 {
     FCALL_CONTRACT;
 
-    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL3(JIT_SetField_Framed<FLOAT>, obj, pFD, val);
@@ -1027,7 +1025,7 @@ HCIMPL3(VOID, JIT_SetFieldDouble, Object *obj, FieldDesc *pFD, DOUBLE val)
 {
     FCALL_CONTRACT;
 
-    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL3(JIT_SetField_Framed<DOUBLE>, obj, pFD, val);
@@ -1072,7 +1070,7 @@ HCIMPL2(Object*, JIT_GetFieldObj, Object *obj, FieldDesc *pFD)
         PRECONDITION(!pFD->IsPrimitive() && !pFD->IsByValue());  // Assert that we are called only for objects
     } CONTRACTL_END;
 
-    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL2(JIT_GetFieldObj_Framed, obj, pFD);
@@ -1116,7 +1114,7 @@ HCIMPL3(VOID, JIT_SetFieldObj, Object *obj, FieldDesc *pFD, Object *value)
         PRECONDITION(!pFD->IsPrimitive() && !pFD->IsByValue());  // Assert that we are called only for objects
     } CONTRACTL_END;
 
-    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL3(JIT_SetFieldObj_Framed, obj, pFD, value);
@@ -1174,7 +1172,7 @@ HCIMPL4(VOID, JIT_GetFieldStruct, LPVOID retBuff, Object *obj, FieldDesc *pFD, M
 
     _ASSERTE(pFieldMT->IsValueType());
 
-    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL4(JIT_GetFieldStruct_Framed, retBuff, obj, pFD, pFieldMT);
@@ -1228,7 +1226,7 @@ HCIMPL4(VOID, JIT_SetFieldStruct, Object *obj, FieldDesc *pFD, MethodTable *pFie
 
     _ASSERTE(pFieldMT->IsValueType());
 
-    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL4(JIT_SetFieldStruct_Framed, obj, pFD, pFieldMT, valuePtr);
@@ -2701,9 +2699,7 @@ HCIMPL2(Object*, JIT_Box, CORINFO_CLASS_HANDLE type, void* unboxedData)
 
     pMT->CheckRestore();
 
-    // You can only box valuetypes
-    if (!pMT->IsValueType())
-        COMPlusThrow(kInvalidCastException, W("Arg_ObjObj"));
+    _ASSERTE (pMT->IsValueType() && !pMT->IsByRefLike());
 
 #ifdef _DEBUG
     if (g_pConfig->FastGCStressLevel()) {
@@ -3094,7 +3090,7 @@ CORINFO_GENERIC_HANDLE JIT_GenericHandleWorker(MethodDesc * pMD, MethodTable * p
         }
 
         pDeclaringMT = pMT;
-        for (;;)
+        while (true)
         {
             MethodTable * pParentMT = pDeclaringMT->GetParentMethodTable();
             if (pParentMT->GetNumDicts() <= dictionaryIndex)
@@ -3243,8 +3239,6 @@ HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleMethodLogging, CORINFO_METHOD_H
         PRECONDITION(CheckPointer(signature));
     } CONTRACTL_END;
 
-    g_IBCLogger.LogMethodDescAccess(GetMethod(methodHnd));
-
     JitGenericHandleCacheKey key(NULL, methodHnd, signature);
     HashDatum res;
     if (g_pJitGenericHandleCache->GetValueSpeculative(&key,&res))
@@ -3308,8 +3302,6 @@ HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleClassLogging, CORINFO_CLASS_HAN
         PRECONDITION(TypeHandle(classHnd).IsRestored());
         PRECONDITION(CheckPointer(signature));
     } CONTRACTL_END;
-
-    g_IBCLogger.LogMethodTableAccess((MethodTable *)classHnd);
 
     JitGenericHandleCacheKey key(classHnd, NULL, signature);
     HashDatum res;
@@ -3380,6 +3372,34 @@ NOINLINE HCIMPL3(CORINFO_MethodPtr, JIT_VirtualFunctionPointer_Framed, Object * 
     HELPER_METHOD_FRAME_END();
 
     return addr;
+}
+HCIMPLEND
+
+HCIMPL3(void, JIT_StaticVirtualAmbiguousResolution, 
+    MethodDesc *method,
+    MethodTable *interfaceType,
+    MethodTable *targetType)
+{
+    FCALL_CONTRACT;
+
+    SString strMethodName;
+    SString strInterfaceName;
+    SString strTargetClassName;
+
+    HELPER_METHOD_FRAME_BEGIN_0();    // Set up a frame
+
+    TypeString::AppendMethod(strMethodName, method, method->GetMethodInstantiation());
+    TypeString::AppendType(strInterfaceName, TypeHandle(interfaceType));
+    TypeString::AppendType(strTargetClassName, targetType);
+
+    HELPER_METHOD_FRAME_END();    // Set up a frame
+
+    FCThrowExVoid(
+        kAmbiguousImplementationException,
+        IDS_CLASSLOAD_AMBIGUOUS_OVERRIDE,
+        strMethodName,
+        strInterfaceName,
+        strTargetClassName);
 }
 HCIMPLEND
 
@@ -4540,12 +4560,6 @@ HCIMPL1(void, JIT_LogMethodEnter, CORINFO_METHOD_HANDLE methHnd_)
     // Record an access to this method desc
     //
 
-    HELPER_METHOD_FRAME_BEGIN_NOPOLL();
-
-    g_IBCLogger.LogMethodCodeAccess(GetMethod(methHnd_));
-
-    HELPER_METHOD_FRAME_END_POLL();
-
 HCIMPLEND
 
 
@@ -5457,7 +5471,7 @@ HCIMPLEND
 
 /**********************************************************************/
 /* Fills out portions of an InlinedCallFrame for JIT64    */
-/* The idea here is to allocate and initalize the frame to only once, */
+/* The idea here is to allocate and initialize the frame to only once, */
 /* regardless of how many PInvokes there are in the method            */
 Thread * __stdcall JIT_InitPInvokeFrame(InlinedCallFrame *pFrame, PTR_VOID StubSecretArg)
 {
@@ -5823,7 +5837,7 @@ void WriteJitHelperCountToSTRESSLOG()
             switch (jitHelperLoggingLevel)
             {
             case 1:
-                // This will print a comma seperated list:
+                // This will print a comma separated list:
                 // CORINFO_XXX_HELPER, 10
                 // CORINFO_YYYY_HELPER, 11
                 STRESS_LOG2(logFacility, logLevel, "%s, %d\n", name, count);

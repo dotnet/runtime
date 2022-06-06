@@ -33,12 +33,12 @@ enum {
 #define MONO_BITSET_FOREACH(set,idx,/*stmt*/...) \
 	do \
 	{ \
-		MonoBitSet *set__ = (set); \
-		for (int i__ = 0; i__ < set__->size / MONO_BITSET_BITS_PER_CHUNK; i__++) { \
-			if (set__->data [i__]) { \
-				for (int j__ = 0; j__ < MONO_BITSET_BITS_PER_CHUNK; j__++) { \
-					if (set__->data [i__] & ((gsize) 1 << j__)) { \
-						guint idx = j__ + i__ * MONO_BITSET_BITS_PER_CHUNK; \
+		MonoBitSet *__set = (set); \
+		for (int __i = 0; __i < __set->size / MONO_BITSET_BITS_PER_CHUNK; __i++) { \
+			if (__set->data [__i]) { \
+				for (int __j = 0; __j < MONO_BITSET_BITS_PER_CHUNK; __j++) { \
+					if (__set->data [__i] & ((gsize) 1 << __j)) { \
+						guint idx = __j + __i * MONO_BITSET_BITS_PER_CHUNK; \
 						__VA_ARGS__; \
 					} \
 				} \
@@ -47,19 +47,19 @@ enum {
 	} while (0)
 
 #define mono_bitset_union_fast(dest,src) do { \
-    MonoBitSet *tmp_src = (src); \
-    MonoBitSet *tmp_dest = (dest); \
-	size_t size = (tmp_dest->size / MONO_BITSET_BITS_PER_CHUNK); \
-	for (size_t i = 0; i < size; ++i) \
-		tmp_dest->data [i] |= tmp_src->data [i]; \
+	MonoBitSet *__tmp_src = (src); \
+	MonoBitSet *__tmp_dest = (dest); \
+	size_t size = (__tmp_dest->size / MONO_BITSET_BITS_PER_CHUNK); \
+	for (size_t __i = 0; __i < size; ++__i) \
+		__tmp_dest->data [__i] |= __tmp_src->data [__i]; \
 } while (0)
 
 #define mono_bitset_sub_fast(dest,src) do { \
-    MonoBitSet *tmp_src = (src); \
-    MonoBitSet *tmp_dest = (dest); \
-    size_t size = tmp_dest->size / MONO_BITSET_BITS_PER_CHUNK; \
-	for (size_t i = 0; i < size; ++i) \
-		tmp_dest->data [i] &= ~tmp_src->data [i]; \
+	MonoBitSet *__tmp_src = (src); \
+	MonoBitSet *__tmp_dest = (dest); \
+	size_t size = __tmp_dest->size / MONO_BITSET_BITS_PER_CHUNK; \
+	for (size_t __i = 0; __i < size; ++__i) \
+		__tmp_dest->data [__i] &= ~__tmp_src->data [__i]; \
 } while (0)
 
 /*
@@ -67,59 +67,58 @@ enum {
  * Interface documentation by Dennis Haney.
  */
 
-MONO_API guint32     mono_bitset_alloc_size   (guint32 max_size, guint32 flags);
+MONO_API guint32 mono_bitset_alloc_size (guint32 max_size, guint32 flags);
 
-MONO_API MonoBitSet* mono_bitset_new          (guint32 max_size, guint32 flags);
+MONO_API MonoBitSet* mono_bitset_new (guint32 max_size, guint32 flags);
 
-MONO_API MonoBitSet* mono_bitset_mem_new      (gpointer mem, guint32 max_size, guint32 flags);
+MONO_API MonoBitSet* mono_bitset_mem_new (gpointer mem, guint32 max_size, guint32 flags);
 
-MONO_API void        mono_bitset_free         (MonoBitSet *set);
+MONO_API void mono_bitset_free (MonoBitSet *set);
 
-MONO_API void        mono_bitset_set          (MonoBitSet *set, guint32 pos);
+MONO_API void mono_bitset_set (MonoBitSet *set, guint32 pos);
 
-MONO_API void        mono_bitset_set_all      (MonoBitSet *set);
+MONO_API void mono_bitset_set_all (MonoBitSet *set);
 
-MONO_API int         mono_bitset_test         (const MonoBitSet *set, guint32 pos);
+MONO_API int mono_bitset_test (const MonoBitSet *set, guint32 pos);
 
-MONO_API gsize       mono_bitset_test_bulk    (const MonoBitSet *set, guint32 pos);
+MONO_API gsize mono_bitset_test_bulk (const MonoBitSet *set, guint32 pos);
 
-MONO_API void        mono_bitset_clear        (MonoBitSet *set, guint32 pos);
+MONO_API void mono_bitset_clear (MonoBitSet *set, guint32 pos);
 
-MONO_API void        mono_bitset_clear_all    (MonoBitSet *set);
+MONO_API void mono_bitset_clear_all (MonoBitSet *set);
 
-MONO_API void        mono_bitset_invert       (MonoBitSet *set);
+MONO_API void mono_bitset_invert (MonoBitSet *set);
 
-MONO_API guint32     mono_bitset_size         (const MonoBitSet *set);
+MONO_API guint32 mono_bitset_size (const MonoBitSet *set);
 
-MONO_API guint32     mono_bitset_count        (const MonoBitSet *set);
+MONO_API guint32 mono_bitset_count (const MonoBitSet *set);
 
-MONO_API void        mono_bitset_low_high     (const MonoBitSet *set, guint32 *low, guint32 *high);
+MONO_API void mono_bitset_low_high (const MonoBitSet *set, guint32 *low, guint32 *high);
 
-MONO_API int         mono_bitset_find_start   (const MonoBitSet *set);
+MONO_API int mono_bitset_find_start (const MonoBitSet *set);
 
-MONO_API int         mono_bitset_find_first   (const MonoBitSet *set, gint pos);
+MONO_API int mono_bitset_find_first (const MonoBitSet *set, gint pos);
 
-MONO_API int         mono_bitset_find_last    (const MonoBitSet *set, gint pos);
+MONO_API int mono_bitset_find_last (const MonoBitSet *set, gint pos);
 
-MONO_API int         mono_bitset_find_first_unset (const MonoBitSet *set, gint pos);
+MONO_API int mono_bitset_find_first_unset (const MonoBitSet *set, gint pos);
 
-MONO_API MonoBitSet* mono_bitset_clone        (const MonoBitSet *set, guint32 new_size);
+MONO_API MonoBitSet* mono_bitset_clone (const MonoBitSet *set, guint32 new_size);
 
-MONO_API void        mono_bitset_copyto       (const MonoBitSet *src, MonoBitSet *dest);
+MONO_API void mono_bitset_copyto (const MonoBitSet *src, MonoBitSet *dest);
 
-MONO_API void        mono_bitset_union        (MonoBitSet *dest, const MonoBitSet *src);
+MONO_API void mono_bitset_union (MonoBitSet *dest, const MonoBitSet *src);
 
-MONO_API void        mono_bitset_intersection (MonoBitSet *dest, const MonoBitSet *src);
+MONO_API void mono_bitset_intersection (MonoBitSet *dest, const MonoBitSet *src);
 
-MONO_API void        mono_bitset_sub          (MonoBitSet *dest, const MonoBitSet *src);
+MONO_API void mono_bitset_sub (MonoBitSet *dest, const MonoBitSet *src);
 
-MONO_API gboolean    mono_bitset_equal        (const MonoBitSet *src, const MonoBitSet *src1);
+MONO_API gboolean mono_bitset_equal (const MonoBitSet *src, const MonoBitSet *src1);
 
-MONO_API void        mono_bitset_foreach      (MonoBitSet *set, MonoBitSetFunc func, gpointer data);
+MONO_API void mono_bitset_foreach (MonoBitSet *set, MonoBitSetFunc func, gpointer data);
 
-MONO_API void        mono_bitset_intersection_2 (MonoBitSet *dest, const MonoBitSet *src1, const MonoBitSet *src2);
+MONO_API void mono_bitset_intersection_2 (MonoBitSet *dest, const MonoBitSet *src1, const MonoBitSet *src2);
 
-gboolean
-mono_bitset_test_safe (const MonoBitSet *set, guint32 pos);
+gboolean mono_bitset_test_safe (const MonoBitSet *set, guint32 pos);
 
 #endif /* __MONO_BITSET_H__ */

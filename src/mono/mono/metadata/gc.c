@@ -42,6 +42,7 @@
 #include <mono/utils/unlocked.h>
 #include <mono/utils/mono-os-wait.h>
 #include <mono/utils/mono-lazy-init.h>
+#include <mono/utils/mono-threads-wasm.h>
 #ifndef HOST_WIN32
 #include <pthread.h>
 #endif
@@ -147,7 +148,7 @@ break_coop_alertable_wait (gpointer user_data)
 static gint
 coop_cond_timedwait_alertable (MonoCoopCond *cond, MonoCoopMutex *mutex, guint32 timeout_ms, gboolean *alertable)
 {
-	BreakCoopAlertableWaitUD *ud;
+	BreakCoopAlertableWaitUD *ud = NULL;
 	int res;
 
 	if (alertable) {
@@ -426,7 +427,7 @@ mono_domain_finalize (MonoDomain *domain, guint32 timeout)
 	MonoInternalThread *thread = mono_thread_internal_current ();
 	gint res;
 	gboolean ret;
-	gint64 start;
+	gint64 start = 0;
 
 	if (mono_thread_internal_current () == gc_thread)
 		/* We are called from inside a finalizer, not much we can do here */
@@ -480,7 +481,7 @@ mono_domain_finalize (MonoDomain *domain, guint32 timeout)
 				break;
 			}
 
-			res = mono_coop_sem_timedwait (&req->done, timeout - elapsed, MONO_SEM_FLAGS_ALERTABLE);
+			res = mono_coop_sem_timedwait (&req->done, GINT64_TO_UINT (timeout - elapsed), MONO_SEM_FLAGS_ALERTABLE);
 		}
 
 		if (res == MONO_SEM_TIMEDWAIT_RET_SUCCESS) {
@@ -685,6 +686,21 @@ ves_icall_System_GCHandle_InternalSet (MonoGCHandle handle, MonoObjectHandle obj
 static MonoCoopSem finalizer_sem;
 static volatile gboolean finished;
 
+#ifdef HOST_WASM
+
+static void
+mono_wasm_gc_finalize_notify (void)
+{
+#if 0
+	/* use this if we are going to start the finalizer thread on wasm. */
+	mono_coop_sem_post (&finalizer_sem);
+#else
+	mono_threads_schedule_background_job (mono_runtime_do_background_work);
+#endif
+}
+
+#endif /* HOST_WASM */
+
 /*
  * mono_gc_finalize_notify:
  *
@@ -705,7 +721,7 @@ mono_gc_finalize_notify (void)
 #if defined(HOST_WASI)
 	// TODO: Schedule the background job on WASI. Threads aren't yet supported in this build.
 #elif defined(HOST_WASM)
-	mono_threads_schedule_background_job (mono_runtime_do_background_work);
+	mono_wasm_gc_finalize_notify ();
 #else
 	mono_coop_sem_post (&finalizer_sem);
 #endif

@@ -14,7 +14,6 @@
 #include "check.h"
 
 #include <tlhelp32.h>
-#include "wtsapi32.h"
 
 #ifndef SM_REMOTESESSION
 #define SM_REMOTESESSION 0x1000
@@ -81,7 +80,6 @@ BOOL GetAllProcessesInSystem(DWORD *ProcessId,
 
     } while ((succ == TRUE) && (iIndex < (int)dwArraySize));
 
-    // I would like to know if we're running more than 512 processes on Win95!!
     _ASSERTE (iIndex < (int)dwArraySize);
 
     *pdwNumEntries = iIndex;

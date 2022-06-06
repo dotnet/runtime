@@ -56,7 +56,7 @@ namespace System.Runtime.InteropServices
             int nb;
 
             uint flags = bestFit ? 0 : Interop.Kernel32.WC_NO_BEST_FIT_CHARS;
-            uint defaultCharUsed = 0;
+            Interop.BOOL defaultCharUsed = Interop.BOOL.FALSE;
 
             fixed (char* pwzChar = s)
             {
@@ -67,11 +67,11 @@ namespace System.Runtime.InteropServices
                     s.Length,
                     buffer,
                     bufferLength,
-                    IntPtr.Zero,
-                    throwOnUnmappableChar ? new IntPtr(&defaultCharUsed) : IntPtr.Zero);
+                    null,
+                    throwOnUnmappableChar ? &defaultCharUsed : null);
             }
 
-            if (defaultCharUsed != 0)
+            if (defaultCharUsed != Interop.BOOL.FALSE)
             {
                 throw new ArgumentException(SR.Interop_Marshal_Unmappable_Char);
             }
@@ -94,7 +94,7 @@ namespace System.Runtime.InteropServices
                 fixed (char* pChars = chars)
                 {
                     byteLength = Interop.Kernel32.WideCharToMultiByte(
-                        Interop.Kernel32.CP_ACP, Interop.Kernel32.WC_NO_BEST_FIT_CHARS, pChars, chars.Length, null, 0, IntPtr.Zero, IntPtr.Zero);
+                        Interop.Kernel32.CP_ACP, Interop.Kernel32.WC_NO_BEST_FIT_CHARS, pChars, chars.Length, null, 0, null, null);
                     if (byteLength <= 0)
                         throw new ArgumentException();
                 }
@@ -118,7 +118,7 @@ namespace System.Runtime.InteropServices
                 fixed (byte* pBytes = bytes)
                 {
                     byteLength = Interop.Kernel32.WideCharToMultiByte(
-                       Interop.Kernel32.CP_ACP, Interop.Kernel32.WC_NO_BEST_FIT_CHARS, pChars, chars.Length, pBytes, bytes.Length, IntPtr.Zero, IntPtr.Zero);
+                       Interop.Kernel32.CP_ACP, Interop.Kernel32.WC_NO_BEST_FIT_CHARS, pChars, chars.Length, pBytes, bytes.Length, null, null);
                     if (byteLength <= 0)
                         throw new ArgumentException();
                 }
@@ -218,8 +218,10 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        internal static Type? GetTypeFromProgID(string progID!!, string? server, bool throwOnError)
+        internal static Type? GetTypeFromProgID(string progID, string? server, bool throwOnError)
         {
+            ArgumentNullException.ThrowIfNull(progID);
+
             int hr = Interop.Ole32.CLSIDFromProgID(progID, out Guid clsid);
             if (hr < 0)
             {

@@ -11,7 +11,8 @@ namespace System
     {
         Default = 0,
         Forced = 1,
-        Optimized = 2
+        Optimized = 2,
+        Aggressive = 3,
     }
 
     public enum GCNotificationStatus
@@ -91,7 +92,7 @@ namespace System
         {
             if (generation < 0)
                 throw new ArgumentOutOfRangeException(nameof(generation), "generation", SR.ArgumentOutOfRange_GenericPositive);
-            if ((mode < GCCollectionMode.Default) || (mode > GCCollectionMode.Optimized))
+            if ((mode < GCCollectionMode.Default) || (mode > GCCollectionMode.Aggressive))
                 throw new ArgumentOutOfRangeException(nameof(mode), SR.ArgumentOutOfRange_Enum);
 
             InternalCollect(generation);
@@ -133,8 +134,7 @@ namespace System
 
         public static void SuppressFinalize(object obj)
         {
-            if (obj == null)
-                throw new ArgumentNullException(nameof(obj));
+            ArgumentNullException.ThrowIfNull(obj);
             _SuppressFinalize(obj);
         }
 
@@ -143,8 +143,7 @@ namespace System
 
         public static void ReRegisterForFinalize(object obj)
         {
-            if (obj == null)
-                throw new ArgumentNullException(nameof(obj));
+            ArgumentNullException.ThrowIfNull(obj);
             _ReRegisterForFinalize(obj);
         }
 
@@ -311,6 +310,11 @@ namespace System
         internal static int GetLastGCPercentTimeInGC()
         {
             return (int)EventPipeInternal.GetRuntimeCounterValue(EventPipeInternal.RuntimeCounters.GC_LAST_PERCENT_TIME_IN_GC);
+        }
+
+        public static TimeSpan GetTotalPauseDuration()
+        {
+            return TimeSpan.Zero;
         }
     }
 }

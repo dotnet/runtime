@@ -283,8 +283,8 @@ amodule_unlock (MonoAotModule *amodule)
 static MonoImage *
 load_image (MonoAotModule *amodule, int index, MonoError *error)
 {
-	MonoAssembly *assembly;
-	MonoImageOpenStatus status;
+	MonoAssembly *assembly = NULL;
+	MonoImageOpenStatus status = MONO_IMAGE_OK;
 	MonoAssemblyLoadContext *alc = mono_alc_get_ambient ();
 
 	g_assert (index < amodule->image_table_len);
@@ -307,7 +307,7 @@ load_image (MonoAotModule *amodule, int index, MonoError *error)
 	 * so it's not obvious that we can call mono_assembly_open_predicate.
 	 *
 	 * In the JIT, an assembly opened with LoadFile is supposed to only
-	 * refer to already-loaded assemblies (or to GAC & MONO_PATH)
+	 * refer to already-loaded assemblies (or to MONO_PATH)
 	 * assemblies - so nothing new should be loading.  And for the
 	 * LoadFile'd assembly itself, we can check if the name and guid of the
 	 * current AOT module matches the wanted name and guid and just return
@@ -682,7 +682,7 @@ decode_type (MonoAotModule *module, guint8 *buf, guint8 **endbuf, MonoError *err
 	if (*p == MONO_TYPE_CMOD_REQD) {
 		++p;
 
-		int count = decode_value (p, &p);
+		uint8_t count = GINT32_TO_UINT8 (decode_value (p, &p));
 
 		/* TODO: encode aggregate cmods differently than simple cmods and make it possible to use the more compact encoding here. */
 		t = (MonoType*)g_malloc0 (mono_sizeof_type_with_mods (count, TRUE));
@@ -692,7 +692,7 @@ decode_type (MonoAotModule *module, guint8 *buf, guint8 **endbuf, MonoError *err
 		g_assert (count < MONO_MAX_EXPECTED_CMODS);
 		MonoAggregateModContainer *cm = g_alloca (mono_sizeof_aggregate_modifiers (count));
 		cm->count = count;
-		for (int i = 0; i < count; ++i) {
+		for (uint8_t i = 0; i < count; ++i) {
 			MonoSingleCustomMod *cmod = &cm->modifiers [i];
 			cmod->required = decode_value (p, &p);
 			cmod->type = decode_type (module, p, &p, error);
@@ -700,7 +700,7 @@ decode_type (MonoAotModule *module, guint8 *buf, guint8 **endbuf, MonoError *err
 		}
 
 		mono_type_set_amods (t, mono_metadata_get_canonical_aggregate_modifiers (cm));
-		for (int i = 0; i < count; ++i)
+		for (uint8_t i = 0; i < count; ++i)
 			mono_metadata_free_type (cm->modifiers [i].type);
 	} else {
 		t = (MonoType *) g_malloc0 (MONO_SIZEOF_TYPE);
@@ -794,15 +794,15 @@ decode_type (MonoAotModule *module, guint8 *buf, guint8 **endbuf, MonoError *err
 		array->eklass = decode_klass_ref (module, p, &p, error);
 		if (!array->eklass)
 			goto fail;
-		array->rank = decode_value (p, &p);
-		array->numsizes = decode_value (p, &p);
+		array->rank = GINT32_TO_UINT8 (decode_value (p, &p));
+		array->numsizes = GINT32_TO_UINT8 (decode_value (p, &p));
 
 		if (array->numsizes)
 			array->sizes = (int *)g_malloc0 (sizeof (int) * array->numsizes);
 		for (i = 0; i < array->numsizes; ++i)
 			array->sizes [i] = decode_value (p, &p);
 
-		array->numlobounds = decode_value (p, &p);
+		array->numlobounds = GINT32_TO_UINT8 (decode_value (p, &p));
 		if (array->numlobounds)
 			array->lobounds = (int *)g_malloc0 (sizeof (int) * array->numlobounds);
 		for (i = 0; i < array->numlobounds; ++i)
@@ -839,7 +839,9 @@ decode_signature_with_target (MonoAotModule *module, MonoMethodSignature *target
 	ERROR_DECL (error);
 	MonoMethodSignature *sig;
 	guint32 flags;
-	int i, gen_param_count = 0, param_count, call_conv;
+	guint16 param_count;
+	unsigned int gen_param_count = 0;
+	int call_conv;
 	guint8 *p = buf;
 	gboolean hasthis, explicit_this, has_gen_params, pinvoke;
 
@@ -853,7 +855,7 @@ decode_signature_with_target (MonoAotModule *module, MonoMethodSignature *target
 
 	if (has_gen_params)
 		gen_param_count = decode_value (p, &p);
-	param_count = decode_value (p, &p);
+	param_count = GINT32_TO_UINT16 (decode_value (p, &p));
 	if (target && param_count != target->param_count)
 		return NULL;
 	sig = (MonoMethodSignature *)g_malloc0 (MONO_SIZEOF_METHOD_SIGNATURE + param_count * sizeof (MonoType *));
@@ -867,7 +869,7 @@ decode_signature_with_target (MonoAotModule *module, MonoMethodSignature *target
 	sig->ret = decode_type (module, p, &p, error);
 	if (!sig->ret)
 		goto fail;
-	for (i = 0; i < param_count; ++i) {
+	for (guint16 i = 0; i < param_count; ++i) {
 		if (*p == MONO_TYPE_SENTINEL) {
 			g_assert (sig->call_convention == MONO_CALL_VARARG);
 			sig->sentinelpos = i;
@@ -1060,8 +1062,8 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 				ref->method = mini_get_interp_in_wrapper (sig);
 				g_free (sig);
 			} else if (subtype == WRAPPER_SUBTYPE_INTERP_LMF) {
-				MonoJitICallInfo *info = mono_find_jit_icall_info ((MonoJitICallId)decode_value (p, &p));
-				ref->method = mini_get_interp_lmf_wrapper (info->name, (gpointer) info->func);
+				MonoJitICallInfo *icall_info = mono_find_jit_icall_info ((MonoJitICallId)decode_value (p, &p));
+				ref->method = mini_get_interp_lmf_wrapper (icall_info->name, (gpointer) icall_info->func);
 			} else if (subtype == WRAPPER_SUBTYPE_GSHAREDVT_IN_SIG) {
 				MonoMethodSignature *sig = decode_signature (module, p, &p);
 				if (!sig)
@@ -1128,8 +1130,8 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 			int subtype = decode_value (p, &p);
 
 			if (subtype == WRAPPER_SUBTYPE_ICALL_WRAPPER) {
-				MonoJitICallInfo *info = mono_find_jit_icall_info ((MonoJitICallId)decode_value (p, &p));
-				ref->method = mono_icall_get_wrapper_method (info);
+				MonoJitICallInfo *icall_info = mono_find_jit_icall_info ((MonoJitICallId)decode_value (p, &p));
+				ref->method = mono_icall_get_wrapper_method (icall_info);
 			} else if (subtype == WRAPPER_SUBTYPE_NATIVE_FUNC_INDIRECT) {
 				MonoClass *klass = decode_klass_ref (module, p, &p, error);
 				if (!klass)
@@ -1347,6 +1349,7 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 
 		memset (&ctx, 0, sizeof (ctx));
 
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 		if (FALSE && mono_class_is_ginst (klass)) {
 			ctx.class_inst = mono_class_get_generic_class (klass)->context.class_inst;
 			ctx.method_inst = NULL;
@@ -1355,6 +1358,7 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 			if (!ref->method)
 				return FALSE;
 		}
+MONO_RESTORE_WARNING
 
 		memset (&ctx, 0, sizeof (ctx));
 
@@ -1904,7 +1908,7 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 	char *msg = NULL;
 	gpointer *globals = NULL;
 	MonoAotFileInfo *info = NULL;
-	int i, version;
+	int version;
 	int align_double, align_int64;
 	guint8 *aot_data = NULL;
 
@@ -2094,7 +2098,7 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 	amodule->shared_got = g_new0 (gpointer, info->nshared_got_entries);
 
 	if (info->flags & MONO_AOT_FILE_FLAG_SEPARATE_DATA) {
-		for (i = 0; i < MONO_AOT_TABLE_NUM; ++i)
+		for (int i = 0; i < MONO_AOT_TABLE_NUM; ++i)
 			amodule->tables [i] = aot_data + info->table_offsets [i];
 	}
 
@@ -2102,7 +2106,7 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 
 	/* Read image table */
 	{
-		guint32 table_len, i;
+		guint32 table_len;
 		char *table = NULL;
 
 		if (info->flags & MONO_AOT_FILE_FLAG_SEPARATE_DATA)
@@ -2117,7 +2121,7 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 		amodule->image_names = g_new0 (MonoAssemblyName, table_len);
 		amodule->image_guids = g_new0 (char*, table_len);
 		amodule->image_table_len = table_len;
-		for (i = 0; i < table_len; ++i) {
+		for (guint32 i = 0; i < table_len; ++i) {
 			MonoAssemblyName *aname = &(amodule->image_names [i]);
 
 			aname->name = g_strdup (table);
@@ -2194,7 +2198,7 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 
 	/* Compute method addresses */
 	amodule->methods = (void **)g_malloc0 (amodule->info.nmethods * sizeof (gpointer));
-	for (i = 0; i < amodule->info.nmethods; ++i) {
+	for (guint32 i = 0; i < amodule->info.nmethods; ++i) {
 		void *addr = NULL;
 
 		if (amodule->info.llvm_get_method) {
@@ -2291,7 +2295,7 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 		mono_tramp_info_create (
 			NULL,
 			amodule->plt,
-			amodule->plt_end - amodule->plt,
+			GPTRDIFF_TO_UINT32 (amodule->plt_end - amodule->plt),
 			NULL,
 			mono_unwind_get_cie_program ()
 			),
@@ -2306,10 +2310,10 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 	 * The cached class info also depends on the exact assemblies.
 	 */
 	if (!mono_opt_aot_lazy_assembly_load) {
-		for (i = 0; i < amodule->image_table_len; ++i) {
-			ERROR_DECL (error);
-			load_image (amodule, i, error);
-			mono_error_cleanup (error); /* FIXME don't swallow the error */
+		for (guint32 i = 0; i < amodule->image_table_len; ++i) {
+			ERROR_DECL (load_error);
+			load_image (amodule, i, load_error);
+			mono_error_cleanup (load_error); /* FIXME don't swallow the error */
 		}
 	}
 
@@ -2681,10 +2685,10 @@ compute_llvm_code_range (MonoAotModule *amodule, guint8 **code_start, guint8 **c
 		//gsize prev = 0;
 
 		// FIXME: This depends on emscripten allocating ftnptr ids sequentially
-		for (int i = 0; i < amodule->info.nmethods; ++i) {
+		for (guint32 i = 0; i < amodule->info.nmethods; ++i) {
 			void *addr = NULL;
 
-			addr = get_method (i);
+			addr = get_method ((int)i);
 			gsize val = (gsize)addr;
 			if (val) {
 				//g_assert (val > prev);
@@ -2854,7 +2858,7 @@ decode_llvm_mono_eh_frame (MonoAotModule *amodule, MonoJitInfo *jinfo,
 		code_end = (guint8 *)amodule->methods [table [(pos + 1) * 2]];
 	}
 	if (!code_len)
-		code_len = code_end - code_start;
+		code_len = GPTRDIFF_TO_UINT32 (code_end - code_start);
 
 	g_assert (code >= code_start && code < code_end);
 
@@ -2987,7 +2991,7 @@ decode_exception_debug_info (MonoAotModule *amodule,
 							 guint8 *code, guint32 code_len)
 {
 	ERROR_DECL (error);
-	int i, buf_len, num_clauses, len;
+	int buf_len, num_clauses;
 	MonoJitInfo *jinfo;
 	MonoJitInfoFlags flags = JIT_INFO_NONE;
 	guint unwind_info, eflags;
@@ -3045,6 +3049,7 @@ decode_exception_debug_info (MonoAotModule *amodule,
 		num_clauses = 0;
 
 	if (from_llvm) {
+		int len;
 		MonoJitExceptionInfo *clauses;
 		GSList **nesting;
 
@@ -3067,13 +3072,13 @@ decode_exception_debug_info (MonoAotModule *amodule,
 			nesting = g_new0 (GSList*, num_clauses);
 		}
 
-		for (i = 0; i < num_clauses; ++i) {
+		for (int i = 0; i < num_clauses; ++i) {
 			MonoJitExceptionInfo *ei = &clauses [i];
 
 			ei->flags = decode_value (p, &p);
 
 			if (!(ei->flags == MONO_EXCEPTION_CLAUSE_FILTER || ei->flags == MONO_EXCEPTION_CLAUSE_FINALLY)) {
-				int len = decode_value (p, &p);
+				len = decode_value (p, &p);
 
 				if (len > 0) {
 					if (async) {
@@ -3116,18 +3121,18 @@ decode_exception_debug_info (MonoAotModule *amodule,
 
 		if (!async) {
 			g_free (clauses);
-			for (i = 0; i < num_clauses; ++i)
+			for (int i = 0; i < num_clauses; ++i)
 				g_slist_free (nesting [i]);
 			g_free (nesting);
 		}
 		jinfo->from_llvm = 1;
 	} else {
-		len = mono_jit_info_size (flags, num_clauses, num_holes);
+		int len = mono_jit_info_size (flags, num_clauses, num_holes);
 		jinfo = (MonoJitInfo *)alloc0_jit_info_data (mem_manager, len, async);
 		/* The jit info table needs to sort addresses so it contains non-authenticated pointers on arm64e */
 		mono_jit_info_init (jinfo, method, code, code_len, flags, num_clauses, num_holes);
 
-		for (i = 0; i < jinfo->num_clauses; ++i) {
+		for (guint32 i = 0; i < jinfo->num_clauses; ++i) {
 			MonoJitExceptionInfo *ei = &jinfo->clauses [i];
 
 			ei->flags = decode_value (p, &p);
@@ -3143,7 +3148,7 @@ decode_exception_debug_info (MonoAotModule *amodule,
 			if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER || ei->flags == MONO_EXCEPTION_CLAUSE_FINALLY) {
 				ei->data.filter = code + decode_value (p, &p);
 			} else {
-				int len = decode_value (p, &p);
+				len = decode_value (p, &p);
 
 				if (len > 0) {
 					if (async) {
@@ -3182,10 +3187,10 @@ decode_exception_debug_info (MonoAotModule *amodule,
 		g_assert (table);
 
 		table->num_holes = (guint16)num_holes;
-		for (i = 0; i < num_holes; ++i) {
+		for (int i = 0; i < num_holes; ++i) {
 			MonoTryBlockHoleJitInfo *hole = &table->holes [i];
-			hole->clause = decode_value (p, &p);
-			hole->length = decode_value (p, &p);
+			hole->clause = GINT32_TO_UINT16 (decode_value (p, &p));
+			hole->length = GINT32_TO_UINT16 (decode_value (p, &p));
 			hole->offset = decode_value (p, &p);
 		}
 	}
@@ -3220,7 +3225,7 @@ decode_exception_debug_info (MonoAotModule *amodule,
 		gi->nlocs = decode_value (p, &p);
 		if (gi->nlocs) {
 			gi->locations = (MonoDwarfLocListEntry *)alloc0_jit_info_data (mem_manager, gi->nlocs * sizeof (MonoDwarfLocListEntry), async);
-			for (i = 0; i < gi->nlocs; ++i) {
+			for (int i = 0; i < gi->nlocs; ++i) {
 				MonoDwarfLocListEntry *entry = &gi->locations [i];
 
 				entry->is_reg = decode_value (p, &p);
@@ -3235,11 +3240,11 @@ decode_exception_debug_info (MonoAotModule *amodule,
 		} else {
 			if (from_llvm) {
 				gi->has_this = this_reg != -1;
-				gi->this_reg = this_reg;
+				gi->this_reg = GINT_TO_UINT8 (this_reg);
 				gi->this_offset = this_offset;
 			} else {
 				gi->has_this = decode_value (p, &p);
-				gi->this_reg = decode_value (p, &p);
+				gi->this_reg = GINT32_TO_UINT8 (decode_value (p, &p));
 				gi->this_offset = decode_value (p, &p);
 			}
 		}
@@ -3453,7 +3458,8 @@ MonoJitInfo *
 mono_aot_find_jit_info (MonoImage *image, gpointer addr)
 {
 	ERROR_DECL (error);
-	int pos, left, right, code_len;
+	ptrdiff_t code_len;
+	int pos, left, right;
 	int method_index, table_len;
 	guint32 token;
 	MonoAotModule *amodule = image->aot_module;
@@ -3522,11 +3528,11 @@ mono_aot_find_jit_info (MonoImage *image, gpointer addr)
 
 	/* In async mode, jinfo is not added to the normal jit info table, so have to cache it ourselves */
 	if (async) {
-		JitInfoMap **table = amodule->async_jit_info_table;
+		JitInfoMap **jinfo_table = amodule->async_jit_info_table;
 		LOAD_ACQUIRE_FENCE;
-		if (table) {
+		if (jinfo_table) {
 			int buckets = (amodule->info.nmethods / JIT_INFO_MAP_BUCKET_SIZE) + 1;
-			JitInfoMap *current_item = table [method_index % buckets];
+			JitInfoMap *current_item = jinfo_table [method_index % buckets];
 			LOAD_ACQUIRE_FENCE;
 			while (current_item) {
 				if (current_item->method_index == method_index)
@@ -3609,11 +3615,11 @@ mono_aot_find_jit_info (MonoImage *image, gpointer addr)
 					/* Happens when a random address is passed in which matches a not-yey called wrapper encoded using its name */
 					return NULL;
 			} else {
-				ERROR_DECL (error);
 				token = mono_metadata_make_token (MONO_TABLE_METHOD, method_index + 1);
 				method = mono_get_method_checked (image, token, NULL, NULL, error);
 				if (!method)
 					g_error ("AOT runtime could not load method due to %s", mono_error_get_message (error)); /* FIXME don't swallow the error */
+				mono_error_cleanup (error);
 			}
 		}
 		/* FIXME: */
@@ -3622,7 +3628,7 @@ mono_aot_find_jit_info (MonoImage *image, gpointer addr)
 
 	//printf ("F: %s\n", mono_method_full_name (method, TRUE));
 
-	jinfo = decode_exception_debug_info (amodule, method, ex_info, code, code_len);
+	jinfo = decode_exception_debug_info (amodule, method, ex_info, code, GPTRDIFF_TO_UINT32 (code_len));
 
 	g_assert ((guint8*)addr >= (guint8*)jinfo->code_start);
 
@@ -3675,7 +3681,6 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 	guint8 *p = buf;
 	gpointer *table;
 	MonoImage *image;
-	int i;
 	MonoMemoryManager *mem_manager = m_image_get_mem_manager (aot_module->assembly->image);
 
 	switch (ji->type) {
@@ -3704,10 +3709,10 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 			if (ref.method) {
 				ji->data.method = ref.method;
 			}else {
-				ERROR_DECL (error);
 				ji->data.method = mono_get_method_checked (ref.image, ref.token, NULL, NULL, error);
 				if (!ji->data.method)
 					g_error ("AOT Runtime could not load method due to %s", mono_error_get_message (error)); /* FIXME don't swallow the error */
+				mono_error_assert_ok (error);
 			}
 			g_assert (ji->data.method);
 			mono_class_init_internal (ji->data.method->klass);
@@ -3771,7 +3776,7 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 		ji->data.table->table_size = decode_value (p, &p);
 		table = (void **)mono_mem_manager_alloc (mem_manager, sizeof (gpointer) * ji->data.table->table_size);
 		ji->data.table->table = (MonoBasicBlock**)table;
-		for (i = 0; i < ji->data.table->table_size; i++)
+		for (int i = 0; i < ji->data.table->table_size; i++)
 			table [i] = (gpointer)(gssize)decode_value (p, &p);
 		break;
 	case MONO_PATCH_INFO_R4:
@@ -3896,7 +3901,6 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 	}
 	case MONO_PATCH_INFO_GSHAREDVT_METHOD: {
 		MonoGSharedVtMethodInfo *info = (MonoGSharedVtMethodInfo *)mono_mempool_alloc0 (mp, sizeof (MonoGSharedVtMethodInfo));
-		int i;
 
 		info->method = decode_resolve_method_ref (aot_module, p, &p, error);
 		mono_error_assert_ok (error); /* FIXME don't swallow the error */
@@ -3904,7 +3908,7 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 		info->num_entries = decode_value (p, &p);
 		info->count_entries = info->num_entries;
 		info->entries = (MonoRuntimeGenericContextInfoTemplate *)mono_mempool_alloc0 (mp, sizeof (MonoRuntimeGenericContextInfoTemplate) * info->num_entries);
-		for (i = 0; i < info->num_entries; ++i) {
+		for (int i = 0; i < info->num_entries; ++i) {
 			MonoRuntimeGenericContextInfoTemplate *template_ = &info->entries [i];
 
 			template_->info_type = (MonoRgctxInfoType)decode_value (p, &p);
@@ -4292,8 +4296,6 @@ load_method (MonoAotModule *amodule, MonoImage *image, MonoMethod *method, guint
 	amodule_unlock (amodule);
 
 	if (MONO_PROFILER_ENABLED (jit_begin) || MONO_PROFILER_ENABLED (jit_done)) {
-		MonoJitInfo *jinfo;
-
 		if (!method) {
 			method = mono_get_method_checked (amodule->assembly->image, token, NULL, NULL, error);
 			if (!method)
@@ -4303,6 +4305,7 @@ load_method (MonoAotModule *amodule, MonoImage *image, MonoMethod *method, guint
 		jinfo = mono_jit_info_table_find_internal (code, TRUE, FALSE);
 		g_assert (jinfo);
 		MONO_PROFILER_RAISE (jit_done, (method, jinfo));
+		jinfo = NULL;
 	}
 
 	return code;
@@ -4409,7 +4412,7 @@ add_module_cb (gpointer key, gpointer value, gpointer user_data)
 static gboolean
 inst_is_private (MonoGenericInst *inst)
 {
-	for (int i = 0; i < inst->type_argc; ++i) {
+	for (guint i = 0; i < inst->type_argc; ++i) {
 		MonoType *t = inst->type_argv [i];
 		if ((t->type == MONO_TYPE_CLASS || t->type == MONO_TYPE_VALUETYPE)) {
 			int access_level = mono_class_get_flags (t->data.klass) & TYPE_ATTRIBUTE_VISIBILITY_MASK;
@@ -4758,7 +4761,7 @@ mono_aot_get_method (MonoMethod *method, MonoError *error)
 	gboolean dedupable = mono_aot_can_dedup (method);
 
 	if (method->is_inflated && !method->wrapper_type && mono_method_is_generic_sharable_full (method, TRUE, FALSE, FALSE) && !dedupable) {
-		MonoMethod *orig_method = method;
+		MonoMethod *generic_orig_method = method;
 		/*
 		 * For generic methods, we store the fully shared instance in place of the
 		 * original method.
@@ -4768,9 +4771,9 @@ mono_aot_get_method (MonoMethod *method, MonoError *error)
 
 		if (amodule->info.flags & MONO_AOT_FILE_FLAG_WITH_LLVM) {
 			/* Needed by mini_llvm_init_gshared_method_this () */
-			/* orig_method is a random instance but it is enough to make init_method () work */
+			/* generic_orig_method is a random instance but it is enough to make init_method () work */
 			amodule_lock (amodule);
-			g_hash_table_insert (amodule->extra_methods, GUINT_TO_POINTER (method_index), orig_method);
+			g_hash_table_insert (amodule->extra_methods, GUINT_TO_POINTER (method_index), generic_orig_method);
 			amodule_unlock (amodule);
 		}
 	}
@@ -5371,7 +5374,7 @@ load_function_full (MonoAotModule *amodule, const char *name, MonoTrampInfo **ou
 				continue;
 
 			/*
-			 * When this code is executed, the runtime may not be initalized yet, so
+			 * When this code is executed, the runtime may not be initialized yet, so
 			 * resolve the patch info by hand.
 			 */
 			if (ji->type == MONO_PATCH_INFO_SPECIFIC_TRAMPOLINE_LAZY_FETCH_ADDR) {
@@ -5963,7 +5966,7 @@ mono_aot_get_unbox_trampoline (MonoMethod *method, gpointer addr)
 		return amodule->unbox_tramp_per_method [method_index];
 
 	if (amodule->info.llvm_unbox_tramp_indexes) {
-		int unbox_tramp_idx;
+		ptrdiff_t unbox_tramp_idx;
 
 		/* Search the llvm_unbox_tramp_indexes table using a binary search */
 		if (amodule->info.llvm_unbox_tramp_elemsize == sizeof (guint32)) {
@@ -6007,7 +6010,7 @@ mono_aot_get_unbox_trampoline (MonoMethod *method, gpointer addr)
 	/* Do a binary search in the sorted table */
 	code = NULL;
 	low = 0;
-	high = (ut_end - ut);
+	high = GPTRDIFF_TO_INT (ut_end - ut);
 	while (low < high) {
 		entry_index = (low + high) / 2;
 		entry = &ut [entry_index];

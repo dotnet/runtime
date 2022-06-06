@@ -33,7 +33,7 @@ namespace System.Text.Json.Reflection
 
                 sb.Append(baseName);
 
-                sb.Append("<");
+                sb.Append('<');
 
                 Type[] genericArgs = type.GetGenericArguments();
                 int genericArgCount = genericArgs.Length;
@@ -46,7 +46,7 @@ namespace System.Text.Json.Reflection
 
                 sb.Append(string.Join(", ", genericArgNames));
 
-                sb.Append(">");
+                sb.Append('>');
 
                 compilableName = sb.ToString();
             }
@@ -132,6 +132,9 @@ namespace System.Text.Json.Reflection
 
             return false;
         }
+
+        public static bool CanUseDefaultConstructorForDeserialization(this Type type)
+            => (type.GetConstructor(Type.EmptyTypes) != null || type.IsValueType) && !type.IsAbstract && !type.IsInterface;
 
         public static bool IsObjectType(this Type type) => type.FullName == "System.Object";
 

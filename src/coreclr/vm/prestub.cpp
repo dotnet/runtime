@@ -90,8 +90,7 @@ PCODE MethodDesc::DoBackpatch(MethodTable * pMT, MethodTable *pDispatchingMT, BO
 
     // Only take the lock if the method is versionable with vtable slot backpatch, for recording slots and synchronizing with
     // backpatching slots
-    MethodDescBackpatchInfoTracker::ConditionalLockHolderForGCCoop slotBackpatchLockHolder(
-        isVersionableWithVtableSlotBackpatch);
+    MethodDescBackpatchInfoTracker::ConditionalLockHolder slotBackpatchLockHolder(isVersionableWithVtableSlotBackpatch);
 
     // Get the method entry point inside the lock above to synchronize with backpatching in
     // MethodDesc::BackpatchEntryPointSlots()
@@ -256,7 +255,7 @@ PCODE MethodDesc::DoBackpatch(MethodTable * pMT, MethodTable *pDispatchingMT, BO
 // <TODO> FIX IN BETA 2
 //
 // g_pNotificationTable is only modified by the DAC and therefore the
-// optmizer can assume that it will always be its default value and has
+// optimizer can assume that it will always be its default value and has
 // been seen to (on IA64 free builds) eliminate the code in DACNotifyCompilationFinished
 // such that DAC notifications are no longer sent.
 //
@@ -430,9 +429,6 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
     {
         DACNotifyCompilationFinished(this, pCode);
     }
-
-    // Mark the code as hot in case the method ends up in the native image
-    g_IBCLogger.LogMethodCodeAccess(this);
 
     return pCode;
 }
@@ -2015,9 +2011,6 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
 
     MethodTable *pMT = GetMethodTable();
 
-    // Running a prestub on a method causes us to access its MethodTable
-    g_IBCLogger.LogMethodDescAccess(this);
-
     if (ContainsGenericVariables())
     {
         COMPlusThrow(kInvalidOperationException, IDS_EE_CODEEXECUTION_CONTAINSGENERICVAR);
@@ -2292,7 +2285,7 @@ PCODE TheVarargNDirectStub(BOOL hasRetBuffArg)
 {
     LIMITED_METHOD_CONTRACT;
 
-#if !defined(TARGET_X86) && !defined(TARGET_ARM64)
+#if !defined(TARGET_X86) && !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64)
     if (hasRetBuffArg)
     {
         return GetEEFuncEntryPoint(VarargPInvokeStub_RetBuffArg);
@@ -2304,7 +2297,7 @@ PCODE TheVarargNDirectStub(BOOL hasRetBuffArg)
     }
 }
 
-static PCODE PatchNonVirtualExternalMethod(MethodDesc * pMD, PCODE pCode, PTR_CORCOMPILE_IMPORT_SECTION pImportSection, TADDR pIndirection)
+static PCODE PatchNonVirtualExternalMethod(MethodDesc * pMD, PCODE pCode, PTR_READYTORUN_IMPORT_SECTION pImportSection, TADDR pIndirection)
 {
     STANDARD_VM_CONTRACT;
 
@@ -2322,7 +2315,6 @@ static PCODE PatchNonVirtualExternalMethod(MethodDesc * pMD, PCODE pCode, PTR_CO
     }
 #endif //HAS_FIXUP_PRECODE
 
-    _ASSERTE((pImportSection->Flags & CORCOMPILE_IMPORT_FLAGS_CODE) == 0);
     *(TADDR *)pIndirection = pCode;
 
     return pCode;
@@ -2416,7 +2408,7 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
 
         RVA rva = pNativeImage->GetDataRva(pIndirection);
 
-        PTR_CORCOMPILE_IMPORT_SECTION pImportSection;
+        PTR_READYTORUN_IMPORT_SECTION pImportSection;
         if (sectionIndex != (DWORD)-1)
         {
             pImportSection = pModule->GetImportSectionFromIndex(sectionIndex);
@@ -2428,7 +2420,6 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
         }
         _ASSERTE(pImportSection != NULL);
 
-        _ASSERTE((pImportSection->Flags & CORCOMPILE_IMPORT_FLAGS_CODE) == 0);
         _ASSERTE(pImportSection->EntrySize == sizeof(TADDR));
         COUNT_T index = (rva - pImportSection->Section.VirtualAddress) / sizeof(TADDR);
 
@@ -2974,7 +2965,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
 
     RVA rva = pNativeImage->GetDataRva((TADDR)pCell);
 
-    PTR_CORCOMPILE_IMPORT_SECTION pImportSection = pModule->GetImportSectionFromIndex(sectionIndex);
+    PTR_READYTORUN_IMPORT_SECTION pImportSection = pModule->GetImportSectionFromIndex(sectionIndex);
     _ASSERTE(pImportSection == pModule->GetImportSectionForRVA(rva));
 
     _ASSERTE(pImportSection->EntrySize == sizeof(TADDR));

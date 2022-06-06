@@ -26,6 +26,9 @@
 // This message is defined here for consistency between errors on the command line and GUI (Windows apphost).
 #define INSTALL_OR_UPDATE_NET_ERROR_MESSAGE _X("You must install or update .NET to run this application.")
 
+#define INSTALL_NET_ERROR_MESSAGE _X("You must install .NET to run this application.")
+#define INSTALL_NET_DESKTOP_ERROR_MESSAGE _X("You must install .NET Desktop Runtime to run this application.")
+
 #define RUNTIME_STORE_DIRECTORY_NAME _X("store")
 
 bool ends_with(const pal::string_t& value, const pal::string_t& suffix, bool match_case);
@@ -63,7 +66,7 @@ pal::string_t get_filename_without_ext(const pal::string_t& path);
 void append_path(pal::string_t* path1, const pal::char_t* path2);
 bool library_exists_in_dir(const pal::string_t& lib_dir, const pal::string_t& lib_name, pal::string_t* p_lib_path);
 bool coreclr_exists_in_dir(const pal::string_t& candidate);
-void remove_trailing_dir_seperator(pal::string_t* dir);
+void remove_trailing_dir_separator(pal::string_t* dir);
 void replace_char(pal::string_t* path, pal::char_t match, pal::char_t repl);
 pal::string_t get_replaced_char(const pal::string_t& path, pal::char_t match, pal::char_t repl);
 const pal::char_t* get_arch();

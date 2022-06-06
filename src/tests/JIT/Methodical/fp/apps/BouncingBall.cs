@@ -4,11 +4,13 @@
 // Method:  Simulate a bouncing ball based on the laws of physics.
 
 using System;
+using Xunit;
 
-class BouncingBall
+public class BouncingBall
 {
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         double coef;
         double height;

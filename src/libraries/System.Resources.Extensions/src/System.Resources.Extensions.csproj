@@ -1,12 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);RESOURCES_EXTENSIONS</DefineConstants>
-    <Nullable>enable</Nullable>
     <IsPackable>true</IsPackable>
-    <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);GeneratePackageTargetsFile</TargetsForTfmSpecificContentInPackage>
-    <DisableNETStandardCompatErrorForNETFramework>true</DisableNETStandardCompatErrorForNETFramework>
+    <SuggestedBindingRedirectsPackageFile>$(BaseIntermediateOutputPath)SuggestedBindingRedirects.targets</SuggestedBindingRedirectsPackageFile>
+    <BeforePack>$(BeforePack);GeneratePackageTargetsFile</BeforePack>
     <PackageDescription>Provides classes which read and write resources in a format that supports non-primitive objects.
 
 Commonly Used Types:
@@ -44,30 +43,15 @@ System.Resources.Extensions.PreserializedResourceWriter</PackageDescription>
              Link="System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <Reference Include="System.Collections" />
-    <Reference Include="System.ComponentModel.TypeConverter" />
-    <Reference Include="System.Memory" />
-    <Reference Include="System.Resources.Writer" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Serialization.Formatters" />
-    <Reference Include="System.Threading" />
-  </ItemGroup>
-
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
   </ItemGroup>
 
-  <PropertyGroup>
-    <_packageTargetsFile>$(IntermediateOutputPath)$(AssemblyName).targets</_packageTargetsFile>
-  </PropertyGroup>
-
   <Target Name="GeneratePackageTargetsFile" 
-          Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'"
           Inputs="$(MSBuildAllProjects)"
-          Outputs="$(_packageTargetsFile)">
+          Outputs="$(SuggestedBindingRedirectsPackageFile)">
     <PropertyGroup>
-      <_packageTargetsFileContent><![CDATA[<Project>
+      <SuggestedBindingRedirectsPackageFileContent><![CDATA[<Project>
   <!-- ResolveAssemblyReferences will never see the assembly reference embedded in the resources type,
        force a binding redirect ourselves so that we'll always unify to the System.Resources.Extensions
        version provided by this package -->
@@ -75,16 +59,16 @@ System.Resources.Extensions.PreserializedResourceWriter</PackageDescription>
     <SuggestedBindingRedirects Include="$(AssemblyName), Culture=neutral, PublicKeyToken=$(PublicKeyToken)" MaxVersion="$(AssemblyVersion)" />
   </ItemGroup>
 </Project>
-]]></_packageTargetsFileContent>
+]]></SuggestedBindingRedirectsPackageFileContent>
     </PropertyGroup>
 
-    <WriteLinesToFile File="$(_packageTargetsFile)"
-                      Lines="$(_packageTargetsFileContent)"
+    <WriteLinesToFile File="$(SuggestedBindingRedirectsPackageFile)"
+                      Lines="$(SuggestedBindingRedirectsPackageFileContent)"
                       Overwrite="true" />
 
     <ItemGroup>
-      <TfmSpecificPackageFile Include="$(_packageTargetsFile)"
-                              PackagePath="buildTransitive/$(TargetFramework)" />
+      <Content Include="$(SuggestedBindingRedirectsPackageFile)"
+               PackagePath="buildTransitive\$(NetFrameworkMinimum)\$(PackageId).targets" />
     </ItemGroup>
   </Target>
 </Project>

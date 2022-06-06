@@ -107,8 +107,10 @@ namespace System.Net.Mime
             return Encoding.GetEncoding(charSet);
         }
 
-        internal static bool IsAscii(string value!!, bool permitCROrLF)
+        internal static bool IsAscii(string value, bool permitCROrLF)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             foreach (char c in value)
             {
                 if (c > 0x7f)
@@ -215,8 +217,10 @@ namespace System.Net.Mime
             throw new NotImplementedException();
         }
 
-        internal void EndSend(IAsyncResult asyncResult!!)
+        internal void EndSend(IAsyncResult asyncResult)
         {
+            ArgumentNullException.ThrowIfNull(asyncResult);
+
             LazyAsyncResult? castedAsyncResult = asyncResult as MimePartAsyncResult;
 
             if (castedAsyncResult == null || castedAsyncResult.AsyncObject != this)

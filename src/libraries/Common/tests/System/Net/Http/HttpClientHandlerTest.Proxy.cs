@@ -89,9 +89,10 @@ namespace System.Net.Http.Functional.Tests
             Uri serverUri = secureServer ? Configuration.Http.SecureRemoteEchoServer : Configuration.Http.RemoteEchoServer;
 
             var options = new LoopbackProxyServer.Options
-                { AuthenticationSchemes = proxyAuthScheme,
-                  ConnectionCloseAfter407 = proxyClosesConnectionAfterFirst407Response
-                };
+            {
+                AuthenticationSchemes = proxyAuthScheme,
+                ConnectionCloseAfter407 = proxyClosesConnectionAfterFirst407Response
+            };
             using (LoopbackProxyServer proxyServer = LoopbackProxyServer.Create(options))
             {
                 using (HttpClientHandler handler = CreateHttpClientHandler())
@@ -321,6 +322,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task ProxyTunnelRequest_GetAsync_Success()
         {
             if (IsWinHttpHandler)
@@ -357,6 +359,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task ProxyTunnelRequest_MaxConnectionsSetButDoesNotApplyToProxyConnect_Success()
         {
             if (IsWinHttpHandler)
@@ -414,6 +417,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task ProxyTunnelRequest_OriginServerSendsProxyAuthChallenge_NoProxyAuthPerformed()
         {
             if (IsWinHttpHandler)
@@ -434,12 +438,12 @@ namespace System.Net.Http.Functional.Tests
                         Assert.Equal(proxyServer.Uri, handler.Proxy.GetProxy(uri));
 
                         Task<HttpResponseMessage> clientTask = client.GetAsync(uri);
-                        await server.AcceptConnectionSendResponseAndCloseAsync(statusCode: HttpStatusCode.ProxyAuthenticationRequired, additionalHeaders: "Proxy-Authenticate: Basic");
-                        using (var response = await clientTask)
+                        await server.AcceptConnectionSendResponseAndCloseAsync(statusCode: HttpStatusCode.ProxyAuthenticationRequired, additionalHeaders: "Proxy-Authenticate: Basic").WaitAsync(TestHelper.PassingTestTimeout);
+                        using (var response = await clientTask.WaitAsync(TestHelper.PassingTestTimeout))
                         {
                             Assert.Equal(HttpStatusCode.ProxyAuthenticationRequired, response.StatusCode);
                         }
-                    }, options);
+                    }, options).WaitAsync(TestHelper.PassingTestTimeout);
                 }
 
                 Assert.Contains("CONNECT", proxyServer.Requests[0].RequestLine);

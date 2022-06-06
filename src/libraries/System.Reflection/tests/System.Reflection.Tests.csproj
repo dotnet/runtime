@@ -13,6 +13,9 @@
     <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'Browser'">true</DebuggerSupport>
   </PropertyGroup>
   <ItemGroup>
+    <RdXmlFile Include="default.rd.xml" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Reflection\MockParameterInfo.cs"
              Link="Common\System\Reflection\MockParameterInfo.cs" />
     <Compile Include="$(CommonTestPath)System\MockType.cs"

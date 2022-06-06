@@ -19,6 +19,7 @@ namespace System.Net.Security.Tests
         protected abstract bool TestAuthenticateAsync { get; }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task ClientOptions_ServerOptions_NotMutatedDuringAuthentication()
         {
             using (X509Certificate2 clientCert = Configuration.Certificates.GetClientCertificate())
@@ -111,6 +112,26 @@ namespace System.Net.Security.Tests
                     Assert.Same(serverCert, serverOptions.ServerCertificate);
                     Assert.Same(certificateContext, serverOptions.ServerCertificateContext);
                 }
+            }
+        }
+
+        [Fact]
+        public async Task ClientOptions_TargetHostNull_OK()
+        {
+            (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
+            using (client)
+            using (server)
+            {
+                var serverOptions = new SslServerAuthenticationOptions() { ServerCertificate = Configuration.Certificates.GetServerCertificate() };
+                var clientOptions = new SslClientAuthenticationOptions() { RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true };
+
+                Assert.Null(clientOptions.TargetHost);
+
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                        client.AuthenticateAsClientAsync(clientOptions),
+                        server.AuthenticateAsServerAsync(serverOptions));
+               Assert.Equal(string.Empty, client.TargetHostName);
+               Assert.Equal(string.Empty, server.TargetHostName);
             }
         }
     }

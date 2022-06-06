@@ -219,6 +219,7 @@ namespace System.IO
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("macos")]
         [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("freebsd")]
         public virtual void Lock(long position, long length)
         {
             if (position < 0 || length < 0)
@@ -236,6 +237,7 @@ namespace System.IO
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("macos")]
         [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("freebsd")]
         public virtual void Unlock(long position, long length)
         {
             if (position < 0 || length < 0)
@@ -532,8 +534,10 @@ namespace System.IO
             return _strategy.BeginRead(buffer, offset, count, callback, state);
         }
 
-        public override int EndRead(IAsyncResult asyncResult!!)
+        public override int EndRead(IAsyncResult asyncResult)
         {
+            ArgumentNullException.ThrowIfNull(asyncResult);
+
             return _strategy.EndRead(asyncResult);
         }
 
@@ -553,8 +557,10 @@ namespace System.IO
             return _strategy.BeginWrite(buffer, offset, count, callback, state);
         }
 
-        public override void EndWrite(IAsyncResult asyncResult!!)
+        public override void EndWrite(IAsyncResult asyncResult)
         {
+            ArgumentNullException.ThrowIfNull(asyncResult);
+
             _strategy.EndWrite(asyncResult);
         }
 

@@ -12,6 +12,7 @@ class NativeImage;
 class Assembly;
 class Module;
 class AssemblyLoaderAllocator;
+class AssemblySpec;
 
 class AssemblyBinder
 {
@@ -48,6 +49,11 @@ public:
 
     NativeImage* LoadNativeImage(Module* componentModule, LPCUTF8 nativeImageName);
     void AddLoadedAssembly(Assembly* loadedAssembly);
+
+    void GetNameForDiagnostics(/*out*/ SString& alcName);
+
+    static void GetNameForDiagnosticsFromManagedALC(INT_PTR managedALC, /* out */ SString& alcName);
+    static void GetNameForDiagnosticsFromSpec(AssemblySpec* spec, /*out*/ SString& alcName);
 
 private:
     BINDER_SPACE::ApplicationContext m_appContext;

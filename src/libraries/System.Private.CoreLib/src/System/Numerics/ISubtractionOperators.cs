@@ -16,11 +16,11 @@ namespace System.Numerics
         /// <returns>The difference of <paramref name="right" /> subtracted from <paramref name="left" />.</returns>
         static abstract TResult operator -(TSelf left, TOther right);
 
-        // /// <summary>Subtracts two values to compute their difference.</summary>
-        // /// <param name="left">The value from which <paramref name="right" /> is subtracted.</param>
-        // /// <param name="right">The value which is subtracted from <paramref name="left" />.</param>
-        // /// <returns>The difference of <paramref name="right" /> subtracted from <paramref name="left" />.</returns>
-        // /// <exception cref="OverflowException">The difference of <paramref name="right" /> subtracted from <paramref name="left" /> is not representable by <typeparamref name="TResult" />.</exception>
-        // static abstract TResult operator checked -(TSelf left, TOther right);
+        /// <summary>Subtracts two values to compute their difference.</summary>
+        /// <param name="left">The value from which <paramref name="right" /> is subtracted.</param>
+        /// <param name="right">The value which is subtracted from <paramref name="left" />.</param>
+        /// <returns>The difference of <paramref name="right" /> subtracted from <paramref name="left" />.</returns>
+        /// <exception cref="OverflowException">The difference of <paramref name="right" /> subtracted from <paramref name="left" /> is not representable by <typeparamref name="TResult" />.</exception>
+        static abstract TResult operator checked -(TSelf left, TOther right);
     }
 }

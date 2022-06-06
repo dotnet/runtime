@@ -1,23 +1,21 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <Nullable>enable</Nullable>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="System.Net.HttpListener.cs" />
   </ItemGroup>
+
   <ItemGroup>
-    <ProjectReference Include="..\..\Microsoft.Win32.Primitives\ref\Microsoft.Win32.Primitives.csproj" />
-    <ProjectReference Include="..\..\System.Collections.NonGeneric\ref\System.Collections.NonGeneric.csproj" />
-    <ProjectReference Include="..\..\System.Collections.Specialized\ref\System.Collections.Specialized.csproj" />
-    <ProjectReference Include="..\..\System.Net.Primitives\ref\System.Net.Primitives.csproj" />
-    <ProjectReference Include="..\..\System.Net.WebHeaderCollection\ref\System.Net.WebHeaderCollection.csproj" />
-    <ProjectReference Include="..\..\System.Net.WebSockets\ref\System.Net.WebSockets.csproj" />
-    <ProjectReference Include="..\..\System.Net.Security\ref\System.Net.Security.csproj" />
-    <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
-    <ProjectReference Include="..\..\System.Runtime.Extensions\ref\System.Runtime.Extensions.csproj" />
-    <ProjectReference Include="..\..\System.Security.Claims\ref\System.Security.Claims.csproj" />
-    <ProjectReference Include="..\..\System.Security.Cryptography.X509Certificates\ref\System.Security.Cryptography.X509Certificates.csproj" />
-    <ProjectReference Include="..\..\System.Security.Principal\ref\System.Security.Principal.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Win32.Primitives\ref\Microsoft.Win32.Primitives.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Specialized\ref\System.Collections.Specialized.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.Primitives\ref\System.Net.Primitives.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.Security\ref\System.Net.Security.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.WebHeaderCollection\ref\System.Net.WebHeaderCollection.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.WebSockets\ref\System.Net.WebSockets.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\ref\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Claims\ref\System.Security.Claims.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography\ref\System.Security.Cryptography.csproj" />
   </ItemGroup>
 </Project>

@@ -955,8 +955,6 @@ void mono_assembly_close_finish (MonoAssembly *assembly);
 
 gboolean mono_public_tokens_are_equal (const unsigned char *pubt1, const unsigned char *pubt2);
 
-void mono_config_parse_publisher_policy (const char *filename, MonoAssemblyBindingInfo *binding_info);
-
 gboolean
 mono_assembly_name_parse_full 		     (const char	   *name,
 					      MonoAssemblyName	   *aname,
@@ -1071,7 +1069,7 @@ MonoWrapperCaches*
 mono_method_get_wrapper_cache (MonoMethod *method);
 
 MonoType*
-mono_metadata_parse_type_checked (MonoImage *m, MonoGenericContainer *container, short opt_attrs, gboolean transient, const char *ptr, const char **rptr, MonoError *error);
+mono_metadata_parse_type_checked (MonoImage *m, MonoGenericContainer *container, guint32 opt_attrs, gboolean transient, const char *ptr, const char **rptr, MonoError *error);
 
 MonoGenericContainer *
 mono_get_anonymous_container_for_image (MonoImage *image, gboolean is_mvar);

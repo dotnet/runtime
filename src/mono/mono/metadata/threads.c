@@ -684,8 +684,8 @@ mono_thread_internal_set_priority (MonoInternalThread *internal, MonoThreadPrior
 	return;
 #else /* !HOST_WIN32 and not HOST_FUCHSIA */
 	pthread_t tid;
-	int policy;
-	struct sched_param param;
+	int policy = SCHED_OTHER;
+	struct sched_param param = {0,};
 	gint res;
 
 	tid = thread_get_tid (internal);
@@ -947,7 +947,7 @@ mono_thread_detach_internal (MonoInternalThread *thread)
 
 	THREAD_DEBUG (g_message ("%s: mono_thread_detach for %p (%" G_GSIZE_FORMAT ")", __func__, thread, (gsize)thread->tid));
 
-	MONO_PROFILER_RAISE (thread_stopping, (thread->tid));
+	MONO_PROFILER_RAISE (thread_stopping, (GUINT64_TO_UINTPTR (thread->tid)));
 
 	/*
 	* Prevent race condition between thread shutdown and runtime shutdown.
@@ -993,7 +993,7 @@ mono_thread_detach_internal (MonoInternalThread *thread)
 
 	g_assert (threads);
 
-	if (!mono_g_hash_table_lookup_extended (threads, (gpointer)thread->tid, NULL, (gpointer*) &value)) {
+	if (!mono_g_hash_table_lookup_extended (threads, GUINT_TO_POINTER (thread->tid), NULL, (gpointer*) &value)) {
 		g_error ("%s: thread %p (tid: %p) should not have been removed yet from threads", __func__, thread, thread->tid);
 	} else if (thread != value) {
 		/* We have to check whether the thread object for the tid is still the same in the table because the
@@ -1002,7 +1002,7 @@ mono_thread_detach_internal (MonoInternalThread *thread)
 		g_error ("%s: thread %p (tid: %p) do not match with value %p (tid: %p)", __func__, thread, thread->tid, value, value->tid);
 	}
 
-	removed = mono_g_hash_table_remove (threads, (gpointer)thread->tid);
+	removed = mono_g_hash_table_remove (threads, GUINT_TO_POINTER (thread->tid));
 	g_assert (removed);
 
 	mono_threads_unlock ();
@@ -1023,7 +1023,7 @@ mono_thread_detach_internal (MonoInternalThread *thread)
 
 	mono_release_type_locks (thread);
 
-	MONO_PROFILER_RAISE (thread_stopped, (thread->tid));
+	MONO_PROFILER_RAISE (thread_stopped, (GUINT64_TO_UINTPTR (thread->tid)));
 	MONO_PROFILER_RAISE (gc_root_unregister, ((const mono_byte*)(info->stack_start_limit)));
 	MONO_PROFILER_RAISE (gc_root_unregister, ((const mono_byte*)(info->handle_stack)));
 
@@ -1055,8 +1055,8 @@ mono_thread_detach_internal (MonoInternalThread *thread)
 	/* There is no more any guarantee that `thread` is alive */
 	mono_memory_barrier ();
 
+	mono_domain_unset();
 	SET_CURRENT_OBJECT (NULL);
-	mono_domain_unset ();
 
 	if (!mono_thread_info_try_get_internal_thread_gchandle (info, &gchandle))
 		g_error ("%s: failed to get gchandle, info = %p", __func__, info);
@@ -1069,7 +1069,7 @@ mono_thread_detach_internal (MonoInternalThread *thread)
 	 * ran also. */
 	dec_longlived_thread_data (thread->longlived);
 
-	MONO_PROFILER_RAISE (thread_exited, (thread->tid));
+	MONO_PROFILER_RAISE (thread_exited, (GUINT64_TO_UINTPTR (thread->tid)));
 
 	/* Don't need to close the handle to this thread, even though we took a
 	 * reference in mono_thread_attach (), because the GC will do it
@@ -1144,7 +1144,7 @@ start_wrapper_internal (StartInfo *start_info, gsize *stack_ptr)
 
 	mono_thread_internal_set_priority (internal, (MonoThreadPriority)internal->priority);
 
-	tid = internal->tid;
+	tid = GUINT64_TO_SIZE (internal->tid);
 
 	start_func = start_info->start_func;
 	start_func_arg = start_info->start_func_arg;
@@ -1190,7 +1190,7 @@ start_wrapper_internal (StartInfo *start_info, gsize *stack_ptr)
 		LOCK_THREAD (internal);
 
 		if (internal->name.chars) {
-			MONO_PROFILER_RAISE (thread_name, (internal->tid, internal->name.chars));
+			MONO_PROFILER_RAISE (thread_name, (GUINT64_TO_UINTPTR (internal->tid), internal->name.chars));
 			mono_native_thread_set_name (MONO_UINT_TO_NATIVE_THREAD_ID (internal->tid), internal->name.chars);
 		}
 
@@ -2739,7 +2739,7 @@ wait_for_tids (struct wait_data *wait, guint32 timeout, gboolean check_state_cha
 		internal = wait->threads [ret - MONO_THREAD_INFO_WAIT_RET_SUCCESS_0];
 
 		mono_threads_lock ();
-		if (mono_g_hash_table_lookup (threads, (gpointer) internal->tid) == internal)
+		if (mono_g_hash_table_lookup (threads, GUINT_TO_POINTER (internal->tid)) == internal)
 			g_error ("%s: failed to call mono_thread_detach_internal on thread %p, InternalThread: %p", __func__, internal->tid, internal);
 		mono_threads_unlock ();
 	}
@@ -3059,7 +3059,11 @@ mono_get_time_of_day (struct timeval *tv) {
 #ifdef WIN32
 	struct _timeb time;
 	_ftime(&time);
+#ifndef _USE_32BIT_TIME_T
+	tv->tv_sec = GINT64_TO_LONG (time.time);
+#else
 	tv->tv_sec = time.time;
+#endif
 	tv->tv_usec = time.millitm * 1000;
 #else
 	if (gettimeofday (tv, NULL) == -1) {
@@ -4815,7 +4819,11 @@ ves_icall_System_Threading_Thread_StartInternal (MonoThreadObjectHandle thread_h
 	MonoThread *internal = MONO_HANDLE_RAW (thread_handle);
 	gboolean res;
 
-#ifdef DISABLE_THREADS
+#if defined (DISABLE_THREADS)
+	/*
+	 * N.B. not checking DISABLE_WASM_USER_THREADS - managed utility threads are allowed; we assume all
+	 * callers of System.Thread.StartCore called System.Thread.ThrowIfNotSupported(bool internalThread)
+	 */
 	mono_error_set_platform_not_supported (error, "Cannot start threads on this runtime.");
 	return;
 #endif

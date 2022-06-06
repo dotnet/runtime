@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<!--  Licensed to the .NET Foundation under one or more agreements. -->
+<!-- The .NET Foundation licenses this file to you under the MIT license. -->
+<html>
+
+<head>
+  <title>Sample EventPipe profile session</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+
+<body>
+  <h3 id="header">Wasm Browser EventPipe profiling Sample</h3>
+  <div>
+    <button id="startWork">Start Work</button>
+    <label for="inputN">N:</label> <input type="number" id="inputN" value="10"/>
+  </div>
+  <div>Computing Fib(N) repeatedly: <span id="out"></span>
+  <script type="text/javascript" src="./dotnet.js"></script>
+  <script type="text/javascript" src="./dotnet.worker.js"></script>
+  <script type="text/javascript" src="./main.js"></script>
+</body>
+
+</html>

@@ -83,18 +83,6 @@ typedef struct SeqPointInfo SeqPointInfo;
 #define MINI_DEBUG(level,limit,code) do {if (G_UNLIKELY ((level) >= (limit))) code} while (0)
 #endif
 
-#if !defined(DISABLE_TASKLETS) && defined(MONO_ARCH_SUPPORT_TASKLETS)
-#if defined(__GNUC__)
-#define MONO_SUPPORT_TASKLETS 1
-#elif defined(HOST_WIN32)
-#define MONO_SUPPORT_TASKLETS 1
-// Replace some gnu intrinsics needed for tasklets with MSVC equivalents.
-#define __builtin_extract_return_addr(x) x
-#define __builtin_return_address(x) _ReturnAddress()
-#define __builtin_frame_address(x) _AddressOfReturnAddress()
-#endif
-#endif
-
 #if ENABLE_LLVM
 #define COMPILE_LLVM(cfg) ((cfg)->compile_llvm)
 #define LLVM_ENABLED TRUE
@@ -216,7 +204,7 @@ enum {
 
 #define MONO_INST_NEW(cfg,dest,op) do {	\
 		(dest) = (MonoInst *)mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
-		(dest)->opcode = (op);	\
+		(dest)->opcode = GINT_TO_OPCODE ((op));	\
 		(dest)->dreg = -1;			    \
 		MONO_INST_NULLIFY_SREGS ((dest));	    \
         (dest)->cil_code = (cfg)->ip;  \
@@ -224,7 +212,7 @@ enum {
 
 #define MONO_INST_NEW_CALL(cfg,dest,op) do {	\
 		(dest) = (MonoCallInst *)mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoCallInst));	\
-		(dest)->inst.opcode = (op);	\
+		(dest)->inst.opcode = GINT_TO_OPCODE ((op));	\
 		(dest)->inst.dreg = -1;					\
 		MONO_INST_NULLIFY_SREGS (&(dest)->inst);		\
         (dest)->inst.cil_code = (cfg)->ip;  \
@@ -644,6 +632,8 @@ typedef enum {
 	LLVMArgInFPReg,
 	/* Valuetype passed in 1-2 consecutive register */
 	LLVMArgVtypeInReg,
+	/* Pass vector types in SIMD registers */
+	LLVMArgVtypeInSIMDReg,
 	LLVMArgVtypeByVal,
 	LLVMArgVtypeRetAddr, /* On on cinfo->ret */
 	LLVMArgGSharedVt,
@@ -1405,6 +1395,7 @@ typedef struct {
 
 	/* Points to the call to mini_init_method_rgctx () */
 	MonoInst *init_method_rgctx_ins;
+	MonoInst *init_method_rgctx_ins_arg;
 
 	MonoInst *lmf_var;
 	MonoInst *lmf_addr_var;
@@ -1935,7 +1926,7 @@ set_code_cursor (MonoCompile *cfg, void* void_code)
 {
 	guint8* code = (guint8*)void_code;
 	g_assert (code <= (cfg->native_code + cfg->code_size));
-	set_code_len (cfg, code - cfg->native_code);
+	set_code_len (cfg, GPTRDIFF_TO_INT (code - cfg->native_code));
 }
 
 #endif
@@ -2344,24 +2335,20 @@ MonoMethod*       mini_get_memset_method (void);
 int               mini_class_check_context_used (MonoCompile *cfg, MonoClass *klass);
 MonoRgctxAccess   mini_get_rgctx_access_for_method (MonoMethod *method);
 
-CompRelation mono_opcode_to_cond (int opcode);
+CompRelation      mono_opcode_to_cond (int opcode);
 CompType          mono_opcode_to_type (int opcode, int cmp_opcode);
 CompRelation      mono_negate_cond (CompRelation cond);
 int               mono_op_imm_to_op (int opcode);
 void              mono_decompose_op_imm (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins);
 void              mono_peephole_ins (MonoBasicBlock *bb, MonoInst *ins);
-MonoUnwindOp     *mono_create_unwind_op (int when,
-										 int tag, int reg,
-										 int val);
-void              mono_emit_unwind_op (MonoCompile *cfg, int when,
-									   int tag, int reg,
-									   int val);
+MonoUnwindOp*     mono_create_unwind_op (gsize when, guint8 tag, guint16 reg, int val);
+void              mono_emit_unwind_op (MonoCompile *cfg, gsize when, guint8 tag, guint16 reg, int val);
 MonoTrampInfo*    mono_tramp_info_create (const char *name, guint8 *code, guint32 code_size, MonoJumpInfo *ji, GSList *unwind_ops);
 void              mono_tramp_info_free (MonoTrampInfo *info);
 void              mono_aot_tramp_info_register (MonoTrampInfo *info, MonoMemoryManager *mem_manager);
 void              mono_tramp_info_register (MonoTrampInfo *info, MonoMemoryManager *mem_manager);
-int mini_exception_id_by_name (const char *name);
-gboolean mini_type_is_hfa (MonoType *t, int *out_nfields, int *out_esize);
+int               mini_exception_id_by_name (const char *name);
+gboolean          mini_type_is_hfa (MonoType *t, int *out_nfields, int *out_esize);
 
 int               mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_bblock, MonoBasicBlock *end_bblock,
 									 MonoInst *return_var, MonoInst **inline_args,

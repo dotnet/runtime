@@ -15,9 +15,6 @@ namespace Microsoft.Diagnostics.Tracing
 namespace System.Diagnostics.Tracing
 #endif
 {
-#if NETCOREAPP
-    [UnsupportedOSPlatform("browser")]
-#endif
     internal sealed class CounterGroup
     {
         private readonly EventSource _eventSource;
@@ -161,7 +158,7 @@ namespace System.Diagnostics.Tracing
 #if ES_BUILD_STANDALONE
                         s_pollingThread.Start();
 #else
-                        s_pollingThread.UnsafeStart();
+                        s_pollingThread.InternalUnsafeStart();
 #endif
                     }
 

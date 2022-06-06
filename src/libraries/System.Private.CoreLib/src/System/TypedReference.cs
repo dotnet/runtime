@@ -13,8 +13,11 @@ namespace System
     public ref partial struct TypedReference
     {
 
-        public static TypedReference MakeTypedReference(object target!!, FieldInfo[] flds!!)
+        public static TypedReference MakeTypedReference(object target, FieldInfo[] flds)
         {
+            ArgumentNullException.ThrowIfNull(target);
+            ArgumentNullException.ThrowIfNull(flds);
+
             if (flds.Length == 0)
                 throw new ArgumentException(SR.Arg_ArrayZeroError, nameof(flds));
 
@@ -71,14 +74,6 @@ namespace System
         {
             throw new NotSupportedException(SR.NotSupported_NYI);
         }
-
-        public static unsafe object ToObject(TypedReference value)
-        {
-            return InternalToObject(&value);
-        }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe object InternalToObject(void* value);
 
         internal bool IsNull => Unsafe.IsNullRef(ref _value.Value) && _type == IntPtr.Zero;
 

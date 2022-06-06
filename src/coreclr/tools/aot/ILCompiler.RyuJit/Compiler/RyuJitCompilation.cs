@@ -53,10 +53,8 @@ namespace ILCompiler
             _instructionSetMap = new Dictionary<string, InstructionSet>();
             foreach (var instructionSetInfo in InstructionSetFlags.ArchitectureToValidInstructionSets(TypeSystemContext.Target.Architecture))
             {
-                if (!instructionSetInfo.Specifiable)
-                    continue;
-
-                _instructionSetMap.Add(instructionSetInfo.ManagedName, instructionSetInfo.InstructionSet);
+                if (instructionSetInfo.ManagedName != "")
+                    _instructionSetMap.Add(instructionSetInfo.ManagedName, instructionSetInfo.InstructionSet);
             }
 
             _profileDataManager = profileDataManager;
@@ -146,7 +144,7 @@ namespace ILCompiler
         {
             if (Logger.IsVerbose)
             {
-                Logger.Writer.WriteLine($"Compiling {methodsToCompile.Count} methods...");
+                Logger.LogMessage($"Compiling {methodsToCompile.Count} methods...");
             }
 
             Parallel.ForEach(
@@ -164,7 +162,7 @@ namespace ILCompiler
             {
                 if (Logger.IsVerbose)
                 {
-                    Logger.Writer.WriteLine($"Compiling {methodCodeNodeNeedingCode.Method}...");
+                    Logger.LogMessage($"Compiling {methodCodeNodeNeedingCode.Method}...");
                 }
 
                 CompileSingleMethod(corInfo, methodCodeNodeNeedingCode);
@@ -231,7 +229,7 @@ namespace ILCompiler
                 if (!InstructionSetSupport.IsInstructionSetSupported(instructionSet)
                     && InstructionSetSupport.OptimisticFlags.HasInstructionSet(instructionSet))
                 {
-                    return HardwareIntrinsicHelpers.EmitIsSupportedIL(method, _hardwareIntrinsicFlags);
+                    return HardwareIntrinsicHelpers.EmitIsSupportedIL(method, _hardwareIntrinsicFlags, instructionSet);
                 }
             }
 

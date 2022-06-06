@@ -35,7 +35,15 @@ namespace System.IO.Pipelines
         /// <param name="minimumSize">The minimum length that needs to be buffered in order to for the call to return.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see langword="default" />.</param>
         /// <returns>A <see cref="System.Threading.Tasks.ValueTask{T}" /> representing the asynchronous read operation.</returns>
-        /// <remarks>The call returns if the <see cref="System.IO.Pipelines.PipeReader" /> has read the minimumLength specified, or is cancelled or completed.</remarks>
+        /// <remarks>
+        ///     <para>
+        ///     The call returns if the <see cref="System.IO.Pipelines.PipeReader" /> has read the minimumLength specified, or is cancelled or completed.
+        ///     </para>
+        ///     <para>
+        ///     Passing a value of 0 for <paramref name="minimumSize" /> will return a <see cref="System.Threading.Tasks.ValueTask{T}" /> that will not complete until
+        ///     further data is available. You should instead call <see cref="System.IO.Pipelines.PipeReader.TryRead" /> to avoid a blocking call.
+        ///     </para>
+        /// </remarks>
         public ValueTask<ReadResult> ReadAtLeastAsync(int minimumSize, CancellationToken cancellationToken = default)
         {
             if (minimumSize < 0)
@@ -163,8 +171,13 @@ namespace System.IO.Pipelines
         /// <param name="destination">The pipe writer to which the contents of the current stream will be copied.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="System.Threading.CancellationToken.None" />.</param>
         /// <returns>A task that represents the asynchronous copy operation.</returns>
-        public virtual Task CopyToAsync(PipeWriter destination!!, CancellationToken cancellationToken = default)
+        public virtual Task CopyToAsync(PipeWriter destination, CancellationToken cancellationToken = default)
         {
+            if (destination is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.destination);
+            }
+
             if (cancellationToken.IsCancellationRequested)
             {
                 return Task.FromCanceled(cancellationToken);
@@ -180,8 +193,13 @@ namespace System.IO.Pipelines
         /// <param name="destination">The stream to which the contents of the current stream will be copied.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="System.Threading.CancellationToken.None" />.</param>
         /// <returns>A task that represents the asynchronous copy operation.</returns>
-        public virtual Task CopyToAsync(Stream destination!!, CancellationToken cancellationToken = default)
+        public virtual Task CopyToAsync(Stream destination, CancellationToken cancellationToken = default)
         {
+            if (destination is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.destination);
+            }
+
             if (cancellationToken.IsCancellationRequested)
             {
                 return Task.FromCanceled(cancellationToken);

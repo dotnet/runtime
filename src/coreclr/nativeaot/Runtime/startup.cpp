@@ -93,13 +93,6 @@ static bool InitDLL(HANDLE hPalInstance)
 
     InitializeYieldProcessorNormalizedCrst();
 
-    STARTUP_TIMELINE_EVENT(NONGC_INIT_COMPLETE);
-
-    if (!RedhawkGCInterface::InitializeSubsystems())
-        return false;
-
-    STARTUP_TIMELINE_EVENT(GC_INIT_COMPLETE);
-
 #ifdef STRESS_LOG
     uint32_t dwTotalStressLogSize = g_pRhConfig->GetTotalStressLogSize();
     uint32_t dwStressLogLevel = g_pRhConfig->GetStressLogLevel();
@@ -113,6 +106,13 @@ static bool InitDLL(HANDLE hPalInstance)
                               (unsigned)dwTotalStressLogSize, hPalInstance);
     }
 #endif // STRESS_LOG
+
+    STARTUP_TIMELINE_EVENT(NONGC_INIT_COMPLETE);
+
+    if (!RedhawkGCInterface::InitializeSubsystems())
+        return false;
+
+    STARTUP_TIMELINE_EVENT(GC_INIT_COMPLETE);
 
 #ifndef USE_PORTABLE_HELPERS
     if (!DetectCPUFeatures())
@@ -177,6 +177,11 @@ bool DetectCPUFeatures()
                         if ((cpuidInfo[ECX] & (1 << 20)) != 0)                                              // SSE4.2
                         {
                             g_cpuFeatures |= XArchIntrinsicConstants_Sse42;
+
+                            if ((cpuidInfo[ECX] & (1 << 22)) != 0)                                          // MOVBE
+                            {
+                                g_cpuFeatures |= XArchIntrinsicConstants_Movbe;
+                            }
 
                             if ((cpuidInfo[ECX] & (1 << 23)) != 0)                                          // POPCNT
                             {
@@ -261,9 +266,10 @@ bool DetectCPUFeatures()
 
     if ((g_cpuFeatures & g_requiredCpuFeatures) != g_requiredCpuFeatures)
     {
-        return false;
+        PalPrintFatalError("\nThe required instruction sets are not supported by the current CPU.\n");
+        RhFailFast();
     }
-#endif // HOST_X86 || HOST_AMD64
+#endif // HOST_X86|| HOST_AMD64 || HOST_ARM64
 
     return true;
 }

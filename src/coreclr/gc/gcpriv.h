@@ -52,7 +52,7 @@ inline void FATAL_GC_ERROR()
 // This means any empty regions can be freely used for any generation. For
 // Server GC we will balance regions between heaps.
 // For now disable regions for StandAlone GC, NativeAOT and MacOS builds
-#if defined (HOST_64BIT) && !defined (BUILD_AS_STANDALONE) && !defined(__APPLE__) && !defined(FEATURE_REDHAWK)
+#if defined (HOST_64BIT) && !defined (BUILD_AS_STANDALONE) && !defined(__APPLE__) && !defined(FEATURE_NATIVEAOT)
 #define USE_REGIONS
 #endif //HOST_64BIT && BUILD_AS_STANDALONE
 
@@ -92,10 +92,10 @@ inline void FATAL_GC_ERROR()
 #define DOUBLY_LINKED_FL
 #endif //HOST_64BIT
 
-#ifndef FEATURE_REDHAWK
+#ifndef FEATURE_NATIVEAOT
 #define HEAP_ANALYZE
 #define COLLECTIBLE_CLASS
-#endif // !FEATURE_REDHAWK
+#endif // !FEATURE_NATIVEAOT
 
 #ifdef HEAP_ANALYZE
 #define initial_internal_roots        (1024*16)
@@ -257,24 +257,23 @@ const int policy_expand  = 2;
 void GCLog (const char *fmt, ... );
 #define dprintf(l,x) {if ((l == 1) || (l == GTC_LOG)) {GCLog x;}}
 #else //SIMPLE_DPRINTF
-// Nobody used the logging mechanism that used to be here. If we find ourselves
-// wanting to inspect GC logs on unmodified builds, we can use this define here
-// to do so.
-//#define dprintf(l, x)
+#ifdef HOST_64BIT
 #define dprintf(l,x) STRESS_LOG_VA(l,x);
-
+#else
+#error Logging dprintf to stress log on 32 bits platforms is not supported.
+#endif
 #endif //SIMPLE_DPRINTF
 
 #else //TRACE_GC
 #define dprintf(l,x)
 #endif //TRACE_GC
 
-#if !defined(FEATURE_REDHAWK) && !defined(BUILD_AS_STANDALONE)
+#if !defined(FEATURE_NATIVEAOT) && !defined(BUILD_AS_STANDALONE)
 #undef  assert
 #define assert _ASSERTE
 #undef  ASSERT
 #define ASSERT _ASSERTE
-#endif // FEATURE_REDHAWK
+#endif // FEATURE_NATIVEAOT
 
 struct GCDebugSpinLock {
     VOLATILE(int32_t) lock;                   // -1 if free, 0 if held
@@ -1647,7 +1646,10 @@ protected:
 
     PER_HEAP
     void walk_relocation (void* profiling_context, record_surv_fn fn);
-
+#ifdef USE_REGIONS
+    PER_HEAP
+    heap_segment* walk_relocation_sip (heap_segment* current_heap_segment, void* profiling_context, record_surv_fn fn);
+#endif // USE_REGIONS
     PER_HEAP
     void walk_relocation_in_brick (uint8_t* tree, walk_relocate_args* args);
 
@@ -2027,7 +2029,7 @@ protected:
     PER_HEAP_ISOLATED
     bool virtual_alloc_commit_for_heap (void* addr, size_t size, int h_number);
     PER_HEAP_ISOLATED
-    bool virtual_commit (void* address, size_t size, gc_oh_num oh, int h_number=-1); 
+    bool virtual_commit (void* address, size_t size, gc_oh_num oh, int h_number=-1, bool* hard_limit_exceeded_p=NULL); 
     PER_HEAP_ISOLATED
     bool virtual_decommit (void* address, size_t size, gc_oh_num oh, int h_number=-1);
     PER_HEAP_ISOLATED
@@ -2128,7 +2130,7 @@ protected:
     BOOL find_card (uint32_t* card_table, size_t& card,
                     size_t card_word_end, size_t& end_card);
     PER_HEAP
-    BOOL grow_heap_segment (heap_segment* seg, uint8_t* high_address);
+    BOOL grow_heap_segment (heap_segment* seg, uint8_t* high_address, bool* hard_limit_exceeded_p=NULL);
     PER_HEAP
     int grow_heap_segment (heap_segment* seg, uint8_t* high_address, uint8_t* old_loc, size_t size, BOOL pad_front_p REQD_ALIGN_AND_OFFSET_DCL);
     PER_HEAP

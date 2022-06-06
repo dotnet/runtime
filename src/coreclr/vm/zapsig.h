@@ -37,7 +37,6 @@ public:
     {
         IllegalValue,
         NormalTokens,
-        IbcTokens,
         MulticoreJitTokens
     };
 

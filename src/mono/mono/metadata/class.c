@@ -218,9 +218,9 @@ mono_class_from_typeref_checked (MonoImage *image, guint32 type_token, MonoError
 done:
 	/* Generic case, should be avoided for when a better error is possible. */
 	if (!res && is_ok (error)) {
-		char *name = mono_class_name_from_token (image, type_token);
-		char *assembly = mono_assembly_name_from_token (image, type_token);
-		mono_error_set_type_load_name (error, name, assembly, "Could not resolve type with token %08x from typeref (expected class '%s' in assembly '%s')", type_token, name, assembly);
+		char *class_name = mono_class_name_from_token (image, type_token);
+		char *assembly_name = mono_assembly_name_from_token (image, type_token);
+		mono_error_set_type_load_name (error, class_name, assembly_name, "Could not resolve type with token %08x from typeref (expected class '%s' in assembly '%s')", type_token, class_name, assembly_name);
 	}
 	return res;
 }
@@ -870,7 +870,7 @@ inflate_generic_custom_modifiers (MonoImage *image, const MonoType *type, MonoGe
 {
 	MonoType *result = NULL;
 	g_assert (type->has_cmods);
-	int count = mono_type_custom_modifier_count (type);
+	guint8 count = mono_type_custom_modifier_count (type);
 	gboolean changed = FALSE;
 
 	/* Try not to blow up the stack. See comment on MONO_MAX_EXPECTED_CMODS. */
@@ -880,7 +880,7 @@ inflate_generic_custom_modifiers (MonoImage *image, const MonoType *type, MonoGe
 	memset (candidate_mods, 0, aggregate_size);
 	candidate_mods->count = count;
 
-	for (int i = 0; i < count; ++i) {
+	for (guint8 i = 0; i < count; ++i) {
 		gboolean required;
 		MonoType *cmod_old = mono_type_get_custom_modifier (type, i, &required, error);
 		goto_if_nok (error, leave);
@@ -894,7 +894,7 @@ inflate_generic_custom_modifiers (MonoImage *image, const MonoType *type, MonoGe
 
 	if (changed) {
 		/* if we're going to make a new type, fill in any modifiers that weren't affected by inflation with copies of the original values. */
-		for (int i = 0; i < count; ++i) {
+		for (guint8 i = 0; i < count; ++i) {
 			if (candidate_mods->modifiers [i].type == NULL) {
 				candidate_mods->modifiers [i].type = mono_metadata_type_dup (NULL, mono_type_get_custom_modifier (type, i, NULL, error));
 
@@ -921,7 +921,7 @@ inflate_generic_custom_modifiers (MonoImage *image, const MonoType *type, MonoGe
 	}
 
 leave:
-	for (int i = 0; i < count; ++i) {
+	for (guint8 i = 0; i < count; ++i) {
 		if (candidate_mods->modifiers [i].type)
 			mono_metadata_free_type (candidate_mods->modifiers [i].type);
 	}
@@ -1265,9 +1265,9 @@ mono_class_inflate_generic_method_full_checked (MonoMethod *method, MonoClass *k
 		}
 
 		/* Check that the method is not instantiated with any invalid types */
-		for (int i = 0; i < method_inst->type_argc; i++) {
+		for (guint i = 0; i < method_inst->type_argc; i++) {
 			if (!mono_type_is_valid_generic_argument (method_inst->type_argv [i])) {
-				mono_error_set_bad_image (error, mono_method_get_image (method), "MVAR %d cannot be expanded with type 0x%x",
+				mono_error_set_bad_image (error, mono_method_get_image (method), "MVAR %u cannot be expanded with type 0x%x",
 							  i, method_inst->type_argv [i]->type);
 				goto fail;
 			}
@@ -2541,7 +2541,7 @@ static int
 mono_field_get_index (MonoClassField *field)
 {
 	g_assert (!m_field_is_from_update (field));
-	int index = field - m_class_get_fields (m_field_get_parent (field));
+	int index = GPTRDIFF_TO_INT (field - m_class_get_fields (m_field_get_parent (field)));
 	g_assert (index >= 0 && index < mono_class_get_field_count (m_field_get_parent (field)));
 
 	return index;
@@ -2594,7 +2594,7 @@ static int
 mono_property_get_index (MonoProperty *prop)
 {
 	MonoClassPropertyInfo *info = mono_class_get_property_info (prop->parent);
-	int index = prop - info->properties;
+	int index = GPTRDIFF_TO_INT (prop - info->properties);
 
 	g_assert (index >= 0 && index < info->count);
 
@@ -3000,7 +3000,7 @@ mono_image_init_name_cache (MonoImage *image)
 	guint32 cols [MONO_TYPEDEF_SIZE];
 	const char *name;
 	const char *nspace;
-	guint32 i, visib, nspace_index;
+	guint32 visib, nspace_index;
 	GHashTable *name_cache2, *nspace_table, *the_name_cache;
 
 	if (image->name_cache)
@@ -3025,7 +3025,7 @@ mono_image_init_name_cache (MonoImage *image)
 
 	/* FIXME: metadata-update */
 	int rows = table_info_get_rows (t);
-	for (i = 1; i <= rows; ++i) {
+	for (int i = 1; i <= rows; ++i) {
 		mono_metadata_decode_row (t, i - 1, cols, MONO_TYPEDEF_SIZE);
 		visib = cols [MONO_TYPEDEF_FLAGS] & TYPE_ATTRIBUTE_VISIBILITY_MASK;
 		/*
@@ -3050,23 +3050,22 @@ mono_image_init_name_cache (MonoImage *image)
 
 	/* Load type names from EXPORTEDTYPES table */
 	{
-		MonoTableInfo  *t = &image->tables [MONO_TABLE_EXPORTEDTYPE];
-		guint32 cols [MONO_EXP_TYPE_SIZE];
-		int i;
+		MonoTableInfo *exptype_tbl = &image->tables [MONO_TABLE_EXPORTEDTYPE];
+		guint32 exptype_cols [MONO_EXP_TYPE_SIZE];
 
-		rows = table_info_get_rows (t);
-		for (i = 0; i < rows; ++i) {
-			mono_metadata_decode_row (t, i, cols, MONO_EXP_TYPE_SIZE);
+		rows = table_info_get_rows (exptype_tbl);
+		for (int i = 0; i < rows; ++i) {
+			mono_metadata_decode_row (exptype_tbl, i, exptype_cols, MONO_EXP_TYPE_SIZE);
 
-			guint32 impl = cols [MONO_EXP_TYPE_IMPLEMENTATION];
+			guint32 impl = exptype_cols [MONO_EXP_TYPE_IMPLEMENTATION];
 			if ((impl & MONO_IMPLEMENTATION_MASK) == MONO_IMPLEMENTATION_EXP_TYPE)
 				/* Nested type */
 				continue;
 
-			name = mono_metadata_string_heap (image, cols [MONO_EXP_TYPE_NAME]);
-			nspace = mono_metadata_string_heap (image, cols [MONO_EXP_TYPE_NAMESPACE]);
+			name = mono_metadata_string_heap (image, exptype_cols [MONO_EXP_TYPE_NAME]);
+			nspace = mono_metadata_string_heap (image, exptype_cols [MONO_EXP_TYPE_NAMESPACE]);
 
-			nspace_index = cols [MONO_EXP_TYPE_NAMESPACE];
+			nspace_index = exptype_cols [MONO_EXP_TYPE_NAMESPACE];
 			nspace_table = (GHashTable *)g_hash_table_lookup (name_cache2, GUINT_TO_POINTER (nspace_index));
 			if (!nspace_table) {
 				nspace_table = g_hash_table_new (g_str_hash, g_str_equal);
@@ -3286,7 +3285,7 @@ mono_class_from_name_checked_aux (MonoImage *image, const char* name_space, cons
 	g_hash_table_insert (visited_images, image, GUINT_TO_POINTER(1));
 
 	if ((nested = (char*)strchr (name, '/'))) {
-		int pos = nested - name;
+		int pos = GPTRDIFF_TO_INT (nested - name);
 		size_t len = strlen (name);
 		if (len > 1023)
 			return NULL;
@@ -6477,7 +6476,7 @@ mono_field_resolve_type (MonoClassField *field, MonoError *error)
 	if (G_UNLIKELY (m_field_is_from_update (field))) {
 		field_idx = -1;
 	} else {
-		field_idx = field - m_class_get_fields (klass);
+		field_idx = GPTRDIFF_TO_INT (field - m_class_get_fields (klass));
 	}
 
 	error_init (error);
@@ -6549,7 +6548,7 @@ mono_field_resolve_flags (MonoClassField *field)
 	MonoClass *klass = m_field_get_parent (field);
 	MonoImage *image = m_class_get_image (klass);
 	MonoClass *gtd = mono_class_is_ginst (klass) ? mono_class_get_generic_type_definition (klass) : NULL;
-	int field_idx = field - m_class_get_fields (klass);
+	int field_idx = GPTRDIFF_TO_INT (field - m_class_get_fields (klass));
 
 	if (gtd) {
 		MonoClassField *gfield = &m_class_get_fields (gtd) [field_idx];

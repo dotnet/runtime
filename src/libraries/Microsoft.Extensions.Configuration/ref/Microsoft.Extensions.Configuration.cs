@@ -14,6 +14,7 @@ namespace Microsoft.Extensions.Configuration
     public partial class ChainedConfigurationProvider : Microsoft.Extensions.Configuration.IConfigurationProvider, System.IDisposable
     {
         public ChainedConfigurationProvider(Microsoft.Extensions.Configuration.ChainedConfigurationSource source) { }
+        public Microsoft.Extensions.Configuration.IConfiguration Configuration { get { throw null; } }
         public void Dispose() { }
         public System.Collections.Generic.IEnumerable<string> GetChildKeys(System.Collections.Generic.IEnumerable<string> earlierKeys, string? parentPath) { throw null; }
         public Microsoft.Extensions.Primitives.IChangeToken GetReloadToken() { throw null; }

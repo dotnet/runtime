@@ -132,61 +132,6 @@ namespace System.IO.Tests
             Assert.Equal(token, ex.CancellationToken);
         }
 
-        [OuterLoop("It creates 1GB file")]
-        [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
-        public async Task ReadToEndAsync_WithCancellation()
-        {
-            string path = GetTestFilePath();
-            CreateLargeFile(path);
-
-            using StreamReader reader = File.OpenText(path);
-            using CancellationTokenSource cts = new();
-            var token = cts.Token;
-
-            var ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
-            {
-                Task<string> readToEndTask = reader.ReadToEndAsync(token);
-
-                // This is a time-sensitive test where the cancellation needs to happen before the async read completes.
-                // A sleep may be too long a delay, so spin-wait for a very short duration before canceling.
-                SpinWait spinner = default;
-                while (!spinner.NextSpinWillYield)
-                {
-                    spinner.SpinOnce(sleep1Threshold: -1);
-                }
-
-                cts.Cancel();
-                await readToEndTask;
-            });
-            Assert.Equal(token, ex.CancellationToken);
-        }
-
-        private void CreateLargeFile(string path)
-        {
-            const string sentence = "A very large file used for testing StreamReader cancellation. 0123456789012345678901234567890123456789.";
-            const int repeatCount = 10_000_000;
-            Encoding encoding = Encoding.UTF8;
-
-            using FileStream fs = File.OpenWrite(path);
-            long fileSize = encoding.GetByteCount(sentence) * repeatCount;
-
-            try
-            {
-                fs.SetLength(fileSize);
-            }
-            catch (IOException)
-            {
-                throw new SkipTestException($"Unable to run {ReadToEndAsync_WithCancellation} due to lack of available disk space");
-            }
-
-            using StreamWriter streamWriter = new StreamWriter(fs, encoding);
-            for (int i = 0; i < repeatCount; i++)
-            {
-                streamWriter.WriteLine(sentence);
-            }
-        }
-
         [Fact]
         public void GetBaseStream()
         {
@@ -610,6 +555,7 @@ namespace System.IO.Tests
         [InlineData(1, false)]
         [InlineData(1, true)]
         [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/51390", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task ReadAsync_Canceled_ThrowsException(int method, bool precanceled)
         {

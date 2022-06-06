@@ -1099,6 +1099,8 @@ begin_suspend_peek_and_preempt (MonoThreadInfo *info);
 MonoThreadBeginSuspendResult
 mono_thread_info_begin_suspend (MonoThreadInfo *info, MonoThreadSuspendPhase phase)
 {
+	if (phase == MONO_THREAD_SUSPEND_PHASE_INITIAL && mono_threads_platform_stw_defer_initial_suspend (info))
+		return MONO_THREAD_BEGIN_SUSPEND_NEXT_PHASE;
 	if (phase == MONO_THREAD_SUSPEND_PHASE_MOPUP && mono_threads_is_hybrid_suspension_enabled ())
 		return begin_suspend_peek_and_preempt (info);
 	else
@@ -1659,7 +1661,7 @@ sleep_interrupt (gpointer data)
 static guint32
 sleep_interruptable (guint32 ms, gboolean *alerted)
 {
-	gint64 now, end;
+	gint64 now = 0, end = 0;
 
 	g_assert (MONO_INFINITE_WAIT == G_MAXUINT32);
 
@@ -1687,7 +1689,7 @@ sleep_interruptable (guint32 ms, gboolean *alerted)
 		}
 
 		if (ms != MONO_INFINITE_WAIT)
-			mono_coop_cond_timedwait (&sleep_cond, &sleep_mutex, end - now);
+			mono_coop_cond_timedwait (&sleep_cond, &sleep_mutex, GUINT64_TO_UINT32 (end - now));
 		else
 			mono_coop_cond_wait (&sleep_cond, &sleep_mutex);
 
@@ -1776,7 +1778,7 @@ gint
 mono_thread_info_usleep (guint64 us)
 {
 	MONO_ENTER_GC_SAFE;
-	g_usleep (us);
+	g_usleep (GUINT64_TO_ULONG (us));
 	MONO_EXIT_GC_SAFE;
 	return 0;
 }
@@ -1845,7 +1847,6 @@ MonoNativeThreadHandle
 mono_threads_open_native_thread_handle (MonoNativeThreadHandle thread_handle)
 {
 #ifdef HOST_WIN32
-	BOOL success = FALSE;
 	HANDLE new_thread_handle = NULL;
 
 	g_assert (thread_handle && thread_handle != INVALID_HANDLE_VALUE);
@@ -2172,3 +2173,10 @@ mono_thread_info_get_tools_data (void)
 	return info ? info->tools_data : NULL;
 }
 
+#ifndef HOST_WASM
+gboolean
+mono_threads_platform_stw_defer_initial_suspend (MonoThreadInfo *info)
+{
+	return FALSE;
+}
+#endif

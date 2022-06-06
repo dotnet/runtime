@@ -134,7 +134,7 @@ namespace
             for (const auto& opt : known_opts)
             {
                 const host_option &arg = get_host_option(opt);
-                trace::error(_X("  %s %-*s  %s"), arg.option, 36 - pal::strlen(arg.option), arg.argument, arg.description);
+                trace::error(_X("  %s %-*s  %s"), arg.option, 36 - (int)pal::strlen(arg.option), arg.argument, arg.description);
             }
             return StatusCode::InvalidArgFailure;
         }
@@ -329,7 +329,7 @@ void command_line::print_muxer_usage(bool is_sdk_present)
     for (const auto& opt : known_opts)
     {
         const host_option &arg = get_host_option(opt);
-        trace::println(_X("  %s %-*s  %s"), arg.option, 29 - pal::strlen(arg.option), arg.argument, arg.description);
+        trace::println(_X("  %s %-*s  %s"), arg.option, 29 - (int)pal::strlen(arg.option), arg.argument, arg.description);
     }
     trace::println(_X("  --list-runtimes                 Display the installed runtimes"));
     trace::println(_X("  --list-sdks                     Display the installed SDKs"));

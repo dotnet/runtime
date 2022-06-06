@@ -13,7 +13,17 @@ namespace ILCompiler
     {
         public override bool IsBlocked(MetadataType type) => !(type is EcmaType);
 
-        public override bool IsBlocked(FieldDesc field) => !(field is EcmaField);
+        public override bool IsBlocked(FieldDesc field)
+        {
+            if (field is not EcmaField ecmaField)
+                return true;
+
+            // Avoid exposing the MethodTable field
+            if (ecmaField.OwningType.IsObject)
+                return true;
+
+            return false;
+        }
 
         private MetadataType _arrayOfTType;
         private MetadataType InitializeArrayOfTType(TypeSystemEntity contextEntity)

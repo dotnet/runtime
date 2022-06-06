@@ -164,17 +164,22 @@ namespace System.ComponentModel
                     [typeof(double)] = new IntrinsicTypeConverterData((type) => new DoubleConverter()),
                     [typeof(string)] = new IntrinsicTypeConverterData((type) => new StringConverter()),
                     [typeof(int)] = new IntrinsicTypeConverterData((type) => new Int32Converter()),
+                    [typeof(Int128)] = new IntrinsicTypeConverterData((type) => new Int128Converter()),
                     [typeof(short)] = new IntrinsicTypeConverterData((type) => new Int16Converter()),
                     [typeof(long)] = new IntrinsicTypeConverterData((type) => new Int64Converter()),
                     [typeof(float)] = new IntrinsicTypeConverterData((type) => new SingleConverter()),
+                    [typeof(Half)] = new IntrinsicTypeConverterData((type) => new HalfConverter()),
+                    [typeof(UInt128)] = new IntrinsicTypeConverterData((type) => new UInt128Converter()),
                     [typeof(ushort)] = new IntrinsicTypeConverterData((type) => new UInt16Converter()),
                     [typeof(uint)] = new IntrinsicTypeConverterData((type) => new UInt32Converter()),
                     [typeof(ulong)] = new IntrinsicTypeConverterData((type) => new UInt64Converter()),
                     [typeof(object)] = new IntrinsicTypeConverterData((type) => new TypeConverter()),
                     [typeof(CultureInfo)] = new IntrinsicTypeConverterData((type) => new CultureInfoConverter()),
+                    [typeof(DateOnly)] = new IntrinsicTypeConverterData((type) => new DateOnlyConverter()),
                     [typeof(DateTime)] = new IntrinsicTypeConverterData((type) => new DateTimeConverter()),
                     [typeof(DateTimeOffset)] = new IntrinsicTypeConverterData((type) => new DateTimeOffsetConverter()),
                     [typeof(decimal)] = new IntrinsicTypeConverterData((type) => new DecimalConverter()),
+                    [typeof(TimeOnly)] = new IntrinsicTypeConverterData((type) => new TimeOnlyConverter()),
                     [typeof(TimeSpan)] = new IntrinsicTypeConverterData((type) => new TimeSpanConverter()),
                     [typeof(Guid)] = new IntrinsicTypeConverterData((type) => new GuidConverter()),
                     [typeof(Uri)] = new IntrinsicTypeConverterData((type) => new UriTypeConverter()),
@@ -227,8 +232,10 @@ namespace System.ComponentModel
         /// table for the editor type, if one can be found.
         /// </summary>
         [RequiresUnreferencedCode("The Types specified in table may be trimmed, or have their static construtors trimmed.")]
-        internal static void AddEditorTable(Type editorBaseType!!, Hashtable table)
+        internal static void AddEditorTable(Type editorBaseType, Hashtable table)
         {
+            ArgumentNullException.ThrowIfNull(editorBaseType);
+
             Debug.Assert(table != null, "COMPAT: Editor table should not be null"); // don't throw; RTM didn't so we can't do it either.
 
             lock (s_internalSyncObject)
@@ -618,8 +625,10 @@ namespace System.ComponentModel
             return properties;
         }
 
-        protected internal override IExtenderProvider[] GetExtenderProviders(object instance!!)
+        protected internal override IExtenderProvider[] GetExtenderProviders(object instance)
         {
+            ArgumentNullException.ThrowIfNull(instance);
+
             IComponent? component = instance as IComponent;
             if (component != null && component.Site != null)
             {

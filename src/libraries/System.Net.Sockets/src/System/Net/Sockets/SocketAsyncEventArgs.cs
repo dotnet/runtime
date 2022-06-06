@@ -201,7 +201,11 @@ namespace System.Net.Sockets
 
         private void OnCompletedInternal()
         {
-            if (SocketsTelemetry.Log.IsEnabled()) AfterConnectAcceptTelemetry();
+            // The following check checks if the operation was Accept (1) or Connect (2)
+            if (LastOperation <= SocketAsyncOperation.Connect)
+            {
+                AfterConnectAcceptTelemetry();
+            }
 
             OnCompleted(this);
         }
@@ -221,6 +225,10 @@ namespace System.Net.Sockets
 
                 case SocketAsyncOperation.Connect:
                     SocketsTelemetry.Log.AfterConnect(SocketError);
+                    break;
+
+                default:
+                    Debug.Fail($"Callers should guard against calling this method for '{LastOperation}'");
                     break;
             }
         }
@@ -999,7 +1007,11 @@ namespace System.Net.Sockets
                 FinishOperationSyncFailure(socketError, bytesTransferred, flags);
             }
 
-            if (SocketsTelemetry.Log.IsEnabled()) AfterConnectAcceptTelemetry();
+            // The following check checks if the operation was Accept (1) or Connect (2)
+            if (LastOperation <= SocketAsyncOperation.Connect)
+            {
+                AfterConnectAcceptTelemetry();
+            }
         }
 
         private static void LogBytesTransferEvents(SocketType? socketType, SocketAsyncOperation operation, int bytesTransferred)

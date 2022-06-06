@@ -63,7 +63,7 @@ class ReadyToRunInfo
 
     PTR_IMAGE_DATA_DIRECTORY        m_pSectionDelayLoadMethodCallThunks;
 
-    PTR_CORCOMPILE_IMPORT_SECTION   m_pImportSections;
+    PTR_READYTORUN_IMPORT_SECTION   m_pImportSections;
     DWORD                           m_nImportSections;
 
     bool                            m_readyToRunCodeDisabled; // Is 
@@ -140,26 +140,26 @@ public:
         return m_pHeader->CoreHeader.Flags & READYTORUN_FLAG_NONSHARED_PINVOKE_STUBS;
     }
 
-    PTR_CORCOMPILE_IMPORT_SECTION GetImportSections(COUNT_T * pCount)
+    PTR_READYTORUN_IMPORT_SECTION GetImportSections(COUNT_T * pCount)
     {
         LIMITED_METHOD_CONTRACT;
         *pCount = m_nImportSections;
         return m_pImportSections;
     }
 
-    PTR_CORCOMPILE_IMPORT_SECTION GetImportSectionFromIndex(COUNT_T index)
+    PTR_READYTORUN_IMPORT_SECTION GetImportSectionFromIndex(COUNT_T index)
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(index < m_nImportSections);
         return m_pImportSections + index;
     }
 
-    PTR_CORCOMPILE_IMPORT_SECTION GetImportSectionForRVA(RVA rva)
+    PTR_READYTORUN_IMPORT_SECTION GetImportSectionForRVA(RVA rva)
     {
         LIMITED_METHOD_CONTRACT;
 
-        PTR_CORCOMPILE_IMPORT_SECTION pEnd = m_pImportSections + m_nImportSections;
-        for (PTR_CORCOMPILE_IMPORT_SECTION pSection = m_pImportSections; pSection < pEnd; pSection++)
+        PTR_READYTORUN_IMPORT_SECTION pEnd = m_pImportSections + m_nImportSections;
+        for (PTR_READYTORUN_IMPORT_SECTION pSection = m_pImportSections; pSection < pEnd; pSection++)
         {
             if (rva >= VAL32(pSection->Section.VirtualAddress) && rva < VAL32(pSection->Section.VirtualAddress) + VAL32(pSection->Section.Size))
                 return pSection;

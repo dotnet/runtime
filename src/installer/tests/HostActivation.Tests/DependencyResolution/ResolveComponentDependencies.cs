@@ -8,7 +8,7 @@ using Xunit;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 {
-    public class ResolveComponentDependencies : 
+    public class ResolveComponentDependencies :
         ComponentDependencyResolutionBase,
         IClassFixture<ResolveComponentDependencies.SharedTestState>
     {
@@ -97,7 +97,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             else
             {
                 // OSPlatform.Linux
-                // We expect the test to fail due to the the case change of AppDll
+                // We expect the test to fail due to the case change of AppDll
                 sharedTestState.RunComponentResolutionTest(component)
                     .Should().Fail()
                     .And.HaveStdErrContaining($"Failed to locate managed application [{component.AppDll}]");
@@ -154,7 +154,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             else
             {
                 // OSPlatform.Linux
-                // We expect the test to fail due to the the case change of AppDll
+                // We expect the test to fail due to the case change of AppDll
                 sharedTestState.RunComponentResolutionTest(component)
                     .Should().Fail()
                     .And.HaveStdErrContaining($"Failed to locate managed application [{component.AppDll}]");
@@ -212,7 +212,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             else
             {
                 // OSPlatform.Linux
-                // We expect the test to fail due to the the case change of AppDll
+                // We expect the test to fail due to the case change of AppDll
                 sharedTestState.RunComponentResolutionTest(component)
                     .Should().Fail()
                     .And.HaveStdErrContaining($"Failed to locate managed application [{component.AppDll}]");

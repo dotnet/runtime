@@ -405,7 +405,7 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
     }
 
 #ifdef HOST_UNIX
-    pResult = (BYTE *)PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(pMinAddr, pMaxAddr, dwSize);
+    pResult = (BYTE *)PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(pMinAddr, pMaxAddr, dwSize, TRUE /* fStoreAllocationInfo */);
     if (pResult != nullptr)
     {
         return pResult;
@@ -509,7 +509,7 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
 //******************************************************************************
 // NumaNodeInfo
 //******************************************************************************
-#if !defined(FEATURE_REDHAWK)
+#if !defined(FEATURE_NATIVEAOT)
 
 /*static*/ LPVOID NumaNodeInfo::VirtualAllocExNuma(HANDLE hProc, LPVOID lpAddr, SIZE_T dwSize,
                          DWORD allocType, DWORD prot, DWORD node)
@@ -527,7 +527,7 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
     if (m_enableGCNumaAware)
     {
         DWORD currentProcsOnNode = 0;
-        for (int i = 0; i < m_nNodes; i++)
+        for (uint16_t i = 0; i < m_nNodes; i++)
         {
             GROUP_AFFINITY processorMask;
             if (GetNumaNodeProcessorMaskEx(i, &processorMask))
@@ -563,7 +563,7 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
 /*static*/ uint16_t NumaNodeInfo::m_nNodes = 0;
 /*static*/ BOOL NumaNodeInfo::InitNumaNodeInfoAPI()
 {
-#if !defined(FEATURE_REDHAWK)
+#if !defined(FEATURE_NATIVEAOT)
     //check for numa support if multiple heaps are used
     ULONG highest = 0;
 
@@ -597,7 +597,7 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
 //******************************************************************************
 // CPUGroupInfo
 //******************************************************************************
-#if !defined(FEATURE_REDHAWK)
+#if !defined(FEATURE_NATIVEAOT)
 /*static*/ //CPUGroupInfo::PNTQSIEx CPUGroupInfo::m_pNtQuerySystemInformationEx = NULL;
 
 /*static*/ BOOL CPUGroupInfo::GetLogicalProcessorInformationEx(LOGICAL_PROCESSOR_RELATIONSHIP relationship,
@@ -641,7 +641,7 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
 /*static*/ CPU_Group_Info *CPUGroupInfo::m_CPUGroupInfoArray = NULL;
 /*static*/ LONG CPUGroupInfo::m_initialization = 0;
 
-#if !defined(FEATURE_REDHAWK) && (defined(TARGET_AMD64) || defined(TARGET_ARM64))
+#if !defined(FEATURE_NATIVEAOT) && (defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64))
 // Calculate greatest common divisor
 DWORD GCD(DWORD u, DWORD v)
 {
@@ -671,7 +671,7 @@ DWORD LCM(DWORD u, DWORD v)
     }
     CONTRACTL_END;
 
-#if !defined(FEATURE_REDHAWK) && (defined(TARGET_AMD64) || defined(TARGET_ARM64))
+#if !defined(FEATURE_NATIVEAOT) && (defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64))
     BYTE *bBuffer = NULL;
     SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX *pSLPIEx = NULL;
     SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX *pRecord = NULL;
@@ -680,8 +680,8 @@ DWORD LCM(DWORD u, DWORD v)
     DWORD dwNumElements = 0;
     DWORD dwWeight = 1;
 
-    if (CPUGroupInfo::GetLogicalProcessorInformationEx(RelationGroup, pSLPIEx, &cbSLPIEx) &&
-                      GetLastError() != ERROR_INSUFFICIENT_BUFFER)
+    if (CPUGroupInfo::GetLogicalProcessorInformationEx(RelationGroup, pSLPIEx, &cbSLPIEx) ||
+        GetLastError() != ERROR_INSUFFICIENT_BUFFER)
         return FALSE;
 
     _ASSERTE(cbSLPIEx);
@@ -721,6 +721,7 @@ DWORD LCM(DWORD u, DWORD v)
     {
         m_CPUGroupInfoArray[i].nr_active   = (WORD)pRecord->Group.GroupInfo[i].ActiveProcessorCount;
         m_CPUGroupInfoArray[i].active_mask = pRecord->Group.GroupInfo[i].ActiveProcessorMask;
+        m_CPUGroupInfoArray[i].begin       = m_nProcessors;
         m_nProcessors += m_CPUGroupInfoArray[i].nr_active;
         dwWeight = LCM(dwWeight, (DWORD)m_CPUGroupInfoArray[i].nr_active);
     }
@@ -742,27 +743,6 @@ DWORD LCM(DWORD u, DWORD v)
 #endif
 }
 
-/*static*/ BOOL CPUGroupInfo::InitCPUGroupInfoRange()
-{
-    LIMITED_METHOD_CONTRACT;
-
-#if !defined(FEATURE_REDHAWK) && (defined(TARGET_AMD64) || defined(TARGET_ARM64))
-    WORD begin   = 0;
-    WORD nr_proc = 0;
-
-    for (WORD i = 0; i < m_nGroups; i++)
-    {
-        nr_proc += m_CPUGroupInfoArray[i].nr_active;
-        m_CPUGroupInfoArray[i].begin = begin;
-        m_CPUGroupInfoArray[i].end   = nr_proc - 1;
-        begin = nr_proc;
-    }
-    return TRUE;
-#else
-    return FALSE;
-#endif
-}
-
 /*static*/ void CPUGroupInfo::InitCPUGroupInfo()
 {
     CONTRACTL
@@ -772,7 +752,7 @@ DWORD LCM(DWORD u, DWORD v)
     }
     CONTRACTL_END;
 
-#if !defined(FEATURE_REDHAWK) && (defined(TARGET_AMD64) || defined(TARGET_ARM64))
+#if !defined(FEATURE_NATIVEAOT) && (defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64))
     BOOL enableGCCPUGroups = Configuration::GetKnobBooleanValue(W("System.GC.CpuGroup"), CLRConfig::EXTERNAL_GCCpuGroup);
 
     if (!enableGCCPUGroups)
@@ -781,20 +761,17 @@ DWORD LCM(DWORD u, DWORD v)
     if (!InitCPUGroupInfoArray())
         return;
 
-    if (!InitCPUGroupInfoRange())
-        return;
-
-    // initalGroup is whatever the CPU group that the main thread is running on
-    GROUP_AFFINITY groupAffinity;
-    CPUGroupInfo::GetThreadGroupAffinity(GetCurrentThread(), &groupAffinity);
-    m_initialGroup = groupAffinity.Group;
-
-    // only enable CPU groups if more than one group exists
+    // Enable processor groups only if more than one group exists
     if (m_nGroups > 1)
     {
         m_enableGCCPUGroups = TRUE;
         m_threadUseAllCpuGroups = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Thread_UseAllCpuGroups) != 0;
         m_threadAssignCpuGroups = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Thread_AssignCpuGroups) != 0;
+
+        // Save the processor group affinity of the initial thread
+        GROUP_AFFINITY groupAffinity;
+        CPUGroupInfo::GetThreadGroupAffinity(GetCurrentThread(), &groupAffinity);
+        m_initialGroup = groupAffinity.Group;
     }
 #endif
 }
@@ -852,7 +829,7 @@ DWORD LCM(DWORD u, DWORD v)
 {
     LIMITED_METHOD_CONTRACT;
 
-#if !defined(FEATURE_REDHAWK) && (defined(TARGET_AMD64) || defined(TARGET_ARM64))
+#if !defined(FEATURE_NATIVEAOT) && (defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64))
     WORD bTemp = 0;
     WORD bDiff = processor_number - bTemp;
 
@@ -883,7 +860,7 @@ DWORD LCM(DWORD u, DWORD v)
     }
     CONTRACTL_END;
 
-#if !defined(FEATURE_REDHAWK) && (defined(TARGET_AMD64) || defined(TARGET_ARM64))
+#if !defined(FEATURE_NATIVEAOT) && (defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64))
     _ASSERTE(m_enableGCCPUGroups && m_threadUseAllCpuGroups);
 
     PROCESSOR_NUMBER proc_no;
@@ -921,7 +898,7 @@ DWORD LCM(DWORD u, DWORD v)
     return false;
 }
 
-#if !defined(FEATURE_REDHAWK)
+#if !defined(FEATURE_NATIVEAOT)
 //Lock ThreadStore before calling this function, so that updates of weights/counts are consistent
 /*static*/ void CPUGroupInfo::ChooseCPUGroupAffinity(GROUP_AFFINITY *gf)
 {
@@ -932,7 +909,7 @@ DWORD LCM(DWORD u, DWORD v)
     }
     CONTRACTL_END;
 
-#if (defined(TARGET_AMD64) || defined(TARGET_ARM64))
+#if (defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64))
     WORD i, minGroup = 0;
     DWORD minWeight = 0;
 
@@ -974,7 +951,7 @@ found:
 /*static*/ void CPUGroupInfo::ClearCPUGroupAffinity(GROUP_AFFINITY *gf)
 {
     LIMITED_METHOD_CONTRACT;
-#if (defined(TARGET_AMD64) || defined(TARGET_ARM64))
+#if (defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64))
     _ASSERTE(m_enableGCCPUGroups && m_threadUseAllCpuGroups && m_threadAssignCpuGroups);
 
     WORD group = gf->Group;

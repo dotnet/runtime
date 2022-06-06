@@ -80,66 +80,10 @@ namespace
 #endif // FEATURE_EVENT_TRACE
     }
 
-    void GetAssemblyLoadContextNameFromManagedALC(INT_PTR managedALC, /* out */ SString &alcName)
-    {
-        if (managedALC == GetAppDomain()->GetDefaultBinder()->GetManagedAssemblyLoadContext())
-        {
-            alcName.Set(W("Default"));
-            return;
-        }
-
-        OBJECTREF *alc = reinterpret_cast<OBJECTREF *>(managedALC);
-
-        GCX_COOP();
-        struct _gc {
-            STRINGREF alcName;
-        } gc;
-        ZeroMemory(&gc, sizeof(gc));
-
-        GCPROTECT_BEGIN(gc);
-
-        PREPARE_VIRTUAL_CALLSITE(METHOD__OBJECT__TO_STRING, *alc);
-        DECLARE_ARGHOLDER_ARRAY(args, 1);
-        args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(*alc);
-        CALL_MANAGED_METHOD_RETREF(gc.alcName, STRINGREF, args);
-        gc.alcName->GetSString(alcName);
-
-        GCPROTECT_END();
-    }
-
-    void GetAssemblyLoadContextNameFromBinder(AssemblyBinder *binder, AppDomain *domain, /*out*/ SString &alcName)
-    {
-        _ASSERTE(binder != nullptr);
-
-        if (binder->IsDefault())
-        {
-            alcName.Set(W("Default"));
-        }
-        else
-        {
-            GetAssemblyLoadContextNameFromManagedALC(binder->GetManagedAssemblyLoadContext(), alcName);
-        }
-    }
-
-    void GetAssemblyLoadContextNameFromSpec(AssemblySpec *spec, /*out*/ SString &alcName)
-    {
-        _ASSERTE(spec != nullptr);
-
-        AppDomain *domain = spec->GetAppDomain();
-        AssemblyBinder* binder = spec->GetBinder();
-        if (binder == nullptr)
-            binder = spec->GetBinderFromParentAssembly(domain);
-
-        GetAssemblyLoadContextNameFromBinder(binder, domain, alcName);
-    }
-
     void PopulateBindRequest(/*inout*/ BinderTracing::AssemblyBindOperation::BindRequest &request)
     {
         AssemblySpec *spec = request.AssemblySpec;
         _ASSERTE(spec != nullptr);
-
-        if (request.AssemblyPath.IsEmpty())
-            request.AssemblyPath = spec->GetCodeBase();
 
         if (spec->GetName() != nullptr)
             spec->GetDisplayName(ASM_DISPLAYF_VERSION | ASM_DISPLAYF_CULTURE | ASM_DISPLAYF_PUBLIC_KEY_TOKEN, request.AssemblyName);
@@ -151,13 +95,12 @@ namespace
             _ASSERTE(pPEAssembly != nullptr);
             pPEAssembly->GetDisplayName(request.RequestingAssembly);
 
-            AppDomain *domain = parentAssembly->GetAppDomain();
             AssemblyBinder *binder = pPEAssembly->GetAssemblyBinder();
 
-            GetAssemblyLoadContextNameFromBinder(binder, domain, request.RequestingAssemblyLoadContext);
+            binder->GetNameForDiagnostics(request.RequestingAssemblyLoadContext);
         }
 
-        GetAssemblyLoadContextNameFromSpec(spec, request.AssemblyLoadContext);
+        AssemblyBinder::GetNameForDiagnosticsFromSpec(spec, request.AssemblyLoadContext);
     }
 
     const WCHAR *s_assemblyNotFoundMessage = W("Could not locate assembly");
@@ -256,11 +199,11 @@ namespace BinderTracing
 
         if (managedALC != 0)
         {
-            GetAssemblyLoadContextNameFromManagedALC(managedALC, m_assemblyLoadContextName);
+            AssemblyBinder::GetNameForDiagnosticsFromManagedALC(managedALC, m_assemblyLoadContextName);
         }
         else
         {
-            GetAssemblyLoadContextNameFromBinder(binder, GetAppDomain(), m_assemblyLoadContextName);
+            binder->GetNameForDiagnostics(m_assemblyLoadContextName);
         }
     }
 
@@ -335,27 +278,28 @@ namespace BinderTracing
                     result = Result::IncompatibleVersion;
 
                     {
-                        errorMsg.Set(W("Requested version"));
+                        SString errorMsgUtf8(SString::Utf8, "Requested version");
                         if (m_assemblyNameObject != nullptr)
                         {
                             const auto &reqVersion = m_assemblyNameObject->GetVersion();
-                            errorMsg.AppendPrintf(W(" %d.%d.%d.%d"),
+                            errorMsgUtf8.AppendPrintf(" %d.%d.%d.%d",
                                 reqVersion->GetMajor(),
                                 reqVersion->GetMinor(),
                                 reqVersion->GetBuild(),
                                 reqVersion->GetRevision());
                         }
 
-                        errorMsg.Append(W(" is incompatible with found version"));
+                        errorMsgUtf8.AppendUTF8(" is incompatible with found version");
                         if (resultAssembly != nullptr)
                         {
                             const auto &foundVersion = resultAssembly->GetAssemblyName()->GetVersion();
-                            errorMsg.AppendPrintf(W(" %d.%d.%d.%d"),
+                            errorMsgUtf8.AppendPrintf(" %d.%d.%d.%d",
                                 foundVersion->GetMajor(),
                                 foundVersion->GetMinor(),
                                 foundVersion->GetBuild(),
                                 foundVersion->GetRevision());
                         }
+                        errorMsg.Set(errorMsgUtf8.GetUnicode());
                     }
                     break;
 
@@ -363,7 +307,11 @@ namespace BinderTracing
                     result = Result::MismatchedAssemblyName;
                     errorMsg.Printf(W("Requested assembly name '%s' does not match found assembly name"), m_assemblyName.GetUnicode());
                     if (resultAssembly != nullptr)
-                        errorMsg.AppendPrintf(W(" '%s'"), resultAssemblyName.GetUnicode());
+                    {
+                        errorMsg.Append(W(" '"));
+                        errorMsg.Append(resultAssemblyName.GetUnicode());
+                        errorMsg.Append(W("'"));
+                    }
 
                     break;
 
@@ -424,7 +372,7 @@ namespace BinderTracing
         spec->GetDisplayName(ASM_DISPLAYF_VERSION | ASM_DISPLAYF_CULTURE | ASM_DISPLAYF_PUBLIC_KEY_TOKEN, assemblyName);
 
         StackSString alcName;
-        GetAssemblyLoadContextNameFromSpec(spec, alcName);
+        AssemblyBinder::GetNameForDiagnosticsFromSpec(spec, alcName);
 
         FireEtwResolutionAttempted(
             GetClrInstanceId(),

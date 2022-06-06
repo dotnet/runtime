@@ -91,9 +91,10 @@ void DumpMap(int index, MethodContext* mc)
     // Add in the "fake" pgo flags
     bool hasEdgeProfile = false;
     bool hasClassProfile = false;
+    bool hasMethodProfile = false;
     bool hasLikelyClass = false;
     ICorJitInfo::PgoSource pgoSource = ICorJitInfo::PgoSource::Unknown;
-    if (mc->hasPgoData(hasEdgeProfile, hasClassProfile, hasLikelyClass, pgoSource))
+    if (mc->hasPgoData(hasEdgeProfile, hasClassProfile, hasMethodProfile, hasLikelyClass, pgoSource))
     {
         rawFlags |= 1ULL << (EXTRA_JIT_FLAGS::HAS_PGO);
 
@@ -105,6 +106,11 @@ void DumpMap(int index, MethodContext* mc)
         if (hasClassProfile)
         {
             rawFlags |= 1ULL << (EXTRA_JIT_FLAGS::HAS_CLASS_PROFILE);
+        }
+
+        if (hasMethodProfile)
+        {
+            rawFlags |= 1ULL << (EXTRA_JIT_FLAGS::HAS_METHOD_PROFILE);
         }
 
         if (hasLikelyClass)

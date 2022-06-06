@@ -3876,7 +3876,6 @@ LONG WatsonLastChance(                  // EXCEPTION_CONTINUE_SEARCH, _CONTINUE_
                         // Since the StackOverflow handler also calls us, we must keep our stack budget
                         // to a minimum. Thus, we will launch a thread to do the actual work.
                         FaultReportInfo fri;
-                        fri.m_fDoReportFault       = TRUE;
                         fri.m_pExceptionInfo       = pExceptionInfo;
                         // DoFaultCreateThreadReportCallback will overwrite this - if it doesn't, we'll assume it failed.
                         fri.m_faultRepRetValResult = frrvErr;
@@ -4101,7 +4100,10 @@ LaunchCreateDump(LPCWSTR lpCommandLine)
         if (WszCreateProcess(NULL, lpCommandLine, NULL, NULL, TRUE, 0, NULL, NULL, &StartupInfo, &processInformation))
         {
             WaitForSingleObject(processInformation.hProcess, INFINITE);
-            fSuccess = true;
+
+            DWORD exitCode = 0;
+            GetExitCodeProcess(processInformation.hProcess, &exitCode);
+            fSuccess = exitCode == 0;
         }
     }
     EX_CATCH
@@ -4176,7 +4178,9 @@ InitializeCrashDump()
 bool GenerateDump(
     LPCWSTR dumpName,
     INT dumpType,
-    ULONG32 flags)
+    ULONG32 flags,
+    LPSTR errorMessageBuffer,
+    INT cbErrorMessageBuffer)
 {
 #ifdef TARGET_UNIX
     MAKE_UTF8PTR_FROMWIDE_NOTHROW (dumpNameUtf8, dumpName);
@@ -4186,7 +4190,7 @@ bool GenerateDump(
     }
     else
     {
-        return PAL_GenerateCoreDump(dumpNameUtf8, dumpType, flags);
+        return PAL_GenerateCoreDump(dumpNameUtf8, dumpType, flags, errorMessageBuffer, cbErrorMessageBuffer);
     }
 #else // TARGET_UNIX
     return GenerateCrashDump(dumpName, dumpType, flags & GenerateDumpFlagsLoggingEnabled);
@@ -5853,252 +5857,6 @@ extern "C" void QCALLTYPE FileLoadException_GetMessageForHR(UINT32 hresult, QCal
     END_QCALL;
 }
 
-
-#define ValidateSigBytes(_size) do { if ((_size) > csig) COMPlusThrow(kArgumentException, W("Argument_BadSigFormat")); csig -= (_size); } while (false)
-
-//==========================================================================
-// Unparses an individual type.
-//==========================================================================
-const BYTE *UnparseType(const BYTE *pType, DWORD& csig, StubLinker *psl)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        INJECT_FAULT(ThrowOutOfMemory();); // Emitting data to the StubLinker can throw OOM.
-    }
-    CONTRACTL_END;
-
-    LPCUTF8 pName = NULL;
-
-    ValidateSigBytes(sizeof(BYTE));
-    switch ( (CorElementType) *(pType++) ) {
-        case ELEMENT_TYPE_VOID:
-            psl->EmitUtf8("void");
-            break;
-
-        case ELEMENT_TYPE_BOOLEAN:
-            psl->EmitUtf8("boolean");
-            break;
-
-        case ELEMENT_TYPE_CHAR:
-            psl->EmitUtf8("char");
-            break;
-
-        case ELEMENT_TYPE_U1:
-            psl->EmitUtf8("unsigned ");
-            FALLTHROUGH;
-        case ELEMENT_TYPE_I1:
-            psl->EmitUtf8("byte");
-            break;
-
-        case ELEMENT_TYPE_U2:
-            psl->EmitUtf8("unsigned ");
-            FALLTHROUGH;
-        case ELEMENT_TYPE_I2:
-            psl->EmitUtf8("short");
-            break;
-
-        case ELEMENT_TYPE_U4:
-            psl->EmitUtf8("unsigned ");
-            FALLTHROUGH;
-        case ELEMENT_TYPE_I4:
-            psl->EmitUtf8("int");
-            break;
-
-        case ELEMENT_TYPE_I:
-            psl->EmitUtf8("native int");
-            break;
-        case ELEMENT_TYPE_U:
-            psl->EmitUtf8("native unsigned");
-            break;
-
-        case ELEMENT_TYPE_U8:
-            psl->EmitUtf8("unsigned ");
-            FALLTHROUGH;
-        case ELEMENT_TYPE_I8:
-            psl->EmitUtf8("long");
-            break;
-
-
-        case ELEMENT_TYPE_R4:
-            psl->EmitUtf8("float");
-            break;
-
-        case ELEMENT_TYPE_R8:
-            psl->EmitUtf8("double");
-            break;
-
-        case ELEMENT_TYPE_STRING:
-            psl->EmitUtf8(g_StringName);
-            break;
-
-        case ELEMENT_TYPE_VAR:
-        case ELEMENT_TYPE_OBJECT:
-            psl->EmitUtf8(g_ObjectName);
-            break;
-
-        case ELEMENT_TYPE_PTR:
-            pType = UnparseType(pType, csig, psl);
-            psl->EmitUtf8("*");
-            break;
-
-        case ELEMENT_TYPE_BYREF:
-            pType = UnparseType(pType, csig, psl);
-            psl->EmitUtf8("&");
-            break;
-
-        case ELEMENT_TYPE_VALUETYPE:
-        case ELEMENT_TYPE_CLASS:
-            pName = (LPCUTF8)pType;
-            while (true) {
-                ValidateSigBytes(sizeof(CHAR));
-                if (*(pType++) == '\0')
-                    break;
-            }
-            psl->EmitUtf8(pName);
-            break;
-
-        case ELEMENT_TYPE_SZARRAY:
-            {
-                pType = UnparseType(pType, csig, psl);
-                psl->EmitUtf8("[]");
-            }
-            break;
-
-        case ELEMENT_TYPE_ARRAY:
-            {
-                pType = UnparseType(pType, csig, psl);
-                ValidateSigBytes(sizeof(DWORD));
-                DWORD rank = GET_UNALIGNED_VAL32(pType);
-                pType += sizeof(DWORD);
-                if (rank)
-                {
-                    ValidateSigBytes(sizeof(UINT32));
-                    UINT32 nsizes = GET_UNALIGNED_VAL32(pType); // Get # of sizes
-                    ValidateSigBytes(nsizes * sizeof(UINT32));
-                    pType += 4 + nsizes*4;
-                    ValidateSigBytes(sizeof(UINT32));
-                    UINT32 nlbounds = GET_UNALIGNED_VAL32(pType); // Get # of lower bounds
-                    ValidateSigBytes(nlbounds * sizeof(UINT32));
-                    pType += 4 + nlbounds*4;
-
-
-                    while (rank--) {
-                        psl->EmitUtf8("[]");
-                    }
-
-}
-
-            }
-            break;
-
-        case ELEMENT_TYPE_TYPEDBYREF:
-            psl->EmitUtf8("&");
-            break;
-
-        case ELEMENT_TYPE_FNPTR:
-            psl->EmitUtf8("ftnptr");
-            break;
-
-        default:
-            psl->EmitUtf8("?");
-            break;
-    }
-
-    return pType;
-    }
-
-
-
-//==========================================================================
-// Helper for MissingMemberException.
-//==========================================================================
-static STRINGREF MissingMemberException_FormatSignature_Internal(I1ARRAYREF* ppPersistedSig)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        INJECT_FAULT(ThrowOutOfMemory(););
-    }
-    CONTRACTL_END;
-
-    STRINGREF pString = NULL;
-
-    DWORD csig = 0;
-    const BYTE *psig = 0;
-    StubLinker *psl = NULL;
-    StubHolder<Stub> pstub;
-
-    if ((*ppPersistedSig) != NULL)
-        csig = (*ppPersistedSig)->GetNumComponents();
-
-    if (csig == 0)
-    {
-        return StringObject::NewString("Unknown signature");
-    }
-
-    psig = (const BYTE*)_alloca(csig);
-    CopyMemory((BYTE*)psig,
-               (*ppPersistedSig)->GetDirectPointerToNonObjectElements(),
-               csig);
-
-    {
-    GCX_PREEMP();
-
-    StubLinker sl;
-    psl = &sl;
-    pstub = NULL;
-
-    ValidateSigBytes(sizeof(UINT32));
-    UINT32 cconv = GET_UNALIGNED_VAL32(psig);
-    psig += 4;
-
-    if (cconv == IMAGE_CEE_CS_CALLCONV_FIELD) {
-        psig = UnparseType(psig, csig, psl);
-    } else {
-        ValidateSigBytes(sizeof(UINT32));
-        UINT32 nargs = GET_UNALIGNED_VAL32(psig);
-        psig += 4;
-
-        // Unparse return type
-        psig = UnparseType(psig, csig, psl);
-        psl->EmitUtf8("(");
-        while (nargs--) {
-            psig = UnparseType(psig, csig, psl);
-            if (nargs) {
-                psl->EmitUtf8(", ");
-            }
-        }
-        psl->EmitUtf8(")");
-    }
-    psl->Emit8('\0');
-
-    pstub = psl->Link(NULL);
-    }
-
-    pString = StringObject::NewString( (LPCUTF8)(pstub->GetEntryPoint()) );
-    return pString;
-}
-
-FCIMPL1(Object*, MissingMemberException_FormatSignature, I1Array* pPersistedSigUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    STRINGREF pString = NULL;
-    I1ARRAYREF pPersistedSig = (I1ARRAYREF) pPersistedSigUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(pPersistedSig);
-
-    pString = MissingMemberException_FormatSignature_Internal(&pPersistedSig);
-
-    HELPER_METHOD_FRAME_END();
-    return OBJECTREFToObject(pString);
-}
-FCIMPLEND
-
 // Check if there is a pending exception or the thread is already aborting. Returns 0 if yes.
 // Otherwise, sets the thread up for generating an abort and returns address of ThrowControlForThread
 // It is the caller's responsibility to set up Thread::m_OSContext prior to this call.  This is used as
@@ -6580,7 +6338,7 @@ IsDebuggerFault(EXCEPTION_RECORD *pExceptionRecord,
 
     // Is this exception really meant for the COM+ Debugger? Note: we will let the debugger have a chance if there
     // is a debugger attached to any part of the process. It is incorrect to consider whether or not the debugger
-    // is attached the the thread's current app domain at this point.
+    // is attached the thread's current app domain at this point.
 
     // Even if a debugger is not attached, we must let the debugger handle the exception in case it's coming from a
     // patch-skipper.
@@ -6601,7 +6359,7 @@ IsDebuggerFault(EXCEPTION_RECORD *pExceptionRecord,
 
 #endif // TARGET_UNIX
 
-#ifndef TARGET_ARM64
+#if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64)
 EXTERN_C void JIT_StackProbe_End();
 #endif // TARGET_ARM64
 
@@ -6668,7 +6426,7 @@ bool IsIPInMarkedJitHelper(UINT_PTR uControlPc)
     CHECK_RANGE(JIT_WriteBarrier)
     CHECK_RANGE(JIT_CheckedWriteBarrier)
     CHECK_RANGE(JIT_ByRefWriteBarrier)
-#if !defined(TARGET_ARM64)
+#if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64)
     CHECK_RANGE(JIT_StackProbe)
 #endif // !TARGET_ARM64
 #else
@@ -6792,7 +6550,7 @@ AdjustContextForJITHelpers(
 
         Thread::VirtualUnwindToFirstManagedCallFrame(pContext);
 
-#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
         // We had an AV in the writebarrier that needs to be treated
         // as originating in managed code. At this point, the stack (growing
         // from left->right) looks like this:
@@ -6816,7 +6574,7 @@ AdjustContextForJITHelpers(
        // Now we save the address back into the context so that it gets used
        // as the faulting address.
        SetIP(pContext, ControlPCPostAdjustment);
-#endif // TARGET_ARM || TARGET_ARM64
+#endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64
 
         // Unwind the frame chain - On Win64, this is required since we may handle the managed fault and to do so,
         // we will replace the exception context with the managed context and "continue execution" there. Thus, we do not
@@ -7063,7 +6821,7 @@ bool ShouldHandleManagedFault(
     //
     // Is this exception really meant for the COM+ Debugger? Note: we will let the debugger have a chance if there is a
     // debugger attached to any part of the process. It is incorrect to consider whether or not the debugger is attached
-    // the the thread's current app domain at this point.
+    // the thread's current app domain at this point.
 
 
     // A managed exception never comes from managed code, and we can ignore all breakpoint
@@ -9641,7 +9399,7 @@ BOOL SetupWatsonBucketsForFailFast(EXCEPTIONREF refException)
                     // Keep the UETracker clean
                     pUEWatsonBucketTracker->ClearWatsonBucketDetails();
 
-                    // Since we couldnt find the watson bucket tracker for the the inner most exception,
+                    // Since we couldnt find the watson bucket tracker for the inner most exception,
                     // try to look for the buckets in the throwable.
                     fCheckThrowableForWatsonBuckets = TRUE;
                 }
@@ -12084,7 +11842,6 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(EXCEPINFO *pExcepInfo)
 // Throw an InvalidCastException
 //==========================================================================
 
-
 VOID GetAssemblyDetailInfo(SString    &sType,
                            SString    &sAssemblyDisplayName,
                            PEAssembly *pPEAssembly,
@@ -12092,8 +11849,10 @@ VOID GetAssemblyDetailInfo(SString    &sType,
 {
     WRAPPER_NO_CONTRACT;
 
-    InlineSString<MAX_LONGPATH> sFormat;
-    const WCHAR *pwzLoadContext = W("Default");
+    StackSString sFormat;
+    StackSString sAlcName;
+
+    pPEAssembly->GetAssemblyBinder()->GetNameForDiagnostics(sAlcName);
 
     if (pPEAssembly->GetPath().IsEmpty())
     {
@@ -12102,7 +11861,7 @@ VOID GetAssemblyDetailInfo(SString    &sType,
         sAssemblyDetailInfo.Printf(sFormat.GetUnicode(),
                                    sType.GetUnicode(),
                                    sAssemblyDisplayName.GetUnicode(),
-                                   pwzLoadContext);
+                                   sAlcName.GetUnicode());
     }
     else
     {
@@ -12111,7 +11870,7 @@ VOID GetAssemblyDetailInfo(SString    &sType,
         sAssemblyDetailInfo.Printf(sFormat.GetUnicode(),
                                    sType.GetUnicode(),
                                    sAssemblyDisplayName.GetUnicode(),
-                                   pwzLoadContext,
+                                   sAlcName.GetUnicode(),
                                    pPEAssembly->GetPath().GetUnicode());
     }
 }
@@ -12142,17 +11901,17 @@ VOID CheckAndThrowSameTypeAndAssemblyInvalidCastException(TypeHandle thCastFrom,
          _ASSERTE(pPEAssemblyTypeFrom != NULL);
          _ASSERTE(pPEAssemblyTypeTo != NULL);
 
-         InlineSString<MAX_LONGPATH> sAssemblyFromDisplayName;
-         InlineSString<MAX_LONGPATH> sAssemblyToDisplayName;
+         StackSString sAssemblyFromDisplayName;
+         StackSString sAssemblyToDisplayName;
 
          pPEAssemblyTypeFrom->GetDisplayName(sAssemblyFromDisplayName);
          pPEAssemblyTypeTo->GetDisplayName(sAssemblyToDisplayName);
 
          // Found the culprit case. Now format the new exception text.
-         InlineSString<MAX_CLASSNAME_LENGTH + 1> strCastFromName;
-         InlineSString<MAX_CLASSNAME_LENGTH + 1> strCastToName;
-         InlineSString<MAX_LONGPATH> sAssemblyDetailInfoFrom;
-         InlineSString<MAX_LONGPATH> sAssemblyDetailInfoTo;
+         StackSString strCastFromName;
+         StackSString strCastToName;
+         StackSString sAssemblyDetailInfoFrom;
+         StackSString sAssemblyDetailInfoTo;
 
          thCastFrom.GetName(strCastFromName);
          thCastTo.GetName(strCastToName);

@@ -452,7 +452,7 @@ namespace System.Data.Common
             {
                 throw ADP.InvalidKeyname(keyword);
             }
-            if ((null != value) && !s_connectionStringValidValueRegex.IsMatch(value))
+            if ((null != value) && value.IndexOf('\0') >= 0)
             {
                 throw ADP.InvalidValue(keyword);
             }

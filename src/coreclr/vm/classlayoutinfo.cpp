@@ -148,7 +148,7 @@ namespace
             LayoutRawFieldInfo* pfwalk = *pSortWalk;
             RawFieldPlacementInfo* placementInfo = &pfwalk->m_placement;
 
-            BYTE alignmentRequirement = placementInfo->m_alignment;
+            BYTE alignmentRequirement = (BYTE)placementInfo->m_alignment;
 
             alignmentRequirement = min(alignmentRequirement, packingSize);
 
@@ -620,7 +620,7 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
         CONSISTENCY_CHECK_MSGF(false, ("BreakOnStructMarshalSetup: '%s' ", szName));
 #endif
 
-    // Running tote - if anything in this type disqualifies it from being ManagedSequential, somebody will set this to TRUE by the the time
+    // Running tote - if anything in this type disqualifies it from being ManagedSequential, somebody will set this to TRUE by the time
     // function exits.
     BOOL fDisqualifyFromManagedSequential;
     BOOL hasAutoLayoutField = FALSE;
@@ -955,7 +955,9 @@ EEClassNativeLayoutInfo* EEClassNativeLayoutInfo::CollectNativeLayoutFieldMetada
             pNativeLayoutInfo->m_alignmentRequirement = pEEClassLayoutInfo->m_ManagedLargestAlignmentRequirementOfAllMembers;
         }
         else
-        if (pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR64T)) ||
+        if (pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__INT128)) ||
+            pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__UINT128)) ||
+            pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR64T)) ||
             pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR128T)) ||
             pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR256T)))
         {

@@ -69,7 +69,7 @@ namespace System.Buffers
         /// <summary>
         /// Converts a <see cref="ReadOnlySpan{Char}"/> into a StandardFormat
         /// </summary>
-        public static StandardFormat Parse(ReadOnlySpan<char> format)
+        public static StandardFormat Parse([StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format)
         {
             ParseHelper(format, out StandardFormat standardFormat, throws: true);
 
@@ -79,12 +79,12 @@ namespace System.Buffers
         /// <summary>
         /// Converts a classic .NET format string into a StandardFormat
         /// </summary>
-        public static StandardFormat Parse(string? format) => format == null ? default : Parse(format.AsSpan());
+        public static StandardFormat Parse([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format) => format == null ? default : Parse(format.AsSpan());
 
         /// <summary>
         /// Tries to convert a <see cref="ReadOnlySpan{Char}"/> into a StandardFormat. A return value indicates whether the conversion succeeded or failed.
         /// </summary>
-        public static bool TryParse(ReadOnlySpan<char> format, out StandardFormat result)
+        public static bool TryParse([StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format, out StandardFormat result)
         {
             return ParseHelper(format, out result);
         }

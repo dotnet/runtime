@@ -65,6 +65,7 @@ align_pointer (void *ptr)
 	return (void*)p;
 }
 
+MONO_DISABLE_WARNING(4740) /* flow in or out of inline asm code suppresses global optimization, x86 only */
 static void
 update_current_thread_stack (void *start)
 {
@@ -86,6 +87,7 @@ update_current_thread_stack (void *start)
 	if (mono_gc_get_gc_callbacks ()->thread_suspend_func)
 		mono_gc_get_gc_callbacks ()->thread_suspend_func (info->client_info.runtime_data, NULL, &info->client_info.ctx);
 }
+MONO_RESTORE_WARNING
 
 static void
 acquire_gc_locks (void)
@@ -102,7 +104,7 @@ release_gc_locks (void)
 }
 
 static TV_DECLARE (stop_world_time);
-static unsigned long max_stw_pause_time = 0;
+static guint64 max_stw_pause_time = 0;
 
 static guint64 time_stop_world;
 static guint64 time_restart_world;
@@ -158,7 +160,7 @@ sgen_client_stop_world (int generation, gboolean serial_collection)
 
 	TV_GETTIME (end_handshake);
 
-	unsigned long stop_world_tv_elapsed = TV_ELAPSED (stop_world_time, end_handshake);
+	gint64 stop_world_tv_elapsed = TV_ELAPSED (stop_world_time, end_handshake);
 	SGEN_LOG (2, "stopping world (time: %d usec)", (int)stop_world_tv_elapsed / 10);
 	time_stop_world += stop_world_tv_elapsed;
 
@@ -202,11 +204,11 @@ sgen_client_restart_world (int generation, gboolean serial_collection, gint64 *s
 
 	TV_GETTIME (end_sw);
 
-	unsigned long restart_world_tv_elapsed = TV_ELAPSED (start_handshake, end_sw);
+	gint64 restart_world_tv_elapsed = TV_ELAPSED (start_handshake, end_sw);
 	SGEN_LOG (2, "restarting world (time: %d usec)", (int)restart_world_tv_elapsed / 10);
 	time_restart_world += restart_world_tv_elapsed;
 
-	unsigned long stw_pause_time = TV_ELAPSED (stop_world_time, end_sw);
+	gint64 stw_pause_time = TV_ELAPSED (stop_world_time, end_sw);
 	max_stw_pause_time = MAX (stw_pause_time, max_stw_pause_time);
 	end_of_last_stw = end_sw;
 

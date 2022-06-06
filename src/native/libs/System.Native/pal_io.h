@@ -31,6 +31,7 @@ typedef struct
     int64_t BirthTime; // time the file was created
     int64_t BirthTimeNsec; // nanosecond part
     int64_t Dev;       // ID of the device containing the file
+    int64_t RDev;      // ID of the device if it is a special file
     int64_t Ino;       // inode number of the file
     uint32_t UserFlags; // user defined flags
 } FileStatus;
@@ -121,6 +122,7 @@ enum
 {
     PAL_S_IFMT = 0xF000,  // Type of file (apply as mask to FileStatus.Mode and one of S_IF*)
     PAL_S_IFIFO = 0x1000, // FIFO (named pipe)
+    PAL_S_IFBLK = 0x6000, // Block special
     PAL_S_IFCHR = 0x2000, // Character special
     PAL_S_IFDIR = 0x4000, // Directory
     PAL_S_IFREG = 0x8000, // Regular file
@@ -541,6 +543,25 @@ PALEXPORT int32_t SystemNative_Link(const char* source, const char* linkTarget);
 PALEXPORT int32_t SystemNative_SymLink(const char* target, const char* linkPath);
 
 /**
+ * Given a device ID, extracts the major and minor and components and returns them.
+ */
+PALEXPORT void SystemNative_GetDeviceIdentifiers(uint64_t dev, uint32_t* majorNumber, uint32_t* minorNumber);
+
+/**
+ * Creates a special or ordinary file.
+ *
+ * Returns 0 on success; otherwise, returns -1 and errno is set.
+ */
+PALEXPORT int32_t SystemNative_MkNod(const char* pathName, uint32_t mode, uint32_t major, uint32_t minor);
+
+/**
+ * Creates a FIFO special file (named pipe).
+ *
+ * Returns 0 on success; otherwise, returns -1 and errno is set.
+ */
+PALEXPORT int32_t SystemNative_MkFifo(const char* pathName, uint32_t mode);
+
+/**
  * Creates a file name that adheres to the specified template, creates the file on disk with
  * 0600 permissions, and returns an open r/w File Descriptor on the file.
  *
@@ -718,9 +739,9 @@ PALEXPORT char* SystemNative_RealPath(const char* path);
 PALEXPORT int32_t SystemNative_GetPeerID(intptr_t socket, uid_t* euid);
 
 /**
-* Returns file system type on success, or -1 on error.
+* Returns file system type on success, or 0 on error.
 */
-PALEXPORT int64_t SystemNative_GetFileSystemType(intptr_t fd);
+PALEXPORT uint32_t SystemNative_GetFileSystemType(intptr_t fd);
 
 /**
 * Attempts to lock/unlock the region of the file "fd" specified by the offset and length. lockType

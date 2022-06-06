@@ -141,7 +141,7 @@ The first 4 options are mutually exclusive
         have managed thread local statics, which work through the HELPER. Support for this is considered
         legacy, and going forward, the EE should
 
-    * <NONE> This is a normal static field. Its address in in memory is determined by getFieldAddress. (see
+    * <NONE> This is a normal static field. Its address in memory is determined by getFieldAddress. (see
         also CORINFO_FLG_STATIC_IN_HEAP).
 
 
@@ -438,7 +438,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_CHKCASTCLASS_SPECIAL, // Optimized helper for classes. Assumes that the trivial cases
                                     // has been taken care of by the inlined check
 
-    CORINFO_HELP_BOX,
+    CORINFO_HELP_BOX,               // Fast box helper. Only possible exception is OutOfMemory
     CORINFO_HELP_BOX_NULLABLE,      // special form of boxing for Nullable<T>
     CORINFO_HELP_UNBOX,
     CORINFO_HELP_UNBOX_NULLABLE,    // special form of unboxing for Nullable<T>
@@ -646,6 +646,8 @@ enum CorInfoHelpFunc
     CORINFO_HELP_VALIDATE_INDIRECT_CALL,    // CFG: Validate function pointer
     CORINFO_HELP_DISPATCH_INDIRECT_CALL,    // CFG: Validate and dispatch to pointer
 
+    CORINFO_HELP_STATIC_VIRTUAL_AMBIGUOUS_RESOLUTION, // Throw AmbiguousResolutionException for failed static virtual method resolution
+
     CORINFO_HELP_COUNT,
 };
 
@@ -842,7 +844,7 @@ enum CorInfoFlag
     CORINFO_FLG_ARRAY                 = 0x00080000, // class is an array class (initialized differently)
     CORINFO_FLG_OVERLAPPING_FIELDS    = 0x00100000, // struct or class has fields that overlap (aka union)
     CORINFO_FLG_INTERFACE             = 0x00200000, // it is an interface
-    CORINFO_FLG_DONT_PROMOTE          = 0x00400000, // don't try to promote fields (used for types outside of AOT compilation version bubble)
+    CORINFO_FLG_DONT_DIG_FIELDS       = 0x00400000, // don't ask field info, AOT can't rely on it (used for types outside of AOT compilation version bubble)
     CORINFO_FLG_CUSTOMLAYOUT          = 0x00800000, // does this struct have custom layout?
     CORINFO_FLG_CONTAINS_GC_PTR       = 0x01000000, // does the class contain a gc ptr ?
     CORINFO_FLG_DELEGATE              = 0x02000000, // is this a subclass of delegate or multicast delegate ?
@@ -892,7 +894,7 @@ enum CORINFO_EH_CLAUSE_FLAGS
     CORINFO_EH_CLAUSE_FINALLY   = 0x0002, // This clause is a finally clause
     CORINFO_EH_CLAUSE_FAULT     = 0x0004, // This clause is a fault clause
     CORINFO_EH_CLAUSE_DUPLICATE = 0x0008, // Duplicated clause. This clause was duplicated to a funclet which was pulled out of line
-    CORINFO_EH_CLAUSE_SAMETRY   = 0x0010, // This clause covers same try block as the previous one. (Used by CoreRT ABI.)
+    CORINFO_EH_CLAUSE_SAMETRY   = 0x0010, // This clause covers same try block as the previous one. (Used by NativeAOT ABI.)
 };
 
 // This enumeration is passed to InternalThrow
@@ -1115,7 +1117,7 @@ struct CORINFO_SIG_INFO
     CorInfoCallConv     getCallConv()       { return CorInfoCallConv((callConv & CORINFO_CALLCONV_MASK)); }
     bool                hasThis()           { return ((callConv & CORINFO_CALLCONV_HASTHIS) != 0); }
     bool                hasExplicitThis()   { return ((callConv & CORINFO_CALLCONV_EXPLICITTHIS) != 0); }
-    unsigned            totalILArgs()       { return (numArgs + hasThis()); }
+    unsigned            totalILArgs()       { return (numArgs + (hasThis() ? 1 : 0)); }
     bool                isVarArg()          { return ((getCallConv() == CORINFO_CALLCONV_VARARG) || (getCallConv() == CORINFO_CALLCONV_NATIVEVARARG)); }
     bool                hasTypeArg()        { return ((callConv & CORINFO_CALLCONV_PARAMTYPE) != 0); }
 };
@@ -1745,7 +1747,7 @@ enum CORINFO_RUNTIME_ABI
 {
     CORINFO_DESKTOP_ABI = 0x100,
     CORINFO_CORECLR_ABI = 0x200,
-    CORINFO_CORERT_ABI = 0x300,
+    CORINFO_NATIVEAOT_ABI = 0x300,
 };
 
 // For some highly optimized paths, the JIT must generate code that directly
@@ -1934,6 +1936,7 @@ struct CORINFO_VarArgInfo
 #define OFFSETOF__CORINFO_String__stringLen               SIZEOF__CORINFO_Object
 #define OFFSETOF__CORINFO_String__chars                   (OFFSETOF__CORINFO_String__stringLen + sizeof(uint32_t) /* stringLen */)
 
+#define OFFSETOF__CORINFO_NullableOfT__hasValue           0
 
 /* data to optimize delegate construction */
 struct DelegateCtorArgs
@@ -2240,10 +2243,11 @@ public:
 
     // Returns string length and content (can be null for dynamic context)
     // for given metaTOK and module, length `-1` means input is incorrect
-    virtual const char16_t * getStringLiteral (
+    virtual int getStringLiteral (
             CORINFO_MODULE_HANDLE       module,     /* IN  */
             unsigned                    metaTOK,    /* IN  */
-            int*                        length      /* OUT */
+            char16_t*                   buffer,     /* OUT */
+            int                         bufferSize  /* IN  */
             ) = 0;
 
     /**********************************************************************************/
@@ -2291,7 +2295,7 @@ public:
     // was truncated when copied to the buffer.
     //
     // Operation:
-    // 
+    //
     // On entry, `*pnBufLen` specifies the size of the buffer pointed to by `*ppBuf` as a count of characters.
     // There are two cases:
     // 1. If the size is zero, the function computes the length of the representation and returns that.

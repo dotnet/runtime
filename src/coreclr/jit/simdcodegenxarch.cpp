@@ -442,7 +442,7 @@ void CodeGen::genSIMDIntrinsicInit(GenTreeSIMD* simdNode)
 #endif // !defined(TARGET_64BIT)
         if (op1->isContained())
     {
-        if (op1->IsIntegralConst(0) || op1->IsFPZero())
+        if (op1->IsIntegralConst(0) || op1->IsFloatPositiveZero())
         {
             genSIMDZero(targetType, baseType, targetReg);
         }
@@ -866,7 +866,7 @@ void CodeGen::genStoreIndTypeSIMD12(GenTree* treeNode)
 
 #ifdef DEBUG
     // Should not require a write barrier
-    GCInfo::WriteBarrierForm writeBarrierForm = gcInfo.gcIsWriteBarrierCandidate(treeNode, data);
+    GCInfo::WriteBarrierForm writeBarrierForm = gcInfo.gcIsWriteBarrierCandidate(treeNode->AsStoreInd());
     assert(writeBarrierForm == GCInfo::WBF_NoBarrier);
 #endif
 
@@ -943,22 +943,7 @@ void CodeGen::genStoreLclTypeSIMD12(GenTree* treeNode)
     unsigned varNum = lclVar->GetLclNum();
     assert(varNum < compiler->lvaCount);
 
-    regNumber tmpReg = treeNode->GetSingleTempReg();
-    GenTree*  op1    = lclVar->gtOp1;
-    if (op1->isContained())
-    {
-        // This is only possible for a zero-init.
-        assert(op1->IsIntegralConst(0) || op1->IsSIMDZero());
-        genSIMDZero(TYP_SIMD16, op1->AsSIMD()->GetSimdBaseType(), tmpReg);
-
-        // store lower 8 bytes
-        GetEmitter()->emitIns_S_R(ins_Store(TYP_DOUBLE), EA_8BYTE, tmpReg, varNum, offs);
-
-        // Store upper 4 bytes
-        GetEmitter()->emitIns_S_R(ins_Store(TYP_FLOAT), EA_4BYTE, tmpReg, varNum, offs + 8);
-
-        return;
-    }
+    GenTree* op1 = lclVar->gtOp1;
 
     assert(!op1->isContained());
     regNumber operandReg = genConsumeReg(op1);
@@ -966,11 +951,18 @@ void CodeGen::genStoreLclTypeSIMD12(GenTree* treeNode)
     // store lower 8 bytes
     GetEmitter()->emitIns_S_R(ins_Store(TYP_DOUBLE), EA_8BYTE, operandReg, varNum, offs);
 
-    // Extract upper 4-bytes from operandReg
-    GetEmitter()->emitIns_R_R_I(INS_pshufd, emitActualTypeSize(TYP_SIMD16), tmpReg, operandReg, 0x02);
+    if (!op1->IsVectorZero())
+    {
+        regNumber tmpReg = treeNode->GetSingleTempReg();
+
+        // Extract upper 4-bytes from operandReg
+        GetEmitter()->emitIns_R_R_I(INS_pshufd, emitActualTypeSize(TYP_SIMD16), tmpReg, operandReg, 0x02);
+
+        operandReg = tmpReg;
+    }
 
     // Store upper 4 bytes
-    GetEmitter()->emitIns_S_R(ins_Store(TYP_FLOAT), EA_4BYTE, tmpReg, varNum, offs + 8);
+    GetEmitter()->emitIns_S_R(ins_Store(TYP_FLOAT), EA_4BYTE, operandReg, varNum, offs + 8);
 }
 
 //-----------------------------------------------------------------------------

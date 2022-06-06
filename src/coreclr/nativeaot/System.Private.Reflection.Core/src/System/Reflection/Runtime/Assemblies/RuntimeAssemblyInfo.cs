@@ -20,7 +20,6 @@ using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
 using Internal.Reflection.Core.NonPortable;
 
-using Internal.Reflection.Tracing;
 using System.Security;
 
 namespace System.Reflection.Runtime.Assemblies
@@ -42,11 +41,6 @@ namespace System.Reflection.Runtime.Assemblies
         {
             get
             {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.Assembly_FullName(this);
-#endif
-
                 return GetName().FullName;
             }
         }
@@ -66,14 +60,17 @@ namespace System.Reflection.Runtime.Assemblies
             }
         }
 
+        public sealed override Module GetModule(string name)
+        {
+            if (name == ManifestModule.ScopeName)
+                return ManifestModule;
+
+            return null;
+        }
+
         [RequiresUnreferencedCode("Types might be removed")]
         public sealed override Type GetType(string name, bool throwOnError, bool ignoreCase)
         {
-#if ENABLE_REFLECTION_TRACE
-            if (ReflectionTrace.Enabled)
-                ReflectionTrace.Assembly_GetType(this, name);
-#endif
-
             if (name == null)
                 throw new ArgumentNullException();
             if (name.Length == 0)
@@ -116,10 +113,6 @@ namespace System.Reflection.Runtime.Assemblies
 
         public sealed override AssemblyName GetName()
         {
-#if ENABLE_REFLECTION_TRACE
-            if (ReflectionTrace.Enabled)
-                ReflectionTrace.Assembly_GetName(this);
-#endif
             return RuntimeAssemblyName.ToAssemblyName();
         }
 
@@ -286,13 +279,13 @@ namespace System.Reflection.Runtime.Assemblies
         [RequiresAssemblyFiles(ThrowingMessageInRAF)]
         public sealed override FileStream GetFile(string name)
         {
-            throw new PlatformNotSupportedException();
+            throw new FileNotFoundException();
         }
 
         [RequiresAssemblyFiles(ThrowingMessageInRAF)]
         public sealed override FileStream[] GetFiles(bool getResourceModules)
         {
-            throw new PlatformNotSupportedException();
+            throw new FileNotFoundException();
         }
 
         public sealed override SecurityRuleSet SecurityRuleSet

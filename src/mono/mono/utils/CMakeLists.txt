@@ -66,9 +66,7 @@ set(utils_common_sources
     mono-once.h
     mono-lazy-init.h
     mono-proclib.c
-    mono-proclib-windows.c
     mono-proclib.h
-    mono-proclib-windows-internals.h
     mono-publib.c
     mono-string.h
     mono-time.c
@@ -137,6 +135,7 @@ set(utils_common_sources
     mono-threads-android.c
     mono-threads-haiku.c
     mono-threads-aix.c
+    mono-threads-wasm.h
     mono-threads-wasm.c
     mono-threads-sunos.c
     mono-threads.h
@@ -151,7 +150,6 @@ set(utils_common_sources
     mono-tls.c
     mono-utils-debug.c
     mono-utils-debug.h
-    linux_magic.h
     mono-memory-model.h
     atomic.h
     atomic.c

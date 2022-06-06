@@ -32,11 +32,14 @@ using System.Diagnostics;
 
 namespace System.Reflection
 {
+    // Note that in CoreCLR, RtFieldInfo derives from RuntimeFieldInfo.
     internal abstract class RtFieldInfo : FieldInfo
     {
         internal abstract object UnsafeGetValue(object obj);
         internal abstract void UnsafeSetValue(object obj, object value, BindingFlags invokeAttr, Binder binder, CultureInfo culture);
         internal abstract void CheckConsistency(object target);
+        internal abstract object? GetValueNonEmit(object? obj);
+        internal abstract void SetValueNonEmit(object? obj, object? value);
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -48,7 +51,18 @@ namespace System.Reflection
         private string? name;
         private Type? type;
         private FieldAttributes attrs;
+        private FieldAccessor? invoker;
 #pragma warning restore 649
+
+        private FieldAccessor Invoker
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                invoker ??= new FieldAccessor(this);
+                return invoker;
+            }
+        }
 
         public override Module Module
         {
@@ -92,16 +106,16 @@ namespace System.Reflection
             }
         }
 
-        [DebuggerStepThroughAttribute]
-        [Diagnostics.DebuggerHidden]
+        [DebuggerStepThrough]
+        [DebuggerHidden]
         internal override void UnsafeSetValue(object? obj, object? value, BindingFlags invokeAttr, Binder? binder, CultureInfo? culture)
         {
             bool domainInitialized = false;
             RuntimeFieldHandle.SetValue(this, obj, value, null, Attributes, null, ref domainInitialized);
         }
 
-        [DebuggerStepThroughAttribute]
-        [Diagnostics.DebuggerHidden]
+        [DebuggerStepThrough]
+        [DebuggerHidden]
         public override void SetValueDirect(TypedReference obj, object value)
         {
             if (obj.IsNull)
@@ -114,8 +128,15 @@ namespace System.Reflection
             }
         }
 
-        [DebuggerStepThroughAttribute]
-        [Diagnostics.DebuggerHidden]
+        [DebuggerStepThrough]
+        [DebuggerHidden]
+        internal override void SetValueNonEmit(object? obj, object? value)
+        {
+            SetValueInternal(this, obj, value);
+        }
+
+        [DebuggerStepThrough]
+        [DebuggerHidden]
         public override object GetValueDirect(TypedReference obj)
         {
             if (obj.IsNull)
@@ -126,6 +147,13 @@ namespace System.Reflection
                 // Passing TypedReference by reference is easier to make correct in native code
                 return RuntimeFieldHandle.GetValueDirect(this, (RuntimeType)FieldType, &obj, (RuntimeType?)DeclaringType);
             }
+        }
+
+        [DebuggerStepThrough]
+        [DebuggerHidden]
+        internal override object? GetValueNonEmit(object? obj)
+        {
+            return GetValueInternal(obj);
         }
 
         public override FieldAttributes Attributes
@@ -191,6 +219,7 @@ namespace System.Reflection
         {
             return CustomAttribute.GetCustomAttributes(this, inherit);
         }
+
         public override object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
             return CustomAttribute.GetCustomAttributes(this, attributeType, inherit);
@@ -217,7 +246,8 @@ namespace System.Reflection
 
             if (!IsLiteral)
                 CheckGeneric();
-            return GetValueInternal(obj);
+
+            return Invoker.GetValue(obj);
         }
 
         public override string ToString()
@@ -248,9 +278,15 @@ namespace System.Reflection
             if (val != null)
             {
                 RuntimeType fieldType = (RuntimeType)FieldType;
-                val = fieldType.CheckValue(val, binder, culture, invokeAttr);
+                ParameterCopyBackAction _ = default;
+
+                if (!ReferenceEquals(val.GetType(), fieldType))
+                {
+                    fieldType.CheckValue(ref val, ref _, binder, culture, invokeAttr);
+                }
             }
-            SetValueInternal(this, obj, val);
+
+            Invoker.SetValue(obj, val);
         }
 
         internal RuntimeFieldInfo Clone(string newName)

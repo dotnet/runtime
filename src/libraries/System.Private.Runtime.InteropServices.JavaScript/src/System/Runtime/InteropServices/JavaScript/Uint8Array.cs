@@ -43,7 +43,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             AssertNotDisposed();
 
-            object res = Interop.Runtime.TypedArrayToArray(JSHandle, out int exception);
+            Interop.Runtime.TypedArrayToArrayRef(JSHandle, out int exception, out object res);
 
             if (exception != 0)
                 throw new JSException((string)res);
@@ -61,7 +61,7 @@ namespace System.Runtime.InteropServices.JavaScript
             ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(span);
             fixed (byte* ptr = bytes)
             {
-                object res = Interop.Runtime.TypedArrayFrom((int)ptr, 0, span.Length, sizeof(byte), (int)TypedArrayTypeCode.Uint8Array, out int exception);
+                Interop.Runtime.TypedArrayFromRef((int)ptr, 0, span.Length, sizeof(byte), (int)TypedArrayTypeCode.Uint8Array, out int exception, out object res);
                 if (exception != 0)
                     throw new JSException((string)res);
                 var r = (Uint8Array)res;

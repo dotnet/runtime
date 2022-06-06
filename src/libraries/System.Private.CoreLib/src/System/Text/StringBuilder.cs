@@ -180,8 +180,10 @@ namespace System.Text
             m_ChunkChars = GC.AllocateUninitializedArray<char>(capacity);
         }
 
-        private StringBuilder(SerializationInfo info!!, StreamingContext context)
+        private StringBuilder(SerializationInfo info, StreamingContext context)
         {
+            ArgumentNullException.ThrowIfNull(info);
+
             int persistedCapacity = 0;
             string? persistedString = null;
             int persistedMaxCapacity = int.MaxValue;
@@ -238,8 +240,10 @@ namespace System.Text
             AssertInvariants();
         }
 
-        void ISerializable.GetObjectData(SerializationInfo info!!, StreamingContext context)
+        void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
+            ArgumentNullException.ThrowIfNull(info);
+
             AssertInvariants();
             info.AddValue(MaxCapacityField, m_MaxCapacity);
             info.AddValue(CapacityField, Capacity);
@@ -355,7 +359,7 @@ namespace System.Text
                     // Check that we will not overrun our boundaries.
                     if ((uint)(chunkLength + chunkOffset) > (uint)result.Length || (uint)chunkLength > (uint)sourceArray.Length)
                     {
-                        throw new ArgumentOutOfRangeException(nameof(chunkLength), SR.ArgumentOutOfRange_Index);
+                        throw new ArgumentOutOfRangeException(nameof(chunkLength), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
                     }
 
                     Buffer.Memmove(
@@ -507,7 +511,7 @@ namespace System.Text
                     {
                         if (indexInBlock >= chunk.m_ChunkLength)
                         {
-                            throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+                            throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLess);
                         }
                         chunk.m_ChunkChars[indexInBlock] = value;
                         return;
@@ -515,7 +519,7 @@ namespace System.Text
                     chunk = chunk.m_ChunkPrevious;
                     if (chunk == null)
                     {
-                        throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+                        throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLess);
                     }
                 }
             }
@@ -751,7 +755,7 @@ namespace System.Text
             }
             if (charCount > value.Length - startIndex)
             {
-                throw new ArgumentOutOfRangeException(nameof(charCount), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(charCount), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
             if (charCount != 0)
@@ -786,7 +790,7 @@ namespace System.Text
         {
             if (startIndex < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
             if (count < 0)
             {
@@ -806,7 +810,7 @@ namespace System.Text
             {
                 if (startIndex > value.Length - count)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
+                    throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
                 }
 
                 Append(ref Unsafe.Add(ref value.GetRawStringData(), startIndex), count);
@@ -828,7 +832,7 @@ namespace System.Text
         {
             if (startIndex < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
             if (count < 0)
@@ -852,7 +856,7 @@ namespace System.Text
 
             if (count > value.Length - startIndex)
             {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
             return AppendCore(value, startIndex, count);
@@ -898,8 +902,10 @@ namespace System.Text
             return Append(Environment.NewLine);
         }
 
-        public void CopyTo(int sourceIndex, char[] destination!!, int destinationIndex, int count)
+        public void CopyTo(int sourceIndex, char[] destination, int destinationIndex, int count)
         {
+            ArgumentNullException.ThrowIfNull(destination);
+
             if (destinationIndex < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(destinationIndex), SR.Format(SR.ArgumentOutOfRange_MustBeNonNegNum, nameof(destinationIndex)));
@@ -922,7 +928,7 @@ namespace System.Text
 
             if ((uint)sourceIndex > (uint)Length)
             {
-                throw new ArgumentOutOfRangeException(nameof(sourceIndex), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(sourceIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
             if (sourceIndex > Length - count)
@@ -977,7 +983,7 @@ namespace System.Text
             int currentLength = Length;
             if ((uint)index > (uint)currentLength)
             {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
             if (value.IsEmpty || count == 0)
@@ -1025,7 +1031,7 @@ namespace System.Text
 
             if (length > Length - startIndex)
             {
-                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
             if (Length == length && startIndex == 0)
@@ -1265,7 +1271,7 @@ namespace System.Text
         {
             if ((uint)index > (uint)Length)
             {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
             if (value != null)
@@ -1292,7 +1298,7 @@ namespace System.Text
         {
             if ((uint)index > (uint)Length)
             {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
             Insert(index, ref value, 1);
@@ -1303,7 +1309,7 @@ namespace System.Text
         {
             if ((uint)index > (uint)Length)
             {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
             if (value != null)
@@ -1318,7 +1324,7 @@ namespace System.Text
             int currentLength = Length;
             if ((uint)index > (uint)currentLength)
             {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
             if (value == null)
@@ -1342,7 +1348,7 @@ namespace System.Text
 
             if (startIndex > value.Length - charCount)
             {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
             if (charCount > 0)
@@ -1378,7 +1384,7 @@ namespace System.Text
         {
             if ((uint)index > (uint)Length)
             {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
             if (value.Length != 0)
@@ -1404,13 +1410,24 @@ namespace System.Text
             return Insert(index, value.ToString(), 1);
         }
 
-        public StringBuilder AppendFormat(string format, object? arg0) => AppendFormatHelper(null, format, new ParamsArray(arg0));
+        public StringBuilder AppendFormat([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0)
+        {
+            return AppendFormatHelper(null, format, new ReadOnlySpan<object?>(in arg0));
+        }
 
-        public StringBuilder AppendFormat(string format, object? arg0, object? arg1) => AppendFormatHelper(null, format, new ParamsArray(arg0, arg1));
+        public StringBuilder AppendFormat([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1)
+        {
+            TwoObjects two = new TwoObjects(arg0, arg1);
+            return AppendFormatHelper(null, format, MemoryMarshal.CreateReadOnlySpan(ref two.Arg0, 2));
+        }
 
-        public StringBuilder AppendFormat(string format, object? arg0, object? arg1, object? arg2) => AppendFormatHelper(null, format, new ParamsArray(arg0, arg1, arg2));
+        public StringBuilder AppendFormat([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1, object? arg2)
+        {
+            ThreeObjects three = new ThreeObjects(arg0, arg1, arg2);
+            return AppendFormatHelper(null, format, MemoryMarshal.CreateReadOnlySpan(ref three.Arg0, 3));
+        }
 
-        public StringBuilder AppendFormat(string format, params object?[] args)
+        public StringBuilder AppendFormat([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[] args)
         {
             if (args is null)
             {
@@ -1419,16 +1436,27 @@ namespace System.Text
                 ArgumentNullException.Throw(format is null ? nameof(format) : nameof(args));
             }
 
-            return AppendFormatHelper(null, format, new ParamsArray(args));
+            return AppendFormatHelper(null, format, args);
         }
 
-        public StringBuilder AppendFormat(IFormatProvider? provider, string format, object? arg0) => AppendFormatHelper(provider, format, new ParamsArray(arg0));
+        public StringBuilder AppendFormat(IFormatProvider? provider, [StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0)
+        {
+            return AppendFormatHelper(provider, format, new ReadOnlySpan<object?>(in arg0));
+        }
 
-        public StringBuilder AppendFormat(IFormatProvider? provider, string format, object? arg0, object? arg1) => AppendFormatHelper(provider, format, new ParamsArray(arg0, arg1));
+        public StringBuilder AppendFormat(IFormatProvider? provider, [StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1)
+        {
+            TwoObjects two = new TwoObjects(arg0, arg1);
+            return AppendFormatHelper(provider, format, MemoryMarshal.CreateReadOnlySpan(ref two.Arg0, 2));
+        }
 
-        public StringBuilder AppendFormat(IFormatProvider? provider, string format, object? arg0, object? arg1, object? arg2) => AppendFormatHelper(provider, format, new ParamsArray(arg0, arg1, arg2));
+        public StringBuilder AppendFormat(IFormatProvider? provider, [StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1, object? arg2)
+        {
+            ThreeObjects three = new ThreeObjects(arg0, arg1, arg2);
+            return AppendFormatHelper(provider, format, MemoryMarshal.CreateReadOnlySpan(ref three.Arg0, 3));
+        }
 
-        public StringBuilder AppendFormat(IFormatProvider? provider, string format, params object?[] args)
+        public StringBuilder AppendFormat(IFormatProvider? provider, [StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[] args)
         {
             if (args is null)
             {
@@ -1437,229 +1465,202 @@ namespace System.Text
                 ArgumentNullException.Throw(format is null ? nameof(format) : nameof(args));
             }
 
-            return AppendFormatHelper(provider, format, new ParamsArray(args));
+            return AppendFormatHelper(provider, format, args);
         }
 
-        private static void FormatError()
+        internal StringBuilder AppendFormatHelper(IFormatProvider? provider, string format, ReadOnlySpan<object?> args)
         {
-            throw new FormatException(SR.Format_InvalidString);
-        }
+            ArgumentNullException.ThrowIfNull(format);
 
-        // Undocumented exclusive limits on the range for Argument Hole Index and Argument Hole Alignment.
-        private const int IndexLimit = 1000000; // Note:            0 <= ArgIndex < IndexLimit
-        private const int WidthLimit = 1000000; // Note:  -WidthLimit <  ArgAlign < WidthLimit
+            // Undocumented exclusive limits on the range for Argument Hole Index and Argument Hole Alignment.
+            const int IndexLimit = 1_000_000; // Note:            0 <= ArgIndex < IndexLimit
+            const int WidthLimit = 1_000_000; // Note:  -WidthLimit <  ArgAlign < WidthLimit
 
-        internal StringBuilder AppendFormatHelper(IFormatProvider? provider, string format!!, ParamsArray args)
-        {
+            // Query the provider (if one was supplied) for an ICustomFormatter.  If there is one,
+            // it needs to be used to transform all arguments.
+            ICustomFormatter? cf = (ICustomFormatter?)provider?.GetFormat(typeof(ICustomFormatter));
+
+            // Repeatedly find the next hole and process it.
             int pos = 0;
-            int len = format.Length;
-            char ch = '\x0';
-
-            ICustomFormatter? cf = null;
-            if (provider != null)
-            {
-                cf = (ICustomFormatter?)provider.GetFormat(typeof(ICustomFormatter));
-            }
-
+            char ch;
             while (true)
             {
-                while (pos < len)
+                // Skip until either the end of the input or the first unescaped opening brace, whichever comes first.
+                // Along the way we need to also unescape escaped closing braces.
+                while (true)
                 {
-                    ch = format[pos];
-
-                    pos++;
-                    // Is it a closing brace?
-                    if (ch == '}')
+                    // Find the next brace.  If there isn't one, the remainder of the input is text to be appended, and we're done.
+                    if ((uint)pos >= (uint)format.Length)
                     {
-                        // Check next character (if there is one) to see if it is escaped. eg }}
-                        if (pos < len && format[pos] == '}')
-                        {
-                            pos++;
-                        }
-                        else
-                        {
-                            // Otherwise treat it as an error (Mismatched closing brace)
-                            FormatError();
-                        }
+                        return this;
                     }
-                    // Is it an opening brace?
-                    else if (ch == '{')
-                    {
-                        // Check next character (if there is one) to see if it is escaped. eg {{
-                        if (pos < len && format[pos] == '{')
-                        {
-                            pos++;
-                        }
-                        else
-                        {
-                            // Otherwise treat it as the opening brace of an Argument Hole.
-                            pos--;
-                            break;
-                        }
-                    }
-                    // If it's neither then treat the character as just text.
-                    Append(ch);
-                }
 
-                //
-                // Start of parsing of Argument Hole.
-                // Argument Hole ::= { Index (, WS* Alignment WS*)? (: Formatting)? }
-                //
-                if (pos == len)
-                {
+                    ReadOnlySpan<char> remainder = format.AsSpan(pos);
+                    int countUntilNextBrace = remainder.IndexOfAny('{', '}');
+                    if (countUntilNextBrace < 0)
+                    {
+                        Append(remainder);
+                        return this;
+                    }
+
+                    // Append the text until the brace.
+                    Append(remainder.Slice(0, countUntilNextBrace));
+                    pos += countUntilNextBrace;
+
+                    // Get the brace.  It must be followed by another character, either a copy of itself in the case of being
+                    // escaped, or an arbitrary character that's part of the hole in the case of an opening brace.
+                    char brace = format[pos];
+                    ch = MoveNext(format, ref pos);
+                    if (brace == ch)
+                    {
+                        Append(ch);
+                        pos++;
+                        continue;
+                    }
+
+                    // This wasn't an escape, so it must be an opening brace.
+                    if (brace != '{')
+                    {
+                        ThrowHelper.ThrowFormatInvalidString();
+                    }
+
+                    // Proceed to parse the hole.
                     break;
                 }
 
-                //
-                //  Start of parsing required Index parameter.
-                //  Index ::= ('0'-'9')+ WS*
-                //
-                pos++;
-                // If reached end of text then error (Unexpected end of text)
-                // or character is not a digit then error (Unexpected Character)
-                if (pos == len || (ch = format[pos]) < '0' || ch > '9') FormatError();
-                int index = 0;
-                do
-                {
-                    index = index * 10 + ch - '0';
-                    pos++;
-                    // If reached end of text then error (Unexpected end of text)
-                    if (pos == len)
-                    {
-                        FormatError();
-                    }
-                    ch = format[pos];
-                    // so long as character is digit and value of the index is less than 1000000 ( index limit )
-                }
-                while (ch >= '0' && ch <= '9' && index < IndexLimit);
-
-                // If value of index is not within the range of the arguments passed in then error (Index out of range)
-                if (index >= args.Length)
-                {
-                    throw new FormatException(SR.Format_IndexOutOfRange);
-                }
-
-                // Consume optional whitespace.
-                while (pos < len && (ch = format[pos]) == ' ') pos++;
-                // End of parsing index parameter.
-
-                //
-                //  Start of parsing of optional Alignment
-                //  Alignment ::= comma WS* minus? ('0'-'9')+ WS*
-                //
-                bool leftJustify = false;
+                // We're now positioned just after the opening brace of an argument hole, which consists of
+                // an opening brace, an index, an optional width preceded by a comma, and an optional format
+                // preceded by a colon, with arbitrary amounts of spaces throughout.
                 int width = 0;
-                // Is the character a comma, which indicates the start of alignment parameter.
-                if (ch == ',')
-                {
-                    pos++;
-
-                    // Consume Optional whitespace
-                    while (pos < len && format[pos] == ' ') pos++;
-
-                    // If reached the end of the text then error (Unexpected end of text)
-                    if (pos == len)
-                    {
-                        FormatError();
-                    }
-
-                    // Is there a minus sign?
-                    ch = format[pos];
-                    if (ch == '-')
-                    {
-                        // Yes, then alignment is left justified.
-                        leftJustify = true;
-                        pos++;
-                        // If reached end of text then error (Unexpected end of text)
-                        if (pos == len)
-                        {
-                            FormatError();
-                        }
-                        ch = format[pos];
-                    }
-
-                    // If current character is not a digit then error (Unexpected character)
-                    if (ch < '0' || ch > '9')
-                    {
-                        FormatError();
-                    }
-                    // Parse alignment digits.
-                    do
-                    {
-                        width = width * 10 + ch - '0';
-                        pos++;
-                        // If reached end of text then error. (Unexpected end of text)
-                        if (pos == len)
-                        {
-                            FormatError();
-                        }
-                        ch = format[pos];
-                        // So long a current character is a digit and the value of width is less than 100000 ( width limit )
-                    }
-                    while (ch >= '0' && ch <= '9' && width < WidthLimit);
-                    // end of parsing Argument Alignment
-                }
-
-                // Consume optional whitespace
-                while (pos < len && (ch = format[pos]) == ' ') pos++;
-
-                //
-                // Start of parsing of optional formatting parameter.
-                //
-                object? arg = args[index];
-
+                bool leftJustify = false;
                 ReadOnlySpan<char> itemFormatSpan = default; // used if itemFormat is null
-                // Is current character a colon? which indicates start of formatting parameter.
-                if (ch == ':')
+
+                // First up is the index parameter, which is of the form:
+                //     at least on digit
+                //     optional any number of spaces
+                // We've already read the first digit into ch.
+                Debug.Assert(format[pos - 1] == '{');
+                Debug.Assert(ch != '{');
+                int index = ch - '0';
+                if ((uint)index >= 10u)
                 {
-                    pos++;
-                    int startPos = pos;
-
-                    while (true)
-                    {
-                        // If reached end of text then error. (Unexpected end of text)
-                        if (pos == len)
-                        {
-                            FormatError();
-                        }
-                        ch = format[pos];
-
-                        if (ch == '}')
-                        {
-                            // Argument hole closed
-                            break;
-                        }
-                        else if (ch == '{')
-                        {
-                            // Braces inside the argument hole are not supported
-                            FormatError();
-                        }
-
-                        pos++;
-                    }
-
-                    if (pos > startPos)
-                    {
-                        itemFormatSpan = format.AsSpan(startPos, pos - startPos);
-                    }
+                    ThrowHelper.ThrowFormatInvalidString();
                 }
-                else if (ch != '}')
+
+                // Common case is a single digit index followed by a closing brace.  If it's not a closing brace,
+                // proceed to finish parsing the full hole format.
+                ch = MoveNext(format, ref pos);
+                if (ch != '}')
                 {
-                    // Unexpected character
-                    FormatError();
+                    // Continue consuming optional additional digits.
+                    while (char.IsAsciiDigit(ch) && index < IndexLimit)
+                    {
+                        index = index * 10 + ch - '0';
+                        ch = MoveNext(format, ref pos);
+                    }
+
+                    // Consume optional whitespace.
+                    while (ch == ' ')
+                    {
+                        ch = MoveNext(format, ref pos);
+                    }
+
+                    // Parse the optional alignment, which is of the form:
+                    //     comma
+                    //     optional any number of spaces
+                    //     optional -
+                    //     at least one digit
+                    //     optional any number of spaces
+                    if (ch == ',')
+                    {
+                        // Consume optional whitespace.
+                        do
+                        {
+                            ch = MoveNext(format, ref pos);
+                        }
+                        while (ch == ' ');
+
+                        // Consume an optional minus sign indicating left alignment.
+                        if (ch == '-')
+                        {
+                            leftJustify = true;
+                            ch = MoveNext(format, ref pos);
+                        }
+
+                        // Parse alignment digits. The read character must be a digit.
+                        width = ch - '0';
+                        if ((uint)width >= 10u)
+                        {
+                            ThrowHelper.ThrowFormatInvalidString();
+                        }
+                        ch = MoveNext(format, ref pos);
+                        while (char.IsAsciiDigit(ch) && width < WidthLimit)
+                        {
+                            width = width * 10 + ch - '0';
+                            ch = MoveNext(format, ref pos);
+                        }
+
+                        // Consume optional whitespace
+                        while (ch == ' ')
+                        {
+                            ch = MoveNext(format, ref pos);
+                        }
+                    }
+
+                    // The next character needs to either be a closing brace for the end of the hole,
+                    // or a colon indicating the start of the format.
+                    if (ch != '}')
+                    {
+                        if (ch != ':')
+                        {
+                            // Unexpected character
+                            ThrowHelper.ThrowFormatInvalidString();
+                        }
+
+                        // Search for the closing brace; everything in between is the format,
+                        // but opening braces aren't allowed.
+                        int startingPos = pos;
+                        while (true)
+                        {
+                            ch = MoveNext(format, ref pos);
+
+                            if (ch == '}')
+                            {
+                                // Argument hole closed
+                                break;
+                            }
+
+                            if (ch == '{')
+                            {
+                                // Braces inside the argument hole are not supported
+                                ThrowHelper.ThrowFormatInvalidString();
+                            }
+                        }
+
+                        startingPos++;
+                        itemFormatSpan = format.AsSpan(startingPos, pos - startingPos);
+                    }
                 }
 
                 // Construct the output for this arg hole.
+                Debug.Assert(format[pos] == '}');
                 pos++;
                 string? s = null;
                 string? itemFormat = null;
 
+                if ((uint)index >= (uint)args.Length)
+                {
+                    throw new FormatException(SR.Format_IndexOutOfRange);
+                }
+                object? arg = args[index];
+
                 if (cf != null)
                 {
-                    if (itemFormatSpan.Length != 0)
+                    if (!itemFormatSpan.IsEmpty)
                     {
                         itemFormat = new string(itemFormatSpan);
                     }
+
                     s = cf.Format(itemFormat, arg, provider);
                 }
 
@@ -1676,16 +1677,15 @@ namespace System.Text
                             // Untrusted ISpanFormattable implementations might return an erroneous charsWritten value,
                             // and m_ChunkLength might end up being used in Unsafe code, so fail if we get back an
                             // out-of-range charsWritten value.
-                            FormatError();
+                            ThrowHelper.ThrowFormatInvalidString();
                         }
 
                         m_ChunkLength += charsWritten;
 
                         // Pad the end, if needed.
-                        int padding = width - charsWritten;
-                        if (leftJustify && padding > 0)
+                        if (leftJustify && width > charsWritten)
                         {
-                            Append(' ', padding);
+                            Append(' ', width - charsWritten);
                         }
 
                         // Continue to parse other characters.
@@ -1701,30 +1701,43 @@ namespace System.Text
                         }
                         s = formattableArg.ToString(itemFormat, provider);
                     }
-                    else if (arg != null)
+                    else
                     {
-                        s = arg.ToString();
+                        s = arg?.ToString();
                     }
-                }
-                // Append it to the final output of the Format String.
-                if (s == null)
-                {
-                    s = string.Empty;
-                }
-                int pad = width - s.Length;
-                if (!leftJustify && pad > 0)
-                {
-                    Append(' ', pad);
+
+                    s ??= string.Empty;
                 }
 
-                Append(s);
-                if (leftJustify && pad > 0)
+                // Append it to the final output of the Format String.
+                if (width <= s.Length)
                 {
-                    Append(' ', pad);
+                    Append(s);
                 }
-                // Continue to parse other characters.
+                else if (leftJustify)
+                {
+                    Append(s);
+                    Append(' ', width - s.Length);
+                }
+                else
+                {
+                    Append(' ', width - s.Length);
+                    Append(s);
+                }
+
+                // Continue parsing the rest of the format string.
             }
-            return this;
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static char MoveNext(string format, ref int pos)
+            {
+                pos++;
+                if ((uint)pos >= (uint)format.Length)
+                {
+                    ThrowHelper.ThrowFormatInvalidString();
+                }
+                return format[pos];
+            }
         }
 
         /// <summary>
@@ -1851,11 +1864,11 @@ namespace System.Text
             int currentLength = Length;
             if ((uint)startIndex > (uint)currentLength)
             {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
             if (count < 0 || startIndex > currentLength - count)
             {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
             ArgumentException.ThrowIfNullOrEmpty(oldValue);
 
@@ -1936,12 +1949,12 @@ namespace System.Text
             int currentLength = Length;
             if ((uint)startIndex > (uint)currentLength)
             {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
             if (count < 0 || startIndex > currentLength - count)
             {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
             int endIndex = startIndex + count;
@@ -2625,7 +2638,7 @@ namespace System.Text
                             {
                                 // Protect against faulty ISpanFormattable implementations returning invalid charsWritten values.
                                 // Other code in _stringBuilder uses Unsafe manipulation, and we want to ensure m_ChunkLength remains safe.
-                                FormatError();
+                                ThrowHelper.ThrowFormatInvalidString();
                             }
 
                             _stringBuilder.m_ChunkLength += charsWritten;
@@ -2678,7 +2691,7 @@ namespace System.Text
                             {
                                 // Protect against faulty ISpanFormattable implementations returning invalid charsWritten values.
                                 // Other code in _stringBuilder uses Unsafe manipulation, and we want to ensure m_ChunkLength remains safe.
-                                FormatError();
+                                ThrowHelper.ThrowFormatInvalidString();
                             }
 
                             _stringBuilder.m_ChunkLength += charsWritten;

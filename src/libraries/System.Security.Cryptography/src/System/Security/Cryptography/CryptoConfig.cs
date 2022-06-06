@@ -252,15 +252,12 @@ namespace System.Security.Cryptography
                 ht.Add("http://www.w3.org/2001/04/xmldsig-more#hmac-sha384", HMACSHA384Type);
                 ht.Add("http://www.w3.org/2001/04/xmldsig-more#hmac-sha512", HMACSHA512Type);
                 // X509 Extensions (custom decoders)
-                // Basic Constraints OID value
                 ht.Add("2.5.29.10", typeof(X509Certificates.X509BasicConstraintsExtension));
                 ht.Add("2.5.29.19", typeof(X509Certificates.X509BasicConstraintsExtension));
-                // Subject Key Identifier OID value
                 ht.Add("2.5.29.14", typeof(X509Certificates.X509SubjectKeyIdentifierExtension));
-                // Key Usage OID value
                 ht.Add("2.5.29.15", typeof(X509Certificates.X509KeyUsageExtension));
-                // Enhanced Key Usage OID value
                 ht.Add("2.5.29.37", typeof(X509Certificates.X509EnhancedKeyUsageExtension));
+                ht.Add(Oids.AuthorityInformationAccess, typeof(X509Certificates.X509AuthorityInformationAccessExtension));
 
                 // X509Chain class can be overridden to use a different chain engine.
                 ht.Add("X509Chain", typeof(X509Certificates.X509Chain));
@@ -333,8 +330,10 @@ namespace System.Security.Cryptography
         }
 
         [RequiresUnreferencedCode("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
-        public static object? CreateFromName(string name!!, params object?[]? args)
+        public static object? CreateFromName(string name, params object?[]? args)
         {
+            ArgumentNullException.ThrowIfNull(name);
+
 #if BROWSER
             switch (name)
             {

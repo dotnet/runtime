@@ -618,7 +618,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 		g_assert(icount <= 65535);
 
 		klass->interfaces = interfaces;
-		klass->interface_count = icount;
+		klass->interface_count = GUINT_TO_UINT16 (icount);
 		klass->interfaces_inited = 1;
 	}
 
@@ -695,15 +695,8 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 		return NULL;
 	}
 
-	if (klass->image->assembly_name && !strcmp (klass->image->assembly_name, "Mono.Simd") && !strcmp (nspace, "Mono.Simd")) {
-		if (!strncmp (name, "Vector", 6))
-			klass->simd_type = !strcmp (name + 6, "2d") || !strcmp (name + 6, "2ul") || !strcmp (name + 6, "2l") || !strcmp (name + 6, "4f") || !strcmp (name + 6, "4ui") || !strcmp (name + 6, "4i") || !strcmp (name + 6, "8s") || !strcmp (name + 6, "8us") || !strcmp (name + 6, "16b") || !strcmp (name + 6, "16sb");
-	} else if (klass->image->assembly_name && !strcmp (klass->image->assembly_name, "System.Numerics") && !strcmp (nspace, "System.Numerics")) {
-		/* The JIT can't handle SIMD types with != 16 size yet */
-		//if (!strcmp (name, "Vector2") || !strcmp (name, "Vector3") || !strcmp (name, "Vector4"))
-		if (!strcmp (name, "Vector4"))
-			klass->simd_type = 1;
-	}
+	if (mono_get_runtime_callbacks ()->init_class)
+		mono_get_runtime_callbacks ()->init_class (klass);
 
 	// compute is_byreflike
 	if (m_class_is_valuetype (klass))
@@ -828,7 +821,7 @@ mono_class_setup_method_has_preserve_base_overrides_attribute (MonoMethod *metho
 static gboolean
 check_valid_generic_inst_arguments (MonoGenericInst *inst, MonoError *error)
 {
-	for (int i = 0; i < inst->type_argc; i++) {
+	for (guint i = 0; i < inst->type_argc; i++) {
 		if (!mono_type_is_valid_generic_argument (inst->type_argv [i])) {
 			char *type_name = mono_type_full_name (inst->type_argv [i]);
 			mono_error_set_invalid_program (error, "generic type cannot be instantiated with type '%s'", type_name);
@@ -878,19 +871,8 @@ mono_class_create_generic_inst (MonoGenericClass *gclass)
 	klass->enumtype = gklass->enumtype;
 	klass->valuetype = gklass->valuetype;
 
-	if (gklass->image->assembly_name && !strcmp (gklass->image->assembly_name, "System.Numerics.Vectors") && !strcmp (gklass->name_space, "System.Numerics") && !strcmp (gklass->name, "Vector`1")) {
-		g_assert (gclass->context.class_inst);
-		g_assert (gclass->context.class_inst->type_argc > 0);
-		if (mono_type_is_primitive (gclass->context.class_inst->type_argv [0]))
-			klass->simd_type = 1;
-	}
-
-	if (mono_is_corlib_image (gklass->image) &&
-		(!strcmp (gklass->name, "Vector`1") || !strcmp (gklass->name, "Vector64`1") || !strcmp (gklass->name, "Vector128`1") || !strcmp (gklass->name, "Vector256`1"))) {
-		MonoType *etype = gclass->context.class_inst->type_argv [0];
-		if (mono_type_is_primitive (etype) && etype->type != MONO_TYPE_CHAR && etype->type != MONO_TYPE_BOOLEAN)
-			klass->simd_type = 1;
-	}
+	if (mono_get_runtime_callbacks ()->init_class)
+		mono_get_runtime_callbacks ()->init_class (klass);
 
 	klass->is_array_special_interface = gklass->is_array_special_interface;
 
@@ -1121,7 +1103,7 @@ mono_class_create_bounded_array (MonoClass *eclass, guint32 rank, gboolean bound
 	klass->type_token = 0;
 	klass->parent = parent;
 	klass->instance_size = mono_class_instance_size (klass->parent);
-	klass->rank = rank;
+	klass->rank = GUINT32_TO_UINT8 (rank);
 	klass->element_class = eclass;
 
 	if (m_class_get_byval_arg (eclass)->type == MONO_TYPE_TYPEDBYREF) {
@@ -1169,7 +1151,7 @@ mono_class_create_bounded_array (MonoClass *eclass, guint32 rank, gboolean bound
 		klass->_byval_arg.type = MONO_TYPE_ARRAY;
 		klass->_byval_arg.data.array = at;
 		at->eklass = eclass;
-		at->rank = rank;
+		at->rank = GUINT32_TO_UINT8 (rank);
 		/* FIXME: complete.... */
 	} else {
 		klass->_byval_arg.type = MONO_TYPE_SZARRAY;
@@ -1331,7 +1313,7 @@ make_generic_param_class (MonoGenericParam *param)
 	}
 
 	if (count - pos > 0) {
-		klass->interface_count = count - pos;
+		klass->interface_count = GINT_TO_UINT16 (count - pos);
 		CHECKED_METADATA_WRITE_PTR_LOCAL ( klass->interfaces , (MonoClass **)mono_image_alloc0 (image, sizeof (MonoClass *) * (count - pos)) );
 		klass->interfaces_inited = TRUE;
 		for (i = pos; i < count; i++)
@@ -1360,11 +1342,11 @@ make_generic_param_class (MonoGenericParam *param)
 		klass->has_references = m_class_has_references (constraint_class);
 	}
 	/*
-	 * This makes sure the the value size of this class is equal to the size of the types the gparam is
+	 * This makes sure the value size of this class is equal to the size of the types the gparam is
 	 * constrained to, the JIT depends on this.
 	 */
 	klass->instance_size = MONO_ABI_SIZEOF (MonoObject) + mono_type_size (m_class_get_byval_arg (klass), &min_align);
-	klass->min_align = min_align;
+	klass->min_align = GINT_TO_UINT8 (min_align);
 	mono_memory_barrier ();
 	klass->size_inited = 1;
 
@@ -1607,7 +1589,7 @@ int
 mono_class_setup_count_virtual_methods (MonoClass *klass)
 {
 	int i, mcount, vcount = 0;
-	guint32 flags;
+	guint16 flags;
 	klass = mono_class_get_generic_type_definition (klass); /*We can find this information by looking at the GTD*/
 
 	if (klass->methods || !MONO_CLASS_HAS_STATIC_METADATA (klass)) {
@@ -1628,7 +1610,7 @@ mono_class_setup_count_virtual_methods (MonoClass *klass)
 		int first_idx = mono_class_get_first_method_idx (klass);
 		mcount = mono_class_get_method_count (klass);
 		for (i = 0; i < mcount; ++i) {
-			flags = mono_metadata_decode_table_row_col (klass->image, MONO_TABLE_METHOD, first_idx + i, MONO_METHOD_FLAGS);
+			flags = GUINT32_TO_UINT16 (mono_metadata_decode_table_row_col (klass->image, MONO_TABLE_METHOD, first_idx + i, MONO_METHOD_FLAGS));
 
 			if ((flags & METHOD_ATTRIBUTE_VIRTUAL)) {
 				if (method_is_reabstracted (flags))
@@ -1769,7 +1751,7 @@ init_sizes_with_info (MonoClass *klass, MonoCachedClassInfo *cached_info)
 		klass->instance_size = cached_info->instance_size;
 		klass->sizes.class_size = cached_info->class_size;
 		klass->packing_size = cached_info->packing_size;
-		klass->min_align = cached_info->min_align;
+		klass->min_align = GUINT32_TO_UINT8 (cached_info->min_align);
 		klass->blittable = cached_info->blittable;
 		klass->has_references = cached_info->has_references;
 		klass->has_static_refs = cached_info->has_static_refs;
@@ -2400,7 +2382,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 	klass->has_references = has_references;
 	klass->has_ref_fields = has_ref_fields;
 	klass->packing_size = packing_size;
-	klass->min_align = min_align;
+	klass->min_align = GINT_TO_UINT8 (min_align);
 	klass->any_field_has_auto_layout = any_field_has_auto_layout;
 	for (i = 0; i < top; ++i) {
 		field = &klass->fields [i];
@@ -2494,7 +2476,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 	if (mono_class_has_static_metadata (klass)) {
 		for (MonoClass *p = klass; p != NULL; p = p->parent) {
 			gpointer iter = NULL;
-			guint32 first_field_idx = mono_class_get_first_field_idx (p);
+			first_field_idx = mono_class_get_first_field_idx (p);
 
 			while ((field = mono_class_get_fields_internal (p, &iter))) {
 				guint32 field_idx = first_field_idx + (field - p->fields);
@@ -3862,7 +3844,7 @@ mono_class_setup_interface_id (MonoClass *klass)
 void
 mono_class_setup_interfaces (MonoClass *klass, MonoError *error)
 {
-	int i, interface_count;
+	int interface_count;
 	MonoClass *iface, **interfaces;
 
 	error_init (error);
@@ -3924,7 +3906,7 @@ mono_class_setup_interfaces (MonoClass *klass, MonoError *error)
 
 		interface_count = gklass->interface_count;
 		interfaces = mono_class_new0 (klass, MonoClass *, interface_count);
-		for (i = 0; i < interface_count; i++) {
+		for (int i = 0; i < interface_count; i++) {
 			interfaces [i] = mono_class_inflate_generic_class_checked (gklass->interfaces [i], mono_generic_class_get_context (mono_class_get_generic_class (klass)), error);
 			if (!is_ok (error)) {
 				mono_class_set_type_load_failure (klass, "Could not setup the interfaces");
@@ -3938,7 +3920,7 @@ mono_class_setup_interfaces (MonoClass *klass, MonoError *error)
 
 	mono_loader_lock ();
 	if (!klass->interfaces_inited) {
-		klass->interface_count = interface_count;
+		klass->interface_count = GINT_TO_UINT16 (interface_count);
 		klass->interfaces = interfaces;
 
 		mono_memory_barrier ();
@@ -4027,7 +4009,7 @@ mono_class_setup_has_finalizer (MonoClass *klass)
 void
 mono_class_setup_supertypes (MonoClass *klass)
 {
-	int ms, idepth;
+	guint16 ms, idepth;
 	MonoClass **supertypes;
 
 	mono_atomic_load_acquire (supertypes, MonoClass **, &klass->supertypes);
