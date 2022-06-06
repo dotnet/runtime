@@ -13,50 +13,35 @@ class Runtime_70259
 {
     private static int Main()
     {
-        // This creates an open delegate that goes through shuffle thunk and then VSD stub.
-        C c = new C();
-        c.Delegate = typeof(IFace).GetMethod("Method").CreateDelegate<Func<IFace, int, int>>();
+        // This creates an open delegate that goes through shuffle thunk and
+        // then VSD stub. On arm32 it also goes through wrapper delegate.
+        Func<IFace, int> del = typeof(IFace).GetMethod("Method").CreateDelegate<Func<IFace, int>>();
 
-        // Do a static call to C.Method to get started -- this is needed to get
-        // a call site of the form `call [rel32]` which triggers the bug.
-        IL.Push(c);
-        IL.Push(100_000);
-        IL.Emit.Call(new MethodRef(typeof(C), nameof(C.Method)));
+        // We need a normal call here to get a call site of the form `call
+        // [rel32]` which triggers the bug.
+        return CallMe(del);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int CallMe(Func<IFace, int> del)
+    {
+        IL.Push(del);
+        IL.Push(new C());
+        IL.Emit.Tail();
+        IL.Emit.Call(new MethodRef(typeof(Func<IFace, int>), "Invoke"));
         return IL.Return<int>();
     }
 
     interface IFace
     {
-        int Method(int left);
+        int Method();
     }
 
     class C : IFace
     {
-        public Func<IFace, int, int> Delegate;
-
-        [SkipLocalsInit]
-        public virtual int Method(int left)
+        public virtual int Method()
         {
-            if (left == 0)
-                return 100;
-
-            LargeStruct s;
-            Consume(s);
-
-            IL.Push(Delegate);
-            IL.Push(this);
-            IL.Push(left - 1);
-            IL.Emit.Tail();
-            IL.Emit.Call(new MethodRef(typeof(Func<IFace, int, int>), "Invoke"));
-            return IL.Return<int>();
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private void Consume(in LargeStruct s) { }
-
-        private unsafe struct LargeStruct
-        {
-            public fixed byte Bytes[1024];
+            return 100;
         }
     }
 }
