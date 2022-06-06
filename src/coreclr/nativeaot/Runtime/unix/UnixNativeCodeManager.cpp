@@ -127,6 +127,12 @@ PTR_VOID UnixNativeCodeManager::GetFramePointer(MethodInfo *   pMethodInfo,
     return NULL;
 }
 
+bool UnixNativeCodeManager::IsSafePoint(PTR_VOID pvAddress)
+{
+    // @TODO: IsSafePoint
+    return false;
+}
+
 void UnixNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
                                        PTR_VOID        safePointAddress,
                                        REGDISPLAY *    pRegisterSet,
