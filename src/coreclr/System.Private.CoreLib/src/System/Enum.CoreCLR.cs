@@ -16,7 +16,7 @@ namespace System
         private static unsafe object InternalBoxEnum(RuntimeType enumType, long value)
         {
             MethodTable* pMethodTable = (MethodTable*)enumType.m_handle;
-            object obj = enumType.CreateUninitializedInstance()!;
+            object obj = GetEnumInfo(enumType, false).CreateUninitializedInstance(enumType);
             ref byte dataRef = ref obj.GetRawData();
 
             switch (pMethodTable->GetNumInstanceFieldBytes())
