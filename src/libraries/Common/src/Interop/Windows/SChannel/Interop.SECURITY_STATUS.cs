@@ -51,6 +51,6 @@ internal static partial class Interop
         DowngradeDetected = unchecked((int)0x80090350),
         ApplicationProtocolMismatch = unchecked((int)0x80090367),
         NoRenegotiation = unchecked((int)0x00090360),
-        KeysetDoesNotExist = unchecked((int)0x80090016)
+        KeySetDoesNotExist = unchecked((int)0x80090016)
     }
 }

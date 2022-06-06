@@ -71,6 +71,6 @@ namespace System.Net
         DowngradeDetected,
         ApplicationProtocolMismatch,
         NoRenegotiation,
-        KeysetDoesNotExist
+        KeySetDoesNotExist
     }
 }
