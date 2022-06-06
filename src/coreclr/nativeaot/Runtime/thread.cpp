@@ -581,7 +581,7 @@ void Thread::GcScanRootsWorker(void * pfnEnumCallback, void * pvCallbackData, St
 
 #ifndef DACCESS_COMPILE
 
-EXTERN_C void FASTCALL RhpGcRedirect();
+EXTERN_C void FASTCALL RhpSuspendRedirected();
 
 #ifndef TARGET_ARM64
 EXTERN_C void FASTCALL RhpGcProbeHijackScalar();
@@ -832,7 +832,7 @@ bool Thread::Redirect(PAL_LIMITED_CONTEXT * pSuspendCtx)
         return false;
 
     uintptr_t origIP = redirectionContext->GetIp();
-    redirectionContext->SetIp((uintptr_t)RhpGcRedirect);
+    redirectionContext->SetIp((uintptr_t)RhpSuspendRedirected);
 
     if (!PalSetThreadContext(m_hPalThread, redirectionContext))
         return false;
@@ -1043,15 +1043,46 @@ EXTERN_C NOINLINE void FASTCALL RhpGcPoll2(PInvokeTransitionFrame* pFrame)
 
 #ifdef FEATURE_SUSPEND_REDIRECTION
 
-EXTERN_C NOINLINE void FASTCALL RhpSuspendRedirected(PInvokeTransitionFrame * pFrame)
+EXTERN_C NOINLINE void FASTCALL RhpSuspendRedirected()
 {
     Thread* pThread = ThreadStore::GetCurrentThread();
     CONTEXT* pCtx = pThread->GetRedirectionContext();
 
-    pFrame->m_pThread = pThread;
-    pFrame->m_RIP = (void*)pCtx->GetIp();
+    PInvokeTransitionFrame* frame =
+        (PInvokeTransitionFrame*)_alloca(PInvokeTransitionFrame_SaveAllRegs_SIZE);
 
-    pThread->WaitForGC(pFrame);
+    frame->m_Flags = PROBE_SAVE_FLAGS_EVERYTHING;
+    frame->m_pThread = pThread;
+    frame->m_RIP = (void*)pCtx->GetIp();
+    frame->m_FramePointer = (void*)pCtx->Rbp;
+
+    UIntTarget* pPreservedRegs = frame->m_PreservedRegs;
+
+#ifdef TARGET_AMD64
+    pPreservedRegs[0] = pCtx->Rbx;
+    pPreservedRegs[1] = pCtx->Rsi;
+    pPreservedRegs[2] = pCtx->Rdi;
+    pPreservedRegs[3] = pCtx->R12;
+    pPreservedRegs[4] = pCtx->R13;
+    pPreservedRegs[5] = pCtx->R14;
+    pPreservedRegs[6] = pCtx->R15;
+
+    pPreservedRegs[7] = pCtx->Rsp;
+
+    pPreservedRegs[8] = pCtx->Rax;
+    pPreservedRegs[9] = pCtx->Rcx;
+    pPreservedRegs[10] = pCtx->Rdx;
+    pPreservedRegs[11] = pCtx->R8;
+    pPreservedRegs[12] = pCtx->R9;
+    pPreservedRegs[13] = pCtx->R10;
+    pPreservedRegs[14] = pCtx->R11;
+#elif defined(TARGET_ARM64)
+
+#elif
+    ASSERT_UNCONDITIONALLY("NYI for this arch");
+#endif
+
+    pThread->WaitForGC(frame);
 
     // restore execution at interrupted location
     PalRestoreContext(pCtx);

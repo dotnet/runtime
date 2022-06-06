@@ -455,6 +455,8 @@ enum PInvokeTransitionFrameFlags
     PTFF_SAVE_R14       = 0x00000040,
     PTFF_SAVE_R15       = 0x00000080,
 
+    PTFF_SAVE_ALL_PRESERVED  = 0x000000F7,// NOTE: RBP is not included in this set!
+
     PTFF_SAVE_RSP       = 0x00008000,   // Used for 'coop pinvokes' in runtime helper routines.  Methods with
                                         // PInvokes are required to have frame pointers, but methods which
                                         // call runtime helpers are not.  Therefore, methods that call runtime
@@ -471,10 +473,16 @@ enum PInvokeTransitionFrameFlags
     PTFF_SAVE_R10       = 0x00002000,
     PTFF_SAVE_R11       = 0x00004000,
 
+    PTFF_SAVE_ALL_SCRATCH    = 0x00007F00,
+
     PTFF_RAX_IS_GCREF   = 0x00010000,   // used by hijack handler to report return value of hijacked method
     PTFF_RAX_IS_BYREF   = 0x00020000,   // used by hijack handler to report return value of hijacked method
 
     PTFF_THREAD_ABORT   = 0x00040000,   // indicates that ThreadAbortException should be thrown when returning from the transition
+
+    DEFAULT_FRAME_SAVE_FLAGS = PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_RSP,
+    PROBE_SAVE_FLAGS_EVERYTHING     = DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_ALL_SCRATCH,
+    PROBE_SAVE_FLAGS_RAX_IS_GCREF   = DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_RAX + PTFF_RAX_IS_GCREF,
 };
 #endif // TARGET_ARM
 
@@ -521,6 +529,8 @@ struct PInvokeTransitionFrame
 #ifdef TARGET_AMD64
 // RBX, RSI, RDI, R12, R13, R14, R15, RAX, RSP
 #define PInvokeTransitionFrame_SaveRegs_count 9
+// RBX, RSI, RDI, R12, R13, R14, R15, RAX, RSP, RAX, RCX, RDX, R8, R9, R10, R11
+#define PInvokeTransitionFrame_SaveAllRegs_count 16
 #elif defined(TARGET_X86)
 // RBX, RSI, RDI, RAX, RSP
 #define PInvokeTransitionFrame_SaveRegs_count 5
@@ -528,7 +538,8 @@ struct PInvokeTransitionFrame
 // R4-R10, R0, SP
 #define PInvokeTransitionFrame_SaveRegs_count 9
 #endif
-#define PInvokeTransitionFrame_MAX_SIZE (sizeof(PInvokeTransitionFrame) + (POINTER_SIZE * PInvokeTransitionFrame_SaveRegs_count))
+#define PInvokeTransitionFrame_SaveRegs_SIZE (sizeof(PInvokeTransitionFrame) + (POINTER_SIZE * PInvokeTransitionFrame_SaveRegs_count))
+#define PInvokeTransitionFrame_SaveAllRegs_SIZE (sizeof(PInvokeTransitionFrame) + (POINTER_SIZE * PInvokeTransitionFrame_SaveAllRegs_count))
 
 #ifdef TARGET_AMD64
 #define OFFSETOF__Thread__m_pTransitionFrame 0x40

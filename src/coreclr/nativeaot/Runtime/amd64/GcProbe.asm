@@ -830,45 +830,4 @@ NESTED_ENTRY RhpGcPollRare, _TEXT
 
 NESTED_END RhpGcPollRare, _TEXT
 
-NESTED_ENTRY RhpGcRedirect, _TEXT
-
-        ;; save volatile registers
-        push_vol_reg r11
-        push_vol_reg r10
-        push_vol_reg r9
-        push_vol_reg r8
-        push_vol_reg rdx
-        push_vol_reg rcx
-        push_vol_reg rax
-
-        ;; the rest is similar to PUSH_COOP_PINVOKE_FRAME rcx
-
-        lea             rcx, [rsp + 7*8]
-        push_vol_reg    rcx                         ; save original RSP
-        push_nonvol_reg r15                         ; save preserved registers
-        push_nonvol_reg r14                         ;   ..
-        push_nonvol_reg r13                         ;   ..
-        push_nonvol_reg r12                         ;   ..
-        push_nonvol_reg rdi                         ;   ..
-        push_nonvol_reg rsi                         ;   ..
-        push_nonvol_reg rbx                         ;   ..
-        push_imm        PROBE_SAVE_FLAGS_EVERYTHING ; save the register bitmask
-        push_vol_reg    rcx                    ; Thread * (will fill later)
-        push_nonvol_reg rbp                    ; save RBP
-        push_vol_reg    rcx                    ; m_RIP (will fill later)
-        lea             rcx, [rsp + 0]         ; address of frame
-
-        ;; allocate scratch space and any required alignment
-        alloc_stack     28h
-
-        END_PROLOGUE
-
-        ;; Call the rest of the suspension helper.
-        ;; void RhpSuspendRedirected(PInvokeTransitionFrame * pFrame)
-        call        RhpSuspendRedirected
-
-        ;; the call above never returns
-        int             3 
-NESTED_END RhpGcRedirect, _TEXT
-
         end
