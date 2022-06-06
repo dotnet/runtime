@@ -1027,6 +1027,9 @@ EXTERN_C NOINLINE void FASTCALL RhpWaitForSuspend2()
 EXTERN_C NOINLINE void FASTCALL RhpWaitForGC2(PInvokeTransitionFrame * pFrame)
 {
     Thread * pThread = pFrame->m_pThread;
+    if (pThread->IsDoNotTriggerGcSet())
+        return;
+
     pThread->WaitForGC(pFrame);
 }
 
@@ -1054,11 +1057,12 @@ EXTERN_C NOINLINE void FASTCALL RhpSuspendRedirected()
     frame->m_Flags = PROBE_SAVE_FLAGS_EVERYTHING;
     frame->m_pThread = pThread;
     frame->m_RIP = (void*)pCtx->GetIp();
-    frame->m_FramePointer = (void*)pCtx->Rbp;
 
     UIntTarget* pPreservedRegs = frame->m_PreservedRegs;
 
 #ifdef TARGET_AMD64
+    frame->m_FramePointer = (void*)pCtx->Rbp;
+
     pPreservedRegs[0] = pCtx->Rbx;
     pPreservedRegs[1] = pCtx->Rsi;
     pPreservedRegs[2] = pCtx->Rdi;
@@ -1077,7 +1081,15 @@ EXTERN_C NOINLINE void FASTCALL RhpSuspendRedirected()
     pPreservedRegs[13] = pCtx->R10;
     pPreservedRegs[14] = pCtx->R11;
 #elif defined(TARGET_ARM64)
-
+    frame->m_FramePointer = (void*)pCtx->Fp;
+    // X19-X28 
+    memcpy(&pPreservedRegs[0], &pCtx->X19, sizeof(uint64_t) * 10);
+    // SP
+    pPreservedRegs[10] = pCtx->Sp;
+    // X0-X18 
+    memcpy(&pPreservedRegs[11], &pCtx->X0, sizeof(uint64_t) * 19);
+    // LR
+    pPreservedRegs[30] = pCtx->Lr;
 #elif
     ASSERT_UNCONDITIONALLY("NYI for this arch");
 #endif
