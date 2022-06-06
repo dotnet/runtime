@@ -1095,17 +1095,7 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, CallArg* callArg, 
             argSplit->SetRegNumByIdx(callArg->AbiInfo.GetRegNum(regIndex), regIndex);
         }
 
-        if (arg->OperGet() == GT_OBJ)
-        {
-            ClassLayout* layout = arg->AsObj()->GetLayout();
-
-            // Set type of registers
-            for (unsigned index = 0; index < callArg->AbiInfo.NumRegs; index++)
-            {
-                argSplit->m_regType[index] = layout->GetGCPtrType(index);
-            }
-        }
-        else
+        if (arg->OperIs(GT_FIELD_LIST))
         {
             unsigned regIndex = 0;
             for (GenTreeFieldList::Use& use : arg->AsFieldList()->Uses())
@@ -1126,6 +1116,16 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, CallArg* callArg, 
 
             // Clear the register assignment on the fieldList node, as these are contained.
             arg->SetRegNum(REG_NA);
+        }
+        else
+        {
+            ClassLayout* layout = arg->GetLayout(comp);
+
+            // Set type of registers
+            for (unsigned index = 0; index < callArg->AbiInfo.NumRegs; index++)
+            {
+                argSplit->m_regType[index] = layout->GetGCPtrType(index);
+            }
         }
     }
     else

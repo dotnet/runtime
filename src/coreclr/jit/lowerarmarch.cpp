@@ -589,15 +589,6 @@ void Lowering::LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode)
         // STRUCT args (FIELD_LIST / OBJ / LCL_VAR / LCL_FLD) will always be contained.
         MakeSrcContained(putArgNode, src);
 
-        if (putArgNode->OperIsPutArgSplit())
-        {
-            if (src->OperIs(GT_OBJ) && src->AsObj()->Addr()->OperIs(GT_LCL_VAR_ADDR))
-            {
-                MakeSrcContained(src, src->AsObj()->Addr());
-            }
-            return;
-        }
-
         // TODO-ADDR: always perform this transformation in local morph and delete this code.
         if (src->OperIs(GT_OBJ) && src->AsObj()->Addr()->OperIsLocalAddr())
         {
@@ -615,7 +606,8 @@ void Lowering::LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode)
         }
         else if (src->OperIs(GT_LCL_VAR))
         {
-            // TODO-1stClassStructs: support struct enregistration here by retyping "src" to its register type.
+            // TODO-1stClassStructs: support struct enregistration here by retyping "src" to its register type for
+            // the non-split case.
             comp->lvaSetVarDoNotEnregister(src->AsLclVar()->GetLclNum() DEBUGARG(DoNotEnregisterReason::IsStructArg));
         }
     }
