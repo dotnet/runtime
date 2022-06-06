@@ -41,8 +41,6 @@ namespace Internal.IL.Stubs
             TypeDesc nativeReturnType = _marshallers[0].NativeParameterType;
             TypeDesc[] nativeParameterTypes = new TypeDesc[_marshallers.Length - 1];
 
-            MetadataType stubHelpersType = InteropTypes.GetStubHelpers(context);
-
             for (int i = 1; i < _marshallers.Length; i++)
             {
                 nativeParameterTypes[i - 1] = _marshallers[i].NativeParameterType;

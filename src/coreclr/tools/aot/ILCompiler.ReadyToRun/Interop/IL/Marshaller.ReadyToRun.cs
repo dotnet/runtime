@@ -9,7 +9,7 @@ namespace Internal.TypeSystem.Interop
     {
         protected static Marshaller CreateMarshaller(MarshallerKind kind)
         {
-            // ReadyToRun only supports emitting IL for 
+            // ReadyToRun only supports emitting IL for blittable types
             switch (kind)
             {
                 case MarshallerKind.Enum:
