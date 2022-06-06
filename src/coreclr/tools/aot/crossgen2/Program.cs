@@ -472,7 +472,10 @@ namespace ILCompiler
                 {
                     try
                     {
-                        EcmaModule module = _typeSystemContext.GetModuleFromPath(referenceFile);
+                        EcmaModule module = _typeSystemContext.GetModuleFromPath(referenceFile, throwOnFailureToLoad: false);
+                        if (module == null)
+                            continue;
+
                         _referenceableModules.Add(module);
                         if (_commandLineOptions.InputBubble && _inputbubblereferenceFilePaths.Count == 0)
                         {
@@ -490,7 +493,11 @@ namespace ILCompiler
                     {
                         try
                         {
-                            EcmaModule module = _typeSystemContext.GetModuleFromPath(referenceFile);
+                            EcmaModule module = _typeSystemContext.GetModuleFromPath(referenceFile, throwOnFailureToLoad: false);
+
+                            if (module == null)
+                                continue;
+
                             versionBubbleModulesHash.Add(module);
                         }
                         catch { } // Ignore non-managed pe files
