@@ -32,7 +32,7 @@ namespace Internal.TypeSystem
         ArrayShape = 2
     }
 
-    public struct EmbeddedSignatureData
+    public partial struct EmbeddedSignatureData
     {
         public string index;
         public EmbeddedSignatureDataKind kind;
@@ -278,15 +278,32 @@ namespace Internal.TypeSystem
                         return true;
                     }
 
+                    if (thisModoptData.Length != otherModoptData.Length)
+                    {
+                        return false;
+                    }
+
                     for (int i = 0; i < thisModoptData.Length; i++)
                     {
-                        if (thisModoptData[i].index != otherModoptData[i].index)
+                        bool found = false;
+                        for (int j =0; j < otherModoptData.Length; j++)
+                        {
+                            if (thisModoptData[i].index == otherModoptData[j].index
+                                && thisModoptData[i].kind == otherModoptData[j].kind
+                                && thisModoptData[i].type == otherModoptData[j].type)
+                            {
+                                found = true;
+                                break;
+                            }
+                        }
+
+                        if (!found)
+                        {
                             return false;
-                        if (thisModoptData[i].kind != otherModoptData[i].kind)
-                            return false;
-                        if (thisModoptData[i].type != otherModoptData[i].type)
-                            return false;
+                        }
                     }
+
+                    return true;
                 }
             }
 

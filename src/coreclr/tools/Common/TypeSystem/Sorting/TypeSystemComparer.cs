@@ -129,6 +129,11 @@ namespace Internal.TypeSystem
         {
             return x.CompareTo(y, this);
         }
+
+        public int Compare(EmbeddedSignatureData x, EmbeddedSignatureData y)
+        {
+            return x.CompareTo(y, this);
+        }
     }
 }
 
