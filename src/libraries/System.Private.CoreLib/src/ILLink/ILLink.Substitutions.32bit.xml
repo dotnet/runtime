@@ -1,6 +1,6 @@
 <linker>
   <assembly fullname="System.Private.CoreLib">
-    <type fullname="nint">
+    <type fullname="System.IntPtr">
       <method signature="System.Int32 get_Size()" body="stub" value="4" />
     </type>
     <type fullname="System.UIntPtr">
