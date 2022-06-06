@@ -109,7 +109,6 @@ The .NET Foundation licenses this file to you under the MIT license.
   </ItemGroup>
 
   <ItemGroup>
-    <_ExcludedPrivateSdkAssemblies Include="$(IlcSdkPath)System.Private.Reflection.Core.dll" Condition="$(IlcDisableReflection) == 'true'" />
     <PrivateSdkAssemblies Include="$(IlcSdkPath)*.dll" Exclude="@(_ExcludedPrivateSdkAssemblies)"/>
 
     <!-- Exclude unmanaged dlls -->
@@ -150,7 +149,6 @@ The .NET Foundation licenses this file to you under the MIT license.
 
     <!-- If running from a package these values need to be set again with the resolved IlcXYZPath -->
     <ItemGroup>
-      <_ExcludedPrivateSdkAssemblies Include="$(IlcSdkPath)System.Private.Reflection.Core.dll" Condition="$(IlcDisableReflection) == 'true'" />
       <PrivateSdkAssemblies Include="$(IlcSdkPath)*.dll" Exclude="@(_ExcludedPrivateSdkAssemblies)"/>
 
       <!-- Exclude unmanaged dlls -->
