@@ -609,21 +609,6 @@ namespace System.Text.RegularExpressions.Symbolic
             }
         }
 
-        /// <summary>Gets or creates a new DFA transition. This version takes and returns state IDs.</summary>
-        public bool TryCreateNewTransition(
-            int sourceStateId, int mintermId, int offset, bool checkThreshold, out int nextStateId)
-        {
-            Debug.Assert(sourceStateId > 0);
-            Debug.Assert(_stateArray is not null);
-            if (TryCreateNewTransition(_stateArray[sourceStateId], mintermId, offset, checkThreshold, out DfaMatchingState<TSet>? nextState))
-            {
-                nextStateId = nextState.Id;
-                return true;
-            }
-            nextStateId = -1;
-            return false;
-        }
-
         /// <summary>Gets or creates a new NFA transition.</summary>
         public int[] CreateNewNfaTransition(int nfaStateId, int mintermId, int nfaOffset)
         {

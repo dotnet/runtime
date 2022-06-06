@@ -315,7 +315,13 @@ namespace System.Text.RegularExpressions.Symbolic
             // the position of the last b: aacaaaabbbc.  It additionally records the position of the first a after
             // the c as the low boundary for the starting position.
             int matchStartLowBoundary, matchStartLengthMarker;
-            int matchEnd = SpecializedFindEndPosition(input, startat, timeoutOccursAt, mode, out matchStartLowBoundary, out matchStartLengthMarker, perThreadData);
+            int matchEnd = (_findOpts is null, _pattern._info.ContainsSomeAnchor) switch
+            {
+                (false, false) => FindEndPosition<NoOptimizationsInitialStateHandler, NoAnchorsNullabilityHandler>(input, startat, timeoutOccursAt, mode, out matchStartLowBoundary, out matchStartLengthMarker, perThreadData),
+                (true, false) => FindEndPosition<InitialStateFindOptimizationsHandler, NoAnchorsNullabilityHandler>(input, startat, timeoutOccursAt, mode, out matchStartLowBoundary, out matchStartLengthMarker, perThreadData),
+                (false, true) => FindEndPosition<NoOptimizationsInitialStateHandler, FullNullabilityHandler>(input, startat, timeoutOccursAt, mode, out matchStartLowBoundary, out matchStartLengthMarker, perThreadData),
+                (true, true) => FindEndPosition<InitialStateFindOptimizationsHandler, FullNullabilityHandler>(input, startat, timeoutOccursAt, mode, out matchStartLowBoundary, out matchStartLengthMarker, perThreadData),
+            };
 
             // If there wasn't a match, we're done.
             if (matchEnd == NoMatchExists)
@@ -349,8 +355,9 @@ namespace System.Text.RegularExpressions.Symbolic
             {
                 Debug.Assert(matchEnd >= startat - 1);
                 matchStart = matchEnd < startat ?
-                    startat :
-                    SpecializedFindStartPosition(input, matchEnd, matchStartLowBoundary, perThreadData);
+                    startat : _pattern._info.ContainsSomeAnchor ?
+                        FindStartPosition<FullNullabilityHandler>(input, matchEnd, matchStartLowBoundary, perThreadData) :
+                        FindStartPosition<NoAnchorsNullabilityHandler>(input, matchEnd, matchStartLowBoundary, perThreadData);
             }
 
             // Phase 3:
@@ -367,25 +374,6 @@ namespace System.Text.RegularExpressions.Symbolic
                 Registers endRegisters = FindSubcaptures(input, matchStart, matchEnd, perThreadData);
                 return new SymbolicMatch(matchStart, matchEnd - matchStart, endRegisters.CaptureStarts, endRegisters.CaptureEnds);
             }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            int SpecializedFindEndPosition(ReadOnlySpan<char> input, int pos, long timeoutOccursAt, RegexRunnerMode mode, out int initialStatePos, out int matchLength, PerThreadData perThreadData) =>
-                _findOpts is null ?
-                    SpecializedFindEndPosition2<NoOptimizationsInitialStateHandler>(input, pos, timeoutOccursAt, mode, out initialStatePos, out matchLength, perThreadData) :
-                    SpecializedFindEndPosition2<InitialStateFindOptimizationsHandler>(input, pos, timeoutOccursAt, mode, out initialStatePos, out matchLength, perThreadData);
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            int SpecializedFindEndPosition2<TFindOptimizationsHandler>(ReadOnlySpan<char> input, int pos, long timeoutOccursAt, RegexRunnerMode mode, out int initialStatePos, out int matchLength, PerThreadData perThreadData)
-                where TFindOptimizationsHandler : struct, IInitialStateHandler =>
-                _pattern._info.ContainsSomeAnchor ?
-                    FindEndPosition<TFindOptimizationsHandler, FullNullabilityHandler>(input, pos, timeoutOccursAt, mode, out initialStatePos, out matchLength, perThreadData) :
-                    FindEndPosition<TFindOptimizationsHandler, NoAnchorsNullabilityHandler>(input, pos, timeoutOccursAt, mode, out initialStatePos, out matchLength, perThreadData);
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            int SpecializedFindStartPosition(ReadOnlySpan<char> input, int i, int matchStartBoundary, PerThreadData perThreadData) =>
-                _pattern._info.ContainsSomeAnchor ?
-                    FindStartPosition<FullNullabilityHandler>(input, i, matchStartBoundary, perThreadData) :
-                    FindStartPosition<NoAnchorsNullabilityHandler>(input, i, matchStartBoundary, perThreadData);
         }
 
         /// <summary>Performs the initial Phase 1 match to find the end position of the match, or first final state if this is an isMatch call.</summary>
@@ -429,31 +417,26 @@ namespace System.Text.RegularExpressions.Symbolic
                     FindEndPositionDeltas<NfaStateHandler, TFindOptimizationsHandler, TNullabilityHandler>(builder, input, mode, ref pos, ref currentState, ref endPos, ref endStateId, ref initialStatePos, ref initialStatePosCandidate) :
                     FindEndPositionDeltas<DfaStateHandler, TFindOptimizationsHandler, TNullabilityHandler>(builder, input, mode, ref pos, ref currentState, ref endPos, ref endStateId, ref initialStatePos, ref initialStatePosCandidate);
 
-                if (done)
+                // If the inner loop indicates that the search finished (for example due to reaching a deadend state) or
+                // there is no more input available, then the whole search is done.
+                if (done || pos >= input.Length)
                 {
-                    // If we reached the end of input or a deadend state, we're done.
                     break;
                 }
-                else
+
+                // The search did not finish, so we either failed to transition (which should only happen if we were in DFA mode and
+                // need to switch over to NFA mode) or ran out of input in the inner loop. Check if the inner loop still had more
+                // input available.
+                if (pos < inputForInnerLoop.Length)
                 {
-                    // The search did not finish, so we either failed to transition (which should only happen if we were in DFA mode and
-                    // need to switch over to NFA mode) or ran out of input in the inner loop. For the latter case check if there is more
-                    // input available.
-                    if (pos >= input.Length)
-                    {
-                        // We ran out of input.
-                        break;
-                    }
-                    else if (pos < inputForInnerLoop.Length)
-                    {
-                        // We failed to transition. Upgrade to DFA mode.
-                        Debug.Assert(pos < inputForInnerLoop.Length);
-                        DfaMatchingState<TSet>? dfaState = currentState.DfaState(_builder);
-                        Debug.Assert(dfaState is not null);
-                        NfaMatchingState nfaState = perThreadData.NfaState;
-                        nfaState.InitializeFrom(dfaState);
-                        currentState = new CurrentState(nfaState);
-                    }
+                    // Because there was still more input available, a failure to transition in DFA mode must be the cause
+                    // of the early exit. Upgrade to NFA mode.
+                    Debug.Assert(pos < inputForInnerLoop.Length);
+                    DfaMatchingState<TSet>? dfaState = currentState.DfaState(_builder);
+                    Debug.Assert(dfaState is not null);
+                    NfaMatchingState nfaState = perThreadData.NfaState;
+                    nfaState.InitializeFrom(dfaState);
+                    currentState = new CurrentState(nfaState);
                 }
 
                 // Check for a timeout before continuing.
@@ -504,7 +487,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 // Loop through each character in the input, transitioning from state to state for each.
                 while (true)
                 {
-                    var (isInitial, isDeadend, isNullable, canBeNullable) = TStateHandler.GetStateInfo(builder, ref state);
+                    (bool isInitial, bool isDeadend, bool isNullable, bool canBeNullable) = TStateHandler.GetStateInfo(builder, ref state);
                     // Check if currentState represents an initial state. If it does, call into any possible find optimizations
                     // to hopefully more quickly find the next possible starting location.
                     if (isInitial)
@@ -632,7 +615,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 // Loop backwards through each character in the input, transitioning from state to state for each.
                 while (true)
                 {
-                    var (isInitial, isDeadend, isNullable, canBeNullable) = TStateHandler.GetStateInfo(builder, ref state);
+                    (bool isInitial, bool isDeadend, bool isNullable, bool canBeNullable) = TStateHandler.GetStateInfo(builder, ref state);
 
                     // If the state accepts the empty string, we found a valid starting position.  Record it and keep going,
                     // since we're looking for the earliest one to occur within bounds.
@@ -1012,11 +995,18 @@ namespace System.Text.RegularExpressions.Symbolic
                 // hasn't been materialized, try to create it; if we can, move to it, and we're done.
                 int dfaOffset = (state.DfaStateId << builder._mintermsLog) | mintermId;
                 int nextStateId = builder._delta[dfaOffset];
-                if (nextStateId > 0 || builder.TryCreateNewTransition(state.DfaStateId, mintermId, dfaOffset, checkThreshold: true, out nextStateId))
+                if (nextStateId > 0)
                 {
-                    // There was an existing state for this transition or we were able to create one.  Move to it and
+                    // There was an existing DFA transition to some state. Move to it and
                     // return that we're still operating as a DFA and can keep going.
                     state.DfaStateId = nextStateId;
+                    return true;
+                }
+                if (builder.TryCreateNewTransition(state.DfaState(builder)!, mintermId, dfaOffset, checkThreshold: true, out DfaMatchingState<TSet>? nextState))
+                {
+                    // We were able to create a new DFA transition to some state. Move to it and
+                    // return that we're still operating as a DFA and can keep going.
+                    state.DfaStateId = nextState.Id;
                     return true;
                 }
 
