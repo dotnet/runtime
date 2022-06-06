@@ -436,13 +436,30 @@ namespace ILCompiler
                 sigRetTypeName = sigRetTypeName.Replace("::", "_");
             sb.Append(sigRetTypeName);
 
+            EmbeddedSignatureData[] embeddedSignatureData = signature.GetEmbeddedSignatureData();
             for (int i = 0; i < signature.Length; i++)
             {
                 sb.Append("__");
+                EmbeddedSignatureData? embeddedSignature = null;
+                if (embeddedSignatureData != null)
+                {
+                    for (int j = 0; j < embeddedSignatureData.Length; j++)
+                    {
+                        if (embeddedSignatureData[j].index == "0.1." + (i + 2) + ".1")
+                        {
+                            embeddedSignature = embeddedSignatureData[j];
+                        }
+                    }
+                }
+
                 string sigArgName = GetMangledTypeName(signature[i]);
                 if (_mangleForCplusPlus)
                     sigArgName = sigArgName.Replace("::", "_");
                 sb.Append(sigArgName);
+                if (embeddedSignature != null)
+                {
+                    sb.Append(EnterNameScopeSequence).Append(embeddedSignature.Value.type.GetDisplayNameWithoutNamespace()).Append(ExitNameScopeSequence);
+                }
             }
 
             sb.Append(ExitNameScopeSequence);
