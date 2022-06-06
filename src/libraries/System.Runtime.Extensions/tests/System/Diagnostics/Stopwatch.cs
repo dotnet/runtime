@@ -95,6 +95,19 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [Fact]
+        public static void DebuggerDisplay()
+        {
+            Stopwatch watch = new Stopwatch();
+            Assert.Equal("{00:00:00} (IsRunning = false)", watch.DebuggerDisplay);
+            watch.Start();
+            Thread.Sleep(10);
+            Assert.Contains("} (IsRunning = true)", watch.DebuggerDisplay);
+            watch.Stop();
+            Assert.Contains("} (IsRunning = false)", watch.DebuggerDisplay);
+            Assert.NotContains("{00:00:00}", watch.DebuggerDisplay);
+        }
+
         [OuterLoop("Sleeps for relatively long periods of time")]
         [Fact]
         public static void ElapsedMilliseconds_WithinExpectedWindow()
