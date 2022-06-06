@@ -32,6 +32,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Theory]
         [MemberData(nameof(HeaderEncodingTestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task HPack_HeaderEncoding(string headerName, string expectedValue, byte[] expectedEncoding)
         {
             await Http2LoopbackServer.CreateClientAndServerAsync(

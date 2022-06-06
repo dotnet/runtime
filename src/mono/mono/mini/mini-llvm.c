@@ -3816,6 +3816,11 @@ emit_unbox_tramp (EmitContext *ctx, const char *method_name, LLVMTypeRef method_
 static void
 emit_gc_pin (EmitContext *ctx, LLVMBuilderRef builder, int vreg)
 {
+	if (ctx->values [vreg] == LLVMConstNull (IntPtrType ()))
+		return;
+	MonoInst *var = get_vreg_to_inst (ctx->cfg, vreg);
+	if (var && var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT|MONO_INST_IS_DEAD))
+		return;
 	LLVMValueRef index0 = const_int32 (0);
 	LLVMValueRef index1 = const_int32 (ctx->gc_var_indexes [vreg] - 1);
 	LLVMValueRef indexes [] = { index0, index1 };
@@ -3856,8 +3861,11 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 	int ngc_vars = 0;
 	for (int i = 0; i < cfg->next_vreg; ++i) {
 		if (vreg_is_ref (cfg, i)) {
-			ctx->gc_var_indexes [i] = ngc_vars + 1;
-			ngc_vars ++;
+			MonoInst *var = get_vreg_to_inst (ctx->cfg, i);
+			if (!(var && var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT|MONO_INST_IS_DEAD))) {
+				ctx->gc_var_indexes [i] = ngc_vars + 1;
+				ngc_vars ++;
+			}
 		}
 	}
 
@@ -4106,15 +4114,17 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 
 #ifdef TARGET_WASM
 	/*
-	 * Store ref arguments to the pin area.
-	 * FIXME: This might not be needed, since the caller already does it ?
+	 * Storing ref arguments to the pin area is not needed
+	 * since it's done by the caller.
 	 */
+	/*
 	for (int i = 0; i < cfg->num_varinfo; ++i) {
 		MonoInst *var = cfg->varinfo [i];
 
 		if (var->opcode == OP_ARG && vreg_is_ref (cfg, var->dreg) && ctx->values [var->dreg])
 			emit_gc_pin (ctx, builder, var->dreg);
 	}
+	*/
 #endif
 
 	if (cfg->deopt) {
@@ -7690,11 +7700,11 @@ MONO_RESTORE_WARNING
 			break;
 		}
 		case OP_STOREX_MEMBASE: {
-			LLVMTypeRef t = LLVMTypeOf (values [ins->sreg1]);
+			LLVMTypeRef t = LLVMTypeOf (lhs);
 			LLVMValueRef dest;
 
 			dest = convert (ctx, LLVMBuildAdd (builder, convert (ctx, values [ins->inst_destbasereg], IntPtrType ()), LLVMConstInt (IntPtrType (), ins->inst_offset, FALSE), ""), pointer_type (t));
-			mono_llvm_build_aligned_store (builder, values [ins->sreg1], dest, FALSE, 1);
+			mono_llvm_build_aligned_store (builder, lhs, dest, FALSE, 1);
 			break;
 		}
 		case OP_XBINOP:
@@ -11284,7 +11294,7 @@ MONO_RESTORE_WARNING
 			if (!skip_volatile_store)
 				emit_volatile_store (ctx, ins->dreg);
 #ifdef TARGET_WASM
-			if (vreg_is_ref (cfg, ins->dreg) && ctx->values [ins->dreg])
+			if (vreg_is_ref (cfg, ins->dreg) && ctx->values [ins->dreg] && ins->opcode != OP_MOVE)
 				emit_gc_pin (ctx, builder, ins->dreg);
 #endif
 		}

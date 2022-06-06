@@ -132,7 +132,6 @@ void StressLog::Initialize(unsigned facilities,  unsigned level, unsigned maxByt
 /* create a new thread stress log buffer associated with pThread                 */
 
 ThreadStressLog* StressLog::CreateThreadStressLog(Thread * pThread) {
-
     if (theLog.facilitiesToLog == 0)
         return NULL;
 
@@ -143,12 +142,6 @@ ThreadStressLog* StressLog::CreateThreadStressLog(Thread * pThread) {
     if (msgs != NULL)
     {
         return msgs;
-    }
-
-    //if we are not allowed to allocate stress log, we should not even try to take the lock
-    if (pThread->IsInCantAllocStressLogRegion())
-    {
-        return NULL;
     }
 
     // if it looks like we won't be allowed to allocate a new chunk, exit early
@@ -264,10 +257,6 @@ void StressLog::ThreadDetach(ThreadStressLog *msgs) {
 bool StressLog::AllowNewChunk (long numChunksInCurThread)
 {
     Thread* pCurrentThread = ThreadStore::RawGetCurrentThread();
-    if (pCurrentThread->IsInCantAllocStressLogRegion())
-    {
-        return FALSE;
-    }
 
     _ASSERTE (numChunksInCurThread <= VolatileLoad(&theLog.totalChunk));
     uint32_t perThreadLimit = theLog.MaxSizePerThread;

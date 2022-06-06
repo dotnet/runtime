@@ -4999,20 +4999,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         {
                             doAddrMode = false;
                         }
-                        else if (varTypeIsStruct(tree))
-                        {
-                            // This is a heuristic attempting to match prior behavior when indirections
-                            // under a struct assignment would not be considered for addressing modes.
-                            if (compCurStmt != nullptr)
-                            {
-                                GenTree* expr = compCurStmt->GetRootNode();
-                                if ((expr->OperGet() == GT_ASG) &&
-                                    ((expr->gtGetOp1() == tree) || (expr->gtGetOp2() == tree)))
-                                {
-                                    doAddrMode = false;
-                                }
-                            }
-                        }
+
 #ifdef TARGET_ARM64
                         if (tree->gtFlags & GTF_IND_VOLATILE)
                         {
@@ -13529,31 +13516,25 @@ GenTree* Compiler::gtFoldBoxNullable(GenTree* tree)
         return tree;
     }
 
-    JITDUMP("\nAttempting to optimize BOX_NULLABLE(&x) %s null [%06u]\n", GenTree::OpName(oper), dspTreeID(tree));
+    JITDUMP("\nReplacing BOX_NULLABLE(&x) %s null [%06u] with x.hasValue\n", GenTree::OpName(oper), dspTreeID(tree));
 
-    // Get the address of the struct being boxed
-    GenTree* const arg = call->gtArgs.GetArgByIndex(1)->GetNode();
+    GenTree*             nullableHndNode  = call->gtArgs.GetArgByIndex(0)->GetNode();
+    CORINFO_CLASS_HANDLE nullableClassHnd = gtGetHelperArgClassHandle(nullableHndNode);
+    CORINFO_FIELD_HANDLE hasValueFieldHnd = info.compCompHnd->getFieldInClass(nullableClassHnd, 0);
 
-    if (arg->OperIs(GT_ADDR))
+    GenTree* srcAddr   = call->gtArgs.GetArgByIndex(1)->GetNode();
+    GenTree* fieldNode = gtNewFieldRef(TYP_BOOL, hasValueFieldHnd, srcAddr, OFFSETOF__CORINFO_NullableOfT__hasValue);
+
+    if (op == op1)
     {
-        CORINFO_CLASS_HANDLE nullableHnd = gtGetStructHandle(arg->AsOp()->gtOp1);
-        CORINFO_FIELD_HANDLE fieldHnd    = info.compCompHnd->getFieldInClass(nullableHnd, 0);
-
-        // Replace the box with an access of the nullable 'hasValue' field.
-        JITDUMP("\nSuccess: replacing BOX_NULLABLE(&x) [%06u] with x.hasValue\n", dspTreeID(op));
-        GenTree* newOp = gtNewFieldRef(TYP_BOOL, fieldHnd, arg, 0);
-
-        if (op == op1)
-        {
-            tree->AsOp()->gtOp1 = newOp;
-        }
-        else
-        {
-            tree->AsOp()->gtOp2 = newOp;
-        }
-
-        cons->gtType = TYP_INT;
+        tree->AsOp()->gtOp1 = fieldNode;
     }
+    else
+    {
+        tree->AsOp()->gtOp2 = fieldNode;
+    }
+
+    cons->gtType = TYP_INT;
 
     return tree;
 }
@@ -23120,6 +23101,29 @@ uint16_t GenTreeLclVarCommon::GetLclOffs() const
     {
         return 0;
     }
+}
+
+//------------------------------------------------------------------------
+// GetLayout: get the struct layout for a local node of struct type.
+//
+// Arguments:
+//    compiler - the compiler instance
+//
+// Return Value:
+//    If "this" is a local field node, the layout stored in the node,
+//    otherwise the layout of local itself.
+//
+ClassLayout* GenTreeLclVarCommon::GetLayout(Compiler* compiler) const
+{
+    assert(varTypeIsStruct(TypeGet()));
+
+    if (OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR))
+    {
+        return compiler->lvaGetDesc(GetLclNum())->GetLayout();
+    }
+
+    assert(OperIs(GT_LCL_FLD, GT_STORE_LCL_FLD));
+    return AsLclFld()->GetLayout();
 }
 
 #if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)

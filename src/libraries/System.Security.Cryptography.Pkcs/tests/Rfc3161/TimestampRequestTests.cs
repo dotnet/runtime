@@ -489,6 +489,12 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 nonce: nonce,
                 requestSignerCertificates: expectedStatus != Rfc3161RequestResponseStatus.UnexpectedCertificates);
 
+            if (!SignatureSupport.SupportsRsaSha1Signatures &&
+                expectedStatus != Rfc3161RequestResponseStatus.RequestFailed)
+            {
+                expectedStatus = Rfc3161RequestResponseStatus.DoesNotParse;
+            }
+
             ProcessResponse(expectedStatus, request, inputBytes, Padding.Length / 2);
         }
 

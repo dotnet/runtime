@@ -347,6 +347,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public TypeInfo TypeInfo { get; }
         public bool HasSequencePoints { get => !DebugInformation.SequencePointsBlob.IsNil; }
         private ParameterInfo[] _parametersInfo;
+        public int KickOffMethod { get; }
 
         public MethodInfo(AssemblyInfo assembly, MethodDefinitionHandle methodDefHandle, int token, SourceFile source, TypeInfo type, MetadataReader asmMetadataReader, MetadataReader pdbMetadataReader)
         {
@@ -359,9 +360,13 @@ namespace Microsoft.WebAssembly.Diagnostics
             this.methodDefHandle = methodDefHandle;
             this.Name = asmMetadataReader.GetString(methodDef.Name);
             this.pdbMetadataReader = pdbMetadataReader;
+            if (!DebugInformation.GetStateMachineKickoffMethod().IsNil)
+                this.KickOffMethod = asmMetadataReader.GetRowNumber(DebugInformation.GetStateMachineKickoffMethod());
+            else
+                this.KickOffMethod = -1;
             this.IsEnCMethod = false;
             this.TypeInfo = type;
-            if (HasSequencePoints)
+            if (HasSequencePoints && source != null)
             {
                 var sps = DebugInformation.GetSequencePoints();
                 SequencePoint start = sps.First();
@@ -790,7 +795,6 @@ namespace Microsoft.WebAssembly.Diagnostics
         internal string PdbName { get; }
         internal bool PdbInformationAvailable { get; }
         public bool TriedToLoadSymbolsOnDemand { get; set; }
-        public MethodInfo EntryPoint { get; private set; }
 
         public unsafe AssemblyInfo(MonoProxy monoProxy, SessionId sessionId, string url, byte[] assembly, byte[] pdb, ILogger logger, CancellationToken token)
         {
@@ -899,11 +903,6 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (pdbMetadataReader != null)
                 ProcessSourceLink();
 
-            MethodDefinitionHandle entryPointHandle = default;
-            if (asmMetadataReader.DebugMetadataHeader is not null)
-                entryPointHandle = asmMetadataReader.DebugMetadataHeader.EntryPoint;
-            if (pdbMetadataReader is not null && pdbMetadataReader.DebugMetadataHeader is not null)
-                entryPointHandle = pdbMetadataReader.DebugMetadataHeader.EntryPoint;
             foreach (TypeDefinitionHandle type in asmMetadataReader.TypeDefinitions)
             {
                 var typeDefinition = asmMetadataReader.GetTypeDefinition(type);
@@ -919,24 +918,20 @@ namespace Microsoft.WebAssembly.Diagnostics
                         if (!method.ToDebugInformationHandle().IsNil)
                         {
                             var methodDebugInformation = pdbMetadataReader.GetMethodDebugInformation(method.ToDebugInformationHandle());
+                            SourceFile source = null;
                             if (!methodDebugInformation.Document.IsNil)
                             {
                                 var document = pdbMetadataReader.GetDocument(methodDebugInformation.Document);
                                 var documentName = pdbMetadataReader.GetString(document.Name);
-                                SourceFile source = FindSource(methodDebugInformation.Document, asmMetadataReader.GetRowNumber(methodDebugInformation.Document), documentName);
-                                var methodInfo = new MethodInfo(this, method, asmMetadataReader.GetRowNumber(method), source, typeInfo, asmMetadataReader, pdbMetadataReader);
-                                methods[asmMetadataReader.GetRowNumber(method)] = methodInfo;
-
-                                if (source != null)
-                                    source.AddMethod(methodInfo);
-
-                                typeInfo.Methods.Add(methodInfo);
-                                if (entryPointHandle.IsNil || EntryPoint is not null)
-                                    continue;
-
-                                if (method.Equals(entryPointHandle))
-                                    EntryPoint = methodInfo;
+                                source = FindSource(methodDebugInformation.Document, asmMetadataReader.GetRowNumber(methodDebugInformation.Document), documentName);
                             }
+                            var methodInfo = new MethodInfo(this, method, asmMetadataReader.GetRowNumber(method), source, typeInfo, asmMetadataReader, pdbMetadataReader);
+                            methods[asmMetadataReader.GetRowNumber(method)] = methodInfo;
+
+                            if (source != null)
+                                source.AddMethod(methodInfo);
+
+                            typeInfo.Methods.Add(methodInfo);
                         }
                     }
                 }
@@ -1344,12 +1339,6 @@ namespace Microsoft.WebAssembly.Diagnostics
         public SourceFile GetFileById(SourceId id) => AllSources().SingleOrDefault(f => f.SourceId.Equals(id));
 
         public AssemblyInfo GetAssemblyByName(string name) => assemblies.FirstOrDefault(a => a.Name.Equals(name, StringComparison.InvariantCultureIgnoreCase));
-        public MethodInfo FindEntryPoint(string preferredEntrypointAssembly)
-        {
-            AssemblyInfo foundAsm = assemblies.FirstOrDefault(asm => asm.EntryPoint?.Assembly.Name == preferredEntrypointAssembly);
-            foundAsm ??= assemblies.FirstOrDefault(asm => asm.EntryPoint is not null);
-            return foundAsm?.EntryPoint;
-        }
 
         /*
         V8 uses zero based indexing for both line and column.

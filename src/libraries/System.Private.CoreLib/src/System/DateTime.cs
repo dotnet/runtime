@@ -1605,8 +1605,7 @@ namespace System
             }
             if ((year & 3) != 0) return false;
             if ((year & 15) == 0) return true;
-            // return true/false not the test result https://github.com/dotnet/runtime/issues/4207
-            return (uint)year % 25 != 0 ? true : false;
+            return (uint)year % 25 != 0;
         }
 
         // Constructs a DateTime from a string. The string must specify a

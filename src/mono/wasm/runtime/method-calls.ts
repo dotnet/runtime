@@ -201,7 +201,11 @@ export function mono_bind_assembly_entry_point(assembly: string, signature?: str
     if (!asm)
         throw new Error("Could not find assembly: " + assembly);
 
-    const method = cwraps.mono_wasm_assembly_get_entry_point(asm);
+    let auto_set_breakpoint = 0;
+    if (runtimeHelpers.wait_for_debugger == 1)
+        auto_set_breakpoint = 1;
+
+    const method = cwraps.mono_wasm_assembly_get_entry_point(asm, auto_set_breakpoint);
     if (!method)
         throw new Error("Could not find entry point for assembly: " + assembly);
 

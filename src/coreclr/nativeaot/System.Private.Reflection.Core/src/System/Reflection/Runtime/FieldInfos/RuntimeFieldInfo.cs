@@ -17,15 +17,13 @@ using System.Reflection.Runtime.BindingFlagSupport;
 using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
 
-using Internal.Reflection.Tracing;
-
 namespace System.Reflection.Runtime.FieldInfos
 {
     //
     // The Runtime's implementation of fields.
     //
     [DebuggerDisplay("{_debugName}")]
-    internal abstract partial class RuntimeFieldInfo : FieldInfo, ITraceableTypeMember
+    internal abstract partial class RuntimeFieldInfo : FieldInfo
     {
         //
         // contextType    - the type that supplies the type context (i.e. substitutions for generic parameters.) Though you
@@ -54,11 +52,6 @@ namespace System.Reflection.Runtime.FieldInfos
         {
             get
             {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.FieldInfo_CustomAttributes(this);
-#endif
-
                 foreach (CustomAttributeData cad in TrueCustomAttributes)
                     yield return cad;
 
@@ -81,11 +74,6 @@ namespace System.Reflection.Runtime.FieldInfos
         {
             get
             {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.FieldInfo_DeclaringType(this);
-#endif
-
                 return _contextTypeInfo;
             }
         }
@@ -110,11 +98,6 @@ namespace System.Reflection.Runtime.FieldInfos
 
         public sealed override object GetValue(object obj)
         {
-#if ENABLE_REFLECTION_TRACE
-            if (ReflectionTrace.Enabled)
-                ReflectionTrace.FieldInfo_GetValue(this, obj);
-#endif
-
             FieldAccessor fieldAccessor = this.FieldAccessor;
             return fieldAccessor.GetField(obj);
         }
@@ -148,11 +131,6 @@ namespace System.Reflection.Runtime.FieldInfos
 
         public sealed override void SetValue(object obj, object value, BindingFlags invokeAttr, Binder binder, CultureInfo culture)
         {
-#if ENABLE_REFLECTION_TRACE
-            if (ReflectionTrace.Enabled)
-                ReflectionTrace.FieldInfo_SetValue(this, obj, value);
-#endif
-
             FieldAccessor fieldAccessor = this.FieldAccessor;
             BinderBundle binderBundle = binder.ToBinderBundle(invokeAttr, culture);
             fieldAccessor.SetField(obj, value, binderBundle);
@@ -167,14 +145,6 @@ namespace System.Reflection.Runtime.FieldInfos
             fieldAccessor.SetFieldDirect(obj, value);
         }
 
-        Type ITraceableTypeMember.ContainingType
-        {
-            get
-            {
-                return _contextTypeInfo;
-            }
-        }
-
         /// <summary>
         /// Override to provide the metadata based name of a field. (Different from the Name
         /// property in that it does not go into the reflection trace logic.)
@@ -182,19 +152,6 @@ namespace System.Reflection.Runtime.FieldInfos
         protected abstract string MetadataName { get; }
 
         public sealed override string Name
-        {
-            get
-            {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.FieldInfo_Name(this);
-#endif
-
-                return MetadataName;
-            }
-        }
-
-        string ITraceableTypeMember.MemberName
         {
             get
             {
@@ -280,7 +237,7 @@ namespace System.Reflection.Runtime.FieldInfos
             if (_debugName == null)
             {
                 _debugName = "Constructing..."; // Protect against any inadvertent reentrancy.
-                _debugName = ((ITraceableTypeMember)this).MemberName;
+                _debugName = MetadataName;
             }
             return this;
         }

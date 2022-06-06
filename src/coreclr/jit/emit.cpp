@@ -5201,8 +5201,8 @@ unsigned emitter::getLoopSize(insGroup* igLoopHeader, unsigned maxLoopSize DEBUG
                 JITDUMP(" -- loopSize exceeded the threshold of %u bytes.", maxLoopSize);
             }
             JITDUMP("\n");
-            break;
 #endif
+            break;
         }
         JITDUMP("\n");
     }

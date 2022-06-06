@@ -700,23 +700,6 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
                 DISPTREERANGE(BlockRange(), use.Def());
                 JITDUMP("\n");
             }
-            else
-            {
-                // This code depends on the fact that NONE of the SIMD intrinsics take vector operands
-                // of a different width.  If that assumption changes, we will EITHER have to make these type
-                // transformations during importation, and plumb the types all the way through the JIT,
-                // OR add a lot of special handling here.
-
-                // TODO-Review: the comment above seems outdated. TYP_SIMDs have been "plumbed through" the Jit.
-                // It may be that this code is actually dead.
-                for (GenTree* operand : simdNode->Operands())
-                {
-                    if (operand->TypeIs(TYP_STRUCT))
-                    {
-                        operand->ChangeType(simdType);
-                    }
-                }
-            }
         }
         break;
 #endif // FEATURE_SIMD

@@ -103,5 +103,25 @@ namespace ILCompiler
                 (owningType is not MetadataType mdType || !mdType.IsModuleType) && /* Compiler parks some instance methods on the <Module> type */
                 !method.IsSharedByGenericInstantiations; /* Current impl limitation; can be lifted */
         }
+
+        public static PropertyPseudoDesc GetPropertyForAccessor(this MethodDesc accessor)
+        {
+            if (accessor.GetTypicalMethodDefinition() is not EcmaMethod ecmaAccessor)
+                return null;
+
+            var type = (EcmaType)ecmaAccessor.OwningType;
+            var reader = type.MetadataReader;
+            foreach (var propertyHandle in reader.GetTypeDefinition(type.Handle).GetProperties())
+            {
+                var accessors = reader.GetPropertyDefinition(propertyHandle).GetAccessors();
+                if (ecmaAccessor.Handle == accessors.Getter
+                    || ecmaAccessor.Handle == accessors.Setter)
+                {
+                    return new PropertyPseudoDesc(type, propertyHandle);
+                }
+            }
+
+            return null;
+        }
     }
 }
