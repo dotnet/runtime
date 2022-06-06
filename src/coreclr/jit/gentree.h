@@ -6458,10 +6458,31 @@ private:
                                       target_ssize_t* pOffset);
 };
 
-// GenTreeArrLen (GT_ARR_LENGTH) -- single-dimension (SZ) array length. Used for `array.Length`.
-// This class is used as a parent class for GenTreeMDArrLen (GT_MDARR_LENGTH).
+// GenTreeArrCommon -- A parent class for GenTreeArrLen, GenTreeMDArr
+// (so, accessing array meta-data for either single-dimensional or multi-dimensional arrays).
+// Mostly just a convenience to use the ArrRef() accessor.
 //
-struct GenTreeArrLen : public GenTreeUnOp
+struct GenTreeArrCommon : public GenTreeUnOp
+{
+    GenTree*& ArrRef() // the array address node
+    {
+        return gtOp1;
+    }
+
+    GenTreeArrCommon(genTreeOps oper, var_types type, GenTree* arrRef) : GenTreeUnOp(oper, type, arrRef)
+    {
+    }
+
+#if DEBUGGABLE_GENTREE
+    GenTreeArrCommon() : GenTreeUnOp()
+    {
+    }
+#endif
+};
+
+// GenTreeArrLen (GT_ARR_LENGTH) -- single-dimension (SZ) array length. Used for `array.Length`.
+//
+struct GenTreeArrLen : public GenTreeArrCommon
 {
     GenTree*& ArrRef() // the array address node
     {
@@ -6477,28 +6498,22 @@ public:
         return gtArrLenOffset;
     }
 
-    // This constructor needed for GenTreeMDArrLen constructor.
-    GenTreeArrLen(genTreeOps oper, var_types type, GenTree* arrRef, int lenOffset)
-        : GenTreeUnOp(oper, type, arrRef), gtArrLenOffset(lenOffset)
-    {
-    }
-
     GenTreeArrLen(var_types type, GenTree* arrRef, int lenOffset)
-        : GenTreeUnOp(GT_ARR_LENGTH, type, arrRef), gtArrLenOffset(lenOffset)
+        : GenTreeArrCommon(GT_ARR_LENGTH, type, arrRef), gtArrLenOffset(lenOffset)
     {
     }
 
 #if DEBUGGABLE_GENTREE
-    GenTreeArrLen() : GenTreeUnOp()
+    GenTreeArrLen() : GenTreeArrCommon()
     {
     }
 #endif
 };
 
-// GenTreeMDArrLen (GT_MDARR_LENGTH) -- multi-dimension (MD) array length for a dimension.
-// Used for `array.GetLength(n)`.
+// GenTreeMDArr (GT_MDARR_LENGTH, GT_MDARR_LOWER_BOUND) -- multi-dimension (MD) array length
+// or lower bound for a dimension. Used for `array.GetLength(n)`, `array.GetLowerBound(n)`.
 //
-struct GenTreeMDArrLen : public GenTreeArrLen
+struct GenTreeMDArr : public GenTreeArrCommon
 {
 private:
     unsigned gtDim;  // array dimension of this array length
@@ -6515,47 +6530,14 @@ public:
         return gtRank;
     }
 
-    GenTreeMDArrLen(GenTree* arrRef, unsigned dim, unsigned rank);
-
-#if DEBUGGABLE_GENTREE
-    GenTreeMDArrLen() : GenTreeArrLen()
+    GenTreeMDArr(genTreeOps oper, GenTree* arrRef, unsigned dim, unsigned rank)
+        : GenTreeArrCommon(oper, TYP_INT, arrRef), gtDim(dim), gtRank(rank)
     {
-    }
-#endif
-};
-
-// GenTreeMDArrLowerBound (GT_MDARR_LOWER_BOUND) -- multi-dimension (MD) array lower bound for a dimension.
-// Used for `array.GetLowerBound(n)`.
-//
-struct GenTreeMDArrLowerBound : public GenTreeUnOp
-{
-private:
-    unsigned gtDim;  // array dimension of this array lower bound
-    unsigned gtRank; // array rank of the array
-
-public:
-    GenTree*& ArrRef() // the array address node
-    {
-        return gtOp1;
-    }
-
-    unsigned Dim() const
-    {
-        return gtDim;
-    }
-
-    unsigned Rank() const
-    {
-        return gtRank;
-    }
-
-    GenTreeMDArrLowerBound(GenTree* arrRef, unsigned dim, unsigned rank)
-        : GenTreeUnOp(GT_MDARR_LOWER_BOUND, TYP_INT, arrRef), gtDim(dim), gtRank(rank)
-    {
+        assert(OperIs(GT_MDARR_LENGTH, GT_MDARR_LOWER_BOUND));
     }
 
 #if DEBUGGABLE_GENTREE
-    GenTreeMDArrLowerBound() : GenTreeUnOp()
+    GenTreeMDArr() : GenTreeArrCommon()
     {
     }
 #endif
@@ -9292,7 +9274,7 @@ inline bool GenTree::isUsedFromSpillTemp() const
 inline GenTree* GenTree::GetArrLengthArrRef()
 {
     assert(OperIsArrLength());
-    return AsArrLen()->ArrRef();
+    return AsArrCommon()->ArrRef();
 }
 
 // Helper function to return the address of an indir or array meta-data node.
@@ -9306,8 +9288,7 @@ inline GenTree* GenTree::GetIndirOrArrMetaDataAddr()
     }
     else
     {
-        // GenTreeArrLen, GenTreeMDArrLen, GenTreeMDArrLowerBound all store the array ref as gtOp1.
-        return AsUnOp()->gtOp1;
+        return AsArrCommon()->ArrRef();
     }
 }
 

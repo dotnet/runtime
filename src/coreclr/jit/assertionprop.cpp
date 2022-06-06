@@ -2692,13 +2692,9 @@ void Compiler::optAssertionGen(GenTree* tree)
 
         case GT_ARR_LENGTH:
         case GT_MDARR_LENGTH:
-            // An array length is an (always R-value) indirection (but doesn't derive from GenTreeIndir).
-            assertionInfo = optCreateAssertion(tree->GetArrLengthArrRef(), nullptr, OAK_NOT_EQUAL);
-            break;
-
         case GT_MDARR_LOWER_BOUND:
-            // An array lower bound is an (always R-value) indirection (but doesn't derive from GenTreeIndir).
-            assertionInfo = optCreateAssertion(tree->AsMDArrLowerBound()->ArrRef(), nullptr, OAK_NOT_EQUAL);
+            // An array meta-data access is an (always R-value) indirection (but doesn't derive from GenTreeIndir).
+            assertionInfo = optCreateAssertion(tree->AsArrCommon()->ArrRef(), nullptr, OAK_NOT_EQUAL);
             break;
 
         case GT_NULLCHECK:

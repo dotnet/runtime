@@ -17650,13 +17650,13 @@ bool Compiler::fgMorphArrayOpsStmt(BasicBlock* block, Statement* stmt)
                 GenTree* idx = idxToUse[i];
                 assert((idx->gtFlags & GTF_ALL_EFFECT) == 0); // We should have taken care of side effects earlier.
 
-                GenTreeMDArrLowerBound* const mdArrLowerBound =
+                GenTreeMDArr* const mdArrLowerBound =
                     m_compiler->gtNewMDArrLowerBound(m_compiler->gtNewLclvNode(arrLcl, TYP_REF), i, rank, m_block);
                 unsigned       effIdxLcl = m_compiler->lvaGrabTemp(true DEBUGARG("MD array effective index"));
                 GenTree* const effIndex  = m_compiler->gtNewOperNode(GT_SUB, TYP_INT, idx, mdArrLowerBound);
                 GenTree* const asgNode =
                     m_compiler->gtNewOperNode(GT_ASG, TYP_INT, m_compiler->gtNewLclvNode(effIdxLcl, TYP_INT), effIndex);
-                GenTreeMDArrLen* const mdArrLength =
+                GenTreeMDArr* const mdArrLength =
                     m_compiler->gtNewMDArrLen(m_compiler->gtNewLclvNode(arrLcl, TYP_REF), i, rank, m_block);
                 GenTreeBoundsChk* const arrBndsChk = new (m_compiler, GT_BOUNDS_CHECK)
                     GenTreeBoundsChk(m_compiler->gtNewLclvNode(effIdxLcl, TYP_INT), mdArrLength, SCK_RNGCHK_FAIL);
@@ -17670,7 +17670,7 @@ bool Compiler::fgMorphArrayOpsStmt(BasicBlock* block, Statement* stmt)
                 {
                     assert(fullTree != nullptr);
 
-                    GenTreeMDArrLen* const mdArrLengthScale =
+                    GenTreeMDArr* const mdArrLengthScale =
                         m_compiler->gtNewMDArrLen(m_compiler->gtNewLclvNode(arrLcl, TYP_REF), i, rank, m_block);
                     GenTree* const scale    = m_compiler->gtNewOperNode(GT_MUL, TYP_INT, fullTree, mdArrLengthScale);
                     GenTree* const effIndex = m_compiler->gtNewOperNode(GT_ADD, TYP_INT, scale, idxComma);

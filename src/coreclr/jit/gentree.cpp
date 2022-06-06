@@ -32,15 +32,6 @@ const GenTreeDebugOperKind GenTree::gtDebugOperKindTable[] = {
 };
 #endif // DEBUG
 
-/*****************************************************************************/
-
-GenTreeMDArrLen::GenTreeMDArrLen(GenTree* arrRef, unsigned dim, unsigned rank)
-    : GenTreeArrLen(GT_MDARR_LENGTH, TYP_INT, arrRef, Compiler::eeGetMDArrayLengthOffset(rank, dim))
-    , gtDim(dim)
-    , gtRank(rank)
-{
-}
-
 /*****************************************************************************
  *
  *  The types of different GenTree nodes
@@ -325,9 +316,8 @@ void GenTree::InitNodeSize()
     static_assert_no_msg(sizeof(GenTreeQmark)        <= TREE_NODE_SZ_LARGE); // *** large node
     static_assert_no_msg(sizeof(GenTreeIntrinsic)    <= TREE_NODE_SZ_LARGE); // *** large node
     static_assert_no_msg(sizeof(GenTreeIndexAddr)    <= TREE_NODE_SZ_LARGE); // *** large node
-    static_assert_no_msg(sizeof(GenTreeArrLen)       <= TREE_NODE_SZ_LARGE); // *** large node
-    static_assert_no_msg(sizeof(GenTreeMDArrLen)        <= TREE_NODE_SZ_SMALL);
-    static_assert_no_msg(sizeof(GenTreeMDArrLowerBound) <= TREE_NODE_SZ_SMALL);
+    static_assert_no_msg(sizeof(GenTreeArrLen)       <= TREE_NODE_SZ_SMALL);
+    static_assert_no_msg(sizeof(GenTreeMDArr)        <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreeBoundsChk)    <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreeArrElem)      <= TREE_NODE_SZ_LARGE); // *** large node
     static_assert_no_msg(sizeof(GenTreeArrIndex)     <= TREE_NODE_SZ_LARGE); // *** large node
@@ -2473,16 +2463,9 @@ AGAIN:
                     }
                     break;
                 case GT_MDARR_LENGTH:
-                    if ((op1->AsMDArrLen()->ArrLenOffset() != op2->AsMDArrLen()->ArrLenOffset()) ||
-                        (op1->AsMDArrLen()->Dim() != op2->AsMDArrLen()->Dim()) ||
-                        (op1->AsMDArrLen()->Rank() != op2->AsMDArrLen()->Rank()))
-                    {
-                        return false;
-                    }
-                    break;
                 case GT_MDARR_LOWER_BOUND:
-                    if ((op1->AsMDArrLowerBound()->Dim() != op2->AsMDArrLowerBound()->Dim()) ||
-                        (op1->AsMDArrLowerBound()->Rank() != op2->AsMDArrLowerBound()->Rank()))
+                    if ((op1->AsMDArr()->Dim() != op2->AsMDArr()->Dim()) ||
+                        (op1->AsMDArr()->Rank() != op2->AsMDArr()->Rank()))
                     {
                         return false;
                     }
@@ -2966,13 +2949,9 @@ AGAIN:
                     hash += tree->AsArrLen()->ArrLenOffset();
                     break;
                 case GT_MDARR_LENGTH:
-                    hash += tree->AsMDArrLen()->ArrLenOffset();
-                    hash += tree->AsMDArrLen()->Dim();
-                    hash += tree->AsMDArrLen()->Rank();
-                    break;
                 case GT_MDARR_LOWER_BOUND:
-                    hash += tree->AsMDArrLowerBound()->Dim();
-                    hash += tree->AsMDArrLowerBound()->Rank();
+                    hash += tree->AsMDArr()->Dim();
+                    hash += tree->AsMDArr()->Rank();
                     break;
                 case GT_CAST:
                     hash ^= tree->AsCast()->gtCastType;
@@ -6474,16 +6453,13 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
 
         case GT_ARR_LENGTH:
         case GT_MDARR_LENGTH:
-            if (((this->gtFlags & GTF_IND_NONFAULTING) == 0) && comp->fgAddrCouldBeNull(this->GetArrLengthArrRef()))
+        case GT_MDARR_LOWER_BOUND:
+            if (((this->gtFlags & GTF_IND_NONFAULTING) == 0) && comp->fgAddrCouldBeNull(this->AsArrCommon()->ArrRef()))
             {
                 return ExceptionSetFlags::NullReferenceException;
             }
 
             return ExceptionSetFlags::None;
-
-        case GT_MDARR_LOWER_BOUND:
-            return (((this->gtFlags & GTF_IND_NONFAULTING) == 0) &&
-                    comp->fgAddrCouldBeNull(this->AsMDArrLowerBound()->ArrRef()));
 
         case GT_ARR_ELEM:
             if (comp->fgAddrCouldBeNull(this->AsArrElem()->gtArrObj))
@@ -8472,13 +8448,13 @@ GenTree* Compiler::gtCloneExpr(
                 break;
 
             case GT_MDARR_LENGTH:
-                copy = gtNewMDArrLen(tree->AsMDArrLen()->ArrRef(), tree->AsMDArrLen()->Dim(),
-                                     tree->AsMDArrLen()->Rank(), nullptr);
+                copy =
+                    gtNewMDArrLen(tree->AsMDArr()->ArrRef(), tree->AsMDArr()->Dim(), tree->AsMDArr()->Rank(), nullptr);
                 break;
 
             case GT_MDARR_LOWER_BOUND:
-                copy = gtNewMDArrLowerBound(tree->AsMDArrLowerBound()->ArrRef(), tree->AsMDArrLowerBound()->Dim(),
-                                            tree->AsMDArrLowerBound()->Rank(), nullptr);
+                copy = gtNewMDArrLowerBound(tree->AsMDArr()->ArrRef(), tree->AsMDArr()->Dim(), tree->AsMDArr()->Rank(),
+                                            nullptr);
                 break;
 
             case GT_ARR_INDEX:
@@ -10685,17 +10661,9 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
                 }
             }
 
-            if (tree->OperIs(GT_MDARR_LENGTH))
+            if (tree->OperIs(GT_MDARR_LENGTH, GT_MDARR_LOWER_BOUND))
             {
-                GenTreeMDArrLen* arrLen = tree->AsMDArrLen();
-                unsigned         dim    = arrLen->Dim();
-                printf(" (%u)", dim);
-            }
-            else if (tree->OperIs(GT_MDARR_LOWER_BOUND))
-            {
-                GenTreeMDArrLowerBound* arrOp = tree->AsMDArrLowerBound();
-                unsigned                dim   = arrOp->Dim();
-                printf(" (%u)", dim);
+                printf(" (%u)", tree->AsMDArr()->Dim());
             }
         }
 

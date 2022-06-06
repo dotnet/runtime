@@ -2951,38 +2951,27 @@ void Compiler::fgSimpleLowering()
                 case GT_MDARR_LENGTH:
                 case GT_MDARR_LOWER_BOUND:
                 {
-                    GenTree* arr       = nullptr;
+                    GenTree* arr       = tree->AsArrCommon()->ArrRef();
                     int      lenOffset = 0;
 
                     switch (tree->OperGet())
                     {
                         case GT_ARR_LENGTH:
                         {
-                            GenTreeArrLen* arrLen = tree->AsArrLen();
-                            arr                   = arrLen->ArrRef();
-                            lenOffset             = arrLen->ArrLenOffset();
+                            lenOffset = tree->AsArrLen()->ArrLenOffset();
                             noway_assert(lenOffset == OFFSETOF__CORINFO_Array__length ||
                                          lenOffset == OFFSETOF__CORINFO_String__stringLen);
                             break;
                         }
 
                         case GT_MDARR_LENGTH:
-                        {
-                            GenTreeMDArrLen* arrOp = tree->AsMDArrLen();
-                            arr                    = arrOp->ArrRef();
-                            lenOffset =
-                                (int)eeGetMDArrayLengthOffset(arrOp->AsMDArrLen()->Rank(), arrOp->AsMDArrLen()->Dim());
+                            lenOffset = (int)eeGetMDArrayLengthOffset(tree->AsMDArr()->Rank(), tree->AsMDArr()->Dim());
                             break;
-                        }
 
                         case GT_MDARR_LOWER_BOUND:
-                        {
-                            GenTreeMDArrLowerBound* arrOp = tree->AsMDArrLowerBound();
-                            arr                           = arrOp->ArrRef();
-                            lenOffset = (int)eeGetMDArrayLowerBoundOffset(arrOp->AsMDArrLowerBound()->Rank(),
-                                                                          arrOp->AsMDArrLowerBound()->Dim());
+                            lenOffset =
+                                (int)eeGetMDArrayLowerBoundOffset(tree->AsMDArr()->Rank(), tree->AsMDArr()->Dim());
                             break;
-                        }
 
                         default:
                             unreached();

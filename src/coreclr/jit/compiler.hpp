@@ -1237,9 +1237,9 @@ inline GenTreeArrLen* Compiler::gtNewArrLen(var_types typ, GenTree* arrayOp, int
 // Return Value:
 //    New GT_MDARR_LENGTH node
 //
-inline GenTreeMDArrLen* Compiler::gtNewMDArrLen(GenTree* arrayOp, unsigned dim, unsigned rank, BasicBlock* block)
+inline GenTreeMDArr* Compiler::gtNewMDArrLen(GenTree* arrayOp, unsigned dim, unsigned rank, BasicBlock* block)
 {
-    GenTreeMDArrLen* arrLen = new (this, GT_MDARR_LENGTH) GenTreeMDArrLen(arrayOp, dim, rank);
+    GenTreeMDArr* arrLen = new (this, GT_MDARR_LENGTH) GenTreeMDArr(GT_MDARR_LENGTH, arrayOp, dim, rank);
     gtAnnotateNewArrLen(arrLen, block);
     if (block != nullptr)
     {
@@ -1261,12 +1261,9 @@ inline GenTreeMDArrLen* Compiler::gtNewMDArrLen(GenTree* arrayOp, unsigned dim, 
 // Return Value:
 //    New GT_MDARR_LOWER_BOUND node
 //
-inline GenTreeMDArrLowerBound* Compiler::gtNewMDArrLowerBound(GenTree*    arrayOp,
-                                                              unsigned    dim,
-                                                              unsigned    rank,
-                                                              BasicBlock* block)
+inline GenTreeMDArr* Compiler::gtNewMDArrLowerBound(GenTree* arrayOp, unsigned dim, unsigned rank, BasicBlock* block)
 {
-    GenTreeMDArrLowerBound* arrOp = new (this, GT_MDARR_LOWER_BOUND) GenTreeMDArrLowerBound(arrayOp, dim, rank);
+    GenTreeMDArr* arrOp = new (this, GT_MDARR_LOWER_BOUND) GenTreeMDArr(GT_MDARR_LOWER_BOUND, arrayOp, dim, rank);
 
     static_assert_no_msg(GTF_MDARRLOWERBOUND_NONFAULTING == GTF_IND_NONFAULTING);
     arrOp->SetIndirExceptionFlags(this);

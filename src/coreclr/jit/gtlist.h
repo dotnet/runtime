@@ -91,8 +91,8 @@ GTNODE(STORE_DYN_BLK    , GenTreeStoreDynBlk ,0,GTK_SPECIAL|GTK_NOVALUE)        
 GTNODE(NULLCHECK        , GenTreeIndir       ,0,GTK_UNOP|GTK_NOVALUE)           // Null checks the source
 
 GTNODE(ARR_LENGTH       , GenTreeArrLen      ,0,GTK_UNOP|GTK_EXOP)            // single-dimension (SZ) array length
-GTNODE(MDARR_LENGTH     , GenTreeMDArrLen    ,0,GTK_UNOP|GTK_EXOP)            // multi-dimension (MD) array length of a specific dimension
-GTNODE(MDARR_LOWER_BOUND, GenTreeMDArrLowerBound ,0,GTK_UNOP|GTK_EXOP)        // multi-dimension (MD) array lower bound of a specific dimension
+GTNODE(MDARR_LENGTH     , GenTreeMDArr       ,0,GTK_UNOP|GTK_EXOP)            // multi-dimension (MD) array length of a specific dimension
+GTNODE(MDARR_LOWER_BOUND, GenTreeMDArr       ,0,GTK_UNOP|GTK_EXOP)            // multi-dimension (MD) array lower bound of a specific dimension
 GTNODE(FIELD            , GenTreeField       ,0,GTK_UNOP|GTK_EXOP|DBK_NOTLIR) // Member-field
 GTNODE(ALLOCOBJ         , GenTreeAllocObj    ,0,GTK_UNOP|GTK_EXOP|DBK_NOTLIR) // object allocator
 

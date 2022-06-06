@@ -8857,25 +8857,9 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     case GT_MDARR_LENGTH:
                     case GT_MDARR_LOWER_BOUND:
                     {
-                        VNFunc   mdarrVnf = VNF_Boundary; // An illegal value...
-                        GenTree* arrRef   = nullptr;
-                        unsigned dim      = 0;
-
-                        switch (oper)
-                        {
-                            case GT_MDARR_LENGTH:
-                                mdarrVnf = VNF_MDArrLength;
-                                arrRef   = tree->AsMDArrLen()->ArrRef();
-                                dim      = tree->AsMDArrLen()->Dim();
-                                break;
-                            case GT_MDARR_LOWER_BOUND:
-                                mdarrVnf = VNF_MDArrLowerBound;
-                                arrRef   = tree->AsMDArrLowerBound()->ArrRef();
-                                dim      = tree->AsMDArrLowerBound()->Dim();
-                                break;
-                            default:
-                                unreached();
-                        }
+                        VNFunc   mdarrVnf = (oper == GT_MDARR_LENGTH) ? VNF_MDArrLength : VNF_MDArrLowerBound;
+                        GenTree* arrRef   = tree->AsMDArr()->ArrRef();
+                        unsigned dim      = tree->AsMDArr()->Dim();
 
                         ValueNumPair arrVNP;
                         ValueNumPair arrVNPx;
@@ -10807,11 +10791,8 @@ void Compiler::fgValueNumberAddExceptionSet(GenTree* tree)
 
             case GT_ARR_LENGTH:
             case GT_MDARR_LENGTH:
-                fgValueNumberAddExceptionSetForIndirection(tree, tree->AsArrLen()->ArrRef());
-                break;
-
             case GT_MDARR_LOWER_BOUND:
-                fgValueNumberAddExceptionSetForIndirection(tree, tree->AsMDArrLowerBound()->ArrRef());
+                fgValueNumberAddExceptionSetForIndirection(tree, tree->AsArrCommon()->ArrRef());
                 break;
 
             case GT_ARR_ELEM:

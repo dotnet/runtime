@@ -404,17 +404,17 @@ void Compiler::fgDumpTree(FILE* fgxFile, GenTree* const tree)
     }
     else if (tree->OperIs(GT_MDARR_LENGTH))
     {
-        GenTreeMDArrLen* arrLen = tree->AsMDArrLen();
-        GenTree*         arr    = arrLen->ArrRef();
-        unsigned         dim    = arrLen->Dim();
+        GenTreeMDArr* arrOp = tree->AsMDArr();
+        GenTree*      arr   = arrOp->ArrRef();
+        unsigned      dim   = arrOp->Dim();
         fgDumpTree(fgxFile, arr);
         fprintf(fgxFile, ".GetLength(%u)", dim);
     }
     else if (tree->OperIs(GT_MDARR_LOWER_BOUND))
     {
-        GenTreeMDArrLowerBound* arrOp = tree->AsMDArrLowerBound();
-        GenTree*                arr   = arrOp->ArrRef();
-        unsigned                dim   = arrOp->Dim();
+        GenTreeMDArr* arrOp = tree->AsMDArr();
+        GenTree*      arr   = arrOp->ArrRef();
+        unsigned      dim   = arrOp->Dim();
         fgDumpTree(fgxFile, arr);
         fprintf(fgxFile, ".GetLowerBound(%u)", dim);
     }
