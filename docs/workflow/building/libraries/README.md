@@ -119,7 +119,7 @@ The libraries build contains some native code. This includes shims over libc, op
 - Building and updating the binplace (for e.g. the testhost), which is needed when iterating on native components
 ```bash
 dotnet.sh build src/native/libraries/build-native.proj
-``` 
+```
 
 - The following example shows how you would do an arm cross-compile build
 ```bash
