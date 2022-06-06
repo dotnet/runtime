@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using System.Threading.Tests;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
+using System.Diagnostics.Tracing;
 
 namespace System.Threading.ThreadPools.Tests
 {
@@ -1060,6 +1061,62 @@ namespace System.Threading.ThreadPools.Tests
                         await fileStream.FlushAsync();
                     }
                 }
+            }).Dispose();
+        }
+
+        private class ClrMinMaxThreadsEventListener : EventListener
+        {
+            private const string ClrProviderName = "Microsoft-Windows-DotNETRuntime";
+            private const EventKeywords ThreadingKeyword = (EventKeywords)0x10000;
+            private const int ThreadPoolMinMaxThreadsEventId = 59;
+
+            protected override void OnEventSourceCreated(EventSource eventSource)
+            {
+                if (eventSource.Name == ClrProviderName)
+                {
+                    EnableEvents(eventSource, EventLevel.Informational, ThreadingKeyword);
+                }
+
+                base.OnEventSourceCreated(eventSource);
+            }
+
+            protected override void OnEventWritten(EventWrittenEventArgs eventData)
+            {
+                Console.Error.WriteLine("OnEventWritten");
+                Console.WriteLine("OnEventWritten");
+                Assert.True(false);
+                if (eventData.EventId == ThreadPoolMinMaxThreadsEventId)
+                {
+                    Console.WriteLine($"{eventData.EventName}");
+                    var payloadNames = eventData.PayloadNames.ToList();
+                    var payloads = eventData.Payload.Select(o => o.ToString()).ToList();
+                    var payloadCount = Math.Min(payloadNames.Count, payloads.Count);
+                    Console.WriteLine($"  Payloads: {payloadCount}");
+                    Assert.True(payloadCount >= 0);
+                    for (int i = 0; i < payloadCount; ++i)
+                    {
+                        string payloadValue = payloads[i];
+                    }
+
+                    Console.WriteLine();
+                }
+
+                base.OnEventWritten(eventData);
+            }
+        }
+
+        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
+        public void ThreadPoolMinMaxThreadsEventTest()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                // Assert.True(false);
+                using var el = new ClrMinMaxThreadsEventListener();
+
+                // using var unblock = new ManualResetEvent(false);
+                ThreadPool.SetMinThreads(1, 2);
+
+                // unblock.Set();
             }).Dispose();
         }
 
