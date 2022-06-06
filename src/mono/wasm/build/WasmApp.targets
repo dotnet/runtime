@@ -86,7 +86,7 @@
 
   <PropertyGroup>
     <WasmDedup Condition="'$(WasmDedup)' == ''">false</WasmDedup>
-    <WasmExceptionHandling Condition="'$(WasmExceptionHandling)' == ''">false</WasmExceptionHandling>
+    <WasmExceptionHandling Condition="'$(WasmExceptionHandling)' == ''">true</WasmExceptionHandling>
     <WasmSIMD Condition="'$(WasmSIMD)' == ''">false</WasmSIMD>
 
     <!--<WasmStripAOTAssemblies Condition="'$(AOTMode)' == 'LLVMOnlyInterp'">false</WasmStripAOTAssemblies>-->
