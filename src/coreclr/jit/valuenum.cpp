@@ -2892,8 +2892,11 @@ ValueNum ValueNumStore::EvalFuncForConstantArgs(var_types typ, VNFunc func, Valu
             // If arg0 has a possible exception, it wouldn't have been constant.
             assert(!VNHasExc(arg0VN));
             // Otherwise...
-            assert(arg0VN == VNForNull());         // Only other REF constant.
-            assert(func == VNFunc(GT_ARR_LENGTH)); // Only function we can apply to a REF constant!
+            assert(arg0VN == VNForNull()); // Only other REF constant.
+
+            // Only functions we can apply to a REF constant!
+            assert((func == VNFunc(GT_ARR_LENGTH)) || (func == VNFunc(GT_MDARR_LENGTH)) ||
+                   (func == VNFunc(GT_MDARR_LOWER_BOUND)));
             return VNWithExc(VNForVoid(), VNExcSetSingleton(VNForFunc(TYP_REF, VNF_NullPtrExc, VNForNull())));
         }
         default:
@@ -5645,13 +5648,15 @@ ValueNum ValueNumStore::GetArrForLenVn(ValueNum vn)
     }
 
     VNFuncApp funcAttr;
-    if (GetVNFunc(vn, &funcAttr) && funcAttr.m_func == (VNFunc)GT_ARR_LENGTH)
+    if (GetVNFunc(vn, &funcAttr) &&
+        ((funcAttr.m_func == (VNFunc)GT_ARR_LENGTH) || (funcAttr.m_func == (VNFunc)GT_MDARR_LENGTH)))
     {
         return funcAttr.m_args[0];
     }
     return NoVN;
 }
 
+// TODO-MDArray: support JitNewMdArr, probably with a IsVNNewMDArr() function
 bool ValueNumStore::IsVNNewArr(ValueNum vn, VNFuncApp* funcApp)
 {
     if (vn == NoVN)
@@ -5666,6 +5671,8 @@ bool ValueNumStore::IsVNNewArr(ValueNum vn, VNFuncApp* funcApp)
     return result;
 }
 
+// TODO-MDArray: support array dimension length of a specific dimension for JitNewMdArr, with a GetNewMDArrSize()
+// function.
 int ValueNumStore::GetNewArrSize(ValueNum vn)
 {
     VNFuncApp funcApp;
@@ -5687,7 +5694,8 @@ bool ValueNumStore::IsVNArrLen(ValueNum vn)
         return false;
     }
     VNFuncApp funcAttr;
-    return (GetVNFunc(vn, &funcAttr) && funcAttr.m_func == (VNFunc)GT_ARR_LENGTH);
+    return GetVNFunc(vn, &funcAttr) &&
+           ((funcAttr.m_func == (VNFunc)GT_ARR_LENGTH) || (funcAttr.m_func == (VNFunc)GT_MDARR_LENGTH));
 }
 
 bool ValueNumStore::IsVNCheckedBound(ValueNum vn)
@@ -8756,6 +8764,16 @@ void Compiler::fgValueNumberTree(GenTree* tree)
         {
             fgValueNumberIntrinsic(tree);
         }
+        else if (tree->OperIs(GT_MDARR_LENGTH, GT_MDARR_LOWER_BOUND))
+        {
+            tree->gtVNPair =
+                vnStore->VNPUniqueWithExc(tree->TypeGet(), vnStore->VNPExceptionSet(tree->gtGetOp1()->gtVNPair));
+            // need to distinguish different 'dim' values.
+            // Make VNFuncIsLegal() return false for these, then handle them specially by creating new
+            // VNF_MDArrLength/VNF_MDArrLowerBound VNs?
+            //*****
+            // assert(!"NYI");
+        }
         else // Look up the VNFunc for the node
         {
             VNFunc vnf = GetVNFuncForNode(tree);
@@ -8780,8 +8798,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                             // If we are fetching the array length for an array ref that came from global memory
                             // then for CSE safety we must use the conservative value number for both
                             //
-                            if ((tree->OperGet() == GT_ARR_LENGTH) &&
-                                ((tree->AsOp()->gtOp1->gtFlags & GTF_GLOB_REF) != 0))
+                            if (tree->OperIsArrLength() && ((tree->AsOp()->gtOp1->gtFlags & GTF_GLOB_REF) != 0))
                             {
                                 // use the conservative value number for both when computing the VN for the ARR_LENGTH
                                 op1VNP.SetBoth(op1VNP.GetConservative());
@@ -9227,7 +9244,7 @@ void Compiler::fgValueNumberSimd(GenTreeSIMD* tree)
 
         if (isMemoryLoad)
         {
-            // Currently the only SIMD operation with MemoryLoad sematics is SIMDIntrinsicInitArray
+            // Currently the only SIMD operation with MemoryLoad semantics is SIMDIntrinsicInitArray
             // and it has to be handled specially since it has an optional op2
             //
             assert(tree->GetSIMDIntrinsicId() == SIMDIntrinsicInitArray);
@@ -10758,10 +10775,16 @@ void Compiler::fgValueNumberAddExceptionSet(GenTree* tree)
                 break;
 
             case GT_ARR_LENGTH:
+            case GT_MDARR_LENGTH:
                 fgValueNumberAddExceptionSetForIndirection(tree, tree->AsArrLen()->ArrRef());
                 break;
 
+            case GT_MDARR_LOWER_BOUND:
+                fgValueNumberAddExceptionSetForIndirection(tree, tree->AsMDArrLowerBound()->ArrRef());
+                break;
+
             case GT_ARR_ELEM:
+                assert(!opts.compJitEarlyExpandMDArrays);
                 fgValueNumberAddExceptionSetForIndirection(tree, tree->AsArrElem()->gtArrObj);
                 break;
 

@@ -3231,7 +3231,7 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
     GenTree* arrayLocalNode = impStackTop(1).val;
 
     //
-    // Verify that the field token is known and valid.  Note that It's also
+    // Verify that the field token is known and valid.  Note that it's also
     // possible for the token to come from reflection, in which case we cannot do
     // the optimization and must therefore revert to calling the helper.  You can
     // see an example of this in bvt\DynIL\initarray2.exe (in Main).
@@ -6070,29 +6070,46 @@ GenTree* Compiler::impUnsupportedNamedIntrinsic(unsigned              helper,
     }
 }
 
-/*****************************************************************************/
-
+//------------------------------------------------------------------------
+// impArrayAccessIntrinsic: try to replace a multi-dimensional array intrinsics with IR nodes.
+//
+// Arguments:
+//    clsHnd        - handle for the intrinsic method's class
+//    sig           - signature of the intrinsic method
+//    memberRef     - the token for the intrinsic method
+//    readonlyCall  - true if call has a readonly prefix
+//    intrinsicName - the intrinsic to expand: one of NI_Array_Address, NI_Array_Get, NI_Array_Set
+//
+// Return Value:
+//    The intrinsic expansion, or nullptr if the expansion was not done (and a function call should be made instead).
+//
 GenTree* Compiler::impArrayAccessIntrinsic(
     CORINFO_CLASS_HANDLE clsHnd, CORINFO_SIG_INFO* sig, int memberRef, bool readonlyCall, NamedIntrinsic intrinsicName)
 {
-    /* If we are generating SMALL_CODE, we don't want to use intrinsics for
-       the following, as it generates fatter code.
-    */
+    assert((intrinsicName == NI_Array_Address) || (intrinsicName == NI_Array_Get) || (intrinsicName == NI_Array_Set));
 
+    // If we are generating SMALL_CODE, we don't want to use intrinsics, as it generates fatter code.
     if (compCodeOpt() == SMALL_CODE)
     {
+        JITDUMP("impArrayAccessIntrinsic: rejecting array intrinsic due to SMALL_CODE\n");
         return nullptr;
     }
 
-    /* These intrinsics generate fatter (but faster) code and are only
-       done if we don't need SMALL_CODE */
-
     unsigned rank = (intrinsicName == NI_Array_Set) ? (sig->numArgs - 1) : sig->numArgs;
 
-    // The rank 1 case is special because it has to handle two array formats
-    // we will simply not do that case
-    if (rank > GT_ARR_MAX_RANK || rank <= 1)
+    // Handle a maximum rank of GT_ARR_MAX_RANK (3). This is an implementation choice (larger ranks are expected
+    // to be rare) and could be increased.
+    if (rank > GT_ARR_MAX_RANK)
     {
+        JITDUMP("impArrayAccessIntrinsic: rejecting array intrinsic because rank (%d) > GT_ARR_MAX_RANK (%d)\n", rank,
+                GT_ARR_MAX_RANK);
+        return nullptr;
+    }
+
+    // The rank 1 case is special because it has to handle two array formats. We will simply not do that case.
+    if (rank <= 1)
+    {
+        JITDUMP("impArrayAccessIntrinsic: rejecting array intrinsic because rank (%d) <= 1\n", rank);
         return nullptr;
     }
 
@@ -6101,7 +6118,7 @@ GenTree* Compiler::impArrayAccessIntrinsic(
 
     // For the ref case, we will only be able to inline if the types match
     // (verifier checks for this, we don't care for the nonverified case and the
-    // type is final (so we don't need to do the cast)
+    // type is final (so we don't need to do the cast))
     if ((intrinsicName != NI_Array_Get) && !readonlyCall && varTypeIsGC(elemType))
     {
         // Get the call site signature
@@ -6136,6 +6153,8 @@ GenTree* Compiler::impArrayAccessIntrinsic(
         // if it's not final, we can't do the optimization
         if (!(info.compCompHnd->getClassAttribs(actualElemClsHnd) & CORINFO_FLG_FINAL))
         {
+            JITDUMP("impArrayAccessIntrinsic: rejecting array intrinsic because actualElemClsHnd (%p) is not final\n",
+                    dspPtr(actualElemClsHnd));
             return nullptr;
         }
     }
@@ -6144,7 +6163,6 @@ GenTree* Compiler::impArrayAccessIntrinsic(
     if (elemType == TYP_STRUCT)
     {
         assert(arrElemClsHnd);
-
         arrayElemSize = info.compCompHnd->getClassSize(arrElemClsHnd);
     }
     else
@@ -6156,6 +6174,8 @@ GenTree* Compiler::impArrayAccessIntrinsic(
     {
         // arrayElemSize would be truncated as an unsigned char.
         // This means the array element is too large. Don't do the optimization.
+        JITDUMP("impArrayAccessIntrinsic: rejecting array intrinsic because arrayElemSize (%d) is too large\n",
+                arrayElemSize);
         return nullptr;
     }
 
@@ -6164,32 +6184,50 @@ GenTree* Compiler::impArrayAccessIntrinsic(
     if (intrinsicName == NI_Array_Set)
     {
         // Assignment of a struct is more work, and there are more gets than sets.
+        // TODO-CQ: support SET (`a[i,j,k] = s`) for struct element arrays.
         if (elemType == TYP_STRUCT)
         {
+            JITDUMP("impArrayAccessIntrinsic: rejecting SET array intrinsic because elemType is TYP_STRUCT"
+                    " (implementation limitation)\n",
+                    arrayElemSize);
             return nullptr;
         }
 
         val = impPopStack().val;
-        assert(genActualType(elemType) == genActualType(val->gtType) ||
+        assert((genActualType(elemType) == genActualType(val->gtType)) ||
                (elemType == TYP_FLOAT && val->gtType == TYP_DOUBLE) ||
                (elemType == TYP_INT && val->gtType == TYP_BYREF) ||
                (elemType == TYP_DOUBLE && val->gtType == TYP_FLOAT));
     }
+
+    // Here, we're committed to expanding the intrinsic and creating a GT_ARR_ELEM node.
+    optMethodFlags |= OMF_HAS_MDARRAYREF;
+    compCurBB->bbFlags |= BBF_HAS_MDARRAYREF;
 
     noway_assert((unsigned char)GT_ARR_MAX_RANK == GT_ARR_MAX_RANK);
 
     GenTree* inds[GT_ARR_MAX_RANK];
     for (unsigned k = rank; k > 0; k--)
     {
-        inds[k - 1] = impPopStack().val;
+        // The indices should be converted to `int` type, as they would be if the intrinsic was not expanded.
+        GenTree* argVal = impPopStack().val;
+#ifdef DEBUG
+        if (impInlineRoot()->opts.compJitEarlyExpandMDArrays)
+        {
+            // TODO-MDArray: this is only enabled when JitEarlyExpandMDArrays is set because it causes small
+            // asm diffs (only in some test cases) otherwise. The GT_ARR_ELEM lowering code "accidentally" does
+            // this cast, but the new code requires it to be explicit.
+            argVal = impImplicitIorI4Cast(argVal, TYP_INT);
+        }
+#endif
+        inds[k - 1] = argVal;
     }
 
     GenTree* arr = impPopStack().val;
     assert(arr->gtType == TYP_REF);
 
-    GenTree* arrElem =
-        new (this, GT_ARR_ELEM) GenTreeArrElem(TYP_BYREF, arr, static_cast<unsigned char>(rank),
-                                               static_cast<unsigned char>(arrayElemSize), elemType, &inds[0]);
+    GenTree* arrElem = new (this, GT_ARR_ELEM) GenTreeArrElem(TYP_BYREF, arr, static_cast<unsigned char>(rank),
+                                                              static_cast<unsigned char>(arrayElemSize), &inds[0]);
 
     if (intrinsicName != NI_Array_Address)
     {
@@ -7979,7 +8017,7 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
 }
 
 //------------------------------------------------------------------------
-// impImportNewObjArray: Build and import `new` of multi-dimmensional array
+// impImportNewObjArray: Build and import `new` of multi-dimensional array
 //
 // Arguments:
 //    pResolvedToken - The CORINFO_RESOLVED_TOKEN that has been initialized
@@ -7994,7 +8032,7 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
 // Notes:
 //    Multi-dimensional array constructors are imported as calls to a JIT
 //    helper, not as regular calls.
-
+//
 void Compiler::impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CALL_INFO* pCallInfo)
 {
     GenTree* classHandle = impParentClassTokenToHandle(pResolvedToken);
@@ -8031,7 +8069,7 @@ void Compiler::impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORI
     // The arguments of the CORINFO_HELP_NEW_MDARR helper are:
     //  - Array class handle
     //  - Number of dimension arguments
-    //  - Pointer to block of int32 dimensions - address  of lvaNewObjArrayArgs temp.
+    //  - Pointer to block of int32 dimensions: address of lvaNewObjArrayArgs temp.
     //
 
     node = gtNewLclvNode(lvaNewObjArrayArgs, TYP_BLK);
@@ -8057,8 +8095,8 @@ void Compiler::impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORI
 
     node->AsCall()->compileTimeHelperArgumentHandle = (CORINFO_GENERIC_HANDLE)pResolvedToken->hClass;
 
-    // Remember that this basic block contains 'new' of a md array
-    compCurBB->bbFlags |= BBF_HAS_NEWARRAY;
+    // Remember that this function contains 'new' of a MD array.
+    optMethodFlags |= OMF_HAS_MDNEWARRAY;
 
     impPushOnStack(node, typeInfo(TI_REF, pResolvedToken->hClass));
 }
@@ -13571,7 +13609,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     {
                         lclTyp = JITtype2varType(cit);
                     }
-                    goto ARR_LD_POST_VERIFY;
+                    goto ARR_LD;
                 }
 
                 // Similarly, if its a readonly access, we can do a simple address-of
@@ -13579,7 +13617,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 if (prefixFlags & PREFIX_READONLY)
                 {
                     lclTyp = TYP_REF;
-                    goto ARR_LD_POST_VERIFY;
+                    goto ARR_LD;
                 }
 
                 // Otherwise we need the full helper function with run-time type check
@@ -13623,7 +13661,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     tiRetVal           = verMakeTypeInfo(ldelemClsHnd); // precise type always needed for struct
                     tiRetVal.NormaliseForStack();
                 }
-                goto ARR_LD_POST_VERIFY;
+                goto ARR_LD;
 
             case CEE_LDELEM_I1:
                 lclTyp = TYP_BYTE;
@@ -13664,7 +13702,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 goto ARR_LD;
 
             ARR_LD:
-            ARR_LD_POST_VERIFY:
 
                 /* Pull the index value and array address */
                 op2 = impPopStack().val;
@@ -13768,7 +13805,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 {
                     CorInfoType jitTyp = info.compCompHnd->asCorInfoType(stelemClsHnd);
                     lclTyp             = JITtype2varType(jitTyp);
-                    goto ARR_ST_POST_VERIFY;
+                    goto ARR_ST;
                 }
 
             case CEE_STELEM_REF:
@@ -13785,7 +13822,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     if (impCanSkipCovariantStoreCheck(value, array))
                     {
                         lclTyp = TYP_REF;
-                        goto ARR_ST_POST_VERIFY;
+                        goto ARR_ST;
                     }
                 }
 
@@ -13819,7 +13856,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 goto ARR_ST;
 
             ARR_ST:
-            ARR_ST_POST_VERIFY:
+
                 /* The strict order of evaluation is LHS-operands, RHS-operands,
                    range-check, and then assignment. However, codegen currently
                    does the range-check before evaluation the RHS-operands. So to
@@ -15298,14 +15335,14 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // Insert the security callout before any actual code is generated
                 impHandleAccessAllowed(callInfo.accessAllowed, &callInfo.callsiteCalloutHelper);
 
-                // There are three different cases for new
-                // Object size is variable (depends on arguments)
+                // There are three different cases for new.
+                // Object size is variable (depends on arguments).
                 //      1) Object is an array (arrays treated specially by the EE)
                 //      2) Object is some other variable sized object (e.g. String)
                 //      3) Class Size can be determined beforehand (normal case)
-                // In the first case, we need to call a NEWOBJ helper (multinewarray)
-                // in the second case we call the constructor with a '0' this pointer
-                // In the third case we alloc the memory, then call the constuctor
+                // In the first case, we need to call a NEWOBJ helper (multinewarray).
+                // In the second case we call the constructor with a '0' this pointer.
+                // In the third case we alloc the memory, then call the constuctor.
 
                 clsFlags = callInfo.classFlags;
                 if (clsFlags & CORINFO_FLG_ARRAY)
@@ -16398,9 +16435,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 op1->AsCall()->compileTimeHelperArgumentHandle = (CORINFO_GENERIC_HANDLE)resolvedToken.hClass;
 
-                /* Remember that this basic block contains 'new' of an sd array */
-
-                block->bbFlags |= BBF_HAS_NEWARRAY;
+                // Remember that this function contains 'new' of an SD array.
                 optMethodFlags |= OMF_HAS_NEWARRAY;
 
                 /* Push the result of the call on the stack */

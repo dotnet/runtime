@@ -1911,6 +1911,14 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForArrOffset(treeNode->AsArrOffs());
             break;
 
+        case GT_MDARR_LENGTH:
+            genCodeForMDArrLen(treeNode->AsMDArrLen());
+            break;
+
+        case GT_MDARR_LOWER_BOUND:
+            genCodeForMDArrLowerBound(treeNode->AsMDArrLowerBound());
+            break;
+
         case GT_CLS_VAR_ADDR:
             emit->emitIns_R_C(INS_lea, EA_PTRSIZE, targetReg, treeNode->AsClsVar()->gtClsVarHnd, 0);
             genProduceReg(treeNode);
@@ -4225,9 +4233,8 @@ void CodeGen::genCodeForArrIndex(GenTreeArrIndex* arrIndex)
     regNumber indexReg = genConsumeReg(indexNode);
     regNumber tgtReg   = arrIndex->GetRegNum();
 
-    unsigned  dim      = arrIndex->gtCurrDim;
-    unsigned  rank     = arrIndex->gtArrRank;
-    var_types elemType = arrIndex->gtArrElemType;
+    unsigned dim  = arrIndex->gtCurrDim;
+    unsigned rank = arrIndex->gtArrRank;
 
     noway_assert(tgtReg != REG_NA);
 
@@ -4268,9 +4275,8 @@ void CodeGen::genCodeForArrOffset(GenTreeArrOffs* arrOffset)
     regNumber tgtReg = arrOffset->GetRegNum();
     assert(tgtReg != REG_NA);
 
-    unsigned  dim      = arrOffset->gtCurrDim;
-    unsigned  rank     = arrOffset->gtArrRank;
-    var_types elemType = arrOffset->gtArrElemType;
+    unsigned dim  = arrOffset->gtCurrDim;
+    unsigned rank = arrOffset->gtArrRank;
 
     // First, consume the operands in the correct order.
     regNumber offsetReg = REG_NA;
@@ -4329,6 +4335,48 @@ void CodeGen::genCodeForArrOffset(GenTreeArrOffs* arrOffset)
         inst_Mov(TYP_INT, tgtReg, indexReg, /* canSkip */ true);
     }
     genProduceReg(arrOffset);
+}
+
+//------------------------------------------------------------------------
+// genCodeForMDArrLength: Generates code to load the length of multi-dimensional array
+// for a specified dimension.
+//
+// Arguments:
+//    tree - the node for which we're generating code
+//
+void CodeGen::genCodeForMDArrLen(GenTreeMDArrLen* tree)
+{
+    GenTree*  arrObj = tree->ArrRef();
+    regNumber arrReg = genConsumeReg(arrObj);
+    regNumber tgtReg = tree->GetRegNum();
+    unsigned  dim    = tree->Dim();
+    unsigned  rank   = tree->Rank();
+
+    noway_assert(tgtReg != REG_NA);
+    GetEmitter()->emitIns_R_AR(INS_mov, emitActualTypeSize(TYP_INT), tgtReg, arrReg,
+                               compiler->eeGetMDArrayLengthOffset(rank, dim));
+    genProduceReg(tree);
+}
+
+//------------------------------------------------------------------------
+// genCodeForMDArrLowerBound: Generates code to load the lower bound of a multi-dimensional array
+// for a specified dimension.
+//
+// Arguments:
+//    tree - the node for which we're generating code
+//
+void CodeGen::genCodeForMDArrLowerBound(GenTreeMDArrLowerBound* tree)
+{
+    GenTree*  arrObj = tree->ArrRef();
+    regNumber arrReg = genConsumeReg(arrObj);
+    regNumber tgtReg = tree->GetRegNum();
+    unsigned  dim    = tree->Dim();
+    unsigned  rank   = tree->Rank();
+
+    noway_assert(tgtReg != REG_NA);
+    GetEmitter()->emitIns_R_AR(INS_mov, emitActualTypeSize(TYP_INT), tgtReg, arrReg,
+                               compiler->eeGetMDArrayLowerBoundOffset(rank, dim));
+    genProduceReg(tree);
 }
 
 instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)

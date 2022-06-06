@@ -838,6 +838,7 @@ bool Compiler::optValnumCSE_Locate()
                     noway_assert(((unsigned)tree->gtCSEnum) == CSEindex);
                 }
 
+                // TODO-MDArray: Support GT_MDARR_LENGTH here?
                 if (IS_CSE_INDEX(CSEindex) && (tree->OperGet() == GT_ARR_LENGTH))
                 {
                     stmtHasArrLenCandidate = true;
@@ -3582,6 +3583,8 @@ bool Compiler::optIsCSEcandidate(GenTree* tree)
 
         case GT_ARR_ELEM:
         case GT_ARR_LENGTH:
+        case GT_MDARR_LENGTH:
+        case GT_MDARR_LOWER_BOUND:
         case GT_LCL_FLD:
             return true;
 

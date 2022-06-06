@@ -2589,7 +2589,13 @@ public:
 
     GenTree* gtNewIndexRef(var_types typ, GenTree* arrayOp, GenTree* indexOp);
 
+    void gtAnnotateNewArrLen(GenTree* arrLen, BasicBlock* block);
+
     GenTreeArrLen* gtNewArrLen(var_types typ, GenTree* arrayOp, int lenOffset, BasicBlock* block);
+
+    GenTreeMDArrLen* gtNewMDArrLen(GenTree* arrayOp, unsigned dim, unsigned rank, BasicBlock* block);
+
+    GenTreeMDArrLowerBound* gtNewMDArrLowerBound(GenTree* arrayOp, unsigned dim, unsigned rank, BasicBlock* block);
 
     GenTreeIndir* gtNewIndir(var_types typ, GenTree* addr);
 
@@ -4529,6 +4535,9 @@ public:
     void fgMergeBlockReturn(BasicBlock* block);
 
     bool fgMorphBlockStmt(BasicBlock* block, Statement* stmt DEBUGARG(const char* msg));
+
+    bool fgMorphArrayOpsStmt(BasicBlock* block, Statement* stmt);
+    PhaseStatus fgMorphArrayOps();
 
     void fgSetOptions();
 
@@ -6750,7 +6759,7 @@ public:
         }
     };
 
-#define OMF_HAS_NEWARRAY 0x00000001         // Method contains 'new' of an array
+#define OMF_HAS_NEWARRAY 0x00000001         // Method contains 'new' of an SD array
 #define OMF_HAS_NEWOBJ 0x00000002           // Method contains 'new' of an object type.
 #define OMF_HAS_ARRAYREF 0x00000004         // Method contains array element loads or stores.
 #define OMF_HAS_NULLCHECK 0x00000008        // Method contains null check.
@@ -6763,6 +6772,8 @@ public:
 #define OMF_HAS_FROZEN_STRING 0x00000400 // Method has a frozen string (REF constant int), currently only on NativeAOT.
 #define OMF_HAS_PARTIAL_COMPILATION_PATCHPOINT 0x00000800 // Method contains partial compilation patchpoints
 #define OMF_HAS_TAILCALL_SUCCESSOR 0x00001000             // Method has potential tail call in a non BBJ_RETURN block
+#define OMF_HAS_MDNEWARRAY 0x00002000                     // Method contains 'new' of an MD array
+#define OMF_HAS_MDARRAYREF 0x00004000 // Method contains multi-dimensional instrinsic array element loads or stores.
 
     bool doesMethodHaveFatPointer()
     {
@@ -9229,6 +9240,12 @@ public:
         static const bool compUseSoftFP = false;
 #endif // ARM_SOFTFP
 #endif // CONFIGURABLE_ARM_ABI
+
+#ifdef DEBUG
+        // Use early multi-dimensional array operator expansion (expand after loop optimizations; before lowering).
+        bool compJitEarlyExpandMDArrays;
+#endif
+
     } opts;
 
     static bool                s_pAltJitExcludeAssembliesListInitialized;
@@ -10722,6 +10739,8 @@ public:
             case GT_COPY:
             case GT_RELOAD:
             case GT_ARR_LENGTH:
+            case GT_MDARR_LENGTH:
+            case GT_MDARR_LOWER_BOUND:
             case GT_CAST:
             case GT_BITCAST:
             case GT_CKFINITE:

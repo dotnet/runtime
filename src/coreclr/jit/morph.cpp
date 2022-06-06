@@ -11173,7 +11173,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
 DONE_MORPHING_CHILDREN:
 #endif // !TARGET_64BIT
 
-    if (tree->OperIsIndirOrArrLength())
+    if (tree->OperIsIndirOrArrMetaData())
     {
         tree->SetIndirExceptionFlags(this);
     }
@@ -17784,4 +17784,290 @@ GenTree* Compiler::fgMorphReduceAddOps(GenTree* tree)
     DEBUG_DESTROY_NODE(tree);
 
     return morphed;
+}
+
+//------------------------------------------------------------------------
+// fgMorphArrayOpsStmt: Tree walk a statement to morph GT_ARR_ELEM.
+//
+// Arguments:
+//      block - BasicBlock where the statement lives
+//      stmt - statement to walk
+//
+// Returns:
+//      True if anything changed, false if the IR was unchanged.
+//
+bool Compiler::fgMorphArrayOpsStmt(BasicBlock* block, Statement* stmt)
+{
+    class MorphMDArrayVisitor final : public GenTreeVisitor<MorphMDArrayVisitor>
+    {
+    public:
+        enum
+        {
+            DoPostOrder = true
+        };
+
+        MorphMDArrayVisitor(Compiler* compiler, BasicBlock* block)
+            : GenTreeVisitor<MorphMDArrayVisitor>(compiler), m_changed(false), m_block(block)
+        {
+        }
+
+        bool Changed() const
+        {
+            return m_changed;
+        }
+
+        fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTree* const node = *use;
+
+            if (!node->OperIs(GT_ARR_ELEM))
+            {
+                return Compiler::WALK_CONTINUE;
+            }
+
+            GenTreeArrElem* const arrElem = node->AsArrElem();
+
+            JITDUMP("Morphing GT_ARR_ELEM [%06u] in " FMT_BB " of '%s'\n", dspTreeID(arrElem), m_block->bbNum,
+                    m_compiler->info.compFullName);
+            DISPTREE(arrElem);
+
+            // impArrayAccessIntrinsic() ensures the following.
+            assert((2 <= arrElem->gtArrRank) && (arrElem->gtArrRank <= GT_ARR_MAX_RANK));
+            assert(arrElem->gtArrObj->TypeIs(TYP_REF));
+            assert(arrElem->TypeIs(TYP_BYREF));
+
+            for (unsigned i = 0; i < arrElem->gtArrRank; i++)
+            {
+                assert(arrElem->gtArrInds[i] != nullptr);
+
+                // We cast the index operands to TYP_INT in the importer.
+                // Note that the offset calculcation needs to be TYP_I_IMPL, as multiplying the linearized index
+                // by the array element scale might overflow (although does .NET support array objects larger than
+                // 2GB in size?).
+                assert(genActualType(arrElem->gtArrInds[i]->TypeGet()) == TYP_INT);
+            }
+
+            // The order of evaluation of a[i,j,k] is: a, i, j, k. That is, if any of the i, j, k throw an
+            // exception, it needs to happen before accessing `a`. For example, `a` could be null, but `i`
+            // could be an expresssion throwing an exception, and that exception needs to be thrown before
+            // indirecting using `a` (such as reading a dimension length or lower bound).
+            //
+            // First, we need to make temp copies of the index expressions that have side-effects. We
+            // always make a copy of the array object (below) so we can multi-use it.
+            //
+            GenTree* idxToUse[GT_ARR_MAX_RANK];
+            unsigned idxToCopy[GT_ARR_MAX_RANK];
+            bool     anyIdxWithSideEffects = false;
+            for (unsigned i = 0; i < arrElem->gtArrRank; i++)
+            {
+                GenTree* idx = arrElem->gtArrInds[i];
+                if ((idx->gtFlags & GTF_ALL_EFFECT) == 0)
+                {
+                    // No side-effect; just use it.
+                    idxToUse[i]  = idx;
+                    idxToCopy[i] = BAD_VAR_NUM;
+                }
+                else
+                {
+                    // Side-effect; create a temp.
+                    unsigned newIdxLcl    = m_compiler->lvaGrabTemp(true DEBUGARG("MD array index copy"));
+                    GenTree* newIdx       = m_compiler->gtNewLclvNode(newIdxLcl, idx->TypeGet());
+                    idxToUse[i]           = newIdx;
+                    idxToCopy[i]          = newIdxLcl;
+                    anyIdxWithSideEffects = true;
+                }
+            }
+
+            // `newArrLcl` is set to the lclvar with a copy of the array object, if needed. The creation/copy of the
+            // array object to this lcl is done as a top-level comma if needed.
+            unsigned arrLcl    = BAD_VAR_NUM;
+            unsigned newArrLcl = BAD_VAR_NUM;
+            GenTree* arrObj    = arrElem->gtArrObj;
+            unsigned rank      = arrElem->gtArrRank;
+
+            // We are going to multiply reference the array object; create a new local var if necessary.
+            if (arrObj->OperIs(GT_LCL_VAR))
+            {
+                arrLcl = arrObj->AsLclVar()->GetLclNum();
+            }
+            else
+            {
+                arrLcl = newArrLcl = m_compiler->lvaGrabTemp(true DEBUGARG("MD array copy"));
+            }
+
+            GenTree* fullTree = nullptr;
+
+            // Work from outer-to-inner rank (i.e., slowest-changing to fastest-changing index), building up the offset
+            // tree.
+            for (unsigned i = 0; i < arrElem->gtArrRank; i++)
+            {
+                GenTree* idx = idxToUse[i];
+                assert((idx->gtFlags & GTF_ALL_EFFECT) == 0); // We should have taken care of side effects earlier.
+
+                GenTreeMDArrLowerBound* const mdArrLowerBound =
+                    m_compiler->gtNewMDArrLowerBound(m_compiler->gtNewLclvNode(arrLcl, TYP_REF), i, rank, m_block);
+                unsigned       effIdxLcl = m_compiler->lvaGrabTemp(true DEBUGARG("MD array effective index"));
+                GenTree* const effIndex  = m_compiler->gtNewOperNode(GT_SUB, TYP_INT, idx, mdArrLowerBound);
+                GenTree* const asgNode =
+                    m_compiler->gtNewOperNode(GT_ASG, TYP_INT, m_compiler->gtNewLclvNode(effIdxLcl, TYP_INT), effIndex);
+                GenTreeMDArrLen* const mdArrLength =
+                    m_compiler->gtNewMDArrLen(m_compiler->gtNewLclvNode(arrLcl, TYP_REF), i, rank, m_block);
+                GenTreeBoundsChk* const arrBndsChk = new (m_compiler, GT_BOUNDS_CHECK)
+                    GenTreeBoundsChk(m_compiler->gtNewLclvNode(effIdxLcl, TYP_INT), mdArrLength, SCK_RNGCHK_FAIL);
+                GenTree* const boundsCheckComma =
+                    m_compiler->gtNewOperNode(GT_COMMA, TYP_INT, arrBndsChk,
+                                              m_compiler->gtNewLclvNode(effIdxLcl, TYP_INT));
+                GenTree* const idxComma = m_compiler->gtNewOperNode(GT_COMMA, TYP_INT, asgNode, boundsCheckComma);
+
+                // If it's not the first index, accumulate with the previously created calculation.
+                if (i > 0)
+                {
+                    assert(fullTree != nullptr);
+
+                    GenTreeMDArrLen* const mdArrLengthScale =
+                        m_compiler->gtNewMDArrLen(m_compiler->gtNewLclvNode(arrLcl, TYP_REF), i, rank, m_block);
+                    GenTree* const scale    = m_compiler->gtNewOperNode(GT_MUL, TYP_INT, fullTree, mdArrLengthScale);
+                    GenTree* const effIndex = m_compiler->gtNewOperNode(GT_ADD, TYP_INT, scale, idxComma);
+
+                    fullTree = effIndex;
+                }
+                else
+                {
+                    fullTree = idxComma;
+                }
+            }
+
+#ifdef TARGET_64BIT
+            // Widen the linearized index on 64-bit targets; subsequent math will be done in TYP_I_IMPL.
+            assert(fullTree->TypeIs(TYP_INT));
+            fullTree = m_compiler->gtNewCastNode(TYP_I_IMPL, fullTree, true, TYP_I_IMPL);
+#endif // TARGET_64BIT
+
+            // Now scale by element size and add offset from array object to array data base.
+
+            unsigned       elemScale  = arrElem->gtArrElemSize;
+            unsigned       dataOffset = m_compiler->eeGetMDArrayDataOffset(arrElem->gtArrRank);
+            GenTree* const scale =
+                m_compiler->gtNewOperNode(GT_MUL, TYP_I_IMPL, fullTree,
+                                          m_compiler->gtNewIconNode(static_cast<ssize_t>(elemScale), TYP_I_IMPL));
+            GenTree* const scalePlusOffset =
+                m_compiler->gtNewOperNode(GT_ADD, TYP_I_IMPL, scale,
+                                          m_compiler->gtNewIconNode(static_cast<ssize_t>(dataOffset), TYP_I_IMPL));
+            GenTree* fullExpansion = m_compiler->gtNewOperNode(GT_ADD, TYP_BYREF, scalePlusOffset,
+                                                               m_compiler->gtNewLclvNode(arrLcl, TYP_REF));
+
+            // Add copies of the index expressions with side effects. Add them in reverse order, so the first index
+            // ends up at the top of the tree (so, first in execution order).
+            if (anyIdxWithSideEffects)
+            {
+                for (unsigned i = arrElem->gtArrRank; i > 0; i--)
+                {
+                    if (idxToCopy[i - 1] != BAD_VAR_NUM)
+                    {
+                        GenTree* const idxLclAsg =
+                            m_compiler->gtNewTempAssign(idxToCopy[i - 1], arrElem->gtArrInds[i - 1]);
+                        fullExpansion =
+                            m_compiler->gtNewOperNode(GT_COMMA, fullExpansion->TypeGet(), idxLclAsg, fullExpansion);
+                    }
+                }
+            }
+
+            // If we needed to create a new local for the array object, copy that before everything.
+            if (newArrLcl != BAD_VAR_NUM)
+            {
+                GenTree* const arrLclAsg = m_compiler->gtNewTempAssign(newArrLcl, arrObj);
+                fullExpansion = m_compiler->gtNewOperNode(GT_COMMA, fullExpansion->TypeGet(), arrLclAsg, fullExpansion);
+            }
+
+            // TODO: morph here? Or morph at the statement level if there are differences?
+
+            JITDUMP("fgMorphArrayOpsStmt (before remorph):\n");
+            DISPTREE(fullExpansion);
+
+            GenTree* morphedTree = m_compiler->fgMorphTree(fullExpansion);
+            DBEXEC(morphedTree != fullExpansion, morphedTree->gtDebugFlags &= ~GTF_DEBUG_NODE_MORPHED);
+
+            JITDUMP("fgMorphArrayOpsStmt (after remorph):\n");
+            DISPTREE(morphedTree);
+
+            *use = morphedTree;
+            JITDUMP("Morphing GT_ARR_ELEM (after)\n");
+            DISPTREE(*use);
+            m_changed = true;
+
+            return fgWalkResult::WALK_CONTINUE;
+        }
+
+    private:
+        bool        m_changed;
+        BasicBlock* m_block;
+    };
+
+    MorphMDArrayVisitor morphMDArrayVisitor(this, block);
+    morphMDArrayVisitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
+    return morphMDArrayVisitor.Changed();
+}
+
+//------------------------------------------------------------------------
+// fgMorphArrayOps: Morph multi-dimensional array operations in this method.
+//
+// GT_ARR_ELEM nodes are morphed to appropriate trees.
+//
+// TODO: include comments for look of trees, e.g., from https://github.com/dotnet/runtime/issues/60785.
+//
+// Returns:
+//   suitable phase status
+//
+PhaseStatus Compiler::fgMorphArrayOps()
+{
+#ifdef DEBUG
+    if (!opts.compJitEarlyExpandMDArrays)
+    {
+        if (verbose)
+        {
+            printf("Early expansion of MD arrays disabled\n");
+        }
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+#endif
+
+    if ((optMethodFlags & OMF_HAS_MDARRAYREF) == 0)
+    {
+        JITDUMP("No multi-dimensional array references in the function\n");
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    bool changed = false;
+
+    for (BasicBlock* const block : Blocks())
+    {
+        if ((block->bbFlags & BBF_HAS_MDARRAYREF) == 0)
+        {
+            // No MD array references in this block
+            continue;
+        }
+
+        // Publish current block (needed for various morphing functions).
+        compCurBB = block;
+
+        for (Statement* const stmt : block->Statements())
+        {
+            if (fgMorphArrayOpsStmt(block, stmt))
+            {
+                changed = true;
+
+                // REVIEW: morph again? e.g., to propagate GTF_ASG (and other?) bits up the tree?
+
+                GenTree* tree        = stmt->GetRootNode();
+                GenTree* morphedTree = fgMorphTree(tree);
+
+                JITDUMP("fgMorphArrayOps (after remorph):\n");
+                DISPTREE(morphedTree);
+
+                stmt->SetRootNode(morphedTree);
+            }
+        }
+    }
+
+    return changed ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }

@@ -2839,6 +2839,8 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.compLongAddress = false;
     opts.optRepeat       = false;
 
+    opts.compJitEarlyExpandMDArrays = true; // TESTING ONLY
+
 #ifdef LATE_DISASM
     opts.doLateDisasm = false;
 #endif // LATE_DISASM
@@ -2991,6 +2993,12 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         if (JitConfig.JitOptRepeat().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
         {
             opts.optRepeat = true;
+        }
+
+        if (JitConfig.JitEarlyExpandMDArrays().contains(info.compMethodName, info.compClassName,
+                                                        &info.compMethodInfo->args))
+        {
+            opts.compJitEarlyExpandMDArrays = true;
         }
     }
 
@@ -4698,6 +4706,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Figure out what locals are address-taken.
     //
     DoPhase(this, PHASE_STR_ADRLCL, &Compiler::fgMarkAddressExposedLocals);
+
     // Run a simple forward substitution pass.
     //
     DoPhase(this, PHASE_FWD_SUB, &Compiler::fgForwardSub);
@@ -4829,6 +4838,12 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 #ifdef DEBUG
     fgDebugCheckLinks();
 #endif
+
+    // Morph multi-dimensional array operations.
+    // (Consider deferring all array operation morphing, including single-dimensional array ops,
+    // from global morph to here, so cloning doesn't have to deal with morphed forms.)
+    //
+    DoPhase(this, PHASE_MORPH_MDARR, &Compiler::fgMorphArrayOps);
 
     // Create the variable table (and compute variable ref counts)
     //
@@ -9812,7 +9827,7 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
 #endif
         if (tree->gtFlags & GTF_IND_NONFAULTING)
         {
-            if (tree->OperIsIndirOrArrLength())
+            if (tree->OperIsIndirOrArrMetaData())
             {
                 chars += printf("[IND_NONFAULTING]");
             }

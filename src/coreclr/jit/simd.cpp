@@ -1755,7 +1755,6 @@ GenTree* Compiler::createAddressNodeForSIMDInit(GenTree* tree, unsigned simdSize
     }
     else if (tree->OperGet() == GT_INDEX)
     {
-
         GenTree* index = tree->AsIndex()->Index();
         assert(index->OperGet() == GT_CNS_INT);
 
