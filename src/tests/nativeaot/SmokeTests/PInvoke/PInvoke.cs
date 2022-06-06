@@ -1133,6 +1133,12 @@ namespace PInvokeTests
 			var refStdcallMethod = (delegate* unmanaged[Stdcall]<ref byte, byte, void>)stdcallMethod;
 			refStdcallMethod(ref storage, 34);
 			ThrowIfNotEquals(storage, 34, "Ref unmanaged stdcall failed.");
+            var refStdcallSuppressTransition = (delegate* unmanaged[Stdcall, SuppressGCTransition]<ref byte, byte, void>)stdcallMethod;
+            if (string.Empty.Length > 0)
+            {
+                // Do not actually call this because the calling convention is wrong. We just check the compiler didn't crash.
+                refStdcallSuppressTransition(ref storage, 56);
+            }
 		}
     }
 
