@@ -1062,7 +1062,7 @@ void EString<TEncoding>::Clear()
     if (IsImmutable())
     {
         // Use shared empty string rather than allocating a new buffer
-        static_assert(sizeof(char_t) <= sizeof(StaticStringHelpers::s_EmptyBuffer));
+        static_assert(sizeof(char_t) <= sizeof(StaticStringHelpers::s_EmptyBuffer), "Empty buffer size must be as large as or larger than the size of a character.");
         SBuffer::SetImmutable(StaticStringHelpers::s_EmptyBuffer, sizeof(char_t));
     }
     else
