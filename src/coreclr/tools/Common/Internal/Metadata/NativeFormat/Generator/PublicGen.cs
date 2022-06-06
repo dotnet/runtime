@@ -36,6 +36,7 @@ class PublicGen : CsWriter
         WriteLine("using System;");
         WriteLine("using System.Reflection;");
         WriteLine("using System.Collections.Generic;");
+        WriteLine("using System.Runtime.CompilerServices;");
         WriteLine();
 
         WriteLine("#pragma warning disable 108     // base type 'uint' is not CLS-compliant");
@@ -81,6 +82,7 @@ class PublicGen : CsWriter
     {
         if ((record.Flags & RecordDefFlags.Flags) != 0)
             WriteScopeAttribute("[Flags]");
+        WriteTypeAttributesForCoreLib();
         OpenScope($"public enum {record.Name} : {record.BaseTypeName}");
 
         foreach (var member in record.Members)
