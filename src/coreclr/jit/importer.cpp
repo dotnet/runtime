@@ -14017,17 +14017,31 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 if ((oper == GT_DIV || oper == GT_UDIV || oper == GT_MOD || oper == GT_UMOD) &&
                     !varTypeIsFloating(type) && (!op2->IsIntegralConst() || op2->IsIntegralConst(0)))
                 {
-                    unsigned tmpNum       = lvaGrabTemp(true DEBUGARG("divisor expr"));
-                    GenTree* divisorAsg   = gtNewTempAssign(tmpNum, op2);
-                    GenTree* divisor      = gtNewLclvNode(tmpNum, op2->TypeGet());
-                    GenTree* chkDivByZero =
-                        new (this, GT_CHK_DIV_BY_ZERO) GenTreeOp(GT_CHK_DIV_BY_ZERO, TYP_VOID, divisor, nullptr);
+                    if (fgIsSafeToClone(op2))
+                    {
+                        GenTree* chkDivByZero =
+                            new (this, GT_CHK_DIV_BY_ZERO) GenTreeOp(GT_CHK_DIV_BY_ZERO, TYP_VOID, gtClone(op2), nullptr);
 
-                    chkDivByZero->gtFlags |= GTF_SIDE_EFFECT;
+                        chkDivByZero->gtFlags |= GTF_SIDE_EFFECT;
 
-                    op2 =
-                        gtNewOperNode(GT_COMMA, divisor->TypeGet(), divisorAsg,
-                                      gtNewOperNode(GT_COMMA, divisor->TypeGet(), chkDivByZero, gtCloneExpr(divisor)));
+                        op2 = gtNewOperNode(GT_COMMA, op2->TypeGet(), chkDivByZero, op2);
+                    }
+                    else
+                    {
+                        TempInfo tempInfo = fgMakeTemp(op2);
+
+                        GenTree* const divisorAsg = tempInfo.asg;
+                        GenTree* const divisor = tempInfo.load;
+
+                        GenTree* chkDivByZero =
+                            new (this, GT_CHK_DIV_BY_ZERO) GenTreeOp(GT_CHK_DIV_BY_ZERO, TYP_VOID, gtClone(divisor), nullptr);
+
+                        chkDivByZero->gtFlags |= GTF_SIDE_EFFECT;
+
+                        op2 = gtNewOperNode(GT_COMMA, divisor->TypeGet(), divisorAsg,
+                                            gtNewOperNode(GT_COMMA, divisor->TypeGet(), chkDivByZero,
+                                                          divisor));
+                    }
                 }
 #endif
 
