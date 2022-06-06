@@ -306,20 +306,11 @@ void Rationalizer::RewriteSubLshDiv(GenTree** use)
             size_t cnsValue   = cns->AsIntConCommon()->IntegralValue();
             if ((cnsValue >> shiftValue) == 1)
             {
-                GenTree* const treeFirstNode  = comp->fgGetFirstNode(node);
-                GenTree* const insertionPoint = treeFirstNode->gtPrev;
-                BlockRange().Remove(treeFirstNode, node);
-
-                // Remove var use so that the var is only used
-                // once; if we did not do this, there would be
-                // extra 'mov' operations.
-                BlockRange().Remove(a);
-
                 node->ChangeOper(GT_MOD);
                 node->AsOp()->gtOp2 = cns;
 
-                comp->gtSetEvalOrder(node);
-                BlockRange().InsertAfter(insertionPoint, LIR::Range(comp->fgSetTreeSeq(node), node));
+                BlockRange().Remove(op2, shift);
+                BlockRange().InsertBefore(node, cns);
             }
         }
     }
