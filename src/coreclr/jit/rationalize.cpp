@@ -271,10 +271,10 @@ void Rationalizer::RewriteIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTree*
 // Arguments:
 //    use - A use of a node.
 //
-// Transform: a - (a / cns) >> shift  =>  a % cns1
-//            where cns is an signed integer constant that is a power of 2.
+// Transform: a - (a / cns) << shift  =>  a % cns
+//            where cns is a signed integer constant that is a power of 2.
 // We do this transformation because Lowering has a specific optimization
-// for 'a % cns1' that is not easily reduced by other means.
+// for 'a % cns' that is not easily reduced by other means.
 //
 void Rationalizer::RewriteSubLshDiv(GenTree** use)
 {
@@ -292,6 +292,9 @@ void Rationalizer::RewriteSubLshDiv(GenTree** use)
     if (!op2->OperIs(GT_LSH))
         return;
 
+    if (op2->IsReverseOp())
+        return;
+
     GenTree* lsh   = op2;
     GenTree* div   = lsh->gtGetOp1();
     GenTree* shift = lsh->gtGetOp2();
@@ -306,11 +309,18 @@ void Rationalizer::RewriteSubLshDiv(GenTree** use)
             size_t cnsValue   = cns->AsIntConCommon()->IntegralValue();
             if ((cnsValue >> shiftValue) == 1)
             {
+                GenTree* const treeFirstNode  = comp->fgGetFirstNode(node);
+                GenTree* const insertionPoint = treeFirstNode->gtPrev;
+                BlockRange().Remove(treeFirstNode, node);
+
                 node->ChangeOper(GT_MOD);
                 node->AsOp()->gtOp2 = cns;
 
                 BlockRange().Remove(op2, shift);
                 BlockRange().InsertBefore(node, cns);
+
+                comp->gtSetEvalOrder(node);
+                BlockRange().InsertAfter(insertionPoint, LIR::Range(comp->fgSetTreeSeq(node), node));
             }
         }
     }
