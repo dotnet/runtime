@@ -4320,9 +4320,9 @@ void emitter::emitRemoveJumpToNextInst()
         jmp = nextJmp;
     }
 
+#ifdef DEBUG
     if (totalRemovedSize > 0)
     {
-#ifdef DEBUG
         emitCheckIGoffsets();
 
         if (EMIT_INSTLIST_VERBOSE)
@@ -4334,13 +4334,14 @@ void emitter::emitRemoveJumpToNextInst()
         {
             emitDispJumpList();
         }
-#endif // DEBUG
+
         JITDUMP("emitRemoveJumpToNextInst removed %u bytes of unconditional jumps\n", totalRemovedSize);
     }
     else
     {
         JITDUMP("emitRemoveJumpToNextInst removed no unconditional jumps\n");
     }
+#endif // DEBUG
 #endif // TARGET_XARCH
 }
 
