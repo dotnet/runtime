@@ -11,8 +11,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Private.Reflection.C
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Private.Reflection.Execution", "System.Private.Reflection.Execution\src\System.Private.Reflection.Execution.csproj", "{7498DD7C-76C1-4912-AF72-DA84E05B568F}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Private.Reflection.Metadata", "System.Private.Reflection.Metadata\src\System.Private.Reflection.Metadata.csproj", "{C0245BD9-6AE2-47A5-BC41-DB6F777423AF}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Private.StackTraceMetadata", "System.Private.StackTraceMetadata\src\System.Private.StackTraceMetadata.csproj", "{33CAE331-16EE-443C-A0CC-4337B94A02AD}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Private.TypeLoader", "System.Private.TypeLoader\src\System.Private.TypeLoader.csproj", "{3E43ACA2-073E-4A66-BA9C-417C5F83D430}"

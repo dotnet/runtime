@@ -334,6 +334,7 @@ void Compiler::impSaveStackState(SavedStack* savePtr, bool copy)
                     case GT_CNS_LNG:
                     case GT_CNS_DBL:
                     case GT_CNS_STR:
+                    case GT_CNS_VEC:
                     case GT_LCL_VAR:
                         table->val = gtCloneExpr(tree);
                         break;
@@ -861,20 +862,6 @@ void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
             // Morph trees that aren't already OBJs or MKREFANY to be OBJs
             assert(ti.IsType(TI_STRUCT));
 
-            // The argument and parameter types can be different for legitimate
-            // reasons, but we expect them to be compatible in those cases. One
-            // example where this happens is when inlining shared code into a
-            // non-generic function, in which case we might see the __Canon in
-            // the parameter type but exact types in the signature type.
-            //
-            // TODO-ARGS: Remove this quirk; we should be able to use the
-            // signature type that is different in the rare case above. It will
-            // cause positive diffs, but that is probably an indication that we
-            // have downstream phases that should be using
-            // `ClassLayout::AreCompatible` instead.
-            //
-            classHnd = ti.GetClassHandleForValueClass();
-
             bool forceNormalization = false;
             if (varTypeIsSIMD(argNode))
             {
@@ -1230,7 +1217,7 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
 #endif // FEATURE_HW_INTRINSICS
     {
         assert(src->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_FIELD, GT_IND, GT_OBJ, GT_CALL, GT_MKREFANY, GT_RET_EXPR,
-                           GT_COMMA) ||
+                           GT_COMMA, GT_CNS_VEC) ||
                ((src->TypeGet() != TYP_STRUCT) && src->OperIsSIMD()));
     }
 #endif // DEBUG
@@ -1602,7 +1589,7 @@ GenTree* Compiler::impGetStructAddr(GenTree*             structVal,
         return (structVal->AsObj()->Addr());
     }
     else if (oper == GT_CALL || oper == GT_RET_EXPR || oper == GT_OBJ || oper == GT_MKREFANY ||
-             structVal->OperIsSimdOrHWintrinsic())
+             structVal->OperIsSimdOrHWintrinsic() || structVal->IsCnsVec())
     {
         unsigned tmpNum = lvaGrabTemp(true DEBUGARG("struct address for call/obj"));
 
@@ -1795,6 +1782,12 @@ GenTree* Compiler::impNormStructVal(GenTree*             structVal,
             alreadyNormalized = true;
             break;
 
+        case GT_CNS_VEC:
+        {
+            assert(varTypeIsSIMD(structVal) && (structVal->gtType == structType));
+            break;
+        }
+
 #ifdef FEATURE_SIMD
         case GT_SIMD:
             assert(varTypeIsSIMD(structVal) && (structVal->gtType == structType));
@@ -1834,7 +1827,7 @@ GenTree* Compiler::impNormStructVal(GenTree*             structVal,
             }
 
 #ifdef FEATURE_SIMD
-            if (blockNode->OperIsSimdOrHWintrinsic())
+            if (blockNode->OperIsSimdOrHWintrinsic() || blockNode->IsCnsVec())
             {
                 parent->AsOp()->gtOp2 = impNormStructVal(blockNode, structHnd, curLevel, forceNormalization);
                 alreadyNormalized     = true;
@@ -3678,16 +3671,11 @@ GenTree* Compiler::impCreateSpanIntrinsic(CORINFO_SIG_INFO* sig)
     unsigned             spanTempNum = lvaGrabTemp(true DEBUGARG("ReadOnlySpan<T> for CreateSpan<T>"));
     lvaSetStruct(spanTempNum, spanHnd, false);
 
-    CORINFO_FIELD_HANDLE pointerFieldHnd = info.compCompHnd->getFieldInClass(spanHnd, 0);
-    CORINFO_FIELD_HANDLE lengthFieldHnd  = info.compCompHnd->getFieldInClass(spanHnd, 1);
+    GenTreeLclFld* pointerField    = gtNewLclFldNode(spanTempNum, TYP_BYREF, 0);
+    GenTree*       pointerFieldAsg = gtNewAssignNode(pointerField, pointerValue);
 
-    GenTreeLclFld* pointerField = gtNewLclFldNode(spanTempNum, TYP_BYREF, 0);
-    pointerField->SetFieldSeq(GetFieldSeqStore()->CreateSingleton(pointerFieldHnd, 0));
-    GenTree* pointerFieldAsg = gtNewAssignNode(pointerField, pointerValue);
-
-    GenTreeLclFld* lengthField = gtNewLclFldNode(spanTempNum, TYP_INT, TARGET_POINTER_SIZE);
-    lengthField->SetFieldSeq(GetFieldSeqStore()->CreateSingleton(lengthFieldHnd, TARGET_POINTER_SIZE));
-    GenTree* lengthFieldAsg = gtNewAssignNode(lengthField, lengthValue);
+    GenTreeLclFld* lengthField    = gtNewLclFldNode(spanTempNum, TYP_INT, TARGET_POINTER_SIZE);
+    GenTree*       lengthFieldAsg = gtNewAssignNode(lengthField, lengthValue);
 
     // Now append a few statements the initialize the span
     impAppendTree(lengthFieldAsg, (unsigned)CHECK_SPILL_NONE, impCurStmtDI);
@@ -9460,7 +9448,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
         switch (callInfo->kind)
         {
-
             case CORINFO_VIRTUALCALL_STUB:
             {
                 assert(!(mflags & CORINFO_FLG_STATIC)); // can't call a static method

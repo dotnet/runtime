@@ -1847,21 +1847,6 @@ FCIMPL1(FC_BOOL_RET, ValueTypeHelper::CanCompareBits, Object* obj)
 }
 FCIMPLEND
 
-FCIMPL2(FC_BOOL_RET, ValueTypeHelper::FastEqualsCheck, Object* obj1, Object* obj2)
-{
-    FCALL_CONTRACT;
-
-    _ASSERTE(obj1 != NULL);
-    _ASSERTE(obj2 != NULL);
-    _ASSERTE(!obj1->GetMethodTable()->ContainsPointers());
-    _ASSERTE(obj1->GetSize() == obj2->GetSize());
-
-    TypeHandle pTh = obj1->GetTypeHandle();
-
-    FC_RETURN_BOOL(memcmp(obj1->GetData(),obj2->GetData(),pTh.GetSize()) == 0);
-}
-FCIMPLEND
-
 static INT32 FastGetValueTypeHashCodeHelper(MethodTable *mt, void *pObjRef)
 {
     CONTRACTL
@@ -2044,35 +2029,27 @@ FCIMPL1(INT32, ValueTypeHelper::GetHashCode, Object* objUNSAFE)
 }
 FCIMPLEND
 
-static LONG s_dwSeed;
-
-FCIMPL1(INT32, ValueTypeHelper::GetHashCodeOfPtr, LPVOID ptr)
+FCIMPL1(UINT32, MethodTableNative::GetNumInstanceFieldBytes, MethodTable* mt)
 {
     FCALL_CONTRACT;
-
-    INT32 hashCode = (INT32)((INT64)(ptr));
-
-    if (hashCode == 0)
-    {
-        return 0;
-    }
-
-    DWORD dwSeed = s_dwSeed;
-
-    // Initialize s_dwSeed lazily
-    if (dwSeed == 0)
-    {
-        // We use the first non-0 pointer as the seed, all hashcodes will be based off that.
-        // This is to make sure that we only reveal relative memory addresses and never absolute ones.
-        dwSeed = hashCode;
-        InterlockedCompareExchange(&s_dwSeed, dwSeed, 0);
-        dwSeed = s_dwSeed;
-    }
-    _ASSERTE(dwSeed != 0);
-
-    return hashCode - dwSeed;
+    return mt->GetNumInstanceFieldBytes();
 }
 FCIMPLEND
+
+extern "C" BOOL QCALLTYPE MethodTable_AreTypesEquivalent(MethodTable* mta, MethodTable* mtb)
+{
+    QCALL_CONTRACT;
+
+    BOOL bResult = FALSE;
+
+    BEGIN_QCALL;
+
+    bResult = mta->IsEquivalentTo(mtb);
+
+    END_QCALL;
+
+    return bResult;
+}
 
 static MethodTable * g_pStreamMT;
 static WORD g_slotBeginRead, g_slotEndRead;

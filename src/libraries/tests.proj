@@ -99,11 +99,6 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\LibraryImportGenerator.Tests\LibraryImportGenerator.Tests.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetArchitecture)' == 'arm'">
-    <!-- Issue: https://github.com/dotnet/runtime/issues/60705 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\LibraryImportGenerator.UnitTests\LibraryImportGenerator.Unit.Tests.csproj" />
-  </ItemGroup>
-
   <ItemGroup Condition="'$(TargetOS)' == 'FreeBSD'">
     <!-- LibraryImportGenerator runtime tests build depends pulling down a pre-built nethost binary, which is not available for FreeBSD. -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\LibraryImportGenerator.Tests\LibraryImportGenerator.Tests.csproj" />
@@ -175,8 +170,6 @@
 
     <!-- https://github.com/dotnet/runtime/issues/50926 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.Tracing\tests\System.Diagnostics.Tracing.Tests.csproj" />
-
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Http\tests\FunctionalTests\System.Net.Http.Functional.Tests.csproj" />
 
     <!-- Execution may be compromised -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Caching.Memory\tests\Microsoft.Extensions.Caching.Memory.Tests.csproj" />
@@ -397,6 +390,16 @@
     <!-- Run only a small randomly chosen set of passing test suites -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj" />
     <ProjectExclusions Remove="$(MSBuildThisFileDirectory)System.Collections\tests\System.Collections.Tests.csproj" />
+    <!-- Remove the condition after fix, https://github.com/dotnet/runtime/issues/70010 -->
+    <ProjectExclusions Remove="$(MSBuildThisFileDirectory)System.Reflection\tests\System.Reflection.Tests.csproj" 
+                       Condition="'$(TargetOS)' == 'windows'" />
+    <ProjectExclusions Remove="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests.csproj" />
+    <ProjectExclusions Remove="$(MSBuildThisFileDirectory)System.IO.Compression\tests\System.IO.Compression.Tests.csproj" />
+    <ProjectExclusions Remove="$(MSBuildThisFileDirectory)System.IO.FileSystem\tests\System.IO.FileSystem.Tests.csproj" />
+    <ProjectExclusions Remove="$(MSBuildThisFileDirectory)System.Threading\tests\System.Threading.Tests.csproj" />
+    <!-- Remove the condition after https://github.com/dotnet/runtime/issues/70012 is fixed -->
+    <ProjectExclusions Remove="$(MSBuildThisFileDirectory)System.Linq.Expressions\tests\System.Linq.Expressions.Tests.csproj"
+                       Condition="'$(TargetOS)' == 'windows'" />
   </ItemGroup>
 
   <ItemGroup>

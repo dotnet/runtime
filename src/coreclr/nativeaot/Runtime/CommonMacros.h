@@ -17,7 +17,7 @@
 #define STDCALL
 #endif
 
-#define REDHAWK_API
+#define NATIVEAOT_API
 #define REDHAWK_CALLCONV FASTCALL
 
 #ifdef _MSC_VER
@@ -178,10 +178,10 @@ inline bool IS_ALIGNED(T* val, uintptr_t alignment);
 // Define an unmanaged function called from managed code that needs to execute in co-operative GC mode. (There
 // should be very few of these, most such functions will be simply p/invoked).
 //
-#define COOP_PINVOKE_HELPER(_rettype, _method, _args) EXTERN_C REDHAWK_API _rettype REDHAWK_CALLCONV _method _args
+#define COOP_PINVOKE_HELPER(_rettype, _method, _args) EXTERN_C NATIVEAOT_API _rettype REDHAWK_CALLCONV _method _args
 #ifdef HOST_X86
 // We have helpers that act like memcpy and memset from the CRT, so they need to be __cdecl.
-#define COOP_PINVOKE_CDECL_HELPER(_rettype, _method, _args) EXTERN_C REDHAWK_API _rettype __cdecl _method _args
+#define COOP_PINVOKE_CDECL_HELPER(_rettype, _method, _args) EXTERN_C NATIVEAOT_API _rettype __cdecl _method _args
 #else
 #define COOP_PINVOKE_CDECL_HELPER COOP_PINVOKE_HELPER
 #endif

@@ -91,10 +91,8 @@ namespace System.Formats.Tar.Tests
 
                     VerifyPlatformSpecificMetadata(blockDevicePath, entry);
 
-                    // TODO: Fix how these values are collected, the numbers don't match even though https://github.com/dotnet/runtime/issues/68230
-                    // they come from stat's dev and from the major/minor syscalls
-                    // Assert.Equal(TestBlockDeviceMajor, entry.DeviceMajor);
-                    // Assert.Equal(TestBlockDeviceMinor, entry.DeviceMinor);
+                    Assert.Equal(TestBlockDeviceMajor, entry.DeviceMajor);
+                    Assert.Equal(TestBlockDeviceMinor, entry.DeviceMinor);
 
                     Assert.Null(reader.GetNextEntry());
                 }
@@ -138,10 +136,8 @@ namespace System.Formats.Tar.Tests
 
                     VerifyPlatformSpecificMetadata(characterDevicePath, entry);
 
-                    // TODO: Fix how these values are collected, the numbers don't match even though https://github.com/dotnet/runtime/issues/68230
-                    // they come from stat's dev and from the major/minor syscalls
-                    // Assert.Equal(TestCharacterDeviceMajor, entry.DeviceMajor);
-                    // Assert.Equal(TestCharacterDeviceMinor, entry.DeviceMinor);
+                    Assert.Equal(TestCharacterDeviceMajor, entry.DeviceMajor);
+                    Assert.Equal(TestCharacterDeviceMinor, entry.DeviceMinor);
 
                     Assert.Null(reader.GetNextEntry());
                 }
@@ -161,8 +157,11 @@ namespace System.Formats.Tar.Tests
 
             if (entry is PosixTarEntry posix)
             {
-                Assert.Equal(DefaultGName, posix.GroupName);
-                Assert.Equal(DefaultUName, posix.UserName);
+                string gname = Interop.Sys.GetGroupName(status.Gid);
+                string uname = Interop.Sys.GetUserNameFromPasswd(status.Uid);
+
+                Assert.Equal(gname, posix.GroupName);
+                Assert.Equal(uname, posix.UserName);
 
                 if (entry.EntryType is not TarEntryType.BlockDevice and not TarEntryType.CharacterDevice)
                 {

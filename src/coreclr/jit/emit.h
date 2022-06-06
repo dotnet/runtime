@@ -1928,6 +1928,9 @@ public:
 
 private:
     CORINFO_FIELD_HANDLE emitFltOrDblConst(double constValue, emitAttr attr);
+    CORINFO_FIELD_HANDLE emitSimd8Const(simd8_t constValue);
+    CORINFO_FIELD_HANDLE emitSimd16Const(simd16_t constValue);
+    CORINFO_FIELD_HANDLE emitSimd32Const(simd32_t constValue);
     regNumber emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src);
     regNumber emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src1, GenTree* src2);
     void emitInsLoadInd(instruction ins, emitAttr attr, regNumber dstReg, GenTreeIndir* mem);

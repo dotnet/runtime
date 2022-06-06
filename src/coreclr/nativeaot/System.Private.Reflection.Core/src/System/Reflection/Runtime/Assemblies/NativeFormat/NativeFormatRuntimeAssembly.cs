@@ -21,7 +21,6 @@ using System.Collections.Generic;
 using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
 using Internal.Metadata.NativeFormat;
-using Internal.Reflection.Tracing;
 
 namespace System.Reflection.Runtime.Assemblies.NativeFormat
 {
@@ -37,11 +36,6 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
         {
             get
             {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.Assembly_CustomAttributes(this);
-#endif
-
                 foreach (QScopeDefinition scope in AllScopes)
                 {
                     foreach (CustomAttributeData cad in RuntimeCustomAttributeData.GetCustomAttributes(scope.Reader, scope.ScopeDefinition.CustomAttributes))
@@ -55,11 +49,6 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
             [RequiresUnreferencedCode("Types might be removed")]
             get
             {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.Assembly_DefinedTypes(this);
-#endif
-
                 foreach (QScopeDefinition scope in AllScopes)
                 {
                     MetadataReader reader = scope.Reader;

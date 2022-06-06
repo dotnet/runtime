@@ -164,21 +164,6 @@
     <Compile Include="..\..\Common\TypeSystem\CodeGen\NativeStructType.CodeGen.cs">
       <Link>TypeSystem\CodeGen\NativeStructType.CodeGen.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\Compiler\Logging\CompilerGeneratedState.cs">
-      <Link>Compiler\Logging\CompilerGeneratedState.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\Compiler\Logging\MessageContainer.cs">
-      <Link>Compiler\Logging\MessageContainer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\Compiler\Logging\MessageOrigin.cs">
-      <Link>Compiler\Logging\MessageOrigin.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\Compiler\Logging\DocumentationSignatureParser.cs">
-      <Link>Compiler\Logging\DocumentationSignatureParser.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\Compiler\Logging\DocumentationSignatureGenerator.PartVisitor.cs">
-      <Link>Compiler\Logging\DocumentationSignatureGenerator.PartVisitor.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\Internal\Runtime\GCDescEncoder.cs">
       <Link>Common\GCDescEncoder.cs</Link>
     </Compile>
@@ -305,11 +290,12 @@
     <Compile Include="..\..\Common\Compiler\InstructionSetSupport.cs" Link="Compiler\InstructionSetSupport.cs" />
     <Compile Include="..\..\Common\Compiler\Int128FieldLayoutAlgorithm.cs" Link="Compiler\Int128FieldLayoutAlgorithm.cs" />
     <Compile Include="..\..\Common\Compiler\InternalCompilerErrorException.cs" Link="Compiler\InternalCompilerErrorException.cs" />
+    <Compile Include="..\..\Common\Compiler\MethodExtensions.cs" Link="Compiler\MethodExtensions.cs" />
     <Compile Include="..\..\Common\Compiler\NameMangler.cs" Link="Compiler\NameMangler.cs" />
+    <Compile Include="..\..\Common\Compiler\PropertyPseudoDesc.cs" Link="Compiler\PropertyPseudoDesc.cs" />
     <Compile Include="..\..\Common\Compiler\SingleMethodRootProvider.cs" Link="Compiler\SingleMethodRootProvider.cs" />
     <Compile Include="..\..\Common\Compiler\TypeExtensions.cs" Link="Compiler\TypeExtensions.cs" />
     <Compile Include="..\..\Common\Compiler\VectorFieldLayoutAlgorithm.cs" Link="Compiler\VectorFieldLayoutAlgorithm.cs" />
-    <Compile Include="..\..\Common\Compiler\Logger.cs" Link="Compiler\Logger.cs" />
 
     <Compile Include="Compiler\AnalysisBasedInteropStubManager.cs" />
     <Compile Include="Compiler\AnalysisBasedMetadataManager.cs" />
@@ -522,7 +508,6 @@
     <Compile Include="Compiler\ManagedBinaryEmitter.cs" />
     <Compile Include="Compiler\MetadataManager.cs" />
     <Compile Include="Compiler\InteropStubManager.cs" />
-    <Compile Include="Compiler\MethodExtensions.cs" />
     <Compile Include="Compiler\MultiFileCompilationModuleGroup.cs" />
     <Compile Include="Compiler\NativeLibraryInitializerRootProvider.cs" />
     <Compile Include="Compiler\NodeMangler.cs" />
@@ -530,7 +515,6 @@
     <Compile Include="Compiler\ExportsFileWriter.cs" />
     <Compile Include="Compiler\ProcessLinkerXmlBase.cs" />
     <Compile Include="Compiler\ProcessXmlBase.cs" />
-    <Compile Include="Compiler\PropertyPseudoDesc.cs" />
     <Compile Include="Compiler\RootingHelpers.cs" />
     <Compile Include="Compiler\RootingServiceProvider.cs" />
     <Compile Include="Compiler\RuntimeConfigurationRootProvider.cs" />
@@ -549,6 +533,14 @@
     <Compile Include="Compiler\VirtualMethodCallHelper.cs" />
     <Compile Include="Compiler\VTableSliceProvider.cs" />
     <Compile Include="Compiler\WindowsNodeMangler.cs" />
+    <Compile Include="Compiler\Logger.cs" />
+    <Compile Include="Compiler\ILogWriter.cs" />
+    <Compile Include="Compiler\TextLogWriter.cs" />
+    <Compile Include="Compiler\Logging\CompilerGeneratedState.cs" />
+    <Compile Include="Compiler\Logging\DocumentationSignatureGenerator.PartVisitor.cs" />
+    <Compile Include="Compiler\Logging\DocumentationSignatureParser.cs" />
+    <Compile Include="Compiler\Logging\MessageContainer.cs" />
+    <Compile Include="Compiler\Logging\MessageOrigin.cs" />
     <Compile Include="IL\ILImporter.Scanner.cs" />
     <Compile Include="IL\Stubs\PInvokeILProvider.cs" />
     <Compile Include="IL\Stubs\StartupCode\AppContextInitializerMethod.cs" />
