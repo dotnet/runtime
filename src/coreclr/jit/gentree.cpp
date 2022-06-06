@@ -4575,17 +4575,21 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             {
                 level = 0;
 #if defined(TARGET_XARCH)
-                /* We use fldz and fld1 to load 0.0 and 1.0, but all other  */
-                /* floating point constants are loaded using an indirection */
                 if (tree->IsFloatPositiveZero())
                 {
+                    // We generate `xorp* tgtReg, tgtReg` which is 3-5 bytes
+                    // but which can be elided by the instruction decoder.
+
                     costEx = 1;
-                    costSz = 1;
+                    costSz = 2;
                 }
                 else
                 {
+                    // We generate `movs* tgtReg, [mem]` which is 4-6 bytes
+                    // and which has the same cost as an indirection.
+
                     costEx = IND_COST_EX;
-                    costSz = 4;
+                    costSz = 2;
                 }
 #elif defined(TARGET_ARM)
                 var_types targetType = tree->TypeGet();
@@ -4603,13 +4607,18 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 #elif defined(TARGET_ARM64)
                 if (tree->IsFloatPositiveZero() || emitter::emitIns_valid_imm_for_fmov(tree->AsDblCon()->gtDconVal))
                 {
+                    // Zero and certain other immediates can be specially created with a single instruction
+                    // These can be cheaply reconstituted but still take up 4-bytes of native codegen
+
                     costEx = 1;
-                    costSz = 1;
+                    costSz = 2;
                 }
                 else
                 {
+                    // We load the constant from memory and so will take the same cost as GT_IND
+
                     costEx = IND_COST_EX;
-                    costSz = 4;
+                    costSz = 2;
                 }
 #elif defined(TARGET_LOONGARCH64)
                 // TODO-LoongArch64-CQ: tune the costs.
@@ -4623,9 +4632,25 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
             case GT_CNS_VEC:
             {
-                costEx = IND_COST_EX;
-                costSz = 4;
-                level  = 0;
+                level = 0;
+
+                if (tree->AsVecCon()->IsAllBitsSet() || tree->AsVecCon()->IsZero())
+                {
+                    // We generate `cmpeq* tgtReg, tgtReg`, which is 4-5 bytes, for AllBitsSet
+                    // and generate `xorp* tgtReg, tgtReg`, which is 3-5 bytes, for Zero
+                    // both of which can be elided by the instruction decoder.
+
+                    costEx = 1;
+                    costSz = 2;
+                }
+                else
+                {
+                    // We generate `movup* tgtReg, [mem]` which is 4-6 bytes
+                    // and which has the same cost as an indirection.
+
+                    costEx = IND_COST_EX;
+                    costSz = 2;
+                }
                 break;
             }
 
@@ -4972,16 +4997,12 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         costSz += 1;
                     }
 
+#ifdef TARGET_ARM
                     if (isflt)
                     {
-                        if (tree->TypeGet() == TYP_DOUBLE)
-                        {
-                            costEx += 1;
-                        }
-#ifdef TARGET_ARM
                         costSz += 2;
-#endif // TARGET_ARM
                     }
+#endif // TARGET_ARM
 
                     // Can we form an addressing mode with this indirection?
                     // TODO-CQ: Consider changing this to op1->gtEffectiveVal() to take into account
