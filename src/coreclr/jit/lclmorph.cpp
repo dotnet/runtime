@@ -1055,11 +1055,10 @@ private:
             return IndirTransform::None;
         }
 
-        if ((user == nullptr) || !user->OperIs(GT_ASG))
+        if ((user == nullptr) || !user->OperIs(GT_ASG, GT_RETURN))
         {
-            // TODO-ADDR: Skip TYP_STRUCT indirs for now, unless they're used by an ASG.
-            // At least call args will require extra work because currently they must be
-            // wrapped in OBJ nodes so we can't replace those with local nodes.
+            // TODO-ADDR: call args require extra work because currently they must
+            // be wrapped in OBJ nodes so we can't replace those with local nodes.
             return IndirTransform::None;
         }
 
@@ -1105,26 +1104,26 @@ private:
 
         // Current matrix of matches/users/types:
         //
-        // |------------|------|---------|--------|
-        // | STRUCT     | CALL | ASG     | RETURN |
-        // |------------|------|---------|--------|
-        // | Exact      | None | LCL_VAR | None   |
-        // | Compatible | None | LCL_VAR | None   |
-        // | Partial    | None | OBJ     | None   |
-        // |------------|------|---------|--------|
+        // |------------|------|---------|---------|
+        // | STRUCT     | CALL | ASG     | RETURN  |
+        // |------------|------|---------|---------|
+        // | Exact      | None | LCL_VAR | LCL_VAR |
+        // | Compatible | None | LCL_VAR | LCL_VAR |
+        // | Partial    | None | OBJ     | LCL_FLD |
+        // |------------|------|---------|---------|
         //
-        // |------------|------|---------|--------|----------|
-        // | SIMD       | CALL | ASG     | RETURN | HWI/SIMD |
-        // |------------|------|---------|--------|----------|
-        // | Exact      | None | None    | None   | None     |
-        // | Compatible | None | None    | None   | None     |
-        // | Partial    | None | None    | None   | None     |
-        // |------------|------|---------|--------|----------|
+        // |------------|------|---------|---------|----------|
+        // | SIMD       | CALL | ASG     | RETURN  | HWI/SIMD |
+        // |------------|------|---------|---------|----------|
+        // | Exact      | None | None    | None    | None     |
+        // | Compatible | None | None    | None    | None     |
+        // | Partial    | None | None    | None    | None     |
+        // |------------|------|---------|---------|----------|
         //
         // TODO-ADDR: delete all the "None" entries and always
         // transform local nodes into LCL_VAR or LCL_FLD.
 
-        assert(user->OperIs(GT_ASG) && indir->TypeIs(TYP_STRUCT));
+        assert(indir->TypeIs(TYP_STRUCT) && user->OperIs(GT_ASG, GT_RETURN));
 
         *pStructLayout = indirLayout;
 
@@ -1133,7 +1132,12 @@ private:
             return IndirTransform::LclVar;
         }
 
-        return IndirTransform::ObjAddrLclFld;
+        if (user->OperIs(GT_ASG))
+        {
+            return IndirTransform::ObjAddrLclFld;
+        }
+
+        return IndirTransform::LclFld;
     }
 
     //------------------------------------------------------------------------
