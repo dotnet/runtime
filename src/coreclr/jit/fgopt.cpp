@@ -723,7 +723,7 @@ bool Compiler::fgRemoveDeadBlocks()
     // A block is unreachable if no path was found from
     // any of the fgFirstBB, handler, filter or BBJ_ALWAYS (Arm) blocks.
     auto isBlockRemovable = [&](BasicBlock* block) -> bool {
-        bool isVisited = BlockSetOps::IsMember(this, visitedBlocks, block->bbNum);
+        bool isVisited   = BlockSetOps::IsMember(this, visitedBlocks, block->bbNum);
         bool isRemovable = (!isVisited || block->bbRefs == 0);
 
         hasUnreachableBlock |= isRemovable;
