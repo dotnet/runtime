@@ -8,6 +8,7 @@ import { createHash } from "crypto";
 import dts from "rollup-plugin-dts";
 import consts from "rollup-plugin-consts";
 import { createFilter } from "@rollup/pluginutils";
+import * as fast_glob from "fast-glob";
 
 const configuration = process.env.Configuration;
 const isDebug = configuration !== "Release";
@@ -245,8 +246,12 @@ function regexReplace(replacements = []) {
 //
 // A file looks like a webworker toplevel input if it's `dotnet-{name}-worker.ts` or `.js`
 function findWebWorkerInputs(basePath) {
+    const glob = "dotnet-*-worker.[tj]s";
+    const files = fast_glob.sync(glob, { cwd: basePath });
+    if (files.length == 0) {
+        return [];
+    }
     const re = /^dotnet-(.*)-worker\.[tj]s$/;
-    const files = fs.readdirSync(basePath);
     let results = [];
     for (const file of files) {
         const match = file.match(re);
