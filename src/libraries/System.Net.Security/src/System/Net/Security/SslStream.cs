@@ -321,7 +321,6 @@ namespace System.Net.Security
         public void AuthenticateAsClient(SslClientAuthenticationOptions sslClientAuthenticationOptions)
         {
             ArgumentNullException.ThrowIfNull(sslClientAuthenticationOptions);
-            ArgumentNullException.ThrowIfNull(sslClientAuthenticationOptions.TargetHost, nameof(sslClientAuthenticationOptions.TargetHost));
 
             ThrowIfExceptional();
 
@@ -384,7 +383,6 @@ namespace System.Net.Security
         public Task AuthenticateAsClientAsync(SslClientAuthenticationOptions sslClientAuthenticationOptions, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(sslClientAuthenticationOptions);
-            ArgumentNullException.ThrowIfNull(sslClientAuthenticationOptions.TargetHost, nameof(sslClientAuthenticationOptions.TargetHost));
 
             ThrowIfExceptional();
             _sslAuthenticationOptions.UpdateOptions(sslClientAuthenticationOptions);
@@ -624,7 +622,7 @@ namespace System.Net.Security
         {
             get
             {
-                return _sslAuthenticationOptions != null ? _sslAuthenticationOptions.TargetHost : string.Empty;
+                return _sslAuthenticationOptions.TargetHost;
             }
         }
 

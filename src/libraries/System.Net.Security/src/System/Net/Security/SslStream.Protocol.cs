@@ -100,7 +100,7 @@ namespace System.Net.Security
         {
             get
             {
-                return _sslAuthenticationOptions!.RemoteCertRequired;
+                return _sslAuthenticationOptions.RemoteCertRequired;
             }
         }
 
