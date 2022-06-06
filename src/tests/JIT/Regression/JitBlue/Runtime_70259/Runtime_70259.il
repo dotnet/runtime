@@ -13,12 +13,12 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )                         // .?_....:
   .ver 7:0:0:0
 }
-.assembly playground
+.assembly Runtime_70259
 {
 }
-.module playground.dll
+.module Runtime_70259.dll
 // MVID: {78ECA09B-26A9-44BB-9FD2-D94B639A44D5}
-.custom instance void [System.Runtime]System.Security.UnverifiableCodeAttribute::.ctor() = ( 01 00 00 00 ) 
+.custom instance void [System.Runtime]System.Security.UnverifiableCodeAttribute::.ctor() = ( 01 00 00 00 )
 .imagebase 0x00400000
 .file alignment 0x00000200
 .stackreserve 0x00100000
@@ -34,7 +34,7 @@
 {
   .class interface abstract auto ansi nested private IFace
   {
-    .method public hidebysig newslot abstract virtual 
+    .method public hidebysig newslot abstract virtual
             instance int32  Method() cil managed
     {
     } // end of method IFace::Method
@@ -45,7 +45,7 @@
          extends [System.Runtime]System.Object
          implements Runtime_70259/IFace
   {
-    .method public hidebysig newslot virtual 
+    .method public hidebysig newslot virtual
             instance int32  Method() cil managed
     {
       // Code size       3 (0x3)
@@ -54,7 +54,7 @@
       IL_0002:  ret
     } // end of method C::Method
 
-    .method public hidebysig specialname rtspecialname 
+    .method public hidebysig specialname rtspecialname
             instance void  .ctor() cil managed
     {
       // Code size       7 (0x7)
@@ -66,7 +66,7 @@
 
   } // end of class C
 
-  .method private hidebysig static int32 
+  .method private hidebysig static int32
           Main() cil managed
   {
     .entrypoint
@@ -81,7 +81,7 @@
     IL_001e:  ret
   } // end of method Runtime_70259::Main
 
-  .method private hidebysig static int32 
+  .method private hidebysig static int32
           CallMe(class [System.Runtime]System.Func`2<class Runtime_70259/IFace,int32> del) cil managed noinlining
   {
     // Code size       14 (0xe)
@@ -93,7 +93,7 @@
     IL_000d:  ret
   } // end of method Runtime_70259::CallMe
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       7 (0x7)
