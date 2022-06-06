@@ -73,7 +73,7 @@ jobs:
           eq(variables['isRollingBuild'], true))
 
 #
-# CoreCLR NativeAOT release build and additional libraries tests
+# CoreCLR NativeAOT release build and additional libraries tests that are known to be passing
 # Only when CoreCLR or library is changed
 #
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -87,8 +87,36 @@ jobs:
     jobParameters:
       testGroup: innerloop
       isSingleFile: true
-      nameSuffix: NativeAOT_Additional_Libs
-      buildArgs: -s clr.alljits+clr.tools+clr.nativeaotlibs+clr.nativeaotruntime+libs+libs.tests -c $(_BuildConfig) /p:TestNativeAot=true /p:TestNativeAotAdditionalLibs=true /p:ArchiveTests=true
+      nameSuffix: NativeAOT_Libs_Passing
+      buildArgs: -s clr.alljits+clr.tools+clr.nativeaotlibs+clr.nativeaotruntime+libs+libs.tests -c $(_BuildConfig) /p:TestNativeAot=true /p:ArchiveTests=true
+      timeoutInMinutes: 180
+      # extra steps, run tests
+      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+      extraStepsParameters:
+        creator: dotnet-bot
+        testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+      condition: >-
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+          eq(variables['isRollingBuild'], true))
+
+#
+# CoreCLR NativeAOT release build and additional libraries tests that are known to be failing
+# Only when CoreCLR or library is changed
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    buildConfig: Release
+    platforms:
+    - windows_x64
+    jobParameters:
+      testGroup: innerloop
+      isSingleFile: true
+      nameSuffix: NativeAOT_Libs_Failing
+      buildArgs: -s clr.alljits+clr.tools+clr.nativeaotlibs+clr.nativeaotruntime+libs+libs.tests -c $(_BuildConfig) /p:TestNativeAot=true /p:RunDisabledNativeAotTests=true /p:ArchiveTests=true
       timeoutInMinutes: 180
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml

@@ -85,6 +85,10 @@ public class SingleFileTestRunner : XunitTestFramework
 
         resultsSink.Finished.WaitOne();
 
+        // Helix need to see results file in the drive to detect if the test has failed or not
+        // @TODO medium-to-longer term (not now) we should try to get rid of the special-unicorn-single-file runner in favor of making the real runner work for single file.
+        resultsXmlAssembly.Save(@"testResults.xml");
+
         var failed = resultsSink.ExecutionSummary.Failed > 0 || resultsSink.ExecutionSummary.Errors > 0;
         return failed ? 1 : 0;
     }
