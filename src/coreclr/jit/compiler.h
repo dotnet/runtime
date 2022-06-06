@@ -6759,21 +6759,25 @@ public:
         }
     };
 
-#define OMF_HAS_NEWARRAY 0x00000001         // Method contains 'new' of an SD array
-#define OMF_HAS_NEWOBJ 0x00000002           // Method contains 'new' of an object type.
-#define OMF_HAS_ARRAYREF 0x00000004         // Method contains array element loads or stores.
-#define OMF_HAS_NULLCHECK 0x00000008        // Method contains null check.
-#define OMF_HAS_FATPOINTER 0x00000010       // Method contains call, that needs fat pointer transformation.
-#define OMF_HAS_OBJSTACKALLOC 0x00000020    // Method contains an object allocated on the stack.
-#define OMF_HAS_GUARDEDDEVIRT 0x00000040    // Method contains guarded devirtualization candidate
-#define OMF_HAS_EXPRUNTIMELOOKUP 0x00000080 // Method contains a runtime lookup to an expandable dictionary.
-#define OMF_HAS_PATCHPOINT 0x00000100       // Method contains patchpoints
-#define OMF_NEEDS_GCPOLLS 0x00000200        // Method needs GC polls
-#define OMF_HAS_FROZEN_STRING 0x00000400 // Method has a frozen string (REF constant int), currently only on NativeAOT.
+// clang-format off
+
+#define OMF_HAS_NEWARRAY                       0x00000001 // Method contains 'new' of an SD array
+#define OMF_HAS_NEWOBJ                         0x00000002 // Method contains 'new' of an object type.
+#define OMF_HAS_ARRAYREF                       0x00000004 // Method contains array element loads or stores.
+#define OMF_HAS_NULLCHECK                      0x00000008 // Method contains null check.
+#define OMF_HAS_FATPOINTER                     0x00000010 // Method contains call, that needs fat pointer transformation.
+#define OMF_HAS_OBJSTACKALLOC                  0x00000020 // Method contains an object allocated on the stack.
+#define OMF_HAS_GUARDEDDEVIRT                  0x00000040 // Method contains guarded devirtualization candidate
+#define OMF_HAS_EXPRUNTIMELOOKUP               0x00000080 // Method contains a runtime lookup to an expandable dictionary.
+#define OMF_HAS_PATCHPOINT                     0x00000100 // Method contains patchpoints
+#define OMF_NEEDS_GCPOLLS                      0x00000200 // Method needs GC polls
+#define OMF_HAS_FROZEN_STRING                  0x00000400 // Method has a frozen string (REF constant int), currently only on NativeAOT.
 #define OMF_HAS_PARTIAL_COMPILATION_PATCHPOINT 0x00000800 // Method contains partial compilation patchpoints
-#define OMF_HAS_TAILCALL_SUCCESSOR 0x00001000             // Method has potential tail call in a non BBJ_RETURN block
-#define OMF_HAS_MDNEWARRAY 0x00002000                     // Method contains 'new' of an MD array
-#define OMF_HAS_MDARRAYREF 0x00004000 // Method contains multi-dimensional instrinsic array element loads or stores.
+#define OMF_HAS_TAILCALL_SUCCESSOR             0x00001000 // Method has potential tail call in a non BBJ_RETURN block
+#define OMF_HAS_MDNEWARRAY                     0x00002000 // Method contains 'new' of an MD array
+#define OMF_HAS_MDARRAYREF                     0x00004000 // Method contains multi-dimensional instrinsic array element loads or stores.
+
+    // clang-format on
 
     bool doesMethodHaveFatPointer()
     {
