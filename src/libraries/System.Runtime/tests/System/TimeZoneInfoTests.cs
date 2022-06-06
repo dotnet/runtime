@@ -2884,7 +2884,7 @@ namespace System.Tests
 
             TimeZoneInfo.AdjustmentRule [] rules = fijiTZ.GetAdjustmentRules();
 
-            // Some machines got some weird TZ data which not including all supported year's rules
+            // Some machines got some weird TZ data which not including all supported years' rules
             // Avoid the test failures in such case.
             if (rules.Length > 0 && rules[rules.Length - 1].DateStart.Year >= 2023)
             {
