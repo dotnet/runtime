@@ -32,9 +32,9 @@ namespace
 {
     alignas(SString)
     BYTE emptyUnicodeSpace[(sizeof(SString))] = { 0 };
-    alignas(SString)
+    alignas(EString<EncodingUTF8>)
     BYTE emptyUtf8Space[(sizeof(EString<EncodingUTF8>))] = { 0 };
-    alignas(SString)
+    alignas(EString<EncodingASCII>)
     BYTE emptyAsciiSpace[(sizeof(EString<EncodingASCII>))] = { 0 };
 }
 #endif
