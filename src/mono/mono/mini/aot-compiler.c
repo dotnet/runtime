@@ -13281,10 +13281,11 @@ add_mibc_group_method_methods (MonoAotCompile *acfg, MonoMethod *mibcGroupMethod
 				state = FIND_METHOD_TYPE_ENTRY_START;
 			continue;
 		}
+		g_assert (il_op == MONO_CEE_LDTOKEN);
 		state = FIND_METHOD_TYPE_ENTRY_END;
 
 		g_assert (opcodeIp + 4 < opcodeEnd);
-		guint32 mibcGroupMethodEntryToken = *(guint32 *)(opcodeIp + 1);
+		guint32 mibcGroupMethodEntryToken = read32 (opcodeIp + 1);
 		g_assertf ((mono_metadata_token_table (mibcGroupMethodEntryToken) == MONO_TABLE_MEMBERREF || mono_metadata_token_table (mibcGroupMethodEntryToken) == MONO_TABLE_METHODSPEC), "token %x is not MemberRef or MethodSpec.\n", mibcGroupMethodEntryToken);
 
 		MonoMethod *methodEntry = mono_get_method_checked (image, mibcGroupMethodEntryToken, mibcModuleClass, context, error);
@@ -13331,7 +13332,9 @@ static void
 add_mibc_profile_methods (MonoAotCompile *acfg, char *filename)
 {
 	MonoImageOpenStatus status = MONO_IMAGE_OK;
-	MonoImage *image = mono_image_open_a_lot (mono_alc_get_default (), filename, &status, TRUE);
+	MonoImageOpenOptions options = {0, };
+	options.not_executable = 1;
+	MonoImage *image = mono_image_open_a_lot (mono_alc_get_default (), filename, &status, &options);
 	g_assert (image != NULL);
 	g_assert (status == MONO_IMAGE_OK);
 
@@ -13362,7 +13365,7 @@ add_mibc_profile_methods (MonoAotCompile *acfg, char *filename)
 			continue;
 
 		g_assert (opcodeIp + 4 < opcodeEnd);
-		guint32 token = *(guint32 *)(opcodeIp + 1);
+		guint32 token = read32 (opcodeIp + 1);
 
 		MonoMethod *mibcGroupMethod = mono_get_method_checked (image, token, mibcModuleClass, context, error);
 		mono_error_assert_ok (error);
