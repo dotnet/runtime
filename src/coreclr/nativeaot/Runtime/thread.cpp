@@ -80,6 +80,10 @@ void Thread::WaitForGC(PInvokeTransitionFrame* pTransitionFrame)
 {
     ASSERT(!IsDoNotTriggerGcSet());
 
+    // The wait operation below may trash the last win32 error. We save the error here so that it can be
+    // restored after the wait operation;
+    int32_t lastErrorOnEntry = PalGetLastError();
+
     do
     {
         m_pTransitionFrame = pTransitionFrame;
@@ -93,6 +97,9 @@ void Thread::WaitForGC(PInvokeTransitionFrame* pTransitionFrame)
         _ReadWriteBarrier();
     }
     while (ThreadStore::IsTrapThreadsRequested());
+
+    // Restore the saved error
+    PalSetLastError(lastErrorOnEntry);
 }
 
 //
@@ -1019,33 +1026,23 @@ EXTERN_C NOINLINE void FASTCALL RhpWaitForSuspend2()
 // Standard calling convention variant and actual implementation for RhpWaitForGC
 EXTERN_C NOINLINE void FASTCALL RhpWaitForGC2(PInvokeTransitionFrame * pFrame)
 {
-
     Thread * pThread = pFrame->m_pThread;
-
-    if (pThread->IsDoNotTriggerGcSet())
-        return;
-
-    // The wait operation below may trash the last win32 error. We save the error here so that it can be
-    // restored after the wait operation;
-    int32_t lastErrorOnEntry = PalGetLastError();
-
     pThread->WaitForGC(pFrame);
-
-    // Restore the saved error
-    PalSetLastError(lastErrorOnEntry);
 }
 
 // Standard calling convention variant and actual implementation for RhpGcPoll
 EXTERN_C NOINLINE void FASTCALL RhpGcPoll2(PInvokeTransitionFrame* pFrame)
 {
     Thread* pThread = ThreadStore::GetCurrentThread();
-    pFrame->m_pThread = pThread;
+    if (pThread->IsDoNotTriggerGcSet())
+        return;
 
-    RhpWaitForGC2(pFrame);
+    pFrame->m_pThread = pThread;
+    pThread->WaitForGC(pFrame);
 }
 
 #ifdef FEATURE_SUSPEND_REDIRECTION
-// Standard calling convention variant and actual implementation for RhpSuspendRedirected
+
 EXTERN_C NOINLINE void FASTCALL RhpSuspendRedirected(PInvokeTransitionFrame * pFrame)
 {
     Thread* pThread = ThreadStore::GetCurrentThread();
@@ -1054,19 +1051,13 @@ EXTERN_C NOINLINE void FASTCALL RhpSuspendRedirected(PInvokeTransitionFrame * pF
     pFrame->m_pThread = pThread;
     pFrame->m_RIP = (void*)pCtx->GetIp();
 
-    // The wait operation below may trash the last win32 error. We save the error here so that it can be
-    // restored after the wait operation;
-    int32_t lastErrorOnEntry = PalGetLastError();
-
     pThread->WaitForGC(pFrame);
-
-    // Restore the saved error
-    PalSetLastError(lastErrorOnEntry);
 
     // restore execution at interrupted location
     PalRestoreContext(pCtx);
     UNREACHABLE();
 }
+
 #endif //FEATURE_SUSPEND_REDIRECTION
 
 void Thread::PushExInfo(ExInfo * pExInfo)
