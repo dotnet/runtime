@@ -60,15 +60,9 @@ LEAF_END JIT_TrialAllocSFastMP_InlineGetThread, _TEXT
 
 ; HCIMPL2(Object*, JIT_Box, CORINFO_CLASS_HANDLE type, void* unboxedData)
 NESTED_ENTRY JIT_BoxFastMP_InlineGetThread, _TEXT
-        mov     rax, [rcx + OFFSETOF__MethodTable__m_pWriteableData]
-
-        ; Check whether the class has not been initialized
-        test    dword ptr [rax + OFFSETOF__MethodTableWriteableData__m_dwFlags], MethodTableWriteableData__enum_flag_Unrestored
-        jnz     ClassNotInited
-
-        mov     r8d, [rcx + OFFSET__MethodTable__m_BaseSize]
 
         ; m_BaseSize is guaranteed to be a multiple of 8.
+        mov     r8d, [rcx + OFFSET__MethodTable__m_BaseSize]
 
         INLINE_GETTHREAD r11
         mov     r10, [r11 + OFFSET__Thread__m_alloc_context__alloc_limit]
@@ -116,7 +110,6 @@ align 16
         pop     rax
         ret
 
-    ClassNotInited:
     AllocFailed:
     NullRef:
         jmp     JIT_Box

@@ -205,15 +205,8 @@ LEAF_END JIT_TrialAllocSFastSP, _TEXT
 ; HCIMPL2(Object*, JIT_Box, CORINFO_CLASS_HANDLE type, void* unboxedData)
 NESTED_ENTRY JIT_BoxFastUP, _TEXT
 
-        mov     rax, [rcx + OFFSETOF__MethodTable__m_pWriteableData]
-
-        ; Check whether the class has not been initialized
-        test    dword ptr [rax + OFFSETOF__MethodTableWriteableData__m_dwFlags], MethodTableWriteableData__enum_flag_Unrestored
-        jnz     JIT_Box
-
-        mov     r8d, [rcx + OFFSET__MethodTable__m_BaseSize]
-
         ; m_BaseSize is guaranteed to be a multiple of 8.
+        mov     r8d, [rcx + OFFSET__MethodTable__m_BaseSize]
 
         inc     [g_global_alloc_lock]
         jnz     JIT_Box
