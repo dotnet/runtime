@@ -1023,6 +1023,7 @@ protected:
                     {
                         size = 0;
                     }
+                    FALLTHROUGH;
                 default:
                     break;
             }
