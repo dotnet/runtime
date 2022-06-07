@@ -118,6 +118,18 @@ namespace System.IO.Tests
                     PreallocationSize = preallocationSize
                 });
         }
+
+        protected override FileStream CreateFileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, long preallocationSize, UnixFileMode unixFileMode)
+            => new FileInfo(path).Open(
+                    new FileStreamOptions {
+                        Mode = mode,
+                        Access = access,
+                        Share = share,
+                        BufferSize = bufferSize,
+                        Options = options,
+                        PreallocationSize = preallocationSize,
+                        UnixCreateMode = unixFileMode
+                    });
     }
 
     public class FileInfo_OpenSpecial : FileStream_ctor_str_fm_fa_fs
