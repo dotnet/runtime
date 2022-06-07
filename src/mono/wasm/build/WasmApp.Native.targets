@@ -91,6 +91,7 @@
         See https://github.com/dotnet/runtime/issues/53367 for the motivating issue
       -->
       <EmscriptenEnvVars Include="PYTHONUTF8=1" />
+      <EmscriptenEnvVars Include="EM_WORKAROUND_PYTHON_BUG_34780=1" />
     </ItemGroup>
   </Target>
 
