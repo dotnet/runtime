@@ -278,6 +278,9 @@ void Rationalizer::RewriteIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTree*
 //
 void Rationalizer::RewriteSubLshDiv(GenTree** use)
 {
+    if (!comp->opts.OptimizationEnabled())
+        return;
+
     GenTree* const node = *use;
 
     if (!node->OperIs(GT_SUB))
@@ -286,7 +289,7 @@ void Rationalizer::RewriteSubLshDiv(GenTree** use)
     GenTree* op1 = node->gtGetOp1();
     GenTree* op2 = node->gtGetOp2();
 
-    if (!(node->TypeIs(TYP_INT, TYP_LONG) && !node->IsUnsigned() && op1->OperIs(GT_LCL_VAR)))
+    if (!(node->TypeIs(TYP_INT, TYP_LONG) && op1->OperIs(GT_LCL_VAR)))
         return;
 
     if (!op2->OperIs(GT_LSH))
@@ -309,18 +312,12 @@ void Rationalizer::RewriteSubLshDiv(GenTree** use)
             size_t cnsValue   = cns->AsIntConCommon()->IntegralValue();
             if ((cnsValue >> shiftValue) == 1)
             {
-                GenTree* const treeFirstNode  = comp->fgGetFirstNode(node);
-                GenTree* const insertionPoint = treeFirstNode->gtPrev;
-                BlockRange().Remove(treeFirstNode, node);
-
                 node->ChangeOper(GT_MOD);
                 node->AsOp()->gtOp2 = cns;
-
-                BlockRange().Remove(op2, shift);
-                BlockRange().InsertBefore(node, cns);
-
-                comp->gtSetEvalOrder(node);
-                BlockRange().InsertAfter(insertionPoint, LIR::Range(comp->fgSetTreeSeq(node), node));
+                BlockRange().Remove(lsh);
+                BlockRange().Remove(div);
+                BlockRange().Remove(a);
+                BlockRange().Remove(shift);
             }
         }
     }
