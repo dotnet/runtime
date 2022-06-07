@@ -14,12 +14,10 @@ namespace System.Formats.Tar
     {
         private ReadOnlyDictionary<string, string>? _readOnlyExtendedAttributes;
 
-        // Constructor used when reading an existing archive.
+        // Constructor called when reading a TarEntry from a TarReader or when converting from a different format.
         internal PaxTarEntry(TarHeader header, TarReader? readerOfOrigin)
-            : base(header, readerOfOrigin)
+            : base(header._typeFlag, TarEntryFormat.Pax, header, readerOfOrigin)
         {
-            _header._extendedAttributes ??= new Dictionary<string, string>();
-            _readOnlyExtendedAttributes = null;
         }
 
         /// <summary>
@@ -50,7 +48,7 @@ namespace System.Formats.Tar
         /// </list>
         /// </remarks>
         public PaxTarEntry(TarEntryType entryType, string entryName)
-            : base(entryType, entryName, TarEntryFormat.Pax)
+            : base(entryType, TarEntryFormat.Pax, entryName)
         {
         }
 
@@ -84,7 +82,7 @@ namespace System.Formats.Tar
         /// </list>
         /// </remarks>
         public PaxTarEntry(TarEntryType entryType, string entryName, IEnumerable<KeyValuePair<string, string>> extendedAttributes)
-            : base(entryType, entryName, TarEntryFormat.Pax)
+            : base(entryType, TarEntryFormat.Pax, entryName)
         {
             ArgumentNullException.ThrowIfNull(extendedAttributes);
             _header.ReplaceNormalAttributesWithExtended(extendedAttributes);
@@ -94,15 +92,11 @@ namespace System.Formats.Tar
         /// Initializes a new <see cref="PaxTarEntry"/> instance by converting the specified <paramref name="other"/> entry into the PAX format.
         /// </summary>
         public PaxTarEntry(TarEntry other)
-            : this(other._header, other._readerOfOrigin)
+            : base(other.EntryType == TarEntryType.V7RegularFile ? TarEntryType.RegularFile : other.EntryType,
+                   TarEntryFormat.Pax,
+                   other._header,
+                   other._readerOfOrigin)
         {
-            if (_header._typeFlag == TarEntryType.V7RegularFile)
-            {
-                _header._typeFlag = TarEntryType.RegularFile;
-            }
-            TarHelpers.VerifyEntryTypeIsSupported(_header._typeFlag, TarEntryFormat.Pax, forWriting: false);
-
-            _header._format = TarEntryFormat.Pax;
         }
 
         /// <summary>

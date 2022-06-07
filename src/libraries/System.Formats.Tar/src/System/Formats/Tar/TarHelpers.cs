@@ -178,8 +178,8 @@ namespace System.Formats.Tar
         }
 
         // Throws if the specified entry type is not supported for the specified format.
-        // If 'forWriting' is true, an incompatible 'Regular File' entry type is allowed. It will be converted to the compatible version before writing.
-        internal static void VerifyEntryTypeIsSupported(TarEntryType entryType, TarEntryFormat archiveFormat, bool forWriting)
+        // If 'invokingFromWriteEntry' is true, an incompatible 'Regular File' entry type is allowed. It will be converted to the compatible version before writing.
+        internal static void VerifyEntryTypeIsSupported(TarEntryType entryType, TarEntryFormat archiveFormat, bool invokingFromWriteEntry = false)
         {
             switch (archiveFormat)
             {
@@ -192,7 +192,7 @@ namespace System.Formats.Tar
                     {
                         return;
                     }
-                    if (forWriting && entryType is TarEntryType.RegularFile)
+                    if (invokingFromWriteEntry && entryType is TarEntryType.RegularFile)
                     {
                         return;
                     }
@@ -210,7 +210,7 @@ namespace System.Formats.Tar
                     {
                         return;
                     }
-                    if (forWriting && entryType is TarEntryType.V7RegularFile)
+                    if (invokingFromWriteEntry && entryType is TarEntryType.V7RegularFile)
                     {
                         return;
                     }
@@ -231,7 +231,7 @@ namespace System.Formats.Tar
                         // - GlobalExtendedAttributes
                         return;
                     }
-                    if (forWriting && entryType is TarEntryType.V7RegularFile)
+                    if (invokingFromWriteEntry && entryType is TarEntryType.V7RegularFile)
                     {
                         return;
                     }
@@ -260,7 +260,7 @@ namespace System.Formats.Tar
                         // - LongPath
                         return;
                     }
-                    if (forWriting && entryType is TarEntryType.V7RegularFile)
+                    if (invokingFromWriteEntry && entryType is TarEntryType.V7RegularFile)
                     {
                         return;
                     }

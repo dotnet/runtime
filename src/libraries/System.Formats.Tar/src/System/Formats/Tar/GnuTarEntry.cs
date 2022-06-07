@@ -9,9 +9,9 @@ namespace System.Formats.Tar
     /// <remarks>Even though the <see cref="TarEntryFormat.Gnu"/> format is not POSIX compatible, it implements and supports the Unix-specific fields that were defined in the POSIX IEEE P1003.1 standard from 1988: <c>devmajor</c>, <c>devminor</c>, <c>gname</c> and <c>uname</c>.</remarks>
     public sealed class GnuTarEntry : PosixTarEntry
     {
-        // Constructor used when reading an existing archive.
+        // Constructor called when reading a TarEntry from a TarReader or when converting from a different format.
         internal GnuTarEntry(TarHeader header, TarReader? readerOfOrigin)
-            : base(header, readerOfOrigin)
+            : base(header._typeFlag, TarEntryFormat.Gnu, header, readerOfOrigin)
         {
         }
 
@@ -29,7 +29,7 @@ namespace System.Formats.Tar
         /// </list>
         /// </remarks>
         public GnuTarEntry(TarEntryType entryType, string entryName)
-            : base(entryType, entryName, TarEntryFormat.Gnu)
+            : base(entryType, TarEntryFormat.Gnu, entryName)
         {
         }
 
@@ -37,15 +37,11 @@ namespace System.Formats.Tar
         /// Initializes a new <see cref="GnuTarEntry"/> instance by converting the specified <paramref name="other"/> entry into the GNU format.
         /// </summary>
         public GnuTarEntry(TarEntry other)
-            : this(other._header, other._readerOfOrigin)
+            : base(other.EntryType == TarEntryType.V7RegularFile ? TarEntryType.RegularFile : other.EntryType,
+                   TarEntryFormat.Gnu,
+                   other._header,
+                   other._readerOfOrigin)
         {
-            if (_header._typeFlag == TarEntryType.V7RegularFile)
-            {
-                _header._typeFlag = TarEntryType.RegularFile;
-            }
-            TarHelpers.VerifyEntryTypeIsSupported(_header._typeFlag, TarEntryFormat.Gnu, forWriting: false);
-
-            _header._format = TarEntryFormat.Gnu;
         }
 
         /// <summary>

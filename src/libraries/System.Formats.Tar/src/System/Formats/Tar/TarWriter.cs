@@ -165,7 +165,7 @@ namespace System.Formats.Tar
         {
             ThrowIfDisposed();
 
-            TarHelpers.VerifyEntryTypeIsSupported(entry.EntryType, Format, forWriting: true);
+            TarHelpers.VerifyEntryTypeIsSupported(entry.EntryType, Format, invokingFromWriteEntry: true);
 
             WriteGlobalExtendedAttributesEntryIfNeeded();
 

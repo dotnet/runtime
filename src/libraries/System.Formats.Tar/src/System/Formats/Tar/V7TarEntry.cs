@@ -8,9 +8,9 @@ namespace System.Formats.Tar
     /// </summary>
     public sealed class V7TarEntry : TarEntry
     {
-        // Constructor used when reading an existing archive.
+        // Constructor called when reading a TarEntry from a TarReader or when converting from a different format.
         internal V7TarEntry(TarHeader header, TarReader? readerOfOrigin)
-            : base(header, readerOfOrigin)
+            : base(header._typeFlag, TarEntryFormat.V7, header, readerOfOrigin)
         {
         }
 
@@ -23,7 +23,7 @@ namespace System.Formats.Tar
         /// <exception cref="InvalidOperationException">The entry type is not supported for creating an entry.</exception>
         /// <remarks>When creating an instance using the <see cref="V7TarEntry(TarEntryType, string)"/> constructor, only the following entry types are supported: <see cref="TarEntryType.Directory"/>, <see cref="TarEntryType.HardLink"/>, <see cref="TarEntryType.SymbolicLink"/> and <see cref="TarEntryType.V7RegularFile"/>.</remarks>
         public V7TarEntry(TarEntryType entryType, string entryName)
-            : base(entryType, entryName, TarEntryFormat.V7)
+            : base(entryType, TarEntryFormat.V7, entryName)
         {
         }
 
@@ -31,15 +31,11 @@ namespace System.Formats.Tar
         /// Initializes a new <see cref="V7TarEntry"/> instance by converting the specified <paramref name="other"/> entry into the V7 format.
         /// </summary>
         public V7TarEntry(TarEntry other)
-            : this(other._header, other._readerOfOrigin)
+            : base(other.EntryType == TarEntryType.RegularFile ? TarEntryType.V7RegularFile : other.EntryType,
+                   TarEntryFormat.V7,
+                   other._header,
+                   other._readerOfOrigin)
         {
-            if (_header._typeFlag == TarEntryType.RegularFile)
-            {
-                _header._typeFlag = TarEntryType.V7RegularFile;
-            }
-            TarHelpers.VerifyEntryTypeIsSupported(_header._typeFlag, TarEntryFormat.V7, forWriting: false);
-
-            _header._format = TarEntryFormat.V7;
         }
 
         // Determines if the current instance's entry type supports setting a data stream.

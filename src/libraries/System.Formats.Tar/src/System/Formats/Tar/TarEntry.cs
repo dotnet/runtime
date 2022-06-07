@@ -19,35 +19,31 @@ namespace System.Formats.Tar
         // Used to access the data section of this entry in an unseekable file
         internal TarReader? _readerOfOrigin;
 
-        // Constructor used when reading an existing archive.
-        internal TarEntry(TarHeader header, TarReader? readerOfOrigin)
+        // Constructor called when reading a TarEntry from a TarReader or when converting from a different format.
+        internal TarEntry(TarEntryType entryType, TarEntryFormat format, TarHeader header, TarReader? readerOfOrigin)
         {
+            // Throws if format is unknown or out of range
+            TarHelpers.VerifyEntryTypeIsSupported(entryType, format);
+
             _header = header;
+            _header._typeFlag = entryType;
+            _header._format = format;
             _readerOfOrigin = readerOfOrigin;
+            _header._extendedAttributes ??= new Dictionary<string, string>();
         }
 
-        // Constructor called when creating a new 'TarEntry*' instance that can be passed to a TarWriter.
-        internal TarEntry(TarEntryType entryType, string entryName, TarEntryFormat format)
+        // Constructor called when creating a new TarEntry.
+        internal TarEntry(TarEntryType entryType, TarEntryFormat format, string entryName)
+            : this(entryType, format, header: default, readerOfOrigin: null)
         {
             ArgumentException.ThrowIfNullOrEmpty(entryName);
 
-            // Throws if format is unknown or out of range
-            TarHelpers.VerifyEntryTypeIsSupported(entryType, format, forWriting: false);
-
-            _readerOfOrigin = null;
-
-            _header = default;
-
-            _header._extendedAttributes = new Dictionary<string, string>();
-
             _header._name = entryName;
-            _header._linkName = string.Empty;
-            _header._typeFlag = entryType;
-            _header._mode = (int)TarHelpers.DefaultMode;
 
+            _header._linkName = string.Empty;
+            _header._mode = (int)TarHelpers.DefaultMode;
             _header._gName = string.Empty;
             _header._uName = string.Empty;
-
             DateTimeOffset now = DateTimeOffset.Now;
             _header._mTime = now;
             _header._aTime = now;

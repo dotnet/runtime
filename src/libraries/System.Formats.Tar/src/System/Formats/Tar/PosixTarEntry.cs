@@ -10,15 +10,15 @@ namespace System.Formats.Tar
     /// Even though the <see cref="TarEntryFormat.Gnu"/> format is not POSIX compatible, it implements and supports the Unix-specific fields that were defined in that POSIX standard.</remarks>
     public abstract partial class PosixTarEntry : TarEntry
     {
-        // Constructor used when reading an existing archive.
-        internal PosixTarEntry(TarHeader header, TarReader? readerOfOrigin)
-            : base(header, readerOfOrigin)
+        // Constructor called when reading a TarEntry from a TarReader or when converting from a different format.
+        internal PosixTarEntry(TarEntryType entryType, TarEntryFormat format, TarHeader header, TarReader? readerOfOrigin)
+            : base(entryType, format, header, readerOfOrigin)
         {
         }
 
-        // Constructor called when creating a new 'TarEntry*' instance that can be passed to a TarWriter.
-        internal PosixTarEntry(TarEntryType entryType, string entryName, TarEntryFormat format)
-            : base(entryType, entryName, format)
+        // Constructor called when creating a new TarEntry.
+        internal PosixTarEntry(TarEntryType entryType, TarEntryFormat format, string entryName)
+            : base(entryType, format, entryName)
         {
         }
 
