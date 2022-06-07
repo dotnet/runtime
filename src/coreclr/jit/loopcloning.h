@@ -70,7 +70,7 @@ exception occurs.
        block, stmt, tree information) to do the optimization later.
             a) This involves checking if the loop is well-formed with respect to
             the optimization being performed.
-            b) In array bounds check case, reconstructing the morphed GT_INDEX
+            b) In array bounds check case, reconstructing the morphed GT_INDEX_ADDR
             nodes back to their array representation.
                 i) The array index is stored in the "context" variable with
                 additional block, tree, stmt info.
@@ -195,7 +195,7 @@ class Compiler;
  *
  *  Represents an array access and associated bounds checks.
  *  Array access is required to have the array and indices in local variables.
- *  This struct is constructed using a GT_INDEX node that is broken into
+ *  This struct is constructed using a GT_INDEX_ADDR node that is broken into
  *  its sub trees.
  *
  */

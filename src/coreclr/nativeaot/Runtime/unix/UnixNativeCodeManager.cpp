@@ -234,7 +234,7 @@ uintptr_t UnixNativeCodeManager::GetConservativeUpperBoundForOutgoingArgs(Method
 
 bool UnixNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
                                              REGDISPLAY *    pRegisterSet,                 // in/out
-                                             PTR_VOID *      ppPreviousTransitionFrame)    // out
+                                             PInvokeTransitionFrame**      ppPreviousTransitionFrame)    // out
 {
     UnixNativeMethodInfo * pNativeMethodInfo = (UnixNativeMethodInfo *)pMethodInfo;
 
@@ -267,7 +267,8 @@ bool UnixNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
         {
             basePointer = dac_cast<TADDR>(pRegisterSet->GetFP());
         }
-        *ppPreviousTransitionFrame = *(void**)(basePointer + slot);
+
+        *ppPreviousTransitionFrame = *(PInvokeTransitionFrame**)(basePointer + slot);
         return true;
     }
 
@@ -444,8 +445,7 @@ PTR_VOID UnixNativeCodeManager::GetAssociatedData(PTR_VOID ControlPC)
     return dac_cast<PTR_VOID>(p + *dac_cast<PTR_Int32>(p));
 }
 
-extern "C" bool RegisterCodeManager(ICodeManager * pCodeManager, PTR_VOID pvStartRange, uint32_t cbRange);
-extern "C" void UnregisterCodeManager(ICodeManager * pCodeManager);
+extern "C" void RegisterCodeManager(ICodeManager * pCodeManager, PTR_VOID pvStartRange, uint32_t cbRange);
 extern "C" bool RegisterUnboxingStubs(PTR_VOID pvStartRange, uint32_t cbRange);
 
 extern "C"
@@ -461,12 +461,10 @@ bool RhRegisterOSModule(void * pModule,
     if (pUnixNativeCodeManager == nullptr)
         return false;
 
-    if (!RegisterCodeManager(pUnixNativeCodeManager, pvManagedCodeStartRange, cbManagedCodeRange))
-        return false;
+    RegisterCodeManager(pUnixNativeCodeManager, pvManagedCodeStartRange, cbManagedCodeRange);
 
     if (!RegisterUnboxingStubs(pvUnboxingStubsStartRange, cbUnboxingStubsRange))
     {
-        UnregisterCodeManager(pUnixNativeCodeManager);
         return false;
     }
 

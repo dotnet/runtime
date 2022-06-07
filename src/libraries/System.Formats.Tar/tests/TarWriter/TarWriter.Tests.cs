@@ -13,7 +13,7 @@ namespace System.Formats.Tar.Tests
         public void Constructors_NullStream()
         {
             Assert.Throws<ArgumentNullException>(() => new TarWriter(archiveStream: null));
-            Assert.Throws<ArgumentNullException>(() => new TarWriter(archiveStream: null, TarFormat.V7));
+            Assert.Throws<ArgumentNullException>(() => new TarWriter(archiveStream: null, TarEntryFormat.V7));
         }
 
         [Fact]
@@ -36,29 +36,29 @@ namespace System.Formats.Tar.Tests
             using MemoryStream archiveStream = new MemoryStream();
 
             using TarWriter writerDefault = new TarWriter(archiveStream, leaveOpen: true);
-            Assert.Equal(TarFormat.Pax, writerDefault.Format);
+            Assert.Equal(TarEntryFormat.Pax, writerDefault.Format);
 
-            using TarWriter writerV7 = new TarWriter(archiveStream, TarFormat.V7, leaveOpen: true);
-            Assert.Equal(TarFormat.V7, writerV7.Format);
+            using TarWriter writerV7 = new TarWriter(archiveStream, TarEntryFormat.V7, leaveOpen: true);
+            Assert.Equal(TarEntryFormat.V7, writerV7.Format);
 
-            using TarWriter writerUstar = new TarWriter(archiveStream, TarFormat.Ustar, leaveOpen: true);
-            Assert.Equal(TarFormat.Ustar, writerUstar.Format);
+            using TarWriter writerUstar = new TarWriter(archiveStream, TarEntryFormat.Ustar, leaveOpen: true);
+            Assert.Equal(TarEntryFormat.Ustar, writerUstar.Format);
 
-            using TarWriter writerPax = new TarWriter(archiveStream, TarFormat.Pax, leaveOpen: true);
-            Assert.Equal(TarFormat.Pax, writerPax.Format);
+            using TarWriter writerPax = new TarWriter(archiveStream, TarEntryFormat.Pax, leaveOpen: true);
+            Assert.Equal(TarEntryFormat.Pax, writerPax.Format);
 
-            using TarWriter writerGnu = new TarWriter(archiveStream, TarFormat.Gnu, leaveOpen: true);
-            Assert.Equal(TarFormat.Gnu, writerGnu.Format);
+            using TarWriter writerGnu = new TarWriter(archiveStream, TarEntryFormat.Gnu, leaveOpen: true);
+            Assert.Equal(TarEntryFormat.Gnu, writerGnu.Format);
 
             using TarWriter writerNullGeaDefaultPax = new TarWriter(archiveStream, leaveOpen: true, globalExtendedAttributes: null);
-            Assert.Equal(TarFormat.Pax, writerNullGeaDefaultPax.Format);
+            Assert.Equal(TarEntryFormat.Pax, writerNullGeaDefaultPax.Format);
 
             using TarWriter writerValidGeaDefaultPax = new TarWriter(archiveStream, leaveOpen: true, globalExtendedAttributes: new Dictionary<string, string>());
-            Assert.Equal(TarFormat.Pax, writerValidGeaDefaultPax.Format);
+            Assert.Equal(TarEntryFormat.Pax, writerValidGeaDefaultPax.Format);
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => new TarWriter(archiveStream, TarFormat.Unknown));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new TarWriter(archiveStream, (TarFormat)int.MinValue));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new TarWriter(archiveStream, (TarFormat)int.MaxValue));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new TarWriter(archiveStream, TarEntryFormat.Unknown));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new TarWriter(archiveStream, (TarEntryFormat)int.MinValue));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new TarWriter(archiveStream, (TarEntryFormat)int.MaxValue));
         }
 
         [Fact]
@@ -67,7 +67,7 @@ namespace System.Formats.Tar.Tests
             using MemoryStream archiveStream = new MemoryStream();
             using WrappedStream wrappedStream = new WrappedStream(archiveStream, canRead: true, canWrite: false, canSeek: false);
             Assert.Throws<IOException>(() => new TarWriter(wrappedStream));
-            Assert.Throws<IOException>(() => new TarWriter(wrappedStream, TarFormat.V7));
+            Assert.Throws<IOException>(() => new TarWriter(wrappedStream, TarEntryFormat.V7));
         }
 
         [Fact]
@@ -80,10 +80,33 @@ namespace System.Formats.Tar.Tests
         }
 
         [Fact]
+        public void Write_To_UnseekableStream()
+        {
+            using MemoryStream inner = new MemoryStream();
+            using WrappedStream wrapped = new WrappedStream(inner, canRead: true, canWrite: true, canSeek: false);
+
+            using (TarWriter writer = new TarWriter(wrapped, leaveOpen: true))
+            {
+                PaxTarEntry paxEntry = new PaxTarEntry(TarEntryType.RegularFile, "file.txt");
+                writer.WriteEntry(paxEntry);
+            } // The final records should get written, and the length should not be set because position cannot be read
+
+            inner.Seek(0, SeekOrigin.Begin); // Rewind the base stream (wrapped cannot be rewound)
+
+            using (TarReader reader = new TarReader(wrapped))
+            {
+                TarEntry entry = reader.GetNextEntry();
+                Assert.Equal(TarEntryFormat.Pax, reader.Format);
+                Assert.Equal(TarEntryType.RegularFile, entry.EntryType);
+                Assert.Null(reader.GetNextEntry());
+            }
+        }
+
+        [Fact]
         public void VerifyChecksumV7()
         {
             using MemoryStream archive = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archive, TarFormat.V7, leaveOpen: true))
+            using (TarWriter writer = new TarWriter(archive, TarEntryFormat.V7, leaveOpen: true))
             {
                 V7TarEntry entry = new V7TarEntry(
                     // '\0' = 0

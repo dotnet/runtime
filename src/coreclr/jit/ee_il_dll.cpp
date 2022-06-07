@@ -1122,6 +1122,36 @@ void Compiler::eeDispLineInfos()
  * (e.g., host AMD64, target ARM64), then VM will get confused anyway.
  */
 
+void Compiler::eeAllocMem(AllocMemArgs* args)
+{
+#ifdef DEBUG
+    const UNATIVE_OFFSET hotSizeRequest  = args->hotCodeSize;
+    const UNATIVE_OFFSET coldSizeRequest = args->coldCodeSize;
+
+    // Fake splitting implementation: place hot/cold code in contiguous section
+    if (JitConfig.JitFakeProcedureSplitting() && (coldSizeRequest > 0))
+    {
+        args->hotCodeSize  = hotSizeRequest + coldSizeRequest;
+        args->coldCodeSize = 0;
+    }
+#endif
+
+    info.compCompHnd->allocMem(args);
+
+#ifdef DEBUG
+    if (JitConfig.JitFakeProcedureSplitting() && (coldSizeRequest > 0))
+    {
+        // Fix up hot/cold code pointers
+        args->coldCodeBlock   = ((BYTE*)args->hotCodeBlock) + hotSizeRequest;
+        args->coldCodeBlockRW = ((BYTE*)args->hotCodeBlockRW) + hotSizeRequest;
+
+        // Reset args' hot/cold code sizes in case caller reads them later
+        args->hotCodeSize  = hotSizeRequest;
+        args->coldCodeSize = coldSizeRequest;
+    }
+#endif
+}
+
 void Compiler::eeReserveUnwindInfo(bool isFunclet, bool isColdCode, ULONG unwindSize)
 {
 #ifdef DEBUG

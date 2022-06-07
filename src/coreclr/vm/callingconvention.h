@@ -1720,8 +1720,6 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
             m_idxFPReg += cFPRegs;
             return argOfs;
         }
-        else
-            m_idxFPReg = NUM_ARGUMENT_REGISTERS;
     }
 
     {

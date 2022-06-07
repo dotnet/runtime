@@ -39,6 +39,9 @@ namespace LibraryImportGenerator.IntegrationTests
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "sum_string_lengths")]
             public static partial int SumStringLengths([MarshalUsing(typeof(ListMarshaller<string>)), MarshalUsing(typeof(Utf16StringMarshaller), ElementIndirectionDepth = 1)] List<string> strArray);
 
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "sum_string_lengths")]
+            public static partial int SumStringLengths([MarshalUsing(typeof(Utf16StringMarshaller), ElementIndirectionDepth = 1)] WrappedList<string> strArray);
+
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "reverse_strings_replace")]
             public static partial void ReverseStrings_Ref([MarshalUsing(typeof(ListMarshaller<string>), CountElementName = "numElements"), MarshalUsing(typeof(Utf16StringMarshaller), ElementIndirectionDepth = 1)] ref List<string> strArray, out int numElements);
 
@@ -57,7 +60,7 @@ namespace LibraryImportGenerator.IntegrationTests
             public static partial List<byte> GetLongBytes(long l);
 
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "and_all_members")]
-            [return:MarshalAs(UnmanagedType.U1)]
+            [return: MarshalAs(UnmanagedType.U1)]
             public static partial bool AndAllMembers([MarshalUsing(typeof(ListMarshaller<BoolStruct>))] List<BoolStruct> pArray, int length);
         }
     }
@@ -141,6 +144,13 @@ namespace LibraryImportGenerator.IntegrationTests
         public void ByValueNullCollectionWithNonBlittableElements()
         {
             Assert.Equal(0, NativeExportsNE.Collections.SumStringLengths(null));
+        }
+
+        [Fact]
+        public void ByValueCollectionWithNonBlittableElements_WithDefaultMarshalling()
+        {
+            var strings = new WrappedList<string>(GetStringList());
+            Assert.Equal(strings.Wrapped.Sum(str => str?.Length ?? 0), NativeExportsNE.Collections.SumStringLengths(strings));
         }
 
         [Fact]

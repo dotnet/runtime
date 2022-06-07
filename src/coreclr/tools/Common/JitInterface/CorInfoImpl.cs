@@ -180,11 +180,11 @@ namespace Internal.JitInterface
             _unmanagedCallbacks = GetUnmanagedCallbacks();
         }
 
-        public TextWriter Log
+        private Logger Logger
         {
             get
             {
-                return _compilation.Logger.Writer;
+                return _compilation.Logger;
             }
         }
 
@@ -3465,8 +3465,8 @@ namespace Internal.JitInterface
 
         private int doAssert(byte* szFile, int iLine, byte* szExpr)
         {
-            Log.WriteLine(Marshal.PtrToStringAnsi((IntPtr)szFile) + ":" + iLine);
-            Log.WriteLine(Marshal.PtrToStringAnsi((IntPtr)szExpr));
+            Logger.LogMessage(Marshal.PtrToStringAnsi((IntPtr)szFile) + ":" + iLine);
+            Logger.LogMessage(Marshal.PtrToStringAnsi((IntPtr)szExpr));
 
             return 1;
         }
