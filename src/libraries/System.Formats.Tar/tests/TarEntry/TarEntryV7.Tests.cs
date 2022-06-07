@@ -48,7 +48,6 @@ namespace System.Formats.Tar.Tests
             Assert.Equal(InitialEntryName, convertedUstar.Name);
         }
 
-
         [Fact]
         public void Constructor_ConversionFromPax()
         {
@@ -58,7 +57,6 @@ namespace System.Formats.Tar.Tests
             Assert.Equal(TarEntryType.V7RegularFile, convertedPax.EntryType);
             Assert.Equal(InitialEntryName, convertedPax.Name);
         }
-
 
         [Fact]
         public void Constructor_ConversionFromGnu()
