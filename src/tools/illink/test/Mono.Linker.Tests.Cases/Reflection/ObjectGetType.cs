@@ -59,6 +59,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			UnknownValue.Test ();
 
 			PrivateMembersOnBaseTypesAppliedToDerived.Test ();
+
+			IsInstOf.Test ();
 		}
 
 		[Kept]
@@ -1567,6 +1569,35 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 				// This should warn - non-public annotations don't propagate to base types
 				type.BaseType.RequiresNonPublicMethods ();
+			}
+		}
+
+		[Kept]
+		class IsInstOf
+		{
+			[Kept]
+			[KeptMember (".ctor()")]
+			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+			class Target
+			{
+			}
+
+			[Kept]
+			// https://github.com/dotnet/linker/issues/2819
+			[ExpectedWarning ("IL2072", ProducedBy = ProducedBy.Trimmer)]
+			static void TestIsInstOf (object o)
+			{
+				if (o is Target t) {
+					t.GetType ().RequiresPublicParameterlessConstructor ();
+				}
+			}
+
+			[Kept]
+			public static void Test ()
+			{
+				var target = new Target ();
+				TestIsInstOf (target);
 			}
 		}
 	}
