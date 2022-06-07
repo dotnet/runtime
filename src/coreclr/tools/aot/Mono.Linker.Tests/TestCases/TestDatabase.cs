@@ -13,26 +13,6 @@ namespace Mono.Linker.Tests.TestCases
 	{
 		private static TestCase[]? _cachedAllCases;
 
-		public static IEnumerable<object[]> BasicTests ()
-		{
-			return TestNamesBySuiteName ("Basic");
-		}
-
-		public static IEnumerable<object[]> MultiAssembly ()
-		{
-			return TestNamesBySuiteName ("MultiAssembly");
-		}
-
-		public static IEnumerable<object[]> LinkXml ()
-		{
-			return TestNamesBySuiteName ("LinkXml");
-		}
-
-		public static IEnumerable<object[]> FeatureSettings ()
-		{
-			return TestNamesBySuiteName ("FeatureSettings");
-		}
-
 		public static IEnumerable<object[]> DataFlow ()
 		{
 			return TestNamesBySuiteName ("DataFlow");
