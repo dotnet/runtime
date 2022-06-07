@@ -138,7 +138,6 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void SetLastWriteTimeTicks()
         {
             string firstFile = GetTestFilePath();
@@ -185,7 +184,6 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void SetLastAccessTimeTicks()
         {
             string firstFile = GetTestFilePath();
@@ -194,7 +192,7 @@ namespace System.IO.Tests
             File.WriteAllText(firstFile, "");
             File.WriteAllText(secondFile, "");
 
-            SetLastWriteTimeUtc(secondFile, DateTime.UtcNow);
+            SetLastWriteTimeUtc(firstFile, DateTime.UtcNow);
             long firstFileTicks = GetLastAccessTimeUtc(firstFile).Ticks;
             long secondFileTicks = GetLastAccessTimeUtc(secondFile).Ticks;
             Assert.True(firstFileTicks <= secondFileTicks, $"First File Ticks\t{firstFileTicks}\nSecond File Ticks\t{secondFileTicks}");

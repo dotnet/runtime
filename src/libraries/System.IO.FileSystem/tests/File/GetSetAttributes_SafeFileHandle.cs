@@ -3,7 +3,7 @@
 
 namespace System.IO.Tests
 {
-    public sealed class GetSetAttributes_SafeFileHandle : File_GetSetAttributes
+    public sealed class GetSetAttributes_SafeFileHandle : FileGetSetAttributes
     {
         protected override FileAttributes GetAttributes(string path)
         {
