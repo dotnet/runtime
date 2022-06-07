@@ -1279,7 +1279,7 @@ inline COUNT_T EString<EncodingASCII>::ConvertToUnicode(EString<EncodingUnicode>
     WCHAR* buf = s.OpenBuffer(GetCount());
 
     // Make sure the buffer is big enough.
-    CONSISTENCY_CHECK(s.GetAllocation() > (GetCount() * sizeof(WCHAR)));
+    CONSISTENCY_CHECK(s.GetAllocation() >= GetCount());
 
     // This is a poor man's widen. Since we know that the representation is ASCII,
     // we can just pad the string with a bunch of zero-value bytes. Of course,
@@ -1296,6 +1296,8 @@ inline COUNT_T EString<EncodingASCII>::ConvertToUnicode(EString<EncodingUnicode>
         outBuf--;
         inBuf--;
     }
+    
+    s.CloseBuffer();
 
     RETURN GetCount() + 1;
 }

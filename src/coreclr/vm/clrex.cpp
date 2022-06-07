@@ -1406,7 +1406,7 @@ EETypeLoadException::EETypeLoadException(LPCUTF8 pszNameSpace, LPCUTF8 pTypeName
         EString<EncodingUTF8> sNameSpace(pszNameSpace);
         EString<EncodingUTF8> sTypeName(pTypeName);
         EString<EncodingUTF8> fullName;
-        ns::MakePath(fullName, sNameSpace, fullName);
+        ns::MakePath(fullName, sNameSpace, sTypeName);
         fullName.ConvertToUnicode(m_fullName);
     }
     else if (pTypeName)
