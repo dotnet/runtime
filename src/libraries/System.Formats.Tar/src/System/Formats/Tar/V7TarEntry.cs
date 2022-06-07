@@ -9,7 +9,7 @@ namespace System.Formats.Tar
     public sealed class V7TarEntry : TarEntry
     {
         // Constructor used when reading an existing archive.
-        internal V7TarEntry(TarHeader header, TarReader readerOfOrigin)
+        internal V7TarEntry(TarHeader header, TarReader? readerOfOrigin)
             : base(header, readerOfOrigin)
         {
         }
@@ -31,7 +31,7 @@ namespace System.Formats.Tar
         /// Initializes a new <see cref="V7TarEntry"/> instance by converting the specified <paramref name="other"/> entry into the V7 format.
         /// </summary>
         public V7TarEntry(TarEntry other)
-            : this(other._header, other._readerOfOrigin!)
+            : this(other._header, other._readerOfOrigin)
         {
             if (_header._typeFlag == TarEntryType.RegularFile)
             {

@@ -10,7 +10,7 @@ namespace System.Formats.Tar
     public sealed class GnuTarEntry : PosixTarEntry
     {
         // Constructor used when reading an existing archive.
-        internal GnuTarEntry(TarHeader header, TarReader readerOfOrigin)
+        internal GnuTarEntry(TarHeader header, TarReader? readerOfOrigin)
             : base(header, readerOfOrigin)
         {
         }
@@ -37,7 +37,7 @@ namespace System.Formats.Tar
         /// Initializes a new <see cref="GnuTarEntry"/> instance by converting the specified <paramref name="other"/> entry into the GNU format.
         /// </summary>
         public GnuTarEntry(TarEntry other)
-            : this(other._header, other._readerOfOrigin!)
+            : this(other._header, other._readerOfOrigin)
         {
             if (_header._typeFlag == TarEntryType.V7RegularFile)
             {

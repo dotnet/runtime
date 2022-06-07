@@ -15,7 +15,7 @@ namespace System.Formats.Tar
         private ReadOnlyDictionary<string, string>? _readOnlyExtendedAttributes;
 
         // Constructor used when reading an existing archive.
-        internal PaxTarEntry(TarHeader header, TarReader readerOfOrigin)
+        internal PaxTarEntry(TarHeader header, TarReader? readerOfOrigin)
             : base(header, readerOfOrigin)
         {
             _header._extendedAttributes ??= new Dictionary<string, string>();
@@ -94,7 +94,7 @@ namespace System.Formats.Tar
         /// Initializes a new <see cref="PaxTarEntry"/> instance by converting the specified <paramref name="other"/> entry into the PAX format.
         /// </summary>
         public PaxTarEntry(TarEntry other)
-            : this(other._header, other._readerOfOrigin!)
+            : this(other._header, other._readerOfOrigin)
         {
             if (_header._typeFlag == TarEntryType.V7RegularFile)
             {

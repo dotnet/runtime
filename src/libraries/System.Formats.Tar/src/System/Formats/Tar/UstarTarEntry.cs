@@ -9,7 +9,7 @@ namespace System.Formats.Tar
     public sealed class UstarTarEntry : PosixTarEntry
     {
         // Constructor used when reading an existing archive.
-        internal UstarTarEntry(TarHeader header, TarReader readerOfOrigin)
+        internal UstarTarEntry(TarHeader header, TarReader? readerOfOrigin)
             : base(header, readerOfOrigin)
         {
         }
@@ -36,7 +36,7 @@ namespace System.Formats.Tar
         /// Initializes a new <see cref="UstarTarEntry"/> instance by converting the specified <paramref name="other"/> entry into the Ustar format.
         /// </summary>
         public UstarTarEntry(TarEntry other)
-            : this(other._header, other._readerOfOrigin!)
+            : this(other._header, other._readerOfOrigin)
         {
             if (_header._typeFlag == TarEntryType.V7RegularFile)
             {

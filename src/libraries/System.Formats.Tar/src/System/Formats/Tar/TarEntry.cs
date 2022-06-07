@@ -20,7 +20,7 @@ namespace System.Formats.Tar
         internal TarReader? _readerOfOrigin;
 
         // Constructor used when reading an existing archive.
-        internal TarEntry(TarHeader header, TarReader readerOfOrigin)
+        internal TarEntry(TarHeader header, TarReader? readerOfOrigin)
         {
             _header = header;
             _readerOfOrigin = readerOfOrigin;

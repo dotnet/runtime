@@ -11,7 +11,7 @@ namespace System.Formats.Tar
     public abstract partial class PosixTarEntry : TarEntry
     {
         // Constructor used when reading an existing archive.
-        internal PosixTarEntry(TarHeader header, TarReader readerOfOrigin)
+        internal PosixTarEntry(TarHeader header, TarReader? readerOfOrigin)
             : base(header, readerOfOrigin)
         {
         }
