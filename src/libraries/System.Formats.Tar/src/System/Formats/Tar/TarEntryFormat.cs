@@ -4,28 +4,28 @@
 namespace System.Formats.Tar
 {
     /// <summary>
-    /// Specifies the supported Tar formats.
+    /// Specifies the supported formats that tar entries can use.
     /// </summary>
-    public enum TarFormat
+    public enum TarEntryFormat
     {
         /// <summary>
-        /// Tar format undetermined.
+        /// Tar entry format undetermined.
         /// </summary>
         Unknown,
         /// <summary>
-        /// 1979 Version 7 AT&amp;T Unix Tar Command Format (v7).
+        /// 1979 Version 7 AT&amp;T Unix tar entry format.
         /// </summary>
         V7,
         /// <summary>
-        /// POSIX IEEE 1003.1-1988 Unix Standard Tar Format (ustar).
+        /// POSIX IEEE 1003.1-1988 Unix Standard tar entry format.
         /// </summary>
         Ustar,
         /// <summary>
-        /// POSIX IEEE 1003.1-2001 ("POSIX.1") Pax Interchange Tar Format (pax).
+        /// POSIX IEEE 1003.1-2001 ("POSIX.1") Pax Interchange tar entry format.
         /// </summary>
         Pax,
         /// <summary>
-        /// GNU Tar Format (gnu).
+        /// GNU tar entry format (gnu).
         /// </summary>
         Gnu,
     }
