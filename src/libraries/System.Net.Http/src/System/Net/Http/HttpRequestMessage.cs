@@ -168,6 +168,22 @@ namespace System.Net.Http
 
         internal bool WasRedirected() => (_sendStatus & MessageIsRedirect) != 0;
 
+        internal bool IsWebSocketRequest()
+        {
+            if (Headers.TryGetValues(":protocol", out IEnumerable<string>? values))
+            {
+                var valuesArray = (string[])values;
+                return valuesArray.Length > 0 && valuesArray[0] == "websocket";
+            }
+
+            if (Headers.TryGetValues("Upgrade", out values))
+            {
+                var valuesArray = (string[])values;
+                return valuesArray.Length > 0 && valuesArray[0] == "websocket";
+            }
+            return false;
+        }
+
         #region IDisposable Members
 
         protected virtual void Dispose(bool disposing)

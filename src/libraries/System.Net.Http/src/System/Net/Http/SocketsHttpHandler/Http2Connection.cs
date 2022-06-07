@@ -1899,7 +1899,7 @@ namespace System.Net.Http
             EnableConnect = 0x7
         }
 
-        internal bool IsWebsocketEnabled { get; private set; } = false;
+        internal bool IsWebsocketEnabled { get; private set; } = true;
 
         // Note that this is safe to be called concurrently by multiple threads.
 

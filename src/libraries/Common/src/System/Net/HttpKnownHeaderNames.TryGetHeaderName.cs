@@ -181,6 +181,9 @@ namespace System.Net
                     }
                     break;
 
+                case 9:
+                    potentialHeader = Protocol; goto TryMatch; // :protocol
+
                 case 10:
                     switch (charAt(key, startIndex))
                     {

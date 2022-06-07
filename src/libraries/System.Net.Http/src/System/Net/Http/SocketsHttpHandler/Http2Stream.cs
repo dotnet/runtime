@@ -634,7 +634,6 @@ namespace System.Net.Http
                         if (_response.RequestMessage != null && _response.RequestMessage.IsWebSocketRequest() && statusCode == 200)
                         {
                             _webSocketEstablished = true;
-                            return;
                         }
 
                         _responseProtocolState = ResponseProtocolState.ExpectingHeaders;
