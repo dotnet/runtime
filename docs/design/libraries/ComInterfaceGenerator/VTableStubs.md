@@ -5,7 +5,7 @@ As a building block for the COM interface source generator, we've decided to bui
 1. As part of the migration of dotnet/runtime to use source-generated P/Invokes, we encountered a few scenarios, particularly in the networking stacks, where non-blittable delegate interop was used because the native APIs do not have static entry points. For at least one of these scenarios, MsQuic, the native library provides a table of function pointers. From our experience, this mechanism for versioning is not uncommon and we feel that supporting native libraries that use a versioning scheme similar to this model is worthwhile for us to support.
 2. There are native APIs that we are likely to interoperate with in the future that use native vtables but are not COM-oriented. In particular, the Java Native Interface API, which both dotnet/runtime and xamarin/java.interop interface with in various capacities, uses a vtable model to support exposing their APIs to C and C++. Additionally, its API does not conform to a COM-style IUnknown-based API.
 3. Some COM-style APIs have some corner cases with non-COM-style interfaces. Specifically, some corners of the DirectX APIs are still vtable-based, but do not implement IUnknown. Providing this building block will allow developers to more easily consume these APIs with similar gestures as the rest of the DirectX API surface.
-4. Our future COM interface source generator can build on this building block to provide sane defaults while allowing developers to use the features of this generator to override any default settings provided by the COM generator.
+4. Our future COM interface source generator can build on this building block to provide defaults while allowing developers to use the features of this generator to override any default settings provided by the COM generator.
 
 ## Defined types
 
@@ -57,7 +57,7 @@ public class VirtualMethodIndexAttribute : Attribute
 
 ```
 
-Additionally, a new interface will be provided. This new interface will be used by the source generator to fetch the native `this` pointer and the vtable that the function pointer is stored in. This interface is designed to provide an API that various native platforms, like COM, WinRT, or Swift, could use to provide support for multiple managed interface wrappers from a single native object. In particular, this interface was designed to ensure it is possible support a managed gesture to do an unmanaged "type cast" (i.e. `QueryInterface` in the COM and WinRT worlds).
+A new interface will be defined and used by the source generator to fetch the native `this` pointer and the vtable that the function pointer is stored in. This interface is designed to provide an API that various native platforms, like COM, WinRT, or Swift, could use to provide support for multiple managed interface wrappers from a single native object. In particular, this interface was designed to ensure it is possible support a managed gesture to do an unmanaged "type cast" (i.e., `QueryInterface` in the COM and WinRT worlds).
 
 ```csharp
 namespace System.Runtime.InteropServices;
@@ -187,6 +187,9 @@ unsafe class NativeAPI : IUnmanagedVirtualMethodTableProvider<NoCasting>, INativ
     }
 }
 
+// This struct represent a flat table of function pointers that implements the native API.
+// This can either be returned by the API (MSQuic) or be constructed manually from calling
+// a method that returns function pointers and be used as a cache (OpenGL and Vulkan)
 unsafe partial struct CNativeAPI
 {
     IntPtr getVersion;
@@ -293,11 +296,11 @@ interface IUnknown
     uint Release();
 }
 
-class UnknownCOMObject : IUnmanagedVirtualMethodTableProvider<Guid>, IDynamicInterfaceCastable
+class BaseIUnknownComObject : IUnmanagedVirtualMethodTableProvider<Guid>, IDynamicInterfaceCastable
 {
     private IntPtr _unknownPtr;
 
-    public UnknownCOMObject(IntPtr unknown)
+    public BaseIUnknownComObject(IntPtr unknown)
     {
         _unknownPtr = unknown;
     }

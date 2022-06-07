@@ -22,9 +22,9 @@ namespace ComInterfaceGenerator.Tests
             {
                 public static readonly NoCasting TypeKey = default;
 
-                [VirtualMethodIndex(0)]
+                [VirtualMethodIndex(0, ImplicitThisParameter = true)]
                 int GetData();
-                [VirtualMethodIndex(1)]
+                [VirtualMethodIndex(1, ImplicitThisParameter = true)]
                 void SetData(int x);
             }
 

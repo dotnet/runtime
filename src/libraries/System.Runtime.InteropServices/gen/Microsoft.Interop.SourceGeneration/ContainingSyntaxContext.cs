@@ -74,7 +74,15 @@ namespace Microsoft.Interop
                 && ContainingNamespace == other.ContainingNamespace;
         }
 
-        public override int GetHashCode() => (ContainingNamespace?.GetHashCode() ?? 0) ^ (!ContainingSyntax.IsEmpty ? ContainingSyntax[0].Identifier.Value.GetHashCode() : 0);
+        public override int GetHashCode()
+        {
+            int code = ContainingNamespace.GetHashCode();
+            foreach (ContainingSyntax containingSyntax in ContainingSyntax)
+            {
+                code ^= containingSyntax.Identifier.Value.GetHashCode();
+            }
+            return code;
+        }
 
         public MemberDeclarationSyntax WrapMemberInContainingSyntaxWithUnsafeModifier(MemberDeclarationSyntax member)
         {

@@ -178,24 +178,6 @@ namespace Microsoft.Interop
                 .WithBody(stubCode);
         }
 
-        private static TargetFramework DetermineTargetFramework(Compilation compilation, out Version version)
-        {
-            IAssemblySymbol systemAssembly = compilation.GetSpecialType(SpecialType.System_Object).ContainingAssembly;
-            version = systemAssembly.Identity.Version;
-
-            return systemAssembly.Identity.Name switch
-            {
-                // .NET Framework
-                "mscorlib" => TargetFramework.Framework,
-                // .NET Standard
-                "netstandard" => TargetFramework.Standard,
-                // .NET Core (when version < 5.0) or .NET
-                "System.Runtime" or "System.Private.CoreLib" =>
-                    (version.Major < 5) ? TargetFramework.Core : TargetFramework.Net,
-                _ => TargetFramework.Unknown,
-            };
-        }
-
         private static VirtualMethodIndexData? ProcessVirtualMethodIndexAttribute(AttributeData attrData)
         {
             // Found the attribute, but it has an error so report the error.
@@ -283,6 +265,10 @@ namespace Microsoft.Interop
             {
                 virtualMethodIndexData = new VirtualMethodIndexData(-1);
             }
+            else if (virtualMethodIndexData.Index < 0)
+            {
+                // Report missing or invalid index
+            }
 
             if (virtualMethodIndexData.IsUserDefined.HasFlag(InteropAttributeMember.StringMarshalling))
             {
@@ -299,11 +285,6 @@ namespace Microsoft.Interop
                     generatorDiagnostics.ReportInvalidStringMarshallingConfiguration(
                         virtualMethodIndexAttr, symbol.Name, SR.InvalidStringMarshallingConfigurationNotCustom);
                 }
-            }
-
-            if (virtualMethodIndexData.Index < 0)
-            {
-                // Report missing or invalid index
             }
 
             if (!virtualMethodIndexData.ImplicitThisParameter && virtualMethodIndexData.Direction.HasFlag(CustomTypeMarshallerDirection.Out))
