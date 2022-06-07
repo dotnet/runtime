@@ -3177,6 +3177,41 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
 
     if (conValTree != nullptr)
     {
+        if (tree->OperIs(GT_LCL_VAR))
+        {
+            bool betterToPropagate = false;
+            if (conValTree->IsVectorZero() || conValTree->IsFloatPositiveZero())
+            {
+                // These are cheap to re-materialize (unlike e.g. "1.0" or "{1,1,1,1}" which end up as
+                // memory loads from the data section)
+                betterToPropagate = true;
+            }
+#ifdef TARGET_ARM64
+            else if (conValTree->IsCnsIntOrI() && unsigned_abs(conValTree->AsIntCon()->IconValue()) < 0x0fff)
+            {
+                // This integer constant is likely immable
+                betterToPropagate = true;
+            }
+#endif
+
+            if (!betterToPropagate)
+            {
+                // Try to find the block this value was defined in
+                // and if the current use is inside a loop while the def is not - do not propagate
+                unsigned lclNum = tree->AsLclVarCommon()->GetLclNum();
+                unsigned ssaNum = GetSsaNumForLocalVarDef(tree);
+                if (ssaNum != SsaConfig::RESERVED_SSA_NUM)
+                {
+                    BasicBlock* defBlock = lvaTable[lclNum].GetPerSsaData(ssaNum)->GetBlock();
+                    if (defBlock != nullptr && !(defBlock->bbFlags & BBF_BACKWARD_JUMP) &&
+                        (block->bbFlags & BBF_BACKWARD_JUMP))
+                    {
+                        return nullptr;
+                    }
+                }
+            }
+        }
+
         // Were able to optimize.
         conValTree->gtVNPair = vnPair;
         GenTree* sideEffList = optExtractSideEffListFromConst(tree);
