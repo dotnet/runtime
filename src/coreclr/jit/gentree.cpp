@@ -256,7 +256,6 @@ void GenTree::InitNodeSize()
     GenTree::s_gtNodeSizes[GT_CAST]          = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_FTN_ADDR]      = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_BOX]           = TREE_NODE_SZ_LARGE;
-    GenTree::s_gtNodeSizes[GT_INDEX]         = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_INDEX_ADDR]    = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_BOUNDS_CHECK]  = TREE_NODE_SZ_SMALL;
     GenTree::s_gtNodeSizes[GT_ARR_ELEM]      = TREE_NODE_SZ_LARGE;
@@ -316,7 +315,6 @@ void GenTree::InitNodeSize()
     static_assert_no_msg(sizeof(GenTreeFptrVal)      <= TREE_NODE_SZ_LARGE); // *** large node
     static_assert_no_msg(sizeof(GenTreeQmark)        <= TREE_NODE_SZ_LARGE); // *** large node
     static_assert_no_msg(sizeof(GenTreeIntrinsic)    <= TREE_NODE_SZ_LARGE); // *** large node
-    static_assert_no_msg(sizeof(GenTreeIndex)        <= TREE_NODE_SZ_LARGE); // *** large node
     static_assert_no_msg(sizeof(GenTreeIndexAddr)    <= TREE_NODE_SZ_LARGE); // *** large node
     static_assert_no_msg(sizeof(GenTreeArrLen)       <= TREE_NODE_SZ_LARGE); // *** large node
     static_assert_no_msg(sizeof(GenTreeBoundsChk)    <= TREE_NODE_SZ_SMALL);
@@ -2495,12 +2493,6 @@ AGAIN:
                         return false;
                     }
                     break;
-                case GT_INDEX:
-                    if (op1->AsIndex()->gtIndElemSize != op2->AsIndex()->gtIndElemSize)
-                    {
-                        return false;
-                    }
-                    break;
                 case GT_INDEX_ADDR:
                     if (op1->AsIndexAddr()->gtElemSize != op2->AsIndexAddr()->gtElemSize)
                     {
@@ -2917,9 +2909,6 @@ AGAIN:
                 case GT_CAST:
                     hash ^= tree->AsCast()->gtCastType;
                     break;
-                case GT_INDEX:
-                    hash += tree->AsIndex()->gtIndElemSize;
-                    break;
                 case GT_INDEX_ADDR:
                     hash += tree->AsIndexAddr()->gtElemSize;
                     break;
@@ -2989,7 +2978,6 @@ AGAIN:
                 // For the ones below no extra argument matters for comparison.
                 case GT_ARR_INDEX:
                 case GT_QMARK:
-                case GT_INDEX:
                 case GT_INDEX_ADDR:
                     break;
 
@@ -6397,7 +6385,6 @@ bool GenTree::OperMayThrow(Compiler* comp)
         case GT_ARR_OFFSET:
         case GT_LCLHEAP:
         case GT_CKFINITE:
-        case GT_INDEX:
         case GT_INDEX_ADDR:
             return true;
 
@@ -8287,15 +8274,6 @@ GenTree* Compiler::gtCloneExpr(
                                 tree->AsCast()->gtCastType DEBUGARG(/*largeNode*/ TRUE));
                 break;
 
-            case GT_INDEX:
-            {
-                GenTreeIndex* asInd = tree->AsIndex();
-                copy                = new (this, GT_INDEX)
-                    GenTreeIndex(asInd->TypeGet(), asInd->Arr(), asInd->Index(), asInd->gtIndElemSize);
-                copy->AsIndex()->gtStructElemClass = asInd->gtStructElemClass;
-            }
-            break;
-
             case GT_INDEX_ADDR:
             {
                 GenTreeIndexAddr* asIndAddr = tree->AsIndexAddr();
@@ -10171,8 +10149,6 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
                 }
                 FALLTHROUGH;
 
-            case GT_INDEX:
-            case GT_INDEX_ADDR:
             case GT_FIELD:
                 if (tree->gtFlags & GTF_IND_VOLATILE)
                 {
@@ -10468,19 +10444,6 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
                 {
                     layout = tree->AsLclFld()->GetLayout();
                 }
-                else if (tree->OperIs(GT_INDEX))
-                {
-                    GenTreeIndex*        asInd  = tree->AsIndex();
-                    CORINFO_CLASS_HANDLE clsHnd = asInd->gtStructElemClass;
-                    if (clsHnd != nullptr)
-                    {
-                        // We could create a layout with `typGetObjLayout(asInd->gtStructElemClass)` but we
-                        // don't want to affect the layout table.
-                        const unsigned  classSize      = info.compCompHnd->getClassSize(clsHnd);
-                        const char16_t* shortClassName = eeGetShortClassName(clsHnd);
-                        printf("<%S, %u>", shortClassName, classSize);
-                    }
-                }
 
                 if (layout != nullptr)
                 {
@@ -10488,15 +10451,21 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
                 }
             }
 
-            if (tree->OperIs(GT_ARR_ADDR))
+            if (tree->OperIs(GT_INDEX_ADDR, GT_ARR_ADDR))
             {
-                if (tree->AsArrAddr()->GetElemClassHandle() != NO_CLASS_HANDLE)
+                var_types elemType =
+                    tree->OperIs(GT_INDEX_ADDR) ? tree->AsIndexAddr()->gtElemType : tree->AsArrAddr()->GetElemType();
+
+                CORINFO_CLASS_HANDLE elemClsHnd = tree->OperIs(GT_INDEX_ADDR) ? tree->AsIndexAddr()->gtStructElemClass
+                                                                              : tree->AsArrAddr()->GetElemClassHandle();
+
+                if (varTypeIsStruct(elemType) && (elemClsHnd != NO_CLASS_HANDLE))
                 {
-                    printf("%S[]", eeGetShortClassName(tree->AsArrAddr()->GetElemClassHandle()));
+                    printf("%S[]", eeGetShortClassName(elemClsHnd));
                 }
                 else
                 {
-                    printf("%s[]", varTypeName(tree->AsArrAddr()->GetElemType()));
+                    printf("%s[]", varTypeName(elemType));
                 }
             }
 
@@ -15109,6 +15078,48 @@ INTEGRAL_OVF:
 #endif
 
 //------------------------------------------------------------------------
+// gtFoldIndirConst: Attempt to fold an "IND(addr)" expression to a constant.
+//
+// Currently handles the case of "addr" being "INDEX_ADDR(CNS_STR, CONST)".
+//
+// Arguments:
+//    indir - The IND node to attempt to fold
+//
+// Return Value:
+//    The new constant node if the folding was successful, "nullptr" otherwise.
+//
+GenTree* Compiler::gtFoldIndirConst(GenTreeIndir* indir)
+{
+    assert(opts.OptimizationEnabled() && !optValnumCSE_phase);
+    assert(indir->OperIs(GT_IND));
+
+    GenTree* addr = indir->Addr();
+
+    if (indir->TypeIs(TYP_USHORT) && addr->OperIs(GT_INDEX_ADDR) && addr->AsIndexAddr()->Arr()->OperIs(GT_CNS_STR))
+    {
+        GenTreeStrCon* stringNode = addr->AsIndexAddr()->Arr()->AsStrCon();
+        GenTree*       indexNode  = addr->AsIndexAddr()->Index();
+        if (!stringNode->IsStringEmptyField() && indexNode->IsCnsIntOrI())
+        {
+            int cnsIndex = static_cast<int>(indexNode->AsIntConCommon()->IconValue());
+            if (cnsIndex >= 0)
+            {
+                const int maxStrSize = 1024;
+                char16_t  str[maxStrSize];
+                int       length =
+                    info.compCompHnd->getStringLiteral(stringNode->gtScpHnd, stringNode->gtSconCPX, str, maxStrSize);
+                if (cnsIndex < length)
+                {
+                    return gtNewIconNode(str[cnsIndex]);
+                }
+            }
+        }
+    }
+
+    return nullptr;
+}
+
+//------------------------------------------------------------------------
 // gtNewTempAssign: Create an assignment of the given value to a temp.
 //
 // Arguments:
@@ -15708,6 +15719,15 @@ void Compiler::gtExtractSideEffList(GenTree*     expr,
                         (node->gtGetOp1()->TypeGet() == TYP_STRUCT))
                     {
                         JITDUMP("Keep the GT_ADDR and GT_IND together:\n");
+                        PushSideEffects(node);
+                        return Compiler::WALK_SKIP_SUBTREES;
+                    }
+
+                    // TODO-ADDR: remove this quirk added to avoid diffs.
+                    if (node->OperIs(GT_IND) && node->AsIndir()->Addr()->OperIs(GT_INDEX_ADDR) &&
+                        !m_compiler->fgGlobalMorph)
+                    {
+                        JITDUMP("Keep the GT_INDEX_ADDR and GT_IND together:\n");
                         PushSideEffects(node);
                         return Compiler::WALK_SKIP_SUBTREES;
                     }
@@ -17173,9 +17193,6 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleIfPresent(GenTree* tree)
             case GT_RET_EXPR:
                 structHnd = tree->AsRetExpr()->gtRetClsHnd;
                 break;
-            case GT_INDEX:
-                structHnd = tree->AsIndex()->gtStructElemClass;
-                break;
             case GT_FIELD:
                 info.compCompHnd->getFieldType(tree->AsField()->gtFldHnd, &structHnd);
                 break;
@@ -17515,13 +17532,19 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                     objClass              = lvaTable[objLcl].lvClassHnd;
                     *pIsExact             = lvaTable[objLcl].lvClassIsExact;
                 }
-                else if (base->OperGet() == GT_ARR_ELEM)
+                else if (base->OperIs(GT_INDEX_ADDR, GT_ARR_ELEM))
                 {
                     // indir(arr_elem(...)) -> array element type
 
-                    GenTree* array = base->AsArrElem()->gtArrObj;
+                    if (base->OperIs(GT_INDEX_ADDR))
+                    {
+                        objClass = gtGetArrayElementClassHandle(base->AsIndexAddr()->Arr());
+                    }
+                    else
+                    {
+                        objClass = gtGetArrayElementClassHandle(base->AsArrElem()->gtArrObj);
+                    }
 
-                    objClass    = gtGetArrayElementClassHandle(array);
                     *pIsExact   = false;
                     *pIsNonNull = false;
                 }
@@ -17574,16 +17597,6 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
             objClass                  = lvaTable[boxTempLcl].lvClassHnd;
             *pIsExact                 = lvaTable[boxTempLcl].lvClassIsExact;
             *pIsNonNull               = true;
-            break;
-        }
-
-        case GT_INDEX:
-        {
-            GenTree* array = obj->AsIndex()->Arr();
-
-            objClass    = gtGetArrayElementClassHandle(array);
-            *pIsExact   = false;
-            *pIsNonNull = false;
             break;
         }
 

@@ -9373,13 +9373,6 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 }
                 break;
 
-            case GT_INDEX:
-
-                if (tree->gtFlags & GTF_INX_STRING_LAYOUT)
-                {
-                    chars += printf("[INX_STRING_LAYOUT]");
-                }
-                FALLTHROUGH;
             case GT_INDEX_ADDR:
                 if (tree->gtFlags & GTF_INX_RNGCHK)
                 {
