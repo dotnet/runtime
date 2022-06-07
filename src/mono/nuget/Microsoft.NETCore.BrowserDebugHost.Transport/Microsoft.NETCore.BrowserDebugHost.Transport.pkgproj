@@ -17,6 +17,13 @@
     <_browserDebugHostFiles Include="$(ArtifactsDir)bin\BrowserDebugHost\$(TargetArchitecture)\$(Configuration)\Microsoft.CodeAnalysis.CSharp.dll" />
     <_browserDebugHostFiles Include="$(ArtifactsDir)bin\BrowserDebugHost\$(TargetArchitecture)\$(Configuration)\Microsoft.CodeAnalysis.dll" />
     <_browserDebugHostFiles Include="$(ArtifactsDir)bin\BrowserDebugHost\$(TargetArchitecture)\$(Configuration)\Newtonsoft.Json.dll" />
+    <_browserDebugHostFiles Include="$(ArtifactsDir)bin\BrowserDebugHost\$(TargetArchitecture)\$(Configuration)\Serilog.dll" />
+    <_browserDebugHostFiles Include="$(ArtifactsDir)bin\BrowserDebugHost\$(TargetArchitecture)\$(Configuration)\Serilog.Extensions.Logging.dll" />
+    <_browserDebugHostFiles Include="$(ArtifactsDir)bin\BrowserDebugHost\$(TargetArchitecture)\$(Configuration)\Serilog.Extensions.Logging.File.dll" />
+    <_browserDebugHostFiles Include="$(ArtifactsDir)bin\BrowserDebugHost\$(TargetArchitecture)\$(Configuration)\Serilog.Formatting.Compact.dll" />
+    <_browserDebugHostFiles Include="$(ArtifactsDir)bin\BrowserDebugHost\$(TargetArchitecture)\$(Configuration)\Serilog.Sinks.Async.dll" />
+    <_browserDebugHostFiles Include="$(ArtifactsDir)bin\BrowserDebugHost\$(TargetArchitecture)\$(Configuration)\Serilog.Sinks.File.dll" />
+    <_browserDebugHostFiles Include="$(ArtifactsDir)bin\BrowserDebugHost\$(TargetArchitecture)\$(Configuration)\Serilog.Sinks.RollingFile.dll" />
 
     <PackageFile Include="@(_browserDebugHostFiles)" TargetPath="tools\$(NetCoreAppCurrent)\" />
   </ItemGroup>
