@@ -10,15 +10,17 @@ using System.Text.RegularExpressions.Generator;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis.Testing;
 using Xunit;
-using VerifyCS = System.Text.RegularExpressions.Unit.Tests.CSharpCodeFixVerifier<
+using VerifyCS = System.Text.RegularExpressions.Tests.CSharpCodeFixVerifier<
     System.Text.RegularExpressions.Generator.UpgradeToRegexGeneratorAnalyzer,
     System.Text.RegularExpressions.Generator.UpgradeToRegexGeneratorCodeFixer>;
 
-namespace System.Text.RegularExpressions.Unit.Tests
+namespace System.Text.RegularExpressions.Tests
 {
     [ActiveIssue("https://github.com/dotnet/runtime/issues/69823", TestRuntimes.Mono)]
     public class UpgradeToRegexGeneratorAnalyzerTests
     {
+        private const string UseRegexSourceGeneratorDiagnosticId = @"SYSLIB1046";
+
         [Fact]
         public async Task NoDiagnosticsForEmpty()
             => await VerifyCS.VerifyAnalyzerAsync(source: string.Empty);
@@ -237,7 +239,7 @@ public partial class Program
         [MemberData(nameof(ConstantPatternTestData))]
         public async Task DiagnosticEmittedForConstantPattern(string test, string fixedSource)
         {
-            DiagnosticResult expectedDiagnostic = VerifyCS.Diagnostic(DiagnosticDescriptors.UseRegexSourceGeneration.Id).WithLocation(0);
+            DiagnosticResult expectedDiagnostic = VerifyCS.Diagnostic(UseRegexSourceGeneratorDiagnosticId).WithLocation(0);
             await VerifyCS.VerifyCodeFixAsync(test, expectedDiagnostic, fixedSource);
         }
 
@@ -400,7 +402,7 @@ public partial class Program
         [MemberData(nameof(ConstantOptionsTestData))]
         public async Task DiagnosticEmittedForConstantOptions(string test, string fixedSource)
         {
-            DiagnosticResult expected = VerifyCS.Diagnostic(DiagnosticDescriptors.UseRegexSourceGeneration.Id).WithLocation(0);
+            DiagnosticResult expected = VerifyCS.Diagnostic(UseRegexSourceGeneratorDiagnosticId).WithLocation(0);
             await VerifyCS.VerifyCodeFixAsync(test, expected, fixedSource);
         }
 
@@ -503,7 +505,7 @@ public partial class Program
     [RegexGenerator(""a|b"", RegexOptions.None)]
     private static partial Regex MyRegex();
 }";
-            DiagnosticResult expectedDiagnostic = VerifyCS.Diagnostic(DiagnosticDescriptors.UseRegexSourceGeneration.Id).WithLocation(0);
+            DiagnosticResult expectedDiagnostic = VerifyCS.Diagnostic(UseRegexSourceGeneratorDiagnosticId).WithLocation(0);
 
             const string testTemplateWithoutOptions = @"using System.Text.RegularExpressions;
 
@@ -600,7 +602,7 @@ public partial class Program
         [Fact]
         public async Task CodeFixSupportsNesting()
         {
-            DiagnosticResult expectedDiagnostic = VerifyCS.Diagnostic(DiagnosticDescriptors.UseRegexSourceGeneration.Id).WithLocation(0);
+            DiagnosticResult expectedDiagnostic = VerifyCS.Diagnostic(UseRegexSourceGeneratorDiagnosticId).WithLocation(0);
             string test = @"using System.Text.RegularExpressions;
 
 public class A
@@ -680,8 +682,8 @@ public class Program
 ";
             DiagnosticResult[] expectedDiagnostics = new[]
             {
-                VerifyCS.Diagnostic(DiagnosticDescriptors.UseRegexSourceGeneration.Id).WithLocation(0),
-                VerifyCS.Diagnostic(DiagnosticDescriptors.UseRegexSourceGeneration.Id).WithLocation(1)
+                VerifyCS.Diagnostic(UseRegexSourceGeneratorDiagnosticId).WithLocation(0),
+                VerifyCS.Diagnostic(UseRegexSourceGeneratorDiagnosticId).WithLocation(1)
             };
 
             string fixedSource = @"using System.Text.RegularExpressions;
@@ -716,7 +718,7 @@ class Program
         Regex r = {|#0:new Regex(options: RegexOptions.None, pattern: ""a|b"")|};
     }
 }";
-            DiagnosticResult expectedDiagnostic = VerifyCS.Diagnostic(DiagnosticDescriptors.UseRegexSourceGeneration.Id).WithLocation(0);
+            DiagnosticResult expectedDiagnostic = VerifyCS.Diagnostic(UseRegexSourceGeneratorDiagnosticId).WithLocation(0);
 
             string fixedSource = @"using System.Text.RegularExpressions;
 
