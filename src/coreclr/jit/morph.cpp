@@ -12895,6 +12895,16 @@ GenTree* Compiler::fgOptimizeAddition(GenTreeOp* add)
 
             return add;
         }
+
+        // Fold (~x + 1) to -x.
+        if (op1->OperIs(GT_NOT) && op2->IsIntegralConst(1))
+        {
+            op1->SetOper(GT_NEG);
+            op1->SetVNsFromNode(add);
+            DEBUG_DESTROY_NODE(op2);
+            DEBUG_DESTROY_NODE(add);
+            return op1;
+        }
     }
 
     return nullptr;
