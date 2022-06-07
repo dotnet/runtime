@@ -6638,10 +6638,13 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
             {
                 // The allocated chunk is bigger than used, fill in unused space in it.
                 unsigned unusedSize = allocatedHotCodeSize - emitCurCodeOffs(cp);
+                BYTE*    cpRW       = cp + writeableOffset;
                 for (unsigned i = 0; i < unusedSize; ++i)
                 {
-                    *cp++ = DEFAULT_CODE_BUFFER_INIT;
+                    *cpRW++ = DEFAULT_CODE_BUFFER_INIT;
                 }
+
+                cp = cpRW - writeableOffset;
                 assert(allocatedHotCodeSize == emitCurCodeOffs(cp));
             }
         }
