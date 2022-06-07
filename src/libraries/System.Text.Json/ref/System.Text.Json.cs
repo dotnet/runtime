@@ -415,8 +415,11 @@ namespace System.Text.Json
         public System.SequencePosition Position { get { throw null; } }
         public readonly long TokenStartIndex { get { throw null; } }
         public System.Text.Json.JsonTokenType TokenType { get { throw null; } }
+        public readonly bool ValueIsEscaped { get { throw null; } }
         public readonly System.Buffers.ReadOnlySequence<byte> ValueSequence { get { throw null; } }
         public readonly System.ReadOnlySpan<byte> ValueSpan { get { throw null; } }
+        public readonly int CopyString(Span<byte> utf8Destination) { throw null; }
+        public readonly int CopyString(Span<char> destination) { throw null; }
         public bool GetBoolean() { throw null; }
         public byte GetByte() { throw null; }
         public byte[] GetBytesFromBase64() { throw null; }

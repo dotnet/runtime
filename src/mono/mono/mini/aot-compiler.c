@@ -1672,7 +1672,7 @@ arch_emit_label_address (MonoAotCompile *acfg, const char *target, gboolean exte
  * - we use an approach similar to the x86 abi: reserve a register (r30) to hold
  *   the GOT pointer.
  * - The full-aot trampolines need access to the GOT of mscorlib, so we store
- *   in in the 2. slot of every GOT, and require every method to place the GOT
+ *   it in the second slot of every GOT, and require every method to place the GOT
  *   address in r30, even when it doesn't access the GOT otherwise. This way,
  *   the trampolines can compute the mscorlib GOT address by loading 4(r30).
  */

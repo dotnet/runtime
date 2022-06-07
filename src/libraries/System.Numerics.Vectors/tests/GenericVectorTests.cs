@@ -834,7 +834,6 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69424", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void VectorDoubleEqualsNaNTest()
         {
             var nan = new Vector<double>(double.NaN);
@@ -842,7 +841,6 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69424", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void VectorSingleEqualsNaNTest()
         {
             var nan = new Vector<float>(float.NaN);

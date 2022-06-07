@@ -316,7 +316,7 @@ public:
     virtual bool logMsg(unsigned level, const char* fmt, va_list args) = 0;
 
     // do an assert.  will return true if the code should retry (DebugBreak)
-    // returns false, if the assert should be igored.
+    // returns false, if the assert should be ignored.
     virtual int doAssert(const char* szFile, int iLine, const char* szExpr) = 0;
 
     virtual void reportFatalError(CorJitResult result) = 0;
@@ -338,13 +338,14 @@ public:
     //
     // SAMPLE_INTERVAL must be >= SIZE. SAMPLE_INTERVAL / SIZE
     // gives the average number of calls between table updates.
-    // 
+    //
     struct ClassProfile32
     {
-        enum { 
-            SIZE = 8, 
-            SAMPLE_INTERVAL = 32, 
-            CLASS_FLAG     = 0x80000000, 
+        enum
+        {
+            SIZE = 8,
+            SAMPLE_INTERVAL = 32,
+            CLASS_FLAG     = 0x80000000,
             INTERFACE_FLAG = 0x40000000,
             OFFSET_MASK    = 0x3FFFFFFF
         };
@@ -447,7 +448,7 @@ public:
     //  3. The JIT may mark a schema item with an alignment flag. This may be used to increase the alignment of a field.
     //  4. Each data entry shall be laid out without extra padding.
     //
-    //  The intention here is that it becomes possible to describe a C data structure with the alignment for ease of use with 
+    //  The intention here is that it becomes possible to describe a C data structure with the alignment for ease of use with
     //  instrumentation helper functions
     virtual JITINTERFACE_HRESULT allocPgoInstrumentationBySchema(
             CORINFO_METHOD_HANDLE     ftnHnd,

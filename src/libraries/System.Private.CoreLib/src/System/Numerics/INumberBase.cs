@@ -27,6 +27,9 @@ namespace System.Numerics
         /// <summary>Gets the value <c>1</c> for the type.</summary>
         static abstract TSelf One { get; }
 
+        /// <summary>Gets the radix, or base, for the type.</summary>
+        static abstract int Radix { get; }
+
         /// <summary>Gets the value <c>0</c> for the type.</summary>
         static abstract TSelf Zero { get; }
 
@@ -61,15 +64,49 @@ namespace System.Numerics
         static abstract TSelf CreateTruncating<TOther>(TOther value)
             where TOther : INumberBase<TOther>;
 
+        /// <summary>Determines if a value is in its canonical representation.</summary>
+        /// <param name="value">The value to be checked.</param>
+        /// <returns><c>true</c> if <paramref name="value" /> is in its canonical representation; otherwise, <c>false</c>.</returns>
+        static abstract bool IsCanonical(TSelf value);
+
+        /// <summary>Determines if a value represents a complex value.</summary>
+        /// <param name="value">The value to be checked.</param>
+        /// <returns><c>true</c> if <paramref name="value" /> is a complex number; otherwise, <c>false</c>.</returns>
+        /// <remarks>This function returns <c>false</c> for a complex number <c>a + bi</c> where <c>b</c> is zero.</remarks>
+        static abstract bool IsComplexNumber(TSelf value);
+
+        /// <summary>Determines if a value represents an even integral value.</summary>
+        /// <param name="value">The value to be checked.</param>
+        /// <returns><c>true</c> if <paramref name="value" /> is an even integer; otherwise, <c>false</c>.</returns>
+        /// <remarks>
+        ///     <para>This correctly handles floating-point values and so <c>2.0</c> will return <c>true</c> while <c>2.2</c> will return <c>false</c>.</para>
+        ///     <para>This functioning returning <c>false</c> does not imply that <see cref="IsOddInteger(TSelf)" /> will return <c>true</c>. A number with a fractional portion, <c>3.3</c>, is not even nor odd.</para>
+        /// </remarks>
+        static abstract bool IsEvenInteger(TSelf value);
+
         /// <summary>Determines if a value is finite.</summary>
         /// <param name="value">The value to be checked.</param>
         /// <returns><c>true</c> if <paramref name="value" /> is finite; otherwise, <c>false</c>.</returns>
+        /// <remarks>This function returning <c>false</c> does not imply that <see cref="IsInfinity(TSelf)" /> will return <c>true</c>. <c>NaN</c> is not finite nor infinite.</remarks>
         static abstract bool IsFinite(TSelf value);
+
+        /// <summary>Determines if a value represents an imaginary value.</summary>
+        /// <param name="value">The value to be checked.</param>
+        /// <returns><c>true</c> if <paramref name="value" /> is an imaginary number; otherwise, <c>false</c>.</returns>
+        /// <remarks>This function returns <c>false</c> for a complex number <c>a + bi</c> where <c>a</c> is non-zero.</remarks>
+        static abstract bool IsImaginaryNumber(TSelf value);
 
         /// <summary>Determines if a value is infinite.</summary>
         /// <param name="value">The value to be checked.</param>
         /// <returns><c>true</c> if <paramref name="value" /> is infinite; otherwise, <c>false</c>.</returns>
+        /// <remarks>This function returning <c>false</c> does not imply that <see cref="IsFinite(TSelf)" /> will return <c>true</c>. <c>NaN</c> is not finite nor infinite.</remarks>
         static abstract bool IsInfinity(TSelf value);
+
+        /// <summary>Determines if a value represents an integral value.</summary>
+        /// <param name="value">The value to be checked.</param>
+        /// <returns><c>true</c> if <paramref name="value" /> is an integer; otherwise, <c>false</c>.</returns>
+        /// <remarks>This correctly handles floating-point values and so <c>2.0</c> and <c>3.0</c> will return <c>true</c> while <c>2.2</c> and <c>3.3</c> will return <c>false</c>.</remarks>
+        static abstract bool IsInteger(TSelf value);
 
         /// <summary>Determines if a value is NaN.</summary>
         /// <param name="value">The value to be checked.</param>
@@ -79,6 +116,7 @@ namespace System.Numerics
         /// <summary>Determines if a value is negative.</summary>
         /// <param name="value">The value to be checked.</param>
         /// <returns><c>true</c> if <paramref name="value" /> is negative; otherwise, <c>false</c>.</returns>
+        /// <remarks>This function returning <c>false</c> does not imply that <see cref="IsPositive(TSelf)" /> will return <c>true</c>. A complex number, <c>a + bi</c> for non-zero <c>b</c>, is not positive nor negative</remarks>
         static abstract bool IsNegative(TSelf value);
 
         /// <summary>Determines if a value is negative infinity.</summary>
@@ -91,15 +129,42 @@ namespace System.Numerics
         /// <returns><c>true</c> if <paramref name="value" /> is normal; otherwise, <c>false</c>.</returns>
         static abstract bool IsNormal(TSelf value);
 
+        /// <summary>Determines if a value represents an odd integral value.</summary>
+        /// <param name="value">The value to be checked.</param>
+        /// <returns><c>true</c> if <paramref name="value" /> is an odd integer; otherwise, <c>false</c>.</returns>
+        /// <remarks>
+        ///     <para>This correctly handles floating-point values and so <c>3.0</c> will return <c>true</c> while <c>3.3</c> will return <c>false</c>.</para>
+        ///     <para>This functioning returning <c>false</c> does not imply that <see cref="IsOddInteger(TSelf)" /> will return <c>true</c>. A number with a fractional portion, <c>3.3</c>, is neither even nor odd.</para>
+        /// </remarks>
+        static abstract bool IsOddInteger(TSelf value);
+
+        /// <summary>Determines if a value is positive.</summary>
+        /// <param name="value">The value to be checked.</param>
+        /// <returns><c>true</c> if <paramref name="value" /> is positive; otherwise, <c>false</c>.</returns>
+        /// <remarks>This function returning <c>false</c> does not imply that <see cref="IsNegative(TSelf)" /> will return <c>true</c>. A complex number, <c>a + bi</c> for non-zero <c>b</c>, is not positive nor negative</remarks>
+        static abstract bool IsPositive(TSelf value);
+
         /// <summary>Determines if a value is positive infinity.</summary>
         /// <param name="value">The value to be checked.</param>
         /// <returns><c>true</c> if <paramref name="value" /> is positive infinity; otherwise, <c>false</c>.</returns>
         static abstract bool IsPositiveInfinity(TSelf value);
 
+        /// <summary>Determines if a value represents a real value.</summary>
+        /// <param name="value">The value to be checked.</param>
+        /// <returns><c>true</c> if <paramref name="value" /> is a real number; otherwise, <c>false</c>.</returns>
+        /// <remarks>This function returns <c>true</c> for a complex number <c>a + bi</c> where <c>b</c> is zero.</remarks>
+        static abstract bool IsRealNumber(TSelf value);
+
         /// <summary>Determines if a value is subnormal.</summary>
         /// <param name="value">The value to be checked.</param>
         /// <returns><c>true</c> if <paramref name="value" /> is subnormal; otherwise, <c>false</c>.</returns>
         static abstract bool IsSubnormal(TSelf value);
+
+        /// <summary>Determines if a value is zero.</summary>
+        /// <param name="value">The value to be checked.</param>
+        /// <returns><c>true</c> if <paramref name="value" /> is zero; otherwise, <c>false</c>.</returns>
+        /// <remarks>This function treats both positive and negative zero as zero and so will return <c>true</c> for <c>+0.0</c> and <c>-0.0</c>.</remarks>
+        static abstract bool IsZero(TSelf value);
 
         /// <summary>Compares two values to compute which is greater.</summary>
         /// <param name="x">The value to compare with <paramref name="y" />.</param>

@@ -165,6 +165,9 @@
   <data name="DepthTooLarge" xml:space="preserve">
     <value>CurrentDepth ({0}) is equal to or larger than the maximum allowed depth of {1}. Cannot write the next JSON object or array.</value>
   </data>
+  <data name="DestinationTooShort" xml:space="preserve">
+    <value>Destination is too short.</value>
+  </data>
   <data name="EmptyJsonIsInvalid" xml:space="preserve">
     <value>Writing an empty JSON payload (excluding comments) is invalid.</value>
   </data>

@@ -9,6 +9,7 @@
     <!-- Disable RS2008: Enable analyzer release tracking
          Diagnostics in runtime use a different mechanism (docs/project/list-of-diagnostics.md) -->
     <NoWarn>RS2008;$(NoWarn)</NoWarn>
+    <AnalyzerLanguage>cs</AnalyzerLanguage>
 
     <!-- Packaging properties -->
     <!-- In the future LibraryImportGenerator might ship as part of a package, but meanwhile disable packaging. -->

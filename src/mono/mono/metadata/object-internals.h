@@ -1183,7 +1183,7 @@ typedef struct {
 	MonoArray *table_indexes;
 } MonoReflectionModuleBuilder;
 
-/* Safely acess System.Reflection.Emit.ModuleBuidler from native code */
+/* Safely acess System.Reflection.Emit.ModuleBuilder from native code */
 TYPED_HANDLE_DECL (MonoReflectionModuleBuilder);
 
 typedef enum {

@@ -2708,7 +2708,7 @@ namespace System.Data.SqlTypes
                     // D5. Test remainder. Carry indicates result<0, therefore QH 1 too large
                     if (HI(dwlAccum) == 0)
                     {
-                        // D6. Add back - probabilty is 2**(-31). R += D. Q[digit] -= 1
+                        // D6. Add back - probability is 2**(-31). R += D. Q[digit] -= 1
                         uint ulCarry;
 
                         rgulQ[iulRindex - ciulD] = QH - 1;

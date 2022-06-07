@@ -545,6 +545,12 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void RadixTest()
+        {
+            Assert.Equal(2, NumberBaseHelper<ushort>.Radix);
+        }
+
+        [Fact]
         public static void ZeroTest()
         {
             Assert.Equal((ushort)0x0000, NumberBaseHelper<ushort>.Zero);
@@ -957,6 +963,36 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void IsCanonicalTest()
+        {
+            Assert.True(NumberBaseHelper<ushort>.IsCanonical((ushort)0x0000));
+            Assert.True(NumberBaseHelper<ushort>.IsCanonical((ushort)0x0001));
+            Assert.True(NumberBaseHelper<ushort>.IsCanonical((ushort)0x7FFF));
+            Assert.True(NumberBaseHelper<ushort>.IsCanonical((ushort)0x8000));
+            Assert.True(NumberBaseHelper<ushort>.IsCanonical((ushort)0xFFFF));
+        }
+
+        [Fact]
+        public static void IsComplexNumberTest()
+        {
+            Assert.False(NumberBaseHelper<ushort>.IsComplexNumber((ushort)0x0000));
+            Assert.False(NumberBaseHelper<ushort>.IsComplexNumber((ushort)0x0001));
+            Assert.False(NumberBaseHelper<ushort>.IsComplexNumber((ushort)0x7FFF));
+            Assert.False(NumberBaseHelper<ushort>.IsComplexNumber((ushort)0x8000));
+            Assert.False(NumberBaseHelper<ushort>.IsComplexNumber((ushort)0xFFFF));
+        }
+
+        [Fact]
+        public static void IsEvenIntegerTest()
+        {
+            Assert.True(NumberBaseHelper<ushort>.IsEvenInteger((ushort)0x0000));
+            Assert.False(NumberBaseHelper<ushort>.IsEvenInteger((ushort)0x0001));
+            Assert.False(NumberBaseHelper<ushort>.IsEvenInteger((ushort)0x7FFF));
+            Assert.True(NumberBaseHelper<ushort>.IsEvenInteger((ushort)0x8000));
+            Assert.False(NumberBaseHelper<ushort>.IsEvenInteger((ushort)0xFFFF));
+        }
+
+        [Fact]
         public static void IsFiniteTest()
         {
             Assert.True(NumberBaseHelper<ushort>.IsFinite((ushort)0x0000));
@@ -967,6 +1003,16 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void IsImaginaryNumberTest()
+        {
+            Assert.False(NumberBaseHelper<ushort>.IsImaginaryNumber((ushort)0x0000));
+            Assert.False(NumberBaseHelper<ushort>.IsImaginaryNumber((ushort)0x0001));
+            Assert.False(NumberBaseHelper<ushort>.IsImaginaryNumber((ushort)0x7FFF));
+            Assert.False(NumberBaseHelper<ushort>.IsImaginaryNumber((ushort)0x8000));
+            Assert.False(NumberBaseHelper<ushort>.IsImaginaryNumber((ushort)0xFFFF));
+        }
+
+        [Fact]
         public static void IsInfinityTest()
         {
             Assert.False(NumberBaseHelper<ushort>.IsInfinity((ushort)0x0000));
@@ -974,6 +1020,16 @@ namespace System.Tests
             Assert.False(NumberBaseHelper<ushort>.IsInfinity((ushort)0x7FFF));
             Assert.False(NumberBaseHelper<ushort>.IsInfinity((ushort)0x8000));
             Assert.False(NumberBaseHelper<ushort>.IsInfinity((ushort)0xFFFF));
+        }
+
+        [Fact]
+        public static void IsIntegerTest()
+        {
+            Assert.True(NumberBaseHelper<ushort>.IsInteger((ushort)0x0000));
+            Assert.True(NumberBaseHelper<ushort>.IsInteger((ushort)0x0001));
+            Assert.True(NumberBaseHelper<ushort>.IsInteger((ushort)0x7FFF));
+            Assert.True(NumberBaseHelper<ushort>.IsInteger((ushort)0x8000));
+            Assert.True(NumberBaseHelper<ushort>.IsInteger((ushort)0xFFFF));
         }
 
         [Fact]
@@ -1017,6 +1073,26 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void IsOddIntegerTest()
+        {
+            Assert.False(NumberBaseHelper<ushort>.IsOddInteger((ushort)0x0000));
+            Assert.True(NumberBaseHelper<ushort>.IsOddInteger((ushort)0x0001));
+            Assert.True(NumberBaseHelper<ushort>.IsOddInteger((ushort)0x7FFF));
+            Assert.False(NumberBaseHelper<ushort>.IsOddInteger((ushort)0x8000));
+            Assert.True(NumberBaseHelper<ushort>.IsOddInteger((ushort)0xFFFF));
+        }
+
+        [Fact]
+        public static void IsPositiveTest()
+        {
+            Assert.True(NumberBaseHelper<ushort>.IsPositive((ushort)0x0000));
+            Assert.True(NumberBaseHelper<ushort>.IsPositive((ushort)0x0001));
+            Assert.True(NumberBaseHelper<ushort>.IsPositive((ushort)0x7FFF));
+            Assert.True(NumberBaseHelper<ushort>.IsPositive((ushort)0x8000));
+            Assert.True(NumberBaseHelper<ushort>.IsPositive((ushort)0xFFFF));
+        }
+
+        [Fact]
         public static void IsPositiveInfinityTest()
         {
             Assert.False(NumberBaseHelper<ushort>.IsPositiveInfinity((ushort)0x0000));
@@ -1027,6 +1103,16 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void IsRealNumberTest()
+        {
+            Assert.True(NumberBaseHelper<ushort>.IsRealNumber((ushort)0x0000));
+            Assert.True(NumberBaseHelper<ushort>.IsRealNumber((ushort)0x0001));
+            Assert.True(NumberBaseHelper<ushort>.IsRealNumber((ushort)0x7FFF));
+            Assert.True(NumberBaseHelper<ushort>.IsRealNumber((ushort)0x8000));
+            Assert.True(NumberBaseHelper<ushort>.IsRealNumber((ushort)0xFFFF));
+        }
+
+        [Fact]
         public static void IsSubnormalTest()
         {
             Assert.False(NumberBaseHelper<ushort>.IsSubnormal((ushort)0x0000));
@@ -1034,6 +1120,16 @@ namespace System.Tests
             Assert.False(NumberBaseHelper<ushort>.IsSubnormal((ushort)0x7FFF));
             Assert.False(NumberBaseHelper<ushort>.IsSubnormal((ushort)0x8000));
             Assert.False(NumberBaseHelper<ushort>.IsSubnormal((ushort)0xFFFF));
+        }
+
+        [Fact]
+        public static void IsZeroTest()
+        {
+            Assert.True(NumberBaseHelper<ushort>.IsZero((ushort)0x0000));
+            Assert.False(NumberBaseHelper<ushort>.IsZero((ushort)0x0001));
+            Assert.False(NumberBaseHelper<ushort>.IsZero((ushort)0x7FFF));
+            Assert.False(NumberBaseHelper<ushort>.IsZero((ushort)0x8000));
+            Assert.False(NumberBaseHelper<ushort>.IsZero((ushort)0xFFFF));
         }
 
         [Fact]

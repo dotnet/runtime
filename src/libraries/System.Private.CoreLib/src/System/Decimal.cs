@@ -1332,6 +1332,9 @@ namespace System
         /// <inheritdoc cref="INumberBase{TSelf}.One" />
         static decimal INumberBase<decimal>.One => One;
 
+        /// <inheritdoc cref="INumberBase{TSelf}.Radix" />
+        static int INumberBase<decimal>.Radix => 10;
+
         /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
         static decimal INumberBase<decimal>.Zero => Zero;
 
@@ -1585,11 +1588,50 @@ namespace System
             }
         }
 
+        /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
+        public static bool IsCanonical(decimal value)
+        {
+            uint scale = (byte)(value._flags >> ScaleShift);
+
+            if (scale == 0)
+            {
+                // We have an exact integer represented with no trailing zero
+                return true;
+            }
+
+            // We have some value where some fractional part is specified. So,
+            // if the least significant digit is 0, then we are not canonical
+
+            if (value._hi32 == 0)
+            {
+                return (value._lo64 % 10) != 0;
+            }
+
+            var significand = new UInt128(value._hi32, value._lo64);
+            return (significand % 10U) != 0U;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsComplexNumber(TSelf)" />
+        static bool INumberBase<decimal>.IsComplexNumber(decimal value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsEvenInteger(TSelf)" />
+        public static bool IsEvenInteger(decimal value)
+        {
+            decimal truncatedValue = Truncate(value);
+            return (value == truncatedValue) && ((truncatedValue._lo64 & 1) == 0);
+        }
+
         /// <inheritdoc cref="INumberBase{TSelf}.IsFinite(TSelf)" />
         static bool INumberBase<decimal>.IsFinite(decimal value) => true;
 
+        /// <inheritdoc cref="INumberBase{TSelf}.IsImaginaryNumber(TSelf)" />
+        static bool INumberBase<decimal>.IsImaginaryNumber(decimal value) => false;
+
         /// <inheritdoc cref="INumberBase{TSelf}.IsInfinity(TSelf)" />
         static bool INumberBase<decimal>.IsInfinity(decimal value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsInteger(TSelf)" />
+        public static bool IsInteger(decimal value) => value == Truncate(value);
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsNaN(TSelf)" />
         static bool INumberBase<decimal>.IsNaN(decimal value) => false;
@@ -1603,11 +1645,27 @@ namespace System
         /// <inheritdoc cref="INumberBase{TSelf}.IsNormal(TSelf)" />
         static bool INumberBase<decimal>.IsNormal(decimal value) => value != 0;
 
+        /// <inheritdoc cref="INumberBase{TSelf}.IsOddInteger(TSelf)" />
+        public static bool IsOddInteger(decimal value)
+        {
+            decimal truncatedValue = Truncate(value);
+            return (value == truncatedValue) && ((truncatedValue._lo64 & 1) != 0);
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsPositive(TSelf)" />
+        public static bool IsPositive(decimal value) => value._flags >= 0;
+
         /// <inheritdoc cref="INumberBase{TSelf}.IsPositiveInfinity(TSelf)" />
         static bool INumberBase<decimal>.IsPositiveInfinity(decimal value) => false;
 
+        /// <inheritdoc cref="INumberBase{TSelf}.IsRealNumber(TSelf)" />
+        static bool INumberBase<decimal>.IsRealNumber(decimal value) => true;
+
         /// <inheritdoc cref="INumberBase{TSelf}.IsSubnormal(TSelf)" />
         static bool INumberBase<decimal>.IsSubnormal(decimal value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsZero(TSelf)" />
+        static bool INumberBase<decimal>.IsZero(decimal value) => (value == 0);
 
         /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitude(TSelf, TSelf)" />
         public static decimal MaxMagnitude(decimal x, decimal y)
