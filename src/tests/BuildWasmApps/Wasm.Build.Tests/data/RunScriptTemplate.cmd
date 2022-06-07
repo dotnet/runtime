@@ -95,13 +95,13 @@ REM Functions
 :SetEnvVars
 if [%TEST_USING_WORKLOADS%] == [true] (
     set SDK_HAS_WORKLOAD_INSTALLED=true
-    robocopy /e %BASE_DIR%\dotnet-workload %EXECUTION_DIR%\dotnet-workload
+    robocopy /np /nfl /e %BASE_DIR%\dotnet-workload %EXECUTION_DIR%\dotnet-workload
     set "SDK_FOR_WORKLOAD_TESTING_PATH=%EXECUTION_DIR%\dotnet-workload"
     set "PATH=%EXECUTION_DIR%\dotnet-workload;%PATH%"
     set "AppRefDir=%BASE_DIR%\microsoft.netcore.app.ref"
 ) else (
     set SDK_HAS_WORKLOAD_INSTALLED=false
-    robocopy /e %BASE_DIR%\sdk-no-workload %EXECUTION_DIR%\sdk-no-workload
+    robocopy /np /nfl /e %BASE_DIR%\sdk-no-workload %EXECUTION_DIR%\sdk-no-workload
     set "SDK_FOR_WORKLOAD_TESTING_PATH=%EXECUTION_DIR%\sdk-no-workload"
     set "PATH=%EXECUTION_DIR%\sdk-no-workload;%PATH%"
     set "AppRefDir=%BASE_DIR%\microsoft.netcore.app.ref"
