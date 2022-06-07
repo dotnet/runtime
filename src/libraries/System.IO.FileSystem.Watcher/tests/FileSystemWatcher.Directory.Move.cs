@@ -25,7 +25,7 @@ namespace System.IO.Tests
             DirectoryMove_FromWatchedToUnwatched(WatcherChangeTypes.Deleted);
         }
 
-        [Theory]
+        [ConditionalTheory]
         [PlatformSpecific(TestPlatforms.OSX)]
         [InlineData(1)]
         [InlineData(2)]
