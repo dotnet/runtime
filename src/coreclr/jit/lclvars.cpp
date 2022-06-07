@@ -4206,8 +4206,6 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
 
                     switch (op2->gtOper)
                     {
-                        unsigned lclNum;
-
                         case GT_CNS_INT:
 
                             if (op2->AsIntCon()->gtIconVal == 0)
