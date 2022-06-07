@@ -31,6 +31,8 @@
 
 #define RUNTIME_STORE_DIRECTORY_NAME _X("store")
 
+#define DOTNET_ROOT_ENV_VAR _X("DOTNET_ROOT")
+
 bool ends_with(const pal::string_t& value, const pal::string_t& suffix, bool match_case);
 bool starts_with(const pal::string_t& value, const pal::string_t& prefix, bool match_case);
 
@@ -82,7 +84,10 @@ void get_framework_and_sdk_locations(const pal::string_t& dotnet_dir, const bool
 bool get_file_path_from_env(const pal::char_t* env_key, pal::string_t* recv);
 size_t index_of_non_numeric(const pal::string_t& str, size_t i);
 bool try_stou(const pal::string_t& str, unsigned* num);
+
+pal::string_t get_dotnet_root_env_var_for_arch(pal::known_architecture arch);
 bool get_dotnet_root_from_env(pal::string_t* used_dotnet_root_env_var_name, pal::string_t* recv);
+
 pal::string_t get_deps_from_app_binary(const pal::string_t& app_base, const pal::string_t& app);
 pal::string_t get_runtime_config_path(const pal::string_t& path, const pal::string_t& name);
 pal::string_t get_runtime_config_dev_path(const pal::string_t& path, const pal::string_t& name);

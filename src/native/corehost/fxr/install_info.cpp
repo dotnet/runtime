@@ -6,6 +6,31 @@
 #include "trace.h"
 #include "utils.h"
 
+bool install_info::print_environment(const pal::char_t* leading_whitespace)
+{
+    bool found_any = false;
+
+    const pal::char_t* fmt = _X("%s%-17s [%s]");
+    pal::string_t value;
+    if (pal::getenv(DOTNET_ROOT_ENV_VAR, &value))
+    {
+        found_any = true;
+        trace::println(fmt, leading_whitespace, DOTNET_ROOT_ENV_VAR, value.c_str());
+    }
+
+    for (uint32_t i = 0; i < static_cast<uint32_t>(pal::known_architecture::__last); ++i)
+    {
+        pal::string_t env_var = get_dotnet_root_env_var_for_arch(static_cast<pal::known_architecture>(i));
+        if (pal::getenv(env_var.c_str(), &value))
+        {
+            found_any = true;
+            trace::println(fmt, leading_whitespace, env_var.c_str(), value.c_str());
+        }
+    }
+
+    return found_any;
+}
+
 bool install_info::print_installs(const pal::char_t* leading_whitespace, bool skip_current_arch)
 {
     bool found_any = false;

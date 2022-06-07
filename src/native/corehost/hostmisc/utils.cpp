@@ -392,10 +392,14 @@ bool try_stou(const pal::string_t& str, unsigned* num)
     return true;
 }
 
+pal::string_t get_dotnet_root_env_var_for_arch(pal::known_architecture arch)
+{
+    return DOTNET_ROOT_ENV_VAR _X("_") + to_upper(get_arch_name(arch));
+}
+
 bool get_dotnet_root_from_env(pal::string_t* dotnet_root_env_var_name, pal::string_t* recv)
 {
-    *dotnet_root_env_var_name = _X("DOTNET_ROOT_");
-    dotnet_root_env_var_name->append(to_upper(get_arch()));
+    *dotnet_root_env_var_name = get_dotnet_root_env_var_for_arch(get_current_arch());
     if (get_file_path_from_env(dotnet_root_env_var_name->c_str(), recv))
         return true;
 
@@ -410,7 +414,7 @@ bool get_dotnet_root_from_env(pal::string_t* dotnet_root_env_var_name, pal::stri
 
     // If no architecture-specific environment variable was set
     // fallback to the default DOTNET_ROOT.
-    *dotnet_root_env_var_name = _X("DOTNET_ROOT");
+    *dotnet_root_env_var_name = DOTNET_ROOT_ENV_VAR;
     return get_file_path_from_env(dotnet_root_env_var_name->c_str(), recv);
 }
 

@@ -312,6 +312,13 @@ void command_line::print_muxer_info(const pal::string_t &dotnet_root)
     }
 
     trace::println();
+    trace::println(DOTNET_ROOT_ENV_VAR _X(" environment variables:"));
+    if (!install_info::print_environment(_X("  ")))
+    {
+        trace::println(_X("  Not set"));
+    }
+
+    trace::println();
     trace::println(_X("Download .NET:"));
     trace::println(_X("  %s"), DOTNET_CORE_DOWNLOAD_URL);
 
