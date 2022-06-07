@@ -6,6 +6,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <assert.h>
+#include <math.h>
 #include <dlfcn.h>
 #include <sys/stat.h>
 
@@ -18,6 +19,7 @@
 #include <mono/metadata/loader.h>
 #include <mono/metadata/mono-gc.h>
 #include <mono/metadata/object.h>
+#include <mono/metadata/debug-helpers.h>
 // FIXME: unavailable in emscripten
 // #include <mono/metadata/gc-internals.h>
 
@@ -30,6 +32,10 @@
 
 #include "wasm-config.h"
 #include "pinvoke.h"
+
+#ifdef GEN_PINVOKE
+#include "wasm_m2n_invoke.g.h"
+#endif
 #include "gc-common.h"
 
 #ifdef CORE_BINDINGS
@@ -37,6 +43,7 @@ void core_initialize_internals ();
 #endif
 
 extern MonoString* mono_wasm_invoke_js (MonoString *str, int *is_exception);
+extern void mono_wasm_set_entrypoint_breakpoint (const char* assembly_name, int method_token);
 
 // Blazor specific custom routines - see dotnet_support.js for backing code
 extern void* mono_wasm_invoke_js_blazor (MonoString **exceptionMessage, void *callInfo, void* arg0, void* arg1, void* arg2);
@@ -49,6 +56,7 @@ int mono_wasm_register_root (char *start, size_t size, const char *name);
 void mono_wasm_deregister_root (char *addr);
 
 void mono_ee_interp_init (const char *opts);
+void mono_marshal_lightweight_init (void);
 void mono_marshal_ilgen_init (void);
 void mono_method_builder_ilgen_init (void);
 void mono_sgen_mono_ilgen_init (void);
@@ -470,7 +478,7 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 	// We should enable this as part of the wasm build later
 #ifndef DISABLE_THREADS
 	monoeg_g_setenv ("MONO_THREADS_SUSPEND", "coop", 0);
-	monoeg_g_setenv ("MONO_SLEEP_ABORT_LIMIT", "250", 0);
+	monoeg_g_setenv ("MONO_SLEEP_ABORT_LIMIT", "5000", 0);
 #endif
 
 #ifdef DEBUG
@@ -514,6 +522,10 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 
 	mono_dl_fallback_register (wasm_dl_load, wasm_dl_symbol, NULL, NULL);
 	mono_wasm_install_get_native_to_interp_tramp (get_native_to_interp);
+	
+#ifdef GEN_PINVOKE
+	mono_wasm_install_interp_to_native_callback (mono_wasm_interp_to_native_callback);
+#endif
 
 #ifdef ENABLE_AOT
 	monoeg_g_setenv ("MONO_AOT_MODE", "aot", 1);
@@ -559,7 +571,8 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 #endif
 #ifdef NEED_INTERP
 	mono_ee_interp_init (interp_opts);
-	mono_marshal_ilgen_init ();
+	mono_marshal_lightweight_init ();
+	mono_marshal_ilgen_init();
 	mono_method_builder_ilgen_init ();
 	mono_sgen_mono_ilgen_init ();
 #endif
@@ -712,7 +725,7 @@ mono_wasm_invoke_method (MonoMethod *method, MonoObject *this_arg, void *params[
 }
 
 EMSCRIPTEN_KEEPALIVE MonoMethod*
-mono_wasm_assembly_get_entry_point (MonoAssembly *assembly)
+mono_wasm_assembly_get_entry_point (MonoAssembly *assembly, int auto_insert_breakpoint)
 {
 	MonoImage *image;
 	MonoMethod *method;
@@ -765,6 +778,13 @@ mono_wasm_assembly_get_entry_point (MonoAssembly *assembly)
 
 	end:
 	MONO_EXIT_GC_UNSAFE;
+	if (auto_insert_breakpoint)
+	{
+		MonoAssemblyName *aname = mono_assembly_get_name (assembly);
+		const char *name = mono_assembly_name_get_name (aname);
+		if (name != NULL)
+			mono_wasm_set_entrypoint_breakpoint(name, mono_method_get_token (method));
+	}
 	return method;
 }
 
@@ -1002,6 +1022,7 @@ static int
 _mono_wasm_try_unbox_primitive_and_get_type_ref_impl (PVOLATILE(MonoObject) obj, void *result, int result_capacity) {
 	void **resultP = result;
 	int *resultI = result;
+	uint32_t *resultU = result;
 	int64_t *resultL = result;
 	float *resultF = result;
 	double *resultD = result;
@@ -1045,22 +1066,21 @@ _mono_wasm_try_unbox_primitive_and_get_type_ref_impl (PVOLATILE(MonoObject) obj,
 			*resultI = *(signed char*)mono_object_unbox (obj);
 			break;
 		case MONO_TYPE_U1:
-			*resultI = *(unsigned char*)mono_object_unbox (obj);
+			*resultU = *(unsigned char*)mono_object_unbox (obj);
 			break;
 		case MONO_TYPE_I2:
 		case MONO_TYPE_CHAR:
 			*resultI = *(short*)mono_object_unbox (obj);
 			break;
 		case MONO_TYPE_U2:
-			*resultI = *(unsigned short*)mono_object_unbox (obj);
+			*resultU = *(unsigned short*)mono_object_unbox (obj);
 			break;
 		case MONO_TYPE_I4:
 		case MONO_TYPE_I:
 			*resultI = *(int*)mono_object_unbox (obj);
 			break;
 		case MONO_TYPE_U4:
-			// FIXME: Will this behave the way we want for large unsigned values?
-			*resultI = *(int*)mono_object_unbox (obj);
+			*resultU = *(uint32_t*)mono_object_unbox (obj);
 			break;
 		case MONO_TYPE_R4:
 			*resultF = *(float*)mono_object_unbox (obj);
@@ -1069,7 +1089,7 @@ _mono_wasm_try_unbox_primitive_and_get_type_ref_impl (PVOLATILE(MonoObject) obj,
 			*resultD = *(double*)mono_object_unbox (obj);
 			break;
 		case MONO_TYPE_PTR:
-			*resultL = (int64_t)(*(void**)mono_object_unbox (obj));
+			*resultU = (uint32_t)(*(void**)mono_object_unbox (obj));
 			break;
 		case MONO_TYPE_I8:
 		case MONO_TYPE_U8:
@@ -1346,4 +1366,56 @@ mono_wasm_init_finalizer_thread (void)
 #if 0
 	mono_gc_init_finalizer_thread ();
 #endif
+}
+
+#define I52_ERROR_NONE 0
+#define I52_ERROR_NON_INTEGRAL 1
+#define I52_ERROR_OUT_OF_RANGE 2
+
+#define U52_MAX_VALUE ((1ULL << 53) - 1)
+#define I52_MAX_VALUE ((1LL << 53) - 1)
+#define I52_MIN_VALUE -I52_MAX_VALUE
+
+EMSCRIPTEN_KEEPALIVE double mono_wasm_i52_to_f64 (int64_t *source, int *error) {
+	int64_t value = *source;
+
+	if ((value < I52_MIN_VALUE) || (value > I52_MAX_VALUE)) {
+		*error = I52_ERROR_OUT_OF_RANGE;
+		return NAN;
+	}
+
+	*error = I52_ERROR_NONE;
+	return (double)value;
+}
+
+EMSCRIPTEN_KEEPALIVE double mono_wasm_u52_to_f64 (uint64_t *source, int *error) {
+	uint64_t value = *source;
+
+	if (value > U52_MAX_VALUE) {
+		*error = I52_ERROR_OUT_OF_RANGE;
+		return NAN;
+	}
+
+	*error = I52_ERROR_NONE;
+	return (double)value;
+}
+
+EMSCRIPTEN_KEEPALIVE int mono_wasm_f64_to_u52 (uint64_t *destination, double value) {
+	if ((value < 0) || (value > U52_MAX_VALUE))
+		return I52_ERROR_OUT_OF_RANGE;
+	if (floor(value) != value)
+		return I52_ERROR_NON_INTEGRAL;
+
+	*destination = (uint64_t)value;
+	return I52_ERROR_NONE;
+}
+
+EMSCRIPTEN_KEEPALIVE int mono_wasm_f64_to_i52 (int64_t *destination, double value) {
+	if ((value < I52_MIN_VALUE) || (value > I52_MAX_VALUE))
+		return I52_ERROR_OUT_OF_RANGE;
+	if (floor(value) != value)
+		return I52_ERROR_NON_INTEGRAL;
+
+	*destination = (int64_t)value;
+	return I52_ERROR_NONE;
 }

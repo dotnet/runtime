@@ -142,23 +142,27 @@ namespace ILCompiler.DependencyAnalysis
             }
             else if (_id == ReadyToRunHelperId.DelegateCtor)
             {
+                DependencyList dependencyList = null;
+
                 var info = (DelegateCreationInfo)_target;
                 if (info.NeedsVirtualMethodUseTracking)
                 {
                     MethodDesc targetMethod = info.TargetMethod;
 
-                    DependencyList dependencyList = new DependencyList();
 #if !SUPPORT_JIT
                     factory.MetadataManager.GetDependenciesDueToVirtualMethodReflectability(ref dependencyList, factory, targetMethod);
 
                     if (!factory.VTable(info.TargetMethod.OwningType).HasFixedSlots)
                     {
+                        dependencyList ??= new DependencyList();
                         dependencyList.Add(factory.VirtualMethodUse(info.TargetMethod), "ReadyToRun Delegate to virtual method");
                     }
 #endif
-
-                    return dependencyList;
                 }
+
+                factory.MetadataManager.GetDependenciesDueToDelegateCreation(ref dependencyList, factory, info.PossiblyUnresolvedTargetMethod);
+
+                return dependencyList;
             }
 
             return null;

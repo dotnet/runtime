@@ -764,7 +764,7 @@ namespace System.Security.Cryptography.X509Certificates
                     (handle, buf) => Interop.Crypto.EncodeOcspRequest(handle, buf),
                     req);
 
-                ArraySegment<char> urlEncoded = Base64UrlEncode(encoded);
+                ArraySegment<char> urlEncoded = UrlBase64Encoding.RentEncode(encoded);
                 string requestUrl = UrlPathAppend(baseUri, urlEncoded);
 
                 // Nothing sensitive is in the encoded request (it was sent via HTTP-non-S)
@@ -815,85 +815,12 @@ namespace System.Security.Cryptography.X509Certificates
             Debug.Assert(baseUri.Length > 0);
             Debug.Assert(resource.Length > 0);
 
-            int count = baseUri.Length + resource.Length;
-
             if (baseUri.EndsWith('/'))
             {
-                return string.Create(
-                    count,
-                    (baseUri, resource),
-                    (buf, st) =>
-                    {
-                        st.baseUri.CopyTo(buf);
-                        st.resource.Span.CopyTo(buf.Slice(st.baseUri.Length));
-                    });
+                return string.Concat(baseUri, resource.Span);
             }
 
-            return string.Create(
-                count + 1,
-                (baseUri, resource),
-                (buf, st) =>
-                {
-                    st.baseUri.CopyTo(buf);
-                    buf[st.baseUri.Length] = '/';
-                    st.resource.Span.CopyTo(buf.Slice(st.baseUri.Length + 1));
-                });
-        }
-
-        private static ArraySegment<char> Base64UrlEncode(ReadOnlySpan<byte> input)
-        {
-            // Every 3 bytes turns into 4 chars for the Base64 operation
-            int base64Len = ((input.Length + 2) / 3) * 4;
-            char[] base64 = ArrayPool<char>.Shared.Rent(base64Len);
-
-            if (!Convert.TryToBase64Chars(input, base64, out int charsWritten))
-            {
-                Debug.Fail($"Convert.TryToBase64 failed with {input.Length} bytes to a {base64.Length} buffer");
-                throw new CryptographicException();
-            }
-
-            Debug.Assert(charsWritten == base64Len);
-
-            // In the degenerate case every char will turn into 3 chars.
-            int urlEncodedLen = charsWritten * 3;
-            char[] urlEncoded = ArrayPool<char>.Shared.Rent(urlEncodedLen);
-            int writeIdx = 0;
-
-            for (int readIdx = 0; readIdx < charsWritten; readIdx++)
-            {
-                char cur = base64[readIdx];
-
-                if (char.IsAsciiLetterOrDigit(cur))
-                {
-                    urlEncoded[writeIdx++] = cur;
-                }
-                else if (cur == '+')
-                {
-                    urlEncoded[writeIdx++] = '%';
-                    urlEncoded[writeIdx++] = '2';
-                    urlEncoded[writeIdx++] = 'B';
-                }
-                else if (cur == '/')
-                {
-                    urlEncoded[writeIdx++] = '%';
-                    urlEncoded[writeIdx++] = '2';
-                    urlEncoded[writeIdx++] = 'F';
-                }
-                else if (cur == '=')
-                {
-                    urlEncoded[writeIdx++] = '%';
-                    urlEncoded[writeIdx++] = '3';
-                    urlEncoded[writeIdx++] = 'D';
-                }
-                else
-                {
-                    Debug.Fail($"'{cur}' is not a valid Base64 character");
-                    throw new CryptographicException();
-                }
-            }
-
-            ArrayPool<char>.Shared.Return(base64);
-            return new ArraySegment<char>(urlEncoded, 0, writeIdx);
+            return string.Concat(baseUri, "/", resource.Span);
         }
 
         private X509ChainElement[] BuildChainElements(
@@ -904,7 +831,7 @@ namespace System.Security.Cryptography.X509Certificates
             overallStatus = null;
 
             List<X509ChainStatus>? statusBuilder = null;
-
+            bool overallHasNotSignatureValid = false;
             using (SafeX509StackHandle chainStack = Interop.Crypto.X509StoreCtxGetChain(_storeCtx))
             {
                 int chainSize = Interop.Crypto.GetX509StackFieldCount(chainStack);
@@ -921,7 +848,20 @@ namespace System.Security.Cryptography.X509Certificates
                         statusBuilder ??= new List<X509ChainStatus>();
                         overallStatus ??= new List<X509ChainStatus>();
 
-                        AddElementStatus(elementErrors.Value, statusBuilder, overallStatus);
+                        bool hadSignatureNotValid = overallHasNotSignatureValid;
+                        AddElementStatus(elementErrors.Value, statusBuilder, overallStatus, ref overallHasNotSignatureValid);
+
+                        // Clear NotSignatureValid for the last element when overall chain is not PartialChain or UntrustedRoot.
+                        bool isLastElement = i == chainSize - 1;
+                        if (isLastElement && !hadSignatureNotValid && overallHasNotSignatureValid)
+                        {
+                            if (!ContainsStatus(overallStatus, X509ChainStatusFlags.PartialChain) &&
+                                !ContainsStatus(overallStatus, X509ChainStatusFlags.UntrustedRoot))
+                            {
+                                RemoveStatus(statusBuilder, X509ChainStatusFlags.NotSignatureValid);
+                                RemoveStatus(overallStatus, X509ChainStatusFlags.NotSignatureValid);
+                            }
+                        }
                         status = statusBuilder.ToArray();
                         statusBuilder.Clear();
                     }
@@ -1013,11 +953,12 @@ namespace System.Security.Cryptography.X509Certificates
         private static void AddElementStatus(
             ErrorCollection errorCodes,
             List<X509ChainStatus> elementStatus,
-            List<X509ChainStatus> overallStatus)
+            List<X509ChainStatus> overallStatus,
+            ref bool overallHasNotSignatureValid)
         {
-            foreach (var errorCode in errorCodes)
+            foreach (Interop.Crypto.X509VerifyStatusCode errorCode in errorCodes)
             {
-                AddElementStatus(errorCode, elementStatus, overallStatus);
+                AddElementStatus(errorCode, elementStatus, overallStatus, ref overallHasNotSignatureValid);
             }
 
             foreach (X509ChainStatus element in elementStatus)
@@ -1042,7 +983,8 @@ namespace System.Security.Cryptography.X509Certificates
         private static void AddElementStatus(
             Interop.Crypto.X509VerifyStatusCode errorCode,
             List<X509ChainStatus> elementStatus,
-            List<X509ChainStatus> overallStatus)
+            List<X509ChainStatus> overallStatus,
+            ref bool overallHasNotSignatureValid)
         {
             X509ChainStatusFlags statusFlag = MapVerifyErrorToChainStatus(errorCode);
 
@@ -1069,6 +1011,11 @@ namespace System.Security.Cryptography.X509Certificates
 
             elementStatus.Add(chainStatus);
             AddUniqueStatus(overallStatus, ref chainStatus);
+
+            if (statusFlag == X509ChainStatusFlags.NotSignatureValid)
+            {
+                overallHasNotSignatureValid = true;
+            }
         }
 
         private static void AddUniqueStatus(List<X509ChainStatus> list, ref X509ChainStatus status)
@@ -1084,6 +1031,31 @@ namespace System.Security.Cryptography.X509Certificates
             }
 
             list.Add(status);
+        }
+
+        private static bool ContainsStatus(List<X509ChainStatus> list, X509ChainStatusFlags statusCode)
+        {
+            for (int i = 0; i < list.Count; i++)
+            {
+                if (list[i].Status == statusCode)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static void RemoveStatus(List<X509ChainStatus> list, X509ChainStatusFlags statusCode)
+        {
+            for (int i = 0; i < list.Count; i++)
+            {
+                if (list[i].Status == statusCode)
+                {
+                    list.RemoveAt(i);
+                    return;
+                }
+            }
         }
 
         private static X509ChainStatusFlags MapVerifyErrorToChainStatus(Interop.Crypto.X509VerifyStatusCode code)

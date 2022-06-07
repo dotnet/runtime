@@ -843,7 +843,7 @@ namespace System.Security.Cryptography
             {
                 try
                 {
-                    return PemKeyHelpers.CreatePemFromData(PemLabels.RsaPrivateKey, exported);
+                    return PemEncoding.WriteString(PemLabels.RsaPrivateKey, exported);
                 }
                 finally
                 {
@@ -874,7 +874,7 @@ namespace System.Security.Cryptography
         public string ExportRSAPublicKeyPem()
         {
             byte[] exported = ExportRSAPublicKey();
-            return PemKeyHelpers.CreatePemFromData(PemLabels.RsaPublicKey, exported);
+            return PemEncoding.WriteString(PemLabels.RsaPublicKey, exported);
         }
 
         /// <summary>

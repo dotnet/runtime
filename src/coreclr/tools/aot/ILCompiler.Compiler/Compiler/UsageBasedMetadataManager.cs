@@ -456,6 +456,46 @@ namespace ILCompiler
                 dependencies.Add(factory.ReflectableMethod(method), "LDTOKEN method");
         }
 
+        public override void GetDependenciesDueToDelegateCreation(ref DependencyList dependencies, NodeFactory factory, MethodDesc target)
+        {
+            if (!IsReflectionBlocked(target))
+            {
+                dependencies = dependencies ?? new DependencyList();
+                dependencies.Add(factory.ReflectableMethod(target), "Target of a delegate");
+            }
+        }
+
+        public override void GetDependenciesForOverridingMethod(ref CombinedDependencyList dependencies, NodeFactory factory, MethodDesc decl, MethodDesc impl)
+        {
+            Debug.Assert(decl.IsVirtual && MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(decl) == decl);
+
+            // If a virtual method slot is reflection visible, all implementations become reflection visible.
+            //
+            // We could technically come up with a weaker position on this because the code below just needs to
+            // to ensure that delegates to virtual methods can have their GetMethodInfo() called.
+            // Delegate construction introduces a ReflectableMethod for the slot defining method; it doesn't need to.
+            // We could have a specialized node type to track that specific thing and introduce a conditional dependency
+            // on that.
+            //
+            // class Base { abstract Boo(); }
+            // class Derived1 : Base { override Boo() { } }
+            // class Derived2 : Base { override Boo() { } }
+            //
+            // typeof(Derived2).GetMethods(...)
+            //
+            // In the above case, we don't really need Derived1.Boo to become reflection visible
+            // but the below code will do that because ReflectableMethodNode tracks all reflectable methods,
+            // without keeping information about subtleities like "reflectable delegate".
+            if (!IsReflectionBlocked(decl) && !IsReflectionBlocked(impl))
+            {
+                dependencies ??= new CombinedDependencyList();
+                dependencies.Add(new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(
+                    factory.ReflectableMethod(impl.GetCanonMethodTarget(CanonicalFormKind.Specific)),
+                    factory.ReflectableMethod(decl.GetCanonMethodTarget(CanonicalFormKind.Specific)),
+                    "Virtual method declaration is reflectable"));
+            }
+        }
+
         protected override void GetDependenciesDueToMethodCodePresenceInternal(ref DependencyList dependencies, NodeFactory factory, MethodDesc method, MethodIL methodIL)
         {
             bool scanReflection = (_generationOptions & UsageBasedMetadataGenerationOptions.ReflectionILScanning) != 0;
@@ -885,19 +925,16 @@ namespace ILCompiler
 
             public bool GeneratesMetadata(EcmaModule module, ExportedTypeHandle exportedTypeHandle)
             {
-                try
-                {
-                    // Generate the forwarder only if we generated the target type.
-                    // If the target type is in a different compilation group, assume we generated it there.
-                    var targetType = (MetadataType)module.GetObject(exportedTypeHandle);
-                    return GeneratesMetadata(targetType) || !_factory.CompilationModuleGroup.ContainsType(targetType);
-                }
-                catch (TypeSystemException)
+                // Generate the forwarder only if we generated the target type.
+                // If the target type is in a different compilation group, assume we generated it there.
+                var targetType = (MetadataType)module.GetObject(exportedTypeHandle, NotFoundBehavior.ReturnNull);
+                if (targetType == null)
                 {
                     // No harm in generating a forwarder that didn't resolve.
                     // We'll get matching behavior at runtime.
                     return true;
                 }
+                return GeneratesMetadata(targetType) || !_factory.CompilationModuleGroup.ContainsType(targetType);
             }
 
             public bool IsBlocked(MetadataType typeDef)

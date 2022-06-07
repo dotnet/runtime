@@ -42,6 +42,7 @@ const linked_functions = [
     "mono_wasm_invoke_js",
     "mono_wasm_invoke_js_blazor",
     "mono_wasm_trace_logger",
+    "mono_wasm_set_entrypoint_breakpoint",
 
     // corebindings.c
     "mono_wasm_invoke_js_with_args_ref",
@@ -67,6 +68,10 @@ const linked_functions = [
     // pal_icushim_static.c
     "mono_wasm_load_icu_data",
     "mono_wasm_get_icudt_name",
+
+    // pal_crypto_webworker.c
+    "dotnet_browser_simple_digest_hash",
+    "dotnet_browser_can_use_simple_digest_hash",
 ];
 
 // -- this javascript file is evaluated by emcc during compilation! --

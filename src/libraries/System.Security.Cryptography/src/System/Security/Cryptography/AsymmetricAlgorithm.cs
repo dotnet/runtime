@@ -401,7 +401,7 @@ namespace System.Security.Cryptography
             {
                 try
                 {
-                    return PemKeyHelpers.CreatePemFromData(PemLabels.Pkcs8PrivateKey, exported);
+                    return PemEncoding.WriteString(PemLabels.Pkcs8PrivateKey, exported);
                 }
                 finally
                 {
@@ -454,7 +454,7 @@ namespace System.Security.Cryptography
             {
                 try
                 {
-                    return PemKeyHelpers.CreatePemFromData(PemLabels.EncryptedPkcs8PrivateKey, exported);
+                    return PemEncoding.WriteString(PemLabels.EncryptedPkcs8PrivateKey, exported);
                 }
                 finally
                 {
@@ -490,7 +490,7 @@ namespace System.Security.Cryptography
         public string ExportSubjectPublicKeyInfoPem()
         {
             byte[] exported = ExportSubjectPublicKeyInfo();
-            return PemKeyHelpers.CreatePemFromData(PemLabels.SpkiPublicKey, exported);
+            return PemEncoding.WriteString(PemLabels.SpkiPublicKey, exported);
         }
 
         /// <summary>

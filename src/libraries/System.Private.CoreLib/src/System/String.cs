@@ -485,9 +485,7 @@ namespace System
         [NonVersionable]
         public static bool IsNullOrEmpty([NotNullWhen(false)] string? value)
         {
-            // Ternary operator returning true/false prevents redundant asm generation:
-            // https://github.com/dotnet/runtime/issues/4207
-            return (value == null || 0 == value.Length) ? true : false;
+            return value == null || value.Length == 0;
         }
 
         public static bool IsNullOrWhiteSpace([NotNullWhen(false)] string? value)

@@ -96,7 +96,6 @@ namespace Microsoft.Interop
             return param;
         }
 
-
         private static bool TryRehydrateMarshalAsAttribute(TypePositionInfo info, out AttributeSyntax marshalAsAttribute)
         {
             marshalAsAttribute = null!;
@@ -203,6 +202,7 @@ namespace Microsoft.Interop
                 ValueBoundaryBehavior.ManagedIdentifier when info.IsByRef => Argument(IdentifierName(managedIdentifier)).WithRefKindKeyword(Token(info.RefKindSyntax)),
                 ValueBoundaryBehavior.NativeIdentifier => Argument(IdentifierName(nativeIdentifier)),
                 ValueBoundaryBehavior.AddressOfNativeIdentifier => Argument(PrefixUnaryExpression(SyntaxKind.AddressOfExpression, IdentifierName(nativeIdentifier))),
+                ValueBoundaryBehavior.CastNativeIdentifier => Argument(CastExpression(generator.AsParameter(info).Type, IdentifierName(nativeIdentifier))),
                 _ => throw new InvalidOperationException()
             };
         }

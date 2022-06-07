@@ -1201,5 +1201,41 @@ namespace DebuggerTests
                     ("localFloat.ToString()", TString(floatLocalVal["description"]?.Value<string>())),
                     ("localDouble.ToString()", TString(doubleLocalVal["description"]?.Value<string>())));
              });
+
+        [Fact]
+        public async Task EvaluateMethodsOnPrimitiveTypesReturningObjects() =>  await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.PrimitiveTypeMethods", "Evaluate", 11, "Evaluate",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.PrimitiveTypeMethods:Evaluate'); })",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+
+                var (res, _) = await EvaluateOnCallFrame(id, "test.propString.Split('_', 3, System.StringSplitOptions.TrimEntries)");
+                var props = res["value"] ?? await GetProperties(res["objectId"]?.Value<string>()); // in firefox getProps is necessary
+                var expected_props = new [] { TString("s"), TString("t"), TString("r") };
+                await CheckProps(props, expected_props, "props#1");
+
+                (res, _) = await EvaluateOnCallFrame(id, "localString.Split('*', 3, System.StringSplitOptions.RemoveEmptyEntries)");
+                props = res["value"] ?? await GetProperties(res["objectId"]?.Value<string>());
+                expected_props = new [] { TString("S"), TString("T"), TString("R") };
+                await CheckProps(props, expected_props, "props#2");
+             });
+
+        [Theory]
+        [InlineData("DefaultMethod", "IDefaultInterface", "Evaluate")]
+        [InlineData("DefaultMethod2", "IExtendIDefaultInterface", "Evaluate")]
+        [InlineData("DefaultMethodAsync", "IDefaultInterface", "EvaluateAsync", true)]
+        public async Task EvaluateLocalsInDefaultInterfaceMethod(string pauseMethod, string methodInterface, string entryMethod, bool isAsync = false) =>
+            await CheckInspectLocalsAtBreakpointSite(
+            methodInterface, pauseMethod, 2, isAsync ? "MoveNext" : pauseMethod,
+            $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DefaultInterfaceMethod:{entryMethod}'); }})",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+                await EvaluateOnCallFrameAndCheck(id,
+                    ("localString", TString($"{pauseMethod}()")),
+                    ("this", TObject("DIMClass")),
+                    ("this.dimClassMember", TNumber(123)));
+            });
     }
 }

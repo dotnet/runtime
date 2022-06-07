@@ -88,6 +88,8 @@ void InitializeShim()
     }
 
 #ifdef HOST_UNIX
+    // Register signal handlers for the shim so we can handle committing collections on JIT segfaults.
+    PAL_SetInitializeDLLFlags(PAL_INITIALIZE_REGISTER_SIGNALS);
     if (0 != PAL_InitializeDLL())
     {
         fprintf(stderr, "Error: Fail to PAL_InitializeDLL\n");

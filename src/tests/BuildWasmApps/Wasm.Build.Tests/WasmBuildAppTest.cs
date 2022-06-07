@@ -10,15 +10,10 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests
 {
-    public class WasmBuildAppTest : BuildTestBase
+    public class WasmBuildAppTest : WasmBuildAppBase
     {
         public WasmBuildAppTest(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext) : base(output, buildContext)
         {}
-
-        public static IEnumerable<object?[]> MainMethodTestData(bool aot, RunHost host)
-            => ConfigWithAOTData(aot)
-                .WithRunHosts(host)
-                .UnwrapItemsAsArrays();
 
         [Theory]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/61725", TestPlatforms.Windows)]
@@ -153,14 +148,26 @@ namespace Wasm.Build.Tests
             RunAndTestWasmApp(buildArgs, expectedExitCode: 42,
                                 test: output => Assert.Contains("System.Threading.ThreadPool.MaxThreads: 20", output), host: host, id: id);
         }
+    }
 
-        void TestMain(string projectName,
-                      string programText,
-                      BuildArgs buildArgs,
-                      RunHost host,
-                      string id,
-                      string extraProperties = "",
-                      bool? dotnetWasmFromRuntimePack = null)
+    public class WasmBuildAppBase : BuildTestBase
+    {
+        public static IEnumerable<object?[]> MainMethodTestData(bool aot, RunHost host)
+            => ConfigWithAOTData(aot)
+                .WithRunHosts(host)
+                .UnwrapItemsAsArrays();
+
+        public WasmBuildAppBase(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext) : base(output, buildContext)
+        {
+        }
+
+        protected void TestMain(string projectName,
+              string programText,
+              BuildArgs buildArgs,
+              RunHost host,
+              string id,
+              string extraProperties = "",
+              bool? dotnetWasmFromRuntimePack = null)
         {
             buildArgs = buildArgs with { ProjectName = projectName };
             buildArgs = ExpandBuildArgs(buildArgs, extraProperties);
@@ -178,5 +185,4 @@ namespace Wasm.Build.Tests
                                 test: output => Assert.Contains("Hello, World!", output), host: host, id: id);
         }
     }
-
- }
+}

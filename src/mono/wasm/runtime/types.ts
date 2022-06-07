@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { bind_runtime_method } from "./method-binding";
-import { CharPtr, EmscriptenModule, ManagedPointer, NativePointer, VoidPtr } from "./types/emscripten";
+import { CharPtr, EmscriptenModule, ManagedPointer, NativePointer, VoidPtr, Int32Ptr } from "./types/emscripten";
 
 export type GCHandle = {
     __brand: "GCHandle"
@@ -144,6 +144,7 @@ export type RuntimeHelpers = {
 
     _box_buffer: VoidPtr;
     _unbox_buffer: VoidPtr;
+    _i52_error_scratch_buffer: Int32Ptr;
     _box_root: any;
     // A WasmRoot that is guaranteed to contain 0
     _null_root: any;
@@ -179,10 +180,14 @@ export type CoverageProfilerOptions = {
 }
 
 /// Options to configure the event pipe session
+/// The recommended method is to MONO.diagnostics.SesisonOptionsBuilder to create an instance of this type
 export interface EventPipeSessionOptions {
     /// Whether to collect additional details (such as method and type names) at EventPipeSession.stop() time (default: true)
     /// This is required for some use cases, and may allow some tools to better understand the events.
     collectRundownEvents?: boolean;
+    /// The providers that will be used by this session.
+    /// See https://docs.microsoft.com/en-us/dotnet/core/diagnostics/eventpipe#trace-using-environment-variables
+    providers: string;
 }
 
 // how we extended emscripten Module
@@ -220,7 +225,7 @@ export type DotnetModuleConfigImports = {
     url?: any;
 }
 
-// see src\mono\wasm\runtime\rollup.config.js 
+// see src\mono\wasm\runtime\rollup.config.js
 // inline this, because the lambda could allocate closure on hot path otherwise
 export function mono_assert(condition: unknown, messageFactory: string | (() => string)): asserts condition {
     if (!condition) {

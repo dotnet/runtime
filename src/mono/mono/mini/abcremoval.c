@@ -272,7 +272,7 @@ get_relation_from_ins (MonoVariableRelationsEvaluationArea *area, MonoInst *ins,
 	switch (ins->opcode) {
 	case OP_ICONST:
 		value->type = MONO_CONSTANT_SUMMARIZED_VALUE;
-		value->value.constant.value = ins->inst_c0;
+		value->value.constant.value = GTMREG_TO_INT (ins->inst_c0);
 		value->value.constant.nullness = MONO_VALUE_MAYBE_NULL;
 		break;
 	case OP_MOVE:
@@ -296,7 +296,7 @@ get_relation_from_ins (MonoVariableRelationsEvaluationArea *area, MonoInst *ins,
 	case OP_IADD_IMM:
 		value->type = MONO_VARIABLE_SUMMARIZED_VALUE;
 		value->value.variable.variable = ins->sreg1;
-		value->value.variable.delta = ins->inst_imm;
+		value->value.variable.delta = GTMREG_TO_INT (ins->inst_imm);
 		value->value.variable.nullness = MONO_VALUE_MAYBE_NULL;
 		/* FIXME: */
 		//check_delta_safety (area, result);
@@ -304,7 +304,7 @@ get_relation_from_ins (MonoVariableRelationsEvaluationArea *area, MonoInst *ins,
 	case OP_ISUB_IMM:
 		value->type = MONO_VARIABLE_SUMMARIZED_VALUE;
 		value->value.variable.variable = ins->sreg1;
-		value->value.variable.delta = -ins->inst_imm;
+		value->value.variable.delta = GTMREG_TO_INT (-ins->inst_imm);
 		value->value.variable.nullness = MONO_VALUE_MAYBE_NULL;
 		/* FIXME: */
 		//check_delta_safety (area, result);
@@ -511,7 +511,7 @@ get_relations_from_previous_bb (MonoVariableRelationsEvaluationArea *area, MonoB
 				relations->relation1.variable = compare->sreg1;
 				relations->relation1.relation.relation = branch_relation;
 				relations->relation1.relation.related_value.type = MONO_CONSTANT_SUMMARIZED_VALUE;
-				relations->relation1.relation.related_value.value.constant.value = compare->inst_imm;
+				relations->relation1.relation.related_value.value.constant.value = GTMREG_TO_INT (compare->inst_imm);
 				relations->relation1.relation.related_value.value.constant.nullness = MONO_VALUE_MAYBE_NULL;
 			}
 		}
@@ -950,7 +950,7 @@ evaluate_relation_with_target_variable (MonoVariableRelationsEvaluationArea *are
 
 			current_context = father_context;
 			while (current_context != last_context) {
-				int index = current_context - area->contexts;
+				ptrdiff_t index = current_context - area->contexts;
 				MonoRelationsEvaluationStatus *current_status = &(area->statuses [index]);
 				*current_status = (MonoRelationsEvaluationStatus)(*current_status | recursive_status);
 				current_context = current_context->father;

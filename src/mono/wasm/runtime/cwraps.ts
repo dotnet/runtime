@@ -81,6 +81,10 @@ const fn_signatures: [ident: string, returnType: string | null, argTypes?: strin
     ["mono_wasm_exec_regression", "number", ["number", "string"]],
     ["mono_wasm_write_managed_pointer_unsafe", "void", ["number", "number"]],
     ["mono_wasm_copy_managed_pointer", "void", ["number", "number"]],
+    ["mono_wasm_i52_to_f64", "number", ["number", "number"]],
+    ["mono_wasm_u52_to_f64", "number", ["number", "number"]],
+    ["mono_wasm_f64_to_i52", "number", ["number", "number"]],
+    ["mono_wasm_f64_to_u52", "number", ["number", "number"]],
 ];
 
 export interface t_Cwraps {
@@ -131,7 +135,7 @@ export interface t_Cwraps {
     mono_wasm_try_unbox_primitive_and_get_type_ref(obj: MonoObjectRef, buffer: VoidPtr, buffer_size: number): number;
     mono_wasm_box_primitive_ref(klass: MonoClass, value: VoidPtr, value_size: number, result: MonoObjectRef): void;
     mono_wasm_intern_string_ref(strRef: MonoStringRef): void;
-    mono_wasm_assembly_get_entry_point(assembly: MonoAssembly): MonoMethod;
+    mono_wasm_assembly_get_entry_point(assembly: MonoAssembly, idx: number): MonoMethod;
     mono_wasm_string_array_new_ref(size: number, result: MonoObjectRef): void;
     mono_wasm_typed_array_new_ref(arr: VoidPtr, length: number, size: number, type: number, result: MonoObjectRef): void;
     mono_wasm_class_get_type(klass: MonoClass): MonoType;
@@ -180,6 +184,10 @@ export interface t_Cwraps {
     mono_wasm_exec_regression(verbose_level: number, image: string): number;
     mono_wasm_write_managed_pointer_unsafe(destination: VoidPtr | MonoObjectRef, pointer: ManagedPointer): void;
     mono_wasm_copy_managed_pointer(destination: VoidPtr | MonoObjectRef, source: VoidPtr | MonoObjectRef): void;
+    mono_wasm_i52_to_f64 (source: VoidPtr, error: Int32Ptr) : number;
+    mono_wasm_u52_to_f64 (source: VoidPtr, error: Int32Ptr) : number;
+    mono_wasm_f64_to_i52 (destination: VoidPtr, value: number) : I52Error;
+    mono_wasm_f64_to_u52 (destination: VoidPtr, value: number) : I52Error;
 }
 
 const wrapped_c_functions: t_Cwraps = <any>{};
@@ -201,4 +209,11 @@ export function wrap_c_function(name: string): Function {
     const fce = Module.cwrap(sig[0], sig[1], sig[2], sig[3]);
     wf[sig[0]] = fce;
     return fce;
+}
+
+// see src/mono/wasm/driver.c I52_ERROR_xxx
+export const enum I52Error {
+    NONE = 0,
+    NON_INTEGRAL = 1,
+    OUT_OF_RANGE = 2,
 }
