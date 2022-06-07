@@ -426,23 +426,6 @@ void *JIT_TrialAlloc::GenBox(Flags flags)
     sl.X86EmitPushReg(kEBX);
     sl.Emit16(0xda8b);
 
-    // Save the MethodTable ptr
-    sl.X86EmitPushReg(kECX);
-
-    // mov             ecx, [ecx]MethodTable.m_pWriteableData
-    sl.X86EmitOffsetModRM(0x8b, kECX, kECX, offsetof(MethodTable, m_pWriteableData));
-
-    // Check whether the class has not been initialized
-    // test [ecx]MethodTableWriteableData.m_dwFlags,MethodTableWriteableData::enum_flag_Unrestored
-    sl.X86EmitOffsetModRM(0xf7, (X86Reg)0x0, kECX, offsetof(MethodTableWriteableData, m_dwFlags));
-    sl.Emit32(MethodTableWriteableData::enum_flag_Unrestored);
-
-    // Restore the MethodTable ptr in ecx
-    sl.X86EmitPopReg(kECX);
-
-    // jne              noAlloc
-    sl.X86EmitCondJump(noAlloc, X86CondCode::kJNE);
-
     // Check for null ref
     // test edx, edx
     sl.X86EmitR2ROp(0x85, kEDX, kEDX);
