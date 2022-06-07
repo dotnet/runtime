@@ -109,6 +109,15 @@ public class NativeLibraryTests : IDisposable
         EXPECT(TryLoadLibrary_WithAssembly(libName, assembly, null), TestResult.ReturnFailure);
     }
 
+    [Fact]
+    [PlatformSpecific(TestPlatforms.Windows)]
+    public void LoadLibraryInvalidPath_Failure()
+    {
+        string libName = "../InvalidPath/InvalidPath.dll";
+        EXPECT(LoadLibrary_WithAssembly(libName, assembly, null), TestResult.DllNotFound);
+        EXPECT(TryLoadLibrary_WithAssembly(libName, assembly, null), TestResult.ReturnFailure);
+    }
+
     public static bool HasKnownLibraryInSystemDirectory =>
         OperatingSystem.IsWindows()
         && File.Exists(Path.Combine(Environment.SystemDirectory, "url.dll"));
