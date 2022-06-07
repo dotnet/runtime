@@ -1075,7 +1075,7 @@ class UTF8Encoding
     DecoderReplacementFallback decoderReplacementFallback;
     DecoderExceptionFallback decoderExceptionFallback;
 
-    bool InRange(WCHAR c, WCHAR begin, WCHAR end)
+    bool InRange(int c, int begin, int end)
     {
         return begin <= c && c <= end;
     }
