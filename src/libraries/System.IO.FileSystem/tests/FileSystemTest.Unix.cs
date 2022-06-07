@@ -53,7 +53,8 @@ namespace System.IO.Tests
                 // We launch a child process to get its value.
                 using Process px = Process.Start(new ProcessStartInfo
                 {
-                    FileName = "umask",
+                    FileName = "/bin/sh",
+                    ArgumentList = { "-c", "umask" },
                     RedirectStandardOutput = true
                 });
                 string stdout = px.StandardOutput.ReadToEnd().Trim();
