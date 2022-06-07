@@ -298,7 +298,7 @@ namespace System.Drawing
         /// <param name="logFont">A structure to populate with LOGFONT data.</param>
         /// <param name="graphics">Graphics object which provide information about font.</param>
         public unsafe void ToLogFont<T>(ref T logFont, Graphics graphics)
-            where T: struct
+            where T: struct, unmanaged
         {
             ArgumentNullException.ThrowIfNull(logFont);
 
@@ -313,7 +313,7 @@ namespace System.Drawing
             Interop.User32.LOGFONT nativeLogFont = ToLogFontInternal(graphics);
 
             // PtrToStructure requires that the passed in object not be a value type.
-            Marshal.PtrToStructure<T>(new IntPtr(&nativeLogFont), logFont);
+            logFont = *(T*)&nativeLogFont;
         }
 #endif
 
@@ -584,7 +584,7 @@ namespace System.Drawing
         /// <param name="logFont">A structure holding LOGFONT data.</param>
         /// <returns>The newly created <see cref="Font"/>.</returns>
         public static Font FromLogFont<T>(in T logFont)
-            where T: struct
+            where T: struct, unmanaged
         {
             using (ScreenDC dc = ScreenDC.Create())
             {
@@ -666,7 +666,7 @@ namespace System.Drawing
         /// <param name="hdc">Handle to a device context (HDC).</param>
         /// <returns>The newly created <see cref="Font"/>.</returns>
         public static unsafe Font FromLogFont<T>(in T logFont, IntPtr hdc)
-            where T: struct
+            where T: struct, unmanaged
         {
             ArgumentNullException.ThrowIfNull(logFont);
 
@@ -687,7 +687,7 @@ namespace System.Drawing
             // Now that we know the marshalled size is the same as LOGFONT, copy in the data
             nativeLogFont = default;
 
-            Marshal.StructureToPtr<T>(logFont, new IntPtr(&nativeLogFont), fDeleteOld: false);
+            *(T*)&nativeLogFont = logFont;
 
             return FromLogFontInternal(ref nativeLogFont, hdc);
         }
@@ -764,7 +764,7 @@ namespace System.Drawing
         /// </summary>
         /// <param name="logFont">A structure to populate with LOGFONT data.</param>
         public void ToLogFont<T>(ref T logFont)
-            where T: struct
+            where T: struct, unmanaged
         {
             using (ScreenDC dc = ScreenDC.Create())
             using (Graphics graphics = Graphics.FromHdcInternal(dc))
