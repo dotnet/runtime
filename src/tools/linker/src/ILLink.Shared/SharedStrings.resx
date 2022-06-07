@@ -1071,6 +1071,24 @@
   <data name="MethodsAreAssociatedWithUserMethodMessage" xml:space="preserve">
     <value>Methods '{0}' and '{1}' are both associated with lambda or local function '{2}'. This is currently unsupported and may lead to incorrectly reported warnings.</value>
   </data>
+  <data name="CompilerGeneratedMemberAccessedViaReflectionTitle" xml:space="preserve">
+    <value>Compiler-generated member is accessed via reflection. Trimmer can't guarantee availability of the requirements of the member.</value>
+  </data>
+  <data name="CompilerGeneratedMemberAccessedViaReflectionMessage" xml:space="preserve">
+    <value>Compiler-generated member '{0}' is accessed via reflection. Trimmer can't guarantee availability of the requirements of the member.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersOnTypeReferencesCompilerGeneratedMemberTitle" xml:space="preserve">
+    <value>'DynamicallyAccessedMemberAttribute' on a type or one of its base types references a compiler-generated member.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersOnTypeReferencesCompilerGeneratedMemberMessage" xml:space="preserve">
+    <value>'DynamicallyAccessedMemberAttribute' on '{0}' or one of its base types references compiler-generated member '{1}'.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersOnTypeReferencesCompilerGeneratedMemberOnBaseTitle" xml:space="preserve">
+    <value>'DynamicallyAccessedMemberAttribute' on a type or one of its base types references a compiler-generated member.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersOnTypeReferencesCompilerGeneratedMemberOnBaseMessage" xml:space="preserve">
+    <value>'DynamicallyAccessedMemberAttribute' on '{0}' or one of its base types references compiler-generated member '{1}'.</value>
+  </data>
   <data name="AvoidAssemblyLocationInSingleFileTitle" xml:space="preserve">
     <value>Avoid accessing Assembly file path when publishing as a single file</value>
   </data>

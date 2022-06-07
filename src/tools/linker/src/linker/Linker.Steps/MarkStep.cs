@@ -69,6 +69,11 @@ namespace Mono.Linker.Steps
 		protected List<(MethodBody, MarkScopeStack.Scope)> _unreachableBodies;
 
 		readonly List<(TypeDefinition Type, MethodBody Body, Instruction Instr)> _pending_isinst_instr;
+
+		// Stores, for compiler-generated methods only, whether they require the reflection
+		// method body scanner.
+		readonly Dictionary<MethodBody, bool> _compilerGeneratedMethodRequiresScanner;
+
 		UnreachableBlocksOptimizer? _unreachableBlocksOptimizer;
 		UnreachableBlocksOptimizer UnreachableBlocksOptimizer {
 			get {
@@ -228,6 +233,7 @@ namespace Mono.Linker.Steps
 			_unreachableBodies = new List<(MethodBody, MarkScopeStack.Scope)> ();
 			_pending_isinst_instr = new List<(TypeDefinition, MethodBody, Instruction)> ();
 			_entireTypesMarked = new HashSet<TypeDefinition> ();
+			_compilerGeneratedMethodRequiresScanner = new Dictionary<MethodBody, bool> ();
 		}
 
 		public AnnotationStore Annotations => Context.Annotations;
@@ -1627,6 +1633,20 @@ namespace Mono.Linker.Steps
 			if (reportOnMember)
 				origin = new MessageOrigin (member);
 
+			// Warn on reflection access to compiler-generated code. This includes MoveNext methods.
+			if (member is MethodDefinition method) {
+				if (ShouldWarnForReflectionAccessToCompilerGeneratedCode (method)) {
+					var id = reportOnMember ? DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesCompilerGeneratedMember : DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesCompilerGeneratedMemberOnBase;
+					Context.LogWarning (origin, id, type.GetDisplayName (), method.GetDisplayName ());
+				}
+
+				// All override methods should have the same annotations as their base methods
+				// (else we will produce warning IL2046 or IL2092 or some other warning).
+				// When marking override methods via DynamicallyAccessedMembers, we should only issue a warning for the base method.
+				if (method.IsVirtual && Annotations.GetBaseMethods (method) != null)
+					return;
+			}
+
 			if (Annotations.DoesMemberRequireUnreferencedCode (member, out RequiresUnreferencedCodeAttribute? requiresUnreferencedCodeAttribute)) {
 				var id = reportOnMember ? DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberWithRequiresUnreferencedCode : DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberOnBaseWithRequiresUnreferencedCode;
 				Context.LogWarning (origin, id, type.GetDisplayName (),
@@ -2810,8 +2830,34 @@ namespace Mono.Linker.Steps
 			return method;
 		}
 
+		bool ShouldWarnForReflectionAccessToCompilerGeneratedCode (MethodDefinition method)
+		{
+			if (!CompilerGeneratedState.IsNestedFunctionOrStateMachineMember (method) || method.Body == null)
+				return false;
+
+			// No need to warn if it's already covered by the Requires attribute or explicit annotations on the method.
+			if (Annotations.DoesMethodRequireUnreferencedCode (method, out _) || Annotations.FlowAnnotations.ShouldWarnWhenAccessedForReflection (method))
+				return false;
+
+			// Warn only if it has potential dataflow issues, as approximated by our check to see if it requires
+			// the reflection scanner. Checking this will also mark direct dependencies of the method body, if it
+			// hasn't been marked already. A cache ensures this only happens once for the method, whether or not
+			// it is accessed via reflection.
+			return MarkAndCheckRequiresReflectionMethodBodyScanner (method.Body);
+		}
+
 		void ProcessAnalysisAnnotationsForMethod (MethodDefinition method, DependencyKind dependencyKind, in MessageOrigin origin)
 		{
+			// There are only two ways to get there such that the origin isn't the same as the top of the scopestack.
+			// - For DAM on type, the current scope is the caller of GetType, while the origin is the type itself.
+			// - For warnings produced inside compiler-generated code, the current scope is the user code that
+			//   owns the compiler-generated code, while the origin is the compiler-generated code.
+			// In either case any warnings produced here should use the origin instead of the scopestack.
+			if (origin.Provider != ScopeStack.CurrentScope.Origin.Provider) {
+				Debug.Assert (dependencyKind == DependencyKind.DynamicallyAccessedMemberOnType ||
+					(origin.Provider is MethodDefinition originMethod && CompilerGeneratedState.IsNestedFunctionOrStateMachineMember (originMethod)));
+			}
+
 			switch (dependencyKind) {
 			// DirectCall, VirtualCall and NewObj are handled by ReflectionMethodBodyScanner
 			// This is necessary since the ReflectionMethodBodyScanner has intrinsic handling for some
@@ -2866,35 +2912,44 @@ namespace Mono.Linker.Steps
 			case DependencyKind.KeptForSpecialAttribute:
 				return;
 
-			case DependencyKind.DynamicallyAccessedMember:
 			case DependencyKind.DynamicallyAccessedMemberOnType:
-				// All override methods should have the same annotations as their base methods
-				// (else we will produce warning IL2046 or IL2092 or some other warning).
-				// When marking override methods via DynamicallyAccessedMembers, we should only issue a warning for the base method.
-				if (method.IsVirtual && Annotations.GetBaseMethods (method) != null)
-					return;
-				break;
+				// DynamicallyAccessedMembers on type gets special treatment so that the warning origin
+				// is the type or the annotated member.
+				ReportWarningsForTypeHierarchyReflectionAccess (method, origin);
+				return;
 
 			default:
 				// All other cases have the potential of us missing a warning if we don't report it
 				// It is possible that in some cases we may report the same warning twice, but that's better than not reporting it.
 				break;
-			}
+			};
 
-			if (dependencyKind == DependencyKind.DynamicallyAccessedMemberOnType) {
-				// DynamicallyAccessedMembers on type gets special treatment so that the warning origin
-				// is the type or the annotated member.
-				ReportWarningsForTypeHierarchyReflectionAccess (method, origin);
+			if (Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode (origin.Provider))
 				return;
+
+			// Warn about reflection access to compiler-generated code.
+			// This must happen before the check for virtual methods, because it should include the
+			// virtual MoveNext method of state machines.
+			switch (dependencyKind) {
+			case DependencyKind.AccessedViaReflection:
+			case DependencyKind.DynamicallyAccessedMember:
+				if (ShouldWarnForReflectionAccessToCompilerGeneratedCode (method))
+					Context.LogWarning (origin, DiagnosticId.CompilerGeneratedMemberAccessedViaReflection, method.GetDisplayName ());
+				break;
 			}
 
-			CheckAndReportRequiresUnreferencedCode (method, new DiagnosticContext (ScopeStack.CurrentScope.Origin, diagnosticsEnabled: true, Context));
+			if (dependencyKind == DependencyKind.DynamicallyAccessedMember) {
+				// All override methods should have the same annotations as their base methods
+				// (else we will produce warning IL2046 or IL2092 or some other warning).
+				// When marking override methods via DynamicallyAccessedMembers, we should only issue a warning for the base method.
+				if (method.IsVirtual && Annotations.GetBaseMethods (method) != null)
+					return;
+			}
+
+			if (Annotations.DoesMethodRequireUnreferencedCode (method, out RequiresUnreferencedCodeAttribute? requiresUnreferencedCode))
+				ReportRequiresUnreferencedCode (method.GetDisplayName (), requiresUnreferencedCode, new DiagnosticContext (origin, diagnosticsEnabled: true, Context));
 
 			if (Annotations.FlowAnnotations.ShouldWarnWhenAccessedForReflection (method)) {
-				// If the current scope has analysis warnings suppressed, don't generate any
-				if (Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode (ScopeStack.CurrentScope.Origin.Provider))
-					return;
-
 				// ReflectionMethodBodyScanner handles more cases for data flow annotations
 				// so don't warn for those.
 				switch (dependencyKind) {
@@ -2906,24 +2961,11 @@ namespace Mono.Linker.Steps
 					break;
 				}
 
-				Context.LogWarning (ScopeStack.CurrentScope.Origin, DiagnosticId.DynamicallyAccessedMembersMethodAccessedViaReflection, method.GetDisplayName ());
+				Context.LogWarning (origin, DiagnosticId.DynamicallyAccessedMembersMethodAccessedViaReflection, method.GetDisplayName ());
 			}
 		}
 
-		internal void CheckAndReportRequiresUnreferencedCode (MethodDefinition method, in DiagnosticContext diagnosticContext)
-		{
-			// If the caller of a method is already marked with `RequiresUnreferencedCodeAttribute` a new warning should not
-			// be produced for the callee.
-			if (Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode (diagnosticContext.Origin.Provider))
-				return;
-
-			if (!Annotations.DoesMethodRequireUnreferencedCode (method, out RequiresUnreferencedCodeAttribute? requiresUnreferencedCode))
-				return;
-
-			ReportRequiresUnreferencedCode (method.GetDisplayName (), requiresUnreferencedCode, diagnosticContext);
-		}
-
-		private static void ReportRequiresUnreferencedCode (string displayName, RequiresUnreferencedCodeAttribute requiresUnreferencedCode, in DiagnosticContext diagnosticContext)
+		internal static void ReportRequiresUnreferencedCode (string displayName, RequiresUnreferencedCodeAttribute requiresUnreferencedCode, in DiagnosticContext diagnosticContext)
 		{
 			string arg1 = MessageFormat.FormatRequiresAttributeMessageArg (requiresUnreferencedCode.Message);
 			string arg2 = MessageFormat.FormatRequiresAttributeUrlArg (requiresUnreferencedCode.Url);
@@ -3329,6 +3371,24 @@ namespace Mono.Linker.Steps
 				return;
 			}
 
+			bool requiresReflectionMethodBodyScanner = MarkAndCheckRequiresReflectionMethodBodyScanner (body);
+
+			// Data-flow (reflection scanning) for compiler-generated methods will happen as part of the
+			// data-flow scan of the user-defined method which uses this compiler-generated method.
+			if (CompilerGeneratedState.IsNestedFunctionOrStateMachineMember (body.Method))
+				return;
+
+			MarkReflectionLikeDependencies (body, requiresReflectionMethodBodyScanner);
+		}
+
+		bool MarkAndCheckRequiresReflectionMethodBodyScanner (MethodBody body)
+		{
+			// This may get called multiple times for compiler-generated code: once for
+			// reflection access, and once as part of the interprocedural scan of the user method.
+			// This check ensures that we only do the work once.
+			if (_compilerGeneratedMethodRequiresScanner.TryGetValue (body, out bool requiresReflectionMethodBodyScanner))
+				return requiresReflectionMethodBodyScanner;
+
 			foreach (VariableDefinition var in body.Variables)
 				MarkType (var.VariableType, new DependencyInfo (DependencyKind.VariableType, body.Method));
 
@@ -3336,16 +3396,20 @@ namespace Mono.Linker.Steps
 				if (eh.HandlerType == ExceptionHandlerType.Catch)
 					MarkType (eh.CatchType, new DependencyInfo (DependencyKind.CatchType, body.Method));
 
-			bool requiresReflectionMethodBodyScanner =
+			requiresReflectionMethodBodyScanner =
 				ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForMethodBody (Context, body.Method);
+			using var _ = ScopeStack.PushScope (new MessageOrigin (body.Method));
 			foreach (Instruction instruction in body.Instructions)
 				MarkInstruction (instruction, body.Method, ref requiresReflectionMethodBodyScanner);
 
 			MarkInterfacesNeededByBodyStack (body);
 
-			MarkReflectionLikeDependencies (body, requiresReflectionMethodBodyScanner);
+			if (CompilerGeneratedState.IsNestedFunctionOrStateMachineMember (body.Method))
+				_compilerGeneratedMethodRequiresScanner.Add (body, requiresReflectionMethodBodyScanner);
 
 			PostMarkMethodBody (body);
+
+			return requiresReflectionMethodBodyScanner;
 		}
 
 		bool IsUnreachableBody (MethodBody body)
@@ -3510,10 +3574,36 @@ namespace Mono.Linker.Steps
 		//
 		protected virtual void MarkReflectionLikeDependencies (MethodBody body, bool requiresReflectionMethodBodyScanner)
 		{
-			if (requiresReflectionMethodBodyScanner) {
-				var scanner = new ReflectionMethodBodyScanner (Context, this, ScopeStack.CurrentScope.Origin);
-				scanner.ScanAndProcessReturnValue (body);
+			// requiresReflectionMethodBodyScanner tells us whether the method body itself requires a dataflow scan.
+
+			// If the method body owns any compiler-generated code, we might still need to do a scan of it together with
+			// all of the compiler-generated code it owns, so first check any compiler-generated callees.
+			if (Context.CompilerGeneratedState.TryGetCompilerGeneratedCalleesForUserMethod (body.Method, out List<IMemberDefinition>? compilerGeneratedCallees)) {
+				foreach (var compilerGeneratedCallee in compilerGeneratedCallees) {
+					switch (compilerGeneratedCallee) {
+					case MethodDefinition nestedFunction:
+						if (nestedFunction.Body is MethodBody nestedBody)
+							requiresReflectionMethodBodyScanner |= MarkAndCheckRequiresReflectionMethodBodyScanner (nestedBody);
+						break;
+					case TypeDefinition stateMachineType:
+						foreach (var method in stateMachineType.Methods) {
+							if (method.Body is MethodBody stateMachineBody)
+								requiresReflectionMethodBodyScanner |= MarkAndCheckRequiresReflectionMethodBodyScanner (stateMachineBody);
+						}
+						break;
+					default:
+						throw new InvalidOperationException ();
+					}
+				}
 			}
+
+			if (!requiresReflectionMethodBodyScanner)
+				return;
+
+			Debug.Assert (ScopeStack.CurrentScope.Origin.Provider == body.Method);
+			var scanner = new ReflectionMethodBodyScanner (Context, this, ScopeStack.CurrentScope.Origin);
+			scanner.InterproceduralScan (body);
+
 		}
 
 		protected class AttributeProviderPair

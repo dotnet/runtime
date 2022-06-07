@@ -1,4 +1,4 @@
-﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
+// Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -618,7 +618,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			{
 				LocalFunction ();
 
-				[ExpectedWarning ("IL2026", "--MethodWithRequires--", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "--MethodWithRequires--",
+					ProducedBy = ProducedBy.Trimmer)]
 				void LocalFunction () => typeof (RequiresInCompilerGeneratedCode)
 					.GetMethod ("MethodWithRequires", System.Reflection.BindingFlags.NonPublic)
 					.Invoke (null, new object[] { });
@@ -656,7 +657,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			{
 				LocalFunction ();
 
-				[ExpectedWarning ("IL2026", "--TypeWithMethodWithRequires.MethodWithRequires--", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "--TypeWithMethodWithRequires.MethodWithRequires--",
+					ProducedBy = ProducedBy.Trimmer)]
 				void LocalFunction () => typeof (TypeWithMethodWithRequires).RequiresNonPublicMethods ();
 			}
 
@@ -869,19 +871,38 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				}
 			}
 
-			class DynamicallyAccessedLocalFunctionUnused
+			class DynamicallyAccessedLocalFunctionUnusedShouldWarn
+			{
+				[ExpectedWarning ("IL2118", nameof (TestCallMethodWithRequiresInDynamicallyAccessedLocalFunction), "LocalFunction", ProducedBy = ProducedBy.Trimmer)]
+				public static void TestCallMethodWithRequiresInDynamicallyAccessedLocalFunction ()
+				{
+					typeof (DynamicallyAccessedLocalFunctionUnusedShouldWarn).RequiresNonPublicMethods ();
+
+					// The linker isn't able to figure out which user method this local function
+					// belongs to, but it doesn't warn because it is only accessed via reflection.
+					// Instead this warns on the reflection access.
+					[ExpectedWarning ("IL2026", "--MethodWithRequires--",
+						ProducedBy = ProducedBy.Analyzer)]
+					[ExpectedWarning ("IL3002", "--MethodWithRequires--",
+						ProducedBy = ProducedBy.Analyzer)]
+					[ExpectedWarning ("IL3050", "--MethodWithRequires--",
+						ProducedBy = ProducedBy.Analyzer)]
+					void LocalFunction () => MethodWithRequires ();
+				}
+			}
+
+			class DynamicallyAccessedLocalFunctionUnusedShouldSuppress
 			{
 				[RequiresUnreferencedCode ("Suppress in body")]
 				[RequiresAssemblyFiles ("Suppress in body")]
 				[RequiresDynamicCode ("Suppress in body")]
 				public static void TestCallMethodWithRequiresInDynamicallyAccessedLocalFunction ()
 				{
-					typeof (DynamicallyAccessedLocalFunctionUnused).RequiresNonPublicMethods ();
+					typeof (DynamicallyAccessedLocalFunctionUnusedShouldSuppress).RequiresNonPublicMethods ();
 
-					// This local function is unused except for the dynamic reference above,
-					// so the linker isn't able to figure out which user method it belongs to,
-					// and the warning is not suppressed.
-					[ExpectedWarning ("IL2026", "--MethodWithRequires--", ProducedBy = ProducedBy.Trimmer)]
+					// The linker isn't able to figure out which user method this local function
+					// belongs to, but it doesn't warn because it is only accessed via reflection,
+					// in a RUC scope.
 					void LocalFunction () => MethodWithRequires ();
 				}
 			}
@@ -902,6 +923,26 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 					unknownType.RequiresNonPublicMethods ();
 				}
 			}
+
+			[ExpectedWarning ("IL2026")]
+			[ExpectedWarning ("IL3002", ProducedBy = ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL3050", ProducedBy = ProducedBy.Analyzer)]
+			static void TestSuppressionOnLocalFunctionWithAssignment ()
+			{
+				LocalFunction (); // This will produce a warning since the local function has Requires on it
+
+				[RequiresUnreferencedCode ("Suppress in body")]
+				[RequiresAssemblyFiles ("Suppress in body")]
+				[RequiresDynamicCode ("Suppress in body")]
+				void LocalFunction (Type unknownType = null)
+				{
+					MethodWithRequires ();
+					typeWithNonPublicMethods = unknownType;
+				}
+			}
+
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.NonPublicMethods)]
+			static Type typeWithNonPublicMethods;
 
 			[ExpectedWarning ("IL2026")]
 			[ExpectedWarning ("IL3002", ProducedBy = ProducedBy.Analyzer)]
@@ -994,8 +1035,10 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				TestGenericLocalFunctionWithAnnotationsAndClosure<TestType> ();
 				TestCallMethodWithRequiresInLtftnLocalFunction ();
 				DynamicallyAccessedLocalFunction.TestCallMethodWithRequiresInDynamicallyAccessedLocalFunction ();
-				DynamicallyAccessedLocalFunctionUnused.TestCallMethodWithRequiresInDynamicallyAccessedLocalFunction ();
+				DynamicallyAccessedLocalFunctionUnusedShouldWarn.TestCallMethodWithRequiresInDynamicallyAccessedLocalFunction ();
+				DynamicallyAccessedLocalFunctionUnusedShouldSuppress.TestCallMethodWithRequiresInDynamicallyAccessedLocalFunction ();
 				TestSuppressionOnLocalFunction ();
+				TestSuppressionOnLocalFunctionWithAssignment ();
 				TestSuppressionOnLocalFunctionWithNestedLocalFunction ();
 				TestSuppressionOnOuterAndLocalFunction ();
 				TestSuppressionOnOuterWithSameName.Test ();
@@ -1043,12 +1086,38 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				lambda ();
 			}
 
+			[ExpectedWarning ("IL2026", "--LambdaWithRequires--")]
+			[ExpectedWarning ("IL3002", "--LambdaWithRequires--", ProducedBy = ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL3050", "--LambdaWithRequires--", ProducedBy = ProducedBy.Analyzer)]
+			static void TestLambdaWithRequires ()
+			{
+				Action lambda =
+					[RequiresUnreferencedCodeAttribute ("--LambdaWithRequires--")]
+				[RequiresAssemblyFiles ("--LambdaWithRequires--")]
+				[RequiresDynamicCode ("--LambdaWithRequires--")]
+				() => MethodWithRequires ();
+
+				lambda ();
+			}
+
 			static void TestCallUnused ()
 			{
 				Action _ =
 				[ExpectedWarning ("IL2026", "--MethodWithRequires--")]
 				[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = ProducedBy.Analyzer)]
 				[ExpectedWarning ("IL3050", "--MethodWithRequires--", ProducedBy = ProducedBy.Analyzer)]
+				() => MethodWithRequires ();
+			}
+
+			[ExpectedWarning ("IL2026", "--LambdaWithRequires--")]
+			[ExpectedWarning ("IL3002", "--LambdaWithRequires--", ProducedBy = ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL3050", "--LambdaWithRequires--", ProducedBy = ProducedBy.Analyzer)]
+			static void TestLambdaWithRequiresUnused ()
+			{
+				Action _ =
+					[RequiresUnreferencedCode ("--LambdaWithRequires--")]
+				[RequiresAssemblyFiles ("--LambdaWithRequires--")]
+				[RequiresDynamicCode ("--LambdaWithRequires--")]
 				() => MethodWithRequires ();
 			}
 
@@ -1125,6 +1194,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			{
 				TestCall ();
 				TestCallUnused ();
+				TestLambdaWithRequires ();
+				TestLambdaWithRequiresUnused ();
 				TestCallWithClosure ();
 				TestCallWithClosureUnused ();
 				TestReflectionAccess ();
@@ -1390,6 +1461,13 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				MethodWithGenericWhichRequiresMethods<TypeWithMethodWithRequires> ();
 			}
 
+			[ExpectedWarning ("IL2026", "--TypeWithMethodWithRequires.MethodWithRequires--", CompilerGeneratedCode = true)]
+			static IEnumerable<int> TestDynamicallyAccessedMethodViaGenericTypeParameterInIterator ()
+			{
+				yield return 1;
+				new TypeWithGenericWhichRequiresMethods<TypeWithMethodWithRequires> ();
+			}
+
 			static void TestLocalFunctionInIteratorLocalFunction ()
 			{
 				IteratorLocalFunction ();
@@ -1428,6 +1506,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			{
 				TestIteratorLocalFunctionInAsync ();
 				TestDynamicallyAccessedMethodViaGenericMethodParameterInIterator ();
+				TestDynamicallyAccessedMethodViaGenericTypeParameterInIterator ();
 				TestLocalFunctionInIteratorLocalFunction ();
 				TestLocalFunctionCalledFromIteratorLocalFunctionAndMethod ();
 			}
@@ -1716,6 +1795,11 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			// state machine members.
 			[ExpectedWarning ("IL2026", "Requires to suppress", ProducedBy = ProducedBy.Trimmer)]
 			[ExpectedWarning ("IL2026", "Requires to suppress", ProducedBy = ProducedBy.Trimmer)]
+			// Linker warns about reflection access to compiler-generated state machine members.
+			[ExpectedWarning ("IL2118", nameof (StateMachinesOnlyReferencedViaReflection), "<" + nameof (TestAsyncOnlyReferencedViaReflectionWhichShouldWarn) + ">", "MoveNext()",
+				ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2118", nameof (StateMachinesOnlyReferencedViaReflection), "<" + nameof (TestIteratorOnlyReferencedViaReflectionWhichShouldWarn) + ">", "MoveNext()",
+				ProducedBy = ProducedBy.Trimmer)]
 			static void TestAll ()
 			{
 				typeof (StateMachinesOnlyReferencedViaReflection).RequiresAll ();
@@ -1751,6 +1835,14 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				void LocalFunction () => MethodWithRequires ();
 			}
 
+			static void TestLocalFunctionWithRequiresOnlyAccessedViaReflection ()
+			{
+				[RequiresUnreferencedCode ("--TestLocalFunctionWithRequiresOnlyAccessedViaReflection--")]
+				[RequiresAssemblyFiles ("--TestLocalFunctionWithRequiresOnlyAccessedViaReflection--")]
+				[RequiresDynamicCode ("--TestLocalFunctionWithRequiresOnlyAccessedViaReflection--")]
+				void LocalFunction () => MethodWithRequires ();
+			}
+
 			[ExpectedWarning ("IL2026", "LocalFunction")]
 			[ExpectedWarning ("IL3002", "LocalFunction", ProducedBy = ProducedBy.Analyzer)]
 			[ExpectedWarning ("IL3050", "LocalFunction", ProducedBy = ProducedBy.Analyzer)]
@@ -1778,6 +1870,16 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				void LocalFunction () => MethodWithRequires ();
 			}
 
+			[RequiresUnreferencedCode ("--TestLocalFunctionInMethodWithRequiresOnlyAccessedViaReflection--")]
+			[RequiresAssemblyFiles ("--TestLocalFunctionInMethodWithRequiresOnlyAccessedViaReflection--")]
+			[RequiresDynamicCode ("--TestLocalFunctionInMethodWithRequiresOnlyAccessedViaReflection--")]
+			static void TestLocalFunctionInMethodWithRequiresOnlyAccessedViaReflection ()
+			{
+				// This is unused, except for the reflection access. Don't warn about MethodWithRequires
+				// because the reflection access will warn about accessing compiler-generated code.
+				void LocalFunction () => MethodWithRequires ();
+			}
+
 			[RequiresUnreferencedCode ("--TestLocalFunctionWithClosureInMethodWithRequires--")]
 			[RequiresAssemblyFiles ("--TestLocalFunctionWithClosureInMethodWithRequires--")]
 			[RequiresDynamicCode ("--TestLocalFunctionWithClosureInMethodWithRequires--")]
@@ -1795,13 +1897,18 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			// Warnings for Reflection access to methods with Requires
 			[ExpectedWarning ("IL2026", "--TestLocalFunctionInMethodWithRequires--")]
 			[ExpectedWarning ("IL2026", "--TestLocalFunctionWithClosureInMethodWithRequires--")]
+			[ExpectedWarning ("IL2026", "--TestLocalFunctionInMethodWithRequiresOnlyAccessedViaReflection--")]
 			// The linker correctly emits warnings about reflection access to local functions with Requires
 			// or which inherit Requires from the containing method. The analyzer doesn't bind to local functions
 			// so does not warn here.
 			[ExpectedWarning ("IL2026", "--TestLocalFunctionWithRequires--", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "--TestLocalFunctionWithRequiresOnlyAccessedViaReflection--", ProducedBy = ProducedBy.Trimmer)]
 			[ExpectedWarning ("IL2026", "--TestLocalFunctionWithClosureWithRequires--", ProducedBy = ProducedBy.Trimmer)]
 			[ExpectedWarning ("IL2026", "--TestLocalFunctionInMethodWithRequires--", ProducedBy = ProducedBy.Trimmer)]
 			[ExpectedWarning ("IL2026", "--TestLocalFunctionWithClosureInMethodWithRequires--", ProducedBy = ProducedBy.Trimmer)]
+			// Linker warns about reflection access to compiler-generated code
+			[ExpectedWarning ("IL2118", nameof (LocalFunctionsReferencedViaReflection), nameof (TestLocalFunctionInMethodWithRequiresOnlyAccessedViaReflection),
+				ProducedBy = ProducedBy.Trimmer)]
 			static void TestAll ()
 			{
 				typeof (LocalFunctionsReferencedViaReflection).RequiresAll ();
@@ -1810,11 +1917,16 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			// Warnings for Reflection access to methods with Requires
 			[ExpectedWarning ("IL2026", "--TestLocalFunctionInMethodWithRequires--")]
 			[ExpectedWarning ("IL2026", "--TestLocalFunctionWithClosureInMethodWithRequires--")]
+			[ExpectedWarning ("IL2026", "--TestLocalFunctionInMethodWithRequiresOnlyAccessedViaReflection--")]
 			// NonPublicMethods warns for local functions not emitted into display classes.
 			[ExpectedWarning ("IL2026", "--TestLocalFunctionWithRequires--", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "--TestLocalFunctionWithRequiresOnlyAccessedViaReflection--", ProducedBy = ProducedBy.Trimmer)]
 			[ExpectedWarning ("IL2026", "--TestLocalFunctionWithClosureWithRequires--", ProducedBy = ProducedBy.Trimmer)]
 			[ExpectedWarning ("IL2026", "--TestLocalFunctionInMethodWithRequires--", ProducedBy = ProducedBy.Trimmer)]
 			[ExpectedWarning ("IL2026", "--TestLocalFunctionWithClosureInMethodWithRequires--", ProducedBy = ProducedBy.Trimmer)]
+			// Linker warns about reflection access to compiler-generated code
+			[ExpectedWarning ("IL2118", nameof (LocalFunctionsReferencedViaReflection), "<" + nameof (TestLocalFunctionInMethodWithRequiresOnlyAccessedViaReflection) + ">",
+				ProducedBy = ProducedBy.Trimmer)]
 			static void TestNonPublicMethods ()
 			{
 				typeof (LocalFunctionsReferencedViaReflection).RequiresNonPublicMethods ();
@@ -2050,6 +2162,10 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		}
 
 		static void MethodWithGenericWhichRequiresMethods<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.NonPublicMethods)] T> ()
+		{
+		}
+
+		class TypeWithGenericWhichRequiresMethods<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.NonPublicMethods)] T>
 		{
 		}
 

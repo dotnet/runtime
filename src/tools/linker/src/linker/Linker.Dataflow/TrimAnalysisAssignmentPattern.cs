@@ -3,7 +3,6 @@
 
 using System;
 using ILLink.Shared.TrimAnalysis;
-
 using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.SingleValue>;
 
 namespace Mono.Linker.Dataflow
@@ -21,14 +20,16 @@ namespace Mono.Linker.Dataflow
 			Origin = origin;
 		}
 
-		public void MarkAndProduceDiagnostics (bool diagnosticsEnabled, ReflectionMarker reflectionMarker, LinkContext context)
+		public void MarkAndProduceDiagnostics (ReflectionMarker reflectionMarker, LinkContext context)
 		{
+			bool diagnosticsEnabled = !context.Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode (Origin.Provider);
+			var diagnosticContext = new DiagnosticContext (Origin, diagnosticsEnabled, context);
+
 			foreach (var sourceValue in Source) {
 				foreach (var targetValue in Target) {
 					if (targetValue is not ValueWithDynamicallyAccessedMembers targetWithDynamicallyAccessedMembers)
 						throw new NotImplementedException ();
 
-					var diagnosticContext = new DiagnosticContext (Origin, diagnosticsEnabled, context);
 					var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction (reflectionMarker, diagnosticContext);
 					requireDynamicallyAccessedMembersAction.Invoke (sourceValue, targetWithDynamicallyAccessedMembers);
 				}
