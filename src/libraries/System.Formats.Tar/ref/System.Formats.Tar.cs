@@ -34,6 +34,7 @@ namespace System.Formats.Tar
         public int Checksum { get { throw null; } }
         public System.IO.Stream? DataStream { get { throw null; } set { } }
         public System.Formats.Tar.TarEntryType EntryType { get { throw null; } }
+        public System.Formats.Tar.TarEntryFormat Format { get { throw null; } }
         public int Gid { get { throw null; } set { } }
         public long Length { get { throw null; } }
         public string LinkName { get { throw null; } set { } }
@@ -107,8 +108,9 @@ namespace System.Formats.Tar
     }
     public sealed partial class TarWriter : System.IDisposable
     {
+        public TarWriter(System.IO.Stream archiveStream) { }
         public TarWriter(System.IO.Stream archiveStream, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>? globalExtendedAttributes = null, bool leaveOpen = false) { }
-        public TarWriter(System.IO.Stream archiveStream, System.Formats.Tar.TarEntryFormat archiveFormat, bool leaveOpen = false) { }
+        public TarWriter(System.IO.Stream archiveStream, System.Formats.Tar.TarEntryFormat archiveFormat = System.Formats.Tar.TarEntryFormat.Pax, bool leaveOpen = false) { }
         public System.Formats.Tar.TarEntryFormat Format { get { throw null; } }
         public void Dispose() { }
         public void WriteEntry(System.Formats.Tar.TarEntry entry) { }
