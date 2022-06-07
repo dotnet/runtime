@@ -6826,6 +6826,8 @@ public:
                                          CORINFO_CLASS_HANDLE    baseClass,
                                          CORINFO_CONTEXT_HANDLE* pContextHandle);
 
+    bool isCompatibleMethodGDV(GenTreeCall* call, CORINFO_METHOD_HANDLE gdvTarget);
+
     void addGuardedDevirtualizationCandidate(GenTreeCall*          call,
                                              CORINFO_METHOD_HANDLE methodHandle,
                                              CORINFO_CLASS_HANDLE  classHandle,

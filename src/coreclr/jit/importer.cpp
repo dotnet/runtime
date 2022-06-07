@@ -22523,6 +22523,94 @@ void Compiler::pickGDV(GenTreeCall*           call,
 }
 
 //------------------------------------------------------------------------
+// isCompatibleMethodGDV:
+//    Check if devirtualizing a call node as a specified target method call is
+//    reasonable.
+//
+// Arguments:
+//    call - the call
+//    gdvTarget - the target method that we want to guess for and devirtualize to
+//
+// Returns:
+//    true if we can proceed with GDV.
+//
+// Notes:
+//    This implements a small simplified signature-compatibility check to
+//    verify that a guess is reasonable. The main goal here is to avoid blowing
+//    up the JIT on PGO data with stale GDV candidates; if they are not
+//    compatible in the ECMA sense then we do not expect the guard to ever pass
+//    at runtime, so we can get by with simplified rules here.
+//
+bool Compiler::isCompatibleMethodGDV(GenTreeCall* call, CORINFO_METHOD_HANDLE gdvTarget)
+{
+    CORINFO_SIG_INFO sig;
+    info.compCompHnd->getMethodSig(gdvTarget, &sig);
+
+    CORINFO_ARG_LIST_HANDLE sigParam  = sig.args;
+    unsigned                numParams = sig.numArgs;
+    unsigned                numArgs   = 0;
+    for (CallArg& arg : call->gtArgs.Args())
+    {
+        switch (arg.GetWellKnownArg())
+        {
+            case WellKnownArg::RetBuffer:
+            case WellKnownArg::ThisPointer:
+                // Not part of signature but we still expect to see it here
+                continue;
+            case WellKnownArg::None:
+                break;
+            default:
+                assert(!"Unexpected well known arg to method GDV candidate");
+                continue;
+        }
+
+        numArgs++;
+        if (numArgs > numParams)
+        {
+            JITDUMP("Incompatible method GDV: call [%06u] has more arguments than signature (sig has %d parameters)\n",
+                    dspTreeID(call), numParams);
+            return false;
+        }
+
+        CORINFO_CLASS_HANDLE classHnd = NO_CLASS_HANDLE;
+        CorInfoType          corType  = strip(info.compCompHnd->getArgType(&sig, sigParam, &classHnd));
+        var_types            sigType  = JITtype2varType(corType);
+
+        if (!impCheckImplicitArgumentCoercion(sigType, arg.GetNode()->TypeGet()))
+        {
+            JITDUMP("Incompatible method GDV: arg [%06u] is type-incompatible with signature of target\n",
+                    dspTreeID(arg.GetNode()));
+            return false;
+        }
+
+        // Best-effort check for struct compatibility here.
+        if (varTypeIsStruct(sigType) && (arg.GetSignatureClassHandle() != classHnd))
+        {
+            ClassLayout* callLayout = typGetObjLayout(arg.GetSignatureClassHandle());
+            ClassLayout* tarLayout  = typGetObjLayout(classHnd);
+
+            if (!ClassLayout::AreCompatible(callLayout, tarLayout))
+            {
+                JITDUMP("Incompatible method GDV: struct arg [%06u] is layout-incompatible with signature of target\n",
+                        dspTreeID(arg.GetNode()));
+                return false;
+            }
+        }
+
+        sigParam = info.compCompHnd->getArgNext(sigParam);
+    }
+
+    if (numArgs < numParams)
+    {
+        JITDUMP("Incompatible method GDV: call [%06u] has fewer arguments (%d) than signature (%d)\n", dspTreeID(call),
+                numArgs, numParams);
+        return false;
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------
 // considerGuardedDevirtualization: see if we can profitably guess at the
 //    class involved in an interface or virtual call.
 //
@@ -22598,6 +22686,16 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
         }
 
         likelyMethod = dvInfo.devirtualizedMethod;
+    }
+    else
+    {
+        // Verify that this is a reasonable looking call target.
+        if (!isCompatibleMethodGDV(call, likelyMethod))
+        {
+            JITDUMP("Target for method-based GDV is incompatible (stale profile?)\n");
+            assert((fgPgoSource != ICorJitInfo::PgoSource::Dynamic) && "Unexpected stale profile in dynamic PGO data");
+            return;
+        }
     }
 
     uint32_t likelyMethodAttribs = info.compCompHnd->getMethodAttribs(likelyMethod);
