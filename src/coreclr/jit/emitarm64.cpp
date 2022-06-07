@@ -13983,6 +13983,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 result.insLatency    = PERFSCORE_LATENCY_ZERO;
                 break;
             }
+            FALLTHROUGH;
         case IF_BI_0C:                                      // bl, b_tail
             result.insThroughput = PERFSCORE_THROUGHPUT_1C; // but is Dual Issue
             result.insLatency    = PERFSCORE_LATENCY_1C;
