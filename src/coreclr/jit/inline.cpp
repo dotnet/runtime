@@ -664,12 +664,6 @@ InlineResult::InlineResult(
     const bool isPrejitRoot = false;
     m_Policy                = InlinePolicy::GetPolicy(m_RootCompiler, isPrejitRoot);
 
-    if (!m_DoNotReport)
-    {
-        COMP_HANDLE comp = m_RootCompiler->info.compCompHnd;
-        comp->beginInlining(m_Caller, m_Callee);
-    }
-
     // Pass along some optional information to the policy.
     if (stmt != nullptr)
     {
@@ -691,6 +685,12 @@ InlineResult::InlineResult(
     if (m_Call->AsCall()->gtCallType == CT_USER_FUNC)
     {
         m_Callee = m_Call->AsCall()->gtCallMethHnd;
+    }
+
+    if (!m_DoNotReport)
+    {
+        COMP_HANDLE comp = m_RootCompiler->info.compCompHnd;
+        comp->beginInlining(m_Caller, m_Callee);
     }
 }
 

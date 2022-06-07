@@ -116,7 +116,7 @@ CorInfoInline interceptor_ICJI::canInline(CORINFO_METHOD_HANDLE callerHnd,    /*
 }
 
 void interceptor_ICJI::beginInlining(CORINFO_METHOD_HANDLE inlinerHnd,
-                           CORINFO_METHOD_HANDLE inlineeHnd)
+                                     CORINFO_METHOD_HANDLE inlineeHnd)
 {
     // do nothing
 }
