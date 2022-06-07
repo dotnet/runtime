@@ -17829,8 +17829,9 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                 {
                     // Do we have to normalize?
                     var_types fncRealRetType = JITtype2varType(info.compMethodInfo->args.retType);
-                    // For RET_EXPR get the type info from the call; if it is inlined, normalization happens inside that,
-                    // and if not code-gen for it should handle normalization.
+                    // For RET_EXPR get the type info from the call regardless
+                    // of whether it ends up inlined or not normalization will
+                    // happen as part of that call.
                     GenTree* returnedTree = op2->OperIs(GT_RET_EXPR) ? op2->AsRetExpr()->gtInlineCandidate : op2;
                     if ((varTypeIsSmall(returnedTree->TypeGet()) || varTypeIsSmall(fncRealRetType)) &&
                         fgCastNeeded(returnedTree, fncRealRetType))
