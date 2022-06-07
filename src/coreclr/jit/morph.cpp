@@ -8973,7 +8973,7 @@ GenTree* Compiler::fgMorphOneAsgBlockOp(GenTree* tree)
             }
             if (isCopyBlock && destLclVarTree == nullptr && !src->OperIs(GT_LCL_VAR))
             {
-                fgMorphBlockOperand(src, asgType, genTypeSize(asgType), false /*isBlkReqd*/);
+                fgMorphBlockOperand(src, asgType, nullptr, false /*isBlkReqd*/);
                 dest->gtFlags |= GTF_DONT_CSE;
                 return tree;
             }
@@ -9195,13 +9195,9 @@ GenTree* Compiler::fgMorphOneAsgBlockOp(GenTree* tree)
 
         if (dest->gtEffectiveVal()->OperIsIndir())
         {
-            // If we have no information about the destination, we have to assume it could
-            // live anywhere (not just in the GC heap).
-            // Mark the GT_IND node so that we use the correct write barrier helper in case
-            // the field is a GC ref.
-
             if (!fgIsIndirOfAddrOfLocal(dest))
             {
+                // TODO-Bug: the GLOB_REF also needs to be set in case "src" is address-exposed.
                 dest->gtFlags |= GTF_GLOB_REF;
                 tree->gtFlags |= GTF_GLOB_REF;
             }
@@ -9280,13 +9276,13 @@ GenTree* Compiler::fgMorphOneAsgBlockOp(GenTree* tree)
         // Ensure that the dest is setup appropriately.
         if (dest->gtEffectiveVal()->OperIsIndir())
         {
-            dest = fgMorphBlockOperand(dest, asgType, size, false /*isBlkReqd*/);
+            dest = fgMorphBlockOperand(dest, asgType, nullptr, false /*isBlkReqd*/);
         }
 
         // Ensure that the rhs is setup appropriately.
         if (isCopyBlock)
         {
-            src = fgMorphBlockOperand(src, asgType, size, false /*isBlkReqd*/);
+            src = fgMorphBlockOperand(src, asgType, nullptr, false /*isBlkReqd*/);
         }
 
         // Set the lhs and rhs on the assignment.
@@ -9562,10 +9558,10 @@ GenTree* Compiler::fgMorphGetStructAddr(GenTree** pTree, CORINFO_CLASS_HANDLE cl
 // fgMorphBlockOperand: Canonicalize an operand of a block assignment
 //
 // Arguments:
-//    tree       - The block operand
-//    asgType    - The type of the assignment
-//    blockWidth - The size of the block
-//    isBlkReqd  - true iff this operand must remain a block node
+//    tree        - The block operand
+//    asgType     - The type of the assignment
+//    blockLayout - The struct layout of the block (for STRUCT "asgType"s)
+//    isBlkReqd   - true iff this operand must remain a block node
 //
 // Return Value:
 //    Returns the morphed block operand
@@ -9576,13 +9572,15 @@ GenTree* Compiler::fgMorphGetStructAddr(GenTree** pTree, CORINFO_CLASS_HANDLE cl
 //    - Ensures that any COMMAs are above ADDR nodes.
 //    Although 'tree' WAS an operand of a block assignment, the assignment
 //    may have been retyped to be a scalar assignment.
-
-GenTree* Compiler::fgMorphBlockOperand(GenTree* tree, var_types asgType, unsigned blockWidth, bool isBlkReqd)
+//
+GenTree* Compiler::fgMorphBlockOperand(GenTree* tree, var_types asgType, ClassLayout* blockLayout, bool isBlkReqd)
 {
     GenTree* effectiveVal = tree->gtEffectiveVal();
 
     if (asgType != TYP_STRUCT)
     {
+        unsigned blockWidth = genTypeSize(asgType);
+
         if (effectiveVal->OperIsIndir())
         {
             if (!isBlkReqd)
@@ -9618,6 +9616,8 @@ GenTree* Compiler::fgMorphBlockOperand(GenTree* tree, var_types asgType, unsigne
     }
     else
     {
+        assert(blockLayout != nullptr);
+
         GenTreeIndir*        indirTree        = nullptr;
         GenTreeLclVarCommon* lclNode          = nullptr;
         bool                 needsIndirection = true;
@@ -9641,7 +9641,7 @@ GenTree* Compiler::fgMorphBlockOperand(GenTree* tree, var_types asgType, unsigne
 #ifdef DEBUG
             GenTreeCall* call = effectiveVal->AsCall();
             assert(call->TypeGet() == TYP_STRUCT);
-            assert(blockWidth == info.compCompHnd->getClassSize(call->gtRetClsHnd));
+            assert(blockLayout->GetSize() == info.compCompHnd->getClassSize(call->gtRetClsHnd));
 #endif
         }
 #ifdef TARGET_ARM64
@@ -9659,7 +9659,7 @@ GenTree* Compiler::fgMorphBlockOperand(GenTree* tree, var_types asgType, unsigne
         if (lclNode != nullptr)
         {
             const LclVarDsc* varDsc = lvaGetDesc(lclNode);
-            if (varTypeIsStruct(varDsc) && (varDsc->lvExactSize == blockWidth) && (varDsc->lvType == asgType))
+            if (varTypeIsStruct(varDsc) && ClassLayout::AreCompatible(varDsc->GetLayout(), blockLayout))
             {
                 if (effectiveVal != lclNode)
                 {
@@ -9674,6 +9674,7 @@ GenTree* Compiler::fgMorphBlockOperand(GenTree* tree, var_types asgType, unsigne
                 effectiveVal->gtFlags |= (lclNode->gtFlags & GTF_ALL_EFFECT);
             }
         }
+
         if (needsIndirection)
         {
             if ((indirTree != nullptr) && (indirTree->OperIsBlk() || !isBlkReqd))
@@ -9682,35 +9683,14 @@ GenTree* Compiler::fgMorphBlockOperand(GenTree* tree, var_types asgType, unsigne
             }
             else
             {
-                GenTree* newTree;
-                GenTree* addr = gtNewOperNode(GT_ADDR, TYP_BYREF, effectiveVal);
-                if (isBlkReqd)
-                {
-                    CORINFO_CLASS_HANDLE clsHnd = gtGetStructHandleIfPresent(effectiveVal);
-                    if (clsHnd == NO_CLASS_HANDLE)
-                    {
-                        newTree = new (this, GT_BLK) GenTreeBlk(GT_BLK, TYP_STRUCT, addr, typGetBlkLayout(blockWidth));
-                    }
-                    else
-                    {
-                        newTree = gtNewObjNode(clsHnd, addr);
-                        gtSetObjGcInfo(newTree->AsObj());
-                    }
-
-                    gtUpdateNodeSideEffects(newTree);
-                }
-                else
-                {
-                    newTree = gtNewIndir(asgType, addr);
-                }
-
-                effectiveVal = newTree;
+                effectiveVal = gtNewStructVal(blockLayout, gtNewOperNode(GT_ADDR, TYP_BYREF, effectiveVal));
+                gtUpdateNodeSideEffects(effectiveVal);
             }
         }
     }
+
     assert(effectiveVal->TypeIs(asgType) || (varTypeIsSIMD(asgType) && varTypeIsStruct(effectiveVal)));
-    tree = effectiveVal;
-    return tree;
+    return effectiveVal;
 }
 
 // insert conversions and normalize to make tree amenable to register
@@ -11640,12 +11620,7 @@ DONE_MORPHING_CHILDREN:
 
                     temp = op1->AsOp()->gtOp1; // X
 
-                    // In the test below, if they're both TYP_STRUCT, this of course does *not* mean that
-                    // they are the *same* struct type.  In fact, they almost certainly aren't.  If the
-                    // address has an associated field sequence, that identifies this case; go through
-                    // the "lcl_fld" path rather than this one.
-                    FieldSeqNode* addrFieldSeq = nullptr; // This is an unused out parameter below.
-                    if (typ == temp->TypeGet() && !GetZeroOffsetFieldMap()->Lookup(op1, &addrFieldSeq))
+                    if ((typ == temp->TypeGet()) && (typ != TYP_STRUCT))
                     {
                         foldAndReturnTemp = true;
                     }
@@ -11710,20 +11685,6 @@ DONE_MORPHING_CHILDREN:
                         {
                             tree->gtType = typ = temp->TypeGet();
                             foldAndReturnTemp  = true;
-                        }
-                        else
-                        {
-                            // Assumes that when Lookup returns "false" it will leave "fieldSeq" unmodified (i.e.
-                            // nullptr)
-                            assert(fieldSeq == nullptr);
-                            bool b = GetZeroOffsetFieldMap()->Lookup(op1, &fieldSeq);
-                            assert(b || fieldSeq == nullptr);
-
-                            if ((fieldSeq != nullptr) && (temp->OperGet() == GT_LCL_FLD))
-                            {
-                                temp->gtType      = typ;
-                                foldAndReturnTemp = true;
-                            }
                         }
                         // Otherwise will will fold this into a GT_LCL_FLD below
                         //   where we check (temp != nullptr)
