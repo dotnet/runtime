@@ -38,9 +38,9 @@ namespace System.Net.Security
         public bool PreferUnicode { get; set; } = true;
 
         // Negotiation results
-        public bool IsAuthenticated { get; set; }
-        public bool IsMICPresent { get; set; }
-        public string? ClientSpecifiedSpn { get; set; }
+        public bool IsAuthenticated { get; private set; }
+        public bool IsMICPresent { get; private set; }
+        public string? ClientSpecifiedSpn { get; private set; }
 
         private NetworkCredential _expectedCredential;
 
