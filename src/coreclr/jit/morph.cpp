@@ -3314,6 +3314,18 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                         makeOutArgCopy = true;
                     }
 
+                    // If the arg may go into registers (both fully or split)
+                    // then we cannot handle passing it from an arbitrary
+                    // source if it would require passing a 3 byte chunk.
+                    // Placing 3 bytes into a register requires multiple loads/shifts/or.
+                    // In theory we could more easily support it for split args
+                    // as those load registers fully always, but currently we
+                    // do not.
+                    if ((arg.AbiInfo.NumRegs > 0) && ((passingSize % REGSIZE_BYTES) == 3))
+                    {
+                        makeOutArgCopy = true;
+                    }
+
                     if (structSize < TARGET_POINTER_SIZE)
                     {
                         makeOutArgCopy = true;
@@ -3918,7 +3930,7 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
                         break;
 #endif // (TARGET_ARM64) || (UNIX_AMD64_ABI) || (TARGET_LOONGARCH64)
                     default:
-                        noway_assert(!"NYI: odd sized struct in fgMorphMultiregStructArg");
+                        noway_assert(!"Cannot load odd sized last element from arbitrary source");
                         break;
                 }
             }
