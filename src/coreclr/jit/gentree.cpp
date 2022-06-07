@@ -3461,9 +3461,6 @@ unsigned Compiler::gtSetCallArgsOrder(CallArgs* args, bool lateArgs, int* callCo
 //------------------------------------------------------------------------
 // gtSetMultiOpOrder: Calculate the costs for a MultiOp.
 //
-// Currently this function just preserves the previous behavior.
-// TODO-List-Cleanup: implement proper costing for these trees.
-//
 // Arguments:
 //    multiOp - The MultiOp tree in question
 //
@@ -3473,12 +3470,11 @@ unsigned Compiler::gtSetCallArgsOrder(CallArgs* args, bool lateArgs, int* callCo
 //
 unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
 {
-    // These default costs preserve previous behavior.
-    // TODO-CQ: investigate opportunities for tuning them.
+    // Most HWI nodes are simple arithmetic operations.
+    //
     int      costEx = 1;
     int      costSz = 1;
     unsigned level  = 0;
-    unsigned lvl2   = 0;
 
 #if defined(FEATURE_HW_INTRINSICS)
     if (multiOp->OperIs(GT_HWINTRINSIC))
@@ -3536,109 +3532,69 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
     }
 #endif // defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
 
-    // This code is here to preserve previous behavior.
-    switch (multiOp->GetOperandCount())
+    // The binary case is special because of GTF_REVERSE_OPS.
+    if (multiOp->GetOperandCount() == 2)
     {
-        case 0:
-            // This is a constant HWIntrinsic, we already have correct costs.
-            break;
+        unsigned lvl2 = 0;
 
-        case 1:
-            // A "unary" case.
+        // This way we have "level" be the complexity of the
+        // first tree to be evaluated, and "lvl2" - the second.
+        if (multiOp->IsReverseOp())
+        {
+            level = gtSetEvalOrder(multiOp->Op(2));
+            lvl2  = gtSetEvalOrder(multiOp->Op(1));
+        }
+        else
+        {
             level = gtSetEvalOrder(multiOp->Op(1));
-            costEx += multiOp->Op(1)->GetCostEx();
-            costSz += multiOp->Op(1)->GetCostSz();
-            break;
+            lvl2  = gtSetEvalOrder(multiOp->Op(2));
+        }
 
-        case 2:
-            // A "binary" case.
+        // We want the more complex tree to be evaluated first.
+        if (level < lvl2)
+        {
+            bool canSwap = multiOp->IsReverseOp() ? gtCanSwapOrder(multiOp->Op(2), multiOp->Op(1))
+                                                  : gtCanSwapOrder(multiOp->Op(1), multiOp->Op(2));
 
-            // This way we have "level" be the complexity of the
-            // first tree to be evaluated, and "lvl2" - the second.
-            if (multiOp->IsReverseOp())
+            if (canSwap)
             {
-                level = gtSetEvalOrder(multiOp->Op(2));
-                lvl2  = gtSetEvalOrder(multiOp->Op(1));
-            }
-            else
-            {
-                level = gtSetEvalOrder(multiOp->Op(1));
-                lvl2  = gtSetEvalOrder(multiOp->Op(2));
-            }
-
-            // We want the more complex tree to be evaluated first.
-            if (level < lvl2)
-            {
-                bool canSwap = multiOp->IsReverseOp() ? gtCanSwapOrder(multiOp->Op(2), multiOp->Op(1))
-                                                      : gtCanSwapOrder(multiOp->Op(1), multiOp->Op(2));
-
-                if (canSwap)
+                if (multiOp->IsReverseOp())
                 {
-                    if (multiOp->IsReverseOp())
-                    {
-                        multiOp->ClearReverseOp();
-                    }
-                    else
-                    {
-                        multiOp->SetReverseOp();
-                    }
-
-                    std::swap(level, lvl2);
-                }
-            }
-
-            if (level < 1)
-            {
-                level = lvl2;
-            }
-            else if (level == lvl2)
-            {
-                level += 1;
-            }
-
-            costEx += (multiOp->Op(1)->GetCostEx() + multiOp->Op(2)->GetCostEx());
-            costSz += (multiOp->Op(1)->GetCostSz() + multiOp->Op(2)->GetCostSz());
-            break;
-
-        default:
-            // The former "ArgList" case... we'll be emulating it here.
-            // The old implementation pushed the nodes on the list, in pre-order.
-            // Then it popped and costed them in "reverse order", so that's what
-            // we'll be doing here as well.
-
-            unsigned nxtlvl = 0;
-            for (size_t i = multiOp->GetOperandCount(); i >= 1; i--)
-            {
-                GenTree* op  = multiOp->Op(i);
-                unsigned lvl = gtSetEvalOrder(op);
-
-                if (lvl < 1)
-                {
-                    level = nxtlvl;
-                }
-                else if (lvl == nxtlvl)
-                {
-                    level = lvl + 1;
+                    multiOp->ClearReverseOp();
                 }
                 else
                 {
-                    level = lvl;
+                    multiOp->SetReverseOp();
                 }
 
-                costEx += op->GetCostEx();
-                costSz += op->GetCostSz();
-
-                // Preserving previous behavior...
-                CLANG_FORMAT_COMMENT_ANCHOR;
-#ifndef TARGET_XARCH
-                if (op->GetCostSz() != 0)
-                {
-                    costSz += 1;
-                }
-#endif
-                nxtlvl = level;
+                std::swap(level, lvl2);
             }
-            break;
+        }
+
+        if (level < 1)
+        {
+            level = lvl2;
+        }
+        else if (level == lvl2)
+        {
+            level += 1;
+        }
+
+        costEx += (multiOp->Op(1)->GetCostEx() + multiOp->Op(2)->GetCostEx());
+        costSz += (multiOp->Op(1)->GetCostSz() + multiOp->Op(2)->GetCostSz());
+    }
+    else
+    {
+        for (size_t i = multiOp->GetOperandCount(); i >= 1; i--)
+        {
+            GenTree* op  = multiOp->Op(i);
+            unsigned lvl = gtSetEvalOrder(op);
+
+            level = max(lvl, level + 1);
+
+            costEx += op->GetCostEx();
+            costSz += op->GetCostSz();
+        }
     }
 
     multiOp->SetCosts(costEx, costSz);
