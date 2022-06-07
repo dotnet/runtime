@@ -47,6 +47,7 @@ namespace Microsoft.DiaSymReader
                 return;
             }
             Marshal.Release(ISymNGenWriter2Inst);
+            Marshal.Release(ISymNGenWriter2Inst);
             _isDisposed = true;
         }
 
