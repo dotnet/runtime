@@ -20,7 +20,6 @@ namespace System.Security.Cryptography.Cose
         internal CoseSign1Message(CoseHeaderMap protectedHeader, CoseHeaderMap unprotectedHeader, byte[]? content, byte[] signature, byte[] protectedHeaderAsBstr)
             : base(protectedHeader, unprotectedHeader, content, signature, protectedHeaderAsBstr) { }
 
-        [UnsupportedOSPlatform("browser")]
         public static byte[] Sign(byte[] content, AsymmetricAlgorithm key, HashAlgorithmName hashAlgorithm, CoseHeaderMap? protectedHeaders = null, CoseHeaderMap? unprotectedHeaders = null, bool isDetached = false)
         {
             if (content is null)
@@ -35,7 +34,6 @@ namespace System.Security.Cryptography.Cose
             return SignCore(content.AsSpan(), null, key, hashAlgorithm, GetKeyType(key), protectedHeaders, unprotectedHeaders, isDetached);
         }
 
-        [UnsupportedOSPlatform("browser")]
         public static byte[] Sign(ReadOnlySpan<byte> content, AsymmetricAlgorithm key, HashAlgorithmName hashAlgorithm, CoseHeaderMap? protectedHeaders = null, CoseHeaderMap? unprotectedHeaders = null, bool isDetached = false)
         {
             if (key is null)
@@ -46,7 +44,6 @@ namespace System.Security.Cryptography.Cose
             return SignCore(content, null, key, hashAlgorithm, GetKeyType(key), protectedHeaders, unprotectedHeaders, isDetached);
         }
 
-        [UnsupportedOSPlatform("browser")]
         public static byte[] Sign(Stream detachedContent, AsymmetricAlgorithm key, HashAlgorithmName hashAlgorithm, CoseHeaderMap? protectedHeaders = null, CoseHeaderMap? unprotectedHeaders = null)
         {
             if (detachedContent is null)
@@ -71,7 +68,6 @@ namespace System.Security.Cryptography.Cose
             return SignCore(default, detachedContent, key, hashAlgorithm, GetKeyType(key), protectedHeaders, unprotectedHeaders, isDetached: true);
         }
 
-        [UnsupportedOSPlatform("browser")]
         internal static byte[] SignCore(
             ReadOnlySpan<byte> contentBytes,
             Stream? contentStream,
@@ -105,7 +101,6 @@ namespace System.Security.Cryptography.Cose
             return buffer;
         }
 
-        [UnsupportedOSPlatform("browser")]
         public static Task<byte[]> SignAsync(
             Stream detachedContent,
             AsymmetricAlgorithm key,
@@ -140,7 +135,6 @@ namespace System.Security.Cryptography.Cose
             return SignAsyncCore(expectedSize, detachedContent, key, hashAlgorithm, keyType, protectedHeaders, unprotectedHeaders, cancellationToken, algHeaderValueToSlip);
         }
 
-        [UnsupportedOSPlatform("browser")]
         private static async Task<byte[]> SignAsyncCore(
             int expectedSize,
             Stream content,
@@ -159,7 +153,6 @@ namespace System.Security.Cryptography.Cose
             return buffer;
         }
 
-        [UnsupportedOSPlatform("browser")]
         public static bool TrySign(
             ReadOnlySpan<byte> content,
             Span<byte> destination,
@@ -197,7 +190,6 @@ namespace System.Security.Cryptography.Cose
             algHeaderValueToSlip = ValidateOrSlipAlgorithmHeader(protectedHeaders, unprotectedHeaders, keyType, hashAlgorithm);
         }
 
-        [UnsupportedOSPlatform("browser")]
         private static int CreateCoseSign1Message(
             ReadOnlySpan<byte> contentBytes,
             Stream? contentStream,
@@ -238,7 +230,6 @@ namespace System.Security.Cryptography.Cose
             return writer.Encode(buffer);
         }
 
-        [UnsupportedOSPlatform("browser")]
         private static async Task<int> CreateCoseSign1MessageAsync(
             Stream content,
             byte[] buffer,
@@ -299,7 +290,6 @@ namespace System.Security.Cryptography.Cose
             }
         }
 
-        [UnsupportedOSPlatform("browser")]
         private static void WriteSignature(Span<byte> buffer, IncrementalHash hasher, CborWriter writer, AsymmetricAlgorithm key, KeyType keyType, HashAlgorithmName hashAlgorithm)
         {
             int bytesWritten;
@@ -317,7 +307,6 @@ namespace System.Security.Cryptography.Cose
             writer.WriteByteString(buffer.Slice(0, bytesWritten));
         }
 
-        [UnsupportedOSPlatform("browser")]
         public bool Verify(AsymmetricAlgorithm key)
         {
             if (key is null)
@@ -333,7 +322,6 @@ namespace System.Security.Cryptography.Cose
             return VerifyCore(key, _content, null, GetKeyType(key));
         }
 
-        [UnsupportedOSPlatform("browser")]
         public bool Verify(AsymmetricAlgorithm key, byte[] content)
         {
             if (key is null)
@@ -353,7 +341,6 @@ namespace System.Security.Cryptography.Cose
             return VerifyCore(key, content, null, GetKeyType(key));
         }
 
-        [UnsupportedOSPlatform("browser")]
         public bool Verify(AsymmetricAlgorithm key, ReadOnlySpan<byte> content)
         {
             if (key is null)
@@ -369,7 +356,6 @@ namespace System.Security.Cryptography.Cose
             return VerifyCore(key, content, null, GetKeyType(key));
         }
 
-        [UnsupportedOSPlatform("browser")]
         public bool Verify(AsymmetricAlgorithm key, Stream detachedContent)
         {
             if (key is null)
@@ -399,7 +385,6 @@ namespace System.Security.Cryptography.Cose
             return VerifyCore(key, default, detachedContent, GetKeyType(key));
         }
 
-        [UnsupportedOSPlatform("browser")]
         private bool VerifyCore(AsymmetricAlgorithm key, ReadOnlySpan<byte> contentBytes, Stream? contentStream, KeyType keyType)
         {
             Debug.Assert(contentStream == null || contentBytes.Length == 0);
@@ -440,7 +425,6 @@ namespace System.Security.Cryptography.Cose
             }
         }
 
-        [UnsupportedOSPlatform("browser")]
         public Task<bool> VerifyAsync(AsymmetricAlgorithm key, Stream detachedContent, CancellationToken cancellationToken = default)
         {
             if (key is null)
@@ -470,7 +454,6 @@ namespace System.Security.Cryptography.Cose
             return VerifyAsyncCore(key, detachedContent, GetKeyType(key), cancellationToken);
         }
 
-        [UnsupportedOSPlatform("browser")]
         private async Task<bool> VerifyAsyncCore(AsymmetricAlgorithm key, Stream content, KeyType keyType, CancellationToken cancellationToken)
         {
             ThrowIfUnsupportedHeaders();
@@ -499,7 +482,6 @@ namespace System.Security.Cryptography.Cose
             }
         }
 
-        [UnsupportedOSPlatform("browser")]
         private bool VerifyHash(AsymmetricAlgorithm key, IncrementalHash hasher, HashAlgorithmName hashAlgorithm, KeyType keyType)
         {
 #if NETSTANDARD2_0 || NETFRAMEWORK
@@ -534,7 +516,6 @@ namespace System.Security.Cryptography.Cose
             }
         }
 
-        [UnsupportedOSPlatform("browser")]
         private bool VerifyHash(AsymmetricAlgorithm key, HashAlgorithmName hashAlgorithm, byte[] toBeSignedHash, KeyType keyType)
         {
             if (keyType == KeyType.ECDsa)

@@ -102,7 +102,6 @@ namespace System.Security.Cryptography.Cose
             }
         }
 
-        [UnsupportedOSPlatform("browser")]
         internal static int SignHashWithECDsa(ECDsa key, IncrementalHash hasher, Span<byte> destination)
         {
 #if NETSTANDARD2_0 || NETFRAMEWORK
@@ -124,7 +123,6 @@ namespace System.Security.Cryptography.Cose
 #endif
         }
 
-        [UnsupportedOSPlatform("browser")]
         internal static int SignHashWithRSA(RSA key, IncrementalHash hasher, HashAlgorithmName hashAlgorithm, Span<byte> destination)
         {
 #if NETSTANDARD2_0 || NETFRAMEWORK
