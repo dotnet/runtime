@@ -29,7 +29,7 @@ namespace System.Text.RegularExpressions.Symbolic
             foreach (DfaMatchingState<TSet> state in _builder._stateCache)
             {
                 writer.WriteLine("        <Node Id=\"{0}\" Label=\"{0}\" Category=\"State\" Group=\"Collapsed\" StateInfo=\"{1}\">", state.Id, state.DgmlView);
-                if (_builder._stateInfo![state.Id].IsInitial)
+                if (_builder.GetStateInfo(state.Id).IsInitial)
                 {
                     writer.WriteLine("            <Category Ref=\"InitialState\" />");
                 }

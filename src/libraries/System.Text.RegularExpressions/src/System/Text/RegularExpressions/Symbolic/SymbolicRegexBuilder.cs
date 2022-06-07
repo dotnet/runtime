@@ -114,10 +114,47 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </summary>
         internal DfaMatchingState<TSet>[]? _stateArray;
         internal DfaMatchingState<TSet>[]? _capturingStateArray;
+
         /// <summary>
         /// Maps state IDs to context-independent information for all states in <see cref="_stateArray"/>.
         /// </summary>
-        internal (bool IsInitial, bool IsDeadend, bool IsNullable, bool CanBeNullable)[]? _stateInfo;
+        internal byte[]? _stateInfo;
+
+        // Bit masks for decoding elements of _stateInfo
+        private const int isInitialMask = 0b0001;
+        private const int isDeadendMask = 0b0010;
+        private const int isNullableMask = 0b0100;
+        private const int canBeNullableMask = 0b1000;
+
+        /// <summary>Assign the context-independent information for the given state.</summary>
+        internal void SetStateInfo(int stateId, bool isInitial, bool isDeadend, bool isNullable, bool canBeNullable)
+        {
+            Debug.Assert(_stateInfo is not null);
+            byte info = 0;
+            if (isInitial)
+                info |= isInitialMask;
+            if (isDeadend)
+                info |= isDeadendMask;
+            if (isNullable)
+                info |= isNullableMask;
+            if (canBeNullable)
+                info |= canBeNullableMask;
+            _stateInfo[stateId] = info;
+        }
+
+        /// <summary>Get context-independent information for the given state.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal (bool IsInitial, bool IsDeadend, bool IsNullable, bool CanBeNullable) GetStateInfo(int stateId)
+        {
+            Debug.Assert(_stateInfo is not null);
+            byte info = _stateInfo[stateId];
+            return (
+                (info & isInitialMask) != 0,
+                (info & isDeadendMask) != 0,
+                (info & isNullableMask) != 0,
+                (info & canBeNullableMask) != 0);
+        }
+
         /// <remarks>
         /// For these "delta" arrays, technically Volatile.Read should be used to read out an element,
         /// but in practice that's not needed on the runtimes in use (though that needs to be documented
@@ -174,7 +211,7 @@ namespace System.Text.RegularExpressions.Symbolic
             {
                 _stateArray = new DfaMatchingState<TSet>[InitialStateLimit];
                 _capturingStateArray = new DfaMatchingState<TSet>[InitialStateLimit];
-                _stateInfo = new (bool, bool, bool, bool)[InitialStateLimit];
+                _stateInfo = new byte[InitialStateLimit];
 
                 // the extra +1 slot with id minterms.Length is reserved for \Z (last occurrence of \n)
                 _mintermsLog = BitOperations.Log2((uint)_minterms.Length) + 1;
@@ -512,7 +549,7 @@ namespace System.Text.RegularExpressions.Symbolic
                         Array.Resize(ref _stateInfo, newsize);
                     }
                     _stateArray[state.Id] = state;
-                    _stateInfo[state.Id] = (isInitialState, state.IsDeadend, state.Node.IsNullable, state.Node.CanBeNullable);
+                    SetStateInfo(state.Id, isInitialState, state.IsDeadend, state.Node.IsNullable, state.Node.CanBeNullable);
                 }
                 return state;
             }

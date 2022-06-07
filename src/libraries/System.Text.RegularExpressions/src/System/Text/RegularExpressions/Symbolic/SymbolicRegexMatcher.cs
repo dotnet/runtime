@@ -315,12 +315,12 @@ namespace System.Text.RegularExpressions.Symbolic
             // the position of the last b: aacaaaabbbc.  It additionally records the position of the first a after
             // the c as the low boundary for the starting position.
             int matchStartLowBoundary, matchStartLengthMarker;
-            int matchEnd = (_findOpts is null, _pattern._info.ContainsSomeAnchor) switch
+            int matchEnd = (_findOpts is not null, _pattern._info.ContainsSomeAnchor) switch
             {
-                (false, false) => FindEndPosition<NoOptimizationsInitialStateHandler, NoAnchorsNullabilityHandler>(input, startat, timeoutOccursAt, mode, out matchStartLowBoundary, out matchStartLengthMarker, perThreadData),
+                (true, true) => FindEndPosition<InitialStateFindOptimizationsHandler, FullNullabilityHandler>(input, startat, timeoutOccursAt, mode, out matchStartLowBoundary, out matchStartLengthMarker, perThreadData),
                 (true, false) => FindEndPosition<InitialStateFindOptimizationsHandler, NoAnchorsNullabilityHandler>(input, startat, timeoutOccursAt, mode, out matchStartLowBoundary, out matchStartLengthMarker, perThreadData),
                 (false, true) => FindEndPosition<NoOptimizationsInitialStateHandler, FullNullabilityHandler>(input, startat, timeoutOccursAt, mode, out matchStartLowBoundary, out matchStartLengthMarker, perThreadData),
-                (true, true) => FindEndPosition<InitialStateFindOptimizationsHandler, FullNullabilityHandler>(input, startat, timeoutOccursAt, mode, out matchStartLowBoundary, out matchStartLengthMarker, perThreadData),
+                (false, false) => FindEndPosition<NoOptimizationsInitialStateHandler, NoAnchorsNullabilityHandler>(input, startat, timeoutOccursAt, mode, out matchStartLowBoundary, out matchStartLengthMarker, perThreadData),
             };
 
             // If there wasn't a match, we're done.
@@ -1024,7 +1024,7 @@ namespace System.Text.RegularExpressions.Symbolic
             public static (bool IsInitial, bool IsDeadend, bool IsNullable, bool CanBeNullable) GetStateInfo(SymbolicRegexBuilder<TSet> builder, ref CurrentState state)
             {
                 Debug.Assert(state.DfaStateId > 0);
-                return builder._stateInfo![state.DfaStateId];
+                return builder.GetStateInfo(state.DfaStateId);
             }
         }
 
@@ -1166,7 +1166,7 @@ namespace System.Text.RegularExpressions.Symbolic
             {
                 foreach (ref KeyValuePair<int, int> nfaState in CollectionsMarshal.AsSpan(state.NfaState!.NfaStateSet.Values))
                 {
-                    if (builder._stateInfo![builder.GetCoreStateId(nfaState.Key)].IsNullable)
+                    if (builder.GetStateInfo(builder.GetCoreStateId(nfaState.Key)).IsNullable)
                     {
                         return true;
                     }
@@ -1180,7 +1180,7 @@ namespace System.Text.RegularExpressions.Symbolic
             {
                 foreach (ref KeyValuePair<int, int> nfaState in CollectionsMarshal.AsSpan(state.NfaState!.NfaStateSet.Values))
                 {
-                    if (builder._stateInfo![builder.GetCoreStateId(nfaState.Key)].CanBeNullable)
+                    if (builder.GetStateInfo(builder.GetCoreStateId(nfaState.Key)).CanBeNullable)
                     {
                         return true;
                     }
