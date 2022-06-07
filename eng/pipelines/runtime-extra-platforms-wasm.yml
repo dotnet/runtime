@@ -75,6 +75,8 @@ jobs:
       extraBuildArgs: /p:WasmEnableThreads=true
       # Don't run for rolling builds, as this is covered
       alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+      # NOTE - Since threading is experimental, we don't want to block mainline work
+      shouldContinueOnError: true
       scenarios:
         - normal
         - WasmTestOnBrowser
@@ -90,6 +92,8 @@ jobs:
       extraBuildArgs: /p:WasmEnablePerfTracing=true
       # Don't run for rolling builds, as this is covered
       alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+      # NOTE - Since threading is experimental, we don't want to block mainline work
+      shouldContinueOnError: true
       scenarios:
         - normal
         - WasmTestOnBrowser
