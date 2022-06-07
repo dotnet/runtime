@@ -1476,6 +1476,49 @@ namespace System.Text.RegularExpressions.Tests
                     }
                 };
 
+                // Validate captures after backtracking constructs are uncaptured when backtracking
+                foreach (string lazy in new[] { "", "?" })
+                {
+                    yield return new object[]
+                    {
+                        engine,
+                        $"^a+{lazy}(a)$", "aaaa", RegexOptions.None, 0, 4,
+                        new CaptureData[]
+                        {
+                            new CaptureData("aaaa", 0, 4),
+                            new CaptureData("a", 3, 1)
+                        }
+                    };
+
+                    yield return new object[]
+                    {
+                        engine,
+                        $"^(a)+{lazy}(a)$", "aaaa", RegexOptions.None, 0, 4,
+                        new CaptureData[]
+                        {
+                            new CaptureData("aaaa", 0, 4),
+                            new CaptureData("a", 2, 1, new CaptureData[]
+                            {
+                                new CaptureData("a", 0, 1),
+                                new CaptureData("a", 1, 1),
+                                new CaptureData("a", 2, 1),
+                            }),
+                            new CaptureData("a", 3, 1)
+                        }
+                    };
+                }
+                yield return new object[]
+                {
+                    engine,
+                    $"^(|a)aa(a)$", "aaaa", RegexOptions.None, 0, 4,
+                    new CaptureData[]
+                    {
+                        new CaptureData("aaaa", 0, 4),
+                        new CaptureData("a", 0, 1),
+                        new CaptureData("a", 3, 1)
+                    }
+                };
+
                 if (!RegexHelpers.IsNonBacktracking(engine))
                 {
                     // Zero-width positive lookahead assertion: Actual - "abc(?=XXX)\\w+"

@@ -5958,60 +5958,26 @@ bool Compiler::optIsSetAssgLoop(unsigned lnum, ALLVARSET_VALARG_TP vars, varRefK
         return true;
     }
 
-    switch (loop->lpAsgCall)
+    // If caller is worried about possible indirect effects, check
+    // what we know about the calls in the loop.
+    //
+    if (inds != 0)
     {
-        case CALLINT_ALL:
-
-            /* Can't hoist if the call might have side effect on an indirection. */
-
-            if (loop->lpAsgInds != VR_NONE)
-            {
+        switch (loop->lpAsgCall)
+        {
+            case CALLINT_ALL:
                 return true;
-            }
-
-            break;
-
-        case CALLINT_REF_INDIRS:
-
-            /* Can't hoist if the call might have side effect on an ref indirection. */
-
-            if (loop->lpAsgInds & VR_IND_REF)
-            {
-                return true;
-            }
-
-            break;
-
-        case CALLINT_SCL_INDIRS:
-
-            /* Can't hoist if the call might have side effect on an non-ref indirection. */
-
-            if (loop->lpAsgInds & VR_IND_SCL)
-            {
-                return true;
-            }
-
-            break;
-
-        case CALLINT_ALL_INDIRS:
-
-            /* Can't hoist if the call might have side effect on any indirection. */
-
-            if (loop->lpAsgInds & (VR_IND_REF | VR_IND_SCL))
-            {
-                return true;
-            }
-
-            break;
-
-        case CALLINT_NONE:
-
-            /* Other helpers kill nothing */
-
-            break;
-
-        default:
-            noway_assert(!"Unexpected lpAsgCall value");
+            case CALLINT_REF_INDIRS:
+                return (inds & VR_IND_REF) != 0;
+            case CALLINT_SCL_INDIRS:
+                return (inds & VR_IND_SCL) != 0;
+            case CALLINT_ALL_INDIRS:
+                return (inds & (VR_IND_REF | VR_IND_SCL)) != 0;
+            case CALLINT_NONE:
+                return false;
+            default:
+                noway_assert(!"Unexpected lpAsgCall value");
+        }
     }
 
     return false;

@@ -3686,6 +3686,10 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
             LowerRetSingleRegStructLclVar(ret);
             break;
 
+        case GT_LCL_FLD:
+            retVal->ChangeType(nativeReturnType);
+            break;
+
 #if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
 #ifdef FEATURE_SIMD
         case GT_SIMD:
@@ -3705,16 +3709,6 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
         }
         break;
 #endif // FEATURE_SIMD || FEATURE_HW_INTRINSICS
-
-        case GT_LCL_FLD:
-        {
-#ifdef DEBUG
-            LclVarDsc* varDsc = comp->lvaGetDesc(retVal->AsLclFld());
-            assert(varDsc->lvDoNotEnregister);
-#endif
-            retVal->ChangeType(nativeReturnType);
-        }
-        break;
 
         default:
             assert(varTypeIsEnregisterable(retVal));

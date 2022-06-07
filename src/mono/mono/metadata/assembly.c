@@ -969,23 +969,20 @@ mono_assembly_load_reference (MonoImage *image, int index)
 		goto commit_reference;
 	}
 
-	if (image->assembly) {
-		if (mono_trace_is_traced (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY)) {
-			char *aname_str = mono_stringify_assembly_name (&aname);
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Loading reference %d of %s (%s), looking for %s",
-				    index, image->name, mono_alc_is_default (mono_image_get_alc (image)) ? "default ALC" : "custom ALC" ,
-				    aname_str);
-			g_free (aname_str);
-		}
-
-		MonoAssemblyByNameRequest req;
-		mono_assembly_request_prepare_byname (&req, mono_image_get_alc (image));
-		req.requesting_assembly = image->assembly;
-		//req.no_postload_search = TRUE; // FIXME: should this be set?
-		reference = mono_assembly_request_byname (&aname, &req, NULL);
-	} else {
-		g_assertf (image->assembly, "While loading reference %d MonoImage %s doesn't have a MonoAssembly", index, image->name);
+	g_assertf (image->assembly || image->not_executable, "While loading reference %d, executable MonoImage %s doesn't have a MonoAssembly", index, image->name);
+	if (mono_trace_is_traced (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY)) {
+		char *aname_str = mono_stringify_assembly_name (&aname);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Loading reference %d of %s (%s), looking for %s",
+				index, image->name, mono_alc_is_default (mono_image_get_alc (image)) ? "default ALC" : "custom ALC" ,
+				aname_str);
+		g_free (aname_str);
 	}
+
+	MonoAssemblyByNameRequest req;
+	mono_assembly_request_prepare_byname (&req, mono_image_get_alc (image));
+	req.requesting_assembly = image->assembly;
+	//req.no_postload_search = TRUE; // FIXME: should this be set?
+	reference = mono_assembly_request_byname (&aname, &req, NULL);
 
 	if (reference == NULL){
 		char *extra_msg;
@@ -1602,8 +1599,10 @@ mono_assembly_request_open (const char *filename, const MonoAssemblyOpenRequest 
 		loaded_from_bundle = image != NULL;
 	}
 
-	if (!image)
-		image = mono_image_open_a_lot (load_req.alc, fname, status);
+	if (!image) {
+		MonoImageOpenOptions options = {0, };
+		image = mono_image_open_a_lot (load_req.alc, fname, status, &options);
+	}
 
 	if (!image){
 		if (*status == MONO_IMAGE_OK)

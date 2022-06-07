@@ -2033,8 +2033,8 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         }
         noway_assert(cloned != nullptr);
 
-        GenTree* newArg = new (comp, GT_ADDR)
-            GenTreeAddrMode(TYP_BYREF, cloned, nullptr, 0, comp->eeGetEEInfo()->offsetOfWrapperDelegateIndirectCell);
+        GenTree* offsetNode = comp->gtNewIconNode(comp->eeGetEEInfo()->offsetOfWrapperDelegateIndirectCell, TYP_I_IMPL);
+        GenTree* newArg     = comp->gtNewOperNode(GT_ADD, TYP_BYREF, cloned, offsetNode);
 
         // Append newArg as the last arg
         PushBack(comp, NewCallArg::Primitive(newArg).WellKnown(WellKnownArg::WrapperDelegateCell));
@@ -3404,11 +3404,24 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                             argObj->gtType = structBaseType;
                         }
                     }
-                    else
+                    else if (argObj->OperIs(GT_LCL_FLD, GT_IND))
                     {
-                        // Not a GT_LCL_VAR, so we can just change the type on the node
+                        // We can just change the type on the node
                         argObj->gtType = structBaseType;
                     }
+                    else
+                    {
+#ifdef FEATURE_SIMD
+                        // We leave the SIMD8 <-> LONG (Windows x64) case to lowering. For SIMD8 <-> DOUBLE (Unix x64),
+                        // we do not need to do anything as both types already use floating-point registers.
+                        assert((argObj->TypeIs(TYP_SIMD8) &&
+                                ((structBaseType == TYP_LONG) || (structBaseType == TYP_DOUBLE))) ||
+                               argObj->TypeIs(structBaseType));
+#else  // !FEATURE_SIMD
+                        unreached();
+#endif // !FEATURE_SIMD
+                    }
+
                     assert(varTypeIsEnregisterable(argObj->TypeGet()) ||
                            (makeOutArgCopy && varTypeIsEnregisterable(structBaseType)));
                 }
@@ -3779,30 +3792,33 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
     GenTree*                   argValue   = argNode; // normally argValue will be arg, but see right below
     unsigned                   structSize = 0;
 
-    if (argNode->TypeGet() != TYP_STRUCT)
+    if (argNode->OperGet() == GT_OBJ)
     {
-        structSize = genTypeSize(argNode->TypeGet());
-    }
-    else if (argNode->OperGet() == GT_OBJ)
-    {
-        GenTreeObj*        argObj    = argNode->AsObj();
-        const ClassLayout* objLayout = argObj->GetLayout();
-        structSize                   = objLayout->GetSize();
+        GenTreeObj*  argObj    = argNode->AsObj();
+        ClassLayout* objLayout = argObj->GetLayout();
+        structSize             = objLayout->GetSize();
 
         // If we have a GT_OBJ of a GT_ADDR then we set argValue to the child node of the GT_ADDR.
-        GenTree* op1 = argObj->gtOp1;
-        if (op1->OperGet() == GT_ADDR)
+        // TODO-ADDR: always perform this transformation in local morph and delete this code.
+        GenTree* addr = argObj->Addr();
+        if (addr->OperGet() == GT_ADDR)
         {
-            GenTree* underlyingTree = op1->AsOp()->gtOp1;
+            GenTree* location = addr->AsOp()->gtOp1;
 
-            // Only update to the same type.
-            if (underlyingTree->OperIs(GT_LCL_VAR))
+            if (location->OperIsLocalRead())
             {
-                const LclVarDsc* varDsc = lvaGetDesc(underlyingTree->AsLclVar());
-                if (ClassLayout::AreCompatible(varDsc->GetLayout(), objLayout))
+                if (!location->OperIs(GT_LCL_VAR) ||
+                    !ClassLayout::AreCompatible(lvaGetDesc(location->AsLclVarCommon())->GetLayout(), objLayout))
                 {
-                    argValue = underlyingTree;
+                    unsigned lclOffset = location->AsLclVarCommon()->GetLclOffs();
+
+                    location->ChangeType(argObj->TypeGet());
+                    location->SetOper(GT_LCL_FLD);
+                    location->AsLclFld()->SetLclOffs(lclOffset);
+                    location->AsLclFld()->SetLayout(objLayout);
                 }
+
+                argValue = location;
             }
         }
     }
@@ -3810,6 +3826,10 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
     {
         LclVarDsc* varDsc = lvaGetDesc(argNode->AsLclVarCommon());
         structSize        = varDsc->lvExactSize;
+    }
+    else if (!argNode->TypeIs(TYP_STRUCT))
+    {
+        structSize = genTypeSize(argNode);
     }
     else
     {
@@ -6645,7 +6665,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
 
         // On x86 we have a faster mechanism than the general one which we use
         // in almost all cases. See fgCanTailCallViaJitHelper for more information.
-        if (fgCanTailCallViaJitHelper())
+        if (fgCanTailCallViaJitHelper(call))
         {
             tailCallViaJitHelper = true;
         }
@@ -9922,7 +9942,7 @@ GenTree* Compiler::getSIMDStructFromField(GenTree*     tree,
             {
                 ret                   = obj;
                 GenTreeVecCon* vecCon = obj->AsVecCon();
-                *simdSizeOut          = vecCon->GetSimdSize();
+                *simdSizeOut          = genTypeSize(vecCon);
                 *simdBaseJitTypeOut   = vecCon->GetSimdBaseJitType();
             }
         }
@@ -17516,12 +17536,8 @@ bool Compiler::fgMorphCombineSIMDFieldAssignments(BasicBlock* block, Statement* 
         {
             setLclRelatedToSIMDIntrinsic(simdStructNode);
         }
-        GenTree* copyBlkAddr = copyBlkDst;
-        if (copyBlkAddr->gtOper == GT_LEA)
-        {
-            copyBlkAddr = copyBlkAddr->AsAddrMode()->Base();
-        }
-        GenTreeLclVarCommon* localDst = copyBlkAddr->IsLocalAddrExpr();
+
+        GenTreeLclVarCommon* localDst = copyBlkDst->IsLocalAddrExpr();
         if (localDst != nullptr)
         {
             setLclRelatedToSIMDIntrinsic(localDst);
@@ -17688,10 +17704,13 @@ bool Compiler::fgCheckStmtAfterTailCall()
 // fgCanTailCallViaJitHelper: check whether we can use the faster tailcall
 // JIT helper on x86.
 //
+// Arguments:
+//   call - the tailcall
+//
 // Return Value:
 //    'true' if we can; or 'false' if we should use the generic tailcall mechanism.
 //
-bool Compiler::fgCanTailCallViaJitHelper()
+bool Compiler::fgCanTailCallViaJitHelper(GenTreeCall* call)
 {
 #if !defined(TARGET_X86) || defined(UNIX_X86_ABI)
     // On anything except windows X86 we have no faster mechanism available.
@@ -17700,11 +17719,22 @@ bool Compiler::fgCanTailCallViaJitHelper()
     // For R2R make sure we go through portable mechanism that the 'EE' side
     // will properly turn into a runtime JIT.
     if (opts.IsReadyToRun())
+    {
         return false;
+    }
 
     // The JIT helper does not properly handle the case where localloc was used.
     if (compLocallocUsed)
+    {
         return false;
+    }
+
+    // Delegate calls may go through VSD stub in rare cases. Those look at the
+    // call site so we cannot use the JIT helper.
+    if (call->IsDelegateInvoke())
+    {
+        return false;
+    }
 
     return true;
 #endif
