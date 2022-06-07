@@ -6,7 +6,7 @@ using Xunit;
 
 namespace ILLink.RoslynAnalyzer.Tests
 {
-	public sealed class RequiresCapabilityTests : LinkerTestBase
+	public sealed partial class RequiresCapabilityTests : LinkerTestBase
 	{
 		protected override string TestSuiteName => "RequiresCapability";
 
@@ -14,6 +14,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 		public Task BasicRequires ()
 		{
 			return RunTest (nameof (BasicRequires));
+		}
+
+		[Fact]
+		public Task ReflectionAccessFromCompilerGeneratedCode ()
+		{
+			return RunTest ();
 		}
 
 		[Fact]

@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using ILLink.Shared;
+using ILLink.Shared.DataFlow;
 using ILLink.Shared.TrimAnalysis;
 using ILLink.Shared.TypeSystemProxy;
 using Mono.Cecil;
@@ -22,7 +23,7 @@ namespace Mono.Linker.Dataflow
 		MessageOrigin _origin;
 		readonly FlowAnnotations _annotations;
 		readonly ReflectionMarker _reflectionMarker;
-		readonly TrimAnalysisPatternStore TrimAnalysisPatterns;
+		public readonly TrimAnalysisPatternStore TrimAnalysisPatterns;
 
 		public static bool RequiresReflectionMethodBodyScannerForCallSite (LinkContext context, MethodReference calledMethod)
 		{
@@ -61,9 +62,18 @@ namespace Mono.Linker.Dataflow
 			TrimAnalysisPatterns = new TrimAnalysisPatternStore (context);
 		}
 
-		public void ScanAndProcessReturnValue (MethodBody methodBody)
+		public override void InterproceduralScan (MethodBody methodBody)
 		{
-			Scan (methodBody);
+			base.InterproceduralScan (methodBody);
+
+			var reflectionMarker = new ReflectionMarker (_context, _markStep, enabled: true);
+			TrimAnalysisPatterns.MarkAndProduceDiagnostics (reflectionMarker, _markStep);
+		}
+
+		protected override void Scan (MethodBody methodBody, ref ValueSet<MethodProxy> methodsInGroup)
+		{
+			_origin = new MessageOrigin (methodBody.Method);
+			base.Scan (methodBody, ref methodsInGroup);
 
 			if (!methodBody.Method.ReturnsVoid ()) {
 				var method = methodBody.Method;
@@ -71,13 +81,6 @@ namespace Mono.Linker.Dataflow
 				if (methodReturnValue.DynamicallyAccessedMemberTypes != 0)
 					HandleAssignmentPattern (_origin, ReturnValue, methodReturnValue);
 			}
-
-			Debug.Assert (_origin.Provider == methodBody.Method);
-			var reflectionMarker = new ReflectionMarker (_context, _markStep, enabled: true);
-			TrimAnalysisPatterns.MarkAndProduceDiagnostics (
-				!_context.Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode (methodBody.Method),
-				reflectionMarker,
-				_markStep);
 		}
 
 		protected override void WarnAboutInvalidILInMethod (MethodBody method, int ilOffset)
@@ -258,7 +261,8 @@ namespace Mono.Linker.Dataflow
 							diagnosticContext.AddDiagnostic (DiagnosticId.CorrectnessOfCOMCannotBeGuaranteed, calledMethodDefinition.GetDisplayName ());
 						}
 					}
-					markStep.CheckAndReportRequiresUnreferencedCode (calledMethodDefinition, diagnosticContext);
+					if (context.Annotations.DoesMethodRequireUnreferencedCode (calledMethodDefinition, out RequiresUnreferencedCodeAttribute? requiresUnreferencedCode))
+						MarkStep.ReportRequiresUnreferencedCode (calledMethodDefinition.GetDisplayName (), requiresUnreferencedCode, diagnosticContext);
 
 					return handleCallAction.Invoke (calledMethodDefinition, instanceValue, argumentValues, out methodReturnValue, out _);
 				}

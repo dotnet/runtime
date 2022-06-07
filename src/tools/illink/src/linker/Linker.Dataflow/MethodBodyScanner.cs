@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using ILLink.Shared;
 using ILLink.Shared.DataFlow;
@@ -44,6 +45,7 @@ namespace Mono.Linker.Dataflow
 	{
 		protected readonly LinkContext _context;
 		protected static ValueSetLattice<SingleValue> MultiValueLattice => default;
+		protected static ValueSetLattice<MethodProxy> MethodLattice => default;
 
 		protected MethodBodyScanner (LinkContext context)
 		{
@@ -220,7 +222,76 @@ namespace Mono.Linker.Dataflow
 			}
 		}
 
-		public void Scan (MethodBody methodBody)
+		// Scans the method as well as any nested functions (local functions or lambdas) and state machines
+		// reachable from it.
+		public virtual void InterproceduralScan (MethodBody methodBody)
+		{
+			var methodsInGroup = new ValueSet<MethodProxy> (methodBody.Method);
+
+			// Optimization to prevent multiple scans of a method.
+			// Eventually we will need to allow re-scanning in some cases, for example
+			// when we discover new inputs to a method. But we aren't doing dataflow across
+			// lambdas and local functions yet, so no need for now.
+			HashSet<MethodDefinition> scannedMethods = new HashSet<MethodDefinition> ();
+
+			while (true) {
+				if (!TryGetNextMethodToScan (out MethodDefinition? methodToScan))
+					break;
+
+				scannedMethods.Add (methodToScan);
+				Scan (methodToScan.Body, ref methodsInGroup);
+
+				// For state machine methods, also scan the state machine members.
+				// Simplification: assume that all generated methods of the state machine type are
+				// invoked at the point where the state machine method is called.			
+				if (CompilerGeneratedState.TryGetStateMachineType (methodToScan, out TypeDefinition? stateMachineType)) {
+					foreach (var method in stateMachineType.Methods) {
+						Debug.Assert (!CompilerGeneratedNames.IsLambdaOrLocalFunction (method.Name));
+						if (method.Body is MethodBody stateMachineBody)
+							Scan (stateMachineBody, ref methodsInGroup);
+					}
+				}
+			}
+
+#if DEBUG
+			// Validate that the compiler-generated callees tracked by the compiler-generated state
+			// are the same set of methods that we discovered and scanned above.
+			if (_context.CompilerGeneratedState.TryGetCompilerGeneratedCalleesForUserMethod (methodBody.Method, out List<IMemberDefinition>? compilerGeneratedCallees)) {
+				var calleeMethods = compilerGeneratedCallees.OfType<MethodDefinition> ();
+				Debug.Assert (methodsInGroup.Count () == 1 + calleeMethods.Count ());
+				foreach (var method in calleeMethods)
+					Debug.Assert (methodsInGroup.Contains (method));
+			} else {
+				Debug.Assert (methodsInGroup.Count () == 1);
+			}
+#endif
+
+			bool TryGetNextMethodToScan ([NotNullWhen (true)] out MethodDefinition? method)
+			{
+				foreach (var candidate in methodsInGroup) {
+					var candidateMethod = candidate.Method;
+					if (!scannedMethods.Contains (candidateMethod) && candidateMethod.HasBody) {
+						method = candidateMethod;
+						return true;
+					}
+				}
+				method = null;
+				return false;
+			}
+		}
+
+		void TrackNestedFunctionReference (MethodReference referencedMethod, ref ValueSet<MethodProxy> methodsInGroup)
+		{
+			if (_context.TryResolve (referencedMethod) is not MethodDefinition method)
+				return;
+
+			if (!CompilerGeneratedNames.IsLambdaOrLocalFunction (method.Name))
+				return;
+
+			methodsInGroup = MethodLattice.Meet (methodsInGroup, new (method));
+		}
+
+		protected virtual void Scan (MethodBody methodBody, ref ValueSet<MethodProxy> methodsInGroup)
 		{
 			MethodDefinition thisMethod = methodBody.Method;
 
@@ -329,11 +400,15 @@ namespace Mono.Linker.Dataflow
 					break;
 
 				case Code.Arglist:
-				case Code.Ldftn:
 				case Code.Sizeof:
 				case Code.Ldc_I8:
 				case Code.Ldc_R4:
 				case Code.Ldc_R8:
+					PushUnknown (currentStack);
+					break;
+
+				case Code.Ldftn:
+					TrackNestedFunctionReference ((MethodReference) operation.Operand, ref methodsInGroup);
 					PushUnknown (currentStack);
 					break;
 
@@ -559,6 +634,7 @@ namespace Mono.Linker.Dataflow
 				case Code.Call:
 				case Code.Callvirt:
 				case Code.Newobj:
+					TrackNestedFunctionReference ((MethodReference) operation.Operand, ref methodsInGroup);
 					HandleCall (methodBody, operation, currentStack, locals, curBasicBlock);
 					break;
 

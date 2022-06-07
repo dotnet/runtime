@@ -719,12 +719,30 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				instance.GetType ().GetField ("publicField");
 			}
 
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)]
+			class DAMAnnotatedClassAccessedFromRUCScope
+			{
+				[ExpectedWarning ("IL2112", "DAMAnnotatedClassAccessedFromRUCScope.RUCMethod", ProducedBy = ProducedBy.Trimmer)]
+				[RequiresUnreferencedCode ("--RUCMethod--")]
+				public static void RUCMethod () { }
+			}
+
+			// RUC on the callsite to GetType should not suppress warnings about the
+			// attribute on the type.
+			[RequiresUnreferencedCode ("--TestDAMOnTypeAccessInRUCScope--")]
+			static void TestDAMOnTypeAccessInRUCScope (DAMAnnotatedClassAccessedFromRUCScope instance = null)
+			{
+				instance.GetType ().GetMethod ("RUCMethod");
+			}
+
+			[ExpectedWarning ("IL2026", "--TestDAMOnTypeAccessInRUCScope--")]
 			public static void Test ()
 			{
 				TestDAMAccess ();
 				TestDirectReflectionAccess ();
 				TestDynamicDependencyAccess ();
 				TestDAMOnTypeAccess (null);
+				TestDAMOnTypeAccessInRUCScope ();
 			}
 		}
 
