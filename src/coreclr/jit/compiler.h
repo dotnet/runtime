@@ -5649,7 +5649,7 @@ private:
 #endif
     bool     fgCheckStmtAfterTailCall();
     GenTree* fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL_HELPERS& help);
-    bool fgCanTailCallViaJitHelper();
+    bool fgCanTailCallViaJitHelper(GenTreeCall* call);
     void fgMorphTailCallViaJitHelper(GenTreeCall* call);
     GenTree* fgCreateCallDispatcherAndGetResult(GenTreeCall*          origCall,
                                                 CORINFO_METHOD_HANDLE callTargetStubHnd,
