@@ -392,7 +392,6 @@ enum PInvokeTransitionFrameFlags : uint64_t
     PTFF_SAVE_X26       = 0x0000000000000080,
     PTFF_SAVE_X27       = 0x0000000000000100,
     PTFF_SAVE_X28       = 0x0000000000000200,
-    PTFF_SAVE_ALL_PRESERVED = 0x0000000000003FF,// NOTE: x19-x28
 
     PTFF_SAVE_SP        = 0x0000000000000400,   // Used for 'coop pinvokes' in runtime helper routines.  Methods with
                                                 // PInvokes are required to have a frame pointers, but methods which
@@ -419,7 +418,6 @@ enum PInvokeTransitionFrameFlags : uint64_t
     PTFF_SAVE_X16       = 0x0000000008000000,
     PTFF_SAVE_X17       = 0x0000000010000000,
     PTFF_SAVE_X18       = 0x0000000020000000,
-    PTFF_SAVE_ALL_SCRATCH  = 0x00000003FFFF800, // NOTE: X0-X18
 
     PTFF_SAVE_FP        = 0x0000000040000000,   // should never be used, we require FP frames for methods with
                                                 // pinvoke and it is saved into the frame pointer field instead
@@ -435,9 +433,6 @@ enum PInvokeTransitionFrameFlags : uint64_t
     PTFF_X1_IS_BYREF    = 0x0000000800000000,
 
     PTFF_THREAD_ABORT   = 0x0000001000000000,   // indicates that ThreadAbortException should be thrown when returning from the transition
-
-    DEFAULT_FRAME_SAVE_FLAGS = PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_SP,
-    PROBE_SAVE_FLAGS_EVERYTHING     = DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_ALL_SCRATCH + PTFF_SAVE_LR,
 };
 
 
@@ -460,10 +455,8 @@ enum PInvokeTransitionFrameFlags
     PTFF_SAVE_R14       = 0x00000040,
     PTFF_SAVE_R15       = 0x00000080,
 
-    PTFF_SAVE_ALL_PRESERVED  = 0x000000F7,// NOTE: RBP is not included in this set!
-
     PTFF_SAVE_RSP       = 0x00008000,   // Used for 'coop pinvokes' in runtime helper routines.  Methods with
-                                        // PInvokes are required to have frame pointers, but methods which
+                                        // PInvokes are required to have a frame pointers, but methods which
                                         // call runtime helpers are not.  Therefore, methods that call runtime
                                         // helpers may need RSP to seed the stackwalk.
                                         //
@@ -478,15 +471,10 @@ enum PInvokeTransitionFrameFlags
     PTFF_SAVE_R10       = 0x00002000,
     PTFF_SAVE_R11       = 0x00004000,
 
-    PTFF_SAVE_ALL_SCRATCH    = 0x00007F00,
-
     PTFF_RAX_IS_GCREF   = 0x00010000,   // used by hijack handler to report return value of hijacked method
     PTFF_RAX_IS_BYREF   = 0x00020000,   // used by hijack handler to report return value of hijacked method
 
     PTFF_THREAD_ABORT   = 0x00040000,   // indicates that ThreadAbortException should be thrown when returning from the transition
-
-    DEFAULT_FRAME_SAVE_FLAGS = PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_RSP,
-    PROBE_SAVE_FLAGS_EVERYTHING     = DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_ALL_SCRATCH,
 };
 #endif // TARGET_ARM
 
@@ -533,22 +521,14 @@ struct PInvokeTransitionFrame
 #ifdef TARGET_AMD64
 // RBX, RSI, RDI, R12, R13, R14, R15, RAX, RSP
 #define PInvokeTransitionFrame_SaveRegs_count 9
-// RBX, RSI, RDI, R12, R13, R14, R15, RAX, RSP, RAX, RCX, RDX, R8, R9, R10, R11
-#define PInvokeTransitionFrame_SaveAllRegs_count 16
 #elif defined(TARGET_X86)
 // RBX, RSI, RDI, RAX, RSP
 #define PInvokeTransitionFrame_SaveRegs_count 5
 #elif defined(TARGET_ARM)
 // R4-R10, R0, SP
 #define PInvokeTransitionFrame_SaveRegs_count 9
-#elif defined(TARGET_ARM64)
-// R19-R28, SP
-#define PInvokeTransitionFrame_SaveRegs_count 10
-// X19-X28, SP, X0-X18, LR
-#define PInvokeTransitionFrame_SaveAllRegs_count 31
 #endif
-#define PInvokeTransitionFrame_SaveRegs_SIZE (sizeof(PInvokeTransitionFrame) + (POINTER_SIZE * PInvokeTransitionFrame_SaveRegs_count))
-#define PInvokeTransitionFrame_SaveAllRegs_SIZE (sizeof(PInvokeTransitionFrame) + (POINTER_SIZE * PInvokeTransitionFrame_SaveAllRegs_count))
+#define PInvokeTransitionFrame_MAX_SIZE (sizeof(PInvokeTransitionFrame) + (POINTER_SIZE * PInvokeTransitionFrame_SaveRegs_count))
 
 #ifdef TARGET_AMD64
 #define OFFSETOF__Thread__m_pTransitionFrame 0x40

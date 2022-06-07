@@ -689,7 +689,7 @@ UInt32_BOOL Thread::HijackCallback(HANDLE /*hThread*/, PAL_LIMITED_CONTEXT* pThr
     if (codeManager->IsSafePoint(pvAddress))
     {
 #ifdef FEATURE_SUSPEND_REDIRECTION
-        if (pThread->Redirect(pThreadContext))
+        if (pThread->Redirect())
         {
             return true;
         }
@@ -812,7 +812,7 @@ CONTEXT* Thread::GetRedirectionContext()
     return m_redirectionContext;
 }
 
-bool Thread::Redirect(PAL_LIMITED_CONTEXT * pSuspendCtx)
+bool Thread::Redirect()
 {
     if (IsDoNotTriggerGcSet())
         return false;
@@ -821,26 +821,18 @@ bool Thread::Redirect(PAL_LIMITED_CONTEXT * pSuspendCtx)
     if (redirectionContext == NULL)
         return false;
 
-    StackFrameIterator frameIterator(this, pSuspendCtx);
-
-    if (!frameIterator.IsValid())
-        return false;
-
-    frameIterator.CalculateCurrentMethodState();
-
     if (!PalGetCompleteThreadContext(m_hPalThread, redirectionContext))
         return false;
 
     uintptr_t origIP = redirectionContext->GetIp();
     redirectionContext->SetIp((uintptr_t)RhpSuspendRedirected);
-
     if (!PalSetThreadContext(m_hPalThread, redirectionContext))
         return false;
 
     redirectionContext->SetIp(origIP);
 
     STRESS_LOG2(LF_STACKWALK, LL_INFO10000, "InternalRedirect: TgtThread = %llx, IP = %p\n",
-        GetPalThreadIdForLogging(), pSuspendCtx->GetIp());
+        GetPalThreadIdForLogging(), origIP);
 
     return true;
 }
@@ -1047,55 +1039,10 @@ EXTERN_C NOINLINE void FASTCALL RhpGcPoll2(PInvokeTransitionFrame* pFrame)
 EXTERN_C NOINLINE void FASTCALL RhpSuspendRedirected()
 {
     Thread* pThread = ThreadStore::GetCurrentThread();
-    CONTEXT* pCtx = pThread->GetRedirectionContext();
-
-    PInvokeTransitionFrame* frame =
-        (PInvokeTransitionFrame*)_alloca(PInvokeTransitionFrame_SaveAllRegs_SIZE);
-
-    frame->m_Flags = PROBE_SAVE_FLAGS_EVERYTHING;
-    frame->m_pThread = pThread;
-    frame->m_RIP = (void*)pCtx->GetIp();
-
-    UIntTarget* pPreservedRegs = frame->m_PreservedRegs;
-
-#ifdef TARGET_AMD64
-    frame->m_FramePointer = (void*)pCtx->Rbp;
-
-    pPreservedRegs[0] = pCtx->Rbx;
-    pPreservedRegs[1] = pCtx->Rsi;
-    pPreservedRegs[2] = pCtx->Rdi;
-    pPreservedRegs[3] = pCtx->R12;
-    pPreservedRegs[4] = pCtx->R13;
-    pPreservedRegs[5] = pCtx->R14;
-    pPreservedRegs[6] = pCtx->R15;
-
-    pPreservedRegs[7] = pCtx->Rsp;
-
-    pPreservedRegs[8] = pCtx->Rax;
-    pPreservedRegs[9] = pCtx->Rcx;
-    pPreservedRegs[10] = pCtx->Rdx;
-    pPreservedRegs[11] = pCtx->R8;
-    pPreservedRegs[12] = pCtx->R9;
-    pPreservedRegs[13] = pCtx->R10;
-    pPreservedRegs[14] = pCtx->R11;
-#elif defined(TARGET_ARM64)
-    frame->m_FramePointer = (void*)pCtx->Fp;
-    // X19-X28 
-    memcpy(&pPreservedRegs[0], &pCtx->X19, sizeof(uint64_t) * 10);
-    // SP
-    pPreservedRegs[10] = pCtx->Sp;
-    // X0-X18 
-    memcpy(&pPreservedRegs[11], &pCtx->X0, sizeof(uint64_t) * 19);
-    // LR
-    pPreservedRegs[30] = pCtx->Lr;
-#elif
-    ASSERT_UNCONDITIONALLY("NYI for this arch");
-#endif
-
-    pThread->WaitForGC(frame);
+    pThread->WaitForGC(REDIRECTED_THREAD_MARKER);
 
     // restore execution at interrupted location
-    PalRestoreContext(pCtx);
+    PalRestoreContext(pThread->GetRedirectionContext());
     UNREACHABLE();
 }
 

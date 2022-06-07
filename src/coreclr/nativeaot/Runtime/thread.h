@@ -28,6 +28,7 @@ class Thread;
 #endif // HOST_64BIT
 
 #define TOP_OF_STACK_MARKER ((PInvokeTransitionFrame*)(ptrdiff_t)-1)
+#define REDIRECTED_THREAD_MARKER ((PInvokeTransitionFrame*)(ptrdiff_t)-2)
 
 #define DYNAMIC_TYPE_TLS_OFFSET_FLAG 0x80000000
 
@@ -144,7 +145,7 @@ private:
     bool InternalHijack(PAL_LIMITED_CONTEXT * pSuspendCtx, void * pvHijackTargets[]);
 
 #ifdef FEATURE_SUSPEND_REDIRECTION
-    bool Redirect(PAL_LIMITED_CONTEXT * pSuspendCtx);
+    bool Redirect();
 #endif //FEATURE_SUSPEND_REDIRECTION
 
     bool CacheTransitionFrameForSuspend();

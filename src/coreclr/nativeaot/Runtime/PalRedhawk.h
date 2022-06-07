@@ -405,6 +405,7 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
     void SetArg1Reg(uintptr_t val) { X1 = val; }
     uintptr_t GetIp() { return Pc; }
     uintptr_t GetLr() { return Lr; }
+    uintptr_t GetSp() { return Sp; }
 } CONTEXT, *PCONTEXT;
 
 #elif defined(HOST_WASM)
