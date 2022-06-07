@@ -117,7 +117,7 @@ inline int StaticStringHelpers::_tstrnicmp(const WCHAR *buffer1, const WCHAR *bu
 //----------------------------------------------------------------------------
 template<typename TEncoding>
 inline EString<TEncoding>::EString()
-  : SBuffer(Immutable, StaticStringHelpers::s_EmptyBuffer, sizeof(StaticStringHelpers::s_EmptyBuffer))
+  : SBuffer(Immutable, StaticStringHelpers::s_EmptyBuffer, sizeof(char_t))
 {
 #ifdef SSTRING_EXTRA_CHECKS
     CONTRACT_VOID
