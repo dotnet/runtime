@@ -73,7 +73,7 @@ namespace
     pal::string_t get_apphost_details_message()
     {
         pal::string_t msg = _X("Architecture: ");
-        msg.append(get_arch());
+        msg.append(get_current_arch_name());
         msg.append(_X("\n")
             _X("App host version: ") _STRINGIFY(COMMON_HOST_PKG_VER) _X("\n\n"));
         return msg;

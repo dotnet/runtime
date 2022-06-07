@@ -236,9 +236,9 @@ const pal::char_t* get_arch_name(pal::known_architecture arch)
     return s_all_architectures[static_cast<uint32_t>(arch)];
 }
 
-const pal::char_t* get_arch()
+const pal::char_t* get_current_arch_name()
 {
-    return s_all_architectures[static_cast<uint32_t>(get_current_arch())];
+    return get_arch_name(get_current_arch());
 }
 
 pal::string_t get_current_runtime_id(bool use_fallback)
@@ -254,7 +254,7 @@ pal::string_t get_current_runtime_id(bool use_fallback)
     if (!rid.empty())
     {
         rid.append(_X("-"));
-        rid.append(get_arch());
+        rid.append(get_current_arch_name());
     }
 
     return rid;
@@ -493,7 +493,7 @@ pal::string_t get_download_url(const pal::char_t* framework_name, const pal::cha
     }
 
     url.append(_X("&arch="));
-    url.append(get_arch());
+    url.append(get_current_arch_name());
     pal::string_t rid = get_current_runtime_id(true /*use_fallback*/);
     url.append(_X("&rid="));
     url.append(rid);

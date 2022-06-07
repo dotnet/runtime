@@ -245,7 +245,7 @@ void append_probe_realpath(const pal::string_t& path, std::vector<pal::string_t>
 
         if (pos_placeholder != pal::string_t::npos)
         {
-            pal::string_t segment = get_arch();
+            pal::string_t segment = get_current_arch_name();
             segment.push_back(DIR_SEPARATOR);
             segment.append(tfm);
             probe_path.replace(pos_placeholder, placeholder.length(), segment);

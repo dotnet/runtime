@@ -74,7 +74,7 @@ pal::string_t get_replaced_char(const pal::string_t& path, pal::char_t match, pa
 
 pal::known_architecture get_current_arch();
 const pal::char_t* get_arch_name(pal::known_architecture arch);
-const pal::char_t* get_arch();
+const pal::char_t* get_current_arch_name();
 
 pal::string_t get_current_runtime_id(bool use_fallback);
 bool get_env_shared_store_dirs(std::vector<pal::string_t>* dirs, const pal::string_t& arch, const pal::string_t& tfm);

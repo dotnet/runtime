@@ -124,7 +124,7 @@ bool fxr_resolver::try_get_path(const pal::string_t& root_path, pal::string_t* o
             _X("Download the .NET runtime:\n")
             _X("%s&apphost_version=%s"),
             host_path.c_str(),
-            get_arch(),
+            get_current_arch_name(),
             _STRINGIFY(COMMON_HOST_PKG_VER),
             get_download_url().c_str(),
             _STRINGIFY(COMMON_HOST_PKG_VER));
