@@ -84,7 +84,6 @@
 //#define STRICT_CLSINITLOCK_ENTRY_LEAK_DETECTION
 
 static const WCHAR DEFAULT_DOMAIN_FRIENDLY_NAME[] = W("DefaultDomain");
-static const WCHAR OTHER_DOMAIN_FRIENDLY_NAME_PREFIX[] = W("Domain");
 
 #define STATIC_OBJECT_TABLE_BUCKET_SIZE 1020
 
@@ -108,8 +107,6 @@ static BYTE         g_pSystemDomainMemory[sizeof(SystemDomain)];
 
 CrstStatic          SystemDomain::m_SystemDomainCrst;
 CrstStatic          SystemDomain::m_DelayedUnloadCrst;
-
-DWORD               SystemDomain::m_dwLowestFreeIndex        = 0;
 
 // Constructor for the PinnedHeapHandleBucket class.
 PinnedHeapHandleBucket::PinnedHeapHandleBucket(PinnedHeapHandleBucket *pNext, DWORD Size, BaseDomain *pDomain)
@@ -1600,58 +1597,6 @@ struct CallersDataWithStackMark
     MethodDesc* pFoundMethod;
     MethodDesc* pPrevMethod;
 };
-
-/*static*/
-MethodDesc* SystemDomain::GetCallersMethod(StackCrawlMark* stackMark)
-
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    GCX_COOP();
-
-    CallersDataWithStackMark cdata;
-    ZeroMemory(&cdata, sizeof(CallersDataWithStackMark));
-    cdata.stackMark = stackMark;
-
-    GetThread()->StackWalkFrames(CallersMethodCallbackWithStackMark, &cdata, FUNCTIONSONLY | LIGHTUNWIND);
-
-    if(cdata.pFoundMethod) {
-        return cdata.pFoundMethod;
-    } else
-        return NULL;
-}
-
-/*static*/
-MethodTable* SystemDomain::GetCallersType(StackCrawlMark* stackMark)
-
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    CallersDataWithStackMark cdata;
-    ZeroMemory(&cdata, sizeof(CallersDataWithStackMark));
-    cdata.stackMark = stackMark;
-
-    GetThread()->StackWalkFrames(CallersMethodCallbackWithStackMark, &cdata, FUNCTIONSONLY | LIGHTUNWIND);
-
-    if(cdata.pFoundMethod) {
-        return cdata.pFoundMethod->GetMethodTable();
-    } else
-        return NULL;
-}
 
 /*static*/
 Module* SystemDomain::GetCallersModule(StackCrawlMark* stackMark)
