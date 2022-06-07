@@ -10796,7 +10796,8 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                     bool     fold  = false;
                     GenTree* lNode = op1->gtGetOp1();
                     GenTree* rNode = op1->gtGetOp2();
-#if defined(HOST_X86)
+
+#if defined(HOST_X86) || defined(HOST_ARM)
                     ssize_t longMin = INT32_MIN;
                     ssize_t longMax = INT32_MAX;
 #else
@@ -13070,7 +13071,7 @@ GenTree* Compiler::fgOptimizeMultiply(GenTreeOp* mul)
         // Should we try to replace integer multiplication with lea/add/shift sequences?
         bool mulShiftOpt = compCodeOpt() != SMALL_CODE;
 #else  // !TARGET_XARCH
-        bool mulShiftOpt = false;
+        bool                mulShiftOpt = false;
 #endif // !TARGET_XARCH
 
         size_t abs_mult      = (mult >= 0) ? mult : -mult;
