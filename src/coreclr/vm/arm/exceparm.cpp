@@ -37,8 +37,8 @@ PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(T_CONTEXT * pContext)
 // 2) represents the current context in the second pass.
 //
 // Since R4 is a non-volatile register, this works for us since we setup the value of R4
-// in the redirection helpers (e.g. NakedThrowHelper or RedirectForThreadAbort) but do not
-// change it in their respective callee functions (e.g. NakedThrowHelper2 or RedirectForThreadAbort2)
+// in the redirection helpers (e.g. RedirectForThreadAbort) but do not
+// change it in their respective callee functions (e.g. RedirectForThreadAbort2)
 // that have the personality routines associated with them (which perform the collided unwind and also
 // invoke the two functions below).
 //

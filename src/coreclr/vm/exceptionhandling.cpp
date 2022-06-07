@@ -223,8 +223,6 @@ void InitializeExceptionHandling()
 {
     EH_LOG((LL_INFO100, "InitializeExceptionHandling(): ExceptionTracker size: 0x%x bytes\n", sizeof(ExceptionTracker)));
 
-    InitSavedExceptionInfo();
-
     CLRAddVectoredHandlers();
 
     g_theTrackerAllocator.Init();
@@ -5739,39 +5737,6 @@ NOT_BIT64_ARG(IN     ULONG               MemoryStackFp),
 }
 
 
-EXTERN_C VOID FixContextForFaultingExceptionFrame (
-        EXCEPTION_RECORD* pExceptionRecord,
-        CONTEXT *pContextRecord);
-
-EXTERN_C EXCEPTION_DISPOSITION
-FixContextHandler(IN     PEXCEPTION_RECORD   pExceptionRecord
-        BIT64_ARG(IN     ULONG64             MemoryStackFp)
-    NOT_BIT64_ARG(IN     ULONG               MemoryStackFp),
-                  IN OUT PCONTEXT            pContextRecord,
-                  IN OUT PDISPATCHER_CONTEXT pDispatcherContext
-                 )
-{
-    CONTEXT* pNewContext = NULL;
-
-    if (FirstCallToHandler(pDispatcherContext, &pNewContext))
-    {
-        //
-        // We've pushed a Frame, but it is not initialized yet, so we
-        // must not be in preemptive mode
-        //
-        CONSISTENCY_CHECK(GetThread()->PreemptiveGCDisabled());
-
-        FixContextForFaultingExceptionFrame(pExceptionRecord, pNewContext);
-    }
-
-    FixupDispatcherContext(pDispatcherContext, pNewContext, pContextRecord);
-
-    // Returning ExceptionCollidedUnwind will cause the OS to take our new context record
-    // and dispatcher context and restart the exception dispatching on this call frame,
-    // which is exactly the behavior we want in order to restore our thread's unwindability
-    // (which was broken when we whacked the IP to get control over the thread)
-    return ExceptionCollidedUnwind;
-}
 #endif // !TARGET_UNIX
 
 #ifdef _DEBUG
