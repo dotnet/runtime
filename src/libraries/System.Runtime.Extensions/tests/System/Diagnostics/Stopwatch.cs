@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Reflection;
 using System.Threading;
 using Xunit;
 
@@ -96,16 +97,24 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        public static void DebuggerDisplay()
+        public static void DebuggerAttributesValid()
         {
+            DebuggerAttributes.ValidateDebuggerDisplayReferences(new Stopwatch());
+
             Stopwatch watch = new Stopwatch();
-            Assert.Equal("{00:00:00} (IsRunning = false)", watch.DebuggerDisplay);
+            Assert.Equal("00:00:00 (IsRunning = False)", GetDebuggerDisplayProperty(watch));
             watch.Start();
             Thread.Sleep(10);
-            Assert.Contains("} (IsRunning = true)", watch.DebuggerDisplay);
+            Assert.Contains("(IsRunning = True)", GetDebuggerDisplayProperty(watch));
+            Assert.DoesNotContain("00:00:00 ", GetDebuggerDisplayProperty(watch));
             watch.Stop();
-            Assert.Contains("} (IsRunning = false)", watch.DebuggerDisplay);
-            Assert.NotContains("{00:00:00}", watch.DebuggerDisplay);
+            Assert.Contains("(IsRunning = False)", GetDebuggerDisplayProperty(watch));
+            Assert.DoesNotContain("00:00:00 ", GetDebuggerDisplayProperty(watch));
+
+            static string GetDebuggerDisplayProperty(Stopwatch value)
+            {
+                return (string)typeof(Stopwatch).GetProperty("DebuggerDisplay", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(value);
+            }
         }
 
         [OuterLoop("Sleeps for relatively long periods of time")]
