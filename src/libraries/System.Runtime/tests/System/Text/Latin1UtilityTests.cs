@@ -329,7 +329,7 @@ namespace System.Text.Tests
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
         private static Type GetLatin1UtilityType()
         {
-            return Type.GetType("System.Text.Latin1Utility");
+            return Type.GetType("System.Text.Latin1Utility, System.Private.CoreLib");
         }
 
         private sealed class UnsafeLazyDelegate<TDelegate> where TDelegate : class

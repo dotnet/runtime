@@ -431,7 +431,7 @@ namespace System.Text.Tests
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
         private static Type GetAsciiUtilityType()
         {
-            return Type.GetType("System.Text.ASCIIUtility");
+            return Type.GetType("System.Text.ASCIIUtility, System.Private.CoreLib");
         }
 
         private sealed class UnsafeLazyDelegate<TDelegate> where TDelegate : Delegate
