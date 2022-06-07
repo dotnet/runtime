@@ -293,6 +293,8 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                     if (!DotnetObjectId.TryParse(resolvedObject?["objectId"]?.Value<string>(), out DotnetObjectId objectId))
                     {
+                        if (resolvedObject["type"].Value<string>() == "string")
+                            throw new ReturnAsErrorException($"String properties evaluation is not supported yet.", "ReferenceError"); // Issue #66823
                         if (!throwOnNullReference)
                             throw new ReturnAsErrorException($"Operation '?' not allowed on primitive type - '{parts[i - 1]}'", "ReferenceError");
                         throw new ReturnAsErrorException($"Cannot find member '{part}' on a primitive type", "ReferenceError");
