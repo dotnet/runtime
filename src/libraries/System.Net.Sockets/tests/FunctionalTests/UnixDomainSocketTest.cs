@@ -531,8 +531,6 @@ namespace System.Net.Sockets.Tests
 
             Assert.NotEqual(endPoint1, endPoint3);
             Assert.NotEqual(endPoint2, endPoint3);
-            Assert.NotEqual(endPoint1.GetHashCode(), endPoint3.GetHashCode());
-            Assert.NotEqual(endPoint2.GetHashCode(), endPoint3.GetHashCode());
         }
 
         [ConditionalFact(nameof(PlatformSupportsUnixDomainSockets))]
@@ -551,8 +549,6 @@ namespace System.Net.Sockets.Tests
 
             Assert.NotEqual(endPoint1, endPoint3);
             Assert.NotEqual(endPoint2, endPoint3);
-            Assert.NotEqual(endPoint1.GetHashCode(), endPoint3.GetHashCode());
-            Assert.NotEqual(endPoint2.GetHashCode(), endPoint3.GetHashCode());
         }
 
         private static string GetRandomNonExistingFilePath()
