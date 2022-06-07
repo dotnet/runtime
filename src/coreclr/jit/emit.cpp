@@ -4185,7 +4185,11 @@ void emitter::emitRemoveJumpToNextInst()
         insGroup*     jmpGroup = jmp->idjIG;
         instrDescJmp* nextJmp  = jmp->idjNext;
 
-        if (emitIsUncondJump(jmp) && jmp->idjIsRemovableJmpCandidate)
+        if (
+#ifdef TARGET_XARCH
+            jmp->idInsFmt() == IF_LABEL &&
+#endif
+            emitIsUncondJump(jmp) && jmp->idjIsRemovableJmpCandidate)
         {
 #ifdef TARGET_ARMARCH
             assert(jmp->idInsOpt() == INS_OPTS_JMP);

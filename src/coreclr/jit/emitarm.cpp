@@ -6431,8 +6431,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             {
                 assert(((instrDescJmp*)id)->idjIsRemovableJmpCandidate);
             }
-            
-            sz  = sizeof(instrDescJmp);
+
+            sz = sizeof(instrDescJmp);
             break;
 
         case IF_T1_D1: // T1_D1   .........mmmm...                       R1*
@@ -6723,7 +6723,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
     /* All instructions are expected to generate code */
 
-    assert(*dp != dst || emitJmpInstHasNoCode(id)));
+    assert(*dp != dst || emitJmpInstHasNoCode(id));
 
     *dp = dst;
 

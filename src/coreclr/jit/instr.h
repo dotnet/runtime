@@ -172,7 +172,8 @@ enum insOpts: unsigned
     INS_OPTS_LSL,
     INS_OPTS_LSR,
     INS_OPTS_ASR,
-    INS_OPTS_ROR
+    INS_OPTS_ROR,
+    INS_OPTS_JMP
 };
 enum insBarrier : unsigned
 {

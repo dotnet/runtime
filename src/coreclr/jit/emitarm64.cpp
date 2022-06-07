@@ -10388,7 +10388,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_BI_0B: // BI_0B   ......iiiiiiiiii iiiiiiiiiii.....               simm19:00
         case IF_LARGEJMP:
             assert(id->idGCref() == GCT_NONE);
-            
+
             if (!emitJmpInstHasNoCode(id))
             {
                 assert(id->idIsBound());
@@ -10398,7 +10398,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             {
                 assert(((instrDescJmp*)id)->idjIsRemovableJmpCandidate);
             }
-            sz  = sizeof(instrDescJmp);
+            sz = sizeof(instrDescJmp);
             break;
 
         case IF_BI_0C: // BI_0C   ......iiiiiiiiii iiiiiiiiiiiiiiii               simm26:00
@@ -13976,7 +13976,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         //  Branch Instructions
         //
 
-        case IF_BI_0A:                                      // b, bl_local
+        case IF_BI_0A: // b, bl_local
             if (emitJmpInstHasNoCode(id))
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_ZERO;
