@@ -2856,10 +2856,7 @@ AGAIN:
                     }
 
                     case TYP_SIMD8:
-                    case TYP_DOUBLE:
-                    case TYP_LONG:
                     {
-                        // TODO-1stClassStructs: do not retype SIMD nodes
                         add = genTreeHashAdd(ulo32(add), vecCon->gtSimd8Val.u32[1]);
                         add = genTreeHashAdd(ulo32(add), vecCon->gtSimd8Val.u32[0]);
                         break;
@@ -2873,7 +2870,6 @@ AGAIN:
                 }
 
                 add = genTreeHashAdd(ulo32(add), vecCon->GetSimdBaseType());
-                add = genTreeHashAdd(ulo32(add), vecCon->GetSimdSize());
                 break;
             }
 
@@ -6949,7 +6945,7 @@ GenTree* Compiler::gtNewSconNode(int CPX, CORINFO_MODULE_HANDLE scpHandle)
 
 GenTreeVecCon* Compiler::gtNewVconNode(var_types type, CorInfoType simdBaseJitType)
 {
-    GenTreeVecCon* vecCon = new (this, GT_CNS_VEC) GenTreeVecCon(type, simdBaseJitType, genTypeSize(type));
+    GenTreeVecCon* vecCon = new (this, GT_CNS_VEC) GenTreeVecCon(type, simdBaseJitType);
     return vecCon;
 }
 
@@ -11152,11 +11148,8 @@ void Compiler::gtDispConst(GenTree* tree)
             switch (vecCon->TypeGet())
             {
 #if defined(FEATURE_SIMD)
-                case TYP_LONG:
-                case TYP_DOUBLE:
                 case TYP_SIMD8:
                 {
-                    // TODO-1stClassStructs: do not retype SIMD nodes
                     simd8_t simdVal = vecCon->gtSimd8Val;
                     printf("<0x%08x, 0x%08x>", simdVal.u32[0], simdVal.u32[1]);
                     break;
