@@ -35,6 +35,38 @@ namespace System.Formats.Tar.Tests
         }
 
         [Fact]
+        public void Constructor_ConversionFromV7()
+        {
+            V7TarEntry v7 = new V7TarEntry(TarEntryType.V7RegularFile, InitialEntryName);
+            UstarTarEntry convertedV7 = new UstarTarEntry(other: v7);
+
+            Assert.Equal(TarEntryType.RegularFile, convertedV7.EntryType);
+            Assert.Equal(InitialEntryName, convertedV7.Name);
+        }
+
+
+        [Fact]
+        public void Constructor_ConversionFromPax()
+        {
+            PaxTarEntry pax = new PaxTarEntry(TarEntryType.RegularFile, InitialEntryName);
+            UstarTarEntry convertedPax = new UstarTarEntry(other: pax);
+
+            Assert.Equal(TarEntryType.RegularFile, convertedPax.EntryType);
+            Assert.Equal(InitialEntryName, convertedPax.Name);
+        }
+
+
+        [Fact]
+        public void Constructor_ConversionFromGnu()
+        {
+            GnuTarEntry gnu = new GnuTarEntry(TarEntryType.RegularFile, InitialEntryName);
+            UstarTarEntry convertedGnu = new UstarTarEntry(other: gnu);
+
+            Assert.Equal(TarEntryType.RegularFile, convertedGnu.EntryType);
+            Assert.Equal(InitialEntryName, convertedGnu.Name);
+        }
+
+        [Fact]
         public void SupportedEntryType_RegularFile()
         {
             UstarTarEntry regularFile = new UstarTarEntry(TarEntryType.RegularFile, InitialEntryName);

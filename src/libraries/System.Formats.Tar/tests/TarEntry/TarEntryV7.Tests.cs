@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Xunit;
@@ -35,6 +36,62 @@ namespace System.Formats.Tar.Tests
             Assert.Throws<InvalidOperationException>(() => new V7TarEntry(TarEntryType.RenamedOrSymlinked, InitialEntryName));
             Assert.Throws<InvalidOperationException>(() => new V7TarEntry(TarEntryType.SparseFile, InitialEntryName));
             Assert.Throws<InvalidOperationException>(() => new V7TarEntry(TarEntryType.TapeVolume, InitialEntryName));
+        }
+
+        [Fact]
+        public void Constructor_ConversionFromUstar()
+        {
+            UstarTarEntry ustar = new UstarTarEntry(TarEntryType.RegularFile, InitialEntryName);
+            V7TarEntry convertedUstar = new V7TarEntry(other: ustar);
+
+            Assert.Equal(TarEntryType.V7RegularFile, convertedUstar.EntryType);
+            Assert.Equal(InitialEntryName, convertedUstar.Name);
+        }
+
+
+        [Fact]
+        public void Constructor_ConversionFromPax()
+        {
+            PaxTarEntry pax = new PaxTarEntry(TarEntryType.RegularFile, InitialEntryName);
+            V7TarEntry convertedPax = new V7TarEntry(other: pax);
+
+            Assert.Equal(TarEntryType.V7RegularFile, convertedPax.EntryType);
+            Assert.Equal(InitialEntryName, convertedPax.Name);
+        }
+
+
+        [Fact]
+        public void Constructor_ConversionFromGnu()
+        {
+            GnuTarEntry gnu = new GnuTarEntry(TarEntryType.RegularFile, InitialEntryName);
+            V7TarEntry convertedGnu = new V7TarEntry(other: gnu);
+
+            Assert.Equal(TarEntryType.V7RegularFile, convertedGnu.EntryType);
+            Assert.Equal(InitialEntryName, convertedGnu.Name);
+        }
+
+        [Fact]
+        public void Constructor_Conversion_UnsupportedEntryTypes_Ustar()
+        {
+            Assert.Throws<InvalidOperationException>(() => new V7TarEntry(new UstarTarEntry(TarEntryType.BlockDevice, InitialEntryName)));
+            Assert.Throws<InvalidOperationException>(() => new V7TarEntry(new UstarTarEntry(TarEntryType.CharacterDevice, InitialEntryName)));
+            Assert.Throws<InvalidOperationException>(() => new V7TarEntry(new UstarTarEntry(TarEntryType.Fifo, InitialEntryName)));
+        }
+
+        [Fact]
+        public void Constructor_Conversion_UnsupportedEntryTypes_Pax()
+        {
+            Assert.Throws<InvalidOperationException>(() => new V7TarEntry(new PaxTarEntry(TarEntryType.BlockDevice, InitialEntryName)));
+            Assert.Throws<InvalidOperationException>(() => new V7TarEntry(new PaxTarEntry(TarEntryType.CharacterDevice, InitialEntryName)));
+            Assert.Throws<InvalidOperationException>(() => new V7TarEntry(new PaxTarEntry(TarEntryType.Fifo, InitialEntryName)));
+        }
+
+        [Fact]
+        public void Constructor_Conversion_UnsupportedEntryTypes_Gnu()
+        {
+            Assert.Throws<InvalidOperationException>(() => new V7TarEntry(new GnuTarEntry(TarEntryType.BlockDevice, InitialEntryName)));
+            Assert.Throws<InvalidOperationException>(() => new V7TarEntry(new GnuTarEntry(TarEntryType.CharacterDevice, InitialEntryName)));
+            Assert.Throws<InvalidOperationException>(() => new V7TarEntry(new GnuTarEntry(TarEntryType.Fifo, InitialEntryName)));
         }
 
         [Fact]
