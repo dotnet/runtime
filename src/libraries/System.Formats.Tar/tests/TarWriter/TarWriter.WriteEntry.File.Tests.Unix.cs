@@ -36,9 +36,8 @@ namespace System.Formats.Tar.Tests
                 archive.Seek(0, SeekOrigin.Begin);
                 using (TarReader reader = new TarReader(archive))
                 {
-                    Assert.Equal(TarEntryFormat.Unknown, reader.Format);
                     PosixTarEntry entry = reader.GetNextEntry() as PosixTarEntry;
-                    Assert.Equal(expectedFormat, reader.Format);
+                    Assert.Equal(expectedFormat, entry.Format);
 
                     Assert.NotNull(entry);
                     Assert.Equal(fifoName, entry.Name);
@@ -79,9 +78,8 @@ namespace System.Formats.Tar.Tests
                 archive.Seek(0, SeekOrigin.Begin);
                 using (TarReader reader = new TarReader(archive))
                 {
-                    Assert.Equal(TarEntryFormat.Unknown, reader.Format);
                     PosixTarEntry entry = reader.GetNextEntry() as PosixTarEntry;
-                    Assert.Equal(expectedFormat, reader.Format);
+                    Assert.Equal(expectedFormat, entry.Format);
 
                     Assert.NotNull(entry);
                     Assert.Equal(AssetBlockDeviceFileName, entry.Name);
@@ -124,9 +122,8 @@ namespace System.Formats.Tar.Tests
                 archive.Seek(0, SeekOrigin.Begin);
                 using (TarReader reader = new TarReader(archive))
                 {
-                    Assert.Equal(TarEntryFormat.Unknown, reader.Format);
                     PosixTarEntry entry = reader.GetNextEntry() as PosixTarEntry;
-                    Assert.Equal(expectedFormat, reader.Format);
+                    Assert.Equal(expectedFormat, entry.Format);
 
                     Assert.NotNull(entry);
                     Assert.Equal(AssetCharacterDeviceFileName, entry.Name);
