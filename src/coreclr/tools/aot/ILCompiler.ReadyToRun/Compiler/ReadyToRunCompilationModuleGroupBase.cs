@@ -407,7 +407,9 @@ namespace ILCompiler
                         case ILOpcode.stfld:
                             {
                                 int token = ilReader.ReadILToken();
-                                FieldDesc field = (FieldDesc)methodIL.GetObject(token);
+                                FieldDesc field = methodIL.GetObject(token) as FieldDesc;
+                                if (field == null)
+                                    return false;
                                 if (field.IsStatic)
                                     return false;
                                 MetadataType owningMetadataType = (MetadataType)field.OwningType;
@@ -425,7 +427,10 @@ namespace ILCompiler
                         case ILOpcode.sizeof_:
                             {
                                 int token = ilReader.ReadILToken();
-                                TypeDesc type = (TypeDesc)methodIL.GetObject(token);
+                                TypeDesc type = methodIL.GetObject(token) as TypeDesc;
+                                if (type == null)
+                                    return false;
+
                                 MetadataType metadataType = type as MetadataType;
                                 if (metadataType == null)
                                     continue; // Types which are not metadata types are all well defined in size
@@ -441,7 +446,9 @@ namespace ILCompiler
                         case ILOpcode.stelem:
                             {
                                 int token = ilReader.ReadILToken();
-                                MetadataType type = (MetadataType)methodIL.GetObject(token);
+                                MetadataType type = methodIL.GetObject(token) as MetadataType;
+                                if (type == null)
+                                    return false;
 
                                 if (!type.IsValueType)
                                     return false;
@@ -483,8 +490,7 @@ namespace ILCompiler
 
                 result = true;
             }
-
-            catch
+            catch (TypeSystemException)
             {
                 return false;
             }
