@@ -2691,6 +2691,10 @@ HCIMPL2(Object*, JIT_Box, CORINFO_CLASS_HANDLE type, void* unboxedData)
     GCPROTECT_BEGININTERIOR(unboxedData);
     HELPER_METHOD_POLL();
 
+    // A null can be passed for boxing of a null ref.
+    if (unboxedData == NULL)
+        COMPlusThrow(kNullReferenceException);
+
     TypeHandle clsHnd(type);
 
     _ASSERTE(!clsHnd.IsTypeDesc());  // boxable types have method tables

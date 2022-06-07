@@ -420,6 +420,7 @@ void *JIT_TrialAlloc::GenBox(Flags flags)
 
     CodeLabel *noLock  = sl.NewCodeLabel();
     CodeLabel *noAlloc = sl.NewCodeLabel();
+    CodeLabel *nullRef = sl.NewCodeLabel();
 
     // Save address of value to be boxed
     sl.X86EmitPushReg(kEBX);
@@ -441,6 +442,13 @@ void *JIT_TrialAlloc::GenBox(Flags flags)
 
     // jne              noAlloc
     sl.X86EmitCondJump(noAlloc, X86CondCode::kJNE);
+
+    // Check for null ref
+    // test edx, edx
+    sl.X86EmitR2ROp(0x85, kEDX, kEDX);
+
+    // je nullRef
+    sl.X86EmitCondJump(nullRef, X86CondCode::kJE);
 
     // Emit the main body of the trial allocator
     EmitCore(&sl, noLock, noAlloc, flags);
@@ -527,8 +535,9 @@ void *JIT_TrialAlloc::GenBox(Flags flags)
 
     sl.X86EmitReturn(0);
 
-    // Come here in case of no space
+    // Come here in case of no space or null ref
     sl.EmitLabel(noAlloc);
+    sl.EmitLabel(nullRef);
 
     // Release the lock in the uniprocessor case
     EmitNoAllocCode(&sl, flags);

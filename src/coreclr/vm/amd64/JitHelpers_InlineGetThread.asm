@@ -79,6 +79,9 @@ NESTED_ENTRY JIT_BoxFastMP_InlineGetThread, _TEXT
         cmp     r8, r10
         ja      AllocFailed
 
+        test    rdx, rdx
+        je      NullRef
+
         mov     [r11 + OFFSET__Thread__m_alloc_context__alloc_ptr], r8
         mov     [rax], rcx
 
@@ -115,6 +118,7 @@ align 16
 
     ClassNotInited:
     AllocFailed:
+    NullRef:
         jmp     JIT_Box
 NESTED_END JIT_BoxFastMP_InlineGetThread, _TEXT
 

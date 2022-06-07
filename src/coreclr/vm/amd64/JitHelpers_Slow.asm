@@ -226,6 +226,8 @@ NESTED_ENTRY JIT_BoxFastUP, _TEXT
         cmp     r8, r10
         ja      NoAlloc
 
+        test    rdx, rdx
+        je      NullRef
 
         mov     qword ptr [g_global_alloc_context + OFFSETOF__gc_alloc_context__alloc_ptr], r8     ; update the alloc ptr
         mov     [rax], rcx
@@ -265,6 +267,7 @@ NESTED_ENTRY JIT_BoxFastUP, _TEXT
         ret
 
     NoAlloc:
+    NullRef:
         mov     [g_global_alloc_lock], -1
         jmp     JIT_Box
 NESTED_END JIT_BoxFastUP, _TEXT
