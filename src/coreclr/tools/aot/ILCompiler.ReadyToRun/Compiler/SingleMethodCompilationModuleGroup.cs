@@ -17,19 +17,9 @@ namespace ILCompiler
         private MethodDesc _method;
 
         public SingleMethodCompilationModuleGroup(
-            CompilerTypeSystemContext context,
-            bool isCompositeBuildMode,
-            bool isInputBubble,
-            IEnumerable<EcmaModule> compilationModuleSet,
-            IEnumerable<ModuleDesc> versionBubbleModuleSet,
-            bool compileGenericDependenciesFromVersionBubbleModuleSet,
+            ReadyToRunCompilationModuleGroupConfig config,
             MethodDesc method) :
-                base(context,
-                     isCompositeBuildMode,
-                     isInputBubble,
-                     compilationModuleSet,
-                     versionBubbleModuleSet,
-                     compileGenericDependenciesFromVersionBubbleModuleSet)
+                base(config)
         {
             _method = method;
         }

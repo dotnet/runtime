@@ -70,12 +70,11 @@ namespace System.Reflection
             // so it can become a simple test
             if (right is null)
             {
-                // return true/false not the test result https://github.com/dotnet/runtime/issues/4207
-                return (left is null) ? true : false;
+                return left is null;
             }
 
             // Try fast reference equality and opposite null check prior to calling the slower virtual Equals
-            if ((object?)left == (object)right)
+            if (ReferenceEquals(left, right))
             {
                 return true;
             }
@@ -143,7 +142,7 @@ namespace System.Reflection
         private protected unsafe void CheckArguments(
             Span<object?> copyOfParameters,
             IntPtr* byrefParameters,
-            Span<bool> shouldCopyBack,
+            Span<ParameterCopyBackAction> shouldCopyBack,
             ReadOnlySpan<object?> parameters,
             RuntimeType[] sigTypes,
             Binder? binder,
@@ -156,35 +155,45 @@ namespace System.Reflection
             ParameterInfo[]? paramInfos = null;
             for (int i = 0; i < parameters.Length; i++)
             {
-                bool copyBackArg = false;
-                bool isValueType;
+                ParameterCopyBackAction copyBackArg = default;
+                bool isValueType = false;
                 object? arg = parameters[i];
                 RuntimeType sigType = sigTypes[i];
 
                 if (arg is null)
                 {
-                    // Fast path that avoids calling CheckValue() for reference types.
+                    // Fast path for null reference types.
                     isValueType = RuntimeTypeHandle.IsValueType(sigType);
                     if (isValueType || RuntimeTypeHandle.IsByRef(sigType))
                     {
                         isValueType = sigType.CheckValue(ref arg, ref copyBackArg, binder, culture, invokeAttr);
                     }
                 }
-                else if (ReferenceEquals(arg.GetType(), sigType))
-                {
-                    // Fast path that avoids calling CheckValue() when argument value matches the signature type.
-                    isValueType = RuntimeTypeHandle.IsValueType(sigType);
-                }
                 else
                 {
-                    paramInfos ??= GetParametersNoCopy();
-                    ParameterInfo paramInfo = paramInfos[i];
-                    if (!ReferenceEquals(arg, Type.Missing))
+                    RuntimeType argType = (RuntimeType)arg.GetType();
+
+                    if (ReferenceEquals(argType, sigType))
                     {
+                        // Fast path when the value's type matches the signature type.
+                        isValueType = RuntimeTypeHandle.IsValueType(argType);
+                    }
+                    else if (sigType.TryByRefFastPath(ref arg, ref isValueType))
+                    {
+                        // Fast path when the value's type matches the signature type of a byref parameter.
+                        copyBackArg = ParameterCopyBackAction.Copy;
+                    }
+                    else if (!ReferenceEquals(arg, Type.Missing))
+                    {
+                        // Slow path that supports type conversions.
                         isValueType = sigType.CheckValue(ref arg, ref copyBackArg, binder, culture, invokeAttr);
                     }
                     else
                     {
+                        // Convert Type.Missing to the default value.
+                        paramInfos ??= GetParametersNoCopy();
+                        ParameterInfo paramInfo = paramInfos[i];
+
                         if (paramInfo.DefaultValue == DBNull.Value)
                         {
                             throw new ArgumentException(SR.Arg_VarMissNull, nameof(parameters));
@@ -193,6 +202,7 @@ namespace System.Reflection
                         arg = paramInfo.DefaultValue;
                         if (ReferenceEquals(arg?.GetType(), sigType))
                         {
+                            // Fast path when the default value's type matches the signature type.
                             isValueType = RuntimeTypeHandle.IsValueType(sigType);
                         }
                         else
@@ -209,16 +219,20 @@ namespace System.Reflection
                 // as we validate them. n.b. This disallows use of ArrayPool, as ArrayPool-rented arrays are
                 // considered user-visible to threads which may still be holding on to returned instances.
                 // This separate array is also used to hold default values when 'null' is specified for value
-                // types, and also used to hold the results from conversions such as from Int16 to Int32; these
-                // default values and conversions should not be applied to the incoming arguments.
+                // types, and also used to hold the results from conversions such as from Int16 to Int32. For
+                // compat, these default values and conversions are not be applied to the incoming arguments.
                 shouldCopyBack[i] = copyBackArg;
                 copyOfParameters[i] = arg;
 
                 if (isValueType)
                 {
-#if DEBUG
-                    // Once Mono has managed conversion logic, VerifyValueType() can be lifted here as Asserts.
-                    sigType.VerifyValueType(arg);
+#if !MONO // Temporary until Mono is updated.
+                    Debug.Assert(arg != null);
+                    Debug.Assert(
+                        arg.GetType() == sigType ||
+                        (sigType.IsPointer && arg.GetType() == typeof(IntPtr)) ||
+                        (sigType.IsByRef && arg.GetType() == RuntimeTypeHandle.GetElementType(sigType)) ||
+                        ((sigType.IsEnum || arg.GetType().IsEnum) && RuntimeType.GetUnderlyingType((RuntimeType)arg.GetType()) == RuntimeType.GetUnderlyingType(sigType)));
 #endif
                     ByReference<byte> valueTypeRef = new(ref copyOfParameters[i]!.GetRawData());
                     *(ByReference<byte>*)(byrefParameters + i) = valueTypeRef;
@@ -247,11 +261,11 @@ namespace System.Reflection
             private object? _arg2;
             private object? _arg3;
 #pragma warning restore CA1823, CS0169, IDE0051
-            internal bool _copyBack0;
+            internal ParameterCopyBackAction _copyBack0;
 #pragma warning disable CA1823, CS0169, IDE0051 // accessed via 'CheckArguments' ref arithmetic
-            private bool _copyBack1;
-            private bool _copyBack2;
-            private bool _copyBack3;
+            private ParameterCopyBackAction _copyBack1;
+            private ParameterCopyBackAction _copyBack2;
+            private ParameterCopyBackAction _copyBack3;
 #pragma warning restore CA1823, CS0169, IDE0051
         }
 

@@ -158,11 +158,6 @@ typedef LPSTR   LPUTF8;
 #define DIGIT_TO_INT(ch) ((ch) - W('0'))
 #define INT_TO_DIGIT(i) ((WCHAR)(W('0') + (i)))
 
-#define IS_HEXDIGIT(ch) ((((ch) >= W('a')) && ((ch) <= W('f'))) || \
-                         (((ch) >= W('A')) && ((ch) <= W('F'))))
-#define HEXDIGIT_TO_INT(ch) ((towlower(ch) - W('a')) + 10)
-#define INT_TO_HEXDIGIT(i) ((WCHAR)(W('a') + ((i) - 10)))
-
 
 // Helper will 4 byte align a value, rounding up.
 #define ALIGN4BYTE(val) (((val) + 3) & ~0x3)
@@ -416,6 +411,33 @@ inline WCHAR* FormatInteger(WCHAR* str, size_t strCount, const char* fmt, I v)
     *str = W('\0');
     return str;
 }
+
+class GuidString final
+{
+    char _buffer[ARRAY_SIZE("{12345678-1234-1234-1234-123456789abc}")];
+public:
+    static void Create(const GUID& g, GuidString& ret)
+    {
+        // Ensure we always have a null
+        ret._buffer[ARRAY_SIZE(ret._buffer) - 1] = '\0';
+        sprintf_s(ret._buffer, ARRAY_SIZE(ret._buffer), "{%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x}",
+            g.Data1, g.Data2, g.Data3,
+            g.Data4[0], g.Data4[1],
+            g.Data4[2], g.Data4[3],
+            g.Data4[4], g.Data4[5],
+            g.Data4[6], g.Data4[7]);
+    }
+
+    const char* AsString() const
+    {
+        return _buffer;
+    }
+
+    operator const char*() const
+    {
+        return _buffer;
+    }
+};
 
 inline
 LPWSTR DuplicateString(
@@ -986,7 +1008,7 @@ public:
     static BOOL CanEnableGCNumaAware();
     static void InitNumaNodeInfo();
 
-#if !defined(FEATURE_REDHAWK)
+#if !defined(FEATURE_NATIVEAOT)
 public: 	// functions
 
     static LPVOID VirtualAllocExNuma(HANDLE hProc, LPVOID lpAddr, SIZE_T size,
@@ -1039,7 +1061,7 @@ public:
     static bool GetCPUGroupInfo(PUSHORT total_groups, DWORD* max_procs_per_group);
     //static void PopulateCPUUsageArray(void * infoBuffer, ULONG infoSize);
 
-#if !defined(FEATURE_REDHAWK)
+#if !defined(FEATURE_NATIVEAOT)
 public:
     static BOOL GetLogicalProcessorInformationEx(LOGICAL_PROCESSOR_RELATIONSHIP relationship,
 		   SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX *slpiex, PDWORD count);
@@ -1156,79 +1178,6 @@ protected:
 
     NodeType* head;
 };
-
-
-template < typename T, typename U >
-struct Pair
-{
-public:
-    typedef Pair< T, U > this_type;
-    typedef T first_type;
-    typedef U second_type;
-
-    Pair()
-    {}
-
-    Pair( T const & t, U const & u )
-        : m_first( t )
-        , m_second( u )
-    { SUPPORTS_DAC; }
-
-    Pair( this_type const & obj )
-        : m_first( obj.m_first )
-        , m_second( obj.m_second )
-    {}
-
-    this_type & operator=( this_type const & obj )
-    {
-        m_first = obj.m_first;
-        m_second = obj.m_second;
-        return *this;
-    }
-
-    T & First()
-    {
-        return m_first;
-    }
-
-    T const & First() const
-    {
-        return m_first;
-    }
-
-    U & Second()
-    {
-        return m_second;
-    }
-
-    U const & Second() const
-    {
-        return m_second;
-    }
-
-    bool operator==(const Pair& rhs) const
-    {
-        return ((this->First()  == rhs.First()) &&
-                (this->Second() == rhs.Second()));
-    }
-
-    bool operator!=(const Pair& rhs) const
-    {
-        return !(*this == rhs);
-    }
-
-private:
-    first_type  m_first;
-    second_type m_second;
-};
-
-
-template < typename T, typename U >
-Pair< T, U > MakePair( T const & t, U const & u )
-{
-    SUPPORTS_DAC;
-    return Pair< T, U >( t, u );
-}
 
 
 //*****************************************************************************
@@ -1657,112 +1606,6 @@ typedef CDynArray<USHORT> USHORTARRAY;
 typedef CDynArray<ULONG> ULONGARRAY;
 typedef CDynArray<BYTE> BYTEARRAY;
 typedef CDynArray<mdToken> TOKENARRAY;
-
-template <class T> class CStackArray : public CStructArray
-{
-public:
-    CStackArray(short iGrowInc=4) :
-        CStructArray(sizeof(T), iGrowInc),
-        m_curPos(0)
-    {
-        LIMITED_METHOD_CONTRACT;
-    }
-
-    void Push(T p)
-    {
-        WRAPPER_NO_CONTRACT;
-        // We should only inc m_curPos after we grow the array.
-        T *pT = (T *)CStructArray::InsertThrowing(m_curPos);
-        m_curPos ++;
-        *pT = p;
-    }
-
-    T * Pop()
-    {
-        WRAPPER_NO_CONTRACT;
-        T * retPtr;
-
-        _ASSERTE(m_curPos > 0);
-
-        retPtr = (T *)CStructArray::Get(m_curPos-1);
-        CStructArray::Delete(m_curPos--);
-
-        return (retPtr);
-    }
-
-    int Count()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return(m_curPos);
-    }
-
-private:
-    int m_curPos;
-};
-
-
-//*****************************************************************************
-// This template manages a list of free entries by their 0 based offset.  By
-// making it a template, you can use whatever size free chain will match your
-// maximum count of items.  -1 is reserved.
-//*****************************************************************************
-template <class T> class TFreeList
-{
-public:
-    void Init(
-        T           *rgList,
-        int         iCount)
-    {
-        LIMITED_METHOD_CONTRACT;
-        // Save off values.
-        m_rgList = rgList;
-        m_iCount = iCount;
-        m_iNext = 0;
-
-        // Init free list.
-        int i;
-        for (i=0;  i<iCount - 1;  i++)
-            m_rgList[i] = i + 1;
-        m_rgList[i] = (T) -1;
-    }
-
-    T GetFreeEntry()                        // Index of free item, or -1.
-    {
-        LIMITED_METHOD_CONTRACT;
-        T           iNext;
-
-        if (m_iNext == (T) -1)
-            return (-1);
-
-        iNext = m_iNext;
-        m_iNext = m_rgList[m_iNext];
-        return (iNext);
-    }
-
-    void DelFreeEntry(T iEntry)
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(iEntry < m_iCount);
-        m_rgList[iEntry] = m_iNext;
-        m_iNext = iEntry;
-    }
-
-    // This function can only be used when it is guaranteed that the free
-    // array is contigous, for example, right after creation to quickly
-    // get a range of items from the heap.
-    void ReserveRange(int iCount)
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(iCount < m_iCount);
-        _ASSERTE(m_iNext == 0);
-        m_iNext = iCount;
-    }
-
-private:
-    T           *m_rgList;              // List of free info.
-    int         m_iCount;               // How many entries to manage.
-    T           m_iNext;                // Next item to get.
-};
 
 
 //*****************************************************************************

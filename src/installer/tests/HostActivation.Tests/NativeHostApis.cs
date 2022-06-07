@@ -45,7 +45,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             dotnet.Exec(appDll)
                 .EnvironmentVariable("CORE_BREADCRUMBS", sharedTestState.BreadcrumbLocation)
                 .EnableTracingAndCaptureOutputs()
-                .Execute(fExpectedToFail: true)
+                .Execute(expectedToFail: true)
                 .Should().Fail()
                 .And.HaveStdErrContaining("Unhandled exception.")
                 .And.HaveStdErrContaining("System.Exception: Goodbye World")

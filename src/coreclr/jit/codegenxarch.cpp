@@ -451,8 +451,8 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr  size,
 /***********************************************************************************
  *
  * Generate code to set a register 'targetReg' of type 'targetType' to the constant
- * specified by the constant (GT_CNS_INT or GT_CNS_DBL) in 'tree'. This does not call
- * genProduceReg() on the target register.
+ * specified by the constant (GT_CNS_INT, GT_CNS_DBL, or GT_CNS_VEC) in 'tree'. This
+ * does not call genProduceReg() on the target register.
  */
 void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTree* tree)
 {
@@ -506,6 +506,74 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             }
         }
         break;
+
+        case GT_CNS_VEC:
+        {
+            GenTreeVecCon* vecCon = tree->AsVecCon();
+
+            emitter* emit = GetEmitter();
+            emitAttr attr = emitTypeSize(targetType);
+
+            if (vecCon->IsAllBitsSet())
+            {
+#if defined(FEATURE_SIMD)
+                emit->emitIns_SIMD_R_R_R(INS_pcmpeqd, attr, targetReg, targetReg, targetReg);
+#else
+                emit->emitIns_R_R(INS_pcmpeqd, attr, targetReg, targetReg);
+#endif // FEATURE_SIMD
+                break;
+            }
+
+            if (vecCon->IsZero())
+            {
+#if defined(FEATURE_SIMD)
+                emit->emitIns_SIMD_R_R_R(INS_xorps, attr, targetReg, targetReg, targetReg);
+#else
+                emit->emitIns_R_R(INS_xorps, attr, targetReg, targetReg);
+#endif // FEATURE_SIMD
+                break;
+            }
+
+            switch (tree->TypeGet())
+            {
+#if defined(FEATURE_SIMD)
+                case TYP_SIMD8:
+                {
+                    simd8_t              constValue = vecCon->gtSimd8Val;
+                    CORINFO_FIELD_HANDLE hnd        = emit->emitSimd8Const(constValue);
+
+                    emit->emitIns_R_C(ins_Load(targetType), attr, targetReg, hnd, 0);
+                    break;
+                }
+
+                case TYP_SIMD12:
+                case TYP_SIMD16:
+                {
+                    simd16_t             constValue = vecCon->gtSimd16Val;
+                    CORINFO_FIELD_HANDLE hnd        = emit->emitSimd16Const(constValue);
+
+                    emit->emitIns_R_C(ins_Load(targetType), attr, targetReg, hnd, 0);
+                    break;
+                }
+
+                case TYP_SIMD32:
+                {
+                    simd32_t             constValue = vecCon->gtSimd32Val;
+                    CORINFO_FIELD_HANDLE hnd        = emit->emitSimd32Const(constValue);
+
+                    emit->emitIns_R_C(ins_Load(targetType), attr, targetReg, hnd, 0);
+                    break;
+                }
+#endif // FEATURE_SIMD
+
+                default:
+                {
+                    unreached();
+                }
+            }
+
+            break;
+        }
 
         default:
             unreached();
@@ -1491,6 +1559,11 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             FALLTHROUGH;
 
         case GT_CNS_DBL:
+            genSetRegToConst(targetReg, targetType, treeNode);
+            genProduceReg(treeNode);
+            break;
+
+        case GT_CNS_VEC:
             genSetRegToConst(targetReg, targetType, treeNode);
             genProduceReg(treeNode);
             break;
@@ -4858,7 +4931,8 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
             // zero in the target register, because an xor is smaller than a copy. Note that we could
             // potentially handle this in the register allocator, but we can't always catch it there
             // because the target may not have a register allocated for it yet.
-            if (op1->isUsedFromReg() && (op1->GetRegNum() != targetReg) && (op1->IsIntegralConst(0) || op1->IsFPZero()))
+            if (op1->isUsedFromReg() && (op1->GetRegNum() != targetReg) &&
+                (op1->IsIntegralConst(0) || op1->IsFloatPositiveZero()))
             {
                 op1->SetRegNum(REG_NA);
                 op1->ResetReuseRegVal();
@@ -5016,7 +5090,17 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
     else
     {
         genConsumeAddress(addr);
-        emit->emitInsLoadInd(ins_Load(targetType), emitTypeSize(tree), tree->GetRegNum(), tree);
+        instruction loadIns = ins_Load(targetType);
+        if (tree->DontExtend())
+        {
+            assert(varTypeIsSmall(tree));
+            // The user of this IND does not need
+            // the upper bits to be set, so we don't need to use longer
+            // INS_movzx/INS_movsx and can use INS_mov instead.
+            // It usually happens when the real type is a small struct.
+            loadIns = INS_mov;
+        }
+        emit->emitInsLoadInd(loadIns, emitTypeSize(tree), tree->GetRegNum(), tree);
     }
 
     genProduceReg(tree);
@@ -8426,26 +8510,28 @@ void CodeGen::genCreateAndStoreGCInfoX64(unsigned codeSize, unsigned prologSize 
         // what we have to preserve is called the "frame header" (see comments in VM\eetwain.cpp)
         // which is:
         //  -return address
-        //  -saved off RBP
-        //  -saved 'this' pointer and bool for synchronized methods
+        //  -saved RBP
+        //  -saved bool for synchronized methods
 
-        // 4 slots for RBP + return address + RSI + RDI
-        int preservedAreaSize = 4 * REGSIZE_BYTES;
+        // slots for ret address + FP + EnC callee-saves
+        int preservedAreaSize = (2 + genCountBits(RBM_ENC_CALLEE_SAVED)) * REGSIZE_BYTES;
 
         if (compiler->info.compFlags & CORINFO_FLG_SYNCH)
         {
-            if (!(compiler->info.compFlags & CORINFO_FLG_STATIC))
-            {
-                preservedAreaSize += REGSIZE_BYTES;
-            }
+            // bool in synchronized methods that tracks whether the lock has been taken (takes a full pointer sized
+            // slot)
+            preservedAreaSize += TARGET_POINTER_SIZE;
 
-            // bool in synchronized methods that tracks whether the lock has been taken (takes 4 bytes on stack)
-            preservedAreaSize += 4;
+            // Verify that MonAcquired bool is at the bottom of the frame header
+            assert(compiler->lvaGetCallerSPRelativeOffset(compiler->lvaMonAcquired) == -preservedAreaSize);
         }
 
         // Used to signal both that the method is compiled for EnC, and also the size of the block at the top of the
         // frame
         gcInfoEncoder->SetSizeOfEditAndContinuePreservedArea(preservedAreaSize);
+
+        JITDUMP("EnC info:\n");
+        JITDUMP("  EnC preserved area size = %d\n", preservedAreaSize);
     }
 
     if (compiler->opts.IsReversePInvoke())

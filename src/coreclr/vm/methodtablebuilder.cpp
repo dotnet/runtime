@@ -1892,7 +1892,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
             {
                 {
                     MethodDesc *pMD = methIt->GetUnboxedMethodDesc();
-                    StackSString name(SString::Utf8);
+                    StackSString name;
                     TypeString::AppendMethodDebug(name, pMD);
                     StackScratchBuffer buff;
                     const char* pDebugNameUTF8 = name.GetUTF8(buff);
@@ -1907,7 +1907,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
                 {
                     MethodDesc *pMD = methIt->GetMethodDesc();
 
-                    StackSString name(SString::Utf8);
+                    StackSString name;
                     TypeString::AppendMethodDebug(name, pMD);
                     StackScratchBuffer buff;
                     const char* pDebugNameUTF8 = name.GetUTF8(buff);
@@ -1997,18 +1997,6 @@ MethodTableBuilder::BuildMethodTableThrowing(
     // once we're past the commit point.
     EnsureRIDMapsCanBeFilled();
 
-    {
-        // NOTE. NOTE!! the EEclass can now be accessed by other threads.
-        // Do NOT place any initialization after this point.
-        // You may NOT fail the call after this point.
-        FAULT_FORBID();
-        CANNOTTHROWCOMPLUSEXCEPTION();
-
-        /*
-        GetMemTracker()->SuppressRelease();
-        */
-    }
-
 #ifdef _DEBUG
     if (g_pConfig->ShouldDumpOnClassLoad(pszDebugName))
     {
@@ -2020,10 +2008,12 @@ MethodTableBuilder::BuildMethodTableThrowing(
         LOG((LF_ALWAYS, LL_ALWAYS, "Number of declared fields: %d\n", NumDeclaredFields()));
         LOG((LF_ALWAYS, LL_ALWAYS, "Number of declared methods: %d\n", NumDeclaredMethods()));
         LOG((LF_ALWAYS, LL_ALWAYS, "Number of declared non-abstract methods: %d\n", bmtMethod->dwNumDeclaredNonAbstractMethods));
+
+        BOOL debugging = IsDebuggerPresent();
         pMT->Debug_DumpInterfaceMap("Approximate");
-        pMT->DebugDumpVtable(pszDebugName, FALSE);
-        pMT->DebugDumpFieldLayout(pszDebugName, FALSE);
-        pMT->DebugDumpGCDesc(pszDebugName, FALSE);
+        pMT->DebugDumpVtable(pszDebugName, debugging);
+        pMT->DebugDumpFieldLayout(pszDebugName, debugging);
+        pMT->DebugDumpGCDesc(pszDebugName, debugging);
         pMT->Debug_DumpDispatchMap();
     }
 #endif //_DEBUG
@@ -2935,7 +2925,7 @@ MethodTableBuilder::EnumerateClassMethods()
                 {
                     BuildMethodTableThrowException(BFA_AB_METHOD_IN_AB_CLASS);
                 }
-                if(!IsMdVirtual(dwMemberAttrs))
+                if(!IsMdVirtual(dwMemberAttrs) && !IsMdStatic(dwMemberAttrs))
                 {
                     BuildMethodTableThrowException(BFA_NONVIRT_AB_METHOD);
                 }
@@ -4829,8 +4819,8 @@ VOID MethodTableBuilder::TestMethodImpl(
         BuildMethodTableThrowException(IDS_CLASSLOAD_MI_FINAL_DECL);
     }
 
-    // Interface method body that has methodimpl should always be final
-    if (IsInterface() && !IsMdFinal(dwImplAttrs))
+    // Non-static interface method body that has methodimpl should always be final
+    if (IsInterface() && !IsMdStatic(dwDeclAttrs) && !IsMdFinal(dwImplAttrs))
     {
         BuildMethodTableThrowException(IDS_CLASSLOAD_MI_FINAL_IMPL);
     }
@@ -8617,7 +8607,7 @@ MethodTableBuilder::HandleExplicitLayout(
         // we will put a catchall "break" here which will cause the typeload to abort (albeit with a probably misleading
         // error message.)
         break;
-    } // for(;;)
+    }
 
     // We only break out of the loop above if we detected an error.
     if (i < bmtMetaData->cFields || !explicitClassTrust.IsLegal())
@@ -9296,9 +9286,8 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
     {
         //#LoadExactInterfaceMap_Algorithm2
         // Exact interface instantiation loading TECHNIQUE 2 - The exact instantiation has caused some duplicates to
-        // appear in the interface map!  This may not be an error: if the duplicates
-        // were ones that arose because because of inheritance from
-        // a parent type then we accept that.  For example
+        // appear in the interface map!  This may not be an error: if the duplicates were ones that arose because of
+        // inheritance from a parent type then we accept that.  For example
         //     class C<T> : I<T>
         //     class D<T> : C<T>, I<string>
         // is acceptable even when loading D<string>.  Note that in such a case
@@ -9509,7 +9498,7 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
 
                     // Compare original and duplicate interface entries in the dispatch map if they contain
                     // different implementation for the same interface method
-                    for (;;)
+                    while (true)
                     {
                         if (!originalIt.IsValid() || !duplicateIt.IsValid())
                         {   // We reached end of one dispatch map iterator

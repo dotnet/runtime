@@ -56,6 +56,12 @@
 #include <sys/endian.h>
 #endif
 
+#ifndef HOST_WIN32
+#define SOCKET int
+#define INVALID_SOCKET (-1)
+#define SOCKET_ERROR (-1)
+#endif
+
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/debug-internals.h>
 #include <mono/metadata/domain-internals.h>
@@ -331,8 +337,8 @@ static AgentConfig agent_config;
 static gint32 agent_inited;
 
 #ifndef DISABLE_SOCKET_TRANSPORT
-static int conn_fd;
-static int listen_fd;
+static SOCKET conn_fd;
+static SOCKET listen_fd;
 #endif
 
 static int objref_id = 0;
@@ -916,7 +922,7 @@ socket_transport_recv (void *buf, int len)
 {
 	int res;
 	int total = 0;
-	int fd = conn_fd;
+	SOCKET fd = conn_fd;
 	int flags = 0;
 	static gint64 last_keepalive;
 	gint64 msecs;
@@ -930,9 +936,9 @@ socket_transport_recv (void *buf, int len)
 			total += res;
 		if (agent_config.keepalive) {
 			gboolean need_keepalive = FALSE;
-			if (res == -1 && get_last_sock_error () == MONO_EWOULDBLOCK) {
+			if (res == SOCKET_ERROR && get_last_sock_error () == MONO_EWOULDBLOCK) {
 				need_keepalive = TRUE;
-			} else if (res == -1) {
+			} else if (res == SOCKET_ERROR) {
 				/* This could happen if recv () is interrupted repeatedly */
 				msecs = mono_msec_ticks ();
 				if (msecs - last_keepalive >= agent_config.keepalive) {
@@ -947,7 +953,7 @@ socket_transport_recv (void *buf, int len)
 				goto again;
 			}
 		}
-	} while ((res > 0 && total < len) || (res == -1 && get_last_sock_error () == MONO_EINTR));
+	} while ((res > 0 && total < len) || (res == SOCKET_ERROR && get_last_sock_error () == MONO_EINTR));
 
 	return total;
 }
@@ -968,16 +974,16 @@ set_keepalive (void)
 	g_assert (result >= 0);
 }
 
-static int
-socket_transport_accept (int socket_fd)
+static SOCKET
+socket_transport_accept (SOCKET socket_fd)
 {
 	MONO_REQ_GC_SAFE_MODE;
 	conn_fd = accept (socket_fd, NULL, NULL);
 
-	if (conn_fd == -1) {
-		PRINT_ERROR_MSG ("debugger-agent: Unable to listen on %d\n", socket_fd);
+	if (conn_fd == INVALID_SOCKET) {
+		PRINT_ERROR_MSG ("debugger-agent: Unable to listen on %d: %s.\n", (int)socket_fd, strerror (get_last_sock_error()));
 	} else {
-		PRINT_DEBUG_MSG (1, "Accepted connection from client, connection fd=%d.\n", conn_fd);
+		PRINT_DEBUG_MSG (1, "Accepted connection from client, connection fd=%d.\n", (int)conn_fd);
 	}
 
 	return conn_fd;
@@ -992,7 +998,7 @@ socket_transport_send (void *data, int len)
 
 	do {
 		res = send (conn_fd, (const char*)data, len, 0);
-	} while (res == -1 && get_last_sock_error () == MONO_EINTR);
+	} while (res == SOCKET_ERROR && get_last_sock_error () == MONO_EINTR);
 
 	if (res != len)
 		return FALSE;
@@ -1010,7 +1016,8 @@ socket_transport_connect (const char *address)
 {
 	MonoAddressInfo *result = NULL;
 	MonoAddressEntry *rp;
-	int sfd = -1, s = 0, res;
+	SOCKET sfd = INVALID_SOCKET;
+	int s = 0, res;
 	char *host;
 	int port;
 
@@ -1028,8 +1035,8 @@ socket_transport_connect (const char *address)
 		port = 56000 + (mono_process_current_pid () % 1000);
 	}
 
-	conn_fd = -1;
-	listen_fd = -1;
+	conn_fd = INVALID_SOCKET;
+	listen_fd = INVALID_SOCKET;
 
 	MONO_ENTER_GC_UNSAFE;
 	mono_networking_init();
@@ -1064,14 +1071,14 @@ socket_transport_connect (const char *address)
 
 			/* No address, generate one */
 			sfd = socket (AF_INET, SOCK_STREAM, 0);
-			if (sfd == -1) {
+			if (sfd == INVALID_SOCKET) {
 				PRINT_ERROR_MSG ("debugger-agent: Unable to create a socket: %s\n", strerror (get_last_sock_error ()));
 				exit (1);
 			}
 
 			/* This will bind the socket to a random port */
 			res = listen (sfd, 16);
-			if (res == -1) {
+			if (res == SOCKET_ERROR) {
 				PRINT_ERROR_MSG ("debugger-agent: Unable to setup listening socket: %s\n", strerror (get_last_sock_error ()));
 				exit (1);
 			}
@@ -1100,18 +1107,18 @@ socket_transport_connect (const char *address)
 				MONO_EXIT_GC_UNSAFE;
 
 				sfd = socket (rp->family, rp->socktype, rp->protocol);
-				if (sfd == -1)
+				if (sfd == INVALID_SOCKET)
 					continue;
 
-				if (setsockopt (sfd, SOL_SOCKET, SO_REUSEADDR, (const char*)&n, sizeof(n)) == -1)
+				if (setsockopt (sfd, SOL_SOCKET, SO_REUSEADDR, (const char*)&n, sizeof(n)) == SOCKET_ERROR)
 					continue;
 
 				res = bind (sfd, &sockaddr.addr, sock_len);
-				if (res == -1)
+				if (res == SOCKET_ERROR)
 					continue;
 
 				res = listen (sfd, 16);
-				if (res == -1)
+				if (res == SOCKET_ERROR)
 					continue;
 				listen_fd = sfd;
 				break;
@@ -1136,7 +1143,7 @@ socket_transport_connect (const char *address)
 			FD_ZERO (&readfds);
 			FD_SET (sfd, &readfds);
 
-			res = select (sfd + 1, &readfds, NULL, NULL, &tv);
+			res = select ((int)sfd + 1, &readfds, NULL, NULL, &tv);
 
 			if (res == 0) {
 				PRINT_ERROR_MSG ("debugger-agent: Timed out waiting to connect.\n");
@@ -1145,14 +1152,14 @@ socket_transport_connect (const char *address)
 		}
 
 		conn_fd = socket_transport_accept (sfd);
-		if (conn_fd == -1)
+		if (conn_fd == INVALID_SOCKET)
 			exit (1);
 
-		PRINT_DEBUG_MSG (1, "Accepted connection from client, socket fd=%d.\n", conn_fd);
+		PRINT_DEBUG_MSG (1, "Accepted connection from client, socket fd=%d.\n", (int)conn_fd);
 	} else {
 		/* Connect to the specified address */
 		/* FIXME: Respect the timeout */
-		uint32_t startTime = time(NULL);
+		time_t startTime = time(NULL);
 		uint32_t elapsedTime;
 		do {
 			PRINT_DEBUG_MSG (1, "Trying to connect - %d.\n", port);
@@ -1166,7 +1173,7 @@ socket_transport_connect (const char *address)
 
 				sfd = socket (rp->family, rp->socktype,
 							rp->protocol);
-				if (sfd == -1) {
+				if (sfd == INVALID_SOCKET) {
 					perror("socket");
 					fprintf(stderr, "socket() failed: %s\n", strerror(errno));
 					PRINT_DEBUG_MSG(1, "socket() failed: %s\n", strerror(errno));
@@ -1175,7 +1182,7 @@ socket_transport_connect (const char *address)
 
 				res = connect (sfd, &sockaddr.addr, sock_len);
 
-				if (res != -1)
+				if (res != SOCKET_ERROR)
 					break;       /* Success */
 
 	#ifdef HOST_WIN32
@@ -1184,7 +1191,7 @@ socket_transport_connect (const char *address)
 				close (sfd);
 	#endif
 			}
-			elapsedTime = difftime (time (NULL), startTime) * 1000;
+			elapsedTime = GDOUBLE_TO_UINT32 (difftime (time (NULL), startTime) * 1000);
 			if (rp == 0)
 				sleep (1);
 		} while ((elapsedTime < agent_config.timeout) && (rp == 0));
@@ -1264,7 +1271,13 @@ socket_fd_transport_connect (const char *address)
 
 	MONO_REQ_GC_SAFE_MODE;
 
-	res = sscanf (address, "%d", &conn_fd);
+#if defined(HOST_WIN32) && (TARGET_SIZEOF_VOID_P == 8)
+	const char *format = "%" PRIu64;
+#else
+	const char *format = "%d";
+#endif
+	res = sscanf (address, format, &conn_fd);
+
 	if (res != 1) {
 		PRINT_ERROR_MSG ("debugger-agent: socket-fd transport address is invalid: '%s'\n", address);
 		exit (1);
@@ -1400,9 +1413,9 @@ transport_handshake (void)
 
 	do {
 		res = transport_send (handshake_msg, (int)strlen (handshake_msg));
-	} while (res == -1 && get_last_sock_error () == MONO_EINTR);
+	} while (res == SOCKET_ERROR && get_last_sock_error () == MONO_EINTR);
 
-	g_assert (res != -1);
+	g_assert (res != SOCKET_ERROR);
 
 	/* Read answer */
 	res = transport_recv (buf, (int)strlen (handshake_msg));
@@ -1489,7 +1502,7 @@ start_debugger_thread (MonoError *error)
 }
 
 static gboolean
-send_packet (int command_set, int command, Buffer *data)
+send_packet (uint8_t command_set, uint8_t command, Buffer *data)
 {
 	Buffer buf;
 	int len, id;
@@ -1497,7 +1510,7 @@ send_packet (int command_set, int command, Buffer *data)
 
 	id = mono_atomic_inc_i32 (&packet_id);
 
-	len = data->p - data->buf + 11;
+	len = GPTRDIFF_TO_INT (data->p - data->buf + 11);
 	buffer_init (&buf, len);
 	buffer_add_int (&buf, len);
 	buffer_add_int (&buf, id);
@@ -1529,7 +1542,7 @@ send_reply_packets (int npackets, ReplyPacket *packets)
 		buffer_add_int (&buf, packets [i].id);
 		buffer_add_byte (&buf, 0x80); /* flags */
 		buffer_add_byte (&buf, (packets [i].error >> 8) & 0xff);
-		buffer_add_byte (&buf, packets [i].error);
+		buffer_add_byte (&buf, packets [i].error & 0xff);
 		buffer_add_buffer (&buf, packets [i].data);
 	}
 
@@ -2003,7 +2016,7 @@ decode_ptr_id (guint8 *buf, guint8 **endbuf, guint8 *limit, IdType type, MonoDom
 	dbg_lock ();
 	g_assert (id > 0 && id <= ids [type]->len);
 
-	res = (Id *)g_ptr_array_index (ids [type], GPOINTER_TO_INT (id - 1));
+	res = (Id *)g_ptr_array_index (ids [type], id - 1);
 	dbg_unlock ();
 
 	if (res->domain == NULL) {
@@ -2931,21 +2944,14 @@ static gint32 isFixedSizeArray (MonoClassField *f)
 			MonoClass *fixed_size_class = mono_class_try_get_fixed_buffer_class ();
 			if (fixed_size_class != NULL && mono_class_has_parent (ctor_class, fixed_size_class)) {
 				attr = &cinfo->attrs [aindex];
-				gpointer *typed_args, *named_args;
-				CattrNamedArg *arginfo;
-				int num_named_args;
-
-				mono_reflection_create_custom_attr_data_args_noalloc (mono_get_corlib (), attr->ctor, attr->data, attr->data_size,
-																	&typed_args, &named_args, &num_named_args, &arginfo, error);
+				MonoDecodeCustomAttr *decoded_args = mono_reflection_create_custom_attr_data_args_noalloc (mono_get_corlib (), attr->ctor, attr->data, attr->data_size, error);
 				if (!is_ok (error)) {
 					ret = 0;
 					goto leave;
 				}
-				ret = *(gint32*)typed_args [1];
-				g_free (typed_args [1]);
-				g_free (typed_args);
-				g_free (named_args);
-				g_free (arginfo);
+
+				ret = *(gint32*)decoded_args->typed_args[1]->value.primitive;
+				mono_reflection_free_custom_attr_data_args_noalloc (decoded_args);
 				return ret;
 			}
 		}
@@ -3193,7 +3199,7 @@ strdup_tolower (char *s)
 
 	s2 = g_strdup (s);
 	for (p = s2; *p; ++p)
-		*p = tolower (*p);
+		*p = GINT_TO_CHAR (tolower (*p));
 	return s2;
 }
 
@@ -3544,7 +3550,7 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 
 	nevents = g_slist_length (events);
 	buffer_init (&buf, 128);
-	buffer_add_byte (&buf, suspend_policy);
+	buffer_add_byte (&buf, GINT_TO_UINT8 (suspend_policy));
 	buffer_add_int (&buf, nevents);
 
 	for (l = events; l; l = l->next) {
@@ -5171,10 +5177,10 @@ buffer_add_value_full (Buffer *buf, MonoType *t, void *addr, MonoDomain *domain,
 		}
 
 		buffer_add_byte (buf, MONO_TYPE_VALUETYPE);
-		buffer_add_byte (buf, m_class_is_enumtype (klass));
+		buffer_add_byte (buf, !!m_class_is_enumtype (klass));
 
 		if (CHECK_PROTOCOL_VERSION(2, 61))
-			buffer_add_byte(buf, boxed_vtype);
+			buffer_add_byte(buf, !!boxed_vtype);
 		buffer_add_typeid (buf, domain, klass);
 
 		nfields = 0;
@@ -5293,40 +5299,40 @@ static ErrorCode decode_fixed_size_array_internal (MonoType *t, int type, MonoDo
 	for (int i = 0 ; i < fixedSizeLen; i++) {
 		switch (newType) {
 		case MONO_TYPE_BOOLEAN:
-			((guint8*)addr)[i] = decode_int (buf, &buf, limit);
+			((guint8*)addr)[i] = GINT_TO_UINT8 (decode_int (buf, &buf, limit));
 			break;
 		case MONO_TYPE_CHAR:
-			((gunichar2*)addr)[i] = decode_int (buf, &buf, limit);
+			((gunichar2*)addr)[i] = GINT_TO_UNICHAR2 (decode_int (buf, &buf, limit));
 			break;
 		case MONO_TYPE_I1:
-			((gint8*)addr)[i] = decode_int (buf, &buf, limit);
+			((gint8*)addr)[i] = GINT_TO_INT8 (decode_int (buf, &buf, limit));
 			break;
 		case MONO_TYPE_U1:
-			((guint8*)addr)[i] = decode_int (buf, &buf, limit);
+			((guint8*)addr)[i] = GINT_TO_UINT8 (decode_int (buf, &buf, limit));
 			break;
 		case MONO_TYPE_I2:
-			((gint16*)addr)[i] = decode_int (buf, &buf, limit);
+			((gint16*)addr)[i] = GINT_TO_INT16 (decode_int (buf, &buf, limit));
 			break;
 		case MONO_TYPE_U2:
-			((guint16*)addr)[i]  = decode_int (buf, &buf, limit);
+			((guint16*)addr)[i]  = GINT_TO_UINT16 (decode_int (buf, &buf, limit));
 			break;
 		case MONO_TYPE_I4:
-			((gint32*)addr)[i]  = decode_int (buf, &buf, limit);
+			((gint32*)addr)[i]  = GINT_TO_INT32 (decode_int (buf, &buf, limit));
 			break;
 		case MONO_TYPE_U4:
-			((guint32*)addr)[i]  = decode_int (buf, &buf, limit);
+			((guint32*)addr)[i]  = GINT_TO_UINT32 (decode_int (buf, &buf, limit));
 			break;
 		case MONO_TYPE_I8:
 			((gint64*)addr)[i]  = decode_long (buf, &buf, limit);
 			break;
 		case MONO_TYPE_U8:
-			((guint64*)addr)[i]  = decode_long (buf, &buf, limit);
+			((guint64*)addr)[i]  = GINT64_TO_UINT64 (decode_long (buf, &buf, limit));
 			break;
 		case MONO_TYPE_R4:
-			((guint32*)addr)[i]  = decode_int (buf, &buf, limit);
+			((guint32*)addr)[i]  = GINT_TO_UINT32 (decode_int (buf, &buf, limit));
 			break;
 		case MONO_TYPE_R8:
-			((guint64*)addr)[i]  = decode_long (buf, &buf, limit);
+			((guint64*)addr)[i]  = GINT64_TO_UINT64 (decode_long (buf, &buf, limit));
 			break;
 		}
 	}
@@ -5358,46 +5364,46 @@ decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, 
 
 	switch (t->type) {
 	case MONO_TYPE_BOOLEAN:
-		*(guint8*)addr = decode_int (buf, &buf, limit);
+		*(guint8*)addr = GINT_TO_UINT8 (decode_int (buf, &buf, limit));
 		break;
 	case MONO_TYPE_CHAR:
-		*(gunichar2*)addr = decode_int (buf, &buf, limit);
+		*(gunichar2*)addr = GINT_TO_UNICHAR2 (decode_int (buf, &buf, limit));
 		break;
 	case MONO_TYPE_I1:
-		*(gint8*)addr = decode_int (buf, &buf, limit);
+		*(gint8*)addr = GINT_TO_INT8 (decode_int (buf, &buf, limit));
 		break;
 	case MONO_TYPE_U1:
-		*(guint8*)addr = decode_int (buf, &buf, limit);
+		*(guint8*)addr = GINT_TO_UINT8 (decode_int (buf, &buf, limit));
 		break;
 	case MONO_TYPE_I2:
-		*(gint16*)addr = decode_int (buf, &buf, limit);
+		*(gint16*)addr = GINT_TO_INT16 (decode_int (buf, &buf, limit));
 		break;
 	case MONO_TYPE_U2:
-		*(guint16*)addr = decode_int (buf, &buf, limit);
+		*(guint16*)addr = GINT_TO_UINT16 (decode_int (buf, &buf, limit));
 		break;
 	case MONO_TYPE_I4:
-		*(gint32*)addr = decode_int (buf, &buf, limit);
+		*(gint32*)addr = GINT_TO_INT32 (decode_int (buf, &buf, limit));
 		break;
 	case MONO_TYPE_U4:
-		*(guint32*)addr = decode_int (buf, &buf, limit);
+		*(guint32*)addr = GINT_TO_UINT32 (decode_int (buf, &buf, limit));
 		break;
 	case MONO_TYPE_I8:
 		*(gint64*)addr = decode_long (buf, &buf, limit);
 		break;
 	case MONO_TYPE_U8:
-		*(guint64*)addr = decode_long (buf, &buf, limit);
+		*(guint64*)addr = GINT64_TO_UINT64 (decode_long (buf, &buf, limit));
 		break;
 	case MONO_TYPE_R4:
-		*(guint32*)addr = decode_int (buf, &buf, limit);
+		*(guint32*)addr = GINT_TO_UINT32 (decode_int (buf, &buf, limit));
 		break;
 	case MONO_TYPE_R8:
-		*(guint64*)addr = decode_long (buf, &buf, limit);
+		*(guint64*)addr = GINT64_TO_UINT64 (decode_long (buf, &buf, limit));
 		break;
 	case MONO_TYPE_PTR:
 	case MONO_TYPE_FNPTR:
 		/* We send these as I8, so we get them back as such */
 		g_assert (type == MONO_TYPE_I8);
-		*(gssize*)addr = decode_long (buf, &buf, limit);
+		*(gssize*)addr = GINT64_TO_SSIZE (decode_long (buf, &buf, limit));
 		break;
 	case MONO_TYPE_GENERICINST:
 		if (MONO_TYPE_ISSTRUCT (t)) {
@@ -5704,7 +5710,7 @@ set_var (MonoType *t, MonoDebugVarInfo *var, MonoContext *ctx, MonoDomain *domai
 			v = is_signed ? *(gint32*)val : *(guint32*)val;
 			break;
 		case 8:
-			v = is_signed ? *(gint64*)val : *(guint64*)val;
+			v = is_signed ? GINT64_TO_HMREG (*(gint64*)val) : GUINT64_TO_HMREG (*(guint64*)val);
 			break;
 		default:
 			g_assert_not_reached ();
@@ -6492,8 +6498,8 @@ send_enc_delta (MonoImage *image, gconstpointer dmeta_bytes, int32_t dmeta_len, 
 
 		EnCInfo info;
 		info.image = image;
-		info.meta_bytes = dpdb_bytes;
-		info.meta_len = dpdb_len;
+		info.meta_bytes = dmeta_bytes;
+		info.meta_len = dmeta_len;
 		info.pdb_bytes = dpdb_bytes;
 		info.pdb_len = dpdb_len;
 
@@ -7094,7 +7100,7 @@ event_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				method = decode_methodid (p, &p, end, &domain, &err);
 				if (err != ERR_NONE)
 					return err;
-				location = decode_long (p, &p, end);
+				location = GINT64_TO_LONG (decode_long (p, &p, end));
 			} else if (mod == MOD_KIND_STEP) {
 				step_thread_id = decode_id (p, &p, end);
 				size = (StepSize)decode_int (p, &p, end);
@@ -7820,9 +7826,6 @@ static int get_static_field_value(MonoClassField* f, MonoClass* klass, MonoDomai
 	vtable = mono_class_vtable_checked(m_field_get_parent (f), error);
 	if (!is_ok(error))
 		return -1;
-
-	/* TODO: metadata-update.  implement support for added fields */
-	g_assert (!m_field_is_from_update (f));
 
 	if (CHECK_ICORDBG (TRUE))
 	{
@@ -9016,7 +9019,7 @@ thread_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 			 * conditional code in the client, since a frame whose type isn't
 			 * FRAME_TYPE_MANAGED has no method, location, etc.
 			 */
-			buffer_add_byte (buf, tls->frames [i]->flags);
+			buffer_add_byte (buf, GINT_TO_UINT8 (tls->frames [i]->flags));
 		}
 		break;
 	}
@@ -9057,7 +9060,7 @@ thread_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		if (tls->frame_count == 0 || tls->frames [0]->actual_method != method)
 			return ERR_INVALID_ARGUMENT;
 
-		found_sp = mono_find_seq_point (method, il_offset, &seq_points, &sp);
+		found_sp = mono_find_seq_point (method, GINT64_TO_INT32 (il_offset), &seq_points, &sp);
 
 		g_assert (seq_points);
 
@@ -9519,8 +9522,8 @@ string_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		buffer_add_long (buf, mono_string_length_internal (str));
 		break;
 	case CMD_STRING_REF_GET_CHARS:
-		index = decode_long (p, &p, end);
-		length = decode_long (p, &p, end);
+		index = GINT64_TO_INT (decode_long (p, &p, end));
+		length = GINT64_TO_INT (decode_long (p, &p, end));
 		if (index > mono_string_length_internal (str) - length)
 			return ERR_INVALID_ARGUMENT;
 		c = mono_string_chars_internal (str) + index;
@@ -10066,7 +10069,7 @@ wait_for_attach (void)
 	MONO_REQ_GC_UNSAFE_MODE;
 
 #ifndef DISABLE_SOCKET_TRANSPORT
-	if (listen_fd == -1) {
+	if (listen_fd == INVALID_SOCKET) {
 		PRINT_DEBUG_MSG (1, "[dbg] Invalid listening socket\n");
 		return FALSE;
 	}
@@ -10076,8 +10079,8 @@ wait_for_attach (void)
 	conn_fd = socket_transport_accept (listen_fd);
 	MONO_EXIT_GC_SAFE;
 
-	PRINT_DEBUG_MSG (1, "Accepted connection on %d\n", conn_fd);
-	if (conn_fd == -1) {
+	PRINT_DEBUG_MSG (1, "Accepted connection on %d\n", (int)conn_fd);
+	if (conn_fd == INVALID_SOCKET) {
 		PRINT_DEBUG_MSG (1, "[dbg] Bad client connection\n");
 		return FALSE;
 	}

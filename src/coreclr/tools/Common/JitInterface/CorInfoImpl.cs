@@ -180,11 +180,11 @@ namespace Internal.JitInterface
             _unmanagedCallbacks = GetUnmanagedCallbacks();
         }
 
-        public TextWriter Log
+        private Logger Logger
         {
             get
             {
-                return _compilation.Logger.Writer;
+                return _compilation.Logger;
             }
         }
 
@@ -2707,8 +2707,7 @@ namespace Internal.JitInterface
             }
 
             // If both sides are arrays, then the result is either an array or g_pArrayClass.  The above is
-            // actually true about the element type for references types, but I think that that is a little
-            // excessive for sanity.
+            // actually true for reference types as well, but it is a little excessive to deal with.
             if (type1.IsArray && type2.IsArray)
             {
                 TypeDesc arrayClass = _compilation.TypeSystemContext.GetWellKnownType(WellKnownType.Array);
@@ -3466,8 +3465,8 @@ namespace Internal.JitInterface
 
         private int doAssert(byte* szFile, int iLine, byte* szExpr)
         {
-            Log.WriteLine(Marshal.PtrToStringAnsi((IntPtr)szFile) + ":" + iLine);
-            Log.WriteLine(Marshal.PtrToStringAnsi((IntPtr)szExpr));
+            Logger.LogMessage(Marshal.PtrToStringAnsi((IntPtr)szFile) + ":" + iLine);
+            Logger.LogMessage(Marshal.PtrToStringAnsi((IntPtr)szExpr));
 
             return 1;
         }

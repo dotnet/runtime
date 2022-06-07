@@ -161,6 +161,37 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 gboolean
 mono_arch_opcode_supported (int opcode)
 {
+	switch (opcode) {
+	case OP_ATOMIC_ADD_I4:
+	case OP_ATOMIC_ADD_I8:
+	case OP_ATOMIC_EXCHANGE_I4:
+	case OP_ATOMIC_EXCHANGE_I8:
+	case OP_ATOMIC_CAS_I4:
+	case OP_ATOMIC_CAS_I8:
+	case OP_ATOMIC_LOAD_I1:
+	case OP_ATOMIC_LOAD_I2:
+	case OP_ATOMIC_LOAD_I4:
+	case OP_ATOMIC_LOAD_I8:
+	case OP_ATOMIC_LOAD_U1:
+	case OP_ATOMIC_LOAD_U2:
+	case OP_ATOMIC_LOAD_U4:
+	case OP_ATOMIC_LOAD_U8:
+	case OP_ATOMIC_LOAD_R4:
+	case OP_ATOMIC_LOAD_R8:
+	case OP_ATOMIC_STORE_I1:
+	case OP_ATOMIC_STORE_I2:
+	case OP_ATOMIC_STORE_I4:
+	case OP_ATOMIC_STORE_I8:
+	case OP_ATOMIC_STORE_U1:
+	case OP_ATOMIC_STORE_U2:
+	case OP_ATOMIC_STORE_U4:
+	case OP_ATOMIC_STORE_U8:
+	case OP_ATOMIC_STORE_R4:
+	case OP_ATOMIC_STORE_R8:
+		return TRUE;
+	default:
+		return FALSE;
+	}
 	return FALSE;
 }
 
@@ -548,6 +579,7 @@ mono_thread_state_init_from_handle (MonoThreadUnwindState *tctx, MonoThreadInfo 
 EMSCRIPTEN_KEEPALIVE void
 mono_set_timeout_exec (void)
 {
+	MONO_ENTER_GC_UNSAFE;
 	ERROR_DECL (error);
 
 	static MonoMethod *method = NULL;
@@ -576,6 +608,7 @@ mono_set_timeout_exec (void)
 		g_printerr ("timeout callback threw a %s\n", type_name);
 		g_free (type_name);
 	}
+	MONO_EXIT_GC_UNSAFE;
 }
 
 #endif

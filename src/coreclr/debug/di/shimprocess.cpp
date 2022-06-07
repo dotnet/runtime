@@ -932,7 +932,7 @@ CordbWin32EventThread * ShimProcess::GetWin32EventThread()
 
 
 // Trivial accessor to mark whether we're interop-debugging.
-// Retreived via code:ShimProcess::IsInteropDebugging
+// Retrieved via code:ShimProcess::IsInteropDebugging
 void ShimProcess::SetIsInteropDebugging(bool fIsInteropDebugging)
 {
     m_fIsInteropDebugging = fIsInteropDebugging;

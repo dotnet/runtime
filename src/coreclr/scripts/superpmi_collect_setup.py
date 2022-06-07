@@ -156,15 +156,24 @@ native_binaries_to_ignore = [
     "mscorrc.dll",
     "msdia140.dll",
     "msquic.dll",
+    "msvcp140.dll",
+    "vcruntime140.dll",
+    "vcruntime140_1.dll",
     "R2RDump.exe",
     "R2RTest.exe",
     "superpmi.exe",
     "superpmi-shim-collector.dll",
     "superpmi-shim-counter.dll",
     "superpmi-shim-simple.dll",
+    "System.CommandLine.resources.dll", # Managed, but uninteresting
     "System.IO.Compression.Native.dll",
     "ucrtbase.dll",
     "xunit.console.exe",
+
+    # The following cause VM asserts. Disabling to attempt to fix periodic SPMI collection pipeline failures.
+    # Tracked by: https://github.com/dotnet/runtime/issues/70293
+    "System.Runtime.InteropServices.Tests.dll", # libraries test
+    "DllImportPathTest.dll", # coreclr test
 ]
 
 MAX_FILES_COUNT = 1500
@@ -253,13 +262,13 @@ def get_files_sorted_by_size(src_directory, exclude_directories, exclude_files):
         return pair
 
     filename_with_size = []
+    exclude_files_lower = [filename.lower() for filename in exclude_files]
 
     for file_path, dirs, files in os.walk(src_directory, topdown=True):
         # Credit: https://stackoverflow.com/a/19859907
         dirs[:] = [d for d in dirs if d not in exclude_directories]
         for name in files:
             # Make the exclude check case-insensitive
-            exclude_files_lower = [filename.lower() for filename in exclude_files]
             if name.lower() in exclude_files_lower:
                 continue
             curr_file_path = os.path.join(file_path, name)

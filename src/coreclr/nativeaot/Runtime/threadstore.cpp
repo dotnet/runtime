@@ -213,9 +213,6 @@ void ThreadStore::SuspendAllThreads(bool waitForGCEvent)
     // set the global trap for pinvoke leave and return
     RhpTrapThreads |= (uint32_t)TrapThreadsFlags::TrapThreads;
 
-    // Set each module's loop hijack flag
-    GetRuntimeInstance()->SetLoopHijackFlags(RhpTrapThreads);
-
     // Our lock-free algorithm depends on flushing write buffers of all processors running RH code.  The
     // reason for this is that we essentially implement Dekker's algorithm, which requires write ordering.
     PalFlushProcessWriteBuffers();
@@ -232,8 +229,7 @@ void ThreadStore::SuspendAllThreads(bool waitForGCEvent)
 
             if (!pTargetThread->CacheTransitionFrameForSuspend())
             {
-                // We drive all threads to preemptive mode by hijacking them with both a
-                // return-address hijack and loop hijacks.
+                // We drive all threads to preemptive mode by hijacking them with return-address hijack.
                 keepWaiting = true;
                 pTargetThread->Hijack();
             }
@@ -277,9 +273,6 @@ void ThreadStore::ResumeAllThreads(bool waitForGCEvent)
     END_FOREACH_THREAD
 
     RhpTrapThreads &= ~(uint32_t)TrapThreadsFlags::TrapThreads;
-
-    // Reset module's hijackLoops flag
-    GetRuntimeInstance()->SetLoopHijackFlags(0);
 
     RhpSuspendingThread = NULL;
     if (waitForGCEvent)
@@ -380,7 +373,7 @@ DECLSPEC_THREAD ThreadBuffer tls_CurrentThread =
     { 0 },                              // m_rgbAllocContextBuffer
     Thread::TSF_Unknown,                // m_ThreadStateFlags
     TOP_OF_STACK_MARKER,                // m_pTransitionFrame
-    TOP_OF_STACK_MARKER,                // m_pHackPInvokeTunnel
+    TOP_OF_STACK_MARKER,                // m_pDeferredTransitionFrame
     0,                                  // m_pCachedTransitionFrame
     0,                                  // m_pNext
     INVALID_HANDLE_VALUE,               // m_hPalThread

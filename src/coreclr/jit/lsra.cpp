@@ -677,17 +677,16 @@ LinearScan::LinearScan(Compiler* theCompiler)
     availableFloatRegs  = RBM_ALLFLOAT;
     availableDoubleRegs = RBM_ALLDOUBLE;
 
-#ifdef TARGET_AMD64
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
     if (compiler->opts.compDbgEnC)
     {
-        // On x64 when the EnC option is set, we always save exactly RBP, RSI and RDI.
-        // RBP is not available to the register allocator, so RSI and RDI are the only
-        // callee-save registers available.
-        availableIntRegs &= ~RBM_CALLEE_SAVED | RBM_RSI | RBM_RDI;
+        // When the EnC option is set we have an exact set of registers that we always save
+        // that are also available in future versions.
+        availableIntRegs &= ~RBM_CALLEE_SAVED | RBM_ENC_CALLEE_SAVED;
         availableFloatRegs &= ~RBM_CALLEE_SAVED;
         availableDoubleRegs &= ~RBM_CALLEE_SAVED;
     }
-#endif // TARGET_AMD64
+#endif // TARGET_AMD64 || TARGET_ARM64
     compiler->rpFrameType           = FT_NOT_SET;
     compiler->rpMustCreateEBPCalled = false;
 
@@ -2270,7 +2269,7 @@ void LinearScan::checkLastUses(BasicBlock* block)
 //
 // Arguments:
 //    block                 - The block for which we're selecting a predecesor.
-//    prevBlock             - The previous block in in allocation order.
+//    prevBlock             - The previous block in allocation order.
 //    pPredBlockIsAllocated - A debug-only argument that indicates whether any of the predecessors have been seen
 //                            in allocation order.
 //
@@ -2696,6 +2695,7 @@ bool LinearScan::isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPo
             }
             break;
         }
+
         case GT_CNS_DBL:
         {
             // For floating point constants, the values must be identical, not simply compare
@@ -2707,6 +2707,12 @@ bool LinearScan::isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPo
             }
             break;
         }
+
+        case GT_CNS_VEC:
+        {
+            return GenTreeVecCon::Equals(refPosition->treeNode->AsVecCon(), otherTreeNode->AsVecCon());
+        }
+
         default:
             break;
     }
@@ -10272,7 +10278,7 @@ bool LinearScan::IsResolutionMove(GenTree* node)
 //
 bool LinearScan::IsResolutionNode(LIR::Range& containingRange, GenTree* node)
 {
-    for (;;)
+    while (true)
     {
         if (IsResolutionMove(node))
         {

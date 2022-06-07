@@ -69,7 +69,7 @@ namespace System.Text.Json
         /// <summary>
         /// Holds the value of $type of the currently read object
         /// </summary>
-        public string? PolymorphicTypeDiscriminator;
+        public object? PolymorphicTypeDiscriminator;
 
         /// <summary>
         /// Global flag indicating whether we can read preserved references.
