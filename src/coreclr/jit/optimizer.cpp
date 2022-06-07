@@ -443,7 +443,7 @@ void Compiler::optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmar
 #endif // DEBUG
         };
 
-        if (block == loop.lpEntry || block == loop.lpBottom)
+        if ((block == loop.lpEntry) || (block == loop.lpBottom) || (block == loop.lpTop))
         {
             reportBefore();
             optMarkLoopRemoved(loopNum);
