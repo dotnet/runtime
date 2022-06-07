@@ -90,14 +90,14 @@ namespace DependencyLogViewer
             g.Nodes.Add(index, n);
         }
 
-        public void AddEdgeToGraph(int pid, int id, int edge1, int edge2, string reason)
+        public void AddEdgeToGraph(int pid, int id, int source, int target, string reason)
         {
             Graph g = GetGraph(pid, id);
             if (g == null)
                 return;
 
-            Node dependent = g.Nodes[edge1];
-            Node dependee = g.Nodes[edge2];
+            Node dependent = g.Nodes[source];
+            Node dependee = g.Nodes[target];
 
             dependent.Dependencies.Add(new KeyValuePair<Node, string>(dependee, reason));
             dependee.Dependents.Add(new KeyValuePair<Node, string>(dependent, reason));
@@ -148,17 +148,16 @@ namespace DependencyLogViewer
     }
     class DGMLGraphProcessing
     {
-        
         public static DGMLGraphProcessing Singleton;
-
+        int fileCount = 0;
         ConcurrentQueue<GraphEvent> events = new ConcurrentQueue<GraphEvent>();
 
         public DGMLGraphProcessing(string filePath)
         {
-            Thread t = new Thread(FileReadingThread);
-            t.Start(filePath);
-
+            System.IO.Stream FileStream = FindXML(filePath);
+            FileReading(FileStream);
         }
+
         public System.IO.Stream FindXML(string fp)
         {
             var fileContent = string.Empty;
@@ -184,10 +183,12 @@ namespace DependencyLogViewer
             }
             return fileStream;
         }
-        public void FileReadingThread(System.IO.Stream fileStream)
+        public void FileReading(System.IO.Stream fileStream)
         {
+            GraphCollection collection = GraphCollection.Singleton;
             XmlReaderSettings settings = new XmlReaderSettings();
             settings.IgnoreWhitespace = true;
+            int linkId = 0;
 
             using (XmlReader reader = XmlReader.Create(fileStream, settings))
             {
@@ -195,23 +196,27 @@ namespace DependencyLogViewer
                 {
                     if (!(reader.Name.StartsWith("P")))
                     {
+                        IXmlLineInfo lineInfo = (IXmlLineInfo)reader;
+                        int lineNumber = lineInfo.LineNumber;
                         switch (reader.NodeType)
                         {
                             case XmlNodeType.Element:
-                                if (reader.Name.EndsWith("s"))
+                                if (reader.Name == "Node")
                                 {
-                                    Console.WriteLine("Begin {0}", reader.Name);
+                                    int id = int.Parse(reader.GetAttribute("Id"));
+                                    collection.AddNodeToGraph(fileCount, id, lineNumber, reader.GetAttribute("Label"));
                                 }
-                                else
+                                else if (reader.Name == "Link")
                                 {
-                                    //String id = reader.GetAttribute("Id");
-                                    //String src = reader.GetAttribute("Source");
-                                    //Console.WriteLine("{0}: {1} {2}", reader.Name, id, src);
-
+                                    int source = int.Parse(reader.GetAttribute("Source"));
+                                    int target = int.Parse(reader.GetAttribute("Target"));
+                                    collection.AddEdgeToGraph(fileCount, linkId, source, target, reader.GetAttribute("Reason"));
                                 }
+                                else if (reader.Name == "DirectedGraph")
+                                {
+                                    collection.AddGraph(fileCount, fileCount, reader.GetAttribute("xmlns"));
                                 break;
-                            case XmlNodeType.EndElement:
-                                Console.WriteLine("End {0}", reader.Name);
+                        }
                                 break;
                             default:
                                 break;
@@ -219,9 +224,15 @@ namespace DependencyLogViewer
                     }
 
                 }
+                fileCount -= 1;
             }
         }
+        public void Stop()
+        {
+            //stopped = true;
+        }
     }
+
     class ETWGraphProcessing
     {
         public static ETWGraphProcessing Singleton;
@@ -352,13 +363,14 @@ namespace DependencyLogViewer
         [STAThread]
         static int Main(string[] args)
         {
+            string argPath = string.Empty;
             if (args.Length == 0)
             {
-                string argPath = "c:\\Users";
+                argPath = "c:\\Users";
             }
             else
             {
-                string argPath = args[0];
+                argPath = args[0];
             }
             
             string message = "Use ETW events?";
@@ -377,6 +389,7 @@ namespace DependencyLogViewer
 
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
+
 
             GraphCollection.DependencyGraphsUI = new DependencyGraphs();
             if (result == System.Windows.Forms.DialogResult.Yes)
