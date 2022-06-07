@@ -3818,9 +3818,11 @@ emit_gc_pin (EmitContext *ctx, LLVMBuilderRef builder, int vreg)
 {
 	if (ctx->values [vreg] == LLVMConstNull (IntPtrType ()))
 		return;
+#if 0
 	MonoInst *var = get_vreg_to_inst (ctx->cfg, vreg);
 	if (var && var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT|MONO_INST_IS_DEAD))
 		return;
+#endif
 	LLVMValueRef index0 = const_int32 (0);
 	LLVMValueRef index1 = const_int32 (ctx->gc_var_indexes [vreg] - 1);
 	LLVMValueRef indexes [] = { index0, index1 };
@@ -3861,11 +3863,15 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 	int ngc_vars = 0;
 	for (int i = 0; i < cfg->next_vreg; ++i) {
 		if (vreg_is_ref (cfg, i)) {
+			ctx->gc_var_indexes [i] = ngc_vars + 1;
+			ngc_vars ++;
+			/*
 			MonoInst *var = get_vreg_to_inst (ctx->cfg, i);
 			if (!(var && var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT|MONO_INST_IS_DEAD))) {
 				ctx->gc_var_indexes [i] = ngc_vars + 1;
 				ngc_vars ++;
 			}
+			*/
 		}
 	}
 
@@ -4114,17 +4120,16 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 
 #ifdef TARGET_WASM
 	/*
+	 * FIXME:
 	 * Storing ref arguments to the pin area is not needed
 	 * since it's done by the caller.
 	 */
-	/*
 	for (int i = 0; i < cfg->num_varinfo; ++i) {
 		MonoInst *var = cfg->varinfo [i];
 
 		if (var->opcode == OP_ARG && vreg_is_ref (cfg, var->dreg) && ctx->values [var->dreg])
 			emit_gc_pin (ctx, builder, var->dreg);
 	}
-	*/
 #endif
 
 	if (cfg->deopt) {
@@ -11294,7 +11299,8 @@ MONO_RESTORE_WARNING
 			if (!skip_volatile_store)
 				emit_volatile_store (ctx, ins->dreg);
 #ifdef TARGET_WASM
-			if (vreg_is_ref (cfg, ins->dreg) && ctx->values [ins->dreg] && ins->opcode != OP_MOVE)
+			//if (vreg_is_ref (cfg, ins->dreg) && ctx->values [ins->dreg] && ins->opcode != OP_MOVE)
+			if (vreg_is_ref (cfg, ins->dreg) && ctx->values [ins->dreg])
 				emit_gc_pin (ctx, builder, ins->dreg);
 #endif
 		}
