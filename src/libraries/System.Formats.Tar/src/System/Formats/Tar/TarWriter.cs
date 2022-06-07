@@ -21,6 +21,16 @@ namespace System.Formats.Tar
         private readonly IEnumerable<KeyValuePair<string, string>>? _globalExtendedAttributes;
 
         /// <summary>
+        /// Initializes a <see cref="TarWriter"/> instance that can write tar entries to the specified stream and closes the <paramref name="archiveStream"/> upon disposal of this instance.
+        /// </summary>
+        /// <param name="archiveStream">The stream to write to.</param>
+        /// <remarks>When using this constructor, <see cref="TarEntryFormat.Pax"/> is used as the default format of the entries written to the archive using the <see cref="WriteEntry(string, string?)"/> method.</remarks>
+        public TarWriter(Stream archiveStream)
+            : this(archiveStream, TarEntryFormat.Pax, leaveOpen: false)
+        {
+        }
+
+        /// <summary>
         /// Initializes a <see cref="TarWriter"/> instance that can write tar entries to the specified stream, optionally leave the stream open upon disposal of this instance, and can optionally add a Global Extended Attributes entry at the beginning of the archive. When using this constructor, the format of the resulting archive is <see cref="TarEntryFormat.Pax"/>.
         /// </summary>
         /// <param name="archiveStream">The stream to write to.</param>
@@ -33,17 +43,16 @@ namespace System.Formats.Tar
         }
 
         /// <summary>
-        /// Initializes a <see cref="TarWriter"/> instance that can write tar entries to the specified stream, optionally leave the stream open upon disposal of this instance, and can specify the format of the underlying archive.
+        /// Initializes a <see cref="TarWriter"/> instance that can write tar entries to the specified stream, optionally leaves the stream open upon disposal of this instance, and can optionally specify the preferred default format when writing entries using the <see cref="WriteEntry(string, string?)"/> method.
         /// </summary>
         /// <param name="archiveStream">The stream to write to.</param>
-        /// <param name="archiveFormat">The format of the archive.</param>
-        /// <param name="leaveOpen"><see langword="false"/> to dispose the <paramref name="archiveStream"/> when this instance is disposed; <see langword="true"/> to leave the stream open.</param>
-        /// <remarks><para>If the selected <paramref name="archiveFormat"/> is <see cref="TarEntryFormat.Pax"/>, no Global Extended Attributes entry is written. To write a PAX archive with a Global Extended Attributes entry inserted at the beginning of the archive, use the <see cref="TarWriter(Stream, IEnumerable{KeyValuePair{string, string}}?, bool)"/> constructor instead.</para>
-        /// <para>The recommended format is <see cref="TarEntryFormat.Pax"/> for its flexibility.</para></remarks>
+        /// <param name="archiveFormat">The preferred default format when writing entries to the archive using the <see cref="WriteEntry(string, string?)"/> method. The default value is <see cref="TarEntryFormat.Pax"/>.</param>
+        /// <param name="leaveOpen"><see langword="false"/> to dispose the <paramref name="archiveStream"/> when this instance is disposed; <see langword="true"/> to leave the stream open. The default is <see langword="false"/>.</param>
+        /// <remarks>The recommended format is <see cref="TarEntryFormat.Pax"/> for its flexibility.</remarks>
         /// <exception cref="ArgumentNullException"><paramref name="archiveStream"/> is <see langword="null"/>.</exception>
         /// <exception cref="IOException"><paramref name="archiveStream"/> is unwritable.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="archiveFormat"/> is either <see cref="TarEntryFormat.Unknown"/>, or not one of the other enum values.</exception>
-        public TarWriter(Stream archiveStream, TarEntryFormat archiveFormat, bool leaveOpen = false)
+        public TarWriter(Stream archiveStream, TarEntryFormat archiveFormat = TarEntryFormat.Pax, bool leaveOpen = false)
         {
             ArgumentNullException.ThrowIfNull(archiveStream);
 
@@ -67,7 +76,7 @@ namespace System.Formats.Tar
         }
 
         /// <summary>
-        /// The format of the archive.
+        /// The preferred default format of the entries when writing entries to the archive using the <see cref="WriteEntry(string, string?)"/> method.
         /// </summary>
         public TarEntryFormat Format { get; private set; }
 
@@ -165,8 +174,6 @@ namespace System.Formats.Tar
         {
             ThrowIfDisposed();
 
-            TarHelpers.VerifyEntryTypeIsSupported(entry.EntryType, Format, invokingFromWriteEntry: true);
-
             WriteGlobalExtendedAttributesEntryIfNeeded();
 
             byte[] rented = ArrayPool<byte>.Shared.Rent(minimumLength: TarHelpers.RecordSize);
@@ -174,7 +181,7 @@ namespace System.Formats.Tar
             buffer.Clear(); // Rented arrays aren't clean
             try
             {
-                switch (Format)
+                switch (entry.Format)
                 {
                     case TarEntryFormat.V7:
                         entry._header.WriteAsV7(_archiveStream, buffer);

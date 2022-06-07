@@ -61,6 +61,11 @@ namespace System.Formats.Tar
         public TarEntryType EntryType => _header._typeFlag;
 
         /// <summary>
+        /// The format of the entry.
+        /// </summary>
+        public TarEntryFormat Format => _header._format;
+
+        /// <summary>
         /// The ID of the group that owns the file represented by this entry.
         /// </summary>
         /// <remarks>This field is only supported in Unix platforms.</remarks>
