@@ -46,7 +46,15 @@ namespace DependencyLogViewer
 
         protected override void OnHandleDestroyed(EventArgs e)
         {
-            GraphProcessing.Singleton.Stop();
+            if (ETWGraphProcessing.Singleton is not null)
+            {
+                ETWGraphProcessing.Singleton.Stop();
+            }
+            if (DGMLGraphProcessing.Singleton is not null)
+            {
+                DGMLGraphProcessing.Singleton.Stop();
+            }
+            
             Application.Exit();
         }
 
