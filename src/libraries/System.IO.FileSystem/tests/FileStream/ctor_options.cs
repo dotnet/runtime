@@ -184,15 +184,12 @@ namespace System.IO.Tests
         [MemberData(nameof(TestUnixFileModes))]
         public void CreateWithUnixFileMode(UnixFileMode mode)
         {
-            // tmpfs gets mounted with nosuid for security.
-            // The filesystem will then filter out the setuid and setgid bits.
-            mode &= ~(UnixFileMode.SetUser | UnixFileMode.SetGroup);
-
             string filename = GetTestFilePath();
             FileStream fs = CreateFileStream(filename, FileMode.CreateNew, FileAccess.Write, FileShare.None, bufferSize: 1, FileOptions.None, preallocationSize: 0, mode);
             fs.Dispose();
 
-            UnixFileMode expectedMode = mode & ~GetUmask();
+            UnixFileMode expectedMode = mode & ~GetUmask() &
+                                        ~(UnixFileMode)(PlatformDetection.IsBsdLike ? UnixFileMode.StickyBit : UnixFileMode.None);;
             UnixFileMode actualMode = File.GetUnixFileMode(filename);
             Assert.Equal(expectedMode, actualMode);
         }

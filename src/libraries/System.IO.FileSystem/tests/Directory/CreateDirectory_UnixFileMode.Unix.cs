@@ -22,7 +22,9 @@ namespace System.IO.Tests
             DirectoryInfo di = Directory.CreateDirectory(path, mode);
 
             // under Linux the created directory gets mode (mode & ~umask & 01777)
-            UnixFileMode expectedMode = mode & ~GetUmask() & (UnixFileMode)0b1_111_111_111;
+            // under OSX, it seems to be (mode & ~umask & 01777).
+            UnixFileMode expectedMode = mode & ~GetUmask() &
+                                        (UnixFileMode)(PlatformDetection.IsBsdLike ? 0b111_111_111 : 0b1_111_111_111);
             Assert.Equal(expectedMode, di.UnixFileMode);
         }
 
