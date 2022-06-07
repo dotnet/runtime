@@ -47,6 +47,23 @@ public class NativeLibraryTests : IDisposable
     }
 
     [Fact]
+    [PlatformSpecific(TestPlatforms.Windows)]
+    public void LoadLibraryRelativePaths()
+    {
+        {
+            string libName = "../InvalidPath/InvalidPath.dll";
+            EXPECT(LoadLibrary_NameOnly(libName), TestResult.DllNotFound);
+            EXPECT(TryLoadLibrary_NameOnly(libName), TestResult.ReturnFailure);
+        }
+
+        {
+            string libName = $"..\\{nameof(NativeLibraryTests)}\\{NativeLibraryToLoad.GetLibraryFileName(NativeLibraryToLoad.Name)}";
+            EXPECT(LoadLibrary_NameOnly(libName), TestResult.Success);
+            EXPECT(TryLoadLibrary_NameOnly(libName), TestResult.Success);
+        }
+    }
+
+    [Fact]
     public void LoadLibraryFullPath_WithAssembly()
     {
         string libName = libFullPath;
@@ -105,15 +122,6 @@ public class NativeLibraryTests : IDisposable
         // DllImport doesn't add a prefix if the name is preceeded by a path specification.
         // Linux and Mac need both prefix and suffix
         string libName = Path.Combine(testBinDir, NativeLibraryToLoad.Name);
-        EXPECT(LoadLibrary_WithAssembly(libName, assembly, null), TestResult.DllNotFound);
-        EXPECT(TryLoadLibrary_WithAssembly(libName, assembly, null), TestResult.ReturnFailure);
-    }
-
-    [Fact]
-    [PlatformSpecific(TestPlatforms.Windows)]
-    public void LoadLibraryInvalidPath_Failure()
-    {
-        string libName = "../InvalidPath/InvalidPath.dll";
         EXPECT(LoadLibrary_WithAssembly(libName, assembly, null), TestResult.DllNotFound);
         EXPECT(TryLoadLibrary_WithAssembly(libName, assembly, null), TestResult.ReturnFailure);
     }

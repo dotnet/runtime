@@ -59,10 +59,6 @@ LoadLibraryExWrapper(
         if (LongFile::IsPathNotFullyQualified(path) || SUCCEEDED(LongFile::NormalizePath(path)))
         {
 #ifdef HOST_WINDOWS
-            // Ensure relative paths which are not just filenames are not used for LoadLibrary calls.
-            if (LongFile::IsPathNotFullyQualified(path) && LongFile::ContainsDirectorySeparator(path))
-                ThrowHR(HRESULT_FROM_WIN32(ERROR_BAD_PATHNAME));
-
             LongFile::NormalizeDirectorySeparators(path);
 #endif //HOST_WINDOWS
 
