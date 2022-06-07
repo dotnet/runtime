@@ -37,7 +37,7 @@ namespace System.Formats.Tar
         /// Initializes a new <see cref="GnuTarEntry"/> instance by converting the specified <paramref name="other"/> entry into the GNU format.
         /// </summary>
         public GnuTarEntry(TarEntry other)
-            : base(other._header, other._readerOfOrigin!)
+            : this(other._header, other._readerOfOrigin!)
         {
             if (_header._typeFlag == TarEntryType.V7RegularFile)
             {

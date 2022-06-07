@@ -36,7 +36,7 @@ namespace System.Formats.Tar
         /// Initializes a new <see cref="UstarTarEntry"/> instance by converting the specified <paramref name="other"/> entry into the Ustar format.
         /// </summary>
         public UstarTarEntry(TarEntry other)
-            : base(other._header, other._readerOfOrigin!)
+            : this(other._header, other._readerOfOrigin!)
         {
             if (_header._typeFlag == TarEntryType.V7RegularFile)
             {
