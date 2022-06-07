@@ -1163,11 +1163,11 @@ namespace DebuggerTests
                    ("list?.Count", TNumber(1)),
                    ("listNull", TObject("System.Collections.Generic.List<int>", is_null: true)),
                    ("listNull?.Count", TObject("System.Collections.Generic.List<int>", is_null: true)),
-                   ("tc?.memberList?.Count", TNumber(2)),
-                   ("tc!.memberList?.Count", TNumber(2)),
-                   ("tc?.memberListNull?.Count", TObject("System.Collections.Generic.List<int>", is_null: true)),
-                   ("tc.memberListNull?.Count", TObject("System.Collections.Generic.List<int>", is_null: true)),
-                   ("tcNull?.memberListNull?.Count", TObject("DebuggerTests.EvaluateNullableProperties.TestClass", is_null: true)));
+                   ("tc?.MemberList?.Count", TNumber(2)),
+                   ("tc!.MemberList?.Count", TNumber(2)),
+                   ("tc?.MemberListNull?.Count", TObject("System.Collections.Generic.List<int>", is_null: true)),
+                   ("tc.MemberListNull?.Count", TObject("System.Collections.Generic.List<int>", is_null: true)),
+                   ("tcNull?.MemberListNull?.Count", TObject("DebuggerTests.EvaluateNullableProperties.TestClass", is_null: true)));
             });
 
         [ConditionalFact(nameof(RunningOnChrome))]
@@ -1177,27 +1177,30 @@ namespace DebuggerTests
             wait_for_event_fn: async (pause_location) =>
             {
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
-                var (_, res) = await EvaluateOnCallFrame(id, "listNull.Count", expect_ok: false);
-                AssertEqual("Cannot access member \"Count\" of a null-valued object.",
-                    res.Error["result"]?["description"]?.Value<string>(), "wrong error message");
-                (_, res) = await EvaluateOnCallFrame(id, "listNull!.Count", expect_ok: false);
-                AssertEqual("Cannot access member \"Count\" of a null-valued object.",
-                    res.Error["result"]?["description"]?.Value<string>(), "wrong error message");
-                (_, res) = await EvaluateOnCallFrame(id, "tcNull.memberListNull.Count", expect_ok: false);
-                AssertEqual("Cannot access member \"memberListNull\" of a null-valued object.",
-                    res.Error["result"]?["description"]?.Value<string>(), "wrong error message");
-                (_, res) = await EvaluateOnCallFrame(id, "tc.memberListNull.Count", expect_ok: false);
-                AssertEqual("Cannot access member \"Count\" of a null-valued object.",
-                    res.Error["result"]?["description"]?.Value<string>(), "wrong error message");
-                (_, res) = await EvaluateOnCallFrame(id, "tcNull?.memberListNull.Count", expect_ok: false);
-                AssertEqual("Cannot access member \"Count\" of a null-valued object.",
-                    res.Error["result"]?["description"]?.Value<string>(), "wrong error message");
-                (_, res) = await EvaluateOnCallFrame(id, "listNull?.Count.NonExistingProperty", expect_ok: false);
-                AssertEqual("Cannot access member \"NonExistingProperty\" of a null-valued object.",
-                    res.Error["result"]?["description"]?.Value<string>(), "wrong error message");
-                (_, res) = await EvaluateOnCallFrame(id, "listNull?", expect_ok: false);
-                AssertEqual("Expected expression.",
-                    res.Error["result"]?["description"]?.Value<string>(), "wrong error message");
+                await CheckEvaluateFail("list.Count.x", "Cannot find member 'x' on a primitive type");
+                await CheckEvaluateFail("listNull.Count", GetNullReferenceErrorOn("\"Count\""));
+                await CheckEvaluateFail("listNull!.Count", GetNullReferenceErrorOn("\"Count\""));
+                await CheckEvaluateFail("tcNull.MemberListNull.Count", GetNullReferenceErrorOn("\"MemberListNull\""));
+                await CheckEvaluateFail("tc.MemberListNull.Count", GetNullReferenceErrorOn("\"Count\""));
+                await CheckEvaluateFail("tcNull?.MemberListNull.Count", GetNullReferenceErrorOn("\"Count\""));
+                await CheckEvaluateFail("listNull?.Count.NonExistingProperty", GetNullReferenceErrorOn("\"NonExistingProperty\""));
+                await CheckEvaluateFail("tc?.MemberListNull! .Count", GetNullReferenceErrorOn("\"Count\""));
+                await CheckEvaluateFail("tc?. MemberListNull!.Count", GetNullReferenceErrorOn("\"Count\""));
+                await CheckEvaluateFail("tc?.MemberListNull.Count", GetNullReferenceErrorOn("\"Count\""));
+                await CheckEvaluateFail("tc! .MemberListNull!.Count", GetNullReferenceErrorOn("\"Count\""));
+                await CheckEvaluateFail("tc!.MemberListNull. Count", GetNullReferenceErrorOn("\"Count\""));
+                await CheckEvaluateFail("tcNull?.Sibling.MemberListNull?.Count", GetNullReferenceErrorOn("\"MemberListNull?\""));
+                await CheckEvaluateFail("listNull?", "Expected expression.");
+                await CheckEvaluateFail("listNull!.Count", GetNullReferenceErrorOn("\"Count\""));
+                await CheckEvaluateFail("x?.p", "Operation '?' not allowed on primitive type - 'x?'");
+
+                string GetNullReferenceErrorOn(string name) => $"Expression threw NullReferenceException trying to access {name} on a null-valued object.";
+
+                async Task CheckEvaluateFail(string expr, string message)
+                {
+                    (_, Result _res) = await EvaluateOnCallFrame(id, expr, expect_ok: false);
+                    AssertEqual(message, _res.Error["result"]?["description"]?.Value<string>(), $"Expression '{expr}' - wrong error message");
+                }
             });
 
         [Fact]

@@ -98,7 +98,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         ArraySegment<string> remaining = null;
                         if (i < parts.Count - 1)
-                            remaining = parts[(i + 1)..];
+                            remaining = parts[i..];
 
                         return (memberObject, remaining);
                     }
@@ -190,22 +190,14 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (scopeCache.ObjectFields.TryGetValue(varName, out JObject valueRet))
                 return await GetValueFromObject(valueRet, token);
 
-            ArraySegment<string> parts = new ArraySegment<string>(varName.Split(".", StringSplitOptions.TrimEntries));
-            if (parts.Count == 0 || string.IsNullOrEmpty(parts[0]))
+            string[] parts = varName.Split(".", StringSplitOptions.TrimEntries);
+            if (parts.Length == 0 || string.IsNullOrEmpty(parts[0]))
                 throw new ReturnAsErrorException($"Failed to resolve expression: {varName}", "ReferenceError");
 
             JObject retObject = await ResolveAsLocalOrThisMember(parts[0]);
-            bool hasNullCondition = parts[0][^1] == '?';
-            if (retObject != null && parts.Count > 1)
-            {
-                // cannot resolve instance member on a primitive type,
-                // try compiling to check if it's not a method on primitive
-                var typeName = retObject["className"]?.Value<string>();
-                if (MonoSDBHelper.IsPrimitiveType(typeName))
-                    return null;
-
-                retObject = await ResolveAsInstanceMember(parts[1..], retObject, hasNullCondition);
-            }
+            bool throwOnNullReference = parts[0][^1] != '?';
+            if (retObject != null && parts.Length > 1)
+                retObject = await ResolveAsInstanceMember(parts, retObject, throwOnNullReference);
 
             if (retObject == null)
             {
@@ -219,7 +211,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                     else
                     {
-                        retObject = await ResolveAsInstanceMember(remaining, retObject, hasNullCondition);
+                        retObject = await ResolveAsInstanceMember(remaining, retObject, throwOnNullReference);
                     }
                 }
             }
@@ -238,7 +230,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
 
                 // remove null-condition, otherwise TryGet by name fails
-                if (name[^1] == '?')
+                if (name[^1] == '?' || name[^1] == '!')
                     name = name.Remove(name.Length - 1);
 
                 if (scopeCache.Locals.TryGetValue(name, out JObject obj))
@@ -264,24 +256,27 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return null;
             }
 
-            async Task<JObject> ResolveAsInstanceMember(ArraySegment<string> parts, JObject baseObject, bool hasNullCondition)
+            async Task<JObject> ResolveAsInstanceMember(ArraySegment<string> parts, JObject baseObject, bool throwOnNullReference)
             {
-                // if the prevPart has "?" at the end: true
-                bool hasResolvedObjNullCondition = hasNullCondition;
-                bool isPrevPartNull = false;
                 JObject resolvedObject = baseObject;
-                for (int i = 0; i < parts.Count; i++)
+                // parts[0] - name of baseObject
+                for (int i = 1; i < parts.Count; i++)
                 {
-                    string partTrimmed = parts[i];
-                    if (partTrimmed.Length == 0)
+                    string part = parts[i];
+                    if (part.Length == 0)
                         return null;
 
+                    if (part[^1] == '!')
+                        part = part.Remove(part.Length - 1);
+
+                    bool hasCurrentPartNullCondition = part[^1] == '?';
+
                     // current value of resolvedObject is on parts[i - 1]
-                    if (isPrevPartNull || resolvedObject.IsNullValuedObject())
+                    if (resolvedObject.IsNullValuedObject())
                     {
                         // trying null.$member
-                        if (!hasResolvedObjNullCondition)
-                            throw new ReturnAsErrorException($"Cannot access member \"{partTrimmed}\" of a null-valued object.", "ReferenceError");
+                        if (throwOnNullReference)
+                            throw new ReturnAsErrorException($"Expression threw NullReferenceException trying to access \"{part}\" on a null-valued object.", "ReferenceError");
 
                         if (i == parts.Count - 1)
                         {
@@ -290,17 +285,18 @@ namespace Microsoft.WebAssembly.Diagnostics
                             // so the class/description of object are not of the last part
                             return resolvedObject;
                         }
-                        // else: trying null?.$member... - allowed operation
-                        isPrevPartNull = true;
+
+                        // check if null condition is correctly applied: should we throw or return null-object
+                        throwOnNullReference = !hasCurrentPartNullCondition;
+                        continue;
                     }
 
-                    bool hasCurrentPartNullCondition = partTrimmed.Last() == '?';
-                    hasResolvedObjNullCondition = hasCurrentPartNullCondition;
-
-                    // cannot resolve the members but can check if null condition is
-                    // correctly applied and if we should throw or return null-object
                     if (!DotnetObjectId.TryParse(resolvedObject?["objectId"]?.Value<string>(), out DotnetObjectId objectId))
-                        continue;
+                    {
+                        if (!throwOnNullReference)
+                            throw new ReturnAsErrorException($"Operation '?' not allowed on primitive type - '{parts[i - 1]}'", "ReferenceError");
+                        throw new ReturnAsErrorException($"Cannot find member '{part}' on a primitive type", "ReferenceError");
+                    }
 
                     var args = JObject.FromObject(new { forDebuggerDisplayAttribute = true });
                     ValueOrError<GetMembersResult> valueOrError = await proxy.RuntimeGetObjectMembers(sessionId, objectId, args, token);
@@ -311,15 +307,15 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
 
                     if (hasCurrentPartNullCondition)
-                        partTrimmed = partTrimmed.Remove(partTrimmed.Length - 1);
-                    JToken objRet = valueOrError.Value.FirstOrDefault(objPropAttr => objPropAttr["name"]?.Value<string>() == partTrimmed);
+                        part = part.Remove(part.Length - 1);
+                    JToken objRet = valueOrError.Value.FirstOrDefault(objPropAttr => objPropAttr["name"]?.Value<string>() == part);
                     if (objRet == null)
                         return null;
 
                     resolvedObject = await GetValueFromObject(objRet, token);
                     if (resolvedObject == null)
                         return null;
-
+                    throwOnNullReference = !hasCurrentPartNullCondition;
                 }
                 return resolvedObject;
             }

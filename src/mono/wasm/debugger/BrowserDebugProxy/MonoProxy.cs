@@ -1318,7 +1318,6 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 var resolver = new MemberReferenceResolver(this, context, msg_id, scopeId, logger);
 
-                expression = ExpressionEvaluator.RemoveNullSuppression(expression);
                 JObject retValue = await resolver.Resolve(expression, token);
                 if (retValue == null)
                 {

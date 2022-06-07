@@ -382,13 +382,6 @@ namespace Microsoft.WebAssembly.Diagnostics
             return values;
         }
 
-        internal static string RemoveNullSuppression(string expression)
-        {
-            expression = expression.Trim();
-            expression = expression.Replace("!.", ".").Replace("![", "[").Replace("!(", "(");
-            return expression;
-        }
-
         internal static async Task<JObject> CompileAndRunTheExpression(
             string expression, MemberReferenceResolver resolver, ILogger logger, CancellationToken token)
         {
