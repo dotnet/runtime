@@ -30,7 +30,7 @@ jobs:
     jobParameters:
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
       testGroup: innerloop
-      nameSuffix: LibraryTests${{ parameters.nameSuffix }}_BuildOnly
+      nameSuffix: ${{ parameters.nameSuffix }}_BuildOnly
       buildArgs: -s mono+libs+host -c $(_BuildConfig) /p:ArchiveTests=true /p:BrowserHost=$(_hostedOs) ${{ parameters.extraBuildArgs }}
       timeoutInMinutes: 240
       # always run for runtime-wasm builds (triggered manually)
