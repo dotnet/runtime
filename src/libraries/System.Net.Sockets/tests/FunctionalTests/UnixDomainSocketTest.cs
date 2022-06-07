@@ -518,7 +518,7 @@ namespace System.Net.Sockets.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformSupportsUnixDomainSockets))]
         public void AbstractPathEquality()
         {
             string abstractPath = '\0' + Guid.NewGuid().ToString();
@@ -535,7 +535,7 @@ namespace System.Net.Sockets.Tests
             Assert.NotEqual(endPoint2.GetHashCode(), endPoint3.GetHashCode());
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformSupportsUnixDomainSockets))]
         public void FilePathEquality()
         {
             string path1 = "relative" + Path.DirectorySeparatorChar + "path";
