@@ -73,6 +73,12 @@ const char* emitOffsetToLabel(unsigned offs);
 #endif // DEBUG
 
 /************************************************************************/
+/*                   Output target-independent instructions             */
+/************************************************************************/
+
+void emitIns_J(instruction ins, BasicBlock* dst, int instrCount = 0, bool isRemovableJmpCandidate = false);
+
+/************************************************************************/
 /*                   Emit initialized data sections                     */
 /************************************************************************/
 

@@ -983,6 +983,12 @@ protected:
             return (idIns() == INS_align) && (idInsOpt() == INS_OPTS_NONE);
         }
 
+        inline bool idIsEmptyJmp() const
+        {
+            return (idIns() == INS_b) && (((instrDescJmp*)this)->idjIsRemovableJmpCandidate) &&
+                   (idInsOpt() == INS_OPTS_NONE);
+        }
+
         unsigned idCodeSize() const
         {
             int size = 4;
@@ -1012,6 +1018,11 @@ protected:
                         size = 0;
                     }
                     break;
+                case IF_BI_0A:
+                    if (idIsEmptyJmp())
+                    {
+                        size = 0;
+                    }
                 default:
                     break;
             }
@@ -1539,15 +1550,10 @@ protected:
         // After emission, for forward jumps, this is the target offset -- in bytes from the
         // beginning of the function -- of the target instruction of the jump, used to
         // determine if this jump needs to be patched.
-        unsigned idjOffs :
-#if defined(TARGET_XARCH)
-            29;
+        unsigned idjOffs : 29;
         // indicates that the jump was added at the end of a BBJ_ALWAYS basic block and is
         // a candidate for being removed if it jumps to the next instruction
         unsigned idjIsRemovableJmpCandidate : 1;
-#else
-            30;
-#endif
         unsigned idjShort : 1;    // is the jump known to be a short one?
         unsigned idjKeepLong : 1; // should the jump be kept long? (used for hot to cold and cold to hot jumps)
     };
@@ -2137,18 +2143,69 @@ private:
     void emitInitIG(insGroup* ig);
     void emitInsertIGAfter(insGroup* insertAfterIG, insGroup* ig);
 
+#if defined(TARGET_XARCH)
+    //------------------------------------------------------------------------
+    // emitAlignInstHasNoCode: Returns true if the 'id' is an align instruction
+    //      that was later removed and hence has codeSize==0.
+    //
+    // Arguments:
+    //    id   -- The instruction to check
+    //
+    inline bool emitAlignInstHasNoCode(instrDesc* id)
+    {
+        return (id->idIns() == INS_align) && (id->idCodeSize() == 0);
+    }
+
+    //------------------------------------------------------------------------
+    // emitJmpInstHasNoCode: Returns true if the 'id' is a jump instruction
+    //      that was later removed and hence has codeSize==0.
+    //
+    // Arguments:
+    //    id   -- The instruction to check
+    //
+    inline bool emitJmpInstHasNoCode(instrDesc* id)
+    {
+        bool result = (id->idIns() == INS_jmp) && (id->idCodeSize() == 0);
+
+        // A zero size jump instruction can only be the one that is marked
+        // as removable candidate.
+        assert(!result || ((instrDescJmp*)id)->idjIsRemovableJmpCandidate);
+
+        return result;
+    }
+
+    //------------------------------------------------------------------------
+    // emitInstHasNoCode: Returns true if the 'id' is an instruction
+    //      that was later removed and hence has codeSize==0.
+    //      Currently it is one of `align` or `jmp`.
+    //
+    // Arguments:
+    //    id   -- The instruction to check
+    inline bool emitInstHasNoCode(instrDesc* id)
+    {
+        return emitAlignInstHasNoCode(id) || emitJmpInstHasNoCode(id);
+    }
+#else
+    //------------------------------------------------------------------------
+    // emitJmpInstHasNoCode: Returns true if the 'id' is a 'branch' instruction
+    //      that was later removed
+    //
+    // Arguments:
+    //    id   -- The instruction to check
+    //
+    inline bool emitJmpInstHasNoCode(instrDesc* id)
+    {
+        return emitIsUncondJump(id) && (((instrDescJmp*)id)->idjIsRemovableJmpCandidate) &&
+               (id->idInsOpt() == INS_OPTS_NONE);
+    }
+#endif
+
     void emitNewIG();
 
 #if !defined(JIT32_GCENCODER)
     void emitDisableGC();
     void emitEnableGC();
 #endif // !defined(JIT32_GCENCODER)
-
-#if defined(TARGET_XARCH)
-    static bool emitAlignInstHasNoCode(instrDesc* id);
-    static bool emitInstHasNoCode(instrDesc* id);
-    static bool emitJmpInstHasNoCode(instrDesc* id);
-#endif
 
     void emitGenIG(insGroup* ig);
     insGroup* emitSavIG(bool emitAdd = false);

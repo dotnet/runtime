@@ -8402,7 +8402,10 @@ void emitter::emitIns_J_R_I(instruction ins, emitAttr attr, BasicBlock* dst, reg
     appendToCurIG(id);
 }
 
-void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount)
+void emitter::emitIns_J(instruction ins,
+                        BasicBlock* dst,
+                        int         instrCount /* = 0 */,
+                        bool        isRemovableJmpCandidate /* = false */)
 {
     insFormat fmt = IF_NONE;
 
@@ -8454,6 +8457,16 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount)
 
     id->idIns(ins);
     id->idInsFmt(fmt);
+    emitContainsRemovableJmpCandidates |= isRemovableJmpCandidate;
+    if (isRemovableJmpCandidate)
+    {
+        id->idInsOpt(INS_OPTS_JMP);
+        id->idjIsRemovableJmpCandidate = 1;
+    }
+    else
+    {
+        id->idjIsRemovableJmpCandidate = 0;
+    }
     id->idjShort = idjShort;
 
 #ifdef DEBUG
@@ -9939,7 +9952,7 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
         NYI_ARM64("Relocation Support for long address");
     }
 
-    assert(insOptsNone(id->idInsOpt()));
+    assert(insOptsNone(id->idInsOpt()) || (isJump && id->idjIsRemovableJmpCandidate));
 
     if (isJump)
     {
@@ -10375,8 +10388,16 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_BI_0B: // BI_0B   ......iiiiiiiiii iiiiiiiiiii.....               simm19:00
         case IF_LARGEJMP:
             assert(id->idGCref() == GCT_NONE);
-            assert(id->idIsBound());
-            dst = emitOutputLJ(ig, dst, id);
+            
+            if (!emitJmpInstHasNoCode(id))
+            {
+                assert(id->idIsBound());
+                dst = emitOutputLJ(ig, dst, id);
+            }
+            else
+            {
+                assert(((instrDescJmp*)id)->idjIsRemovableJmpCandidate);
+            }
             sz  = sizeof(instrDescJmp);
             break;
 
@@ -11613,7 +11634,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     size_t expected = emitSizeOfInsDsc(id);
     assert(sz == expected);
 
-    if (emitComp->opts.disAsm || emitComp->verbose)
+    if ((emitComp->opts.disAsm || emitComp->verbose) && !emitJmpInstHasNoCode(id))
     {
         emitDispIns(id, false, dspOffs, true, emitCurCodeOffs(odst), *dp, (dst - *dp), ig);
     }
@@ -11637,7 +11658,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
     /* All instructions are expected to generate code */
 
-    assert(*dp != dst || id->idIsEmptyAlign());
+    assert(*dp != dst || id->idIsEmptyAlign() || emitJmpInstHasNoCode(id));
 
     *dp = dst;
 
@@ -13956,6 +13977,12 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         //
 
         case IF_BI_0A:                                      // b, bl_local
+            if (emitJmpInstHasNoCode(id))
+            {
+                result.insThroughput = PERFSCORE_THROUGHPUT_ZERO;
+                result.insLatency    = PERFSCORE_LATENCY_ZERO;
+                break;
+            }
         case IF_BI_0C:                                      // bl, b_tail
             result.insThroughput = PERFSCORE_THROUGHPUT_1C; // but is Dual Issue
             result.insLatency    = PERFSCORE_LATENCY_1C;

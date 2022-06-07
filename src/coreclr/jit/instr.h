@@ -237,6 +237,7 @@ enum insOpts : unsigned
 #if FEATURE_LOOP_ALIGN
     , INS_OPTS_ALIGN      // Align instruction
 #endif
+    , INS_OPTS_JMP        // Jump instruction
 };
 
 enum insCond : unsigned

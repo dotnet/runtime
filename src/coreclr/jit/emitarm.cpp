@@ -4334,7 +4334,10 @@ void emitter::emitSetMediumJump(instrDescJmp* id)
  *     branch. Thus, we can handle branch offsets of imm24 instead of just imm20.
  */
 
-void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount /* = 0 */)
+void emitter::emitIns_J(instruction ins,
+                        BasicBlock* dst,
+                        int         instrCount /* = 0 */,
+                        bool        isRemovableJmpCandidate /* = false */)
 {
     insFormat fmt = IF_NONE;
 
@@ -4394,6 +4397,18 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount /* = 0 
     /* Assume the jump will be long */
 
     id->idjShort = 0;
+    emitContainsRemovableJmpCandidates |= isRemovableJmpCandidate;
+
+    if (isRemovableJmpCandidate)
+    {
+        id->idInsOpt(INS_OPTS_JMP);
+        id->idjIsRemovableJmpCandidate = 1;
+    }
+    else
+    {
+        id->idjIsRemovableJmpCandidate = 0;
+    }
+
     if (dst != NULL)
     {
         id->idAddr()->iiaBBlabel = dst;
@@ -6406,9 +6421,17 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_T2_N1: // T2_N    .....i......iiii .iiiddddiiiiiiii       R1                 imm16
         case IF_LARGEJMP:
             assert(id->idGCref() == GCT_NONE);
-            assert(id->idIsBound());
 
-            dst = emitOutputLJ(ig, dst, id);
+            if (!emitJmpInstHasNoCode(id))
+            {
+                assert(id->idIsBound());
+                dst = emitOutputLJ(ig, dst, id);
+            }
+            else
+            {
+                assert(((instrDescJmp*)id)->idjIsRemovableJmpCandidate);
+            }
+            
             sz  = sizeof(instrDescJmp);
             break;
 
@@ -6661,7 +6684,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     size_t expected = emitSizeOfInsDsc(id);
     assert(sz == expected);
 
-    if (emitComp->opts.disAsm || emitComp->verbose)
+    if ((emitComp->opts.disAsm || emitComp->verbose) && !emitJmpInstHasNoCode(id))
     {
         emitDispIns(id, false, dspOffs, true, emitCurCodeOffs(odst), *dp, (dst - *dp), ig);
     }
@@ -6700,7 +6723,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
     /* All instructions are expected to generate code */
 
-    assert(*dp != dst);
+    assert(*dp != dst || emitJmpInstHasNoCode(id)));
 
     *dp = dst;
 

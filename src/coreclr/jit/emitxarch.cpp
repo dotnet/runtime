@@ -2059,49 +2059,6 @@ const emitJumpKind emitReverseJumpKinds[] = {
     return emitReverseJumpKinds[jumpKind];
 }
 
-//------------------------------------------------------------------------
-// emitAlignInstHasNoCode: Returns true if the 'id' is an align instruction
-//      that was later removed and hence has codeSize==0.
-//
-// Arguments:
-//    id   -- The instruction to check
-//
-/* static */ bool emitter::emitAlignInstHasNoCode(instrDesc* id)
-{
-    return (id->idIns() == INS_align) && (id->idCodeSize() == 0);
-}
-
-//------------------------------------------------------------------------
-// emitJmpInstHasNoCode: Returns true if the 'id' is a jump instruction
-//      that was later removed and hence has codeSize==0.
-//
-// Arguments:
-//    id   -- The instruction to check
-//
-/* static */ bool emitter::emitJmpInstHasNoCode(instrDesc* id)
-{
-    bool result = (id->idIns() == INS_jmp) && (id->idCodeSize() == 0);
-
-    // A zero size jump instruction can only be the one that is marked
-    // as removable candidate.
-    assert(!result || ((instrDescJmp*)id)->idjIsRemovableJmpCandidate);
-
-    return result;
-}
-
-//------------------------------------------------------------------------
-// emitInstHasNoCode: Returns true if the 'id' is an instruction
-//      that was later removed and hence has codeSize==0.
-//      Currently it is one of `align` or `jmp`.
-//
-// Arguments:
-//    id   -- The instruction to check
-//
-/* static */ bool emitter::emitInstHasNoCode(instrDesc* id)
-{
-    return emitAlignInstHasNoCode(id) || emitJmpInstHasNoCode(id);
-}
-
 /*****************************************************************************
  * When encoding instructions that operate on byte registers
  * we have to ensure that we use a low register (EAX, EBX, ECX or EDX)
@@ -9951,6 +9908,7 @@ void emitter::emitDispIns(
             {
                 printf("L_M%03u_" FMT_BB, emitComp->compMethodID, id->idAddr()->iiaBBlabel->bbNum);
             }
+
             break;
 
         case IF_METHOD:
@@ -14724,7 +14682,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
     assert((int)emitCurStackLvl >= 0);
 
-    // Only epilog "instructions", some pseudo-instrs and blocks that ends with a jump to the next block
+    // Only epilog "instructions", some pseudo-instrs and block ending jumps
+    // are allowed not to generate any code
 
     assert(*dp != dst || emitInstHasNoCode(id));
 

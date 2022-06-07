@@ -1006,14 +1006,19 @@ insGroup* emitter::emitSavIG(bool emitAdd)
         assert(emitLastIns != nullptr);
         assert(emitCurIGfreeBase <= (BYTE*)emitLastIns);
         assert((BYTE*)emitLastIns < emitCurIGfreeBase + sz);
-
-#if defined(TARGET_XARCH)
         assert(emitLastIns != nullptr);
-        if (emitLastIns->idIns() == INS_jmp)
+
+#ifdef TARGET_XARCH
+        instruction jmpInstr = INS_jmp;
+#else // TARGET_ARM64
+        instruction jmpInstr = INS_b;
+#endif
+
+        if (emitLastIns->idIns() == jmpInstr)
+
         {
             ig->igFlags |= IGF_HAS_REMOVABLE_JMP;
         }
-#endif
 
         emitLastIns = (instrDesc*)((BYTE*)id + ((BYTE*)emitLastIns - (BYTE*)emitCurIGfreeBase));
     }
@@ -3821,7 +3826,6 @@ void emitter::emitDispIG(insGroup* ig, insGroup* igPrev, bool verbose)
                 {
                     instrDesc* id = (instrDesc*)ins;
 
-#ifdef TARGET_XARCH
                     if (emitJmpInstHasNoCode(id))
                     {
                         // an instruction with no code prevents us being able to iterate to the
@@ -3830,12 +3834,10 @@ void emitter::emitDispIG(insGroup* ig, insGroup* igPrev, bool verbose)
                         assert(cnt == 1);
                         break;
                     }
-#endif
                     emitDispIns(id, false, true, false, ofs, nullptr, 0, ig);
 
                     ins += emitSizeOfInsDsc(id);
                     ofs += id->idCodeSize();
-
                 } while (--cnt);
 
                 printf("\n");
@@ -3897,12 +3899,7 @@ void emitter::emitDispJumpList()
         printf("IG%02u IN%04x %3s[%u] -> IG%02u %s\n", jmp->idjIG->igNum, jmp->idDebugOnlyInfo()->idNum,
                codeGen->genInsDisplayName(jmp), jmp->idCodeSize(),
                ((insGroup*)emitCodeGetCookie(jmp->idAddr()->iiaBBlabel))->igNum,
-#if defined(TARGET_XARCH)
-               jmp->idjIsRemovableJmpCandidate ? " ; removal candidate" : ""
-#else
-               ""
-#endif
-               );
+               jmp->idjIsRemovableJmpCandidate ? " ; removal candidate" : "");
         jmpCount += 1;
     }
     printf("  total jump count: %u\n", jmpCount);
@@ -4157,7 +4154,6 @@ void emitter::emitDispCommentForHandle(size_t handle, GenTreeFlags flag)
 //
 void emitter::emitRemoveJumpToNextInst()
 {
-#ifdef TARGET_XARCH
     if (!emitContainsRemovableJmpCandidates)
     {
         return;
@@ -4189,8 +4185,12 @@ void emitter::emitRemoveJumpToNextInst()
         insGroup*     jmpGroup = jmp->idjIG;
         instrDescJmp* nextJmp  = jmp->idjNext;
 
-        if (jmp->idInsFmt() == IF_LABEL && emitIsUncondJump(jmp) && jmp->idjIsRemovableJmpCandidate)
+        if (emitIsUncondJump(jmp) && jmp->idjIsRemovableJmpCandidate)
         {
+#ifdef TARGET_ARMARCH
+            assert(jmp->idInsOpt() == INS_OPTS_JMP);
+#endif
+
 #if DEBUG
             assert((jmpGroup->igFlags & IGF_HAS_ALIGN) == 0);
             assert((jmpGroup->igNum > previousJumpIgNum) || (previousJumpIgNum == (UNATIVE_OFFSET)-1) ||
@@ -4261,7 +4261,11 @@ void emitter::emitRemoveJumpToNextInst()
                 }
 
                 UNATIVE_OFFSET codeSize = jmp->idCodeSize();
+#ifdef TARGET_XARCH
                 jmp->idCodeSize(0);
+#else
+                jmp->idInsOpt(INS_OPTS_NONE);
+#endif
 
                 jmpGroup->igSize -= (unsigned short)codeSize;
                 jmpGroup->igFlags |= IGF_UPD_ISZ;
@@ -4342,7 +4346,6 @@ void emitter::emitRemoveJumpToNextInst()
         JITDUMP("emitRemoveJumpToNextInst removed no unconditional jumps\n");
     }
 #endif // DEBUG
-#endif // TARGET_XARCH
 }
 
 /*****************************************************************************
