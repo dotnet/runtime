@@ -10303,7 +10303,7 @@ public:
 #define DEFAULT_MAX_INLINE_SIZE 100 // Methods with >  DEFAULT_MAX_INLINE_SIZE IL bytes will never be inlined.
                                     // This can be overwritten by setting complus_JITInlineSize env variable.
 
-#define DEFAULT_MAX_INLINE_DEPTH 20 // Methods at more than this level deep will not be inlined
+#define DEFAULT_MAX_INLINE_DEPTH 6 // Methods at more than this level deep will not be inlined
 
 #define DEFAULT_MAX_LOCALLOC_TO_LOCAL_SIZE 32 // fixed locallocs of this size or smaller will convert to local buffers
 
