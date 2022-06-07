@@ -33,6 +33,20 @@ namespace System.Net.WebSockets
         }
 
         [UnsupportedOSPlatform("browser")]
+        public Version Version
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
+
+        [UnsupportedOSPlatform("browser")]
+        public System.Net.Http.HttpVersionPolicy VersionPolicy
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
+
+        [UnsupportedOSPlatform("browser")]
         public System.Net.ICredentials Credentials
         {
             get => throw new PlatformNotSupportedException();

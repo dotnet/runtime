@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Net.Http;
 using System.Net.Security;
 using System.Runtime.Versioning;
 using System.Security.Cryptography.X509Certificates;
@@ -25,6 +26,29 @@ namespace System.Net.WebSockets
         internal X509CertificateCollection? _clientCertificates;
         internal WebHeaderCollection? _requestHeaders;
         internal List<string>? _requestedSubProtocols;
+        private Version _version = HttpVersion.Version11;
+        private HttpVersionPolicy _versionPolicy = HttpVersionPolicy.RequestVersionOrLower;
+
+        [UnsupportedOSPlatform("browser")]
+        public Version Version
+        {
+            get { return _version; }
+            set
+            {
+                ArgumentNullException.ThrowIfNull(value);
+                _version = value;
+            }
+        }
+
+        [UnsupportedOSPlatform("browser")]
+        public HttpVersionPolicy VersionPolicy
+        {
+            get { return _versionPolicy; }
+            set
+            {
+                _versionPolicy = value;
+            }
+        }
 
         internal ClientWebSocketOptions() { } // prevent external instantiation
 

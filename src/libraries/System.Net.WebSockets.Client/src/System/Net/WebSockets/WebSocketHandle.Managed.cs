@@ -44,115 +44,154 @@ namespace System.Net.WebSockets
 
         public async Task ConnectAsync(Uri uri, CancellationToken cancellationToken, ClientWebSocketOptions options)
         {
+            SocketsHttpHandler handler = SetupHandler(options);
+            await ConnectAsyncHelper(uri, new HttpMessageInvoker(handler), cancellationToken, options).ConfigureAwait(false);
+        }
+
+        public async Task ConnectAsync(Uri uri, HttpMessageInvoker handler, CancellationToken cancellationToken, ClientWebSocketOptions options)
+        {
+            await ConnectAsyncHelper(uri, handler, cancellationToken, options).ConfigureAwait(false);
+        }
+
+        private static SocketsHttpHandler SetupHandler(ClientWebSocketOptions options)
+        {
+            SocketsHttpHandler? handler;
+            // Create the handler for this request and populate it with all of the options.
+            // Try to use a shared handler rather than creating a new one just for this request, if
+            // the options are compatible.
+            if (options.Credentials == null &&
+                !options.UseDefaultCredentials &&
+                options.Proxy == null &&
+                options.Cookies == null &&
+                options.RemoteCertificateValidationCallback == null &&
+                options._clientCertificates?.Count == 0)
+            {
+                handler = s_defaultHandler;
+                if (handler == null)
+                {
+                    handler = new SocketsHttpHandler()
+                    {
+                        PooledConnectionLifetime = TimeSpan.Zero,
+                        UseProxy = false,
+                        UseCookies = false,
+                    };
+                    if (Interlocked.CompareExchange(ref s_defaultHandler, handler, null) != null)
+                    {
+                        handler.Dispose();
+                        handler = s_defaultHandler;
+                    }
+                }
+            }
+            else
+            {
+                handler = new SocketsHttpHandler();
+                handler.PooledConnectionLifetime = TimeSpan.Zero;
+                handler.CookieContainer = options.Cookies;
+                handler.UseCookies = options.Cookies != null;
+                handler.SslOptions.RemoteCertificateValidationCallback = options.RemoteCertificateValidationCallback;
+
+                if (options.UseDefaultCredentials)
+                {
+                    handler.Credentials = CredentialCache.DefaultCredentials;
+                }
+                else
+                {
+                    handler.Credentials = options.Credentials;
+                }
+
+                if (options.Proxy == null)
+                {
+                    handler.UseProxy = false;
+                }
+                else if (options.Proxy != DefaultWebProxy.Instance)
+                {
+                    handler.Proxy = options.Proxy;
+                }
+
+                if (options._clientCertificates?.Count > 0) // use field to avoid lazily initializing the collection
+                {
+                    Debug.Assert(handler.SslOptions.ClientCertificates == null);
+                    handler.SslOptions.ClientCertificates = new X509Certificate2Collection();
+                    handler.SslOptions.ClientCertificates.AddRange(options.ClientCertificates);
+                }
+            }
+            return handler;
+        }
+
+        private async Task ConnectAsyncHelper(Uri uri, HttpMessageInvoker handler, CancellationToken cancellationToken, ClientWebSocketOptions options)
+        {
             HttpResponseMessage? response = null;
-            SocketsHttpHandler? handler = null;
+
+            // TODO setup to false
             bool disposeHandler = true;
             try
             {
+                if (options.Version.Major >= 3 && options.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
+                {
+                    throw new Exception();
+                }
+
                 var request = new HttpRequestMessage(HttpMethod.Get, uri);
-                if (options._requestHeaders?.Count > 0) // use field to avoid lazily initializing the collection
+                if (options.Version.Major >= 2 || (options.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher))
                 {
-                    foreach (string key in options.RequestHeaders)
-                    {
-                        request.Headers.TryAddWithoutValidation(key, options.RequestHeaders[key]);
-                    }
+                    request.Version = new Version(2, 0);
+                }
+                else
+                {
+                    request.Version = new Version(1, 1);
                 }
 
-                // Create the security key and expected response, then build all of the request headers
-                KeyValuePair<string, string> secKeyAndSecWebSocketAccept = CreateSecKeyAndSecWebSocketAccept();
-                AddWebSocketHeaders(request, secKeyAndSecWebSocketAccept.Key, options);
-
-                // Create the handler for this request and populate it with all of the options.
-                // Try to use a shared handler rather than creating a new one just for this request, if
-                // the options are compatible.
-                if (options.Credentials == null &&
-                    !options.UseDefaultCredentials &&
-                    options.Proxy == null &&
-                    options.Cookies == null &&
-                    options.RemoteCertificateValidationCallback == null &&
-                    options._clientCertificates?.Count == 0)
+                while (true)
                 {
-                    disposeHandler = false;
-                    handler = s_defaultHandler;
-                    if (handler == null)
+                    try
                     {
-                        handler = new SocketsHttpHandler()
+                        if (options._requestHeaders?.Count > 0) // use field to avoid lazily initializing the collection
                         {
-                            PooledConnectionLifetime = TimeSpan.Zero,
-                            UseProxy = false,
-                            UseCookies = false,
-                        };
-                        if (Interlocked.CompareExchange(ref s_defaultHandler, handler, null) != null)
-                        {
-                            handler.Dispose();
-                            handler = s_defaultHandler;
+                            foreach (string key in options.RequestHeaders)
+                            {
+                                request.Headers.TryAddWithoutValidation(key, options.RequestHeaders[key]);
+                            }
                         }
-                    }
-                }
-                else
-                {
-                    handler = new SocketsHttpHandler();
-                    handler.PooledConnectionLifetime = TimeSpan.Zero;
-                    handler.CookieContainer = options.Cookies;
-                    handler.UseCookies = options.Cookies != null;
-                    handler.SslOptions.RemoteCertificateValidationCallback = options.RemoteCertificateValidationCallback;
 
-                    if (options.UseDefaultCredentials)
+                        // Create the security key and expected response, then build all of the request headers
+                        KeyValuePair<string, string> secKeyAndSecWebSocketAccept = CreateSecKeyAndSecWebSocketAccept();
+                        AddWebSocketHeaders(request, secKeyAndSecWebSocketAccept.Key, options);
+
+                        // Issue the request.  The response must be status code 101.
+                        CancellationTokenSource? linkedCancellation;
+                        CancellationTokenSource externalAndAbortCancellation;
+                        if (cancellationToken.CanBeCanceled) // avoid allocating linked source if external token is not cancelable
+                        {
+                            linkedCancellation =
+                                externalAndAbortCancellation =
+                                CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _abortSource.Token);
+                        }
+                        else
+                        {
+                            linkedCancellation = null;
+                            externalAndAbortCancellation = _abortSource;
+                        }
+
+                        using (linkedCancellation)
+                        {
+                            response = await handler.SendAsync(request, externalAndAbortCancellation.Token).ConfigureAwait(false);
+                            externalAndAbortCancellation.Token.ThrowIfCancellationRequested(); // poll in case sends/receives in request/response didn't observe cancellation
+                        }
+                        ValidateResponse(response, secKeyAndSecWebSocketAccept.Value, options);
+                        break;
+                    }
+                    catch (HttpRequestException ex)
                     {
-                        handler.Credentials = CredentialCache.DefaultCredentials;
-                    }
-                    else
-                    {
-                        handler.Credentials = options.Credentials;
-                    }
-
-                    if (options.Proxy == null)
-                    {
-                        handler.UseProxy = false;
-                    }
-                    else if (options.Proxy != DefaultWebProxy.Instance)
-                    {
-                        handler.Proxy = options.Proxy;
+                        if (request.Version.Major == 2
+                            && (options.Version.Major == 2 && options.VersionPolicy == HttpVersionPolicy.RequestVersionOrLower
+                            || options.Version.Major == 1 && options.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher))
+                        {
+                            request.Version = new Version(1, 1);
+                        }
+                        else { throw ex; }
                     }
 
-                    if (options._clientCertificates?.Count > 0) // use field to avoid lazily initializing the collection
-                    {
-                        Debug.Assert(handler.SslOptions.ClientCertificates == null);
-                        handler.SslOptions.ClientCertificates = new X509Certificate2Collection();
-                        handler.SslOptions.ClientCertificates.AddRange(options.ClientCertificates);
-                    }
                 }
-
-                // Issue the request.  The response must be status code 101.
-                CancellationTokenSource? linkedCancellation;
-                CancellationTokenSource externalAndAbortCancellation;
-                if (cancellationToken.CanBeCanceled) // avoid allocating linked source if external token is not cancelable
-                {
-                    linkedCancellation =
-                        externalAndAbortCancellation =
-                        CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _abortSource.Token);
-                }
-                else
-                {
-                    linkedCancellation = null;
-                    externalAndAbortCancellation = _abortSource;
-                }
-
-                using (linkedCancellation)
-                {
-                    response = await new HttpMessageInvoker(handler).SendAsync(request, externalAndAbortCancellation.Token).ConfigureAwait(false);
-                    externalAndAbortCancellation.Token.ThrowIfCancellationRequested(); // poll in case sends/receives in request/response didn't observe cancellation
-                }
-
-                if (response.StatusCode != HttpStatusCode.SwitchingProtocols)
-                {
-                    throw new WebSocketException(WebSocketError.NotAWebSocket, SR.Format(SR.net_WebSockets_Connect101Expected, (int)response.StatusCode));
-                }
-
-                // The Connection, Upgrade, and SecWebSocketAccept headers are required and with specific values.
-                ValidateHeader(response.Headers, HttpKnownHeaderNames.Connection, "Upgrade");
-                ValidateHeader(response.Headers, HttpKnownHeaderNames.Upgrade, "websocket");
-                ValidateHeader(response.Headers, HttpKnownHeaderNames.SecWebSocketAccept, secKeyAndSecWebSocketAccept.Value);
 
                 // The SecWebSocketProtocol header is optional.  We should only get it with a non-empty value if we requested subprotocols,
                 // and then it must only be one of the ones we requested.  If we got a subprotocol other than one we requested (or if we
@@ -198,11 +237,6 @@ namespace System.Net.WebSockets
                             break;
                         }
                     }
-                }
-
-                if (response.Content is null)
-                {
-                    throw new WebSocketException(WebSocketError.ConnectionClosedPrematurely);
                 }
 
                 // Get the response stream and wrap it in a web socket.
@@ -319,10 +353,27 @@ namespace System.Net.WebSockets
         /// <param name="options">The options controlling the request.</param>
         private static void AddWebSocketHeaders(HttpRequestMessage request, string secKey, ClientWebSocketOptions options)
         {
-            request.Headers.TryAddWithoutValidation(HttpKnownHeaderNames.Connection, HttpKnownHeaderNames.Upgrade);
-            request.Headers.TryAddWithoutValidation(HttpKnownHeaderNames.Upgrade, "websocket");
+            request.Version = options.Version;
+            // always exact because we handle downgrade here
+            request.VersionPolicy = HttpVersionPolicy.RequestVersionExact;
+
+            if (options.Version == HttpVersion.Version11)
+            {
+                request.Headers.TryAddWithoutValidation(HttpKnownHeaderNames.Connection, HttpKnownHeaderNames.Upgrade);
+                request.Headers.TryAddWithoutValidation(HttpKnownHeaderNames.Upgrade, "websocket");
+                request.Headers.TryAddWithoutValidation(HttpKnownHeaderNames.SecWebSocketKey, secKey);
+            }
+            else if (options.Version == HttpVersion.Version20)
+            {
+                request.Headers.TryAddWithoutValidation(":method", "CONNECT");
+                request.Headers.TryAddWithoutValidation(HttpKnownHeaderNames.Protocol, "websocket");
+                request.Headers.TryAddWithoutValidation(":scheme", "https");
+                request.Headers.TryAddWithoutValidation(":path", "/chat");
+                request.Headers.TryAddWithoutValidation(HttpKnownHeaderNames.Origin, request.Headers.Host);
+            }
+
             request.Headers.TryAddWithoutValidation(HttpKnownHeaderNames.SecWebSocketVersion, "13");
-            request.Headers.TryAddWithoutValidation(HttpKnownHeaderNames.SecWebSocketKey, secKey);
+
             if (options._requestedSubProtocols?.Count > 0)
             {
                 request.Headers.TryAddWithoutValidation(HttpKnownHeaderNames.SecWebSocketProtocol, string.Join(", ", options.RequestedSubProtocols));
@@ -364,6 +415,34 @@ namespace System.Net.WebSockets
                     Debug.Assert(builder.Length <= ClientWebSocketDeflateConstants.MaxExtensionLength);
                     return builder.ToString();
                 }
+            }
+        }
+
+        private static void ValidateResponse(HttpResponseMessage response, string secValue, ClientWebSocketOptions options)
+        {
+            if (options.Version == HttpVersion.Version11)
+            {
+                if (response.StatusCode != HttpStatusCode.SwitchingProtocols)
+                {
+                    throw new WebSocketException(WebSocketError.NotAWebSocket, SR.Format(SR.net_WebSockets_Connect101Expected, (int)response.StatusCode));
+                }
+
+                // The Connection, Upgrade, and SecWebSocketAccept headers are required and with specific values.
+                ValidateHeader(response.Headers, HttpKnownHeaderNames.Connection, "Upgrade");
+                ValidateHeader(response.Headers, HttpKnownHeaderNames.Upgrade, "websocket");
+                ValidateHeader(response.Headers, HttpKnownHeaderNames.SecWebSocketAccept, secValue);
+            }
+            else if (options.Version == HttpVersion.Version20)
+            {
+                if (response.StatusCode != HttpStatusCode.OK)
+                {
+                    throw new WebSocketException(WebSocketError.NotAWebSocket, SR.Format(SR.net_WebSockets_Connect101Expected, (int)response.StatusCode));
+                }
+            }
+
+            if (response.Content is null)
+            {
+                throw new WebSocketException(WebSocketError.ConnectionClosedPrematurely);
             }
         }
 

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -52,6 +53,16 @@ namespace System.Net.WebSockets
 
         public Task ConnectAsync(Uri uri, CancellationToken cancellationToken)
         {
+            return ConnectAsyncHelper(uri, null, cancellationToken);
+        }
+
+        public Task ConnectAsync(Uri uri, HttpMessageInvoker sharedHandler, CancellationToken cancellationToken)
+        {
+            return ConnectAsyncHelper(uri, sharedHandler, cancellationToken);
+        }
+
+        public Task ConnectAsyncHelper(Uri uri, HttpMessageInvoker? sharedHandler, CancellationToken cancellationToken)
+        {
             ArgumentNullException.ThrowIfNull(uri);
 
             if (!uri.IsAbsoluteUri)
@@ -77,16 +88,23 @@ namespace System.Net.WebSockets
             }
 
             Options.SetToReadOnly();
-            return ConnectAsyncCore(uri, cancellationToken);
+            return ConnectAsyncCore(uri, sharedHandler, cancellationToken);
         }
 
-        private async Task ConnectAsyncCore(Uri uri, CancellationToken cancellationToken)
+        private async Task ConnectAsyncCore(Uri uri, HttpMessageInvoker? sharedHandler, CancellationToken cancellationToken)
         {
             _innerWebSocket = new WebSocketHandle();
 
             try
             {
-                await _innerWebSocket.ConnectAsync(uri, cancellationToken, Options).ConfigureAwait(false);
+                if (sharedHandler == null)
+                {
+                    await _innerWebSocket.ConnectAsync(uri, cancellationToken, Options).ConfigureAwait(false);
+                }
+                else
+                {
+                    await _innerWebSocket.ConnectAsync(uri, sharedHandler, cancellationToken, Options).ConfigureAwait(false);
+                }
             }
             catch
             {
