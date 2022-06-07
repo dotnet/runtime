@@ -246,7 +246,7 @@ jobs:
 
 #
 # CoreCLR NativeAOT release build and libraries tests
-# Only when CoreCLR is changed
+# Only when CoreCLR or library is changed
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:

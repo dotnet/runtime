@@ -3375,34 +3375,6 @@ NOINLINE HCIMPL3(CORINFO_MethodPtr, JIT_VirtualFunctionPointer_Framed, Object * 
 }
 HCIMPLEND
 
-HCIMPL3(void, JIT_StaticVirtualAmbiguousResolution, 
-    MethodDesc *method,
-    MethodTable *interfaceType,
-    MethodTable *targetType)
-{
-    FCALL_CONTRACT;
-
-    SString strMethodName;
-    SString strInterfaceName;
-    SString strTargetClassName;
-
-    HELPER_METHOD_FRAME_BEGIN_0();    // Set up a frame
-
-    TypeString::AppendMethod(strMethodName, method, method->GetMethodInstantiation());
-    TypeString::AppendType(strInterfaceName, TypeHandle(interfaceType));
-    TypeString::AppendType(strTargetClassName, targetType);
-
-    HELPER_METHOD_FRAME_END();    // Set up a frame
-
-    FCThrowExVoid(
-        kAmbiguousImplementationException,
-        IDS_CLASSLOAD_AMBIGUOUS_OVERRIDE,
-        strMethodName,
-        strInterfaceName,
-        strTargetClassName);
-}
-HCIMPLEND
-
 HCIMPL1(Object*, JIT_GetRuntimeFieldStub, CORINFO_FIELD_HANDLE field)
 {
     FCALL_CONTRACT;
@@ -4178,6 +4150,35 @@ HCIMPL0(void, JIT_ThrowTypeNotSupportedException)
     COMPlusThrow(kNotSupportedException, W("Arg_TypeNotSupported"));
 
     HELPER_METHOD_FRAME_END();
+}
+HCIMPLEND
+
+/*********************************************************************/
+HCIMPL3(void, JIT_ThrowAmbiguousResolutionException,
+    MethodDesc *method,
+    MethodTable *interfaceType,
+    MethodTable *targetType)
+{
+    FCALL_CONTRACT;
+
+    SString strMethodName;
+    SString strInterfaceName;
+    SString strTargetClassName;
+
+    HELPER_METHOD_FRAME_BEGIN_0();    // Set up a frame
+
+    TypeString::AppendMethod(strMethodName, method, method->GetMethodInstantiation());
+    TypeString::AppendType(strInterfaceName, TypeHandle(interfaceType));
+    TypeString::AppendType(strTargetClassName, targetType);
+
+    HELPER_METHOD_FRAME_END();    // Set up a frame
+
+    FCThrowExVoid(
+        kAmbiguousImplementationException,
+        IDS_CLASSLOAD_AMBIGUOUS_OVERRIDE,
+        strMethodName,
+        strInterfaceName,
+        strTargetClassName);
 }
 HCIMPLEND
 

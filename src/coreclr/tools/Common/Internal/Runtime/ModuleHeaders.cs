@@ -82,7 +82,7 @@ namespace Internal.Runtime
         ThreadStaticOffsetRegion = 208,
         ThreadStaticGCDescRegion = 209,
         ThreadStaticIndex = 210,
-        LoopHijackFlag = 211,
+        // 211 is unused - it was used by LoopHijackFlag
         ImportAddressTables = 212,
         ModuleInitializerList = 213,
 

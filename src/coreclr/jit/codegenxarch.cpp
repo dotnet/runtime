@@ -537,12 +537,8 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             switch (tree->TypeGet())
             {
 #if defined(FEATURE_SIMD)
-                case TYP_LONG:
-                case TYP_DOUBLE:
                 case TYP_SIMD8:
                 {
-                    // TODO-1stClassStructs: do not retype SIMD nodes
-
                     simd8_t              constValue = vecCon->gtSimd8Val;
                     CORINFO_FIELD_HANDLE hnd        = emit->emitSimd8Const(constValue);
 

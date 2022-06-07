@@ -5670,6 +5670,19 @@ handle_ctor_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fs
 		return;
 	}
 
+	if ((cfg->opt & MONO_OPT_INLINE) && mono_method_check_inlining (cfg, cmethod) &&
+			   !mono_class_is_subclass_of_internal (cmethod->klass, mono_defaults.exception_class, FALSE)) {
+		int costs;
+
+		costs = inline_method (cfg, cmethod, fsig, sp, ip, cfg->real_offset, FALSE, NULL);
+		if (costs) {
+			cfg->real_offset += 5;
+
+			*inline_costs += costs - 5;
+			return;
+		}
+	}
+
 	if (mono_class_generic_sharing_enabled (cmethod->klass) && mono_method_is_generic_sharable (cmethod, TRUE)) {
 		MonoRgctxAccess access = mini_get_rgctx_access_for_method (cmethod);
 
@@ -5682,22 +5695,12 @@ handle_ctor_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fs
 	}
 
 	/* Avoid virtual calls to ctors if possible */
-	if ((cfg->opt & MONO_OPT_INLINE) && cmethod && !context_used && !rgctx_arg &&
-			   mono_method_check_inlining (cfg, cmethod) &&
-			   !mono_class_is_subclass_of_internal (cmethod->klass, mono_defaults.exception_class, FALSE)) {
-		int costs;
-
-		if ((costs = inline_method (cfg, cmethod, fsig, sp, ip, cfg->real_offset, FALSE, NULL))) {
-			cfg->real_offset += 5;
-
-			*inline_costs += costs - 5;
-		} else {
-			INLINE_FAILURE ("inline failure");
-			// FIXME-VT: Clean this up
-			if (cfg->gsharedvt && mini_is_gsharedvt_signature (fsig))
-				GSHAREDVT_FAILURE(*ip);
-			mini_emit_method_call_full (cfg, cmethod, fsig, FALSE, sp, callvirt_this_arg, NULL, NULL);
-		}
+	if (!context_used && !rgctx_arg) {
+		INLINE_FAILURE ("inline failure");
+		// FIXME-VT: Clean this up
+		if (cfg->gsharedvt && mini_is_gsharedvt_signature (fsig))
+			GSHAREDVT_FAILURE(*ip);
+		mini_emit_method_call_full (cfg, cmethod, fsig, FALSE, sp, callvirt_this_arg, NULL, NULL);
 	} else if (cfg->gsharedvt && mini_is_gsharedvt_signature (fsig)) {
 		MonoInst *addr;
 
@@ -6593,6 +6596,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		else
 			EMIT_NEW_PCONST (cfg, args [1], info);
 
+		cfg->init_method_rgctx_ins_arg = args [1];
 		cfg->init_method_rgctx_ins = mono_emit_jit_icall (cfg, mini_init_method_rgctx, args);
 	}
 
@@ -8908,6 +8912,8 @@ calli_end:
 				break;
 			}
 
+			if (!(ins_flag & MONO_INST_NONULLCHECK))
+				MONO_EMIT_NULL_CHECK (cfg, sp [0]->dreg, FALSE);
 			ins = mini_emit_memory_load (cfg, m_class_get_byval_arg (klass), sp [0], 0, ins_flag);
 			*sp++ = ins;
 

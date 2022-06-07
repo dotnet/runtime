@@ -48,7 +48,7 @@ namespace System.Formats.Tar
         internal void WriteAsV7(Stream archiveStream, Span<byte> buffer)
         {
             long actualLength = GetTotalDataBytesToWrite();
-            TarEntryType actualEntryType = GetCorrectTypeFlagForFormat(TarFormat.V7);
+            TarEntryType actualEntryType = GetCorrectTypeFlagForFormat(TarEntryFormat.V7);
 
             int checksum = WriteName(buffer, out _);
             checksum += WriteCommonFields(buffer, actualLength, actualEntryType);
@@ -66,7 +66,7 @@ namespace System.Formats.Tar
         internal void WriteAsUstar(Stream archiveStream, Span<byte> buffer)
         {
             long actualLength = GetTotalDataBytesToWrite();
-            TarEntryType actualEntryType = GetCorrectTypeFlagForFormat(TarFormat.Ustar);
+            TarEntryType actualEntryType = GetCorrectTypeFlagForFormat(TarEntryFormat.Ustar);
 
             int checksum = WritePosixName(buffer);
             checksum += WriteCommonFields(buffer, actualLength, actualEntryType);
@@ -153,7 +153,7 @@ namespace System.Formats.Tar
             _gnuUnusedBytes ??= new byte[FieldLengths.AllGnuUnused];
 
             long actualLength = GetTotalDataBytesToWrite();
-            TarEntryType actualEntryType = GetCorrectTypeFlagForFormat(TarFormat.Gnu);
+            TarEntryType actualEntryType = GetCorrectTypeFlagForFormat(TarEntryFormat.Gnu);
 
             int checksum = WriteName(buffer, out _);
             checksum += WriteCommonFields(buffer, actualLength, actualEntryType);
@@ -194,7 +194,7 @@ namespace System.Formats.Tar
         private void WriteAsPaxInternal(Stream archiveStream, Span<byte> buffer)
         {
             long actualLength = GetTotalDataBytesToWrite();
-            TarEntryType actualEntryType = GetCorrectTypeFlagForFormat(TarFormat.Pax);
+            TarEntryType actualEntryType = GetCorrectTypeFlagForFormat(TarEntryFormat.Pax);
 
             int checksum = WritePosixName(buffer);
             checksum += WriteCommonFields(buffer, actualLength, actualEntryType);
@@ -275,9 +275,9 @@ namespace System.Formats.Tar
         // When writing an entry that came from an archive of a different format, if its entry type happens to
         // be an incompatible regular file entry type, convert it to the compatible one.
         // No change for all other entry types.
-        private TarEntryType GetCorrectTypeFlagForFormat(TarFormat format)
+        private TarEntryType GetCorrectTypeFlagForFormat(TarEntryFormat format)
         {
-            if (format is TarFormat.V7)
+            if (format is TarEntryFormat.V7)
             {
                 if (_typeFlag is TarEntryType.RegularFile)
                 {
