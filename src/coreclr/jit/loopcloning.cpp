@@ -129,16 +129,16 @@ GenTree* LC_Ident::ToGenTree(Compiler* comp, BasicBlock* bb)
             assert(constant <= INT32_MAX);
             return comp->gtNewIconNode(constant);
         case Var:
-            return comp->gtNewLclvNode((unsigned)constant, comp->lvaTable[constant].lvType);
+            return comp->gtNewLclvNode(lclNum, comp->lvaTable[lclNum].lvType);
         case ArrLen:
             return arrLen.ToGenTree(comp, bb);
         case Null:
             return comp->gtNewIconNode(0, TYP_REF);
         case ClassHandle:
-            return comp->gtNewIconHandleNode((size_t)constant, GTF_ICON_CLASS_HDL);
+            return comp->gtNewIconHandleNode((size_t)clsHnd, GTF_ICON_CLASS_HDL);
         case Indir:
         {
-            GenTree* indir = comp->gtNewIndir(TYP_I_IMPL, comp->gtNewLclvNode((unsigned)constant, TYP_REF));
+            GenTree* const indir = comp->gtNewIndir(TYP_I_IMPL, comp->gtNewLclvNode(lclNum, TYP_REF));
             indir->gtFlags |= GTF_IND_INVARIANT;
             return indir;
         }
@@ -1153,13 +1153,13 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
         if (isIncreasingLoop)
         {
             geZero =
-                LC_Condition(GT_GE, LC_Expr(LC_Ident(initLcl, LC_Ident::Var)), LC_Expr(LC_Ident(0, LC_Ident::Const)));
+                LC_Condition(GT_GE, LC_Expr(LC_Ident(initLcl, LC_Ident::Var)), LC_Expr(LC_Ident(0u, LC_Ident::Const)));
         }
         else
         {
             // For decreasing loop, the init value needs to be checked against the array length
             ident  = LC_Ident(initLcl, LC_Ident::Var);
-            geZero = LC_Condition(GT_GE, LC_Expr(ident), LC_Expr(LC_Ident(0, LC_Ident::Const)));
+            geZero = LC_Condition(GT_GE, LC_Expr(ident), LC_Expr(LC_Ident(0u, LC_Ident::Const)));
         }
         context->EnsureConditions(loopNum)->Push(geZero);
     }
@@ -1194,12 +1194,12 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
         {
             // For increasing loop, thelimit value needs to be checked against the array length
             ident  = LC_Ident(limitLcl, LC_Ident::Var);
-            geZero = LC_Condition(GT_GE, LC_Expr(ident), LC_Expr(LC_Ident(0, LC_Ident::Const)));
+            geZero = LC_Condition(GT_GE, LC_Expr(ident), LC_Expr(LC_Ident(0u, LC_Ident::Const)));
         }
         else
         {
             geZero =
-                LC_Condition(GT_GE, LC_Expr(LC_Ident(limitLcl, LC_Ident::Var)), LC_Expr(LC_Ident(0, LC_Ident::Const)));
+                LC_Condition(GT_GE, LC_Expr(LC_Ident(limitLcl, LC_Ident::Var)), LC_Expr(LC_Ident(0u, LC_Ident::Const)));
         }
 
         context->EnsureConditions(loopNum)->Push(geZero);
@@ -1509,7 +1509,7 @@ bool Compiler::optComputeDerefConditions(unsigned loopNum, LoopCloneContext* con
             // ObjDeref array has indir(lcl), we want lcl.
             //
             LC_Ident& mtIndirIdent = (*objDeref)[i];
-            LC_Ident  ident(mtIndirIdent.constant, LC_Ident::Var);
+            LC_Ident  ident(mtIndirIdent.LclNum(), LC_Ident::Var);
             (*levelCond)[0]->Push(LC_Condition(GT_NE, LC_Expr(ident), LC_Expr(LC_Ident(LC_Ident::Null))));
         }
     }
@@ -2833,8 +2833,11 @@ Compiler::fgWalkResult Compiler::optCanOptimizeByLoopCloning(GenTree* tree, Loop
 
         // Update the loop context.
         //
+        assert(relopOp2->IsIconHandle(GTF_ICON_CLASS_HDL));
+        CORINFO_CLASS_HANDLE clsHnd = (CORINFO_CLASS_HANDLE)relopOp2->AsIntConCommon()->IconValue();
+
         info->context->EnsureLoopOptInfo(info->loopNum)
-            ->Push(new (this, CMK_LoopOpt) LcTypeTestOptInfo(lclNum, relopOp2->AsIntConCommon()->IconValue()));
+            ->Push(new (this, CMK_LoopOpt) LcTypeTestOptInfo(lclNum, clsHnd));
     }
 
     return WALK_CONTINUE;
