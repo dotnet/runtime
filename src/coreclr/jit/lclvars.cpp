@@ -4231,10 +4231,7 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
 
                         NOT_BOOL:
 
-                            lclNum = op1->AsLclVarCommon()->GetLclNum();
-                            noway_assert(lclNum < lvaCount);
-
-                            lvaTable[lclNum].lvIsBoolean = false;
+                            varDsc->lvIsBoolean = false;
                             break;
                     }
                 }
