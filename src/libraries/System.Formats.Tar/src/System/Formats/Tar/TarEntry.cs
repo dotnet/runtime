@@ -15,8 +15,9 @@ namespace System.Formats.Tar
     public abstract partial class TarEntry
     {
         internal TarHeader _header;
+
         // Used to access the data section of this entry in an unseekable file
-        private TarReader? _readerOfOrigin;
+        internal TarReader? _readerOfOrigin;
 
         // Constructor used when reading an existing archive.
         internal TarEntry(TarHeader header, TarReader readerOfOrigin)

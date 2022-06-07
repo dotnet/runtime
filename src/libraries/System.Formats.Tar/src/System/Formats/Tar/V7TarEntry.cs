@@ -27,6 +27,21 @@ namespace System.Formats.Tar
         {
         }
 
+        /// <summary>
+        /// Initializes a new <see cref="V7TarEntry"/> instance by converting the specified <paramref name="other"/> entry into the V7 format.
+        /// </summary>
+        public V7TarEntry(TarEntry other)
+            : base(other._header, other._readerOfOrigin!)
+        {
+            if (_header._typeFlag == TarEntryType.RegularFile)
+            {
+                _header._typeFlag = TarEntryType.V7RegularFile;
+            }
+            TarHelpers.VerifyEntryTypeIsSupported(_header._typeFlag, TarEntryFormat.V7, forWriting: false);
+
+            _header._format = TarEntryFormat.V7;
+        }
+
         // Determines if the current instance's entry type supports setting a data stream.
         internal override bool IsDataStreamSetterSupported() => EntryType == TarEntryType.V7RegularFile;
     }

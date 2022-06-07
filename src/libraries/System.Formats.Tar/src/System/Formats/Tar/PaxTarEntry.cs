@@ -91,6 +91,21 @@ namespace System.Formats.Tar
         }
 
         /// <summary>
+        /// Initializes a new <see cref="PaxTarEntry"/> instance by converting the specified <paramref name="other"/> entry into the PAX format.
+        /// </summary>
+        public PaxTarEntry(TarEntry other)
+            : base(other._header, other._readerOfOrigin!)
+        {
+            if (_header._typeFlag == TarEntryType.V7RegularFile)
+            {
+                _header._typeFlag = TarEntryType.RegularFile;
+            }
+            TarHelpers.VerifyEntryTypeIsSupported(_header._typeFlag, TarEntryFormat.Pax, forWriting: false);
+
+            _header._format = TarEntryFormat.Pax;
+        }
+
+        /// <summary>
         /// Returns the extended attributes for this entry.
         /// </summary>
         /// <remarks>The extended attributes are specified when constructing an entry. Use <see cref="PaxTarEntry(TarEntryType, string, IEnumerable{KeyValuePair{string, string}})"/> to append your own enumeration of extended attributes to the current entry on top of the default ones. Use <see cref="PaxTarEntry(TarEntryType, string)"/> to only use the default extended attributes.
