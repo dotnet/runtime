@@ -196,7 +196,7 @@ namespace System.Formats.Tar
             Debug.Assert(Path.IsPathFullyQualified(sourceDirectoryName));
             Debug.Assert(destination.CanWrite);
 
-            using (TarWriter writer = new TarWriter(destination, TarFormat.Pax, leaveOpen))
+            using (TarWriter writer = new TarWriter(destination, TarEntryFormat.Pax, leaveOpen))
             {
                 bool baseDirectoryIsEmpty = true;
                 DirectoryInfo di = new(sourceDirectoryName);

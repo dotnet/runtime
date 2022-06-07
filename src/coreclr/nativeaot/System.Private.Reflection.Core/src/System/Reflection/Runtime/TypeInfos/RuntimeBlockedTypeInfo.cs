@@ -11,7 +11,6 @@ using System.Reflection.Runtime.Assemblies;
 using System.Reflection.Runtime.CustomAttributes;
 
 using Internal.LowLevelLinq;
-using Internal.Reflection.Tracing;
 using Internal.Reflection.Core.Execution;
 
 using CharSet = System.Runtime.InteropServices.CharSet;
@@ -57,10 +56,6 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.TypeInfo_CustomAttributes(this);
-#endif
                 return Empty<CustomAttributeData>.Enumerable;
             }
         }
@@ -69,10 +64,6 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.TypeInfo_FullName(this);
-#endif
                 return GeneratedName;
             }
         }
@@ -101,10 +92,6 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.TypeInfo_Namespace(this);
-#endif
                 return null;  // Reflection-blocked framework types report themselves as existing in the "root" namespace.
             }
         }

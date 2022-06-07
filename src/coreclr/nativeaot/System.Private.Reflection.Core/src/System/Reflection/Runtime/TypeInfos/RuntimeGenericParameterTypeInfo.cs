@@ -13,8 +13,6 @@ using System.Reflection.Runtime.CustomAttributes;
 using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
 
-using Internal.Reflection.Tracing;
-
 namespace System.Reflection.Runtime.TypeInfos
 {
     internal abstract class RuntimeGenericParameterTypeInfo : RuntimeTypeInfo
@@ -67,10 +65,6 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.TypeInfo_FullName(this);
-#endif
                 return null;  // We return null as generic parameter types are not roundtrippable through Type.GetType().
             }
         }
@@ -100,10 +94,6 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.TypeInfo_Namespace(this);
-#endif
                 return DeclaringType.Namespace;
             }
         }
