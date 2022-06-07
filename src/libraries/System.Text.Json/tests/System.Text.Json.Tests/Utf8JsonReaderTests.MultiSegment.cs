@@ -15,7 +15,7 @@ namespace System.Text.Json.Tests
         [Fact]
         public static void InitialStateMultiSegment()
         {
-            byte[] utf8 = Encoding.UTF8.GetBytes("1");
+            byte[] utf8 = "1"u8.ToArray();
             ReadOnlySequence<byte> sequence = JsonTestHelper.GetSequence(utf8, 1);
             var json = new Utf8JsonReader(sequence, isFinalBlock: true, state: default);
 
@@ -395,7 +395,7 @@ namespace System.Text.Json.Tests
         [Fact]
         public static void InitialStateSimpleCtorMultiSegment()
         {
-            byte[] utf8 = Encoding.UTF8.GetBytes("1");
+            byte[] utf8 = "1"u8.ToArray();
             ReadOnlySequence<byte> sequence = JsonTestHelper.GetSequence(utf8, 1);
             var json = new Utf8JsonReader(sequence);
 
@@ -420,7 +420,7 @@ namespace System.Text.Json.Tests
         [Fact]
         public static void StateRecoveryMultiSegment()
         {
-            byte[] utf8 = Encoding.UTF8.GetBytes("[1]");
+            byte[] utf8 = "[1]"u8.ToArray();
             ReadOnlySequence<byte> sequence = JsonTestHelper.GetSequence(utf8, 1);
             var json = new Utf8JsonReader(sequence, isFinalBlock: false, state: default);
 

@@ -11,7 +11,6 @@ using System.Reflection.Runtime.Assemblies;
 using System.Reflection.Runtime.CustomAttributes;
 
 using Internal.LowLevelLinq;
-using Internal.Reflection.Tracing;
 using Internal.Reflection.Core.Execution;
 
 using StructLayoutAttribute = System.Runtime.InteropServices.StructLayoutAttribute;
@@ -58,10 +57,6 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.TypeInfo_FullName(this);
-#endif
                 throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(this);
             }
         }
@@ -90,10 +85,6 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.TypeInfo_Namespace(this);
-#endif
                 throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(this);
             }
         }

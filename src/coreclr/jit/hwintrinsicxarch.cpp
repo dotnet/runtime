@@ -550,11 +550,6 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
     GenTree* op3     = nullptr;
     GenTree* op4     = nullptr;
 
-    if (!IsBaselineSimdIsaSupported())
-    {
-        return nullptr;
-    }
-
     CORINFO_InstructionSet isa = HWIntrinsicInfo::lookupIsa(intrinsic);
 
     if ((isa == InstructionSet_Vector256) && !compExactlyDependsOn(InstructionSet_AVX))

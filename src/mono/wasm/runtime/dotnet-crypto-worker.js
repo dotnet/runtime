@@ -3,9 +3,14 @@
 
 var ChannelWorker = {
     _impl: class {
+        // LOCK states
+        get LOCK_UNLOCKED() { return 0; } // 0 means the lock is unlocked
+        get LOCK_OWNED() { return 2; } // 2 means the ChannelWorker owns the lock
+
         // BEGIN ChannelOwner contract - shared constants.
         get STATE_IDX() { return 0; }
         get MSG_SIZE_IDX() { return 1; }
+        get LOCK_IDX() { return 2; }
 
         // Communication states.
         get STATE_SHUTDOWN() { return -1; } // Shutdown
@@ -51,6 +56,8 @@ var ChannelWorker = {
         _read_request() {
             var request = "";
             for (;;) {
+                this._acquire_lock();
+
                 // Get the current state and message size
                 var state = Atomics.load(this.comm, this.STATE_IDX);
                 var size_to_read = Atomics.load(this.comm, this.MSG_SIZE_IDX);
@@ -59,16 +66,22 @@ var ChannelWorker = {
                 request += this._read_from_msg(0, size_to_read);
 
                 // The request is complete.
-                if (state === this.STATE_REQ)
+                if (state === this.STATE_REQ) {
+                    this._release_lock();
                     break;
+                }
 
                 // Shutdown the worker.
-                if (state === this.STATE_SHUTDOWN)
+                if (state === this.STATE_SHUTDOWN) {
+                    this._release_lock();
                     return this.STATE_SHUTDOWN;
+                }
 
                 // Reset the size and transition to await state.
                 Atomics.store(this.comm, this.MSG_SIZE_IDX, 0);
                 Atomics.store(this.comm, this.STATE_IDX, this.STATE_AWAIT);
+                this._release_lock();
+
                 Atomics.wait(this.comm, this.STATE_IDX, this.STATE_AWAIT);
             }
 
@@ -88,6 +101,8 @@ var ChannelWorker = {
             var msg_written = 0;
 
             for (;;) {
+                this._acquire_lock();
+
                 // Write the message and return how much was written.
                 var wrote = this._write_to_msg(msg, msg_written, msg_len);
                 msg_written += wrote;
@@ -100,6 +115,8 @@ var ChannelWorker = {
 
                 // Update the state
                 Atomics.store(this.comm, this.STATE_IDX, state);
+
+                this._release_lock();
 
                 // Wait for the transition to know the main thread has
                 // received the response by moving onto a new state.
@@ -120,6 +137,19 @@ var ChannelWorker = {
                 mi++; // Next buffer index
             }
             return ii - start;
+        }
+
+        _acquire_lock() {
+            while (Atomics.compareExchange(this.comm, this.LOCK_IDX, this.LOCK_UNLOCKED, this.LOCK_OWNED) !== this.LOCK_UNLOCKED) {
+                // empty
+            }
+        }
+
+        _release_lock() {
+            const result = Atomics.compareExchange(this.comm, this.LOCK_IDX, this.LOCK_OWNED, this.LOCK_UNLOCKED);
+            if (result !== this.LOCK_OWNED) {
+                throw "CRYPTO: ChannelWorker tried to release a lock that wasn't acquired: " + result;
+            }
         }
     },
 

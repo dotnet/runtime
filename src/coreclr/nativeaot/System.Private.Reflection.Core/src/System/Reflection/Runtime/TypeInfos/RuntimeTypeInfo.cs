@@ -11,7 +11,6 @@ using System.Reflection.Runtime.MethodInfos;
 
 using Internal.Reflection.Core.Execution;
 using Internal.Reflection.Core.NonPortable;
-using Internal.Reflection.Tracing;
 using Internal.Reflection.Augments;
 
 using StructLayoutAttribute = System.Runtime.InteropServices.StructLayoutAttribute;
@@ -34,7 +33,7 @@ namespace System.Reflection.Runtime.TypeInfos
     //     shows up as build error.
     //
     [DebuggerDisplay("{_debugName}")]
-    internal abstract partial class RuntimeTypeInfo : RuntimeType, ITraceableTypeMember, ICloneable
+    internal abstract partial class RuntimeTypeInfo : RuntimeType, ICloneable
     {
         protected RuntimeTypeInfo()
         {
@@ -61,11 +60,6 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.TypeInfo_AssemblyQualifiedName(this);
-#endif
-
                 string fullName = FullName;
                 if (fullName == null)   // Some Types (such as generic parameters) return null for FullName by design.
                     return null;
@@ -83,11 +77,6 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.TypeInfo_BaseType(this);
-#endif
-
                 // If this has a RuntimeTypeHandle, let the underlying runtime engine have the first crack. If it refuses, fall back to metadata.
                 RuntimeTypeHandle typeHandle = InternalTypeHandleIfAvailable;
                 if (!typeHandle.IsNull())
@@ -427,11 +416,6 @@ namespace System.Reflection.Runtime.TypeInfos
         [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public sealed override Type MakeArrayType()
         {
-#if ENABLE_REFLECTION_TRACE
-            if (ReflectionTrace.Enabled)
-                ReflectionTrace.TypeInfo_MakeArrayType(this);
-#endif
-
             // Do not implement this as a call to MakeArrayType(1) - they are not interchangable. MakeArrayType() returns a
             // vector type ("SZArray") while MakeArrayType(1) returns a multidim array of rank 1. These are distinct types
             // in the ECMA model and in CLR Reflection.
@@ -441,11 +425,6 @@ namespace System.Reflection.Runtime.TypeInfos
         [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public sealed override Type MakeArrayType(int rank)
         {
-#if ENABLE_REFLECTION_TRACE
-            if (ReflectionTrace.Enabled)
-                ReflectionTrace.TypeInfo_MakeArrayType(this, rank);
-#endif
-
             if (rank <= 0)
                 throw new IndexOutOfRangeException();
             return this.GetMultiDimArrayTypeWithTypeHandle(rank);
@@ -453,10 +432,6 @@ namespace System.Reflection.Runtime.TypeInfos
 
         public sealed override Type MakeByRefType()
         {
-#if ENABLE_REFLECTION_TRACE
-            if (ReflectionTrace.Enabled)
-                ReflectionTrace.TypeInfo_MakeByRefType(this);
-#endif
             return this.GetByRefType();
         }
 
@@ -464,11 +439,6 @@ namespace System.Reflection.Runtime.TypeInfos
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public sealed override Type MakeGenericType(params Type[] typeArguments)
         {
-#if ENABLE_REFLECTION_TRACE
-            if (ReflectionTrace.Enabled)
-                ReflectionTrace.TypeInfo_MakeGenericType(this, typeArguments);
-#endif
-
             if (typeArguments == null)
                 throw new ArgumentNullException(nameof(typeArguments));
 
@@ -520,11 +490,6 @@ namespace System.Reflection.Runtime.TypeInfos
 
         public sealed override Type MakePointerType()
         {
-#if ENABLE_REFLECTION_TRACE
-            if (ReflectionTrace.Enabled)
-                ReflectionTrace.TypeInfo_MakePointerType(this);
-#endif
-
             return this.GetPointerType();
         }
 
@@ -540,11 +505,6 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.TypeInfo_Name(this);
-#endif
-
                 Type rootCauseForFailure = null;
                 string name = InternalGetNameIfAvailable(ref rootCauseForFailure);
                 if (name == null)
@@ -621,23 +581,6 @@ namespace System.Reflection.Runtime.TypeInfos
         protected sealed override bool IsValueTypeImpl()
         {
             return 0 != (Classification & TypeClassification.IsValueType);
-        }
-
-        string ITraceableTypeMember.MemberName
-        {
-            get
-            {
-                string name = InternalNameIfAvailable;
-                return name ?? string.Empty;
-            }
-        }
-
-        Type ITraceableTypeMember.ContainingType
-        {
-            get
-            {
-                return this.InternalDeclaringType;
-            }
         }
 
         //
@@ -799,11 +742,6 @@ namespace System.Reflection.Runtime.TypeInfos
             {
                 _debugName = "Constructing..."; // Protect against any inadvertent reentrancy.
                 string debugName;
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    debugName = this.GetTraceString();  // If tracing on, call this.GetTraceString() which only gives you useful strings when metadata is available but doesn't pollute the ETW trace.
-                else
-#endif
                 debugName = this.ToString();
                 if (debugName == null)
                     debugName = "";

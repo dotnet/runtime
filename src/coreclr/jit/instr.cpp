@@ -843,11 +843,8 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                 switch (op->TypeGet())
                 {
 #if defined(FEATURE_SIMD)
-                    case TYP_LONG:
-                    case TYP_DOUBLE:
                     case TYP_SIMD8:
                     {
-                        // TODO-1stClassStructs: do not retype SIMD nodes
                         simd8_t constValue = op->AsVecCon()->gtSimd8Val;
                         return OperandDesc(emit->emitSimd8Const(constValue));
                     }

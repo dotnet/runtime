@@ -20,7 +20,6 @@ using Internal.Metadata.NativeFormat;
 
 using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
-using Internal.Reflection.Tracing;
 
 using Internal.Runtime.TypeLoader;
 

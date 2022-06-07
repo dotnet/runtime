@@ -5,7 +5,6 @@ import { INTERNAL, Module, MONO, runtimeHelpers } from "./imports";
 import { toBase64StringImpl } from "./base64";
 import cwraps from "./cwraps";
 import { VoidPtr, CharPtr } from "./types/emscripten";
-
 const commands_received : any = new Map<number, CommandResponse>();
 const wasm_func_map = new Map<number, string>();
 commands_received.remove = function (key: number) : CommandResponse { const value = this.get(key); this.delete(key); return value;};
@@ -158,8 +157,17 @@ export function mono_wasm_wait_for_debugger(): Promise<void> {
 }
 
 export function mono_wasm_debugger_attached(): void {
-    runtimeHelpers.wait_for_debugger = 1;
+    if (runtimeHelpers.wait_for_debugger == -1)
+        runtimeHelpers.wait_for_debugger = 1;
     cwraps.mono_wasm_set_is_debugger_attached(true);
+}
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function mono_wasm_set_entrypoint_breakpoint(assembly_name: CharPtr, entrypoint_method_token: number): void {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const assembly_name_str = Module.UTF8ToString(assembly_name).concat(".dll");
+    // eslint-disable-next-line no-debugger
+    debugger;
 }
 
 function _create_proxy_from_object_id(objectId: string, details: any) {
