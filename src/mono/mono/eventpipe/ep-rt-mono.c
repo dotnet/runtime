@@ -3274,7 +3274,7 @@ ep_rt_mono_log_single_type (
 		// NOTE: If name is actively used, set it to NULL and relevant memory management to reduce byte count
 		// This type is apparently so huge, it's too big to squeeze into an event, even
 		// if it were the only type batched in the whole event.  Bail
-		mono_trace (G_LOG_LEVEL_ERROR, MONO_TRACE_DIAGNOSTICS, "Failed to log single mono type %p with typeID %llu. Type is too large for the BulkType Event.\n", (gpointer)mono_type, val->fixed_sized_data.type_id);
+		mono_trace (G_LOG_LEVEL_ERROR, MONO_TRACE_DIAGNOSTICS, "Failed to log single mono type %p with typeID %llu. Type is too large for the BulkType Event.\n", (gpointer)mono_type, (unsigned long long)val->fixed_sized_data.type_id);
 		return -1;
 	}
 

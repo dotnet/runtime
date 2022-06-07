@@ -634,8 +634,8 @@ void CLRConfig::Initialize()
     if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DisableConfigCache) != 0)
         return;
 
-    const WCHAR prefixC = towlower(COMPLUS_PREFIX[0]);
-    const WCHAR prefixD = towlower(DOTNET_PREFIX[0]);
+    const WCHAR prefixC = (WCHAR)towlower(COMPLUS_PREFIX[0]);
+    const WCHAR prefixD = (WCHAR)towlower(DOTNET_PREFIX[0]);
 
     // Create a cache of environment variables
     WCHAR* wszStrings = GetEnvironmentStringsW();
@@ -645,7 +645,7 @@ void CLRConfig::Initialize()
         // null terminated strings
         for(WCHAR *wszCurr = wszStrings; *wszCurr; wszCurr++)
         {
-            WCHAR wch = towlower(*wszCurr);
+            WCHAR wch = (WCHAR)towlower(*wszCurr);
 
             // Lets only cache env variables with targeted prefixes
             bool matchC = wch == prefixC;
