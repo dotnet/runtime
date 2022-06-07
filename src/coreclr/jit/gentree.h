@@ -3691,9 +3691,10 @@ private:
 
 public:
     GenTreeLclFld(genTreeOps oper, var_types type, unsigned lclNum, unsigned lclOffs, ClassLayout* layout = nullptr)
-        : GenTreeLclVarCommon(oper, type, lclNum), m_lclOffs(static_cast<uint16_t>(lclOffs)), m_layout(layout)
+        : GenTreeLclVarCommon(oper, type, lclNum), m_lclOffs(static_cast<uint16_t>(lclOffs))
     {
         assert(lclOffs <= UINT16_MAX);
+        SetLayout(layout);
     }
 
     uint16_t GetLclOffs() const
@@ -3709,6 +3710,7 @@ public:
 
     ClassLayout* GetLayout() const
     {
+        assert(!TypeIs(TYP_STRUCT) || (m_layout != nullptr));
         return m_layout;
     }
 

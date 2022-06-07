@@ -23181,7 +23181,7 @@ unsigned GenTreeHWIntrinsic::GetResultOpNumForFMA(GenTree* use, GenTree* op1, Ge
 
 unsigned GenTreeLclFld::GetSize() const
 {
-    return genTypeSize(TypeGet());
+    return TypeIs(TYP_STRUCT) ? GetLayout()->GetSize() : genTypeSize(TypeGet());
 }
 
 #ifdef TARGET_ARM
