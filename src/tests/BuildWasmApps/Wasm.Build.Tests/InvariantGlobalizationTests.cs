@@ -20,7 +20,7 @@ namespace Wasm.Build.Tests
         public static IEnumerable<object?[]> InvariantGlobalizationTestData(bool aot, RunHost host)
             => ConfigWithAOTData(aot)
                 .Multiply(
-                    new object?[] { null },
+                    new object?[] { null })
                     new object?[] { false },
                     new object?[] { true })
                 .WithRunHosts(host)
@@ -29,7 +29,7 @@ namespace Wasm.Build.Tests
         // TODO: check that icu bits have been linked out
         [Theory]
         [MemberData(nameof(InvariantGlobalizationTestData), parameters: new object[] { /*aot*/ false, RunHost.All })]
-        [MemberData(nameof(InvariantGlobalizationTestData), parameters: new object[] { /*aot*/ true, RunHost.All })]
+        [MemberData(nameof(InvariantGlobalizationTestData), parameters: new object[] { [>aot<] true, RunHost.All })]
         public void AOT_InvariantGlobalization(BuildArgs buildArgs, bool? invariantGlobalization, RunHost host, string id)
             => TestInvariantGlobalization(buildArgs, invariantGlobalization, host, id);
 

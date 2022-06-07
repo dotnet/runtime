@@ -750,6 +750,8 @@ namespace Wasm.Build.Tests
                 // resetEvent.WaitOne();
                 if (!process.WaitForExit(timeoutMs ?? s_defaultPerTestTimeoutMs))
                 {
+                    if (process.HasExited)
+                        _testOutput.WriteLine("Process has already exited");
                     // process didn't exit
                     process.Kill(entireProcessTree: true);
                     lock (syncObj)
@@ -763,7 +765,7 @@ namespace Wasm.Build.Tests
                     // this will ensure that all the async event handling
                     // has completed
                     // https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.process.waitforexit?view=net-5.0#System_Diagnostics_Process_WaitForExit_System_Int32_
-                    await process.WaitForExitAsync();
+                    await process.WaitForExitAsync().ConfigureAwait(false);
                 }
 
                 process.ErrorDataReceived -= logStdErr;
