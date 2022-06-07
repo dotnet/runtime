@@ -168,6 +168,14 @@ namespace System.Net.Security
                 ref outSecurityBuffer,
                 ref outContextFlags);
 
+            // SSPI Workaround
+            // If a client sends up a blob on the initial request, Negotiate returns SEC_E_INVALID_HANDLE
+            // when it should return SEC_E_INVALID_TOKEN.
+            if (winStatus == Interop.SECURITY_STATUS.InvalidHandle && securityContext == null && !incomingBlob.IsEmpty)
+            {
+                winStatus = Interop.SECURITY_STATUS.InvalidToken;
+            }
+
             resultBlob = outSecurityBuffer.token;
             securityContext = sslContext;
             contextFlags = ContextFlagsAdapterPal.GetContextFlagsPalFromInterop(outContextFlags);
