@@ -892,7 +892,7 @@ inline SCOUNT_T EString<TEncoding>::Index::Subtract(const Index &i) const
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    return (SCOUNT_T) ((m_ptr - i.m_ptr) / sizeof(char_t));
+    return (SCOUNT_T) ((m_ptr - i.m_ptr) / (SCOUNT_T)sizeof(char_t));
 }
 
 template<typename TEncoding>
