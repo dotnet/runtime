@@ -188,6 +188,9 @@
     <!-- Crashes on CI (possibly flakey) -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml/tests/Misc/System.Xml.Misc.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Dynamic.Runtime/tests/System.Dynamic.Runtime.Tests.csproj"/>
+
+    <!-- gRPC tests should be run only manually -->
+    <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\gRPC\Android.Device_Emulator.gRPC.Test.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="('$(TargetOS)' == 'Android' or '$(TargetsLinuxBionic)' == 'true') and '$(TargetArchitecture)' == 'arm64' and '$(RunDisabledAndroidTests)' != 'true'">
