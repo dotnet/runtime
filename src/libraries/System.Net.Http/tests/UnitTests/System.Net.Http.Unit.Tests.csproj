@@ -396,6 +396,8 @@
              Link="Common\System\Net\Http\aspnetcore\Http3\QPack\QPackEncodingException.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
              Link="Common\System\Text\ValueStringBuilder.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.AppendSpanFormattable.cs"
+             Link="Common\System\Text\ValueStringBuilder.AppendSpanFormattable.cs" />
     <Compile Include="..\..\..\System.Net.Http.WinHttpHandler\tests\UnitTests\FakeInterop.cs"
              Link="WinHttpHandler\UnitTests\FakeInterop.cs" />
     <Compile Include="..\..\..\System.Net.Http.WinHttpHandler\tests\UnitTests\FakeRegistry.cs"

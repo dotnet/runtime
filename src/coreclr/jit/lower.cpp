@@ -3686,6 +3686,10 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
             LowerRetSingleRegStructLclVar(ret);
             break;
 
+        case GT_LCL_FLD:
+            retVal->ChangeType(nativeReturnType);
+            break;
+
 #if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
 #ifdef FEATURE_SIMD
         case GT_SIMD:
@@ -3705,16 +3709,6 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
         }
         break;
 #endif // FEATURE_SIMD || FEATURE_HW_INTRINSICS
-
-        case GT_LCL_FLD:
-        {
-#ifdef DEBUG
-            LclVarDsc* varDsc = comp->lvaGetDesc(retVal->AsLclFld());
-            assert(varDsc->lvDoNotEnregister);
-#endif
-            retVal->ChangeType(nativeReturnType);
-        }
-        break;
 
         default:
             assert(varTypeIsEnregisterable(retVal));
@@ -4927,11 +4921,21 @@ GenTree* Lowering::LowerVirtualVtableCall(GenTreeCall* call)
 {
     noway_assert(call->gtCallType == CT_USER_FUNC);
 
-    assert(call->gtArgs.HasThisPointer());
-    CallArg* thisArg = call->gtArgs.GetThisArg();
+    GenTree* thisArgNode;
+    if (call->IsTailCallViaJitHelper())
+    {
+        assert(call->gtArgs.CountArgs() > 0);
+        thisArgNode = call->gtArgs.GetArgByIndex(0)->GetNode();
+    }
+    else
+    {
+        assert(call->gtArgs.HasThisPointer());
+        thisArgNode = call->gtArgs.GetThisArg()->GetNode();
+    }
+
     // get a reference to the thisPtr being passed
-    assert(thisArg->GetNode()->OperIs(GT_PUTARG_REG));
-    GenTree* thisPtr = thisArg->GetNode()->AsUnOp()->gtGetOp1();
+    assert(thisArgNode->OperIs(GT_PUTARG_REG));
+    GenTree* thisPtr = thisArgNode->AsUnOp()->gtGetOp1();
 
     // If what we are passing as the thisptr is not already a local, make a new local to place it in
     // because we will be creating expressions based on it.
@@ -4948,7 +4952,7 @@ GenTree* Lowering::LowerVirtualVtableCall(GenTreeCall* call)
             vtableCallTemp = comp->lvaGrabTemp(true DEBUGARG("virtual vtable call"));
         }
 
-        LIR::Use thisPtrUse(BlockRange(), &thisArg->GetNode()->AsUnOp()->gtOp1, thisArg->GetNode());
+        LIR::Use thisPtrUse(BlockRange(), &thisArgNode->AsUnOp()->gtOp1, thisArgNode);
         ReplaceWithLclVar(thisPtrUse, vtableCallTemp);
 
         lclNum = vtableCallTemp;

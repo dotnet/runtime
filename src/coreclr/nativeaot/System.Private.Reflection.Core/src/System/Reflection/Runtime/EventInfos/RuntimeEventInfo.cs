@@ -12,7 +12,6 @@ using System.Reflection.Runtime.ParameterInfos;
 using System.Reflection.Runtime.CustomAttributes;
 
 using Internal.Reflection.Core.Execution;
-using Internal.Reflection.Tracing;
 
 namespace System.Reflection.Runtime.EventInfos
 {
@@ -20,7 +19,7 @@ namespace System.Reflection.Runtime.EventInfos
     // The runtime's implementation of EventInfo's
     //
     [DebuggerDisplay("{_debugName}")]
-    internal abstract partial class RuntimeEventInfo : EventInfo, ITraceableTypeMember
+    internal abstract partial class RuntimeEventInfo : EventInfo
     {
         protected RuntimeEventInfo(RuntimeTypeInfo contextTypeInfo, RuntimeTypeInfo reflectedType)
         {
@@ -32,11 +31,6 @@ namespace System.Reflection.Runtime.EventInfos
         {
             get
             {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.EventInfo_AddMethod(this);
-#endif
-
                 MethodInfo adder = _lazyAdder;
                 if (adder == null)
                 {
@@ -54,11 +48,6 @@ namespace System.Reflection.Runtime.EventInfos
         {
             get
             {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.EventInfo_DeclaringType(this);
-#endif
-
                 return ContextTypeInfo;
             }
         }
@@ -82,11 +71,6 @@ namespace System.Reflection.Runtime.EventInfos
         {
             get
             {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.EventInfo_Name(this);
-#endif
-
                 return MetadataName;
             }
         }
@@ -103,11 +87,6 @@ namespace System.Reflection.Runtime.EventInfos
         {
             get
             {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.EventInfo_RaiseMethod(this);
-#endif
-
                 return GetEventMethod(EventMethodSemantics.Fire);
             }
         }
@@ -116,11 +95,6 @@ namespace System.Reflection.Runtime.EventInfos
         {
             get
             {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.EventInfo_RemoveMethod(this);
-#endif
-
                 MethodInfo remover = _lazyRemover;
                 if (remover == null)
                 {
@@ -142,22 +116,6 @@ namespace System.Reflection.Runtime.EventInfos
                 throw new InvalidOperationException(); // Legacy: Why is a ToString() intentionally throwing an exception?
             RuntimeParameterInfo runtimeParameterInfo = (RuntimeParameterInfo)(parameters[0]);
             return runtimeParameterInfo.ParameterTypeString + " " + this.Name;
-        }
-
-        string ITraceableTypeMember.MemberName
-        {
-            get
-            {
-                return MetadataName;
-            }
-        }
-
-        Type ITraceableTypeMember.ContainingType
-        {
-            get
-            {
-                return ContextTypeInfo;
-            }
         }
 
         protected RuntimeEventInfo WithDebugName()

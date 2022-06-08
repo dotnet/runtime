@@ -58,8 +58,7 @@ void ArrIndex::PrintBoundsCheckNodes(unsigned dim /* = -1 */)
 //      the "type" member
 //
 // Notes:
-//      This tree produces GT_INDEX node, the caller is supposed to morph it appropriately
-//      so it can be codegen'ed.
+//      This tree produces a GT_IND(GT_INDEX_ADDR) node, the caller is supposed to morph it.
 //
 GenTree* LC_Array::ToGenTree(Compiler* comp, BasicBlock* bb)
 {
@@ -71,13 +70,15 @@ GenTree* LC_Array::ToGenTree(Compiler* comp, BasicBlock* bb)
         int      rank = GetDimRank();
         for (int i = 0; i < rank; ++i)
         {
-            arr = comp->gtNewIndexRef(TYP_REF, arr, comp->gtNewLclvNode(arrIndex->indLcls[i],
-                                                                        comp->lvaTable[arrIndex->indLcls[i]].lvType));
+            GenTree* idx     = comp->gtNewLclvNode(arrIndex->indLcls[i], comp->lvaTable[arrIndex->indLcls[i]].lvType);
+            GenTree* arrAddr = comp->gtNewArrayIndexAddr(arr, idx, TYP_REF, NO_CLASS_HANDLE);
 
             // Clear the range check flag and mark the index as non-faulting: we guarantee that all necessary range
             // checking has already been done by the time this array index expression is invoked.
-            arr->gtFlags &= ~(GTF_INX_RNGCHK | GTF_EXCEPT);
-            arr->gtFlags |= GTF_INX_NOFAULT;
+            arrAddr->gtFlags &= ~GTF_INX_RNGCHK;
+            arrAddr->gtFlags |= GTF_INX_ADDR_NONNULL;
+
+            arr = comp->gtNewIndexIndir(arrAddr->AsIndexAddr());
         }
         // If asked for arrlen invoke arr length operator.
         if (oper == ArrLen)
@@ -2186,7 +2187,7 @@ bool Compiler::optIsStackLocalInvariant(unsigned loopNum, unsigned lclNum)
 //
 //  Arguments:
 //      tree             the tree to be checked if it is the array [] operation.
-//      result           the extracted GT_INDEX information is updated in result.
+//      result           the extracted GT_INDEX_ADDR information is updated in result.
 //      lhsNum           for the root level (function is recursive) callers should pass BAD_VAR_NUM.
 //      topLevelIsFinal  OUT: set to `true` if see a non-TYP_REF element type array.
 //
@@ -2196,8 +2197,8 @@ bool Compiler::optIsStackLocalInvariant(unsigned loopNum, unsigned lclNum)
 //      dimension of [] encountered.
 //
 //  Operation:
-//      Given a "tree" extract the GT_INDEX node in "result" as ArrIndex. In morph
-//      we have converted a GT_INDEX tree into a scaled index base offset expression.
+//      Given a "tree" extract the GT_INDEX_ADDR node in "result" as ArrIndex. In morph
+//      we have converted a GT_INDEX_ADDR tree into a scaled index base offset expression.
 //      However, we don't actually bother to parse the morphed tree. All we care about is
 //      the bounds check node: it contains the array base and element index. The other side
 //      of the COMMA node can vary between array of primitive type and array of struct. There's
@@ -2306,7 +2307,7 @@ bool Compiler::optExtractArrIndex(GenTree* tree, ArrIndex* result, unsigned lhsN
 //
 //  Arguments:
 //      tree             the tree to be checked if it is an array [][][] operation.
-//      result           OUT: the extracted GT_INDEX information.
+//      result           OUT: the extracted GT_INDEX_ADDR information.
 //      lhsNum           var number of array object we're looking for.
 //      topLevelIsFinal  OUT: set to `true` if we reached a non-TYP_REF element type array.
 //
@@ -2333,7 +2334,7 @@ bool Compiler::optReconstructArrIndexHelp(GenTree* tree, ArrIndex* result, unsig
         GenTree* lhs = before->gtGetOp1();
         GenTree* rhs = before->gtGetOp2();
 
-        // "rhs" should contain an GT_INDEX
+        // "rhs" should contain an index expression.
         if (!lhs->IsLocal() || !optReconstructArrIndexHelp(rhs, result, lhsNum, topLevelIsFinal))
         {
             return false;

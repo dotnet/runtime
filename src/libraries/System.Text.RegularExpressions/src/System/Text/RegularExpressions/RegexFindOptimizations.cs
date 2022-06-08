@@ -206,6 +206,11 @@ namespace System.Text.RegularExpressions
             }
         }
 
+        /// <summary>true iff <see cref="TryFindNextStartingPosition"/> might advance the position.</summary>
+        public bool IsUseful =>
+            FindMode != FindNextStartingPositionMode.NoSearch || // there's a searching scheme available
+            LeadingAnchor == RegexNodeKind.Bol; // there's a leading BOL anchor we can otherwise search for
+
         /// <summary>Gets the selected mode for performing the next <see cref="TryFindNextStartingPosition"/> operation</summary>
         public FindNextStartingPositionMode FindMode { get; } = FindNextStartingPositionMode.NoSearch;
 

@@ -325,11 +325,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
     assert(category != HW_Category_Scalar);
     assert(!HWIntrinsicInfo::isScalarIsa(HWIntrinsicInfo::lookupIsa(intrinsic)));
 
-    if (!IsBaselineSimdIsaSupported())
-    {
-        return nullptr;
-    }
-
     assert(numArgs >= 0);
 
     var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);

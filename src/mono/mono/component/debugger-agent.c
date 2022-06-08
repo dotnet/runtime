@@ -2944,21 +2944,14 @@ static gint32 isFixedSizeArray (MonoClassField *f)
 			MonoClass *fixed_size_class = mono_class_try_get_fixed_buffer_class ();
 			if (fixed_size_class != NULL && mono_class_has_parent (ctor_class, fixed_size_class)) {
 				attr = &cinfo->attrs [aindex];
-				gpointer *typed_args, *named_args;
-				CattrNamedArg *arginfo;
-				int num_named_args;
-
-				mono_reflection_create_custom_attr_data_args_noalloc (mono_get_corlib (), attr->ctor, attr->data, attr->data_size,
-																	&typed_args, &named_args, &num_named_args, &arginfo, error);
+				MonoDecodeCustomAttr *decoded_args = mono_reflection_create_custom_attr_data_args_noalloc (mono_get_corlib (), attr->ctor, attr->data, attr->data_size, error);
 				if (!is_ok (error)) {
 					ret = 0;
 					goto leave;
 				}
-				ret = *(gint32*)typed_args [1];
-				g_free (typed_args [1]);
-				g_free (typed_args);
-				g_free (named_args);
-				g_free (arginfo);
+
+				ret = *(gint32*)decoded_args->typed_args[1]->value.primitive;
+				mono_reflection_free_custom_attr_data_args_noalloc (decoded_args);
 				return ret;
 			}
 		}
@@ -6505,8 +6498,8 @@ send_enc_delta (MonoImage *image, gconstpointer dmeta_bytes, int32_t dmeta_len, 
 
 		EnCInfo info;
 		info.image = image;
-		info.meta_bytes = dpdb_bytes;
-		info.meta_len = dpdb_len;
+		info.meta_bytes = dmeta_bytes;
+		info.meta_len = dmeta_len;
 		info.pdb_bytes = dpdb_bytes;
 		info.pdb_len = dpdb_len;
 
@@ -7833,9 +7826,6 @@ static int get_static_field_value(MonoClassField* f, MonoClass* klass, MonoDomai
 	vtable = mono_class_vtable_checked(m_field_get_parent (f), error);
 	if (!is_ok(error))
 		return -1;
-
-	/* TODO: metadata-update.  implement support for added fields */
-	g_assert (!m_field_is_from_update (f));
 
 	if (CHECK_ICORDBG (TRUE))
 	{

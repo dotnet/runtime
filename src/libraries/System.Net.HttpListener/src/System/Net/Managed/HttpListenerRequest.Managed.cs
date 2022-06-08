@@ -64,7 +64,7 @@ namespace System.Net
         private HttpListenerContext _context;
         private bool _isChunked;
 
-        private static byte[] s_100continue = Encoding.ASCII.GetBytes("HTTP/1.1 100 Continue\r\n\r\n");
+        private static byte[] s_100continue = "HTTP/1.1 100 Continue\r\n\r\n"u8.ToArray();
 
         internal HttpListenerRequest(HttpListenerContext context)
         {

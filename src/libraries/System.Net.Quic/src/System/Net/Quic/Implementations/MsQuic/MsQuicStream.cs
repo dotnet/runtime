@@ -125,11 +125,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             try
             {
                 Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
-                delegate* unmanaged[Cdecl]<QUIC_HANDLE*, void*, QUIC_STREAM_EVENT*, int> nativeCallback = &NativeCallback;
-                MsQuicApi.Api.ApiTable->SetCallbackHandler(
-                    _state.Handle.QuicHandle,
-                    nativeCallback,
-                    (void*)GCHandle.ToIntPtr(_state.StateGCHandle));
+                MsQuicApi.Api.ApiTable->SetStreamCallback(_state.Handle.QuicHandle, &NativeCallback, (void*)GCHandle.ToIntPtr(_state.StateGCHandle));
             }
             catch
             {
