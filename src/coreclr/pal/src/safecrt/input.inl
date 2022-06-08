@@ -1262,7 +1262,7 @@ static int __cdecl _inc(miniFILE* fileptr)
 static void __cdecl _un_inc(int chr, miniFILE* fileptr)
 {
     if (_TEOF != chr) {
-        _ungettc_nolock(chr,fileptr);
+        _ungettc_nolock((char)chr,fileptr);
     }
 }
 
