@@ -323,3 +323,7 @@ export interface EventPipeSession {
     stop(): void;
     getTraceBlob(): Blob;
 }
+
+export interface EventPipeStreamingSession extends EventPipeSession {
+    get isIPCStreamingSession(): true;
+}

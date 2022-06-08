@@ -3,7 +3,8 @@
 
 import { Module } from "./imports";
 import cwraps from "./cwraps";
-import type { DiagnosticOptions, EventPipeSession, EventPipeSessionOptions, EventPipeSessionAutoStopOptions } from "./types";
+import type { DiagnosticOptions, EventPipeSession, EventPipeStreamingSession, EventPipeSessionOptions, EventPipeSessionAutoStopOptions } from "./types";
+import { mono_assert } from "./types";
 import type { VoidPtr } from "./types/emscripten";
 import serverController from "./diagnostic-server-controller";
 import * as memory from "./memory";
@@ -26,6 +27,38 @@ function start_streaming(sessionID: EventPipeSessionIDImpl): void {
 
 function stop_streaming(sessionID: EventPipeSessionIDImpl): void {
     cwraps.mono_wasm_event_pipe_session_disable(sessionID);
+}
+
+class EventPipeIPCSession implements EventPipeStreamingSession {
+    private _sessionID: EventPipeSessionIDImpl;
+    private _messagePort: MessagePort;
+
+    constructor(messagePort: MessagePort, sessionID: EventPipeSessionIDImpl) {
+        this._messagePort = messagePort;
+        this._sessionID = sessionID;
+    }
+
+    get sessionID(): bigint {
+        return BigInt(this._sessionID);
+    }
+    get isIPCStreamingSession(): true {
+        return true;
+    }
+    start() {
+        throw new Error("implement me");
+    }
+    stop() {
+        throw new Error("implement me");
+    }
+    getTraceBlob(): Blob {
+        throw new Error("implement me");
+    }
+    postIPCStreamingSessionStarted() {
+        this._messagePort.postMessage({
+            "type": "started",
+            "sessionID": this._sessionID,
+        });
+    }
 }
 
 /// An EventPipe session that saves the event data to a file in the VFS.
@@ -236,7 +269,11 @@ export interface Diagnostics {
     getStartupSessions(): (EventPipeSession | null)[];
 }
 
-let startup_session_configs: (EventPipeSessionOptions & EventPipeSessionAutoStopOptions)[] | null = null;
+interface EventPipeSessionIPCOptions {
+    message_port: MessagePort;
+}
+
+let startup_session_configs: (EventPipeSessionOptions & EventPipeSessionAutoStopOptions & EventPipeSessionIPCOptions)[] = [];
 let startup_sessions: (EventPipeSession | null)[] | null = null;
 
 export function mono_wasm_event_pipe_early_startup_callback(): void {
@@ -244,25 +281,24 @@ export function mono_wasm_event_pipe_early_startup_callback(): void {
         return;
     }
     startup_sessions = startup_session_configs.map(config => createAndStartEventPipeSession(config));
-    startup_session_configs = null;
+    startup_session_configs = [];
 }
 
 
-
-function createAndStartEventPipeSession(options: (EventPipeSessionOptions & EventPipeSessionAutoStopOptions)): EventPipeSession | null {
+function createAndStartEventPipeSession(options: (EventPipeSessionOptions & EventPipeSessionAutoStopOptions & EventPipeSessionIPCOptions)): EventPipeSession | null {
     const session = createEventPipeSession(options);
     if (session === null) {
         return null;
     }
 
-    if (session.isIPCStreamingSession) {
-        serverController.postIPCStreamingSessionStarted(session.sessionID);
+    if (session instanceof EventPipeIPCSession) {
+        session.postIPCStreamingSessionStarted();
     }
     session.start();
     return session;
 }
 
-function createEventPipeSession(options?: EventPipeSessionOptions): EventPipeSession | null {
+function createEventPipeSession(options?: EventPipeSessionOptions & EventPipeSessionIPCOptions): EventPipeSession | null {
     // The session trace is saved to a file in the VFS. The file name doesn't matter,
     // but we'd like it to be distinct from other traces.
     const tracePath = `/trace-${totalSessions++}.nettrace`;
@@ -273,8 +309,12 @@ function createEventPipeSession(options?: EventPipeSessionOptions): EventPipeSes
         return null;
     const sessionID = success;
 
-    const session = new EventPipeFileSession(sessionID, tracePath);
-    return session;
+    if (options?.message_port !== undefined) {
+        return new EventPipeIPCSession(sessionID, options.message_port);
+    } else {
+        const session = new EventPipeFileSession(sessionID, tracePath);
+        return session;
+    }
 }
 
 /// APIs for working with .NET diagnostics from JavaScript.
@@ -298,10 +338,21 @@ export const diagnostics: Diagnostics = {
     },
 };
 
-export async function conifigureDiagnostics(options: DiagnosticOptions): Promise<DiagnosticOptions> {
+// Initialization flow
+///   * The runtime calls configure_diagnostics with options from MonoConfig
+///   * We start the diagnostic server which connects to the host and waits for some configurations (an IPC CollectTracing command)
+///   * The host sends us the configurations and we push them onto the startup_session_configs array and let the startup resume
+///   * The runtime calls mono_wasm_initA_diagnostics with any options from MonoConfig
+///   * The runtime C layer calls mono_wasm_event_pipe_early_startup_callback during startup once native EventPipe code is initialized
+///   * We start all the sessiosn in startup_session_configs and allow them to start streaming
+///   * The IPC sessions first send an IPC message with the session ID and then they start streaming
+////  * If the diagnostic server gets more commands it will send us a message through the serverController and we will start additional sessions
+
+
+export async function configure_diagnostics(options: DiagnosticOptions): Promise<DiagnosticOptions> {
     if (!options.server)
         return options;
-    mono_assert(options.server !== undefined && (options.server === true || options.server === "wait"));
+    mono_assert(options.server !== undefined && (options.server === true || options.server === "wait"), "options.server must be a boolean or 'wait'");
     // serverController.startServer
     // if diagnostic_options.await is true, wait for the server to get a connection
     const q = await serverController.configureServer(options);
@@ -309,8 +360,11 @@ export async function conifigureDiagnostics(options: DiagnosticOptions): Promise
     if (q.serverStarted) {
         if (wait && q.serverReady) {
             // wait for the server to get a connection
-            await q.serverReady;
+            const serverReadyResponse = await q.serverReady;
             // TODO: get sessions from the server controller and add them to the list of startup sessions
+            if (serverReadyResponse.sessions) {
+                startup_sesison_configs.push(...serverReadyResponse.sessions);
+            }
         }
     }
     return options;
@@ -318,7 +372,7 @@ export async function conifigureDiagnostics(options: DiagnosticOptions): Promise
 
 export function mono_wasm_init_diagnostics(config?: DiagnosticOptions): void {
     const sessions = config?.sessions ?? [];
-    startup_session_configs = sessions;
+    startup_session_configs.push(...sessions);
 }
 
 export default diagnostics;
