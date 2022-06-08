@@ -10790,52 +10790,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                         }
                     }
                 }
-
-                if (op1->OperIs(GT_LT, GT_GT))
-                {
-                    bool     fold  = false;
-                    GenTree* lNode = op1->gtGetOp1();
-                    GenTree* rNode = op1->gtGetOp2();
-
-#if defined(HOST_X86) || defined(HOST_ARM)
-                    ssize_t longMin = INT32_MIN;
-                    ssize_t longMax = INT32_MAX;
-#else
-                    ssize_t longMin     = INT64_MIN;
-                    ssize_t longMax     = INT64_MAX;
-#endif
-                    if (op1->OperIs(GT_LT))
-                    {
-                        // Folds:
-                        // 1. byte x >= 0 => true
-                        // 2. int  x >= int.MinValue => true
-                        // 3. long x >= long.MaxValue => true
-
-                        fold = (lNode->TypeIs(TYP_UBYTE) && rNode->IsIntegralConst(0)) ||
-                               (lNode->TypeIs(TYP_INT) && rNode->IsIntegralConst(INT32_MIN)) ||
-                               (lNode->TypeIs(TYP_LONG) && rNode->IsIntegralConst(longMin));
-                    }
-
-                    if (op1->OperIs(GT_GT))
-                    {
-                        // Folds:
-                        // 1. byte x <= byte.MaxValue => true
-                        // 2. int  x <= int.MaxValue => true
-                        // 3. long x <= long.MaxValue => true
-
-                        fold = (lNode->TypeIs(TYP_UBYTE) && rNode->IsIntegralConst(BYTE_MAX)) ||
-                               (lNode->TypeIs(TYP_INT) && rNode->IsIntegralConst(INT32_MAX)) ||
-                               (lNode->TypeIs(TYP_LONG) && rNode->IsIntegralConst(longMax));
-                    }
-
-                    if (fold)
-                    {
-                        GenTree* ret = gtNewIconNode(1, TYP_INT);
-                        ret->SetVNsFromNode(tree);
-                        DEBUG_DESTROY_NODE(tree);
-                        return fgMorphTree(ret);
-                    }
-                }
             }
         }
 
@@ -11421,6 +11375,12 @@ DONE_MORPHING_CHILDREN:
             if (!optValnumCSE_phase && op2->IsIntegralConst())
             {
                 tree = fgOptimizeEqualityComparisonWithConst(tree->AsOp());
+
+                if (tree->OperIs(GT_CNS_INT, GT_COMMA))
+                {
+                    return tree;
+                }
+
                 assert(tree->OperIsCompare());
 
                 oper = tree->OperGet();
@@ -12524,6 +12484,65 @@ GenTree* Compiler::fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp)
             op1->SetVNsFromNode(cmp);
 
             DEBUG_DESTROY_NODE(cmp);
+
+            if (op1->OperIs(GT_GE, GT_LE) && (op1->gtGetOp2()->IsIntegralConst() || op1->gtGetOp1()->IsIntegralConst()))
+            {
+                GenTree* conNode = op1->gtGetOp2()->IsIntegralConst() ? op1->gtGetOp2() : op1->gtGetOp1();
+
+                IntegralRange valRange = IntegralRange::ForNode(conNode, this);
+
+#if defined(HOST_X86) || defined(HOST_ARM)
+                ssize_t valMin =
+                    (int32_t)IntegralRange::SymbolicToRealValue(valRange.LowerBoundForType(conNode->TypeGet()));
+                ssize_t valMax =
+                    (int32_t)IntegralRange::SymbolicToRealValue(valRange.UpperBoundForType(conNode->TypeGet()));
+#else
+                ssize_t valMin = IntegralRange::SymbolicToRealValue(valRange.LowerBoundForType(conNode->TypeGet()));
+                ssize_t valMax = IntegralRange::SymbolicToRealValue(valRange.UpperBoundForType(conNode->TypeGet()));
+#endif
+                // Folds
+                // 1. byte x <= 0 => true
+                // 2. int  x <= int.MinValue => true
+                // 3. long x <= long.MaxValue => true
+                // 4. byte x >= byte.MaxValue => true
+                // 5. int  x >= int.MaxValue => true
+                // 6. long x >= long.MaxValue => true
+                //
+                // when const is RHS:
+                if (op1->gtGetOp2()->IsIntegralConst())
+                {
+
+                    if ((op1->OperIs(GT_GE) && conNode->IsIntegralConst(valMin)) ||
+                        (op1->OperIs(GT_LE) && conNode->IsIntegralConst(valMax)))
+                    {
+                        GenTree* ret = gtNewIconNode(1, TYP_INT);
+                        ret->SetVNsFromNode(op1);
+                        DEBUG_DESTROY_NODE(op1);
+                        return fgMorphTree(ret);
+                    }
+                } // when const is LHS:
+                else
+                {
+                    if ((op1->OperIs(GT_GE) && conNode->IsIntegralConst(valMax)) ||
+                        (op1->OperIs(GT_LE) && conNode->IsIntegralConst(valMin)))
+                    {
+                        GenTree* cmpSideEffects = nullptr;
+                        GenTree* ret            = gtNewIconNode(1, TYP_INT);
+
+                        gtExtractSideEffList(op1, &cmpSideEffects);
+
+                        if (cmpSideEffects != nullptr)
+                        {
+                            ret = gtNewOperNode(GT_COMMA, TYP_INT, cmpSideEffects, ret);
+                        }
+
+                        ret->SetVNsFromNode(op1);
+                        DEBUG_DESTROY_NODE(op1);
+                        return fgMorphTree(ret);
+                    }
+                }
+            }
+
             return op1;
         }
 
@@ -13071,7 +13090,7 @@ GenTree* Compiler::fgOptimizeMultiply(GenTreeOp* mul)
         // Should we try to replace integer multiplication with lea/add/shift sequences?
         bool mulShiftOpt = compCodeOpt() != SMALL_CODE;
 #else  // !TARGET_XARCH
-        bool                mulShiftOpt = false;
+        bool            mulShiftOpt = false;
 #endif // !TARGET_XARCH
 
         size_t abs_mult      = (mult >= 0) ? mult : -mult;
