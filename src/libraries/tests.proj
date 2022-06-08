@@ -388,23 +388,33 @@
     <ProjectExclusions Remove="$(MSBuildThisFileDirectory)System.IO.IsolatedStorage\tests\System.IO.IsolatedStorage.Tests.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TestNativeAot)' == 'true' and '$(RunNativeAotSmokeTestsOnly)' == 'true'">
+  <ItemGroup Condition="'$(TestNativeAot)' == 'true' and '$(RunSmokeTestsOnly)' == 'true'">
     <!-- Run only a small randomly chosen set of passing test suites -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj" />
-    <ProjectExclusions Remove="$(MSBuildThisFileDirectory)System.Collections\tests\System.Collections.Tests.csproj" />
-    <!-- Remove the condition after fix, https://github.com/dotnet/runtime/issues/70010 -->
-    <ProjectExclusions Remove="$(MSBuildThisFileDirectory)System.Reflection\tests\System.Reflection.Tests.csproj" 
+    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Collections\tests\System.Collections.Tests.csproj" />
+    <!-- Include the condition after fix, https://github.com/dotnet/runtime/issues/70010 -->
+    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Reflection\tests\System.Reflection.Tests.csproj" 
                        Condition="'$(TargetOS)' == 'windows'" />
-    <ProjectExclusions Remove="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests.csproj" />
-    <ProjectExclusions Remove="$(MSBuildThisFileDirectory)System.IO.Compression\tests\System.IO.Compression.Tests.csproj" />
-    <ProjectExclusions Remove="$(MSBuildThisFileDirectory)System.IO.FileSystem\tests\System.IO.FileSystem.Tests.csproj" />
-    <ProjectExclusions Remove="$(MSBuildThisFileDirectory)System.Threading\tests\System.Threading.Tests.csproj" />
-    <!-- Remove the condition after https://github.com/dotnet/runtime/issues/70012 is fixed -->
-    <ProjectExclusions Remove="$(MSBuildThisFileDirectory)System.Linq.Expressions\tests\System.Linq.Expressions.Tests.csproj"
+    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests.csproj" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)System.IO.Compression\tests\System.IO.Compression.Tests.csproj" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)System.IO.FileSystem\tests\System.IO.FileSystem.Tests.csproj" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Threading\tests\System.Threading.Tests.csproj" />
+    <!-- Include the condition after https://github.com/dotnet/runtime/issues/70012 is fixed -->
+    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Linq.Expressions\tests\System.Linq.Expressions.Tests.csproj"
                        Condition="'$(TargetOS)' == 'windows'" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TestNativeAot)' == 'true'">
+    <!--Failing due to https://github.com/dotnet/runtime/issues/67805 -->
+    <NativeAotFailingAsemblies Include="$(MSBuildThisFileDirectory)System.Collections.Concurrent/tests/System.Collections.Concurrent.Tests.csproj" />
+    <NativeAotFailingAsemblies Include="$(MSBuildThisFileDirectory)System.Linq.Parallel/tests/System.Linq.Parallel.Tests.csproj" />
+    <NativeAotFailingAsemblies Include="$(MSBuildThisFileDirectory)System.Threading.Thread/tests/System.Threading.Thread.Tests.csproj" />
+    <!--These tests are not interesting for NativeAot -->
+    <NativeAotFailingAsemblies Include="$(MSBuildThisFileDirectory)System.Reflection.Emit.Lightweight\tests\System.Reflection.Emit.Lightweight.Tests.csproj" />
+    <NativeAotFailingAsemblies Include="$(MSBuildThisFileDirectory)System.Reflection.Emit.ILGeneration\tests\System.Reflection.Emit.ILGeneration.Tests.csproj" />
+    <NativeAotFailingAsemblies Include="$(MSBuildThisFileDirectory)System.Reflection.Emit\tests\System.Reflection.Emit.Tests.csproj" />
+    <NativeAotFailingAsemblies Include="$(MSBuildThisFileDirectory)System.Runtime.Loader\tests\System.Runtime.Loader.Tests.csproj" />
+    <NativeAotFailingAsemblies Include="$(MSBuildThisFileDirectory)System.Reflection.DispatchProxy\tests\System.Reflection.DispatchProxy.Tests.csproj" />
+    <!--Needs work to get these tests to pass -->
     <NativeAotFailingAsemblies Include="$(MSBuildThisFileDirectory)System.Diagnostics.Process\tests\System.Diagnostics.Process.Tests.csproj" />
     <NativeAotFailingAsemblies Include="$(MSBuildThisFileDirectory)System.Drawing.Primitives\tests\System.Drawing.Primitives.Tests.csproj" />
     <NativeAotFailingAsemblies Include="$(MSBuildThisFileDirectory)System.Reflection\tests\System.Reflection.Tests.csproj" />
@@ -477,15 +487,16 @@
     <NativeAotFailingAsemblies Include="$(MSBuildThisFileDirectory)System.Xml.XPath.XDocument\tests\System.Xml.XPath.XDocument.Tests.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TestNativeAot)' == 'true' and '$(RunDisabledNativeAotTests)' == 'true'">
-    <!-- Run failing library tests for NativeAOT -->    
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj" />
-    <ProjectExclusions Remove="@(NativeAotFailingAsemblies)" />
+  <ItemGroup Condition="'$(TestNativeAot)' == 'true' and '$(RunSmokeTestsOnly)' != 'true' and '$(RunDisabledNativeAotTests)' != 'true' and '$(TestAssemblies)' == 'true'">
+    <!-- Run all test assemblies except failing tests -->
+    <ProjectReference Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj"
+                      Exclude="@(NativeAotFailingAsemblies)"
+                      Condition="'$(TestAssemblies)' == 'true'" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TestNativeAot)' == 'true' and '$(RunNativeAotSmokeTestsOnly)' != 'true' and '$(RunDisabledNativeAotTests)' != 'true'">
-    <!-- Run all test assemblies except failing tests -->
-    <ProjectExclusions Include="@(NativeAotFailingAsemblies)" />
+  <ItemGroup Condition="'$(TestNativeAot)' == 'true' and '$(RunDisabledNativeAotTests)' == 'true'">
+    <!-- Run failing library tests for NativeAOT -->    
+    <ProjectReference Include="@(NativeAotFailingAsemblies)" />
   </ItemGroup>
 
   <ItemGroup>
@@ -501,7 +512,7 @@
                       BuildInParallel="false" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(RunSmokeTestsOnly)' != 'true' and '$(RunHighAOTResourceRequiringTestsOnly)' != 'true'">
+  <ItemGroup Condition="'$(RunSmokeTestsOnly)' != 'true' and '$(RunHighAOTResourceRequiringTestsOnly)' != 'true' and '$(TestNativeAot)' != 'true'">
     <ProjectReference Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj"
                       Exclude="@(ProjectExclusions)"
                       Condition="'$(TestAssemblies)' == 'true'" />
