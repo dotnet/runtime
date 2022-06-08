@@ -149,83 +149,63 @@ namespace DependencyLogViewer
     class DGMLGraphProcessing
     {
         public static DGMLGraphProcessing Singleton;
-        int fileCount = 0;
+        int fileCount = -1;
         ConcurrentQueue<GraphEvent> events = new ConcurrentQueue<GraphEvent>();
 
-        public DGMLGraphProcessing(string filePath)
+        public DGMLGraphProcessing(Object fileStream)
         {
-            System.IO.Stream FileStream = FindXML(filePath);
-            FileReading(FileStream);
+            Thread th = new Thread(FindXML);
+            th.Start(fileStream);
+            //FileReading(FileStream);
         }
 
-        public System.IO.Stream FindXML(string fp)
+        public void FindXML(object fileStream)
         {
-            var fileContent = string.Empty;
-            var filePath = string.Empty;
-            var fileStream = System.IO.Stream.Null;
+            
+                GraphCollection collection = GraphCollection.Singleton;
+                XmlReaderSettings settings = new XmlReaderSettings();
+                settings.IgnoreWhitespace = true;
 
-            using (OpenFileDialog openFileDialog = new OpenFileDialog())
-            {
-                openFileDialog.InitialDirectory = fp;
-                openFileDialog.Filter = @"All Files|*.*|DGML(*.dgml)|*.dgml|XML(*.xml)|*xml";
-                openFileDialog.FilterIndex = 2;
-                openFileDialog.RestoreDirectory = true;
-
-                if (!filePath.EndsWith(".dgml") && !filePath.EndsWith(".xml"))
+                using (XmlReader reader = XmlReader.Create((System.IO.FileStream)fileStream, settings))
                 {
-                    if (openFileDialog.ShowDialog() == DialogResult.OK)
+                    while (reader.Read())
                     {
-                        //Get the path of specified file
-                        filePath = openFileDialog.FileName;
+                        if (!(reader.Name.StartsWith("P")))
+                        {
+                            IXmlLineInfo lineInfo = (IXmlLineInfo)reader;
+                            int lineNumber = lineInfo.LineNumber;
+                            switch (reader.NodeType)
+                            {
+                                case XmlNodeType.Element:
+                                    if (reader.Name == "Node")
+                                    {
+                                        int id = int.Parse(reader.GetAttribute("Id"));
+                                        collection.AddNodeToGraph(fileCount, fileCount, id, reader.GetAttribute("Label")); // same PID and ID because each process will only have one graph
+                                    }
+                                    else if (reader.Name == "Link")
+                                    {
+                                        int source = int.Parse(reader.GetAttribute("Source"));
+                                        int target = int.Parse(reader.GetAttribute("Target"));
+                                        collection.AddEdgeToGraph(fileCount, fileCount, source, target, reader.GetAttribute("Reason"));
+                                    }
+                                    else if (reader.Name == "DirectedGraph")
+                                    {
+                                        collection.AddGraph(fileCount, fileCount, reader.GetAttribute("xmlns"));
+                                        break;
+                                    }
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }
+
                     }
+                    fileCount -= 1;
                 }
-                fileStream = openFileDialog.OpenFile();
-            }
-            return fileStream;
         }
         public void FileReading(System.IO.Stream fileStream)
         {
-            GraphCollection collection = GraphCollection.Singleton;
-            XmlReaderSettings settings = new XmlReaderSettings();
-            settings.IgnoreWhitespace = true;
-            int linkId = 0;
-
-            using (XmlReader reader = XmlReader.Create(fileStream, settings))
-            {
-                while (reader.Read())
-                {
-                    if (!(reader.Name.StartsWith("P")))
-                    {
-                        IXmlLineInfo lineInfo = (IXmlLineInfo)reader;
-                        int lineNumber = lineInfo.LineNumber;
-                        switch (reader.NodeType)
-                        {
-                            case XmlNodeType.Element:
-                                if (reader.Name == "Node")
-                                {
-                                    int id = int.Parse(reader.GetAttribute("Id"));
-                                    collection.AddNodeToGraph(fileCount, id, lineNumber, reader.GetAttribute("Label"));
-                                }
-                                else if (reader.Name == "Link")
-                                {
-                                    int source = int.Parse(reader.GetAttribute("Source"));
-                                    int target = int.Parse(reader.GetAttribute("Target"));
-                                    collection.AddEdgeToGraph(fileCount, linkId, source, target, reader.GetAttribute("Reason"));
-                                }
-                                else if (reader.Name == "DirectedGraph")
-                                {
-                                    collection.AddGraph(fileCount, fileCount, reader.GetAttribute("xmlns"));
-                                break;
-                        }
-                                break;
-                            default:
-                                break;
-                        }
-                    }
-
-                }
-                fileCount -= 1;
-            }
+           
         }
         public void Stop()
         {
@@ -398,10 +378,32 @@ namespace DependencyLogViewer
             }
             else
             {
-                DGMLGraphProcessing.Singleton = new DGMLGraphProcessing(argPath);
-            }
-            
+                var fileContent = string.Empty;
+                var filePath = string.Empty;
+                var fileStream = System.IO.Stream.Null;
 
+                using (OpenFileDialog openFileDialog = new OpenFileDialog())
+                {
+                    openFileDialog.InitialDirectory = argPath;
+                    openFileDialog.Filter = @"All Files|*.*|DGML(*.dgml)|*.dgml|XML(*.xml)|*xml";
+                    openFileDialog.FilterIndex = 2;
+                    openFileDialog.RestoreDirectory = true;
+
+                    if (!filePath.EndsWith(".dgml") && !filePath.EndsWith(".xml"))
+                    {
+                        if (openFileDialog.ShowDialog() == DialogResult.OK)
+                        {
+                            //Get the path of specified file
+                            filePath = openFileDialog.FileName;
+                        }
+                    }
+                    fileStream = openFileDialog.OpenFile();
+                    DGMLGraphProcessing.Singleton = new DGMLGraphProcessing((Object)fileStream);
+                }
+
+
+                
+            }
             Application.Run(GraphCollection.DependencyGraphsUI);
 
             return 0;
