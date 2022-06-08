@@ -13,8 +13,6 @@
 #include "holder.h"
 #include "corerror.h"
 
-#ifdef FEATURE_COMINTEROP
-
 // ---------------------------------------------------------------------------
 // COMException class.  Implements exception API for standard COM-based error info
 // ---------------------------------------------------------------------------
@@ -36,6 +34,8 @@ IErrorInfo *COMException::GetErrorInfo()
         pErrorInfo->AddRef();
     return pErrorInfo;
 }
+
+#ifdef FEATURE_COMINTEROP
 
 void COMException::GetMessage(SString &string)
 {
