@@ -82,7 +82,7 @@ public:
     INT_CONFIG   (LOHThreshold,              "GCLOHThreshold",            NULL,                                LARGE_OBJECT_SIZE,  true, "Specifies the size that will make objects go on LOH")                                     \
     INT_CONFIG   (BGCSpinCount,              "BGCSpinCount",              NULL,                                140,                false, "Specifies the bgc spin count")                                                           \
     INT_CONFIG   (BGCSpin,                   "BGCSpin",                   NULL,                                2,                  false, "Specifies the bgc spin time")                                                            \
-    INT_CONFIG   (HeapCount,                 "GCHeapCount",               "System.GC.HeapCount",               0,                  false, "Specifies the number of server GC heaps")                                                \
+    INT_CONFIG   (HeapCount,                 "GCHeapCount",               "System.GC.HeapCount",               0,                  true, "Specifies the number of server GC heaps")                                                 \
     INT_CONFIG   (Gen0Size,                  "GCgen0size",                NULL,                                0,                  false, "Specifies the smallest gen0 budget")                                                     \
     INT_CONFIG   (SegmentSize,               "GCSegmentSize",             NULL,                                0,                  false, "Specifies the managed heap segment size")                                                \
     INT_CONFIG   (LatencyMode,               "GCLatencyMode",             NULL,                                -1,                 true, "Specifies the GC latency mode - batch, interactive or low latency (note that the same "   \
@@ -91,7 +91,7 @@ public:
                                                                                                                                           "to 3. See documentation for more details on each level.")                                \
     INT_CONFIG   (LogFileSize,               "GCLogFileSize",             NULL,                                0,                  false, "Specifies the GC log file size")                                                         \
     INT_CONFIG   (CompactRatio,              "GCCompactRatio",            NULL,                                0,                  false, "Specifies the ratio compacting GCs vs sweeping")                                         \
-    INT_CONFIG   (GCHeapAffinitizeMask,      "GCHeapAffinitizeMask",      "System.GC.HeapAffinitizeMask",      0,                  false, "Specifies processor mask for Server GC threads")                                         \
+    INT_CONFIG   (GCHeapAffinitizeMask,      "GCHeapAffinitizeMask",      "System.GC.HeapAffinitizeMask",      0,                  true, "Specifies processor mask for Server GC threads")                                          \
     STRING_CONFIG(GCHeapAffinitizeRanges,    "GCHeapAffinitizeRanges",    "System.GC.HeapAffinitizeRanges",                        false, "Specifies list of processors for Server GC threads. The format is a comma separated "    \
                                                                                                                                           "list of processor numbers or ranges of processor numbers. On Windows, each entry is "    \
                                                                                                                                           "prefixed by the CPU group number. Example: Unix - 1,3,5,7-9,12, Windows - 0:1,1:7-9")    \
@@ -100,8 +100,8 @@ public:
     INT_CONFIG   (GCGen0MaxBudget,           "GCGen0MaxBudget",           NULL,                                0,                  false, "Specifies the largest gen0 allocation budget")                                           \
     INT_CONFIG   (GCGen1MaxBudget,           "GCGen1MaxBudget",           NULL,                                0,                  false, "Specifies the largest gen1 allocation budget")                                           \
     INT_CONFIG   (GCLowSkipRatio,            "GCLowSkipRatio",            NULL,                                30,                 false,  "Specifies the low generation skip ratio")                                                \
-    INT_CONFIG   (GCHeapHardLimit,           "GCHeapHardLimit",           "System.GC.HeapHardLimit",           0,                  false, "Specifies a hard limit for the GC heap")                                                 \
-    INT_CONFIG   (GCHeapHardLimitPercent,    "GCHeapHardLimitPercent",    "System.GC.HeapHardLimitPercent",    0,                  false, "Specifies the GC heap usage as a percentage of the total memory")                        \
+    INT_CONFIG   (GCHeapHardLimit,           "GCHeapHardLimit",           "System.GC.HeapHardLimit",           0,                  true, "Specifies a hard limit for the GC heap")                                                  \
+    INT_CONFIG   (GCHeapHardLimitPercent,    "GCHeapHardLimitPercent",    "System.GC.HeapHardLimitPercent",    0,                  true, "Specifies the GC heap usage as a percentage of the total memory")                         \
     INT_CONFIG   (GCTotalPhysicalMemory,     "GCTotalPhysicalMemory",     NULL,                                0,                  false, "Specifies what the GC should consider to be total physical memory")                      \
     INT_CONFIG   (GCRegionRange,             "GCRegionRange",             NULL,                                274877906944L,      false, "Specifies the range for the GC heap")                                                    \
     INT_CONFIG   (GCRegionSize,              "GCRegionSize",              NULL,                                4194304,            false, "Specifies the size for a basic GC region")                                               \
@@ -126,12 +126,12 @@ public:
     INT_CONFIG   (BGCFLEnableTBH,            "BGCFLEnableTBH",            NULL,                                0,                  false, "Enables TBH")                                                                            \
     INT_CONFIG   (BGCFLEnableFF,             "BGCFLEnableFF",             NULL,                                0,                  false, "Enables FF")                                                                             \
     INT_CONFIG   (BGCG2RatioStep,            "BGCG2RatioStep",            NULL,                                5,                  false, "Ratio correction factor for ML loop")                                                    \
-    INT_CONFIG   (GCHeapHardLimitSOH,        "GCHeapHardLimitSOH",        "System.GC.HeapHardLimitSOH",        0,                  false, "Specifies a hard limit for the GC heap SOH")                                             \
-    INT_CONFIG   (GCHeapHardLimitLOH,        "GCHeapHardLimitLOH",        "System.GC.HeapHardLimitLOH",        0,                  false, "Specifies a hard limit for the GC heap LOH")                                             \
-    INT_CONFIG   (GCHeapHardLimitPOH,        "GCHeapHardLimitPOH",        "System.GC.HeapHardLimitPOH",        0,                  false, "Specifies a hard limit for the GC heap POH")                                             \
-    INT_CONFIG   (GCHeapHardLimitSOHPercent, "GCHeapHardLimitSOHPercent", "System.GC.HeapHardLimitSOHPercent", 0,                  false, "Specifies the GC heap SOH usage as a percentage of the total memory")                    \
-    INT_CONFIG   (GCHeapHardLimitLOHPercent, "GCHeapHardLimitLOHPercent", "System.GC.HeapHardLimitLOHPercent", 0,                  false, "Specifies the GC heap LOH usage as a percentage of the total memory")                    \
-    INT_CONFIG   (GCHeapHardLimitPOHPercent, "GCHeapHardLimitPOHPercent", "System.GC.HeapHardLimitPOHPercent", 0,                  false, "Specifies the GC heap POH usage as a percentage of the total memory")                    \
+    INT_CONFIG   (GCHeapHardLimitSOH,        "GCHeapHardLimitSOH",        "System.GC.HeapHardLimitSOH",        0,                  true, "Specifies a hard limit for the GC heap SOH")                                              \
+    INT_CONFIG   (GCHeapHardLimitLOH,        "GCHeapHardLimitLOH",        "System.GC.HeapHardLimitLOH",        0,                  true, "Specifies a hard limit for the GC heap LOH")                                              \
+    INT_CONFIG   (GCHeapHardLimitPOH,        "GCHeapHardLimitPOH",        "System.GC.HeapHardLimitPOH",        0,                  true, "Specifies a hard limit for the GC heap POH")                                              \
+    INT_CONFIG   (GCHeapHardLimitSOHPercent, "GCHeapHardLimitSOHPercent", "System.GC.HeapHardLimitSOHPercent", 0,                  true, "Specifies the GC heap SOH usage as a percentage of the total memory")                     \
+    INT_CONFIG   (GCHeapHardLimitLOHPercent, "GCHeapHardLimitLOHPercent", "System.GC.HeapHardLimitLOHPercent", 0,                  true, "Specifies the GC heap LOH usage as a percentage of the total memory")                     \
+    INT_CONFIG   (GCHeapHardLimitPOHPercent, "GCHeapHardLimitPOHPercent", "System.GC.HeapHardLimitPOHPercent", 0,                  true, "Specifies the GC heap POH usage as a percentage of the total memory")                     \
     INT_CONFIG   (GCEnabledInstructionSets,  "GCEnabledInstructionSets",  NULL,                                -1,                 false, "Specifies whether GC can use AVX2 or AVX512F - 0 for neither, 1 for AVX2, 3 for AVX512F")\
     INT_CONFIG   (GCConserveMem,             "GCConserveMemory",          NULL,                                0,                  true, "Specifies how hard GC should try to conserve memory - values 0-9")                        \
 
@@ -153,6 +153,12 @@ GC_CONFIGURATION_KEYS
 public:
   static void SetConcurrentGC(bool isConcurrentGC);
   static void SetGCLatencyMode(int latencyMode);
+  static void SetGCHeapCount(int heapNumber);
+  static void SetGCHeapAffinitizedMask(int heapAffinitizedMask);
+  static void SetGCHeapHardLimit(int heapHardLimit);
+  static void SetGCHeapHardLimitSOH(int heapHardLimitSOH);
+  static void SetGCHeapHardLimitLOH(int heapHardLimitLOH);
+  static void SetGCHeapHardLimitPOH(int heapHardLimitPOH);
 
 #undef BOOL_CONFIG
 #undef INT_CONFIG

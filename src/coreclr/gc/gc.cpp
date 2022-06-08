@@ -43949,6 +43949,10 @@ HRESULT GCHeap::Initialize()
     }
 
 #endif //HOST_64BIT
+    GCConfig::SetGCHeapHardLimit(static_cast<int>(gc_heap::heap_hard_limit));
+    GCConfig::SetGCHeapHardLimitSOH(static_cast<int>(gc_heap::heap_hard_limit_oh[soh]));
+    GCConfig::SetGCHeapHardLimitLOH(static_cast<int>(gc_heap::heap_hard_limit_oh[loh]));
+    GCConfig::SetGCHeapHardLimitPOH(static_cast<int>(gc_heap::heap_hard_limit_oh[poh]));
 
     uint32_t nhp = 1;
     uint32_t nhp_from_config = 0;
@@ -43964,6 +43968,7 @@ HRESULT GCHeap::Initialize()
     }
 
     const AffinitySet* process_affinity_set = GCToOSInterface::SetGCThreadsAffinitySet(config_affinity_mask, &config_affinity_set);
+    GCConfig::SetGCHeapAffinitizedMask(static_cast<int>(config_affinity_mask));
 
     if (process_affinity_set->IsEmpty())
     {
@@ -44036,6 +44041,7 @@ HRESULT GCHeap::Initialize()
                 }
             }
 #endif
+            GCConfig::SetGCHeapCount(nhp);
             seg_size = gc_heap::heap_hard_limit_oh[soh] / nhp;
             large_seg_size = gc_heap::heap_hard_limit_oh[loh] / nhp;
             pin_seg_size = (gc_heap::heap_hard_limit_oh[poh] != 0) ? (gc_heap::heap_hard_limit_oh[2] / nhp) : min_segment_size_hard_limit;
