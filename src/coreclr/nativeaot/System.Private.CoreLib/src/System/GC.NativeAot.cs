@@ -782,5 +782,10 @@ namespace System
         {
             return new TimeSpan(RuntimeImports.RhGetTotalPauseDuration());
         }
+
+        public static System.Collections.Generic.IReadOnlyDictionary<string, object> GetConfigurationVariables()
+        {
+            throw new NotImplementedException();
+        }
     }
 }

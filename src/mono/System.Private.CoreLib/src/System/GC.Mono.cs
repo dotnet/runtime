@@ -316,5 +316,10 @@ namespace System
         {
             return TimeSpan.Zero;
         }
+
+        public static IReadOnlyDictionary<string, object> GetConfigurationVariables()
+        {
+            throw new NotImplementedException();
+        }
     }
 }
