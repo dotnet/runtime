@@ -357,7 +357,6 @@ namespace System.Security.Cryptography
                     return new SHA512Managed();
 #pragma warning restore SYSLIB0021
 
-                case "HMAC":
                 case "System.Security.Cryptography.HMAC":
                 case "HMACSHA1":
                 case "System.Security.Cryptography.HMACSHA1":

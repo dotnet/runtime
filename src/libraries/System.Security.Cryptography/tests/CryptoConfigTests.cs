@@ -343,7 +343,6 @@ namespace System.Security.Cryptography.Tests
             get
             {
                 // Keyed Hash Algorithms - supported on all platforms
-                yield return new object[] { "HMAC", "System.Security.Cryptography.HMACSHA1", true };
                 yield return new object[] { "System.Security.Cryptography.HMAC", "System.Security.Cryptography.HMACSHA1", true };
                 yield return new object[] { "System.Security.Cryptography.KeyedHashAlgorithm", "System.Security.Cryptography.HMACSHA1", true };
                 yield return new object[] { "HMACSHA1", "System.Security.Cryptography.HMACSHA1", true };
