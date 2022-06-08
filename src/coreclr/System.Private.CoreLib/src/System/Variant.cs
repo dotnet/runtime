@@ -70,11 +70,43 @@ namespace System
         internal static Variant Missing => new Variant(CV_MISSING, Type.Missing, 0);
         internal static Variant DBNull => new Variant(CV_NULL, System.DBNull.Value, 0);
 
-        //
-        // Native Methods
-        //
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal extern void SetFieldsObject(object val);
+        internal unsafe void SetFieldsObject(object val)
+        {
+            MethodTable* pMT = RuntimeHelpers.GetMethodTable(val);
+
+            if (!pMT->IsValueType)
+            {
+                _objref = val;
+                _flags = CV_OBJECT;
+            }
+            else if (val.GetType().FullName == "System.Drawing.Color")
+            {
+
+            }
+            else
+            {
+                switch (val)
+                {
+                    case byte u1:
+                        this = new(u1);
+                        break;
+                    case sbyte i1:
+                        this = new(i1);
+                        break;
+                    case short i2:
+                        this = new(i2);
+                        break;
+                    case ushort u2:
+                        this = new(u2);
+                        break;
+                    case int i4:
+                        this = new(i4);
+                        break;
+                }
+
+                ref byte data = ref RuntimeHelpers.GetRawData(val); // Unbox?
+            }
+        }
 
         //
         // Constructors
@@ -206,7 +238,7 @@ namespace System
                 return;
             }
 
-            if (obj == null)
+            if (obj == null || obj is System.Empty)
             {
                 this = Empty;
                 return;
