@@ -55,13 +55,13 @@ namespace System.Net.Security
             throw new PlatformNotSupportedException();
         }
 
-        public static SafeFreeCredentials AcquireCredentialsHandle(
+        public static SafeFreeCredentials? AcquireCredentialsHandle(
             SslStreamCertificateContext? certificateContext,
             SslProtocols protocols,
             EncryptionPolicy policy,
             bool isServer)
         {
-            return new SafeFreeSslCredentials(certificateContext, protocols, policy);
+            return null;
         }
 
         public static SecurityStatusPal EncryptMessage(
@@ -186,7 +186,7 @@ namespace System.Net.Security
 
                 if ((context == null) || context.IsInvalid)
                 {
-                    context = new SafeDeleteSslContext((credential as SafeFreeSslCredentials)!, sslAuthenticationOptions);
+                    context = new SafeDeleteSslContext(sslAuthenticationOptions);
                     sslContext = context;
                 }
 

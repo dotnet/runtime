@@ -27,16 +27,14 @@ namespace System.Net
 
         public SafeSslHandle SslContext => _sslContext;
 
-        public SafeDeleteSslContext(SafeFreeSslCredentials credential, SslAuthenticationOptions sslAuthenticationOptions)
-            : base(credential)
+        public SafeDeleteSslContext(SslAuthenticationOptions sslAuthenticationOptions)
+            : base(IntPtr.Zero)
         {
-            Debug.Assert((null != credential) && !credential.IsInvalid, "Invalid credential used in SafeDeleteSslContext");
-
             try
             {
                 int osStatus;
 
-                _sslContext = CreateSslContext(credential, sslAuthenticationOptions.IsServer);
+                _sslContext = CreateSslContext(sslAuthenticationOptions);
 
                 // Make sure the class instance is associated to the session and is provided
                 // in the Read/Write callback connection parameter
@@ -131,9 +129,9 @@ namespace System.Net
             }
         }
 
-        private static SafeSslHandle CreateSslContext(SafeFreeSslCredentials credential, bool isServer)
+        private static SafeSslHandle CreateSslContext(SslAuthenticationOptions options)
         {
-            switch (credential.Policy)
+            switch (options.EncryptionPolicy)
             {
                 case EncryptionPolicy.RequireEncryption:
 #pragma warning disable SYSLIB0040 // NoEncryption and AllowNoEncryption are obsolete
@@ -144,10 +142,10 @@ namespace System.Net
                     break;
 #pragma warning restore SYSLIB0040
                 default:
-                    throw new PlatformNotSupportedException(SR.Format(SR.net_encryptionpolicy_notsupported, credential.Policy));
+                    throw new PlatformNotSupportedException(SR.Format(SR.net_encryptionpolicy_notsupported, options.EncryptionPolicy));
             }
 
-            SafeSslHandle sslContext = Interop.AppleCrypto.SslCreateContext(isServer ? 1 : 0);
+            SafeSslHandle sslContext = Interop.AppleCrypto.SslCreateContext(options.IsServer ? 1 : 0);
 
             try
             {
@@ -159,14 +157,14 @@ namespace System.Net
                 }
 
                 // Let None mean "system default"
-                if (credential.Protocols != SslProtocols.None)
+                if (options.EnabledSslProtocols != SslProtocols.None)
                 {
-                    SetProtocols(sslContext, credential.Protocols);
+                    SetProtocols(sslContext, options.EnabledSslProtocols);
                 }
 
-                if (credential.CertificateContext != null)
+                if (options.CertificateContext != null)
                 {
-                    SetCertificate(sslContext, credential.CertificateContext);
+                    SetCertificate(sslContext, options.CertificateContext);
                 }
 
                 Interop.AppleCrypto.SslBreakOnCertRequested(sslContext, true);

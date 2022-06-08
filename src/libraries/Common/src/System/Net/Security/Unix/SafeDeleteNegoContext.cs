@@ -44,13 +44,13 @@ namespace System.Net.Security
         }
 
         public SafeDeleteNegoContext(SafeFreeNegoCredentials credential)
-            : base(credential)
+            : base(IntPtr.Zero)
         {
             Debug.Assert((null != credential), "Null credential in SafeDeleteNegoContext");
         }
 
         public SafeDeleteNegoContext(SafeFreeNegoCredentials credential, string targetName)
-            : this(credential)
+            : base(IntPtr.Zero)
         {
             try
             {

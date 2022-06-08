@@ -224,7 +224,7 @@ internal static partial class Interop
 
                 if (sslAuthenticationOptions.CertificateContext != null)
                 {
-                    SetSslCertificate(sslCtx, sslAuthenticationOptions.CertificateContext.Certificate);
+                    SetSslCertificate(sslCtx, sslAuthenticationOptions.CertificateContext.CertificateHandle, sslAuthenticationOptions.CertificateContext.KeyHandle);
 
                     if (sslAuthenticationOptions.CertificateContext.IntermediateCertificates.Length > 0)
                     {
@@ -259,20 +259,16 @@ internal static partial class Interop
                 return;
             }
 
-            var credential = new SafeFreeSslCredentials(sslAuthenticationOptions.CertificateContext, sslAuthenticationOptions.EnabledSslProtocols, sslAuthenticationOptions.EncryptionPolicy, sslAuthenticationOptions.IsServer);
-            SafeX509Handle? certHandle = credential.CertHandle;
-            SafeEvpPKeyHandle? certKeyHandle = credential.CertKeyHandle;
+            Debug.Assert(sslAuthenticationOptions.CertificateContext.CertificateHandle != null);
+            Debug.Assert(sslAuthenticationOptions.CertificateContext.KeyHandle != null);
 
-            Debug.Assert(certHandle != null);
-            Debug.Assert(certKeyHandle != null);
-
-            int retVal = Ssl.SslUseCertificate(ssl, certHandle);
+            int retVal = Ssl.SslUseCertificate(ssl, sslAuthenticationOptions.CertificateContext.CertificateHandle);
             if (1 != retVal)
             {
                 throw CreateSslException(SR.net_ssl_use_cert_failed);
             }
 
-            retVal = Ssl.SslUsePrivateKey(ssl, certKeyHandle);
+            retVal = Ssl.SslUsePrivateKey(ssl, sslAuthenticationOptions.CertificateContext.KeyHandle);
             if (1 != retVal)
             {
                 throw CreateSslException(SR.net_ssl_use_private_key_failed);
@@ -285,7 +281,6 @@ internal static partial class Interop
                     throw CreateSslException(SR.net_ssl_use_cert_failed);
                 }
             }
-
         }
 
         // This essentially wraps SSL* SSL_new()
@@ -827,42 +822,6 @@ internal static partial class Interop
             }
 
             return innerError;
-        }
-
-        private static void SetSslCertificate(SafeSslContextHandle contextPtr, X509Certificate2 cert)
-        {
-            SafeEvpPKeyHandle? certKeyHandle = null;
-
-            using (RSAOpenSsl? rsa = (RSAOpenSsl?)cert.GetRSAPrivateKey())
-            {
-                if (rsa != null)
-                {
-                    certKeyHandle = rsa.DuplicateKeyHandle();
-                    Interop.Crypto.CheckValidOpenSslHandle(certKeyHandle);
-                }
-            }
-
-            if (certKeyHandle == null)
-            {
-                using (ECDsaOpenSsl? ecdsa = (ECDsaOpenSsl?)cert.GetECDsaPrivateKey())
-                {
-                    if (ecdsa != null)
-                    {
-                        certKeyHandle = ecdsa.DuplicateKeyHandle();
-                        Interop.Crypto.CheckValidOpenSslHandle(certKeyHandle);
-                    }
-                }
-            }
-
-            if (certKeyHandle == null)
-            {
-                throw new NotSupportedException(SR.net_ssl_io_no_server_cert);
-            }
-
-            using (SafeX509Handle certHandle = Interop.Crypto.X509UpRef(cert.Handle))
-            {
-                SetSslCertificate(contextPtr, certHandle, certKeyHandle);
-            }
         }
 
         private static void SetSslCertificate(SafeSslContextHandle contextPtr, SafeX509Handle certPtr, SafeEvpPKeyHandle keyPtr)
