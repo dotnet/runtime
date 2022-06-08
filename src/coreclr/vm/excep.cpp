@@ -4047,7 +4047,7 @@ BuildCreateDumpCommandLine(
         }
     }
 
-    commandLine.AppendPrintf("%s %d", DumpGeneratorName, GetCurrentProcessId());
+    commandLine.AppendASCII(DumpGeneratorName);
 
     if (dumpName != nullptr)
     {
