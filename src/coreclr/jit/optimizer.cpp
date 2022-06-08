@@ -6287,18 +6287,9 @@ void Compiler::optHoistLoopNest(unsigned lnum, LoopHoistContext* hoistCtxt)
         BitVecTraits m_visitedTraits(fgBBNumMax * 2, this);
         BitVec       m_visited(BitVecOps::MakeEmpty(&m_visitedTraits));
 
-        // Since loops in optLoopTable are arranged in reverse execution order, arrange
-        // them back in execution order before processing.
-        ArrayStack<unsigned> childLoops(getAllocatorLoopHoist());
         for (unsigned child = optLoopTable[lnum].lpChild; child != BasicBlock::NOT_IN_LOOP;
              child          = optLoopTable[child].lpSibling)
         {
-            childLoops.Push(child);
-        }
-
-        while (!childLoops.Empty())
-        {
-            unsigned child = childLoops.Pop();
             optHoistLoopNest(child, hoistCtxt);
 
             if (optLoopTable[child].lpFlags & LPFLG_HAS_PREHEAD)
