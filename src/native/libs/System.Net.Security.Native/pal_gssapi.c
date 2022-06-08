@@ -613,7 +613,7 @@ static uint32_t AcquireCredWithPassword(uint32_t* minorStatus,
 
     // call gss_set_cred_option with GSS_KRB5_CRED_NO_CI_FLAGS_X to support Kerberos Sign Only option from *nix client against a windows server
 #if HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X
-    if (majorStatus == GSS_S_COMPLETE)
+    if (!isNtlm && majorStatus == GSS_S_COMPLETE)
     {
         GssBuffer emptyBuffer = GSS_C_EMPTY_BUFFER;
         majorStatus = gss_set_cred_option(minorStatus, outputCredHandle, GSS_KRB5_CRED_NO_CI_FLAGS_X, &emptyBuffer);
