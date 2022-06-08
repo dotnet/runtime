@@ -22099,8 +22099,8 @@ Compiler::GDVProbeType Compiler::compClassifyGDVProbeType(GenTreeCall* call)
                                                       (call->gtHandleHistogramProfileCandidateInfo != nullptr));
     }
 
-    bool createMethodHistogram =
-        (JitConfig.JitMethodProfiling() > 0) && (call->IsVirtualVtable() || call->IsDelegateInvoke());
+    bool createMethodHistogram = ((JitConfig.JitDelegateProfiling() > 0) && call->IsDelegateInvoke()) ||
+                                 ((JitConfig.JitVTableProfiling() > 0) && call->IsVirtualVtable());
 
     if (createTypeHistogram && createMethodHistogram)
     {

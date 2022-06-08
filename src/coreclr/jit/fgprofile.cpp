@@ -1549,7 +1549,7 @@ public:
                 call->gtHandleHistogramProfileCandidateInfo->ilOffset);
 
         // We transform the call from (CALLVIRT obj, ... args ...) to
-        // to
+        //
         //      (CALLVIRT
         //        (COMMA
         //          (ASG tmp, obj)
@@ -1598,24 +1598,44 @@ public:
         unsigned const tmpNum             = compiler->lvaGrabTemp(true DEBUGARG("handle histogram profile tmp"));
         compiler->lvaTable[tmpNum].lvType = TYP_REF;
 
-        GenTree* helperCallNode;
+        GenTree* helperCallNode = nullptr;
         if (methodHistogram != nullptr)
         {
             GenTree* const tmpNode           = compiler->gtNewLclvNode(tmpNum, TYP_REF);
-            GenTree* const baseMethodNode    = compiler->gtNewIconEmbMethHndNode(call->gtCallMethHnd);
             GenTree* const methodProfileNode = compiler->gtNewIconNode((ssize_t)methodHistogram, TYP_I_IMPL);
-            GenTree* const classProfileNode  = compiler->gtNewIconNode((ssize_t)typeHistogram, TYP_I_IMPL);
-            helperCallNode =
-                compiler->gtNewHelperCallNode(is32 ? CORINFO_HELP_METHODPROFILE32 : CORINFO_HELP_METHODPROFILE64,
-                                              TYP_VOID, tmpNode, baseMethodNode, methodProfileNode, classProfileNode);
+
+            if (call->IsDelegateInvoke())
+            {
+                helperCallNode = compiler->gtNewHelperCallNode(is32 ? CORINFO_HELP_DELEGATEPROFILE32
+                                                                    : CORINFO_HELP_DELEGATEPROFILE64,
+                                                               TYP_VOID, tmpNode, methodProfileNode);
+            }
+            else
+            {
+                assert(call->IsVirtualVtable());
+                GenTree* const baseMethodNode = compiler->gtNewIconEmbMethHndNode(call->gtCallMethHnd);
+                helperCallNode =
+                    compiler->gtNewHelperCallNode(is32 ? CORINFO_HELP_VTABLEPROFILE32 : CORINFO_HELP_VTABLEPROFILE64,
+                                                  TYP_VOID, tmpNode, baseMethodNode, methodProfileNode);
+            }
         }
-        else
+
+        if (typeHistogram != nullptr)
         {
             GenTree* const tmpNode          = compiler->gtNewLclvNode(tmpNum, TYP_REF);
             GenTree* const classProfileNode = compiler->gtNewIconNode((ssize_t)typeHistogram, TYP_I_IMPL);
-            helperCallNode =
+            GenTree*       classProfileCall =
                 compiler->gtNewHelperCallNode(is32 ? CORINFO_HELP_CLASSPROFILE32 : CORINFO_HELP_CLASSPROFILE64,
                                               TYP_VOID, tmpNode, classProfileNode);
+
+            if (helperCallNode == nullptr)
+            {
+                helperCallNode = classProfileCall;
+            }
+            else
+            {
+                helperCallNode = compiler->gtNewOperNode(GT_COMMA, TYP_REF, classProfileCall, helperCallNode);
+            }
         }
 
         // Generate the IR...
@@ -1885,9 +1905,10 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
     // Enable class profiling by default, when jitting.
     // Todo: we may also want this on by default for prejitting.
     //
-    const bool useClassProfiles  = (JitConfig.JitClassProfiling() > 0);
-    const bool useMethodProfiles = (JitConfig.JitMethodProfiling() > 0);
-    if (!prejit && (useClassProfiles || useMethodProfiles))
+    const bool useClassProfiles    = (JitConfig.JitClassProfiling() > 0);
+    const bool useDelegateProfiles = (JitConfig.JitDelegateProfiling() > 0);
+    const bool useVTableProfiles   = (JitConfig.JitVTableProfiling() > 0);
+    if (!prejit && (useClassProfiles || useDelegateProfiles || useVTableProfiles))
     {
         fgHistogramInstrumentor = new (this, CMK_Pgo) HandleHistogramProbeInstrumentor(this);
     }

@@ -5462,7 +5462,7 @@ HCIMPL2(void, JIT_ClassProfile64, Object *obj, ICorJitInfo::HandleHistogram64* c
 }
 HCIMPLEND
 
-HCIMPL4(void, JIT_MethodProfile32, Object *obj, CORINFO_METHOD_HANDLE baseMethod, ICorJitInfo::HandleHistogram32* methodProfile, ICorJitInfo::HandleHistogram32* typeProfile)
+HCIMPL2(void, JIT_DelegateProfile32, Object *obj, ICorJitInfo::HandleHistogram32* methodProfile)
 {
     FCALL_CONTRACT;
     FC_GC_POLL_NOT_NEEDED();
@@ -5474,24 +5474,9 @@ HCIMPL4(void, JIT_MethodProfile32, Object *obj, CORINFO_METHOD_HANDLE baseMethod
     const unsigned methodCallIndex = (*pMethodCount)++;
     int methodSampleIndex = CheckSample(methodCallIndex);
 
-    int typeSampleIndex = -1;
-    if (typeProfile != nullptr)
+    if (methodSampleIndex == -1)
     {
-        volatile unsigned* pTypeCount = (volatile unsigned*) &typeProfile->Count;
-        const unsigned typeCallIndex = (*pTypeCount)++;
-        typeSampleIndex = CheckSample(typeCallIndex);
-
-        if ((methodSampleIndex == -1) && (typeSampleIndex == -1))
-        {
-            return;
-        }
-    }
-    else
-    {
-        if (methodSampleIndex == -1)
-        {
-            return;
-        }
+        return;
     }
 
     if (objRef == NULL)
@@ -5499,48 +5484,22 @@ HCIMPL4(void, JIT_MethodProfile32, Object *obj, CORINFO_METHOD_HANDLE baseMethod
         return;
     }
 
-    MethodDesc* pBaseMD = GetMethod(baseMethod);
-
-    // Method better be virtual
-    _ASSERTE(pBaseMD->IsVirtual());
-
-    // We currently do not expect to see interface methods here as we cannot
-    // efficiently use method handle information for these anyway.
-    _ASSERTE(!pBaseMD->IsInterface());
-
-    // Shouldn't be doing this for instantiated methods as they live elsewhere
-    _ASSERTE(!pBaseMD->HasMethodInstantiation());
-
     MethodTable* pMT = objRef->GetMethodTable();
 
-    // Resolve method
+    _ASSERTE(pMT->IsDelegate());
+
+    // Resolve method. We handle only the common "direct" delegate as that is
+    // in any case the only one we can reasonably do GDV for. For instance,
+    // open delegates are filtered out here, and many cases with inner
+    // "complicated" logic as well (e.g. static functions, multicast, unmanaged
+    // functions).
+    //
     MethodDesc* pRecordedMD = (MethodDesc*)DEFAULT_UNKNOWN_HANDLE;
-    if (pMT->IsDelegate() && (pBaseMD == ((DelegateEEClass*)pMT->GetClass())->GetInvokeMethod()))
+    DELEGATEREF del = (DELEGATEREF)objRef;
+    if ((del->GetInvocationCount() == 0) && (del->GetMethodPtrAux() == NULL))
     {
-        // We handle only the common "direct" delegate as that is in any case
-        // the only one we can reasonably do GDV for. For instance, open
-        // delegates are filtered out here, and many cases with inner
-        // "complicated" logic as well (e.g. static functions, multicast,
-        // unmanaged functions).
-        //
-        DELEGATEREF del = (DELEGATEREF)objRef;
-        if ((del->GetInvocationCount() == 0) && (del->GetMethodPtrAux() == NULL))
-        {
-            MethodDesc* pMD = NonVirtualEntry2MethodDesc(del->GetMethodPtr());
-            if ((pMD != nullptr) && !pMD->GetLoaderAllocator()->IsCollectible() && !pMD->IsDynamicMethod())
-            {
-                pRecordedMD = pMD;
-            }
-        }
-    }
-    else
-    {
-        WORD slot = pBaseMD->GetSlot();
-        _ASSERTE(slot < pBaseMD->GetMethodTable()->GetNumVirtuals());
-
-        MethodDesc* pMD = pMT->GetMethodDescForSlot(slot);
-
-        if (!pMD->GetLoaderAllocator()->IsCollectible() && !pMD->IsDynamicMethod())
+        MethodDesc* pMD = NonVirtualEntry2MethodDesc(del->GetMethodPtr());
+        if ((pMD != nullptr) && !pMD->GetLoaderAllocator()->IsCollectible() && !pMD->IsDynamicMethod())
         {
             pRecordedMD = pMD;
         }
@@ -5554,21 +5513,11 @@ HCIMPL4(void, JIT_MethodProfile32, Object *obj, CORINFO_METHOD_HANDLE baseMethod
     // If table is not yet full, just add entries in.
     //
     methodProfile->HandleTable[methodSampleIndex] = (CORINFO_METHOD_HANDLE)pRecordedMD;
-
-    if (typeSampleIndex != -1)
-    {
-        if (pMT->GetLoaderAllocator()->IsCollectible())
-        {
-            pMT = (MethodTable*)DEFAULT_UNKNOWN_HANDLE;
-        }
-
-        typeProfile->HandleTable[typeSampleIndex] = (CORINFO_CLASS_HANDLE)pMT;
-    }
 }
 HCIMPLEND
 
 // Version of helper above used when the count is 64-bit
-HCIMPL4(void, JIT_MethodProfile64, Object *obj, CORINFO_METHOD_HANDLE baseMethod, ICorJitInfo::HandleHistogram64* methodProfile, ICorJitInfo::HandleHistogram64* typeProfile)
+HCIMPL3(void, JIT_DelegateProfile64, Object *obj, CORINFO_METHOD_HANDLE baseMethod, ICorJitInfo::HandleHistogram64* methodProfile)
 {
     FCALL_CONTRACT;
     FC_GC_POLL_NOT_NEEDED();
@@ -5580,24 +5529,63 @@ HCIMPL4(void, JIT_MethodProfile64, Object *obj, CORINFO_METHOD_HANDLE baseMethod
     const uint64_t methodCallIndex = (*pMethodCount)++;
     int methodSampleIndex = CheckSample(methodCallIndex);
 
-    int typeSampleIndex = -1;
-    if (typeProfile != nullptr)
+    if (methodSampleIndex == -1)
     {
-        volatile uint64_t* pTypeCount = (volatile uint64_t*) &typeProfile->Count;
-        const uint64_t typeCallIndex = (*pTypeCount)++;
-        typeSampleIndex = CheckSample(typeCallIndex);
+        return;
+    }
 
-        if ((methodSampleIndex == -1) && (typeSampleIndex == -1))
+    if (objRef == NULL)
+    {
+        return;
+    }
+
+    MethodTable* pMT = objRef->GetMethodTable();
+
+    _ASSERTE(pMT->IsDelegate());
+
+    // Resolve method. We handle only the common "direct" delegate as that is
+    // in any case the only one we can reasonably do GDV for. For instance,
+    // open delegates are filtered out here, and many cases with inner
+    // "complicated" logic as well (e.g. static functions, multicast, unmanaged
+    // functions).
+    //
+    MethodDesc* pRecordedMD = (MethodDesc*)DEFAULT_UNKNOWN_HANDLE;
+    DELEGATEREF del = (DELEGATEREF)objRef;
+    if ((del->GetInvocationCount() == 0) && (del->GetMethodPtrAux() == NULL))
+    {
+        MethodDesc* pMD = NonVirtualEntry2MethodDesc(del->GetMethodPtr());
+        if ((pMD != nullptr) && !pMD->GetLoaderAllocator()->IsCollectible() && !pMD->IsDynamicMethod())
         {
-            return;
+            pRecordedMD = pMD;
         }
     }
-    else
+
+#ifdef _DEBUG
+    PgoManager::VerifyAddress(methodProfile);
+    PgoManager::VerifyAddress(methodProfile + 1);
+#endif
+
+    // If table is not yet full, just add entries in.
+    //
+    methodProfile->HandleTable[methodSampleIndex] = (CORINFO_METHOD_HANDLE)pRecordedMD;
+}
+HCIMPLEND
+
+HCIMPL3(void, JIT_VTableProfile32, Object* obj, CORINFO_METHOD_HANDLE baseMethod, ICorJitInfo::HandleHistogram32* methodProfile)
+{
+    FCALL_CONTRACT;
+    FC_GC_POLL_NOT_NEEDED();
+
+    OBJECTREF objRef = ObjectToOBJECTREF(obj);
+    VALIDATEOBJECTREF(objRef);
+
+    volatile unsigned* pMethodCount = (volatile unsigned*) &methodProfile->Count;
+    const unsigned methodCallIndex = (*pMethodCount)++;
+    int methodSampleIndex = CheckSample(methodCallIndex);
+
+    if (methodSampleIndex == -1)
     {
-        if (methodSampleIndex == -1)
-        {
-            return;
-        }
+        return;
     }
 
     if (objRef == NULL)
@@ -5610,8 +5598,8 @@ HCIMPL4(void, JIT_MethodProfile64, Object *obj, CORINFO_METHOD_HANDLE baseMethod
     // Method better be virtual
     _ASSERTE(pBaseMD->IsVirtual());
 
-    // We currently do not expect to see interface methods here as we cannot
-    // efficiently use method handle information for these anyway.
+    // We do not expect to see interface methods here as we cannot efficiently
+    // use method handle information for these anyway.
     _ASSERTE(!pBaseMD->IsInterface());
 
     // Shouldn't be doing this for instantiated methods as they live elsewhere
@@ -5620,36 +5608,15 @@ HCIMPL4(void, JIT_MethodProfile64, Object *obj, CORINFO_METHOD_HANDLE baseMethod
     MethodTable* pMT = objRef->GetMethodTable();
 
     // Resolve method
+    WORD slot = pBaseMD->GetSlot();
+    _ASSERTE(slot < pBaseMD->GetMethodTable()->GetNumVirtuals());
+
+    MethodDesc* pMD = pMT->GetMethodDescForSlot(slot);
+
     MethodDesc* pRecordedMD = (MethodDesc*)DEFAULT_UNKNOWN_HANDLE;
-    if (pMT->IsDelegate() && (pBaseMD == ((DelegateEEClass*)pMT->GetClass())->GetInvokeMethod()))
+    if (!pMD->GetLoaderAllocator()->IsCollectible() && !pMD->IsDynamicMethod())
     {
-        // We handle only the common "direct" delegate as that is in any case
-        // the only one we can reasonably do GDV for. For instance, open
-        // delegates are filtered out here, and many cases with inner
-        // "complicated" logic as well (e.g. static functions, multicast,
-        // unmanaged functions).
-        //
-        DELEGATEREF del = (DELEGATEREF)objRef;
-        if ((del->GetInvocationCount() == 0) && (del->GetMethodPtrAux() == NULL))
-        {
-            MethodDesc* pMD = NonVirtualEntry2MethodDesc(del->GetMethodPtr());
-            if ((pMD != nullptr) && !pMD->GetLoaderAllocator()->IsCollectible() && !pMD->IsDynamicMethod())
-            {
-                pRecordedMD = pMD;
-            }
-        }
-    }
-    else
-    {
-        WORD slot = pBaseMD->GetSlot();
-        _ASSERTE(slot < pBaseMD->GetMethodTable()->GetNumVirtuals());
-
-        MethodDesc* pMD = pMT->GetMethodDescForSlot(slot);
-
-        if (!pMD->GetLoaderAllocator()->IsCollectible() && !pMD->IsDynamicMethod())
-        {
-            pRecordedMD = pMD;
-        }
+        pRecordedMD = pMD;
     }
 
 #ifdef _DEBUG
@@ -5658,16 +5625,63 @@ HCIMPL4(void, JIT_MethodProfile64, Object *obj, CORINFO_METHOD_HANDLE baseMethod
 #endif
 
     methodProfile->HandleTable[methodSampleIndex] = (CORINFO_METHOD_HANDLE)pRecordedMD;
+}
+HCIMPLEND
 
-    if (typeSampleIndex != -1)
+HCIMPL3(void, JIT_VTableProfile64, Object* obj, CORINFO_METHOD_HANDLE baseMethod, ICorJitInfo::HandleHistogram64* methodProfile)
+{
+    FCALL_CONTRACT;
+    FC_GC_POLL_NOT_NEEDED();
+
+    OBJECTREF objRef = ObjectToOBJECTREF(obj);
+    VALIDATEOBJECTREF(objRef);
+
+    volatile uint64_t* pMethodCount = (volatile uint64_t*) &methodProfile->Count;
+    const uint64_t methodCallIndex = (*pMethodCount)++;
+    int methodSampleIndex = CheckSample(methodCallIndex);
+
+    if (methodSampleIndex == -1)
     {
-        if (pMT->GetLoaderAllocator()->IsCollectible())
-        {
-            pMT = (MethodTable*)DEFAULT_UNKNOWN_HANDLE;
-        }
-
-        typeProfile->HandleTable[typeSampleIndex] = (CORINFO_CLASS_HANDLE)pMT;
+        return;
     }
+
+    if (objRef == NULL)
+    {
+        return;
+    }
+
+    MethodDesc* pBaseMD = GetMethod(baseMethod);
+
+    // Method better be virtual
+    _ASSERTE(pBaseMD->IsVirtual());
+
+    // We do not expect to see interface methods here as we cannot efficiently
+    // use method handle information for these anyway.
+    _ASSERTE(!pBaseMD->IsInterface());
+
+    // Shouldn't be doing this for instantiated methods as they live elsewhere
+    _ASSERTE(!pBaseMD->HasMethodInstantiation());
+
+    MethodTable* pMT = objRef->GetMethodTable();
+
+    // Resolve method
+    WORD slot = pBaseMD->GetSlot();
+    _ASSERTE(slot < pBaseMD->GetMethodTable()->GetNumVirtuals());
+
+    MethodDesc* pMD = pMT->GetMethodDescForSlot(slot);
+
+    MethodDesc* pRecordedMD = (MethodDesc*)DEFAULT_UNKNOWN_HANDLE;
+    if (!pMD->GetLoaderAllocator()->IsCollectible() && !pMD->IsDynamicMethod())
+    {
+        pRecordedMD = pMD;
+    }
+
+#ifdef _DEBUG
+    PgoManager::VerifyAddress(methodProfile);
+    PgoManager::VerifyAddress(methodProfile + 1);
+#endif
+
+    methodProfile->HandleTable[methodSampleIndex] = (CORINFO_METHOD_HANDLE)pRecordedMD;
 }
 HCIMPLEND
 
