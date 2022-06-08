@@ -665,7 +665,7 @@ scanit:
                                     } else
 #else  /* _UNICODE */
                                     if (fl_wchar_arg) {
-                                        *(char16_t UNALIGNED *)pointer = (char16_t)ch;
+                                        *(char16_t UNALIGNED *)pointer = ch;
                                         pointer = (char16_t *)pointer + 1;
 #ifdef _SECURE_SCANF
                                         --array_width;
