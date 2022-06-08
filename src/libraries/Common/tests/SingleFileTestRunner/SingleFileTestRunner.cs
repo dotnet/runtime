@@ -60,7 +60,7 @@ public class SingleFileTestRunner : XunitTestFramework
         discoverer.Find(false, discoverySink, TestFrameworkOptions.ForDiscovery(assemblyConfig));
         discoverySink.Finished.WaitOne();
 
-        string xmlResultFileName = "testResults.xml";
+        string xmlResultFileName = null;
         XunitFilters filters = new XunitFilters();
         // Quick hack wo much validation to get args that are passed (notrait, xml)
         Dictionary<string, List<string>> noTraits = new Dictionary<string, List<string>>();
@@ -93,7 +93,10 @@ public class SingleFileTestRunner : XunitTestFramework
         resultsSink.Finished.WaitOne();
 
         // Helix need to see results file in the drive to detect if the test has failed or not
-        resultsXmlAssembly.Save(xmlResultFileName);
+        if(xmlResultFileName != null)
+        {
+            resultsXmlAssembly.Save(xmlResultFileName);
+        }
 
         var failed = resultsSink.ExecutionSummary.Failed > 0 || resultsSink.ExecutionSummary.Errors > 0;
         return failed ? 1 : 0;
