@@ -5433,7 +5433,7 @@ void CEEInfo::getCallInfo(
             // shared generics is covered by the ConstrainedMethodEntrySlot dictionary entry.
             pResult->kind = CORINFO_CALL;
             pResult->accessAllowed = CORINFO_ACCESS_ILLEGAL;
-            pResult->callsiteCalloutHelper.helperNum = CORINFO_HELP_STATIC_VIRTUAL_AMBIGUOUS_RESOLUTION;
+            pResult->callsiteCalloutHelper.helperNum = CORINFO_HELP_THROW_AMBIGUOUS_RESOLUTION_EXCEPTION;
             pResult->callsiteCalloutHelper.numArgs = 3;
             pResult->callsiteCalloutHelper.args[0].methodHandle = (CORINFO_METHOD_HANDLE)pMD;
             pResult->callsiteCalloutHelper.args[0].argType = CORINFO_HELPER_ARG_TYPE_Method;
@@ -11617,50 +11617,6 @@ uint32_t CEEJitInfo::getExpectedTargetArchitecture()
     return IMAGE_FILE_MACHINE_NATIVE;
 }
 
-bool CEEJitInfo::doesFieldBelongToClass(CORINFO_FIELD_HANDLE fldHnd, CORINFO_CLASS_HANDLE cls)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    bool result = false;
-
-    JIT_TO_EE_TRANSITION();
-
-    FieldDesc* field = (FieldDesc*) fldHnd;
-    TypeHandle th(cls);
-
-    _ASSERTE(!field->IsStatic());
-
-    // doesFieldBelongToClass implements the predicate of...
-    // if field is not associated with the class in any way, return false.
-    // if field is the only FieldDesc that the JIT might see for a given class handle
-    // and logical field pair then return true. This is needed as the field handle here
-    // is used as a key into a hashtable mapping writes to fields to value numbers.
-    //
-    // In the CoreCLR VM implementation, verifying that the canonical MethodTable of
-    // the field matches the type found via GetExactDeclaringType, as all instance fields
-    // are only held on the canonical MethodTable.
-    // This yields a truth table such as
-
-    // BaseType._field, BaseType -> true
-    // BaseType._field, DerivedType -> true
-    // BaseType<__Canon>._field, BaseType<__Canon> -> true
-    // BaseType<__Canon>._field, BaseType<string> -> true
-    // BaseType<__Canon>._field, BaseType<object> -> true
-    // BaseType<sbyte>._field, BaseType<sbyte> -> true
-    // BaseType<sbyte>._field, BaseType<byte> -> false
-
-    MethodTable* pMT = field->GetExactDeclaringType(th.GetMethodTable());
-    result = (pMT != nullptr) && (pMT->GetCanonicalMethodTable() == field->GetApproxEnclosingMethodTable()->GetCanonicalMethodTable());
-
-    EE_TO_JIT_TRANSITION();
-
-    return result;
-}
-
 void CEEInfo::JitProcessShutdownWork()
 {
     LIMITED_METHOD_CONTRACT;
@@ -14281,12 +14237,6 @@ uint32_t CEEInfo::getExpectedTargetArchitecture()
     LIMITED_METHOD_CONTRACT;
 
     return IMAGE_FILE_MACHINE_NATIVE;
-}
-
-bool CEEInfo::doesFieldBelongToClass(CORINFO_FIELD_HANDLE fld, CORINFO_CLASS_HANDLE cls)
-{
-    LIMITED_METHOD_CONTRACT;
-    UNREACHABLE_RET();      // only called on derived class.
 }
 
 void CEEInfo::setBoundaries(CORINFO_METHOD_HANDLE ftn, ULONG32 cMap,

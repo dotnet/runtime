@@ -39,7 +39,7 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public void UnflushedBytesWorks()
         {
-            byte[] bytes = Encoding.ASCII.GetBytes("abcdefghijklmnopqrstuvwzyz");
+            byte[] bytes = "abcdefghijklmnopqrstuvwzyz"u8.ToArray();
             Pipe.Writer.Write(bytes);
             Assert.True(Pipe.Writer.CanGetUnflushedBytes);
             Assert.Equal(bytes.Length,Pipe.Writer.UnflushedBytes);
