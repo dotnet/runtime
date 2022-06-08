@@ -24,6 +24,7 @@ namespace System.Runtime.InteropServices
     /// <summary>Defines an immutable value type that represents a floating type that has the same size as the native integer size.</summary>
     /// <remarks>It is meant to be used as an exchange type at the managed/unmanaged boundary to accurately represent in managed code unmanaged APIs that use a type alias for C or C++'s <c>float</c> on 32-bit platforms or <c>double</c> on 64-bit platforms, such as the CGFloat type in libraries provided by Apple.</remarks>
     [Intrinsic]
+    [NonVersionable] // This only applies to field layout
     public readonly struct NFloat
         : IBinaryFloatingPointIeee754<NFloat>,
           IMinMaxValue<NFloat>

@@ -315,13 +315,6 @@ typedef const OLECHAR* LPCOLESTR;
 
 typedef WCHAR *BSTR;
 
-STDAPI_VIS(DLLEXPORT, BSTR) SysAllocString(const OLECHAR*);
-STDAPI_VIS(DLLEXPORT, BSTR) SysAllocStringLen(const OLECHAR*, UINT);
-STDAPI_VIS(DLLEXPORT, BSTR) SysAllocStringByteLen(const char *, UINT);
-STDAPI_VIS(DLLEXPORT, void) SysFreeString(BSTR);
-STDAPI_VIS(DLLEXPORT, UINT) SysStringLen(BSTR);
-STDAPI_VIS(DLLEXPORT, UINT) SysStringByteLen(BSTR);
-
 typedef double DATE;
 
 typedef union tagCY {

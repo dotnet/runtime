@@ -33,7 +33,7 @@ class StackFrameIterator
 
 public:
     StackFrameIterator() {}
-    StackFrameIterator(Thread * pThreadToWalk, PTR_VOID pInitialTransitionFrame);
+    StackFrameIterator(Thread * pThreadToWalk, PInvokeTransitionFrame* pInitialTransitionFrame);
     StackFrameIterator(Thread * pThreadToWalk, PTR_PAL_LIMITED_CONTEXT pCtx);
 
 

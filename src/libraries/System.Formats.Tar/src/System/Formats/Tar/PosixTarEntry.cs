@@ -4,10 +4,10 @@
 namespace System.Formats.Tar
 {
     /// <summary>
-    /// Abstract class that represents a tar entry from an archive of a format that is based on the POSIX IEEE P1003.1 standard from 1988. This includes the formats <see cref="TarFormat.Ustar"/> (represented by the <see cref="UstarTarEntry"/> class), <see cref="TarFormat.Pax"/> (represented by the <see cref="PaxTarEntry"/> class) and <see cref="TarFormat.Gnu"/> (represented by the <see cref="GnuTarEntry"/> class).
+    /// Abstract class that represents a tar entry from an archive of a format that is based on the POSIX IEEE P1003.1 standard from 1988. This includes the formats <see cref="TarEntryFormat.Ustar"/> (represented by the <see cref="UstarTarEntry"/> class), <see cref="TarEntryFormat.Pax"/> (represented by the <see cref="PaxTarEntry"/> class) and <see cref="TarEntryFormat.Gnu"/> (represented by the <see cref="GnuTarEntry"/> class).
     /// </summary>
     /// <remarks>Formats that implement the POSIX IEEE P1003.1 standard from 1988, support the following header fields: <c>devmajor</c>, <c>devminor</c>, <c>gname</c> and <c>uname</c>.
-    /// Even though the <see cref="TarFormat.Gnu"/> format is not POSIX compatible, it implements and supports the Unix-specific fields that were defined in that POSIX standard.</remarks>
+    /// Even though the <see cref="TarEntryFormat.Gnu"/> format is not POSIX compatible, it implements and supports the Unix-specific fields that were defined in that POSIX standard.</remarks>
     public abstract partial class PosixTarEntry : TarEntry
     {
         // Constructor used when reading an existing archive.
@@ -17,7 +17,7 @@ namespace System.Formats.Tar
         }
 
         // Constructor called when creating a new 'TarEntry*' instance that can be passed to a TarWriter.
-        internal PosixTarEntry(TarEntryType entryType, string entryName, TarFormat format)
+        internal PosixTarEntry(TarEntryType entryType, string entryName, TarEntryFormat format)
             : base(entryType, entryName, format)
         {
         }

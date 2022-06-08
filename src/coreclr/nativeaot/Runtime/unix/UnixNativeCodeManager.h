@@ -41,7 +41,7 @@ public:
 
     bool UnwindStackFrame(MethodInfo *    pMethodInfo,
                           REGDISPLAY *    pRegisterSet,                 // in/out
-                          PTR_VOID *      ppPreviousTransitionFrame);   // out
+                          PInvokeTransitionFrame**      ppPreviousTransitionFrame);   // out
 
     uintptr_t GetConservativeUpperBoundForOutgoingArgs(MethodInfo *   pMethodInfo,
                                                         REGDISPLAY *   pRegisterSet);

@@ -19,9 +19,10 @@ namespace System.Text.RegularExpressions.Symbolic
 
         private SymbolicRegexInfo(uint i) => _info = i;
 
-        internal static SymbolicRegexInfo Create(bool isAlwaysNullable = false, bool canBeNullable = false,
+        internal static SymbolicRegexInfo Create(
+            bool isAlwaysNullable = false, bool canBeNullable = false,
             bool startsWithLineAnchor = false, bool startsWithSomeAnchor = false, bool containsSomeAnchor = false,
-            bool isLazyLoop = false, bool isHighPriorityNullable = false, bool containsEffect = false)
+            bool isHighPriorityNullable = false, bool containsEffect = false)
         {
             uint i = 0;
 
@@ -48,11 +49,6 @@ namespace System.Text.RegularExpressions.Symbolic
                 {
                     i |= StartsWithSomeAnchorMask;
                 }
-            }
-
-            if (isLazyLoop)
-            {
-                i |= IsLazyLoopMask;
             }
 
             if (isHighPriorityNullable)

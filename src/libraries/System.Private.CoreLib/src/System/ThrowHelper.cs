@@ -87,6 +87,12 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowArgumentException_ArgumentNull_TypedRefType()
+        {
+            throw new ArgumentNullException("value", SR.ArgumentNull_TypedRefType);
+        }
+
+        [DoesNotReturn]
         internal static void ThrowArgumentException_CannotExtractScalar(ExceptionArgument argument)
         {
             throw GetArgumentException(ExceptionResource.Argument_CannotExtractScalar, argument);
@@ -554,6 +560,12 @@ namespace System
 
             ex.HResult = hr;
             throw ex;
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowFormatInvalidString()
+        {
+            throw new FormatException(SR.Format_InvalidString);
         }
 
         private static Exception GetArraySegmentCtorValidationFailedException(Array? array, int offset, int count)

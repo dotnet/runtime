@@ -8,8 +8,6 @@ using System.Runtime.InteropServices;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.CustomAttributes;
 
-using Internal.Reflection.Tracing;
-
 #pragma warning disable CA1067 // override Equals because it implements IEquatable<T>
 
 namespace System.Reflection.Runtime.TypeInfos
@@ -37,11 +35,6 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.TypeInfo_CustomAttributes(this);
-#endif
-
                 foreach (CustomAttributeData cad in TrueCustomAttributes)
                     yield return cad;
 
@@ -94,11 +87,6 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.TypeInfo_FullName(this);
-#endif
-
                 Debug.Assert(!IsConstructedGenericType);
                 Debug.Assert(!IsGenericParameter);
                 Debug.Assert(!HasElementType);
@@ -209,10 +197,6 @@ namespace System.Reflection.Runtime.TypeInfos
                 return new TypeContext(this.RuntimeGenericTypeParameters, null);
             }
         }
-
-#if ENABLE_REFLECTION_TRACE
-        internal abstract string TraceableTypeName { get; }
-#endif
 
         /// <summary>
         /// QTypeDefRefOrSpec handle that can be used to re-acquire this type. Must be implemented

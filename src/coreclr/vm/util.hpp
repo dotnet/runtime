@@ -87,8 +87,6 @@ void * __cdecl _alloca(size_t);
 #pragma warning(disable:6255)
 #endif // _PREFAST_
 
-#define ISWWHITE(x) ((x)==W(' ') || (x)==W('\t') || (x)==W('\n') || (x)==W('\r') )
-
 BOOL inline FitsInI1(__int64 val)
 {
     LIMITED_METHOD_DAC_CONTRACT;

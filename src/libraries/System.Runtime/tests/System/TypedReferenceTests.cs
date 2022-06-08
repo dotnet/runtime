@@ -78,6 +78,35 @@ namespace System.Tests
             Assert.Equal(structObj, TypedReference.ToObject(reference));
         }
 
+        // These tests are currently crashing the Mono AOT compiler, so commenting them out (skipping them isn't enough)
+        //[Fact]
+        //[ActiveIssue("https://github.com/dotnet/runtime/issues/70091", TestRuntimes.Mono)]
+        //public static unsafe void MakeTypedReference_ToObjectTests_WithPointer()
+        //{
+        //    float* pointer = (float*)(nuint)0x12345678;
+        //    TypedReference reference = __makeref(pointer);
+        //    object obj = TypedReference.ToObject(reference);
+        //
+        //    // TypedReference-s over pointers use the UIntPtr type when boxing
+        //    Assert.NotNull(obj);
+        //    Assert.IsType<UIntPtr>(obj);
+        //    Assert.Equal((nuint)0x12345678, (nuint)obj);
+        //}
+        //
+        //[Fact]
+        //[ActiveIssue("https://github.com/dotnet/runtime/issues/70091", TestRuntimes.Mono)]
+        //public static unsafe void MakeTypedReference_ToObjectTests_WithFunctionPointer()
+        //{
+        //    delegate*<int, float, string> pointer = (delegate*<int, float, string>)(void*)(nuint)0x12345678;
+        //    TypedReference reference = __makeref(pointer);
+        //    object obj = TypedReference.ToObject(reference);
+        //
+        //    // TypedReference-s over function pointers use the UIntPtr type when boxing
+        //    Assert.NotNull(obj);
+        //    Assert.IsType<UIntPtr>(obj);
+        //    Assert.Equal((nuint)0x12345678, (nuint)obj);
+        //}
+
         [Fact]
         public static void MakeTypedReference_ReadOnlyField_Succeeds()
         {

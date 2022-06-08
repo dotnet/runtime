@@ -24,12 +24,14 @@ terminology.
 | DAC | Data Access Component. An abstraction layer over the internal structures in the runtime. |
 | EE | [Execution Engine](https://docs.microsoft.com/dotnet/standard/managed-execution-process#running_code). |
 | GC | [Garbage Collector](https://github.com/dotnet/runtime/blob/main/docs/design/coreclr/botr/garbage-collection.md). |
+| IBC | Instrumented Block Counts - used as extension (`*.ibc`) for old PGO files. |
 | IPC | Inter-Process Communication. |
 | IL | Intermediate Language. Equivalent to CIL, also equivalent to [MSIL](https://docs.microsoft.com/dotnet/standard/managed-execution-process#compiling-to-msil). |
 | JIT | [Just-in-Time](https://github.com/dotnet/runtime/blob/main/docs/design/coreclr/jit/ryujit-overview.md) compiler. RyuJIT is the code name for the next generation Just-in-Time(aka "JIT") for the .NET runtime. |
 | LCG | Lightweight Code Generation. An early name for [dynamic methods](https://github.com/dotnet/runtime/blob/main/src/coreclr/System.Private.CoreLib/src/System/Reflection/Emit/DynamicMethod.cs). |
 | MD | MetaData. |
 | MDA | Managed Debugging Assistant - see [details](https://docs.microsoft.com/dotnet/framework/debug-trace-profile/diagnosing-errors-with-managed-debugging-assistants) (Note: Not in .NET Core, equivalent diagnostic functionality is made available on a case-by-case basis, e.g. [#9418](https://github.com/dotnet/runtime/issues/9418)) |
+| MIBC | Managed Instrumented Block Counts - used as extension (`*.mibc`) for managed PGO files. |
 | MSIL | [Microsoft Intermediate Language](https://docs.microsoft.com/dotnet/standard/managed-execution-process#compiling-to-msil).Common Intermediate Language. Equivalent to IL, also equivalent to CIL. |
 | NGen | Native Image Generator. |
 | NYI | Not Yet Implemented. |

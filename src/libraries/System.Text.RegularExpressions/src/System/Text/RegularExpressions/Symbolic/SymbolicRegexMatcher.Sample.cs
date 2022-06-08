@@ -38,12 +38,12 @@ namespace System.Text.RegularExpressions.Symbolic
 
             // Create helper BDDs for handling anchors and preferentially generating ASCII inputs
             BDD asciiWordCharacters = charSetSolver.Or(new BDD[] {
-                charSetSolver.CreateSetFromRange('A', 'Z'),
-                charSetSolver.CreateSetFromRange('a', 'z'),
-                charSetSolver.CreateFromChar('_'),
-                charSetSolver.CreateSetFromRange('0', '9')});
+                charSetSolver.CreateBDDFromRange('A', 'Z'),
+                charSetSolver.CreateBDDFromRange('a', 'z'),
+                charSetSolver.CreateBDDFromChar('_'),
+                charSetSolver.CreateBDDFromRange('0', '9')});
             // Visible ASCII range for input character generation
-            BDD ascii = charSetSolver.CreateSetFromRange('\x20', '\x7E');
+            BDD ascii = charSetSolver.CreateBDDFromRange('\x20', '\x7E');
             BDD asciiNonWordCharacters = charSetSolver.And(ascii, charSetSolver.Not(asciiWordCharacters));
 
             // Set up two sets of minterms, one with the additional special minterm for the last end-of-line
@@ -83,25 +83,25 @@ namespace System.Text.RegularExpressions.Symbolic
                     {
                         // Unconditionally final state or end of the input due to \Z anchor for example
                         if (NfaStateHandler.IsNullable(ref statesWrapper) ||
-                            NfaStateHandler.IsNullable(ref statesWrapper, CharKind.BeginningEnd))
+                            NfaStateHandler.IsNullableFor(_builder, ref statesWrapper, CharKind.BeginningEnd))
                         {
                             possibleEndings.Add("");
                         }
 
                         // End of line due to end-of-line anchor
-                        if (NfaStateHandler.IsNullable(ref statesWrapper, CharKind.Newline))
+                        if (NfaStateHandler.IsNullableFor(_builder, ref statesWrapper, CharKind.Newline))
                         {
                             possibleEndings.Add("\n");
                         }
 
                         // Related to wordborder due to \b or \B
-                        if (NfaStateHandler.IsNullable(ref statesWrapper, CharKind.WordLetter))
+                        if (NfaStateHandler.IsNullableFor(_builder, ref statesWrapper, CharKind.WordLetter))
                         {
                             possibleEndings.Add(ChooseChar(random, asciiWordCharacters, ascii, charSetSolver).ToString());
                         }
 
                         // Related to wordborder due to \b or \B
-                        if (NfaStateHandler.IsNullable(ref statesWrapper, CharKind.General))
+                        if (NfaStateHandler.IsNullableFor(_builder, ref statesWrapper, CharKind.General))
                         {
                             possibleEndings.Add(ChooseChar(random, asciiNonWordCharacters, ascii, charSetSolver).ToString());
                         }
@@ -125,7 +125,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     }
 
                     // Shuffle the minterms, including the last end-of-line marker if appropriate
-                    int[] mintermIds = NfaStateHandler.StartsWithLineAnchor(ref statesWrapper) ?
+                    int[] mintermIds = NfaStateHandler.StartsWithLineAnchor(_builder, ref statesWrapper) ?
                         Shuffle(random, mintermIdsWithZ) :
                         Shuffle(random, mintermIdsWithoutZ);
                     foreach (int mintermId in mintermIds)

@@ -178,26 +178,25 @@ namespace System.Net.NameResolution.Tests
     public class GetHostAddressesTest_Cancellation
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/33378", TestPlatforms.AnyUnix)] // Cancellation of an outstanding getaddrinfo is not supported on *nix.
+        [SkipOnCoreClr("JitStress interferes with cancellation timing", RuntimeTestModes.JitStress | RuntimeTestModes.JitStressRegs)]
         public async Task DnsGetHostAddresses_PostCancelledToken_Throws()
         {
             using var cts = new CancellationTokenSource();
 
             Task task = Dns.GetHostAddressesAsync(TestSettings.UncachedHost, cts.Token);
+
+            // This test might flake if the cancellation token takes too long to trigger:
+            // It's a race between the DNS server getting back to us and the cancellation processing.
             cts.Cancel();
 
-            // This test is nondeterministic, the cancellation may take too long to trigger:
-            // It's a race between the DNS server getting back to us and the cancellation processing.
-            // since the host does not exist, both cases throw an exception.
-            Exception ex = await Assert.ThrowsAnyAsync<Exception>(() => task);
-            if (ex is OperationCanceledException oce)
-            {
-                // canceled in time
-                Assert.Equal(cts.Token, oce.CancellationToken);
-            }
+            OperationCanceledException oce = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => task);
+            Assert.Equal(cts.Token, oce.CancellationToken);
         }
 
         // This is a regression test for https://github.com/dotnet/runtime/issues/63552
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/33378", TestPlatforms.AnyUnix)] // Cancellation of an outstanding getaddrinfo is not supported on *nix.
         public async Task DnsGetHostAddresses_ResolveParallelCancelOnFailure_AllCallsReturn()
         {
             string invalidAddress = TestSettings.UncachedHost;

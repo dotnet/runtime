@@ -165,8 +165,6 @@ nativeStringResourceTable_mscorrc
 #Sleep
 #SleepEx
 #SwitchToThread
-#SysAllocStringLen
-#SysFreeString
 #TerminateProcess
 #VirtualAlloc
 #VirtualAllocExNuma
