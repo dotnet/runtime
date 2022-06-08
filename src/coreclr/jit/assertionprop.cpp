@@ -3179,12 +3179,16 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
     {
         if (tree->OperIs(GT_LCL_VAR) && conValTree->OperIs(GT_CNS_VEC, GT_CNS_DBL, GT_CNS_INT))
         {
+            // A simple heuristic: If the constant is defined outside of a loop (not far from its head)
+            // and is used inside it - don't propagate.
+
             bool keepPropagating = false;
 
             if (conValTree->OperIs(GT_CNS_VEC))
             {
                 if (conValTree->IsVectorZero() || conValTree->IsVectorAllBitsSet())
                 {
+                    // These are cheap to materialize
                     keepPropagating = true;
                 }
             }
@@ -3192,12 +3196,13 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
             {
                 if (conValTree->IsFloatPositiveZero())
                 {
+                    // This is cheap to materialize
                     keepPropagating = true;
                 }
 #ifdef TARGET_ARM64
                 if (emitter::canEncodeFloatImm8(conValTree->AsDblCon()->gtDconVal))
                 {
-                    // This float won't be expensive for the loop
+                    // Such floats are likely immable on arm64
                     keepPropagating = true;
                 }
 #endif
@@ -3209,8 +3214,12 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
                 if ((unsigned_abs(conValTree->AsIntCon()->IconValue()) <= 0xFFF) ||
                     isPow2(conValTree->AsIntCon()->IconValue()))
                 {
+                    // Small integers are likely containable on arm
                     keepPropagating = true;
                 }
+#elif TARGET_XARCH
+                // All integer constants are cheap to materialize on xarch
+                keepPropagating = true;
 #endif
             }
 
@@ -3225,25 +3234,22 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
 
                     if (defBlock != nullptr)
                     {
-                        // A simple heuristic: If the constant is defined outside of a loop (not far from its head)
-                        // and is used inside it - don't propagate.
 
-                        // TODO: if it lives across calls in that loops we'd better propagate it after those
-                        // calls on ABIs without callee-saved registers
+                        // TODO: if it lives across calls in that loops we should propagate it only after those
+                        // calls on ABIs without callee-saved registers to avoid spills
 
                         if (!defBlock->IsInLoop() && block->IsInLoop())
                         {
-                            //const LoopDsc* loopInfo = &optLoopTable[block->bbNatLoopNum];
-                            // Definition better to be close (e.g. result of CSE) so we won't occupy a register
-
-                            //if ((loopInfo->lpHead == defBlock) || loopInfo->lpHead->bbIDom == defBlock)
+                            const LoopDsc* loopInfo = &optLoopTable[block->bbNatLoopNum];
+                            // Def is better to be close (e.g. result of CSE) so we won't occupy a register
+                            if ((loopInfo->lpHead == defBlock) || loopInfo->lpHead->bbIDom == defBlock)
                             {
                                 // Last, let's limit it to cases where block is not some not-always-taken
                                 // block inside that loop
-                                //weight_t defBlockWeight = defBlock->getBBWeight(this);
-                                //weight_t blockWeight    = block->getBBWeight(this);
+                                const weight_t defBlockWeight = defBlock->getBBWeight(this);
+                                const weight_t blockWeight    = block->getBBWeight(this);
 
-                                //if (((blockWeight / defBlockWeight) >= BB_LOOP_WEIGHT_SCALE) && (defBlockWeight > 0))
+                                if (((blockWeight / defBlockWeight) >= BB_LOOP_WEIGHT_SCALE) && (defBlockWeight > 0))
                                 {
                                     JITDUMP("Skip constant propagation inside loop " FMT_BB "\n", block->bbNum);
                                     return nullptr;
