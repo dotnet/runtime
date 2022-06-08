@@ -4247,7 +4247,8 @@ public:
     unsigned        fgEdgeCount;    // # of control flow edges between the BBs
     unsigned        fgBBcount;      // # of BBs in the method
 #ifdef DEBUG
-    unsigned fgBBcountAtCodegen; // # of BBs in the method at the start of codegen
+    unsigned                     fgBBcountAtCodegen; // # of BBs in the method at the start of codegen
+    jitstd::vector<BasicBlock*>* fgBBOrder;          // ordered vector of BBs
 #endif
     unsigned     fgBBNumMax;       // The max bbNum that has been assigned to basic blocks
     unsigned     fgDomBBcount;     // # of BBs for which we have dominator and reachability information
