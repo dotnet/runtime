@@ -9210,10 +9210,8 @@ void emitter::emitDispIns(
             printf("%s, %s", emitRegName(id->idReg1(), attr), sstr);
             emitDispAddrMode(id);
 
-#ifdef DEBUG
             emitDispCommentForHandle(emitGetInsAmdAny(id), id->idDebugOnlyInfo()->idMemCookie,
                                      id->idDebugOnlyInfo()->idFlags);
-#endif
             break;
 
         case IF_RRW_ARD_CNS:
