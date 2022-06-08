@@ -229,7 +229,7 @@ g_array_set_size (GArray *array, gint length)
 	if (length == priv->capacity)
 		return; // nothing to be done
 
-	if (length > priv->capacity) {
+	if (length > GUINT_TO_INT(priv->capacity)) {
 		// grow the array
 		ensure_capacity (priv, length);
 	}

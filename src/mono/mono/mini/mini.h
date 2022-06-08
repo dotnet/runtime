@@ -1282,7 +1282,7 @@ typedef enum {
 #define MONO_REGION_FLAGS(region) ((region) & 0x7)
 #define MONO_REGION_CLAUSE_INDEX(region) (((region) >> 8) - 1)
 
-#define get_vreg_to_inst(cfg, vreg) ((vreg) < (cfg)->vreg_to_inst_len ? (cfg)->vreg_to_inst [(vreg)] : NULL)
+#define get_vreg_to_inst(cfg, vreg) ((vreg) < GUINT32_TO_INT32((cfg)->vreg_to_inst_len) ? (cfg)->vreg_to_inst [(vreg)] : NULL)
 
 #define vreg_is_volatile(cfg, vreg) (G_UNLIKELY (get_vreg_to_inst ((cfg), (vreg)) && (get_vreg_to_inst ((cfg), (vreg))->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT))))
 

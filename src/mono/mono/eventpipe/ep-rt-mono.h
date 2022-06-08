@@ -1459,7 +1459,7 @@ ep_rt_temp_path_get (
 	EP_ASSERT (buffer_len > 0);
 
 	const ep_char8_t *path = g_get_tmp_dir ();
-	int32_t result = snprintf (buffer, buffer_len, "%s", path);
+	uint32_t result = snprintf (buffer, buffer_len, "%s", path);
 	if (result <= 0 || result > buffer_len)
 		ep_raise_error ();
 

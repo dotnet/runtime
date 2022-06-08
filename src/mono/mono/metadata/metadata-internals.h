@@ -833,7 +833,7 @@ void
 mono_metadata_decode_row_raw (const MonoTableInfo *t, int idx, uint32_t *res, int res_size);
 
 gboolean
-mono_metadata_decode_row_dynamic_checked (const MonoDynamicImage *image, const MonoDynamicTable *t, int idx, guint32 *res, int res_size, MonoError *error);
+mono_metadata_decode_row_dynamic_checked (const MonoDynamicImage *image, const MonoDynamicTable *t, guint idx, guint32 *res, int res_size, MonoError *error);
 
 MonoType*
 mono_metadata_get_shared_type (MonoType *type);
@@ -902,7 +902,7 @@ MonoMethodSignature  *mono_metadata_parse_signature_checked (MonoImage *image,
 gboolean
 mono_method_get_header_summary (MonoMethod *method, MonoMethodHeaderSummary *summary);
 
-int* mono_metadata_get_param_attrs          (MonoImage *m, int def, int param_count);
+int* mono_metadata_get_param_attrs          (MonoImage *m, int def, guint32 param_count);
 gboolean mono_metadata_method_has_param_attrs (MonoImage *m, int def);
 
 guint

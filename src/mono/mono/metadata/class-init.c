@@ -436,7 +436,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 	MonoClass *klass, *parent = NULL;
 	guint32 cols [MONO_TYPEDEF_SIZE];
 	guint32 cols_next [MONO_TYPEDEF_SIZE];
-	guint tidx = mono_metadata_token_index (type_token);
+	gint tidx = mono_metadata_token_index (type_token);
 	MonoGenericContext *context = NULL;
 	const char *name, *nspace;
 	guint icount = 0;
@@ -649,9 +649,9 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 		}
 
 		if (cols [MONO_TYPEDEF_FIELD_LIST] &&
-		    cols [MONO_TYPEDEF_FIELD_LIST] <= table_info_get_rows (&image->tables [MONO_TABLE_FIELD]))
+		    GUINT32_TO_INT32(cols [MONO_TYPEDEF_FIELD_LIST]) <= table_info_get_rows (&image->tables [MONO_TABLE_FIELD]))
 			mono_class_set_field_count (klass, field_last - first_field_idx);
-		if (cols [MONO_TYPEDEF_METHOD_LIST] <= table_info_get_rows (&image->tables [MONO_TABLE_METHOD]))
+		if (GUINT32_TO_INT32(cols [MONO_TYPEDEF_METHOD_LIST]) <= table_info_get_rows (&image->tables [MONO_TABLE_METHOD]))
 			mono_class_set_method_count (klass, method_last - first_method_idx);
 	} else if (G_UNLIKELY (cols [MONO_TYPEDEF_FIELD_LIST] == 0 && cols [MONO_TYPEDEF_METHOD_LIST] == 0 && image->has_updates)) {
 		uint32_t first_field_idx, first_method_idx, field_count, method_count;
@@ -2020,7 +2020,8 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 	int i;
 	const int top = mono_class_get_field_count (klass);
 	guint32 layout = mono_class_get_flags (klass) & TYPE_ATTRIBUTE_LAYOUT_MASK;
-	guint32 pass, passes, real_size;
+	guint32 pass, passes;
+	gint32 real_size;
 	gboolean gc_aware_layout = FALSE;
 	gboolean has_static_fields = FALSE;
 	gboolean has_references = FALSE;
@@ -2270,8 +2271,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 	case TYPE_ATTRIBUTE_EXPLICIT_LAYOUT: {
 		real_size = 0;
 		for (i = 0; i < top; i++) {
-			gint32 align;
-			guint32 size;
+			gint32 align, size;
 			MonoType *ftype;
 
 			field = &klass->fields [i];
@@ -2802,7 +2802,7 @@ mono_unload_interface_id (MonoClass *klass)
 static guint32
 mono_get_unique_iid (MonoClass *klass)
 {
-	int iid;
+	guint32 iid;
 
 	g_assert (MONO_CLASS_IS_INTERFACE_INTERNAL (klass));
 
@@ -3690,8 +3690,8 @@ inflate_method_listz (MonoMethod **methods, MonoClass *klass, MonoGenericContext
 void
 mono_class_setup_events (MonoClass *klass)
 {
-	int first, count;
-	guint startm, endm, i, j;
+	int first, count, i;
+	guint startm, endm, j;
 	guint32 cols [MONO_EVENT_SIZE];
 	MonoTableInfo *msemt = &klass->image->tables [MONO_TABLE_METHODSEMANTICS];
 	guint32 last;
@@ -3749,7 +3749,7 @@ mono_class_setup_events (MonoClass *klass)
 		}
 
 		events = (MonoEvent *)mono_class_alloc0 (klass, sizeof (MonoEvent) * count);
-		for (i = first; i < last; ++i) {
+		for (i = first; i < GUINT32_TO_INT32(last); ++i) {
 			MonoEvent *event = &events [i - first];
 
 			mono_metadata_decode_table_row (klass->image, MONO_TABLE_EVENT, i, cols, MONO_EVENT_SIZE);
