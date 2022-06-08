@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-
-
 #include "common.h"
 #include "jitinterface.h"
 #include "codeman.h"
@@ -3092,7 +3090,7 @@ CORINFO_GENERIC_HANDLE JIT_GenericHandleWorker(MethodDesc * pMD, MethodTable * p
         }
 
         pDeclaringMT = pMT;
-        for (;;)
+        while (true)
         {
             MethodTable * pParentMT = pDeclaringMT->GetParentMethodTable();
             if (pParentMT->GetNumDicts() <= dictionaryIndex)
@@ -4152,6 +4150,35 @@ HCIMPL0(void, JIT_ThrowTypeNotSupportedException)
     COMPlusThrow(kNotSupportedException, W("Arg_TypeNotSupported"));
 
     HELPER_METHOD_FRAME_END();
+}
+HCIMPLEND
+
+/*********************************************************************/
+HCIMPL3(void, JIT_ThrowAmbiguousResolutionException,
+    MethodDesc *method,
+    MethodTable *interfaceType,
+    MethodTable *targetType)
+{
+    FCALL_CONTRACT;
+
+    SString strMethodName;
+    SString strInterfaceName;
+    SString strTargetClassName;
+
+    HELPER_METHOD_FRAME_BEGIN_0();    // Set up a frame
+
+    TypeString::AppendMethod(strMethodName, method, method->GetMethodInstantiation());
+    TypeString::AppendType(strInterfaceName, TypeHandle(interfaceType));
+    TypeString::AppendType(strTargetClassName, targetType);
+
+    HELPER_METHOD_FRAME_END();    // Set up a frame
+
+    FCThrowExVoid(
+        kAmbiguousImplementationException,
+        IDS_CLASSLOAD_AMBIGUOUS_OVERRIDE,
+        strMethodName,
+        strInterfaceName,
+        strTargetClassName);
 }
 HCIMPLEND
 
@@ -5811,7 +5838,7 @@ void WriteJitHelperCountToSTRESSLOG()
             switch (jitHelperLoggingLevel)
             {
             case 1:
-                // This will print a comma seperated list:
+                // This will print a comma separated list:
                 // CORINFO_XXX_HELPER, 10
                 // CORINFO_YYYY_HELPER, 11
                 STRESS_LOG2(logFacility, logLevel, "%s, %d\n", name, count);

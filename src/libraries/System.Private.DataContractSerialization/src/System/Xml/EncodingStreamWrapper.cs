@@ -31,11 +31,11 @@ namespace System.Xml
 
         // UTF-8 is fastpath, so that's how these are stored
         // Compare methods adapt to Unicode.
-        private static readonly byte[] s_encodingAttr = new byte[] { (byte)'e', (byte)'n', (byte)'c', (byte)'o', (byte)'d', (byte)'i', (byte)'n', (byte)'g' };
-        private static readonly byte[] s_encodingUTF8 = new byte[] { (byte)'u', (byte)'t', (byte)'f', (byte)'-', (byte)'8' };
-        private static readonly byte[] s_encodingUnicode = new byte[] { (byte)'u', (byte)'t', (byte)'f', (byte)'-', (byte)'1', (byte)'6' };
-        private static readonly byte[] s_encodingUnicodeLE = new byte[] { (byte)'u', (byte)'t', (byte)'f', (byte)'-', (byte)'1', (byte)'6', (byte)'l', (byte)'e' };
-        private static readonly byte[] s_encodingUnicodeBE = new byte[] { (byte)'u', (byte)'t', (byte)'f', (byte)'-', (byte)'1', (byte)'6', (byte)'b', (byte)'e' };
+        private static readonly byte[] s_encodingAttr = "encoding"u8.ToArray();
+        private static readonly byte[] s_encodingUTF8 = "utf-8"u8.ToArray();
+        private static readonly byte[] s_encodingUnicode = "utf-16"u8.ToArray();
+        private static readonly byte[] s_encodingUnicodeLE = "utf-16le"u8.ToArray();
+        private static readonly byte[] s_encodingUnicodeBE = "utf-16be"u8.ToArray();
 
         private SupportedEncoding _encodingCode;
         private Encoding? _encoding;
@@ -281,14 +281,9 @@ namespace System.Xml
         private void FillBuffer(int count)
         {
             count -= _byteCount;
-            while (count > 0)
+            if (count > 0)
             {
-                int read = _stream.Read(_bytes!, _byteOffset + _byteCount, count);
-                if (read == 0)
-                    break;
-
-                _byteCount += read;
-                count -= read;
+                _byteCount += _stream.ReadAtLeast(_bytes.AsSpan(_byteOffset + _byteCount, count), count, throwOnEndOfStream: false);
             }
         }
 
@@ -598,14 +593,17 @@ namespace System.Xml
             return _byteBuffer[0];
         }
 
-        public override int Read(byte[] buffer, int offset, int count)
+        public override int Read(byte[] buffer, int offset, int count) =>
+            Read(new Span<byte>(buffer, offset, count));
+
+        public override int Read(Span<byte> buffer)
         {
             try
             {
                 if (_byteCount == 0)
                 {
                     if (_encodingCode == SupportedEncoding.UTF8)
-                        return _stream.Read(buffer, offset, count);
+                        return _stream.Read(buffer);
 
                     Debug.Assert(_bytes != null);
                     Debug.Assert(_chars != null);
@@ -627,9 +625,11 @@ namespace System.Xml
                 }
 
                 // Give them bytes
+                int count = buffer.Length;
                 if (_byteCount < count)
                     count = _byteCount;
-                Buffer.BlockCopy(_bytes!, _byteOffset, buffer, offset, count);
+
+                _bytes.AsSpan(_byteOffset, count).CopyTo(buffer);
                 _byteOffset += count;
                 _byteCount -= count;
                 return count;

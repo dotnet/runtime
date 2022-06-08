@@ -24,6 +24,7 @@ RangeCheck::RangeCheck(Compiler* pCompiler)
     , m_pCompiler(pCompiler)
     , m_alloc(pCompiler->getAllocator(CMK_RangeCheck))
     , m_nVisitBudget(MAX_VISIT_BUDGET)
+    , m_updateStmt(false)
 {
 }
 
@@ -255,6 +256,7 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
         {
             JITDUMP("Removing range check\n");
             m_pCompiler->optRemoveRangeCheck(bndsChk, comma, stmt);
+            m_updateStmt = true;
             return;
         }
     }
@@ -296,8 +298,8 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
     {
         JITDUMP("[RangeCheck::OptimizeRangeCheck] Between bounds\n");
         m_pCompiler->optRemoveRangeCheck(bndsChk, comma, stmt);
+        m_updateStmt = true;
     }
-    return;
 }
 
 void RangeCheck::Widen(BasicBlock* block, GenTree* tree, Range* pRange)
@@ -1056,13 +1058,7 @@ Range RangeCheck::ComputeRangeForLocalDef(BasicBlock*          block,
     return range;
 }
 
-// https://msdn.microsoft.com/en-us/windows/apps/hh285054.aspx
-// CLR throws IDS_EE_ARRAY_DIMENSIONS_EXCEEDED if array length is > INT_MAX.
-// new byte[INT_MAX]; still throws OutOfMemoryException on my system with 32 GB RAM.
-// I believe practical limits are still smaller than this number.
-#define ARRLEN_MAX (0x7FFFFFFF)
-
-// Get the limit's maximum possible value, treating array length to be ARRLEN_MAX.
+// Get the limit's maximum possible value.
 bool RangeCheck::GetLimitMax(Limit& limit, int* pMax)
 {
     int& max1 = *pMax;
@@ -1077,7 +1073,21 @@ bool RangeCheck::GetLimitMax(Limit& limit, int* pMax)
             int tmp = GetArrLength(limit.vn);
             if (tmp <= 0)
             {
-                tmp = ARRLEN_MAX;
+                // If we can't figure out the array length, use the maximum array length,
+                // CORINFO_Array_MaxLength (0x7FFFFFC7). However, we get here also when
+                // we can't find a Span/ReadOnlySpan bounds check length, and these have
+                // a maximum length of INT_MAX (0x7FFFFFFF). If limit.vn refers to a
+                // GT_ARR_LENGTH node, then it's an array length, otherwise use the INT_MAX value.
+
+                if (m_pCompiler->vnStore->IsVNArrLen(limit.vn))
+                {
+                    tmp = CORINFO_Array_MaxLength;
+                }
+                else
+                {
+                    const int MaxSpanLength = 0x7FFFFFFF;
+                    tmp                     = MaxSpanLength;
+                }
             }
             if (IntAddOverflows(tmp, limit.GetConstant()))
             {
@@ -1545,13 +1555,22 @@ void RangeCheck::OptimizeRangeChecks()
     {
         for (Statement* const stmt : block->Statements())
         {
+            m_updateStmt = false;
+
             for (GenTree* const tree : stmt->TreeList())
             {
-                if (IsOverBudget())
+                if (IsOverBudget() && !m_updateStmt)
                 {
                     return;
                 }
+
                 OptimizeRangeCheck(block, stmt, tree);
+            }
+
+            if (m_updateStmt)
+            {
+                m_pCompiler->gtSetStmtInfo(stmt);
+                m_pCompiler->fgSetStmtSeq(stmt);
             }
         }
     }

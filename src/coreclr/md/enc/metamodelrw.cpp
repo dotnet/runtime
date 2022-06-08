@@ -528,7 +528,7 @@ private:
         int     iLast;
         int     nResult;
 
-        for (;;)
+        while (true)
         {
             // if less than two elements you're done.
             if (iLeft >= iRight)
@@ -2861,7 +2861,7 @@ CMiniMdRW::PreSaveFull()
 
     m_bPreSaveDone = true;
 
-    // send the Ref->Def optmization notification to host
+    // send the Ref->Def optimization notification to host
     if (m_pHandler != NULL)
     {
         TOKENMAP * ptkmap = GetMemberRefToMemberDefMap();
@@ -5692,7 +5692,7 @@ CMiniMdRW::LookUpTableByCol(
             ridEnd = ridBegin + 1;
 
             // Search back to start of group.
-            for (;;)
+            while (true)
             {
                 if (ridBegin <= 1)
                 {
@@ -5712,7 +5712,7 @@ CMiniMdRW::LookUpTableByCol(
             // If desired, search forward to end of group.
             if (pRidEnd != NULL)
             {
-                for (;;)
+                while (true)
                 {
                     if (ridEnd > GetCountRecs(ixTbl))
                     {
@@ -7186,7 +7186,7 @@ VirtualSort::SortRange(
     HRESULT hr;
     int     iLast;
 
-    for (;;)
+    while (true)
     {
         // if less than two elements you're done.
         if (iLeft >= iRight)

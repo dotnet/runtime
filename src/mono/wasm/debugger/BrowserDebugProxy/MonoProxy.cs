@@ -29,12 +29,13 @@ namespace Microsoft.WebAssembly.Diagnostics
         // index of the runtime in a same JS page/process
         public int RuntimeId { get; private init; }
         public bool JustMyCode { get; private set; }
-        public bool AutoSetBreakpointOnEntryPoint { get; set; }
+        protected readonly ProxyOptions _options;
 
-        public MonoProxy(ILogger logger, IList<string> urlSymbolServerList, int runtimeId = 0, string loggerId = "") : base(logger, loggerId)
+        public MonoProxy(ILogger logger, IList<string> urlSymbolServerList, int runtimeId = 0, string loggerId = "", ProxyOptions options = null) : base(logger, loggerId)
         {
             this.urlSymbolServerList = urlSymbolServerList ?? new List<string>();
             RuntimeId = runtimeId;
+            _options = options;
         }
 
         internal ExecutionContext GetContext(SessionId sessionId)
@@ -212,6 +213,12 @@ namespace Microsoft.WebAssembly.Diagnostics
                         string top_func = args?["callFrames"]?[0]?["functionName"]?.Value<string>();
                         switch (top_func) {
                             // keep function names un-mangled via src\mono\wasm\runtime\rollup.config.js
+                            case "mono_wasm_set_entrypoint_breakpoint":
+                            case "_mono_wasm_set_entrypoint_breakpoint":
+                                {
+                                    await OnSetEntrypointBreakpoint(sessionId, args, token);
+                                    return true;
+                                }
                             case "mono_wasm_runtime_ready":
                             case "_mono_wasm_runtime_ready":
                                 {
@@ -247,12 +254,10 @@ namespace Microsoft.WebAssembly.Diagnostics
                         switch (url)
                         {
                             case var _ when url == "":
-                            case var _ when url.StartsWith("wasm://", StringComparison.Ordinal):
-                            case var _ when url.EndsWith(".wasm", StringComparison.Ordinal):
-                                {
-                                    logger.LogTrace($"ignoring wasm: Debugger.scriptParsed {url}");
-                                    return true;
-                                }
+                            {
+                                logger.LogTrace($"ignoring empty: Debugger.scriptParsed {url}");
+                                return true;
+                            }
                         }
                         logger.LogTrace($"proxying Debugger.scriptParsed ({sessionId.sessionId}) {url} {args}");
                         break;
@@ -639,7 +644,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
 
             MethodInfo methodInfo = type.Methods.FirstOrDefault(m => m.Name == methodName);
-            if (methodInfo == null)
+            if (methodInfo?.Source is null)
             {
                 // Maybe this is an async method, in which case the debug info is attached
                 // to the async method implementation, in class named:
@@ -801,6 +806,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                         return value_json_str != null
                                     ? ValueOrError<GetMembersResult>.WithValue(GetMembersResult.FromValues(JArray.Parse(value_json_str)))
                                     : ValueOrError<GetMembersResult>.WithError(res);
+                    case "evaluationResult":
+                        JArray evaluationRes = (JArray)context.SdbAgent.GetEvaluationResultProperties(objectId.ToString());
+                        return ValueOrError<GetMembersResult>.WithValue(GetMembersResult.FromValues(evaluationRes));
                     default:
                         return ValueOrError<GetMembersResult>.WithError($"RuntimeGetProperties: unknown object id scheme: {objectId.Scheme}");
                 }
@@ -1304,6 +1312,72 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
+        private async Task OnSetEntrypointBreakpoint(SessionId sessionId, JObject args, CancellationToken token)
+        {
+            try
+            {
+                ExecutionContext context = GetContext(sessionId);
+
+                var argsNew = JObject.FromObject(new
+                {
+                    callFrameId = args?["callFrames"]?[0]?["callFrameId"]?.Value<string>(),
+                    expression = "assembly_name_str + '|' + entrypoint_method_token",
+                });
+                Result assemblyAndMethodToken = await SendCommand(sessionId, "Debugger.evaluateOnCallFrame", argsNew, token);
+                if (!assemblyAndMethodToken.IsOk)
+                {
+                    logger.LogDebug("Failure evaluating assembly_name_str + '|' + entrypoint_method_token");
+                    return;
+                }
+                logger.LogDebug($"Entrypoint assembly and method token {assemblyAndMethodToken.Value["result"]["value"].Value<string>()}");
+
+                var assemblyAndMethodTokenArr = assemblyAndMethodToken.Value["result"]["value"].Value<string>().Split('|', StringSplitOptions.TrimEntries);
+                var assemblyName = assemblyAndMethodTokenArr[0];
+                var methodToken = Convert.ToInt32(assemblyAndMethodTokenArr[1]) & 0xffffff; //token
+
+                var store = await LoadStore(sessionId, token);
+                AssemblyInfo assembly = store.GetAssemblyByName(assemblyName);
+                if (assembly == null)
+                {
+                    logger.LogDebug($"Could not find entrypoint assembly {assemblyName} in the store");
+                    return;
+                }
+                var method = assembly.GetMethodByToken(methodToken);
+                if (method.StartLocation == null) //It's an async method and we need to get the MoveNext method to add the breakpoint
+                    method = assembly.Methods.FirstOrDefault(m => m.Value.KickOffMethod == methodToken).Value;
+                if (method == null)
+                {
+                    logger.LogDebug($"Could not find entrypoint method {methodToken} in assembly {assemblyName}");
+                    return;
+                }
+                var sourceFile = assembly.Sources.FirstOrDefault(sf => sf.SourceId == method.SourceId);
+                if (sourceFile == null)
+                {
+                    logger.LogDebug($"Could not source file {method.SourceName} for method {method.Name} in assembly {assemblyName}");
+                    return;
+                }
+                string bpId = $"auto:{method.StartLocation.Line}:{method.StartLocation.Column}:{sourceFile.DotNetUrl}";
+                BreakpointRequest request = new(bpId, JObject.FromObject(new
+                {
+                    lineNumber = method.StartLocation.Line,
+                    columnNumber = method.StartLocation.Column,
+                    url = sourceFile.Url
+                }));
+                context.BreakpointRequests[bpId] = request;
+                if (request.TryResolve(sourceFile))
+                    await SetBreakpoint(sessionId, context.store, request, sendResolvedEvent: false, fromEnC: false, token);
+                logger.LogInformation($"Adding bp req {request}");
+            }
+            catch (Exception e)
+            {
+                logger.LogDebug($"Unable to set entrypoint breakpoint. {e}");
+            }
+            finally
+            {
+                await SendResume(sessionId, token);
+            }
+        }
+
         private async Task<bool> OnEvaluateOnCallFrame(MessageId msg_id, int scopeId, string expression, CancellationToken token)
         {
             try
@@ -1438,31 +1512,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                     await foreach (SourceFile source in context.store.Load(sessionId, loaded_files, token).WithCancellation(token))
                     {
                         await OnSourceFileAdded(sessionId, source, context, token);
-                    }
-
-                    if (AutoSetBreakpointOnEntryPoint)
-                    {
-                        var entryPoint = context.store.FindEntryPoint();
-                        if (entryPoint is not null)
-                        {
-                            var sourceFile = entryPoint.Assembly.Sources.Single(sf => sf.SourceId == entryPoint.SourceId);
-                            string bpId = $"auto:{entryPoint.StartLocation.Line}:{entryPoint.StartLocation.Column}:{sourceFile.DotNetUrl}";
-                            BreakpointRequest request = new(bpId, JObject.FromObject(new
-                            {
-                                lineNumber = entryPoint.StartLocation.Line,
-                                columnNumber = entryPoint.StartLocation.Column,
-                                url = sourceFile.Url
-                            }));
-                            logger.LogDebug($"Adding bp req {request}");
-                            context.BreakpointRequests[bpId] = request;
-                            request.TryResolve(sourceFile);
-                            if (request.TryResolve(sourceFile))
-                                await SetBreakpoint(sessionId, context.store, request, true, true, token);
-                        }
-                        else
-                        {
-                            logger.LogDebug($"No entrypoint found, for setting automatic breakpoint");
-                        }
                     }
                 }
             }

@@ -1,18 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // File: typedesc.cpp
-//
-
-
 //
 // This file contains definitions for methods in the code:TypeDesc class and its
 // subclasses
 //     code:ParamTypeDesc,
 //     code:TyVarTypeDesc,
 //     code:FnPtrTypeDesc
-//
-
 //
 // ============================================================================
 
@@ -34,7 +30,6 @@ BOOL ParamTypeDesc::Verify() {
     STATIC_CONTRACT_DEBUG_ONLY;
     STATIC_CONTRACT_SUPPORTS_DAC;
 
-    _ASSERTE((m_TemplateMT == NULL) || GetTemplateMethodTableInternal()->SanityCheck());
     _ASSERTE(!GetTypeParam().IsNull());
     _ASSERTE(CorTypeInfo::IsModifier_NoThrow(GetInternalCorElementType()) ||
                               GetInternalCorElementType() == ELEMENT_TYPE_VALUETYPE);
@@ -137,26 +132,6 @@ PTR_Module TypeDesc::GetModule() {
     return GetLoaderModule();
 }
 
-BOOL ParamTypeDesc::OwnsTemplateMethodTable()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    CorElementType kind = GetInternalCorElementType();
-
-    // The m_TemplateMT for pointer types is UIntPtr
-    if (!CorTypeInfo::IsArray_NoThrow(kind))
-    {
-        return FALSE;
-    }
-
-    return TRUE;
-}
-
 Assembly* TypeDesc::GetAssembly() {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
@@ -257,7 +232,7 @@ void TypeDesc::ConstructName(CorElementType kind,
         break;
 
     case ELEMENT_TYPE_FNPTR:
-        ssBuff.Printf(W("FNPTR"));
+        ssBuff.Set(W("FNPTR"));
         break;
 
     default:
@@ -536,12 +511,6 @@ OBJECTREF ParamTypeDesc::GetManagedClassObject()
             pLoaderAllocator->FreeHandle(hExposedClassObject);
         }
 
-        if (OwnsTemplateMethodTable())
-        {
-            // Set the handle on template methodtable as well to make Object.GetType for arrays take the fast path
-            GetTemplateMethodTableInternal()->GetWriteableDataForWrite()->m_hExposedClassObject = m_hExposedClassObject;
-        }
-
         GCPROTECT_END();
     }
     return GetManagedClassObjectIfExists();
@@ -694,14 +663,6 @@ void TypeDesc::DoFullyLoad(Generics::RecursionGraph *pVisited, ClassLoadLevel le
 
         // Fully load the type parameter
         GetTypeParam().DoFullyLoad(&newVisited, level, pPending, &fBailed, pInstContext);
-
-        ParamTypeDesc* pPTD = (ParamTypeDesc*) this;
-
-        // Fully load the template method table
-        if (pPTD->m_TemplateMT != NULL)
-        {
-            pPTD->GetTemplateMethodTableInternal()->DoFullyLoad(&newVisited, level, pPending, &fBailed, pInstContext);
-        }
     }
 
     switch (level)
@@ -861,7 +822,7 @@ void TypeVarTypeDesc::LoadConstraints(ClassLoadLevel level /* = CLASS_LOADED */)
         if (numConstraints != 0)
         {
             LoaderAllocator* pAllocator = GetModule()->GetLoaderAllocator();
-            // If there is a single class constraint we put in in element 0 of the array
+            // If there is a single class constraint we place it at index 0 of the array
             AllocMemHolder<TypeHandle> constraints
                 (pAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(numConstraints) * S_SIZE_T(sizeof(TypeHandle))));
 
@@ -1611,7 +1572,8 @@ BOOL TypeVarTypeDesc::SatisfiesConstraints(SigTypeContext *pTypeContextOfConstra
                                 MethodDesc *pMD = it.GetMethodDesc();
                                 if (pMD->IsVirtual() &&
                                     pMD->IsStatic() &&
-                                    (pMD->IsAbstract() && !thElem.AsMethodTable()->ResolveVirtualStaticMethod(pInterfaceMT, pMD, /* allowNullResult */ TRUE, /* verifyImplemented */ TRUE)))
+                                    (pMD->IsAbstract() && !thElem.AsMethodTable()->ResolveVirtualStaticMethod(
+                                        pInterfaceMT, pMD, /* allowNullResult */ TRUE, /* verifyImplemented */ TRUE)))
                                 {
                                     virtualStaticResolutionCheckFailed = true;
                                     break;
@@ -1724,12 +1686,6 @@ ParamTypeDesc::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
     SUPPORTS_DAC;
     DAC_ENUM_DTHIS();
-
-    PTR_MethodTable pTemplateMT = GetTemplateMethodTableInternal();
-    if (pTemplateMT.IsValid())
-    {
-        pTemplateMT->EnumMemoryRegions(flags);
-    }
 
     m_Arg.EnumMemoryRegions(flags);
 }

@@ -243,25 +243,23 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
             // Otherwise, we treat it as a use here.
             if ((tree->gtFlags & GTF_IND_ASG_LHS) == 0)
             {
-                GenTreeLclVarCommon* dummyLclVarTree = nullptr;
-                bool                 dummyIsEntire   = false;
-                GenTree*             addrArg         = tree->AsOp()->gtOp1->gtEffectiveVal(/*commaOnly*/ true);
-                if (!addrArg->DefinesLocalAddr(this, /*width doesn't matter*/ 0, &dummyLclVarTree, &dummyIsEntire))
+                GenTreeLclVarCommon* lclVarTree = nullptr;
+                GenTree*             addrArg    = tree->AsOp()->gtOp1->gtEffectiveVal(/*commaOnly*/ true);
+                if (!addrArg->DefinesLocalAddr(&lclVarTree))
                 {
                     fgCurMemoryUse |= memoryKindSet(GcHeap, ByrefExposed);
                 }
                 else
                 {
                     // Defines a local addr
-                    assert(dummyLclVarTree != nullptr);
-                    fgMarkUseDef(dummyLclVarTree->AsLclVarCommon());
+                    assert(lclVarTree != nullptr);
+                    fgMarkUseDef(lclVarTree->AsLclVarCommon());
                 }
             }
             break;
 
         // These should have been morphed away to become GT_INDs:
         case GT_FIELD:
-        case GT_INDEX:
             unreached();
             break;
 
@@ -2006,7 +2004,13 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
 
                 if (isDeadStore && fgTryRemoveDeadStoreLIR(node, lclVarNode, block))
                 {
-                    lclVarNode->Data()->SetUnusedValue();
+                    GenTree* data = lclVarNode->Data();
+                    data->SetUnusedValue();
+
+                    if (data->isIndir())
+                    {
+                        Lowering::TransformUnusedIndirection(data->AsIndir(), this, block);
+                    }
                 }
                 break;
             }
@@ -2017,6 +2021,7 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
             case GT_CNS_LNG:
             case GT_CNS_DBL:
             case GT_CNS_STR:
+            case GT_CNS_VEC:
             case GT_CLS_VAR_ADDR:
             case GT_PHYSREG:
                 // These are all side-effect-free leaf nodes.

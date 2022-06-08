@@ -1692,6 +1692,14 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
         saveRegsPlusPSPSize += MAX_REG_ARG * REGSIZE_BYTES;
     }
 
+    if (compiler->lvaMonAcquired != BAD_VAR_NUM && !compiler->opts.IsOSR())
+    {
+        // We furthermore allocate the "monitor acquired" bool between PSP and
+        // the saved registers because this is part of the EnC header.
+        // Note that OSR methods reuse the monitor bool created by tier 0.
+        saveRegsPlusPSPSize += compiler->lvaLclSize(compiler->lvaMonAcquired);
+    }
+
     unsigned const saveRegsPlusPSPSizeAligned = roundUp(saveRegsPlusPSPSize, STACK_ALIGN);
 
     assert(compiler->lvaOutgoingArgSpaceSize % REGSIZE_BYTES == 0);
@@ -2306,6 +2314,73 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
         }
         break;
 
+        case GT_CNS_VEC:
+        {
+            GenTreeVecCon* vecCon = tree->AsVecCon();
+
+            emitter* emit = GetEmitter();
+            emitAttr attr = emitTypeSize(targetType);
+
+            switch (tree->TypeGet())
+            {
+#if defined(FEATURE_SIMD)
+                case TYP_SIMD8:
+                {
+                    if (vecCon->IsAllBitsSet())
+                    {
+                        emit->emitIns_R_I(INS_mvni, attr, targetReg, 0, INS_OPTS_2S);
+                    }
+                    else if (vecCon->IsZero())
+                    {
+                        emit->emitIns_R_I(INS_movi, attr, targetReg, 0, INS_OPTS_2S);
+                    }
+                    else
+                    {
+                        // Get a temp integer register to compute long address.
+                        regNumber addrReg = tree->GetSingleTempReg();
+
+                        simd8_t              constValue = vecCon->gtSimd8Val;
+                        CORINFO_FIELD_HANDLE hnd        = emit->emitSimd8Const(constValue);
+
+                        emit->emitIns_R_C(INS_ldr, attr, targetReg, addrReg, hnd, 0);
+                    }
+                    break;
+                }
+
+                case TYP_SIMD12:
+                case TYP_SIMD16:
+                {
+                    if (vecCon->IsAllBitsSet())
+                    {
+                        emit->emitIns_R_I(INS_mvni, attr, targetReg, 0, INS_OPTS_4S);
+                    }
+                    else if (vecCon->IsZero())
+                    {
+                        emit->emitIns_R_I(INS_movi, attr, targetReg, 0, INS_OPTS_4S);
+                    }
+                    else
+                    {
+                        // Get a temp integer register to compute long address.
+                        regNumber addrReg = tree->GetSingleTempReg();
+
+                        simd16_t             constValue = vecCon->gtSimd16Val;
+                        CORINFO_FIELD_HANDLE hnd        = emit->emitSimd16Const(constValue);
+
+                        emit->emitIns_R_C(INS_ldr, attr, targetReg, addrReg, hnd, 0);
+                    }
+                    break;
+                }
+#endif // FEATURE_SIMD
+
+                default:
+                {
+                    unreached();
+                }
+            }
+
+            break;
+        }
+
         default:
             unreached();
     }
@@ -2540,10 +2615,18 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
     }
     else if (data->isContained())
     {
-        assert(data->OperIs(GT_BITCAST));
-        const GenTree* bitcastSrc = data->AsUnOp()->gtGetOp1();
-        assert(!bitcastSrc->isContained());
-        dataReg = bitcastSrc->GetRegNum();
+        if (data->IsCnsVec())
+        {
+            assert(data->AsVecCon()->IsZero());
+            dataReg = REG_ZR;
+        }
+        else
+        {
+            assert(data->OperIs(GT_BITCAST));
+            const GenTree* bitcastSrc = data->AsUnOp()->gtGetOp1();
+            assert(!bitcastSrc->isContained());
+            dataReg = bitcastSrc->GetRegNum();
+        }
     }
     else
     {
@@ -2621,7 +2704,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
         if (data->isContained())
         {
             // This is only possible for a zero-init or bitcast.
-            const bool zeroInit = (data->IsIntegralConst(0) || data->IsSIMDZero());
+            const bool zeroInit = (data->IsIntegralConst(0) || data->IsVectorZero());
             assert(zeroInit || data->OperIs(GT_BITCAST));
 
             if (zeroInit && varTypeIsSIMD(targetType))
@@ -4241,7 +4324,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
         assert(!op1->isContained());
         assert(op1Type == op2Type);
 
-        if (op2->IsFPZero())
+        if (op2->IsFloatPositiveZero())
         {
             assert(op2->isContained());
             emit->emitIns_R_F(INS_fcmp, cmpSize, op1->GetRegNum(), 0.0);
@@ -5067,7 +5150,7 @@ void CodeGen::genLoadIndTypeSIMD12(GenTree* treeNode)
 //
 void CodeGen::genStoreLclTypeSIMD12(GenTree* treeNode)
 {
-    assert((treeNode->OperGet() == GT_STORE_LCL_FLD) || (treeNode->OperGet() == GT_STORE_LCL_VAR));
+    assert(treeNode->OperIs(GT_STORE_LCL_FLD, GT_STORE_LCL_VAR));
 
     GenTreeLclVarCommon* lclVar = treeNode->AsLclVarCommon();
 
@@ -5080,7 +5163,7 @@ void CodeGen::genStoreLclTypeSIMD12(GenTree* treeNode)
     if (op1->isContained())
     {
         // This is only possible for a zero-init.
-        assert(op1->IsIntegralConst(0) || op1->IsSIMDZero());
+        assert(op1->IsIntegralConst(0) || op1->IsVectorZero());
 
         // store lower 8 bytes
         GetEmitter()->emitIns_S_R(ins_Store(TYP_DOUBLE), EA_8BYTE, REG_ZR, varNum, offs);
@@ -5090,12 +5173,24 @@ void CodeGen::genStoreLclTypeSIMD12(GenTree* treeNode)
 
         return;
     }
+
+    regNumber targetReg  = treeNode->GetRegNum();
     regNumber operandReg = genConsumeReg(op1);
 
-    // Need an additional integer register to extract upper 4 bytes from data.
-    regNumber tmpReg = lclVar->GetSingleTempReg();
+    if (targetReg != REG_NA)
+    {
+        assert(GetEmitter()->isVectorRegister(targetReg));
 
-    GetEmitter()->emitStoreSIMD12ToLclOffset(varNum, offs, operandReg, tmpReg);
+        // Simply use mov if we move a SIMD12 reg to another SIMD12 reg
+        inst_Mov(treeNode->TypeGet(), targetReg, operandReg, /* canSkip */ true);
+        genProduceReg(treeNode);
+    }
+    else
+    {
+        // Need an additional integer register to extract upper 4 bytes from data.
+        regNumber tmpReg = lclVar->GetSingleTempReg();
+        GetEmitter()->emitStoreSIMD12ToLclOffset(varNum, offs, operandReg, tmpReg);
+    }
 }
 
 #endif // FEATURE_SIMD

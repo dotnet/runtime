@@ -5379,7 +5379,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                     {
                         tokenType = tempType;
                         tokenValue = tempValue;
-                        // This is a token, so the Index has been advanced propertly in DTFI.Tokenizer().
+                        // This is a token, so the Index has been advanced properly in DTFI.Tokenizer().
                     }
                     else
                     {

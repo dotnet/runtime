@@ -141,7 +141,7 @@ The first 4 options are mutually exclusive
         have managed thread local statics, which work through the HELPER. Support for this is considered
         legacy, and going forward, the EE should
 
-    * <NONE> This is a normal static field. Its address in in memory is determined by getFieldAddress. (see
+    * <NONE> This is a normal static field. Its address in memory is determined by getFieldAddress. (see
         also CORINFO_FLG_STATIC_IN_HEAP).
 
 
@@ -625,6 +625,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_THROW_NOT_IMPLEMENTED,             // throw NotImplementedException
     CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED,      // throw PlatformNotSupportedException
     CORINFO_HELP_THROW_TYPE_NOT_SUPPORTED,          // throw TypeNotSupportedException
+    CORINFO_HELP_THROW_AMBIGUOUS_RESOLUTION_EXCEPTION, // throw AmbiguousResolutionException for failed static virtual method resolution
 
     CORINFO_HELP_JIT_PINVOKE_BEGIN, // Transition to preemptive mode before a P/Invoke, frame is the first argument
     CORINFO_HELP_JIT_PINVOKE_END,   // Transition to cooperative mode after a P/Invoke, frame is the first argument
@@ -1934,6 +1935,7 @@ struct CORINFO_VarArgInfo
 #define OFFSETOF__CORINFO_String__stringLen               SIZEOF__CORINFO_Object
 #define OFFSETOF__CORINFO_String__chars                   (OFFSETOF__CORINFO_String__stringLen + sizeof(uint32_t) /* stringLen */)
 
+#define OFFSETOF__CORINFO_NullableOfT__hasValue           0
 
 /* data to optimize delegate construction */
 struct DelegateCtorArgs

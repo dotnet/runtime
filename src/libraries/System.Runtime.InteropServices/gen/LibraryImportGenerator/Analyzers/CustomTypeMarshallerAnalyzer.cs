@@ -13,7 +13,7 @@ using static Microsoft.Interop.Analyzers.AnalyzerDiagnostics;
 
 namespace Microsoft.Interop.Analyzers
 {
-    [DiagnosticAnalyzer(LanguageNames.CSharp, LanguageNames.VisualBasic)]
+    [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class CustomTypeMarshallerAnalyzer : DiagnosticAnalyzer
     {
         private const string Category = "Usage";

@@ -104,7 +104,7 @@ When `DllGetClassObject()` is called in a COM activation scenario, the following
         }
         ```
         Note this API is not exposed outside of `System.Private.CoreLib` and is subject to change at any time.
-    * The loading of the assembly will take place in a new [`AssemblyLoadContext`](https://docs.microsoft.com/dotnet/api/system.runtime.loader.assemblyloadcontext) for dependency isolation. Each assembly path will get a seperate `AssemblyLoadContext`. This means that if an assembly provides multiple COM servers all of the servers from that assembly will reside in the same `AssemblyLoadContext`.
+    * The loading of the assembly will take place in a new [`AssemblyLoadContext`](https://docs.microsoft.com/dotnet/api/system.runtime.loader.assemblyloadcontext) for dependency isolation. Each assembly path will get a separate `AssemblyLoadContext`. This means that if an assembly provides multiple COM servers all of the servers from that assembly will reside in the same `AssemblyLoadContext`.
     * The created `AssemblyLoadContext` will use an [`AssemblyDependencyResolver`](https://github.com/dotnet/runtime/issues/27787) that was supplied with the path to the assembly to load assemblies.
 1) The `IClassFactory` instance is returned to the caller of `DllGetClassObject()` to attempt class activation.
 

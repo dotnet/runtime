@@ -2092,7 +2092,15 @@ public:
     // Specify allowNullResult to return NULL instead of throwing if the there is no implementation
     // Specify verifyImplemented to verify that there is a match, but do not actually return a final usable MethodDesc
     // Specify allowVariantMatches to permit generic interface variance
-    MethodDesc *ResolveVirtualStaticMethod(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, BOOL allowNullResult, BOOL verifyImplemented = FALSE, BOOL allowVariantMatches = TRUE);
+    // Specify uniqueResolution to store the flag saying whether the resolution was unambiguous;
+    // when NULL, throw an AmbiguousResolutionException upon hitting ambiguous SVM resolution.
+    MethodDesc *ResolveVirtualStaticMethod(
+        MethodTable* pInterfaceType,
+        MethodDesc* pInterfaceMD,
+        BOOL allowNullResult,
+        BOOL verifyImplemented = FALSE,
+        BOOL allowVariantMatches = TRUE,
+        BOOL *uniqueResolution = NULL);
 
     // Try a partial resolve of the constraint call, up to generic code sharing.
     //
@@ -2382,7 +2390,6 @@ public:
     OBJECTREF FastBox(void** data);
 #ifndef DACCESS_COMPILE
     BOOL UnBoxInto(void *dest, OBJECTREF src);
-    BOOL UnBoxIntoArg(ArgDestination *argDest, OBJECTREF src);
     void UnBoxIntoUnchecked(void *dest, OBJECTREF src);
 #endif
 

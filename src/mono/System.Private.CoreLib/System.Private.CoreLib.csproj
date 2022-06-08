@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <EnableDefaultItems>false</EnableDefaultItems>
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
@@ -170,7 +170,6 @@
       <Compile Include="$(BclSourcesRoot)\System\Object.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Math.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\MathF.Mono.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\MissingMemberException.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\ModuleHandle.cs" />
       <Compile Include="$(BclSourcesRoot)\System\MulticastDelegate.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Nullable.Mono.cs" />
@@ -200,10 +199,12 @@
       <Compile Include="$(BclSourcesRoot)\System\IO\FileLoadException.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Assembly.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\AssemblyName.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\ConstructorInvoker.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\CustomAttribute.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\FieldInfo.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\MemberInfo.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodBase.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodInvoker.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeAssembly.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeCustomAttributeData.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeEventInfo.cs" />
@@ -276,15 +277,6 @@
       </Compile>
       <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetEnviron.cs">
         <Link>Common\Interop\Unix\System.Native\Interop.GetEnviron.cs</Link>
-      </Compile>
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
-      <Compile Include="$(BclSourcesRoot)\System\Environment.iOS.cs" />
-      <Compile Include="$(CommonPath)Interop\OSX\System.Native\Interop.SearchPath.cs">
-        <Link>Common\Interop\OSX\Interop.SearchPath.cs</Link>
-      </Compile>
-      <Compile Include="$(CommonPath)Interop\OSX\System.Native\Interop.SearchPath.iOS.cs">
-        <Link>Common\Interop\OSX\Interop.SearchPath.iOS.cs</Link>
       </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">

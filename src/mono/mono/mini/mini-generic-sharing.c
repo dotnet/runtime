@@ -682,7 +682,7 @@ inflate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoTempl
 		 * contiguous.  So this is ok.
 		 */
 		g_assert (!m_field_is_from_update (field));
-		int i = field - m_class_get_fields (m_field_get_parent (field));
+		int i = GPTRDIFF_TO_INT (field - m_class_get_fields (m_field_get_parent (field)));
 		gpointer dummy = NULL;
 
 		mono_metadata_free_type (inflated_type);
@@ -1472,7 +1472,7 @@ mini_get_gsharedvt_in_sig_wrapper (MonoMethodSignature *sig)
 	MonoMethod *res, *cached;
 	WrapperInfo *info;
 	MonoMethodSignature *csig, *gsharedvt_sig;
-	int pindex;
+	guint16 pindex;
 	static GHashTable *cache;
 
 	// FIXME: Memory management
@@ -1591,7 +1591,8 @@ mini_get_gsharedvt_out_sig_wrapper (MonoMethodSignature *sig)
 	MonoMethod *res, *cached;
 	WrapperInfo *info;
 	MonoMethodSignature *normal_sig, *csig;
-	int pindex, args_start;
+	gint16 pindex;
+	int args_start;
 	static GHashTable *cache;
 
 	// FIXME: Memory management
@@ -1652,7 +1653,7 @@ mini_get_gsharedvt_out_sig_wrapper (MonoMethodSignature *sig)
 #endif
 
 #ifndef DISABLE_JIT
-	int ldind_op, stind_op;
+	guint8 ldind_op, stind_op;
 	if (sig->ret->type != MONO_TYPE_VOID)
 		/* Load return address */
 		mono_mb_emit_ldarg (mb, sig->hasthis ? 1 : 0);
@@ -1740,7 +1741,8 @@ mini_get_interp_in_wrapper (MonoMethodSignature *sig)
 	MonoMethod *res, *cached;
 	WrapperInfo *info;
 	MonoMethodSignature *csig, *entry_sig;
-	int i, pindex;
+	guint16 pindex;
+	int i;
 	static GHashTable *cache;
 	const char *name;
 	gboolean generic = FALSE;
@@ -2009,7 +2011,8 @@ MonoMethodSignature*
 mini_get_gsharedvt_out_sig_wrapper_signature (gboolean has_this, gboolean has_ret, int param_count)
 {
 	MonoMethodSignature *sig = g_malloc0 (sizeof (MonoMethodSignature) + ((param_count + 3) * sizeof (MonoType*)));
-	int i, pindex;
+	guint16 pindex;
+	int i;
 	MonoType *int_type = mono_get_int_type ();
 
 	sig->ret = mono_get_void_type ();
@@ -2244,7 +2247,7 @@ instantiate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoT
 	case MONO_RGCTX_INFO_INTERP_METHOD: {
 		MonoMethod *m = (MonoMethod*)data;
 
-		return mini_get_interp_callbacks ()->get_interp_method (m, error);
+		return mini_get_interp_callbacks ()->get_interp_method (m);
 	}
 	case MONO_RGCTX_INFO_LLVMONLY_INTERP_ENTRY: {
 		MonoMethod *m = (MonoMethod*)data;
@@ -3158,12 +3161,11 @@ mono_class_fill_runtime_generic_context (MonoVTable *class_vtable, guint32 slot,
 {
 	MonoRuntimeGenericContext *rgctx, *new_rgctx;
 	gpointer info;
-	MonoJitMemoryManager *jit_mm = jit_mm_for_class (class_vtable->klass);
-
-	error_init (error);
 
 	rgctx = class_vtable->runtime_generic_context;
 	if (G_UNLIKELY (!rgctx)) {
+		MonoJitMemoryManager *jit_mm = jit_mm_for_class (class_vtable->klass);
+
 		new_rgctx = alloc_rgctx_array (jit_mm->mem_manager, 0, FALSE);
 		/* Make sure that this array is zeroed if other threads access it */
 		mono_memory_write_barrier ();
@@ -4056,7 +4058,7 @@ get_shared_gparam_name (MonoTypeEnum constraint, const char *name)
 		tname = mono_type_full_name (&t);
 		size_t len = strlen (tname);
 		for (size_t i = 0; i < len; ++i)
-			tname [i] = toupper (tname [i]);
+			tname [i] = GINT_TO_CHAR (toupper (tname [i]));
 		res = g_strdup_printf ("%s_%s", name, tname);
 		g_free (tname);
 		return res;

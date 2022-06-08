@@ -254,21 +254,19 @@ namespace ILCompiler
 
             public bool GeneratesMetadata(EcmaModule module, ExportedTypeHandle exportedTypeHandle)
             {
-                try
-                {
-                    // We'll possibly need to do something else here if we ever use this MetadataManager
-                    // with compilation modes that generate multiple metadata blobs.
-                    // (Multi-module or .NET Native style shared library.)
-                    // We are currently missing type forwarders pointing to the other blobs.
-                    var targetType = (MetadataType)module.GetObject(exportedTypeHandle);
-                    return GeneratesMetadata(targetType);
-                }
-                catch (TypeSystemException)
+                // We'll possibly need to do something else here if we ever use this MetadataManager
+                // with compilation modes that generate multiple metadata blobs.
+                // (Multi-module or .NET Native style shared library.)
+                // We are currently missing type forwarders pointing to the other blobs.
+                var targetType = (MetadataType)module.GetObject(exportedTypeHandle, NotFoundBehavior.ReturnNull);
+                if (targetType == null)
                 {
                     // No harm in generating a forwarder that didn't resolve.
                     // We'll get matching behavior at runtime.
                     return true;
                 }
+
+                return GeneratesMetadata(targetType);
             }
 
             public bool IsBlocked(MetadataType typeDef)

@@ -13,8 +13,6 @@
 #include "eventtrace.h"
 #include "posterror.h"
 
-#include <shlobj.h>
-
 #include "dlwrap.h"
 
 #ifndef DACCESS_COMPILE
@@ -45,184 +43,6 @@ void ClrFlsClearThreadType(TlsThreadTypeFlag flag)
 }
 
 thread_local size_t t_CantStopCount;
-
-// Helper function that encapsulates the parsing rules.
-//
-// Called first with *pdstout == NULL to figure out how many args there are
-// and the size of the required destination buffer.
-//
-// Called again with a nonnull *pdstout to fill in the actual buffer.
-//
-// Returns the # of arguments.
-static UINT ParseCommandLine(LPCWSTR psrc, __inout LPWSTR *pdstout)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
-    }
-    CONTRACTL_END
-
-    UINT    argcount = 1;       // discovery of arg0 is unconditional, below
-    LPWSTR  pdst     = *pdstout;
-    BOOL    fDoWrite = (pdst != NULL);
-
-    BOOL    fInQuotes;
-    int     iSlash;
-
-    /* A quoted program name is handled here. The handling is much
-       simpler than for other arguments. Basically, whatever lies
-       between the leading double-quote and next one, or a terminal null
-       character is simply accepted. Fancier handling is not required
-       because the program name must be a legal NTFS/HPFS file name.
-       Note that the double-quote characters are not copied, nor do they
-       contribute to numchars.
-
-       This "simplification" is necessary for compatibility reasons even
-       though it leads to mishandling of certain cases.  For example,
-       "c:\tests\"test.exe will result in an arg0 of c:\tests\ and an
-       arg1 of test.exe.  In any rational world this is incorrect, but
-       we need to preserve compatibility.
-    */
-
-    LPCWSTR pStart = psrc;
-    BOOL    skipQuote = FALSE;
-
-    if (*psrc == W('\"'))
-    {
-        // scan from just past the first double-quote through the next
-        // double-quote, or up to a null, whichever comes first
-        while ((*(++psrc) != W('\"')) && (*psrc != W('\0')))
-            continue;
-
-        skipQuote = TRUE;
-    }
-    else
-    {
-        /* Not a quoted program name */
-
-        while (!ISWWHITE(*psrc) && *psrc != W('\0'))
-            psrc++;
-    }
-
-    // We have now identified arg0 as pStart (or pStart+1 if we have a leading
-    // quote) through psrc-1 inclusive
-    if (skipQuote)
-        pStart++;
-    while (pStart < psrc)
-    {
-        if (fDoWrite)
-            *pdst = *pStart;
-
-        pStart++;
-        pdst++;
-    }
-
-    // And terminate it.
-    if (fDoWrite)
-        *pdst = W('\0');
-
-    pdst++;
-
-    // if we stopped on a double-quote when arg0 is quoted, skip over it
-    if (skipQuote && *psrc == W('\"'))
-        psrc++;
-
-    while ( *psrc != W('\0'))
-    {
-LEADINGWHITE:
-
-        // The outofarg state.
-        while (ISWWHITE(*psrc))
-            psrc++;
-
-        if (*psrc == W('\0'))
-            break;
-        else
-        if (*psrc == W('#'))
-        {
-            while (*psrc != W('\0') && *psrc != W('\n'))
-                psrc++;     // skip to end of line
-
-            goto LEADINGWHITE;
-        }
-
-        argcount++;
-        fInQuotes = FALSE;
-
-        while ((!ISWWHITE(*psrc) || fInQuotes) && *psrc != W('\0'))
-        {
-            switch (*psrc)
-            {
-            case W('\\'):
-                iSlash = 0;
-                while (*psrc == W('\\'))
-                {
-                    iSlash++;
-                    psrc++;
-                }
-
-                if (*psrc == W('\"'))
-                {
-                    for ( ; iSlash >= 2; iSlash -= 2)
-                    {
-                        if (fDoWrite)
-                            *pdst = W('\\');
-
-                        pdst++;
-                    }
-
-                    if (iSlash & 1)
-                    {
-                        if (fDoWrite)
-                            *pdst = *psrc;
-
-                        psrc++;
-                        pdst++;
-                    }
-                    else
-                    {
-                        fInQuotes = !fInQuotes;
-                        psrc++;
-                    }
-                }
-                else
-                    for ( ; iSlash > 0; iSlash--)
-                    {
-                        if (fDoWrite)
-                            *pdst = W('\\');
-
-                        pdst++;
-                    }
-
-                break;
-
-            case W('\"'):
-                fInQuotes = !fInQuotes;
-                psrc++;
-                break;
-
-            default:
-                if (fDoWrite)
-                    *pdst = *psrc;
-
-                psrc++;
-                pdst++;
-            }
-        }
-
-        if (fDoWrite)
-            *pdst = W('\0');
-
-        pdst++;
-    }
-
-
-    _ASSERTE(*psrc == W('\0'));
-    *pdstout = pdst;
-    return argcount;
-}
 
 
 //************************************************************************
@@ -1793,7 +1613,7 @@ void InitializeClrNotifications()
 // <TODO> FIX IN BETA 2
 //
 // g_dacNotificationFlags is only modified by the DAC and therefore the
-// optmizer can assume that it will always be its default value and has
+// optimizer can assume that it will always be its default value and has
 // been seen to eliminate the code in DoModuleLoadNotification,
 // etc... such that DAC notifications are no longer sent.
 //

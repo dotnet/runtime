@@ -1145,16 +1145,48 @@ inline GenTreeField* Compiler::gtNewFieldRef(var_types type, CORINFO_FIELD_HANDL
     return fieldNode;
 }
 
-/*****************************************************************************
- *
- *  A little helper to create an array index node.
- */
-
-inline GenTree* Compiler::gtNewIndexRef(var_types typ, GenTree* arrayOp, GenTree* indexOp)
+inline GenTreeIndexAddr* Compiler::gtNewIndexAddr(GenTree*             arrayOp,
+                                                  GenTree*             indexOp,
+                                                  var_types            elemType,
+                                                  CORINFO_CLASS_HANDLE elemClassHandle,
+                                                  unsigned             firstElemOffset,
+                                                  unsigned             lengthOffset)
 {
-    GenTreeIndex* gtIndx = new (this, GT_INDEX) GenTreeIndex(typ, arrayOp, indexOp, genTypeSize(typ));
+    unsigned elemSize =
+        (elemType == TYP_STRUCT) ? info.compCompHnd->getClassSize(elemClassHandle) : genTypeSize(elemType);
 
-    return gtIndx;
+    GenTreeIndexAddr* indexAddr = new (this, GT_INDEX_ADDR)
+        GenTreeIndexAddr(arrayOp, indexOp, elemType, elemClassHandle, elemSize, lengthOffset, firstElemOffset);
+
+    return indexAddr;
+}
+
+inline GenTreeIndexAddr* Compiler::gtNewArrayIndexAddr(GenTree*             arrayOp,
+                                                       GenTree*             indexOp,
+                                                       var_types            elemType,
+                                                       CORINFO_CLASS_HANDLE elemClassHandle)
+{
+    unsigned lengthOffset    = OFFSETOF__CORINFO_Array__length;
+    unsigned firstElemOffset = OFFSETOF__CORINFO_Array__data;
+
+    return gtNewIndexAddr(arrayOp, indexOp, elemType, elemClassHandle, firstElemOffset, lengthOffset);
+}
+
+inline GenTreeIndir* Compiler::gtNewIndexIndir(GenTreeIndexAddr* indexAddr)
+{
+    GenTreeIndir* index;
+    if (varTypeIsStruct(indexAddr->gtElemType))
+    {
+        index = gtNewObjNode(indexAddr->gtStructElemClass, indexAddr);
+    }
+    else
+    {
+        index = gtNewIndir(indexAddr->gtElemType, indexAddr);
+    }
+
+    index->gtFlags |= GTF_GLOB_REF;
+
+    return index;
 }
 
 //------------------------------------------------------------------------------
@@ -1348,7 +1380,7 @@ inline void GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
 #endif
         case GT_LCL_FLD:
             AsLclFld()->SetLclOffs(0);
-            AsLclFld()->SetFieldSeq(FieldSeqStore::NotAField());
+            AsLclFld()->SetLayout(nullptr);
             break;
 
         case GT_CALL:
@@ -4202,6 +4234,7 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_CNS_LNG:
         case GT_CNS_DBL:
         case GT_CNS_STR:
+        case GT_CNS_VEC:
         case GT_MEMORYBARRIER:
         case GT_JMP:
         case GT_JCC:
@@ -4579,7 +4612,7 @@ inline unsigned short LclVarDsc::lvRefCnt(RefCountState state) const
 //    state: the requestor's expected ref count state; defaults to RCS_NORMAL
 //
 // Notes:
-//    It is currently the caller's responsibilty to ensure this increment
+//    It is currently the caller's responsibility to ensure this increment
 //    will not cause overflow.
 
 inline void LclVarDsc::incLvRefCnt(unsigned short delta, RefCountState state)
@@ -4653,7 +4686,7 @@ inline weight_t LclVarDsc::lvRefCntWtd(RefCountState state) const
 //    state: the requestor's expected ref count state; defaults to RCS_NORMAL
 //
 // Notes:
-//    It is currently the caller's responsibilty to ensure this increment
+//    It is currently the caller's responsibility to ensure this increment
 //    will not cause overflow.
 
 inline void LclVarDsc::incLvRefCntWtd(weight_t delta, RefCountState state)

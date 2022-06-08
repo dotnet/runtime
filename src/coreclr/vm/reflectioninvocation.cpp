@@ -25,29 +25,6 @@
 #include "dbginterface.h"
 #include "argdestination.h"
 
-/**************************************************************************/
-/* if the type handle 'th' is a byref to a nullable type, return the
-   type handle to the nullable type in the byref.  Otherwise return
-   the null type handle  */
-static TypeHandle NullableTypeOfByref(TypeHandle th) {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    if (th.GetVerifierCorElementType() != ELEMENT_TYPE_BYREF)
-        return TypeHandle();
-
-    TypeHandle subType = th.AsTypeDesc()->GetTypeParam();
-    if (!Nullable::IsNullableType(subType))
-        return TypeHandle();
-
-    return subType;
-}
-
 FCIMPL5(Object*, RuntimeFieldHandle::GetValue, ReflectFieldObject *pFieldUNSAFE, Object *instanceUNSAFE, ReflectClassBaseObject *pFieldTypeUNSAFE, ReflectClassBaseObject *pDeclaringTypeUNSAFE, CLR_BOOL *pDomainInitialized) {
     CONTRACTL {
         FCALL_CHECK;
@@ -145,7 +122,10 @@ FCIMPL2(FC_BOOL_RET, ReflectionInvocation::CanValueSpecialCast, ReflectClassBase
 }
 FCIMPLEND
 
-FCIMPL3(Object*, ReflectionInvocation::AllocateValueType, ReflectClassBaseObject *pTargetTypeUNSAFE, Object *valueUNSAFE, CLR_BOOL fForceTypeChange) {
+/// <summary>
+///  Allocate the value type and copy the optional value into it.
+/// </summary>
+FCIMPL2(Object*, ReflectionInvocation::AllocateValueType, ReflectClassBaseObject *pTargetTypeUNSAFE, Object *valueUNSAFE) {
     CONTRACTL {
         FCALL_CHECK;
         PRECONDITION(CheckPointer(pTargetTypeUNSAFE));
@@ -164,41 +144,23 @@ FCIMPL3(Object*, ReflectionInvocation::AllocateValueType, ReflectClassBaseObject
     gc.obj = gc.value;
     gc.refTargetType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTargetTypeUNSAFE);
 
+    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
+
     TypeHandle targetType = gc.refTargetType->GetType();
 
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
-    CorElementType targetElementType = targetType.GetSignatureCorElementType();
-    if (InvokeUtil::IsPrimitiveType(targetElementType) || targetElementType == ELEMENT_TYPE_VALUETYPE)
-    {
-        MethodTable* allocMT = targetType.AsMethodTable();
+    // This method is only intended for value types; it is not called directly by any public APIs
+    // so we don't expect validation issues here.
+    _ASSERTE(targetType.IsValueType());
 
-        if (allocMT->IsByRefLike()) {
-            COMPlusThrow(kNotSupportedException, W("NotSupported_ByRefLike"));
-        }
+    MethodTable* allocMT = targetType.AsMethodTable();
+    _ASSERTE(!allocMT->IsByRefLike());
 
-        if (gc.value != NULL)
-        {
-            // ignore the type of the incoming box if fForceTypeChange is set
-            // and the target type is not nullable
-            if (!fForceTypeChange || Nullable::IsNullableType(targetType))
-                allocMT = gc.value->GetMethodTable();
-        }
+    gc.obj = allocMT->Allocate();
+    _ASSERTE(gc.obj != NULL);
 
-        // for null Nullable<T> we don't want a default value being created.
-        // just allow the null value to be passed, as it will be converted to
-        // a true nullable
-        if (!(gc.value == NULL && Nullable::IsNullableType(targetType)))
-        {
-            // boxed value type are 'read-only' in the sence that you can't
-            // only the implementor of the value type can expose mutators.
-            // To insure byrefs don't mutate value classes in place, we make
-            // a copy (and if we were not given one, we create a null value type
-            // instance.
-            gc.obj = allocMT->Allocate();
-
-            if (gc.value != NULL)
-                    CopyValueClass(gc.obj->UnBox(), gc.value->UnBox(), allocMT);
-        }
+    if (gc.value != NULL) {
+        _ASSERTE(allocMT->IsEquivalentTo(gc.value->GetMethodTable()));
+        CopyValueClass(gc.obj->UnBox(), gc.value->UnBox(), allocMT);
     }
 
     HELPER_METHOD_FRAME_END();
@@ -345,29 +307,6 @@ FCIMPL2(FC_BOOL_RET, RuntimeTypeHandle::IsInstanceOfType, ReflectClassBaseObject
     FC_INNER_RETURN(FC_BOOL_RET, IsInstanceOfTypeHelper(obj, refType));
 }
 FCIMPLEND
-
-/****************************************************************************/
-/* boxed Nullable<T> are represented as a boxed T, so there is no unboxed
-   Nullable<T> inside to point at by reference.  Because of this a byref
-   parameters  of type Nullable<T> are copied out of the boxed instance
-   (to a place on the stack), before the call is made (and this copy is
-   pointed at).  After the call returns, this copy must be copied back to
-   the original argument array.  ByRefToNullable, is a simple linked list
-   that remembers what copy-backs are needed */
-
-struct ByRefToNullable  {
-    unsigned argNum;            // The argument number for this byrefNullable argument
-    void* data;                 // The data to copy back to the ByRefNullable.  This points to the stack
-    TypeHandle type;            // The type of Nullable for this argument
-    ByRefToNullable* next;      // list of these
-
-    ByRefToNullable(unsigned aArgNum, void* aData, TypeHandle aType, ByRefToNullable* aNext) {
-        argNum = aArgNum;
-        data = aData;
-        type = aType;
-        next = aNext;
-    }
-};
 
 static OBJECTREF InvokeArrayConstructor(TypeHandle th, PVOID* args, int argCnt)
 {
@@ -641,7 +580,6 @@ FCIMPL4(Object*, RuntimeMethodHandle::InvokeMethod,
 
     FrameWithCookie<ProtectValueClassFrame> *pProtectValueClassFrame = NULL;
     ValueClassInfo *pValueClasses = NULL;
-    ByRefToNullable* byRefToNullables = NULL;
 
     // if we have the magic Value Class return, we need to allocate that class
     // and place a pointer to it on the stack.
@@ -685,8 +623,7 @@ FCIMPL4(Object*, RuntimeMethodHandle::InvokeMethod,
             else
                 pThisPtr = OBJECTREFToObject(gc.retVal);
         }
-        else
-        if (!pMeth->GetMethodTable()->IsValueType())
+        else if (!pMeth->GetMethodTable()->IsValueType())
             pThisPtr = OBJECTREFToObject(gc.target);
         else {
             if (pMeth->IsUnboxingStub())
@@ -761,23 +698,8 @@ FCIMPL4(Object*, RuntimeMethodHandle::InvokeMethod,
         bool needsStackCopy = false;
         ArgDestination argDest(pTransitionBlock, ofs, argit.GetArgLocDescForStructInRegs());
 
-        TypeHandle nullableType = NullableTypeOfByref(th);
-        if (!nullableType.IsNull()) {
-            // A boxed Nullable<T> is represented as boxed T. So to pass a Nullable<T> by reference,
-            // we have to create a Nullable<T> on stack, copy the T into it, then pass it to the callee and
-            // after returning from the call, copy the T out of the Nullable<T> back to the boxed T.
-            th = nullableType;
-            structSize = th.GetSize();
-            needsStackCopy = true;
-        }
 #ifdef ENREGISTERED_PARAMTYPE_MAXSIZE
-        else if (argit.IsArgPassedByRef())
-        {
-            needsStackCopy = true;
-        }
-#endif
-
-        if (needsStackCopy)
+        if (argit.IsArgPassedByRef())
         {
             MethodTable* pMT = th.GetMethodTable();
             _ASSERTE(pMT && pMT->IsValueType());
@@ -786,11 +708,6 @@ FCIMPL4(Object*, RuntimeMethodHandle::InvokeMethod,
 
             PVOID pStackCopy = _alloca(structSize);
             *(PVOID *)pArgDst = pStackCopy;
-
-            if (!nullableType.IsNull())
-            {
-                byRefToNullables = new(_alloca(sizeof(ByRefToNullable))) ByRefToNullable(i, pStackCopy, nullableType, byRefToNullables);
-            }
 
             // save the info into ValueClassInfo
             if (pMT->ContainsPointers())
@@ -801,6 +718,7 @@ FCIMPL4(Object*, RuntimeMethodHandle::InvokeMethod,
             // We need a new ArgDestination that points to the stack copy
             argDest = ArgDestination(pStackCopy, 0, NULL);
         }
+#endif
 
         InvokeUtil::CopyArg(th, args[i], &argDest);
     }
@@ -874,12 +792,6 @@ FCIMPL4(Object*, RuntimeMethodHandle::InvokeMethod,
         gc.retVal = InvokeUtil::CreateObjectAfterInvoke(retTH, &callDescrData.returnValue);
     }
 
-    while (byRefToNullables != NULL) {
-        OBJECTREF obj = Nullable::Box(byRefToNullables->data, byRefToNullables->type.GetMethodTable());
-        SetObjectReference((OBJECTREF*)args[byRefToNullables->argNum], obj);
-        byRefToNullables = byRefToNullables->next;
-    }
-
     if (pProtectValueClassFrame != NULL)
         pProtectValueClassFrame->Pop(pThread);
 
@@ -887,6 +799,68 @@ FCIMPL4(Object*, RuntimeMethodHandle::InvokeMethod,
 
 Done:
     ;
+    HELPER_METHOD_FRAME_END();
+
+    return OBJECTREFToObject(gc.retVal);
+}
+FCIMPLEND
+
+/// <summary>
+/// Convert a boxed value of {T} (which is either {T} or null) to a true boxed Nullable{T}.
+/// </summary>
+FCIMPL2(Object*, RuntimeMethodHandle::ReboxToNullable, Object* pBoxedValUNSAFE, ReflectClassBaseObject *pDestUNSAFE)
+{
+    FCALL_CONTRACT;
+
+    struct {
+        OBJECTREF pBoxed;
+        REFLECTCLASSBASEREF destType;
+        OBJECTREF retVal;
+    } gc;
+
+    gc.pBoxed = ObjectToOBJECTREF(pBoxedValUNSAFE);
+    gc.destType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pDestUNSAFE);
+    gc.retVal = NULL;
+
+    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
+
+    MethodTable* destMT = gc.destType->GetType().AsMethodTable();
+
+    gc.retVal = destMT->Allocate();
+    void* buffer = gc.retVal->GetData();
+    BOOL result = Nullable::UnBox(buffer, gc.pBoxed, destMT);
+    _ASSERTE(result == TRUE);
+
+    HELPER_METHOD_FRAME_END();
+
+    return OBJECTREFToObject(gc.retVal);
+}
+FCIMPLEND
+
+/// <summary>
+/// For a true boxed Nullable{T}, re-box to a boxed {T} or null, otherwise just return the input.
+/// </summary>
+FCIMPL1(Object*, RuntimeMethodHandle::ReboxFromNullable, Object* pBoxedValUNSAFE)
+{
+    FCALL_CONTRACT;
+
+    struct {
+        OBJECTREF pBoxed;
+        OBJECTREF retVal;
+    } gc;
+
+    if (pBoxedValUNSAFE == NULL)
+        return NULL;
+
+    gc.pBoxed = ObjectToOBJECTREF(pBoxedValUNSAFE);
+    MethodTable* retMT = gc.pBoxed->GetMethodTable();
+    if (!Nullable::IsNullableType(retMT))
+        return pBoxedValUNSAFE;
+
+    gc.retVal = NULL;
+
+    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
+    gc.retVal = Nullable::Box(gc.pBoxed->GetData(), retMT);
     HELPER_METHOD_FRAME_END();
 
     return OBJECTREFToObject(gc.retVal);
@@ -1493,38 +1467,6 @@ FCIMPL4(void, ReflectionInvocation::MakeTypedReference, TypedByRef * value, Obje
 
     GCPROTECT_END();
     HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
-
-// This is an internal helper function to TypedReference class.
-// It extracts the object from the typed reference.
-FCIMPL1(Object*, ReflectionInvocation::TypedReferenceToObject, TypedByRef * value) {
-    FCALL_CONTRACT;
-
-    OBJECTREF       Obj = NULL;
-
-    TypeHandle th(value->type);
-
-    if (th.IsNull())
-        FCThrowRes(kArgumentNullException, W("ArgumentNull_TypedRefType"));
-
-    MethodTable* pMT = th.GetMethodTable();
-    PREFIX_ASSUME(NULL != pMT);
-
-    if (pMT->IsValueType())
-    {
-        // value->data is protected by the caller
-        HELPER_METHOD_FRAME_BEGIN_RET_1(Obj);
-
-        Obj = pMT->Box(value->data);
-
-        HELPER_METHOD_FRAME_END();
-    }
-    else {
-        Obj = ObjectToOBJECTREF(*((Object**)value->data));
-    }
-
-    return OBJECTREFToObject(Obj);
 }
 FCIMPLEND
 

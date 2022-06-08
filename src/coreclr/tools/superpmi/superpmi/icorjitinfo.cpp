@@ -433,7 +433,7 @@ CORINFO_CLASS_HANDLE MyICJI::getTypeInstantiationArgument(CORINFO_CLASS_HANDLE c
 // was truncated when copied to the buffer.
 //
 // Operation:
-// 
+//
 // On entry, `*pnBufLen` specifies the size of the buffer pointed to by `*ppBuf` as a count of characters.
 // There are two cases:
 // 1. If the size is zero, the function computes the length of the representation and returns that.
@@ -1576,13 +1576,6 @@ uint32_t MyICJI::getJitFlags(CORJIT_FLAGS* jitFlags, uint32_t sizeInBytes)
     return ret;
 }
 
-bool MyICJI::doesFieldBelongToClass(CORINFO_FIELD_HANDLE fldHnd, CORINFO_CLASS_HANDLE cls)
-{
-    jitInstance->mc->cr->AddCall("doesFieldBelongToClass");
-    bool result = jitInstance->mc->repDoesFieldBelongToClass(fldHnd, cls);
-    return result;
-}
-
 // Runs the given function with the given parameter under an error trap
 // and returns true if the function completes successfully. We fake this
 // up a bit for SuperPMI and simply catch all exceptions.
@@ -1782,7 +1775,7 @@ bool MyICJI::logMsg(unsigned level, const char* fmt, va_list args)
 }
 
 // do an assert.  will return true if the code should retry (DebugBreak)
-// returns false, if the assert should be igored.
+// returns false, if the assert should be ignored.
 int MyICJI::doAssert(const char* szFile, int iLine, const char* szExpr)
 {
     jitInstance->mc->cr->AddCall("doAssert");

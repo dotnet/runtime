@@ -45,6 +45,7 @@ typedef struct _MonoComponentHotReload {
 	gboolean (*get_typedef_skeleton_events) (MonoImage *base_image, uint32_t typedef_token, uint32_t *first_event_idx, uint32_t *event_count);
 	MonoMethod* (*added_methods_iter) (MonoClass *klass, gpointer *iter);
 	MonoClassField* (*added_fields_iter) (MonoClass *klass, gboolean lazy, gpointer *iter);
+	uint32_t (*get_num_fields_added) (MonoClass *klass);
 } MonoComponentHotReload;
 
 MONO_COMPONENT_EXPORT_ENTRYPOINT
