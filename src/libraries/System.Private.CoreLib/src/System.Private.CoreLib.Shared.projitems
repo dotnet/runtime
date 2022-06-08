@@ -2061,6 +2061,9 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.LChflags.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.LChflags.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.LChMod.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.LChMod.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Link.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.Link.cs</Link>
     </Compile>

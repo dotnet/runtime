@@ -436,7 +436,7 @@ namespace System.IO
                 FileSystemInfo.ThrowNotFound(path);
 
             int rv = handle is not null ? Interop.Sys.FChMod(handle, (int)mode) :
-                                          Interop.Sys.ChMod(path!, (int)mode);
+                                          Interop.Sys.LChMod(path!, (int)mode);
             Interop.CheckIo(rv, path);
 
             InvalidateCaches();
