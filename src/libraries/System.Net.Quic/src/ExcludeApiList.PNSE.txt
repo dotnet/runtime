@@ -1,1 +1,1 @@
-C:System.Net.Quic.QuicImplementationProviders
+P:System.Net.Quic.QuicProvider.IsSupported

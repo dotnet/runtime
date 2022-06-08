@@ -29,11 +29,6 @@ namespace System.Net.Http.Functional.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task IncompleteResponseStream_ResponseDropped_CancelsRequestToServer()
         {
-            if (UseQuicImplementationProvider == QuicImplementationProviders.Mock)
-            {
-                return;
-            }
-
             using (HttpClient client = CreateHttpClient())
             {
                 bool stopGCs = false;

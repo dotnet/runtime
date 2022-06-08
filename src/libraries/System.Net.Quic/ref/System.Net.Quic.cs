@@ -15,10 +15,7 @@ namespace System.Net.Quic
     }
     public sealed partial class QuicConnection : System.IDisposable
     {
-        public QuicConnection(System.Net.EndPoint remoteEndPoint, System.Net.Security.SslClientAuthenticationOptions? sslClientAuthenticationOptions, System.Net.IPEndPoint? localEndPoint = null) { }
-        public QuicConnection(System.Net.Quic.Implementations.QuicImplementationProvider implementationProvider, System.Net.EndPoint remoteEndPoint, System.Net.Security.SslClientAuthenticationOptions? sslClientAuthenticationOptions, System.Net.IPEndPoint? localEndPoint = null) { }
-        public QuicConnection(System.Net.Quic.Implementations.QuicImplementationProvider implementationProvider, System.Net.Quic.QuicClientConnectionOptions options) { }
-        public QuicConnection(System.Net.Quic.QuicClientConnectionOptions options) { }
+        internal QuicConnection() { }
         public bool Connected { get { throw null; } }
         public System.Net.IPEndPoint? LocalEndPoint { get { throw null; } }
         public System.Net.Security.SslApplicationProtocol NegotiatedApplicationProtocol { get { throw null; } }
@@ -44,18 +41,9 @@ namespace System.Net.Quic
         public QuicException(string? message, System.Exception? innerException) { }
         public QuicException(string? message, System.Exception? innerException, int result) { }
     }
-    public static partial class QuicImplementationProviders
-    {
-        public static System.Net.Quic.Implementations.QuicImplementationProvider Default { get { throw null; } }
-        public static System.Net.Quic.Implementations.QuicImplementationProvider Mock { get { throw null; } }
-        public static System.Net.Quic.Implementations.QuicImplementationProvider MsQuic { get { throw null; } }
-    }
     public sealed partial class QuicListener : System.IDisposable
     {
-        public QuicListener(System.Net.IPEndPoint listenEndPoint, System.Net.Security.SslServerAuthenticationOptions sslServerAuthenticationOptions) { }
-        public QuicListener(System.Net.Quic.Implementations.QuicImplementationProvider implementationProvider, System.Net.IPEndPoint listenEndPoint, System.Net.Security.SslServerAuthenticationOptions sslServerAuthenticationOptions) { }
-        public QuicListener(System.Net.Quic.Implementations.QuicImplementationProvider implementationProvider, System.Net.Quic.QuicListenerOptions options) { }
-        public QuicListener(System.Net.Quic.QuicListenerOptions options) { }
+        internal QuicListener() { }
         public System.Net.IPEndPoint ListenEndPoint { get { throw null; } }
         public System.Threading.Tasks.ValueTask<System.Net.Quic.QuicConnection> AcceptConnectionAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public void Dispose() { }
@@ -77,6 +65,12 @@ namespace System.Net.Quic
         public System.TimeSpan IdleTimeout { get { throw null; } set { } }
         public int MaxBidirectionalStreams { get { throw null; } set { } }
         public int MaxUnidirectionalStreams { get { throw null; } set { } }
+    }
+    public static partial class QuicProvider
+    {
+        public static bool IsSupported { get { throw null; } }
+        public static System.Threading.Tasks.ValueTask<System.Net.Quic.QuicConnection> CreateConnectionAsync(System.Net.Quic.QuicClientConnectionOptions options, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.ValueTask<System.Net.Quic.QuicListener> CreateListenerAsync(System.Net.Quic.QuicListenerOptions options, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
     public sealed partial class QuicStream : System.IO.Stream
     {
@@ -125,13 +119,5 @@ namespace System.Net.Quic
     {
         public QuicStreamAbortedException(string message, long errorCode) : base (default(string)) { }
         public long ErrorCode { get { throw null; } }
-    }
-}
-namespace System.Net.Quic.Implementations
-{
-    public abstract partial class QuicImplementationProvider
-    {
-        internal QuicImplementationProvider() { }
-        public abstract bool IsSupported { get; }
     }
 }

@@ -134,7 +134,7 @@ namespace System.Net.Http
 
             if (IsHttp3Supported())
             {
-                _http3Enabled = _poolManager.Settings._maxHttpVersion >= HttpVersion.Version30 && (_poolManager.Settings._quicImplementationProvider ?? QuicImplementationProviders.Default).IsSupported;
+                _http3Enabled = _poolManager.Settings._maxHttpVersion >= HttpVersion.Version30 && QuicProvider.IsSupported;
             }
 
             switch (kind)
@@ -885,7 +885,7 @@ namespace System.Net.Http
                 QuicConnection quicConnection;
                 try
                 {
-                    quicConnection = await ConnectHelper.ConnectQuicAsync(request, Settings._quicImplementationProvider ?? QuicImplementationProviders.Default, new DnsEndPoint(authority.IdnHost, authority.Port), _sslOptionsHttp3!, cancellationToken).ConfigureAwait(false);
+                    quicConnection = await ConnectHelper.ConnectQuicAsync(request, new DnsEndPoint(authority.IdnHost, authority.Port), _sslOptionsHttp3!, cancellationToken).ConfigureAwait(false);
                 }
                 catch (Exception e)
                 {
