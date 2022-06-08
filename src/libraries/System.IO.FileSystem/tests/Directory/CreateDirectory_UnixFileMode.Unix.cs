@@ -21,10 +21,10 @@ namespace System.IO.Tests
             string path = GetRandomDirPath();
             DirectoryInfo di = Directory.CreateDirectory(path, mode);
 
-            // under Linux the created directory gets mode (mode & ~umask & 01777)
-            // under OSX, it seems to be (mode & ~umask & 01777).
-            UnixFileMode expectedMode = mode & ~GetUmask() &
-                                        (UnixFileMode)(PlatformDetection.IsBsdLike ? 0b111_111_111 : 0b1_111_111_111);
+            // under Linux the created directory gets mode (mode & ~umask & 01777).
+            // under OSX, it gets (mode & ~umask & 0777).
+            UnixFileMode platformFilter = UnixFileMode.SetGroup | UnixFileMode.SetUser | (PlatformDetection.IsBsdLike ? UnixFileMode.StickyBit : UnixFileMode.None);
+            UnixFileMode expectedMode = mode & ~GetUmask() & ~platformFilter;
             Assert.Equal(expectedMode, di.UnixFileMode);
         }
 

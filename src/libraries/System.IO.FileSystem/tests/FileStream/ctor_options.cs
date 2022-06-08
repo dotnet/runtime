@@ -188,8 +188,10 @@ namespace System.IO.Tests
             FileStream fs = CreateFileStream(filename, FileMode.CreateNew, FileAccess.Write, FileShare.None, bufferSize: 1, FileOptions.None, preallocationSize: 0, mode);
             fs.Dispose();
 
-            UnixFileMode expectedMode = mode & ~GetUmask() &
-                                        ~(UnixFileMode)(PlatformDetection.IsBsdLike ? UnixFileMode.StickyBit : UnixFileMode.None);;
+            UnixFileMode platformFilter = PlatformDetection.IsBsdLike
+                                            ? (UnixFileMode.SetGroup | UnixFileMode.SetUser | UnixFileMode.StickyBit)
+                                            : UnixFileMode.None;
+            UnixFileMode expectedMode = mode & ~GetUmask() & ~platformFilter;
             UnixFileMode actualMode = File.GetUnixFileMode(filename);
             Assert.Equal(expectedMode, actualMode);
         }
