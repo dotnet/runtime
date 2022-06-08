@@ -1938,8 +1938,8 @@ GenTree* Compiler::impTokenToHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     }
 
     // Generate the full lookup tree. May be null if we're abandoning an inline attempt.
-    GenTree* result = impLookupToTree(pResolvedToken, &embedInfo.lookup, gtTokenToIconFlags(pResolvedToken->token),
-                                      embedInfo.compileTimeHandle);
+    GenTreeFlags handleType = importParent ? GTF_ICON_CLASS_HDL : gtTokenToIconFlags(pResolvedToken->token);
+    GenTree*     result = impLookupToTree(pResolvedToken, &embedInfo.lookup, handleType, embedInfo.compileTimeHandle);
 
     // If we have a result and it requires runtime lookup, wrap it in a runtime lookup node.
     if ((result != nullptr) && embedInfo.lookup.lookupKind.needsRuntimeLookup)
