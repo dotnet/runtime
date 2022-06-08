@@ -19,9 +19,9 @@ dotnet nuget add source -n dotnet7 https://dnceng.pkgs.visualstudio.com/public/_
 
 Then, you will be able to add the latest prerelease version of the desired package to your project.
 
-**Example:** To add version 7.0.0-alpha.1.20468.7 of the System.Data.OleDb package, use the [dotnet add package](https://docs.microsoft.com/en-us/dotnet/core/tools/dotnet-add-package) command:
+**Example:** To add version 7.0.100-preview.5.22226.4 of the System.Data.OleDb package, use the [dotnet add package](https://docs.microsoft.com/en-us/dotnet/core/tools/dotnet-add-package) command:
 ```
-dotnet add package System.Data.OleDb -v 7.0.0-alpha.1.20468.7
+dotnet add package System.Data.OleDb -v 7.0.100-preview.5.22226.4
 ```
 
 To use nightly builds of the entire runtime, follow the steps given in the rest of this document instead.
