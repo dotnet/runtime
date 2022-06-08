@@ -1077,6 +1077,11 @@ struct BasicBlock : private LIR::Range
         return PredEdgeList(bbPreds);
     }
 
+    bool IsInLoop() const
+    {
+        return bbNatLoopNum != NOT_IN_LOOP;
+    }
+
     // PredBlocks: convenience method for enabling range-based `for` iteration over predecessor blocks, e.g.:
     //    for (BasicBlock* const predBlock : block->PredBlocks()) ...
     //

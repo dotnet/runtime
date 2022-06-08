@@ -3177,33 +3177,78 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
 
     if (conValTree != nullptr)
     {
-        if (tree->OperIs(GT_LCL_VAR))
+        if (tree->OperIs(GT_LCL_VAR) && conValTree->OperIs(GT_CNS_VEC, GT_CNS_DBL, GT_CNS_INT))
         {
-            if (conValTree->OperIs(GT_CNS_VEC) && !conValTree->IsVectorZero() && !conValTree->IsVectorAllBitsSet())
+            bool keepPropagating = false;
+
+            if (conValTree->OperIs(GT_CNS_VEC))
             {
-                // Try to find the block this value was defined in
+                if (conValTree->IsVectorZero() || conValTree->IsVectorAllBitsSet())
+                {
+                    keepPropagating = true;
+                }
+            }
+            else if (conValTree->OperIs(GT_CNS_DBL))
+            {
+                if (conValTree->IsFloatPositiveZero())
+                {
+                    keepPropagating = true;
+                }
+#ifdef TARGET_ARM64
+                if (emitter::canEncodeFloatImm8(conValTree->AsDblCon()->gtDconVal))
+                {
+                    // This float won't be expensive for the loop
+                    keepPropagating = true;
+                }
+#endif
+            }
+            else
+            {
+                assert(conValTree->OperIs(GT_CNS_INT));
+#ifdef TARGET_ARM64
+                if ((unsigned_abs(conValTree->AsIntCon()->IconValue()) <= 0xFFF) ||
+                    isPow2(conValTree->AsIntCon()->IconValue()))
+                {
+                    keepPropagating = true;
+                }
+#endif
+            }
+
+            if (!keepPropagating)
+            {
+                // Try to find the block this constant was originally defined in
                 const unsigned lclNum = tree->AsLclVarCommon()->GetLclNum();
                 const unsigned ssaNum = GetSsaNumForLocalVarDef(tree);
                 if (ssaNum != SsaConfig::RESERVED_SSA_NUM)
                 {
                     BasicBlock* defBlock = lvaTable[lclNum].GetPerSsaData(ssaNum)->GetBlock();
 
-                    // If the vector constant was defined outside of the loop - do not propagate
-                    // TODO: do propagate if it lives across a call in that loop and the ABI doesn't have
-                    // callee-saved registers
                     if (defBlock != nullptr)
                     {
-                        const weight_t defBlockWeight = defBlock->getBBWeight(this);
-                        const weight_t blockWeight    = block->getBBWeight(this);
-
-                        // A simple heuristic: If the constant is defined outside the loop (not far from its head)
+                        // A simple heuristic: If the constant is defined outside of a loop (not far from its head)
                         // and is used inside it - don't propagate.
-                        // TODO: if it lives accross calls in that loops we'd better propagate it after those
-                        // calls on ABIs without callee-saved registers (e.g. Linux-x64)
-                        if ((defBlockWeight > 0) && (blockWeight / defBlockWeight) >= 2)
+
+                        // TODO: if it lives across calls in that loops we'd better propagate it after those
+                        // calls on ABIs without callee-saved registers
+
+                        if (!defBlock->IsInLoop() && block->IsInLoop())
                         {
-                            JITDUMP("Skip constant propagation of vector constant inside loop " FMT_BB "\n", block->bbNum);
-                            return nullptr;
+                            //const LoopDsc* loopInfo = &optLoopTable[block->bbNatLoopNum];
+                            // Definition better to be close (e.g. result of CSE) so we won't occupy a register
+
+                            //if ((loopInfo->lpHead == defBlock) || loopInfo->lpHead->bbIDom == defBlock)
+                            {
+                                // Last, let's limit it to cases where block is not some not-always-taken
+                                // block inside that loop
+                                //weight_t defBlockWeight = defBlock->getBBWeight(this);
+                                //weight_t blockWeight    = block->getBBWeight(this);
+
+                                //if (((blockWeight / defBlockWeight) >= BB_LOOP_WEIGHT_SCALE) && (defBlockWeight > 0))
+                                {
+                                    JITDUMP("Skip constant propagation inside loop " FMT_BB "\n", block->bbNum);
+                                    return nullptr;
+                                }
+                            }
                         }
                     }
                 }
