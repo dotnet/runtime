@@ -612,7 +612,7 @@ private:
                     CORINFO_CONST_LOOKUP  lookup;
                     compiler->info.compCompHnd->getFunctionEntryPoint(methHnd, &lookup);
 
-                    GenTree* compareTarTree = CreateTreeForLookup(lookup);
+                    GenTree* compareTarTree = CreateTreeForLookup(methHnd, lookup);
                     compare                 = compiler->gtNewOperNode(GT_NE, TYP_INT, compareTarTree, tarTree);
                 }
                 else
@@ -650,7 +650,7 @@ private:
                     CORINFO_CONST_LOOKUP  lookup;
                     compiler->info.compCompHnd->getFunctionFixedEntryPoint(methHnd, false, &lookup);
 
-                    GenTree* compareTarTree = CreateTreeForLookup(lookup);
+                    GenTree* compareTarTree = CreateTreeForLookup(methHnd, lookup);
                     compare                 = compiler->gtNewOperNode(GT_NE, TYP_INT, compareTarTree, tarTree);
                 }
             }
@@ -1183,17 +1183,17 @@ private:
         unsigned   returnTemp;
         Statement* lastStmt;
 
-        GenTree* CreateTreeForLookup(const CORINFO_CONST_LOOKUP& lookup)
+        GenTree* CreateTreeForLookup(CORINFO_METHOD_HANDLE methHnd, const CORINFO_CONST_LOOKUP& lookup)
         {
             switch (lookup.accessType)
             {
                 case IAT_VALUE:
                 {
-                    return compiler->gtNewIconHandleNode((size_t)lookup.addr, GTF_ICON_FTN_ADDR);
+                    return CreateFunctionTargetAddr(methHnd, lookup);
                 }
                 case IAT_PVALUE:
                 {
-                    GenTree* tree = compiler->gtNewIconHandleNode((size_t)lookup.addr, GTF_ICON_FTN_ADDR);
+                    GenTree* tree = CreateFunctionTargetAddr(methHnd, lookup);
                     tree          = compiler->gtNewIndir(TYP_I_IMPL, tree);
                     tree->gtFlags |= GTF_IND_NONFAULTING | GTF_IND_INVARIANT;
                     tree->gtFlags &= ~GTF_EXCEPT;
@@ -1206,8 +1206,8 @@ private:
                 }
                 case IAT_RELPVALUE:
                 {
-                    GenTree* addr = compiler->gtNewIconHandleNode((size_t)lookup.addr, GTF_ICON_FTN_ADDR);
-                    GenTree* tree = compiler->gtNewIconHandleNode((size_t)lookup.addr, GTF_ICON_FTN_ADDR);
+                    GenTree* addr = CreateFunctionTargetAddr(methHnd, lookup);
+                    GenTree* tree = CreateFunctionTargetAddr(methHnd, lookup);
                     tree          = compiler->gtNewIndir(TYP_I_IMPL, tree);
                     tree->gtFlags |= GTF_IND_NONFAULTING | GTF_IND_INVARIANT;
                     tree->gtFlags &= ~GTF_EXCEPT;
@@ -1220,6 +1220,13 @@ private:
                     return nullptr;
                 }
             }
+        }
+
+        GenTreeIntCon* CreateFunctionTargetAddr(CORINFO_METHOD_HANDLE methHnd, const CORINFO_CONST_LOOKUP& lookup)
+        {
+            GenTreeIntCon* con = compiler->gtNewIconHandleNode((size_t)lookup.addr, GTF_ICON_FTN_ADDR);
+            INDEBUG(con->gtTargetHandle = (size_t)methHnd);
+            return con;
         }
     };
 
