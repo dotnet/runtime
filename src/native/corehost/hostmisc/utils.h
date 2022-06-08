@@ -72,8 +72,8 @@ void remove_trailing_dir_separator(pal::string_t* dir);
 void replace_char(pal::string_t* path, pal::char_t match, pal::char_t repl);
 pal::string_t get_replaced_char(const pal::string_t& path, pal::char_t match, pal::char_t repl);
 
-pal::known_architecture get_current_arch();
-const pal::char_t* get_arch_name(pal::known_architecture arch);
+pal::architecture get_current_arch();
+const pal::char_t* get_arch_name(pal::architecture arch);
 const pal::char_t* get_current_arch_name();
 
 pal::string_t get_current_runtime_id(bool use_fallback);
@@ -85,7 +85,7 @@ bool get_file_path_from_env(const pal::char_t* env_key, pal::string_t* recv);
 size_t index_of_non_numeric(const pal::string_t& str, size_t i);
 bool try_stou(const pal::string_t& str, unsigned* num);
 
-pal::string_t get_dotnet_root_env_var_for_arch(pal::known_architecture arch);
+pal::string_t get_dotnet_root_env_var_for_arch(pal::architecture arch);
 bool get_dotnet_root_from_env(pal::string_t* used_dotnet_root_env_var_name, pal::string_t* recv);
 
 pal::string_t get_deps_from_app_binary(const pal::string_t& app_base, const pal::string_t& app);

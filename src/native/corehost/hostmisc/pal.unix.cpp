@@ -414,7 +414,7 @@ bool pal::get_global_dotnet_dirs(std::vector<pal::string_t>* recv)
     return false;
 }
 
-pal::string_t pal::get_dotnet_self_registered_config_location(pal::known_architecture arch)
+pal::string_t pal::get_dotnet_self_registered_config_location(pal::architecture arch)
 {
     pal::string_t config_location = _X("/etc/dotnet");
 
@@ -502,7 +502,7 @@ bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
     return pal::get_dotnet_self_registered_dir_for_arch(get_current_arch(), recv);
 }
 
-bool pal::get_dotnet_self_registered_dir_for_arch(pal::known_architecture arch, pal::string_t* recv)
+bool pal::get_dotnet_self_registered_dir_for_arch(pal::architecture arch, pal::string_t* recv)
 {
     recv->clear();
 
@@ -543,11 +543,11 @@ bool pal::get_dotnet_self_registered_dir_for_arch(pal::known_architecture arch, 
 
 namespace
 {
-    bool is_supported_multi_arch_install(pal::known_architecture arch)
+    bool is_supported_multi_arch_install(pal::architecture arch)
     {
 #if defined(TARGET_OSX) && defined(TARGET_ARM64)
         // arm64, looking for x64 install
-        return arch == pal::known_architecture::x64;
+        return arch == pal::architecture::x64;
 #else
         // Others do not support default install locations on a different architecture
         return false;
@@ -569,7 +569,7 @@ bool pal::get_default_installation_dir(pal::string_t* recv)
     return get_default_installation_dir_for_arch(get_current_arch(), recv);
 }
 
-bool pal::get_default_installation_dir_for_arch(pal::known_architecture arch, pal::string_t* recv)
+bool pal::get_default_installation_dir_for_arch(pal::architecture arch, pal::string_t* recv)
 {
     bool is_current_arch = arch == get_current_arch();
 
@@ -587,7 +587,7 @@ bool pal::get_default_installation_dir_for_arch(pal::known_architecture arch, pa
     else if (!is_current_arch)
     {
         // Running arm64, looking for x64 install
-        assert(arch == pal::known_architecture::x64);
+        assert(arch == pal::architecture::x64);
         append_path(recv, get_arch_name(arch));
     }
 #endif

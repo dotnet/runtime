@@ -207,33 +207,35 @@ namespace
         _X("x64"),
         _X("x86")
     };
-    static_assert((sizeof(s_all_architectures) / sizeof(*s_all_architectures)) == static_cast<size_t>(pal::known_architecture::__last), "Invalid known architectures count");
+    static_assert((sizeof(s_all_architectures) / sizeof(*s_all_architectures)) == static_cast<size_t>(pal::architecture::__last), "Invalid known architectures count");
 }
 
-pal::known_architecture get_current_arch()
+pal::architecture get_current_arch()
 {
 #if defined(TARGET_AMD64)
-    return pal::known_architecture::x64;
+    return pal::architecture::x64;
 #elif defined(TARGET_X86)
-    return pal::known_architecture::x86;
+    return pal::architecture::x86;
 #elif defined(TARGET_ARMV6)
-    return pal::known_architecture::armv6;
+    return pal::architecture::armv6;
 #elif defined(TARGET_ARM)
-    return pal::known_architecture::arm;
+    return pal::architecture::arm;
 #elif defined(TARGET_ARM64)
-    return pal::known_architecture::arm64;
+    return pal::architecture::arm64;
 #elif defined(TARGET_LOONGARCH64)
-    return pal::known_architecture::loongarch64;
+    return pal::architecture::loongarch64;
 #elif defined(TARGET_S390X)
-    return pal::known_architecture::s390X;
+    return pal::architecture::s390X;
 #else
 #error "Unknown target"
 #endif
 }
 
-const pal::char_t* get_arch_name(pal::known_architecture arch)
+const pal::char_t* get_arch_name(pal::architecture arch)
 {
-    return s_all_architectures[static_cast<uint32_t>(arch)];
+    int idx = static_cast<int>(arch);
+    assert(0 <= idx && idx < static_cast<int>(pal::architecture::__last));
+    return s_all_architectures[idx];
 }
 
 const pal::char_t* get_current_arch_name()
@@ -392,7 +394,7 @@ bool try_stou(const pal::string_t& str, unsigned* num)
     return true;
 }
 
-pal::string_t get_dotnet_root_env_var_for_arch(pal::known_architecture arch)
+pal::string_t get_dotnet_root_env_var_for_arch(pal::architecture arch)
 {
     return DOTNET_ROOT_ENV_VAR _X("_") + to_upper(get_arch_name(arch));
 }

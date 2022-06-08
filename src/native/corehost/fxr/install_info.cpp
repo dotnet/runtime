@@ -18,9 +18,9 @@ bool install_info::print_environment(const pal::char_t* leading_whitespace)
         trace::println(fmt, leading_whitespace, DOTNET_ROOT_ENV_VAR, value.c_str());
     }
 
-    for (uint32_t i = 0; i < static_cast<uint32_t>(pal::known_architecture::__last); ++i)
+    for (uint32_t i = 0; i < static_cast<uint32_t>(pal::architecture::__last); ++i)
     {
-        pal::string_t env_var = get_dotnet_root_env_var_for_arch(static_cast<pal::known_architecture>(i));
+        pal::string_t env_var = get_dotnet_root_env_var_for_arch(static_cast<pal::architecture>(i));
         if (pal::getenv(env_var.c_str(), &value))
         {
             found_any = true;
@@ -31,13 +31,13 @@ bool install_info::print_environment(const pal::char_t* leading_whitespace)
     return found_any;
 }
 
-bool install_info::print_installs(const pal::char_t* leading_whitespace, bool skip_current_arch)
+bool install_info::print_other_architectures(const pal::char_t* leading_whitespace)
 {
     bool found_any = false;
-    for (uint32_t i = 0; i < static_cast<uint32_t>(pal::known_architecture::__last); ++i)
+    for (uint32_t i = 0; i < static_cast<uint32_t>(pal::architecture::__last); ++i)
     {
-        pal::known_architecture arch = static_cast<pal::known_architecture>(i);
-        if (skip_current_arch && arch == get_current_arch())
+        pal::architecture arch = static_cast<pal::architecture>(i);
+        if (arch == get_current_arch())
             continue;
 
         pal::string_t install_location;

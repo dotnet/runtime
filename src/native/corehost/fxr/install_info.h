@@ -9,7 +9,7 @@
 namespace install_info
 {
     bool print_environment(const pal::char_t* leading_whitespace);
-    bool print_installs(const pal::char_t* leading_whitespace, bool skip_current_arch);
+    bool print_other_architectures(const pal::char_t* leading_whitespace);
 };
 
 #endif // __INSTALL_INFO_H__

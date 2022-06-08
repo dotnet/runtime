@@ -306,7 +306,7 @@ void command_line::print_muxer_info(const pal::string_t &dotnet_root)
 
     trace::println();
     trace::println(_X("Other architectures found:"));
-    if (!install_info::print_installs(_X("  "), /*skip_current_arch*/ true))
+    if (!install_info::print_other_architectures(_X("  ")))
     {
         trace::println(_X("  None"));
     }

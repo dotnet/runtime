@@ -267,18 +267,18 @@ bool pal::get_default_servicing_directory(string_t* recv)
 
 namespace
 {
-    bool is_supported_multi_arch_install(pal::known_architecture arch)
+    bool is_supported_multi_arch_install(pal::architecture arch)
     {
 #if defined(TARGET_AMD64)
         // x64, looking for x86 install or emulating x64, looking for arm64 install
-        return arch == pal::known_architecture::x86
-            || (arch == pal::known_architecture::arm64 && pal::is_emulating_x64());
+        return arch == pal::architecture::x86
+            || (arch == pal::architecture::arm64 && pal::is_emulating_x64());
 #elif defined(TARGET_ARM64)
         // arm64, looking for x64 install
-        return arch == pal::known_architecture::x64;
+        return arch == pal::architecture::x64;
 #elif defined(TARGET_X86)
         // x86 running in WoW64, looking for x64 install
-        return arch == pal::known_architecture::x64 && pal::is_running_in_wow64();
+        return arch == pal::architecture::x64 && pal::is_running_in_wow64();
 #else
         // Others do not support default install locations on a different architecture
         return false;
@@ -300,7 +300,7 @@ bool pal::get_default_installation_dir(pal::string_t* recv)
     return get_default_installation_dir_for_arch(get_current_arch(), recv);
 }
 
-bool pal::get_default_installation_dir_for_arch(pal::known_architecture arch, pal::string_t* recv)
+bool pal::get_default_installation_dir_for_arch(pal::architecture arch, pal::string_t* recv)
 {
     bool is_current_arch = arch == get_current_arch();
 
@@ -315,7 +315,7 @@ bool pal::get_default_installation_dir_for_arch(pal::known_architecture arch, pa
         program_files_dir = _X("ProgramFiles(x86)");
     }
 #if defined(TARGET_AMD64)
-    else if (!is_current_arch && arch == pal::known_architecture::x86)
+    else if (!is_current_arch && arch == pal::architecture::x86)
     {
         // Running x64, looking for x86 install
         program_files_dir = _X("ProgramFiles(x86)");
@@ -341,7 +341,7 @@ bool pal::get_default_installation_dir_for_arch(pal::known_architecture arch, pa
     else if (!is_current_arch)
     {
         // Running arm64, looking for x64 install
-        assert(arch == pal::known_architecture::x64);
+        assert(arch == pal::architecture::x64);
         append_path(recv, get_arch_name(arch));
     }
 #endif
@@ -351,7 +351,7 @@ bool pal::get_default_installation_dir_for_arch(pal::known_architecture arch, pa
 
 namespace
 {
-    void get_dotnet_install_location_registry_path(pal::known_architecture arch, HKEY * key_hive, pal::string_t * sub_key, const pal::char_t ** value)
+    void get_dotnet_install_location_registry_path(pal::architecture arch, HKEY * key_hive, pal::string_t * sub_key, const pal::char_t ** value)
     {
         *key_hive = HKEY_LOCAL_MACHINE;
         // The registry search occurs in the 32-bit registry in all cases.
@@ -381,7 +381,7 @@ namespace
     }
 }
 
-pal::string_t pal::get_dotnet_self_registered_config_location(pal::known_architecture arch)
+pal::string_t pal::get_dotnet_self_registered_config_location(pal::architecture arch)
 {
     HKEY key_hive;
     pal::string_t sub_key;
@@ -405,7 +405,7 @@ bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
     return get_dotnet_self_registered_dir_for_arch(get_current_arch(), recv);
 }
 
-bool pal::get_dotnet_self_registered_dir_for_arch(pal::known_architecture arch, pal::string_t* recv)
+bool pal::get_dotnet_self_registered_dir_for_arch(pal::architecture arch, pal::string_t* recv)
 {
     recv->clear();
 
