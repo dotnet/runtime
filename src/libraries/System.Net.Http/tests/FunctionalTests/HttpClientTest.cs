@@ -921,6 +921,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(HttpCompletionOption.ResponseContentRead)]
         [InlineData(HttpCompletionOption.ResponseHeadersRead)]
         [SkipOnPlatform(TestPlatforms.Browser, "Synchronous Send is not supported on Browser")]
+        [SkipOnPlatform(TestPlatforms.Android, "Synchronous Send is not supported on Android")]
         public async Task Send_SingleThread_Loopback_Succeeds(HttpCompletionOption completionOption)
         {
             string content = "Test content";
@@ -975,6 +976,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         [OuterLoop]
         [SkipOnPlatform(TestPlatforms.Browser, "Synchronous Send is not supported on Browser")]
+        [SkipOnPlatform(TestPlatforms.Android, "Synchronous Send is not supported on Android")]
         public async Task Send_CancelledRequestContent_Throws()
         {
             CancellationTokenSource cts = new CancellationTokenSource();
@@ -1026,6 +1028,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         [OuterLoop]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/39056")]
+        [SkipOnPlatform(TestPlatforms.Android, "Synchronous Send is not supported on Android")]
         public async Task Send_TimeoutRequestContent_Throws()
         {
             await LoopbackServer.CreateClientAndServerAsync(
@@ -1074,6 +1077,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         [OuterLoop]
         [SkipOnPlatform(TestPlatforms.Browser, "Synchronous Send is not supported on Browser")]
+        [SkipOnPlatform(TestPlatforms.Android, "Synchronous Send is not supported on Android")]
         public async Task Send_CancelledResponseContent_Throws()
         {
             string content = "Test content";
@@ -1129,6 +1133,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         [OuterLoop]
         [SkipOnPlatform(TestPlatforms.Browser, "Synchronous Send is not supported on Browser")]
+        [SkipOnPlatform(TestPlatforms.Android, "Synchronous Send is not supported on Android")]
         public async Task Send_TimeoutResponseContent_Throws()
         {
             const string Content = "Test content";
@@ -1183,6 +1188,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [MemberData(nameof(VersionSelectionMemberData))]
         [SkipOnPlatform(TestPlatforms.Browser, "Version is ignored on Browser")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task SendAsync_CorrectVersionSelected_LoopbackServer(Version requestVersion, HttpVersionPolicy versionPolicy, Version serverVersion, bool useSsl, object expectedResult)
         {
             await HttpAgnosticLoopbackServer.CreateClientAndServerAsync(
@@ -1461,6 +1467,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [SkipOnPlatform(TestPlatforms.Android, "The Send method is not implemented on mobile platforms")]
         public void Send_NullRequest_ThrowsException()
         {
             using var client = new CustomHttpClient();

@@ -390,11 +390,12 @@ function(strip_symbols targetName outputFilename)
         message(FATAL_ERROR "strip not found")
       endif()
 
+      set(strip_command ${STRIP} -no_code_signature_warning -S ${strip_source_file})
+
+      # codesign release build
       string(TOLOWER "${CMAKE_BUILD_TYPE}" LOWERCASE_CMAKE_BUILD_TYPE)
       if (LOWERCASE_CMAKE_BUILD_TYPE STREQUAL release)
-        set(strip_command ${STRIP} -no_code_signature_warning -S ${strip_source_file} && codesign -f -s - ${strip_source_file})
-      else ()
-        set(strip_command)
+        set(strip_command ${strip_command} && codesign -f -s - ${strip_source_file})
       endif ()
 
       execute_process(

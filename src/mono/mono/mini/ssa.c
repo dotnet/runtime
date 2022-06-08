@@ -174,13 +174,13 @@ rename_phi_arguments_in_out_bbs(MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *
 
 		for (ins = n->code; ins; ins = ins->next) {
 			if (MONO_IS_PHI (ins)) {
-				int idx = ins->inst_c0;
+				target_mgreg_t idx = ins->inst_c0;
 				if (stack [idx])
 					new_var = stack [idx];
 				else
 					new_var = cfg->varinfo [idx];
 #ifdef DEBUG_SSA
-				printf ("FOUND PHI %d (%d, %d)\n", idx, j, new_var->inst_c0);
+				printf ("FOUND PHI %d (%d, %d)\n", GTMREG_TO_INT (idx), j, new_var->inst_c0);
 #endif
 				ins->inst_phi_args [j + 1] = new_var->dreg;
 				record_use (cfg,  new_var, n, ins);
@@ -217,7 +217,7 @@ create_new_vars (MonoCompile *cfg, int max_vars, MonoBasicBlock *bb, gboolean *o
 			if (spec [MONO_INST_SRC1 + i] != ' ') {
 				MonoInst *var = get_vreg_to_inst (cfg, sregs [i]);
 				if (var && !(var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT))) {
-					int idx = var->inst_c0;
+					target_mgreg_t idx = var->inst_c0;
 					if (stack [idx]) {
 						if (var->opcode != OP_ARG)
 							g_assert (stack [idx]);
@@ -236,7 +236,7 @@ create_new_vars (MonoCompile *cfg, int max_vars, MonoBasicBlock *bb, gboolean *o
 		if (MONO_IS_STORE_MEMBASE (ins)) {
 			MonoInst *var = get_vreg_to_inst (cfg, ins->dreg);
 			if (var && !(var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT))) {
-				int idx = var->inst_c0;
+				target_mgreg_t idx = var->inst_c0;
 				if (stack [idx]) {
 					if (var->opcode != OP_ARG)
 						g_assert (stack [idx]);
@@ -256,7 +256,7 @@ create_new_vars (MonoCompile *cfg, int max_vars, MonoBasicBlock *bb, gboolean *o
 			MonoMethodVar *info;
 
 			if (var && !(var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT))) {
-				int idx = var->inst_c0;
+				int idx = GTMREG_TO_INT (var->inst_c0);
 				g_assert (idx < max_vars);
 
 				if (var->opcode == OP_ARG)
@@ -581,7 +581,7 @@ mono_ssa_remove_gsharedvt (MonoCompile *cfg)
 					break;
 
 			if ((bb->in_count > 1) && (j == bb->in_count)) {
-				ins->opcode = op_phi_to_move (ins->opcode);
+				ins->opcode = GINT_TO_OPCODE (op_phi_to_move (ins->opcode));
 				if (ins->opcode == OP_VMOVE)
 					g_assert (ins->klass);
 				ins->sreg1 = first;
@@ -637,7 +637,7 @@ mono_ssa_remove (MonoCompile *cfg)
 						break;
 
 				if ((bb->in_count > 1) && (j == bb->in_count)) {
-					ins->opcode = op_phi_to_move (ins->opcode);
+					ins->opcode = GINT_TO_OPCODE (op_phi_to_move (ins->opcode));
 					if (ins->opcode == OP_VMOVE)
 						g_assert (ins->klass);
 					ins->sreg1 = first;
@@ -936,7 +936,7 @@ evaluate_ins (MonoCompile *cfg, MonoInst *ins, MonoInst **res, MonoInst **carray
 }
 
 static void
-change_varstate (MonoCompile *cfg, GList **cvars, MonoMethodVar *info, int state, MonoInst *c0, MonoInst **carray)
+change_varstate (MonoCompile *cfg, GList **cvars, MonoMethodVar *info, char state, MonoInst *c0, MonoInst **carray)
 {
 	if (info->cpstate >= state)
 		return;
@@ -1090,9 +1090,9 @@ visit_inst (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, GList **cvars, 
 
 			if (carray [ins->next->sreg2]) {
 #if SIZEOF_REGISTER == 8
-				int idx = carray [ins->next->sreg2]->inst_c0 >> 3;
+				int idx = GTMREG_TO_INT (carray [ins->next->sreg2]->inst_c0 >> 3);
 #else
-				int idx = carray [ins->next->sreg2]->inst_c0 >> 2;
+				int idx = GTMREG_TO_INT (carray [ins->next->sreg2]->inst_c0 >> 2);
 #endif
 				if ((idx < 0) || (idx >= table->table_size))
 					/* Out-of-range, no branch is executed */
@@ -1173,7 +1173,7 @@ fold_ins (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, MonoInst **carray
 			/* Perform op->op_imm conversion */
 			opcode2 = mono_op_to_op_imm (ins->opcode);
 			if (opcode2 != -1) {
-				ins->opcode = opcode2;
+				ins->opcode = GINT_TO_OPCODE (opcode2);
 				ins->inst_imm = carray [ins->sreg2]->inst_c0;
 				ins->sreg2 = -1;
 
@@ -1201,9 +1201,9 @@ fold_ins (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, MonoInst **carray
 			if (carray [ins->next->sreg2]) {
 				/* Convert to a simple branch */
 #if SIZEOF_REGISTER == 8
-				int idx = carray [ins->next->sreg2]->inst_c0 >> 3;
+				int idx = GTMREG_TO_INT (carray [ins->next->sreg2]->inst_c0 >> 3);
 #else
-				int idx = carray [ins->next->sreg2]->inst_c0 >> 2;
+				int idx = GTMREG_TO_INT (carray [ins->next->sreg2]->inst_c0 >> 2);
 #endif
 
 				if (!((idx >= 0) && (idx < table->table_size))) {

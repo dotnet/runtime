@@ -8,7 +8,6 @@ using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.MethodInfos;
 using System.Runtime.InteropServices;
 
-using Internal.Reflection.Tracing;
 using Internal.Reflection.Core.Execution;
 
 namespace System.Reflection.Runtime.TypeInfos
@@ -40,11 +39,6 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.TypeInfo_CustomAttributes(this);
-#endif
-
                 return Empty<CustomAttributeData>.Enumerable;
             }
         }

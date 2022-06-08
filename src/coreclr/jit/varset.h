@@ -111,7 +111,7 @@ typedef BitSetOpsWithCounter<VARSET_TP,
 typedef VarSetOpsRaw       VarSetOps;
 #endif
 
-#define ALLVARSET_REP BSUInt64
+#define ALLVARSET_REP BSShortLong
 
 #if ALLVARSET_REP == BSUInt64
 
@@ -141,7 +141,8 @@ typedef BitSetOps</*BitSetType*/ BitSetShortLongRep,
 
 typedef BitSetShortLongRep ALLVARSET_TP;
 
-const unsigned lclMAX_ALLSET_TRACKED = lclMAX_TRACKED;
+// default value for JitConfig.JitMaxLocalsToTrack()
+const unsigned lclMAX_ALLSET_TRACKED = 0x400;
 
 #define ALLVARSET_REP_IS_CLASS 0
 

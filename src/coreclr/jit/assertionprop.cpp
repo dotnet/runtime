@@ -2958,8 +2958,8 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
     ValueNumPair vnPair = tree->gtVNPair;
     ValueNum     vnCns  = vnStore->VNConservativeNormalValue(vnPair);
 
-    // Check if node evaluates to a constant or Vector.Zero.
-    if (!vnStore->IsVNConstant(vnCns) && !vnStore->IsVNVectorZero(vnCns))
+    // Check if node evaluates to a constant
+    if (!vnStore->IsVNConstant(vnCns))
     {
         return nullptr;
     }
@@ -3118,23 +3118,52 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
         }
         break;
 
-#if FEATURE_HW_INTRINSICS
+#if FEATURE_SIMD
         case TYP_SIMD8:
+        {
+            simd8_t value = vnStore->ConstantValue<simd8_t>(vnCns);
+
+            GenTreeVecCon* vecCon = gtNewVconNode(tree->TypeGet(), CORINFO_TYPE_FLOAT);
+            vecCon->gtSimd8Val    = value;
+
+            conValTree = vecCon;
+            break;
+        }
+
         case TYP_SIMD12:
+        {
+            simd12_t value = vnStore->ConstantValue<simd12_t>(vnCns);
+
+            GenTreeVecCon* vecCon = gtNewVconNode(tree->TypeGet(), CORINFO_TYPE_FLOAT);
+            vecCon->gtSimd12Val   = value;
+
+            conValTree = vecCon;
+            break;
+        }
+
         case TYP_SIMD16:
+        {
+            simd16_t value = vnStore->ConstantValue<simd16_t>(vnCns);
+
+            GenTreeVecCon* vecCon = gtNewVconNode(tree->TypeGet(), CORINFO_TYPE_FLOAT);
+            vecCon->gtSimd16Val   = value;
+
+            conValTree = vecCon;
+            break;
+        }
+
         case TYP_SIMD32:
         {
-            assert(vnStore->IsVNVectorZero(vnCns));
-            VNSimdTypeInfo vnInfo = vnStore->GetVectorZeroSimdTypeOfVN(vnCns);
+            simd32_t value = vnStore->ConstantValue<simd32_t>(vnCns);
 
-            assert(vnInfo.m_simdBaseJitType != CORINFO_TYPE_UNDEF);
-            assert(vnInfo.m_simdSize != 0);
-            assert(getSIMDTypeForSize(vnInfo.m_simdSize) == vnStore->TypeOfVN(vnCns));
+            GenTreeVecCon* vecCon = gtNewVconNode(tree->TypeGet(), CORINFO_TYPE_FLOAT);
+            vecCon->gtSimd32Val   = value;
 
-            conValTree = gtNewSimdZeroNode(tree->TypeGet(), vnInfo.m_simdBaseJitType, vnInfo.m_simdSize, true);
+            conValTree = vecCon;
+            break;
         }
         break;
-#endif
+#endif // FEATURE_SIMD
 
         case TYP_BYREF:
             // Do not support const byref optimization.
@@ -4297,23 +4326,11 @@ GenTree* Compiler::optAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* tr
         return nullptr;
     }
 
-    // Check for add of a constant.
-    GenTree* op1 = tree->AsIndir()->Addr();
-    if ((op1->gtOper == GT_ADD) && (op1->AsOp()->gtOp2->gtOper == GT_CNS_INT))
-    {
-        op1 = op1->AsOp()->gtOp1;
-    }
-
-    if (op1->gtOper != GT_LCL_VAR)
-    {
-        return nullptr;
-    }
-
 #ifdef DEBUG
     bool           vnBased = false;
     AssertionIndex index   = NO_ASSERTION_INDEX;
 #endif
-    if (optAssertionIsNonNull(op1, assertions DEBUGARG(&vnBased) DEBUGARG(&index)))
+    if (optAssertionIsNonNull(tree->AsIndir()->Addr(), assertions DEBUGARG(&vnBased) DEBUGARG(&index)))
     {
 #ifdef DEBUG
         if (verbose)
@@ -4359,17 +4376,26 @@ bool Compiler::optAssertionIsNonNull(GenTree*         op,
                                      ASSERT_VALARG_TP assertions DEBUGARG(bool* pVnBased)
                                          DEBUGARG(AssertionIndex* pIndex))
 {
+    if (op->OperIs(GT_ADD) && op->AsOp()->gtGetOp2()->IsCnsIntOrI() &&
+        !fgIsBigOffset(op->AsOp()->gtGetOp2()->AsIntCon()->IconValue()))
+    {
+        op = op->AsOp()->gtGetOp1();
+    }
+
     bool vnBased = (!optLocalAssertionProp && vnStore->IsKnownNonNull(op->gtVNPair.GetConservative()));
 #ifdef DEBUG
+    *pIndex   = NO_ASSERTION_INDEX;
     *pVnBased = vnBased;
 #endif
 
     if (vnBased)
     {
-#ifdef DEBUG
-        *pIndex = NO_ASSERTION_INDEX;
-#endif
         return true;
+    }
+
+    if (!op->OperIs(GT_LCL_VAR))
+    {
+        return false;
     }
 
     AssertionIndex index = optAssertionIsNonNullInternal(op, assertions DEBUGARG(pVnBased));
@@ -4494,16 +4520,13 @@ AssertionIndex Compiler::optAssertionIsNonNullInternal(GenTree*         op,
  */
 GenTree* Compiler::optNonNullAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCall* call)
 {
-    if ((call->gtFlags & GTF_CALL_NULLCHECK) == 0)
+    if (!call->NeedsNullCheck())
     {
         return nullptr;
     }
+
     GenTree* op1 = call->gtArgs.GetThisArg()->GetNode();
     noway_assert(op1 != nullptr);
-    if (op1->gtOper != GT_LCL_VAR)
-    {
-        return nullptr;
-    }
 
 #ifdef DEBUG
     bool           vnBased = false;
@@ -4524,6 +4547,7 @@ GenTree* Compiler::optNonNullAssertionProp_Call(ASSERT_VALARG_TP assertions, Gen
         noway_assert(call->gtFlags & GTF_SIDE_EFFECT);
         return call;
     }
+
     return nullptr;
 }
 
@@ -5608,8 +5632,7 @@ struct VNAssertionPropVisitorInfo
 //
 GenTree* Compiler::optExtractSideEffListFromConst(GenTree* tree)
 {
-    assert(vnStore->IsVNConstant(vnStore->VNConservativeNormalValue(tree->gtVNPair)) ||
-           vnStore->IsVNVectorZero(vnStore->VNConservativeNormalValue(tree->gtVNPair)));
+    assert(vnStore->IsVNConstant(vnStore->VNConservativeNormalValue(tree->gtVNPair)));
 
     GenTree* sideEffList = nullptr;
 

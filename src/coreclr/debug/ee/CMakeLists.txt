@@ -9,6 +9,7 @@ include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 set(CORDBEE_SOURCES_DAC_AND_WKS
   controller.cpp
   debugger.cpp
+  debuggermessagebox.cpp
   debuggermodule.cpp
   functioninfo.cpp
 )

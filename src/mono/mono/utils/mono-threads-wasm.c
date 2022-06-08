@@ -393,6 +393,23 @@ mono_threads_wasm_is_browser_thread (void)
 #endif
 }
 
+MonoNativeThreadId
+mono_threads_wasm_browser_thread_tid (void)
+{
+#ifdef DISABLE_THREADS
+	return (MonoNativeThreadId)1;
+#else
+	return (MonoNativeThreadId)emscripten_main_browser_thread_id ();
+#endif
+}
+
+gboolean
+mono_threads_platform_stw_defer_initial_suspend (MonoThreadInfo *info)
+{
+	/* Suspend the browser thread after all the other threads are suspended already. */
+	return mono_native_thread_id_equals (mono_thread_info_get_tid (info), mono_threads_wasm_browser_thread_tid ());
+}
+
 #ifndef DISABLE_THREADS
 void
 mono_threads_wasm_async_run_in_main_thread (void (*func) (void))

@@ -488,13 +488,11 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
           eq(variables['isRollingBuild'], true))
-      # NOTE: Per PR test execution is not recommended for runtime tests 
-      ${{ if eq(variables['isRollingBuild'], true) }}:
-        # extra steps, run tests
-        extraStepsTemplate: /eng/pipelines/common/templates/runtimes/android-runtime-and-send-to-helix.yml
-        extraStepsParameters:
-          creator: dotnet-bot
-          testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+      # extra steps, run tests
+      extraStepsTemplate: /eng/pipelines/common/templates/runtimes/android-runtime-and-send-to-helix.yml
+      extraStepsParameters:
+        creator: dotnet-bot
+        testRunNamePrefixSuffix: Mono_$(_BuildConfig)
 
 #
 # Mono CoreCLR runtime Test executions using live libraries in jit mode

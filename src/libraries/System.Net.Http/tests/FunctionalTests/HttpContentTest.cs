@@ -366,7 +366,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(false)]
         public async Task LoadIntoBufferAsync_CallOnMockContentWithLessLengthThanContentLengthHeader_BufferedStreamLengthMatchesActualLengthNotContentLengthHeaderValue(bool readStreamAsync)
         {
-            byte[] data = Encoding.UTF8.GetBytes("16 bytes of data");
+            byte[] data = "16 bytes of data"u8.ToArray();
             var content = new MockContent(data);
             content.Headers.ContentLength = 32; // Set the Content-Length header to a value > actual data length.
             Assert.Equal(32, content.Headers.ContentLength);
@@ -961,15 +961,7 @@ namespace System.Net.Http.Functional.Tests
             public MockContent(byte[] mockData, MockOptions options)
             {
                 _options = options;
-
-                if (mockData == null)
-                {
-                    _mockData = Encoding.UTF8.GetBytes("data");
-                }
-                else
-                {
-                    _mockData = mockData;
-                }
+                _mockData = mockData ?? "data"u8.ToArray();
             }
 
             public byte[] GetMockData()
