@@ -4066,7 +4066,7 @@ void emitter::emitDispCommentForHandle(size_t handle, size_t cookie, GenTreeFlag
             const char* className = nullptr;
             const char* methName =
                 emitComp->eeGetMethodName(reinterpret_cast<CORINFO_METHOD_HANDLE>(cookie), &className);
-            printf("%s code address for %s:%s", commentPrefix, className, methName);
+            printf("%s code for %s:%s", commentPrefix, className, methName);
             return;
         }
 
