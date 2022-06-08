@@ -3177,7 +3177,7 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
 
     if (conValTree != nullptr)
     {
-        if (tree->OperIs(GT_LCL_VAR) && conValTree->OperIs(GT_CNS_VEC, GT_CNS_DBL, GT_CNS_INT))
+        if (tree->OperIs(GT_LCL_VAR) && conValTree->OperIs(GT_CNS_VEC, GT_CNS_DBL))
         {
             // A simple heuristic: If the constant is defined outside of a loop (not far from its head)
             // and is used inside it - don't propagate.
@@ -3199,27 +3199,12 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
                     // This is cheap to materialize
                     keepPropagating = true;
                 }
-#ifdef TARGET_ARM64
+#if defined(TARGET_ARM64)
                 if (emitter::canEncodeFloatImm8(conValTree->AsDblCon()->gtDconVal))
                 {
                     // Such floats are likely immable on arm64
                     keepPropagating = true;
                 }
-#endif
-            }
-            else
-            {
-                assert(conValTree->OperIs(GT_CNS_INT));
-#ifdef TARGET_ARM64
-                if ((unsigned_abs(conValTree->AsIntCon()->IconValue()) <= 0xFFF) ||
-                    isPow2(conValTree->AsIntCon()->IconValue()))
-                {
-                    // Small integers are likely containable on arm
-                    keepPropagating = true;
-                }
-#elif TARGET_XARCH
-                // All integer constants are cheap to materialize on xarch
-                keepPropagating = true;
 #endif
             }
 
@@ -3231,29 +3216,21 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
                 if (ssaNum != SsaConfig::RESERVED_SSA_NUM)
                 {
                     BasicBlock* defBlock = lvaTable[lclNum].GetPerSsaData(ssaNum)->GetBlock();
-
                     if (defBlock != nullptr)
                     {
-
                         // TODO: if it lives across calls in that loops we should propagate it only after those
                         // calls on ABIs without callee-saved registers to avoid spills
-
                         if (!defBlock->IsInLoop() && block->IsInLoop())
                         {
-                            const LoopDsc* loopInfo = &optLoopTable[block->bbNatLoopNum];
-                            // Def is better to be close (e.g. result of CSE) so we won't occupy a register
-                            if ((loopInfo->lpHead == defBlock) || loopInfo->lpHead->bbIDom == defBlock)
-                            {
-                                // Last, let's limit it to cases where block is not some not-always-taken
-                                // block inside that loop
-                                const weight_t defBlockWeight = defBlock->getBBWeight(this);
-                                const weight_t blockWeight    = block->getBBWeight(this);
+                            // Last, let's limit it to cases where block is not some not-always-taken
+                            // block inside that loop
+                            const weight_t defBlockWeight = defBlock->getBBWeight(this);
+                            const weight_t blockWeight    = block->getBBWeight(this);
 
-                                if (((blockWeight / defBlockWeight) >= BB_LOOP_WEIGHT_SCALE) && (defBlockWeight > 0))
-                                {
-                                    JITDUMP("Skip constant propagation inside loop " FMT_BB "\n", block->bbNum);
-                                    return nullptr;
-                                }
+                            if ((defBlockWeight > 0) && ((blockWeight / defBlockWeight) >= BB_LOOP_WEIGHT_SCALE))
+                            {
+                                JITDUMP("Skip constant propagation inside loop " FMT_BB "\n", block->bbNum);
+                                return nullptr;
                             }
                         }
                     }
