@@ -352,6 +352,7 @@ namespace Microsoft.Extensions.Configuration
 
                 // Leaf nodes are always reinitialized
                 bindingPoint.TrySetValue(convertedValue);
+                return;
             }
 
             if (config != null && config.GetChildren().Any())
