@@ -5,7 +5,7 @@ using Xunit;
 
 namespace System.IO.Tests
 {
-    public class CreateDirectoryWithUnixFileMode
+    public class CreateDirectoryWithUnixFileMode : FileSystemTest
     {
         [Fact]
         public void NotSupported()
