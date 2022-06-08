@@ -302,18 +302,14 @@ namespace System.Drawing
         {
             ArgumentNullException.ThrowIfNull(logFont);
 
-            int nativeSize = sizeof(Interop.User32.LOGFONT);
-            if (Marshal.SizeOf<T>() != nativeSize)
+            if (sizeof(T) != sizeof(Interop.User32.LOGFONT))
             {
                 // If we don't actually have an object that is LOGFONT in size, trying to pass
                 // it to GDI+ is likely to cause an AV.
                 throw new ArgumentException(null, nameof(logFont));
             }
 
-            Interop.User32.LOGFONT nativeLogFont = ToLogFontInternal(graphics);
-
-            // PtrToStructure requires that the passed in object not be a value type.
-            logFont = *(T*)&nativeLogFont;
+            *(Interop.User32.LOGFONT*)&logFont = ToLogFontInternal(graphics);
         }
 #endif
 
@@ -676,20 +672,14 @@ namespace System.Drawing
                 return FromLogFontInternal(ref nativeLogFont, hdc);
             }
 
-            int nativeSize = sizeof(Interop.User32.LOGFONT);
-            if (Marshal.SizeOf<T>() != nativeSize)
+            if (sizeof(T) != sizeof(Interop.User32.LOGFONT))
             {
                 // If we don't actually have an object that is LOGFONT in size, trying to pass
                 // it to GDI+ is likely to cause an AV.
                 throw new ArgumentException(null, nameof(logFont));
             }
 
-            // Now that we know the marshalled size is the same as LOGFONT, copy in the data
-            nativeLogFont = default;
-
-            *(T*)&nativeLogFont = logFont;
-
-            return FromLogFontInternal(ref nativeLogFont, hdc);
+            return FromLogFontInternal(ref *(Interop.User32.LOGFONT*)&logFont, hdc);
         }
 #endif
 
