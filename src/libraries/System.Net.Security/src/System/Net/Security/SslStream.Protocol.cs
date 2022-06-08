@@ -835,7 +835,7 @@ namespace System.Net.Security
 
         internal SecurityStatusPal Renegotiate(out byte[]? output)
         {
-            ArgumentNullException.ThrowIfNull(_securityContext);
+            Debug.Assert(_securityContext != null);
 
             return SslStreamPal.Renegotiate(
                                       ref _credentialsHandle!,
