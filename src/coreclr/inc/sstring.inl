@@ -141,17 +141,25 @@ template<typename TEncoding>
 inline EString<TEncoding>::EString(void* buffer, COUNT_T size, bool isAllocated)
     : SBuffer(Prealloc, buffer, size)
 {
-    // If this buffer was allocated on the heap, make sure to set the Allocated flag
-    // so we release it when resizing.
+    // If this buffer was allocated on the heap, that ownership is passed to this instance.
     if (isAllocated)
     {
-        SetAllocated();
+        if (GetRawBuffer() == nullptr)
+        {
+            // If we were unable to use the provided buffer, we need to release it as we now own the memory.
+            DeleteBuffer((BYTE*)buffer, size);
+        }
+        else
+        {
+            // Make sure to set the Allocated flag so we release it when resizing.
+            SetAllocated();
+        }
     }
 }
 
 template<typename TEncoding>
 inline EString<TEncoding>::EString(const EString &s, const CIterator &i, COUNT_T count)
-  : SBuffer(Immutable, StaticStringHelpers::s_EmptyBuffer, sizeof(StaticStringHelpers::s_EmptyBuffer))
+  : EString()
 {
     SS_CONTRACT_VOID
     {

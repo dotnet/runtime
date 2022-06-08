@@ -971,7 +971,7 @@ FORCEINLINE BYTE* SBuffer::GetRawBufferForMove() const
 FORCEINLINE COUNT_T SBuffer::GetAllocationForMove() const
 {
 #ifdef SBUFFER_CANARY_CHECKS
-    return (COUNT_T)(m_allocation + sizeof(SBUFFER_CANARY_VALUE) * 2);
+    return (COUNT_T)(m_allocation + sizeof(SBUFFER_CANARY_VALUE) * 2 + AlignmentTrim((SIZE_T)m_buffer + m_allocation, sizeof(SBUFFER_CANARY_VALUE)));
 #else
     return m_allocation;
 #endif
