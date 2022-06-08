@@ -196,6 +196,11 @@ export interface EventPipeSessionAutoStopOptions {
     /// Called after the session has been stopped.
     on_session_stopped?: (session: EventPipeSession) => void;
 }
+/// For EventPipe sessions started by the diagnostic server, a message port to send back the session data
+export interface EventPipeSessionIPCOptions {
+    message_port: MessagePort;
+}
+
 
 /// Options to configure the event pipe session
 /// The recommended method is to MONO.diagnostics.SesisonOptionsBuilder to create an instance of this type

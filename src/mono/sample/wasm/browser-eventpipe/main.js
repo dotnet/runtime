@@ -63,15 +63,15 @@ function getOnClickHandler(startWork, stopWork, getIterationsDone) {
         //     .build();
         // console.log('starting providers', options.providers);
 
-	let sessions = MONO.diagnostics.getStartupSessions();
+        let sessions = MONO.diagnostics.getStartupSessions();
 
-	if (typeof(sessions) !== "object" || sessions.length === "undefined" || sessions.length == 0)
-	    console.error ("expected an array of sessions, got ", sessions);
-	if (sessions.length != 1)
-	    console.error ("expected one startup session, got ", sessions);
-	let eventSession = sessions[0];
+        if (typeof (sessions) !== "object" || sessions.length === "undefined" || sessions.length == 0)
+            console.error("expected an array of sessions, got ", sessions);
+        if (sessions.length != 1)
+            console.error("expected one startup session, got ", sessions);
+        let eventSession = sessions[0];
 
-	console.debug ("eventSession state is ", eventSession._state); // ooh protected member access
+        console.debug("eventSession state is ", eventSession._state); // ooh protected member access
 
         // const eventSession = MONO.diagnostics.createEventPipeSession(options);
 
@@ -79,9 +79,9 @@ function getOnClickHandler(startWork, stopWork, getIterationsDone) {
         const ret = await doWork(startWork, stopWork, getIterationsDone);
 
 
-	eventSession.stop();
+        eventSession.stop();
 
-	
+
         const filename = "dotnet-wasm-" + makeTimestamp() + ".nettrace";
 
         const blob = eventSession.getTraceBlob();
@@ -90,7 +90,25 @@ function getOnClickHandler(startWork, stopWork, getIterationsDone) {
     }
 }
 
+function websocketTestThing() {
+    console.log("websocketTestThing opening a connection");
+    const ws = new WebSocket("ws://localhost:9090/diagnostics");
+    ws.onopen = function () {
+        ws.send("hello from browser");
+        ws.onmessage = function (event) {
+            console.log("got message from server: ", event.data);
+            ws.close();
+        }
+    }
+    ws.onerror = function (event) {
+        console.log("error from server: ", event);
+    }
+}
+
 async function main() {
+    const wsbtn = document.getElementById("openWS");
+    wsbtn.onclick = websocketTestThing;
+
     const { MONO, BINDING, Module, RuntimeBuildInfo } = await createDotnetRuntime(() => {
         return {
             disableDotnet6Compatibility: true,

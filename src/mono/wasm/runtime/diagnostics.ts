@@ -3,7 +3,7 @@
 
 import { Module } from "./imports";
 import cwraps from "./cwraps";
-import type { DiagnosticOptions, EventPipeSession, EventPipeStreamingSession, EventPipeSessionOptions, EventPipeSessionAutoStopOptions } from "./types";
+import type { DiagnosticOptions, EventPipeSession, EventPipeStreamingSession, EventPipeSessionOptions, EventPipeSessionIPCOptions, EventPipeSessionAutoStopOptions } from "./types";
 import { mono_assert } from "./types";
 import type { VoidPtr } from "./types/emscripten";
 import serverController from "./diagnostic-server-controller";
@@ -245,13 +245,15 @@ export class SessionOptionsBuilder {
 // a conter for the number of sessions created
 let totalSessions = 0;
 
-function createSessionWithPtrCB(sessionIdOutPtr: VoidPtr, options: EventPipeSessionOptions | undefined, tracePath: string): false | number {
+function createSessionWithPtrCB(sessionIdOutPtr: VoidPtr, options: EventPipeSessionOptions & Partial<EventPipeIPCSession> | undefined, tracePath: string): false | number {
     const defaultRundownRequested = true;
     const defaultProviders = ""; // empty string means use the default providers
     const defaultBufferSizeInMB = 1;
 
     const rundown = options?.collectRundownEvents ?? defaultRundownRequested;
     const providers = options?.providers ?? defaultProviders;
+
+    // TODO: if options.message_port, create a streaming session instead of a file session
 
     memory.setI32(sessionIdOutPtr, 0);
     if (!cwraps.mono_wasm_event_pipe_enable(tracePath, defaultBufferSizeInMB, providers, rundown, sessionIdOutPtr)) {
@@ -269,11 +271,8 @@ export interface Diagnostics {
     getStartupSessions(): (EventPipeSession | null)[];
 }
 
-interface EventPipeSessionIPCOptions {
-    message_port: MessagePort;
-}
 
-let startup_session_configs: (EventPipeSessionOptions & EventPipeSessionAutoStopOptions & EventPipeSessionIPCOptions)[] = [];
+let startup_session_configs: (EventPipeSessionOptions & EventPipeSessionAutoStopOptions & Partial<EventPipeSessionIPCOptions>)[] = [];
 let startup_sessions: (EventPipeSession | null)[] | null = null;
 
 export function mono_wasm_event_pipe_early_startup_callback(): void {
@@ -285,7 +284,7 @@ export function mono_wasm_event_pipe_early_startup_callback(): void {
 }
 
 
-function createAndStartEventPipeSession(options: (EventPipeSessionOptions & EventPipeSessionAutoStopOptions & EventPipeSessionIPCOptions)): EventPipeSession | null {
+function createAndStartEventPipeSession(options: (EventPipeSessionOptions & EventPipeSessionAutoStopOptions & Partial<EventPipeSessionIPCOptions>)): EventPipeSession | null {
     const session = createEventPipeSession(options);
     if (session === null) {
         return null;
@@ -298,7 +297,7 @@ function createAndStartEventPipeSession(options: (EventPipeSessionOptions & Even
     return session;
 }
 
-function createEventPipeSession(options?: EventPipeSessionOptions & EventPipeSessionIPCOptions): EventPipeSession | null {
+function createEventPipeSession(options?: EventPipeSessionOptions & Partial<EventPipeSessionIPCOptions>): EventPipeSession | null {
     // The session trace is saved to a file in the VFS. The file name doesn't matter,
     // but we'd like it to be distinct from other traces.
     const tracePath = `/trace-${totalSessions++}.nettrace`;
@@ -310,7 +309,7 @@ function createEventPipeSession(options?: EventPipeSessionOptions & EventPipeSes
     const sessionID = success;
 
     if (options?.message_port !== undefined) {
-        return new EventPipeIPCSession(sessionID, options.message_port);
+        return new EventPipeIPCSession(options.message_port, sessionID);
     } else {
         const session = new EventPipeFileSession(sessionID, tracePath);
         return session;
@@ -361,9 +360,8 @@ export async function configure_diagnostics(options: DiagnosticOptions): Promise
         if (wait && q.serverReady) {
             // wait for the server to get a connection
             const serverReadyResponse = await q.serverReady;
-            // TODO: get sessions from the server controller and add them to the list of startup sessions
-            if (serverReadyResponse.sessions) {
-                startup_sesison_configs.push(...serverReadyResponse.sessions);
+            if (serverReadyResponse?.sessions) {
+                startup_session_configs.push(...serverReadyResponse.sessions);
             }
         }
     }

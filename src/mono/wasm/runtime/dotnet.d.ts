@@ -211,6 +211,7 @@ declare type CoverageProfilerOptions = {
 };
 declare type DiagnosticOptions = {
     sessions?: (EventPipeSessionOptions & EventPipeSessionAutoStopOptions)[];
+    server?: boolean | "wait";
 };
 interface EventPipeSessionAutoStopOptions {
     stop_at?: string;

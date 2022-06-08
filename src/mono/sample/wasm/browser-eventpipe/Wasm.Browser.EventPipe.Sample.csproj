@@ -20,7 +20,7 @@
   "MONO_LOG_LEVEL": "debug",
   "MONO_LOG_MASK": "diagnostics"
 }' />
-    <WasmExtraConfig Include="diagnostic_options" Value='
+    <WasmExtraConfig Condition="false" Include="diagnostic_options" Value='
 {
   "sessions": [ { "collectRundownEvents": "true", "providers": "WasmHello::5:EventCounterIntervalSec=1" } ]
 }' />
