@@ -1,0 +1,25 @@
+<Project>
+  <PropertyGroup>
+    <_CryptoProjectName>System.Security.Cryptography.Tests</_CryptoProjectName>
+    <System_Security_Cryptography_Tests_TargetName Condition="'$(Scenario))' == 'WasmTestOnBrowser'">System_Security_Cryptography_Tests_Target</System_Security_Cryptography_Tests_TargetName>
+  </PropertyGroup>
+
+  <Target Name="System_Security_Cryptography_Tests_Target">
+    <ItemGroup>
+      <HelixWorkItem Include="$(Scenario)-managed-$(_CryptoProjectName)">
+        <PayloadArchive>$(TestArchiveTestsDir)$(_CryptoProjectName).zip</PayloadArchive>
+        <Command>$(HelixCommand)</Command>
+        <Timeout>$(_workItemTimeout)</Timeout>
+      </HelixWorkItem>
+
+      <HelixWorkItem Include="$(Scenario)-subtlecrypto-System.Security.Cryptography.Tests">
+        <PayloadArchive>$(TestArchiveTestsDir)$(_CryptoProjectName).zip</PayloadArchive>
+        <Command>$(HelixCommand)</Command>
+        <Timeout>$(_workItemTimeout)</Timeout>
+
+        <PreCommands Condition="'$(OS)' == 'Windows_NT'">set &quot;WasmXHarnessArgs=--web-server-use-cors&quot;</PreCommands>
+        <PreCommands Condition="'$(OS)' != 'Windows_NT'">export &quot;WasmXHarnessArgs=--web-server-use-cors&quot;</PreCommands>
+      </HelixWorkItem>
+    </ItemGroup>
+  </Target>
+</Project>
