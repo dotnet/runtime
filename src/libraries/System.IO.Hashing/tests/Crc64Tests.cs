@@ -59,7 +59,7 @@ namespace System.IO.Hashing.Tests
                     "0000000000000000"),
                 new TestCase(
                     "Self-test 123456789",
-                    Encoding.ASCII.GetBytes("123456789"),
+                    "123456789"u8.ToArray(),
                     "6C40DF5F0B497347"),
                 new TestCase(
                     "Self-test residue",
@@ -67,7 +67,7 @@ namespace System.IO.Hashing.Tests
                     "0000000000000000"),
                 new TestCase(
                     "The quick brown fox jumps over the lazy dog",
-                    Encoding.ASCII.GetBytes("The quick brown fox jumps over the lazy dog"),
+                    "The quick brown fox jumps over the lazy dog"u8.ToArray(),
                     "41E05242FFA9883B"),
             };
 

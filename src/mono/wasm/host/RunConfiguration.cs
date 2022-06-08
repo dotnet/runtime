@@ -74,8 +74,6 @@ internal sealed class RunConfiguration
         if (HostProperties.FirefoxDebuggingPort is not null)
             options.FirefoxDebugPort = HostProperties.FirefoxDebuggingPort.Value;
         options.LogPath = ".";
-        options.AutoSetBreakpointOnEntryPoint = true;
-
         return options;
     }
 }

@@ -203,13 +203,13 @@ namespace System.Linq
         private static MethodInfo? s_DefaultIfEmpty_TSource_1;
 
         public static MethodInfo DefaultIfEmpty_TSource_1(Type TSource) =>
-             (s_DefaultIfEmpty_TSource_1 ??= new Func<IQueryable<object>, IQueryable<object>>(Queryable.DefaultIfEmpty).GetMethodInfo().GetGenericMethodDefinition())
+             (s_DefaultIfEmpty_TSource_1 ??= new Func<IQueryable<object>, IQueryable<object?>>(Queryable.DefaultIfEmpty).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_DefaultIfEmpty_TSource_2;
 
         public static MethodInfo DefaultIfEmpty_TSource_2(Type TSource) =>
-             (s_DefaultIfEmpty_TSource_2 ??= new Func<IQueryable<object>, object, IQueryable<object>>(Queryable.DefaultIfEmpty).GetMethodInfo().GetGenericMethodDefinition())
+             (s_DefaultIfEmpty_TSource_2 ??= new Func<IQueryable<object>, object, IQueryable<object?>>(Queryable.DefaultIfEmpty).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_Distinct_TSource_1;

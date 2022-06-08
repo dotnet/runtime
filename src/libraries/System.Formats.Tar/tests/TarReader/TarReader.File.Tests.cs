@@ -12,13 +12,13 @@ namespace System.Formats.Tar.Tests
     public class TarReader_File_Tests : TarTestsBase
     {
         [Theory]
-        [InlineData(TarFormat.V7, TestTarFormat.v7)]
-        [InlineData(TarFormat.Ustar, TestTarFormat.ustar)]
-        [InlineData(TarFormat.Pax, TestTarFormat.pax)]
-        [InlineData(TarFormat.Pax, TestTarFormat.pax_gea)]
-        [InlineData(TarFormat.Gnu, TestTarFormat.gnu)]
-        [InlineData(TarFormat.Gnu, TestTarFormat.oldgnu)]
-        public void Read_Archive_File(TarFormat format, TestTarFormat testFormat)
+        [InlineData(TarEntryFormat.V7, TestTarFormat.v7)]
+        [InlineData(TarEntryFormat.Ustar, TestTarFormat.ustar)]
+        [InlineData(TarEntryFormat.Pax, TestTarFormat.pax)]
+        [InlineData(TarEntryFormat.Pax, TestTarFormat.pax_gea)]
+        [InlineData(TarEntryFormat.Gnu, TestTarFormat.gnu)]
+        [InlineData(TarEntryFormat.Gnu, TestTarFormat.oldgnu)]
+        public void Read_Archive_File(TarEntryFormat format, TestTarFormat testFormat)
         {
             string testCaseName = "file";
             using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName);
@@ -32,7 +32,7 @@ namespace System.Formats.Tar.Tests
             }
 
             // Format is determined after reading the first entry, not on the constructor
-            Assert.Equal(TarFormat.Unknown, reader.Format);
+            Assert.Equal(TarEntryFormat.Unknown, reader.Format);
             TarEntry file = reader.GetNextEntry();
 
             Assert.Equal(format, reader.Format);
@@ -50,13 +50,13 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [InlineData(TarFormat.V7, TestTarFormat.v7)]
-        [InlineData(TarFormat.Ustar, TestTarFormat.ustar)]
-        [InlineData(TarFormat.Pax, TestTarFormat.pax)]
-        [InlineData(TarFormat.Pax, TestTarFormat.pax_gea)]
-        [InlineData(TarFormat.Gnu, TestTarFormat.gnu)]
-        [InlineData(TarFormat.Gnu, TestTarFormat.oldgnu)]
-        public void Read_Archive_File_HardLink(TarFormat format, TestTarFormat testFormat)
+        [InlineData(TarEntryFormat.V7, TestTarFormat.v7)]
+        [InlineData(TarEntryFormat.Ustar, TestTarFormat.ustar)]
+        [InlineData(TarEntryFormat.Pax, TestTarFormat.pax)]
+        [InlineData(TarEntryFormat.Pax, TestTarFormat.pax_gea)]
+        [InlineData(TarEntryFormat.Gnu, TestTarFormat.gnu)]
+        [InlineData(TarEntryFormat.Gnu, TestTarFormat.oldgnu)]
+        public void Read_Archive_File_HardLink(TarEntryFormat format, TestTarFormat testFormat)
         {
             string testCaseName = "file_hardlink";
             using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName);
@@ -69,7 +69,7 @@ namespace System.Formats.Tar.Tests
                 Assert.Null(reader.GlobalExtendedAttributes);
             }
             // Format is determined after reading the first entry, not on the constructor
-            Assert.Equal(TarFormat.Unknown, reader.Format);
+            Assert.Equal(TarEntryFormat.Unknown, reader.Format);
             TarEntry file = reader.GetNextEntry();
 
             Assert.Equal(format, reader.Format);
@@ -91,13 +91,13 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [InlineData(TarFormat.V7, TestTarFormat.v7)]
-        [InlineData(TarFormat.Ustar, TestTarFormat.ustar)]
-        [InlineData(TarFormat.Pax, TestTarFormat.pax)]
-        [InlineData(TarFormat.Pax, TestTarFormat.pax_gea)]
-        [InlineData(TarFormat.Gnu, TestTarFormat.gnu)]
-        [InlineData(TarFormat.Gnu, TestTarFormat.oldgnu)]
-        public void Read_Archive_File_SymbolicLink(TarFormat format, TestTarFormat testFormat)
+        [InlineData(TarEntryFormat.V7, TestTarFormat.v7)]
+        [InlineData(TarEntryFormat.Ustar, TestTarFormat.ustar)]
+        [InlineData(TarEntryFormat.Pax, TestTarFormat.pax)]
+        [InlineData(TarEntryFormat.Pax, TestTarFormat.pax_gea)]
+        [InlineData(TarEntryFormat.Gnu, TestTarFormat.gnu)]
+        [InlineData(TarEntryFormat.Gnu, TestTarFormat.oldgnu)]
+        public void Read_Archive_File_SymbolicLink(TarEntryFormat format, TestTarFormat testFormat)
         {
             string testCaseName = "file_symlink";
             using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName);
@@ -111,7 +111,7 @@ namespace System.Formats.Tar.Tests
             }
 
             // Format is determined after reading the first entry, not on the constructor
-            Assert.Equal(TarFormat.Unknown, reader.Format);
+            Assert.Equal(TarEntryFormat.Unknown, reader.Format);
             TarEntry file = reader.GetNextEntry();
 
             Assert.Equal(format, reader.Format);
@@ -133,13 +133,13 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [InlineData(TarFormat.V7, TestTarFormat.v7)]
-        [InlineData(TarFormat.Ustar, TestTarFormat.ustar)]
-        [InlineData(TarFormat.Pax, TestTarFormat.pax)]
-        [InlineData(TarFormat.Pax, TestTarFormat.pax_gea)]
-        [InlineData(TarFormat.Gnu, TestTarFormat.gnu)]
-        [InlineData(TarFormat.Gnu, TestTarFormat.oldgnu)]
-        public void Read_Archive_Folder_File(TarFormat format, TestTarFormat testFormat)
+        [InlineData(TarEntryFormat.V7, TestTarFormat.v7)]
+        [InlineData(TarEntryFormat.Ustar, TestTarFormat.ustar)]
+        [InlineData(TarEntryFormat.Pax, TestTarFormat.pax)]
+        [InlineData(TarEntryFormat.Pax, TestTarFormat.pax_gea)]
+        [InlineData(TarEntryFormat.Gnu, TestTarFormat.gnu)]
+        [InlineData(TarEntryFormat.Gnu, TestTarFormat.oldgnu)]
+        public void Read_Archive_Folder_File(TarEntryFormat format, TestTarFormat testFormat)
         {
             string testCaseName = "folder_file";
             using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName);
@@ -153,7 +153,7 @@ namespace System.Formats.Tar.Tests
             }
 
             // Format is determined after reading the first entry, not on the constructor
-            Assert.Equal(TarFormat.Unknown, reader.Format);
+            Assert.Equal(TarEntryFormat.Unknown, reader.Format);
             TarEntry directory = reader.GetNextEntry();
 
             Assert.Equal(format, reader.Format);
@@ -174,13 +174,13 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [InlineData(TarFormat.V7, TestTarFormat.v7)]
-        [InlineData(TarFormat.Ustar, TestTarFormat.ustar)]
-        [InlineData(TarFormat.Pax, TestTarFormat.pax)]
-        [InlineData(TarFormat.Pax, TestTarFormat.pax_gea)]
-        [InlineData(TarFormat.Gnu, TestTarFormat.gnu)]
-        [InlineData(TarFormat.Gnu, TestTarFormat.oldgnu)]
-        public void Read_Archive_Folder_File_Utf8(TarFormat format, TestTarFormat testFormat)
+        [InlineData(TarEntryFormat.V7, TestTarFormat.v7)]
+        [InlineData(TarEntryFormat.Ustar, TestTarFormat.ustar)]
+        [InlineData(TarEntryFormat.Pax, TestTarFormat.pax)]
+        [InlineData(TarEntryFormat.Pax, TestTarFormat.pax_gea)]
+        [InlineData(TarEntryFormat.Gnu, TestTarFormat.gnu)]
+        [InlineData(TarEntryFormat.Gnu, TestTarFormat.oldgnu)]
+        public void Read_Archive_Folder_File_Utf8(TarEntryFormat format, TestTarFormat testFormat)
         {
             string testCaseName = "folder_file_utf8";
             using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName);
@@ -193,7 +193,7 @@ namespace System.Formats.Tar.Tests
             }
 
             // Format is determined after reading the first entry, not on the constructor
-            Assert.Equal(TarFormat.Unknown, reader.Format);
+            Assert.Equal(TarEntryFormat.Unknown, reader.Format);
             TarEntry directory = reader.GetNextEntry();
 
             Assert.Equal(format, reader.Format);
@@ -214,13 +214,13 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [InlineData(TarFormat.V7, TestTarFormat.v7)]
-        [InlineData(TarFormat.Ustar, TestTarFormat.ustar)]
-        [InlineData(TarFormat.Pax, TestTarFormat.pax)]
-        [InlineData(TarFormat.Pax, TestTarFormat.pax_gea)]
-        [InlineData(TarFormat.Gnu, TestTarFormat.gnu)]
-        [InlineData(TarFormat.Gnu, TestTarFormat.oldgnu)]
-        public void Read_Archive_Folder_Subfolder_File(TarFormat format, TestTarFormat testFormat)
+        [InlineData(TarEntryFormat.V7, TestTarFormat.v7)]
+        [InlineData(TarEntryFormat.Ustar, TestTarFormat.ustar)]
+        [InlineData(TarEntryFormat.Pax, TestTarFormat.pax)]
+        [InlineData(TarEntryFormat.Pax, TestTarFormat.pax_gea)]
+        [InlineData(TarEntryFormat.Gnu, TestTarFormat.gnu)]
+        [InlineData(TarEntryFormat.Gnu, TestTarFormat.oldgnu)]
+        public void Read_Archive_Folder_Subfolder_File(TarEntryFormat format, TestTarFormat testFormat)
         {
             string testCaseName = "folder_subfolder_file";
             using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName);
@@ -233,7 +233,7 @@ namespace System.Formats.Tar.Tests
             }
 
             // Format is determined after reading the first entry, not on the constructor
-            Assert.Equal(TarFormat.Unknown, reader.Format);
+            Assert.Equal(TarEntryFormat.Unknown, reader.Format);
             TarEntry parent = reader.GetNextEntry();
 
             Assert.Equal(format, reader.Format);
@@ -257,13 +257,13 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [InlineData(TarFormat.V7, TestTarFormat.v7)]
-        [InlineData(TarFormat.Ustar, TestTarFormat.ustar)]
-        [InlineData(TarFormat.Pax, TestTarFormat.pax)]
-        [InlineData(TarFormat.Pax, TestTarFormat.pax_gea)]
-        [InlineData(TarFormat.Gnu, TestTarFormat.gnu)]
-        [InlineData(TarFormat.Gnu, TestTarFormat.oldgnu)]
-        public void Read_Archive_FolderSymbolicLink_Folder_Subfolder_File(TarFormat format, TestTarFormat testFormat)
+        [InlineData(TarEntryFormat.V7, TestTarFormat.v7)]
+        [InlineData(TarEntryFormat.Ustar, TestTarFormat.ustar)]
+        [InlineData(TarEntryFormat.Pax, TestTarFormat.pax)]
+        [InlineData(TarEntryFormat.Pax, TestTarFormat.pax_gea)]
+        [InlineData(TarEntryFormat.Gnu, TestTarFormat.gnu)]
+        [InlineData(TarEntryFormat.Gnu, TestTarFormat.oldgnu)]
+        public void Read_Archive_FolderSymbolicLink_Folder_Subfolder_File(TarEntryFormat format, TestTarFormat testFormat)
         {
             string testCaseName = "foldersymlink_folder_subfolder_file";
             using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName);
@@ -276,7 +276,7 @@ namespace System.Formats.Tar.Tests
             }
 
             // Format is determined after reading the first entry, not on the constructor
-            Assert.Equal(TarFormat.Unknown, reader.Format);
+            Assert.Equal(TarEntryFormat.Unknown, reader.Format);
             TarEntry childlink = reader.GetNextEntry();
 
             Assert.Equal(format, reader.Format);
@@ -303,13 +303,13 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [InlineData(TarFormat.V7, TestTarFormat.v7)]
-        [InlineData(TarFormat.Ustar, TestTarFormat.ustar)]
-        [InlineData(TarFormat.Pax, TestTarFormat.pax)]
-        [InlineData(TarFormat.Pax, TestTarFormat.pax_gea)]
-        [InlineData(TarFormat.Gnu, TestTarFormat.gnu)]
-        [InlineData(TarFormat.Gnu, TestTarFormat.oldgnu)]
-        public void Read_Archive_Many_Small_Files(TarFormat format, TestTarFormat testFormat)
+        [InlineData(TarEntryFormat.V7, TestTarFormat.v7)]
+        [InlineData(TarEntryFormat.Ustar, TestTarFormat.ustar)]
+        [InlineData(TarEntryFormat.Pax, TestTarFormat.pax)]
+        [InlineData(TarEntryFormat.Pax, TestTarFormat.pax_gea)]
+        [InlineData(TarEntryFormat.Gnu, TestTarFormat.gnu)]
+        [InlineData(TarEntryFormat.Gnu, TestTarFormat.oldgnu)]
+        public void Read_Archive_Many_Small_Files(TarEntryFormat format, TestTarFormat testFormat)
         {
             string testCaseName = "many_small_files";
             using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName);
@@ -322,7 +322,7 @@ namespace System.Formats.Tar.Tests
             }
 
             // Format is determined after reading the first entry, not on the constructor
-            Assert.Equal(TarFormat.Unknown, reader.Format);
+            Assert.Equal(TarEntryFormat.Unknown, reader.Format);
 
             List<TarEntry> entries = new List<TarEntry>();
             TarEntry entry;
@@ -348,7 +348,7 @@ namespace System.Formats.Tar.Tests
             int directoriesCount = entries.Count(e => e.EntryType == TarEntryType.Directory);
             Assert.Equal(10, directoriesCount);
 
-            TarEntryType regularFileEntryType = format == TarFormat.V7 ? TarEntryType.V7RegularFile : TarEntryType.RegularFile;
+            TarEntryType regularFileEntryType = format == TarEntryFormat.V7 ? TarEntryType.V7RegularFile : TarEntryType.RegularFile;
             for (int i = 0; i < 10; i++)
             {
                 int filesCount = entries.Count(e => e.EntryType == regularFileEntryType && e.Name.StartsWith($"{i}/"));
@@ -358,12 +358,12 @@ namespace System.Formats.Tar.Tests
 
         [Theory]
         // V7 does not support longer filenames
-        [InlineData(TarFormat.Ustar, TestTarFormat.ustar)]
-        [InlineData(TarFormat.Pax, TestTarFormat.pax)]
-        [InlineData(TarFormat.Pax, TestTarFormat.pax_gea)]
-        [InlineData(TarFormat.Gnu, TestTarFormat.gnu)]
-        [InlineData(TarFormat.Gnu, TestTarFormat.oldgnu)]
-        public void Read_Archive_LongPath_Splitable_Under255(TarFormat format, TestTarFormat testFormat)
+        [InlineData(TarEntryFormat.Ustar, TestTarFormat.ustar)]
+        [InlineData(TarEntryFormat.Pax, TestTarFormat.pax)]
+        [InlineData(TarEntryFormat.Pax, TestTarFormat.pax_gea)]
+        [InlineData(TarEntryFormat.Gnu, TestTarFormat.gnu)]
+        [InlineData(TarEntryFormat.Gnu, TestTarFormat.oldgnu)]
+        public void Read_Archive_LongPath_Splitable_Under255(TarEntryFormat format, TestTarFormat testFormat)
         {
             string testCaseName = "longpath_splitable_under255";
             using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName);
@@ -376,7 +376,7 @@ namespace System.Formats.Tar.Tests
             }
 
             // Format is determined after reading the first entry, not on the constructor
-            Assert.Equal(TarFormat.Unknown, reader.Format);
+            Assert.Equal(TarEntryFormat.Unknown, reader.Format);
             TarEntry directory = reader.GetNextEntry();
 
             Assert.Equal(format, reader.Format);
@@ -398,12 +398,12 @@ namespace System.Formats.Tar.Tests
 
         [Theory]
         // V7 does not support block devices, character devices or fifos
-        [InlineData(TarFormat.Ustar, TestTarFormat.ustar)]
-        [InlineData(TarFormat.Pax, TestTarFormat.pax)]
-        [InlineData(TarFormat.Pax, TestTarFormat.pax_gea)]
-        [InlineData(TarFormat.Gnu, TestTarFormat.gnu)]
-        [InlineData(TarFormat.Gnu, TestTarFormat.oldgnu)]
-        public void Read_Archive_SpecialFiles(TarFormat format, TestTarFormat testFormat)
+        [InlineData(TarEntryFormat.Ustar, TestTarFormat.ustar)]
+        [InlineData(TarEntryFormat.Pax, TestTarFormat.pax)]
+        [InlineData(TarEntryFormat.Pax, TestTarFormat.pax_gea)]
+        [InlineData(TarEntryFormat.Gnu, TestTarFormat.gnu)]
+        [InlineData(TarEntryFormat.Gnu, TestTarFormat.oldgnu)]
+        public void Read_Archive_SpecialFiles(TarEntryFormat format, TestTarFormat testFormat)
         {
             string testCaseName = "specialfiles";
             using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName);
@@ -416,7 +416,7 @@ namespace System.Formats.Tar.Tests
             }
 
             // Format is determined after reading the first entry, not on the constructor
-            Assert.Equal(TarFormat.Unknown, reader.Format);
+            Assert.Equal(TarEntryFormat.Unknown, reader.Format);
             PosixTarEntry blockDevice = reader.GetNextEntry() as PosixTarEntry;
 
             Assert.Equal(format, reader.Format);
@@ -441,11 +441,11 @@ namespace System.Formats.Tar.Tests
 
         [Theory]
         // Neither V7 not Ustar can handle links with long target filenames
-        [InlineData(TarFormat.Pax, TestTarFormat.pax)]
-        [InlineData(TarFormat.Pax, TestTarFormat.pax_gea)]
-        [InlineData(TarFormat.Gnu, TestTarFormat.gnu)]
-        [InlineData(TarFormat.Gnu, TestTarFormat.oldgnu)]
-        public void Read_Archive_File_LongSymbolicLink(TarFormat format, TestTarFormat testFormat)
+        [InlineData(TarEntryFormat.Pax, TestTarFormat.pax)]
+        [InlineData(TarEntryFormat.Pax, TestTarFormat.pax_gea)]
+        [InlineData(TarEntryFormat.Gnu, TestTarFormat.gnu)]
+        [InlineData(TarEntryFormat.Gnu, TestTarFormat.oldgnu)]
+        public void Read_Archive_File_LongSymbolicLink(TarEntryFormat format, TestTarFormat testFormat)
         {
             string testCaseName = "file_longsymlink";
             using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName);
@@ -458,7 +458,7 @@ namespace System.Formats.Tar.Tests
             }
 
             // Format is determined after reading the first entry, not on the constructor
-            Assert.Equal(TarFormat.Unknown, reader.Format);
+            Assert.Equal(TarEntryFormat.Unknown, reader.Format);
             TarEntry directory = reader.GetNextEntry();
 
             Assert.Equal(format, reader.Format);
@@ -483,11 +483,11 @@ namespace System.Formats.Tar.Tests
 
         [Theory]
         // Neither V7 not Ustar can handle a path that does not have separators that can be split under 100 bytes
-        [InlineData(TarFormat.Pax, TestTarFormat.pax)]
-        [InlineData(TarFormat.Pax, TestTarFormat.pax_gea)]
-        [InlineData(TarFormat.Gnu, TestTarFormat.gnu)]
-        [InlineData(TarFormat.Gnu, TestTarFormat.oldgnu)]
-        public void Read_Archive_LongFileName_Over100_Under255(TarFormat format, TestTarFormat testFormat)
+        [InlineData(TarEntryFormat.Pax, TestTarFormat.pax)]
+        [InlineData(TarEntryFormat.Pax, TestTarFormat.pax_gea)]
+        [InlineData(TarEntryFormat.Gnu, TestTarFormat.gnu)]
+        [InlineData(TarEntryFormat.Gnu, TestTarFormat.oldgnu)]
+        public void Read_Archive_LongFileName_Over100_Under255(TarEntryFormat format, TestTarFormat testFormat)
         {
             string testCaseName = "longfilename_over100_under255";
             using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName);
@@ -500,7 +500,7 @@ namespace System.Formats.Tar.Tests
             }
 
             // Format is determined after reading the first entry, not on the constructor
-            Assert.Equal(TarFormat.Unknown, reader.Format);
+            Assert.Equal(TarEntryFormat.Unknown, reader.Format);
             TarEntry file = reader.GetNextEntry();
 
             Assert.Equal(format, reader.Format);
@@ -519,11 +519,11 @@ namespace System.Formats.Tar.Tests
 
         [Theory]
         // Neither V7 not Ustar can handle path lenghts waaaay beyond name+prefix length
-        [InlineData(TarFormat.Pax, TestTarFormat.pax)]
-        [InlineData(TarFormat.Pax, TestTarFormat.pax_gea)]
-        [InlineData(TarFormat.Gnu, TestTarFormat.gnu)]
-        [InlineData(TarFormat.Gnu, TestTarFormat.oldgnu)]
-        public void Read_Archive_LongPath_Over255(TarFormat format, TestTarFormat testFormat)
+        [InlineData(TarEntryFormat.Pax, TestTarFormat.pax)]
+        [InlineData(TarEntryFormat.Pax, TestTarFormat.pax_gea)]
+        [InlineData(TarEntryFormat.Gnu, TestTarFormat.gnu)]
+        [InlineData(TarEntryFormat.Gnu, TestTarFormat.oldgnu)]
+        public void Read_Archive_LongPath_Over255(TarEntryFormat format, TestTarFormat testFormat)
         {
             string testCaseName = "longpath_over255";
             using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, testFormat, testCaseName);
@@ -536,7 +536,7 @@ namespace System.Formats.Tar.Tests
             }
 
             // Format is determined after reading the first entry, not on the constructor
-            Assert.Equal(TarFormat.Unknown, reader.Format);
+            Assert.Equal(TarEntryFormat.Unknown, reader.Format);
             TarEntry directory = reader.GetNextEntry();
 
             Assert.Equal(format, reader.Format);
@@ -556,7 +556,7 @@ namespace System.Formats.Tar.Tests
             Assert.Null(reader.GetNextEntry());
         }
 
-        private void Verify_Archive_RegularFile(TarEntry file, TarFormat format, IReadOnlyDictionary<string, string> gea, string expectedFileName, string expectedContents)
+        private void Verify_Archive_RegularFile(TarEntry file, TarEntryFormat format, IReadOnlyDictionary<string, string> gea, string expectedFileName, string expectedContents)
         {
             Assert.NotNull(file);
 
@@ -572,7 +572,7 @@ namespace System.Formats.Tar.Tests
                 Assert.Equal(expectedContents, contents);
             }
 
-            TarEntryType expectedEntryType = format == TarFormat.V7 ? TarEntryType.V7RegularFile : TarEntryType.RegularFile;
+            TarEntryType expectedEntryType = format == TarEntryFormat.V7 ? TarEntryType.V7RegularFile : TarEntryType.RegularFile;
             Assert.Equal(expectedEntryType, file.EntryType);
 
             Assert.Equal(AssetGid, file.Gid);
@@ -713,13 +713,8 @@ namespace System.Formats.Tar.Tests
             Assert.True(blockDevice.ModificationTime > DateTimeOffset.UnixEpoch);
             Assert.Equal(expectedFileName, blockDevice.Name);
             Assert.Equal(AssetUid, blockDevice.Uid);
-
-            // TODO: Figure out why the numbers don't match https://github.com/dotnet/runtime/issues/68230
-            // Assert.Equal(AssetBlockDeviceMajor, blockDevice.DeviceMajor);
-            // Assert.Equal(AssetBlockDeviceMinor, blockDevice.DeviceMinor);
-            // Remove these two temporary checks when the above is fixed
-            Assert.True(blockDevice.DeviceMajor > 0);
-            Assert.True(blockDevice.DeviceMinor > 0);
+            Assert.Equal(AssetBlockDeviceMajor, blockDevice.DeviceMajor);
+            Assert.Equal(AssetBlockDeviceMinor, blockDevice.DeviceMinor);
             Assert.Equal(AssetGName, blockDevice.GroupName);
             Assert.Equal(AssetUName, blockDevice.UserName);
 
@@ -749,13 +744,8 @@ namespace System.Formats.Tar.Tests
             Assert.True(characterDevice.ModificationTime > DateTimeOffset.UnixEpoch);
             Assert.Equal(expectedFileName, characterDevice.Name);
             Assert.Equal(AssetUid, characterDevice.Uid);
-
-            // TODO: Figure out why the numbers don't match https://github.com/dotnet/runtime/issues/68230
-            //Assert.Equal(AssetBlockDeviceMajor, characterDevice.DeviceMajor);
-            //Assert.Equal(AssetBlockDeviceMinor, characterDevice.DeviceMinor);
-            // Remove these two temporary checks when the above is fixed
-            Assert.True(characterDevice.DeviceMajor > 0);
-            Assert.True(characterDevice.DeviceMinor > 0);
+            Assert.Equal(AssetCharacterDeviceMajor, characterDevice.DeviceMajor);
+            Assert.Equal(AssetCharacterDeviceMinor, characterDevice.DeviceMinor);
             Assert.Equal(AssetGName, characterDevice.GroupName);
             Assert.Equal(AssetUName, characterDevice.UserName);
 

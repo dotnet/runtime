@@ -7959,16 +7959,6 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
                 tree->gtVNPair.SetBoth(
                     vnStore->VNForHandle(ssize_t(tree->AsIntConCommon()->IconValue()), tree->GetIconHandleFlag()));
             }
-#ifdef FEATURE_SIMD
-            else if (tree->IsCnsVec())
-            {
-                // TODO-1stClassStructs: do not retype SIMD nodes
-                assert(varTypeIsLong(typ));
-
-                simd8_t simd8Val = tree->AsVecCon()->gtSimd8Val;
-                tree->gtVNPair.SetBoth(vnStore->VNForSimd8Con(simd8Val));
-            }
-#endif // FEATURE_SIMD
             else if ((typ == TYP_LONG) || (typ == TYP_ULONG))
             {
                 tree->gtVNPair.SetBoth(vnStore->VNForLongCon(INT64(tree->AsIntConCommon()->LngValue())));
@@ -8061,18 +8051,7 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
 
         case TYP_DOUBLE:
         {
-#ifdef FEATURE_SIMD
-            if (tree->IsCnsVec())
-            {
-                // TODO-1stClassStructs: do not retype SIMD nodes
-                simd8_t simd8Val = tree->AsVecCon()->gtSimd8Val;
-                tree->gtVNPair.SetBoth(vnStore->VNForSimd8Con(simd8Val));
-            }
-            else
-#endif // FEATURE_SIMD
-            {
-                tree->gtVNPair.SetBoth(vnStore->VNForDoubleCon(tree->AsDblCon()->gtDconVal));
-            }
+            tree->gtVNPair.SetBoth(vnStore->VNForDoubleCon(tree->AsDblCon()->gtDconVal));
             break;
         }
 
@@ -8806,17 +8785,6 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 {
                     assert(oper != GT_ASG); // We handled assignments earlier.
                     assert(GenTree::OperIsBinary(oper));
-                    // Standard binary operator.
-                    ValueNumPair op2VNPair;
-                    if (tree->AsOp()->gtOp2 == nullptr)
-                    {
-                        // Handle any GT_LEA nodes as they can have a nullptr for op2.
-                        op2VNPair.SetBoth(ValueNumStore::VNForNull());
-                    }
-                    else
-                    {
-                        op2VNPair = tree->AsOp()->gtOp2->gtVNPair;
-                    }
 
                     // Handle a few special cases: if we add a field offset constant to a PtrToXXX, we will get back a
                     // new
@@ -8828,7 +8796,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
 
                     ValueNumPair op2vnp;
                     ValueNumPair op2Xvnp;
-                    vnStore->VNPUnpackExc(op2VNPair, &op2vnp, &op2Xvnp);
+                    vnStore->VNPUnpackExc(tree->AsOp()->gtOp2->gtVNPair, &op2vnp, &op2Xvnp);
                     ValueNumPair excSetPair = vnStore->VNPExcSetUnion(op1Xvnp, op2Xvnp);
 
                     ValueNum newVN = ValueNumStore::NoVN;

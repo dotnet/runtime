@@ -993,7 +993,7 @@ namespace System.Runtime.InteropServices
 
             int nb = Encoding.UTF8.GetMaxByteCount(s.Length);
 
-            IntPtr ptr = AllocHGlobal(nb + 1);
+            IntPtr ptr = AllocHGlobal(checked(nb + 1));
 
             int nbWritten;
             byte* pbMem = (byte*)ptr;
@@ -1040,7 +1040,7 @@ namespace System.Runtime.InteropServices
 
             int nb = Encoding.UTF8.GetMaxByteCount(s.Length);
 
-            IntPtr ptr = AllocCoTaskMem(nb + 1);
+            IntPtr ptr = AllocCoTaskMem(checked(nb + 1));
 
             int nbWritten;
             byte* pbMem = (byte*)ptr;

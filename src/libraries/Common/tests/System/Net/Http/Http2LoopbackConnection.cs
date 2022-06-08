@@ -100,7 +100,7 @@ namespace System.Net.Test.Common
                 // Since those tests are not set up to handle multiple retries, we instead just send back an invalid response here
                 // so that SocketsHttpHandler will not induce retry.
                 // The contents of what we send don't really matter, as long as it is interpreted by SocketsHttpHandler as an invalid response.
-                await _connectionStream.WriteAsync(Encoding.ASCII.GetBytes("HTTP/2.0 400 Bad Request\r\n\r\n"));
+                await _connectionStream.WriteAsync("HTTP/2.0 400 Bad Request\r\n\r\n"u8.ToArray());
                 _connectionSocket.Shutdown(SocketShutdown.Send);
                 // If WinHTTP doesn't support streaming a request without a length then it will fallback
                 // to HTTP/1.1. Throwing an exception to detect this case in WinHttpHandler tests. 

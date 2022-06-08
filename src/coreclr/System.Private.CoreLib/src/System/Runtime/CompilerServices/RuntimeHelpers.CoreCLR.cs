@@ -622,6 +622,11 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <summary>
+        /// Gets whether the current instance wraps a <see langword="null"/> pointer.
+        /// </summary>
+        public bool IsNull => m_asTAddr is null;
+
+        /// <summary>
         /// Gets whether or not this <see cref="TypeHandle"/> wraps a <c>TypeDesc</c> pointer.
         /// Only if this returns <see langword="false"/> it is safe to call <see cref="AsMethodTable"/>.
         /// </summary>

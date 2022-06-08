@@ -30866,7 +30866,7 @@ void gc_heap::sweep_region_in_plan (heap_segment* region,
     size_t region_index = get_basic_region_index_for_address (heap_segment_mem (region));
     dprintf (REGIONS_LOG, ("region #%d %Ix survived %Id, %s recorded %Id",
         region_index, heap_segment_mem (region), survived,
-        ((survived == heap_segment_survived (region)) ? "same as" : "diff from"),
+        ((survived == (size_t)heap_segment_survived (region)) ? "same as" : "diff from"),
         heap_segment_survived (region)));
 #ifdef MULTIPLE_HEAPS
     assert (survived <= (size_t)heap_segment_survived (region));

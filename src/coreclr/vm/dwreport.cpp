@@ -16,7 +16,6 @@
 #include <cordbpriv.h>
 #include "field.h"
 #include <msodwwrap.h>
-#include <shlobj.h>
 #include <werapi.h>
 #include "dbginterface.h"
 #include <winver.h>
