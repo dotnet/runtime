@@ -31,6 +31,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			AsyncTypeMismatch ();
 			AsyncInsideClosure ();
 			AsyncInsideClosureMismatch ();
+
+			// Closures
+			GlobalClosures ();
 		}
 
 		private static void UseIterator ()
@@ -227,6 +230,36 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					_ = typeof (T1).GetMethods ();
 					_ = typeof (T2).GetProperties ();
 				}
+			}
+		}
+
+		private static void GlobalClosures ()
+		{
+			GlobalClosureClass<int>.M1<int> ();
+			GlobalClosureClass<int>.M2<int> ();
+		}
+
+		private sealed class GlobalClosureClass<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T>
+		{
+			public static void M1<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)] U> ()
+			{
+				Func<string, Action> a = (string s) => () => Console.WriteLine (s + typeof (T).GetMethods ());
+				Func<string, Action> b = (string s) =>
+					// https://github.com/dotnet/linker/issues/2826
+					[ExpectedWarning ("IL2090", "U", "PublicProperties", ProducedBy = ProducedBy.Trimmer)]
+				() => Console.WriteLine (s + typeof (U).GetProperties ());
+				a ("");
+				b ("");
+			}
+			public static void M2<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)] U> ()
+			{
+				Func<string, Action> a = (string s) => () => Console.WriteLine (s + typeof (T).GetMethods ());
+				Func<string, Action> b = (string s) =>
+					// https://github.com/dotnet/linker/issues/2826
+					[ExpectedWarning ("IL2090", "U", "PublicProperties", ProducedBy = ProducedBy.Trimmer)]
+				() => Console.WriteLine (s + typeof (U).GetProperties ());
+				a ("");
+				b ("");
 			}
 		}
 	}

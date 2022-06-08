@@ -148,7 +148,7 @@ namespace Mono.Linker
 							CompilerGeneratedNames.IsLambdaDisplayClass (generatedType.Name)) {
 							// fill in null for now, attribute providers will be filled in later
 							if (!_generatedTypeToTypeArgumentInfo.TryAdd (generatedType, new TypeArgumentInfo (method, null))) {
-								var alreadyAssociatedMethod = _compilerGeneratedTypeToUserCodeMethod[generatedType];
+								var alreadyAssociatedMethod = _generatedTypeToTypeArgumentInfo[generatedType].CreatingMethod;
 								_context.LogWarning (new MessageOrigin (method), DiagnosticId.MethodsAreAssociatedWithUserMethod, method.GetDisplayName (), alreadyAssociatedMethod.GetDisplayName (), generatedType.GetDisplayName ());
 							}
 							continue;
@@ -268,7 +268,14 @@ namespace Mono.Linker
 			{
 				Debug.Assert (CompilerGeneratedNames.IsGeneratedType (generatedType.Name));
 
-				var typeInfo = _generatedTypeToTypeArgumentInfo[generatedType];
+				if (!_generatedTypeToTypeArgumentInfo.TryGetValue (generatedType, out var typeInfo)) {
+					// This can happen for static (non-capturing) closure environments, where more than
+					// nested function can map to the same closure environment. Since the current functionality
+					// is based on a one-to-one relationship between environments (types) and methods, this is
+					// not supported.
+					return;
+				}
+
 				if (typeInfo.OriginalAttributes is not null) {
 					return;
 				}
@@ -298,10 +305,9 @@ namespace Mono.Linker
 									userAttrs = param;
 								} else if (_context.TryResolve ((TypeReference) param.Owner) is { } owningType) {
 									MapGeneratedTypeTypeParameters (owningType);
-									if (_generatedTypeToTypeArgumentInfo[owningType].OriginalAttributes is { } owningAttrs) {
+									if (_generatedTypeToTypeArgumentInfo.TryGetValue (owningType, out var owningInfo) &&
+										owningInfo.OriginalAttributes is { } owningAttrs) {
 										userAttrs = owningAttrs[param.Position];
-									} else {
-										Debug.Assert (false, "This should be impossible in valid code");
 									}
 								}
 							}
