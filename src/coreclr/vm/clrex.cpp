@@ -1785,6 +1785,7 @@ void DECLSPEC_NORETURN EEFileLoadException::Throw(PEAssembly *parent,
     EX_THROW_WITH_INNER(EEFileLoadException, (name, hr), pInnerException);
 }
 
+#ifdef FEATURE_COMINTEROP
 // ---------------------------------------------------------------------------
 // EEComException methods
 // ---------------------------------------------------------------------------
@@ -1980,6 +1981,7 @@ OBJECTREF EECOMException::CreateThrowable()
 
     return throwable;
 }
+#endif // FEATURE_COMINTEROP
 
 // ---------------------------------------------------------------------------
 // ObjrefException methods
