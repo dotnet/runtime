@@ -666,12 +666,6 @@ namespace System.Drawing
         {
             ArgumentNullException.ThrowIfNull(logFont);
 
-            if (logFont is Interop.User32.LOGFONT nativeLogFont)
-            {
-                // A boxed LOGFONT, just use it to create the font
-                return FromLogFontInternal(ref nativeLogFont, hdc);
-            }
-
             if (sizeof(T) != sizeof(Interop.User32.LOGFONT))
             {
                 // If we don't actually have an object that is LOGFONT in size, trying to pass
