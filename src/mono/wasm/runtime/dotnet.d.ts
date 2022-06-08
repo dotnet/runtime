@@ -210,6 +210,7 @@ declare type CoverageProfilerOptions = {
 };
 interface EventPipeSessionOptions {
     collectRundownEvents?: boolean;
+    providers: string;
 }
 declare type DotnetModuleConfig = {
     disableDotnet6Compatibility?: boolean;
@@ -249,7 +250,39 @@ interface EventPipeSession {
     stop(): void;
     getTraceBlob(): Blob;
 }
+declare const eventLevel: {
+    readonly LogAlways: 0;
+    readonly Critical: 1;
+    readonly Error: 2;
+    readonly Warning: 3;
+    readonly Informational: 4;
+    readonly Verbose: 5;
+};
+declare type EventLevel = typeof eventLevel;
+declare type UnnamedProviderConfiguration = Partial<{
+    keyword_mask: string | 0;
+    level: number;
+    args: string;
+}>;
+interface ProviderConfiguration extends UnnamedProviderConfiguration {
+    name: string;
+}
+declare class SessionOptionsBuilder {
+    private _rundown?;
+    private _providers;
+    constructor();
+    static get Empty(): SessionOptionsBuilder;
+    static get DefaultProviders(): SessionOptionsBuilder;
+    setRundownEnabled(enabled: boolean): SessionOptionsBuilder;
+    addProvider(provider: ProviderConfiguration): SessionOptionsBuilder;
+    addRuntimeProvider(overrideOptions?: UnnamedProviderConfiguration): SessionOptionsBuilder;
+    addRuntimePrivateProvider(overrideOptions?: UnnamedProviderConfiguration): SessionOptionsBuilder;
+    addSampleProfilerProvider(overrideOptions?: UnnamedProviderConfiguration): SessionOptionsBuilder;
+    build(): EventPipeSessionOptions;
+}
 interface Diagnostics {
+    EventLevel: EventLevel;
+    SessionOptionsBuilder: typeof SessionOptionsBuilder;
     createEventPipeSession(options?: EventPipeSessionOptions): EventPipeSession | null;
 }
 
@@ -329,11 +362,11 @@ declare function getI8(offset: _MemOffset): number;
 declare function getI16(offset: _MemOffset): number;
 declare function getI32(offset: _MemOffset): number;
 /**
- * Throws for  Number.MIN_SAFE_INTEGER > value > Number.MAX_SAFE_INTEGER
+ * Throws for Number.MIN_SAFE_INTEGER > value > Number.MAX_SAFE_INTEGER
  */
 declare function getI52(offset: _MemOffset): number;
 /**
- * Throws for  Number.MIN_SAFE_INTEGER > value > Number.MAX_SAFE_INTEGER
+ * Throws for 0 > value > Number.MAX_SAFE_INTEGER
  */
 declare function getU52(offset: _MemOffset): number;
 declare function getI64Big(offset: _MemOffset): bigint;

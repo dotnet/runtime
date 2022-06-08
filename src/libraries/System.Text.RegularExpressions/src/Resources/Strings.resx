@@ -261,6 +261,10 @@
     <value>RegexOptions.NonBacktracking is not supported in conjunction with expressions containing: '{0}'.</value>
     <comment>{Locked="RegexOptions.NonBacktracking"}</comment>
   </data>
+  <data name="NotSupported_NonBacktrackingUnsafeSize" xml:space="preserve">
+    <value>The specified pattern with RegexOptions.NonBacktracking could result in an automata as large as '{0}' nodes, which is larger than the configured limit of '{1}'.</value>
+    <comment>{Locked="RegexOptions.NonBacktracking"}</comment>
+  </data>
   <data name="ExpressionDescription_Backreference" xml:space="preserve">
     <value>backreference (\\ number)</value>
   </data>
@@ -287,5 +291,8 @@
   </data>
   <data name="UsingSpanAPIsWithCompiledToAssembly" xml:space="preserve">
     <value>Searching an input span using a pre-compiled Regex assembly is not supported. Please use the string overloads or use a newer Regex implementation.</value>
+  </data>
+  <data name="UseRegexSourceGeneratorTitle" xml:space="preserve">
+    <value>Use the RegEx source generator.</value>
   </data>
 </root>

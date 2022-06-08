@@ -562,6 +562,16 @@ namespace ILCompiler
                 method = null;
             }
 
+            // Default implementation logic, which only kicks in for default implementations when looking up on an exact interface target
+            if (isStaticVirtualMethod && method == null && !genInterfaceMethod.IsAbstract && !constrainedType.IsCanonicalSubtype(CanonicalFormKind.Any))
+            {
+                MethodDesc exactInterfaceMethod = genInterfaceMethod;
+                if (genInterfaceMethod.OwningType != interfaceType)
+                    exactInterfaceMethod = context.GetMethodForInstantiatedType(
+                        genInterfaceMethod.GetTypicalMethodDefinition(), (InstantiatedType)interfaceType);
+                method = exactInterfaceMethod;
+            }
+
             if (method == null)
             {
                 // Fall back to VSD
@@ -681,6 +691,28 @@ namespace ILCompiler
                 // Could be e.g. "where T : IFoo<U>" or "where T : U"
                 if (c.ContainsSignatureVariables())
                     return null;
+
+                // If there's unimplemented static abstract methods, this is not a suitable instantiation.
+                // We shortcut to look for any static virtuals. It matches what Roslyn does for error CS8920.
+                // Once TypeSystemConstraintsHelpers is updated to check constraints around static virtuals,
+                // we could dispatch there instead.
+                if (c.IsInterface)
+                {
+                    if (HasStaticVirtualMethods(c))
+                        return null;
+
+                    foreach (DefType intface in c.RuntimeInterfaces)
+                        if (HasStaticVirtualMethods(intface))
+                            return null;
+
+                    static bool HasStaticVirtualMethods(TypeDesc type)
+                    {
+                        foreach (MethodDesc method in type.GetVirtualMethods())
+                            if (method.Signature.IsStatic)
+                                return true;
+                        return false;
+                    }
+                }
 
                 constrainedType = c;
             }

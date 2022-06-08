@@ -7,6 +7,10 @@ namespace System.Security.Cryptography.Tests
     {
         internal static bool CanProduceSha1Signature(AsymmetricAlgorithm algorithm)
         {
+#if NETFRAMEWORK
+            algorithm.Dispose();
+            return true;
+#else
             // We expect all non-Linux platforms to support SHA1 signatures, currently.
             if (!OperatingSystem.IsLinux())
             {
@@ -46,6 +50,7 @@ namespace System.Security.Cryptography.Tests
                 default:
                     throw new NotSupportedException($"Algorithm type {algorithm.GetType()} is not supported.");
             }
+#endif
         }
     }
 }

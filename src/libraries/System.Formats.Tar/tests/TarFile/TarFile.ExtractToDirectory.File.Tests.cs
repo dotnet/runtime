@@ -100,10 +100,7 @@ namespace System.Formats.Tar.Tests
 
             string filePath = Path.Join(destination.Path, "file.txt");
 
-            using (StreamWriter writer = File.CreateText(filePath))
-            {
-                writer.WriteLine("My existence should cause an exception");
-            }
+            File.Create(filePath).Dispose();
 
             Assert.Throws<IOException>(() => TarFile.ExtractToDirectory(sourceArchiveFileName, destination.Path, overwriteFiles: false));
         }

@@ -101,7 +101,6 @@ PTR_Module ClassLoader::ComputeLoaderModuleWorker(
     for (DWORD i = 0; i < classInst.GetNumArgs(); i++)
     {
         TypeHandle classArg = classInst[i];
-        _ASSERTE(!classArg.IsEncodedFixup());
         Module* pModule = classArg.GetLoaderModule();
         if (pModule->IsCollectible())
             goto ComputeCollectibleLoaderModule;
@@ -112,7 +111,6 @@ PTR_Module ClassLoader::ComputeLoaderModuleWorker(
     for (DWORD i = 0; i < methodInst.GetNumArgs(); i++)
     {
         TypeHandle methodArg = methodInst[i];
-        _ASSERTE(!methodArg.IsEncodedFixup());
         Module *pModule = methodArg.GetLoaderModule();
         if (pModule->IsCollectible())
             goto ComputeCollectibleLoaderModule;
@@ -2942,7 +2940,6 @@ TypeHandle ClassLoader::CreateTypeHandleForTypeKey(TypeKey* pKey, AllocMemTracke
 
         CorElementType kind = pKey->GetKind();
         TypeHandle paramType = pKey->GetElementType();
-        MethodTable *templateMT;
 
         // Create a new type descriptor and insert into constructed type table
         if (CorTypeInfo::IsArray(kind))
@@ -2972,7 +2969,8 @@ TypeHandle ClassLoader::CreateTypeHandleForTypeKey(TypeKey* pKey, AllocMemTracke
                 ThrowTypeLoadException(pKey, IDS_CLASSLOAD_RANK_TOOLARGE);
             }
 
-            templateMT = pLoaderModule->CreateArrayMethodTable(paramType, kind, rank, pamTracker);
+            MethodTable *templateMT = pLoaderModule->CreateArrayMethodTable(paramType, kind, rank, pamTracker);
+
             typeHnd = TypeHandle(templateMT);
         }
         else
@@ -2986,15 +2984,8 @@ TypeHandle ClassLoader::CreateTypeHandleForTypeKey(TypeKey* pKey, AllocMemTracke
             // We do allow parametrized types of ByRefLike types. Languages may restrict them to produce safe or verifiable code,
             // but there is not a good reason for restricting them in the runtime.
 
-            // let <Type>* type have a method table
-            // System.UIntPtr's method table is used for types like int*, void *, string * etc.
-            if (kind == ELEMENT_TYPE_PTR)
-                templateMT = CoreLibBinder::GetElementType(ELEMENT_TYPE_U);
-            else
-                templateMT = NULL;
-
             BYTE* mem = (BYTE*) pamTracker->Track(pLoaderModule->GetAssembly()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(ParamTypeDesc))));
-            typeHnd = TypeHandle(new(mem)  ParamTypeDesc(kind, templateMT, paramType));
+            typeHnd = TypeHandle(new(mem)  ParamTypeDesc(kind, paramType));
         }
     }
 

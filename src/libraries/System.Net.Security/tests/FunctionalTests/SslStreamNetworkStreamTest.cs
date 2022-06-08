@@ -164,7 +164,7 @@ namespace System.Net.Security.Tests
                 Assert.True(ssl.IsEncrypted);
 
                 // Issue request that triggers regotiation from server.
-                byte[] message = Encoding.UTF8.GetBytes("GET /EchoClientCertificate.ashx HTTP/1.1\r\nHost: corefx-net-tls.azurewebsites.net\r\n\r\n");
+                byte[] message = "GET /EchoClientCertificate.ashx HTTP/1.1\r\nHost: corefx-net-tls.azurewebsites.net\r\n\r\n"u8.ToArray();
                 if (useSync)
                 {
                     ssl.Write(message, 0, message.Length);
@@ -961,7 +961,7 @@ namespace System.Net.Security.Tests
 
                 await TestConfiguration.WhenAllOrAnyFailedWithTimeout(t1, t2);
 
-                Task writer = Task.Run(() =>
+                Task writer = Task.Run(async () =>
                 {
                     Memory<byte> data = new Memory<byte>(dataToCopy);
                     while (data.Length > 0)
@@ -969,11 +969,12 @@ namespace System.Net.Security.Tests
                         int writeLength = Math.Min(data.Length, writeBufferSize);
                         if (useAsync)
                         {
-                            server.WriteAsync(data.Slice(0, writeLength)).GetAwaiter().GetResult();
+                            await server.WriteAsync(data.Slice(0, writeLength));
                         }
                         else
                         {
                             server.Write(data.Span.Slice(0, writeLength));
+                            await Task.CompletedTask;
                         }
 
                         data = data.Slice(Math.Min(writeBufferSize, data.Length));
@@ -982,7 +983,7 @@ namespace System.Net.Security.Tests
                     server.ShutdownAsync().GetAwaiter().GetResult();
                 });
 
-                Task reader = Task.Run(() =>
+                Task reader = Task.Run(async () =>
                 {
                     Memory<byte> readBuffer = new Memory<byte>(dataReceived);
                     int totalLength = 0;
@@ -992,11 +993,12 @@ namespace System.Net.Security.Tests
                     {
                         if (useAsync)
                         {
-                            readLength = client.ReadAsync(readBuffer.Slice(totalLength, readBufferSize)).GetAwaiter().GetResult();
+                            readLength = await client.ReadAsync(readBuffer.Slice(totalLength, readBufferSize));
                         }
                         else
                         {
                             readLength = client.Read(readBuffer.Span.Slice(totalLength, readBufferSize));
+                            await Task.CompletedTask;
                         }
 
                         if (readLength == 0)

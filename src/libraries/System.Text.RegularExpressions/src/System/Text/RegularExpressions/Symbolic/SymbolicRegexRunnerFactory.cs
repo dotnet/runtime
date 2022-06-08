@@ -22,6 +22,21 @@ namespace System.Text.RegularExpressions.Symbolic
             var converter = new RegexNodeConverter(bddBuilder, regexTree.CaptureNumberSparseMapping);
 
             SymbolicRegexNode<BDD> rootNode = converter.ConvertToSymbolicRegexNode(regexTree.Root);
+            // Determine if the root node is supported for safe handling
+            int threshold = SymbolicRegexThresholds.GetSymbolicRegexSafeSizeThreshold();
+            Debug.Assert(threshold > 0);
+
+            // Skip the threshold check if the threshold equals int.MaxValue
+            if (threshold != int.MaxValue)
+            {
+                int size = rootNode.EstimateNfaSize();
+                if (size > threshold)
+                {
+                    throw new NotSupportedException(SR.Format(SR.NotSupported_NonBacktrackingUnsafeSize, size, threshold));
+                }
+            }
+
+            rootNode = rootNode.AddFixedLengthMarkers();
             BDD[] minterms = rootNode.ComputeMinterms();
 
             _matcher = minterms.Length > 64 ?

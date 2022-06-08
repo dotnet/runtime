@@ -471,8 +471,6 @@ public:
     unsigned char lvInSsa : 1;       // The variable is in SSA form (set by SsaBuilder)
     unsigned char lvIsCSE : 1;       // Indicates if this LclVar is a CSE variable.
     unsigned char lvHasLdAddrOp : 1; // has ldloca or ldarga opcode on this local.
-    unsigned char lvStackByref : 1;  // This is a compiler temporary of TYP_BYREF that is known to point into our local
-                                     // stack frame.
 
     unsigned char lvHasILStoreOp : 1;         // there is at least one STLOC or STARG on this local
     unsigned char lvHasMultipleILStoreOp : 1; // there is more than one STLOC on this local
@@ -1181,6 +1179,7 @@ enum class SymbolicIntegerValue : int32_t
     UByteMax,
     ShortMax,
     UShortMax,
+    ArrayLenMax,
     IntMax,
     UIntMax,
     LongMax,
@@ -1650,6 +1649,12 @@ struct FuncInfoDsc
 
     // Eventually we may want to move rsModifiedRegsMask, lvaOutgoingArgSize, and anything else
     // that isn't shared between the main function body and funclets.
+};
+
+struct TempInfo
+{
+    GenTree* asg;
+    GenTree* load;
 };
 
 #ifdef DEBUG
@@ -2284,15 +2289,17 @@ public:
 
     GenTree* gtNewSconNode(int CPX, CORINFO_MODULE_HANDLE scpHandle);
 
+    GenTreeVecCon* gtNewVconNode(var_types type, CorInfoType simdBaseJitType);
+
+    GenTree* gtNewAllBitsSetConNode(var_types type);
+    GenTree* gtNewAllBitsSetConNode(var_types type, CorInfoType simdBaseJitType);
+
     GenTree* gtNewZeroConNode(var_types type);
+    GenTree* gtNewZeroConNode(var_types type, CorInfoType simdBaseJitType);
 
     GenTree* gtNewOneConNode(var_types type);
 
     GenTreeLclVar* gtNewStoreLclVar(unsigned dstLclNum, GenTree* src);
-
-#ifdef FEATURE_SIMD
-    GenTree* gtNewSIMDVectorZero(var_types simdType, CorInfoType simdBaseJitType, unsigned simdSize);
-#endif
 
     GenTree* gtNewBlkOpNode(GenTree* dst, GenTree* srcOrFillVal, bool isVolatile, bool isCopyBlock);
 
@@ -2558,11 +2565,6 @@ public:
                                       unsigned    simdSize,
                                       bool        isSimdAsHWIntrinsic);
 
-    GenTree* gtNewSimdZeroNode(var_types   type,
-                               CorInfoType simdBaseJitType,
-                               unsigned    simdSize,
-                               bool        isSimdAsHWIntrinsic);
-
     GenTreeHWIntrinsic* gtNewScalarHWIntrinsicNode(var_types type, NamedIntrinsic hwIntrinsicID);
     GenTreeHWIntrinsic* gtNewScalarHWIntrinsicNode(var_types type, GenTree* op1, NamedIntrinsic hwIntrinsicID);
     GenTreeHWIntrinsic* gtNewScalarHWIntrinsicNode(var_types      type,
@@ -2585,7 +2587,19 @@ public:
 
     GenTreeField* gtNewFieldRef(var_types type, CORINFO_FIELD_HANDLE fldHnd, GenTree* obj = nullptr, DWORD offset = 0);
 
-    GenTree* gtNewIndexRef(var_types typ, GenTree* arrayOp, GenTree* indexOp);
+    GenTreeIndexAddr* gtNewIndexAddr(GenTree*             arrayOp,
+                                     GenTree*             indexOp,
+                                     var_types            elemType,
+                                     CORINFO_CLASS_HANDLE elemClassHandle,
+                                     unsigned             firstElemOffset,
+                                     unsigned             lengthOffset);
+
+    GenTreeIndexAddr* gtNewArrayIndexAddr(GenTree*             arrayOp,
+                                          GenTree*             indexOp,
+                                          var_types            elemType,
+                                          CORINFO_CLASS_HANDLE elemClassHandle);
+
+    GenTreeIndir* gtNewIndexIndir(GenTreeIndexAddr* indexAddr);
 
     GenTreeArrLen* gtNewArrLen(var_types typ, GenTree* arrayOp, int lenOffset, BasicBlock* block);
 
@@ -2756,6 +2770,7 @@ public:
 
     GenTree* gtFoldExpr(GenTree* tree);
     GenTree* gtFoldExprConst(GenTree* tree);
+    GenTree* gtFoldIndirConst(GenTreeIndir* indir);
     GenTree* gtFoldExprSpecial(GenTree* tree);
     GenTree* gtFoldBoxNullable(GenTree* tree);
     GenTree* gtFoldExprCompare(GenTree* tree);
@@ -3257,6 +3272,19 @@ public:
     bool lvaIsOriginalThisArg(unsigned varNum); // Is this varNum the original this argument?
     bool lvaIsOriginalThisReadOnly();           // return true if there is no place in the code
                                                 // that writes to arg0
+
+#ifdef TARGET_X86
+    bool lvaIsArgAccessedViaVarArgsCookie(unsigned lclNum)
+    {
+        if (!info.compIsVarArgs)
+        {
+            return false;
+        }
+
+        LclVarDsc* varDsc = lvaGetDesc(lclNum);
+        return varDsc->lvIsParam && !varDsc->lvIsRegArg && (lclNum != lvaVarargsHandleArg);
+    }
+#endif // TARGET_X86
 
     // For x64 this is 3, 5, 6, 7, >8 byte structs that are passed by reference.
     // For ARM64, this is structs larger than 16 bytes that are passed by reference.
@@ -4782,8 +4810,6 @@ public:
     // Does value-numbering for a block assignment.
     void fgValueNumberBlockAssignment(GenTree* tree);
 
-    bool fgValueNumberBlockAssignmentTypeCheck(LclVarDsc* dstVarDsc, FieldSeqNode* dstFldSeq, GenTree* src);
-
     // Does value-numbering for a cast tree.
     void fgValueNumberCastTree(GenTree* tree);
 
@@ -5226,7 +5252,7 @@ public:
     void fgComputeCalledCount(weight_t returnWeight);
     void fgComputeEdgeWeights();
 
-    bool fgReorderBlocks();
+    bool fgReorderBlocks(bool useProfile);
 
     PhaseStatus fgDetermineFirstColdBlock();
 
@@ -5496,9 +5522,10 @@ private:
     //                  Create a new temporary variable to hold the result of *ppTree,
     //                  and transform the graph accordingly.
     GenTree* fgInsertCommaFormTemp(GenTree** ppTree, CORINFO_CLASS_HANDLE structType = nullptr);
+    bool fgIsSafeToClone(GenTree* tree);
+    TempInfo fgMakeTemp(GenTree* rhs, CORINFO_CLASS_HANDLE structType = nullptr);
     GenTree* fgMakeMultiUse(GenTree** ppTree, CORINFO_CLASS_HANDLE structType = nullptr);
 
-private:
     //                  Recognize a bitwise rotation pattern and convert into a GT_ROL or a GT_ROR node.
     GenTree* fgRecognizeAndMorphBitwiseRotation(GenTree* tree);
     bool fgOperIsBitwiseRotationRoot(genTreeOps oper);
@@ -5510,8 +5537,11 @@ private:
 #endif
 
     //-------- Determine the order in which the trees will be evaluated -------
-    GenTree* fgSetTreeSeq(GenTree* tree, bool isLIR = false);
+public:
     void fgSetStmtSeq(Statement* stmt);
+
+private:
+    GenTree* fgSetTreeSeq(GenTree* tree, bool isLIR = false);
     void fgSetBlockOrder(BasicBlock* block);
 
     //------------------------- Morphing --------------------------------------
@@ -5566,8 +5596,6 @@ private:
     GenTree* fgMorphIntoHelperCall(
         GenTree* tree, int helper, bool morphArgs, GenTree* arg1 = nullptr, GenTree* arg2 = nullptr);
 
-    GenTree* fgMorphStackArgForVarArgs(unsigned lclNum, var_types varType, unsigned lclOffs);
-
     // A "MorphAddrContext" carries information from the surrounding context.  If we are evaluating a byref address,
     // it is useful to know whether the address will be immediately dereferenced, or whether the address value will
     // be used, perhaps by passing it as an argument to a called method.  This affects how null checking is done:
@@ -5612,13 +5640,15 @@ private:
     Statement* fgPreviousCandidateSIMDFieldAsgStmt;
 
 #endif // FEATURE_SIMD
-    GenTree* fgMorphArrayIndex(GenTree* tree);
+    GenTree* fgMorphIndexAddr(GenTreeIndexAddr* tree);
     GenTree* fgMorphExpandCast(GenTreeCast* tree);
     GenTreeFieldList* fgMorphLclArgToFieldlist(GenTreeLclVarCommon* lcl);
     GenTreeCall* fgMorphArgs(GenTreeCall* call);
 
-    void fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg, CORINFO_CLASS_HANDLE copyBlkClass);
+    void fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg);
 
+    GenTree* fgMorphLocal(GenTreeLclVarCommon* lclNode);
+    GenTree* fgMorphExpandStackArgForVarArgs(GenTreeLclVarCommon* lclNode);
     GenTree* fgMorphLocalVar(GenTree* tree, bool forceRemorph);
 
 public:
@@ -5632,7 +5662,7 @@ private:
 #endif
     bool     fgCheckStmtAfterTailCall();
     GenTree* fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL_HELPERS& help);
-    bool fgCanTailCallViaJitHelper();
+    bool fgCanTailCallViaJitHelper(GenTreeCall* call);
     void fgMorphTailCallViaJitHelper(GenTreeCall* call);
     GenTree* fgCreateCallDispatcherAndGetResult(GenTreeCall*          origCall,
                                                 CORINFO_METHOD_HANDLE callTargetStubHnd,
@@ -5650,6 +5680,7 @@ private:
     GenTree* getTokenHandleTree(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool parent);
 
     GenTree* fgMorphPotentialTailCall(GenTreeCall* call);
+    void fgValidateIRForTailCall(GenTreeCall* call);
     GenTree* fgGetStubAddrArg(GenTreeCall* call);
     unsigned fgGetArgParameterLclNum(GenTreeCall* call, CallArg* arg);
     void fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCall* recursiveTailCall);
@@ -5677,7 +5708,7 @@ private:
     GenTree* fgMorphInitBlock(GenTree* tree);
     GenTree* fgMorphPromoteLocalInitBlock(GenTreeLclVar* destLclNode, GenTree* initVal, unsigned blockSize);
     GenTree* fgMorphGetStructAddr(GenTree** pTree, CORINFO_CLASS_HANDLE clsHnd, bool isRValue = false);
-    GenTree* fgMorphBlockOperand(GenTree* tree, var_types asgType, unsigned blockWidth, bool isBlkReqd);
+    GenTree* fgMorphBlockOperand(GenTree* tree, var_types asgType, ClassLayout* blockLayout, bool isBlkReqd);
     GenTree* fgMorphCopyBlock(GenTree* tree);
     GenTree* fgMorphStoreDynBlock(GenTreeStoreDynBlk* tree);
     GenTree* fgMorphForRegisterFP(GenTree* tree);
@@ -5701,8 +5732,6 @@ private:
     GenTree* fgMorphSmpOpOptional(GenTreeOp* tree);
     GenTree* fgMorphMultiOp(GenTreeMultiOp* multiOp);
     GenTree* fgMorphConst(GenTree* tree);
-
-    bool fgMorphCanUseLclFldForCopy(unsigned lclNum1, unsigned lclNum2);
 
     GenTreeLclVar* fgMorphTryFoldObjAsLclVar(GenTreeObj* obj, bool destroyNodes = true);
     GenTreeOp* fgMorphCommutative(GenTreeOp* tree);
@@ -6001,6 +6030,7 @@ public:
 
 public:
     PhaseStatus optInvertLoops();    // Invert loops so they're entered at top and tested at bottom.
+    PhaseStatus optOptimizeFlow();   // Simplify flow graph and do tail duplication
     PhaseStatus optOptimizeLayout(); // Optimize the BasicBlock layout of the method
     PhaseStatus optSetBlockWeights();
     PhaseStatus optFindLoopsPhase(); // Finds loops and records them in the loop table
@@ -6308,7 +6338,7 @@ protected:
 
     bool optIsLoopTestEvalIntoTemp(Statement* testStmt, Statement** newTestStmt);
     unsigned optIsLoopIncrTree(GenTree* incr);
-    bool optCheckIterInLoopTest(unsigned loopInd, GenTree* test, BasicBlock* from, BasicBlock* to, unsigned iterVar);
+    bool optCheckIterInLoopTest(unsigned loopInd, GenTree* test, unsigned iterVar);
     bool optComputeIterInfo(GenTree* incr, BasicBlock* from, BasicBlock* to, unsigned* pIterVar);
     bool optPopulateInitInfo(unsigned loopInd, BasicBlock* initBlock, GenTree* init, unsigned iterVar);
     bool optExtractInitTestIncr(
@@ -6402,7 +6432,7 @@ protected:
 
     bool optIsVarAssgLoop(unsigned lnum, unsigned var);
 
-    int optIsSetAssgLoop(unsigned lnum, ALLVARSET_VALARG_TP vars, varRefKinds inds = VR_NONE);
+    bool optIsSetAssgLoop(unsigned lnum, ALLVARSET_VALARG_TP vars, varRefKinds inds = VR_NONE);
 
     bool optNarrowTree(GenTree* tree, var_types srct, var_types dstt, ValueNumPair vnpNarrow, bool doit);
 
@@ -7613,6 +7643,8 @@ public:
 
     // ICorJitInfo wrappers
 
+    void eeAllocMem(AllocMemArgs* args);
+
     void eeReserveUnwindInfo(bool isFunclet, bool isColdCode, ULONG unwindSize);
 
     void eeAllocUnwindInfo(BYTE*          pHotCode,
@@ -7968,6 +8000,10 @@ private:
     void unwindReserveFuncHelper(FuncInfoDsc* func, bool isHotCode);
     void unwindEmitFuncHelper(FuncInfoDsc* func, void* pHotCode, void* pColdCode, bool isHotCode);
 
+#ifdef DEBUG
+    void fakeUnwindEmitFuncHelper(FuncInfoDsc* func, void* pHotCode);
+#endif // DEBUG
+
 #endif // TARGET_AMD64 || (TARGET_X86 && FEATURE_EH_FUNCLETS)
 
     UNATIVE_OFFSET unwindGetCurrentOffset(FuncInfoDsc* func);
@@ -8196,9 +8232,6 @@ private:
 
     SIMDHandlesCache* m_simdHandleCache;
 
-    // Get an appropriate "zero" for the given type and class handle.
-    GenTree* gtGetSIMDZero(var_types simdType, CorInfoType simdBaseJitType, CORINFO_CLASS_HANDLE simdHandle);
-
     // Get the handle for a SIMD type.
     CORINFO_CLASS_HANDLE gtGetStructHandleForSIMD(var_types simdType, CorInfoType simdBaseJitType)
     {
@@ -8279,7 +8312,6 @@ private:
             clsHnd = gtGetStructHandleForHWSIMD(simdType, simdBaseJitType);
         }
 
-        assert(clsHnd != NO_CLASS_HANDLE);
         return clsHnd;
     }
 #endif // FEATURE_HW_INTRINSICS
@@ -10664,6 +10696,7 @@ public:
             case GT_CNS_LNG:
             case GT_CNS_DBL:
             case GT_CNS_STR:
+            case GT_CNS_VEC:
             case GT_MEMORYBARRIER:
             case GT_JMP:
             case GT_JCC:

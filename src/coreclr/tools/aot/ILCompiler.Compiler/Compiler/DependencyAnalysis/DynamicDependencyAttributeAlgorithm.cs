@@ -16,7 +16,6 @@ using static ILCompiler.Dataflow.DynamicallyAccessedMembersBinder;
 
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
 using MethodAttributes = System.Reflection.MethodAttributes;
-using DynamicallyAccessedMemberTypes = ILCompiler.Dataflow.DynamicallyAccessedMemberTypes;
 
 namespace ILCompiler.DependencyAnalysis
 {

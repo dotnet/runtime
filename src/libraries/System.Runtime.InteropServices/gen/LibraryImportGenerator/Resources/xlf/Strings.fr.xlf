@@ -531,7 +531,7 @@
       </trans-unit>
       <trans-unit id="ValueInCallerAllocatedBufferRequiresSpanConstructorMessage">
         <source>The type '{0}' specifies that it supports 'In' marshalling with the 'CallerAllocatedBuffer' feature for '{1}' but does not provide a two-parameter constructor that takes a '{1}' and 'Span' of an 'unmanaged' type as parameters</source>
-        <target state="new">The type '{0}' specifies that it supports 'In' marshalling with the 'CallerAllocatedBuffer' feature for '{1}' but does not provide a two-parameter constructor that takes a '{1}' and 'Span' of an 'unmanaged' type as parameters</target>
+        <target state="translated">Le type « {0} » spécifie qu’il prend en charge le marshaling «In» avec la fonctionnalité «CallerAllocatedBuffer» pour « {1} » mais ne fournit pas de constructeur à deux paramètre qui accepte un « {1} » et « Span » d’un type « non géré » comme paramètres.</target>
         <note />
       </trans-unit>
       <trans-unit id="ValueInRequiresOneParameterConstructorDescription">
