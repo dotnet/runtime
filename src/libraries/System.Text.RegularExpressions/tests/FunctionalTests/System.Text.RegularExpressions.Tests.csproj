@@ -8,7 +8,6 @@
     <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'Browser'">true</DebuggerSupport>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <IsHighAotMemoryUsageTest>true</IsHighAotMemoryUsageTest> <!-- to avoid OOMs with source generation in wasm: https://github.com/dotnet/runtime/pull/60701 -->
-    <TestRunRequiresLiveRefPack Condition="'$(TargetOS)' != 'Browser'">true</TestRunRequiresLiveRefPack>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AttRegexTests.cs" />
@@ -46,7 +45,6 @@
     <Compile Include="CustomDerivedRegexScenarioTest.cs" />
     <Compile Include="CSharpCodeFixVerifier`2.cs"/>
     <Compile Include="UpgradeToRegexGeneratorAnalyzerTests.cs" />
-    <Compile Include="$(CommonTestPath)SourceGenerators\LiveReferencePack.cs" Link="Common\SourceGenerators\LiveReferencePack.cs" />
     <Compile Include="RegexRunnerTests.cs" />
     <Compile Include="Regex.Count.Tests.cs" />
     <Compile Include="RegexAssert.netcoreapp.cs" />
