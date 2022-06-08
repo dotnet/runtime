@@ -17,7 +17,7 @@ namespace System.Reflection.Tests
 
             Assert.Contains("Here", exInner.ToString());
             Assert.Contains("InvokeStub_TestClassThatThrows", exInner.ToString());
-            Assert.DoesNotContain("System.RuntimeMethodHandle.InvokeMethod", exInner.ToString());
+            Assert.DoesNotContain(InterpretedMethodName, exInner.ToString());
         }
 
         [ConditionalFact(typeof(InvokeEmitTests), nameof(InvokeEmitTests.IsEmitInvokeSupported))]
@@ -29,7 +29,7 @@ namespace System.Reflection.Tests
 
             Assert.Contains("Here", exInner.ToString());
             Assert.Contains("InvokeStub_TestClassThatThrows", exInner.ToString());
-            Assert.DoesNotContain("System.RuntimeMethodHandle.InvokeMethod", exInner.ToString());
+            Assert.DoesNotContain(InterpretedMethodName, exInner.ToString());
         }
 
         private static bool IsEmitInvokeSupported()
@@ -39,7 +39,11 @@ namespace System.Reflection.Tests
                 && !PlatformDetection.IsMonoRuntime; // Temporary until Mono is updated.
         }
 
-        private class TestClassThatThrows
+        private static string InterpretedMethodName => PlatformDetection.IsMonoRuntime ?
+                "System.Reflection.MethodInvoker.InterpretedInvoke" :
+                "System.RuntimeMethodHandle.InvokeMethod";
+
+    private class TestClassThatThrows
         {
             public TestClassThatThrows()
             {
