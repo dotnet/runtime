@@ -427,7 +427,7 @@ namespace System.IO
         {
             if ((mode & ~FileSystem.ValidUnixFileModes) != 0)
             {
-                throw new ArgumentException(SR.Arg_InvalidUnixFileMode, "UnixFileMode");
+                throw new ArgumentException(SR.Arg_InvalidUnixFileMode, nameof(UnixFileMode));
             }
 
             EnsureCachesInitialized(handle, path);

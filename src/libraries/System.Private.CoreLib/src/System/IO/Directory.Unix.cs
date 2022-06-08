@@ -11,7 +11,7 @@ namespace System.IO
 
             if ((unixCreateMode & ~FileSystem.ValidUnixFileModes) != 0)
             {
-                ThrowHelper.ArgumentOutOfRangeException_Enum_Value();
+                throw new ArgumentException(SR.Arg_InvalidUnixFileMode, nameof(unixCreateMode));
             }
 
             string fullPath = Path.GetFullPath(path);

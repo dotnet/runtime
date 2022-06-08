@@ -133,7 +133,7 @@ namespace System.IO
 
                 if (value.HasValue && ((value & ~FileSystem.ValidUnixFileModes) != 0))
                 {
-                    ThrowHelper.ArgumentOutOfRangeException_Enum_Value();
+                    throw new ArgumentException(SR.Arg_InvalidUnixFileMode, nameof(UnixCreateMode));
                 }
 
                 _unixCreateMode = value;

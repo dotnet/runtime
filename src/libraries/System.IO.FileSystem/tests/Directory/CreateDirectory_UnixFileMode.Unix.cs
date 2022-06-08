@@ -38,5 +38,20 @@ namespace System.IO.Tests
             DirectoryInfo di2 = Directory.CreateDirectory(path, UnixFileMode.UserRead);
             Assert.Equal(initialMode, di2.UnixFileMode);
         }
+
+        [Theory]
+        [InlineData((UnixFileMode)(1 << 12), false)]
+        [InlineData((UnixFileMode)(1 << 12), true)]
+        public void InvalidModeThrows(UnixFileMode mode, bool alreadyExists)
+        {
+            string path = GetRandomDirPath();
+
+            if (alreadyExists)
+            {
+                Directory.CreateDirectory(path);
+            }
+
+            Assert.Throws<ArgumentException>(() => Directory.CreateDirectory(path, mode));
+        }
     }
 }
