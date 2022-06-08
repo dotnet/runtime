@@ -177,7 +177,6 @@ namespace System.Net.Security.Tests
                     Assert.False(fakeNegotiateServer.IsAuthenticated);
                     // Send the client blob to the fake server
                     serverBlob = fakeNegotiateServer.GetOutgoingBlob(clientBlob);
-                    Assert.NotNull(serverBlob);
                 }
 
                 if (status.ErrorCode == SecurityStatusPalErrorCode.OK)
@@ -189,6 +188,7 @@ namespace System.Net.Security.Tests
                 else if (status.ErrorCode == SecurityStatusPalErrorCode.ContinueNeeded)
                 {
                     Assert.NotNull(clientBlob);
+                    Assert.NotNull(serverBlob);
                 }
                 else
                 {
