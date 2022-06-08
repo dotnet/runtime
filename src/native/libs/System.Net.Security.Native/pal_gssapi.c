@@ -58,6 +58,18 @@ static gss_OID_desc gss_mech_ntlm_OID_desc = {.length = STRING_LENGTH(gss_ntlm_o
 
 #if defined(GSS_SHIM)
 
+#if HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X
+
+#define FOR_ALL_OPTIONAL_GSS_FUNCTIONS \
+    PER_FUNCTION_BLOCK(gss_set_cred_option) \
+    PER_FUNCTION_BLOCK(GSS_KRB5_CRED_NO_CI_FLAGS_X)
+
+#else
+
+#define FOR_ALL_OPTIONAL_GSS_FUNCTIONS
+
+#endif //HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X
+
 #define FOR_ALL_GSS_FUNCTIONS \
     PER_FUNCTION_BLOCK(gss_accept_sec_context) \
     PER_FUNCTION_BLOCK(gss_acquire_cred) \
@@ -78,14 +90,8 @@ static gss_OID_desc gss_mech_ntlm_OID_desc = {.length = STRING_LENGTH(gss_ntlm_o
     PER_FUNCTION_BLOCK(gss_unwrap) \
     PER_FUNCTION_BLOCK(gss_wrap) \
     PER_FUNCTION_BLOCK(GSS_C_NT_USER_NAME) \
-    PER_FUNCTION_BLOCK(GSS_C_NT_HOSTBASED_SERVICE)
-
-#if HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X
-
-#define FOR_ALL_GSS_FUNCTIONS FOR_ALL_GSS_FUNCTIONS \
-    PER_FUNCTION_BLOCK(gss_set_cred_option)
-
-#endif //HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X
+    PER_FUNCTION_BLOCK(GSS_C_NT_HOSTBASED_SERVICE) \
+    FOR_ALL_OPTIONAL_GSS_FUNCTIONS
 
 // define indirection pointers for all functions, like
 // static TYPEOF(gss_accept_sec_context)* gss_accept_sec_context_ptr;
@@ -118,6 +124,7 @@ static void* volatile s_gssLib = NULL;
 
 #if HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X
 #define gss_set_cred_option(...)            gss_set_cred_option_ptr(__VA_ARGS__)
+#define GSS_KRB5_CRED_NO_CI_FLAGS_X         (*GSS_KRB5_CRED_NO_CI_FLAGS_X_ptr)
 #endif //HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X
 
 
