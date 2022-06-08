@@ -9,8 +9,6 @@ using System.Reflection.Runtime.Assemblies;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.CustomAttributes;
 
-using Internal.Reflection.Tracing;
-
 using Internal.Metadata.NativeFormat;
 
 namespace System.Reflection.Runtime.TypeInfos.NativeFormat
@@ -87,11 +85,6 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
         {
             get
             {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.TypeInfo_Namespace(this);
-#endif
-
                 return NamespaceChain.NameSpace.EscapeTypeNameIdentifier();
             }
         }
@@ -284,35 +277,6 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
             object otherAsObject = other;
             return base.Equals(otherAsObject);
         }
-
-#if ENABLE_REFLECTION_TRACE
-        internal sealed override string TraceableTypeName
-        {
-            get
-            {
-                MetadataReader reader = Reader;
-
-                String s = "";
-                TypeDefinitionHandle typeDefinitionHandle = TypeDefinitionHandle;
-                do
-                {
-                    TypeDefinition typeDefinition = typeDefinitionHandle.GetTypeDefinition(reader);
-                    String name = typeDefinition.Name.GetString(reader);
-                    if (s == "")
-                        s = name;
-                    else
-                        s = name + "+" + s;
-                    typeDefinitionHandle = typeDefinition.EnclosingType;
-                }
-                while (!typeDefinitionHandle.IsNull(reader));
-
-                String ns = NamespaceChain.NameSpace;
-                if (ns != null)
-                    s = ns + "." + s;
-                return s;
-            }
-        }
-#endif
 
         internal sealed override QTypeDefRefOrSpec TypeDefinitionQHandle
         {
