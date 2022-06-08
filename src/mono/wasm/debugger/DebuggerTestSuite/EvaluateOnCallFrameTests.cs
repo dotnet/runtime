@@ -1165,6 +1165,7 @@ namespace DebuggerTests
                    ("listNull?.Count", TObject("System.Collections.Generic.List<int>", is_null: true)),
                    ("tc?.MemberList?.Count", TNumber(2)),
                    ("tc!.MemberList?.Count", TNumber(2)),
+                   ("tc!.MemberList!.Count", TNumber(2)),
                    ("tc?.MemberListNull?.Count", TObject("System.Collections.Generic.List<int>", is_null: true)),
                    ("tc.MemberListNull?.Count", TObject("System.Collections.Generic.List<int>", is_null: true)),
                    ("tcNull?.MemberListNull?.Count", TObject("DebuggerTests.EvaluateNullableProperties.TestClass", is_null: true)));

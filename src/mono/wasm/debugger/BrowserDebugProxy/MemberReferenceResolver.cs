@@ -266,9 +266,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                     if (part.Length == 0)
                         return null;
 
-                    if (part[^1] == '!')
-                        part = part.Remove(part.Length - 1);
-
                     bool hasCurrentPartNullCondition = part[^1] == '?';
 
                     // current value of resolvedObject is on parts[i - 1]
@@ -308,8 +305,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                         return null;
                     }
 
-                    if (hasCurrentPartNullCondition)
+                    if (part[^1] == '!' || part[^1] == '?')
                         part = part.Remove(part.Length - 1);
+
                     JToken objRet = valueOrError.Value.FirstOrDefault(objPropAttr => objPropAttr["name"]?.Value<string>() == part);
                     if (objRet == null)
                         return null;
