@@ -4,4 +4,8 @@ Provides high-performance and low-allocating types that serialize objects to Jav
 
 The `System.Text.Json` library is built-in as part of the shared framework for .NET Core 3.0+ and .NET 5+. You only need to install it as a package for earlier .NET Core versions or other target frameworks.
 
-For more information, see [JSON serialization and deserialization in .NET](https://docs.microsoft.com/dotnet/standard/serialization/system-text-json-overview).
+For more information, see the documentation:
+
+- [JSON serialization and deserialization in .NET](https://docs.microsoft.com/dotnet/standard/serialization/system-text-json-overview)
+- [How to serialize and deserialize JSON in .NET](https://docs.microsoft.com/dotnet/standard/serialization/system-text-json-how-to)
+- [System.Text.Json API reference](https://docs.microsoft.com/en-us/dotnet/api/system.text.json?view=net-6.0)
