@@ -59,7 +59,7 @@ namespace System.Text.Json.Serialization
             return new JsonPropertyInfo<T>();
         }
 
-        internal override sealed JsonParameterInfo CreateJsonParameterInfo()
+        internal sealed override JsonParameterInfo CreateJsonParameterInfo()
         {
             return new JsonParameterInfo<T>();
         }
@@ -246,14 +246,14 @@ namespace System.Text.Json.Serialization
             return success;
         }
 
-        internal override sealed bool OnTryReadAsObject(ref Utf8JsonReader reader, JsonSerializerOptions options, ref ReadStack state, out object? value)
+        internal sealed override bool OnTryReadAsObject(ref Utf8JsonReader reader, JsonSerializerOptions options, ref ReadStack state, out object? value)
         {
             bool success = OnTryRead(ref reader, TypeToConvert, options, ref state, out T? typedValue);
             value = typedValue;
             return success;
         }
 
-        internal override sealed bool TryReadAsObject(ref Utf8JsonReader reader, JsonSerializerOptions options, ref ReadStack state, out object? value)
+        internal sealed override bool TryReadAsObject(ref Utf8JsonReader reader, JsonSerializerOptions options, ref ReadStack state, out object? value)
         {
             bool success = TryRead(ref reader, TypeToConvert, options, ref state, out T? typedValue);
             value = typedValue;

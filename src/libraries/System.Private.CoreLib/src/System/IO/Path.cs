@@ -696,7 +696,7 @@ namespace System.IO
                 string.Concat(first, PathInternal.DirectorySeparatorCharAsString, second);
         }
 
-        private unsafe readonly struct Join3Payload
+        private readonly unsafe struct Join3Payload
         {
             public Join3Payload(char* first, int firstLength, char* second, int secondLength, char* third, int thirdLength, byte separators)
             {
@@ -750,7 +750,7 @@ namespace System.IO
             }
         }
 
-        private unsafe readonly struct Join4Payload
+        private readonly unsafe struct Join4Payload
         {
             public Join4Payload(char* first, int firstLength, char* second, int secondLength, char* third, int thirdLength, char* fourth, int fourthLength, byte separators)
             {
