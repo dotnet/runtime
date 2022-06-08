@@ -1072,8 +1072,11 @@ namespace System.Threading.ThreadPools.Tests
 
             protected override void OnEventSourceCreated(EventSource eventSource)
             {
+                // Console.WriteLine("eventSource = " + eventSource.Name);
+
                 if (eventSource.Name == ClrProviderName)
                 {
+                    // Console.WriteLine("Enabling events");
                     EnableEvents(eventSource, EventLevel.Informational, ThreadingKeyword);
                 }
 
@@ -1082,10 +1085,10 @@ namespace System.Threading.ThreadPools.Tests
 
             protected override void OnEventWritten(EventWrittenEventArgs eventData)
             {
-                Console.Error.WriteLine("OnEventWritten");
                 Console.WriteLine("OnEventWritten");
-                Assert.True(false);
-                if (eventData.EventId == ThreadPoolMinMaxThreadsEventId)
+                Console.WriteLine("eventId = " + eventData.EventId.ToString());
+                Console.WriteLine("eventName = " + eventData.EventName);
+                /* if (eventData.EventId == ThreadPoolMinMaxThreadsEventId)
                 {
                     Console.WriteLine($"{eventData.EventName}");
                     var payloadNames = eventData.PayloadNames.ToList();
@@ -1100,6 +1103,7 @@ namespace System.Threading.ThreadPools.Tests
 
                     Console.WriteLine();
                 }
+                */
 
                 base.OnEventWritten(eventData);
             }
@@ -1114,7 +1118,14 @@ namespace System.Threading.ThreadPools.Tests
                 using var el = new ClrMinMaxThreadsEventListener();
 
                 // using var unblock = new ManualResetEvent(false);
-                ThreadPool.SetMinThreads(1, 2);
+                ThreadPool.SetMinThreads(3, 4);
+                /*ThreadPool.GetMinThreads(out int x, out int y);
+                Console.WriteLine("Finished");
+                Console.WriteLine("x = " + x.ToString());
+                Console.WriteLine("y = " + y.ToString());
+                */
+                // unblock.Set();
+                // Console.WriteLine("unblocked");
 
                 // unblock.Set();
             }).Dispose();
