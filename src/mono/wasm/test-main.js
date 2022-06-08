@@ -105,7 +105,23 @@ function set_exit_code(exit_code, reason) {
         }
 
     } else if (App && App.INTERNAL) {
-        App.INTERNAL.mono_wasm_exit(exit_code);
+        if (is_node) {
+            let stdoutFlushed = new Promise((resolve, reject) => {
+                process.stdout.on('drain', () => resolve());
+                setTimeout(reject, 3000);
+            });
+            let stderrFlushed = new Promise((resolve, reject) => {
+                process.stderr.on('drain', () => resolve());
+                setTimeout(reject, 3000);
+            });
+
+            Promise.all([ stdoutFlushed, stderrFlushed ])
+                    .then(
+                        () => App.INTERNAL.mono_wasm_exit(exit_code),
+                        () => App.INTERNAL.mono_wasm_exit(exit_code));
+        } else {
+            App.INTERNAL.mono_wasm_exit(exit_code);
+        }
     }
 }
 
