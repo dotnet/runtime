@@ -63,7 +63,6 @@ PInvokeTransitionFrame* Thread::GetTransitionFrame()
 
 PInvokeTransitionFrame* Thread::GetTransitionFrameForStackTrace()
 {
-    ASSERT_MSG(ThreadStore::GetSuspendingThread() == NULL, "Not allowed when suspended for GC.");
     ASSERT_MSG(this == ThreadStore::GetCurrentThread(), "Only supported for current thread.");
     ASSERT(Thread::IsCurrentThreadInCooperativeMode());
     ASSERT(m_pDeferredTransitionFrame != NULL);
