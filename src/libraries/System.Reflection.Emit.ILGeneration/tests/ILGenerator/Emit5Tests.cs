@@ -9,6 +9,7 @@ namespace System.Reflection.Emit.Tests
     public class ILGeneratorEmit5
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/63805", TestRuntimes.Mono)]
         public void MaxStackOverflowTest()
         {
             Run(1 << 5);
@@ -76,6 +77,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/63805", TestRuntimes.Mono)]
         public void MaxStackNonEmptyForward()
         {
             // This test uses forward branches to "new" basic blocks where the stack depth
@@ -139,6 +141,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/63805", TestRuntimes.Mono)]
         public void MaxStackNonEmptyBackward()
         {
             // This test uses backward branches to "new" basic blocks where the stack depth
@@ -212,6 +215,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/63805", TestRuntimes.Mono)]
         public void AmbiguousDepth()
         {
             var meth = GetCode();
@@ -258,6 +262,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/63805", TestRuntimes.Mono)]
         public void UnreachableDepth()
         {
             var meth = GetCode();
