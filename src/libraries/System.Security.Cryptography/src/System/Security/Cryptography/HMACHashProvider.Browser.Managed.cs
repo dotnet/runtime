@@ -17,11 +17,6 @@ namespace System.Security.Cryptography
         private readonly HashProvider _hash1;
         private readonly HashProvider _hash2;
 
-        // _inner = PaddedKey ^ {0x36,...,0x36}
-        // _outer = PaddedKey ^ {0x5C,...,0x5C}
-        private readonly byte[] _inner;
-        private readonly byte[] _outer;
-
         public HMACManagedHashProvider(string hashAlgorithmId, ReadOnlySpan<byte> key)
         {
             _hash1 = HashProviderDispenser.CreateHashProvider(hashAlgorithmId);
@@ -37,7 +32,6 @@ namespace System.Security.Cryptography
             };
 
             _key = InitializeKey(key);
-            (_inner, _outer) = UpdateIOPadBuffers();
         }
 
         private byte[] InitializeKey(ReadOnlySpan<byte> key)
@@ -55,31 +49,11 @@ namespace System.Security.Cryptography
             return key.ToArray();
         }
 
-        private (byte[] inner, byte[] outer) UpdateIOPadBuffers()
-        {
-            byte[] inner = new byte[_blockSizeValue];
-            byte[] outer = new byte[_blockSizeValue];
-
-            int i;
-            for (i = 0; i < _blockSizeValue; i++)
-            {
-                inner[i] = 0x36;
-                outer[i] = 0x5C;
-            }
-            for (i = 0; i < _key.Length; i++)
-            {
-                inner[i] ^= _key[i];
-                outer[i] ^= _key[i];
-            }
-
-            return (inner, outer);
-        }
-
         public override void AppendHashData(ReadOnlySpan<byte> data)
         {
-            if (_hashing == false)
+            if (!_hashing)
             {
-                _hash1.AppendHashData(_inner);
+                AppendInnerBuffer();
                 _hashing = true;
             }
 
@@ -95,9 +69,9 @@ namespace System.Security.Cryptography
 
         public override int GetCurrentHash(Span<byte> destination)
         {
-            if (_hashing == false)
+            if (!_hashing)
             {
-                _hash1.AppendHashData(_inner);
+                AppendInnerBuffer();
                 _hashing = true;
             }
 
@@ -107,10 +81,27 @@ namespace System.Security.Cryptography
             Debug.Assert(hash1Written == hashValue1.Length);
 
             // write the outer array
-            _hash2.AppendHashData(_outer);
+            AppendOuterBuffer();
             // write the inner hash and finalize the hash
             _hash2.AppendHashData(hashValue1);
             return _hash2.FinalizeHashAndReset(destination);
+        }
+
+        private void AppendInnerBuffer() => AppendPaddingBuffer(0x36, _hash1);
+        private void AppendOuterBuffer() => AppendPaddingBuffer(0x5C, _hash2);
+
+        private void AppendPaddingBuffer(byte paddingConstant, HashProvider hash)
+        {
+            Span<byte> paddingBuffer = stackalloc byte[_blockSizeValue];
+            paddingBuffer.Fill(paddingConstant);
+
+            for (int i = 0; i < _key.Length; i++)
+            {
+                paddingBuffer[i] ^= _key[i];
+            }
+
+            hash.AppendHashData(paddingBuffer);
+            CryptographicOperations.ZeroMemory(paddingBuffer);
         }
 
         public override int HashSizeInBytes => _hashSizeValue;
@@ -121,9 +112,8 @@ namespace System.Security.Cryptography
             {
                 _hash1.Dispose();
                 _hash2.Dispose();
-                Array.Clear(_inner);
-                Array.Clear(_outer);
-                Array.Clear(_key);
+
+                CryptographicOperations.ZeroMemory(_key);
             }
         }
 
