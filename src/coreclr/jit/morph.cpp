@@ -4785,7 +4785,7 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
         addr = gtNewOperNode(GT_ADD, TYP_BYREF, arrRef, addr);
     }
 
-    // TODO-Throughout: bash the INDEX_ADDR to ARR_ADDR here instead of creating a new node.
+    // TODO-Throughput: bash the INDEX_ADDR to ARR_ADDR here instead of creating a new node.
     addr = new (this, GT_ARR_ADDR) GenTreeArrAddr(addr, elemTyp, elemStructType, elemOffs);
 
     if (indexAddr->IsNotNull())
@@ -4825,7 +4825,7 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
     tree = fgMorphTree(tree);
     DBEXEC(tree == indexAddr, tree->gtDebugFlags &= ~GTF_DEBUG_NODE_MORPHED);
 
-    JITDUMP("fgMorphArrayIndex (after remorph):\n")
+    JITDUMP("fgMorphIndexAddr (after remorph):\n")
     DISPTREE(tree)
 
     return tree;
