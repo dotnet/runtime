@@ -121,8 +121,9 @@ namespace System.Security.Cryptography
             {
                 _hash1.Dispose();
                 _hash2.Dispose();
-                Array.Clear(_inner, 0, _inner.Length);
-                Array.Clear(_outer, 0, _outer.Length);
+                Array.Clear(_inner);
+                Array.Clear(_outer);
+                Array.Clear(_key);
             }
         }
 
