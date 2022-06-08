@@ -867,7 +867,7 @@ getnum:
 
                                     if (_ISXDIGIT(ch)) {
                                         num64 <<= 4;
-                                        ch = _hextodec(ch);
+                                        ch = _hextodec((_TCHAR)ch);
                                     }
                                     else
                                         ++done_flag;
@@ -910,7 +910,7 @@ getnum:
 
                                     if (_ISXDIGIT(ch)) {
                                         number = (number << 4);
-                                        ch = _hextodec(ch);
+                                        ch = _hextodec((_TCHAR)ch);
                                     }
                                     else
                                         ++done_flag;
