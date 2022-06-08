@@ -42,6 +42,8 @@ CONFIG_INTEGER(JitBreakOnBadCode, W("JitBreakOnBadCode"), 0)
 CONFIG_INTEGER(JitBreakOnMinOpts, W("JITBreakOnMinOpts"), 0) // Halt if jit switches to MinOpts
 CONFIG_INTEGER(JitBreakOnUnsafeCode, W("JitBreakOnUnsafeCode"), 0)
 CONFIG_INTEGER(JitCloneLoops, W("JitCloneLoops"), 1) // If 0, don't clone. Otherwise clone loops for optimizations.
+CONFIG_INTEGER(JitCloneLoopsWithTypeTests, W("JitCloneLoopsWithTypeTests"), 1) // If 0, don't clone loops based on
+                                                                               // invariant type tests
 CONFIG_INTEGER(JitDebugLogLoopCloning, W("JitDebugLogLoopCloning"), 0) // In debug builds log places where loop cloning
                                                                        // optimizations are performed on the fast path.
 CONFIG_INTEGER(JitDefaultFill, W("JitDefaultFill"), 0xdd) // In debug builds, initialize the memory allocated by the nra
