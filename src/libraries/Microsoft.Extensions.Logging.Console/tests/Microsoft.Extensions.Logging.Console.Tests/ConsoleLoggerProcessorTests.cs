@@ -21,7 +21,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             // Arrange
             var sink = new ConsoleSink();
             var console = new TestConsole(sink);
-            var processor = new ConsoleLoggerProcessor(nameof(LogAfterDisposeWritesLog), console, null!, ConsoleLoggerBufferFullMode.Wait, 1024);
+            var processor = new ConsoleLoggerProcessor(console, null!, ConsoleLoggerBufferFullMode.Wait, 1024);
 
             var logger = new ConsoleLogger(_loggerName, loggerProcessor: processor,
                 new SimpleConsoleFormatter(new TestFormatterOptionsMonitor<SimpleConsoleFormatterOptions>(new SimpleConsoleFormatterOptions())),
@@ -45,7 +45,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             // Arrange
             var sink = new ConsoleSink();
             var console = new TestConsole(sink);
-            var processor = new ConsoleLoggerProcessor(nameof(MaxQueueLength_SetInvalid_Throws), console, null!, ConsoleLoggerBufferFullMode.Wait, 1024);
+            var processor = new ConsoleLoggerProcessor(console, null!, ConsoleLoggerBufferFullMode.Wait, 1024);
 
             // Act & Assert
             Assert.Throws<ArgumentOutOfRangeException>(() => processor.MaxQueueLength = invalidMaxQueueLength);
@@ -57,7 +57,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             // Arrange
             var sink = new ConsoleSink();
             var console = new TestConsole(sink);
-            var processor = new ConsoleLoggerProcessor(nameof(FullMode_SetInvalid_Throws), console, null!, ConsoleLoggerBufferFullMode.Wait, 1024);
+            var processor = new ConsoleLoggerProcessor(console, null!, ConsoleLoggerBufferFullMode.Wait, 1024);
 
             // Act & Assert
             Assert.Throws<ArgumentOutOfRangeException>(() => processor.FullMode = (ConsoleLoggerBufferFullMode)10);
@@ -74,7 +74,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             var console = new TestConsole(sink);
             var errorConsole = new TimesWriteCalledConsole();
             string queueName = nameof(CheckForNotificationWhenQueueIsFull) + (okToDrop ? "InDropWriteMode" : "InWaitMode");
-            var processor = new ConsoleLoggerProcessor(queueName, console, errorConsole, ConsoleLoggerBufferFullMode.Wait, 1024);
+            var processor = new ConsoleLoggerProcessor(console, errorConsole, ConsoleLoggerBufferFullMode.Wait, 1024);
             var formatter = new SimpleConsoleFormatter(new TestFormatterOptionsMonitor<SimpleConsoleFormatterOptions>(
                 new SimpleConsoleFormatterOptions()));
 
@@ -127,7 +127,6 @@ namespace Microsoft.Extensions.Logging.Console.Test
             var console = new TimesWriteCalledConsole();
             var writeThrowingConsole = new WriteThrowingConsole();
             var processor = new ConsoleLoggerProcessor(
-                nameof(ThrowDuringProcessLog_ShutsDownGracefully),
                 console,
                 writeThrowingConsole,
                 ConsoleLoggerBufferFullMode.Wait,

@@ -1418,7 +1418,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
     internal class TestLoggerProcessor : ConsoleLoggerProcessor
     {
         public TestLoggerProcessor(IConsole console, IConsole errorConsole, ConsoleLoggerBufferFullMode fullMode, int maxQueueLength)
-            : base(nameof(TestLoggerProcessor), console, errorConsole, fullMode, maxQueueLength)
+            : base(console, errorConsole, fullMode, maxQueueLength)
         {
         }
 

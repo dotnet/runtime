@@ -14,7 +14,10 @@ namespace Microsoft.Extensions.Logging.Console
     [UnsupportedOSPlatform("browser")]
     internal class ConsoleLoggerProcessor : IDisposable
     {
+        private static int s_processorCount;
+        private int _processorId;
         private static readonly Meter s_meter = new Meter("Microsoft-Extension-Logging-Console-Queue", "1.0.0");
+        private const string WarningMessageOnDrop = " message(s) dropped because of queue size limit. Increase the queue size or decrease logging verbosity to avoid this. You may change `ConsoleLoggerBufferFullMode` to stop dropping messages.";
         private readonly Queue<LogMessageEntry> _messageQueue;
         private int _messagesDropped;
         private bool _isAddingCompleted;
@@ -46,18 +49,17 @@ namespace Microsoft.Extensions.Logging.Console
                 {
                     throw new ArgumentOutOfRangeException(nameof(value), value, $"{nameof(value)} is not a supported buffer mode value.");
                 }
+
                 _fullMode = value;
             }
         }
-        private readonly string _queueName;
         private readonly Thread _outputThread;
 
         public IConsole Console { get; }
         public IConsole ErrorConsole { get; }
 
-        public ConsoleLoggerProcessor(string queueName, IConsole console, IConsole errorConsole, ConsoleLoggerBufferFullMode fullMode, int maxQueueLength)
+        public ConsoleLoggerProcessor(IConsole console, IConsole errorConsole, ConsoleLoggerBufferFullMode fullMode, int maxQueueLength)
         {
-            _queueName = queueName;
             _messageQueue = new Queue<LogMessageEntry>();
             FullMode = fullMode;
             MaxQueueLength = maxQueueLength;
@@ -70,6 +72,7 @@ namespace Microsoft.Extensions.Logging.Console
                 Name = "Console logger queue processing thread"
             };
             _outputThread.Start();
+            _processorId = ++s_processorCount;
             s_meter.CreateObservableGauge<long>("queue-size", GetQueueSize);
         }
 
@@ -87,12 +90,6 @@ namespace Microsoft.Extensions.Logging.Console
         {
             try
             {
-                var messagesDropped = Interlocked.Exchange(ref _messagesDropped, 0);
-                if (messagesDropped != 0)
-                {
-                    ErrorConsole.Write($"{messagesDropped} message(s) dropped because of queue size limit. Increase the queue size or decrease logging verbosity to avoid this.{Environment.NewLine}");
-                }
-
                 IConsole console = entry.LogAsError ? ErrorConsole : Console;
                 console.Write(entry.Message);
             }
@@ -121,7 +118,7 @@ namespace Microsoft.Extensions.Logging.Console
                 {
                     if (FullMode == ConsoleLoggerBufferFullMode.DropWrite)
                     {
-                        Interlocked.Increment(ref _messagesDropped);
+                        _messagesDropped++;
                         return true;
                     }
 
@@ -131,9 +128,24 @@ namespace Microsoft.Extensions.Logging.Console
 
                 if (_messageQueue.Count < MaxQueueLength && !_isAddingCompleted)
                 {
+                    bool startedEmpty = _messageQueue.Count == 0;
+                    if (_messagesDropped > 0)
+                    {
+                        _messageQueue.Enqueue(new LogMessageEntry(
+                            message: _messagesDropped + WarningMessageOnDrop + Environment.NewLine,
+                            logAsError: true
+                        ));
+
+                        _messagesDropped = 0;
+                    }
+
+                    // if we just logged the dropped message warning this could push the queue size to
+                    // MaxLength + 1, that shouldn't be a problem. It won't grow any further until it is less than
+                    // MaxLength once again.
                     _messageQueue.Enqueue(item);
 
-                    if (_messageQueue.Count == 1)
+                    // if the queue started empty it could be at 1 or 2 now
+                    if (startedEmpty)
                     {
                         // pulse for wait in Dequeue
                         Monitor.PulseAll(_messageQueue);
@@ -196,7 +208,7 @@ namespace Microsoft.Extensions.Logging.Console
         {
             return new Measurement<long>[]
             {
-                new Measurement<long>(_messageQueue.Count, new KeyValuePair<string, object?>("queue-name", _queueName)),
+                new Measurement<long>(_messageQueue.Count, new KeyValuePair<string, object?>("queue-name", nameof(ConsoleLoggerProcessor) + _processorId)),
             };
         }
     }

@@ -56,7 +56,6 @@ namespace Microsoft.Extensions.Logging.Console
                 errorConsole = new AnsiParsingLogConsole(stdErr: true);
             }
             _messageQueue = new ConsoleLoggerProcessor(
-                "LoggingConsoleQueue",
                 console,
                 errorConsole,
                 options.CurrentValue.BufferFullMode,

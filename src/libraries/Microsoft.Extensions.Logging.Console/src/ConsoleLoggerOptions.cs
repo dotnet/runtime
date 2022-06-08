@@ -81,11 +81,11 @@ namespace Microsoft.Extensions.Logging.Console
             }
         }
 
-        internal const int DefaultMaxQueueLengthValue = 1024 * 1024;
+        internal const int DefaultMaxQueueLengthValue = 2500;
         private int _maxQueuedMessages = DefaultMaxQueueLengthValue;
 
         /// <summary>
-        /// Gets or sets the maximum number of enqueued messages. Defaults to 1024 * 1024.
+        /// Gets or sets the maximum number of enqueued messages. Defaults to 2500.
         /// </summary>
         public int MaxQueueLength
         {
