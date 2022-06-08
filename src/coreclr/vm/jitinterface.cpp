@@ -8012,7 +8012,8 @@ void CEEInfo::reportInliningDecision (CORINFO_METHOD_HANDLE inlinerHnd,
     //I'm gonna duplicate this code because the format is slightly different.  And LoggingOn is debug only.
     if (ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
                                      TRACE_LEVEL_VERBOSE,
-                                     CLR_JITTRACING_KEYWORD))
+                                     CLR_JITTRACING_KEYWORD) &&
+        (inlineResult <= INLINE_PASS)) // Only report pass, and failure inliner information. The various informative reports such as INLINE_CHECK_CAN_INLINE_SUCCESS are not to be reported via ETW
     {
         SString methodBeingCompiledNames[3];
         SString inlinerNames[3];

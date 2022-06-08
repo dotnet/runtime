@@ -643,10 +643,10 @@ static bool isSupportedBaseType(NamedIntrinsic intrinsic, CorInfoType baseJitTyp
 #ifdef DEBUG
     CORINFO_InstructionSet isa = HWIntrinsicInfo::lookupIsa(intrinsic);
 #ifdef TARGET_XARCH
-    assert(isa == InstructionSet_Vector256 || InstructionSet_Vector128);
+    assert((isa == InstructionSet_Vector256) || (isa == InstructionSet_Vector128));
 #endif // TARGET_XARCH
 #ifdef TARGET_ARM64
-    assert(isa == InstructionSet_Vector64 || InstructionSet_Vector128);
+    assert((isa == InstructionSet_Vector64) || (isa == InstructionSet_Vector128));
 #endif // TARGET_ARM64
 #endif // DEBUG
     return false;
