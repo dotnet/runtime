@@ -96,7 +96,7 @@ StackFrameIterator::StackFrameIterator(Thread * pThreadToWalk, PInvokeTransition
 #ifdef FEATURE_SUSPEND_REDIRECTION
     if (pInitialTransitionFrame == REDIRECTED_THREAD_MARKER)
     {
-        InternalInit(pThreadToWalk, pThreadToWalk->GetRedirectionContext(), GcStackWalkFlags);
+        InternalInit(pThreadToWalk, pThreadToWalk->GetRedirectionContext(), GcStackWalkFlags | ActiveStackFrame);
     }
     else
 #endif
@@ -1407,7 +1407,7 @@ void StackFrameIterator::NextInternal()
 {
 UnwindOutOfCurrentManagedFrame:
     ASSERT(m_dwFlags & MethodStateCalculated);
-    m_dwFlags &= ~(ExCollide|MethodStateCalculated|UnwoundReversePInvoke);
+    m_dwFlags &= ~(ExCollide|MethodStateCalculated|UnwoundReversePInvoke|ActiveStackFrame);
     ASSERT(IsValid());
 
     m_pHijackedReturnValue = NULL;
@@ -1755,6 +1755,12 @@ MethodInfo * StackFrameIterator::GetMethodInfo()
 {
     ASSERT(IsValid());
     return &m_methodInfo;
+}
+
+bool StackFrameIterator::IsActiveStackFrame()
+{
+    ASSERT(IsValid());
+    return (m_dwFlags & ActiveStackFrame) != 0;
 }
 
 #ifdef DACCESS_COMPILE

@@ -152,7 +152,8 @@ public:
     virtual void EnumGcRefs(MethodInfo *    pMethodInfo,
                             PTR_VOID        safePointAddress,
                             REGDISPLAY *    pRegisterSet,
-                            GCEnumContext * hCallback) = 0;
+                            GCEnumContext * hCallback,
+                            bool            isActiveStackFrame) = 0;
 
     virtual bool UnwindStackFrame(MethodInfo *    pMethodInfo,
                                   REGDISPLAY *    pRegisterSet,                     // in/out

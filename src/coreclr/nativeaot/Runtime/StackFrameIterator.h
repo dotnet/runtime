@@ -43,6 +43,7 @@ public:
     REGDISPLAY *     GetRegisterSet();
     PTR_ICodeManager GetCodeManager();
     MethodInfo *     GetMethodInfo();
+    bool             IsActiveStackFrame();
     bool             GetHijackedReturnValueLocation(PTR_RtuObjectRef * pLocation, GCRefKind * pKind);
     void             SetControlPC(PTR_VOID controlPC);
 
@@ -137,6 +138,9 @@ private:
 
         // This is a state returned by Next() which indicates that we just unwound a reverse pinvoke method
         UnwoundReversePInvoke = 0x20,
+
+        // The thread was interrupted in the current frame at the current IP by a signal, SuspendThread or similar.
+        ActiveStackFrame = 0x40,
 
         GcStackWalkFlags = (CollapseFunclets | RemapHardwareFaultsToSafePoint),
         EHStackWalkFlags = ApplyReturnAddressAdjustment,

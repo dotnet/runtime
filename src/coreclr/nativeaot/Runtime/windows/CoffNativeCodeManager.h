@@ -77,7 +77,8 @@ public:
     void EnumGcRefs(MethodInfo *    pMethodInfo,
                     PTR_VOID        safePointAddress,
                     REGDISPLAY *    pRegisterSet,
-                    GCEnumContext * hCallback);
+                    GCEnumContext * hCallback,
+                    bool            isActiveStackFrame);
 
     bool UnwindStackFrame(MethodInfo *    pMethodInfo,
                           REGDISPLAY *    pRegisterSet,                 // in/out

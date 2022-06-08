@@ -379,10 +379,22 @@ bool CoffNativeCodeManager::IsSafePoint(PTR_VOID pvAddress)
 void CoffNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
                                        PTR_VOID        safePointAddress,
                                        REGDISPLAY *    pRegisterSet,
-                                       GCEnumContext * hCallback)
+                                       GCEnumContext * hCallback,
+                                       bool            isActiveStackFrame)
 {
     PTR_UInt8 gcInfo;
     uint32_t codeOffset = GetCodeOffset(pMethodInfo, safePointAddress, &gcInfo);
+
+    if (!isActiveStackFrame)
+    {
+        // If we are not in the active method, we are currently pointing
+        // to the return address. That may not be reachable after a call (if call does not return)
+        // or reachable via a jump and thus have a different live set.
+        // Therefore we simply adjust the offset to inside of call instruction.
+        // NOTE: The GcInfoDecoder depends on this; if you change it, you must
+        // revisit the GcInfoEncoder/Decoder
+        codeOffset--;
+    }
 
     GcInfoDecoder decoder(
         GCInfoToken(gcInfo),
@@ -393,12 +405,16 @@ void CoffNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
     ICodeManagerFlags flags = (ICodeManagerFlags)0;
     if (((CoffNativeMethodInfo *)pMethodInfo)->executionAborted)
         flags = ICodeManagerFlags::ExecutionAborted;
+
     if (IsFilter(pMethodInfo))
         flags = (ICodeManagerFlags)(flags | ICodeManagerFlags::NoReportUntracked);
 
+    if (isActiveStackFrame)
+        flags = (ICodeManagerFlags)(flags | ICodeManagerFlags::ActiveStackFrame);
+
     if (!decoder.EnumerateLiveSlots(
         pRegisterSet,
-        false /* reportScratchSlots */,
+        isActiveStackFrame /* reportScratchSlots */,
         flags,
         hCallback->pCallback,
         hCallback

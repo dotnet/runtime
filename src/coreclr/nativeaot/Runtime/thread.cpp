@@ -533,7 +533,8 @@ void Thread::GcScanRootsWorker(void * pfnEnumCallback, void * pvCallbackData, St
                                                frameIterator.GetEffectiveSafePointAddress(),
                                                frameIterator.GetRegisterSet(),
                                                pfnEnumCallback,
-                                               pvCallbackData);
+                                               pvCallbackData,
+                                               frameIterator.IsActiveStackFrame());
             }
 
             // Each enumerated frame (including the first one) may have an associated stack range we need to

@@ -136,7 +136,8 @@ bool UnixNativeCodeManager::IsSafePoint(PTR_VOID pvAddress)
 void UnixNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
                                        PTR_VOID        safePointAddress,
                                        REGDISPLAY *    pRegisterSet,
-                                       GCEnumContext * hCallback)
+                                       GCEnumContext * hCallback,
+                                       bool            isActiveStackFrame)
 {
     UnixNativeMethodInfo * pNativeMethodInfo = (UnixNativeMethodInfo *)pMethodInfo;
 
@@ -155,7 +156,7 @@ void UnixNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
     GcInfoDecoder decoder(
         GCInfoToken(p),
         GcInfoDecoderFlags(DECODE_GC_LIFETIMES | DECODE_SECURITY_OBJECT | DECODE_VARARG),
-        codeOffset - 1 // TODO: Is this adjustment correct?
+        codeOffset - 1 // TODO: isActiveStackFrame
     );
 
     ICodeManagerFlags flags = (ICodeManagerFlags)0;
