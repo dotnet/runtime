@@ -13,6 +13,7 @@ namespace System.Text.RegularExpressions.Symbolic
     /// Used to support O(1) append of two lists that is currently not possible by using <see cref="LinkedList{T}"/>.
     /// <see cref="AddLast(DoublyLinkedList{T})"/> operation is made use of in the <see cref="RegexNodeConverter.ConvertToSymbolicRegexNode(RegexNode)"/> method
     /// where it maintains linear construction time in terms of the overall number of AST nodes in a given <see cref="RegexNode"/> input.
+    /// Enumeration is performed in reverse of the order added, yielding items from last to first.
     /// </remarks>
     internal sealed class DoublyLinkedList<T> : IEnumerable<T> where T : notnull
     {
