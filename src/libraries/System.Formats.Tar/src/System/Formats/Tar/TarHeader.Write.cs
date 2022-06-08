@@ -12,11 +12,11 @@ namespace System.Formats.Tar
     // Writes header attributes of a tar archive entry.
     internal partial struct TarHeader
     {
-        private static ReadOnlySpan<byte> PaxMagicBytes => new byte[] { 0x75, 0x73, 0x74, 0x61, 0x72, 0x0 }; // "ustar\0"
-        private static ReadOnlySpan<byte> PaxVersionBytes => new byte[] { TarHelpers.ZeroChar, TarHelpers.ZeroChar }; // "00"
+        private static ReadOnlySpan<byte> PaxMagicBytes => "ustar\0"u8;
+        private static ReadOnlySpan<byte> PaxVersionBytes => "00"u8;
 
-        private static ReadOnlySpan<byte> GnuMagicBytes => new byte[] { 0x75, 0x73, 0x74, 0x61, 0x72, TarHelpers.SpaceChar }; // "ustar "
-        private static ReadOnlySpan<byte> GnuVersionBytes => new byte[] { TarHelpers.SpaceChar, 0x0 }; // " \0"
+        private static ReadOnlySpan<byte> GnuMagicBytes => "ustar "u8;
+        private static ReadOnlySpan<byte> GnuVersionBytes => " \0"u8;
 
         // Extended Attribute entries have a special format in the Name field:
         // "{dirName}/PaxHeaders.{processId}/{fileName}{trailingSeparator}"

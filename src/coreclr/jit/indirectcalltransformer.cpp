@@ -1420,7 +1420,6 @@ Compiler::fgWalkResult Compiler::fgDebugCheckForTransformableIndirectCalls(GenTr
 void Compiler::CheckNoTransformableIndirectCallsRemain()
 {
     assert(!doesMethodHaveFatPointer());
-    assert(!doesMethodHaveGuardedDevirtualization());
     assert(!doesMethodHaveExpRuntimeLookup());
 
     for (BasicBlock* const block : Blocks())
@@ -1460,7 +1459,6 @@ PhaseStatus Compiler::fgTransformIndirectCalls()
         }
 
         clearMethodHasFatPointer();
-        clearMethodHasGuardedDevirtualization();
         clearMethodHasExpRuntimeLookup();
     }
     else

@@ -87,49 +87,13 @@ namespace ILCompiler
 
         public void LogWarning(string text, int code, MethodIL origin, int ilOffset, string subcategory = MessageSubCategory.None)
         {
-            string document = null;
-            int? lineNumber = null;
-
-            IEnumerable<ILSequencePoint> sequencePoints = origin.GetDebugInfo()?.GetSequencePoints();
-            if (sequencePoints != null)
-            {
-                foreach (var sequencePoint in sequencePoints)
-                {
-                    if (sequencePoint.Offset <= ilOffset)
-                    {
-                        document = sequencePoint.Document;
-                        lineNumber = sequencePoint.LineNumber;
-                    }
-                }
-            }
-
-            MethodDesc warnedMethod = CompilerGeneratedState.GetUserDefinedMethodForCompilerGeneratedMember(origin.OwningMethod) ?? origin.OwningMethod;
-
-            MessageOrigin messageOrigin = new MessageOrigin(warnedMethod, document, lineNumber, null);
+            MessageOrigin messageOrigin = new MessageOrigin(origin, ilOffset);
             LogWarning(text, code, messageOrigin, subcategory);
         }
 
         public void LogWarning(MethodIL origin, int ilOffset, DiagnosticId id, params string[] args)
         {
-            string document = null;
-            int? lineNumber = null;
-
-            IEnumerable<ILSequencePoint> sequencePoints = origin.GetDebugInfo()?.GetSequencePoints();
-            if (sequencePoints != null)
-            {
-                foreach (var sequencePoint in sequencePoints)
-                {
-                    if (sequencePoint.Offset <= ilOffset)
-                    {
-                        document = sequencePoint.Document;
-                        lineNumber = sequencePoint.LineNumber;
-                    }
-                }
-            }
-
-            MethodDesc warnedMethod = CompilerGeneratedState.GetUserDefinedMethodForCompilerGeneratedMember(origin.OwningMethod) ?? origin.OwningMethod;
-
-            MessageOrigin messageOrigin = new MessageOrigin(warnedMethod, document, lineNumber, null);
+            MessageOrigin messageOrigin = new MessageOrigin(origin, ilOffset);
             LogWarning(messageOrigin, id, args);
         }
 
