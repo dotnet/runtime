@@ -8,4 +8,4 @@ For more information, see the documentation:
 
 - [JSON serialization and deserialization in .NET](https://docs.microsoft.com/dotnet/standard/serialization/system-text-json-overview)
 - [How to serialize and deserialize JSON in .NET](https://docs.microsoft.com/dotnet/standard/serialization/system-text-json-how-to)
-- [System.Text.Json API reference](https://docs.microsoft.com/en-us/dotnet/api/system.text.json?view=net-6.0)
+- [System.Text.Json API reference](https://docs.microsoft.com/dotnet/api/system.text.json)
