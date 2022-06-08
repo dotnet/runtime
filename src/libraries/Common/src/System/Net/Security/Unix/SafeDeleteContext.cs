@@ -21,6 +21,11 @@ namespace System.Net.Security
         {
         }
 
+        public override bool IsInvalid
+        {
+            get { return (IntPtr.Zero == handle); }
+        }
+
         protected override bool ReleaseHandle()
         {
             return true;
