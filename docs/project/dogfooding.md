@@ -1,7 +1,7 @@
 # Dogfooding nightly builds of .NET
 
 This document provides the steps necessary to consume a nightly build of .NET runtime and SDK.
-Example bellow is for 7.0 but similar steps should work for other versions as well.
+Example below is for 7.0 but similar steps should work for other versions as well.
 
 ## Obtaining nightly builds of NuGet packages
 
