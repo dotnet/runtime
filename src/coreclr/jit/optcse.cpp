@@ -3507,7 +3507,7 @@ bool Compiler::optIsCSEcandidate(GenTree* tree)
     }
 
     /* Don't bother if the potential savings are very low */
-    if (cost < MIN_CSE_COST)
+    if (cost == 0)
     {
         return false;
     }
