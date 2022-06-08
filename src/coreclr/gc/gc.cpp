@@ -46470,6 +46470,7 @@ int GCHeap::SetGcLatencyMode (int newLatencyMode)
     }
 #endif //BACKGROUND_GC
 
+    GCConfig::SetGCLatencyMode(new_mode);
     return (int)set_pause_mode_success;
 }
 
@@ -47740,6 +47741,7 @@ void GCHeap::TemporaryEnableConcurrentGC()
 {
 #ifdef BACKGROUND_GC
     gc_heap::temp_disable_concurrent_p = false;
+    GCConfig::SetConcurrentGC((gc_heap::gc_can_use_concurrent && !(gc_heap::temp_disable_concurrent_p)));
 #endif //BACKGROUND_GC
 }
 
@@ -47747,14 +47749,17 @@ void GCHeap::TemporaryDisableConcurrentGC()
 {
 #ifdef BACKGROUND_GC
     gc_heap::temp_disable_concurrent_p = true;
+    GCConfig::SetConcurrentGC((gc_heap::gc_can_use_concurrent && !(gc_heap::temp_disable_concurrent_p)));
 #endif //BACKGROUND_GC
 }
 
 bool GCHeap::IsConcurrentGCEnabled()
 {
 #ifdef BACKGROUND_GC
+    GCConfig::SetConcurrentGC((gc_heap::gc_can_use_concurrent && !(gc_heap::temp_disable_concurrent_p)));
     return (gc_heap::gc_can_use_concurrent && !(gc_heap::temp_disable_concurrent_p));
 #else
+    GCConfig::SetConcurrentGC(false);
     return FALSE;
 #endif //BACKGROUND_GC
 }

@@ -26,6 +26,9 @@
 
 GC_CONFIGURATION_KEYS
 
+void GCConfig::SetConcurrentGC(bool isConcurrentGC) { s_ConcurrentGC = isConcurrentGC; }
+void GCConfig::SetGCLatencyMode(int latencyMode)    { s_LatencyMode  = latencyMode;    }
+
 #undef BOOL_CONFIG
 #undef INT_CONFIG
 #undef STRING_CONFIG

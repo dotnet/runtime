@@ -64,29 +64,29 @@ public:
 // is the first parameter of the *_CONFIG macros below.
 #define GC_CONFIGURATION_KEYS \
     BOOL_CONFIG  (ServerGC,                  "gcServer",                  NULL,                                false,              true,  "Whether we should be using Server GC")                                                   \
-    BOOL_CONFIG  (ConcurrentGC,              "gcConcurrent",              NULL,                                true,               false, "Whether we should be using Concurrent GC")                                               \
+    BOOL_CONFIG  (ConcurrentGC,              "gcConcurrent",              NULL,                                true,               true, "Whether we should be using Concurrent GC")                                                \
     BOOL_CONFIG  (ConservativeGC,            "gcConservative",            NULL,                                false,              false, "Enables/Disables conservative GC")                                                       \
     BOOL_CONFIG  (ForceCompact,              "gcForceCompact",            NULL,                                false,              false, "When set to true, always do compacting GC")                                              \
-    BOOL_CONFIG  (RetainVM,                  "GCRetainVM",                NULL,                                false,              false, "When set we put the segments that should be deleted on a standby list (instead of "      \
+    BOOL_CONFIG  (RetainVM,                  "GCRetainVM",                NULL,                                false,              true, "When set we put the segments that should be deleted on a standby list (instead of "       \
                                                                                                                                           "releasing them back to the OS) which will be considered to satisfy new segment requests" \
                                                                                                                                           " (note that the same thing can be specified via API which is the supported way)")        \
     BOOL_CONFIG  (BreakOnOOM,                "GCBreakOnOOM",              NULL,                                false,              false, "Does a DebugBreak at the soonest time we detect an OOM")                                 \
-    BOOL_CONFIG  (NoAffinitize,              "GCNoAffinitize",            "System.GC.NoAffinitize",            false,              false, "If set, do not affinitize server GC threads")                                            \
+    BOOL_CONFIG  (NoAffinitize,              "GCNoAffinitize",            "System.GC.NoAffinitize",            false,              true, "If set, do not affinitize server GC threads")                                             \
     BOOL_CONFIG  (LogEnabled,                "GCLogEnabled",              NULL,                                false,              false, "Specifies if you want to turn on logging in GC")                                         \
     BOOL_CONFIG  (ConfigLogEnabled,          "GCConfigLogEnabled",        NULL,                                false,              false, "Specifies the name of the GC config log file")                                           \
     BOOL_CONFIG  (GCNumaAware,               "GCNumaAware",               NULL,                                true,               false, "Enables numa allocations in the GC")                                                     \
-    BOOL_CONFIG  (GCCpuGroup,                "GCCpuGroup",                "System.GC.CpuGroup",                false,              false, "Enables CPU groups in the GC")                                                           \
-    BOOL_CONFIG  (GCLargePages,              "GCLargePages",              "System.GC.LargePages",              false,              false, "Enables using Large Pages in the GC")                                                    \
+    BOOL_CONFIG  (GCCpuGroup,                "GCCpuGroup",                "System.GC.CpuGroup",                false,              true, "Enables CPU groups in the GC")                                                            \
+    BOOL_CONFIG  (GCLargePages,              "GCLargePages",              "System.GC.LargePages",              false,              true, "Enables using Large Pages in the GC")                                                     \
     INT_CONFIG   (HeapVerifyLevel,           "HeapVerify",                NULL,                                HEAPVERIFY_NONE,    false, "When set verifies the integrity of the managed heap on entry and exit of each GC")       \
     INT_CONFIG   (LOHCompactionMode,         "GCLOHCompact",              NULL,                                0,                  false, "Specifies the LOH compaction mode")                                                      \
-    INT_CONFIG   (LOHThreshold,              "GCLOHThreshold",            NULL,                                LARGE_OBJECT_SIZE,  false, "Specifies the size that will make objects go on LOH")                                    \
+    INT_CONFIG   (LOHThreshold,              "GCLOHThreshold",            NULL,                                LARGE_OBJECT_SIZE,  true, "Specifies the size that will make objects go on LOH")                                     \
     INT_CONFIG   (BGCSpinCount,              "BGCSpinCount",              NULL,                                140,                false, "Specifies the bgc spin count")                                                           \
     INT_CONFIG   (BGCSpin,                   "BGCSpin",                   NULL,                                2,                  false, "Specifies the bgc spin time")                                                            \
     INT_CONFIG   (HeapCount,                 "GCHeapCount",               "System.GC.HeapCount",               0,                  false, "Specifies the number of server GC heaps")                                                \
     INT_CONFIG   (Gen0Size,                  "GCgen0size",                NULL,                                0,                  false, "Specifies the smallest gen0 budget")                                                     \
     INT_CONFIG   (SegmentSize,               "GCSegmentSize",             NULL,                                0,                  false, "Specifies the managed heap segment size")                                                \
-    INT_CONFIG   (LatencyMode,               "GCLatencyMode",             NULL,                                -1,                 false, "Specifies the GC latency mode - batch, interactive or low latency (note that the same "  \
-                                                                                                                                           "thing can be specified via API which is the supported way")                              \
+    INT_CONFIG   (LatencyMode,               "GCLatencyMode",             NULL,                                -1,                 true, "Specifies the GC latency mode - batch, interactive or low latency (note that the same "   \
+                                                                                                                                           "thing can be specified via API which is the supported way")                             \
     INT_CONFIG   (LatencyLevel,              "GCLatencyLevel",            NULL,                                1,                  false, "Specifies the GC latency level that you want to optimize for. Must be a number from 0 "  \
                                                                                                                                           "to 3. See documentation for more details on each level.")                                \
     INT_CONFIG   (LogFileSize,               "GCLogFileSize",             NULL,                                0,                  false, "Specifies the GC log file size")                                                         \
@@ -95,17 +95,17 @@ public:
     STRING_CONFIG(GCHeapAffinitizeRanges,    "GCHeapAffinitizeRanges",    "System.GC.HeapAffinitizeRanges",                        false, "Specifies list of processors for Server GC threads. The format is a comma separated "    \
                                                                                                                                           "list of processor numbers or ranges of processor numbers. On Windows, each entry is "    \
                                                                                                                                           "prefixed by the CPU group number. Example: Unix - 1,3,5,7-9,12, Windows - 0:1,1:7-9")    \
-    INT_CONFIG   (GCHighMemPercent,          "GCHighMemPercent",          "System.GC.HighMemoryPercent",       0,                  false, "The percent for GC to consider as high memory")                                          \
+    INT_CONFIG   (GCHighMemPercent,          "GCHighMemPercent",          "System.GC.HighMemoryPercent",       0,                  true, "The percent for GC to consider as high memory")                                           \
     INT_CONFIG   (GCProvModeStress,          "GCProvModeStress",          NULL,                                0,                  false, "Stress the provisional modes")                                                           \
     INT_CONFIG   (GCGen0MaxBudget,           "GCGen0MaxBudget",           NULL,                                0,                  false, "Specifies the largest gen0 allocation budget")                                           \
     INT_CONFIG   (GCGen1MaxBudget,           "GCGen1MaxBudget",           NULL,                                0,                  false, "Specifies the largest gen1 allocation budget")                                           \
-    INT_CONFIG   (GCLowSkipRatio,            "GCLowSkipRatio",            NULL,                                30,                 true,  "Specifies the low generation skip ratio")                                                \
+    INT_CONFIG   (GCLowSkipRatio,            "GCLowSkipRatio",            NULL,                                30,                 false,  "Specifies the low generation skip ratio")                                                \
     INT_CONFIG   (GCHeapHardLimit,           "GCHeapHardLimit",           "System.GC.HeapHardLimit",           0,                  false, "Specifies a hard limit for the GC heap")                                                 \
     INT_CONFIG   (GCHeapHardLimitPercent,    "GCHeapHardLimitPercent",    "System.GC.HeapHardLimitPercent",    0,                  false, "Specifies the GC heap usage as a percentage of the total memory")                        \
     INT_CONFIG   (GCTotalPhysicalMemory,     "GCTotalPhysicalMemory",     NULL,                                0,                  false, "Specifies what the GC should consider to be total physical memory")                      \
     INT_CONFIG   (GCRegionRange,             "GCRegionRange",             NULL,                                274877906944L,      false, "Specifies the range for the GC heap")                                                    \
     INT_CONFIG   (GCRegionSize,              "GCRegionSize",              NULL,                                4194304,            false, "Specifies the size for a basic GC region")                                               \
-    STRING_CONFIG(LogFile,                   "GCLogFile",                 NULL,                                                    true,  "Specifies the name of the GC log file")                                                  \
+    STRING_CONFIG(LogFile,                   "GCLogFile",                 NULL,                                                    false,  "Specifies the name of the GC log file")                                                  \
     STRING_CONFIG(ConfigLogFile,             "GCConfigLogFile",           NULL,                                                    false, "Specifies the name of the GC config log file")                                           \
     INT_CONFIG   (BGCFLTuningEnabled,        "BGCFLTuningEnabled",        NULL,                                0,                  false, "Enables FL tuning")                                                                      \
     INT_CONFIG   (BGCMemGoal,                "BGCMemGoal",                NULL,                                75,                 false, "Specifies the physical memory load goal")                                                \
@@ -133,7 +133,7 @@ public:
     INT_CONFIG   (GCHeapHardLimitLOHPercent, "GCHeapHardLimitLOHPercent", "System.GC.HeapHardLimitLOHPercent", 0,                  false, "Specifies the GC heap LOH usage as a percentage of the total memory")                    \
     INT_CONFIG   (GCHeapHardLimitPOHPercent, "GCHeapHardLimitPOHPercent", "System.GC.HeapHardLimitPOHPercent", 0,                  false, "Specifies the GC heap POH usage as a percentage of the total memory")                    \
     INT_CONFIG   (GCEnabledInstructionSets,  "GCEnabledInstructionSets",  NULL,                                -1,                 false, "Specifies whether GC can use AVX2 or AVX512F - 0 for neither, 1 for AVX2, 3 for AVX512F")\
-    INT_CONFIG   (GCConserveMem,             "GCConserveMemory",          NULL,                                0,                  false, "Specifies how hard GC should try to conserve memory - values 0-9")                       \
+    INT_CONFIG   (GCConserveMem,             "GCConserveMemory",          NULL,                                0,                  true, "Specifies how hard GC should try to conserve memory - values 0-9")                        \
 
 // This class is responsible for retreiving configuration information
 // for how the GC should operate.
@@ -149,6 +149,10 @@ class GCConfig
   public: static GCConfigStringHolder Get##name();
 
 GC_CONFIGURATION_KEYS
+
+public:
+  static void SetConcurrentGC(bool isConcurrentGC);
+  static void SetGCLatencyMode(int latencyMode);
 
 #undef BOOL_CONFIG
 #undef INT_CONFIG
