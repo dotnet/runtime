@@ -7,6 +7,8 @@ namespace System.IO.Tests
 {
     public class DirectoryInfo_GetSetUnixFileMode : BaseGetSetUnixFileMode
     {
+        protected override bool GetModeThrowsPNSE => false;
+
         protected override string CreateTestItem(string path = null, [CallerMemberName] string memberName = null, [CallerLineNumber] int lineNumber = 0)
         {
             path =  path ?? GetTestFilePath(null, memberName, lineNumber);

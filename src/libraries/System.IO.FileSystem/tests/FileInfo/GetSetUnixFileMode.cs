@@ -5,6 +5,8 @@ namespace System.IO.Tests
 {
     public class FileInfo_GetSetUnixFileMode : BaseGetSetUnixFileMode
     {
+        protected override bool GetModeThrowsPNSE => false;
+
         protected override UnixFileMode GetMode(string path)
             => new FileInfo(path).UnixFileMode;
 
