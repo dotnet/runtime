@@ -162,46 +162,46 @@ namespace DependencyLogViewer
         public void FindXML(object fileStream)
         {
             
-                GraphCollection collection = GraphCollection.Singleton;
-                XmlReaderSettings settings = new XmlReaderSettings();
-                settings.IgnoreWhitespace = true;
+            GraphCollection collection = GraphCollection.Singleton;
+            XmlReaderSettings settings = new XmlReaderSettings();
+            settings.IgnoreWhitespace = true;
 
-                using (XmlReader reader = XmlReader.Create((System.IO.FileStream)fileStream, settings))
+            using (XmlReader reader = XmlReader.Create((System.IO.Stream)fileStream, settings))
+            {
+                while (reader.Read())
                 {
-                    while (reader.Read())
+                    if (!(reader.Name.StartsWith("P")))
                     {
-                        if (!(reader.Name.StartsWith("P")))
+                        IXmlLineInfo lineInfo = (IXmlLineInfo)reader;
+                        int lineNumber = lineInfo.LineNumber;
+                        switch (reader.NodeType)
                         {
-                            IXmlLineInfo lineInfo = (IXmlLineInfo)reader;
-                            int lineNumber = lineInfo.LineNumber;
-                            switch (reader.NodeType)
-                            {
-                                case XmlNodeType.Element:
-                                    if (reader.Name == "Node")
-                                    {
-                                        int id = int.Parse(reader.GetAttribute("Id"));
-                                        collection.AddNodeToGraph(fileCount, fileCount, id, reader.GetAttribute("Label")); // same PID and ID because each process will only have one graph
-                                    }
-                                    else if (reader.Name == "Link")
-                                    {
-                                        int source = int.Parse(reader.GetAttribute("Source"));
-                                        int target = int.Parse(reader.GetAttribute("Target"));
-                                        collection.AddEdgeToGraph(fileCount, fileCount, source, target, reader.GetAttribute("Reason"));
-                                    }
-                                    else if (reader.Name == "DirectedGraph")
-                                    {
-                                        collection.AddGraph(fileCount, fileCount, reader.GetAttribute("xmlns"));
-                                        break;
-                                    }
+                            case XmlNodeType.Element:
+                                if (reader.Name == "Node")
+                                {
+                                    int id = int.Parse(reader.GetAttribute("Id"));
+                                    collection.AddNodeToGraph(fileCount, fileCount, id, reader.GetAttribute("Label")); // same PID and ID because each process will only have one graph
+                                }
+                                else if (reader.Name == "Link")
+                                {
+                                    int source = int.Parse(reader.GetAttribute("Source"));
+                                    int target = int.Parse(reader.GetAttribute("Target"));
+                                    collection.AddEdgeToGraph(fileCount, fileCount, source, target, reader.GetAttribute("Reason"));
+                                }
+                                else if (reader.Name == "DirectedGraph")
+                                {
+                                    collection.AddGraph(fileCount, fileCount, reader.GetAttribute("xmlns"));
                                     break;
-                                default:
-                                    break;
-                            }
+                                }
+                                break;
+                            default:
+                                break;
                         }
-
                     }
-                    fileCount -= 1;
+
                 }
+                fileCount -= 1;
+            }
         }
         public void FileReading(System.IO.Stream fileStream)
         {
@@ -389,15 +389,27 @@ namespace DependencyLogViewer
                     openFileDialog.FilterIndex = 2;
                     openFileDialog.RestoreDirectory = true;
 
-                    if (!filePath.EndsWith(".dgml") && !filePath.EndsWith(".xml"))
+                    Console.WriteLine(argPath);
+
+
+                    if (!argPath.EndsWith(".dgml") && !argPath.EndsWith(".xml"))
                     {
                         if (openFileDialog.ShowDialog() == DialogResult.OK)
                         {
                             //Get the path of specified file
                             filePath = openFileDialog.FileName;
+                            fileStream = openFileDialog.OpenFile();
+
                         }
                     }
-                    fileStream = openFileDialog.OpenFile();
+                    else
+                    {
+                        if (argPath.EndsWith(".dgml"))
+                        {
+                            argPath += ".xml";
+                        }
+                        fileStream = new FileStream(argPath, FileMode.Open);
+                    }
                     DGMLGraphProcessing.Singleton = new DGMLGraphProcessing((Object)fileStream);
                 }
 
