@@ -164,8 +164,11 @@ namespace System.Text.RegularExpressions.Symbolic
                 _fixedMatchLength = findOptimizations.MinRequiredLength;
             }
 
-            if (findOptimizations.FindMode != FindNextStartingPositionMode.NoSearch &&
-                findOptimizations.LeadingAnchor == 0) // If there are any anchors, we're better off letting the DFA quickly do its job of determining whether there's a match.
+            // Store the find optimizations that can be used to jump ahead to the next possible starting location.
+            // If there's a leading beginning anchor, the find optimizations are unnecessary on top of the DFA's
+            // handling for beginning anchors.
+            if (findOptimizations.IsUseful &&
+                findOptimizations.LeadingAnchor is not RegexNodeKind.Beginning)
             {
                 _findOpts = findOptimizations;
             }
