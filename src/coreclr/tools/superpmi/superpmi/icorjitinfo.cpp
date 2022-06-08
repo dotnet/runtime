@@ -113,11 +113,8 @@ void MyICJI::reportInliningDecision(CORINFO_METHOD_HANDLE inlinerHnd,
                                     CorInfoInline         inlineResult,
                                     const char*           reason)
 {
-    if (inlineResult == INLINE_PASS || inlineResult == INLINE_FAIL|| inlineResult == INLINE_NEVER)
-    {
-        jitInstance->mc->cr->AddCall("reportInliningDecision");
-        jitInstance->mc->cr->recReportInliningDecision(inlinerHnd, inlineeHnd, inlineResult, reason);
-    }
+    jitInstance->mc->cr->AddCall("reportInliningDecision");
+    jitInstance->mc->cr->recReportInliningDecision(inlinerHnd, inlineeHnd, inlineResult, reason);
 }
 
 // Returns false if the call is across security boundaries thus we cannot tailcall

@@ -118,7 +118,8 @@ CorInfoInline interceptor_ICJI::canInline(CORINFO_METHOD_HANDLE callerHnd,    /*
 void interceptor_ICJI::beginInlining(CORINFO_METHOD_HANDLE inlinerHnd,
                                      CORINFO_METHOD_HANDLE inlineeHnd)
 {
-    // do nothing
+    mc->cr->AddCall("beginInlining");
+    original_ICorJitInfo->beginInlining(inlinerHnd, inlineeHnd);
 }
 
 // Reports whether or not a method can be inlined, and why.  canInline is responsible for reporting all
@@ -129,12 +130,9 @@ void interceptor_ICJI::reportInliningDecision(CORINFO_METHOD_HANDLE inlinerHnd,
                                               CorInfoInline         inlineResult,
                                               const char*           reason)
 {
-    if (inlineResult == INLINE_PASS || inlineResult == INLINE_FAIL|| inlineResult == INLINE_NEVER)
-    {
-        mc->cr->AddCall("reportInliningDecision");
-        original_ICorJitInfo->reportInliningDecision(inlinerHnd, inlineeHnd, inlineResult, reason);
-        mc->cr->recReportInliningDecision(inlinerHnd, inlineeHnd, inlineResult, reason);
-    }
+    mc->cr->AddCall("reportInliningDecision");
+    original_ICorJitInfo->reportInliningDecision(inlinerHnd, inlineeHnd, inlineResult, reason);
+    mc->cr->recReportInliningDecision(inlinerHnd, inlineeHnd, inlineResult, reason);
 }
 
 // Returns false if the call is across security boundaries thus we cannot tailcall
