@@ -198,6 +198,17 @@ export type DotnetModuleConfig = {
 
     config?: MonoConfig | MonoConfigError,
     configSrc?: string,
+
+    /**
+     * Base url for the app, defaults to `./` and must contain a trailing slash
+     */
+    baseUrl?: string,
+
+    /**
+     * main script path from baseUrl, defaults to `dotnet.js`
+     */
+    mainScriptPath?: string,
+    
     onConfigLoaded?: (config: MonoConfig) => Promise<void>;
     onDotnetReady?: () => void;
 

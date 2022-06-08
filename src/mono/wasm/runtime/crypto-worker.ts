@@ -41,7 +41,7 @@ export function init_crypto(): void {
         console.debug("MONO_WASM: Initializing Crypto WebWorker");
 
         const chan = LibraryChannel.create(1024); // 1024 is the buffer size in char units.
-        const worker = new Worker("dotnet-crypto-worker.js");
+        const worker = new Worker(`${Module.baseUrl}dotnet-crypto-worker.js`);
         mono_wasm_crypto = {
             channel: chan,
             worker: worker,
