@@ -1,13 +1,14 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Reflection.Tests
 {
     public class InvokeEmitTests
     {
-        [Fact]
+        [ConditionalFact(typeof(InvokeEmitTests), nameof(InvokeEmitTests.IsEmitInvokeSupported))]
         public static void VerifyInvokeIsUsingEmit_Method()
         {
             MethodInfo method = typeof(TestClassThatThrows).GetMethod(nameof(TestClassThatThrows.Throw))!;
@@ -19,7 +20,7 @@ namespace System.Reflection.Tests
             Assert.DoesNotContain("System.RuntimeMethodHandle.InvokeMethod", exInner.ToString());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(InvokeEmitTests), nameof(InvokeEmitTests.IsEmitInvokeSupported))]
         public static void VerifyInvokeIsUsingEmit_Constructor()
         {
             ConstructorInfo ctor = typeof(TestClassThatThrows).GetConstructor(Type.EmptyTypes)!;
@@ -30,7 +31,14 @@ namespace System.Reflection.Tests
             Assert.Contains("InvokeStub_TestClassThatThrows", exInner.ToString());
             Assert.DoesNotContain("System.RuntimeMethodHandle.InvokeMethod", exInner.ToString());
         }
-    
+
+        private static bool IsEmitInvokeSupported()
+        {
+            // Emit is only used for Invoke when RuntimeFeature.IsDynamicCodeCompiled is true.
+            return RuntimeFeature.IsDynamicCodeCompiled
+                && !PlatformDetection.IsMonoRuntime; // Temporary until Mono is updated.
+        }
+
         private class TestClassThatThrows
         {
             public TestClassThatThrows()
