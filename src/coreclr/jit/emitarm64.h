@@ -861,6 +861,8 @@ BYTE* emitOutputShortBranch(BYTE* dst, instruction ins, insFormat fmt, ssize_t d
 BYTE* emitOutputShortAddress(BYTE* dst, instruction ins, insFormat fmt, ssize_t distVal, regNumber reg);
 BYTE* emitOutputShortConstant(
     BYTE* dst, instruction ins, insFormat fmt, ssize_t distVal, regNumber reg, emitAttr opSize);
+BYTE* emitOutputVectorConstant(
+    BYTE* dst, ssize_t distVal, regNumber dstReg, regNumber addrReg, emitAttr opSize, emitAttr elemSize);
 
 /*****************************************************************************
  *

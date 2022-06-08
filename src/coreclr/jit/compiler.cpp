@@ -3199,11 +3199,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
     opts.compProcedureSplitting = jitFlags->IsSet(JitFlags::JIT_FLAG_PROCSPLIT) || enableFakeSplitting;
 
-#ifdef TARGET_ARM64
-    // TODO-ARM64-NYI: enable hot/cold splitting
-    opts.compProcedureSplitting = false;
-#endif // TARGET_ARM64
-
 #ifdef DEBUG
     opts.compProcedureSplittingEH = opts.compProcedureSplitting;
 #endif // DEBUG

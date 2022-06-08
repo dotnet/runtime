@@ -996,7 +996,7 @@ protected:
                 case IF_LARGELDC:
                     if (isVectorRegister(idReg1()))
                     {
-                        // adrp + ldr + fmov
+                        // (adrp + ldr + fmov) or (adrp + add + ld1)
                         size = 12;
                     }
                     else
