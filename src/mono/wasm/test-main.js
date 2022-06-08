@@ -124,7 +124,7 @@ function set_exit_code(exit_code, reason) {
                         () => App.INTERNAL.mono_wasm_exit(exit_code),
                         reason => {
                             console.error(`flushing std* streams failed: ${reason}`);
-                            App.INTERNAL.mono_wasm_exit(-123);
+                            App.INTERNAL.mono_wasm_exit(123);
                         });
         } else {
             App.INTERNAL.mono_wasm_exit(exit_code);
