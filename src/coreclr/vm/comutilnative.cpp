@@ -260,6 +260,8 @@ FCIMPL3(VOID, ExceptionNative::SaveStackTracesFromDeepCopy, Object* pExceptionOb
 }
 FCIMPLEND
 
+#ifdef FEATURE_COMINTEROP
+
 BSTR BStrFromString(STRINGREF s)
 {
     CONTRACTL
@@ -467,8 +469,6 @@ void ExceptionNative::GetExceptionData(OBJECTREF objException, ExceptionData *pE
     GCPROTECT_END();
     return;
 }
-
-#ifdef FEATURE_COMINTEROP
 
 HRESULT SimpleComCallWrapper::IErrorInfo_hr()
 {
