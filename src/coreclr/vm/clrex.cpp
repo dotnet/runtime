@@ -1874,11 +1874,9 @@ EECOMException::EECOMException(
 {
     WRAPPER_NO_CONTRACT;
 
-#ifdef FEATURE_COMINTEROP
     // Must use another path for managed IErrorInfos...
     //  note that this doesn't cover out-of-proc managed IErrorInfos.
     _ASSERTE(!bCheckInProcCCWTearOff || !IsInProcCCWTearOff(pErrInfo));
-#endif  // FEATURE_COMINTEROP
 
     m_ED.hr = hr;
     m_ED.bstrDescription = NULL;

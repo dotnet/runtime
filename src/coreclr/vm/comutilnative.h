@@ -31,7 +31,9 @@
 //
 //
 
+#ifdef FEATURE_COMINTEROP
 void FreeExceptionData(ExceptionData *pedata);
+#endif
 
 class ExceptionNative
 {

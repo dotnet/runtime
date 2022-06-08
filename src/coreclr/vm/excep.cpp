@@ -2959,6 +2959,7 @@ void ResMgrGetString(LPCWSTR wszResourceName, STRINGREF * ppMessage)
     }
 }
 
+#ifdef FEATURE_COMINTEROP
 void FreeExceptionData(ExceptionData *pedata)
 {
     CONTRACTL
@@ -2984,6 +2985,7 @@ void FreeExceptionData(ExceptionData *pedata)
     if (pedata->bstrHelpFile)
         SysFreeString(pedata->bstrHelpFile);
 }
+#endif // FEATURE_COMINTEROP
 
 void GetExceptionForHR(HRESULT hr, IErrorInfo* pErrInfo, OBJECTREF* pProtectedThrowable)
 {
