@@ -106,14 +106,18 @@ function set_exit_code(exit_code, reason) {
 
     } else if (App && App.INTERNAL) {
         if (is_node) {
-            let stdoutFlushed = new Promise((resolve, reject) => {
-                process.stdout.on('drain', () => resolve());
-                setTimeout(reject, 3000);
-            });
-            let stderrFlushed = new Promise((resolve, reject) => {
-                process.stderr.on('drain', () => resolve());
-                setTimeout(reject, 3000);
-            });
+            let _flush = function(_stream) {
+                return new Promise((resolve, reject) => {
+                    if (!_stream.write('')) {
+                        _stream.on('drain', () => resolve());
+                        setTimeout(reject, 3000);
+                    } else {
+                        resolve();
+                    }
+                });
+            };
+            let stderrFlushed = _flush(process.stderr);
+            let stdoutFlushed = _flush(process.stdout);
 
             Promise.all([ stdoutFlushed, stderrFlushed ])
                     .then(
