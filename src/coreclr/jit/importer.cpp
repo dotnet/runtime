@@ -7446,8 +7446,28 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                 const TypeCompareState compare =
                     info.compCompHnd->compareTypesForEquality(unboxResolvedToken.hClass, pResolvedToken->hClass);
 
+                bool optimize = false;
+
                 // If so, box/unbox.any is a nop.
                 if (compare == TypeCompareState::Must)
+                {
+                    optimize = true;
+                }
+                else if (compare == TypeCompareState::MustNot)
+                {
+                    // An attempt to catch cases where we mix enums and primitives, e.g.:
+                    //   (IntEnum)(object)myInt
+                    //   (byte)(object)myByteEnum
+                    //
+                    CorInfoType typ = info.compCompHnd->getTypeForPrimitiveValueClass(unboxResolvedToken.hClass);
+                    if ((typ >= CORINFO_TYPE_BYTE) && (typ <= CORINFO_TYPE_ULONG) &&
+                        (info.compCompHnd->getTypeForPrimitiveValueClass(pResolvedToken->hClass) == typ))
+                    {
+                        optimize = true;
+                    }
+                }
+
+                if (optimize)
                 {
                     JITDUMP("\n Importing BOX; UNBOX.ANY as NOP\n");
                     // Skip the next unbox.any instruction
