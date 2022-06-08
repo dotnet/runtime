@@ -431,6 +431,11 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         internal override async ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default)
         {
+            //
+            // If MsQuic indicated that some data were received (QUIC_STREAM_EVENT_RECEIVE), we use it to complete the request
+            // synchronously. Otherwise we setup the request to be completed by the HandleEventReceive handler.
+            //
+
             ThrowIfDisposed();
 
             if (_state.ReadState == ReadState.Closed)
@@ -993,6 +998,13 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private static unsafe int HandleEventReceive(State state, ref QUIC_STREAM_EVENT streamEvent)
         {
+            //
+            // Handle MsQuic QUIC_STREAM_EVENT_RECEIVE event
+            //
+            // If there is a pending ReadAsync call, then we complete it. Otherwise we keep a pointer to the received data
+            // and use it to complete the next ReadAsync operation synchronously.
+            //
+
             ref var receiveEvent = ref streamEvent.RECEIVE;
 
             if (NetEventSource.Log.IsEnabled())
