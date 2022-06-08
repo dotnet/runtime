@@ -303,9 +303,13 @@ namespace System
                 _ => _objref, // CV_DECIMAL, CV_STRING, CV_OBJECT
             };
 
-        // This routine will return an boxed enum.
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern object BoxEnum();
+        private unsafe object BoxEnum()
+        {
+            Debug.Assert(_objref != null);
+            return RuntimeHelpers.Box(
+                RuntimeHelpers.GetMethodTable(_objref),
+                ref Unsafe.As<long, byte>(ref _data))!;
+        }
 
         // Helper code for marshaling managed objects to VARIANT's (we use
         // managed variants as an intermediate type.

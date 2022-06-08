@@ -156,37 +156,6 @@ FCIMPL2(void, COMVariant::SetFieldsObject, VariantData* var, Object* vVal)
 FCIMPLEND
 
 
-FCIMPL1(Object*, COMVariant::BoxEnum, VariantData* var)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(var));
-        PRECONDITION(var->GetObjRef() != NULL);
-    }
-    CONTRACTL_END;
-
-    OBJECTREF retO = NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_1(retO);
-
-#ifdef _DEBUG
-    CVTypes vType = (CVTypes) var->GetType();
-#endif
-
-    _ASSERTE(vType == CV_ENUM);
-
-    MethodTable* mt = ((REFLECTCLASSBASEREF) var->GetObjRef())->GetType().GetMethodTable();
-    _ASSERTE(mt);
-
-    retO = mt->Box(var->GetData());
-
-    HELPER_METHOD_FRAME_END();
-    return OBJECTREFToObject(retO);
-}
-FCIMPLEND
-
-
 /*===============================GetTypeFromClass===============================
 **Action: Takes an MethodTable * and returns the associated CVType.
 **Arguments: MethodTable * -- a pointer to the class for which we want the CVType.

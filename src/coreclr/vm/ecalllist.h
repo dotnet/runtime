@@ -361,7 +361,6 @@ FCFuncEnd()
 #ifdef FEATURE_COMINTEROP
 FCFuncStart(gVariantFuncs)
     FCFuncElement("SetFieldsObject", COMVariant::SetFieldsObject)
-    FCFuncElement("BoxEnum", COMVariant::BoxEnum)
 FCFuncEnd()
 #endif // FEATURE_COMINTEROP
 

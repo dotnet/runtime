@@ -31,7 +31,6 @@ public:
     //
 
     static FCDECL2(void, SetFieldsObject, VariantData* vThisRef, Object* vVal);
-    static FCDECL1(Object*, BoxEnum, VariantData* var);
 
 private:
     // GetCVTypeFromClass
