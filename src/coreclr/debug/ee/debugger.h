@@ -1835,17 +1835,6 @@ public:
     // Send a raw managed debug event over the managed pipeline.
     void SendRawEvent(const DebuggerIPCEvent * pManagedEvent);
 
-    // Message box API for the left side of the debugger. This API handles calls from the
-    // debugger helper thread as well as from normal EE threads. It is the only one that
-    // should be used from inside the debugger left side.
-    int MessageBox(
-                UINT uText,       // Resource Identifier for Text message
-                UINT uCaption,    // Resource Identifier for Caption
-                UINT uType,       // Style of MessageBox
-                BOOL displayForNonInteractive,      // Display even if the process is running non interactive
-                BOOL showFileNameInTitle,           // Flag to show FileName in Caption
-                ...);             // Additional Arguments
-
     void SetEEInterface(EEDebugInterface* i);
     void StopDebugger(void);
     BOOL IsStopped(void)
@@ -3251,7 +3240,7 @@ struct DebuggerMethodInfoEntry
 };
 
 // class DebuggerMethodInfoTable:   Hash table to hold all the non-JIT related
-// info for each method we see.  The JIT infos live in a seperate table
+// info for each method we see.  The JIT infos live in a separate table
 // keyed by MethodDescs - there may be multiple
 // JITted realizations of each MethodDef, e.g. under different generic
 // assumptions.  Hangs off of the Debugger object.
@@ -3679,9 +3668,6 @@ void DbgLogHelper(DebuggerIPCEventType event);
 // Helpers for cleanup
 // These are various utility functions, mainly where we factor out code.
 //-----------------------------------------------------------------------------
-void GetPidDecoratedName(_Out_writes_(cBufSizeInChars) WCHAR * pBuf,
-                         int cBufSizeInChars,
-                         const WCHAR * pPrefix);
 
 // Specify type of Win32 event
 enum EEventResetType {

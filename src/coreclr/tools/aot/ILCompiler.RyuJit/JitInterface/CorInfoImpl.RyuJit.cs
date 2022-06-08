@@ -1199,11 +1199,12 @@ namespace Internal.JitInterface
                     // Either
                     //    1. no constraint resolution at compile time (!directMethod)
                     // OR 2. no code sharing lookup in call
-                    // OR 3. we have have resolved to an instantiating stub
+                    // OR 3. we have resolved to an instantiating stub
 
                     methodAfterConstraintResolution = directMethod;
 
-                    Debug.Assert(!methodAfterConstraintResolution.OwningType.IsInterface);
+                    Debug.Assert(!methodAfterConstraintResolution.OwningType.IsInterface
+                        || methodAfterConstraintResolution.Signature.IsStatic);
                     resolvedConstraint = true;
                     pResult->thisTransform = CORINFO_THIS_TRANSFORM.CORINFO_NO_THIS_TRANSFORM;
 
@@ -1863,7 +1864,7 @@ namespace Internal.JitInterface
                 }
                 else
                 {
-                    *pCookieVal = (IntPtr)0x216D6F6D202C6948;
+                    *pCookieVal = unchecked((IntPtr)0x216D6F6D202C6948);
                 }
                 *ppCookieVal = null;
             }

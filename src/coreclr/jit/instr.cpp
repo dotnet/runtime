@@ -258,32 +258,6 @@ bool CodeGenInterface::instIsFP(instruction ins)
 
 /*****************************************************************************
  *
- *  Generate a jump instruction.
- */
-
-void CodeGen::inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock)
-{
-#if !FEATURE_FIXED_OUT_ARGS
-    // On the x86 we are pushing (and changing the stack level), but on x64 and other archs we have
-    // a fixed outgoing args area that we store into and we never change the stack level when calling methods.
-    //
-    // Thus only on x86 do we need to assert that the stack level at the target block matches the current stack level.
-    //
-    CLANG_FORMAT_COMMENT_ANCHOR;
-
-#ifdef UNIX_X86_ABI
-    // bbTgtStkDepth is a (pure) argument count (stack alignment padding should be excluded).
-    assert((tgtBlock->bbTgtStkDepth * sizeof(int) == (genStackLevel - curNestedAlignment)) || isFramePointerUsed());
-#else
-    assert((tgtBlock->bbTgtStkDepth * sizeof(int) == genStackLevel) || isFramePointerUsed());
-#endif
-#endif // !FEATURE_FIXED_OUT_ARGS
-
-    GetEmitter()->emitIns_J(emitter::emitJumpKindToIns(jmp), tgtBlock);
-}
-
-/*****************************************************************************
- *
  *  Generate a set instruction.
  */
 
@@ -837,6 +811,38 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
             case GT_CNS_INT:
                 assert(op->isContainedIntOrIImmed());
                 return OperandDesc(op->AsIntCon()->IconValue(), op->AsIntCon()->ImmedValNeedsReloc(compiler));
+
+            case GT_CNS_VEC:
+            {
+                switch (op->TypeGet())
+                {
+#if defined(FEATURE_SIMD)
+                    case TYP_SIMD8:
+                    {
+                        simd8_t constValue = op->AsVecCon()->gtSimd8Val;
+                        return OperandDesc(emit->emitSimd8Const(constValue));
+                    }
+
+                    case TYP_SIMD12:
+                    case TYP_SIMD16:
+                    {
+                        simd16_t constValue = op->AsVecCon()->gtSimd16Val;
+                        return OperandDesc(emit->emitSimd16Const(constValue));
+                    }
+
+                    case TYP_SIMD32:
+                    {
+                        simd32_t constValue = op->AsVecCon()->gtSimd32Val;
+                        return OperandDesc(emit->emitSimd32Const(constValue));
+                    }
+#endif // FEATURE_SIMD
+
+                    default:
+                    {
+                        unreached();
+                    }
+                }
+            }
 
             default:
                 unreached();

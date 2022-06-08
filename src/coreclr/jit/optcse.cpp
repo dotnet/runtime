@@ -1218,7 +1218,7 @@ public:
     }
 
     // At the end of the merge store results of the dataflow equations, in a postmerge state.
-    // We also handle the case where calls conditionally kill CSE availabilty.
+    // We also handle the case where calls conditionally kill CSE availability.
     //
     bool EndMerge(BasicBlock* block)
     {
@@ -1251,9 +1251,9 @@ public:
         // If it is 'true' then the initial value of m_preMergeOut was different than the final value that
         // we computed for bbCseOut.  When it is true we will visit every the successor of 'block'
         //
-        // This is also why we need to allocate an extra bit in our cseLivenessTrair BitVecs.
-        // We always need to visit our successor blocks once, thus we require that that the first time
-        // that we visit a block we have a bit set in m_preMergeOut that won't be set when we compute
+        // This is also why we need to allocate an extra bit in our cseLivenessTraits BitVecs.
+        // We always need to visit our successor blocks once, thus we require that the first time
+        // we visit a block we have a bit set in m_preMergeOut that won't be set when we compute
         // the new value of bbCseOut.
         //
         bool notDone = !BitVecOps::Equal(m_comp->cseLivenessTraits, block->bbCseOut, m_preMergeOut);
@@ -1851,7 +1851,19 @@ public:
                 //
                 // Thus we might need to use large displacements when loading or storing
                 // to CSE LclVars that are not enregistered
-                // On ARM64 this means using rsGetRsvdReg() to hold the large displacement
+                // On ARM64 this means using rsGetRsvdReg() or R21 to hold the large displacement
+                //
+                largeFrame = true;
+                break; // early out,  we don't need to keep increasing frameSize
+            }
+#elif defined(TARGET_LOONGARCH64)
+            if (frameSize > 0x7ff)
+            {
+                // We likely have a large stack frame.
+                //
+                // Thus we might need to use large displacements when loading or storing
+                // to CSE LclVars that are not enregistered
+                // On LoongArch64 this means using rsGetRsvdReg() to hold the large displacement
                 //
                 largeFrame = true;
                 break; // early out,  we don't need to keep increasing frameSize
@@ -1887,7 +1899,7 @@ public:
 
             // The enregCount only tracks the uses of integer registers
             //
-            // We could track floating point register usage seperately
+            // We could track floating point register usage separately
             // but it isn't worth the additional complexity as floating point CSEs
             // are rare and we typically have plenty of floating point register available.
             //
@@ -3565,6 +3577,7 @@ bool Compiler::optIsCSEcandidate(GenTree* tree)
         case GT_CNS_INT:
         case GT_CNS_DBL:
         case GT_CNS_STR:
+        case GT_CNS_VEC:
             return true; // We reach here only when CSE_CONSTS is enabled
 
         case GT_ARR_ELEM:

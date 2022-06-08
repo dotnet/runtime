@@ -10,9 +10,6 @@ using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.MethodInfos;
 using System.Reflection.Runtime.TypeInfos;
 
-
-using Internal.Reflection.Tracing;
-
 using Internal.Metadata.NativeFormat;
 
 namespace System.Reflection.Runtime.TypeInfos.NativeFormat
@@ -33,10 +30,6 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
         {
             get
             {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.TypeInfo_DeclaringMethod(this);
-#endif
                 return _declaringRuntimeNamedMethodInfo;
             }
         }

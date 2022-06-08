@@ -36,12 +36,18 @@ namespace System.Reflection
 
         private sealed class ManifestResourceStream : UnmanagedMemoryStream
         {
+            // ensures the RuntimeAssembly is kept alive for as long as the stream lives
             private RuntimeAssembly _manifestAssembly;
 
             internal unsafe ManifestResourceStream(RuntimeAssembly manifestAssembly, byte* pointer, long length, long capacity, FileAccess access) : base(pointer, length, capacity, access)
             {
                 _manifestAssembly = manifestAssembly;
             }
+
+            // override Read(Span<byte>) because the base UnmanagedMemoryStream doesn't optimize it for derived types
+            public override int Read(Span<byte> buffer) => ReadCore(buffer);
+
+            // NOTE: no reason to override Write(Span<byte>), since a ManifestResourceStream is read-only.
         }
 
         internal object SyncRoot

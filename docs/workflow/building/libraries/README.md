@@ -26,9 +26,11 @@ cd tests
 pushd ..\src & dotnet build & popd & dotnet build /t:test
 ```
 
-The instructions for Linux and macOS are essentially the same:
+Instructions for Unix-like operating systems are essentially the same:
 
 ```bash
+#!/usr/bin/env bash
+
 # From root:
 git clean -xdf
 git pull upstream main & git push origin main
@@ -114,6 +116,11 @@ The libraries build contains some native code. This includes shims over libc, op
 ./src/native/libs/build-native.sh debug x64
 ```
 
+- Building and updating the binplace (for e.g. the testhost), which is needed when iterating on native components
+```bash
+dotnet.sh build src/native/libraries/build-native.proj
+```
+
 - The following example shows how you would do an arm cross-compile build
 ```bash
 ./src/native/libs/build-native.sh debug arm cross verbose
@@ -161,12 +168,12 @@ For libraries that have multiple target frameworks the target frameworks will be
 **Examples**
 
 - Build project for Linux
-```
+```bash
 dotnet build System.Net.NetworkInformation.csproj /p:TargetOS=Linux
 ```
 
 - Build Release version of library
-```
+```bash
 dotnet build -c Release System.Net.NetworkInformation.csproj
 ```
 
@@ -175,13 +182,13 @@ When changing `System.Private.CoreLib` after a full build, in order to test agai
 
 After doing a build of the runtime:
 
-```
+```cmd
 build.cmd clr -rc Release
 ```
 
 You can iterate on `System.Private.CoreLib` by running:
 
-```
+```cmd
 build.cmd clr.corelib+clr.nativecorelib+libs.pretest -rc Release
 ```
 
@@ -192,7 +199,7 @@ You can use the same workflow for mono runtime by using `mono.corelib+libs.prete
 ### Building for Mono
 By default the libraries will attempt to build using the CoreCLR version of `System.Private.CoreLib.dll`. In order to build against the Mono version you need to use the `/p:RuntimeFlavor=Mono` argument.
 
-```
+```cmd
 .\build.cmd libs /p:RuntimeFlavor=Mono
 ```
 
@@ -225,13 +232,13 @@ For more about running tests, read the [running tests](../../testing/libraries/t
 ## Build packages
 To build a library's package, simply invoke `dotnet pack` on the src project after you successfully built the .NETCoreApp vertical from root:
 
-```
+```cmd
 build libs
 dotnet pack src\libraries\System.Text.Json\src\
 ```
 
 Same as for `dotnet build` or `dotnet publish`, you can specify the desired configuration via the `-c` flag:
 
-```
+```cmd
 dotnet pack src\libraries\System.Text.Json\src\ -c Release
 ```

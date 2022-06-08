@@ -313,7 +313,7 @@ public class DebuggerTestFirefox : DebuggerTestBase
             }
             return ret;
         }
-        if (id.StartsWith("dotnet:valuetype:") || id.StartsWith("dotnet:object:") || id.StartsWith("dotnet:array:") || id.StartsWith("dotnet:pointer:"))
+        if (id.StartsWith("dotnet:evaluationResult:") || id.StartsWith("dotnet:valuetype:") || id.StartsWith("dotnet:object:") || id.StartsWith("dotnet:array:") || id.StartsWith("dotnet:pointer:"))
         {
             JArray ret = new ();
             var o = JObject.FromObject(new
@@ -422,7 +422,7 @@ public class DebuggerTestFirefox : DebuggerTestBase
                     description = res.Value["result"]["value"]["description"],
                     objectId = actor
                 });
-                if (actor.StartsWith("dotnet:valuetype:"))
+                if (actor?.StartsWith("dotnet:valuetype:") == true)
                     resObj["isValueType"] = true;
                 return (resObj, res);
             }

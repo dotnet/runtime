@@ -1073,15 +1073,19 @@ namespace System.Data.SqlTypes
                 usChar = rgwchStr[iCurChar];
                 iCurChar++;
 
-                if (usChar >= '0' && usChar <= '9')
+                if (char.IsAsciiDigit(usChar))
+                {
                     usChar -= '0';
+                }
                 else if (usChar == '.' && lDecPnt < 0)
                 {
                     lDecPnt = iData;
                     continue;
                 }
                 else
+                {
                     throw new FormatException(SQLResource.FormatMessage);
+                }
 
                 snResult.MultByULong(s_ulBase10);
                 snResult.AddULong(usChar);
@@ -2704,7 +2708,7 @@ namespace System.Data.SqlTypes
                     // D5. Test remainder. Carry indicates result<0, therefore QH 1 too large
                     if (HI(dwlAccum) == 0)
                     {
-                        // D6. Add back - probabilty is 2**(-31). R += D. Q[digit] -= 1
+                        // D6. Add back - probability is 2**(-31). R += D. Q[digit] -= 1
                         uint ulCarry;
 
                         rgulQ[iulRindex - ciulD] = QH - 1;

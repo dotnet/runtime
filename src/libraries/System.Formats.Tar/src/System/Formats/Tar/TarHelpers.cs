@@ -151,22 +151,6 @@ namespace System.Formats.Tar
         // removing the trailing null or space chars.
         internal static string GetTrimmedUtf8String(ReadOnlySpan<byte> buffer) => GetTrimmedString(buffer, Encoding.UTF8);
 
-        // Reads the specified number of bytes and stores it in the byte buffer passed by reference.
-        // Throws if end of stream is reached.
-        internal static void ReadOrThrow(Stream archiveStream, Span<byte> buffer)
-        {
-            int totalRead = 0;
-            while (totalRead < buffer.Length)
-            {
-                int bytesRead = archiveStream.Read(buffer.Slice(totalRead));
-                if (bytesRead == 0)
-                {
-                    throw new EndOfStreamException();
-                }
-                totalRead += bytesRead;
-            }
-        }
-
         // Returns true if it successfully converts the specified string to a DateTimeOffset, false otherwise.
         internal static bool TryConvertToDateTimeOffset(string value, out DateTimeOffset timestamp)
         {
@@ -195,11 +179,11 @@ namespace System.Formats.Tar
 
         // Throws if the specified entry type is not supported for the specified format.
         // If 'forWriting' is true, an incompatible 'Regular File' entry type is allowed. It will be converted to the compatible version before writing.
-        internal static void VerifyEntryTypeIsSupported(TarEntryType entryType, TarFormat archiveFormat, bool forWriting)
+        internal static void VerifyEntryTypeIsSupported(TarEntryType entryType, TarEntryFormat archiveFormat, bool forWriting)
         {
             switch (archiveFormat)
             {
-                case TarFormat.V7:
+                case TarEntryFormat.V7:
                     if (entryType is
                         TarEntryType.Directory or
                         TarEntryType.HardLink or
@@ -214,7 +198,7 @@ namespace System.Formats.Tar
                     }
                     break;
 
-                case TarFormat.Ustar:
+                case TarEntryFormat.Ustar:
                     if (entryType is
                         TarEntryType.BlockDevice or
                         TarEntryType.CharacterDevice or
@@ -232,7 +216,7 @@ namespace System.Formats.Tar
                     }
                     break;
 
-                case TarFormat.Pax:
+                case TarEntryFormat.Pax:
                     if (entryType is
                         TarEntryType.BlockDevice or
                         TarEntryType.CharacterDevice or
@@ -253,7 +237,7 @@ namespace System.Formats.Tar
                     }
                     break;
 
-                case TarFormat.Gnu:
+                case TarEntryFormat.Gnu:
                     if (entryType is
                         TarEntryType.BlockDevice or
                         TarEntryType.CharacterDevice or
@@ -282,7 +266,7 @@ namespace System.Formats.Tar
                     }
                     break;
 
-                case TarFormat.Unknown:
+                case TarEntryFormat.Unknown:
                 default:
                     throw new FormatException(string.Format(SR.TarInvalidFormat, archiveFormat));
             }

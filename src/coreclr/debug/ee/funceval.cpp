@@ -3155,7 +3155,7 @@ static void RecordFuncEvalException(DebuggerEval *pDE,
  *
  * Does the main body of work (steps 1c onward) for the normal func-eval algorithm detailed at the
  * top of this file. The args have already been GC protected and we've transitioned into the appropriate
- * domain (steps 1a & 1b).  This has to be a seperate function from GCProtectArgsAndDoNormalFuncEval
+ * domain (steps 1a & 1b).  This has to be a separate function from GCProtectArgsAndDoNormalFuncEval
  * because otherwise we can't reliably find the right GCFrames to pop when unwinding the stack due to
  * an exception on 64-bit platforms (we have some GCFrames outside of the TRY, and some inside,
  * and they won't necesarily be layed out sequentially on the stack if they are all in the same function).

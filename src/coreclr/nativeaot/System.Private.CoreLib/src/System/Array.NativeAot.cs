@@ -874,7 +874,7 @@ namespace System
             }
         }
 
-        // Allocate new multidimensional array of given dimensions. Assumes that that pLengths is immutable.
+        // Allocate new multidimensional array of given dimensions. Assumes that pLengths is immutable.
         internal static unsafe Array NewMultiDimArray(EETypePtr eeType, int* pLengths, int rank)
         {
             Debug.Assert(eeType.IsArray && !eeType.IsSzArray);
@@ -953,6 +953,22 @@ namespace System
             if (dimension != 0)
                 throw new IndexOutOfRangeException();
             return Length - 1;
+        }
+
+        private unsafe nint GetFlattenedIndex(int rawIndex)
+        {
+            // Checked by the caller
+            Debug.Assert(Rank == 1);
+
+            if (!IsSzArray)
+            {
+                ref int bounds = ref GetRawMultiDimArrayBounds();
+                rawIndex -= Unsafe.Add(ref bounds, 1);
+            }
+
+            if ((uint)rawIndex >= NativeLength)
+                ThrowHelper.ThrowIndexOutOfRangeException();
+            return rawIndex;
         }
 
         private unsafe nint GetFlattenedIndex(ReadOnlySpan<int> indices)

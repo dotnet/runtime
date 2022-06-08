@@ -23,29 +23,15 @@ namespace System.Text.RegularExpressions.Symbolic
 
         internal int Id { get; set; }
 
-        internal bool IsInitialState { get; set; }
-
         /// <summary>This is a deadend state</summary>
         internal bool IsDeadend => Node.IsNothing;
 
         /// <summary>The node must be nullable here</summary>
-        internal int FixedLength
+        internal int FixedLength(uint nextCharKind)
         {
-            get
-            {
-                if (Node._kind == SymbolicRegexNodeKind.FixedLengthMarker)
-                {
-                    return Node._lower;
-                }
-
-                if (Node._kind == SymbolicRegexNodeKind.Or)
-                {
-                    Debug.Assert(Node._alts is not null);
-                    return Node._alts._maximumLength;
-                }
-
-                return -1;
-            }
+            Debug.Assert(nextCharKind is 0 or CharKind.BeginningEnd or CharKind.Newline or CharKind.WordLetter or CharKind.NewLineS);
+            uint context = CharKind.Context(PrevCharKind, nextCharKind);
+            return Node.ResolveFixedLength(context);
         }
 
         /// <summary>If true then the state is a dead-end, rejects all inputs.</summary>
@@ -105,7 +91,7 @@ namespace System.Text.RegularExpressions.Symbolic
             uint context = CharKind.Context(PrevCharKind, nextCharKind);
 
             // Compute the derivative of the node for the given context
-            SymbolicRegexNode<TSet> derivative = Node.CreateDerivative(minterm, context);
+            SymbolicRegexNode<TSet> derivative = Node.CreateDerivativeWithoutEffects(minterm, context);
 
             // nextCharKind will be the PrevCharKind of the target state
             // use an existing state instead if one exists already
@@ -142,7 +128,7 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal bool IsNullable(uint nextCharKind)
+        internal bool IsNullableFor(uint nextCharKind)
         {
             Debug.Assert(nextCharKind is 0 or CharKind.BeginningEnd or CharKind.Newline or CharKind.WordLetter or CharKind.NewLineS);
             uint context = CharKind.Context(PrevCharKind, nextCharKind);
@@ -154,11 +140,11 @@ namespace System.Text.RegularExpressions.Symbolic
 
         public override int GetHashCode() => (PrevCharKind, Node).GetHashCode();
 
+#if DEBUG
         public override string ToString() =>
             PrevCharKind == 0 ? Node.ToString() :
              $"({CharKind.DescribePrev(PrevCharKind)},{Node})";
 
-#if DEBUG
         internal string DgmlView
         {
             get

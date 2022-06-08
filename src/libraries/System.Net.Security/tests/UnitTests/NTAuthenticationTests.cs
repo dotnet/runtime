@@ -18,7 +18,7 @@ namespace System.Net.Security.Tests
 
         private static NetworkCredential s_testCredentialRight = new NetworkCredential("rightusername", "rightpassword");
         private static NetworkCredential s_testCredentialWrong = new NetworkCredential("rightusername", "wrongpassword");
-        private static byte[] s_Hello => "Hello"u8;
+        private static readonly byte[] s_Hello = "Hello"u8.ToArray();
 
         [Fact]
         public void NtlmProtocolExampleTest()
@@ -108,7 +108,7 @@ namespace System.Net.Security.Tests
         }
 
         [ConditionalFact(nameof(IsNtlmInstalled))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/65678", TestPlatforms.OSX)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/65678", TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.MacCatalyst)]
         public void NtlmSignatureTest()
         {
             FakeNtlmServer fakeNtlmServer = new FakeNtlmServer(s_testCredentialRight);

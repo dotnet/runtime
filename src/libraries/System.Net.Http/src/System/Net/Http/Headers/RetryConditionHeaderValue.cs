@@ -52,8 +52,9 @@ namespace System.Net.Http.Headers
             {
                 return ((int)_delta.Value.TotalSeconds).ToString(NumberFormatInfo.InvariantInfo);
             }
+
             Debug.Assert(_date != null);
-            return HttpDateParser.DateToString(_date.Value);
+            return _date.GetValueOrDefault().ToString("r");
         }
 
         public override bool Equals([NotNullWhen(true)] object? obj)
@@ -126,7 +127,7 @@ namespace System.Net.Http.Headers
             // If it is a number, we have a timespan, otherwise we assume we have a date.
             char firstChar = input[current];
 
-            if ((firstChar >= '0') && (firstChar <= '9'))
+            if (char.IsAsciiDigit(firstChar))
             {
                 int deltaStartIndex = current;
                 int deltaLength = HttpRuleParser.GetNumberLength(input, current, false);

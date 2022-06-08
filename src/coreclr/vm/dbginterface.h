@@ -21,7 +21,7 @@ typedef void (*FAVORCALLBACK)(void *);
 
 //
 // The purpose of this object is to serve as an entry point to the
-// debugger, which used to reside in a seperate DLL.
+// debugger, which used to reside in a separate DLL.
 //
 
 class DebugInterface
