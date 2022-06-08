@@ -10,16 +10,19 @@ using SimpleDigest = Interop.BrowserCrypto.SimpleDigest;
 
 namespace System.Security.Cryptography
 {
-    internal sealed class SHANativeHashProvider : HashProvider
+    internal sealed class HMACNativeHashProvider : HashProvider
     {
         private readonly int _hashSizeInBytes;
-        private readonly SimpleDigest _impl;
+        private readonly SimpleDigest _hashAlgorithm;
+        private readonly byte[] _key;
         private MemoryStream? _buffer;
 
-        public SHANativeHashProvider(string hashAlgorithmId)
+        public HMACNativeHashProvider(string hashAlgorithmId, ReadOnlySpan<byte> key)
         {
             Debug.Assert(HashProviderDispenser.CanUseSubtleCryptoImpl);
-            (_impl, _hashSizeInBytes) = HashAlgorithmToPal(hashAlgorithmId);
+
+            (_hashAlgorithm, _hashSizeInBytes) = SHANativeHashProvider.HashAlgorithmToPal(hashAlgorithmId);
+            _key = key.ToArray();
         }
 
         public override void AppendHashData(ReadOnlySpan<byte> data)
@@ -30,10 +33,10 @@ namespace System.Security.Cryptography
 
         public override int FinalizeHashAndReset(Span<byte> destination)
         {
-            GetCurrentHash(destination);
+            int written = GetCurrentHash(destination);
             _buffer = null;
 
-            return _hashSizeInBytes;
+            return written;
         }
 
         public override int GetCurrentHash(Span<byte> destination)
@@ -50,10 +53,11 @@ namespace System.Security.Cryptography
 
             unsafe
             {
+                fixed (byte* key = _key)
                 fixed (byte* src = srcArray)
                 fixed (byte* dest = destination)
                 {
-                    int res = Interop.BrowserCrypto.SimpleDigestHash(_impl, src, srcLength, dest, destination.Length);
+                    int res = Interop.BrowserCrypto.Sign(_hashAlgorithm, key, _key.Length, src, srcLength, dest, destination.Length);
                     Debug.Assert(res != 0);
                 }
             }
@@ -61,15 +65,16 @@ namespace System.Security.Cryptography
             return _hashSizeInBytes;
         }
 
-        public static unsafe int HashOneShot(string hashAlgorithmId, ReadOnlySpan<byte> data, Span<byte> destination)
+        public static unsafe int MacDataOneShot(string hashAlgorithmId, ReadOnlySpan<byte> key, ReadOnlySpan<byte> data, Span<byte> destination)
         {
-            (SimpleDigest impl, int hashSizeInBytes) = HashAlgorithmToPal(hashAlgorithmId);
+            (SimpleDigest hashName, int hashSizeInBytes) = SHANativeHashProvider.HashAlgorithmToPal(hashAlgorithmId);
             Debug.Assert(destination.Length >= hashSizeInBytes);
 
+            fixed (byte* k = key)
             fixed (byte* src = data)
             fixed (byte* dest = destination)
             {
-                int res = Interop.BrowserCrypto.SimpleDigestHash(impl, src, data.Length, dest, destination.Length);
+                int res = Interop.BrowserCrypto.Sign(hashName, k, key.Length, src, data.Length, dest, destination.Length);
                 Debug.Assert(res != 0);
             }
 
@@ -80,23 +85,15 @@ namespace System.Security.Cryptography
 
         public override void Dispose(bool disposing)
         {
-        }
+            if (disposing)
+            {
+                CryptographicOperations.ZeroMemory(_key);
+            }
+         }
 
         public override void Reset()
         {
             _buffer = null;
-        }
-
-        internal static (SimpleDigest HashName, int HashSizeInBytes) HashAlgorithmToPal(string hashAlgorithmId)
-        {
-            return hashAlgorithmId switch
-            {
-                HashAlgorithmNames.SHA256 => (SimpleDigest.Sha256, SHA256.HashSizeInBytes),
-                HashAlgorithmNames.SHA1 => (SimpleDigest.Sha1, SHA1.HashSizeInBytes),
-                HashAlgorithmNames.SHA384 => (SimpleDigest.Sha384, SHA384.HashSizeInBytes),
-                HashAlgorithmNames.SHA512 => (SimpleDigest.Sha512, SHA512.HashSizeInBytes),
-                _ => throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmId)),
-            };
         }
     }
 }
