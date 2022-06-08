@@ -1025,7 +1025,15 @@ namespace System.Text.RegularExpressions.Tests
         [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
         public async Task Match_VaryingLengthStrings_Huge(RegexEngine engine)
         {
-            await Match_VaryingLengthStrings(engine, RegexOptions.None, 100_000);
+            RegexHelpers.SetSafeSizeThreshold(100_002);
+            try
+            {
+                await Match_VaryingLengthStrings(engine, RegexOptions.None, 100_000);
+            }
+            finally
+            {
+                RegexHelpers.RestoreSafeSizeThresholdToDefault();
+            }
         }
 
         public static IEnumerable<object[]> Match_DeepNesting_MemberData()
@@ -1465,6 +1473,49 @@ namespace System.Text.RegularExpressions.Tests
                     {
                         new CaptureData("line2\nline3", 6, 11),
                         new CaptureData("line2\n", 6, 6)
+                    }
+                };
+
+                // Validate captures after backtracking constructs are uncaptured when backtracking
+                foreach (string lazy in new[] { "", "?" })
+                {
+                    yield return new object[]
+                    {
+                        engine,
+                        $"^a+{lazy}(a)$", "aaaa", RegexOptions.None, 0, 4,
+                        new CaptureData[]
+                        {
+                            new CaptureData("aaaa", 0, 4),
+                            new CaptureData("a", 3, 1)
+                        }
+                    };
+
+                    yield return new object[]
+                    {
+                        engine,
+                        $"^(a)+{lazy}(a)$", "aaaa", RegexOptions.None, 0, 4,
+                        new CaptureData[]
+                        {
+                            new CaptureData("aaaa", 0, 4),
+                            new CaptureData("a", 2, 1, new CaptureData[]
+                            {
+                                new CaptureData("a", 0, 1),
+                                new CaptureData("a", 1, 1),
+                                new CaptureData("a", 2, 1),
+                            }),
+                            new CaptureData("a", 3, 1)
+                        }
+                    };
+                }
+                yield return new object[]
+                {
+                    engine,
+                    $"^(|a)aa(a)$", "aaaa", RegexOptions.None, 0, 4,
+                    new CaptureData[]
+                    {
+                        new CaptureData("aaaa", 0, 4),
+                        new CaptureData("a", 0, 1),
+                        new CaptureData("a", 3, 1)
                     }
                 };
 
@@ -1923,7 +1974,17 @@ namespace System.Text.RegularExpressions.Tests
             string fullpattern = string.Concat(string.Concat(Enumerable.Repeat($"({pattern}", pattern_repetition).Concat(Enumerable.Repeat(")", pattern_repetition))), anchor);
             string fullinput = string.Concat(Enumerable.Repeat(input, input_repetition));
 
-            Regex re = await RegexHelpers.GetRegexAsync(engine, fullpattern);
+            RegexHelpers.SetSafeSizeThreshold(10_005);
+            Regex re;
+            try
+            {
+                re = await RegexHelpers.GetRegexAsync(engine, fullpattern);
+            }
+            finally
+            {
+                RegexHelpers.RestoreSafeSizeThresholdToDefault();
+            }
+
             Assert.True(re.Match(fullinput).Success);
         }
 
@@ -1945,7 +2006,17 @@ namespace System.Text.RegularExpressions.Tests
             string fullpattern = string.Concat(Enumerable.Repeat(begin, pattern_repetition)) + inner + string.Concat(Enumerable.Repeat(end, pattern_repetition));
             string fullinput = string.Concat(Enumerable.Repeat(input, input_repetition));
 
-            var re = await RegexHelpers.GetRegexAsync(engine, fullpattern, options);
+            RegexHelpers.SetSafeSizeThreshold(int.MaxValue);
+            Regex re;
+            try
+            {
+                re = await RegexHelpers.GetRegexAsync(engine, fullpattern, options);
+            }
+            finally
+            {
+                RegexHelpers.RestoreSafeSizeThresholdToDefault();
+            }
+
             Assert.True(re.Match(fullinput).Success);
         }
 

@@ -77,10 +77,11 @@
     <Compile Include="System\Text\RegularExpressions\Symbolic\SymbolicRegexKind.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\SymbolicRegexInfo.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\SymbolicRegexMatcher.cs" />
-    <Compile Include="System\Text\RegularExpressions\Symbolic\SymbolicRegexRunnerFactory.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\SymbolicRegexMatcher.Dgml.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\SymbolicRegexMatcher.Explore.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\SymbolicRegexMatcher.Sample.cs" />
+    <Compile Include="System\Text\RegularExpressions\Symbolic\SymbolicRegexRunnerFactory.cs" />
+    <Compile Include="System\Text\RegularExpressions\Symbolic\SymbolicRegexThresholds.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\UInt64Solver.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\UnicodeCategoryConditions.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\UnicodeCategoryRanges.cs" />

@@ -16,6 +16,7 @@ This is a list of additions and edits to be made in ECMA-335 specifications. It 
 - [Ref field support](#ref-fields)
 - [Rules for IL rewriters](#rules-for-il-rewriters)
 - [Checked user-defined operators](#checked-user-defined-operators)
+- [Atomic reads and writes](#atomic-reads-and-writes)
 
 ## Signatures
 
@@ -1013,3 +1014,9 @@ Section "I.10.3.3 Conversion operators" of ECMA-335 adds *op_CheckedExplicit* as
 implementing checked explicit conversion operator.
 
 A checked user-defined operator is expected to throw an exception when the result of an operation is too large to represent in the destination type. What does it mean to be too large actually depends on the nature of the destination type. Typically the exception thrown is a System.OverflowException.
+
+## Atomic reads and writes
+
+Section "I.12.6.6 Atomic reads and writes" adds clarification that the atomicity guarantees apply to built-in primitive value types and pointers only.
+
+A conforming CLI shall guarantee that read and write access of *built-in primitive value types and pointers* to properly aligned memory locations no larger than the native word size (the size of type native int) is atomic (see §I.12.6.2) when all the write accesses to a location are the same size.
