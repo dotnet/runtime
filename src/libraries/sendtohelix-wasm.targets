@@ -211,7 +211,6 @@
            items. For example, it might want to add custom helix items only for a nodejs scenario -->
       <_TestWithCustomTarget Remove="@(_TestWithCustomTarget)" Condition="'$(%(_TestWithCustomTarget.PropertyName))' == ''" />
     </ItemGroup>
-    <Message Text="_TestWithCustomTarget: %(_TestWithCustomTarget.Identity) prop: %(_TestWithCustomTarget.PropertyName) archivePath: %(_TestWithCustomTarget.ArchivePath) tname: %(_TestWithCustomTarget.TestName)" />
 
     <CallTarget Condition="'$(IsRunningLibraryTests)' == 'true'"
                 RunEachTargetSeparately="true"
