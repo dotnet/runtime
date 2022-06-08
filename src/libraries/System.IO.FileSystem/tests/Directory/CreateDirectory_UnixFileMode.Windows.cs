@@ -8,7 +8,7 @@ namespace System.IO.Tests
     public class CreateDirectoryWithUnixFileMode
     {
         [Fact]
-        public void ThrowsPNSE()
+        public void NotSupported()
         {
             string path = GetRandomDirPath();
             Assert.Throws<PlatformNotSupportedException>(() => Directory.CreateDirectory(path, UnixFileMode.UserRead));
