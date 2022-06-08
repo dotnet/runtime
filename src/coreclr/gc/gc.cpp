@@ -46410,6 +46410,11 @@ int64_t GCHeap::GetTotalPauseDuration()
     return (int64_t)(gc_heap::total_suspended_time * 10);
 }
 
+void GCHeap::EnumerateConfigurationValues(void* context, ConfigurationValueFunc configurationValueFunc)
+{
+    GCConfig::EnumerateConfigurationValues(context, configurationValueFunc);
+}
+
 uint32_t GCHeap::GetMemoryLoad()
 {
     uint32_t memory_load = 0;

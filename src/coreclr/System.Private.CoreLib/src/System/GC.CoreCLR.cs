@@ -737,5 +737,47 @@ namespace System
         {
             return new TimeSpan(_GetTotalPauseDuration());
         }
+
+        internal delegate void EnumerateConfigurationValuesCallback(int type, long intValue, bool boolValue);
+
+        public static unsafe IReadOnlyDictionary<string, object> GetConfigurationVariables()
+        {
+            Dictionary<string, object> result = new Dictionary<string, object>();
+
+            string? name  = null;
+            string? value = null;
+
+            // It is important that we do not capture name or value in the lambda
+            // That capture will lead to the failure of QCall::StringHandleOnStack.Set()
+            // because name is no longer allocated on the stack.
+            void* addressOfName  = (void*)Unsafe.AsPointer(ref name);
+            void* addressOfValue = (void*)Unsafe.AsPointer(ref value);
+            StringHandleOnStack nameHandle  = new StringHandleOnStack(ref name);
+            StringHandleOnStack valueHandle = new StringHandleOnStack(ref value);
+
+            _EnumerateConfigurationValues(nameHandle: nameHandle, valueHandle: valueHandle,
+                callback: (type, intValue, boolValue) =>
+                {
+                    switch(type)
+                    {
+                        case 0:
+                            result.Add(Unsafe.AsRef<string>(addressOfName), intValue);
+                            break;
+
+                        case 1:
+                            result.Add(Unsafe.AsRef<string>(addressOfName), Unsafe.AsRef<string>(addressOfValue));
+                            break;
+
+                        case 2:
+                            result.Add(Unsafe.AsRef<string>(addressOfName), boolValue);
+                            break;
+                    }
+                });
+
+            return result;
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_EnumerateConfigurationValues")]
+        internal static partial void _EnumerateConfigurationValues(StringHandleOnStack nameHandle, StringHandleOnStack valueHandle, EnumerateConfigurationValuesCallback callback);
     }
 }

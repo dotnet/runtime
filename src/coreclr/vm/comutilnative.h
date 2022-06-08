@@ -121,6 +121,7 @@ typedef GCMemoryInfoData * GCMEMORYINFODATA;
 typedef GCMemoryInfoData * GCMEMORYINFODATAREF;
 #endif // USE_CHECKED_OBJECTREFS
 
+typedef void (*EnumerateConfigurationValuesCallback)(int type, int64_t intValue, BOOL boolValue);
 
 class GCInterface {
 private:
@@ -169,6 +170,8 @@ public:
     static void RemoveMemoryPressure(UINT64 bytesAllocated);
     static void AddMemoryPressure(UINT64 bytesAllocated);
 
+    static void EnumerateConfigurationValues(QCall::StringHandleOnStack& nameHandle, QCall::StringHandleOnStack& valueHandle, EnumerateConfigurationValuesCallback callback);
+
 private:
     // Out-of-line helper to avoid EH prolog/epilog in functions that otherwise don't throw.
     NOINLINE static void GarbageCollectModeAny(int generation);
@@ -192,6 +195,8 @@ extern "C" int QCALLTYPE GCInterface_EndNoGCRegion();
 extern "C" void QCALLTYPE GCInterface_AddMemoryPressure(UINT64 bytesAllocated);
 
 extern "C" void QCALLTYPE GCInterface_RemoveMemoryPressure(UINT64 bytesAllocated);
+
+extern "C" void QCALLTYPE GCInterface_EnumerateConfigurationValues(QCall::StringHandleOnStack nameHandle, QCall::StringHandleOnStack valueHandle, EnumerateConfigurationValuesCallback callback);
 
 class COMInterlocked
 {

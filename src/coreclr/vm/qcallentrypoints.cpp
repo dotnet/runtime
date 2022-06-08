@@ -232,6 +232,7 @@ static const Entry s_QCall[] =
     DllImportEntry(GCInterface_RegisterFrozenSegment)
     DllImportEntry(GCInterface_UnregisterFrozenSegment)
 #endif
+    DllImportEntry(GCInterface_EnumerateConfigurationValues)
     DllImportEntry(MarshalNative_Prelink)
     DllImportEntry(MarshalNative_IsBuiltInComSupported)
     DllImportEntry(MarshalNative_GetHINSTANCE)

@@ -536,6 +536,8 @@ public:
     virtual void TraceRefCountedHandles(HANDLESCANPROC callback, uintptr_t param1, uintptr_t param2) = 0;
 };
 
+typedef void (*ConfigurationValueFunc)(void* context, const char* name, int type, int64_t intValue, const char* stringValue, bool boolValue);
+
 // IGCHeap is the interface that the VM will use when interacting with the GC.
 class IGCHeap {
 public:
@@ -933,6 +935,8 @@ public:
 
     // Get the total paused duration.
     virtual int64_t GetTotalPauseDuration() = 0;
+
+    virtual void EnumerateConfigurationValues(void* context, ConfigurationValueFunc configurationValueFunc) = 0;
 };
 
 #ifdef WRITE_BARRIER_CHECK

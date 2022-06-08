@@ -2609,6 +2609,12 @@ namespace System
         /// </summary>
         /// <returns> The total amount of time paused in GC since the beginning of the process.</returns>
         public static TimeSpan GetTotalPauseDuration() { return TimeSpan.Zero; }
+
+        /// <summary>
+        /// Gets the GC Configuration Variables.
+        /// </summary>
+        /// <returns> A Dictionary of the Configuration Variables keyed on the name of the configuration with the values as the configuration values </returns> 
+        public static System.Collections.Generic.IReadOnlyDictionary<string, object> GetConfigurationVariables() { throw null; }
     }
 
     /// <summary>Specifies the behavior for a forced garbage collection.</summary>
