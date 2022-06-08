@@ -545,12 +545,15 @@ namespace System.Text.RegularExpressions.Tests
             // Lazy operator Backtracking
             yield return (@"http://([a-zA-z0-9\-]*\.?)*?(:[0-9]*)??/", "http://www.msn.com", RegexOptions.IgnoreCase, 0, 18, false, string.Empty);
 
-            // Grouping Constructs Invalid Regular Expressions
-            if (!RegexHelpers.IsNonBacktracking(engine))
-            {
-                yield return ("(?!)", "(?!)cat", RegexOptions.None, 0, 7, false, string.Empty);
-                yield return ("(?<!)", "(?<!)cat", RegexOptions.None, 0, 8, false, string.Empty);
-            }
+            // Expressions containing Nothing (subexpressions that never match).
+            // (Lookarounds aren't supported by NonBacktracking, but optimizer reduces (?!) to Nothing, which is supported.)
+            yield return ("(?!)", "cat", RegexOptions.None, 0, 3, false, string.Empty); 
+            yield return ("(?!)|((?!))|(?!)", "cat", RegexOptions.None, 0, 3, false, string.Empty); 
+            yield return ("cat(?!)", "cat", RegexOptions.None, 0, 3, false, string.Empty);
+            yield return ("(?<!)", "cat", RegexOptions.None, 0, 3, false, string.Empty);
+            yield return ("(?!)|cat", "cat", RegexOptions.None, 0, 3, true, "cat");
+            yield return ("dog|(?!)|cat", "cat", RegexOptions.None, 0, 3, true, "cat");
+            yield return ("dog|cat(?!)|cat", "cat", RegexOptions.None, 0, 3, true, "cat");
 
             // Alternation construct
             foreach (string input in new[] { "abc", "def" })

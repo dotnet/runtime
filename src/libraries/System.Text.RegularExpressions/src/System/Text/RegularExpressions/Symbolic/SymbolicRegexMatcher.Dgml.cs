@@ -28,7 +28,11 @@ namespace System.Text.RegularExpressions.Symbolic
             writer.WriteLine("        <Node Id=\"dfainfo\" Category=\"DFAInfo\" Label=\"{0}\"/>", FormatInfo(_builder, transitions.Count));
             foreach (DfaMatchingState<TSet> state in _builder._stateCache)
             {
-                writer.WriteLine("        <Node Id=\"{0}\" Label=\"{0}\" Category=\"State\" Group=\"Collapsed\" StateInfo=\"{1}\">", state.Id, state.DgmlView);
+                string info = CharKind.DescribePrev(state.PrevCharKind);
+                string deriv = WebUtility.HtmlEncode(state.Node.ToString());
+                string nodeDgmlView = $"{(info == string.Empty ? info : $"Previous: {info}&#13;")}{(deriv == string.Empty ? "()" : deriv)}";
+
+                writer.WriteLine("        <Node Id=\"{0}\" Label=\"{0}\" Category=\"State\" Group=\"Collapsed\" StateInfo=\"{1}\">", state.Id, nodeDgmlView);
                 if (_builder.GetStateInfo(state.Id).IsInitial)
                 {
                     writer.WriteLine("            <Category Ref=\"InitialState\" />");
@@ -38,7 +42,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     writer.WriteLine("            <Category Ref=\"FinalState\" />");
                 }
                 writer.WriteLine("        </Node>");
-                writer.WriteLine("        <Node Id=\"{0}info\" Label=\"{1}\" Category=\"StateInfo\"/>", state.Id, state.DgmlView);
+                writer.WriteLine("        <Node Id=\"{0}info\" Label=\"{1}\" Category=\"StateInfo\"/>", state.Id, nodeDgmlView);
             }
             writer.WriteLine("    </Nodes>");
             writer.WriteLine("    <Links>");
