@@ -101,7 +101,7 @@ GetSystemTime(
         int old_seconds;
         int new_seconds;
 
-        lpSystemTime->wMilliseconds = timeval.tv_usec/tccMillieSecondsToMicroSeconds;
+        lpSystemTime->wMilliseconds = (WORD)(timeval.tv_usec/tccMillieSecondsToMicroSeconds);
 
         old_seconds = utPtr->tm_sec;
         new_seconds = timeval.tv_sec%60;
