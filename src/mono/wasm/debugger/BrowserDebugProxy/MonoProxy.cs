@@ -756,14 +756,14 @@ namespace Microsoft.WebAssembly.Diagnostics
             GetObjectCommandOptions getObjectOptions = GetObjectCommandOptions.WithProperties;
             if (args != null)
             {
-                if (args["accessorPropertiesOnly"] != null && args["accessorPropertiesOnly"].Value<bool>())
-                {
+                if (args["accessorPropertiesOnly"]?.Value<bool>() == true)
                     getObjectOptions |= GetObjectCommandOptions.AccessorPropertiesOnly;
-                }
-                if (args["ownProperties"] != null && args["ownProperties"].Value<bool>())
-                {
+
+                if (args["ownProperties"]?.Value<bool>() == true)
                     getObjectOptions |= GetObjectCommandOptions.OwnProperties;
-                }
+
+                if (args["forDebuggerDisplayAttribute"]?.Value<bool>() == true)
+                    getObjectOptions |= GetObjectCommandOptions.ForDebuggerDisplayAttribute;
             }
             try
             {
