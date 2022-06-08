@@ -3179,34 +3179,32 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
     {
         if (tree->OperIs(GT_LCL_VAR))
         {
-            bool betterToPropagate = false;
-            if (conValTree->IsVectorZero() || conValTree->IsFloatPositiveZero())
-            {
-                // These are cheap to re-materialize (unlike e.g. "1.0" or "{1,1,1,1}" which end up as
-                // memory loads from the data section)
-                betterToPropagate = true;
-            }
-#ifdef TARGET_ARM64
-            else if (conValTree->IsCnsIntOrI() && unsigned_abs(conValTree->AsIntCon()->IconValue()) < 0x0fff)
-            {
-                // This integer constant is likely immable
-                betterToPropagate = true;
-            }
-#endif
-
-            if (!betterToPropagate)
+            if (conValTree->OperIs(GT_CNS_VEC) && !conValTree->IsVectorZero() && !conValTree->IsVectorAllBitsSet())
             {
                 // Try to find the block this value was defined in
-                // and if the current use is inside a loop while the def is not - do not propagate
-                unsigned lclNum = tree->AsLclVarCommon()->GetLclNum();
-                unsigned ssaNum = GetSsaNumForLocalVarDef(tree);
+                const unsigned lclNum = tree->AsLclVarCommon()->GetLclNum();
+                const unsigned ssaNum = GetSsaNumForLocalVarDef(tree);
                 if (ssaNum != SsaConfig::RESERVED_SSA_NUM)
                 {
                     BasicBlock* defBlock = lvaTable[lclNum].GetPerSsaData(ssaNum)->GetBlock();
-                    if (defBlock != nullptr && !(defBlock->bbFlags & BBF_BACKWARD_JUMP) &&
-                        (block->bbFlags & BBF_BACKWARD_JUMP))
+
+                    // If the vector constant was defined outside of the loop - do not propagate
+                    // TODO: do propagate if it lives across a call in that loop and the ABI doesn't have
+                    // callee-saved registers
+                    if (defBlock != nullptr)
                     {
-                        return nullptr;
+                        const weight_t defBlockWeight = defBlock->getBBWeight(this);
+                        const weight_t blockWeight    = block->getBBWeight(this);
+
+                        // A simple heuristic: If the constant is defined outside the loop (not far from its head)
+                        // and is used inside it - don't propagate.
+                        // TODO: if it lives accross calls in that loops we'd better propagate it after those
+                        // calls on ABIs without callee-saved registers (e.g. Linux-x64)
+                        if ((defBlockWeight > 0) && (blockWeight / defBlockWeight) >= 2)
+                        {
+                            JITDUMP("Skip constant propagation of vector constant inside loop " FMT_BB "\n", block->bbNum);
+                            return nullptr;
+                        }
                     }
                 }
             }
