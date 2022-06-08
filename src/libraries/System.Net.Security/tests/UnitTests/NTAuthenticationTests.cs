@@ -160,7 +160,8 @@ namespace System.Net.Security.Tests
         [InlineData(false, false)]
         public void NegotiateCorrectExchangeTest(bool requestMIC, bool requestConfidentiality)
         {
-            FakeNtlmServer fakeNtlmServer = new FakeNtlmServer(s_testCredentialRight);
+            // Older versions of gss-ntlmssp on Linux generate MIC at incorrect offset unless ForceNegotiateVersion is specified
+            FakeNtlmServer fakeNtlmServer = new FakeNtlmServer(s_testCredentialRight) { ForceNegotiateVersion = true };
             FakeNegotiateServer fakeNegotiateServer = new FakeNegotiateServer(fakeNtlmServer) { RequestMIC = requestMIC };
             NTAuthentication ntAuth = new NTAuthentication(
                 isServer: false, "Negotiate", s_testCredentialRight, "HTTP/foo",

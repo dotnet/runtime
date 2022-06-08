@@ -209,10 +209,22 @@ namespace System.Net.Security
                 Assert.NotNull(mechToken);
                 byte[]? outgoingBlob = _ntlmServer.GetOutgoingBlob(mechToken);
 
-                if (RequestMIC)
+                if (_ntlmServer.IsAuthenticated)
                 {
-                    Assert.Equal(_ntlmServer.IsAuthenticated, mechListMIC is not null);
-                    // TODO: Validate mechListMIC
+                    if (RequestMIC)
+                    {
+                        Assert.NotNull(mechListMIC);
+                    }
+
+                    // Validate mechListMIC, if present
+                    if (mechListMIC is not null)
+                    {
+                        _ntlmServer.VerifyMIC(_spnegoMechList, mechListMIC, 0);
+                    }
+                }
+                else
+                {
+                    Assert.Null(mechListMIC);
                 }
 
                 // Generate reply
@@ -245,7 +257,7 @@ namespace System.Net.Security
                             }
                         }
 
-                        if (RequestMIC && mechListMIC != null)
+                        if (mechListMIC != null)
                         {
                             using (writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, (int)NegTokenResp.MechListMIC)))
                             {
