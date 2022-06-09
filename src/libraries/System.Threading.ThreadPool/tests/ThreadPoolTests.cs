@@ -1066,17 +1066,28 @@ namespace System.Threading.ThreadPools.Tests
 
         private class ClrMinMaxThreadsEventListener : EventListener
         {
+            private int GetDataPtr = 0;
+            private int DataRecordPtr = 0;
+            private int[] DataRecord = new int[15];
             private const string ClrProviderName = "Microsoft-Windows-DotNETRuntime";
             private const EventKeywords ThreadingKeyword = (EventKeywords)0x10000;
             private const int ThreadPoolMinMaxThreadsEventId = 59;
 
+            public int[] GetEventRecord()
+            {
+                int[] eventRecord = new int[5];
+                for (int i = 0; i < 5; ++i)
+                {
+                    eventRecord[i] = DataRecord[GetDataPtr++];
+                }
+
+                return eventRecord;
+            }
+
             protected override void OnEventSourceCreated(EventSource eventSource)
             {
-                // Console.WriteLine("eventSource = " + eventSource.Name);
-
                 if (eventSource.Name == ClrProviderName)
                 {
-                    // Console.WriteLine("Enabling events");
                     EnableEvents(eventSource, EventLevel.Informational, ThreadingKeyword);
                 }
 
@@ -1085,25 +1096,18 @@ namespace System.Threading.ThreadPools.Tests
 
             protected override void OnEventWritten(EventWrittenEventArgs eventData)
             {
-                Console.WriteLine("OnEventWritten");
-                Console.WriteLine("eventId = " + eventData.EventId.ToString());
-                Console.WriteLine("eventName = " + eventData.EventName);
-                /* if (eventData.EventId == ThreadPoolMinMaxThreadsEventId)
+                if (eventData.EventId == ThreadPoolMinMaxThreadsEventId)
                 {
-                    Console.WriteLine($"{eventData.EventName}");
                     var payloadNames = eventData.PayloadNames.ToList();
                     var payloads = eventData.Payload.Select(o => o.ToString()).ToList();
                     var payloadCount = Math.Min(payloadNames.Count, payloads.Count);
-                    Console.WriteLine($"  Payloads: {payloadCount}");
-                    Assert.True(payloadCount >= 0);
                     for (int i = 0; i < payloadCount; ++i)
                     {
                         string payloadValue = payloads[i];
+                        DataRecord[DataRecordPtr++] = Int32.Parse(payloads[i]);
                     }
 
-                    Console.WriteLine();
                 }
-                */
 
                 base.OnEventWritten(eventData);
             }
@@ -1112,22 +1116,42 @@ namespace System.Threading.ThreadPools.Tests
         [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
         public void ThreadPoolMinMaxThreadsEventTest()
         {
+            // The ThreadPoolMinMaxThreads event is fired when the thread is created as well as
+            // when either SetMinThreads or SetMaxThreads is called
+            // Each time the event is fired, it is verified that it recorded the correct values
             RemoteExecutor.Invoke(() =>
             {
-                // Assert.True(false);
                 using var el = new ClrMinMaxThreadsEventListener();
 
-                // using var unblock = new ManualResetEvent(false);
-                ThreadPool.SetMinThreads(3, 4);
-                /*ThreadPool.GetMinThreads(out int x, out int y);
-                Console.WriteLine("Finished");
-                Console.WriteLine("x = " + x.ToString());
-                Console.WriteLine("y = " + y.ToString());
-                */
-                // unblock.Set();
-                // Console.WriteLine("unblocked");
+                int newMinWorkerThreads = 3;
+                int newMinIOCompletionThreads = 4;
 
-                // unblock.Set();
+                int newMaxWorkerThreads = 10;
+                int newMaxIOCompletionThreads = 11;
+
+                ThreadPool.GetMinThreads(out int minWorkerThreads, out int minIOCompletionThreads);
+                ThreadPool.GetMaxThreads(out int maxWorkerThreads, out int maxIOCompletionThreads);
+
+                ThreadPool.SetMinThreads(newMinWorkerThreads, newMinIOCompletionThreads);
+                ThreadPool.SetMaxThreads(newMaxWorkerThreads, newMaxIOCompletionThreads);
+
+                Thread.Sleep(5000);
+
+                var record = el.GetEventRecord(); // record when thread is created
+                Assert.Equal(minWorkerThreads, record[0]);
+                Assert.Equal(maxWorkerThreads, record[1]);
+                Assert.Equal(minIOCompletionThreads, record[2]);
+                Assert.Equal(maxIOCompletionThreads, record[3]);
+                record = el.GetEventRecord(); // record when ThreadPool.SetMinThreads(3, 4) was called
+                Assert.Equal(newMinWorkerThreads, record[0]);
+                Assert.Equal(maxWorkerThreads, record[1]);
+                Assert.Equal(newMinIOCompletionThreads, record[2]);
+                Assert.Equal(maxIOCompletionThreads, record[3]);
+                record = el.GetEventRecord(); // record when ThreadPool.SetMaxThreads(10, 11) was called
+                Assert.Equal(newMinWorkerThreads, record[0]);
+                Assert.Equal(newMaxWorkerThreads, record[1]);
+                Assert.Equal(newMinIOCompletionThreads, record[2]);
+                Assert.Equal(newMaxIOCompletionThreads, record[3]);
             }).Dispose();
         }
 
