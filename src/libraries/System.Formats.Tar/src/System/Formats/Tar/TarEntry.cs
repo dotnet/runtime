@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using Microsoft.Win32.SafeHandles;
@@ -19,35 +18,70 @@ namespace System.Formats.Tar
         // Used to access the data section of this entry in an unseekable file
         internal TarReader? _readerOfOrigin;
 
-        // Constructor called when reading a TarEntry from a TarReader or when converting from a different format.
-        internal TarEntry(TarEntryType entryType, TarEntryFormat format, TarHeader header, TarReader? readerOfOrigin)
+        // Constructor called when reading a TarEntry from a TarReader.
+        internal TarEntry(TarHeader header, TarReader readerOfOrigin, TarEntryFormat format)
         {
-            // Throws if format is unknown or out of range
-            TarHelpers.VerifyEntryTypeIsSupported(entryType, format);
-
+            Debug.Assert(header._format == format);
             _header = header;
-            _header._typeFlag = entryType;
             _header._format = format;
             _readerOfOrigin = readerOfOrigin;
-            _header._extendedAttributes ??= new Dictionary<string, string>();
         }
 
         // Constructor called when creating a new TarEntry.
-        internal TarEntry(TarEntryType entryType, TarEntryFormat format, string entryName)
-            : this(entryType, format, header: default, readerOfOrigin: null)
+        internal TarEntry(TarEntryType entryType, string entryName, TarEntryFormat format)
         {
             ArgumentException.ThrowIfNullOrEmpty(entryName);
+            TarHelpers.ThrowIfEntryTypeNotSupported(entryType, format);
 
+            _header = default;
+            _header._format = format;
+
+            // Default values for fields shared by all supported formats
             _header._name = entryName;
-
-            _header._linkName = string.Empty;
             _header._mode = (int)TarHelpers.DefaultMode;
-            _header._gName = string.Empty;
-            _header._uName = string.Empty;
-            DateTimeOffset now = DateTimeOffset.Now;
-            _header._mTime = now;
-            _header._aTime = now;
-            _header._cTime = now;
+            _header._uid = 0;
+            _header._gid = 0;
+            _header._size = 0;
+            _header._mTime = DateTimeOffset.Now;
+            _header._checksum = 0;
+            _header._typeFlag = entryType;
+            _header._linkName = string.Empty;
+        }
+
+        internal TarEntry(TarEntry other, TarEntryFormat format)
+        {
+            TarEntryType compatibleEntryType;
+            if (other.Format is TarEntryFormat.V7 && other.EntryType is TarEntryType.V7RegularFile && format is TarEntryFormat.Ustar or TarEntryFormat.Pax or TarEntryFormat.Gnu)
+            {
+                compatibleEntryType = TarEntryType.RegularFile;
+            }
+            else if (other.Format is TarEntryFormat.Ustar or TarEntryFormat.Pax or TarEntryFormat.Gnu && other.EntryType is TarEntryType.RegularFile && format is TarEntryFormat.V7)
+            {
+                compatibleEntryType = TarEntryType.V7RegularFile;
+            }
+            else
+            {
+                compatibleEntryType = other.EntryType;
+            }
+
+            TarHelpers.ThrowIfEntryTypeNotSupported(compatibleEntryType, format);
+
+            _readerOfOrigin = other._readerOfOrigin;
+
+            _header = default;
+            _header._format = format;
+
+            _header._name = other._header._name;
+            _header._mode = other._header._mode;
+            _header._uid = other._header._uid;
+            _header._gid = other._header._gid;
+            _header._size = other._header._size;
+            _header._mTime = other._header._mTime;
+            _header._checksum = 0;
+            _header._typeFlag = compatibleEntryType;
+            _header._linkName = other._header._linkName;
+
+            _header._dataStream = other._header._dataStream;
         }
 
         /// <summary>

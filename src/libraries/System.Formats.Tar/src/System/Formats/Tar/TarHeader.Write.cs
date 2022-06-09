@@ -91,6 +91,7 @@ namespace System.Formats.Tar
             // Fill the current header's dict
             CollectExtendedAttributesFromStandardFieldsIfNeeded();
             // And pass them to the extended attributes header for writing
+            _extendedAttributes ??= new Dictionary<string, string>();
             extendedAttributesHeader.WriteAsPaxExtendedAttributes(archiveStream, buffer, _extendedAttributes, isGea: false);
 
             buffer.Clear(); // Reset it to reuse it
@@ -393,6 +394,7 @@ namespace System.Formats.Tar
         // extended attributes. They get collected and saved in that dictionary, with no restrictions.
         private void CollectExtendedAttributesFromStandardFieldsIfNeeded()
         {
+            _extendedAttributes ??= new Dictionary<string, string>();
             _extendedAttributes.Add(PaxEaName, _name);
 
             AddTimestampAsUnixSeconds(_extendedAttributes, PaxEaATime, _aTime);
@@ -417,8 +419,7 @@ namespace System.Formats.Tar
                 // Avoid overwriting if the user already added it before
                 if (!extendedAttributes.ContainsKey(key))
                 {
-                    double unixTimeSeconds = ((double)(value.UtcDateTime - DateTime.UnixEpoch).Ticks) / TimeSpan.TicksPerSecond;
-                    extendedAttributes.Add(key, unixTimeSeconds.ToString("F6", CultureInfo.InvariantCulture)); // 6 decimals, no commas
+                    extendedAttributes.Add(key, TarHelpers.GetTimestampStringFromDateTimeOffset(value));
                 }
             }
 

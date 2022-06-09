@@ -8,9 +8,9 @@ namespace System.Formats.Tar
     /// </summary>
     public sealed class UstarTarEntry : PosixTarEntry
     {
-        // Constructor called when reading a TarEntry from a TarReader or when converting from a different format.
-        internal UstarTarEntry(TarHeader header, TarReader? readerOfOrigin)
-            : base(header._typeFlag, TarEntryFormat.Ustar, header, readerOfOrigin)
+        // Constructor called when reading a TarEntry from a TarReader.
+        internal UstarTarEntry(TarHeader header, TarReader readerOfOrigin)
+            : base(header, readerOfOrigin, TarEntryFormat.Ustar)
         {
         }
 
@@ -28,19 +28,21 @@ namespace System.Formats.Tar
         /// </list>
         /// </remarks>
         public UstarTarEntry(TarEntryType entryType, string entryName)
-            : base(entryType, TarEntryFormat.Ustar, entryName)
+            : base(entryType, entryName, TarEntryFormat.Ustar)
         {
+            _header._prefix = string.Empty;
         }
 
         /// <summary>
         /// Initializes a new <see cref="UstarTarEntry"/> instance by converting the specified <paramref name="other"/> entry into the Ustar format.
         /// </summary>
         public UstarTarEntry(TarEntry other)
-            : base(other.EntryType == TarEntryType.V7RegularFile ? TarEntryType.RegularFile : other.EntryType,
-                   TarEntryFormat.Ustar,
-                   other._header,
-                   other._readerOfOrigin)
+            : base(other, TarEntryFormat.Ustar)
         {
+            if (other._header._format is TarEntryFormat.Ustar or TarEntryFormat.Pax)
+            {
+                _header._prefix = other._header._prefix;
+            }
         }
 
         // Determines if the current instance's entry type supports setting a data stream.

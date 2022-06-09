@@ -14,10 +14,13 @@ namespace System.Formats.Tar
     {
         private ReadOnlyDictionary<string, string>? _readOnlyExtendedAttributes;
 
-        // Constructor called when reading a TarEntry from a TarReader or when converting from a different format.
-        internal PaxTarEntry(TarHeader header, TarReader? readerOfOrigin)
-            : base(header._typeFlag, TarEntryFormat.Pax, header, readerOfOrigin)
+        // Constructor called when reading a TarEntry from a TarReader.
+        internal PaxTarEntry(TarHeader header, TarReader readerOfOrigin)
+            : base(header, readerOfOrigin, TarEntryFormat.Pax)
         {
+            _header._extendedAttributes ??= new Dictionary<string, string>();
+
+            AddNewAccessAndChangeTimestampsIfNotExist();
         }
 
         /// <summary>
@@ -48,7 +51,7 @@ namespace System.Formats.Tar
         /// </list>
         /// </remarks>
         public PaxTarEntry(TarEntryType entryType, string entryName)
-            : base(entryType, TarEntryFormat.Pax, entryName)
+            : this(entryType, entryName, extendedAttributes: new Dictionary<string, string>())
         {
         }
 
@@ -82,21 +85,42 @@ namespace System.Formats.Tar
         /// </list>
         /// </remarks>
         public PaxTarEntry(TarEntryType entryType, string entryName, IEnumerable<KeyValuePair<string, string>> extendedAttributes)
-            : base(entryType, TarEntryFormat.Pax, entryName)
+            : base(entryType, entryName, TarEntryFormat.Pax)
         {
             ArgumentNullException.ThrowIfNull(extendedAttributes);
-            _header.ReplaceNormalAttributesWithExtended(extendedAttributes);
+
+            _header._prefix = string.Empty;
+            _header._extendedAttributes = new Dictionary<string, string>(extendedAttributes);
+
+            AddNewAccessAndChangeTimestampsIfNotExist();
         }
 
         /// <summary>
         /// Initializes a new <see cref="PaxTarEntry"/> instance by converting the specified <paramref name="other"/> entry into the PAX format.
         /// </summary>
         public PaxTarEntry(TarEntry other)
-            : base(other.EntryType == TarEntryType.V7RegularFile ? TarEntryType.RegularFile : other.EntryType,
-                   TarEntryFormat.Pax,
-                   other._header,
-                   other._readerOfOrigin)
+            : base(other, TarEntryFormat.Pax)
         {
+            if (other._header._format is TarEntryFormat.Ustar or TarEntryFormat.Pax)
+            {
+                _header._prefix = other._header._prefix;
+            }
+
+            if (other is PaxTarEntry paxOther)
+            {
+                _header._extendedAttributes = new Dictionary<string, string>(paxOther.ExtendedAttributes);
+            }
+            else
+            {
+                _header._extendedAttributes = new Dictionary<string, string>();
+                if (other is GnuTarEntry gnuOther)
+                {
+                    _header._extendedAttributes[TarHeader.PaxEaATime] = TarHelpers.GetTimestampStringFromDateTimeOffset(gnuOther.AccessTime);
+                    _header._extendedAttributes[TarHeader.PaxEaCTime] = TarHelpers.GetTimestampStringFromDateTimeOffset(gnuOther.ChangeTime);
+                }
+            }
+
+            AddNewAccessAndChangeTimestampsIfNotExist();
         }
 
         /// <summary>
@@ -128,5 +152,29 @@ namespace System.Formats.Tar
 
         // Determines if the current instance's entry type supports setting a data stream.
         internal override bool IsDataStreamSetterSupported() => EntryType == TarEntryType.RegularFile;
+
+        // Checks if the extended attributes dictionary contains 'atime' and 'ctime'. If any of them is not found, it is added with the value of 'DateTimeOffset.Now'.
+        private void AddNewAccessAndChangeTimestampsIfNotExist()
+        {
+            Debug.Assert(_header._extendedAttributes != null);
+
+            bool containsATime = _header._extendedAttributes.ContainsKey(TarHeader.PaxEaATime);
+            bool containsCTime = _header._extendedAttributes.ContainsKey(TarHeader.PaxEaCTime);
+
+            if (!containsATime || !containsCTime)
+            {
+                string nowSecondsFromEpochString = TarHelpers.GetTimestampStringFromDateTimeOffset(DateTimeOffset.Now);
+
+                if (!containsATime)
+                {
+                    _header._extendedAttributes[TarHeader.PaxEaATime] = nowSecondsFromEpochString;
+                }
+
+                if (!containsCTime)
+                {
+                    _header._extendedAttributes[TarHeader.PaxEaCTime] = nowSecondsFromEpochString;
+                }
+            }
+        }
     }
 }

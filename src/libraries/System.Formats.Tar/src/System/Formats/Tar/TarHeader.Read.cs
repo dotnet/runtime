@@ -69,64 +69,6 @@ namespace System.Formats.Tar
             }
         }
 
-        // Reads the elements from the passed dictionary, which comes from the first global extended attributes entry,
-        // and inserts or replaces those elements into the current header's dictionary.
-        // If any of the dictionary entries use the name of a standard attribute (not all of them), that attribute's value gets replaced with the one from the dictionary.
-        // Unlike the historic header, numeric values in extended attributes are stored using decimal, not octal.
-        // Throws if any conversion from string to the expected data type fails.
-        internal void ReplaceNormalAttributesWithGlobalExtended(IReadOnlyDictionary<string, string> gea)
-        {
-            // First step: Insert or replace all the elements in the passed dictionary into the current header's dictionary.
-            foreach ((string key, string value) in gea)
-            {
-                _extendedAttributes ??= new Dictionary<string, string>();
-                _extendedAttributes[key] = value;
-            }
-
-            // Second, find only the attributes that make sense to substitute, and replace them.
-            if (gea.TryGetValue(PaxEaATime, out string? paxEaATime))
-            {
-                if (TarHelpers.TryConvertToDateTimeOffset(paxEaATime, out DateTimeOffset aTime))
-                {
-                    _aTime = aTime;
-                }
-            }
-            if (gea.TryGetValue(PaxEaCTime, out string? paxEaCTime))
-            {
-                if (TarHelpers.TryConvertToDateTimeOffset(paxEaCTime, out DateTimeOffset cTime))
-                {
-                    _cTime = cTime;
-                }
-            }
-            if (gea.TryGetValue(PaxEaMTime, out string? paxEaMTime))
-            {
-                if (TarHelpers.TryConvertToDateTimeOffset(paxEaMTime, out DateTimeOffset mTime))
-                {
-                    _mTime = mTime;
-                }
-            }
-            if (gea.TryGetValue(PaxEaMode, out string? paxEaMode))
-            {
-                _mode = Convert.ToInt32(paxEaMode);
-            }
-            if (gea.TryGetValue(PaxEaUid, out string? paxEaUid))
-            {
-                _uid = Convert.ToInt32(paxEaUid);
-            }
-            if (gea.TryGetValue(PaxEaGid, out string? paxEaGid))
-            {
-                _gid = Convert.ToInt32(paxEaGid);
-            }
-            if (gea.TryGetValue(PaxEaUName, out string? paxEaUName))
-            {
-                _uName = paxEaUName;
-            }
-            if (gea.TryGetValue(PaxEaGName, out string? paxEaGName))
-            {
-                _gName = paxEaGName;
-            }
-        }
-
         // Reads the elements from the passed dictionary, which comes from the previous extended attributes entry,
         // and inserts or replaces those elements into the current header's dictionary.
         // If any of the dictionary entries use the name of a standard attribute, that attribute's value gets replaced with the one from the dictionary.
@@ -134,80 +76,91 @@ namespace System.Formats.Tar
         // Throws if any conversion from string to the expected data type fails.
         internal void ReplaceNormalAttributesWithExtended(IEnumerable<KeyValuePair<string, string>> extendedAttributesEnumerable)
         {
-            Dictionary<string, string> ea = new Dictionary<string, string>(extendedAttributesEnumerable);
-            if (ea.Count == 0)
+            Debug.Assert(_extendedAttributes == null);
+            _extendedAttributes = new Dictionary<string, string>(extendedAttributesEnumerable);
+            if (_extendedAttributes.Count == 0)
             {
                 return;
             }
-            _extendedAttributes ??= new Dictionary<string, string>();
 
-            // First step: Insert or replace all the elements in the passed dictionary into the current header's dictionary.
-            foreach ((string key, string value) in ea)
-            {
-                _extendedAttributes[key] = value;
-            }
+            // Find all the extended attributes with known names and save them in the expected standard attribute.
 
-            // Second, find all the extended attributes with known names and save them in the expected standard attribute.
-            if (ea.TryGetValue(PaxEaName, out string? paxEaName))
+            // The 'name' header field only fits 100 bytes
+            if (_extendedAttributes.TryGetValue(PaxEaName, out string? paxEaName))
             {
                 _name = paxEaName;
             }
-            if (ea.TryGetValue(PaxEaLinkName, out string? paxEaLinkName))
+
+            // The 'linkName' header field only fits 100 bytes
+            if (_extendedAttributes.TryGetValue(PaxEaLinkName, out string? paxEaLinkName))
             {
                 _linkName = paxEaLinkName;
             }
-            if (ea.TryGetValue(PaxEaATime, out string? paxEaATime))
+
+            // PAX has no 'atime' header field, so it is always stored in the extended attributes
+            if (TarHelpers.TryGetDateTimeOffsetFromTimestampString(_extendedAttributes, PaxEaATime, out DateTimeOffset aTime))
             {
-                if (TarHelpers.TryConvertToDateTimeOffset(paxEaATime, out DateTimeOffset aTime))
-                {
-                    _aTime = aTime;
-                }
+                _aTime = aTime;
             }
-            if (ea.TryGetValue(PaxEaCTime, out string? paxEaCTime))
+
+            // PAX has no 'ctime' header field, so it is always stored in the extended attributes
+            if (TarHelpers.TryGetDateTimeOffsetFromTimestampString(_extendedAttributes, PaxEaCTime, out DateTimeOffset cTime))
             {
-                if (TarHelpers.TryConvertToDateTimeOffset(paxEaCTime, out DateTimeOffset cTime))
-                {
-                    _cTime = cTime;
-                }
+                _cTime = cTime;
             }
-            if (ea.TryGetValue(PaxEaMTime, out string? paxEaMTime))
+
+            // The 'mtime' header field only fits 12 bytes, so a more precise timestamp goes in the extended attributes
+            if (TarHelpers.TryGetDateTimeOffsetFromTimestampString(_extendedAttributes, PaxEaMTime, out DateTimeOffset mTime))
             {
-                if (TarHelpers.TryConvertToDateTimeOffset(paxEaMTime, out DateTimeOffset mTime))
-                {
-                    _mTime = mTime;
-                }
+                _mTime = mTime;
             }
-            if (ea.TryGetValue(PaxEaMode, out string? paxEaMode))
+
+            // The user could've stored an override in the extended attributes
+            if (TarHelpers.TryGetStringAsBaseTenInteger(_extendedAttributes, PaxEaMode, out int mode))
             {
-                _mode = Convert.ToInt32(paxEaMode);
+                _mode = mode;
             }
-            if (ea.TryGetValue(PaxEaSize, out string? paxEaSize))
+
+            // The 'size' header field only fits 12 bytes, so the data section length that surpases that limit needs to be retrieved
+            if (TarHelpers.TryGetStringAsBaseTenLong(_extendedAttributes, PaxEaSize, out long size))
             {
-                _size = Convert.ToInt32(paxEaSize);
+                _size = size;
             }
-            if (ea.TryGetValue(PaxEaUid, out string? paxEaUid))
+
+            // The 'uid' header field only fits 8 bytes, or the user could've stored an override in the extended attributes
+            if (TarHelpers.TryGetStringAsBaseTenInteger(_extendedAttributes, PaxEaUid, out int uid))
             {
-                _uid = Convert.ToInt32(paxEaUid);
+                _uid = uid;
             }
-            if (ea.TryGetValue(PaxEaGid, out string? paxEaGid))
+
+            // The 'gid' header field only fits 8 bytes, or the user could've stored an override in the extended attributes
+            if (TarHelpers.TryGetStringAsBaseTenInteger(_extendedAttributes, PaxEaGid, out int gid))
             {
-                _gid = Convert.ToInt32(paxEaGid);
+                _gid = gid;
             }
-            if (ea.TryGetValue(PaxEaUName, out string? paxEaUName))
+
+            // The 'uname' header field only fits 32 bytes
+            if (_extendedAttributes.TryGetValue(PaxEaUName, out string? paxEaUName))
             {
                 _uName = paxEaUName;
             }
-            if (ea.TryGetValue(PaxEaGName, out string? paxEaGName))
+
+            // The 'gname' header field only fits 32 bytes
+            if (_extendedAttributes.TryGetValue(PaxEaGName, out string? paxEaGName))
             {
                 _gName = paxEaGName;
             }
-            if (ea.TryGetValue(PaxEaDevMajor, out string? paxEaDevMajor))
+
+            // The 'devmajor' header field only fits 8 bytes, or the user could've stored an override in the extended attributes
+            if (TarHelpers.TryGetStringAsBaseTenInteger(_extendedAttributes, PaxEaDevMajor, out int devMajor))
             {
-                _devMajor = int.Parse(paxEaDevMajor);
+                _devMajor = devMajor;
             }
-            if (ea.TryGetValue(PaxEaDevMinor, out string? paxEaDevMinor))
+
+            // The 'devminor' header field only fits 8 bytes, or the user could've stored an override in the extended attributes
+            if (TarHelpers.TryGetStringAsBaseTenInteger(_extendedAttributes, PaxEaDevMinor, out int devMinor))
             {
-                _devMinor = int.Parse(paxEaDevMinor);
+                _devMinor = devMinor;
             }
         }
 
@@ -330,7 +283,7 @@ namespace System.Formats.Tar
             _uid = TarHelpers.GetTenBaseNumberFromOctalAsciiChars(buffer.Slice(FieldLocations.Uid, FieldLengths.Uid));
             _gid = TarHelpers.GetTenBaseNumberFromOctalAsciiChars(buffer.Slice(FieldLocations.Gid, FieldLengths.Gid));
             int mTime = TarHelpers.GetTenBaseNumberFromOctalAsciiChars(buffer.Slice(FieldLocations.MTime, FieldLengths.MTime));
-            _mTime = TarHelpers.GetDateTimeFromSecondsSinceEpoch(mTime);
+            _mTime = TarHelpers.GetDateTimeOffsetFromSecondsSinceEpoch(mTime);
             _typeFlag = (TarEntryType)buffer[FieldLocations.TypeFlag];
             _linkName = TarHelpers.GetTrimmedUtf8String(buffer.Slice(FieldLocations.LinkName, FieldLengths.LinkName));
 
@@ -440,10 +393,10 @@ namespace System.Formats.Tar
         {
             // Convert byte arrays
             int aTime = TarHelpers.GetTenBaseNumberFromOctalAsciiChars(buffer.Slice(FieldLocations.ATime, FieldLengths.ATime));
-            _aTime = TarHelpers.GetDateTimeFromSecondsSinceEpoch(aTime);
+            _aTime = TarHelpers.GetDateTimeOffsetFromSecondsSinceEpoch(aTime);
 
             int cTime = TarHelpers.GetTenBaseNumberFromOctalAsciiChars(buffer.Slice(FieldLocations.CTime, FieldLengths.CTime));
-            _cTime = TarHelpers.GetDateTimeFromSecondsSinceEpoch(cTime);
+            _cTime = TarHelpers.GetDateTimeOffsetFromSecondsSinceEpoch(cTime);
 
             // TODO: Read the bytes of the currently unsupported GNU fields, in case user wants to write this entry into another GNU archive, they need to be preserved. https://github.com/dotnet/runtime/issues/68230
         }

@@ -10,16 +10,40 @@ namespace System.Formats.Tar
     /// Even though the <see cref="TarEntryFormat.Gnu"/> format is not POSIX compatible, it implements and supports the Unix-specific fields that were defined in that POSIX standard.</remarks>
     public abstract partial class PosixTarEntry : TarEntry
     {
-        // Constructor called when reading a TarEntry from a TarReader or when converting from a different format.
-        internal PosixTarEntry(TarEntryType entryType, TarEntryFormat format, TarHeader header, TarReader? readerOfOrigin)
-            : base(entryType, format, header, readerOfOrigin)
+        // Constructor called when reading a TarEntry from a TarReader.
+        internal PosixTarEntry(TarHeader header, TarReader readerOfOrigin, TarEntryFormat format)
+            : base(header, readerOfOrigin, format)
         {
         }
 
-        // Constructor called when creating a new TarEntry.
-        internal PosixTarEntry(TarEntryType entryType, TarEntryFormat format, string entryName)
-            : base(entryType, format, entryName)
+        internal PosixTarEntry(TarEntryType entryType, string entryName, TarEntryFormat format)
+            : base(entryType, entryName, format)
         {
+            _header._uName = string.Empty;
+            _header._gName = string.Empty;
+            _header._devMajor = 0;
+            _header._devMinor = 0;
+        }
+
+        // Constructor called when creating a new TarEntry.
+        internal PosixTarEntry(TarEntry other, TarEntryFormat format)
+            : base(other, format)
+        {
+            // Avoid transferring if entry was V7
+            if (other is PosixTarEntry)
+            {
+                _header._uName = other._header._uName;
+                _header._gName = other._header._gName;
+                _header._devMajor = other._header._devMajor;
+                _header._devMinor = other._header._devMinor;
+            }
+            else
+            {
+                _header._uName = string.Empty;
+                _header._gName = string.Empty;
+                _header._devMajor = 0;
+                _header._devMinor = 0;
+            }
         }
 
         /// <summary>

@@ -305,19 +305,15 @@ namespace System.Formats.Tar
                 throw new FormatException(SR.TarTooManyGlobalExtendedAttributesEntries);
             }
 
-            // Can't have two metadata entries in a row, no matter the archive format
+            // Can't have two extended attribute metadata entries in a row
             if (secondHeader._typeFlag is TarEntryType.ExtendedAttributes)
             {
                 throw new FormatException(string.Format(SR.TarUnexpectedMetadataEntry, TarEntryType.ExtendedAttributes, TarEntryType.ExtendedAttributes));
             }
 
             Debug.Assert(firstHeader._extendedAttributes != null);
-            if (GlobalExtendedAttributes != null)
-            {
-                // First, replace some of the entry's standard attributes with the global ones
-                secondHeader.ReplaceNormalAttributesWithGlobalExtended(GlobalExtendedAttributes);
-            }
-            // Then replace all the standard attributes with the extended attributes ones,
+
+            // Replace all the standard attributes with the extended attributes ones,
             // overwriting the previous global replacements if needed
             secondHeader.ReplaceNormalAttributesWithExtended(firstHeader._extendedAttributes);
 

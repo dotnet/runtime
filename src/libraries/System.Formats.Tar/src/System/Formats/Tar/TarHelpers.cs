@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Text;
@@ -113,11 +114,55 @@ namespace System.Formats.Tar
             return true;
         }
 
-        // Returns a DateTimeOffset instance representing the number of seconds that have passed since the Unix Epoch.
-        internal static DateTimeOffset GetDateTimeFromSecondsSinceEpoch(double secondsSinceUnixEpoch)
+        // Converts the specified number of seconds that have passed since the Unix Epoch to a DateTimeOffset.
+        internal static DateTimeOffset GetDateTimeOffsetFromSecondsSinceEpoch(double secondsSinceUnixEpoch) =>
+            new DateTimeOffset((long)(secondsSinceUnixEpoch * TimeSpan.TicksPerSecond) + DateTime.UnixEpoch.Ticks, TimeSpan.Zero);
+
+        // Converts the specified DateTimeOffset to the number of seconds that have passed since the Unix Epoch.
+        internal static double GetSecondsSinceEpochFromDateTimeOffset(DateTimeOffset dateTimeOffset) =>
+            ((double)(dateTimeOffset.UtcDateTime - DateTime.UnixEpoch).Ticks) / TimeSpan.TicksPerSecond;
+
+        // If the specified fieldName is found in the provided dictionary and it is a valid double number, returns true and sets the value in 'dateTimeOffset'.
+        internal static bool TryGetDateTimeOffsetFromTimestampString(IReadOnlyDictionary<string, string> dict, string fieldName, out DateTimeOffset dateTimeOffset)
         {
-            DateTimeOffset offset = new DateTimeOffset((long)(secondsSinceUnixEpoch * TimeSpan.TicksPerSecond) + DateTime.UnixEpoch.Ticks, TimeSpan.Zero);
-            return offset;
+            dateTimeOffset = default;
+            if (dict.TryGetValue(fieldName, out string? value) &&
+                double.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out double secondsSinceEpoch))
+            {
+                dateTimeOffset = GetDateTimeOffsetFromSecondsSinceEpoch(secondsSinceEpoch);
+            }
+            return dateTimeOffset != default;
+        }
+
+        // Converts the specified DateTimeOffset to the string representation of seconds since the Unix Epoch.
+        internal static string GetTimestampStringFromDateTimeOffset(DateTimeOffset timestamp)
+        {
+            double secondsSinceEpoch = GetSecondsSinceEpochFromDateTimeOffset(timestamp);
+            return secondsSinceEpoch.ToString("F6", CultureInfo.InvariantCulture); // 6 decimals, no commas
+        }
+
+        // If the specified fieldName is found in the provided dictionary and is a valid string representation of a number, returns true and sets the value in 'baseTenInteger'.
+        internal static bool TryGetStringAsBaseTenInteger(IReadOnlyDictionary<string, string> dict, string fieldName, out int baseTenInteger)
+        {
+            if (dict.TryGetValue(fieldName, out string? strNumber) && !string.IsNullOrEmpty(strNumber))
+            {
+                baseTenInteger = Convert.ToInt32(strNumber);
+                return true;
+            }
+            baseTenInteger = 0;
+            return false;
+        }
+
+        // If the specified fieldName is found in the provided dictionary and is a valid string representation of a number, returns true and sets the value in 'baseTenLong'.
+        internal static bool TryGetStringAsBaseTenLong(IReadOnlyDictionary<string, string> dict, string fieldName, out long baseTenLong)
+        {
+            if (dict.TryGetValue(fieldName, out string? strNumber) && !string.IsNullOrEmpty(strNumber))
+            {
+                baseTenLong = Convert.ToInt64(strNumber);
+                return true;
+            }
+            baseTenLong = 0;
+            return false;
         }
 
         // Receives a byte array that represents an ASCII string containing a number in octal base.
@@ -151,22 +196,6 @@ namespace System.Formats.Tar
         // removing the trailing null or space chars.
         internal static string GetTrimmedUtf8String(ReadOnlySpan<byte> buffer) => GetTrimmedString(buffer, Encoding.UTF8);
 
-        // Returns true if it successfully converts the specified string to a DateTimeOffset, false otherwise.
-        internal static bool TryConvertToDateTimeOffset(string value, out DateTimeOffset timestamp)
-        {
-            timestamp = default;
-            if (!string.IsNullOrEmpty(value))
-            {
-                if (!double.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out double doubleTime))
-                {
-                    return false;
-                }
-
-                timestamp = GetDateTimeFromSecondsSinceEpoch(doubleTime);
-            }
-            return timestamp != default;
-        }
-
         // After the file contents, there may be zero or more null characters,
         // which exist to ensure the data is aligned to the record size. Skip them and
         // set the stream position to the first byte of the next entry.
@@ -179,7 +208,7 @@ namespace System.Formats.Tar
 
         // Throws if the specified entry type is not supported for the specified format.
         // If 'invokingFromWriteEntry' is true, an incompatible 'Regular File' entry type is allowed. It will be converted to the compatible version before writing.
-        internal static void VerifyEntryTypeIsSupported(TarEntryType entryType, TarEntryFormat archiveFormat)
+        internal static void ThrowIfEntryTypeNotSupported(TarEntryType entryType, TarEntryFormat archiveFormat)
         {
             switch (archiveFormat)
             {

@@ -9,9 +9,9 @@ namespace System.Formats.Tar
     /// <remarks>Even though the <see cref="TarEntryFormat.Gnu"/> format is not POSIX compatible, it implements and supports the Unix-specific fields that were defined in the POSIX IEEE P1003.1 standard from 1988: <c>devmajor</c>, <c>devminor</c>, <c>gname</c> and <c>uname</c>.</remarks>
     public sealed class GnuTarEntry : PosixTarEntry
     {
-        // Constructor called when reading a TarEntry from a TarReader or when converting from a different format.
-        internal GnuTarEntry(TarHeader header, TarReader? readerOfOrigin)
-            : base(header._typeFlag, TarEntryFormat.Gnu, header, readerOfOrigin)
+        // Constructor called when reading a TarEntry from a TarReader.
+        internal GnuTarEntry(TarHeader header, TarReader readerOfOrigin)
+            : base(header, readerOfOrigin, TarEntryFormat.Gnu)
         {
         }
 
@@ -29,19 +29,56 @@ namespace System.Formats.Tar
         /// </list>
         /// </remarks>
         public GnuTarEntry(TarEntryType entryType, string entryName)
-            : base(entryType, TarEntryFormat.Gnu, entryName)
+            : base(entryType, entryName, TarEntryFormat.Gnu)
         {
+            _header._aTime = _header._mTime; // mtime was set in base constructor
+            _header._cTime = _header._mTime;
+            _header._gnuUnusedBytes = null;
         }
 
         /// <summary>
         /// Initializes a new <see cref="GnuTarEntry"/> instance by converting the specified <paramref name="other"/> entry into the GNU format.
         /// </summary>
         public GnuTarEntry(TarEntry other)
-            : base(other.EntryType == TarEntryType.V7RegularFile ? TarEntryType.RegularFile : other.EntryType,
-                   TarEntryFormat.Gnu,
-                   other._header,
-                   other._readerOfOrigin)
+            : base(other, TarEntryFormat.Gnu)
         {
+            bool changedATime = false;
+            bool changedCTime = false;
+
+            if (other is GnuTarEntry gnuOther)
+            {
+                _header._aTime = gnuOther.AccessTime;
+                _header._cTime = gnuOther.ChangeTime;
+                _header._gnuUnusedBytes = other._header._gnuUnusedBytes;
+            }
+            else if (other is PaxTarEntry paxOther)
+            {
+                changedATime = TarHelpers.TryGetDateTimeOffsetFromTimestampString(paxOther.ExtendedAttributes, TarHeader.PaxEaATime, out DateTimeOffset aTime);
+                if (changedATime)
+                {
+                    _header._aTime = aTime;
+                }
+
+                changedCTime = TarHelpers.TryGetDateTimeOffsetFromTimestampString(paxOther.ExtendedAttributes, TarHeader.PaxEaCTime, out DateTimeOffset cTime);
+                if (changedCTime)
+                {
+                    _header._cTime = cTime;
+                }
+            }
+
+            // 'other' was V7 or Ustar, or the entries were not found in PAX extended attributes
+            if (!changedATime || !changedCTime)
+            {
+                DateTimeOffset now = DateTimeOffset.Now;
+                if (!changedATime)
+                {
+                    _header._aTime = now;
+                }
+                if (!changedCTime)
+                {
+                    _header._cTime = now;
+                }
+            }
         }
 
         /// <summary>
