@@ -157,12 +157,14 @@ namespace Microsoft.Extensions.Logging.Console
 #pragma warning disable CS0618
         private static void UpdateFormatterOptions(ConsoleFormatter formatter, ConsoleLoggerOptions deprecatedFromOptions)
         {
+            bool disableColors = deprecatedFromOptions.DisableColors || System.Console.IsOutputRedirected;
+
             // kept for deprecated apis:
             if (formatter is SimpleConsoleFormatter defaultFormatter)
             {
                 defaultFormatter.FormatterOptions = new SimpleConsoleFormatterOptions()
                 {
-                    ColorBehavior = deprecatedFromOptions.DisableColors ? LoggerColorBehavior.Disabled : LoggerColorBehavior.Enabled,
+                    ColorBehavior = disableColors ? LoggerColorBehavior.Disabled : LoggerColorBehavior.Enabled,
                     IncludeScopes = deprecatedFromOptions.IncludeScopes,
                     TimestampFormat = deprecatedFromOptions.TimestampFormat,
                     UseUtcTimestamp = deprecatedFromOptions.UseUtcTimestamp,
