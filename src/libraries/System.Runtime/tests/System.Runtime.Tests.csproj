@@ -10,6 +10,13 @@
     <Features>$(Features.Replace('nullablePublicOnly', '')</Features>
   </PropertyGroup>
 
+  <!-- 
+    Add special trait to run local timezone validation test on devices.  We want to make sure the local timezone is correct and not UTC
+  -->
+  <PropertyGroup>
+    <WithoutCategories Condition="'$(EnableAdditionalTimezoneChecks)' != 'true'">$(WithoutCategories);AdditionalTimezoneChecks</WithoutCategories>
+  </PropertyGroup>
+
   <ItemGroup>
     <RdXmlFile Include="default.rd.xml" />
   </ItemGroup>

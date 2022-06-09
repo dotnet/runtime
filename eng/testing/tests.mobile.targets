@@ -13,10 +13,6 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <TargetsDevices Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS' or ('$(TargetOS)' == 'Android' and '$(TargetArchitecture)' == 'arm64')">true</TargetsDevices>
-  </PropertyGroup>
-
-  <PropertyGroup>
     <RunAOTCompilation Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'">true</RunAOTCompilation>
   </PropertyGroup>
 
@@ -53,12 +49,6 @@
     <!-- Pass the -m or -c flag along to the app bundle, note that due to the double hyphen this needs to be the last argument -->
     <AdditionalXHarnessArguments Condition="'$(XUnitMethodName)' != ''">$(AdditionalXHarnessArguments) -- -m=$(XUnitMethodName)</AdditionalXHarnessArguments>
     <AdditionalXHarnessArguments Condition="'$(XUnitClassName)' != ''">$(AdditionalXHarnessArguments) -- -c=$(XUnitClassName)</AdditionalXHarnessArguments>
-  </PropertyGroup>
-
-  <!-- Add special trait to run local timezone validation test on devices -->
-  <PropertyGroup>
-    <_withCategories Condition="'$(TargetsDevices)' == 'true'">$(_withCategories);ValidTimeZone</_withCategories>
-    <_withoutCategories Condition="'$(TargetsDevices)' != 'true'">$(_withoutCategories);ValidTimeZone</_withoutCategories>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(XUnitUseRandomizedTestOrderer)' == 'true'">

@@ -2949,7 +2949,7 @@ namespace System.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Android | TestPlatforms.iOS | TestPlatforms.tvOS)]
-        [Trait(XunitConstants.Category, "validtimezone")]
+        [Trait(XunitConstants.Category, "additionaltimezonechecks")]
         public static void LocalTzIsNotUtc()
         {
             Assert.NotEqual(TimeZoneInfo.Utc.StandardName, TimeZoneInfo.Local.StandardName);
