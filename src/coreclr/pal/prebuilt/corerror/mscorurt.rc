@@ -195,12 +195,12 @@ BEGIN
 	MSG_FOR_URT_HR(COR_E_THREADABORTED) "Thread has aborted."
 	MSG_FOR_URT_HR(COR_E_INVALIDOLEVARIANTTYPE) "OLE Variant has an invalid type."
 	MSG_FOR_URT_HR(COR_E_MISSINGMANIFESTRESOURCE) "An expected resource in the assembly manifest was missing."
-
+	MSG_FOR_URT_HR(COR_E_SAFEARRAYTYPEMISMATCH) "A mismatch has occurred between the runtime type of the array and the sub type recorded in the metadata."
 	MSG_FOR_URT_HR(COR_E_TYPEINITIALIZATION) "Uncaught exception during type initialization."
 	MSG_FOR_URT_HR(COR_E_MARSHALDIRECTIVE) "Invalid marshaling directives."
 	MSG_FOR_URT_HR(COR_E_MISSINGSATELLITEASSEMBLY) "An expected satellite assembly containing the ultimate fallback resources for a given culture was not found or could not be loaded."
 	MSG_FOR_URT_HR(COR_E_FORMAT) "The format of one argument does not meet the contract of the method."
-
+	MSG_FOR_URT_HR(COR_E_SAFEARRAYRANKMISMATCH) "A mismatch has occurred between the runtime rank of the array and the rank recorded in the metadata."
 	MSG_FOR_URT_HR(COR_E_PLATFORMNOTSUPPORTED) "Operation is not supported on this platform."
 	MSG_FOR_URT_HR(COR_E_INVALIDPROGRAM) "Invalid IL or CLR metadata."
 	MSG_FOR_URT_HR(COR_E_OPERATIONCANCELED) "The operation was cancelled."
