@@ -43,19 +43,45 @@ public class SingleFileTestRunner : XunitTestFramework
             testsFinished.SetResult();
         };
 
+        var assemblyConfig = new TestAssemblyConfiguration()
+        {
+            // Turn off pre-enumeration of theories, since there is no theory selection UI in this runner
+            PreEnumerateTheories = false,
+        };
+
         var xunitTestFx = new SingleFileTestRunner(diagnosticSink);
         var asmInfo = Reflector.Wrap(asm);
         var asmName = asm.GetName();
 
         var discoverySink = new TestDiscoverySink();
         var discoverer = xunitTestFx.CreateDiscoverer(asmInfo);
-        discoverer.Find(false, discoverySink, TestFrameworkOptions.ForDiscovery());
+        discoverer.Find(false, discoverySink, TestFrameworkOptions.ForDiscovery(assemblyConfig));
         discoverySink.Finished.WaitOne();
+
         XunitFilters filters = new XunitFilters();
-        filters.ExcludedTraits.Add("category", new List<string> { "failing" });
+        // Quick hack wo much validation to get no traits passed
+        Dictionary<string, List<string>> noTraits = new Dictionary<string, List<string>>();
+        for (int i = 0; i < args.Length; i++)
+        {
+            if (args[i].Equals("-notrait", StringComparison.OrdinalIgnoreCase))
+            {
+                var traitKeyValue=args[i + 1].Split("=", StringSplitOptions.TrimEntries);
+                if (!noTraits.TryGetValue(traitKeyValue[0], out List<string> values))
+                {
+                    noTraits.Add(traitKeyValue[0], values = new List<string>());
+                }
+                values.Add(traitKeyValue[1]);
+            }
+        }
+
+        foreach (KeyValuePair<string, List<string>> kvp in noTraits)
+        {
+            filters.ExcludedTraits.Add(kvp.Key, kvp.Value);
+        }
+
         var filteredTestCases = discoverySink.TestCases.Where(filters.Filter).ToList();
         var executor = xunitTestFx.CreateExecutor(asmName);
-        executor.RunTests(filteredTestCases, resultsSink, TestFrameworkOptions.ForExecution());
+        executor.RunTests(filteredTestCases, resultsSink, TestFrameworkOptions.ForExecution(assemblyConfig));
 
         resultsSink.Finished.WaitOne();
 

@@ -16,7 +16,7 @@ using System.Reflection;
 [assembly: TestAssembly]
 [module: TestModule]
 
-internal class ReflectionTest
+internal static class ReflectionTest
 {
     private static int Main()
     {
@@ -27,6 +27,8 @@ internal class ReflectionTest
         //
         // Tests for dependency graph in the compiler
         //
+        TestSimpleDelegateTargets.Run();
+        TestVirtualDelegateTargets.Run();
         TestRunClassConstructor.Run();
 #if !OPTIMIZED_MODE_WITHOUT_SCANNER
         TestContainment.Run();
@@ -1215,7 +1217,7 @@ internal class ReflectionTest
 
             PropertyInfo p = typeof(TestClassIntPointer).GetProperty(nameof(TestClassIntPointer.NullRefReturningProp));
             Assert.NotNull(p);
-            Assert.Throws<NullReferenceException>(() => p.GetValue(tc));
+            Assert.Throws<TargetInvocationException>(() => p.GetValue(tc));
         }
 
         public static unsafe void TestByRefLikeRefReturn()
@@ -1656,6 +1658,104 @@ internal class ReflectionTest
         }
     }
 
+    class TestSimpleDelegateTargets
+    {
+        class TestClass
+        {
+            public static void StaticMethod() { }
+            public void InstanceMethod() { }
+            public static void SimplyCalledMethod() { }
+        }
+
+        class TestClass<T>
+        {
+            public static void StaticMethod() { }
+        }
+
+        static void CheckGeneric<T>()
+        {
+            Action staticMethod = TestClass<T>.StaticMethod;
+            if (staticMethod.GetMethodInfo().Name != nameof(TestClass<T>.StaticMethod))
+                throw new Exception();
+        }
+
+        public static void Run()
+        {
+            Console.WriteLine("Testing delegate targets are reflectable...");
+
+            Action staticMethod = TestClass.StaticMethod;
+            if (staticMethod.GetMethodInfo().Name != nameof(TestClass.StaticMethod))
+                throw new Exception();
+
+            Action instanceMethod = new TestClass().InstanceMethod;
+            if (instanceMethod.GetMethodInfo().Name != nameof(TestClass.InstanceMethod))
+                throw new Exception();
+
+            TestClass.SimplyCalledMethod();
+
+            Assert.Equal(
+#if REFLECTION_FROM_USAGE
+                3,
+#else
+                2,
+#endif
+                typeof(TestClass).CountMethods());
+
+            CheckGeneric<object>();
+        }
+    }
+
+    class TestVirtualDelegateTargets
+    {
+        abstract class Base
+        {
+            public virtual void VirtualMethod() { }
+            public abstract void AbstractMethod();
+        }
+
+        class Derived : Base, IBar
+        {
+            public override void AbstractMethod() { }
+            public override void VirtualMethod() { }
+            void IFoo.InterfaceMethod() { }
+        }
+
+        interface IFoo
+        {
+            void InterfaceMethod();
+            void DefaultInterfaceMethod() { }
+        }
+
+        interface IBar : IFoo
+        {
+            void IFoo.DefaultInterfaceMethod() { }
+        }
+
+        static Base s_baseInstance = new Derived();
+        static IFoo s_ifooInstance = new Derived();
+
+        public static void Run()
+        {
+            Console.WriteLine("Testing virtual delegate targets are reflectable...");
+
+            Action abstractMethod = s_baseInstance.AbstractMethod;
+            if (abstractMethod.GetMethodInfo().Name != nameof(Derived.AbstractMethod))
+                throw new Exception();
+
+            Action virtualMethod = s_baseInstance.VirtualMethod;
+            if (virtualMethod.GetMethodInfo().Name != nameof(Derived.VirtualMethod))
+                throw new Exception();
+
+            Action interfaceMethod = s_ifooInstance.InterfaceMethod;
+            if (!interfaceMethod.GetMethodInfo().Name.EndsWith("IFoo.InterfaceMethod"))
+                throw new Exception();
+
+            Action defaultMethod = s_ifooInstance.DefaultInterfaceMethod;
+            if (!defaultMethod.GetMethodInfo().Name.EndsWith("IFoo.DefaultInterfaceMethod"))
+                throw new Exception();
+        }
+    }
+
     class TestRunClassConstructor
     {
         static class TypeWithNoStaticFieldsButACCtor
@@ -1708,6 +1808,11 @@ internal class ReflectionTest
         }
         return true;
     }
+
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+        Justification = "That's the point")]
+    public static int CountMethods(this Type t)
+        => t.GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly).Length;
 
     class Assert
     {

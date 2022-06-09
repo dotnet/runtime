@@ -331,12 +331,11 @@ PTR_VOID CoffNativeCodeManager::GetFramePointer(MethodInfo *   pMethInfo,
     return NULL;
 }
 
-void CoffNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
-                                       PTR_VOID        safePointAddress,
-                                       REGDISPLAY *    pRegisterSet,
-                                       GCEnumContext * hCallback)
+uint32_t CoffNativeCodeManager::GetCodeOffset(MethodInfo* pMethodInfo, PTR_VOID address, /*out*/ PTR_UInt8* gcInfo)
 {
     CoffNativeMethodInfo * pNativeMethodInfo = (CoffNativeMethodInfo *)pMethodInfo;
+
+    _ASSERTE(FindMethodInfo(address, pMethodInfo) && (MethodInfo*)pNativeMethodInfo == pMethodInfo);
 
     size_t unwindDataBlobSize;
     PTR_VOID pUnwindDataBlob = GetUnwindDataBlob(m_moduleBase, pNativeMethodInfo->mainRuntimeFunction, &unwindDataBlobSize);
@@ -351,24 +350,71 @@ void CoffNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
     if ((unwindBlockFlags & UBF_FUNC_HAS_EHINFO) != 0)
         p += sizeof(int32_t);
 
+    *gcInfo = p;
+
     TADDR methodStartAddress = m_moduleBase + pNativeMethodInfo->mainRuntimeFunction->BeginAddress;
-    uint32_t codeOffset = (uint32_t)(dac_cast<TADDR>(safePointAddress) - methodStartAddress);
+    return (uint32_t)(dac_cast<TADDR>(address) - methodStartAddress);
+}
+
+bool CoffNativeCodeManager::IsSafePoint(PTR_VOID pvAddress)
+{
+    MethodInfo pMethodInfo;
+    if (!FindMethodInfo(pvAddress, &pMethodInfo))
+    {
+        return false;
+    }
+
+    PTR_UInt8 gcInfo;
+    uint32_t codeOffset = GetCodeOffset(&pMethodInfo, pvAddress, &gcInfo);
 
     GcInfoDecoder decoder(
-        GCInfoToken(p),
+        GCInfoToken(gcInfo),
+        GcInfoDecoderFlags(DECODE_INTERRUPTIBILITY),
+        codeOffset
+    );
+
+    return decoder.IsInterruptible();
+}
+
+void CoffNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
+                                       PTR_VOID        safePointAddress,
+                                       REGDISPLAY *    pRegisterSet,
+                                       GCEnumContext * hCallback,
+                                       bool            isActiveStackFrame)
+{
+    PTR_UInt8 gcInfo;
+    uint32_t codeOffset = GetCodeOffset(pMethodInfo, safePointAddress, &gcInfo);
+
+    if (!isActiveStackFrame)
+    {
+        // If we are not in the active method, we are currently pointing
+        // to the return address. That may not be reachable after a call (if call does not return)
+        // or reachable via a jump and thus have a different live set.
+        // Therefore we simply adjust the offset to inside of call instruction.
+        // NOTE: The GcInfoDecoder depends on this; if you change it, you must
+        // revisit the GcInfoEncoder/Decoder
+        codeOffset--;
+    }
+
+    GcInfoDecoder decoder(
+        GCInfoToken(gcInfo),
         GcInfoDecoderFlags(DECODE_GC_LIFETIMES | DECODE_SECURITY_OBJECT | DECODE_VARARG),
-        codeOffset - 1 // TODO: Is this adjustment correct?
+        codeOffset
         );
 
     ICodeManagerFlags flags = (ICodeManagerFlags)0;
-    if (pNativeMethodInfo->executionAborted)
+    if (((CoffNativeMethodInfo *)pMethodInfo)->executionAborted)
         flags = ICodeManagerFlags::ExecutionAborted;
+
     if (IsFilter(pMethodInfo))
         flags = (ICodeManagerFlags)(flags | ICodeManagerFlags::NoReportUntracked);
 
+    if (isActiveStackFrame)
+        flags = (ICodeManagerFlags)(flags | ICodeManagerFlags::ActiveStackFrame);
+
     if (!decoder.EnumerateLiveSlots(
         pRegisterSet,
-        false /* reportScratchSlots */,
+        isActiveStackFrame /* reportScratchSlots */,
         flags,
         hCallback->pCallback,
         hCallback
@@ -490,7 +536,7 @@ uintptr_t CoffNativeCodeManager::GetConservativeUpperBoundForOutgoingArgs(Method
 
 bool CoffNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
                                       REGDISPLAY *    pRegisterSet,                 // in/out
-                                      PTR_VOID *      ppPreviousTransitionFrame)    // out
+                                      PInvokeTransitionFrame**      ppPreviousTransitionFrame)    // out
 {
     CoffNativeMethodInfo * pNativeMethodInfo = (CoffNativeMethodInfo *)pMethodInfo;
 
@@ -526,7 +572,8 @@ bool CoffNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
         {
             basePointer = dac_cast<TADDR>(pRegisterSet->GetFP());
         }
-        *ppPreviousTransitionFrame = *(void**)(basePointer + slot);
+
+        *ppPreviousTransitionFrame = *(PInvokeTransitionFrame**)(basePointer + slot);
         return true;
     }
 
@@ -672,11 +719,7 @@ bool CoffNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
         p += sizeof(int32_t);
 
     // Decode the GC info for the current method to determine its return type
-    GcInfoDecoder decoder(
-        GCInfoToken(p),
-        GcInfoDecoderFlags(DECODE_RETURN_KIND),
-        0
-        );
+    GcInfoDecoder decoder(GCInfoToken(p), DECODE_RETURN_KIND);
 
     GCRefKind gcRefKind = GetGcRefKind(decoder.GetReturnKind());
 
@@ -870,8 +913,7 @@ PTR_VOID CoffNativeCodeManager::GetAssociatedData(PTR_VOID ControlPC)
     return dac_cast<PTR_VOID>(m_moduleBase + dataRVA);
 }
 
-extern "C" bool __stdcall RegisterCodeManager(ICodeManager * pCodeManager, PTR_VOID pvStartRange, uint32_t cbRange);
-extern "C" void __stdcall UnregisterCodeManager(ICodeManager * pCodeManager);
+extern "C" void __stdcall RegisterCodeManager(ICodeManager * pCodeManager, PTR_VOID pvStartRange, uint32_t cbRange);
 extern "C" bool __stdcall RegisterUnboxingStubs(PTR_VOID pvStartRange, uint32_t cbRange);
 
 extern "C"
@@ -894,12 +936,10 @@ bool RhRegisterOSModule(void * pModule,
     if (pCoffNativeCodeManager == nullptr)
         return false;
 
-    if (!RegisterCodeManager(pCoffNativeCodeManager, pvManagedCodeStartRange, cbManagedCodeRange))
-        return false;
+    RegisterCodeManager(pCoffNativeCodeManager, pvManagedCodeStartRange, cbManagedCodeRange);
 
     if (!RegisterUnboxingStubs(pvUnboxingStubsStartRange, cbUnboxingStubsRange))
     {
-        UnregisterCodeManager(pCoffNativeCodeManager);
         return false;
     }
 

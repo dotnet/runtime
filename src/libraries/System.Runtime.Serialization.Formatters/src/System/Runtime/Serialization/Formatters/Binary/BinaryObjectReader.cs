@@ -40,7 +40,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         //MethodCall and MethodReturn are handled special for perf reasons
         private bool _fullDeserialization;
 
-        private SerStack ValueFixupStack => _valueFixupStack ?? (_valueFixupStack = new SerStack("ValueType Fixup Stack"));
+        private SerStack ValueFixupStack => _valueFixupStack ??= new SerStack("ValueType Fixup Stack");
 
         // Older formatters generate ids for valuetypes using a different counter than ref types. Newer ones use
         // a single counter, only value types have a negative value. Need a way to handle older formats.

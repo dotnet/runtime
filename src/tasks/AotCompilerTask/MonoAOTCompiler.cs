@@ -117,6 +117,11 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     public string[]? AotProfilePath { get; set; }
 
     /// <summary>
+    /// Mibc file to use for profile-guided optimization, *only* the methods described in the file will be AOT compiled.
+    /// </summary>
+    public string[]? MibcProfilePath { get; set; }
+
+    /// <summary>
     /// List of profilers to use.
     /// </summary>
     public string[]? Profilers { get; set; }
@@ -273,6 +278,18 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                 if (!File.Exists(path))
                 {
                     Log.LogError($"AotProfilePath '{path}' doesn't exist.");
+                    return false;
+                }
+            }
+        }
+
+        if (MibcProfilePath != null)
+        {
+            foreach (var path in MibcProfilePath)
+            {
+                if (!File.Exists(path))
+                {
+                    Log.LogError($"MibcProfilePath '{path}' doesn't exist.");
                     return false;
                 }
             }
@@ -736,6 +753,15 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             foreach (var path in AotProfilePath)
             {
                 aotArgs.Add($"profile={path}");
+            }
+        }
+
+        if (MibcProfilePath?.Length > 0)
+        {
+            aotArgs.Add("profile-only");
+            foreach (var path in MibcProfilePath)
+            {
+                aotArgs.Add($"mibc-profile={path}");
             }
         }
 

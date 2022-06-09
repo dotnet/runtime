@@ -189,10 +189,6 @@
   <data name="InvalidUnicodePropertyEscape" xml:space="preserve">
     <value>Incomplete \\p{X} character escape.</value>
   </data>
-  <data name="InternalError_ScanRegex" xml:space="preserve">
-    <value>Internal error in ScanRegex.</value>
-    <comment>{Locked="ScanRegex"}</comment>
-  </data>
   <data name="CaptureGroupNameInvalid" xml:space="preserve">
     <value>Invalid group name: Group names must begin with a word character.</value>
   </data>
@@ -234,9 +230,6 @@
   </data>
   <data name="RegexMatchTimeoutException_Occurred" xml:space="preserve">
     <value>The RegEx engine has timed out while trying to match a pattern to an input string. This can occur for many reasons, including very large inputs or excessive backtracking caused by nested quantifiers, back-references and other factors.</value>
-  </data>
-  <data name="ReplacementError" xml:space="preserve">
-    <value>Replacement pattern error.</value>
   </data>
   <data name="ReversedCharacterRange" xml:space="preserve">
     <value>[x-y] range in reverse order.</value>

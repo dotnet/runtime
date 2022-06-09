@@ -114,6 +114,26 @@ namespace System.Net.Security.Tests
                 }
             }
         }
+
+        [Fact]
+        public async Task ClientOptions_TargetHostNull_OK()
+        {
+            (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
+            using (client)
+            using (server)
+            {
+                var serverOptions = new SslServerAuthenticationOptions() { ServerCertificate = Configuration.Certificates.GetServerCertificate() };
+                var clientOptions = new SslClientAuthenticationOptions() { RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true };
+
+                Assert.Null(clientOptions.TargetHost);
+
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                        client.AuthenticateAsClientAsync(clientOptions),
+                        server.AuthenticateAsServerAsync(serverOptions));
+               Assert.Equal(string.Empty, client.TargetHostName);
+               Assert.Equal(string.Empty, server.TargetHostName);
+            }
+        }
     }
 
     public sealed class SslClientAuthenticationOptionsTestBase_Sync : SslClientAuthenticationOptionsTestBase

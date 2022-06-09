@@ -283,7 +283,7 @@ namespace System.Net.NetworkInformation
             {
                 var asyncOp = (AsyncOperation)state!;
                 var e = new PingCompletedEventArgs(t.IsCompletedSuccessfully ? t.Result : null, t.Exception, t.IsCanceled, asyncOp.UserSuppliedState);
-                SendOrPostCallback callback = _onPingCompletedDelegate ?? (_onPingCompletedDelegate = new SendOrPostCallback(o => { OnPingCompleted((PingCompletedEventArgs)o!); }));
+                SendOrPostCallback callback = _onPingCompletedDelegate ??= new SendOrPostCallback(o => { OnPingCompleted((PingCompletedEventArgs)o!); });
                 asyncOp.PostOperationCompleted(callback, e);
             }, AsyncOperationManager.CreateOperation(userToken), CancellationToken.None, TaskContinuationOptions.DenyChildAttach, TaskScheduler.Default);
         }

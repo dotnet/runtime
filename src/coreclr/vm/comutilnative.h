@@ -31,7 +31,9 @@
 //
 //
 
+#ifdef FEATURE_COMINTEROP
 void FreeExceptionData(ExceptionData *pedata);
+#endif
 
 class ExceptionNative
 {
@@ -44,8 +46,10 @@ public:
     static FCDECL3(VOID, SaveStackTracesFromDeepCopy, Object* pExceptionObjectUnsafe, Object *pStackTraceUnsafe, Object *pDynamicMethodsUnsafe);
 
 
+#ifdef FEATURE_COMINTEROP
     // NOTE: caller cleans up any partially initialized BSTRs in pED
     static void      GetExceptionData(OBJECTREF, ExceptionData *);
+#endif
 
     // Note: these are on the PInvoke class to hide these from the user.
     static FCDECL0(EXCEPTION_POINTERS*, GetExceptionPointers);
@@ -225,6 +229,8 @@ class MethodTableNative {
 public:
     static FCDECL1(UINT32, GetNumInstanceFieldBytes, MethodTable* mt);
 };
+
+extern "C" BOOL QCALLTYPE MethodTable_AreTypesEquivalent(MethodTable* mta, MethodTable* mtb);
 
 class StreamNative {
 public:

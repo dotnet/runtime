@@ -260,6 +260,8 @@ FCIMPL3(VOID, ExceptionNative::SaveStackTracesFromDeepCopy, Object* pExceptionOb
 }
 FCIMPLEND
 
+#ifdef FEATURE_COMINTEROP
+
 BSTR BStrFromString(STRINGREF s)
 {
     CONTRACTL
@@ -467,8 +469,6 @@ void ExceptionNative::GetExceptionData(OBJECTREF objException, ExceptionData *pE
     GCPROTECT_END();
     return;
 }
-
-#ifdef FEATURE_COMINTEROP
 
 HRESULT SimpleComCallWrapper::IErrorInfo_hr()
 {
@@ -2035,6 +2035,21 @@ FCIMPL1(UINT32, MethodTableNative::GetNumInstanceFieldBytes, MethodTable* mt)
     return mt->GetNumInstanceFieldBytes();
 }
 FCIMPLEND
+
+extern "C" BOOL QCALLTYPE MethodTable_AreTypesEquivalent(MethodTable* mta, MethodTable* mtb)
+{
+    QCALL_CONTRACT;
+
+    BOOL bResult = FALSE;
+
+    BEGIN_QCALL;
+
+    bResult = mta->IsEquivalentTo(mtb);
+
+    END_QCALL;
+
+    return bResult;
+}
 
 static MethodTable * g_pStreamMT;
 static WORD g_slotBeginRead, g_slotEndRead;

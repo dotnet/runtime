@@ -849,7 +849,7 @@ namespace Internal.IL
             }
             else
             {
-                _dependencies.Add(_factory.ConstructedTypeSymbol(type), reason);
+                _dependencies.Add(_factory.MaximallyConstructableType(type), reason);
             }
         }
 

@@ -969,23 +969,20 @@ mono_assembly_load_reference (MonoImage *image, int index)
 		goto commit_reference;
 	}
 
-	if (image->assembly) {
-		if (mono_trace_is_traced (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY)) {
-			char *aname_str = mono_stringify_assembly_name (&aname);
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Loading reference %d of %s (%s), looking for %s",
-				    index, image->name, mono_alc_is_default (mono_image_get_alc (image)) ? "default ALC" : "custom ALC" ,
-				    aname_str);
-			g_free (aname_str);
-		}
-
-		MonoAssemblyByNameRequest req;
-		mono_assembly_request_prepare_byname (&req, mono_image_get_alc (image));
-		req.requesting_assembly = image->assembly;
-		//req.no_postload_search = TRUE; // FIXME: should this be set?
-		reference = mono_assembly_request_byname (&aname, &req, NULL);
-	} else {
-		g_assertf (image->assembly, "While loading reference %d MonoImage %s doesn't have a MonoAssembly", index, image->name);
+	g_assertf (image->assembly || image->not_executable, "While loading reference %d, executable MonoImage %s doesn't have a MonoAssembly", index, image->name);
+	if (mono_trace_is_traced (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY)) {
+		char *aname_str = mono_stringify_assembly_name (&aname);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Loading reference %d of %s (%s), looking for %s",
+				index, image->name, mono_alc_is_default (mono_image_get_alc (image)) ? "default ALC" : "custom ALC" ,
+				aname_str);
+		g_free (aname_str);
 	}
+
+	MonoAssemblyByNameRequest req;
+	mono_assembly_request_prepare_byname (&req, mono_image_get_alc (image));
+	req.requesting_assembly = image->assembly;
+	//req.no_postload_search = TRUE; // FIXME: should this be set?
+	reference = mono_assembly_request_byname (&aname, &req, NULL);
 
 	if (reference == NULL){
 		char *extra_msg;
@@ -1602,8 +1599,10 @@ mono_assembly_request_open (const char *filename, const MonoAssemblyOpenRequest 
 		loaded_from_bundle = image != NULL;
 	}
 
-	if (!image)
-		image = mono_image_open_a_lot (load_req.alc, fname, status);
+	if (!image) {
+		MonoImageOpenOptions options = {0, };
+		image = mono_image_open_a_lot (load_req.alc, fname, status, &options);
+	}
 
 	if (!image){
 		if (*status == MONO_IMAGE_OK)
@@ -1923,7 +1922,7 @@ mono_assembly_request_load_from (MonoImage *image, const char *fname,
 	 */
 	ass = g_new0 (MonoAssembly, 1);
 	ass->basedir = base_dir;
-	ass->context.no_managed_load_event = req->no_managed_load_event;
+	ass->context.no_managed_load_event = !!req->no_managed_load_event;
 	ass->image = image;
 
 	MONO_PROFILER_RAISE (assembly_loading, (ass));
@@ -2112,14 +2111,14 @@ parse_public_key (const gchar *key, gchar** pubkey, gboolean *is_ecma)
 		return TRUE;
 	}
 	*is_ecma = FALSE;
-	val = g_ascii_xdigit_value (key [0]) << 4;
-	val |= g_ascii_xdigit_value (key [1]);
+	val = GINT_TO_CHAR (g_ascii_xdigit_value (key [0]) << 4);
+	val |= GINT_TO_CHAR (g_ascii_xdigit_value (key [1]));
 	switch (val) {
 		case 0x00:
 			if (keylen < 13)
 				return FALSE;
-			val = g_ascii_xdigit_value (key [24]);
-			val |= g_ascii_xdigit_value (key [25]);
+			val = GINT_TO_CHAR (g_ascii_xdigit_value (key [24]));
+			val |= GINT_TO_CHAR (g_ascii_xdigit_value (key [25]));
 			if (val != 0x06)
 				return FALSE;
 			pkey = key + 24;
@@ -2138,8 +2137,8 @@ parse_public_key (const gchar *key, gchar** pubkey, gboolean *is_ecma)
 		return FALSE;
 
 	for (i = 0, j = 0; i < 16; i++) {
-		header [i] = g_ascii_xdigit_value (pkey [j++]) << 4;
-		header [i] |= g_ascii_xdigit_value (pkey [j++]);
+		header [i] = GINT_TO_CHAR (g_ascii_xdigit_value (pkey [j++]) << 4);
+		header [i] |= GINT_TO_CHAR (g_ascii_xdigit_value (pkey [j++]));
 	}
 
 	if (header [0] != 0x06 || /* PUBLICKEYBLOB (0x06) */
@@ -2160,8 +2159,8 @@ parse_public_key (const gchar *key, gchar** pubkey, gboolean *is_ecma)
 	offset = (gint)(endp-arr);
 
 	for (i = offset, j = 0; i < keylen + offset; i++) {
-		arr [i] = g_ascii_xdigit_value (key [j++]) << 4;
-		arr [i] |= g_ascii_xdigit_value (key [j++]);
+		arr [i] = GINT_TO_CHAR (g_ascii_xdigit_value (key [j++]) << 4);
+		arr [i] |= GINT_TO_CHAR (g_ascii_xdigit_value (key [j++]));
 	}
 
 	*pubkey = arr;
@@ -2288,7 +2287,7 @@ split_key_value (const gchar *pair, gchar **key, guint32 *keylen, gchar **value)
 	}
 
 	*key = (gchar*)pair;
-	*keylen = eqsign - *key;
+	*keylen = GPTRDIFF_TO_UINT32 (eqsign - *key);
 	while (*keylen > 0 && g_ascii_isspace ((*key) [*keylen - 1]))
 		(*keylen)--;
 	*value = g_strstrip (eqsign + 1);
@@ -2589,12 +2588,12 @@ uint16_t
 mono_assembly_name_get_version (MonoAssemblyName *aname, uint16_t *minor, uint16_t *build, uint16_t *revision)
 {
 	if (minor)
-		*minor = aname->minor;
+		*minor = GINT32_TO_UINT16 (aname->minor);
 	if (build)
-		*build = aname->build;
+		*build = GINT32_TO_UINT16 (aname->build);
 	if (revision)
-		*revision = aname->revision;
-	return aname->major;
+		*revision = GINT32_TO_UINT16 (aname->revision);
+	return GINT32_TO_UINT16 (aname->major);
 }
 
 gboolean
@@ -3227,7 +3226,7 @@ mono_assembly_is_jit_optimizer_disabled (MonoAssembly *ass)
 		mono_custom_attrs_free (attrs);
 	}
 
-	ass->jit_optimizer_disabled = disable_opts;
+	ass->jit_optimizer_disabled = !!disable_opts;
 	mono_memory_barrier ();
 	ass->jit_optimizer_disabled_inited = TRUE;
 

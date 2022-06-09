@@ -28,8 +28,12 @@ namespace System.Text.RegularExpressions.Symbolic
             writer.WriteLine("        <Node Id=\"dfainfo\" Category=\"DFAInfo\" Label=\"{0}\"/>", FormatInfo(_builder, transitions.Count));
             foreach (DfaMatchingState<TSet> state in _builder._stateCache)
             {
-                writer.WriteLine("        <Node Id=\"{0}\" Label=\"{0}\" Category=\"State\" Group=\"Collapsed\" StateInfo=\"{1}\">", state.Id, state.DgmlView);
-                if (state.IsInitialState)
+                string info = CharKind.DescribePrev(state.PrevCharKind);
+                string deriv = WebUtility.HtmlEncode(state.Node.ToString());
+                string nodeDgmlView = $"{(info == string.Empty ? info : $"Previous: {info}&#13;")}{(deriv == string.Empty ? "()" : deriv)}";
+
+                writer.WriteLine("        <Node Id=\"{0}\" Label=\"{0}\" Category=\"State\" Group=\"Collapsed\" StateInfo=\"{1}\">", state.Id, nodeDgmlView);
+                if (_builder.GetStateInfo(state.Id).IsInitial)
                 {
                     writer.WriteLine("            <Category Ref=\"InitialState\" />");
                 }
@@ -38,7 +42,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     writer.WriteLine("            <Category Ref=\"FinalState\" />");
                 }
                 writer.WriteLine("        </Node>");
-                writer.WriteLine("        <Node Id=\"{0}info\" Label=\"{1}\" Category=\"StateInfo\"/>", state.Id, state.DgmlView);
+                writer.WriteLine("        <Node Id=\"{0}info\" Label=\"{1}\" Category=\"StateInfo\"/>", state.Id, nodeDgmlView);
             }
             writer.WriteLine("    </Nodes>");
             writer.WriteLine("    <Links>");
@@ -143,16 +147,17 @@ namespace System.Text.RegularExpressions.Symbolic
                 foreach (DfaMatchingState<TSet> source in builder._stateCache)
                 {
                     // Get the span of entries in delta that gives the transitions for the different minterms
-                    Span<DfaMatchingState<TSet>?> deltas = builder.GetDeltasFor(source);
+                    Span<int> deltas = builder.GetDeltasFor(source);
                     Span<int[]?> nfaDeltas = builder.GetNfaDeltasFor(source);
                     Debug.Assert(deltas.Length == builder._minterms.Length);
                     for (int i = 0; i < deltas.Length; ++i)
                     {
-                        // null entries are transitions not explored yet, so skip them
-                        if (deltas[i] is DfaMatchingState<TSet> target)
+                        // negative entries are transitions not explored yet, so skip them
+                        int targetId = deltas[i];
+                        if (targetId >= 0)
                         {
                             // Get or create the data for this (source,destination) state ID pair
-                            (int Source, int Target) key = (source.Id, target.Id);
+                            (int Source, int Target) key = (source.Id, targetId);
                             if (!result.TryGetValue(key, out (TSet Rule, List<int> NfaTargets) entry))
                             {
                                 entry = (builder._solver.Empty, new List<int>());

@@ -14,7 +14,6 @@ using System.Reflection.Runtime.ParameterInfos;
 using System.Reflection.Runtime.BindingFlagSupport;
 
 using Internal.Reflection.Core.Execution;
-using Internal.Reflection.Tracing;
 
 namespace System.Reflection.Runtime.MethodInfos
 {
@@ -22,7 +21,7 @@ namespace System.Reflection.Runtime.MethodInfos
     // Abstract base class for RuntimeNamedMethodInfo, RuntimeConstructedGenericMethodInfo.
     //
     [DebuggerDisplay("{_debugName}")]
-    internal abstract partial class RuntimeMethodInfo : MethodInfo, ITraceableTypeMember
+    internal abstract partial class RuntimeMethodInfo : MethodInfo
     {
         protected RuntimeMethodInfo()
         {
@@ -62,22 +61,12 @@ namespace System.Reflection.Runtime.MethodInfos
         // V4.5 api - Creates open delegates over static or instance methods.
         public sealed override Delegate CreateDelegate(Type delegateType)
         {
-#if ENABLE_REFLECTION_TRACE
-            if (ReflectionTrace.Enabled)
-                ReflectionTrace.MethodInfo_CreateDelegate(this, delegateType);
-#endif
-
             return CreateDelegateWorker(delegateType, null, allowClosed: false);
         }
 
         // V4.5 api - Creates open or closed delegates over static or instance methods.
         public sealed override Delegate CreateDelegate(Type delegateType, object target)
         {
-#if ENABLE_REFLECTION_TRACE
-            if (ReflectionTrace.Enabled)
-                ReflectionTrace.MethodInfo_CreateDelegate(this, delegateType, target);
-#endif
-
             return CreateDelegateWorker(delegateType, target, allowClosed: true);
         }
 
@@ -107,11 +96,6 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             get
             {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.MethodBase_DeclaringType(this);
-#endif
-
                 return this.RuntimeDeclaringType;
             }
         }
@@ -160,11 +144,6 @@ namespace System.Reflection.Runtime.MethodInfos
 
         public sealed override ParameterInfo[] GetParameters()
         {
-#if ENABLE_REFLECTION_TRACE
-            if (ReflectionTrace.Enabled)
-                ReflectionTrace.MethodBase_GetParameters(this);
-#endif
-
             RuntimeParameterInfo[] runtimeParameterInfos = RuntimeParameters;
             if (runtimeParameterInfos.Length == 0)
                 return Array.Empty<ParameterInfo>();
@@ -184,10 +163,6 @@ namespace System.Reflection.Runtime.MethodInfos
         [DebuggerGuidedStepThroughAttribute]
         public sealed override object Invoke(object obj, BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture)
         {
-#if ENABLE_REFLECTION_TRACE
-            if (ReflectionTrace.Enabled)
-                ReflectionTrace.MethodBase_Invoke(this, obj, parameters);
-#endif
             if (parameters == null)
                 parameters = Array.Empty<object>();
             MethodInvoker methodInvoker = this.MethodInvoker;
@@ -236,10 +211,6 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             get
             {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.MethodBase_Name(this);
-#endif
                 return this.RuntimeName;
             }
         }
@@ -250,11 +221,6 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             get
             {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.MethodInfo_ReturnParameter(this);
-#endif
-
                 return this.RuntimeReturnParameter;
             }
         }
@@ -263,11 +229,6 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             get
             {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.MethodInfo_ReturnType(this);
-#endif
-
                 return ReturnParameter.ParameterType;
             }
         }
@@ -275,22 +236,6 @@ namespace System.Reflection.Runtime.MethodInfos
         public abstract override string ToString();
 
         public abstract override RuntimeMethodHandle MethodHandle { get; }
-
-        Type ITraceableTypeMember.ContainingType
-        {
-            get
-            {
-                return this.RuntimeDeclaringType;
-            }
-        }
-
-        string ITraceableTypeMember.MemberName
-        {
-            get
-            {
-                return this.RuntimeName;
-            }
-        }
 
         internal abstract RuntimeTypeInfo RuntimeDeclaringType
         {
@@ -527,7 +472,7 @@ namespace System.Reflection.Runtime.MethodInfos
             if (_debugName == null)
             {
                 _debugName = "Constructing..."; // Protect against any inadvertent reentrancy.
-                _debugName = ((ITraceableTypeMember)this).MemberName;
+                _debugName = RuntimeName;
             }
             return this;
         }

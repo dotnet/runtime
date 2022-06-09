@@ -118,9 +118,8 @@ mono_save_seq_point_info (MonoCompile *cfg, MonoJitInfo *jinfo)
 	for (i = 0; i < cfg->seq_points->len; ++i) {
 		SeqPoint *sp = &seq_points [i];
 		MonoInst *ins = (MonoInst *)g_ptr_array_index (cfg->seq_points, i);
-
-		sp->il_offset = ins->inst_imm;
-		sp->native_offset = ins->inst_offset;
+		sp->il_offset = GTMREG_TO_INT (ins->inst_imm);
+		sp->native_offset = GTMREG_TO_INT (ins->inst_offset);
 		if (ins->flags & MONO_INST_NONEMPTY_STACK)
 			sp->flags |= MONO_SEQ_POINT_FLAG_NONEMPTY_STACK;
 		if (ins->flags & MONO_INST_NESTED_CALL)

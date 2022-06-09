@@ -92,11 +92,6 @@
         <target state="translated">Недостаточно шестнадцатеричных цифр.</target>
         <note />
       </trans-unit>
-      <trans-unit id="InternalError_ScanRegex">
-        <source>Internal error in ScanRegex.</source>
-        <target state="translated">Внутренняя ошибка в ScanRegex.</target>
-        <note>{Locked="ScanRegex"}</note>
-      </trans-unit>
       <trans-unit id="InvalidGroupingConstruct">
         <source>Unrecognized grouping construct.</source>
         <target state="translated">Нераспознанная конструкция группирования.</target>
@@ -210,11 +205,6 @@
       <trans-unit id="RegexMethodMustHaveValidSignatureMessage">
         <source>RegexGenerator method must be partial, parameterless, non-generic, non-abstract, and return Regex</source>
         <target state="translated">Метод RegexGenerator должен быть частичным, без параметров, неуниверсальным, неабстрактным и возвращать регулярное выражение</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="ReplacementError">
-        <source>Replacement pattern error.</source>
-        <target state="translated">Ошибка шаблона замены.</target>
         <note />
       </trans-unit>
       <trans-unit id="ReversedCharacterRange">

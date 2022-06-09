@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.IO;
 
@@ -124,12 +125,18 @@ namespace System.Net.Sockets
             }
         }
 
+        public override bool Equals([NotNullWhen(true)] object? obj)
+            => obj is UnixDomainSocketEndPoint ep && _path == ep._path;
+
+        public override int GetHashCode() => _path.GetHashCode();
+
         internal UnixDomainSocketEndPoint CreateBoundEndPoint()
         {
             if (IsAbstract(_path))
             {
                 return this;
             }
+
             return new UnixDomainSocketEndPoint(_path, Path.GetFullPath(_path));
         }
 
@@ -139,6 +146,7 @@ namespace System.Net.Sockets
             {
                 return this;
             }
+
             return new UnixDomainSocketEndPoint(_path, null);
         }
 
