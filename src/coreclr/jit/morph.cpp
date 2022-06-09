@@ -12902,6 +12902,7 @@ GenTree* Compiler::fgOptimizeMultiply(GenTreeOp* mul)
         {
             mul->gtOp1                 = op1->AsUnOp()->gtGetOp1();
             op2->AsIntCon()->gtIconVal = -op2->AsIntCon()->gtIconVal;
+            fgUpdateConstTreeValueNumber(op2);
             DEBUG_DESTROY_NODE(op1);
 
             op1 = mul->gtOp1;
