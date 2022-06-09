@@ -670,16 +670,6 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             unsigned     simdSize = simdNode->GetSimdSize();
             var_types    simdType = comp->getSIMDTypeForSize(simdSize);
 
-            // TODO-1stClassStructs: This should be handled more generally for enregistered or promoted
-            // structs that are passed or returned in a different register type than their enregistered
-            // type(s).
-            if (simdNode->gtType == TYP_I_IMPL && simdNode->GetSimdSize() == TARGET_POINTER_SIZE)
-            {
-                // This happens when it is consumed by a GT_RET_EXPR.
-                // It can only be a Vector2f or Vector2i.
-                assert(genTypeSize(simdNode->GetSimdBaseType()) == 4);
-                simdNode->gtType = TYP_SIMD8;
-            }
             // Certain SIMD trees require rationalizing.
             if (simdNode->AsSIMD()->GetSIMDIntrinsicId() == SIMDIntrinsicInitArray)
             {
@@ -702,54 +692,6 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             }
         }
         break;
-#endif // FEATURE_SIMD
-
-#ifdef FEATURE_HW_INTRINSICS
-        case GT_HWINTRINSIC:
-        {
-            GenTreeHWIntrinsic* hwIntrinsicNode = node->AsHWIntrinsic();
-
-            if (!hwIntrinsicNode->isSIMD())
-            {
-                break;
-            }
-
-            // TODO-1stClassStructs: This should be handled more generally for enregistered or promoted
-            // structs that are passed or returned in a different register type than their enregistered
-            // type(s).
-            if ((hwIntrinsicNode->gtType == TYP_I_IMPL) && (hwIntrinsicNode->GetSimdSize() == TARGET_POINTER_SIZE))
-            {
-#ifdef TARGET_ARM64
-                // Special case for GetElement/ToScalar because they take Vector64<T> and return T
-                // and T can be long or ulong.
-                if (!((hwIntrinsicNode->GetHWIntrinsicId() == NI_Vector64_GetElement) ||
-                      (hwIntrinsicNode->GetHWIntrinsicId() == NI_Vector64_ToScalar)))
-#endif
-                {
-                    // This happens when it is consumed by a GT_RET_EXPR.
-                    // It can only be a Vector2f or Vector2i.
-                    assert(genTypeSize(hwIntrinsicNode->GetSimdBaseType()) == 4);
-                    hwIntrinsicNode->gtType = TYP_SIMD8;
-                }
-            }
-            break;
-        }
-#endif // FEATURE_HW_INTRINSICS
-
-#if defined(FEATURE_SIMD)
-        case GT_CNS_VEC:
-        {
-            GenTreeVecCon* vecCon = node->AsVecCon();
-
-            // TODO-1stClassStructs: do not retype SIMD nodes
-
-            if ((vecCon->TypeIs(TYP_I_IMPL)) && (vecCon->GetSimdSize() == TARGET_POINTER_SIZE))
-            {
-                assert(genTypeSize(vecCon->GetSimdBaseType()) == 4);
-                vecCon->gtType = TYP_SIMD8;
-            }
-            break;
-        }
 #endif // FEATURE_SIMD
 
         default:

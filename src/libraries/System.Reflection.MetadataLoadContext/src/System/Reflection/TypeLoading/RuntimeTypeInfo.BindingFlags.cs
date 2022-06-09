@@ -209,7 +209,7 @@ namespace System.Reflection.TypeLoading
             return true;
         }
 
-        private TypeComponentsCache Cache => _lazyCache ?? (_lazyCache = new TypeComponentsCache(this));
+        private TypeComponentsCache Cache => _lazyCache ??= new TypeComponentsCache(this);
 
         private volatile TypeComponentsCache? _lazyCache;
 

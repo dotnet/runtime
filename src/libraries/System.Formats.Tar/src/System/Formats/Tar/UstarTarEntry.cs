@@ -28,7 +28,7 @@ namespace System.Formats.Tar
         /// </list>
         /// </remarks>
         public UstarTarEntry(TarEntryType entryType, string entryName)
-            : base(entryType, entryName, TarFormat.Ustar)
+            : base(entryType, entryName, TarEntryFormat.Ustar)
         {
         }
 

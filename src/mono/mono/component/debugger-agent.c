@@ -6498,8 +6498,8 @@ send_enc_delta (MonoImage *image, gconstpointer dmeta_bytes, int32_t dmeta_len, 
 
 		EnCInfo info;
 		info.image = image;
-		info.meta_bytes = dpdb_bytes;
-		info.meta_len = dpdb_len;
+		info.meta_bytes = dmeta_bytes;
+		info.meta_len = dmeta_len;
 		info.pdb_bytes = dpdb_bytes;
 		info.pdb_len = dpdb_len;
 
@@ -7826,9 +7826,6 @@ static int get_static_field_value(MonoClassField* f, MonoClass* klass, MonoDomai
 	vtable = mono_class_vtable_checked(m_field_get_parent (f), error);
 	if (!is_ok(error))
 		return -1;
-
-	/* TODO: metadata-update.  implement support for added fields */
-	g_assert (!m_field_is_from_update (f));
 
 	if (CHECK_ICORDBG (TRUE))
 	{

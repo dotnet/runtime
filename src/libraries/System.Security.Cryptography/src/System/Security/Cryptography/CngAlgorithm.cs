@@ -89,7 +89,7 @@ namespace System.Security.Cryptography
         {
             get
             {
-                return s_rsa ?? (s_rsa = new CngAlgorithm("RSA")); // BCRYPT_RSA_ALGORITHM
+                return s_rsa ??= new CngAlgorithm("RSA"); // BCRYPT_RSA_ALGORITHM
             }
         }
 
@@ -97,7 +97,7 @@ namespace System.Security.Cryptography
         {
             get
             {
-                return s_ecdh ?? (s_ecdh = new CngAlgorithm("ECDH")); // BCRYPT_ECDH_ALGORITHM
+                return s_ecdh ??= new CngAlgorithm("ECDH"); // BCRYPT_ECDH_ALGORITHM
             }
         }
 
@@ -105,7 +105,7 @@ namespace System.Security.Cryptography
         {
             get
             {
-                return s_ecdhp256 ?? (s_ecdhp256 = new CngAlgorithm("ECDH_P256")); // BCRYPT_ECDH_P256_ALGORITHM
+                return s_ecdhp256 ??= new CngAlgorithm("ECDH_P256"); // BCRYPT_ECDH_P256_ALGORITHM
             }
         }
 
@@ -113,7 +113,7 @@ namespace System.Security.Cryptography
         {
             get
             {
-                return s_ecdhp384 ?? (s_ecdhp384 = new CngAlgorithm("ECDH_P384")); // BCRYPT_ECDH_P384_ALGORITHM
+                return s_ecdhp384 ??= new CngAlgorithm("ECDH_P384"); // BCRYPT_ECDH_P384_ALGORITHM
             }
         }
 
@@ -121,7 +121,7 @@ namespace System.Security.Cryptography
         {
             get
             {
-                return s_ecdhp521 ?? (s_ecdhp521 = new CngAlgorithm("ECDH_P521")); // BCRYPT_ECDH_P521_ALGORITHM
+                return s_ecdhp521 ??= new CngAlgorithm("ECDH_P521"); // BCRYPT_ECDH_P521_ALGORITHM
             }
         }
 
@@ -129,7 +129,7 @@ namespace System.Security.Cryptography
         {
             get
             {
-                return s_ecdsa ?? (s_ecdsa = new CngAlgorithm("ECDSA")); // BCRYPT_ECDSA_ALGORITHM
+                return s_ecdsa ??= new CngAlgorithm("ECDSA"); // BCRYPT_ECDSA_ALGORITHM
             }
         }
 
@@ -137,7 +137,7 @@ namespace System.Security.Cryptography
         {
             get
             {
-                return s_ecdsap256 ?? (s_ecdsap256 = new CngAlgorithm("ECDSA_P256")); // BCRYPT_ECDSA_P256_ALGORITHM
+                return s_ecdsap256 ??= new CngAlgorithm("ECDSA_P256"); // BCRYPT_ECDSA_P256_ALGORITHM
             }
         }
 
@@ -145,7 +145,7 @@ namespace System.Security.Cryptography
         {
             get
             {
-                return s_ecdsap384 ?? (s_ecdsap384 = new CngAlgorithm("ECDSA_P384")); // BCRYPT_ECDSA_P384_ALGORITHM
+                return s_ecdsap384 ??= new CngAlgorithm("ECDSA_P384"); // BCRYPT_ECDSA_P384_ALGORITHM
             }
         }
 
@@ -153,7 +153,7 @@ namespace System.Security.Cryptography
         {
             get
             {
-                return s_ecdsap521 ?? (s_ecdsap521 = new CngAlgorithm("ECDSA_P521")); // BCRYPT_ECDSA_P521_ALGORITHM
+                return s_ecdsap521 ??= new CngAlgorithm("ECDSA_P521"); // BCRYPT_ECDSA_P521_ALGORITHM
             }
         }
 
@@ -161,7 +161,7 @@ namespace System.Security.Cryptography
         {
             get
             {
-                return s_md5 ?? (s_md5 = new CngAlgorithm("MD5")); // BCRYPT_MD5_ALGORITHM
+                return s_md5 ??= new CngAlgorithm("MD5"); // BCRYPT_MD5_ALGORITHM
             }
         }
 
@@ -169,7 +169,7 @@ namespace System.Security.Cryptography
         {
             get
             {
-                return s_sha1 ?? (s_sha1 = new CngAlgorithm("SHA1")); // BCRYPT_SHA1_ALGORITHM
+                return s_sha1 ??= new CngAlgorithm("SHA1"); // BCRYPT_SHA1_ALGORITHM
             }
         }
 
@@ -177,7 +177,7 @@ namespace System.Security.Cryptography
         {
             get
             {
-                return s_sha256 ?? (s_sha256 = new CngAlgorithm("SHA256")); // BCRYPT_SHA256_ALGORITHM
+                return s_sha256 ??= new CngAlgorithm("SHA256"); // BCRYPT_SHA256_ALGORITHM
             }
         }
 
@@ -185,7 +185,7 @@ namespace System.Security.Cryptography
         {
             get
             {
-                return s_sha384 ?? (s_sha384 = new CngAlgorithm("SHA384")); // BCRYPT_SHA384_ALGORITHM
+                return s_sha384 ??= new CngAlgorithm("SHA384"); // BCRYPT_SHA384_ALGORITHM
             }
         }
 
@@ -193,7 +193,7 @@ namespace System.Security.Cryptography
         {
             get
             {
-                return s_sha512 ?? (s_sha512 = new CngAlgorithm("SHA512")); // BCRYPT_SHA512_ALGORITHM
+                return s_sha512 ??= new CngAlgorithm("SHA512"); // BCRYPT_SHA512_ALGORITHM
             }
         }
 

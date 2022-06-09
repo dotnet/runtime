@@ -17,8 +17,7 @@ namespace System.Reflection.Tests
         private static readonly NullabilityInfoContext nullabilityContext = new NullabilityInfoContext();
         private static readonly Type testType = typeof(TypeWithNotNullContext);
         private static readonly Type genericType = typeof(GenericTest<TypeWithNotNullContext>);
-        private static readonly Type stringType = typeof(string);
-        private static readonly BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
+        private const BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
 
         public static IEnumerable<object[]> FieldTestData()
         {
@@ -705,7 +704,7 @@ namespace System.Reflection.Tests
         [MemberData(nameof(StringTypeTestData))]
         public void NullablePublicOnlyStringTypeTest(string methodName, NullabilityState param1State, NullabilityState param2State, NullabilityState param3State, Type[] types)
         {
-            ParameterInfo[] parameters = stringType.GetMethod(methodName, flags, types)!.GetParameters();
+            ParameterInfo[] parameters = typeof(string).GetMethod(methodName, flags, types)!.GetParameters();
             NullabilityInfo param1 = nullabilityContext.Create(parameters[0]);
             NullabilityInfo param2 = nullabilityContext.Create(parameters[1]);
             NullabilityInfo param3 = nullabilityContext.Create(parameters[2]);

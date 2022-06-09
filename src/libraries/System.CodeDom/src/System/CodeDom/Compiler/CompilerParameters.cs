@@ -60,7 +60,7 @@ namespace System.CodeDom.Compiler
 
         public TempFileCollection TempFiles
         {
-            get => _tempFiles ?? (_tempFiles = new TempFileCollection());
+            get => _tempFiles ??= new TempFileCollection();
             set => _tempFiles = value;
         }
 

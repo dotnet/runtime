@@ -4152,10 +4152,9 @@ void Compiler::fgSetBlockOrder(BasicBlock* block)
             }
             break;
 
-        case GT_INDEX:
         case GT_INDEX_ADDR:
-            // These two call CORINFO_HELP_RNGCHKFAIL for Debug code
-            if (tree->gtFlags & GTF_INX_RNGCHK)
+            // This calls CORINFO_HELP_RNGCHKFAIL for Debug code.
+            if (tree->AsIndexAddr()->IsBoundsChecked())
             {
                 return Compiler::WALK_ABORT;
             }

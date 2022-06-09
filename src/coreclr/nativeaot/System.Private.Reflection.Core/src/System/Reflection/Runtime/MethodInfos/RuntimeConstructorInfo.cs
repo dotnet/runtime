@@ -13,8 +13,6 @@ using System.Reflection.Runtime.ParameterInfos;
 
 using Internal.Reflection.Core.Execution;
 
-using Internal.Reflection.Tracing;
-
 namespace System.Reflection.Runtime.MethodInfos
 {
     //
@@ -52,11 +50,6 @@ namespace System.Reflection.Runtime.MethodInfos
 
         public sealed override ParameterInfo[] GetParameters()
         {
-#if ENABLE_REFLECTION_TRACE
-            if (ReflectionTrace.Enabled)
-                ReflectionTrace.MethodBase_GetParameters(this);
-#endif
-
             RuntimeParameterInfo[] parameters = RuntimeParameters;
             if (parameters.Length == 0)
                 return Array.Empty<ParameterInfo>();
@@ -78,10 +71,6 @@ namespace System.Reflection.Runtime.MethodInfos
         [DebuggerGuidedStepThrough]
         public sealed override object Invoke(object obj, BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture)
         {
-#if ENABLE_REFLECTION_TRACE
-            if (ReflectionTrace.Enabled)
-                ReflectionTrace.MethodBase_Invoke(this, obj, parameters);
-#endif
             if (parameters == null)
                 parameters = Array.Empty<object>();
             MethodInvoker methodInvoker;

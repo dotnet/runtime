@@ -62,7 +62,7 @@ namespace System.Net.Tests
                         outputStream.Close();
                     }
 
-                    byte[] extraBytesSentAfterClose = Encoding.UTF8.GetBytes("Should not be sent.");
+                    byte[] extraBytesSentAfterClose = "Should not be sent."u8.ToArray();
                     await outputStream.WriteAsync(extraBytesSentAfterClose, 0, extraBytesSentAfterClose.Length);
                 }
 
@@ -100,7 +100,7 @@ namespace System.Net.Tests
                         outputStream.Close();
                     }
 
-                    byte[] extraBytesSentAfterClose = Encoding.UTF8.GetBytes("Should not be sent.");
+                    byte[] extraBytesSentAfterClose = "Should not be sent."u8.ToArray();
                     outputStream.Write(extraBytesSentAfterClose, 0, extraBytesSentAfterClose.Length);
                 }
 
@@ -308,7 +308,7 @@ namespace System.Net.Tests
                 using (HttpListenerResponse response = serverContext.Response)
                 {
                     Stream output = response.OutputStream;
-                    byte[] responseBuffer = Encoding.UTF8.GetBytes("A long string");
+                    byte[] responseBuffer = "A long string"u8.ToArray();
                     response.ContentLength64 = responseBuffer.Length - 1;
                     try
                     {
@@ -337,7 +337,7 @@ namespace System.Net.Tests
                 {
                     Stream output = response.OutputStream;
 
-                    byte[] responseBuffer = Encoding.UTF8.GetBytes("A long string");
+                    byte[] responseBuffer = "A long string"u8.ToArray();
                     response.ContentLength64 = responseBuffer.Length + 1;
 
                     // Throws when there are bytes left to write
@@ -363,7 +363,7 @@ namespace System.Net.Tests
                 {
                     Stream output = response.OutputStream;
 
-                    byte[] responseBuffer = Encoding.UTF8.GetBytes("A long string");
+                    byte[] responseBuffer = "A long string"u8.ToArray();
                     response.ContentLength64 = responseBuffer.Length + 1;
 
                     // Throws when there are bytes left to write
