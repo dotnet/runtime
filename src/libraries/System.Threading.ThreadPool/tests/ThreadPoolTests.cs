@@ -1103,7 +1103,6 @@ namespace System.Threading.ThreadPools.Tests
                     var payloadCount = Math.Min(payloadNames.Count, payloads.Count);
                     for (int i = 0; i < payloadCount; ++i)
                     {
-                        string payloadValue = payloads[i];
                         DataRecord[DataRecordPtr++] = Int32.Parse(payloads[i]);
                     }
 
