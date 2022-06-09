@@ -11265,8 +11265,10 @@ DONE_MORPHING_CHILDREN:
                     // If we are performing a narrowing cast and
                     // castType is larger or the same as op1's type
                     // then we can discard the cast.
+                    // However, the actual VM sizes must be the same.
 
-                    if (varTypeIsSmall(castType) && (genActualTypeSize(castType) == genActualTypeSize(effectiveOp1)))
+                    if (varTypeIsSmall(castType) && (genTypeSize(castType) >= genTypeSize(effectiveOp1) &&
+                                                     (genActualTypeSize(castType) == genActualTypeSize(effectiveOp1))))
                     {
                         tree->AsOp()->gtOp2 = op2 = op2->AsCast()->CastOp();
                     }
