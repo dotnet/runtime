@@ -342,7 +342,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
                     System.Diagnostics.Debug.Assert(dwSymbolOffset == 0 || _symbols[iWord] == sRule);
 
-                    rule = dwSymbolOffset > 0 && _nameOffsetRules.ContainsKey(dwSymbolOffset) ? _nameOffsetRules[dwSymbolOffset] : null;
+                    rule = dwSymbolOffset > 0 && _nameOffsetRules.TryGetValue(dwSymbolOffset, out Rule value) ? value : null;
                 }
             }
 
