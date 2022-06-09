@@ -26,9 +26,7 @@ namespace System.Reflection.Context.Virtual
 
             protected override Type[] GetParameterTypes()
             {
-                return (_parameterTypes != null) ?
-                       _parameterTypes :
-                       _parameterTypes = new Type[1] { DeclaringProperty.PropertyType };
+                return _parameterTypes ??= new Type[1] { DeclaringProperty.PropertyType };
             }
         }
     }

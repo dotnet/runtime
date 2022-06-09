@@ -43,7 +43,7 @@ namespace System.Collections.Specialized
 
         protected NameObjectCollectionBase(IEqualityComparer? equalityComparer)
         {
-            _keyComparer = (equalityComparer == null) ? s_defaultComparer : equalityComparer;
+            _keyComparer = equalityComparer ?? s_defaultComparer;
             Reset();
         }
 

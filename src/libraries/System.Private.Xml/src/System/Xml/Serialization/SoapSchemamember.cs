@@ -21,7 +21,7 @@ namespace System.Xml.Serialization
         [AllowNull]
         public string MemberName
         {
-            get { return _memberName == null ? string.Empty : _memberName; }
+            get { return _memberName ?? string.Empty; }
             set { _memberName = value; }
         }
     }

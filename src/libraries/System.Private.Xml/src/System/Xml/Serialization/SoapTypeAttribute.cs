@@ -37,7 +37,7 @@ namespace System.Xml.Serialization
         [AllowNull]
         public string TypeName
         {
-            get { return _typeName == null ? string.Empty : _typeName; }
+            get { return _typeName ?? string.Empty; }
             set { _typeName = value; }
         }
 

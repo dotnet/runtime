@@ -239,7 +239,9 @@ namespace System.Xml
                         return docTypeNodeAttributes[_nAttrInd].value!;
                 }
                 if (nt == XmlNodeType.DocumentType)
+                {
                     retValue = ((XmlDocumentType)_curNode).InternalSubset; //in this case nav.Value will be null
+                }
                 else if (nt == XmlNodeType.XmlDeclaration)
                 {
                     StringBuilder strb = new StringBuilder(string.Empty);
@@ -254,8 +256,10 @@ namespace System.Xml
                     retValue = strb.ToString();
                 }
                 else
+                {
                     retValue = _curNode.Value;
-                return (retValue == null) ? string.Empty : retValue;
+                }
+                return retValue ?? string.Empty;
             }
         }
 
@@ -1340,7 +1344,7 @@ namespace System.Xml
             //if not on Attribute, only element node could have attributes
             if (!IsInReadingStates())
                 return null;
-            string ns = (namespaceURI == null) ? string.Empty : namespaceURI;
+            string ns = namespaceURI ?? string.Empty;
             return _readerNav.GetAttribute(name, ns);
         }
 
@@ -1380,7 +1384,7 @@ namespace System.Xml
             if (!IsInReadingStates())
                 return false;
             _readerNav.ResetMove(ref _curDepth, ref _nodeType);
-            string ns = (namespaceURI == null) ? string.Empty : namespaceURI;
+            string ns = namespaceURI ?? string.Empty;
             if (_readerNav.MoveToAttribute(name, ns))
             { //, ref curDepth ) ) {
                 _curDepth++;

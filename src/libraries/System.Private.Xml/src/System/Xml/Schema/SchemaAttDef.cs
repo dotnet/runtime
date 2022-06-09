@@ -144,7 +144,7 @@ namespace System.Xml.Schema
         [AllowNull]
         internal string DefaultValueExpanded
         {
-            get { return (_defExpanded != null) ? _defExpanded : string.Empty; }
+            get { return _defExpanded ?? string.Empty; }
             set { _defExpanded = value; }
         }
 
