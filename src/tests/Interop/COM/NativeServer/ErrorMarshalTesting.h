@@ -26,6 +26,25 @@ public: // IErrorMarshalTesting
         return hresultToReturn;
     }
 
+    DEF_FUNC(Throw_HResult_HelpLink)(
+        /*[in]*/ int hresultToReturn,
+        /*[in]*/ BSTR helpLink,
+        /*[in]*/ DWORD helpContext)
+    {
+        ICreateErrorInfo* pCreateErrInfo;
+        CreateErrorInfo(&pCreateErrInfo);
+        pCreateErrInfo->SetHelpFile(helpLink);
+        pCreateErrInfo->SetHelpContext(helpContext);
+
+        IErrorInfo* pErrInfo;
+        pCreateErrInfo->QueryInterface(IID_IErrorInfo, (void**)&pErrInfo);
+        SetErrorInfo(0, pErrInfo);
+        pErrInfo->Release();
+        pCreateErrInfo->Release();
+
+        return HRESULT{ hresultToReturn };
+    }
+
 public: // IUnknown
     STDMETHOD(QueryInterface)(
         /* [in] */ REFIID riid,
