@@ -2224,17 +2224,11 @@ namespace System.Text.RegularExpressions.Symbolic
                     // The recursive call is to make sure that cases such as ((A|B)C)D are also handled,
                     // because right associative form of concatenations is not always guaranteed
                     Debug.Assert(_left is not null && _right is not null);
-                    foreach (SymbolicRegexNode<TSet> left_alt in _left.EnumerateAlternationBranches())
+                    foreach (SymbolicRegexNode<TSet> branch in _left.EnumerateAlternationBranches())
                     {
-                        if (left_alt == _left)
-                        {
-                            // There were no initial alternatives in this concatenation
-                            yield return this;
-                        }
-                        else
-                        {
-                            yield return CreateConcat(_builder, left_alt, _right);
-                        }
+                        yield return branch == _left ?
+                            this : // no initial alternation
+                            CreateConcat(_builder, branch, _right);
                     }
                     break;
 
