@@ -156,7 +156,6 @@ namespace DependencyLogViewer
         {
             Thread th = new Thread(FindXML);
             th.Start(fileStream);
-            //FileReading(FileStream);
         }
 
         public void FindXML(object fileStream)
@@ -170,17 +169,19 @@ namespace DependencyLogViewer
             {
                 while (reader.Read())
                 {
-                    if (!(reader.Name.StartsWith("P")))
+                    if (!(reader.Name.StartsWith("P"))) // skips over 'properties' in the .dgml file
                     {
                         IXmlLineInfo lineInfo = (IXmlLineInfo)reader;
                         int lineNumber = lineInfo.LineNumber;
                         switch (reader.NodeType)
+                        // fileCount is the PID for the system, increments down with the number of files being read.
+                        // There is the same PID and ID because each process will only have one graph, this is why the first two args are the same for each of the functions below.
                         {
                             case XmlNodeType.Element:
                                 if (reader.Name == "Node")
                                 {
                                     int id = int.Parse(reader.GetAttribute("Id"));
-                                    collection.AddNodeToGraph(fileCount, fileCount, id, reader.GetAttribute("Label")); // same PID and ID because each process will only have one graph
+                                    collection.AddNodeToGraph(fileCount, fileCount, id, reader.GetAttribute("Label")); 
                                 }
                                 else if (reader.Name == "Link")
                                 {
@@ -329,7 +330,7 @@ namespace DependencyLogViewer
         }
 
         public void Stop()
-        {
+         {
             session.Source.Dispose();
             stopped = true;
         }
@@ -359,7 +360,7 @@ namespace DependencyLogViewer
             DialogResult result;
             result = MessageBox.Show(message, caption, buttons);
             
-            // Today you have to be Admin to turn on ETW events (anyone can write ETW events).
+            // Today you have to be Admin to turn on ETW events (anyone can write ETW events). If user elects to use ETW events, they must be Admin.
             
             if (!(TraceEventSession.IsElevated() ?? false) && result == System.Windows.Forms.DialogResult.Yes)
             {
@@ -404,7 +405,7 @@ namespace DependencyLogViewer
                     }
                     else
                     {
-                        if (argPath.EndsWith(".dgml"))
+                        if (argPath.EndsWith(".dgml")) // all .dgml files in the path need to have .xml added for XmlReader to function
                         {
                             argPath += ".xml";
                         }
