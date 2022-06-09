@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-
     <TestRuntime>true</TestRuntime>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <MainLibraryFileName>Android.Device_Emulator.gRPC.Test.dll</MainLibraryFileName>
@@ -11,19 +10,14 @@
     <RunAOTCompilation>true</RunAOTCompilation>
     <ForceAOT>true</ForceAOT>
     <AOTWithLibraryFiles>true</AOTWithLibraryFiles>
-    
+
     <PublishTrimmed>true</PublishTrimmed>
     <EnableAggressiveTrimming>true</EnableAggressiveTrimming>
     
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <!-- Disable CS8981 because the generated code from the protobuf files contains classes with lowercase names -->
-    <!-- Disable IL2026 because of trim analysis errors related to XML serialization -->
-    <!-- Disable IL2035 because of HttpClientHandler.AnyMobile.InvokeNativeHandler.cs referencing Mono.Android in DynamicDependencyAttribute which is fine -->
-    <!-- Disable IL2087 because of a trim analysis error in Grpc.Shared.TestAssets.InteropClient.CreateClient<TClient>(IChannelWrapper) -->
-    <!-- Disable IL2104 because of trim warnings in the following assemblies: Google.Apis.Core.dll, Google.Apis.dll, Google.Protobuf.dll, Microsoft.Extensions.Configuration.Binder.dll, Microsoft.Extensions.DependencyInjection.Abstractions.dll, Microsoft.Extensions.DependencyInjection.dll, Microsoft.Extensions.Logging.Configuration.dll, Microsoft.Extensions.Logging.dll, Microsoft.Extensions.Options.dll -->
     <!-- Disable SYSLIB0039 because the tests intentionally use TLS 1.0 and 1.1 -->
-    <!-- <NoWarn>CS8981;IL2026;IL2035;IL2104;SYSLIB0039</NoWarn> -->
     <NoWarn>CS8981;SYSLIB0039</NoWarn>
     <!-- The destination for the code of the grpc/grpc-dotnet repo -->
     <GrpcDotnetBasePath>$(MSBuildProjectDirectory)\grpc-dotnet</GrpcDotnetBasePath>
@@ -67,17 +61,15 @@
     <PackageReference Include="Grpc.Core" Version="$(GrpcPackageVersion)" PrivateAssets="All" />
     <PackageReference Include="Grpc.Tools" Version="$(GrpcPackageVersion)" PrivateAssets="All" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="$(MicrosoftExtensionsPackageVersion)" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="$(MicrosoftExtensionsPackageVersion)" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="$(MicrosoftExtensionsPackageVersion)" />
     <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
     <PackageReference Include="System.CommandLine" Version="$(SystemCommandLinePackageVersion)" />
     <PackageReference Include="System.Net.Http.WinHttpHandler" Version="$(SystemNetHttpWinHttpHandlerPackageVersion)" />
   </ItemGroup>
 
-  <!-- <Target Name="_GitCloneGrpcDotnet" BeforeTargets="Restore">
+  <Target Name="_GitCloneGrpcDotnet" BeforeTargets="Restore">
     <RemoveDir Directories="$(GrpcDotnetBasePath)" />
-    <Exec Command="git clone depth 1 https://github.com/grpc/grpc-dotnet.git $(GrpcDotnetBasePath)"
+    <Exec Command="git clone --depth 1 https://github.com/grpc/grpc-dotnet.git $(GrpcDotnetBasePath)"
           WorkingDirectory="$(MSBuildProjectDirectory )"
           IgnoreStandardErrorWarningFormat="true" />
-  </Target> -->
+  </Target>
 </Project>

@@ -1,11 +1,11 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 // The code of the tests is cloned from https://github.com/grpc/grpc-dotnet
 using Grpc.Shared.TestAssets;
 
-int failedTests = 0;
 var skippedTests = new[]
 {
     "compute_engine_creds",
@@ -19,27 +19,19 @@ var configurations = new[]
 {
     new ClientOptions
     {
-        ServerHost = "grpc.rozsival.com", // TODO
+        ServerHost = "TODO",
         ServerPort = 443,
         UseTls = true,
     },
 };
 
-// var services = new ServiceCollection();
-// services.AddLogging(configure =>
-// {
-//     configure.SetMinimumLevel(LogLevel.Trace);
-//     configure.AddConsole(loggerOptions => loggerOptions.IncludeScopes = true);
-// });
+int failedTests = 0;
 
-// using var serviceProvider = services.BuildServiceProvider();
-// var loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
-var loggerFactory = Microsoft.Extensions.Logging.Abstractions.NullLoggerFactory.Instance;
-
-foreach (var options in configurations) {
-    Console.WriteLine($$"""
-        gRPC client options
-        -------------------
+foreach (var options in configurations)
+{
+    Console.WriteLine($"""
+        gRPC client options:
+        --------------------
         ClientType: {options.ClientType}
         ServerHost: {options.ServerHost}
         ServerHostOverride: {options.ServerHostOverride}
@@ -52,23 +44,27 @@ foreach (var options in configurations) {
         GrpcWebMode: {options.GrpcWebMode}
         UseWinHttp: {options.UseWinHttp}
         UseHttp3: {options.UseHttp3}
+        ---
         """);
 
-    foreach (var testName in InteropClient.TestNames) {
-        if (skippedTests.Contains(testName)) {
-            Console.WriteLine($"TestCase: {testName} ... FAILED");
+    foreach (var testName in InteropClient.TestNames)
+    {
+        if (skippedTests.Contains(testName))
+        {
+            Log(testName, "SKIPPED");
             continue;
         }
 
         options.TestCase = testName;
-        var client = new InteropClient(options, loggerFactory);
+        var client = new InteropClientWrapper(options);
 
-        try {
-            Console.WriteLine($"TestCase: {testName} ... STARTED");
+        try
+        {
+            Log(testName, "STARTED");
             await client.Run();
-            Console.WriteLine($"TestCase: {testName} ... PASSED");
+            Log(testName, "PASSED");
         } catch (Exception e) {
-            Console.WriteLine($"TestCase: {testName} ... FAILED");
+            Log(testName, "FAILED");
             Console.Error.WriteLine(e);
             failedTests++;
         }
@@ -76,3 +72,24 @@ foreach (var options in configurations) {
 }
 
 return 42 + failedTests;
+
+void Log(string testName, string status)
+    => Console.WriteLine($"TestCase: {testName} ... {status}");
+
+sealed class InteropClientWrapper
+{
+    private readonly InteropClient interopClient;
+
+    [DynamicDependency(DynamicallyAccessedMemberTypes.All, "Grpc.Testing.TestService.TestServiceClient", "Android.Device_Emulator.gRPC.Test")]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.All, "Grpc.Testing.UnimplementedService.UnimplementedServiceClient", "Android.Device_Emulator.gRPC.Test")]
+    public InteropClientWrapper(ClientOptions options)
+    {
+        interopClient = new InteropClient(
+            options,
+            Microsoft.Extensions.Logging.Abstractions.NullLoggerFactory.Instance
+        );
+    }
+
+    public Task Run()
+        => interopClient.Run();
+}
