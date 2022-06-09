@@ -64,13 +64,15 @@ static gss_OID_desc gss_mech_ntlm_OID_desc = {.length = STRING_LENGTH(gss_ntlm_o
     PER_FUNCTION_BLOCK(gss_set_cred_option) \
     PER_FUNCTION_BLOCK(GSS_KRB5_CRED_NO_CI_FLAGS_X)
 
+#define GSS_KRB5_CRED_NO_CI_FLAGS_X_AVAILABLE (gss_set_cred_option_ptr != NULL && GSS_KRB5_CRED_NO_CI_FLAGS_X_ptr != NULL)
+
 #else
 
 #define FOR_ALL_OPTIONAL_GSS_FUNCTIONS
 
 #endif //HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X
 
-#define FOR_ALL_GSS_FUNCTIONS \
+#define FOR_ALL_REQUIRED_GSS_FUNCTIONS \
     PER_FUNCTION_BLOCK(gss_accept_sec_context) \
     PER_FUNCTION_BLOCK(gss_acquire_cred) \
     PER_FUNCTION_BLOCK(gss_acquire_cred_with_password) \
@@ -91,6 +93,9 @@ static gss_OID_desc gss_mech_ntlm_OID_desc = {.length = STRING_LENGTH(gss_ntlm_o
     PER_FUNCTION_BLOCK(gss_wrap) \
     PER_FUNCTION_BLOCK(GSS_C_NT_USER_NAME) \
     PER_FUNCTION_BLOCK(GSS_C_NT_HOSTBASED_SERVICE) \
+
+#define FOR_ALL_GSS_FUNCTIONS \
+    FOR_ALL_REQUIRED_GSS_FUNCTIONS \
     FOR_ALL_OPTIONAL_GSS_FUNCTIONS
 
 // define indirection pointers for all functions, like
@@ -145,18 +150,26 @@ static int32_t ensure_gss_shim_initialized()
         dlclose(lib);
     }
 
-    // initialize indirection pointers for all functions, like:
+    // initialize indirection pointers for all required functions, like:
     //   gss_accept_sec_context_ptr = (TYPEOF(gss_accept_sec_context)*)dlsym(s_gssLib, "gss_accept_sec_context");
     //   if (gss_accept_sec_context_ptr == NULL) { fprintf(stderr, "Cannot get symbol %s from %s \nError: %s\n", "gss_accept_sec_context", gss_lib_name, dlerror()); return -1; }
 #define PER_FUNCTION_BLOCK(fn) \
     fn##_ptr = (TYPEOF(fn)*)dlsym(s_gssLib, #fn); \
     if (fn##_ptr == NULL) { fprintf(stderr, "Cannot get symbol " #fn " from %s \nError: %s\n", gss_lib_name, dlerror()); return -1; }
-
-    FOR_ALL_GSS_FUNCTIONS
+FOR_ALL_REQUIRED_GSS_FUNCTIONS
+#undef PER_FUNCTION_BLOCK
+    // for optional functions skip the error check
+#define PER_FUNCTION_BLOCK(fn) \
+    fn##_ptr = (TYPEOF(fn)*)dlsym(s_gssLib, #fn);
+FOR_ALL_OPTIONAL_GSS_FUNCTIONS
 #undef PER_FUNCTION_BLOCK
 
     return 0;
 }
+
+#else // GSS_SHIM
+
+#define GSS_KRB5_CRED_NO_CI_FLAGS_X_AVAILABLE 1
 
 #endif // GSS_SHIM
 
@@ -190,7 +203,7 @@ static uint32_t AcquireCredSpNego(uint32_t* minorStatus,
 
     // call gss_set_cred_option with GSS_KRB5_CRED_NO_CI_FLAGS_X to support Kerberos Sign Only option from *nix client against a windows server
 #if HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X
-    if (majorStatus == GSS_S_COMPLETE)
+    if (majorStatus == GSS_S_COMPLETE && GSS_KRB5_CRED_NO_CI_FLAGS_X_AVAILABLE)
     {
         GssBuffer emptyBuffer = GSS_C_EMPTY_BUFFER;
         uint32_t tempMinorStatus;
@@ -622,7 +635,7 @@ static uint32_t AcquireCredWithPassword(uint32_t* minorStatus,
 
     // call gss_set_cred_option with GSS_KRB5_CRED_NO_CI_FLAGS_X to support Kerberos Sign Only option from *nix client against a windows server
 #if HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X
-    if (!isNtlm && majorStatus == GSS_S_COMPLETE)
+    if (!isNtlm && majorStatus == GSS_S_COMPLETE && GSS_KRB5_CRED_NO_CI_FLAGS_X_AVAILABLE)
     {
         GssBuffer emptyBuffer = GSS_C_EMPTY_BUFFER;
         uint32_t tempMinorStatus;
