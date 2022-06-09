@@ -7264,6 +7264,7 @@ public:
     GenTree* optConstantAssertionProp(AssertionDsc*        curAssertion,
                                       GenTreeLclVarCommon* tree,
                                       Statement* stmt DEBUGARG(AssertionIndex index));
+    bool optIsProfitableToSubstitute(GenTreeLclVarCommon* lcl, BasicBlock* lclBlock, GenTree* value);
     bool optZeroObjAssertionProp(GenTree* tree, ASSERT_VALARG_TP assertions);
 
     // Assertion propagation functions.

@@ -3177,39 +3177,12 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
 
     if (conValTree != nullptr)
     {
-        // TODO: Extend on integers, especially on ARM where a constant might take up to 4 instructions
-        if (tree->OperIs(GT_LCL_VAR) && conValTree->OperIs(GT_CNS_VEC, GT_CNS_DBL))
+        if (tree->OperIs(GT_LCL_VAR))
         {
-            // A simple heuristic: If the constant is defined outside of a loop (not far from its head)
-            // and is used inside it - don't propagate.
-
-            if (!conValTree->gtCostsInitialized)
+            if (!optIsProfitableToSubstitute(tree->AsLclVar(), block, conValTree))
             {
-                gtPrepareCost(conValTree);
-            }
-
-            if ((conValTree->GetCostEx() > 1) && (conValTree->GetCostSz() > 1))
-            {
-                // Try to find the block this constant was originally defined in
-                GenTreeLclVar* lcl = tree->AsLclVar();
-                if (lcl->HasSsaName())
-                {
-                    BasicBlock* defBlock = lvaGetDesc(lcl)->GetPerSsaData(lcl->GetSsaNum())->GetBlock();
-                    if (defBlock != nullptr)
-                    {
-                        // Avoid propagating if the weighted use cost is significantly greater than the def cost.
-                        // NOTE: this currently does not take "a float living across a call" case into account
-                        // where we might end up with spill/restore on ABIs without callee-saved registers
-                        const weight_t defBlockWeight = defBlock->getBBWeight(this);
-                        const weight_t blockWeight    = block->getBBWeight(this);
-
-                        if ((defBlockWeight > 0) && ((blockWeight / defBlockWeight) >= BB_LOOP_WEIGHT_SCALE))
-                        {
-                            JITDUMP("Skip constant propagation inside loop " FMT_BB "\n", block->bbNum);
-                            return nullptr;
-                        }
-                    }
-                }
+                // Not profitable to substitute
+                return nullptr;
             }
         }
 
@@ -3233,6 +3206,58 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
         // Was not able to optimize.
         return nullptr;
     }
+}
+
+//------------------------------------------------------------------------------
+// optIsProfitableToPropagate: Checks if value worth substituting to lcl location
+//
+// Arguments:
+//    lcl       - lcl to replace with value if profitable
+//    lclBlock  - Basic block lcl located in
+//    value     - value we plan to substitute to lcl
+//
+// Returns:
+//    False if it's likely not profitable to do substitution, True otherwise
+//
+bool Compiler::optIsProfitableToSubstitute(GenTreeLclVarCommon* lcl, BasicBlock* lclBlock, GenTree* value)
+{
+    // A simple heuristic: If the constant is defined outside of a loop (not far from its head)
+    // and is used inside it - don't propagate.
+
+    // TODO: Extend on more kinds of trees
+    if (!value->OperIs(GT_CNS_VEC, GT_CNS_DBL))
+    {
+        return true;
+    }
+
+    if (!value->gtCostsInitialized)
+    {
+        gtPrepareCost(value);
+    }
+
+    if ((value->GetCostEx() > 1) && (value->GetCostSz() > 1))
+    {
+        // Try to find the block this constant was originally defined in
+        if (lcl->HasSsaName())
+        {
+            BasicBlock* defBlock = lvaGetDesc(lcl)->GetPerSsaData(lcl->GetSsaNum())->GetBlock();
+            if (defBlock != nullptr)
+            {
+                // Avoid propagating if the weighted use cost is significantly greater than the def cost.
+                // NOTE: this currently does not take "a float living across a call" case into account
+                // where we might end up with spill/restore on ABIs without callee-saved registers
+                const weight_t defBlockWeight = defBlock->getBBWeight(this);
+                const weight_t lclblockWeight = lclBlock->getBBWeight(this);
+
+                if ((defBlockWeight > 0) && ((lclblockWeight / defBlockWeight) >= BB_LOOP_WEIGHT_SCALE))
+                {
+                    JITDUMP("Constant propagation inside loop " FMT_BB " is not profitable\n", lclBlock->bbNum);
+                    return false;
+                }
+            }
+        }
+    }
+    return true;
 }
 
 //------------------------------------------------------------------------------
