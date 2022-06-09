@@ -3230,10 +3230,7 @@ bool Compiler::optIsProfitableToSubstitute(GenTreeLclVarCommon* lcl, BasicBlock*
         return true;
     }
 
-    if (!value->gtCostsInitialized)
-    {
-        gtPrepareCost(value);
-    }
+    gtPrepareCost(value);
 
     if ((value->GetCostEx() > 1) && (value->GetCostSz() > 1))
     {
