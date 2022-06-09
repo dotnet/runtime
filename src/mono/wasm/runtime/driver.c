@@ -19,6 +19,7 @@
 #include <mono/metadata/loader.h>
 #include <mono/metadata/mono-gc.h>
 #include <mono/metadata/object.h>
+#include <mono/metadata/debug-helpers.h>
 // FIXME: unavailable in emscripten
 // #include <mono/metadata/gc-internals.h>
 
@@ -42,6 +43,7 @@ void core_initialize_internals ();
 #endif
 
 extern MonoString* mono_wasm_invoke_js (MonoString *str, int *is_exception);
+extern void mono_wasm_set_entrypoint_breakpoint (const char* assembly_name, int method_token);
 
 // Blazor specific custom routines - see dotnet_support.js for backing code
 extern void* mono_wasm_invoke_js_blazor (MonoString **exceptionMessage, void *callInfo, void* arg0, void* arg1, void* arg2);
@@ -723,7 +725,7 @@ mono_wasm_invoke_method (MonoMethod *method, MonoObject *this_arg, void *params[
 }
 
 EMSCRIPTEN_KEEPALIVE MonoMethod*
-mono_wasm_assembly_get_entry_point (MonoAssembly *assembly)
+mono_wasm_assembly_get_entry_point (MonoAssembly *assembly, int auto_insert_breakpoint)
 {
 	MonoImage *image;
 	MonoMethod *method;
@@ -776,6 +778,13 @@ mono_wasm_assembly_get_entry_point (MonoAssembly *assembly)
 
 	end:
 	MONO_EXIT_GC_UNSAFE;
+	if (auto_insert_breakpoint)
+	{
+		MonoAssemblyName *aname = mono_assembly_get_name (assembly);
+		const char *name = mono_assembly_name_get_name (aname);
+		if (name != NULL)
+			mono_wasm_set_entrypoint_breakpoint(name, mono_method_get_token (method));
+	}
 	return method;
 }
 

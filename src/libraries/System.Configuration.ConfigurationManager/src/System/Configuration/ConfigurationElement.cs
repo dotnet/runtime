@@ -86,17 +86,13 @@ namespace System.Configuration
 
         internal ConfigurationValueFlags ItemLocked => _itemLockedFlag;
 
-        public ConfigurationLockCollection LockAttributes => _lockedAttributesList
-            ?? (_lockedAttributesList = new ConfigurationLockCollection(this, ConfigurationLockCollectionType.LockedAttributes));
+        public ConfigurationLockCollection LockAttributes => _lockedAttributesList ??= new ConfigurationLockCollection(this, ConfigurationLockCollectionType.LockedAttributes);
 
-        public ConfigurationLockCollection LockAllAttributesExcept => _lockedAllExceptAttributesList
-            ?? (_lockedAllExceptAttributesList = new ConfigurationLockCollection(this, ConfigurationLockCollectionType.LockedExceptionList, ElementTagName));
+        public ConfigurationLockCollection LockAllAttributesExcept => _lockedAllExceptAttributesList ??= new ConfigurationLockCollection(this, ConfigurationLockCollectionType.LockedExceptionList, ElementTagName);
 
-        public ConfigurationLockCollection LockElements => _lockedElementsList
-            ?? (_lockedElementsList = new ConfigurationLockCollection(this, ConfigurationLockCollectionType.LockedElements));
+        public ConfigurationLockCollection LockElements => _lockedElementsList ??= new ConfigurationLockCollection(this, ConfigurationLockCollectionType.LockedElements);
 
-        public ConfigurationLockCollection LockAllElementsExcept => _lockedAllExceptElementsList
-            ?? (_lockedAllExceptElementsList = new ConfigurationLockCollection(this, ConfigurationLockCollectionType.LockedElementsExceptionList, ElementTagName));
+        public ConfigurationLockCollection LockAllElementsExcept => _lockedAllExceptElementsList ??= new ConfigurationLockCollection(this, ConfigurationLockCollectionType.LockedElementsExceptionList, ElementTagName);
 
         public bool LockItem
         {
@@ -203,7 +199,7 @@ namespace System.Configuration
 
         internal ConfigurationValues Values { get; }
 
-        public ElementInformation ElementInformation => _evaluationElement ?? (_evaluationElement = new ElementInformation(this));
+        public ElementInformation ElementInformation => _evaluationElement ??= new ElementInformation(this);
 
         protected ContextInformation EvaluationContext
         {

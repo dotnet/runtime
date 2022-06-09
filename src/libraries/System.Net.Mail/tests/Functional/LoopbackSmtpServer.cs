@@ -16,8 +16,8 @@ namespace Systen.Net.Mail.Tests
 {
     public class LoopbackSmtpServer : IDisposable
     {
-        private static readonly ReadOnlyMemory<byte> s_messageTerminator = new byte[] { (byte)'\r', (byte)'\n' };
-        private static readonly ReadOnlyMemory<byte> s_bodyTerminator = new byte[] { (byte)'\r', (byte)'\n', (byte)'.', (byte)'\r', (byte)'\n' };
+        private static readonly ReadOnlyMemory<byte> s_messageTerminator = "\r\n"u8.ToArray();
+        private static readonly ReadOnlyMemory<byte> s_bodyTerminator = "\r\n.\r\n"u8.ToArray();
 
         public bool ReceiveMultipleConnections = false;
         public bool SupportSmtpUTF8 = false;

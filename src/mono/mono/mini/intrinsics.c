@@ -296,7 +296,7 @@ llvm_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	}
 
 	if (in_corlib && !strcmp (m_class_get_name (cmethod->klass), "Buffer")) {
-		if (!strcmp (cmethod->name, "Memmove") && fsig->param_count == 3 && fsig->params [0]->type == MONO_TYPE_PTR && fsig->params [1]->type == MONO_TYPE_PTR) {
+		if (!strcmp (cmethod->name, "Memmove") && fsig->param_count == 3 && m_type_is_byref (fsig->params [0]) && m_type_is_byref (fsig->params [1]) && !cmethod->is_inflated) {
 			MonoBasicBlock *end_bb;
 			NEW_BBLOCK (cfg, end_bb);
 

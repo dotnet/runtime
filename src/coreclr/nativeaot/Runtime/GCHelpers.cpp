@@ -31,7 +31,7 @@ EXTERN_C NATIVEAOT_API void __cdecl RhpCollect(uint32_t uGeneration, uint32_t uM
 
     Thread * pCurThread = ThreadStore::GetCurrentThread();
 
-    pCurThread->SetupHackPInvokeTunnel();
+    pCurThread->DeferTransitionFrame();
     pCurThread->DisablePreemptiveMode();
 
     ASSERT(!pCurThread->IsDoNotTriggerGcSet());
@@ -46,7 +46,7 @@ EXTERN_C NATIVEAOT_API int64_t __cdecl RhpGetGcTotalMemory()
 
     Thread * pCurThread = ThreadStore::GetCurrentThread();
 
-    pCurThread->SetupHackPInvokeTunnel();
+    pCurThread->DeferTransitionFrame();
     pCurThread->DisablePreemptiveMode();
 
     int64_t ret = GCHeapUtilities::GetGCHeap()->GetTotalBytesInUse();
@@ -61,7 +61,7 @@ EXTERN_C NATIVEAOT_API int32_t __cdecl RhpStartNoGCRegion(int64_t totalSize, UIn
     Thread *pCurThread = ThreadStore::GetCurrentThread();
     ASSERT(!pCurThread->IsCurrentThreadInCooperativeMode());
 
-    pCurThread->SetupHackPInvokeTunnel();
+    pCurThread->DeferTransitionFrame();
     pCurThread->DisablePreemptiveMode();
 
     int result = GCHeapUtilities::GetGCHeap()->StartNoGCRegion(totalSize, hasLohSize, lohSize, disallowFullBlockingGC);
@@ -316,7 +316,7 @@ EXTERN_C NATIVEAOT_API void RhAllocateNewArray(MethodTable* pArrayEEType, uint32
 {
     Thread* pThread = ThreadStore::GetCurrentThread();
 
-    pThread->SetupHackPInvokeTunnel();
+    pThread->DeferTransitionFrame();
     pThread->DisablePreemptiveMode();
 
     ASSERT(!pThread->IsDoNotTriggerGcSet());
@@ -330,7 +330,7 @@ EXTERN_C NATIVEAOT_API void RhAllocateNewObject(MethodTable* pEEType, uint32_t f
 {
     Thread* pThread = ThreadStore::GetCurrentThread();
 
-    pThread->SetupHackPInvokeTunnel();
+    pThread->DeferTransitionFrame();
     pThread->DisablePreemptiveMode();
 
     ASSERT(!pThread->IsDoNotTriggerGcSet());

@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
+using System.Runtime.Versioning;
 
 namespace System.Runtime.CompilerServices
 {
@@ -399,6 +400,7 @@ namespace System.Runtime.CompilerServices
     }
     // Helper class to assist with unsafe pinning of arbitrary objects.
     // It's used by VM code.
+    [NonVersionable] // This only applies to field layout
     internal sealed class RawData
     {
         public byte Data;
@@ -412,6 +414,7 @@ namespace System.Runtime.CompilerServices
     // The BaseSize of an array includes all the fields before the array data,
     // including the sync block and method table. The reference to RawData.Data
     // points at the number of components, skipping over these two pointer-sized fields.
+    [NonVersionable] // This only applies to field layout
     internal sealed class RawArrayData
     {
         public uint Length; // Array._numComponents padded to IntPtr
@@ -620,6 +623,11 @@ namespace System.Runtime.CompilerServices
         {
             m_asTAddr = tAddr;
         }
+
+        /// <summary>
+        /// Gets whether the current instance wraps a <see langword="null"/> pointer.
+        /// </summary>
+        public bool IsNull => m_asTAddr is null;
 
         /// <summary>
         /// Gets whether or not this <see cref="TypeHandle"/> wraps a <c>TypeDesc</c> pointer.
