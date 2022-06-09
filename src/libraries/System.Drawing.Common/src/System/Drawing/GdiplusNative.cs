@@ -3281,7 +3281,11 @@ namespace System.Drawing
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
-            HandleRef imageAttributes, Graphics.DrawImageAbort? callback,
+            HandleRef imageAttributes,
+#if NET7_0_OR_GREATER
+            [MarshalUsing(typeof(Graphics.DrawImageAbortMarshaller))]
+#endif
+            Graphics.DrawImageAbort? callback,
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
@@ -3300,7 +3304,11 @@ namespace System.Drawing
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
-            HandleRef imageAttributes, Graphics.DrawImageAbort? callback,
+            HandleRef imageAttributes,
+#if NET7_0_OR_GREATER
+            [MarshalUsing(typeof(Graphics.DrawImageAbortMarshaller))]
+#endif
+            Graphics.DrawImageAbort? callback,
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
@@ -3319,7 +3327,11 @@ namespace System.Drawing
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
-            HandleRef imageAttributes, Graphics.DrawImageAbort? callback,
+            HandleRef imageAttributes,
+#if NET7_0_OR_GREATER
+            [MarshalUsing(typeof(Graphics.DrawImageAbortMarshaller))]
+#endif
+            Graphics.DrawImageAbort? callback,
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
@@ -3338,7 +3350,11 @@ namespace System.Drawing
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
-            HandleRef imageAttributes, Graphics.DrawImageAbort? callback,
+            HandleRef imageAttributes,
+#if NET7_0_OR_GREATER
+            [MarshalUsing(typeof(Graphics.DrawImageAbortMarshaller))]
+#endif
+            Graphics.DrawImageAbort? callback,
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
@@ -4029,7 +4045,11 @@ namespace System.Drawing
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
-            HandleRef image, int thumbWidth, int thumbHeight, out IntPtr thumbImage, Image.GetThumbnailImageAbort? callback, IntPtr callbackdata);
+            HandleRef image, int thumbWidth, int thumbHeight, out IntPtr thumbImage,
+#if NET7_0_OR_GREATER
+            [MarshalUsing(typeof(Image.GetThumbnailImageAbortMarshaller))]
+#endif
+            Image.GetThumbnailImageAbort? callback, IntPtr callbackdata);
 
             [LibraryImport(LibraryName)]
             internal static partial int GdipGetImagePalette(
@@ -4131,7 +4151,11 @@ namespace System.Drawing
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
-            HandleRef metafile, ref PointF destPoint, Graphics.EnumerateMetafileProc callback, IntPtr callbackdata,
+            HandleRef metafile, ref PointF destPoint,
+#if NET7_0_OR_GREATER
+            [MarshalUsing(typeof(Graphics.EnumerateMetafileProcMarshaller))]
+#endif
+            Graphics.EnumerateMetafileProc callback, IntPtr callbackdata,
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
@@ -4146,7 +4170,11 @@ namespace System.Drawing
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
-            HandleRef metafile, ref Point destPoint, Graphics.EnumerateMetafileProc callback, IntPtr callbackdata,
+            HandleRef metafile, ref Point destPoint,
+#if NET7_0_OR_GREATER
+            [MarshalUsing(typeof(Graphics.EnumerateMetafileProcMarshaller))]
+#endif
+            Graphics.EnumerateMetafileProc callback, IntPtr callbackdata,
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
@@ -4161,7 +4189,11 @@ namespace System.Drawing
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
-            HandleRef metafile, ref RectangleF destRect, Graphics.EnumerateMetafileProc callback, IntPtr callbackdata,
+            HandleRef metafile, ref RectangleF destRect,
+#if NET7_0_OR_GREATER
+            [MarshalUsing(typeof(Graphics.EnumerateMetafileProcMarshaller))]
+#endif
+            Graphics.EnumerateMetafileProc callback, IntPtr callbackdata,
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
@@ -4176,7 +4208,11 @@ namespace System.Drawing
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
-            HandleRef metafile, ref Rectangle destRect, Graphics.EnumerateMetafileProc callback, IntPtr callbackdata,
+            HandleRef metafile, ref Rectangle destRect,
+#if NET7_0_OR_GREATER
+            [MarshalUsing(typeof(Graphics.EnumerateMetafileProcMarshaller))]
+#endif
+            Graphics.EnumerateMetafileProc callback, IntPtr callbackdata,
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
@@ -4191,7 +4227,11 @@ namespace System.Drawing
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
-            HandleRef metafile, PointF* destPoints, int count, Graphics.EnumerateMetafileProc callback, IntPtr callbackdata,
+            HandleRef metafile, PointF* destPoints, int count,
+#if NET7_0_OR_GREATER
+            [MarshalUsing(typeof(Graphics.EnumerateMetafileProcMarshaller))]
+#endif
+            Graphics.EnumerateMetafileProc callback, IntPtr callbackdata,
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
@@ -4206,7 +4246,11 @@ namespace System.Drawing
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
-            HandleRef metafile, Point* destPoints, int count, Graphics.EnumerateMetafileProc callback, IntPtr callbackdata,
+            HandleRef metafile, Point* destPoints, int count,
+#if NET7_0_OR_GREATER
+            [MarshalUsing(typeof(Graphics.EnumerateMetafileProcMarshaller))]
+#endif
+            Graphics.EnumerateMetafileProc callback, IntPtr callbackdata,
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
@@ -4221,7 +4265,11 @@ namespace System.Drawing
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
-            HandleRef metafile, ref PointF destPoint, ref RectangleF srcRect, GraphicsUnit pageUnit, Graphics.EnumerateMetafileProc callback, IntPtr callbackdata,
+            HandleRef metafile, ref PointF destPoint, ref RectangleF srcRect, GraphicsUnit pageUnit,
+#if NET7_0_OR_GREATER
+            [MarshalUsing(typeof(Graphics.EnumerateMetafileProcMarshaller))]
+#endif
+            Graphics.EnumerateMetafileProc callback, IntPtr callbackdata,
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
@@ -4236,7 +4284,11 @@ namespace System.Drawing
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
-            HandleRef metafile, ref Point destPoint, ref Rectangle srcRect, GraphicsUnit pageUnit, Graphics.EnumerateMetafileProc callback, IntPtr callbackdata,
+            HandleRef metafile, ref Point destPoint, ref Rectangle srcRect, GraphicsUnit pageUnit,
+#if NET7_0_OR_GREATER
+            [MarshalUsing(typeof(Graphics.EnumerateMetafileProcMarshaller))]
+#endif
+            Graphics.EnumerateMetafileProc callback, IntPtr callbackdata,
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
@@ -4251,7 +4303,11 @@ namespace System.Drawing
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
-            HandleRef metafile, ref RectangleF destRect, ref RectangleF srcRect, GraphicsUnit pageUnit, Graphics.EnumerateMetafileProc callback, IntPtr callbackdata,
+            HandleRef metafile, ref RectangleF destRect, ref RectangleF srcRect, GraphicsUnit pageUnit,
+#if NET7_0_OR_GREATER
+            [MarshalUsing(typeof(Graphics.EnumerateMetafileProcMarshaller))]
+#endif
+            Graphics.EnumerateMetafileProc callback, IntPtr callbackdata,
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
@@ -4266,7 +4322,11 @@ namespace System.Drawing
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
-            HandleRef metafile, ref Rectangle destRect, ref Rectangle srcRect, GraphicsUnit pageUnit, Graphics.EnumerateMetafileProc callback, IntPtr callbackdata,
+            HandleRef metafile, ref Rectangle destRect, ref Rectangle srcRect, GraphicsUnit pageUnit,
+#if NET7_0_OR_GREATER
+            [MarshalUsing(typeof(Graphics.EnumerateMetafileProcMarshaller))]
+#endif
+            Graphics.EnumerateMetafileProc callback, IntPtr callbackdata,
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
@@ -4281,7 +4341,11 @@ namespace System.Drawing
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
-            HandleRef metafile, PointF* destPoints, int count, ref RectangleF srcRect, GraphicsUnit pageUnit, Graphics.EnumerateMetafileProc callback, IntPtr callbackdata,
+            HandleRef metafile, PointF* destPoints, int count, ref RectangleF srcRect, GraphicsUnit pageUnit,
+#if NET7_0_OR_GREATER
+            [MarshalUsing(typeof(Graphics.EnumerateMetafileProcMarshaller))]
+#endif
+            Graphics.EnumerateMetafileProc callback, IntPtr callbackdata,
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
@@ -4296,7 +4360,11 @@ namespace System.Drawing
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
-            HandleRef metafile, Point* destPoints, int count, ref Rectangle srcRect, GraphicsUnit pageUnit, Graphics.EnumerateMetafileProc callback, IntPtr callbackdata,
+            HandleRef metafile, Point* destPoints, int count, ref Rectangle srcRect, GraphicsUnit pageUnit,
+#if NET7_0_OR_GREATER
+            [MarshalUsing(typeof(Graphics.EnumerateMetafileProcMarshaller))]
+#endif
+            Graphics.EnumerateMetafileProc callback, IntPtr callbackdata,
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif

@@ -267,9 +267,9 @@ namespace System.Data
         }
 
         internal AutoIncrementValue AutoInc =>
-            (_autoInc ?? (_autoInc = ((DataType == typeof(BigInteger)) ?
+            (_autoInc ??= ((DataType == typeof(BigInteger)) ?
                 (AutoIncrementValue)new AutoIncrementBigInteger() :
-                new AutoIncrementInt64())));
+                new AutoIncrementInt64()));
 
 
         /// <summary>
@@ -859,7 +859,7 @@ namespace System.Data
         /// Gets the collection of custom user information.
         /// </summary>
         [Browsable(false)]
-        public PropertyCollection ExtendedProperties => _extendedProperties ?? (_extendedProperties = new PropertyCollection());
+        public PropertyCollection ExtendedProperties => _extendedProperties ??= new PropertyCollection();
 
         /// <summary>
         /// Indicates whether this column is now storing data.

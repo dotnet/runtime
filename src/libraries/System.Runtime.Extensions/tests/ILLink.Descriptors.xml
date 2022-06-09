@@ -4,4 +4,7 @@
   <assembly fullname="VoidMainWithExitCodeApp" />
   <assembly fullname="TestApp" />
   <assembly fullname="TargetFrameworkNameTestApp" />
+  <assembly fullname="System.Private.CoreLib">
+    <type fullname="System.Diagnostics.DebuggerDisplayAttribute" />
+  </assembly>
 </linker>

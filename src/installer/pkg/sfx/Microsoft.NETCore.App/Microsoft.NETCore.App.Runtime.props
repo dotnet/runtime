@@ -66,7 +66,7 @@
         <TargetPath>tools</TargetPath>
       </RuntimeFiles>
 
-      <RuntimeFiles Condition="'$(TargetsMobile)' == 'true'"
+      <RuntimeFiles
         Include="@(MonoIncludeFiles)"
         ExcludeFromDataFiles="true">
         <TargetPath>runtimes/$(RuntimeIdentifier)/native/include/%(RecursiveDir)</TargetPath>

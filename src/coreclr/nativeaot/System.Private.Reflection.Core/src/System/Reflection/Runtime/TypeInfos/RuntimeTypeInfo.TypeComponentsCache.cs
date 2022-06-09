@@ -74,7 +74,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 return Unsafe.As<QueriedMemberList<M>>(result);
             }
 
-            public EnumInfo EnumInfo => _lazyEnumInfo ?? (_lazyEnumInfo = ReflectionCoreExecution.ExecutionDomain.ExecutionEnvironment.GetEnumInfo(_type.TypeHandle));
+            public EnumInfo EnumInfo => _lazyEnumInfo ??= ReflectionCoreExecution.ExecutionDomain.ExecutionEnvironment.GetEnumInfo(_type.TypeHandle);
 
             private static object[] CreatePerNameQueryCaches(RuntimeTypeInfo type, bool ignoreCase)
             {

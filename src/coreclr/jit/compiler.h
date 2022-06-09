@@ -4247,7 +4247,8 @@ public:
     unsigned        fgEdgeCount;    // # of control flow edges between the BBs
     unsigned        fgBBcount;      // # of BBs in the method
 #ifdef DEBUG
-    unsigned fgBBcountAtCodegen; // # of BBs in the method at the start of codegen
+    unsigned                     fgBBcountAtCodegen; // # of BBs in the method at the start of codegen
+    jitstd::vector<BasicBlock*>* fgBBOrder;          // ordered vector of BBs
 #endif
     unsigned     fgBBNumMax;       // The max bbNum that has been assigned to basic blocks
     unsigned     fgDomBBcount;     // # of BBs for which we have dominator and reachability information
@@ -6814,11 +6815,6 @@ public:
         optMethodFlags |= OMF_HAS_GUARDEDDEVIRT;
     }
 
-    void clearMethodHasGuardedDevirtualization()
-    {
-        optMethodFlags &= ~OMF_HAS_GUARDEDDEVIRT;
-    }
-
     void considerGuardedDevirtualization(GenTreeCall*            call,
                                          IL_OFFSET               ilOffset,
                                          bool                    isInterface,
@@ -7313,10 +7309,20 @@ public:
     struct LoopCloneVisitorInfo
     {
         LoopCloneContext* context;
-        unsigned          loopNum;
         Statement*        stmt;
-        LoopCloneVisitorInfo(LoopCloneContext* context, unsigned loopNum, Statement* stmt)
-            : context(context), loopNum(loopNum), stmt(nullptr)
+        const unsigned    loopNum;
+        const bool        cloneForArrayBounds;
+        const bool        cloneForTypeTests;
+        LoopCloneVisitorInfo(LoopCloneContext* context,
+                             unsigned          loopNum,
+                             Statement*        stmt,
+                             bool              cloneForArrayBounds,
+                             bool              cloneForTypeTests)
+            : context(context)
+            , stmt(nullptr)
+            , loopNum(loopNum)
+            , cloneForArrayBounds(cloneForArrayBounds)
+            , cloneForTypeTests(cloneForTypeTests)
         {
         }
     };

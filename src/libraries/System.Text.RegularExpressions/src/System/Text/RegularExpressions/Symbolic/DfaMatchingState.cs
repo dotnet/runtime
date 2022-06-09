@@ -144,26 +144,6 @@ namespace System.Text.RegularExpressions.Symbolic
         public override string ToString() =>
             PrevCharKind == 0 ? Node.ToString() :
              $"({CharKind.DescribePrev(PrevCharKind)},{Node})";
-
-        internal string DgmlView
-        {
-            get
-            {
-                string info = CharKind.DescribePrev(PrevCharKind);
-                if (info != string.Empty)
-                {
-                    info = $"Previous: {info}&#13;";
-                }
-
-                string deriv = WebUtility.HtmlEncode(Node.ToString());
-                if (deriv == string.Empty)
-                {
-                    deriv = "()";
-                }
-
-                return $"{info}{deriv}";
-            }
-        }
 #endif
     }
 }

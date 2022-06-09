@@ -19,7 +19,7 @@ namespace System.Xml
         private static UTF8Encoding? s_utf8BomThrowing;
 
         private static UTF8Encoding UTF8BomThrowing =>
-            s_utf8BomThrowing ?? (s_utf8BomThrowing = new UTF8Encoding(encoderShouldEmitUTF8Identifier: true, throwOnInvalidBytes: true));
+            s_utf8BomThrowing ??= new UTF8Encoding(encoderShouldEmitUTF8Identifier: true, throwOnInvalidBytes: true);
 
         //
         // Private helper types
