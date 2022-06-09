@@ -13,8 +13,9 @@ namespace System.Text.RegularExpressions.Symbolic
     /// Used to support O(1) append of two lists that is currently not possible by using <see cref="LinkedList{T}"/>.
     /// <see cref="AddLast(DoublyLinkedList{T})"/> operation is made use of in the <see cref="RegexNodeConverter.ConvertToSymbolicRegexNode(RegexNode)"/> method
     /// where it maintains linear construction time in terms of the overall number of AST nodes in a given <see cref="RegexNode"/> input.
+    /// Enumeration is performed in reverse of the order added, yielding items from last to first.
     /// </remarks>
-    internal sealed class DoublyLinkedList<T> where T : notnull
+    internal sealed class DoublyLinkedList<T> : IEnumerable<T> where T : notnull
     {
         /// <summary>First node of the list</summary>
         private Node? _first;
@@ -118,7 +119,7 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         /// <summary>Enumerates the elements in the list from last to first.</summary>
-        public IEnumerable<T> EnumerateLastToFirst()
+        public IEnumerator<T> GetEnumerator()
         {
             AssertInvariants();
 
@@ -128,21 +129,8 @@ namespace System.Text.RegularExpressions.Symbolic
             }
         }
 
-#if DEBUG
-        public override string ToString()
-        {
-            StringBuilder sb = new StringBuilder().Append('#').Append(_size).Append('(');
-
-            string separator = "";
-            for (Node? current = _first; current is not null; current = current.Next)
-            {
-                sb.Append(separator).Append(current.Value);
-                separator = ",";
-            }
-
-            return sb.Append(')').ToString();
-        }
-#endif
+        /// <summary>Enumerates the elements in the list from last to first.</summary>
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
         [Conditional("DEBUG")]
         private void AssertInvariants()

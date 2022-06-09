@@ -26,7 +26,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "lower.h"
 
 //------------------------------------------------------------------------
-// BuildNode: Build the RefPositions for for a node
+// BuildNode: Build the RefPositions for a node
 //
 // Arguments:
 //    treeNode - the node of interest
@@ -167,6 +167,29 @@ int LinearScan::BuildNode(GenTree* tree)
             def->getInterval()->isConstant = true;
         }
         break;
+
+        case GT_CNS_VEC:
+        {
+            GenTreeVecCon* vecCon = tree->AsVecCon();
+
+            if (vecCon->IsAllBitsSet() || vecCon->IsZero())
+            {
+                // Directly encode constant to instructions.
+            }
+            else
+            {
+                // Reserve int to load constant from memory (IF_LARGELDC)
+                buildInternalIntRegisterDefForNode(tree);
+                buildInternalRegisterUses();
+            }
+
+            srcCount = 0;
+            assert(dstCount == 1);
+
+            RefPosition* def               = BuildDef(tree);
+            def->getInterval()->isConstant = true;
+            break;
+        }
 
         case GT_BOX:
         case GT_COMMA:

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -709,6 +708,95 @@ namespace System.Reflection.Tests
                 name, BindingFlags.Public | BindingFlags.Static)!;
         }
 
+        [Fact]
+        public void ValueTypeMembers_WithOverrides()
+        {
+            ValueTypeWithOverrides obj = new() { Id = 1 };
+
+            // ToString is overridden.
+            Assert.Equal("Hello", (string)GetMethod(typeof(ValueTypeWithOverrides), nameof(ValueTypeWithOverrides.ToString)).
+                Invoke(obj, null));
+
+            // Ensure a normal method works.
+            Assert.Equal(1, (int)GetMethod(typeof(ValueTypeWithOverrides), nameof(ValueTypeWithOverrides.GetId)).
+                Invoke(obj, null));
+        }
+
+        [Fact]
+        public void ValueTypeMembers_WithoutOverrides()
+        {
+            ValueTypeWithoutOverrides obj = new() { Id = 1 };
+
+            // ToString is not overridden.
+            Assert.Equal(typeof(ValueTypeWithoutOverrides).ToString(), (string)GetMethod(typeof(ValueTypeWithoutOverrides), nameof(ValueTypeWithoutOverrides.ToString)).
+                Invoke(obj, null));
+
+            // Ensure a normal method works.
+            Assert.Equal(1, (int)GetMethod(typeof(ValueTypeWithoutOverrides), nameof(ValueTypeWithoutOverrides.GetId)).
+                Invoke(obj, null));
+        }
+
+        [Fact]
+        public void NullableOfTMembers()
+        {
+            // Ensure calling a method on Nullable<T> works.
+            MethodInfo mi = GetMethod(typeof(int?), nameof(Nullable<int>.GetValueOrDefault));
+            Assert.Equal(42, mi.Invoke(42, null));
+        }
+
+        [Fact]
+        public void CopyBackWithByRefArgs()
+        {
+            object i = 42;
+            object[] args = new object[] { i };
+            GetMethod(typeof(CopyBackMethods), nameof(CopyBackMethods.IncrementByRef)).Invoke(null, args);
+            Assert.Equal(43, (int)args[0]);
+            Assert.NotSame(i, args[0]); // A copy should be made; a boxed instance should never be directly updated.
+
+            i = 42;
+            args = new object[] { i };
+            GetMethod(typeof(CopyBackMethods), nameof(CopyBackMethods.IncrementByNullableRef)).Invoke(null, args);
+            Assert.Equal(43, (int)args[0]);
+            Assert.NotSame(i, args[0]);
+
+            object o = null;
+            args = new object[] { o };
+            GetMethod(typeof(CopyBackMethods), nameof(CopyBackMethods.SetToNonNullByRef)).Invoke(null, args);
+            Assert.NotNull(args[0]);
+
+            o = new object();
+            args = new object[] { o };
+            GetMethod(typeof(CopyBackMethods), nameof(CopyBackMethods.SetToNullByRef)).Invoke(null, args);
+            Assert.Null(args[0]);
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69919", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        public static void CallStackFrame_AggressiveInlining()
+        {
+            MethodInfo mi = typeof(System.Reflection.TestAssembly.ClassToInvoke).GetMethod(nameof(System.Reflection.TestAssembly.ClassToInvoke.CallMe_AggressiveInlining),
+                BindingFlags.Public | BindingFlags.Static)!;
+
+            // Although the target method has AggressiveInlining, currently reflection should not inline the target into any generated IL.
+            FirstCall(mi);
+            SecondCall(mi);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)] // Separate non-inlineable method to aid any test failures
+        private static void FirstCall(MethodInfo mi)
+        {
+            Assembly asm = (Assembly)mi.Invoke(null, null);
+            Assert.Contains("TestAssembly", asm.ToString());
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)] // Separate non-inlineable method to aid any test failures
+        private static void SecondCall(MethodInfo mi)
+        {
+            Assembly asm = (Assembly)mi.Invoke(null, null);
+            Assert.Contains("TestAssembly", asm.ToString());
+        }
+
         //Methods for Reflection Metadata
         private void DummyMethod1(string str, int iValue, long lValue)
         {
@@ -1001,6 +1089,29 @@ namespace System.Reflection.Tests
         }
     }
 
+    public static class CopyBackMethods
+    {
+        public static void IncrementByRef(ref int i)
+        {
+            i++;
+        }
+
+        public static void IncrementByNullableRef(ref int? i)
+        {
+            i++;
+        }
+
+        public static void SetToNullByRef(ref object o)
+        {
+            o = null;
+        }
+
+        public static void SetToNonNullByRef(ref object o)
+        {
+            o = new object();
+        }
+    }
+
     public enum ColorsInt : int
     {
         Red = 1
@@ -1014,6 +1125,19 @@ namespace System.Reflection.Tests
     public enum OtherColorsInt : int
     {
         Red = 1
+    }
+
+    public struct ValueTypeWithOverrides
+    {
+        public int Id;
+        public override string ToString() => "Hello";
+        public int GetId() => Id;
+    }
+
+    public struct ValueTypeWithoutOverrides
+    {
+        public int Id;
+        public int GetId() => Id;
     }
 
     public static class EnumMethods

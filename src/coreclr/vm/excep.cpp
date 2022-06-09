@@ -2959,6 +2959,7 @@ void ResMgrGetString(LPCWSTR wszResourceName, STRINGREF * ppMessage)
     }
 }
 
+#ifdef FEATURE_COMINTEROP
 void FreeExceptionData(ExceptionData *pedata)
 {
     CONTRACTL
@@ -2984,6 +2985,7 @@ void FreeExceptionData(ExceptionData *pedata)
     if (pedata->bstrHelpFile)
         SysFreeString(pedata->bstrHelpFile);
 }
+#endif // FEATURE_COMINTEROP
 
 void GetExceptionForHR(HRESULT hr, IErrorInfo* pErrInfo, OBJECTREF* pProtectedThrowable)
 {
@@ -3876,7 +3878,6 @@ LONG WatsonLastChance(                  // EXCEPTION_CONTINUE_SEARCH, _CONTINUE_
                         // Since the StackOverflow handler also calls us, we must keep our stack budget
                         // to a minimum. Thus, we will launch a thread to do the actual work.
                         FaultReportInfo fri;
-                        fri.m_fDoReportFault       = TRUE;
                         fri.m_pExceptionInfo       = pExceptionInfo;
                         // DoFaultCreateThreadReportCallback will overwrite this - if it doesn't, we'll assume it failed.
                         fri.m_faultRepRetValResult = frrvErr;
@@ -4046,7 +4047,7 @@ BuildCreateDumpCommandLine(
         }
     }
 
-    commandLine.AppendPrintf("%s %d", DumpGeneratorName, GetCurrentProcessId());
+    commandLine.AppendASCII(DumpGeneratorName);
 
     if (dumpName != nullptr)
     {
@@ -4101,7 +4102,10 @@ LaunchCreateDump(LPCWSTR lpCommandLine)
         if (WszCreateProcess(NULL, lpCommandLine, NULL, NULL, TRUE, 0, NULL, NULL, &StartupInfo, &processInformation))
         {
             WaitForSingleObject(processInformation.hProcess, INFINITE);
-            fSuccess = true;
+
+            DWORD exitCode = 0;
+            GetExitCodeProcess(processInformation.hProcess, &exitCode);
+            fSuccess = exitCode == 0;
         }
     }
     EX_CATCH
@@ -4176,7 +4180,9 @@ InitializeCrashDump()
 bool GenerateDump(
     LPCWSTR dumpName,
     INT dumpType,
-    ULONG32 flags)
+    ULONG32 flags,
+    LPSTR errorMessageBuffer,
+    INT cbErrorMessageBuffer)
 {
 #ifdef TARGET_UNIX
     MAKE_UTF8PTR_FROMWIDE_NOTHROW (dumpNameUtf8, dumpName);
@@ -4186,7 +4192,7 @@ bool GenerateDump(
     }
     else
     {
-        return PAL_GenerateCoreDump(dumpNameUtf8, dumpType, flags);
+        return PAL_GenerateCoreDump(dumpNameUtf8, dumpType, flags, errorMessageBuffer, cbErrorMessageBuffer);
     }
 #else // TARGET_UNIX
     return GenerateCrashDump(dumpName, dumpType, flags & GenerateDumpFlagsLoggingEnabled);
@@ -5852,252 +5858,6 @@ extern "C" void QCALLTYPE FileLoadException_GetMessageForHR(UINT32 hresult, QCal
 
     END_QCALL;
 }
-
-
-#define ValidateSigBytes(_size) do { if ((_size) > csig) COMPlusThrow(kArgumentException, W("Argument_BadSigFormat")); csig -= (_size); } while (false)
-
-//==========================================================================
-// Unparses an individual type.
-//==========================================================================
-const BYTE *UnparseType(const BYTE *pType, DWORD& csig, StubLinker *psl)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        INJECT_FAULT(ThrowOutOfMemory();); // Emitting data to the StubLinker can throw OOM.
-    }
-    CONTRACTL_END;
-
-    LPCUTF8 pName = NULL;
-
-    ValidateSigBytes(sizeof(BYTE));
-    switch ( (CorElementType) *(pType++) ) {
-        case ELEMENT_TYPE_VOID:
-            psl->EmitUtf8("void");
-            break;
-
-        case ELEMENT_TYPE_BOOLEAN:
-            psl->EmitUtf8("boolean");
-            break;
-
-        case ELEMENT_TYPE_CHAR:
-            psl->EmitUtf8("char");
-            break;
-
-        case ELEMENT_TYPE_U1:
-            psl->EmitUtf8("unsigned ");
-            FALLTHROUGH;
-        case ELEMENT_TYPE_I1:
-            psl->EmitUtf8("byte");
-            break;
-
-        case ELEMENT_TYPE_U2:
-            psl->EmitUtf8("unsigned ");
-            FALLTHROUGH;
-        case ELEMENT_TYPE_I2:
-            psl->EmitUtf8("short");
-            break;
-
-        case ELEMENT_TYPE_U4:
-            psl->EmitUtf8("unsigned ");
-            FALLTHROUGH;
-        case ELEMENT_TYPE_I4:
-            psl->EmitUtf8("int");
-            break;
-
-        case ELEMENT_TYPE_I:
-            psl->EmitUtf8("native int");
-            break;
-        case ELEMENT_TYPE_U:
-            psl->EmitUtf8("native unsigned");
-            break;
-
-        case ELEMENT_TYPE_U8:
-            psl->EmitUtf8("unsigned ");
-            FALLTHROUGH;
-        case ELEMENT_TYPE_I8:
-            psl->EmitUtf8("long");
-            break;
-
-
-        case ELEMENT_TYPE_R4:
-            psl->EmitUtf8("float");
-            break;
-
-        case ELEMENT_TYPE_R8:
-            psl->EmitUtf8("double");
-            break;
-
-        case ELEMENT_TYPE_STRING:
-            psl->EmitUtf8(g_StringName);
-            break;
-
-        case ELEMENT_TYPE_VAR:
-        case ELEMENT_TYPE_OBJECT:
-            psl->EmitUtf8(g_ObjectName);
-            break;
-
-        case ELEMENT_TYPE_PTR:
-            pType = UnparseType(pType, csig, psl);
-            psl->EmitUtf8("*");
-            break;
-
-        case ELEMENT_TYPE_BYREF:
-            pType = UnparseType(pType, csig, psl);
-            psl->EmitUtf8("&");
-            break;
-
-        case ELEMENT_TYPE_VALUETYPE:
-        case ELEMENT_TYPE_CLASS:
-            pName = (LPCUTF8)pType;
-            while (true) {
-                ValidateSigBytes(sizeof(CHAR));
-                if (*(pType++) == '\0')
-                    break;
-            }
-            psl->EmitUtf8(pName);
-            break;
-
-        case ELEMENT_TYPE_SZARRAY:
-            {
-                pType = UnparseType(pType, csig, psl);
-                psl->EmitUtf8("[]");
-            }
-            break;
-
-        case ELEMENT_TYPE_ARRAY:
-            {
-                pType = UnparseType(pType, csig, psl);
-                ValidateSigBytes(sizeof(DWORD));
-                DWORD rank = GET_UNALIGNED_VAL32(pType);
-                pType += sizeof(DWORD);
-                if (rank)
-                {
-                    ValidateSigBytes(sizeof(UINT32));
-                    UINT32 nsizes = GET_UNALIGNED_VAL32(pType); // Get # of sizes
-                    ValidateSigBytes(nsizes * sizeof(UINT32));
-                    pType += 4 + nsizes*4;
-                    ValidateSigBytes(sizeof(UINT32));
-                    UINT32 nlbounds = GET_UNALIGNED_VAL32(pType); // Get # of lower bounds
-                    ValidateSigBytes(nlbounds * sizeof(UINT32));
-                    pType += 4 + nlbounds*4;
-
-
-                    while (rank--) {
-                        psl->EmitUtf8("[]");
-                    }
-
-}
-
-            }
-            break;
-
-        case ELEMENT_TYPE_TYPEDBYREF:
-            psl->EmitUtf8("&");
-            break;
-
-        case ELEMENT_TYPE_FNPTR:
-            psl->EmitUtf8("ftnptr");
-            break;
-
-        default:
-            psl->EmitUtf8("?");
-            break;
-    }
-
-    return pType;
-    }
-
-
-
-//==========================================================================
-// Helper for MissingMemberException.
-//==========================================================================
-static STRINGREF MissingMemberException_FormatSignature_Internal(I1ARRAYREF* ppPersistedSig)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        INJECT_FAULT(ThrowOutOfMemory(););
-    }
-    CONTRACTL_END;
-
-    STRINGREF pString = NULL;
-
-    DWORD csig = 0;
-    const BYTE *psig = 0;
-    StubLinker *psl = NULL;
-    StubHolder<Stub> pstub;
-
-    if ((*ppPersistedSig) != NULL)
-        csig = (*ppPersistedSig)->GetNumComponents();
-
-    if (csig == 0)
-    {
-        return StringObject::NewString("Unknown signature");
-    }
-
-    psig = (const BYTE*)_alloca(csig);
-    CopyMemory((BYTE*)psig,
-               (*ppPersistedSig)->GetDirectPointerToNonObjectElements(),
-               csig);
-
-    {
-    GCX_PREEMP();
-
-    StubLinker sl;
-    psl = &sl;
-    pstub = NULL;
-
-    ValidateSigBytes(sizeof(UINT32));
-    UINT32 cconv = GET_UNALIGNED_VAL32(psig);
-    psig += 4;
-
-    if (cconv == IMAGE_CEE_CS_CALLCONV_FIELD) {
-        psig = UnparseType(psig, csig, psl);
-    } else {
-        ValidateSigBytes(sizeof(UINT32));
-        UINT32 nargs = GET_UNALIGNED_VAL32(psig);
-        psig += 4;
-
-        // Unparse return type
-        psig = UnparseType(psig, csig, psl);
-        psl->EmitUtf8("(");
-        while (nargs--) {
-            psig = UnparseType(psig, csig, psl);
-            if (nargs) {
-                psl->EmitUtf8(", ");
-            }
-        }
-        psl->EmitUtf8(")");
-    }
-    psl->Emit8('\0');
-
-    pstub = psl->Link(NULL);
-    }
-
-    pString = StringObject::NewString( (LPCUTF8)(pstub->GetEntryPoint()) );
-    return pString;
-}
-
-FCIMPL1(Object*, MissingMemberException_FormatSignature, I1Array* pPersistedSigUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    STRINGREF pString = NULL;
-    I1ARRAYREF pPersistedSig = (I1ARRAYREF) pPersistedSigUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(pPersistedSig);
-
-    pString = MissingMemberException_FormatSignature_Internal(&pPersistedSig);
-
-    HELPER_METHOD_FRAME_END();
-    return OBJECTREFToObject(pString);
-}
-FCIMPLEND
 
 // Check if there is a pending exception or the thread is already aborting. Returns 0 if yes.
 // Otherwise, sets the thread up for generating an abort and returns address of ThrowControlForThread
@@ -8490,10 +8250,12 @@ bool DebugIsEECxxExceptionPointer(void* pv)
         EEMessageException      boilerplate7;
         EEResourceException     boilerplate8;
 
+#ifdef FEATURE_COMINTEROP
         // EECOMException::~EECOMException calls FreeExceptionData, which is GC_TRIGGERS,
         // but it won't trigger in this case because EECOMException's members remain NULL.
         CONTRACT_VIOLATION(GCViolation);
         EECOMException          boilerplate9;
+#endif // FEATURE_COMINTEROP
 
         EEFieldException        boilerplate10;
         EEMethodException       boilerplate11;
@@ -8512,7 +8274,9 @@ bool DebugIsEECxxExceptionPointer(void* pv)
             *((TADDR*)&boilerplate6),
             *((TADDR*)&boilerplate7),
             *((TADDR*)&boilerplate8),
+#ifdef FEATURE_COMINTEROP
             *((TADDR*)&boilerplate9),
+#endif // FEATURE_COMINTEROP
             *((TADDR*)&boilerplate10),
             *((TADDR*)&boilerplate11),
             *((TADDR*)&boilerplate12),
@@ -11727,27 +11491,14 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, IErrorInfo* pErrInfo, Exce
     }
 #endif // FEATURE_COMINTEROP
 
-    if (pErrInfo != NULL)
+    _ASSERTE((pErrInfo == NULL) || !"pErrInfo should always be null when FEATURE_COMINTEROP is disabled.");
+    if (pInnerException == NULL)
     {
-        if (pInnerException == NULL)
-        {
-            EX_THROW(EECOMException, (hr, pErrInfo));
-        }
-        else
-        {
-            EX_THROW_WITH_INNER(EECOMException, (hr, pErrInfo), pInnerException);
-        }
+        EX_THROW(EEMessageException, (hr));
     }
     else
     {
-        if (pInnerException == NULL)
-        {
-            EX_THROW(EEMessageException, (hr));
-        }
-        else
-        {
-            EX_THROW_WITH_INNER(EEMessageException, (hr), pInnerException);
-        }
+        EX_THROW_WITH_INNER(EEMessageException, (hr), pInnerException);
     }
 }
 

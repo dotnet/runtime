@@ -501,7 +501,7 @@ mono_gc_invoke_finalizers (void)
 MonoBoolean
 mono_gc_pending_finalizers (void)
 {
-	return sgen_have_pending_finalizers ();
+	return !!sgen_have_pending_finalizers ();
 }
 
 void

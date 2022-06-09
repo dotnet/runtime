@@ -26,6 +26,7 @@
 #include "mono/metadata/debug-internals.h"
 #include "mono/metadata/mono-debug.h"
 #include "mono/metadata/debug-mono-ppdb.h"
+#include "mono/metadata/class-init.h"
 #include "mono/utils/bsearch.h"
 
 
@@ -134,6 +135,9 @@ hot_reload_added_methods_iter (MonoClass *klass, gpointer *iter);
 static MonoClassField *
 hot_reload_added_fields_iter (MonoClass *klass, gboolean lazy, gpointer *iter);
 
+static uint32_t
+hot_reload_get_num_fields_added (MonoClass *klass);
+
 static MonoClassMetadataUpdateField *
 metadata_update_field_setup_basic_info_and_resolve (MonoImage *image_base, BaselineInfo *base_info, uint32_t generation, DeltaInfo *delta_info, MonoClass *parent_klass, uint32_t fielddef_token, uint32_t field_flags, MonoError *error);
 
@@ -167,6 +171,7 @@ static MonoComponentHotReload fn_table = {
 	&hot_reload_get_typedef_skeleton_events,
 	&hot_reload_added_methods_iter,
 	&hot_reload_added_fields_iter,
+	&hot_reload_get_num_fields_added,
 };
 
 MonoComponentHotReload *
@@ -217,7 +222,7 @@ typedef struct _delta_row_count {
 	guint32 inserted_rows;
 } delta_row_count;
 
-/* Additional informaiton for MonoImages representing deltas */
+/* Additional information for MonoImages representing deltas */
 struct _DeltaInfo {
 	uint32_t generation; /* global update ID that added this delta image */
 	MonoImage *delta_image; /* DeltaInfo doesn't own the image, the base MonoImage owns the reference */
@@ -240,7 +245,7 @@ struct _DeltaInfo {
 };
 
 
-/* Additional informaiton for baseline MonoImages */
+/* Additional information for baseline MonoImages */
 struct _BaselineInfo {
 	/* List of DeltaInfos of deltas*/
 	GList *delta_info;
@@ -965,6 +970,17 @@ dump_update_summary (MonoImage *image_base, MonoImage *image_dmeta)
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "dmeta typeref i=%d (token=0x%08x) -> scope=%s, nspace=%s, name=%s", i, MONO_TOKEN_TYPE_REF | i, scope, nspace, name);
 		}
 	}
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "================================");
+
+	rows = mono_image_get_table_rows (image_dmeta, MONO_TABLE_TYPEDEF);
+	for (int i = 1; i <= rows; ++i) {
+		guint32 cols [MONO_TYPEDEF_SIZE];
+		mono_metadata_decode_row (&image_dmeta->tables [MONO_TABLE_TYPEDEF], i - 1, cols, MONO_TYPEDEF_SIZE);
+		const char *name = mono_metadata_string_heap (image_base, cols [MONO_TYPEDEF_NAME]);
+		const char *nspace = mono_metadata_string_heap (image_base, cols [MONO_TYPEDEF_NAMESPACE]);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "dmeta typedef i=%d (token=0x%08x) -> nspace=[%x]%s, name=[%x]%s", i, MONO_TOKEN_TYPE_REF | i, cols [MONO_TYPEDEF_NAMESPACE], nspace, cols [MONO_TYPEDEF_NAME], name);
+	}
+
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "================================");
 
 	rows = mono_image_get_table_rows (image_base, MONO_TABLE_METHOD);
@@ -2854,7 +2870,8 @@ hot_reload_get_field (MonoClass *klass, uint32_t fielddef_token) {
 static MonoClassMetadataUpdateField *
 metadata_update_field_setup_basic_info_and_resolve (MonoImage *image_base, BaselineInfo *base_info, uint32_t generation, DeltaInfo *delta_info, MonoClass *parent_klass, uint32_t fielddef_token, uint32_t field_flags, MonoError *error)
 {
-	g_assert (m_class_is_inited (parent_klass));
+	if (!m_class_is_inited (parent_klass))
+		mono_class_init_internal (parent_klass);
 
 	MonoClassMetadataUpdateInfo *parent_info = mono_class_get_or_add_metadata_update_info (parent_klass);
 
@@ -3086,4 +3103,13 @@ hot_reload_added_fields_iter (MonoClass *klass, gboolean lazy G_GNUC_UNUSED, gpo
 	idx++;
 	*iter = GUINT_TO_POINTER (idx);
 	return &field->field;
+}
+
+static uint32_t
+hot_reload_get_num_fields_added (MonoClass *klass)
+{
+	MonoClassMetadataUpdateInfo *info = mono_class_get_metadata_update_info (klass);
+	if (!info)
+		return 0;
+	return g_slist_length (info->added_fields);
 }

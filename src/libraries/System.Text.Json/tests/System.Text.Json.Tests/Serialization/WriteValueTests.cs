@@ -67,7 +67,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async static void NullValueWithNullableSuccess()
         {
-            byte[] nullUtf8Literal = Encoding.UTF8.GetBytes("null");
+            byte[] nullUtf8Literal = "null"u8.ToArray();
 
             var stream = new MemoryStream();
             Utf8JsonWriter writer = new Utf8JsonWriter(stream);

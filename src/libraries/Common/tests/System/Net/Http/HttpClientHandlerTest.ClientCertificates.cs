@@ -81,6 +81,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(1, true)]
         [InlineData(2, true)]
         [InlineData(3, false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task Manual_CertificateOnlySentWhenValid_Success(int certIndex, bool serverExpectsClientCertificate)
         {
             var options = new LoopbackServer.Options { UseSsl = true };
@@ -129,6 +130,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(6, false)]
         [InlineData(3, true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task Manual_CertificateSentMatchesCertificateReceived_Success(
             int numberOfRequests,
             bool reuseClient) // validate behavior with and without connection pooling, which impacts client cert usage

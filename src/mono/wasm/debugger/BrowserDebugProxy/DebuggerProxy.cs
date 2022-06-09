@@ -18,13 +18,10 @@ namespace Microsoft.WebAssembly.Diagnostics
     {
         internal MonoProxy MonoProxy { get; }
 
-        public DebuggerProxy(ILoggerFactory loggerFactory, IList<string> urlSymbolServerList, int runtimeId = 0, string loggerId = "", bool autoSetBreakpointOnEntryPoint = false)
+        public DebuggerProxy(ILoggerFactory loggerFactory, IList<string> urlSymbolServerList, int runtimeId = 0, string loggerId = "", ProxyOptions options = null)
         {
             string suffix = loggerId.Length > 0 ? $"-{loggerId}" : string.Empty;
-            MonoProxy = new MonoProxy(loggerFactory.CreateLogger($"DevToolsProxy{suffix}"), urlSymbolServerList, runtimeId, loggerId)
-            {
-                AutoSetBreakpointOnEntryPoint = autoSetBreakpointOnEntryPoint
-            };
+            MonoProxy = new MonoProxy(loggerFactory.CreateLogger($"DevToolsProxy{suffix}"), urlSymbolServerList, runtimeId, loggerId, options);
         }
 
         public Task Run(Uri browserUri, WebSocket ideSocket, CancellationTokenSource cts)

@@ -23,7 +23,7 @@ namespace System.Formats.Tar
         /// <exception cref="InvalidOperationException">The entry type is not supported for creating an entry.</exception>
         /// <remarks>When creating an instance using the <see cref="V7TarEntry(TarEntryType, string)"/> constructor, only the following entry types are supported: <see cref="TarEntryType.Directory"/>, <see cref="TarEntryType.HardLink"/>, <see cref="TarEntryType.SymbolicLink"/> and <see cref="TarEntryType.V7RegularFile"/>.</remarks>
         public V7TarEntry(TarEntryType entryType, string entryName)
-            : base(entryType, entryName, TarFormat.V7)
+            : base(entryType, entryName, TarEntryFormat.V7)
         {
         }
 

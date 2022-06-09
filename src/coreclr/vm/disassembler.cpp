@@ -82,7 +82,8 @@ namespace
         LPCWSTR libFileName = MAKEDLLNAME(W("coredistools"));
 
         // Look for the coredistools module next to the clr binary
-        libPath.AppendPrintf(W("%s%s"), sysDirectory, libFileName);
+        libPath.Append(sysDirectory);
+        libPath.Append(libFileName);
 
         LPCWSTR libraryName = libPath.GetUnicode();
         return CLRLoadLibrary(libraryName);

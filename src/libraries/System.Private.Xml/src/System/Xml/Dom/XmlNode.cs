@@ -778,7 +778,7 @@ namespace System.Xml
                                 firstChildTextLikeNode = null;
                             }
 
-                            sb.Remove(0, sb.Length);
+                            sb.Clear();
                             break;
                         }
                 }

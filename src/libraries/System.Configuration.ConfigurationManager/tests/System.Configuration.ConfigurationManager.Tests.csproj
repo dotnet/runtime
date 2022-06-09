@@ -81,7 +81,7 @@
     <Compile Include="System\Configuration\SettingElementTests.cs" />
     <Compile Include="System\Configuration\SettingsDescriptionAttributeTests.cs" />
     <Compile Include="System\Configuration\SettingsGroupDescriptionAttributeTests.cs" />
-    <Compile Include="System\Configuration\SettingsManageabilityAtrributeTests.cs" />
+    <Compile Include="System\Configuration\SettingsManageabilityAttributeTests.cs" />
     <Compile Include="System\Configuration\SettingsPropertyIsReadOnlyExceptionTests.cs" />
     <Compile Include="System\Configuration\SettingsPropertyNotFoundExceptionTests.cs" />
     <Compile Include="System\Configuration\SettingsPropertyWrongTypeExceptionTests.cs" />

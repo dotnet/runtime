@@ -1393,10 +1393,6 @@ protected:
     void genMultiRegStoreToSIMDLocal(GenTreeLclVar* lclNode);
     void genMultiRegStoreToLocal(GenTreeLclVar* lclNode);
 
-#if defined(TARGET_LOONGARCH64)
-    void genMultiRegCallStoreToLocal(GenTree* treeNode);
-#endif
-
     // Codegen for multi-register struct returns.
     bool isStructReturn(GenTree* treeNode);
 #ifdef FEATURE_SIMD
@@ -1476,8 +1472,11 @@ protected:
 
 public:
     void instGen(instruction ins);
-
+#if defined(TARGET_XARCH)
+    void inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock, bool isRemovableJmpCandidate = false);
+#else
     void inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock);
+#endif
 
     void inst_SET(emitJumpKind condition, regNumber reg);
 

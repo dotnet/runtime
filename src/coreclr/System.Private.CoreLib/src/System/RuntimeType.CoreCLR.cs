@@ -467,7 +467,7 @@ namespace System
                             case MemberListType.All:
                                 if (!m_cacheComplete)
                                 {
-                                    MergeWithGlobalList(list);
+                                    MergeWithGlobalListInOrder(list);
 
                                     // Trim null entries at the end of m_allMembers array
                                     int memberCount = m_allMembers!.Length;
@@ -497,6 +497,36 @@ namespace System
                             Monitor.Exit(this);
                         }
                     }
+                }
+
+                private void MergeWithGlobalListInOrder(T[] list)
+                {
+                    T?[]? cachedMembers = m_allMembers;
+
+                    if (cachedMembers == null)
+                    {
+                        m_allMembers = list;
+                        return;
+                    }
+
+                    foreach (T? cachedMemberInfo in cachedMembers)
+                    {
+                        if (cachedMemberInfo == null)
+                            break;
+
+                        for (int i = 0; i < list.Length; i++)
+                        {
+                            T newMemberInfo = list[i];
+
+                            if (newMemberInfo.CacheEquals(cachedMemberInfo))
+                            {
+                                list[i] = cachedMemberInfo;
+                                break;
+                            }
+                        }
+                    }
+
+                    m_allMembers = list;
                 }
 
                 // Modifies the existing list.
@@ -3495,7 +3525,7 @@ namespace System
         private static extern bool CanValueSpecialCast(RuntimeType valueType, RuntimeType targetType);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern object AllocateValueType(RuntimeType type, object? value, bool fForceTypeChange);
+        private static extern object AllocateValueType(RuntimeType type, object? value);
 
         private enum CheckValueStatus
         {
@@ -3504,26 +3534,13 @@ namespace System
             NotSupported_ByRefLike
         }
 
-#if DEBUG
-        internal void VerifyValueType(object? value)
-        {
-            Debug.Assert(value != null);
-            Debug.Assert(
-                value.GetType() == this ||
-                (IsPointer && value.GetType() == typeof(IntPtr)) ||
-                (IsByRef && value.GetType() == RuntimeTypeHandle.GetElementType(this)) ||
-                (value.GetType().IsEnum && GetUnderlyingType((RuntimeType)value.GetType()) == GetUnderlyingType(this)) ||
-                (IsEnum && GetUnderlyingType((RuntimeType)value.GetType()) == GetUnderlyingType(this)));
-        }
-#endif
-
         /// <summary>
         /// Verify <paramref name="value"/> and optionally convert the value for special cases.
         /// </summary>
-        /// <returns>True if the value should be considered a value type, False otherwise</returns>
+        /// <returns>True if <paramref name="value"/> is a value type, False otherwise</returns>
         internal bool CheckValue(
             ref object? value,
-            ref bool copyBack,
+            ref ParameterCopyBackAction copyBack,
             Binder? binder,
             CultureInfo? culture,
             BindingFlags invokeAttr)
@@ -3531,20 +3548,22 @@ namespace System
             // Already fast-pathed by the caller.
             Debug.Assert(!ReferenceEquals(value?.GetType(), this));
 
+            // Since this cannot be a generic parameter, we use RuntimeTypeHandle.IsValueType here
+            // because it is faster than IsValueType
+            Debug.Assert(!IsGenericParameter);
+
             // Fast path to whether a value can be assigned without conversion.
             if (IsInstanceOfType(value))
             {
-                // Since this cannot be a generic parameter, we use RuntimeTypeHandle.IsValueType here
-                // because it is faster than IsValueType
-                Debug.Assert(!IsGenericParameter);
-
-                if (RuntimeTypeHandle.IsValueType(this))
+                if (IsNullableOfT)
                 {
-                    // Nullable is the only value type that will get here.
-                    Debug.Assert(IsNullableOfT);
-
-                    // Fall through and treat as a reference type.
+                    // Pass as a true boxed Nullable<T>, not as a T or null.
+                    value = RuntimeMethodHandle.ReboxToNullable(value, this);
+                    return true;
                 }
+
+                // Other value types won't get here since Type equality was previous checked.
+                Debug.Assert(!RuntimeTypeHandle.IsValueType(this));
 
                 return false;
             }
@@ -3566,8 +3585,18 @@ namespace System
                     value = binder.ChangeType(value, this, culture);
                     if (IsInstanceOfType(value))
                     {
-                        copyBack = true;
-                        return IsValueType;
+                        if (IsNullableOfT)
+                        {
+                            // Pass as a true boxed Nullable<T>, not as a T or null.
+                            value = RuntimeMethodHandle.ReboxToNullable(value, this);
+                            copyBack = ParameterCopyBackAction.CopyNullable;
+                        }
+                        else
+                        {
+                            copyBack = ParameterCopyBackAction.Copy;
+                        }
+
+                        return IsValueType; // Note the call to IsValueType, not the variable.
                     }
 
                     result = TryChangeType(ref value, out copyBack, out isValueType);
@@ -3592,116 +3621,94 @@ namespace System
 
         private CheckValueStatus TryChangeType(
             ref object? value,
-            out bool copyBack,
+            out ParameterCopyBackAction copyBack,
             out bool isValueType)
         {
-            // If this is a ByRef get the element type and check if it's compatible
-            if (IsByRef)
+            RuntimeType? sigElementType;
+            if (RuntimeTypeHandle.TryGetByRefElementType(this, out sigElementType))
             {
-                RuntimeType sigElementType = RuntimeTypeHandle.GetElementType(this);
-
-                // If a nullable, pass the object even though it's a value type.
-                if (sigElementType.IsNullableOfT)
-                {
-                    // Treat as a reference type since a null value may be replaced with T or vise-versa.
-                    isValueType = false;
-                    copyBack = true;
-                    return CheckValueStatus.Success;
-                }
+                copyBack = ParameterCopyBackAction.Copy;
+                Debug.Assert(!sigElementType.IsGenericParameter);
 
                 if (sigElementType.IsInstanceOfType(value))
                 {
-                    // Need to create an instance of the ByRef if null was provided, but only if primitive, enum or value type
-                    value = AllocateValueType(sigElementType, value, fForceTypeChange: false);
-                    isValueType = sigElementType.IsValueType;
-                    copyBack = true;
+                    isValueType = RuntimeTypeHandle.IsValueType(sigElementType);
+                    if (isValueType)
+                    {
+                        if (sigElementType.IsNullableOfT)
+                        {
+                            // Pass as a true boxed Nullable<T>, not as a T or null.
+                            value = RuntimeMethodHandle.ReboxToNullable(value, sigElementType);
+                            copyBack = ParameterCopyBackAction.CopyNullable;
+                        }
+                        else
+                        {
+                            // Make a copy to prevent the boxed instance from being directly modified by the method.
+                            value = AllocateValueType(sigElementType, value);
+                        }
+                    }
+
                     return CheckValueStatus.Success;
                 }
 
                 if (value == null)
                 {
-                    if (IsByRefLike)
+                    isValueType = RuntimeTypeHandle.IsValueType(sigElementType);
+                    if (!isValueType)
                     {
-                        isValueType = copyBack = default;
+                        // Normally we don't get here since 'null' was previosuly checked, but due to binders we can.
+                        return CheckValueStatus.Success;
+                    }
+
+                    if (sigElementType.IsByRefLike)
+                    {
                         return CheckValueStatus.NotSupported_ByRefLike;
                     }
 
-                    value = AllocateValueType(sigElementType, value, fForceTypeChange: false);
-                    isValueType = sigElementType.IsValueType;
-                    copyBack = true;
+                    // Allocate default<T>.
+                    value = AllocateValueType(sigElementType, value: null);
+                    copyBack = sigElementType.IsNullableOfT ? ParameterCopyBackAction.CopyNullable : ParameterCopyBackAction.Copy;
                     return CheckValueStatus.Success;
                 }
 
-                if (NeedsSpecialCast())
-                {
-                    if (SpecialCast(sigElementType, ref value) == CheckValueStatus.Success)
-                    {
-                        isValueType = true;
-                        copyBack = false;
-                        return CheckValueStatus.Success;
-                    }
-                }
-
-                isValueType = copyBack = default;
+                isValueType = false;
                 return CheckValueStatus.ArgumentException;
             }
 
             if (value == null)
             {
-                if (!RuntimeTypeHandle.IsValueType(this))
+                copyBack = ParameterCopyBackAction.None;
+                isValueType = RuntimeTypeHandle.IsValueType(this);
+                if (!isValueType)
                 {
-                    isValueType = false;
-                    copyBack = false;
+                    // Normally we don't get here since 'null' was previosuly checked, but due to binders we can.
                     return CheckValueStatus.Success;
                 }
 
-                if (IsNullableOfT)
+                if (IsByRefLike)
                 {
-                    // Treat as a boxed value.
-                    isValueType = false;
-                    copyBack = false;
-                    return CheckValueStatus.Success;
-                }
-
-                if (RuntimeTypeHandle.IsByRefLike(this))
-                {
-                    isValueType = copyBack = default;
                     return CheckValueStatus.NotSupported_ByRefLike;
                 }
 
-                // Need to create a default instance of the value type.
-                value = AllocateValueType(this, value: null, fForceTypeChange: false);
-                isValueType = true;
-                copyBack = false;
+                // Allocate default<T>.
+                value = AllocateValueType(this, value: null);
                 return CheckValueStatus.Success;
             }
 
-            if (NeedsSpecialCast())
-            {
-                if (SpecialCast(this, ref value) == CheckValueStatus.Success)
-                {
-                    isValueType = true;
-                    copyBack = false;
-                    return CheckValueStatus.Success;
-                }
-            }
-
-            isValueType = copyBack = default;
-            return CheckValueStatus.ArgumentException;
-
             // Check the strange ones courtesy of reflection:
-            // - implicit cast between primitives
-            // - enum treated as underlying type
-            // - IntPtr and System.Reflection.Pointer to pointer types
-            bool NeedsSpecialCast() => IsPointer || IsEnum || IsPrimitive;
-
-            static CheckValueStatus SpecialCast(RuntimeType type, ref object value)
+            // - Implicit cast between primitives
+            // - Enum treated as underlying type
+            // - Pointer (*) types to IntPtr (if dest is IntPtr)
+            // - System.Reflection.Pointer to appropriate pointer (*) type (if dest is pointer type)
+            if (IsPointer || IsEnum || IsPrimitive)
             {
                 Pointer? pointer = value as Pointer;
                 RuntimeType srcType = pointer != null ? pointer.GetPointerType() : (RuntimeType)value.GetType();
 
-                if (!CanValueSpecialCast(srcType, type))
+                if (!CanValueSpecialCast(srcType, this))
                 {
+                    isValueType = false;
+                    copyBack = ParameterCopyBackAction.None;
                     return CheckValueStatus.ArgumentException;
                 }
 
@@ -3712,18 +3719,42 @@ namespace System
                 else
                 {
                     CorElementType srcElementType = GetUnderlyingType(srcType);
-                    CorElementType dstElementType = GetUnderlyingType(type);
+                    CorElementType dstElementType = GetUnderlyingType(this);
                     if (dstElementType != srcElementType)
                     {
-                        value = InvokeUtils.ConvertOrWiden(srcType, srcElementType, value, type, dstElementType);
+                        value = InvokeUtils.ConvertOrWiden(srcType, srcElementType, value, this, dstElementType);
                     }
                 }
 
+                isValueType = true;
+                copyBack = ParameterCopyBackAction.None;
                 return CheckValueStatus.Success;
             }
+
+            isValueType = false;
+            copyBack = ParameterCopyBackAction.None;
+            return CheckValueStatus.ArgumentException;
         }
 
-        private static CorElementType GetUnderlyingType(RuntimeType type)
+        internal bool TryByRefFastPath(ref object arg, ref bool isValueType)
+        {
+            if (RuntimeTypeHandle.TryGetByRefElementType(this, out RuntimeType? sigElementType) &&
+                ReferenceEquals(sigElementType, arg.GetType()))
+            {
+                isValueType = sigElementType.IsValueType;
+                if (isValueType)
+                {
+                    // Make a copy to prevent the boxed instance from being directly modified by the method.
+                    arg = AllocateValueType(sigElementType, arg);
+                }
+
+                return true;
+            }
+
+            return false;
+        }
+
+        internal static CorElementType GetUnderlyingType(RuntimeType type)
         {
             if (type.IsEnum)
             {

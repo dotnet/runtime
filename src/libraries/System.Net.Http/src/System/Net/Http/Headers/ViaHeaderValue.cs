@@ -78,7 +78,7 @@ namespace System.Net.Http.Headers
 
         public override string ToString()
         {
-            StringBuilder sb = StringBuilderCache.Acquire();
+            var sb = new ValueStringBuilder(stackalloc char[256]);
 
             if (!string.IsNullOrEmpty(_protocolName))
             {
@@ -96,7 +96,7 @@ namespace System.Net.Http.Headers
                 sb.Append(_comment);
             }
 
-            return StringBuilderCache.GetStringAndRelease(sb);
+            return sb.ToString();
         }
 
         public override bool Equals([NotNullWhen(true)] object? obj)

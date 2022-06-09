@@ -6,14 +6,26 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
+using ILCompiler.DependencyAnalysis;
+using ILCompiler.DependencyAnalysis.ReadyToRun;
+using Internal.IL;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 using Internal.TypeSystem.Interop;
-using ILCompiler.DependencyAnalysis.ReadyToRun;
 using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler
 {
+    public class ReadyToRunCompilationModuleGroupConfig
+    {
+        public CompilerTypeSystemContext Context;
+        public bool IsCompositeBuildMode;
+        public bool IsInputBubble;
+        public IEnumerable<EcmaModule> CompilationModuleSet;
+        public IEnumerable<ModuleDesc> VersionBubbleModuleSet;
+        public bool CompileGenericDependenciesFromVersionBubbleModuleSet;
+    }
+
     public abstract class ReadyToRunCompilationModuleGroupBase : CompilationModuleGroup
     {
         protected readonly HashSet<EcmaModule> _compilationModuleSet;
@@ -29,27 +41,22 @@ namespace ILCompiler
         private readonly Dictionary<ModuleDesc, CompilationUnitIndex> _moduleCompilationUnits = new Dictionary<ModuleDesc, CompilationUnitIndex>();
         private CompilationUnitIndex _nextCompilationUnit = CompilationUnitIndex.FirstDynamicallyAssigned;
         private ModuleTokenResolver _tokenResolver = null;
+        private ConcurrentDictionary<EcmaMethod, bool> _tokenTranslationFreeNonVersionable = new ConcurrentDictionary<EcmaMethod, bool>();
 
-        public ReadyToRunCompilationModuleGroupBase(
-            CompilerTypeSystemContext context,
-            bool isCompositeBuildMode,
-            bool isInputBubble,
-            IEnumerable<EcmaModule> compilationModuleSet,
-            IEnumerable<ModuleDesc> versionBubbleModuleSet,
-            bool compileGenericDependenciesFromVersionBubbleModuleSet)
+        public ReadyToRunCompilationModuleGroupBase(ReadyToRunCompilationModuleGroupConfig config)
         {
-            _compilationModuleSet = new HashSet<EcmaModule>(compilationModuleSet);
-            _isCompositeBuildMode = isCompositeBuildMode;
-            _isInputBubble = isInputBubble;
+            _compilationModuleSet = new HashSet<EcmaModule>(config.CompilationModuleSet);
+            _isCompositeBuildMode = config.IsCompositeBuildMode;
+            _isInputBubble = config.IsInputBubble;
 
             Debug.Assert(_isCompositeBuildMode || _compilationModuleSet.Count == 1);
 
-            _versionBubbleModuleSet = new HashSet<ModuleDesc>(versionBubbleModuleSet);
+            _versionBubbleModuleSet = new HashSet<ModuleDesc>(config.VersionBubbleModuleSet);
             _versionBubbleModuleSet.UnionWith(_compilationModuleSet);
 
-            _compileGenericDependenciesFromVersionBubbleModuleSet = compileGenericDependenciesFromVersionBubbleModuleSet;
+            _compileGenericDependenciesFromVersionBubbleModuleSet = config.CompileGenericDependenciesFromVersionBubbleModuleSet;
 
-            _tokenResolver = new ModuleTokenResolver(this, context);
+            _tokenResolver = new ModuleTokenResolver(this, config.Context);
         }
 
         public ModuleTokenResolver Resolver => _tokenResolver;
@@ -100,8 +107,8 @@ namespace ILCompiler
         }
 
         // Compilation Unit Index is the compilation unit of a given module. If the compilation unit
-        // is unknown the module will be given an independent index from other modules, but 
-        // IsCompilationUnitIndexExact will return false for that index. All compilation unit indices 
+        // is unknown the module will be given an independent index from other modules, but
+        // IsCompilationUnitIndexExact will return false for that index. All compilation unit indices
         // are >= 2, to allow for 0 and 1 to be sentinel values.
         private CompilationUnitIndex ModuleToCompilationUnitIndex(ModuleDesc nonEcmaModule)
         {
@@ -111,12 +118,12 @@ namespace ILCompiler
 
             if (!VersionsWithModule(module))
                 return CompilationUnitIndex.OutsideOfVersionBubble;
-            
-            // Assemblies within the version bubble, but not compiled as part of this compilation unit are given 
-            // unique seperate compilation units. The practical effect of this is that the compiler can assume that
+
+            // Assemblies within the version bubble, but not compiled as part of this compilation unit are given
+            // unique separate compilation units. The practical effect of this is that the compiler can assume that
             // types which are entirely defined in one module can be laid out in an optimal fashion, but types
             // which are laid out relying on multiple modules cannot have their type layout precisely known as
-            // it is unknown if the modules are bounding into a single composite image or into individual assemblies. 
+            // it is unknown if the modules are bounding into a single composite image or into individual assemblies.
             lock (_moduleCompilationUnits)
             {
                 if (!_moduleCompilationUnits.TryGetValue(module, out CompilationUnitIndex compilationUnit))
@@ -139,7 +146,7 @@ namespace ILCompiler
             // 2. That any assembly which is compiled in the current process may be considered to be part of a single unit.
             //
             // At some point, the compiler could take new parameters to allow the compiler to know that assemblies not in the current compilation
-            // unit are to be compiled into composite images or into seperate binaries, and this helper function could return true for these other
+            // unit are to be compiled into composite images or into separate binaries, and this helper function could return true for these other
             // compilation unit shapes.
             if (compilationUnitIndex != CompilationUnitIndex.Current)
                 return false;
@@ -175,7 +182,7 @@ namespace ILCompiler
                 {
                     if (_bits == null)
                         return false;
-                        
+
                     return _bits[(int)CompilationUnitIndex.RESERVEDForHasMultipleCompilationUnits];
                 }
             }
@@ -197,7 +204,7 @@ namespace ILCompiler
 
                 if (other._bits.Length > _bits.Length)
                     _bits.Length = other._bits.Length;
-                
+
                 if (other._bits.Length < _bits.Length)
                 {
                     for (int i = 0; i < other._bits.Length; i++)
@@ -338,30 +345,165 @@ namespace ILCompiler
             // (because otherwise we may not be able to encode its tokens)
             // and if the callee is either in the same version bubble or is marked as non-versionable.
             bool canInline = VersionsWithMethodBody(callerMethod) &&
-                (VersionsWithMethodBody(calleeMethod) || calleeMethod.IsNonVersionable());
+                (VersionsWithMethodBody(calleeMethod) || IsNonVersionableWithILTokensThatDoNotNeedTranslation(calleeMethod));
 
             return canInline;
         }
 
-        public sealed override bool GeneratesPInvoke(MethodDesc method)
+        public bool IsNonVersionableWithILTokensThatDoNotNeedTranslation(MethodDesc method)
         {
-            // PInvokes depend on details of the core library, so for now only compile them if:
-            //    1) We're compiling the core library module, or
-            //    2) We're compiling any module, and no marshalling is needed
-            //
-            // TODO Future: consider compiling PInvokes with complex marshalling in version bubble
-            // mode when the core library is included in the bubble.
-
-            Debug.Assert(method is EcmaMethod);
-
-            // If the PInvoke is declared on an external module, we can only compile it if
-            // that module is part of the version bubble.
-            if (!_versionBubbleModuleSet.Contains(((EcmaMethod)method).Module))
+            if (!method.IsNonVersionable())
                 return false;
 
-            if (((EcmaMethod)method).Module.Equals(method.Context.SystemModule))
-                return true;
+            return _tokenTranslationFreeNonVersionable.GetOrAdd((EcmaMethod)method.GetTypicalMethodDefinition(), IsNonVersionableWithILTokensThatDoNotNeedTranslationUncached);
+        }
 
+        private bool IsNonVersionableWithILTokensThatDoNotNeedTranslationUncached(EcmaMethod method)
+        {
+            bool result = false;
+            try
+            {
+
+                // Validate that there are no tokens in the IL other than tokens associated with the following
+                // instructions with the 
+                // 1. ldfld, ldflda, and stfld to instance fields of NonVersionable structs and NonVersionable classes
+                // 2. cpobj, initobj, ldobj, stobj, ldelem, ldelema or sizeof, to NonVersionable structures, signature variables, pointers, function pointers, byrefs, classes, or arrays
+                // 3. stelem, to NonVersionable structures
+                // In addition, the method must not have any EH.
+                // The method may only have locals which are NonVersionable structures, or classes
+
+                MethodIL methodIL = new ReadyToRunILProvider().GetMethodIL(method);
+                if (methodIL.GetExceptionRegions().Length > 0)
+                    return false;
+
+                foreach (var local in methodIL.GetLocals())
+                {
+                    if (local.Type.IsPrimitive)
+                        continue;
+
+                    if (local.Type.IsArray)
+                        continue;
+
+                    if (local.Type.IsSignatureVariable)
+                        continue;
+                    MetadataType metadataType = local.Type as MetadataType;
+
+                    if (metadataType == null)
+                        return false;
+
+                    if (metadataType.IsValueType)
+                    {
+                        if (metadataType.IsNonVersionable())
+                            continue;
+                        else
+                            return false;
+                    }
+                }
+
+                ILReader ilReader = new ILReader(methodIL.GetILBytes());
+                while (ilReader.HasNext)
+                {
+                    ILOpcode opcode = ilReader.ReadILOpcode();
+                    switch (opcode)
+                    {
+                        case ILOpcode.ldfld:
+                        case ILOpcode.ldflda:
+                        case ILOpcode.stfld:
+                            {
+                                int token = ilReader.ReadILToken();
+                                FieldDesc field = methodIL.GetObject(token) as FieldDesc;
+                                if (field == null)
+                                    return false;
+                                if (field.IsStatic)
+                                    return false;
+                                MetadataType owningMetadataType = (MetadataType)field.OwningType;
+                                if (!owningMetadataType.IsNonVersionable())
+                                    return false;
+                                break;
+                            }
+
+                        case ILOpcode.ldelem:
+                        case ILOpcode.ldelema:
+                        case ILOpcode.stobj:
+                        case ILOpcode.ldobj:
+                        case ILOpcode.initobj:
+                        case ILOpcode.cpobj:
+                        case ILOpcode.sizeof_:
+                            {
+                                int token = ilReader.ReadILToken();
+                                TypeDesc type = methodIL.GetObject(token) as TypeDesc;
+                                if (type == null)
+                                    return false;
+
+                                MetadataType metadataType = type as MetadataType;
+                                if (metadataType == null)
+                                    continue; // Types which are not metadata types are all well defined in size
+
+                                if (!metadataType.IsValueType)
+                                    continue; // Reference types are all well defined in size for the sizeof instruction
+
+                                if (metadataType.IsNonVersionable())
+                                    continue;
+                                return false;
+                            }
+
+                        case ILOpcode.stelem:
+                            {
+                                int token = ilReader.ReadILToken();
+                                MetadataType type = methodIL.GetObject(token) as MetadataType;
+                                if (type == null)
+                                    return false;
+
+                                if (!type.IsValueType)
+                                    return false;
+                                if (!type.IsNonVersionable())
+                                    return false;
+                                break;
+                            }
+
+                        // IL instructions which refer to tokens which are not safe for NonVersionable methods
+                        case ILOpcode.box:
+                        case ILOpcode.call:
+                        case ILOpcode.calli:
+                        case ILOpcode.callvirt:
+                        case ILOpcode.castclass:
+                        case ILOpcode.jmp:
+                        case ILOpcode.isinst:
+                        case ILOpcode.ldstr:
+                        case ILOpcode.ldsfld:
+                        case ILOpcode.ldsflda:
+                        case ILOpcode.ldtoken:
+                        case ILOpcode.ldvirtftn:
+                        case ILOpcode.ldftn:
+                        case ILOpcode.mkrefany:
+                        case ILOpcode.newarr:
+                        case ILOpcode.newobj:
+                        case ILOpcode.refanyval:
+                        case ILOpcode.stsfld:
+                        case ILOpcode.unbox:
+                        case ILOpcode.unbox_any:
+                        case ILOpcode.constrained:
+                            return false;
+
+                        default:
+                            // Unless its a opcode known to be permitted with a 
+                            ilReader.Skip(opcode);
+                            break;
+                    }
+                }
+
+                result = true;
+            }
+            catch (TypeSystemException)
+            {
+                return false;
+            }
+
+            return result;
+        }
+
+        public sealed override bool GeneratesPInvoke(MethodDesc method)
+        {
             return !Marshaller.IsMarshallingRequired(method);
         }
 

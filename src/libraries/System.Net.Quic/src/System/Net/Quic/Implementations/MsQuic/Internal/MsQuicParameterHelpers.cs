@@ -4,13 +4,14 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Net.Sockets;
+using Microsoft.Quic;
 using static Microsoft.Quic.MsQuic;
 
 namespace System.Net.Quic.Implementations.MsQuic.Internal
 {
     internal static class MsQuicParameterHelpers
     {
-        internal static unsafe IPEndPoint GetIPEndPointParam(MsQuicApi api, MsQuicSafeHandle nativeObject, uint param)
+        internal static unsafe IPEndPoint GetIPEndPointParam(MsQuicApi api, MsQuicSafeHandle nativeObject, uint param, AddressFamily? addressFamilyOverride = null)
         {
             // MsQuic always uses storage size as if IPv6 was used
             uint valueLen = (uint)Internals.SocketAddress.IPv6AddressSize;
@@ -27,7 +28,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
             address = address.Slice(0, (int)valueLen);
 
-            return new Internals.SocketAddress(SocketAddressPal.GetAddressFamily(address), address).GetIPEndPoint();
+            return new Internals.SocketAddress(addressFamilyOverride ?? SocketAddressPal.GetAddressFamily(address), address).GetIPEndPoint();
         }
 
         internal static unsafe void SetIPEndPointParam(MsQuicApi api, MsQuicSafeHandle nativeObject, uint param, IPEndPoint value)

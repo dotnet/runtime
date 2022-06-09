@@ -1507,7 +1507,7 @@ dotnet_diagnostic.IDE0072.severity = silent
 dotnet_diagnostic.IDE0073.severity = warning
 
 # IDE0074: Use compound assignment
-dotnet_diagnostic.IDE0074.severity = suggestion
+dotnet_diagnostic.IDE0074.severity = warning
 
 # IDE0075: Simplify conditional expression
 dotnet_diagnostic.IDE0075.severity = silent

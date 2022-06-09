@@ -4,9 +4,15 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-
+using ILLink.Shared.DataFlow;
+using ILLink.Shared.TrimAnalysis;
+using ILLink.Shared.TypeSystemProxy;
 using Internal.IL;
 using Internal.TypeSystem;
+
+using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.SingleValue>;
+
+#nullable enable
 
 namespace ILCompiler.Dataflow
 {
@@ -15,14 +21,26 @@ namespace ILCompiler.Dataflow
     /// </summary>
     readonly struct StackSlot
     {
-        public ValueNode Value { get; }
+        public MultiValue Value { get; }
 
         /// <summary>
         /// True if the value is on the stack as a byref
         /// </summary>
         public bool IsByRef { get; }
 
-        public StackSlot(ValueNode value, bool isByRef = false)
+        public StackSlot()
+        {
+            Value = new MultiValue(UnknownValue.Instance);
+            IsByRef = false;
+        }
+
+        public StackSlot(SingleValue value, bool isByRef = false)
+        {
+            Value = new MultiValue(value);
+            IsByRef = isByRef;
+        }
+
+        public StackSlot(MultiValue value, bool isByRef = false)
         {
             Value = value;
             IsByRef = isByRef;
@@ -31,7 +49,9 @@ namespace ILCompiler.Dataflow
 
     abstract partial class MethodBodyScanner
     {
-        internal ValueNode MethodReturnValue { private set; get; }
+        protected static ValueSetLattice<SingleValue> MultiValueLattice => default;
+
+        internal MultiValue ReturnValue { private set; get; }
 
         protected virtual void WarnAboutInvalidILInMethod(MethodIL method, int ilOffset)
         {
@@ -78,21 +98,7 @@ namespace ILCompiler.Dataflow
 
         private static StackSlot MergeStackElement(StackSlot a, StackSlot b)
         {
-            StackSlot mergedSlot;
-            if (b.Value == null)
-            {
-                mergedSlot = a;
-            }
-            else if (a.Value == null)
-            {
-                mergedSlot = b;
-            }
-            else
-            {
-                mergedSlot = new StackSlot(MergePointValue.MergeValues(a.Value, b.Value));
-            }
-
-            return mergedSlot;
+            return new StackSlot(MultiValueLattice.Meet(a.Value, b.Value));
         }
 
         // Merge stacks together. This may return the first stack, the stack length must be the same for the two stacks.
@@ -121,7 +127,7 @@ namespace ILCompiler.Dataflow
             return new Stack<StackSlot>(newStack);
         }
 
-        private static void ClearStack(ref Stack<StackSlot> stack)
+        private static void ClearStack(ref Stack<StackSlot>? stack)
         {
             stack = null;
         }
@@ -188,63 +194,62 @@ namespace ILCompiler.Dataflow
         }
 
         private static void StoreMethodLocalValue(
-            ValueBasicBlockPair[] valueCollection,
-            ValueNode valueToStore,
+            ValueBasicBlockPair?[] valueCollection,
+            in MultiValue valueToStore,
             int index,
             int curBasicBlock)
         {
-            ValueBasicBlockPair newValue = new ValueBasicBlockPair { BasicBlockIndex = curBasicBlock };
+            MultiValue value;
 
-            ValueBasicBlockPair existingValue = valueCollection[index];
-            if (existingValue.Value != null
-                && existingValue.BasicBlockIndex == curBasicBlock)
+            ValueBasicBlockPair? existingValue = valueCollection[index];
+            if (!existingValue.HasValue
+                || existingValue.Value.BasicBlockIndex == curBasicBlock)
             {
                 // If the previous value was stored in the current basic block, then we can safely 
                 // overwrite the previous value with the new one.
-                newValue.Value = valueToStore;
+                value = valueToStore;
             }
             else
             {
                 // If the previous value came from a previous basic block, then some other use of 
                 // the local could see the previous value, so we must merge the new value with the 
                 // old value.
-                newValue.Value = MergePointValue.MergeValues(existingValue.Value, valueToStore);
+                value = MultiValueLattice.Meet(existingValue.Value.Value, valueToStore);
             }
-            valueCollection[index] = newValue;
+            valueCollection[index] = new ValueBasicBlockPair(value, curBasicBlock);
         }
 
         private static void StoreMethodLocalValue<KeyType>(
             Dictionary<KeyType, ValueBasicBlockPair> valueCollection,
-            ValueNode valueToStore,
+            in MultiValue valueToStore,
             KeyType collectionKey,
             int curBasicBlock,
             int? maxTrackedValues = null)
+            where KeyType : notnull
         {
-            ValueBasicBlockPair newValue = new ValueBasicBlockPair { BasicBlockIndex = curBasicBlock };
-
-            ValueBasicBlockPair existingValue;
-            if (valueCollection.TryGetValue(collectionKey, out existingValue))
+            if (valueCollection.TryGetValue(collectionKey, out ValueBasicBlockPair existingValue))
             {
+                MultiValue value;
+
                 if (existingValue.BasicBlockIndex == curBasicBlock)
                 {
                     // If the previous value was stored in the current basic block, then we can safely 
                     // overwrite the previous value with the new one.
-                    newValue.Value = valueToStore;
+                    value = valueToStore;
                 }
                 else
                 {
                     // If the previous value came from a previous basic block, then some other use of 
                     // the local could see the previous value, so we must merge the new value with the 
                     // old value.
-                    newValue.Value = MergePointValue.MergeValues(existingValue.Value, valueToStore);
+                    value = MultiValueLattice.Meet(existingValue.Value, valueToStore);
                 }
-                valueCollection[collectionKey] = newValue;
+                valueCollection[collectionKey] = new ValueBasicBlockPair(value, curBasicBlock);
             }
             else if (maxTrackedValues == null || valueCollection.Count < maxTrackedValues)
             {
                 // We're not currently tracking a value a this index, so store the value now.
-                newValue.Value = valueToStore;
-                valueCollection[collectionKey] = newValue;
+                valueCollection[collectionKey] = new ValueBasicBlockPair(valueToStore, curBasicBlock);
             }
         }
 
@@ -252,16 +257,16 @@ namespace ILCompiler.Dataflow
         {
             MethodDesc thisMethod = methodBody.OwningMethod;
 
-            ValueBasicBlockPair[] locals = new ValueBasicBlockPair[methodBody.GetLocals().Length];
+            ValueBasicBlockPair?[] locals = new ValueBasicBlockPair?[methodBody.GetLocals().Length];
 
             Dictionary<int, Stack<StackSlot>> knownStacks = new Dictionary<int, Stack<StackSlot>>();
-            Stack<StackSlot> currentStack = new Stack<StackSlot>(methodBody.MaxStack);
+            Stack<StackSlot>? currentStack = new Stack<StackSlot>(methodBody.MaxStack);
 
             ScanExceptionInformation(knownStacks, methodBody);
 
             BasicBlockIterator blockIterator = new BasicBlockIterator(methodBody);
 
-            MethodReturnValue = null;
+            ReturnValue = new();
             ILReader reader = new ILReader(methodBody.GetILBytes());
             while (reader.HasNext)
             {
@@ -509,7 +514,7 @@ namespace ILCompiler.Dataflow
                         {
                             StackSlot count = PopUnknown(currentStack, 1, methodBody, offset);
                             var arrayElement = (TypeDesc)methodBody.GetObject(reader.ReadILToken());
-                            currentStack.Push(new StackSlot(new ArrayValue(count.Value, arrayElement)));
+                            currentStack.Push(new StackSlot(ArrayValue.Create(count.Value, arrayElement)));
                         }
                         break;
 
@@ -589,7 +594,8 @@ namespace ILCompiler.Dataflow
                     case ILOpcode.stloc_1:
                     case ILOpcode.stloc_2:
                     case ILOpcode.stloc_3:
-                        ScanStloc(methodBody, offset, opcode switch {
+                        ScanStloc(methodBody, offset, opcode switch
+                        {
                             ILOpcode.stloc => reader.ReadILUInt16(),
                             ILOpcode.stloc_s => reader.ReadILByte(),
                             _ => opcode - ILOpcode.stloc_0,
@@ -674,7 +680,7 @@ namespace ILCompiler.Dataflow
                             if (hasReturnValue)
                             {
                                 StackSlot retValue = PopUnknown(currentStack, 1, methodBody, offset);
-                                MethodReturnValue = MergePointValue.MergeValues(MethodReturnValue, retValue.Value);
+                                ReturnValue = MultiValueLattice.Meet(ReturnValue, retValue.Value);
                             }
                             ClearStack(ref currentStack);
                             break;
@@ -742,7 +748,7 @@ namespace ILCompiler.Dataflow
             }
         }
 
-        protected abstract ValueNode GetMethodParameterValue(MethodDesc method, int parameterIndex);
+        protected abstract SingleValue GetMethodParameterValue(MethodDesc method, int parameterIndex);
 
         private void ScanLdarg(ILOpcode opcode, int paramNum, Stack<StackSlot> currentStack, MethodDesc thisMethod)
         {
@@ -771,7 +777,11 @@ namespace ILCompiler.Dataflow
             )
         {
             var valueToStore = PopUnknown(currentStack, 1, methodBody, offset);
-            HandleStoreParameter(methodBody, offset, index, valueToStore.Value);
+            var targetValue = GetMethodParameterValue(methodBody.OwningMethod, index);
+            if (targetValue is MethodParameterValue targetParameterValue)
+                HandleStoreParameter(methodBody, offset, targetParameterValue, valueToStore.Value);
+
+            // If the targetValue is MethodThisValue do nothing - it should never happen really, and if it does, there's nothing we can track there
         }
 
         private void ScanLdloc(
@@ -780,20 +790,19 @@ namespace ILCompiler.Dataflow
             ILOpcode operation,
             int index,
             Stack<StackSlot> currentStack,
-            ValueBasicBlockPair[] locals)
+            ValueBasicBlockPair?[] locals)
         {
             bool isByRef = operation == ILOpcode.ldloca || operation == ILOpcode.ldloca_s
                 || methodBody.GetLocals()[index].Type.IsByRefOrPointer();
 
-            ValueBasicBlockPair localValue = locals[index];
-            if (localValue.Value != null)
+            ValueBasicBlockPair? localValue = locals[index];
+            if (!localValue.HasValue)
             {
-                ValueNode valueToPush = localValue.Value;
-                currentStack.Push(new StackSlot(valueToPush, isByRef));
+                currentStack.Push(new StackSlot(UnknownValue.Instance, isByRef));
             }
             else
             {
-                currentStack.Push(new StackSlot(null, isByRef));
+                currentStack.Push(new StackSlot(localValue.Value.Value, isByRef));
             }
         }
 
@@ -808,8 +817,31 @@ namespace ILCompiler.Dataflow
                 }
                 else
                 {
-                    StackSlot slot = new StackSlot(new RuntimeTypeHandleValue(type));
-                    currentStack.Push(slot);
+                    // Note that Nullable types without a generic argument (i.e. Nullable<>) will be RuntimeTypeHandleValue / SystemTypeValue
+                    if (type.HasInstantiation && !type.IsGenericDefinition && type.IsTypeOf(ILLink.Shared.TypeSystemProxy.WellKnownType.System_Nullable_T))
+                    {
+                        switch (type.Instantiation[0])
+                        {
+                            case GenericParameterDesc genericParam:
+                                var nullableDam = new RuntimeTypeHandleForNullableValueWithDynamicallyAccessedMembers(new TypeProxy(type),
+                                    new RuntimeTypeHandleForGenericParameterValue(genericParam));
+                                currentStack.Push(new StackSlot(nullableDam));
+                                return;
+                            case MetadataType underlyingType:
+                                var nullableType = new RuntimeTypeHandleForNullableSystemTypeValue(new TypeProxy(type), new SystemTypeValue(underlyingType));
+                                currentStack.Push(new StackSlot(nullableType));
+                                return;
+                            default:
+                                PushUnknown(currentStack);
+                                return;
+                        }
+                    }
+                    else
+                    {
+                        var typeHandle = new RuntimeTypeHandleValue(new TypeProxy(type));
+                        currentStack.Push(new StackSlot(typeHandle));
+                        return;
+                    }
                 }
             }
             else if (operand is MethodDesc method)
@@ -828,7 +860,7 @@ namespace ILCompiler.Dataflow
             int offset,
             int index,
             Stack<StackSlot> currentStack,
-            ValueBasicBlockPair[] locals,
+            ValueBasicBlockPair?[] locals,
             int curBasicBlock)
         {
             StackSlot valueToStore = PopUnknown(currentStack, 1, methodBody, offset);
@@ -843,21 +875,21 @@ namespace ILCompiler.Dataflow
             StackSlot valueToStore = PopUnknown(currentStack, 1, methodBody, offset);
             StackSlot destination = PopUnknown(currentStack, 1, methodBody, offset);
 
-            foreach (var uniqueDestination in destination.Value.UniqueValues())
+            foreach (var uniqueDestination in destination.Value)
             {
-                if (uniqueDestination.Kind == ValueNodeKind.LoadField)
+                if (uniqueDestination is FieldValue fieldDestination)
                 {
-                    HandleStoreField(methodBody, offset, ((LoadFieldValue)uniqueDestination).Field, valueToStore.Value);
+                    HandleStoreField(methodBody, offset, fieldDestination, valueToStore.Value);
                 }
-                else if (uniqueDestination.Kind == ValueNodeKind.MethodParameter)
+                else if (uniqueDestination is MethodParameterValue parameterDestination)
                 {
-                    HandleStoreParameter(methodBody, offset, ((MethodParameterValue)uniqueDestination).ParameterIndex, valueToStore.Value);
+                    HandleStoreParameter(methodBody, offset, parameterDestination, valueToStore.Value);
                 }
             }
 
         }
 
-        protected abstract ValueNode GetFieldValue(MethodIL method, FieldDesc field);
+        protected abstract MultiValue GetFieldValue(FieldDesc field);
 
         private void ScanLdfld(
             MethodIL methodBody,
@@ -872,15 +904,15 @@ namespace ILCompiler.Dataflow
 
             bool isByRef = opcode == ILOpcode.ldflda || opcode == ILOpcode.ldsflda;
 
-            StackSlot slot = new StackSlot(GetFieldValue(methodBody, field), isByRef);
+            StackSlot slot = new StackSlot(GetFieldValue(field), isByRef);
             currentStack.Push(slot);
         }
 
-        protected virtual void HandleStoreField(MethodIL method, int offset, FieldDesc field, ValueNode valueToStore)
+        protected virtual void HandleStoreField(MethodIL method, int offset, FieldValue field, MultiValue valueToStore)
         {
         }
 
-        protected virtual void HandleStoreParameter(MethodIL method, int offset, int index, ValueNode valueToStore)
+        protected virtual void HandleStoreParameter(MethodIL method, int offset, MethodParameterValue parameter, MultiValue valueToStore)
         {
         }
 
@@ -895,7 +927,15 @@ namespace ILCompiler.Dataflow
             if (opcode == ILOpcode.stfld)
                 PopUnknown(currentStack, 1, methodBody, offset);
 
-            HandleStoreField(methodBody, offset, field, valueToStoreSlot.Value);
+            foreach (var value in GetFieldValue(field))
+            {
+                // GetFieldValue may return different node types, in which case they can't be stored to.
+                // At least not yet.
+                if (value is not FieldValue fieldValue)
+                    continue;
+
+                HandleStoreField(methodBody, offset, fieldValue, valueToStoreSlot.Value);
+            }
         }
 
         private ValueNodeList PopCallArguments(
@@ -903,7 +943,7 @@ namespace ILCompiler.Dataflow
             MethodDesc methodCalled,
             MethodIL containingMethodBody,
             bool isNewObj, int ilOffset,
-            out ValueNode newObjValue)
+            out SingleValue? newObjValue)
         {
             newObjValue = null;
 
@@ -938,11 +978,11 @@ namespace ILCompiler.Dataflow
         {
             bool isNewObj = opcode == ILOpcode.newobj;
 
-            ValueNode newObjValue;
+            SingleValue? newObjValue;
             ValueNodeList methodParams = PopCallArguments(currentStack, calledMethod, callingMethodBody, isNewObj,
                                                            offset, out newObjValue);
 
-            ValueNode methodReturnValue;
+            MultiValue methodReturnValue;
             bool handledFunction = HandleCall(
                 callingMethodBody,
                 calledMethod,
@@ -957,7 +997,7 @@ namespace ILCompiler.Dataflow
                 if (isNewObj)
                 {
                     if (newObjValue == null)
-                        PushUnknown(currentStack);
+                        methodReturnValue = UnknownValue.Instance;
                     else
                         methodReturnValue = newObjValue;
                 }
@@ -970,14 +1010,17 @@ namespace ILCompiler.Dataflow
                 }
             }
 
-            if (methodReturnValue != null)
+            if (isNewObj || !calledMethod.Signature.ReturnType.IsVoid)
                 currentStack.Push(new StackSlot(methodReturnValue, calledMethod.Signature.ReturnType.IsByRefOrPointer()));
 
             foreach (var param in methodParams)
             {
-                if (param is ArrayValue arr)
+                foreach (var v in param)
                 {
-                    MarkArrayValuesAsUnknown(arr, curBasicBlock);
+                    if (v is ArrayValue arr)
+                    {
+                        MarkArrayValuesAsUnknown(arr, curBasicBlock);
+                    }
                 }
             }
         }
@@ -988,7 +1031,7 @@ namespace ILCompiler.Dataflow
             ILOpcode operation,
             int offset,
             ValueNodeList methodParams,
-            out ValueNode methodReturnValue);
+            out MultiValue methodReturnValue);
 
         // Limit tracking array values to 32 values for performance reasons. There are many arrays much longer than 32 elements in .NET, but the interesting ones for the linker are nearly always less than 32 elements.
         private const int MaxTrackedArrayValues = 32;
@@ -1014,7 +1057,7 @@ namespace ILCompiler.Dataflow
             StackSlot indexToStoreAt = PopUnknown(currentStack, 1, methodBody, offset);
             StackSlot arrayToStoreIn = PopUnknown(currentStack, 1, methodBody, offset);
             int? indexToStoreAtInt = indexToStoreAt.Value.AsConstInt();
-            foreach (var array in arrayToStoreIn.Value.UniqueValues())
+            foreach (var array in arrayToStoreIn.Value)
             {
                 if (array is ArrayValue arrValue)
                 {
@@ -1040,7 +1083,7 @@ namespace ILCompiler.Dataflow
         {
             StackSlot indexToLoadFrom = PopUnknown(currentStack, 1, methodBody, offset);
             StackSlot arrayToLoadFrom = PopUnknown(currentStack, 1, methodBody, offset);
-            if (arrayToLoadFrom.Value is not ArrayValue arr)
+            if (arrayToLoadFrom.Value.AsSingleValue() is not ArrayValue arr)
             {
                 PushUnknown(currentStack);
                 return;
@@ -1058,17 +1101,13 @@ namespace ILCompiler.Dataflow
                 return;
             }
 
-
-            ValueBasicBlockPair arrayIndexValue;
-            arr.IndexValues.TryGetValue(index.Value, out arrayIndexValue);
-            if (arrayIndexValue.Value != null)
+            if (arr.IndexValues.TryGetValue(index.Value, out ValueBasicBlockPair arrayIndexValue))
             {
-                ValueNode valueToPush = arrayIndexValue.Value;
-                currentStack.Push(new StackSlot(valueToPush, isByRef));
+                currentStack.Push(new StackSlot(arrayIndexValue.Value, isByRef));
             }
             else
             {
-                currentStack.Push(new StackSlot(null, isByRef));
+                PushUnknown(currentStack);
             }
         }
     }

@@ -40,8 +40,6 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 #define SMAKEHR(val)    val
 #define EMAKEHR(val)    val
 
-#include "mscorrc.common.rc"
-
 STRINGTABLE DISCARDABLE
 BEGIN
     CLDB_E_FILE_OLDVER                      "Version %d.%d is not a compatible version."
@@ -298,8 +296,6 @@ BEGIN
 #if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
     IDS_EE_NATIVE_COM_WEAKREF_BAD_TYPE               "The object resolved by a native IWeakReference has an incompatible type for its managed WeakReference instance.\r\nExpected WeakReference target type: '%1'\r\nNative IWeakReference returned type: '%2'"
 #endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
-
-    IDS_EE_INTEROP_CODE_SIZE_COMMENT        "Code size"
 
     IDS_CLASSLOAD_TYPEWRONGNUMGENERICARGS      "The generic type '%1' was used with the wrong number of generic arguments in assembly '%2'."
     IDS_CLASSLOAD_INVALIDINSTANTIATION    "The generic type '%1' was used with an invalid instantiation in assembly '%2'."

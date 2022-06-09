@@ -406,7 +406,7 @@ namespace Internal.Runtime.CompilerHelpers
             // Marshal.AllocCoTaskMem will throw OOMException if out of memory
             Debug.Assert(ptr != null);
 
-            Buffer.ZeroMemory(ptr, (uint)size);
+            NativeMemory.Clear(ptr, (uint)size);
             return ptr;
         }
 

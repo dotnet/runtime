@@ -33,14 +33,21 @@ namespace System.Net.Http
         /// to final error status code sent by the server when using Expect: 100-continue.
         /// </summary>
         private const int Expect100ErrorSendThreshold = 1024;
+        /// <summary>How long a chunk indicator is allowed to be.</summary>
+        /// <remarks>
+        /// While most chunks indicators will contain no more than ulong.MaxValue.ToString("X").Length characters,
+        /// "chunk extensions" are allowed. We place a limit on how long a line can be to avoid OOM issues if an
+        /// infinite chunk length is sent.  This value is arbitrary and can be changed as needed.
+        /// </remarks>
+        private const int MaxChunkBytesAllowed = 16 * 1024;
 
-        private static readonly byte[] s_contentLength0NewlineAsciiBytes = Encoding.ASCII.GetBytes("Content-Length: 0\r\n");
-        private static readonly byte[] s_spaceHttp10NewlineAsciiBytes = Encoding.ASCII.GetBytes(" HTTP/1.0\r\n");
-        private static readonly byte[] s_spaceHttp11NewlineAsciiBytes = Encoding.ASCII.GetBytes(" HTTP/1.1\r\n");
-        private static readonly byte[] s_httpSchemeAndDelimiter = Encoding.ASCII.GetBytes(Uri.UriSchemeHttp + Uri.SchemeDelimiter);
-        private static readonly byte[] s_http1DotBytes = Encoding.ASCII.GetBytes("HTTP/1.");
-        private static readonly ulong s_http10Bytes = BitConverter.ToUInt64(Encoding.ASCII.GetBytes("HTTP/1.0"));
-        private static readonly ulong s_http11Bytes = BitConverter.ToUInt64(Encoding.ASCII.GetBytes("HTTP/1.1"));
+        private static readonly byte[] s_contentLength0NewlineAsciiBytes = "Content-Length: 0\r\n"u8.ToArray();
+        private static readonly byte[] s_spaceHttp10NewlineAsciiBytes = " HTTP/1.0\r\n"u8.ToArray();
+        private static readonly byte[] s_spaceHttp11NewlineAsciiBytes = " HTTP/1.1\r\n"u8.ToArray();
+        private static readonly byte[] s_httpSchemeAndDelimiter = "http://"u8.ToArray();
+        private static readonly byte[] s_http1DotBytes = "HTTP/1."u8.ToArray();
+        private static readonly ulong s_http10Bytes = BitConverter.ToUInt64("HTTP/1.0"u8);
+        private static readonly ulong s_http11Bytes = BitConverter.ToUInt64("HTTP/1.1"u8);
 
         private readonly HttpConnectionPool _pool;
         private readonly Stream _stream;
@@ -1446,28 +1453,49 @@ namespace System.Net.Http
             }
         }
 
-        private bool TryReadNextLine(out ReadOnlySpan<byte> line)
+        private bool TryReadNextChunkedLine(bool readingHeader, out ReadOnlySpan<byte> line)
         {
+            int maxByteLength = readingHeader ? _allowedReadLineBytes : MaxChunkBytesAllowed;
             var buffer = new ReadOnlySpan<byte>(_readBuffer, _readOffset, _readLength - _readOffset);
-            int length = buffer.IndexOf((byte)'\n');
-            if (length < 0)
-            {
-                if (_allowedReadLineBytes < buffer.Length)
-                {
-                    throw new HttpRequestException(SR.Format(SR.net_http_response_headers_exceeded_length, _pool.Settings._maxResponseHeadersLength * 1024L));
-                }
 
-                line = default;
-                return false;
+            int lineFeedIndex = buffer.IndexOf((byte)'\n');
+            if (lineFeedIndex < 0)
+            {
+                if (buffer.Length < maxByteLength)
+                {
+                    line = default;
+                    return false;
+                }
+            }
+            else
+            {
+                int bytesConsumed = lineFeedIndex + 1;
+                int maxBytesRemaining = maxByteLength - bytesConsumed;
+                if (maxBytesRemaining >= 0)
+                {
+                    _readOffset += bytesConsumed;
+
+                    if (readingHeader)
+                    {
+                        _allowedReadLineBytes = maxBytesRemaining;
+                    }
+
+                    int carriageReturnIndex = lineFeedIndex - 1;
+
+                    int length = (uint)carriageReturnIndex < (uint)buffer.Length && buffer[carriageReturnIndex] == '\r'
+                        ? carriageReturnIndex
+                        : lineFeedIndex;
+
+                    line = buffer.Slice(0, length);
+                    return true;
+                }
             }
 
-            int bytesConsumed = length + 1;
-            _readOffset += bytesConsumed;
-            _allowedReadLineBytes -= bytesConsumed;
-            ThrowIfExceededAllowedReadLineBytes();
+            string message = readingHeader
+                ? SR.Format(SR.net_http_response_headers_exceeded_length, _pool.Settings._maxResponseHeadersLength * 1024L)
+                : SR.net_http_chunk_too_large;
 
-            line = buffer.Slice(0, length > 0 && buffer[length - 1] == '\r' ? length - 1 : length);
-            return true;
+            throw new HttpRequestException(message);
         }
 
         private async ValueTask<ReadOnlyMemory<byte>> ReadNextResponseHeaderLineAsync(bool async, bool foldedHeadersAllowed = false)

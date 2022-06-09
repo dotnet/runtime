@@ -52,6 +52,12 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        public static void ThrowArgumentException_DestinationTooShort()
+        {
+            throw GetArgumentException(SR.DestinationTooShort);
+        }
+
+        [DoesNotReturn]
         public static void ThrowArgumentException_PropertyNameTooLarge(int tokenLength)
         {
             throw GetArgumentException(SR.Format(SR.PropertyNameTooLarge, tokenLength));
@@ -480,7 +486,7 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowInvalidOperationException_ReadInvalidUTF16()
+        public static void ThrowInvalidOperationException_ReadIncompleteUTF16()
         {
             throw GetInvalidOperationException(SR.CannotReadIncompleteUTF16);
         }
@@ -622,6 +628,7 @@ namespace System.Text.Json
                 case DataType.DateOnly:
                 case DataType.DateTime:
                 case DataType.DateTimeOffset:
+                case DataType.TimeOnly:
                 case DataType.TimeSpan:
                 case DataType.Guid:
                 case DataType.Version:
@@ -717,6 +724,7 @@ namespace System.Text.Json
         DateOnly,
         DateTime,
         DateTimeOffset,
+        TimeOnly,
         TimeSpan,
         Base64String,
         Guid,

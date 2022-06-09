@@ -1078,7 +1078,7 @@ namespace System.Management
 
         /// <summary>
         /// Function for generating the helper class "ManagementSystemProperties" which is
-        /// used for seperating the system properties from the other properties. This is used
+        /// used for separating the system properties from the other properties. This is used
         /// just to make the drop down list in the editor to look good.
         /// </summary>
         private CodeTypeDeclaration GenerateSystemPropertiesClass()
@@ -4716,7 +4716,7 @@ namespace System.Management
         }
 
         /// <summary>
-        /// Function to convert a given ValueMap or BitMap name to propert enum name
+        /// Function to convert a given ValueMap or BitMap name to property enum name
         /// </summary>
         private static string ConvertValuesToName(string str)
         {

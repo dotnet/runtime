@@ -310,8 +310,8 @@ void Compiler::fgNoteNonInlineCandidate(Statement* stmt, GenTreeCall* call)
  */
 GenTree* Compiler::fgGetStructAsStructPtr(GenTree* tree)
 {
-    noway_assert(tree->OperIs(GT_LCL_VAR, GT_FIELD, GT_IND, GT_BLK, GT_OBJ, GT_COMMA) || tree->OperIsSIMD() ||
-                 tree->OperIsHWIntrinsic());
+    noway_assert(tree->OperIs(GT_LCL_VAR, GT_FIELD, GT_IND, GT_BLK, GT_OBJ, GT_COMMA) ||
+                 tree->OperIsSimdOrHWintrinsic() || tree->IsCnsVec());
     // GT_CALL,     cannot get address of call.
     // GT_MKREFANY, inlining should've been aborted due to mkrefany opcode.
     // GT_RET_EXPR, cannot happen after fgUpdateInlineReturnExpressionPlaceHolder
