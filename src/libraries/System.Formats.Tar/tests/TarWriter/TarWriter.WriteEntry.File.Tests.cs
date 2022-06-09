@@ -209,5 +209,20 @@ namespace System.Formats.Tar.Tests
         }
 
         partial void VerifyPlatformSpecificMetadata(string filePath, TarEntry entry);
+
+        protected void VerifyPaxTimestamps(PaxTarEntry pax)
+        {
+            Assert.True(pax.ExtendedAttributes.Count >= 4);
+            Assert.Contains(PaxEaName, pax.ExtendedAttributes);
+            VerifyExtendedAttributeTimestamp(pax, PaxEaMTime);
+            VerifyExtendedAttributeTimestamp(pax, PaxEaATime);
+            VerifyExtendedAttributeTimestamp(pax, PaxEaCTime);
+        }
+
+        protected void VerifyGnuTimestamps(GnuTarEntry gnu)
+        {
+            Assert.True(gnu.AccessTime > DateTimeOffset.UnixEpoch);
+            Assert.True(gnu.ChangeTime > DateTimeOffset.UnixEpoch);
+        }
     }
 }

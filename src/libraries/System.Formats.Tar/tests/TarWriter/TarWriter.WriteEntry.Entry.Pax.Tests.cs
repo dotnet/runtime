@@ -204,10 +204,10 @@ namespace System.Formats.Tar.Tests
                 // path, mtime, atime and ctime are always collected by default
                 Assert.True(regularFile.ExtendedAttributes.Count >= 5);
 
-                Assert.Contains("path", regularFile.ExtendedAttributes);
-                Assert.Contains("mtime", regularFile.ExtendedAttributes);
-                Assert.Contains("atime", regularFile.ExtendedAttributes);
-                Assert.Contains("ctime", regularFile.ExtendedAttributes);
+                Assert.Contains(PaxEaName, regularFile.ExtendedAttributes);
+                Assert.Contains(PaxEaMTime, regularFile.ExtendedAttributes);
+                Assert.Contains(PaxEaATime, regularFile.ExtendedAttributes);
+                Assert.Contains(PaxEaCTime, regularFile.ExtendedAttributes);
 
                 Assert.Contains(expectedKey, regularFile.ExtendedAttributes);
                 Assert.Equal(expectedValue, regularFile.ExtendedAttributes[expectedKey]);
@@ -218,8 +218,8 @@ namespace System.Formats.Tar.Tests
         public void WritePaxAttributes_Timestamps()
         {
             Dictionary<string, string> extendedAttributes = new();
-            extendedAttributes.Add("atime", ConvertDateTimeOffsetToDouble(TestAccessTime).ToString("F6", CultureInfo.InvariantCulture));
-            extendedAttributes.Add("ctime", ConvertDateTimeOffsetToDouble(TestChangeTime).ToString("F6", CultureInfo.InvariantCulture));
+            extendedAttributes.Add(PaxEaATime, GetTimestampStringFromDateTimeOffset(TestAccessTime));
+            extendedAttributes.Add(PaxEaCTime, GetTimestampStringFromDateTimeOffset(TestChangeTime));
 
             using MemoryStream archiveStream = new MemoryStream();
             using (TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.Pax, leaveOpen: true))
@@ -239,10 +239,10 @@ namespace System.Formats.Tar.Tests
                 Assert.NotNull(regularFile.ExtendedAttributes);
                 Assert.True(regularFile.ExtendedAttributes.Count >= 4);
 
-                Assert.Contains("path", regularFile.ExtendedAttributes);
-                VerifyExtendedAttributeTimestamp(regularFile, "mtime", TestModificationTime);
-                VerifyExtendedAttributeTimestamp(regularFile, "atime", TestAccessTime);
-                VerifyExtendedAttributeTimestamp(regularFile, "ctime", TestChangeTime);
+                Assert.Contains(PaxEaName, regularFile.ExtendedAttributes);
+                VerifyExtendedAttributeTimestamp(regularFile, PaxEaMTime, TestModificationTime);
+                VerifyExtendedAttributeTimestamp(regularFile, PaxEaATime, TestAccessTime);
+                VerifyExtendedAttributeTimestamp(regularFile, PaxEaCTime, TestChangeTime);
             }
         }
 
@@ -274,16 +274,16 @@ namespace System.Formats.Tar.Tests
                 // path, mtime, atime and ctime are always collected by default
                 Assert.True(regularFile.ExtendedAttributes.Count >= 6);
 
-                Assert.Contains("path", regularFile.ExtendedAttributes);
-                Assert.Contains("mtime", regularFile.ExtendedAttributes);
-                Assert.Contains("atime", regularFile.ExtendedAttributes);
-                Assert.Contains("ctime", regularFile.ExtendedAttributes);
+                Assert.Contains(PaxEaName, regularFile.ExtendedAttributes);
+                Assert.Contains(PaxEaMTime, regularFile.ExtendedAttributes);
+                Assert.Contains(PaxEaATime, regularFile.ExtendedAttributes);
+                Assert.Contains(PaxEaCTime, regularFile.ExtendedAttributes);
 
-                Assert.Contains("uname", regularFile.ExtendedAttributes);
-                Assert.Equal(userName, regularFile.ExtendedAttributes["uname"]);
+                Assert.Contains(PaxEaUName, regularFile.ExtendedAttributes);
+                Assert.Equal(userName, regularFile.ExtendedAttributes[PaxEaUName]);
 
-                Assert.Contains("gname", regularFile.ExtendedAttributes);
-                Assert.Equal(groupName, regularFile.ExtendedAttributes["gname"]);
+                Assert.Contains(PaxEaGName, regularFile.ExtendedAttributes);
+                Assert.Equal(groupName, regularFile.ExtendedAttributes[PaxEaGName]);
 
                 // They should also get exposed via the regular properties
                 Assert.Equal(groupName, regularFile.GroupName);

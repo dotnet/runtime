@@ -151,6 +151,107 @@ namespace System.Formats.Tar.Tests
         }
 
         [Fact]
+        public void Constructor_ConversionV7_BackAndForth()
+        {
+            DateTimeOffset firstNow = DateTimeOffset.Now;
+            // V7 does not support blockdev, so can't verify transfer of DeviceMajor/DeviceMinor fields
+            PaxTarEntry firstEntry = new PaxTarEntry(TarEntryType.RegularFile, "file.txt")
+            {
+                Gid = TestGid,
+                GroupName = TestGName,
+                Uid = TestUid,
+                UserName = TestUName,
+            };
+
+            VerifyExtendedAttributeTimestamp(firstEntry, PaxEaATime, firstNow);
+            VerifyExtendedAttributeTimestamp(firstEntry, PaxEaCTime, firstNow);
+
+            V7TarEntry otherEntry = new V7TarEntry(other: firstEntry);
+            Assert.Equal(TarEntryType.V7RegularFile, otherEntry.EntryType);
+
+            DateTimeOffset secondNow = DateTimeOffset.Now;
+            PaxTarEntry secondEntry = new PaxTarEntry(other: otherEntry);
+            Assert.Equal(TarEntryType.RegularFile, secondEntry.EntryType);
+
+            VerifyExtendedAttributeTimestamp(secondEntry, PaxEaATime, secondNow);
+            VerifyExtendedAttributeTimestamp(secondEntry, PaxEaCTime, secondNow);
+
+            Assert.Equal(TestGid, secondEntry.Gid);
+            Assert.Equal(DefaultGName, secondEntry.GroupName);
+            Assert.Equal(TestUid, secondEntry.Uid);
+            Assert.Equal(DefaultUName, secondEntry.UserName);
+        }
+
+        [Fact]
+        public void Constructor_ConversionUstar_BackAndForth()
+        {
+            DateTimeOffset firstNow = DateTimeOffset.Now;
+            PaxTarEntry firstEntry = new PaxTarEntry(TarEntryType.BlockDevice, "blockdev")
+            {
+                DeviceMajor = TestBlockDeviceMajor,
+                DeviceMinor = TestBlockDeviceMinor,
+                Gid = TestGid,
+                GroupName = TestGName,
+                Uid = TestUid,
+                UserName = TestUName,
+            };
+
+            VerifyExtendedAttributeTimestamp(firstEntry, PaxEaATime, firstNow);
+            VerifyExtendedAttributeTimestamp(firstEntry, PaxEaCTime, firstNow);
+
+            UstarTarEntry otherEntry = new UstarTarEntry(other: firstEntry);
+
+            DateTimeOffset secondNow = DateTimeOffset.Now;
+            PaxTarEntry secondEntry = new PaxTarEntry(other: otherEntry);
+
+            VerifyExtendedAttributeTimestamp(secondEntry, PaxEaATime, secondNow);
+            VerifyExtendedAttributeTimestamp(secondEntry, PaxEaCTime, secondNow);
+
+            Assert.Equal(TestBlockDeviceMajor, secondEntry.DeviceMajor);
+            Assert.Equal(TestBlockDeviceMinor, secondEntry.DeviceMinor);
+            Assert.Equal(TestGid, secondEntry.Gid);
+            Assert.Equal(TestGName, secondEntry.GroupName);
+            Assert.Equal(TestUid, secondEntry.Uid);
+            Assert.Equal(TestUName, secondEntry.UserName);
+        }
+
+        [Fact]
+        public void Constructor_ConversionGnu_BackAndForth()
+        {
+            DateTimeOffset firstNow = DateTimeOffset.Now;
+            PaxTarEntry firstEntry = new PaxTarEntry(TarEntryType.BlockDevice, "blockdev")
+            {
+                DeviceMajor = TestBlockDeviceMajor,
+                DeviceMinor = TestBlockDeviceMinor,
+                Gid = TestGid,
+                GroupName = TestGName,
+                Uid = TestUid,
+                UserName = TestUName,
+            };
+
+            VerifyExtendedAttributeTimestamp(firstEntry, PaxEaATime, firstNow);
+            VerifyExtendedAttributeTimestamp(firstEntry, PaxEaCTime, firstNow);
+
+            GnuTarEntry otherEntry = new GnuTarEntry(other: firstEntry);
+
+            DateTimeOffset secondNow = DateTimeOffset.Now;
+            PaxTarEntry secondEntry = new PaxTarEntry(other: otherEntry);
+
+            DateTimeOffset atime = GetDateTimeOffsetFromTimestampString(secondEntry.ExtendedAttributes, PaxEaATime);
+            Assert.True(atime < secondNow, $"Extended attribute timestamp '{PaxEaATime}' was greater than or equal to the second 'now'.");
+
+            DateTimeOffset ctime = GetDateTimeOffsetFromTimestampString(secondEntry.ExtendedAttributes, PaxEaCTime);
+            Assert.True(ctime < secondNow, $"Extended attribute timestamp '{PaxEaCTime}' was greater than or equal to the second 'now'.");
+
+            Assert.Equal(TestBlockDeviceMajor, secondEntry.DeviceMajor);
+            Assert.Equal(TestBlockDeviceMinor, secondEntry.DeviceMinor);
+            Assert.Equal(TestGid, secondEntry.Gid);
+            Assert.Equal(TestGName, secondEntry.GroupName);
+            Assert.Equal(TestUid, secondEntry.Uid);
+            Assert.Equal(TestUName, secondEntry.UserName);
+        }
+
+        [Fact]
         public void SupportedEntryType_RegularFile()
         {
             PaxTarEntry regularFile = new PaxTarEntry(TarEntryType.RegularFile, InitialEntryName);

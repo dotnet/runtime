@@ -55,6 +55,20 @@ namespace System.Formats.Tar.Tests
         protected const string AssetPaxGeaKey = "globexthdr.MyGlobalExtendedAttribute";
         protected const string AssetPaxGeaValue = "hello";
 
+        protected const string PaxEaName = "path";
+        protected const string PaxEaLinkName = "linkpath";
+        protected const string PaxEaMode = "mode";
+        protected const string PaxEaGName = "gname";
+        protected const string PaxEaUName = "uname";
+        protected const string PaxEaGid = "gid";
+        protected const string PaxEaUid = "uid";
+        protected const string PaxEaATime = "atime";
+        protected const string PaxEaCTime = "ctime";
+        protected const string PaxEaMTime = "mtime";
+        protected const string PaxEaSize = "size";
+        protected const string PaxEaDevMajor = "devmajor";
+        protected const string PaxEaDevMinor = "devminor";
+
         protected enum CompressionMethod
         {
             // Archiving only, no compression

@@ -153,6 +153,63 @@ namespace System.Formats.Tar.Tests
         }
 
         [Fact]
+        public void Constructor_ConversionUstar_BackAndForth()
+        {
+            V7TarEntry firstEntry = new V7TarEntry(TarEntryType.V7RegularFile, "file.txt")
+            {
+                Gid = TestGid,
+                Uid = TestUid
+            };
+
+            UstarTarEntry otherEntry = new UstarTarEntry(other: firstEntry);
+            Assert.Equal(TarEntryType.RegularFile, otherEntry.EntryType);
+
+            V7TarEntry secondEntry = new V7TarEntry(other: otherEntry);
+            Assert.Equal(TarEntryType.V7RegularFile, secondEntry.EntryType);
+
+            Assert.Equal(TestGid, secondEntry.Gid);
+            Assert.Equal(TestUid, secondEntry.Uid);
+        }
+
+        [Fact]
+        public void Constructor_ConversionPax_BackAndForth()
+        {
+            V7TarEntry firstEntry = new V7TarEntry(TarEntryType.V7RegularFile, "file.txt")
+            {
+                Gid = TestGid,
+                Uid = TestUid
+            };
+
+            PaxTarEntry otherEntry = new PaxTarEntry(other: firstEntry);
+            Assert.Equal(TarEntryType.RegularFile, otherEntry.EntryType);
+
+            V7TarEntry secondEntry = new V7TarEntry(other: otherEntry);
+            Assert.Equal(TarEntryType.V7RegularFile, secondEntry.EntryType);
+
+            Assert.Equal(TestGid, secondEntry.Gid);
+            Assert.Equal(TestUid, secondEntry.Uid);
+        }
+
+        [Fact]
+        public void Constructor_ConversionGnu_BackAndForth()
+        {
+            V7TarEntry firstEntry = new V7TarEntry(TarEntryType.V7RegularFile, "file.txt")
+            {
+                Gid = TestGid,
+                Uid = TestUid
+            };
+
+            GnuTarEntry otherEntry = new GnuTarEntry(other: firstEntry);
+            Assert.Equal(TarEntryType.RegularFile, otherEntry.EntryType);
+
+            V7TarEntry secondEntry = new V7TarEntry(other: otherEntry);
+            Assert.Equal(TarEntryType.V7RegularFile, secondEntry.EntryType);
+
+            Assert.Equal(TestGid, secondEntry.Gid);
+            Assert.Equal(TestUid, secondEntry.Uid);
+        }
+
+        [Fact]
         public void Constructor_Conversion_UnsupportedEntryTypes_Ustar()
         {
             Assert.Throws<InvalidOperationException>(() => new V7TarEntry(new UstarTarEntry(TarEntryType.BlockDevice, InitialEntryName)));

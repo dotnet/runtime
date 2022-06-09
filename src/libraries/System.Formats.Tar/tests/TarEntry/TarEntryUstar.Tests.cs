@@ -149,6 +149,80 @@ namespace System.Formats.Tar.Tests
         }
 
         [Fact]
+        public void Constructor_ConversionV7_BackAndForth()
+        {
+            // V7 does not support blockdev, so can't verify transfer of DeviceMajor/DeviceMinor fields
+            UstarTarEntry firstEntry = new UstarTarEntry(TarEntryType.RegularFile, "file.txt")
+            {
+                Gid = TestGid,
+                GroupName = TestGName,
+                Uid = TestUid,
+                UserName = TestUName,
+            };
+
+            V7TarEntry otherEntry = new V7TarEntry(other: firstEntry);
+            Assert.Equal(TarEntryType.V7RegularFile, otherEntry.EntryType);
+
+            UstarTarEntry secondEntry = new UstarTarEntry(other: otherEntry);
+            Assert.Equal(TarEntryType.RegularFile, secondEntry.EntryType);
+
+            Assert.Equal(TestGid, secondEntry.Gid);
+            Assert.Equal(DefaultGName, secondEntry.GroupName);
+            Assert.Equal(TestUid, secondEntry.Uid);
+            Assert.Equal(DefaultUName, secondEntry.UserName);
+        }
+
+        [Fact]
+        public void Constructor_ConversionPax_BackAndForth()
+        {
+            UstarTarEntry firstEntry = new UstarTarEntry(TarEntryType.BlockDevice, "blockdev")
+            {
+                DeviceMajor = TestBlockDeviceMajor,
+                DeviceMinor = TestBlockDeviceMinor,
+                Gid = TestGid,
+                GroupName = TestGName,
+                Uid = TestUid,
+                UserName = TestUName,
+            };
+
+            PaxTarEntry otherEntry = new PaxTarEntry(other: firstEntry);
+
+            UstarTarEntry secondEntry = new UstarTarEntry(other: otherEntry);
+
+            Assert.Equal(TestBlockDeviceMajor, secondEntry.DeviceMajor);
+            Assert.Equal(TestBlockDeviceMinor, secondEntry.DeviceMinor);
+            Assert.Equal(TestGid, secondEntry.Gid);
+            Assert.Equal(TestGName, secondEntry.GroupName);
+            Assert.Equal(TestUid, secondEntry.Uid);
+            Assert.Equal(TestUName, secondEntry.UserName);
+        }
+
+        [Fact]
+        public void Constructor_ConversionGnu_BackAndForth()
+        {
+            UstarTarEntry firstEntry = new UstarTarEntry(TarEntryType.BlockDevice, "blockdev")
+            {
+                DeviceMajor = TestBlockDeviceMajor,
+                DeviceMinor = TestBlockDeviceMinor,
+                Gid = TestGid,
+                GroupName = TestGName,
+                Uid = TestUid,
+                UserName = TestUName,
+            };
+
+            GnuTarEntry otherEntry = new GnuTarEntry(other: firstEntry);
+
+            UstarTarEntry secondEntry = new UstarTarEntry(other: otherEntry);
+
+            Assert.Equal(TestBlockDeviceMajor, secondEntry.DeviceMajor);
+            Assert.Equal(TestBlockDeviceMinor, secondEntry.DeviceMinor);
+            Assert.Equal(TestGid, secondEntry.Gid);
+            Assert.Equal(TestGName, secondEntry.GroupName);
+            Assert.Equal(TestUid, secondEntry.Uid);
+            Assert.Equal(TestUName, secondEntry.UserName);
+        }
+
+        [Fact]
         public void SupportedEntryType_RegularFile()
         {
             UstarTarEntry regularFile = new UstarTarEntry(TarEntryType.RegularFile, InitialEntryName);

@@ -170,26 +170,18 @@ namespace System.Formats.Tar.Tests
             if (entry.EntryType is not TarEntryType.Directory)
             {
                 TarFileMode expectedMode = (TarFileMode)(status.Mode & 4095); // First 12 bits
-                DateTimeOffset expectedMTime = DateTimeOffset.FromUnixTimeSeconds(status.MTime);
-                DateTimeOffset expectedATime = DateTimeOffset.FromUnixTimeSeconds(status.ATime);
-                DateTimeOffset expectedCTime = DateTimeOffset.FromUnixTimeSeconds(status.CTime);
-
+               
                 Assert.Equal(expectedMode, entry.Mode);
-                Assert.Equal(expectedMTime, entry.ModificationTime);
+                Assert.True(entry.ModificationTime > DateTimeOffset.UnixEpoch);
 
                 if (entry is PaxTarEntry pax)
                 {
-                    Assert.NotNull(pax.ExtendedAttributes);
-                    Assert.True(pax.ExtendedAttributes.Count >= 4);
-                    Assert.Contains("path", pax.ExtendedAttributes);
-                    VerifyExtendedAttributeTimestamp(pax, "mtime");
-                    VerifyExtendedAttributeTimestamp(pax, "atime");
-                    VerifyExtendedAttributeTimestamp(pax, "ctime");
+                    VerifyPaxTimestamps(pax);
                 }
-                else if (entry is GnuTarEntry gnu)
+
+                if (entry is GnuTarEntry gnu)
                 {
-                    Assert.Equal(expectedATime, gnu.AccessTime);
-                    Assert.Equal(expectedCTime, gnu.ChangeTime);
+                    VerifyGnuTimestamps(gnu);
                 }
             }
         }

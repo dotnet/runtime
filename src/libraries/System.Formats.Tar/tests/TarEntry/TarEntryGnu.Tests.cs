@@ -153,6 +153,104 @@ namespace System.Formats.Tar.Tests
         }
 
         [Fact]
+        public void Constructor_ConversionV7_BackAndForth()
+        {
+            DateTimeOffset firstNow = DateTimeOffset.Now;
+            // V7 does not support blockdev, so can't verify transfer of DeviceMajor/DeviceMinor fields
+            GnuTarEntry firstEntry = new GnuTarEntry(TarEntryType.RegularFile, "file.txt")
+            {
+                Gid = TestGid,
+                GroupName = TestGName,
+                Uid = TestUid,
+                UserName = TestUName,
+            };
+
+            Assert.True(firstEntry.AccessTime > firstNow);
+            Assert.True(firstEntry.ChangeTime > firstNow);
+
+            DateTimeOffset secondNow = DateTimeOffset.Now;
+
+            V7TarEntry otherEntry = new V7TarEntry(other: firstEntry);
+            Assert.Equal(TarEntryType.V7RegularFile, otherEntry.EntryType);
+
+            GnuTarEntry secondEntry = new GnuTarEntry(other: otherEntry);
+            Assert.Equal(TarEntryType.RegularFile, secondEntry.EntryType);
+
+            Assert.True(secondEntry.AccessTime > secondNow);
+            Assert.True(secondEntry.ChangeTime > secondNow);
+            Assert.Equal(TestGid, secondEntry.Gid);
+            Assert.Equal(DefaultGName, secondEntry.GroupName);
+            Assert.Equal(TestUid, secondEntry.Uid);
+            Assert.Equal(DefaultUName, secondEntry.UserName);
+        }
+
+        [Fact]
+        public void Constructor_ConversionUstar_BackAndForth()
+        {
+            DateTimeOffset firstNow = DateTimeOffset.Now;
+            GnuTarEntry firstEntry = new GnuTarEntry(TarEntryType.BlockDevice, "blockdev")
+            {
+                DeviceMajor = TestBlockDeviceMajor,
+                DeviceMinor = TestBlockDeviceMinor,
+                Gid = TestGid,
+                GroupName = TestGName,
+                Uid = TestUid,
+                UserName = TestUName,
+            };
+
+            Assert.True(firstEntry.AccessTime > firstNow);
+            Assert.True(firstEntry.ChangeTime > firstNow);
+
+            DateTimeOffset secondNow = DateTimeOffset.Now;
+
+            UstarTarEntry otherEntry = new UstarTarEntry(other: firstEntry);
+
+            GnuTarEntry secondEntry = new GnuTarEntry(other: otherEntry);
+
+            Assert.True(secondEntry.AccessTime > secondNow);
+            Assert.True(secondEntry.ChangeTime > secondNow);
+            Assert.Equal(TestBlockDeviceMajor, secondEntry.DeviceMajor);
+            Assert.Equal(TestBlockDeviceMinor, secondEntry.DeviceMinor);
+            Assert.Equal(TestGid, secondEntry.Gid);
+            Assert.Equal(TestGName, secondEntry.GroupName);
+            Assert.Equal(TestUid, secondEntry.Uid);
+            Assert.Equal(TestUName, secondEntry.UserName);
+        }
+
+        [Fact]
+        public void Constructor_ConversionPax_BackAndForth()
+        {
+            DateTimeOffset firstNow = DateTimeOffset.Now;
+            GnuTarEntry firstEntry = new GnuTarEntry(TarEntryType.BlockDevice, "blockdev")
+            {
+                DeviceMajor = TestBlockDeviceMajor,
+                DeviceMinor = TestBlockDeviceMinor,
+                Gid = TestGid,
+                GroupName = TestGName,
+                Uid = TestUid,
+                UserName = TestUName,
+            };
+
+            Assert.True(firstEntry.AccessTime > firstNow);
+            Assert.True(firstEntry.ChangeTime > firstNow);
+
+            DateTimeOffset secondNow = DateTimeOffset.Now;
+
+            PaxTarEntry otherEntry = new PaxTarEntry(other: firstEntry);
+
+            GnuTarEntry secondEntry = new GnuTarEntry(other: otherEntry);
+
+            Assert.True(secondEntry.AccessTime < secondNow); // atime is preserved in extended attributes, then passed again to AccessTime
+            Assert.True(secondEntry.ChangeTime < secondNow); // ctime is preserved in extended attributes, then passed again to ChangeTime
+            Assert.Equal(TestBlockDeviceMajor, secondEntry.DeviceMajor);
+            Assert.Equal(TestBlockDeviceMinor, secondEntry.DeviceMinor);
+            Assert.Equal(TestGid, secondEntry.Gid);
+            Assert.Equal(TestGName, secondEntry.GroupName);
+            Assert.Equal(TestUid, secondEntry.Uid);
+            Assert.Equal(TestUName, secondEntry.UserName);
+        }
+
+        [Fact]
         public void SupportedEntryType_RegularFile()
         {
             GnuTarEntry regularFile = new GnuTarEntry(TarEntryType.RegularFile, InitialEntryName);
