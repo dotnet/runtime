@@ -119,7 +119,6 @@ namespace System.Net.Security
 
             _securityContext?.Dispose();
             _credentialsHandle?.Dispose();
-            GC.SuppressFinalize(this);
         }
 
         //
