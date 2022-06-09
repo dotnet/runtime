@@ -22313,7 +22313,14 @@ void Compiler::pickGDV(GenTreeCall*           call,
     const int               maxLikelyMethods = 32;
     LikelyClassMethodRecord likelyMethods[maxLikelyMethods];
     unsigned                numberOfMethods = 0;
-    if (call->IsVirtualVtable() || call->IsDelegateInvoke())
+
+    // TODO-GDV: R2R support requires additional work to reacquire the
+    // entrypoint, similar to what happens at the end of impDevirtualizeCall.
+    // As part of supporting this we should merge the tail of
+    // impDevirtualizeCall and what happens in
+    // GuardedDevirtualizationTransformer::CreateThen for method GDV.
+    //
+    if (!opts.IsReadyToRun() && (call->IsVirtualVtable() || call->IsDelegateInvoke()))
     {
         numberOfMethods =
             getLikelyMethods(likelyMethods, maxLikelyMethods, fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset);
