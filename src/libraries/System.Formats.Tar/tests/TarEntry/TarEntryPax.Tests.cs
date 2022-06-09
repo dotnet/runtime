@@ -153,7 +153,7 @@ namespace System.Formats.Tar.Tests
         [Fact]
         public void Constructor_ConversionV7_BackAndForth()
         {
-            DateTimeOffset firstNow = DateTimeOffset.Now;
+            DateTimeOffset firstNow = DateTimeOffset.Now - TimeSpan.FromMilliseconds(100);
             // V7 does not support blockdev, so can't verify transfer of DeviceMajor/DeviceMinor fields
             PaxTarEntry firstEntry = new PaxTarEntry(TarEntryType.RegularFile, "file.txt")
             {
@@ -166,10 +166,11 @@ namespace System.Formats.Tar.Tests
             VerifyExtendedAttributeTimestamp(firstEntry, PaxEaATime, firstNow);
             VerifyExtendedAttributeTimestamp(firstEntry, PaxEaCTime, firstNow);
 
+            DateTimeOffset secondNow = DateTimeOffset.Now;
+
             V7TarEntry otherEntry = new V7TarEntry(other: firstEntry);
             Assert.Equal(TarEntryType.V7RegularFile, otherEntry.EntryType);
 
-            DateTimeOffset secondNow = DateTimeOffset.Now;
             PaxTarEntry secondEntry = new PaxTarEntry(other: otherEntry);
             Assert.Equal(TarEntryType.RegularFile, secondEntry.EntryType);
 
@@ -185,7 +186,7 @@ namespace System.Formats.Tar.Tests
         [Fact]
         public void Constructor_ConversionUstar_BackAndForth()
         {
-            DateTimeOffset firstNow = DateTimeOffset.Now;
+            DateTimeOffset firstNow = DateTimeOffset.Now - TimeSpan.FromMilliseconds(100);
             PaxTarEntry firstEntry = new PaxTarEntry(TarEntryType.BlockDevice, "blockdev")
             {
                 DeviceMajor = TestBlockDeviceMajor,
@@ -199,9 +200,10 @@ namespace System.Formats.Tar.Tests
             VerifyExtendedAttributeTimestamp(firstEntry, PaxEaATime, firstNow);
             VerifyExtendedAttributeTimestamp(firstEntry, PaxEaCTime, firstNow);
 
+            DateTimeOffset secondNow = DateTimeOffset.Now;
+
             UstarTarEntry otherEntry = new UstarTarEntry(other: firstEntry);
 
-            DateTimeOffset secondNow = DateTimeOffset.Now;
             PaxTarEntry secondEntry = new PaxTarEntry(other: otherEntry);
 
             VerifyExtendedAttributeTimestamp(secondEntry, PaxEaATime, secondNow);
@@ -218,7 +220,7 @@ namespace System.Formats.Tar.Tests
         [Fact]
         public void Constructor_ConversionGnu_BackAndForth()
         {
-            DateTimeOffset firstNow = DateTimeOffset.Now;
+            DateTimeOffset firstNow = DateTimeOffset.Now - TimeSpan.FromMilliseconds(100);
             PaxTarEntry firstEntry = new PaxTarEntry(TarEntryType.BlockDevice, "blockdev")
             {
                 DeviceMajor = TestBlockDeviceMajor,
@@ -232,9 +234,10 @@ namespace System.Formats.Tar.Tests
             VerifyExtendedAttributeTimestamp(firstEntry, PaxEaATime, firstNow);
             VerifyExtendedAttributeTimestamp(firstEntry, PaxEaCTime, firstNow);
 
+            DateTimeOffset secondNow = DateTimeOffset.Now;
+
             GnuTarEntry otherEntry = new GnuTarEntry(other: firstEntry);
 
-            DateTimeOffset secondNow = DateTimeOffset.Now;
             PaxTarEntry secondEntry = new PaxTarEntry(other: otherEntry);
 
             DateTimeOffset atime = GetDateTimeOffsetFromTimestampString(secondEntry.ExtendedAttributes, PaxEaATime);

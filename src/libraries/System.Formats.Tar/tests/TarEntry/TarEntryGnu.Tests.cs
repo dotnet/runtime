@@ -155,7 +155,7 @@ namespace System.Formats.Tar.Tests
         [Fact]
         public void Constructor_ConversionV7_BackAndForth()
         {
-            DateTimeOffset firstNow = DateTimeOffset.Now;
+            DateTimeOffset firstNow = DateTimeOffset.Now - TimeSpan.FromMilliseconds(100);
             // V7 does not support blockdev, so can't verify transfer of DeviceMajor/DeviceMinor fields
             GnuTarEntry firstEntry = new GnuTarEntry(TarEntryType.RegularFile, "file.txt")
             {
@@ -187,7 +187,7 @@ namespace System.Formats.Tar.Tests
         [Fact]
         public void Constructor_ConversionUstar_BackAndForth()
         {
-            DateTimeOffset firstNow = DateTimeOffset.Now;
+            DateTimeOffset firstNow = DateTimeOffset.Now - TimeSpan.FromMilliseconds(100);
             GnuTarEntry firstEntry = new GnuTarEntry(TarEntryType.BlockDevice, "blockdev")
             {
                 DeviceMajor = TestBlockDeviceMajor,
@@ -220,7 +220,7 @@ namespace System.Formats.Tar.Tests
         [Fact]
         public void Constructor_ConversionPax_BackAndForth()
         {
-            DateTimeOffset firstNow = DateTimeOffset.Now;
+            DateTimeOffset firstNow = DateTimeOffset.Now - TimeSpan.FromMilliseconds(100);
             GnuTarEntry firstEntry = new GnuTarEntry(TarEntryType.BlockDevice, "blockdev")
             {
                 DeviceMajor = TestBlockDeviceMajor,
