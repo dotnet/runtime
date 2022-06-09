@@ -16,7 +16,7 @@ Mono is written in C.
 
 We follow the [Mono Coding guidelines](https://www.mono-project.com/community/contributing/coding-guidelines/) for the C code - in particular:
 
-* tabs, not spaces, tab width is 8
+* tabs, not spaces
 * space between a function name and the open parenthesis
 * braces on the same line as `if`, `for`, `while` etc
 
@@ -192,7 +192,7 @@ argument and assume that it was pinned by the caller.
 In cases where an object is created in native code, it should be kept alive:
 
 1. By assigning into a `MonoObject *volatile *` (ie: use `out` or `ref` arugments in C#)
-2. By creating a local handle using `MONO_HANDLE_NEW` (the function should then use `HANDLE_FUCNTION_ENTER`/`HANDLE_FUNCTION_RETURN`
+2. By creating a local handle using `MONO_HANDLE_NEW` or `MONO_HANDLE_PIN` (the function should then use `HANDLE_FUNCTION_ENTER`/`HANDLE_FUNCTION_RETURN` to set up and tear down a handle frame.)
 3. By creating a GCHandle
 4. By assigning to a field of another managed objet.
 
