@@ -1570,7 +1570,7 @@ dotnet_diagnostic.IDE0160.severity = silent
 dotnet_diagnostic.IDE0161.severity = silent
 
 # IDE1005: Delegate invocation can be simplified.
-dotnet_diagnostic.IDE1005.severity = suggestion
+dotnet_diagnostic.IDE1005.severity = warning
 
 # IDE1006: Naming styles
 dotnet_diagnostic.IDE1006.severity = silent
