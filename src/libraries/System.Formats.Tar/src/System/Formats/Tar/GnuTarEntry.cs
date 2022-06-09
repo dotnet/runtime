@@ -69,7 +69,7 @@ namespace System.Formats.Tar
             // 'other' was V7 or Ustar, or the entries were not found in PAX extended attributes
             if (!changedATime || !changedCTime)
             {
-                DateTimeOffset now = DateTimeOffset.Now;
+                DateTimeOffset now = DateTimeOffset.UtcNow;
                 if (!changedATime)
                 {
                     _header._aTime = now;

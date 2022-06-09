@@ -42,7 +42,7 @@ namespace System.Formats.Tar
             _header._uid = 0;
             _header._gid = 0;
             _header._size = 0;
-            _header._mTime = DateTimeOffset.Now;
+            _header._mTime = DateTimeOffset.UtcNow;
             _header._checksum = 0;
             _header._typeFlag = entryType;
             _header._linkName = string.Empty;
