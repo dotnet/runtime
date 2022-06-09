@@ -81,7 +81,7 @@ namespace System.Text.RegularExpressions.Tests
                 ("(a{2147483647,})", 2),
                 // typical case that blows up the DFA size to 2^100 when .* is added at the beginnig (below)
                 ("a.{100}b", 103),
-                // these patterns are regression tests to make sure that right concatenations are propagated over alternations
+                // make sure that right concatenations are propagated over alternations
                 ("a.{10}|bb", 14),
                 ("(a.{10}|bb)c", 15),
                 ("((a.{10}|bb)c)d", 16),
