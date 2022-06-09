@@ -11376,11 +11376,6 @@ DONE_MORPHING_CHILDREN:
             {
                 tree = fgOptimizeEqualityComparisonWithConst(tree->AsOp());
 
-                if (tree->OperIs(GT_CNS_INT, GT_COMMA))
-                {
-                    return tree;
-                }
-
                 assert(tree->OperIsCompare());
 
                 oper = tree->OperGet();
@@ -11403,9 +11398,17 @@ DONE_MORPHING_CHILDREN:
             }
 
             // op2's value may be changed, so it cannot be a CSE candidate.
-            if (op2->IsIntegralConst() && !gtIsActiveCSE_Candidate(op2))
+            // op1's value may be changed, so it cannot be a CSE candidate.
+            if ((op2->IsIntegralConst() && !gtIsActiveCSE_Candidate(op2)) ||
+                (op1->IsIntegralConst() && !gtIsActiveCSE_Candidate(op1)))
             {
                 tree = fgOptimizeRelationalComparisonWithConst(tree->AsOp());
+
+                if (tree->OperIs(GT_CNS_INT, GT_COMMA))
+                {
+                    return tree;
+                }
+
                 oper = tree->OperGet();
 
                 assert(op1 == tree->AsOp()->gtGetOp1());
@@ -12485,64 +12488,6 @@ GenTree* Compiler::fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp)
 
             DEBUG_DESTROY_NODE(cmp);
 
-            if (op1->OperIs(GT_GE, GT_LE) && (op1->gtGetOp2()->IsIntegralConst() || op1->gtGetOp1()->IsIntegralConst()))
-            {
-                GenTree* conNode = op1->gtGetOp2()->IsIntegralConst() ? op1->gtGetOp2() : op1->gtGetOp1();
-
-                IntegralRange valRange = IntegralRange::ForNode(conNode, this);
-
-#if defined(HOST_X86) || defined(HOST_ARM)
-                ssize_t valMin =
-                    (int32_t)IntegralRange::SymbolicToRealValue(valRange.LowerBoundForType(conNode->TypeGet()));
-                ssize_t valMax =
-                    (int32_t)IntegralRange::SymbolicToRealValue(valRange.UpperBoundForType(conNode->TypeGet()));
-#else
-                ssize_t valMin = IntegralRange::SymbolicToRealValue(valRange.LowerBoundForType(conNode->TypeGet()));
-                ssize_t valMax = IntegralRange::SymbolicToRealValue(valRange.UpperBoundForType(conNode->TypeGet()));
-#endif
-                // Folds
-                // 1. byte x <= 0 => true
-                // 2. int  x <= int.MinValue => true
-                // 3. long x <= long.MaxValue => true
-                // 4. byte x >= byte.MaxValue => true
-                // 5. int  x >= int.MaxValue => true
-                // 6. long x >= long.MaxValue => true
-                //
-                // when const is RHS:
-                if (op1->gtGetOp2()->IsIntegralConst())
-                {
-
-                    if ((op1->OperIs(GT_GE) && conNode->IsIntegralConst(valMin)) ||
-                        (op1->OperIs(GT_LE) && conNode->IsIntegralConst(valMax)))
-                    {
-                        GenTree* ret = gtNewIconNode(1, TYP_INT);
-                        ret->SetVNsFromNode(op1);
-                        DEBUG_DESTROY_NODE(op1);
-                        return fgMorphTree(ret);
-                    }
-                } // when const is LHS:
-                else
-                {
-                    if ((op1->OperIs(GT_GE) && conNode->IsIntegralConst(valMax)) ||
-                        (op1->OperIs(GT_LE) && conNode->IsIntegralConst(valMin)))
-                    {
-                        GenTree* cmpSideEffects = nullptr;
-                        GenTree* ret            = gtNewIconNode(1, TYP_INT);
-
-                        gtExtractSideEffList(op1, &cmpSideEffects);
-
-                        if (cmpSideEffects != nullptr)
-                        {
-                            ret = gtNewOperNode(GT_COMMA, TYP_INT, cmpSideEffects, ret);
-                        }
-
-                        ret->SetVNsFromNode(op1);
-                        DEBUG_DESTROY_NODE(op1);
-                        return fgMorphTree(ret);
-                    }
-                }
-            }
-
             return op1;
         }
 
@@ -12706,8 +12651,9 @@ SKIP:
 //   cmp - the GT_LE/GT_LT/GT_GE/GT_GT tree to morph.
 //
 // Return Value:
-//   The "cmp" tree, possibly with a modified oper.
+//   1. The "cmp" tree, possibly with a modified oper.
 //   The second operand's constant value may be modified as well.
+//   2. GT_CNS_INT node containing zero as value
 //
 // Assumptions:
 //   The operands have been swapped so that any constants are on the right.
@@ -12716,79 +12662,199 @@ SKIP:
 GenTree* Compiler::fgOptimizeRelationalComparisonWithConst(GenTreeOp* cmp)
 {
     assert(cmp->OperIs(GT_LE, GT_LT, GT_GE, GT_GT));
-    assert(cmp->gtGetOp2()->IsIntegralConst());
-    assert(!gtIsActiveCSE_Candidate(cmp->gtGetOp2()));
 
-    GenTree*             op1 = cmp->gtGetOp1();
-    GenTreeIntConCommon* op2 = cmp->gtGetOp2()->AsIntConCommon();
-
-    assert(genActualType(op1) == genActualType(op2));
-
-    genTreeOps oper     = cmp->OperGet();
-    int64_t    op2Value = op2->IntegralValue();
-
-    if (op2Value == 1)
+    if (cmp->gtGetOp2()->IsIntegralConst() && !gtIsActiveCSE_Candidate(cmp->gtGetOp2()))
     {
-        // Check for "expr >= 1".
-        if (oper == GT_GE)
+        assert(cmp->gtGetOp2()->IsIntegralConst());
+        assert(!gtIsActiveCSE_Candidate(cmp->gtGetOp2()));
+
+        GenTree*             op1 = cmp->gtGetOp1();
+        GenTreeIntConCommon* op2 = cmp->gtGetOp2()->AsIntConCommon();
+
+        assert(genActualType(op1) == genActualType(op2));
+
+        genTreeOps oper     = cmp->OperGet();
+        int64_t    op2Value = op2->IntegralValue();
+
+        if (op2Value == 1)
         {
-            // Change to "expr != 0" for unsigned and "expr > 0" for signed.
-            oper = cmp->IsUnsigned() ? GT_NE : GT_GT;
-        }
-        // Check for "expr < 1".
-        else if (oper == GT_LT)
-        {
-            // Change to "expr == 0" for unsigned and "expr <= 0".
-            oper = cmp->IsUnsigned() ? GT_EQ : GT_LE;
-        }
-    }
-    // Check for "expr relop -1".
-    else if (!cmp->IsUnsigned() && (op2Value == -1))
-    {
-        // Check for "expr <= -1".
-        if (oper == GT_LE)
-        {
-            // Change to "expr < 0".
-            oper = GT_LT;
-        }
-        // Check for "expr > -1".
-        else if (oper == GT_GT)
-        {
-            // Change to "expr >= 0".
-            oper = GT_GE;
-        }
-    }
-    else if (cmp->IsUnsigned())
-    {
-        if ((oper == GT_LE) || (oper == GT_GT))
-        {
-            if (op2Value == 0)
+            // Check for "expr >= 1".
+            if (oper == GT_GE)
             {
-                // IL doesn't have a cne instruction so compilers use cgt.un instead. The JIT
-                // recognizes certain patterns that involve GT_NE (e.g (x & 4) != 0) and fails
-                // if GT_GT is used instead. Transform (x GT_GT.unsigned 0) into (x GT_NE 0)
-                // and (x GT_LE.unsigned 0) into (x GT_EQ 0). The later case is rare, it sometimes
-                // occurs as a result of branch inversion.
-                oper = (oper == GT_LE) ? GT_EQ : GT_NE;
-                cmp->gtFlags &= ~GTF_UNSIGNED;
+                // Change to "expr != 0" for unsigned and "expr > 0" for signed.
+                oper = cmp->IsUnsigned() ? GT_NE : GT_GT;
             }
-            // LE_UN/GT_UN(expr, int/long.MaxValue) => GE/LT(expr, 0).
-            else if (((op1->TypeIs(TYP_LONG) && (op2Value == INT64_MAX))) ||
-                     ((genActualType(op1) == TYP_INT) && (op2Value == INT32_MAX)))
+            // Check for "expr < 1".
+            else if (oper == GT_LT)
             {
-                oper = (oper == GT_LE) ? GT_GE : GT_LT;
-                cmp->gtFlags &= ~GTF_UNSIGNED;
+                // Change to "expr == 0" for unsigned and "expr <= 0".
+                oper = cmp->IsUnsigned() ? GT_EQ : GT_LE;
             }
         }
+        // Check for "expr relop -1".
+        else if (!cmp->IsUnsigned() && (op2Value == -1))
+        {
+            // Check for "expr <= -1".
+            if (oper == GT_LE)
+            {
+                // Change to "expr < 0".
+                oper = GT_LT;
+            }
+            // Check for "expr > -1".
+            else if (oper == GT_GT)
+            {
+                // Change to "expr >= 0".
+                oper = GT_GE;
+            }
+        }
+        else if (cmp->IsUnsigned())
+        {
+            if ((oper == GT_LE) || (oper == GT_GT))
+            {
+                if (op2Value == 0)
+                {
+                    // IL doesn't have a cne instruction so compilers use cgt.un instead. The JIT
+                    // recognizes certain patterns that involve GT_NE (e.g (x & 4) != 0) and fails
+                    // if GT_GT is used instead. Transform (x GT_GT.unsigned 0) into (x GT_NE 0)
+                    // and (x GT_LE.unsigned 0) into (x GT_EQ 0). The later case is rare, it sometimes
+                    // occurs as a result of branch inversion.
+                    oper = (oper == GT_LE) ? GT_EQ : GT_NE;
+                    cmp->gtFlags &= ~GTF_UNSIGNED;
+                }
+                // LE_UN/GT_UN(expr, int/long.MaxValue) => GE/LT(expr, 0).
+                else if (((op1->TypeIs(TYP_LONG) && (op2Value == INT64_MAX))) ||
+                         ((genActualType(op1) == TYP_INT) && (op2Value == INT32_MAX)))
+                {
+                    oper = (oper == GT_LE) ? GT_GE : GT_LT;
+                    cmp->gtFlags &= ~GTF_UNSIGNED;
+                }
+            }
+        }
+
+        if (!cmp->OperIs(oper))
+        {
+            // Keep the old ValueNumber for 'tree' as the new expr
+            // will still compute the same value as before.
+            cmp->SetOper(oper, GenTree::PRESERVE_VN);
+            op2->SetIntegralValue(0);
+            fgUpdateConstTreeValueNumber(op2);
+        }
     }
 
-    if (!cmp->OperIs(oper))
+    if (cmp->OperIs(GT_LT, GT_GT))
     {
-        // Keep the old ValueNumber for 'tree' as the new expr
-        // will still compute the same value as before.
-        cmp->SetOper(oper, GenTree::PRESERVE_VN);
-        op2->SetIntegralValue(0);
-        fgUpdateConstTreeValueNumber(op2);
+        assert(cmp->gtGetOp2()->IsIntegralConst() || cmp->gtGetOp1()->IsIntegralConst());
+        assert(!gtIsActiveCSE_Candidate(cmp->gtGetOp2()) || !gtIsActiveCSE_Candidate(cmp->gtGetOp1()));
+
+        GenTree*  conNode   = cmp->gtGetOp2()->IsIntegralConst() ? cmp->gtGetOp2() : cmp->gtGetOp1();
+        GenTree*  varNode   = cmp->gtGetOp2()->IsIntegralConst() ? cmp->gtGetOp1() : cmp->gtGetOp2();
+        var_types limitType = varNode->TypeGet();
+
+        if (varNode->OperIs(GT_CAST))
+        {
+            limitType = varNode->AsCast()->gtCastType;
+        }
+
+        switch (limitType)
+        {
+            case TYP_UBYTE:
+            case TYP_SHORT:
+            case TYP_USHORT:
+            case TYP_INT:
+            case TYP_UINT:
+            case TYP_LONG:
+                break;
+            default:
+                return cmp;
+        }
+
+        IntegralRange valRange = IntegralRange::ForNode(varNode, this);
+
+#if defined(HOST_X86) || defined(HOST_ARM)
+        ssize_t valMin = (int32_t)IntegralRange::SymbolicToRealValue(valRange.LowerBoundForType(limitType));
+        ssize_t valMax = (int32_t)IntegralRange::SymbolicToRealValue(valRange.UpperBoundForType(limitType));
+#else
+        ssize_t valMax      = IntegralRange::SymbolicToRealValue(valRange.UpperBoundForType(limitType));
+        ssize_t valMin      = IntegralRange::SymbolicToRealValue(valRange.LowerBoundForType(limitType));
+
+#endif
+
+        bool fold = false;
+        // Folds
+        // 1.   byte    x <= 0 => false
+        // 2.   short   x <= short.MinValue => false
+        // 3.   ushort  x <= ushort.MinValue => false
+        // 4.   int     x <= int.MinValue => false
+        // 5.   uint    x <= uint.MinValue => false
+        // 6.   long    x <= long.MinValue => false
+        // 7.   ulong   x <= ulong.MinValue => false
+        //
+        // 8.   byte    x >= byte.MaxValue => false
+        // 9.   short   x <= short.MinValue => false
+        // 10.  ushort  x <= ushort.MinValue => false
+        // 11.  int     x >= int.MaxValue => false
+        // 12.  int     x >= int.MaxValue => false
+        // 13.  long    x >= long.MaxValue => false
+        // 14.  long    x >= long.MaxValue => false
+        //
+        // when const is RHS:
+        if (cmp->gtGetOp2()->IsIntegralConst())
+        {
+            if ((cmp->OperIs(GT_GT) && conNode->IsIntegralConst(valMax)) ||
+                (cmp->OperIs(GT_LT) && conNode->IsIntegralConst(valMin)))
+            {
+                fold = true;
+            }
+
+            // when const is RHS and cmp is unsigned
+            if (cmp->IsUnsigned())
+            {
+                if (cmp->OperIs(GT_GT) && conNode->IsIntegralConst(-1))
+                {
+                    fold = true;
+                }
+            }
+        }
+        // when const is LHS:
+        else if (cmp->gtGetOp1()->IsIntegralConst())
+        {
+            if ((cmp->OperIs(GT_GT) && conNode->IsIntegralConst(valMin)) ||
+                (cmp->OperIs(GT_LT) && conNode->IsIntegralConst(valMax)))
+            {
+                fold = true;
+            }
+
+            // when const is LHS and cmp is unsigned
+            if (cmp->IsUnsigned())
+            {
+                if (cmp->OperIs(GT_LT) && conNode->IsIntegralConst(-1))
+                {
+                    fold = true;
+                }
+            }
+        }
+
+        if (fold)
+        {
+            GenTree* ret = gtNewIconNode(0);
+
+            ret->SetVNsFromNode(cmp);
+
+            GenTree* cmpSideEffects = nullptr;
+
+            gtExtractSideEffList(cmp, &cmpSideEffects);
+
+            if (cmpSideEffects != nullptr)
+            {
+                ret = gtNewOperNode(GT_COMMA, TYP_INT, cmpSideEffects, ret);
+            }
+
+            DEBUG_DESTROY_NODE(cmp);
+
+            INDEBUG(ret->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+
+            return ret;
+        }
     }
 
     return cmp;
@@ -13090,7 +13156,7 @@ GenTree* Compiler::fgOptimizeMultiply(GenTreeOp* mul)
         // Should we try to replace integer multiplication with lea/add/shift sequences?
         bool mulShiftOpt = compCodeOpt() != SMALL_CODE;
 #else  // !TARGET_XARCH
-        bool            mulShiftOpt = false;
+        bool    mulShiftOpt = false;
 #endif // !TARGET_XARCH
 
         size_t abs_mult      = (mult >= 0) ? mult : -mult;
