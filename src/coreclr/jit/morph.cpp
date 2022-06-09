@@ -12900,7 +12900,7 @@ GenTree* Compiler::fgOptimizeMultiply(GenTreeOp* mul)
         // MUL(NEG(a), C) => MUL(a, NEG(C))
         if (opts.OptimizationEnabled() && op1->OperIs(GT_NEG) && !op2->IsIconHandle())
         {
-            mul->gtOp1 = op1->AsUnOp()->gtGetOp1();
+            mul->gtOp1                 = op1->AsUnOp()->gtGetOp1();
             op2->AsIntCon()->gtIconVal = -op2->AsIntCon()->gtIconVal;
             DEBUG_DESTROY_NODE(op1);
 
