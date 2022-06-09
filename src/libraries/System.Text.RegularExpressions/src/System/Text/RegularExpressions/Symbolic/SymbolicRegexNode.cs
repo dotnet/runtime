@@ -2219,10 +2219,10 @@ namespace System.Text.RegularExpressions.Symbolic
                     break;
 
                 case SymbolicRegexNodeKind.Concat:
-                    // Extract possible alternations present in the initial element of the concatenation
-                    // Typical case would be that (A|B)C is treated the same as (AC|BC)
+                    // Extract possible alternations present in the initial element of the concatenation.
+                    // Typical case would be that (A|B)C is treated the same as (AC|BC).
                     // The recursive call is to make sure that cases such as ((A|B)C)D are also handled,
-                    // because right associative form of concatenations is not always guaranteed
+                    // because a right associative form of concatenations is not always guaranteed.
                     Debug.Assert(_left is not null && _right is not null);
                     foreach (SymbolicRegexNode<TSet> branch in _left.EnumerateAlternationBranches())
                     {
