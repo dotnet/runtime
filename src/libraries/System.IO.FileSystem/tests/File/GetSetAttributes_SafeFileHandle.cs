@@ -1,21 +1,30 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Microsoft.Win32.SafeHandles;
+
 namespace System.IO.Tests
 {
-    public sealed class GetSetAttributes_SafeFileHandle : FileGetSetAttributes
+    public class GetSetAttributes_SafeFileHandle : FileGetSetAttributes
     {
+        protected virtual SafeFileHandle OpenFileHandle(string path, FileAccess fileAccess) =>
+            File.OpenHandle(
+                path,
+                FileMode.OpenOrCreate,
+                fileAccess,
+                FileShare.None);
+
+        protected override bool CanBeReadOnly => false;
+
         protected override FileAttributes GetAttributes(string path)
         {
-            using var fileHandle =
-                File.OpenHandle(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            using SafeFileHandle fileHandle = OpenFileHandle(path, FileAccess.Read);
             return File.GetAttributes(fileHandle);
         }
-
+        
         protected override void SetAttributes(string path, FileAttributes attributes)
         {
-            using var fileHandle =
-                File.OpenHandle(path, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
+            using SafeFileHandle fileHandle = OpenFileHandle(path, FileAccess.ReadWrite);
             File.SetAttributes(fileHandle, attributes);
         }
     }
