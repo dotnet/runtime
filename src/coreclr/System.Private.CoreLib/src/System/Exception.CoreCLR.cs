@@ -276,7 +276,7 @@ namespace System
         }
 
         // used by vm
-        internal string? GetHelpContext(out int helpContext)
+        internal string? GetHelpContext(out uint helpContext)
         {
             helpContext = 0;
             string? helpFile = HelpLink;
@@ -294,7 +294,7 @@ namespace System
                     break;
             }
 
-            if (int.TryParse(helpFile.AsSpan(poundPos + 1, digitEnd - poundPos - 1), out helpContext))
+            if (uint.TryParse(helpFile.AsSpan(poundPos + 1, digitEnd - poundPos - 1), out helpContext))
             {
                 helpFile = helpFile.Substring(0, poundPos);
             }
