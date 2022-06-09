@@ -138,6 +138,9 @@ hot_reload_added_fields_iter (MonoClass *klass, gboolean lazy, gpointer *iter);
 static uint32_t
 hot_reload_get_num_fields_added (MonoClass *klass);
 
+static uint32_t
+hot_reload_get_num_methods_added (MonoClass *klass);
+
 static MonoClassMetadataUpdateField *
 metadata_update_field_setup_basic_info_and_resolve (MonoImage *image_base, BaselineInfo *base_info, uint32_t generation, DeltaInfo *delta_info, MonoClass *parent_klass, uint32_t fielddef_token, uint32_t field_flags, MonoError *error);
 
@@ -172,6 +175,7 @@ static MonoComponentHotReload fn_table = {
 	&hot_reload_added_methods_iter,
 	&hot_reload_added_fields_iter,
 	&hot_reload_get_num_fields_added,
+	&hot_reload_get_num_methods_added
 };
 
 MonoComponentHotReload *
@@ -3113,3 +3117,20 @@ hot_reload_get_num_fields_added (MonoClass *klass)
 		return 0;
 	return g_slist_length (info->added_fields);
 }
+
+static uint32_t
+hot_reload_get_num_methods_added (MonoClass *klass)
+{
+	printf("olha thays - to pedingo o numero de metodos");
+	uint32_t count = 0;
+	GSList *members = hot_reload_get_added_members (klass);
+	for (GSList *ptr = members; ptr; ptr = ptr->next) {
+		uint32_t token = GPOINTER_TO_UINT(ptr->data);
+		if (mono_metadata_token_table (token) != MONO_TABLE_METHOD)
+			continue;
+		count++;
+	}
+	printf("olha thays - to retornando - %d\n", count);
+	return count;
+}
+

@@ -218,3 +218,9 @@ mono_metadata_update_get_num_fields_added (MonoClass *klass)
 {
 	return mono_component_hot_reload()->get_num_fields_added (klass);
 }
+
+uint32_t
+mono_metadata_update_get_num_methods_added (MonoClass *klass)
+{
+	return mono_component_hot_reload()->get_num_methods_added (klass);
+}

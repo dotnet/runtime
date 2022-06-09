@@ -46,6 +46,7 @@ typedef struct _MonoComponentHotReload {
 	MonoMethod* (*added_methods_iter) (MonoClass *klass, gpointer *iter);
 	MonoClassField* (*added_fields_iter) (MonoClass *klass, gboolean lazy, gpointer *iter);
 	uint32_t (*get_num_fields_added) (MonoClass *klass);
+	uint32_t (*get_num_methods_added) (MonoClass *klass);
 } MonoComponentHotReload;
 
 MONO_COMPONENT_EXPORT_ENTRYPOINT
