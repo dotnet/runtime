@@ -10284,27 +10284,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
         case GT_MUL:
             noway_assert(op2 != nullptr);
 
-            if (opts.OptimizationEnabled() && !optValnumCSE_phase && !tree->gtOverflow())
-            {
-                // MUL(NEG(a), C) => MUL(a, NEG(C))
-                if (op1->OperIs(GT_NEG) && !op1->gtGetOp1()->IsCnsIntOrI() && op2->IsCnsIntOrI() &&
-                    !op2->IsIconHandle())
-                {
-                    // We are changing the shape of a child node here which
-                    // means we need to recall fgMorphTree (in particular to
-                    // do promotion-specific morphing of op1); however, morphing
-                    // the top-level node twice is not ok. Reuse op1 as the new
-                    // top-level node instead.
-                    op2->AsIntCon()->gtIconVal = -op2->AsIntCon()->gtIconVal;
-                    op1->ChangeOper(GT_MUL);
-                    op1->SetVNsFromNode(tree);
-                    op1->AsOp()->gtOp2 = op2;
-                    DEBUG_DESTROY_NODE(tree);
-
-                    return fgMorphTree(op1);
-                }
-            }
-
 #ifndef TARGET_64BIT
             if (typ == TYP_LONG)
             {
@@ -12915,6 +12894,19 @@ GenTree* Compiler::fgOptimizeMultiply(GenTreeOp* mul)
 
     if (op2->IsIntegralConst())
     {
+        // We should not get here for 64-bit multiplications on 32-bit.
+        assert(op2->IsCnsIntOrI());
+
+        // MUL(NEG(a), C) => MUL(a, NEG(C))
+        if (opts.OptimizationEnabled() && op1->OperIs(GT_NEG) && !op2->IsIconHandle())
+        {
+            mul->gtOp1 = op1->AsUnOp()->gtGetOp1();
+            op2->AsIntCon()->gtIconVal = -op2->AsIntCon()->gtIconVal;
+            DEBUG_DESTROY_NODE(op1);
+
+            op1 = mul->gtOp1;
+        }
+
         ssize_t mult = op2->AsIntConCommon()->IconValue();
 
         if (mult == 0)
