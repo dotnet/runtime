@@ -563,7 +563,7 @@ namespace System.Net.Security
             return cachedCred;
         }
 
-        private static List<T> EnsureInitialized<T>(ref List<T>? list) => list ?? (list = new List<T>());
+        private static List<T> EnsureInitialized<T>(ref List<T>? list) => list ??= new List<T>();
 
         //
         // Acquire Server Side Certificate information and set it on the class.

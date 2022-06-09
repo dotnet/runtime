@@ -281,17 +281,17 @@ namespace System.Linq.Expressions.Interpreter
             {
                 return type.GetNonNullableType().GetTypeCode() switch
                 {
-                    TypeCode.SByte => s_liftedToNullSByte ?? (s_liftedToNullSByte = new LessThanOrEqualSByte(null)),
-                    TypeCode.Int16 => s_liftedToNullInt16 ?? (s_liftedToNullInt16 = new LessThanOrEqualInt16(null)),
-                    TypeCode.Char => s_liftedToNullChar ?? (s_liftedToNullChar = new LessThanOrEqualChar(null)),
-                    TypeCode.Int32 => s_liftedToNullInt32 ?? (s_liftedToNullInt32 = new LessThanOrEqualInt32(null)),
-                    TypeCode.Int64 => s_liftedToNullInt64 ?? (s_liftedToNullInt64 = new LessThanOrEqualInt64(null)),
-                    TypeCode.Byte => s_liftedToNullByte ?? (s_liftedToNullByte = new LessThanOrEqualByte(null)),
-                    TypeCode.UInt16 => s_liftedToNullUInt16 ?? (s_liftedToNullUInt16 = new LessThanOrEqualUInt16(null)),
-                    TypeCode.UInt32 => s_liftedToNullUInt32 ?? (s_liftedToNullUInt32 = new LessThanOrEqualUInt32(null)),
-                    TypeCode.UInt64 => s_liftedToNullUInt64 ?? (s_liftedToNullUInt64 = new LessThanOrEqualUInt64(null)),
-                    TypeCode.Single => s_liftedToNullSingle ?? (s_liftedToNullSingle = new LessThanOrEqualSingle(null)),
-                    TypeCode.Double => s_liftedToNullDouble ?? (s_liftedToNullDouble = new LessThanOrEqualDouble(null)),
+                    TypeCode.SByte => s_liftedToNullSByte ??= new LessThanOrEqualSByte(null),
+                    TypeCode.Int16 => s_liftedToNullInt16 ??= new LessThanOrEqualInt16(null),
+                    TypeCode.Char => s_liftedToNullChar ??= new LessThanOrEqualChar(null),
+                    TypeCode.Int32 => s_liftedToNullInt32 ??= new LessThanOrEqualInt32(null),
+                    TypeCode.Int64 => s_liftedToNullInt64 ??= new LessThanOrEqualInt64(null),
+                    TypeCode.Byte => s_liftedToNullByte ??= new LessThanOrEqualByte(null),
+                    TypeCode.UInt16 => s_liftedToNullUInt16 ??= new LessThanOrEqualUInt16(null),
+                    TypeCode.UInt32 => s_liftedToNullUInt32 ??= new LessThanOrEqualUInt32(null),
+                    TypeCode.UInt64 => s_liftedToNullUInt64 ??= new LessThanOrEqualUInt64(null),
+                    TypeCode.Single => s_liftedToNullSingle ??= new LessThanOrEqualSingle(null),
+                    TypeCode.Double => s_liftedToNullDouble ??= new LessThanOrEqualDouble(null),
                     _ => throw ContractUtils.Unreachable,
                 };
             }
@@ -299,17 +299,17 @@ namespace System.Linq.Expressions.Interpreter
             {
                 return type.GetNonNullableType().GetTypeCode() switch
                 {
-                    TypeCode.SByte => s_SByte ?? (s_SByte = new LessThanOrEqualSByte(Utils.BoxedFalse)),
-                    TypeCode.Int16 => s_Int16 ?? (s_Int16 = new LessThanOrEqualInt16(Utils.BoxedFalse)),
-                    TypeCode.Char => s_Char ?? (s_Char = new LessThanOrEqualChar(Utils.BoxedFalse)),
-                    TypeCode.Int32 => s_Int32 ?? (s_Int32 = new LessThanOrEqualInt32(Utils.BoxedFalse)),
-                    TypeCode.Int64 => s_Int64 ?? (s_Int64 = new LessThanOrEqualInt64(Utils.BoxedFalse)),
-                    TypeCode.Byte => s_Byte ?? (s_Byte = new LessThanOrEqualByte(Utils.BoxedFalse)),
-                    TypeCode.UInt16 => s_UInt16 ?? (s_UInt16 = new LessThanOrEqualUInt16(Utils.BoxedFalse)),
-                    TypeCode.UInt32 => s_UInt32 ?? (s_UInt32 = new LessThanOrEqualUInt32(Utils.BoxedFalse)),
-                    TypeCode.UInt64 => s_UInt64 ?? (s_UInt64 = new LessThanOrEqualUInt64(Utils.BoxedFalse)),
-                    TypeCode.Single => s_Single ?? (s_Single = new LessThanOrEqualSingle(Utils.BoxedFalse)),
-                    TypeCode.Double => s_Double ?? (s_Double = new LessThanOrEqualDouble(Utils.BoxedFalse)),
+                    TypeCode.SByte => s_SByte ??= new LessThanOrEqualSByte(Utils.BoxedFalse),
+                    TypeCode.Int16 => s_Int16 ??= new LessThanOrEqualInt16(Utils.BoxedFalse),
+                    TypeCode.Char => s_Char ??= new LessThanOrEqualChar(Utils.BoxedFalse),
+                    TypeCode.Int32 => s_Int32 ??= new LessThanOrEqualInt32(Utils.BoxedFalse),
+                    TypeCode.Int64 => s_Int64 ??= new LessThanOrEqualInt64(Utils.BoxedFalse),
+                    TypeCode.Byte => s_Byte ??= new LessThanOrEqualByte(Utils.BoxedFalse),
+                    TypeCode.UInt16 => s_UInt16 ??= new LessThanOrEqualUInt16(Utils.BoxedFalse),
+                    TypeCode.UInt32 => s_UInt32 ??= new LessThanOrEqualUInt32(Utils.BoxedFalse),
+                    TypeCode.UInt64 => s_UInt64 ??= new LessThanOrEqualUInt64(Utils.BoxedFalse),
+                    TypeCode.Single => s_Single ??= new LessThanOrEqualSingle(Utils.BoxedFalse),
+                    TypeCode.Double => s_Double ??= new LessThanOrEqualDouble(Utils.BoxedFalse),
                     _ => throw ContractUtils.Unreachable,
                 };
             }
