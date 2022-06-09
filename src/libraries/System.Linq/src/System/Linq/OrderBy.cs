@@ -7,11 +7,23 @@ namespace System.Linq
 {
     public static partial class Enumerable
     {
+        public static IOrderedEnumerable<T> Order<T>(this IEnumerable<T> source) =>
+            new OrderedKeylessEnumerable<T>(source, null, false, null);
+
+        public static IOrderedEnumerable<T> Order<T>(this IEnumerable<T> source, IComparer<T> comparer) =>
+            new OrderedKeylessEnumerable<T>(source, comparer, false, null);
+
         public static IOrderedEnumerable<TSource> OrderBy<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector) =>
             new OrderedEnumerable<TSource, TKey>(source, keySelector, null, false, null);
 
         public static IOrderedEnumerable<TSource> OrderBy<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IComparer<TKey>? comparer) =>
             new OrderedEnumerable<TSource, TKey>(source, keySelector, comparer, false, null);
+
+        public static IOrderedEnumerable<T> OrderDescending<T>(this IEnumerable<T> source) =>
+            new OrderedKeylessEnumerable<T>(source, null, true, null);
+
+        public static IOrderedEnumerable<T> OrderDescending<T>(this IEnumerable<T> source, IComparer<T> comparer) =>
+            new OrderedKeylessEnumerable<T>(source, comparer, true, null);
 
         public static IOrderedEnumerable<TSource> OrderByDescending<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector) =>
             new OrderedEnumerable<TSource, TKey>(source, keySelector, null, true, null);
