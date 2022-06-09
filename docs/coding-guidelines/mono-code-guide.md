@@ -42,7 +42,7 @@ There are actually three boolean types to keep in mind:
 
 ## Utility and platform abstraction functions
 
-Mono genrally tries to fill in POSIX-like abstractions on platforms that lack them (e.g. Windows).
+Mono genrally tries to fill in POSIX-like abstractions on platforms that lack them (for example, Windows).
 This is in contrast to the CoreCLR PAL which generally tries to add Windows API abstractions on top
 of POSIX.
 
@@ -97,7 +97,7 @@ New code should prefer to use the `MonoError` functions.
 
 New code should generally not deal with `MonoException*`, use `MonoError*` instead.
 
-New code should avoid useing `mono_error_set_pending_exception` - it affects a thread-local flag in
+New code should avoid using `mono_error_set_pending_exception` - it affects a thread-local flag in
 a way that is not obvious to the caller of your function and may trample existing in-flight
 exceptions and make your code fail in unexpected ways.
 
@@ -123,7 +123,7 @@ The difference is that `HANDLES` icalls receive references to managed objects wr
 that attempts to keep the object alive for the duration of the internal call even if the thread
 blocks or is suspended, while `NOHANDLES` functions don't.  Additionally `HANDLES` functions get a
 `MonoError*` argument from the managed-to-native interop layer that will be converted to a managed
-exception when the function returns.  `NOHANDLES` functions generally ahve to call
+exception when the function returns.  `NOHANDLES` functions generally have to call
 `mono_error_set_pending_exception` themselves.
 
 ## Suspend Safety
@@ -165,7 +165,7 @@ nearly any runtime internal API, due to assembly loading potentially triggering 
 * a GCHandle is passed in
 
 Generally only function on the boundary between managed and native should use one of the above
-mechanisms (ie: it's enough that an object is pinned once). Callees can take a `MonoObject*`
+mechanisms (that is, it's enough that an object is pinned once). Callees can take a `MonoObject*`
 argument and assume that it was pinned by the caller.
 
 In cases where an object is created in native code, it should be kept alive:
@@ -181,5 +181,5 @@ must be kept alive before the call using one of the above methods.
 ### Write barriers
 
 When writing a managed object to a field of another managed object, use one of the
-`mono_gc_wbarrier_` functions (e.g. `mono_gc_wbarrier_generic_store`).  It is ok to call the write
+`mono_gc_wbarrier_` functions (for example, `mono_gc_wbarrier_generic_store`).  It is ok to call the write
 barrier functions if the destination is not in the managed heap (in which case they will just do a normal write)
