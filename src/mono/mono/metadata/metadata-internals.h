@@ -694,7 +694,7 @@ assembly_is_dynamic (MonoAssembly *assembly)
 #endif
 }
 
-static inline int
+static inline uint32_t
 table_info_get_rows (const MonoTableInfo *table)
 {
 	return table->rows_;
@@ -799,7 +799,7 @@ static inline void
 mono_image_effective_table (const MonoTableInfo **t, uint32_t idx)
 {
 	if (G_UNLIKELY (mono_metadata_has_updates ())) {
-		if (G_UNLIKELY (idx >= table_info_get_rows ((*t)) || mono_metadata_update_has_modified_rows (*t))) {
+		if (G_UNLIKELY (idx >= table_info_get_rows (*t) || mono_metadata_update_has_modified_rows (*t))) {
 			mono_image_effective_table_slow (t, idx);
 		}
 	}
@@ -861,7 +861,7 @@ static inline gboolean
 mono_metadata_table_bounds_check (MonoImage *image, int table_index, int token_index)
 {
 	/* returns true if given index is not in bounds with provided table/index pair */
-	if (G_LIKELY (token_index <= table_info_get_rows (&image->tables [table_index])))
+	if (G_LIKELY (GINT_TO_UINT32(token_index) <= table_info_get_rows (&image->tables [table_index])))
 		return FALSE;
         if (G_LIKELY (!image->has_updates))
                 return TRUE;
