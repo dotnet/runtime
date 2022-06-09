@@ -13,6 +13,6 @@ public class Test_GetConfigurationVariables
         // A simple smoke test to ensure there are no exceptions.
         var configurations = GC.GetConfigurationVariables();
         Console.WriteLine($"Configuration Count: {configurations.Count}");
-        return 0;
+        return 100;
     }
 }

@@ -33,21 +33,7 @@ void GCConfig::SetGCHeapHardLimit(int heapHardLimit)       { s_GCHeapHardLimit  
 void GCConfig::SetGCHeapHardLimitSOH(int heapHardLimitSOH) { s_GCHeapHardLimitSOH = heapHardLimitSOH; }
 void GCConfig::SetGCHeapHardLimitLOH(int heapHardLimitLOH) { s_GCHeapHardLimitLOH = heapHardLimitLOH; }
 void GCConfig::SetGCHeapHardLimitPOH(int heapHardLimitPOH) { s_GCHeapHardLimitPOH = heapHardLimitPOH; }
-void GCConfig::SetGCHeapAffinitizedMask(int gcHeapAffinitizedMask) 
-{ 
-    // If gcHeapAffinizedMask is not enabled, set the value to -1 rather than 0.
-    if (gcHeapAffinitizedMask == 0)
-    {
-        s_GCHeapAffinitizeMask = -1;
-    }
-
-    else
-    {
-        s_GCHeapAffinitizeMask = gcHeapAffinitizedMask;
-    }
-}
-
-
+void GCConfig::SetGCHeapAffinitizedMask(int gcHeapAffinitizedMask) { s_GCHeapAffinitizeMask = gcHeapAffinitizedMask;}
 
 #undef BOOL_CONFIG
 #undef INT_CONFIG

@@ -44041,7 +44041,6 @@ HRESULT GCHeap::Initialize()
                 }
             }
 #endif
-            GCConfig::SetGCHeapCount(nhp);
             seg_size = gc_heap::heap_hard_limit_oh[soh] / nhp;
             large_seg_size = gc_heap::heap_hard_limit_oh[loh] / nhp;
             pin_seg_size = (gc_heap::heap_hard_limit_oh[poh] != 0) ? (gc_heap::heap_hard_limit_oh[2] / nhp) : min_segment_size_hard_limit;
@@ -44105,6 +44104,8 @@ HRESULT GCHeap::Initialize()
         gc_heap::min_segment_size = min (seg_size, gc_heap::min_uoh_segment_size);
     }
 #endif //!USE_REGIONS
+
+    GCConfig::SetGCHeapCount(nhp);
 
 #ifdef USE_REGIONS
     // REGIONS TODO:
