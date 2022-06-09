@@ -379,6 +379,7 @@ private:
 #endif // _DEBUG
 };
 
+#ifdef FEATURE_COMINTEROP
 // ---------------------------------------------------------------------------
 // EECOMException is an EE exception subclass composed of COM-generated data.
 // Note that you must ensure that the COM data was not derived from a wrapper
@@ -437,6 +438,7 @@ private:
     }
 #endif // _DEBUG
 };
+#endif // FEATURE_COMINTEROP
 
 // ---------------------------------------------------------------------------
 // EEFieldException is an EE exception subclass composed of a field

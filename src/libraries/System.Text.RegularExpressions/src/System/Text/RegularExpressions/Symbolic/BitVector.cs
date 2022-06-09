@@ -61,34 +61,26 @@ namespace System.Text.RegularExpressions.Symbolic
         public static BitVector CreateSingleBit(int length, int i)
         {
             var bv = new BitVector(length);
-            bv[i] = true;
+            bv.Set(i);
             return bv;
         }
 
         /// <summary>Gets the value of the i'th bit, true for 1 and false for 0.</summary>
-        internal bool this[int i]
+        internal readonly bool this[int i]
         {
-            readonly get
+            get
             {
                 Debug.Assert(i >= 0 && i < Length);
-                (int k, int j) = Math.DivRem(i, 64);
-                return (_blocks[k] & (1ul << j)) != 0;
+                (int block, int bit) = Math.DivRem(i, 64);
+                return (_blocks[block] & (1ul << bit)) != 0;
             }
-            private set
-            {
-                Debug.Assert(i >= 0 && i < Length);
-                (int k, int j) = Math.DivRem(i, 64);
-                if (value)
-                {
-                    //set the j'th bit of the k'th block to 1
-                    _blocks[k] |= 1ul << j;
-                }
-                else
-                {
-                    //set the j'th bit of the k'th block to 0
-                    _blocks[k] &= ~(1ul << j);
-                }
-            }
+        }
+
+        private void Set(int i)
+        {
+            Debug.Assert(i >= 0 && i < Length);
+            (int block, int bit) = Math.DivRem(i, 64);
+            _blocks[block] |= 1ul << bit;
         }
 
         /// <summary>Create a new <see cref="BitVector"/> that is the bitwise-and of the two input vectors.</summary>
