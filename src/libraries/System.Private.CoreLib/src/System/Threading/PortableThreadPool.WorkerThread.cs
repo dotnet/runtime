@@ -157,6 +157,8 @@ namespace System.Threading
             /// </summary>
             private static void RemoveWorkingWorker(PortableThreadPool threadPoolInstance)
             {
+                // A compare-exchange loop is used instead of Interlocked.Decrement or Interlocked.Add to defensively prevent
+                // NumProcessingWork from underflowing. See the setter for NumProcessingWork.
                 ThreadCounts counts = threadPoolInstance._separated.counts;
                 while (true)
                 {
