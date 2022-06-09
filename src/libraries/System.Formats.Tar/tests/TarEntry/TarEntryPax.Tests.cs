@@ -153,7 +153,7 @@ namespace System.Formats.Tar.Tests
         [Fact]
         public void Constructor_ConversionV7_BackAndForth()
         {
-            DateTimeOffset firstNow = DateTimeOffset.Now - TimeSpan.FromMilliseconds(100);
+            DateTimeOffset firstNow = DateTimeOffset.UtcNow - TimeSpan.FromMilliseconds(10);
             // V7 does not support blockdev, so can't verify transfer of DeviceMajor/DeviceMinor fields
             PaxTarEntry firstEntry = new PaxTarEntry(TarEntryType.RegularFile, "file.txt")
             {
@@ -166,7 +166,7 @@ namespace System.Formats.Tar.Tests
             VerifyExtendedAttributeTimestamp(firstEntry, PaxEaATime, firstNow);
             VerifyExtendedAttributeTimestamp(firstEntry, PaxEaCTime, firstNow);
 
-            DateTimeOffset secondNow = DateTimeOffset.Now;
+            DateTimeOffset secondNow = GetDateTimeOffsetFromTimestampString(firstEntry.ExtendedAttributes, PaxEaATime);
 
             V7TarEntry otherEntry = new V7TarEntry(other: firstEntry);
             Assert.Equal(TarEntryType.V7RegularFile, otherEntry.EntryType);
@@ -186,7 +186,7 @@ namespace System.Formats.Tar.Tests
         [Fact]
         public void Constructor_ConversionUstar_BackAndForth()
         {
-            DateTimeOffset firstNow = DateTimeOffset.Now - TimeSpan.FromMilliseconds(100);
+            DateTimeOffset firstNow = DateTimeOffset.UtcNow - TimeSpan.FromMilliseconds(10);
             PaxTarEntry firstEntry = new PaxTarEntry(TarEntryType.BlockDevice, "blockdev")
             {
                 DeviceMajor = TestBlockDeviceMajor,
@@ -200,7 +200,7 @@ namespace System.Formats.Tar.Tests
             VerifyExtendedAttributeTimestamp(firstEntry, PaxEaATime, firstNow);
             VerifyExtendedAttributeTimestamp(firstEntry, PaxEaCTime, firstNow);
 
-            DateTimeOffset secondNow = DateTimeOffset.Now;
+            DateTimeOffset secondNow = GetDateTimeOffsetFromTimestampString(firstEntry.ExtendedAttributes, PaxEaATime);
 
             UstarTarEntry otherEntry = new UstarTarEntry(other: firstEntry);
 
@@ -220,7 +220,7 @@ namespace System.Formats.Tar.Tests
         [Fact]
         public void Constructor_ConversionGnu_BackAndForth()
         {
-            DateTimeOffset firstNow = DateTimeOffset.Now - TimeSpan.FromMilliseconds(100);
+            DateTimeOffset firstNow = DateTimeOffset.UtcNow - TimeSpan.FromMilliseconds(10);
             PaxTarEntry firstEntry = new PaxTarEntry(TarEntryType.BlockDevice, "blockdev")
             {
                 DeviceMajor = TestBlockDeviceMajor,
@@ -234,17 +234,17 @@ namespace System.Formats.Tar.Tests
             VerifyExtendedAttributeTimestamp(firstEntry, PaxEaATime, firstNow);
             VerifyExtendedAttributeTimestamp(firstEntry, PaxEaCTime, firstNow);
 
-            DateTimeOffset secondNow = DateTimeOffset.Now;
-
             GnuTarEntry otherEntry = new GnuTarEntry(other: firstEntry);
 
             PaxTarEntry secondEntry = new PaxTarEntry(other: otherEntry);
 
-            DateTimeOffset atime = GetDateTimeOffsetFromTimestampString(secondEntry.ExtendedAttributes, PaxEaATime);
-            Assert.True(atime < secondNow, $"Extended attribute timestamp '{PaxEaATime}' was greater than or equal to the second 'now'.");
-
-            DateTimeOffset ctime = GetDateTimeOffsetFromTimestampString(secondEntry.ExtendedAttributes, PaxEaCTime);
-            Assert.True(ctime < secondNow, $"Extended attribute timestamp '{PaxEaCTime}' was greater than or equal to the second 'now'.");
+            // atime and ctime should be transferred from pax to gnu and then back to pax
+            DateTimeOffset originalATime = GetDateTimeOffsetFromTimestampString(firstEntry.ExtendedAttributes, PaxEaATime);
+            DateTimeOffset originalCTime = GetDateTimeOffsetFromTimestampString(firstEntry.ExtendedAttributes, PaxEaCTime);
+            DateTimeOffset secondATime = GetDateTimeOffsetFromTimestampString(secondEntry.ExtendedAttributes, PaxEaATime);
+            DateTimeOffset secondCTime = GetDateTimeOffsetFromTimestampString(secondEntry.ExtendedAttributes, PaxEaCTime);
+            CompareDateTimeOffsets(originalATime, secondATime);
+            CompareDateTimeOffsets(originalCTime, secondCTime);
 
             Assert.Equal(TestBlockDeviceMajor, secondEntry.DeviceMajor);
             Assert.Equal(TestBlockDeviceMinor, secondEntry.DeviceMinor);
