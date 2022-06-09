@@ -134,9 +134,9 @@ namespace System.Reflection
 
             an.RawFlags = GetFlags() | AssemblyNameFlags.PublicKey;
 
-#pragma warning disable IL3000 // System.Reflection.AssemblyName.CodeBase' always returns an empty string for assemblies embedded in a single-file app.
+#pragma warning disable IL3000, SYSLIB0044 // System.Reflection.AssemblyName.CodeBase' always returns an empty string for assemblies embedded in a single-file app.
             an.CodeBase = GetCodeBase();
-#pragma warning restore IL3000
+#pragma warning restore IL3000, SYSLIB004 // AssemblyName.CodeBase and AssemblyName.EscapedCodeBase are obsolete, using them for loading an assembly is not supported.
 
 #pragma warning disable SYSLIB0037 // AssemblyName.HashAlgorithm is obsolete
             an.HashAlgorithm = GetHashAlgorithm();
