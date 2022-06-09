@@ -6,15 +6,16 @@ the [src/mono/mono/](../../src/mono/mono),
 dotnet/runtime repo.
 
 In general this guide does not apply to:
+
 1. Shared native code in [src/native](../../src/native)
 2. The Mono-specific C# code in [src/mono](../../src/mono) in System.Private.CoreLib or elsewhere
-
 
 ## Code style
 
 Mono is written in C.
 
 We follow the [Mono Coding guidelines](https://www.mono-project.com/community/contributing/coding-guidelines/) for the C code - in particular:
+
 * tabs, not spaces, tab width is 8
 * space between a function name and the open parenthesis
 * braces on the same line as `if`, `for`, `while` etc
@@ -68,7 +69,6 @@ For the code in `src/mono/mono`:
 * `components` can use functions from all of the above provided they're marked with
   `MONO_COMPONENT_API`, see [../design/mono/components.md](../design/mono/components.md)
 
-
 The main distinction between `metadata` and `utils` is that utils code should not assume that it is
 part of an executing .NET runtime - anything that loads types, creates objects, etc does not belong
 in utils but in metadata.
@@ -92,8 +92,7 @@ New code should prefer to use the `MonoError` functions.
   possibly-failing function and pass it `local_error`, then call `mono_error_assert_ok
   (local_error)` if it "can't fail" or `mono_error_cleanup (local_error)` if you want to ignore the
   failure.
-  
-  
+
 ## Managed Exceptions
 
 New code should generally not deal with `MonoException*`, use `MonoError*` instead.
@@ -103,6 +102,7 @@ a way that is not obvious to the caller of your function and may trample existin
 exceptions and make your code fail in unexpected ways.
 
 There are two circumstances when you might need to call `mono_error_set_pending_exception`:
+
 1. You're working with a public Mono API that sets a pending exception
 2. You're implementing an icall, but can't use `HANDLES()` (see the [internal calls](#internal-calls) section below)
 
@@ -164,12 +164,12 @@ nearly any runtime internal API, due to assembly loading potentially triggering 
 * an icall is declared with `HANDLES()` and a `MonoObjectHandle` (or a more specific type such as `MonoReflectionTypeHandle` is passed in).
 * a GCHandle is passed in
 
-
 Generally only function on the boundary between managed and native should use one of the above
 mechanisms (ie: it's enough that an object is pinned once). Callees can take a `MonoObject*`
 argument and assume that it was pinned by the caller.
 
 In cases where an object is created in native code, it should be kept alive:
+
 1. By assigning into a `MonoObject *volatile *` (ie: use `out` or `ref` arugments in C#)
 2. By creating a local handle using `MONO_HANDLE_NEW` (the function should then use `HANDLE_FUCNTION_ENTER`/`HANDLE_FUNCTION_RETURN`
 3. By creating a GCHandle
@@ -183,5 +183,3 @@ must be kept alive before the call using one of the above methods.
 When writing a managed object to a field of another managed object, use one of the
 `mono_gc_wbarrier_` functions (e.g. `mono_gc_wbarrier_generic_store`).  It is ok to call the write
 barrier functions if the destination is not in the managed heap (in which case they will just do a normal write)
-
-
