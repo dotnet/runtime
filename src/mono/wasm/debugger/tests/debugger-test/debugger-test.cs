@@ -996,6 +996,8 @@ public class TestHotReloadUsingSDB {
 #region Default Interface Method
 public interface IDefaultInterface
 {
+    public static string defaultInterfaceMember = "defaultInterfaceMember";
+
     string DefaultMethod()
     {
         string localString = "DefaultMethod()";
@@ -1012,6 +1014,21 @@ public interface IDefaultInterface
     async System.Threading.Tasks.Task DefaultMethodAsync()
     {
         string localString = "DefaultMethodAsync()";
+        DefaultInterfaceMethod.MethodForCallingFromDIM();
+        await System.Threading.Tasks.Task.FromResult(0);
+    }
+    static string DefaultMethodStatic()
+    {
+        string localString = "DefaultMethodStatic()";
+        DefaultInterfaceMethod.MethodForCallingFromDIM();
+        return $"{localString} from IDefaultInterface";
+    }
+
+    // cannot override the static method of the interface - skipping
+
+    static async System.Threading.Tasks.Task DefaultMethodAsyncStatic()
+    {
+        string localString = "DefaultMethodAsyncStatic()";
         DefaultInterfaceMethod.MethodForCallingFromDIM();
         await System.Threading.Tasks.Task.FromResult(0);
     }
@@ -1101,6 +1118,16 @@ public static class DefaultInterfaceMethod
     {
         IExtendIDefaultInterface extendDefaultInter = new DIMClass();
         extendDefaultInter.NonUserCodeDefaultMethod(extendDefaultInter.BoundaryBp);
+    }
+
+    public static void EvaluateStatic()
+    {
+        IExtendIDefaultInterface.DefaultMethodStatic();
+    }
+
+    public static async void EvaluateAsyncStatic()
+    {
+        await IExtendIDefaultInterface.DefaultMethodAsyncStatic();
     }
 
     public static void MethodForCallingFromDIM()
