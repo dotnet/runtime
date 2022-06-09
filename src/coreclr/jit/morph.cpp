@@ -11229,7 +11229,6 @@ DONE_MORPHING_CHILDREN:
     GenTree*      temp;
     size_t        ival1;
     GenTree*      lclVarTree;
-    GenTree*      effectiveOp1;
     FieldSeqNode* fieldSeq = nullptr;
 
     switch (oper)
@@ -11247,30 +11246,6 @@ DONE_MORPHING_CHILDREN:
             if (lclVarTree != nullptr)
             {
                 lclVarTree->gtFlags |= GTF_VAR_DEF;
-            }
-
-            effectiveOp1 = op1->gtEffectiveVal();
-
-            // If we are storing a small type, we might be able to omit a cast.
-            if ((effectiveOp1->OperIs(GT_IND) ||
-                 (effectiveOp1->OperIs(GT_LCL_VAR) &&
-                  lvaGetDesc(effectiveOp1->AsLclVarCommon()->GetLclNum())->lvNormalizeOnLoad())) &&
-                varTypeIsSmall(effectiveOp1))
-            {
-                if (!gtIsActiveCSE_Candidate(op2) && op2->OperIs(GT_CAST) &&
-                    varTypeIsIntegral(op2->AsCast()->CastOp()) && !op2->gtOverflow())
-                {
-                    var_types castType = op2->CastToType();
-
-                    // If we are performing a narrowing cast and
-                    // castType is larger or the same as op1's type
-                    // then we can discard the cast.
-
-                    if (varTypeIsSmall(castType) && (genActualTypeSize(castType) == genActualTypeSize(effectiveOp1)))
-                    {
-                        tree->AsOp()->gtOp2 = op2 = op2->AsCast()->CastOp();
-                    }
-                }
             }
 
             fgAssignSetVarDef(tree);
@@ -12301,6 +12276,14 @@ GenTree* Compiler::fgOptimizeCast(GenTreeCast* cast)
                 cast->CastOp() = src->AsCast()->CastOp();
                 DEBUG_DESTROY_NODE(src);
             }
+
+            return cast;
+        }
+
+        if (opts.OptimizationEnabled() && (genActualTypeSize(castToType) == genActualTypeSize(src)) &&
+            (!varTypeIsUnsigned(src) || (varTypeIsUnsigned(castToType) == varTypeIsUnsigned(src))))
+        {
+            return src;
         }
     }
 
