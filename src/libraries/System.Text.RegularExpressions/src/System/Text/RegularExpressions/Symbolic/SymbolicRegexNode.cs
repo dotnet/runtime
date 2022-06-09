@@ -2181,7 +2181,6 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <returns>an enumeration of the elements of the alternation, or just the node itself if there is no alternation</returns>
         internal IEnumerable<SymbolicRegexNode<TSet>> EnumerateAlternationBranches()
         {
-            // Guard against stack overflow due to deep recursion, that should not arise in any normal situation
             if (!StackHelper.TryEnsureSufficientExecutionStack())
             {
                 foreach (SymbolicRegexNode<TSet> elem in StackHelper.CallOnEmptyStack(EnumerateAlternationBranches))
