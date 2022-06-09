@@ -1222,10 +1222,10 @@ private:
             }
         }
 
-        GenTreeIntCon* CreateFunctionTargetAddr(CORINFO_METHOD_HANDLE methHnd, const CORINFO_CONST_LOOKUP& lookup)
+        GenTree* CreateFunctionTargetAddr(CORINFO_METHOD_HANDLE methHnd, const CORINFO_CONST_LOOKUP& lookup)
         {
-            GenTreeIntCon* con = compiler->gtNewIconHandleNode((size_t)lookup.addr, GTF_ICON_FTN_ADDR);
-            INDEBUG(con->gtTargetHandle = (size_t)methHnd);
+            GenTree* con = compiler->gtNewIconHandleNode((size_t)lookup.addr, GTF_ICON_FTN_ADDR);
+            INDEBUG(con->AsIntCon()->gtTargetHandle = (size_t)methHnd);
             return con;
         }
     };
