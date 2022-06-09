@@ -20,6 +20,25 @@ We follow the [Mono Coding guidelines](https://www.mono-project.com/community/co
 * space between a function name and the open parenthesis
 * braces on the same line as `if`, `for`, `while` etc
 
+## Naming
+
+Mono reserves the following prefixes for symbols: `mono_`, `monovm_`, `m_`, `monoeg_` (use to remap `eglib`
+functions which in source code have a `g_` prefix).
+
+All non-`static` symbols should use one of these prefixes.  We generally use `mono_` for most
+functions.  `m_` is used for some inline accessor functions and macros.  `g_` (`mono_eg_`) is used
+for `eglib` functions.
+
+Types in a single C file can use any name.  Types in a header should use a `Mono` (or sometimes
+`mono_`) prefix.
+
+Public API symbols and types *must* be prefixed.
+
+For types Mono generally uses `typedef struct _MonoWhatever { ... } MonoWhatever`.  Opaque types may
+define `typedef struct _MonoWhatever MonoWhatever` in a client header and define `struct
+_MonoWhatever {...}` in an implementation header.  Occasionally we break `#include` cyles by adding
+forward declarations for some types.
+
 ## Macros
 
 Mono derives from an autotools-style project so we generally write `HOST_XYZ` for the machine on
@@ -27,6 +46,8 @@ which the runtime is executing (as opposed to the machine on which the runtime w
 `TARGET_XYZ` for the machine that will be targets by the JIT and AOT compilers.  In the case of AOT
 compilation host and target might be different: the host might be Windows, and the target might be
 Browser WebAssembly, for example.
+
+Macros generally use a `MONO_` prefix.  Macros in public API headers *must* use the prefix.
 
 ## Types
 
@@ -76,7 +97,7 @@ in utils but in metadata.
 The `mini` directory contains execution engines.  If the execution engine has to provide some
 functionality to `metadata` it generally does so by installing some callback that is invoked by
 `metadata`.  For example, `mini` knows how to unwind exceptions and perform stack walks - while
-`metadata` decides _when_ to unwind or perform a stackwalk.  To coordinate, `metadata` exposes an
+`metadata` decides *when*_* to unwind or perform a stackwalk.  To coordinate, `metadata` exposes an
 API to install hooks and `mini` provides the implementations.
 
 ## Error handling
@@ -183,3 +204,41 @@ must be kept alive before the call using one of the above methods.
 When writing a managed object to a field of another managed object, use one of the
 `mono_gc_wbarrier_` functions (for example, `mono_gc_wbarrier_generic_store`).  It is ok to call the write
 barrier functions if the destination is not in the managed heap (in which case they will just do a normal write)
+
+## Mono Public API
+
+Mono maintains a public API for projects that embed the Mono runtime in order to provide the ability
+to execute .NET code in the context of another application or framework.  The current Mono API is
+`mono-2.0`.  We strive to maintain binary ABI and API stability for our embedders.
+
+The public API headers are defined in
+[`../../src/native/public/mono`](../../src/native/public/mono).  Great care should be taken when
+modifying any of the functions declared in these headers.  In particular breaking the ABI by
+removing these functions or changing their arguments is not allowed.  Semantic changes should be
+avoided, or implemented in a way that is least disruptive to embedders (for example the runtime does
+not support multiple appdomains anymore, but `mono_domain_get` continues to work).
+
+### Hidden API functions
+
+In practice certain functions have been tagged with `MONO_API` even if they are not declared in the
+public headers.  These symbols have been used by projects that embed Mono despite not being in the
+public headers.  They should be treated with the same care as the real public API.
+
+### Unstable API functions
+
+Functions declared in `mono-private-unstable.h` headers do not need to maintain API/ABI stability.
+They are generally new APIs that have been added since .NET 5 but that have not been stabilized yet.
+
+As a matter of courtesy, notify the .NET macios and .NET Android teams if changing the behavior of these functions.
+
+### WASM
+
+The WASM and WASI runtimes in [`src/mono/wasm/runtime`](../../src/mono/wasm/runtime) and
+`src/mono/wasi` are effectively external API clients.  When possible they should use existing `MONO_API` functions.
+
+As a matter of expedience, the wasm project has sometimes taken advantage of static linking by
+adding declarations of internal Mono functions in `src/mono/wasm/runtime/driver.c` and directly
+calling Mono internals.
+
+In general new code should not do this.  When modifying existing code, mysterious WASM failures may
+be attributed to symbol signature mismatches between WASM and the Mono runtime.
