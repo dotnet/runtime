@@ -6320,7 +6320,6 @@ GenTree* Compiler::impArrayAccessIntrinsic(
     {
         // The indices should be converted to `int` type, as they would be if the intrinsic was not expanded.
         GenTree* argVal = impPopStack().val;
-#ifdef DEBUG
         if (impInlineRoot()->opts.compJitEarlyExpandMDArrays)
         {
             // This is only enabled when early MD expansion is set because it causes small
@@ -6328,7 +6327,6 @@ GenTree* Compiler::impArrayAccessIntrinsic(
             // this cast, but the new code requires it to be explicit.
             argVal = impImplicitIorI4Cast(argVal, TYP_INT);
         }
-#endif // DEBUG
         inds[k - 1] = argVal;
     }
 

@@ -17532,6 +17532,40 @@ GenTree* Compiler::fgMorphReduceAddOps(GenTree* tree)
     return morphed;
 }
 
+unsigned Compiler::MorphMDArrayTempCache::TempList::GetTemp()
+{
+    if (m_nextAvail != nullptr)
+    {
+        unsigned tmp = m_nextAvail->tmp;
+        JITDUMP("Reusing temp V%02u\n", tmp);
+        m_nextAvail = m_nextAvail->next;
+        return tmp;
+    }
+    else
+    {
+        unsigned newTmp  = m_compiler->lvaGrabTemp(true DEBUGARG("MD array shared temp"));
+        Node*    newNode = new (m_compiler, CMK_Unknown) Node(newTmp);
+        assert(m_insertPtr != nullptr);
+        assert(*m_insertPtr == nullptr);
+        *m_insertPtr = newNode;
+        m_insertPtr  = &newNode->next;
+        return newTmp;
+    }
+}
+
+unsigned Compiler::MorphMDArrayTempCache::GrabTemp(var_types type)
+{
+    switch (genActualType(type))
+    {
+        case TYP_INT:
+            return intTemps.GetTemp();
+        case TYP_REF:
+            return refTemps.GetTemp();
+        default:
+            unreached();
+    }
+}
+
 //------------------------------------------------------------------------
 // fgMorphArrayOpsStmt: Tree walk a statement to morph GT_ARR_ELEM.
 //
@@ -17546,7 +17580,7 @@ GenTree* Compiler::fgMorphReduceAddOps(GenTree* tree)
 // Returns:
 //      True if anything changed, false if the IR was unchanged.
 //
-bool Compiler::fgMorphArrayOpsStmt(BasicBlock* block, Statement* stmt)
+bool Compiler::fgMorphArrayOpsStmt(MorphMDArrayTempCache* pTempCache, BasicBlock* block, Statement* stmt)
 {
     class MorphMDArrayVisitor final : public GenTreeVisitor<MorphMDArrayVisitor>
     {
@@ -17556,8 +17590,8 @@ bool Compiler::fgMorphArrayOpsStmt(BasicBlock* block, Statement* stmt)
             DoPostOrder = true
         };
 
-        MorphMDArrayVisitor(Compiler* compiler, BasicBlock* block)
-            : GenTreeVisitor<MorphMDArrayVisitor>(compiler), m_changed(false), m_block(block)
+        MorphMDArrayVisitor(Compiler* compiler, BasicBlock* block, MorphMDArrayTempCache* pTempCache)
+            : GenTreeVisitor<MorphMDArrayVisitor>(compiler), m_changed(false), m_block(block), m_pTempCache(pTempCache)
         {
         }
 
@@ -17620,7 +17654,8 @@ bool Compiler::fgMorphArrayOpsStmt(BasicBlock* block, Statement* stmt)
                 else
                 {
                     // Side-effect; create a temp.
-                    unsigned newIdxLcl    = m_compiler->lvaGrabTemp(true DEBUGARG("MD array index copy"));
+                    // unsigned newIdxLcl    = m_compiler->lvaGrabTemp(true DEBUGARG("MD array index copy"));
+                    unsigned newIdxLcl    = m_pTempCache->GrabTemp(idx->TypeGet());
                     GenTree* newIdx       = m_compiler->gtNewLclvNode(newIdxLcl, idx->TypeGet());
                     idxToUse[i]           = newIdx;
                     idxToCopy[i]          = newIdxLcl;
@@ -17642,7 +17677,8 @@ bool Compiler::fgMorphArrayOpsStmt(BasicBlock* block, Statement* stmt)
             }
             else
             {
-                arrLcl = newArrLcl = m_compiler->lvaGrabTemp(true DEBUGARG("MD array copy"));
+                // arrLcl = newArrLcl = m_compiler->lvaGrabTemp(true DEBUGARG("MD array copy"));
+                arrLcl = newArrLcl = m_pTempCache->GrabTemp(TYP_REF);
             }
 
             GenTree* fullTree = nullptr;
@@ -17656,10 +17692,10 @@ bool Compiler::fgMorphArrayOpsStmt(BasicBlock* block, Statement* stmt)
 
                 GenTreeMDArr* const mdArrLowerBound =
                     m_compiler->gtNewMDArrLowerBound(m_compiler->gtNewLclvNode(arrLcl, TYP_REF), i, rank, m_block);
-                unsigned       effIdxLcl = m_compiler->lvaGrabTemp(true DEBUGARG("MD array effective index"));
-                GenTree* const effIndex  = m_compiler->gtNewOperNode(GT_SUB, TYP_INT, idx, mdArrLowerBound);
-                GenTree* const asgNode =
-                    m_compiler->gtNewOperNode(GT_ASG, TYP_INT, m_compiler->gtNewLclvNode(effIdxLcl, TYP_INT), effIndex);
+                // unsigned       effIdxLcl = m_compiler->lvaGrabTemp(true DEBUGARG("MD array effective index"));
+                unsigned            effIdxLcl = m_pTempCache->GrabTemp(TYP_INT);
+                GenTree* const      effIndex  = m_compiler->gtNewOperNode(GT_SUB, TYP_INT, idx, mdArrLowerBound);
+                GenTree* const      asgNode   = m_compiler->gtNewTempAssign(effIdxLcl, effIndex);
                 GenTreeMDArr* const mdArrLength =
                     m_compiler->gtNewMDArrLen(m_compiler->gtNewLclvNode(arrLcl, TYP_REF), i, rank, m_block);
                 GenTreeBoundsChk* const arrBndsChk = new (m_compiler, GT_BOUNDS_CHECK)
@@ -17729,31 +17765,25 @@ bool Compiler::fgMorphArrayOpsStmt(BasicBlock* block, Statement* stmt)
                 fullExpansion = m_compiler->gtNewOperNode(GT_COMMA, fullExpansion->TypeGet(), arrLclAsg, fullExpansion);
             }
 
-            // TODO: morph here? Or morph at the statement level if there are differences?
-
             JITDUMP("fgMorphArrayOpsStmt (before remorph):\n");
             DISPTREE(fullExpansion);
 
-            GenTree* morphedTree = m_compiler->fgMorphTree(fullExpansion);
-            DBEXEC(morphedTree != fullExpansion, morphedTree->gtDebugFlags &= ~GTF_DEBUG_NODE_MORPHED);
-
-            JITDUMP("fgMorphArrayOpsStmt (after remorph):\n");
-            DISPTREE(morphedTree);
-
-            *use = morphedTree;
-            JITDUMP("Morphing GT_ARR_ELEM (after)\n");
-            DISPTREE(*use);
+            *use      = fullExpansion;
             m_changed = true;
+
+            // The GT_ARR_ELEM node is no longer needed.
+            DEBUG_DESTROY_NODE(node);
 
             return fgWalkResult::WALK_CONTINUE;
         }
 
     private:
-        bool        m_changed;
-        BasicBlock* m_block;
+        bool                   m_changed;
+        BasicBlock*            m_block;
+        MorphMDArrayTempCache* m_pTempCache;
     };
 
-    MorphMDArrayVisitor morphMDArrayVisitor(this, block);
+    MorphMDArrayVisitor morphMDArrayVisitor(this, block, pTempCache);
     morphMDArrayVisitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
     return morphMDArrayVisitor.Changed();
 }
@@ -17846,16 +17876,11 @@ bool Compiler::fgMorphArrayOpsStmt(BasicBlock* block, Statement* stmt)
 //
 PhaseStatus Compiler::fgMorphArrayOps()
 {
-#ifdef DEBUG
     if (!opts.compJitEarlyExpandMDArrays)
     {
-        if (verbose)
-        {
-            printf("Early expansion of MD arrays disabled\n");
-        }
+        JITDUMP("Early expansion of MD arrays disabled\n");
         return PhaseStatus::MODIFIED_NOTHING;
     }
-#endif
 
     if ((optMethodFlags & OMF_HAS_MDARRAYREF) == 0)
     {
@@ -17863,7 +17888,8 @@ PhaseStatus Compiler::fgMorphArrayOps()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    bool changed = false;
+    bool                  changed = false;
+    MorphMDArrayTempCache mdArrayTempCache(this);
 
     for (BasicBlock* const block : Blocks())
     {
@@ -17878,11 +17904,11 @@ PhaseStatus Compiler::fgMorphArrayOps()
 
         for (Statement* const stmt : block->Statements())
         {
-            if (fgMorphArrayOpsStmt(block, stmt))
+            if (fgMorphArrayOpsStmt(&mdArrayTempCache, block, stmt))
             {
                 changed = true;
 
-                // REVIEW: morph again? e.g., to propagate GTF_ASG (and other?) bits up the tree?
+                // Morph the statement if there have been changes.
 
                 GenTree* tree        = stmt->GetRootNode();
                 GenTree* morphedTree = fgMorphTree(tree);
@@ -17893,6 +17919,8 @@ PhaseStatus Compiler::fgMorphArrayOps()
                 stmt->SetRootNode(morphedTree);
             }
         }
+
+        mdArrayTempCache.Reset();
     }
 
     return changed ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;

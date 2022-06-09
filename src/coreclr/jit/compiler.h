@@ -4546,7 +4546,59 @@ public:
 
     bool fgMorphBlockStmt(BasicBlock* block, Statement* stmt DEBUGARG(const char* msg));
 
-    bool fgMorphArrayOpsStmt(BasicBlock* block, Statement* stmt);
+    class MorphMDArrayTempCache
+    {
+    private:
+        class TempList
+        {
+        public:
+            TempList(Compiler* compiler)
+                : m_compiler(compiler), m_first(nullptr), m_insertPtr(&m_first), m_nextAvail(nullptr)
+            {
+            }
+
+            unsigned GetTemp();
+
+            void Reset()
+            {
+                m_nextAvail = m_first;
+            }
+
+        private:
+            struct Node
+            {
+                Node(unsigned tmp) : next(nullptr), tmp(tmp)
+                {
+                }
+
+                Node*    next;
+                unsigned tmp;
+            };
+
+            Compiler* m_compiler;
+            Node*     m_first;
+            Node**    m_insertPtr;
+            Node*     m_nextAvail;
+        };
+
+        TempList intTemps; // Temps for genActualType() == TYP_INT
+        TempList refTemps; // Temps for TYP_REF
+
+    public:
+        MorphMDArrayTempCache(Compiler* compiler) : intTemps(compiler), refTemps(compiler)
+        {
+        }
+
+        unsigned GrabTemp(var_types type);
+
+        void Reset()
+        {
+            intTemps.Reset();
+            refTemps.Reset();
+        }
+    };
+
+    bool fgMorphArrayOpsStmt(MorphMDArrayTempCache* pTempCache, BasicBlock* block, Statement* stmt);
     PhaseStatus fgMorphArrayOps();
 
     void fgSetOptions();
