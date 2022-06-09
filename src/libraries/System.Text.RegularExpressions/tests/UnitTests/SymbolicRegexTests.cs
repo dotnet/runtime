@@ -134,7 +134,7 @@ namespace System.Text.RegularExpressions.Tests
             // because it does not matter which algebra we use here (this matters only for performance)
             HashSet<(uint, SymbolicRegexNode<BDD>)> states = new();
             Stack<(uint, SymbolicRegexNode<BDD>)> frontier = new();
-            List<BDD> minterms = root._builder._solver.GenerateMinterms(root.GetSets());
+            List<BDD> minterms = MintermGenerator<BDD>.GenerateMinterms(root._builder._solver, root.GetSets());
 
             // Start from the initial state that has kind 'General' when no anchors are being used, else kind 'BeginningEnd'
             (uint, SymbolicRegexNode<BDD>) initialState = (root._info.ContainsSomeAnchor ? CharKind.BeginningEnd : CharKind.General, root);

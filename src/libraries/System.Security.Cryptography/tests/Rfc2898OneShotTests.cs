@@ -289,7 +289,7 @@ namespace System.Security.Cryptography
             string password = "password";
             int iterations = 16777216;
             byte[] expected = "eefe3d61cd4da4e4e9945b3d6ba2158c2634e984".HexToByteArray();
-            byte[] salt = Encoding.UTF8.GetBytes("salt");
+            ReadOnlySpan<byte> salt = "salt"u8;
             byte[] actual = Rfc2898DeriveBytes.Pbkdf2(password, salt, iterations, HashAlgorithmName.SHA1, expected.Length);
             Assert.Equal(expected, actual);
         }

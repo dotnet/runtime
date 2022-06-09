@@ -32,7 +32,7 @@ namespace System.Reflection.Runtime.ParameterInfos
         {
             get
             {
-                return _lazyParameterType ?? (_lazyParameterType = QualifiedParameterTypeHandle.Resolve(_typeContext));
+                return _lazyParameterType ??= QualifiedParameterTypeHandle.Resolve(_typeContext);
             }
         }
 

@@ -248,7 +248,7 @@ namespace System.Reflection.Runtime.Assemblies
         {
             get
             {
-                return _lazyCaseSensitiveTypeTable ?? (_lazyCaseSensitiveTypeTable = new CaseSensitiveTypeCache(this));
+                return _lazyCaseSensitiveTypeTable ??= new CaseSensitiveTypeCache(this);
             }
         }
 

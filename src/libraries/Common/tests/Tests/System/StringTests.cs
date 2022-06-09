@@ -7418,8 +7418,7 @@ namespace System.Tests
         [Fact]
         public static void CreateStringFromEncoding_0Length_EmptyStringReturned() // basic test for code coverage; more tests in encodings tests
         {
-            byte[] bytes = Encoding.ASCII.GetBytes("hello");
-            Assert.Same(string.Empty, new AsciiEncodingWithZeroReturningGetCharCount().GetString(bytes, 0, 0));
+            Assert.Same(string.Empty, new AsciiEncodingWithZeroReturningGetCharCount().GetString("hello"u8.ToArray(), 0, 0));
         }
 
         private sealed class AsciiEncodingWithZeroReturningGetCharCount : ASCIIEncoding
