@@ -7446,8 +7446,28 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                 const TypeCompareState compare =
                     info.compCompHnd->compareTypesForEquality(unboxResolvedToken.hClass, pResolvedToken->hClass);
 
+                bool optimize = false;
+
                 // If so, box/unbox.any is a nop.
                 if (compare == TypeCompareState::Must)
+                {
+                    optimize = true;
+                }
+                else if (compare == TypeCompareState::MustNot)
+                {
+                    // An attempt to catch cases where we mix enums and primitives, e.g.:
+                    //   (IntEnum)(object)myInt
+                    //   (byte)(object)myByteEnum
+                    //
+                    CorInfoType typ = info.compCompHnd->getTypeForPrimitiveValueClass(unboxResolvedToken.hClass);
+                    if ((typ >= CORINFO_TYPE_BYTE) && (typ <= CORINFO_TYPE_ULONG) &&
+                        (info.compCompHnd->getTypeForPrimitiveValueClass(pResolvedToken->hClass) == typ))
+                    {
+                        optimize = true;
+                    }
+                }
+
+                if (optimize)
                 {
                     JITDUMP("\n Importing BOX; UNBOX.ANY as NOP\n");
                     // Skip the next unbox.any instruction
@@ -17740,8 +17760,12 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                 {
                     // Do we have to normalize?
                     var_types fncRealRetType = JITtype2varType(info.compMethodInfo->args.retType);
-                    if ((varTypeIsSmall(op2->TypeGet()) || varTypeIsSmall(fncRealRetType)) &&
-                        fgCastNeeded(op2, fncRealRetType))
+                    // For RET_EXPR get the type info from the call. Regardless
+                    // of whether it ends up inlined or not normalization will
+                    // happen as part of that function's codegen.
+                    GenTree* returnedTree = op2->OperIs(GT_RET_EXPR) ? op2->AsRetExpr()->gtInlineCandidate : op2;
+                    if ((varTypeIsSmall(returnedTree->TypeGet()) || varTypeIsSmall(fncRealRetType)) &&
+                        fgCastNeeded(returnedTree, fncRealRetType))
                     {
                         // Small-typed return values are normalized by the callee
                         op2 = gtNewCastNode(TYP_INT, op2, false, fncRealRetType);

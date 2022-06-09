@@ -92,11 +92,6 @@
         <target state="translated">Dígitos hexadecimales insuficientes.</target>
         <note />
       </trans-unit>
-      <trans-unit id="InternalError_ScanRegex">
-        <source>Internal error in ScanRegex.</source>
-        <target state="translated">Error interno en ScanRegex.</target>
-        <note>{Locked="ScanRegex"}</note>
-      </trans-unit>
       <trans-unit id="InvalidGroupingConstruct">
         <source>Unrecognized grouping construct.</source>
         <target state="translated">Construcción de agrupación no reconocida.</target>
@@ -210,11 +205,6 @@
       <trans-unit id="RegexMethodMustHaveValidSignatureMessage">
         <source>RegexGenerator method must be partial, parameterless, non-generic, non-abstract, and return Regex</source>
         <target state="translated">El método RegexGenerator debe ser parcial, sin parámetros, no genérico, no abstracto y devolver Regex</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="ReplacementError">
-        <source>Replacement pattern error.</source>
-        <target state="translated">Error de patrón de reemplazo.</target>
         <note />
       </trans-unit>
       <trans-unit id="ReversedCharacterRange">

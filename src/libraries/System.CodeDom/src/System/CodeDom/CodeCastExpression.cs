@@ -29,7 +29,7 @@ namespace System.CodeDom
 
         public CodeTypeReference TargetType
         {
-            get => _targetType ?? (_targetType = new CodeTypeReference(""));
+            get => _targetType ??= new CodeTypeReference("");
             set => _targetType = value;
         }
 

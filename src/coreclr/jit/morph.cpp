@@ -4785,7 +4785,7 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
         addr = gtNewOperNode(GT_ADD, TYP_BYREF, arrRef, addr);
     }
 
-    // TODO-Throughout: bash the INDEX_ADDR to ARR_ADDR here instead of creating a new node.
+    // TODO-Throughput: bash the INDEX_ADDR to ARR_ADDR here instead of creating a new node.
     addr = new (this, GT_ARR_ADDR) GenTreeArrAddr(addr, elemTyp, elemStructType, elemOffs);
 
     if (indexAddr->IsNotNull())
@@ -4825,7 +4825,7 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
     tree = fgMorphTree(tree);
     DBEXEC(tree == indexAddr, tree->gtDebugFlags &= ~GTF_DEBUG_NODE_MORPHED);
 
-    JITDUMP("fgMorphArrayIndex (after remorph):\n")
+    JITDUMP("fgMorphIndexAddr (after remorph):\n")
     DISPTREE(tree)
 
     return tree;
@@ -7056,20 +7056,6 @@ void Compiler::fgValidateIRForTailCall(GenTreeCall* call)
             // self-assignments, which get morphed to GT_NOP.
             if (tree->OperIs(GT_NOP))
             {
-            }
-            // No-op casts may appear due to normalization during inlining. Example:
-            //  *  RETURN    int
-            //  \--*  CAST      int <- bool <- int
-            //     \--*  CALL      int    Attribute.IsDefined (with gtReturnType = TYP_BOOL)
-            //        +--*  LCL_VAR   ref    V00 arg0
-            //        +--*  LCL_VAR   ref    V01 arg1
-            //        \--*  CNS_INT   int    1
-            else if (tree->OperIs(GT_CAST))
-            {
-                assert(ValidateUse(tree->AsCast()->CastOp()) && "Expected cast op to be from result of tailcall");
-                assert((tree->AsCast()->gtCastType == m_tailcall->gtReturnType) &&
-                       "Expected cast after tailcall to be no-op");
-                m_prevVal = tree;
             }
             // We might see arbitrary chains of assignments that trivially
             // propagate the result. Example:

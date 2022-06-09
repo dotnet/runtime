@@ -65,6 +65,40 @@ jobs:
         - WasmTestOnBrowser
         - WasmTestOnNodeJs
 
+  # Library tests with full threading 
+  - template: /eng/pipelines/common/templates/wasm-library-tests.yml
+    parameters:
+      platforms:
+        - Browser_wasm
+        #- Browser_wasm_win
+      nameSuffix: _Threading
+      extraBuildArgs: /p:WasmEnableThreads=true
+      # Don't run for rolling builds, as this is covered
+      alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+      # NOTE - Since threading is experimental, we don't want to block mainline work
+      shouldContinueOnError: true
+      scenarios:
+        - normal
+        - WasmTestOnBrowser
+        - WasmTestOnNodeJs
+
+  # Library tests with internal threads only
+  - template: /eng/pipelines/common/templates/wasm-library-tests.yml
+    parameters:
+      platforms:
+        - Browser_wasm
+        #- Browser_wasm_win
+      nameSuffix: _Threading_PerfTracing
+      extraBuildArgs: /p:WasmEnablePerfTracing=true
+      # Don't run for rolling builds, as this is covered
+      alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+      # NOTE - Since threading is experimental, we don't want to block mainline work
+      shouldContinueOnError: true
+      scenarios:
+        - normal
+        - WasmTestOnBrowser
+        - WasmTestOnNodeJs
+
   # EAT Library tests - only run on linux
   - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
     parameters:

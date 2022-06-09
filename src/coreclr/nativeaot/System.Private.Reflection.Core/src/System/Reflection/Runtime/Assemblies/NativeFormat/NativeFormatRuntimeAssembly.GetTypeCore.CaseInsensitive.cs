@@ -60,7 +60,7 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
         {
             get
             {
-                return _lazyCaseInsensitiveTypeDictionary ?? (_lazyCaseInsensitiveTypeDictionary = CreateCaseInsensitiveTypeDictionary());
+                return _lazyCaseInsensitiveTypeDictionary ??= CreateCaseInsensitiveTypeDictionary();
             }
         }
 

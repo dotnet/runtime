@@ -394,6 +394,23 @@ jobs:
       - Browser_wasm
     alwaysRun: ${{ variables.isRollingBuild }}
 
+# BUILD ONLY - Wasm Threading Legs
+- template: /eng/pipelines/common/templates/wasm-build-only.yml
+  parameters:
+    platforms:
+      - Browser_wasm
+    nameSuffix: _Threading
+    extraBuildArgs: /p:WasmEnableThreads=true
+    alwaysRun: ${{ variables.isRollingBuild }}
+
+- template: /eng/pipelines/common/templates/wasm-build-only.yml
+  parameters:
+    platforms:
+      - Browser_wasm
+    nameSuffix: _Threading_PerfTracing
+    extraBuildArgs: /p:WasmEnablePerfTracing=true
+    alwaysRun: ${{ variables.isRollingBuild }}
+
 #
 # iOS/tvOS devices - Full AOT + AggressiveTrimming to reduce size
 # Build the whole product using Mono and run libraries tests
