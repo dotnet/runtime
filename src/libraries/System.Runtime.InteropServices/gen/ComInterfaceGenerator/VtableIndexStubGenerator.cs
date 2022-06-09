@@ -336,18 +336,15 @@ namespace Microsoft.Interop
 
         private static IMarshallingGeneratorFactory GetMarshallingGeneratorFactory(StubEnvironment env)
         {
-            InteropGenerationOptions options = new(UseMarshalType: true);
-            IMarshallingGeneratorFactory generatorFactory;
-
-            generatorFactory = new UnsupportedMarshallingFactory();
-
-            generatorFactory = new MarshalAsMarshallingGeneratorFactory(options, generatorFactory);
-
             IAssemblySymbol coreLibraryAssembly = env.Compilation.GetSpecialType(SpecialType.System_Object).ContainingAssembly;
             ITypeSymbol? disabledRuntimeMarshallingAttributeType = coreLibraryAssembly.GetTypeByMetadataName(TypeNames.System_Runtime_CompilerServices_DisableRuntimeMarshallingAttribute);
             bool runtimeMarshallingDisabled = disabledRuntimeMarshallingAttributeType is not null
                 && env.Compilation.Assembly.GetAttributes().Any(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, disabledRuntimeMarshallingAttributeType));
+            InteropGenerationOptions options = new(UseMarshalType: true, RuntimeMarshallingDisabled: runtimeMarshallingDisabled);
+            IMarshallingGeneratorFactory generatorFactory;
 
+            generatorFactory = new UnsupportedMarshallingFactory();
+            generatorFactory = new MarshalAsMarshallingGeneratorFactory(options, generatorFactory);
             IMarshallingGeneratorFactory elementFactory = new AttributedMarshallingModelGeneratorFactory(generatorFactory, new AttributedMarshallingModelOptions(runtimeMarshallingDisabled));
             // We don't need to include the later generator factories for collection elements
             // as the later generator factories only apply to parameters.
