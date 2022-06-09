@@ -104,6 +104,7 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
             case GT_LE:
             case GT_GE:
             case GT_GT:
+            case GT_CMP:
             case GT_BOUNDS_CHECK:
                 return emitter::emitIns_valid_imm_for_cmp(immVal, size);
             case GT_AND:
@@ -717,10 +718,6 @@ GenTree* Lowering::LowerModPow2(GenTree* node)
         mod->ChangeOper(GT_CNEG_LT);
         mod->gtOp1 = trueExpr;
         mod->gtFlags |= GTF_USE_FLAGS;
-
-        ContainCheckNode(mod);
-
-        return mod->gtNext;
     }
     else
     {
@@ -756,11 +753,11 @@ GenTree* Lowering::LowerModPow2(GenTree* node)
         mod->gtOp1 = trueExpr;
         mod->gtOp2 = falseExpr;
         mod->gtFlags |= GTF_USE_FLAGS;
-
-        ContainCheckNode(mod);
-
-        return mod->gtNext;
     }
+
+    ContainCheckNode(mod);
+
+    return mod->gtNext;
 }
 
 //------------------------------------------------------------------------
