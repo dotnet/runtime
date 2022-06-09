@@ -2110,18 +2110,11 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
 #ifdef DEBUG
         indirectCellAddress->AsIntCon()->gtTargetHandle = (size_t)call->gtCallMethHnd;
 #endif
-        indirectCellAddress->SetRegNum(REG_R2R_INDIRECT_PARAM);
-#ifdef TARGET_ARM
-        // Issue #xxxx : Don't attempt to CSE this constant on ARM32
-        //
-        // This constant has specific register requirements, and LSRA doesn't currently correctly
-        // handle them when the value is in a CSE'd local.
-        indirectCellAddress->SetDoNotCSE();
-#endif // TARGET_ARM
 
         // Push the stub address onto the list of arguments.
-        InsertAfterThisOrFirst(comp,
-                               NewCallArg::Primitive(indirectCellAddress).WellKnown(WellKnownArg::R2RIndirectionCell));
+        NewCallArg indirCellAddrArg =
+            NewCallArg::Primitive(indirectCellAddress).WellKnown(WellKnownArg::R2RIndirectionCell);
+        InsertAfterThisOrFirst(comp, indirCellAddrArg);
     }
 #endif
 
@@ -7938,7 +7931,6 @@ GenTree* Compiler::fgGetStubAddrArg(GenTreeCall* call)
 #endif
     }
     assert(stubAddrArg != nullptr);
-    stubAddrArg->SetRegNum(virtualStubParamInfo->GetReg());
     return stubAddrArg;
 }
 
