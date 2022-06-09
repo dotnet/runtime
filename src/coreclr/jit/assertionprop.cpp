@@ -3177,61 +3177,36 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
 
     if (conValTree != nullptr)
     {
+        // TODO: Extend on integers, especially on ARM where a constant might take up to 4 instructions
         if (tree->OperIs(GT_LCL_VAR) && conValTree->OperIs(GT_CNS_VEC, GT_CNS_DBL))
         {
             // A simple heuristic: If the constant is defined outside of a loop (not far from its head)
             // and is used inside it - don't propagate.
 
-            bool keepPropagating = false;
-
-            if (conValTree->OperIs(GT_CNS_VEC))
+            if (!conValTree->gtCostsInitialized)
             {
-                if (conValTree->IsVectorZero() || conValTree->IsVectorAllBitsSet())
-                {
-                    // These are cheap to materialize
-                    keepPropagating = true;
-                }
-            }
-            else if (conValTree->OperIs(GT_CNS_DBL))
-            {
-                if (conValTree->IsFloatPositiveZero())
-                {
-                    // This is cheap to materialize
-                    keepPropagating = true;
-                }
-#if defined(TARGET_ARM64)
-                if (emitter::canEncodeFloatImm8(conValTree->AsDblCon()->gtDconVal))
-                {
-                    // Such floats are likely immable on arm64
-                    keepPropagating = true;
-                }
-#endif
+                gtPrepareCost(conValTree);
             }
 
-            if (!keepPropagating)
+            if ((conValTree->GetCostEx() > 1) && (conValTree->GetCostSz() > 1))
             {
                 // Try to find the block this constant was originally defined in
-                const unsigned lclNum = tree->AsLclVarCommon()->GetLclNum();
-                const unsigned ssaNum = GetSsaNumForLocalVarDef(tree);
-                if (ssaNum != SsaConfig::RESERVED_SSA_NUM)
+                GenTreeLclVar* lcl = tree->AsLclVar();
+                if (lcl->HasSsaName())
                 {
-                    BasicBlock* defBlock = lvaTable[lclNum].GetPerSsaData(ssaNum)->GetBlock();
+                    BasicBlock* defBlock = lvaGetDesc(lcl)->GetPerSsaData(lcl->GetSsaNum())->GetBlock();
                     if (defBlock != nullptr)
                     {
-                        // TODO: if it lives across calls in that loops we should propagate it only after those
-                        // calls on ABIs without callee-saved registers to avoid spills
-                        if (!defBlock->IsInLoop() && block->IsInLoop())
-                        {
-                            // Last, let's limit it to cases where block is not some not-always-taken
-                            // block inside that loop
-                            const weight_t defBlockWeight = defBlock->getBBWeight(this);
-                            const weight_t blockWeight    = block->getBBWeight(this);
+                        // Avoid propagating if the weighted use cost is significantly greater than the def cost.
+                        // NOTE: this currently does not take "a float living across a call" case into account
+                        // where we might end up with spill/restore on ABIs without callee-saved registers
+                        const weight_t defBlockWeight = defBlock->getBBWeight(this);
+                        const weight_t blockWeight    = block->getBBWeight(this);
 
-                            if ((defBlockWeight > 0) && ((blockWeight / defBlockWeight) >= BB_LOOP_WEIGHT_SCALE))
-                            {
-                                JITDUMP("Skip constant propagation inside loop " FMT_BB "\n", block->bbNum);
-                                return nullptr;
-                            }
+                        if ((defBlockWeight > 0) && ((blockWeight / defBlockWeight) >= BB_LOOP_WEIGHT_SCALE))
+                        {
+                            JITDUMP("Skip constant propagation inside loop " FMT_BB "\n", block->bbNum);
+                            return nullptr;
                         }
                     }
                 }
