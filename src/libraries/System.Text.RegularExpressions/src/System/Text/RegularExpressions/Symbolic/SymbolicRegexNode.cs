@@ -2181,6 +2181,15 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <returns>an enumeration of the elements of the alternation, or just the node itself if there is no alternation</returns>
         internal IEnumerable<SymbolicRegexNode<TSet>> EnumerateAlternationBranches()
         {
+            // Guard against stack overflow due to deep recursion, that should not arise in any normal situation
+            if (!StackHelper.TryEnsureSufficientExecutionStack())
+            {
+                foreach (SymbolicRegexNode<TSet> elem in StackHelper.CallOnEmptyStack(EnumerateAlternationBranches))
+                {
+                    yield return elem;
+                }
+            }
+
             switch (_kind)
             {
                 case SymbolicRegexNodeKind.DisableBacktrackingSimulation:
@@ -2208,6 +2217,31 @@ namespace System.Text.RegularExpressions.Symbolic
                     // Yield the last element
                     yield return current;
                     break;
+
+                case SymbolicRegexNodeKind.Concat:
+                    // Extract possible alternations present in the initial element of the concatenation
+                    // Typical case would be that (A|B)C is treated the same as (AC|BC)
+                    // The recursive call is to make sure that cases such as ((A|B)C)D are also handled,
+                    // because right associative form of concatenations is not always guaranteed
+                    Debug.Assert(_left is not null && _right is not null);
+                    foreach (SymbolicRegexNode<TSet> left_alt in _left.EnumerateAlternationBranches())
+                    {
+                        if (left_alt == _left)
+                        {
+                            // There were no initial alternatives in this concatenation
+                            yield return this;
+                        }
+                        else
+                        {
+                            yield return CreateConcat(_builder, left_alt, _right);
+                        }
+                    }
+                    break;
+
+                case SymbolicRegexNodeKind.Singleton when IsNothing:
+                    // Skip deadends
+                    break;
+
                 default:
                     yield return this;
                     break;
@@ -2244,7 +2278,7 @@ namespace System.Text.RegularExpressions.Symbolic
             switch (_kind)
             {
                 case SymbolicRegexNodeKind.Singleton:
-                    return 1;
+                    return IsNothing ? 0 : 1;
 
                 case SymbolicRegexNodeKind.Concat:
                 case SymbolicRegexNodeKind.Alternate:

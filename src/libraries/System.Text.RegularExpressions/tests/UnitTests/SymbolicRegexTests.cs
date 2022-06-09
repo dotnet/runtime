@@ -5,6 +5,7 @@ using System.Globalization;
 using Xunit;
 using System.Text.RegularExpressions.Symbolic;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace System.Text.RegularExpressions.Tests
 {
@@ -79,7 +80,16 @@ namespace System.Text.RegularExpressions.Tests
                 // lower bound int.MaxValue is never unfolded and treated as infinity
                 ("(a{2147483647,})", 2),
                 // typical case that blows up the DFA size to 2^100 when .* is added at the beginnig (below)
-                ("a.{100}b", 103)
+                ("a.{100}b", 103),
+                // these patterns are regression tests to make sure that right concatenations are propagated over alternations
+                ("a.{10}|bb", 14),
+                ("(a.{10}|bb)c", 15),
+                ("((a.{10}|bb)c)d", 16),
+                ("(((a.{10}|bb)c)d)*", 16),
+                // involves a deadend in form of an empty character class [\d-[\w]] that contributes with no states to an NFA
+                (@"([\d-[\w]]{10}|bc)", 3),
+                // in contrast this pattern has no deadends because [\w-[\d]] is nonempty
+                (@"([\w-[\d]]{10}|bc)", 13)
             };
 
             foreach ((string Pattern, int ExpectedSafeSize) in patternData)
@@ -153,10 +163,13 @@ namespace System.Text.RegularExpressions.Tests
                     SymbolicRegexNode<BDD> target = source.Node.CreateDerivativeWithoutEffects(minterm, source.Kind);
 
                     //In the case of an NFA all the different alternatives in the DFA state become individual states themselves
-                    foreach (SymbolicRegexNode<BDD> node in GetAlternatives(target))
+                    foreach (SymbolicRegexNode<BDD> node in target.EnumerateAlternationBranches())
                     {
+                        // A deadend is not a valid alternative
+                        Assert.False(node.IsNothing);
+
                         (uint, SymbolicRegexNode<BDD>) state = (kind, node);
-                        // Add the state to the set of states
+                        // Add the state to the set of states seen so far
                         if (states.Add(state))
                         {
                             // If state is new then it still needs to be explored
@@ -167,22 +180,6 @@ namespace System.Text.RegularExpressions.Tests
             }
 
             return states.Count;
-
-            // Enumerates the alternatives from a node, for eaxmple (ab|(bc|cd)) has three alternatives
-            static IEnumerable<SymbolicRegexNode<BDD>> GetAlternatives(SymbolicRegexNode<BDD> node)
-            {
-                if (node._kind == SymbolicRegexNodeKind.Alternate)
-                {
-                    foreach (SymbolicRegexNode<BDD> elem in GetAlternatives(node._left!))
-                        yield return elem;
-                    foreach (SymbolicRegexNode<BDD> elem in GetAlternatives(node._right!))
-                        yield return elem;
-                }
-                else if (!node.IsNothing) // omit deadend states
-                {
-                    yield return node;
-                }
-            }
 
             // Simplified character kind calculation that omits the special case that minterm can be the very last \n
             // This omission has practically no effect of the size of the state space, but would complicate the logic
