@@ -235,10 +235,6 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="DeployHelixTargetsFile" AfterTargets="ArchiveTests" Condition="'$(HelixTargetsFile)' != ''">
-    <Copy SourceFiles="$(HelixTargetsFile)" DestinationFiles="$(TestArchiveTestsDir)$(TestProjectName).helix.targets" SkipUnchangedFiles="true" />
-  </Target>
-
   <Import Project="$(MSBuildThisFileDirectory)workloads-testing.targets" />
 
   <Target Name="PublishTestAsSelfContained"
