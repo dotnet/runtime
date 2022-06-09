@@ -10,6 +10,9 @@ using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
+#if NET7_0_OR_GREATER
+using System.Runtime.InteropServices.Marshalling;
+#endif
 using Gdip = System.Drawing.SafeNativeMethods.Gdip;
 
 namespace System.Drawing
@@ -39,6 +42,31 @@ namespace System.Drawing
         // However, as this delegate is not used in both GDI 1.0 and 1.1, we choose not
         // to modify it, in order to preserve compatibility.
         public delegate bool GetThumbnailImageAbort();
+
+#if NET7_0_OR_GREATER
+        [CustomTypeMarshaller(typeof(GetThumbnailImageAbort), CustomTypeMarshallerKind.Value, Direction = CustomTypeMarshallerDirection.In, Features = CustomTypeMarshallerFeatures.TwoStageMarshalling | CustomTypeMarshallerFeatures.UnmanagedResources)]
+        internal unsafe struct GetThumbnailImageAbortMarshaller
+        {
+            private delegate Interop.BOOL GetThumbnailImageAbortNative(IntPtr callbackdata);
+            private GetThumbnailImageAbortNative _managed;
+            private delegate* unmanaged<IntPtr, Interop.BOOL> _nativeFunction;
+            public GetThumbnailImageAbortMarshaller(GetThumbnailImageAbort managed)
+            {
+                _managed = data => managed() ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+                _nativeFunction = (delegate* unmanaged<IntPtr, Interop.BOOL>)Marshal.GetFunctionPointerForDelegate(_managed);
+            }
+
+            public delegate* unmanaged<IntPtr, Interop.BOOL> ToNativeValue()
+            {
+                return _nativeFunction;
+            }
+
+            public void FreeNative()
+            {
+                GC.KeepAlive(_managed);
+            }
+        }
+#endif
 
         internal IntPtr nativeImage;
 

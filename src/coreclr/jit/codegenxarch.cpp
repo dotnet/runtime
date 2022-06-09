@@ -451,8 +451,8 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr  size,
 /***********************************************************************************
  *
  * Generate code to set a register 'targetReg' of type 'targetType' to the constant
- * specified by the constant (GT_CNS_INT or GT_CNS_DBL) in 'tree'. This does not call
- * genProduceReg() on the target register.
+ * specified by the constant (GT_CNS_INT, GT_CNS_DBL, or GT_CNS_VEC) in 'tree'. This
+ * does not call genProduceReg() on the target register.
  */
 void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTree* tree)
 {
@@ -506,6 +506,74 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             }
         }
         break;
+
+        case GT_CNS_VEC:
+        {
+            GenTreeVecCon* vecCon = tree->AsVecCon();
+
+            emitter* emit = GetEmitter();
+            emitAttr attr = emitTypeSize(targetType);
+
+            if (vecCon->IsAllBitsSet())
+            {
+#if defined(FEATURE_SIMD)
+                emit->emitIns_SIMD_R_R_R(INS_pcmpeqd, attr, targetReg, targetReg, targetReg);
+#else
+                emit->emitIns_R_R(INS_pcmpeqd, attr, targetReg, targetReg);
+#endif // FEATURE_SIMD
+                break;
+            }
+
+            if (vecCon->IsZero())
+            {
+#if defined(FEATURE_SIMD)
+                emit->emitIns_SIMD_R_R_R(INS_xorps, attr, targetReg, targetReg, targetReg);
+#else
+                emit->emitIns_R_R(INS_xorps, attr, targetReg, targetReg);
+#endif // FEATURE_SIMD
+                break;
+            }
+
+            switch (tree->TypeGet())
+            {
+#if defined(FEATURE_SIMD)
+                case TYP_SIMD8:
+                {
+                    simd8_t              constValue = vecCon->gtSimd8Val;
+                    CORINFO_FIELD_HANDLE hnd        = emit->emitSimd8Const(constValue);
+
+                    emit->emitIns_R_C(ins_Load(targetType), attr, targetReg, hnd, 0);
+                    break;
+                }
+
+                case TYP_SIMD12:
+                case TYP_SIMD16:
+                {
+                    simd16_t             constValue = vecCon->gtSimd16Val;
+                    CORINFO_FIELD_HANDLE hnd        = emit->emitSimd16Const(constValue);
+
+                    emit->emitIns_R_C(ins_Load(targetType), attr, targetReg, hnd, 0);
+                    break;
+                }
+
+                case TYP_SIMD32:
+                {
+                    simd32_t             constValue = vecCon->gtSimd32Val;
+                    CORINFO_FIELD_HANDLE hnd        = emit->emitSimd32Const(constValue);
+
+                    emit->emitIns_R_C(ins_Load(targetType), attr, targetReg, hnd, 0);
+                    break;
+                }
+#endif // FEATURE_SIMD
+
+                default:
+                {
+                    unreached();
+                }
+            }
+
+            break;
+        }
 
         default:
             unreached();
@@ -1369,6 +1437,30 @@ void CodeGen::inst_SETCC(GenCondition condition, var_types type, regNumber dstRe
 }
 
 //------------------------------------------------------------------------
+// inst_JMP: Generate a jump instruction.
+//
+void CodeGen::inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock, bool isRemovableJmpCandidate)
+{
+#if !FEATURE_FIXED_OUT_ARGS
+    // On the x86 we are pushing (and changing the stack level), but on x64 and other archs we have
+    // a fixed outgoing args area that we store into and we never change the stack level when calling methods.
+    //
+    // Thus only on x86 do we need to assert that the stack level at the target block matches the current stack level.
+    //
+    CLANG_FORMAT_COMMENT_ANCHOR;
+
+#ifdef UNIX_X86_ABI
+    // bbTgtStkDepth is a (pure) argument count (stack alignment padding should be excluded).
+    assert((tgtBlock->bbTgtStkDepth * sizeof(int) == (genStackLevel - curNestedAlignment)) || isFramePointerUsed());
+#else
+    assert((tgtBlock->bbTgtStkDepth * sizeof(int) == genStackLevel) || isFramePointerUsed());
+#endif
+#endif // !FEATURE_FIXED_OUT_ARGS
+
+    GetEmitter()->emitIns_J(emitter::emitJumpKindToIns(jmp), tgtBlock, 0, isRemovableJmpCandidate);
+}
+
+//------------------------------------------------------------------------
 // genCodeForReturnTrap: Produce code for a GT_RETURNTRAP node.
 //
 // Arguments:
@@ -1491,6 +1583,11 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             FALLTHROUGH;
 
         case GT_CNS_DBL:
+            genSetRegToConst(targetReg, targetType, treeNode);
+            genProduceReg(treeNode);
+            break;
+
+        case GT_CNS_VEC:
             genSetRegToConst(targetReg, targetType, treeNode);
             genProduceReg(treeNode);
             break;
@@ -4858,7 +4955,8 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
             // zero in the target register, because an xor is smaller than a copy. Note that we could
             // potentially handle this in the register allocator, but we can't always catch it there
             // because the target may not have a register allocated for it yet.
-            if (op1->isUsedFromReg() && (op1->GetRegNum() != targetReg) && (op1->IsIntegralConst(0) || op1->IsFPZero()))
+            if (op1->isUsedFromReg() && (op1->GetRegNum() != targetReg) &&
+                (op1->IsIntegralConst(0) || op1->IsFloatPositiveZero()))
             {
                 op1->SetRegNum(REG_NA);
                 op1->ResetReuseRegVal();

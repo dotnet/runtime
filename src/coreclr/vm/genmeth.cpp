@@ -473,7 +473,7 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
                 amt.SuppressRelease();
 
 #ifdef _DEBUG
-                SString name(SString::Utf8);
+                SString name;
                 TypeString::AppendMethodDebug(name, pNewMD);
                 StackScratchBuffer buff;
                 const char* pDebugNameUTF8 = name.GetUTF8(buff);

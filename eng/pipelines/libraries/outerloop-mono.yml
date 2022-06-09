@@ -56,6 +56,7 @@ jobs:
         - Linux_x64
         - Linux_musl_x64
         - OSX_x64
+        - Android_arm64
         jobParameters:
           testScope: outerloop
           nameSuffix: AllSubsets_Mono

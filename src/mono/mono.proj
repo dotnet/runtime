@@ -918,7 +918,7 @@
     <Copy SourceFiles="@(_MonoIncludeArtifacts)"
           DestinationFiles="@(_MonoIncludeArtifacts->'$(RuntimeBinDir)include\%(RecursiveDir)%(Filename)%(Extension)')"
           SkipUnchangedFiles="true"
-          Condition="'$(MonoGenerateOffsetsOSGroups)' == '' and ('$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsAndroid)' == 'true' or '$(TargetsLinuxBionic)' == 'true' or '$(TargetsBrowser)' == 'true')"/>
+          Condition="'$(MonoGenerateOffsetsOSGroups)' == ''"/>
 
     <Copy SourceFiles="@(_MonoRuntimeBuildArtifacts)"
           DestinationFiles="@(_MonoRuntimeBuildArtifacts->'$(RuntimeBinDir)build\%(RecursiveDir)%(Filename)%(Extension)')"

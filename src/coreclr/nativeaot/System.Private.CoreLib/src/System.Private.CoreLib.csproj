@@ -81,6 +81,9 @@
     <Compile Include="$(CompilerCommonPath)\Internal\NativeFormat\NativeFormatReader.cs">
       <Link>Common\src\Internal\NativeFormat\NativeFormatReader.cs</Link>
     </Compile>
+    <Compile Include="$(CompilerCommonPath)\Internal\NativeFormat\NativeFormatReader.Primitives.cs">
+      <Link>Common\src\Internal\NativeFormat\NativeFormatReader.Primitives.cs</Link>
+    </Compile>
     <Compile Include="$(CompilerCommonPath)\Internal\NativeFormat\NativeFormatReader.String.cs">
       <Link>Common\src\Internal\NativeFormat\NativeFormatReader.String.cs</Link>
     </Compile>
@@ -371,9 +374,6 @@
     <Compile Include="$(AotCommonPath)\System\Runtime\CompilerServices\__BlockReflectionAttribute.cs">
       <Link>System\Runtime\CompilerServices\__BlockReflectionAttribute.cs</Link>
     </Compile>
-    <Compile Include="$(CompilerCommonPath)\Internal\NativeFormat\NativeFormatReader.Primitives.cs">
-      <Link>Internal\NativeFormat\NativeFormatReader.Primitives.cs</Link>
-    </Compile>
     <Compile Include="$(CompilerCommonPath)\Internal\Runtime\CanonTypeKind.cs">
       <Link>Internal\Runtime\CanonTypeKind.cs</Link>
     </Compile>
@@ -386,6 +386,17 @@
     <Compile Include="$(AotCommonPath)\Internal\Runtime\LowLevelStringConverter.cs">
       <Link>Internal\Runtime\LowLevelStringConverter.cs</Link>
     </Compile>
+  </ItemGroup>
+  <!-- Native metadata reader -->
+  <PropertyGroup>
+    <MetadataCommonPath>$(CompilerCommonPath)\Internal\Metadata\NativeFormat</MetadataCommonPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MetadataCommonPath)\NativeFormatReaderCommonGen.cs" />
+    <Compile Include="$(MetadataCommonPath)\MdBinaryReader.cs" />
+    <Compile Include="$(MetadataCommonPath)\MdBinaryReaderGen.cs" />
+    <Compile Include="$(MetadataCommonPath)\NativeMetadataReader.cs" />
+    <Compile Include="$(MetadataCommonPath)\NativeFormatReaderGen.cs" />
   </ItemGroup>
   <!-- For now, link Runtime.Base into System.Private.CoreLib until there is proper multifile build -->
   <PropertyGroup>

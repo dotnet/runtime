@@ -545,7 +545,7 @@ mini_emit_memory_copy_bytes (MonoCompile *cfg, MonoInst *dest, MonoInst *src, Mo
 	}
 
 	if ((cfg->opt & MONO_OPT_INTRINS) && (size->opcode == OP_ICONST)) {
-		mini_emit_memcpy_const_size (cfg, dest, src, size->inst_c0, align);
+		mini_emit_memcpy_const_size (cfg, dest, src, GTMREG_TO_INT (size->inst_c0), align);
 	} else {
 		mini_emit_memcpy_internal (cfg, dest, src, size, 0, align);
 	}
@@ -568,7 +568,7 @@ mini_emit_memory_init_bytes (MonoCompile *cfg, MonoInst *dest, MonoInst *value, 
 
 	//FIXME unrolled memset only supports zeroing
 	if ((cfg->opt & MONO_OPT_INTRINS) && (size->opcode == OP_ICONST) && (value->opcode == OP_ICONST) && (value->inst_c0 == 0)) {
-		mini_emit_memset_const_size (cfg, dest, value->inst_c0, size->inst_c0, align);
+		mini_emit_memset_const_size (cfg, dest, GTMREG_TO_INT (value->inst_c0), GTMREG_TO_INT (size->inst_c0), align);
 	} else {
 		mini_emit_memset_internal (cfg, dest, value, 0, size, 0, align);
 	}

@@ -10,8 +10,6 @@ using System.Runtime.InteropServices;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
 
-using Internal.Reflection.Tracing;
-
 namespace System.Reflection.Runtime.TypeInfos
 {
     //
@@ -79,11 +77,6 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.TypeInfo_CustomAttributes(this);
-#endif
-
                 return Empty<CustomAttributeData>.Enumerable;
             }
         }
@@ -100,10 +93,6 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.TypeInfo_FullName(this);
-#endif
                 string elementFullName = _key.ElementType.FullName;
                 if (elementFullName == null)
                     return null;
@@ -124,10 +113,6 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.TypeInfo_Namespace(this);
-#endif
                 return _key.ElementType.Namespace;
             }
         }

@@ -36,6 +36,7 @@ protected:
     GenTree*   m_src = nullptr;
 
     unsigned             m_blockSize          = 0;
+    ClassLayout*         m_blockLayout        = nullptr;
     unsigned             m_dstLclNum          = BAD_VAR_NUM;
     GenTreeLclVarCommon* m_dstLclNode         = nullptr;
     LclVarDsc*           m_dstVarDsc          = nullptr;
@@ -196,31 +197,10 @@ void MorphInitBlockHelper::PrepareDst()
         m_dstVarDsc    = m_comp->lvaGetDesc(m_dstLclNode);
         m_dstLclOffset = m_dstLclNode->GetLclOffs();
 
-        if (m_dst->OperIs(GT_LCL_VAR))
+        if (m_dst->TypeIs(TYP_STRUCT))
         {
-            if (m_dstVarDsc->TypeGet() == TYP_STRUCT)
-            {
-#ifdef DEBUG
-                const bool isSizeMistmatch =
-                    (m_dstVarDsc->lvExactSize != m_comp->info.compCompHnd->getClassSize(m_dstVarDsc->GetStructHnd()));
-                const bool isStackAllocCandidate =
-                    m_comp->compObjectStackAllocation() && !m_dstVarDsc->GetLayout()->IsValueClass();
-                // There were cases where for temps lvExactSize did not correspond to the struct size
-                // so we were using `getClassSize` result here, however, now this cases are gone and the only
-                // scenario when `getClassSize` != `lvExactSize` it is a class object optimized to be on stack
-                assert(!isSizeMistmatch || isStackAllocCandidate);
-#endif // DEBUG
-                m_blockSize = m_dstVarDsc->lvExactSize;
-            }
-            else
-            {
-                m_blockSize = genTypeSize(m_dstVarDsc);
-            }
-        }
-        else
-        {
-            assert(m_dst->OperIs(GT_LCL_FLD) && !m_dst->TypeIs(TYP_STRUCT));
-            m_blockSize = m_dst->AsLclFld()->GetSize();
+            assert(m_dstVarDsc->GetLayout()->GetSize() == m_dstVarDsc->lvExactSize);
+            m_blockLayout = m_dstLclNode->GetLayout(m_comp);
         }
     }
     else
@@ -239,7 +219,20 @@ void MorphInitBlockHelper::PrepareDst()
             m_dstLclOffset = static_cast<unsigned>(dstLclOffset);
         }
 
-        m_blockSize = m_dst->AsIndir()->Size();
+        if (m_dst->TypeIs(TYP_STRUCT))
+        {
+            m_blockLayout = m_dst->AsBlk()->GetLayout();
+        }
+    }
+
+    if (m_dst->TypeIs(TYP_STRUCT))
+    {
+        m_blockSize = m_blockLayout->GetSize();
+    }
+    else
+    {
+        assert(m_blockLayout == nullptr);
+        m_blockSize = genTypeSize(m_dst);
     }
 
     if (m_dstLclNode != nullptr)
@@ -332,7 +325,7 @@ void MorphInitBlockHelper::MorphStructCases()
     if (m_transformationDecision == BlockTransformation::Undefined)
     {
         // For an InitBlock we always require a block operand.
-        m_dst = m_comp->fgMorphBlockOperand(m_dst, m_dst->TypeGet(), m_blockSize, true /*isBlkReqd*/);
+        m_dst = m_comp->fgMorphBlockOperand(m_dst, m_dst->TypeGet(), m_blockLayout, true /*isBlkReqd*/);
         m_transformationDecision = BlockTransformation::StructBlock;
         m_dst->gtFlags |= GTF_DONT_CSE;
         m_result                = m_asg;
@@ -340,15 +333,10 @@ void MorphInitBlockHelper::MorphStructCases()
         m_result->gtFlags |= (m_dst->gtFlags & GTF_ALL_EFFECT);
 
 #if FEATURE_SIMD
-        if (varTypeIsSIMD(m_asg) && (m_dst == m_dstLclNode))
+        if (varTypeIsSIMD(m_asg) && (m_dst == m_dstLclNode) && m_src->IsIntegralConst(0))
         {
-            // For a SIMD local init we need to call SIMDIntrinsic init.
-            // We need this block becuase morph does not create SIMD init for promoted lclVars.
-            assert(m_src->IsIntegralConst(0) || m_src->IsFPZero());
             assert(m_dstVarDsc != nullptr);
-            const var_types asgType         = m_asg->TypeGet();
-            CorInfoType     simdBaseJitType = m_dstVarDsc->GetSimdBaseJitType();
-            m_src = m_comp->gtNewSIMDNode(asgType, m_src, SIMDIntrinsicInit, simdBaseJitType, m_blockSize);
+            m_src                   = m_comp->gtNewZeroConNode(m_asg->TypeGet(), CORINFO_TYPE_FLOAT);
             m_result->AsOp()->gtOp2 = m_src;
         }
 #endif // FEATURE_SIMD
@@ -911,11 +899,11 @@ void MorphCopyBlockHelper::MorphStructCases()
     {
         const var_types asgType   = m_dst->TypeGet();
         bool            isBlkReqd = (asgType == TYP_STRUCT);
-        m_dst                     = m_comp->fgMorphBlockOperand(m_dst, asgType, m_blockSize, isBlkReqd);
+        m_dst                     = m_comp->fgMorphBlockOperand(m_dst, asgType, m_blockLayout, isBlkReqd);
         m_dst->gtFlags |= GTF_DONT_CSE;
         m_asg->gtOp1 = m_dst;
 
-        m_src        = m_comp->fgMorphBlockOperand(m_src, asgType, m_blockSize, isBlkReqd);
+        m_src        = m_comp->fgMorphBlockOperand(m_src, asgType, m_blockLayout, isBlkReqd);
         m_asg->gtOp2 = m_src;
 
         m_asg->SetAllEffectsFlags(m_dst, m_src);
@@ -996,7 +984,7 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
     else if (m_dstDoFldAsg)
     {
         fieldCnt       = m_dstVarDsc->lvFieldCnt;
-        m_src          = m_comp->fgMorphBlockOperand(m_src, m_asg->TypeGet(), m_blockSize, false /*isBlkReqd*/);
+        m_src          = m_comp->fgMorphBlockOperand(m_src, m_asg->TypeGet(), m_blockLayout, false /*isBlkReqd*/);
         m_srcUseLclFld = m_srcVarDsc != nullptr;
 
         if (!m_srcUseLclFld && (m_srcAddr == nullptr))
@@ -1030,7 +1018,7 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
     {
         assert(m_srcDoFldAsg);
         fieldCnt       = m_srcVarDsc->lvFieldCnt;
-        m_dst          = m_comp->fgMorphBlockOperand(m_dst, m_dst->TypeGet(), m_blockSize, false /*isBlkReqd*/);
+        m_dst          = m_comp->fgMorphBlockOperand(m_dst, m_dst->TypeGet(), m_blockLayout, false /*isBlkReqd*/);
         m_dstUseLclFld = m_dstVarDsc != nullptr;
 
         if (m_dst->OperIsBlk())

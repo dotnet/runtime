@@ -175,7 +175,7 @@ PhaseStatus Compiler::fgInsertGCPolls()
     if (createdPollBlocks)
     {
         noway_assert(opts.OptimizationEnabled());
-        fgReorderBlocks();
+        fgReorderBlocks(/* useProfileData */ false);
         constexpr bool computePreds = true;
         constexpr bool computeDoms  = false;
         fgUpdateChangedFlowGraph(computePreds, computeDoms);
@@ -4152,10 +4152,9 @@ void Compiler::fgSetBlockOrder(BasicBlock* block)
             }
             break;
 
-        case GT_INDEX:
         case GT_INDEX_ADDR:
-            // These two call CORINFO_HELP_RNGCHKFAIL for Debug code
-            if (tree->gtFlags & GTF_INX_RNGCHK)
+            // This calls CORINFO_HELP_RNGCHKFAIL for Debug code.
+            if (tree->AsIndexAddr()->IsBoundsChecked())
             {
                 return Compiler::WALK_ABORT;
             }

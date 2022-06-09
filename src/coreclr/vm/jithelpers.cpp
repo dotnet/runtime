@@ -4154,6 +4154,35 @@ HCIMPL0(void, JIT_ThrowTypeNotSupportedException)
 HCIMPLEND
 
 /*********************************************************************/
+HCIMPL3(void, JIT_ThrowAmbiguousResolutionException,
+    MethodDesc *method,
+    MethodTable *interfaceType,
+    MethodTable *targetType)
+{
+    FCALL_CONTRACT;
+
+    SString strMethodName;
+    SString strInterfaceName;
+    SString strTargetClassName;
+
+    HELPER_METHOD_FRAME_BEGIN_0();    // Set up a frame
+
+    TypeString::AppendMethod(strMethodName, method, method->GetMethodInstantiation());
+    TypeString::AppendType(strInterfaceName, TypeHandle(interfaceType));
+    TypeString::AppendType(strTargetClassName, targetType);
+
+    HELPER_METHOD_FRAME_END();    // Set up a frame
+
+    FCThrowExVoid(
+        kAmbiguousImplementationException,
+        IDS_CLASSLOAD_AMBIGUOUS_OVERRIDE,
+        strMethodName,
+        strInterfaceName,
+        strTargetClassName);
+}
+HCIMPLEND
+
+/*********************************************************************/
 HCIMPL0(void, JIT_Overflow)
 {
     FCALL_CONTRACT;

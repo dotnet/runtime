@@ -229,13 +229,14 @@ mono_thread_platform_create_thread (MonoThreadStart thread_fn, gpointer thread_d
 	pthread_attr_t attr;
 	pthread_t thread;
 	gint res;
-	gsize set_stack_size;
 
 	res = pthread_attr_init (&attr);
 	if (res != 0)
 		g_error ("%s: pthread_attr_init failed, error: \"%s\" (%d)", __func__, g_strerror (res), res);
 
 #if 0
+	gsize set_stack_size;
+
 	if (stack_size)
 		set_stack_size = *stack_size;
 	else
@@ -391,6 +392,23 @@ mono_threads_wasm_is_browser_thread (void)
 #else
 	return emscripten_is_main_browser_thread ();
 #endif
+}
+
+MonoNativeThreadId
+mono_threads_wasm_browser_thread_tid (void)
+{
+#ifdef DISABLE_THREADS
+	return (MonoNativeThreadId)1;
+#else
+	return (MonoNativeThreadId)emscripten_main_browser_thread_id ();
+#endif
+}
+
+gboolean
+mono_threads_platform_stw_defer_initial_suspend (MonoThreadInfo *info)
+{
+	/* Suspend the browser thread after all the other threads are suspended already. */
+	return mono_native_thread_id_equals (mono_thread_info_get_tid (info), mono_threads_wasm_browser_thread_tid ());
 }
 
 #ifndef DISABLE_THREADS

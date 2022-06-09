@@ -30,7 +30,7 @@ namespace System.Net.Mime
         // the encoding should only be done once.
         private readonly bool _shouldEncodeLeadingDots;
 
-        private WriteStateInfoBase WriteState => _writeState ?? (_writeState = new WriteStateInfoBase());
+        private WriteStateInfoBase WriteState => _writeState ??= new WriteStateInfoBase();
 
         /// <summary>
         /// ctor.

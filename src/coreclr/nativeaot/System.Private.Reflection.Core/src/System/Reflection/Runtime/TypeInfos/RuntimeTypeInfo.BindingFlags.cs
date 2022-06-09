@@ -212,7 +212,7 @@ namespace System.Reflection.Runtime.TypeInfos
             return new QueryResult<M>(bindingAttr, queriedMembers);
         }
 
-        private TypeComponentsCache Cache => _lazyCache ?? (_lazyCache = new TypeComponentsCache(this));
+        private TypeComponentsCache Cache => _lazyCache ??= new TypeComponentsCache(this);
 
         private volatile TypeComponentsCache _lazyCache;
 

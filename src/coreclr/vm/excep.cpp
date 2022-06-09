@@ -2959,6 +2959,7 @@ void ResMgrGetString(LPCWSTR wszResourceName, STRINGREF * ppMessage)
     }
 }
 
+#ifdef FEATURE_COMINTEROP
 void FreeExceptionData(ExceptionData *pedata)
 {
     CONTRACTL
@@ -2984,6 +2985,7 @@ void FreeExceptionData(ExceptionData *pedata)
     if (pedata->bstrHelpFile)
         SysFreeString(pedata->bstrHelpFile);
 }
+#endif // FEATURE_COMINTEROP
 
 void GetExceptionForHR(HRESULT hr, IErrorInfo* pErrInfo, OBJECTREF* pProtectedThrowable)
 {
@@ -3876,7 +3878,6 @@ LONG WatsonLastChance(                  // EXCEPTION_CONTINUE_SEARCH, _CONTINUE_
                         // Since the StackOverflow handler also calls us, we must keep our stack budget
                         // to a minimum. Thus, we will launch a thread to do the actual work.
                         FaultReportInfo fri;
-                        fri.m_fDoReportFault       = TRUE;
                         fri.m_pExceptionInfo       = pExceptionInfo;
                         // DoFaultCreateThreadReportCallback will overwrite this - if it doesn't, we'll assume it failed.
                         fri.m_faultRepRetValResult = frrvErr;
@@ -4046,7 +4047,7 @@ BuildCreateDumpCommandLine(
         }
     }
 
-    commandLine.AppendPrintf("%s %d", DumpGeneratorName, GetCurrentProcessId());
+    commandLine.AppendASCII(DumpGeneratorName);
 
     if (dumpName != nullptr)
     {
@@ -8249,10 +8250,12 @@ bool DebugIsEECxxExceptionPointer(void* pv)
         EEMessageException      boilerplate7;
         EEResourceException     boilerplate8;
 
+#ifdef FEATURE_COMINTEROP
         // EECOMException::~EECOMException calls FreeExceptionData, which is GC_TRIGGERS,
         // but it won't trigger in this case because EECOMException's members remain NULL.
         CONTRACT_VIOLATION(GCViolation);
         EECOMException          boilerplate9;
+#endif // FEATURE_COMINTEROP
 
         EEFieldException        boilerplate10;
         EEMethodException       boilerplate11;
@@ -8271,7 +8274,9 @@ bool DebugIsEECxxExceptionPointer(void* pv)
             *((TADDR*)&boilerplate6),
             *((TADDR*)&boilerplate7),
             *((TADDR*)&boilerplate8),
+#ifdef FEATURE_COMINTEROP
             *((TADDR*)&boilerplate9),
+#endif // FEATURE_COMINTEROP
             *((TADDR*)&boilerplate10),
             *((TADDR*)&boilerplate11),
             *((TADDR*)&boilerplate12),
@@ -11486,27 +11491,14 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, IErrorInfo* pErrInfo, Exce
     }
 #endif // FEATURE_COMINTEROP
 
-    if (pErrInfo != NULL)
+    _ASSERTE((pErrInfo == NULL) || !"pErrInfo should always be null when FEATURE_COMINTEROP is disabled.");
+    if (pInnerException == NULL)
     {
-        if (pInnerException == NULL)
-        {
-            EX_THROW(EECOMException, (hr, pErrInfo));
-        }
-        else
-        {
-            EX_THROW_WITH_INNER(EECOMException, (hr, pErrInfo), pInnerException);
-        }
+        EX_THROW(EEMessageException, (hr));
     }
     else
     {
-        if (pInnerException == NULL)
-        {
-            EX_THROW(EEMessageException, (hr));
-        }
-        else
-        {
-            EX_THROW_WITH_INNER(EEMessageException, (hr), pInnerException);
-        }
+        EX_THROW_WITH_INNER(EEMessageException, (hr), pInnerException);
     }
 }
 

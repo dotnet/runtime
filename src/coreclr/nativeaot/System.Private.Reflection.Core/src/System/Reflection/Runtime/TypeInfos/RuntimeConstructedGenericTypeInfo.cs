@@ -10,7 +10,6 @@ using System.Collections.Concurrent;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
 
-using Internal.Reflection.Tracing;
 using Internal.Reflection.Core.Execution;
 
 using StructLayoutAttribute = System.Runtime.InteropServices.StructLayoutAttribute;
@@ -75,11 +74,6 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.TypeInfo_CustomAttributes(this);
-#endif
-
                 return GenericTypeDefinitionTypeInfo.CustomAttributes;
             }
         }
@@ -88,10 +82,6 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.TypeInfo_FullName(this);
-#endif
                 // Desktop quirk: open constructions don't have "fullNames".
                 if (ContainsGenericParameters)
                     return null;
@@ -158,10 +148,6 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.TypeInfo_Namespace(this);
-#endif
                 return GenericTypeDefinitionTypeInfo.Namespace;
             }
         }
