@@ -19,7 +19,7 @@
 #define DOTNET_CORE_DOWNLOAD_URL _X("https://aka.ms/dotnet-download")
 #define DOTNET_CORE_APPLAUNCH_URL _X("https://aka.ms/dotnet-core-applaunch")
 
-#define DOTNET_INFO_URL _X("https://aka.ms/dotnet/runtimes-sdk-info")
+#define DOTNET_INFO_URL _X("https://aka.ms/dotnet/info")
 #define DOTNET_APP_LAUNCH_FAILED_URL _X("https://aka.ms/dotnet/app-launch-failed")
 #define DOTNET_SDK_NOT_FOUND_URL _X("https://aka.ms/dotnet/sdk-not-found")
 

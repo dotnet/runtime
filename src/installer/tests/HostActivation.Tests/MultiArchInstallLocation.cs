@@ -173,7 +173,7 @@ namespace HostActivation.Tests
 
             var result = command.Execute();
             result.Should().Pass()
-                .And.HaveStdOutContaining($"{Constants.DotnetRoot.EnvironmentVariable} environment variables:")
+                .And.HaveStdOutContaining("Environment variables:")
                 .And.HaveStdOutMatching($@"{Constants.DotnetRoot.EnvironmentVariable}\s*\[{dotnetRootNoArch}\]")
                 .And.NotHaveStdOutContaining($"{Constants.DotnetRoot.ArchitectureEnvironmentVariablePrefix}{unknownEnvVar.Architecture.ToUpper()}")
                 .And.NotHaveStdOutContaining($"[{unknownEnvVar.Path}]");
