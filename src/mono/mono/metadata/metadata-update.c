@@ -143,7 +143,7 @@ mono_metadata_has_updates_api (void)
  * Returns the number of rows from the specified table that the current thread can see.
  * If there's a EnC metadata update, this number may change.
  */
-int
+guint32
 mono_metadata_table_num_rows_slow (MonoImage *base_image, int table_index)
 {
 	return mono_component_hot_reload()->table_num_rows_slow (base_image, table_index);

@@ -844,10 +844,10 @@ mono_metadata_clean_generic_classes_for_image (MonoImage *image);
 gboolean
 mono_metadata_table_bounds_check_slow (MonoImage *image, int table_index, int token_index);
 
-int
+guint32
 mono_metadata_table_num_rows_slow (MonoImage *image, int table_index);
 
-static inline int
+static inline guint32
 mono_metadata_table_num_rows (MonoImage *image, int table_index)
 {
 	if (G_LIKELY (!image->has_updates))

@@ -990,7 +990,7 @@ mono_metadata_compute_size (MonoImage *meta, int tableindex, guint32 *result_bit
 gboolean
 mono_metadata_table_bounds_check_slow (MonoImage *image, int table_index, int token_index)
 {
-	if (G_LIKELY (token_index <= table_info_get_rows (&image->tables [table_index])))
+	if (G_LIKELY (GINT_TO_UINT32(token_index) <= table_info_get_rows (&image->tables [table_index])))
 		return FALSE;
 
         if (G_LIKELY (!image->has_updates))
@@ -1037,7 +1037,7 @@ mono_metadata_locate (MonoImage *meta, int table, int idx)
 {
 	/* FIXME: metadata-update */
 	/* idx == 0 refers always to NULL */
-	g_return_val_if_fail (idx > 0 && idx <= table_info_get_rows (&meta->tables [table]), ""); /*FIXME shouldn't we return NULL here?*/
+	g_return_val_if_fail (idx > 0 && GINT_TO_UINT32(idx) <= table_info_get_rows (&meta->tables [table]), ""); /*FIXME shouldn't we return NULL here?*/
 
 	return meta->tables [table].base + (meta->tables [table].row_size * (idx - 1));
 }
@@ -1318,7 +1318,7 @@ mono_metadata_decode_row_raw (const MonoTableInfo *t, int idx, guint32 *res, int
 	int i, count = mono_metadata_table_count (bitfield);
 	const char *data;
 
-	g_assert (idx < table_info_get_rows (t));
+	g_assert (GINT_TO_UINT32(idx) < table_info_get_rows (t));
 	g_assert (idx >= 0);
 	data = t->base + idx * t->row_size;
 
@@ -1366,7 +1366,7 @@ mono_metadata_decode_row_checked (const MonoImage *image, const MonoTableInfo *t
 	guint32 bitfield = t->size_bitfield;
 	int i, count = mono_metadata_table_count (bitfield);
 
-	if (G_UNLIKELY (! (idx < table_info_get_rows (t) && idx >= 0))) {
+	if (G_UNLIKELY (! (GINT_TO_UINT32(idx) < table_info_get_rows (t) && idx >= 0))) {
 		mono_error_set_bad_image_by_name (error, image_name, "row index %d out of bounds: %d rows: %s", idx, table_info_get_rows (t), image_name);
 		return FALSE;
 	}
@@ -1470,7 +1470,7 @@ mono_metadata_decode_row_col_raw (const MonoTableInfo *t, int idx, guint col)
 
 	guint32 bitfield = t->size_bitfield;
 
-	g_assert (idx < table_info_get_rows (t));
+	g_assert (GINT_TO_UINT32(idx) < table_info_get_rows (t));
 	g_assert (col < mono_metadata_table_count (bitfield));
 	data = t->base + idx * t->row_size;
 
@@ -2288,7 +2288,7 @@ mono_metadata_method_has_param_attrs (MonoImage *m, int def)
 		return FALSE;
 
 	/* FIXME: metadata-update */
-	if (def < table_info_get_rows (methodt))
+	if (GINT_TO_UINT32(def) < table_info_get_rows (methodt))
 		lastp = mono_metadata_decode_row_col (methodt, def, MONO_METHOD_PARAMLIST);
 	else
 		lastp = table_info_get_rows (&m->tables [MONO_TABLE_PARAM]) + 1;
@@ -2327,8 +2327,8 @@ mono_metadata_get_param_attrs (MonoImage *m, int def, guint32 param_count)
 		return NULL;
 
 	/* FIXME: metadata-update */
-	int rows = mono_metadata_table_num_rows (m, MONO_TABLE_METHOD);
-	if (def < rows)
+	guint32 rows = mono_metadata_table_num_rows (m, MONO_TABLE_METHOD);
+	if (GINT_TO_UINT32(def) < rows)
 		lastp = mono_metadata_decode_row_col (methodt, def, MONO_METHOD_PARAMLIST);
 	else
 		lastp = table_info_get_rows (paramt) + 1;
@@ -4710,7 +4710,8 @@ typedef_locator (const void *a, const void *b)
 	/*
 	 * Need to check that the next row is valid.
 	 */
-	if (typedef_index + 1 < table_info_get_rows (loc->t)) {
+	g_assert (typedef_index >= 0);
+	if (GINT_TO_UINT32(typedef_index) + 1 < table_info_get_rows (loc->t)) {
 		col_next = mono_metadata_decode_row_col (loc->t, typedef_index + 1, loc->col_idx);
 		if (loc->idx >= col_next)
 			return 1;
@@ -6363,7 +6364,7 @@ guint32
 mono_metadata_methods_from_event   (MonoImage *meta, guint32 index, guint *end_idx)
 {
 	locator_t loc;
-	guint start, end;
+	guint32 start, end;
 	guint32 cols [MONO_METHOD_SEMA_SIZE];
 	MonoTableInfo *msemt = &meta->tables [MONO_TABLE_METHODSEMANTICS];
 
@@ -6400,14 +6401,14 @@ mono_metadata_methods_from_event   (MonoImage *meta, guint32 index, guint *end_i
 			break;
 	}
 	end = start + 1;
-	guint rows = mono_metadata_table_num_rows (meta, MONO_TABLE_METHODSEMANTICS);
+	guint32 rows = mono_metadata_table_num_rows (meta, MONO_TABLE_METHODSEMANTICS);
 	while (end < rows) {
 		mono_metadata_decode_row (msemt, end, cols, MONO_METHOD_SEMA_SIZE);
 		if (cols [MONO_METHOD_SEMA_ASSOCIATION] != loc.idx)
 			break;
 		++end;
 	}
-	*end_idx = end;
+	*end_idx = GUINT32_TO_UINT(end);
 	return start;
 }
 
@@ -6454,13 +6455,13 @@ mono_metadata_properties_from_typedef (MonoImage *meta, guint32 index, guint *en
 	}
 
 	start = mono_metadata_decode_row_col (tdef, loc.result, MONO_PROPERTY_MAP_PROPERTY_LIST);
-	if (GUINT32_TO_INT(loc.result + 1) < mono_metadata_table_num_rows (meta, MONO_TABLE_PROPERTYMAP)) {
+	if (loc.result + 1 < mono_metadata_table_num_rows (meta, MONO_TABLE_PROPERTYMAP)) {
 		end = mono_metadata_decode_row_col (tdef, loc.result + 1, MONO_PROPERTY_MAP_PROPERTY_LIST) - 1;
 	} else {
 		end = mono_metadata_table_num_rows (meta, MONO_TABLE_PROPERTY);
 	}
 
-	*end_idx = end;
+	*end_idx = GUINT32_TO_UINT(end);
 	return start - 1;
 }
 
@@ -6476,7 +6477,7 @@ guint32
 mono_metadata_methods_from_property   (MonoImage *meta, guint32 index, guint *end_idx)
 {
 	locator_t loc;
-	guint start, end;
+	guint32 start, end;
 	guint32 cols [MONO_METHOD_SEMA_SIZE];
 	MonoTableInfo *msemt = &meta->tables [MONO_TABLE_METHODSEMANTICS];
 
@@ -6513,14 +6514,14 @@ mono_metadata_methods_from_property   (MonoImage *meta, guint32 index, guint *en
 			break;
 	}
 	end = start + 1;
-	guint rows = mono_metadata_table_num_rows (meta, MONO_TABLE_METHODSEMANTICS);
+	guint32 rows = mono_metadata_table_num_rows (meta, MONO_TABLE_METHODSEMANTICS);
 	while (end < rows) {
 		mono_metadata_decode_row (msemt, end, cols, MONO_METHOD_SEMA_SIZE);
 		if (cols [MONO_METHOD_SEMA_ASSOCIATION] != loc.idx)
 			break;
 		++end;
 	}
-	*end_idx = end;
+	*end_idx = GUINT32_TO_UINT(end);
 	return start;
 }
 
@@ -7260,8 +7261,7 @@ mono_metadata_load_generic_params (MonoImage *image, guint32 token, MonoGenericC
 {
 	MonoTableInfo *tdef  = &image->tables [MONO_TABLE_GENERICPARAM];
 	guint32 cols [MONO_GENERICPARAM_SIZE];
-	guint32 owner = 0, n;
-	int i;
+	guint32 owner = 0, n, i;
 	MonoGenericContainer *container;
 	MonoGenericParamFull *params;
 	MonoGenericContext *context;
@@ -7284,8 +7284,8 @@ mono_metadata_load_generic_params (MonoImage *image, guint32 token, MonoGenericC
 			container->owner.klass = (MonoClass*)real_owner;
 	}
 	/* first pass over the gparam table - just count how many params we own */
-	uint32_t type_argc = 0;
-	int i2 = i;
+	guint32 type_argc = 0;
+	guint32 i2 = i;
 	do {
 		type_argc++;
 		if (++i2 > mono_metadata_table_num_rows (image, MONO_TABLE_GENERICPARAM))

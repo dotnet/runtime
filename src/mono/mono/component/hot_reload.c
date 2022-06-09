@@ -92,7 +92,7 @@ hot_reload_get_updated_method_ppdb (MonoImage *base_image, uint32_t idx);
 static gboolean
 hot_reload_has_modified_rows (const MonoTableInfo *table);
 
-static int
+static guint32
 hot_reload_table_num_rows_slow (MonoImage *image, int table_index);
 
 static GSList*
@@ -2678,7 +2678,7 @@ hot_reload_has_modified_rows (const MonoTableInfo *table)
 	return info->any_modified_rows[tbl_index];
 }
 
-static int
+static guint32
 hot_reload_table_num_rows_slow (MonoImage *base, int table_index)
 {
 	BaselineInfo *base_info = baseline_info_lookup (base);
