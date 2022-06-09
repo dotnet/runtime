@@ -205,6 +205,15 @@ When writing a managed object to a field of another managed object, use one of t
 `mono_gc_wbarrier_` functions (for example, `mono_gc_wbarrier_generic_store`).  It is ok to call the write
 barrier functions if the destination is not in the managed heap (in which case they will just do a normal write)
 
+## Assertions
+
+Mono code should use `g_assert`, `mono_error_assert_ok`, `g_assertf`, `g_assert_not_reached` etc.
+
+Unlike CoreCLR, Mono assertions are always included in the runtime - both in Debug and in Release builds.
+
+New could should try not to rely on side-effects of assert conditions. (That is, one day we may want
+to turn off assertions in Release builds.)
+
 ## Mono Public API
 
 Mono maintains a public API for projects that embed the Mono runtime in order to provide the ability
