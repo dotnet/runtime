@@ -208,8 +208,9 @@ static uint32_t AcquireCredSpNego(uint32_t* minorStatus,
         GssBuffer emptyBuffer = GSS_C_EMPTY_BUFFER;
         uint32_t tempMinorStatus;
         majorStatus = gss_set_cred_option(&tempMinorStatus, outputCredHandle, GSS_KRB5_CRED_NO_CI_FLAGS_X, &emptyBuffer);
-        if (majorStatus == GSS_S_UNAVAILABLE)
+        if (majorStatus == GSS_S_UNAVAILABLE || majorStatus == GSS_S_COMPLETE)
         {
+            // preserve the original majorStatus/minorStatus from gss_acquire_cred
             majorStatus = GSS_S_COMPLETE;
         }
         else
@@ -640,8 +641,9 @@ static uint32_t AcquireCredWithPassword(uint32_t* minorStatus,
         GssBuffer emptyBuffer = GSS_C_EMPTY_BUFFER;
         uint32_t tempMinorStatus;
         majorStatus = gss_set_cred_option(&tempMinorStatus, outputCredHandle, GSS_KRB5_CRED_NO_CI_FLAGS_X, &emptyBuffer);
-        if (majorStatus == GSS_S_UNAVAILABLE)
+        if (majorStatus == GSS_S_UNAVAILABLE || majorStatus == GSS_S_COMPLETE)
         {
+            // preserve the original majorStatus/minorStatus from gss_acquire_cred_with_password
             majorStatus = GSS_S_COMPLETE;
         }
         else
