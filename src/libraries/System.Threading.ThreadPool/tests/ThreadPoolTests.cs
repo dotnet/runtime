@@ -1115,8 +1115,8 @@ namespace System.Threading.ThreadPools.Tests
         [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
         public void ThreadPoolMinMaxThreadsEventTest()
         {
-            // The ThreadPoolMinMaxThreads event is fired when the thread is created as well as
-            // when either SetMinThreads or SetMaxThreads is called
+            // The ThreadPoolMinMaxThreads event is fired when the ThreadPool is created
+            // or when SetMinThreads/SetMaxThreads are called
             // Each time the event is fired, it is verified that it recorded the correct values
             RemoteExecutor.Invoke(() =>
             {
