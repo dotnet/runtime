@@ -19,8 +19,6 @@ namespace System.Formats.Tar
             : base(header, readerOfOrigin, TarEntryFormat.Pax)
         {
             _header._extendedAttributes ??= new Dictionary<string, string>();
-
-            AddNewAccessAndChangeTimestampsIfNotExist();
         }
 
         /// <summary>
@@ -92,7 +90,7 @@ namespace System.Formats.Tar
             _header._prefix = string.Empty;
             _header._extendedAttributes = new Dictionary<string, string>(extendedAttributes);
 
-            AddNewAccessAndChangeTimestampsIfNotExist();
+            AddNewAccessAndChangeTimestampsIfNotExist(useMTime: true);
         }
 
         /// <summary>
@@ -120,7 +118,7 @@ namespace System.Formats.Tar
                 }
             }
 
-            AddNewAccessAndChangeTimestampsIfNotExist();
+            AddNewAccessAndChangeTimestampsIfNotExist(useMTime: false);
         }
 
         /// <summary>
@@ -153,8 +151,8 @@ namespace System.Formats.Tar
         // Determines if the current instance's entry type supports setting a data stream.
         internal override bool IsDataStreamSetterSupported() => EntryType == TarEntryType.RegularFile;
 
-        // Checks if the extended attributes dictionary contains 'atime' and 'ctime'. If any of them is not found, it is added with the value of 'DateTimeOffset.Now'.
-        private void AddNewAccessAndChangeTimestampsIfNotExist()
+        // Checks if the extended attributes dictionary contains 'atime' and 'ctime'. If any of them is not found, it is added with the value of either the current entry's 'mtime', or 'DateTimeOffset.Now', depending on the value of 'useMTime'.
+        private void AddNewAccessAndChangeTimestampsIfNotExist(bool useMTime)
         {
             Debug.Assert(_header._extendedAttributes != null);
 
@@ -163,16 +161,16 @@ namespace System.Formats.Tar
 
             if (!containsATime || !containsCTime)
             {
-                string nowSecondsFromEpochString = TarHelpers.GetTimestampStringFromDateTimeOffset(DateTimeOffset.Now);
+                string secondsFromEpochString = TarHelpers.GetTimestampStringFromDateTimeOffset(useMTime ? _header._mTime : DateTimeOffset.Now);
 
                 if (!containsATime)
                 {
-                    _header._extendedAttributes[TarHeader.PaxEaATime] = nowSecondsFromEpochString;
+                    _header._extendedAttributes[TarHeader.PaxEaATime] = secondsFromEpochString;
                 }
 
                 if (!containsCTime)
                 {
-                    _header._extendedAttributes[TarHeader.PaxEaCTime] = nowSecondsFromEpochString;
+                    _header._extendedAttributes[TarHeader.PaxEaCTime] = secondsFromEpochString;
                 }
             }
         }
