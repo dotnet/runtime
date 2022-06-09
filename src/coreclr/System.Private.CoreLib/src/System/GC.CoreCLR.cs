@@ -740,6 +740,12 @@ namespace System
 
         internal delegate void EnumerateConfigurationValuesCallback(int type, long intValue, bool boolValue);
 
+        /// <summary>
+        /// Returns a dictionary keyed on GC Configuration Names with values as the configuration values.
+        /// </summary>
+        /// <remarks>
+        /// Corresponding issue: https://github.com/dotnet/runtime/issues/67471
+        /// </remarks>
         public static unsafe IReadOnlyDictionary<string, object> GetConfigurationVariables()
         {
             Dictionary<string, object> result = new Dictionary<string, object>();
