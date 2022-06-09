@@ -6,8 +6,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
 
-using Internal.Reflection.Tracing;
-
 namespace System.Reflection.Runtime.CustomAttributes
 {
     //
@@ -23,11 +21,6 @@ namespace System.Reflection.Runtime.CustomAttributes
         {
             get
             {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.CustomAttributeData_ConstructorArguments(this);
-#endif
-
                 return new ReadOnlyCollection<CustomAttributeTypedArgument>(GetConstructorArguments(throwIfMissingMetadata: true));
             }
         }
@@ -38,11 +31,6 @@ namespace System.Reflection.Runtime.CustomAttributes
         {
             get
             {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.CustomAttributeData_NamedArguments(this);
-#endif
-
                 return new ReadOnlyCollection<CustomAttributeNamedArgument>(GetNamedArguments(throwIfMissingMetadata: true));
             }
         }

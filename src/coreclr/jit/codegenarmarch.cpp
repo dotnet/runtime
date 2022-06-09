@@ -144,7 +144,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
     if (treeNode->IsReuseRegVal())
     {
         // For now, this is only used for constant nodes.
-        assert((treeNode->OperGet() == GT_CNS_INT) || (treeNode->OperGet() == GT_CNS_DBL));
+        assert(treeNode->OperIs(GT_CNS_INT, GT_CNS_DBL, GT_CNS_VEC));
         JITDUMP("  TreeNode is marked ReuseReg\n");
         return;
     }
@@ -188,6 +188,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_CNS_INT:
         case GT_CNS_DBL:
+        case GT_CNS_VEC:
             genSetRegToConst(targetReg, targetType, treeNode);
             genProduceReg(treeNode);
             break;
@@ -1095,8 +1096,9 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
 
             while (remainingSize > 0)
             {
-                var_types type;
+                nextIndex = structOffset / TARGET_POINTER_SIZE;
 
+                var_types type;
                 if (remainingSize >= TARGET_POINTER_SIZE)
                 {
                     type = layout->GetGCPtrType(nextIndex);
@@ -1106,18 +1108,18 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                     // the left over size is smaller than a pointer and thus can never be a GC type
                     assert(!layout->IsGCPtr(nextIndex));
 
-                    if (remainingSize == 1)
+                    if (remainingSize >= 4)
                     {
-                        type = TYP_UBYTE;
+                        type = TYP_INT;
                     }
-                    else if (remainingSize == 2)
+                    else if (remainingSize >= 2)
                     {
                         type = TYP_USHORT;
                     }
                     else
                     {
-                        assert(remainingSize == 4);
-                        type = TYP_UINT;
+                        assert(remainingSize == 1);
+                        type = TYP_UBYTE;
                     }
                 }
 
@@ -1146,7 +1148,6 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                 assert(argOffsetOut <= argOffsetMax); // We can't write beyond the outgoing arg area
 
                 structOffset += moveSize;
-                nextIndex++;
             }
         }
     }
@@ -2801,11 +2802,6 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
     CopyBlockUnrollHelper helper(srcOffset, dstOffset, size);
     regNumber             srcReg = srcAddrBaseReg;
 
-#ifdef DEBUG
-    bool isSrcRegAddrAlignmentKnown = false;
-    bool isDstRegAddrAlignmentKnown = false;
-#endif
-
     if (srcLclNum != BAD_VAR_NUM)
     {
         bool      fpBased;
@@ -2813,10 +2809,6 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
 
         srcReg = fpBased ? REG_FPBASE : REG_SPBASE;
         helper.SetSrcOffset(baseAddr + srcOffset);
-
-#ifdef DEBUG
-        isSrcRegAddrAlignmentKnown = true;
-#endif
     }
 
     regNumber dstReg = dstAddrBaseReg;
@@ -2828,10 +2820,6 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
 
         dstReg = fpBased ? REG_FPBASE : REG_SPBASE;
         helper.SetDstOffset(baseAddr + dstOffset);
-
-#ifdef DEBUG
-        isDstRegAddrAlignmentKnown = true;
-#endif
     }
 
     bool canEncodeAllLoads  = true;
@@ -2945,8 +2933,8 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
     }
 #endif
 
-#ifndef JIT32_GCENCODER
-    if (!node->gtBlkOpGcUnsafe && ((srcOffsetAdjustment != 0) || (dstOffsetAdjustment != 0)))
+    if (!node->gtBlkOpGcUnsafe &&
+        ((srcOffsetAdjustment != 0) || (dstOffsetAdjustment != 0) || (node->GetLayout()->HasGCPtr())))
     {
         // If node is not already marked as non-interruptible, and if are about to generate code
         // that produce GC references in temporary registers not reported, then mark the block
@@ -2955,7 +2943,6 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
         node->gtBlkOpGcUnsafe = true;
         GetEmitter()->emitDisableGC();
     }
-#endif
 
     if ((srcOffsetAdjustment != 0) && (dstOffsetAdjustment != 0))
     {
@@ -4299,6 +4286,18 @@ void CodeGen::inst_SETCC(GenCondition condition, var_types type, regNumber dstRe
     GetEmitter()->emitIns_R_I(INS_mov, emitActualTypeSize(type), dstReg, 1);
     genDefineTempLabel(labelNext);
 #endif
+}
+
+//------------------------------------------------------------------------
+// inst_JMP: Generate a jump instruction.
+//
+void CodeGen::inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock)
+{
+#if !FEATURE_FIXED_OUT_ARGS
+    assert((tgtBlock->bbTgtStkDepth * sizeof(int) == genStackLevel) || isFramePointerUsed());
+#endif // !FEATURE_FIXED_OUT_ARGS
+
+    GetEmitter()->emitIns_J(emitter::emitJumpKindToIns(jmp), tgtBlock);
 }
 
 //------------------------------------------------------------------------

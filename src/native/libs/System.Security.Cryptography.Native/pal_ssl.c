@@ -5,6 +5,7 @@
 #include "openssl.h"
 #include "pal_evp_pkey.h"
 #include "pal_evp_pkey_rsa.h"
+#include "pal_utilities.h"
 #include "pal_x509.h"
 
 #include <assert.h>
@@ -751,6 +752,33 @@ int32_t CryptoNative_SslCtxSetEncryptionPolicy(SSL_CTX* ctx, EncryptionPolicy po
     return false;
 }
 
+static int DefaultOcspCallback(SSL* ssl, void* args)
+{
+    (void)args;
+    int ret = SSL_TLSEXT_ERR_NOACK;
+
+    if (ssl != NULL)
+    {
+        uint8_t* resp;
+        long len = SSL_get_tlsext_status_ocsp_resp(ssl, &resp);
+
+        // If we've already provided the stapled data, say so.
+        if (len > 0 && resp != NULL)
+        {
+            ret = SSL_TLSEXT_ERR_OK;
+        }
+    }
+
+    return ret;
+}
+
+void CryptoNative_SslCtxSetDefaultOcspCallback(SSL_CTX* ctx)
+{
+    assert(ctx != NULL);
+
+    SSL_CTX_set_tlsext_status_cb(ctx, DefaultOcspCallback);
+}
+
 int32_t CryptoNative_SslCtxSetCiphers(SSL_CTX* ctx, const char* cipherList, const char* cipherSuites)
 {
     ERR_clear_error();
@@ -1217,4 +1245,23 @@ int32_t CryptoNative_OpenSslGetProtocolSupport(SslProtocols protocol)
     ERR_clear_error();
 
     return ret == 1;
+}
+
+void CryptoNative_SslStapleOcsp(SSL* ssl, uint8_t* buf, int32_t len)
+{
+    assert(ssl != NULL);
+    assert(buf != NULL);
+    assert(len > 0);
+
+    // OpenSSL's cleanup of the SSL structure will always call OPENSSL_free on
+    // the pointer we provide for the OCSP response, so we need to freshly
+    // duplicate it here, using an OpenSSL allocator.
+    size_t size = Int32ToSizeT(len);
+    void* copy = OPENSSL_malloc(size);
+    memcpy(copy, buf, size);
+
+    if (SSL_set_tlsext_status_ocsp_resp(ssl, copy, len) != 1)
+    {
+        OPENSSL_free(copy);
+    }
 }

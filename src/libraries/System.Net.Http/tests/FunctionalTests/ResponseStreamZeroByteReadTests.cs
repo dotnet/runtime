@@ -48,7 +48,7 @@ namespace System.Net.Http.Functional.Tests
         {
             await stream.WriteAsync(Encoding.ASCII.GetBytes($"{data.Length:X}\r\n"));
             await stream.WriteAsync(data);
-            await stream.WriteAsync(Encoding.ASCII.GetBytes("\r\n"));
+            await stream.WriteAsync("\r\n"u8.ToArray());
         }
     }
 
@@ -62,12 +62,11 @@ namespace System.Net.Http.Functional.Tests
             {
                 await stream.WriteAsync(Encoding.ASCII.GetBytes($"1\r\n"));
                 await stream.WriteAsync(data.AsMemory(i, 1));
-                await stream.WriteAsync(Encoding.ASCII.GetBytes("\r\n"));
+                await stream.WriteAsync("\r\n"u8.ToArray());
             }
         }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public abstract class Http1ResponseStreamZeroByteReadTestBase
     {
         protected abstract string GetResponseHeaders();
@@ -82,6 +81,8 @@ namespace System.Net.Http.Functional.Tests
 
         [Theory]
         [MemberData(nameof(ZeroByteRead_IssuesZeroByteReadOnUnderlyingStream_MemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
+        [SkipOnPlatform(TestPlatforms.Browser, "ConnectCallback is not supported on Browser")]
         public async Task ZeroByteRead_IssuesZeroByteReadOnUnderlyingStream(StreamConformanceTests.ReadWriteMode readMode, bool useSsl)
         {
             (Stream httpConnection, Stream server) = ConnectedStreams.CreateBidirectional(4096, int.MaxValue);
@@ -129,14 +130,14 @@ namespace System.Net.Http.Functional.Tests
                 using Stream clientStream = response.Content.ReadAsStream();
                 Assert.False(sawZeroByteRead.Task.IsCompleted);
 
-                Task<int> zeroByteReadTask = Task.Run(() => StreamConformanceTests.ReadAsync(readMode, clientStream, Array.Empty<byte>(), 0, 0, CancellationToken.None) );
+                Task<int> zeroByteReadTask = Task.Run(() => StreamConformanceTests.ReadAsync(readMode, clientStream, Array.Empty<byte>(), 0, 0, CancellationToken.None));
                 Assert.False(zeroByteReadTask.IsCompleted);
 
                 // The zero-byte read should block until data is actually available
                 await sawZeroByteRead.Task.WaitAsync(TimeSpan.FromSeconds(10));
                 Assert.False(zeroByteReadTask.IsCompleted);
 
-                byte[] data = Encoding.UTF8.GetBytes("Hello");
+                byte[] data = "Hello"u8.ToArray();
                 await WriteAsync(server, data);
                 await server.FlushAsync();
 
@@ -210,6 +211,7 @@ namespace System.Net.Http.Functional.Tests
     }
 
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMsQuicSupported))]
+    [Collection(nameof(DisableParallelization))]
     public sealed class Http3ResponseStreamZeroByteReadTest_MsQuic : ResponseStreamZeroByteReadTestBase
     {
         public Http3ResponseStreamZeroByteReadTest_MsQuic(ITestOutputHelper output) : base(output) { }
@@ -237,6 +239,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task ZeroByteRead_BlocksUntilDataIsAvailable(bool async)
         {
             var zeroByteReadIssued = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);

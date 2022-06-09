@@ -185,7 +185,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public static void InvokeUnboxLongFail()
         {
-            var ex = Assert.Throws<JSException>(() => Runtime.InvokeJS(@"App.call_test_method (""InvokeReturnLong"");"));
+            var ex = Assert.Throws<JSException>(() => Runtime.InvokeJS(@"
+                console.log(""the exception in InvokeReturnLong after this is intentional"");
+                App.call_test_method (""InvokeReturnLong"");
+            "));
             Assert.Contains("int64 not available", ex.Message);
         }
 
@@ -335,7 +338,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             Runtime.InvokeJS(@"
                 var obj = {myInt: 100, myDouble: 4.5, myString: ""Hic Sunt Dracones"", myBoolean: true};
-                App.call_test_method (""RetrieveObjectProperties"", [ obj ]);		
+                App.call_test_method (""RetrieveObjectProperties"", [ obj ]);
             ");
 
             Assert.Equal(100, HelperMarshal._jsProperties[0]);
@@ -349,8 +352,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             Runtime.InvokeJS(@"
                 var obj = {myInt: 200, myDouble: 0, myString: ""foo"", myBoolean: false};
-                App.call_test_method (""PopulateObjectProperties"", [ obj, false ]);		
-                App.call_test_method (""RetrieveObjectProperties"", [ obj ]);		
+                App.call_test_method (""PopulateObjectProperties"", [ obj, false ]);
+                App.call_test_method (""RetrieveObjectProperties"", [ obj ]);
             ");
 
             Assert.Equal(100, HelperMarshal._jsProperties[0]);
@@ -365,8 +368,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             // This test will not create the properties if they do not already exist
             Runtime.InvokeJS(@"
                 var obj = {myInt: 200};
-                App.call_test_method (""PopulateObjectProperties"", [ obj, false ]);		
-                App.call_test_method (""RetrieveObjectProperties"", [ obj ]);		
+                App.call_test_method (""PopulateObjectProperties"", [ obj, false ]);
+                App.call_test_method (""RetrieveObjectProperties"", [ obj ]);
             ");
 
             Assert.Equal(100, HelperMarshal._jsProperties[0]);
@@ -378,7 +381,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public static void SetObjectPropertiesIfNotExistsTrue()
         {
-            // This test will set the value of the property if it exists and will create and 
+            // This test will set the value of the property if it exists and will create and
             // set the value if it does not exists
             Runtime.InvokeJS(@"
                 var obj = {myInt: 200};
@@ -398,7 +401,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Runtime.InvokeJS(@"
                 var buffer = new ArrayBuffer(16);
                 var uint8View = new Uint8Array(buffer);
-                App.call_test_method (""MarshalByteBuffer"", [ uint8View ]);		
+                App.call_test_method (""MarshalByteBuffer"", [ uint8View ]);
             ");
 
             Assert.Equal(16, HelperMarshal._byteBuffer.Length);
@@ -455,7 +458,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 var invoke_int = INTERNAL.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeInt"");
                 invoke_int ();
             "));
-            Assert.Contains("Value is not integer but undefined", ex.Message);
+            Assert.Contains("Value is not an integer: undefined (undefined)", ex.Message);
             Assert.Equal(1, HelperMarshal._intValue);
         }
 
@@ -492,7 +495,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 var invoke_int = INTERNAL.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeInt"");
                 invoke_int (3.14);
             "));
-            Assert.Contains("Value is not integer but float", ex.Message);
+            Assert.Contains("Value is not an integer: 3.14 (number)", ex.Message);
             Assert.Equal(0, HelperMarshal._intValue);
         }
 
@@ -505,7 +508,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 var invoke_int = INTERNAL.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeInt"");
                 invoke_int (""200"");
             "));
-            Assert.Contains("Value is not integer but string", ex.Message);
+            Assert.Contains("Value is not an integer: 200 (string)", ex.Message);
             Assert.Equal(0, HelperMarshal._intValue);
         }
 

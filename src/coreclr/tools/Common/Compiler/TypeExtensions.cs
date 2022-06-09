@@ -562,6 +562,16 @@ namespace ILCompiler
                 method = null;
             }
 
+            // Default implementation logic, which only kicks in for default implementations when looking up on an exact interface target
+            if (isStaticVirtualMethod && method == null && !genInterfaceMethod.IsAbstract && !constrainedType.IsCanonicalSubtype(CanonicalFormKind.Any))
+            {
+                MethodDesc exactInterfaceMethod = genInterfaceMethod;
+                if (genInterfaceMethod.OwningType != interfaceType)
+                    exactInterfaceMethod = context.GetMethodForInstantiatedType(
+                        genInterfaceMethod.GetTypicalMethodDefinition(), (InstantiatedType)interfaceType);
+                method = exactInterfaceMethod;
+            }
+
             if (method == null)
             {
                 // Fall back to VSD
@@ -682,6 +692,28 @@ namespace ILCompiler
                 if (c.ContainsSignatureVariables())
                     return null;
 
+                // If there's unimplemented static abstract methods, this is not a suitable instantiation.
+                // We shortcut to look for any static virtuals. It matches what Roslyn does for error CS8920.
+                // Once TypeSystemConstraintsHelpers is updated to check constraints around static virtuals,
+                // we could dispatch there instead.
+                if (c.IsInterface)
+                {
+                    if (HasStaticVirtualMethods(c))
+                        return null;
+
+                    foreach (DefType intface in c.RuntimeInterfaces)
+                        if (HasStaticVirtualMethods(intface))
+                            return null;
+
+                    static bool HasStaticVirtualMethods(TypeDesc type)
+                    {
+                        foreach (MethodDesc method in type.GetVirtualMethods())
+                            if (method.Signature.IsStatic)
+                                return true;
+                        return false;
+                    }
+                }
+
                 constrainedType = c;
             }
 
@@ -697,28 +729,6 @@ namespace ILCompiler
             }
 
             return false;
-        }
-
-        /// <summary>
-        /// Return true when the type in question is marked with the NonVersionable attribute.
-        /// </summary>
-        /// <param name="type">Type to check</param>
-        /// <returns>True when the type is marked with the non-versionable custom attribute, false otherwise.</returns>
-        public static bool IsNonVersionable(this MetadataType type)
-        {
-            return type.HasCustomAttribute("System.Runtime.Versioning", "NonVersionableAttribute");
-        }
-
-        /// <summary>
-        /// Return true when the method is marked as non-versionable. Non-versionable methods
-        /// may be freely inlined into ReadyToRun images even when they don't reside in the
-        /// same version bubble as the module being compiled.
-        /// </summary>
-        /// <param name="method">Method to check</param>
-        /// <returns>True when the method is marked as non-versionable, false otherwise.</returns>
-        public static bool IsNonVersionable(this MethodDesc method)
-        {
-            return method.HasCustomAttribute("System.Runtime.Versioning", "NonVersionableAttribute");
         }
 
         /// <summary>

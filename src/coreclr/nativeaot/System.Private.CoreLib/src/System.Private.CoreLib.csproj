@@ -73,16 +73,29 @@
     <Compile Include="$(CompilerCommonPath)\Internal\Runtime\ModuleHeaders.cs">
       <Link>Internal\Runtime\ModuleHeaders.cs</Link>
     </Compile>
+    <Compile Include="$(CompilerCommonPath)\Internal\Runtime\MetadataBlob.cs">
+      <Link>MetadataBlob.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CompilerCommonPath)\Internal\NativeFormat\NativeFormatReader.cs">
       <Link>Common\src\Internal\NativeFormat\NativeFormatReader.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\Internal\NativeFormat\NativeFormatReader.Primitives.cs">
+      <Link>Common\src\Internal\NativeFormat\NativeFormatReader.Primitives.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\Internal\NativeFormat\NativeFormatReader.String.cs">
+      <Link>Common\src\Internal\NativeFormat\NativeFormatReader.String.cs</Link>
+    </Compile>
+    <Compile Include="$(AotCommonPath)\Internal\Runtime\TypeLoader\ExternalReferencesTable.cs">
+      <Link>Common\src\Internal\Runtime\TypeLoader\ExternalReferencesTable.cs</Link>
     </Compile>
     <Compile Include="Internal\Runtime\ThreadStatics.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\StartupCode\StartupCodeHelpers.Extensions.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\ArrayHelpers.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\InteropHelpers.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\LdTokenHelpers.cs" />
+    <Compile Include="Internal\Runtime\CompilerHelpers\RuntimeInteropData.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\SynchronizedMethodHelpers.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\TypedReferenceHelpers.cs" />
   </ItemGroup>
@@ -107,7 +120,6 @@
     <Compile Include="Internal\Runtime\Augments\RuntimeAugments.cs" />
     <Compile Include="Internal\Runtime\Augments\ReflectionExecutionDomainCallbacks.cs" />
     <Compile Include="Internal\Runtime\Augments\TypeLoaderCallbacks.cs" />
-    <Compile Include="Internal\Runtime\Augments\InteropCallbacks.cs" />
     <Compile Include="Internal\Runtime\Augments\StackTraceMetadataCallbacks.cs" />
     <Compile Include="Internal\Runtime\Augments\DynamicDelegateAugments.cs" />
   </ItemGroup>
@@ -172,7 +184,6 @@
     <Compile Include="System\Helpers.cs" />
     <Compile Include="System\Math.NativeAot.cs" />
     <Compile Include="System\MathF.NativeAot.cs" />
-    <Compile Include="System\MissingMemberException.NativeAot.cs" />
     <Compile Include="System\MulticastDelegate.cs" />
     <Compile Include="System\Object.NativeAot.cs" />
     <Compile Include="System\Reflection\MissingMetadataException.cs" />
@@ -199,6 +210,7 @@
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal.NativeAot.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal.Com.cs" Condition="'$(FeatureCominterop)' == 'true'" />
+    <Compile Include="System\Runtime\InteropServices\MissingInteropDataException.cs" />
     <Compile Include="System\Runtime\InteropServices\MemoryMarshal.NativeAot.cs" />
     <Compile Include="System\Runtime\InteropServices\SafeHandle.NativeAot.cs" />
     <Compile Include="System\Runtime\InteropServices\UnsafeGCHandle.cs" />
@@ -248,6 +260,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)'=='true'">
     <Compile Include="Microsoft\Win32\SafeHandles\SafeThreadPoolIOHandle.cs" />
+    <Compile Include="System\Runtime\InteropServices\NativeLibrary.NativeAot.Windows.cs" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.Windows.cs" />
     <Compile Include="$(CommonPath)\System\Runtime\InteropServices\Variant.cs">
       <Link>System\Runtime\InteropServices\Variant.cs</Link>
@@ -307,6 +320,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)'=='true'">
     <Compile Include="System\Environment.NativeAot.Unix.cs" />
+    <Compile Include="System\Runtime\InteropServices\NativeLibrary.NativeAot.Unix.cs" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.Unix.cs" />
     <Compile Include="System\Threading\LowLevelLifoSemaphore.Unix.cs" />
     <Compile Include="System\Threading\Thread.NativeAot.Unix.cs" />
@@ -360,9 +374,6 @@
     <Compile Include="$(AotCommonPath)\System\Runtime\CompilerServices\__BlockReflectionAttribute.cs">
       <Link>System\Runtime\CompilerServices\__BlockReflectionAttribute.cs</Link>
     </Compile>
-    <Compile Include="$(CompilerCommonPath)\Internal\NativeFormat\NativeFormatReader.Primitives.cs">
-      <Link>Internal\NativeFormat\NativeFormatReader.Primitives.cs</Link>
-    </Compile>
     <Compile Include="$(CompilerCommonPath)\Internal\Runtime\CanonTypeKind.cs">
       <Link>Internal\Runtime\CanonTypeKind.cs</Link>
     </Compile>
@@ -375,6 +386,17 @@
     <Compile Include="$(AotCommonPath)\Internal\Runtime\LowLevelStringConverter.cs">
       <Link>Internal\Runtime\LowLevelStringConverter.cs</Link>
     </Compile>
+  </ItemGroup>
+  <!-- Native metadata reader -->
+  <PropertyGroup>
+    <MetadataCommonPath>$(CompilerCommonPath)\Internal\Metadata\NativeFormat</MetadataCommonPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MetadataCommonPath)\NativeFormatReaderCommonGen.cs" />
+    <Compile Include="$(MetadataCommonPath)\MdBinaryReader.cs" />
+    <Compile Include="$(MetadataCommonPath)\MdBinaryReaderGen.cs" />
+    <Compile Include="$(MetadataCommonPath)\NativeMetadataReader.cs" />
+    <Compile Include="$(MetadataCommonPath)\NativeFormatReaderGen.cs" />
   </ItemGroup>
   <!-- For now, link Runtime.Base into System.Private.CoreLib until there is proper multifile build -->
   <PropertyGroup>

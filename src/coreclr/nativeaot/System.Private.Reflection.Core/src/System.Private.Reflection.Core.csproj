@@ -8,7 +8,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
-    <ProjectReference Include="..\..\System.Private.Reflection.Metadata\src\System.Private.Reflection.Metadata.csproj" />
     <ProjectReference Include="..\..\System.Private.TypeLoader\src\System.Private.TypeLoader.csproj" />
   </ItemGroup>
   <ItemGroup>
@@ -104,7 +103,6 @@
     <Compile Include="System\Reflection\Runtime\ParameterInfos\RuntimeSyntheticParameterInfo.cs" />
     <Compile Include="System\Reflection\Runtime\PropertyInfos\NativeFormat\NativeFormatRuntimePropertyInfo.cs" />
     <Compile Include="System\Reflection\Runtime\PropertyInfos\RuntimePropertyInfo.cs" />
-    <Compile Include="System\Reflection\Runtime\Tracing\ReflectionEventSource.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\NativeFormat\NativeFormatRuntimeNamedTypeInfo.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\NativeFormat\NativeFormatRuntimeGenericParameterTypeInfo.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\NativeFormat\NativeFormatRuntimeNamedTypeInfo.UnificationKey.cs" />
@@ -147,9 +145,6 @@
     <Compile Include="Internal\Reflection\Core\Execution\FieldAccessor.cs" />
     <Compile Include="Internal\Reflection\Core\Execution\MethodInvoker.cs" />
     <Compile Include="Internal\Reflection\Core\Execution\ReflectionCoreExecution.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Internal\Reflection\Tracing\ITraceableTypeMember.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)\System\NotImplemented.cs">

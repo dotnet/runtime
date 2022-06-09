@@ -179,11 +179,11 @@ namespace System.Formats.Tar
 
         // Throws if the specified entry type is not supported for the specified format.
         // If 'forWriting' is true, an incompatible 'Regular File' entry type is allowed. It will be converted to the compatible version before writing.
-        internal static void VerifyEntryTypeIsSupported(TarEntryType entryType, TarFormat archiveFormat, bool forWriting)
+        internal static void VerifyEntryTypeIsSupported(TarEntryType entryType, TarEntryFormat archiveFormat, bool forWriting)
         {
             switch (archiveFormat)
             {
-                case TarFormat.V7:
+                case TarEntryFormat.V7:
                     if (entryType is
                         TarEntryType.Directory or
                         TarEntryType.HardLink or
@@ -198,7 +198,7 @@ namespace System.Formats.Tar
                     }
                     break;
 
-                case TarFormat.Ustar:
+                case TarEntryFormat.Ustar:
                     if (entryType is
                         TarEntryType.BlockDevice or
                         TarEntryType.CharacterDevice or
@@ -216,7 +216,7 @@ namespace System.Formats.Tar
                     }
                     break;
 
-                case TarFormat.Pax:
+                case TarEntryFormat.Pax:
                     if (entryType is
                         TarEntryType.BlockDevice or
                         TarEntryType.CharacterDevice or
@@ -237,7 +237,7 @@ namespace System.Formats.Tar
                     }
                     break;
 
-                case TarFormat.Gnu:
+                case TarEntryFormat.Gnu:
                     if (entryType is
                         TarEntryType.BlockDevice or
                         TarEntryType.CharacterDevice or
@@ -266,7 +266,7 @@ namespace System.Formats.Tar
                     }
                     break;
 
-                case TarFormat.Unknown:
+                case TarEntryFormat.Unknown:
                 default:
                     throw new FormatException(string.Format(SR.TarInvalidFormat, archiveFormat));
             }

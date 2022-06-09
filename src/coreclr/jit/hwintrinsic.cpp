@@ -314,6 +314,21 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
         return NI_Throw_PlatformNotSupportedException;
     }
 
+#if defined(TARGET_XARCH)
+    if ((isa == InstructionSet_Vector128) || (isa == InstructionSet_Vector256))
+#elif defined(TARGET_ARM64)
+    if ((isa == InstructionSet_Vector64) || (isa == InstructionSet_Vector128))
+#endif
+    {
+        if (!comp->IsBaselineSimdIsaSupported())
+        {
+            // Special case: For Vector64/128/256 we currently don't accelerate any of the methods when SSE/SSE2
+            // aren't supported since IsHardwareAccelerated reports false. To simplify the importation logic we'll
+            // just return illegal here and let it fallback to the software path instead.
+            return NI_Illegal;
+        }
+    }
+
     for (int i = 0; i < (NI_HW_INTRINSIC_END - NI_HW_INTRINSIC_START - 1); i++)
     {
         const HWIntrinsicInfo& intrinsicInfo = hwIntrinsicInfoArray[i];

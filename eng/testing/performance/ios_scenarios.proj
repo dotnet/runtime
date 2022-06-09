@@ -34,6 +34,38 @@
         <Command>$(Python) test.py sod --scenario-name &quot;%(Identity)&quot;</Command>
         <PostCommands>$(Python) post.py</PostCommands>
     </HelixWorkItem>
+    <HelixWorkItem Include="SOD - iOS HelloWorld Mono Zip Size $(LlvmPath)">
+      <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
+      <PreCommands>cd $(ScenarioDirectory)helloios;cp -v $HELIX_CORRELATION_PAYLOAD/iosHelloWorldZip/$(LlvmPath)zip/iOSSampleApp$(LlvmPath)/iOSSampleApp$(LlvmPath).zip .;$(Python) pre.py --name iOSSampleApp$(LlvmPath).zip</PreCommands>
+      <Command>$(Python) test.py sod --scenario-name &quot;%(Identity)&quot;</Command>
+      <PostCommands>$(Python) post.py</PostCommands>
+    </HelixWorkItem>
+    <XHarnessAppBundleToTest Include="Device Startup - iOS Mono HelloWorld $(LlvmPath)">
+      <AppBundlePath>$(WorkItemDirectory).zip</AppBundlePath>
+      <WorkItemTimeout>00:05:00</WorkItemTimeout>
+      <TestTarget>ios-device</TestTarget>
+      <CustomCommands>
+        <![CDATA[
+          # PreCommands
+          export XHARNESSPATH=$XHARNESS_CLI_PATH
+
+          cp -r $HELIX_CORRELATION_PAYLOAD/iosHelloWorld/$(LlvmPath)/HelloiOS.app $(ScenarioDirectory)helloios/HelloiOS.app
+          cp -f embedded.mobileprovision $(ScenarioDirectory)helloios/HelloiOS.app
+          cd $(ScenarioDirectory)helloios
+          sign HelloiOS.app
+
+          $(Python) pre.py --name HelloiOS.app
+
+          # Testing commands
+          $(Python) test.py devicestartup --device-type ios --package-path HelloiOS.app --package-name net.dot.HelloiOS --scenario-name "%(Identity)"
+          ((result=$?))
+          
+          # Post commands
+          $(Python) post.py
+          exit $result
+        ]]>
+      </CustomCommands>
+    </XHarnessAppBundleToTest>
     <HelixWorkItem Include="SOD - Maui MacCatalyst .app Size" Condition="'$(iOSLlvmBuild)' == 'False'">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
       <PreCommands>cd $(ScenarioDirectory)mauiios;cp -rf $HELIX_CORRELATION_PAYLOAD/MauiMacCatalystDefault ./app;$(Python) pre.py --name app</PreCommands>

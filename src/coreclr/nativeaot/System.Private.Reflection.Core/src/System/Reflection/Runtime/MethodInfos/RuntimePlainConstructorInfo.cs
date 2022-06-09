@@ -12,8 +12,6 @@ using System.Reflection.Runtime.ParameterInfos;
 
 using Internal.Reflection.Core.Execution;
 
-using Internal.Reflection.Tracing;
-
 namespace System.Reflection.Runtime.MethodInfos
 {
     //
@@ -65,11 +63,6 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             get
             {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.MethodBase_CustomAttributes(this);
-#endif
-
                 return _common.TrueCustomAttributes;
             }
         }
@@ -78,11 +71,6 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             get
             {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.MethodBase_DeclaringType(this);
-#endif
-
                 return _common.DeclaringType;
             }
         }
@@ -90,10 +78,6 @@ namespace System.Reflection.Runtime.MethodInfos
         [DebuggerGuidedStepThrough]
         public sealed override object Invoke(BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture)
         {
-#if ENABLE_REFLECTION_TRACE
-            if (ReflectionTrace.Enabled)
-                ReflectionTrace.ConstructorInfo_Invoke(this, parameters);
-#endif
             if (parameters == null)
                 parameters = Array.Empty<object>();
 
@@ -127,11 +111,6 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             get
             {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.MethodBase_Name(this);
-#endif
-
                 return _common.Name;
             }
         }

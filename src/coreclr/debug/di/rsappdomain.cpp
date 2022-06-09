@@ -12,9 +12,6 @@
 
 #include "check.h"
 
-#include <tlhelp32.h>
-#include "wtsapi32.h"
-
 #ifndef SM_REMOTESESSION
 #define SM_REMOTESESSION 0x1000
 #endif

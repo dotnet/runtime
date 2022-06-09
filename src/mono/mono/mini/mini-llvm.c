@@ -470,6 +470,11 @@ ovr_tag_from_mono_vector_class (MonoClass *klass) {
 	case MONO_TYPE_I2: case MONO_TYPE_U2: ret |= INTRIN_int16; break;
 	case MONO_TYPE_I4: case MONO_TYPE_U4: ret |= INTRIN_int32; break;
 	case MONO_TYPE_I8: case MONO_TYPE_U8: ret |= INTRIN_int64; break;
+#if TARGET_SIZEOF_VOID_P == 8
+	case MONO_TYPE_I: case MONO_TYPE_U: ret |= INTRIN_int64; break;
+#else
+	case MONO_TYPE_I: case MONO_TYPE_U: ret |= INTRIN_int32; break;
+#endif
 	case MONO_TYPE_R4: ret |= INTRIN_float32; break;
 	case MONO_TYPE_R8: ret |= INTRIN_float64; break;
 	}
@@ -1738,6 +1743,11 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 				}
 			}
 			break;
+		case LLVMArgVtypeInSIMDReg: {
+			MonoClass *klass = mono_class_from_mono_type_internal (sig->params [i]);
+			param_types [pindex ++] = simd_class_to_llvm_type (ctx, klass);
+			break;
+		}
 		case LLVMArgVtypeByVal:
 			param_types [pindex] = type_to_llvm_arg_type (ctx, ainfo->type);
 			if (!ctx_ok (ctx))
@@ -2237,6 +2247,39 @@ get_callee_llvmonly (EmitContext *ctx, LLVMTypeRef llvm_sig, MonoJumpInfoType ty
 	 * All other calls are made through the GOT.
 	 */
 	callee = get_aotconst (ctx, type, data, pointer_type (llvm_sig));
+
+	return callee;
+}
+
+/*
+ * get_callee_module:
+ *
+ *   Return a callee for TYPE/DATA in MODULE.
+ */
+static LLVMValueRef
+get_callee_module (MonoLLVMModule *module, LLVMTypeRef llvm_sig, MonoJumpInfoType type, gconstpointer data)
+{
+	LLVMValueRef callee;
+	char *callee_name;
+	MonoJumpInfo *ji = NULL;
+
+	callee_name = mono_aot_get_plt_symbol (type, data);
+	g_assert (callee_name);
+
+	callee = (LLVMValueRef)g_hash_table_lookup (module->plt_entries, callee_name);
+	if (!callee) {
+		callee = LLVMAddFunction (module->lmodule, callee_name, llvm_sig);
+
+		LLVMSetVisibility (callee, LLVMHiddenVisibility);
+
+		g_hash_table_insert (module->plt_entries, (char*)callee_name, callee);
+	}
+
+	ji = g_new0 (MonoJumpInfo, 1);
+	ji->type = type;
+	ji->data.target = data;
+
+	g_hash_table_insert (module->plt_entries_ji, ji, callee);
 
 	return callee;
 }
@@ -3458,7 +3501,14 @@ emit_icall_cold_wrapper (MonoLLVMModule *module, LLVMModuleRef lmodule, MonoJitI
 	LLVMPositionBuilderAtEnd (builder, entry_bb);
 
 	if (aot) {
-		callee = get_aotconst_module (module, builder, MONO_PATCH_INFO_JIT_ICALL_ID, GUINT_TO_POINTER (icall_id), pointer_type (sig), NULL, NULL);
+		/*
+		 * If the icall has a wrapper, the call needs to be patched, so use get_callee_module () instead of
+		 * get_aotconst_module ().
+		 */
+		if (module->llvm_only)
+			callee = get_aotconst_module (module, builder, MONO_PATCH_INFO_JIT_ICALL_ID, GUINT_TO_POINTER (icall_id), pointer_type (sig), NULL, NULL);
+		else
+			callee = get_callee_module (module, sig, MONO_PATCH_INFO_JIT_ICALL_ID, GUINT_TO_POINTER (icall_id));
 	} else {
 		MonoJitICallInfo * const info = mono_find_jit_icall_info (icall_id);
 		gpointer target = (gpointer)mono_icall_get_wrapper_full (info, TRUE);
@@ -3806,6 +3856,13 @@ emit_unbox_tramp (EmitContext *ctx, const char *method_name, LLVMTypeRef method_
 static void
 emit_gc_pin (EmitContext *ctx, LLVMBuilderRef builder, int vreg)
 {
+	if (ctx->values [vreg] == LLVMConstNull (IntPtrType ()))
+		return;
+#if 0
+	MonoInst *var = get_vreg_to_inst (ctx->cfg, vreg);
+	if (var && var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT|MONO_INST_IS_DEAD))
+		return;
+#endif
 	LLVMValueRef index0 = const_int32 (0);
 	LLVMValueRef index1 = const_int32 (ctx->gc_var_indexes [vreg] - 1);
 	LLVMValueRef indexes [] = { index0, index1 };
@@ -3848,6 +3905,13 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 		if (vreg_is_ref (cfg, i)) {
 			ctx->gc_var_indexes [i] = ngc_vars + 1;
 			ngc_vars ++;
+			/*
+			MonoInst *var = get_vreg_to_inst (ctx->cfg, i);
+			if (!(var && var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT|MONO_INST_IS_DEAD))) {
+				ctx->gc_var_indexes [i] = ngc_vars + 1;
+				ngc_vars ++;
+			}
+			*/
 		}
 	}
 
@@ -3920,6 +3984,13 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 			ctx->addresses [reg] = build_alloca_address (ctx, ainfo->type);
 
 			emit_args_to_vtype (ctx, builder, ainfo->type, ctx->addresses [reg]->value, ainfo, args);
+			break;
+		}
+		case LLVMArgVtypeInSIMDReg: {
+			LLVMValueRef arg = LLVMGetParam (ctx->lmethod, pindex);
+
+			ctx->addresses [reg] = build_alloca_address (ctx, ainfo->type);
+			LLVMBuildStore (builder, arg, build_ptr_cast (builder, ctx->addresses [reg]->value,  pointer_type(LLVMTypeOf (arg))));
 			break;
 		}
 		case LLVMArgVtypeByVal: {
@@ -4017,6 +4088,7 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 
 		switch (ainfo->storage) {
 		case LLVMArgVtypeInReg:
+		case LLVMArgVtypeInSIMDReg:
 		case LLVMArgVtypeByVal:
 		case LLVMArgAsIArgs:
 			// FIXME: Enabling this fails on windows
@@ -4088,8 +4160,9 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 
 #ifdef TARGET_WASM
 	/*
-	 * Store ref arguments to the pin area.
-	 * FIXME: This might not be needed, since the caller already does it ?
+	 * FIXME:
+	 * Storing ref arguments to the pin area is not needed
+	 * since it's done by the caller.
 	 */
 	for (int i = 0; i < cfg->num_varinfo; ++i) {
 		MonoInst *var = cfg->varinfo [i];
@@ -4569,6 +4642,10 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 
 			// FIXME: alignment
 			// FIXME: Get rid of the VMOVE
+			break;
+		}
+		case LLVMArgVtypeInSIMDReg: {
+			args [pindex] = LLVMBuildLoad2 (ctx->builder, addresses [reg]->type, addresses [reg]->value, "load_param");
 			break;
 		}
 		case LLVMArgVtypeByVal:
@@ -7778,7 +7855,7 @@ MONO_RESTORE_WARNING
 					g_assert_not_reached ();
 				}
 #if defined(TARGET_ARM64)
-				if ((ins->inst_c1 == MONO_TYPE_U8) || (ins->inst_c1 == MONO_TYPE_I8)) {
+				if ((ins->inst_c1 == MONO_TYPE_U8) || (ins->inst_c1 == MONO_TYPE_I8) || (ins->inst_c1 == MONO_TYPE_I) || (ins->inst_c1 == MONO_TYPE_U)) {
 					LLVMValueRef cmp = LLVMBuildICmp (builder, op, l, r, "");
 					result = LLVMBuildSelect (builder, cmp, l, r, "");
 				} else {
@@ -11281,6 +11358,7 @@ MONO_RESTORE_WARNING
 			if (!skip_volatile_store)
 				emit_volatile_store (ctx, ins->dreg);
 #ifdef TARGET_WASM
+			//if (vreg_is_ref (cfg, ins->dreg) && ctx->values [ins->dreg] && ins->opcode != OP_MOVE)
 			if (vreg_is_ref (cfg, ins->dreg) && ctx->values [ins->dreg])
 				emit_gc_pin (ctx, builder, ins->dreg);
 #endif
@@ -12446,6 +12524,7 @@ mono_llvm_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		case LLVMArgVtypeByVal:
 		case LLVMArgVtypeByRef:
 		case LLVMArgVtypeInReg:
+		case LLVMArgVtypeInSIMDReg:
 		case LLVMArgVtypeAddr:
 		case LLVMArgVtypeAsScalar:
 		case LLVMArgAsIArgs:

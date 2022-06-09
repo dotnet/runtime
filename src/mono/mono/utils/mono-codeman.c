@@ -627,7 +627,7 @@ mono_code_manager_reserve_align (MonoCodeManager *cman, int size, int alignment)
 			/* Align the chunk->data we add to chunk->pos */
 			/* or we can't guarantee proper alignment     */
 			ptr = (void*)((((uintptr_t)chunk->data + align_mask) & ~(uintptr_t)align_mask) + chunk->pos);
-			chunk->pos = ((char*)ptr - chunk->data) + size;
+			chunk->pos = GPTRDIFF_TO_INT (((char*)ptr - chunk->data) + size);
 			return ptr;
 		}
 	}
@@ -658,7 +658,7 @@ mono_code_manager_reserve_align (MonoCodeManager *cman, int size, int alignment)
 	/* Align the chunk->data we add to chunk->pos */
 	/* or we can't guarantee proper alignment     */
 	ptr = (void*)((((uintptr_t)chunk->data + align_mask) & ~(uintptr_t)align_mask) + chunk->pos);
-	chunk->pos = ((char*)ptr - chunk->data) + size;
+	chunk->pos = GPTRDIFF_TO_INT (((char*)ptr - chunk->data) + size);
 	return ptr;
 }
 

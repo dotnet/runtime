@@ -20,8 +20,6 @@ using System.Reflection.Runtime.CustomAttributes;
 using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
 
-using Internal.Reflection.Tracing;
-
 using Internal.Metadata.NativeFormat;
 using NativeFormatMethodSemanticsAttributes = global::Internal.Metadata.NativeFormat.MethodSemanticsAttributes;
 
@@ -73,11 +71,6 @@ namespace System.Reflection.Runtime.PropertyInfos.NativeFormat
         {
             get
             {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.PropertyInfo_CustomAttributes(this);
-#endif
-
                 return RuntimeCustomAttributeData.GetCustomAttributes(_reader, _property.CustomAttributes);
             }
         }

@@ -2303,7 +2303,7 @@ namespace System.Text.RegularExpressions
         {
             if (!StackHelper.TryEnsureSufficientExecutionStack())
             {
-                // If we can't recur further, assume there's no minimum we can enforce.
+                // If we can't recur further, assume there's no maximum we can enforce.
                 return null;
             }
 

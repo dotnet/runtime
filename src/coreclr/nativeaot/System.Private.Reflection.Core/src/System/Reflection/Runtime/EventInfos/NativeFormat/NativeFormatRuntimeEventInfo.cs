@@ -18,7 +18,6 @@ using Internal.Metadata.NativeFormat;
 using NativeFormatMethodSemanticsAttributes = global::Internal.Metadata.NativeFormat.MethodSemanticsAttributes;
 
 using Internal.Reflection.Core.Execution;
-using Internal.Reflection.Tracing;
 
 namespace System.Reflection.Runtime.EventInfos.NativeFormat
 {
@@ -98,11 +97,6 @@ namespace System.Reflection.Runtime.EventInfos.NativeFormat
         {
             get
             {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.EventInfo_CustomAttributes(this);
-#endif
-
                 return RuntimeCustomAttributeData.GetCustomAttributes(_reader, _event.CustomAttributes);
             }
         }

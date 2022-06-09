@@ -20,8 +20,6 @@ using System.Reflection.Runtime.CustomAttributes;
 using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
 
-using Internal.Reflection.Tracing;
-
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 
@@ -73,11 +71,6 @@ namespace System.Reflection.Runtime.PropertyInfos.EcmaFormat
         {
             get
             {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.PropertyInfo_CustomAttributes(this);
-#endif
-
                 return RuntimeCustomAttributeData.GetCustomAttributes(_reader, _property.GetCustomAttributes());
             }
         }

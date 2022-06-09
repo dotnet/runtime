@@ -43,17 +43,17 @@ namespace System.Text.Json.Serialization.Metadata
 
         public Type BaseType { get; }
 
-        public string? CustomTypeDiscriminatorPropertyName => _polymorphicTypeAttribute?.CustomTypeDiscriminatorPropertyName;
+        public string? TypeDiscriminatorPropertyName => _polymorphicTypeAttribute?.TypeDiscriminatorPropertyName;
 
         public JsonUnknownDerivedTypeHandling UnknownDerivedTypeHandling => _polymorphicTypeAttribute?.UnknownDerivedTypeHandling ?? default;
 
         public bool IgnoreUnrecognizedTypeDiscriminators => _polymorphicTypeAttribute?.IgnoreUnrecognizedTypeDiscriminators ?? false;
 
-        public IEnumerable<(Type DerivedType, string? TypeDiscriminatorId)> GetSupportedDerivedTypes()
+        public IEnumerable<(Type DerivedType, object? TypeDiscriminator)> GetSupportedDerivedTypes()
         {
             foreach (JsonDerivedTypeAttribute attribute in _derivedTypeAttributes)
             {
-                yield return (attribute.DerivedType, attribute.TypeDiscriminatorId);
+                yield return (attribute.DerivedType, attribute.TypeDiscriminator);
             }
         }
 #pragma warning restore CA2252 // This API requires opting into preview features

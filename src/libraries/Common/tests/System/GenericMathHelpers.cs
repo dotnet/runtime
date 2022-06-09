@@ -358,9 +358,6 @@ namespace System
 
         public static TSelf Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider provider) => TSelf.Parse(s, style, provider);
 
-        public static bool TryCreate<TOther>(TOther value, out TSelf result)
-            where TOther : INumberBase<TOther> => TSelf.TryCreate(value, out result);
-
         public static bool TryParse(string s, NumberStyles style, IFormatProvider provider, out TSelf result) => TSelf.TryParse(s, style, provider, out result);
 
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider provider, out TSelf result) => TSelf.TryParse(s, style, provider, out result);

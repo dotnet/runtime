@@ -710,10 +710,6 @@ uint32_t getJitFlags(
           CORJIT_FLAGS* flags,
           uint32_t sizeInBytes) override;
 
-bool doesFieldBelongToClass(
-          CORINFO_FIELD_HANDLE fldHnd,
-          CORINFO_CLASS_HANDLE cls) override;
-
 /**********************************************************************************/
 // clang-format on
 /**********************************************************************************/
