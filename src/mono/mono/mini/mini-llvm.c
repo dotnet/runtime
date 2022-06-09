@@ -2252,6 +2252,39 @@ get_callee_llvmonly (EmitContext *ctx, LLVMTypeRef llvm_sig, MonoJumpInfoType ty
 }
 
 /*
+ * get_callee_module:
+ *
+ *   Return a callee for TYPE/DATA in MODULE.
+ */
+static LLVMValueRef
+get_callee_module (MonoLLVMModule *module, LLVMTypeRef llvm_sig, MonoJumpInfoType type, gconstpointer data)
+{
+	LLVMValueRef callee;
+	char *callee_name;
+	MonoJumpInfo *ji = NULL;
+
+	callee_name = mono_aot_get_plt_symbol (type, data);
+	g_assert (callee_name);
+
+	callee = (LLVMValueRef)g_hash_table_lookup (module->plt_entries, callee_name);
+	if (!callee) {
+		callee = LLVMAddFunction (module->lmodule, callee_name, llvm_sig);
+
+		LLVMSetVisibility (callee, LLVMHiddenVisibility);
+
+		g_hash_table_insert (module->plt_entries, (char*)callee_name, callee);
+	}
+
+	ji = g_new0 (MonoJumpInfo, 1);
+	ji->type = type;
+	ji->data.target = data;
+
+	g_hash_table_insert (module->plt_entries_ji, ji, callee);
+
+	return callee;
+}
+
+/*
  * get_callee:
  *
  *   Return an llvm value representing the callee given by the arguments.
@@ -3468,7 +3501,14 @@ emit_icall_cold_wrapper (MonoLLVMModule *module, LLVMModuleRef lmodule, MonoJitI
 	LLVMPositionBuilderAtEnd (builder, entry_bb);
 
 	if (aot) {
-		callee = get_aotconst_module (module, builder, MONO_PATCH_INFO_JIT_ICALL_ID, GUINT_TO_POINTER (icall_id), pointer_type (sig), NULL, NULL);
+		/*
+		 * If the icall has a wrapper, the call needs to be patched, so use get_callee_module () instead of
+		 * get_aotconst_module ().
+		 */
+		if (module->llvm_only)
+			callee = get_aotconst_module (module, builder, MONO_PATCH_INFO_JIT_ICALL_ID, GUINT_TO_POINTER (icall_id), pointer_type (sig), NULL, NULL);
+		else
+			callee = get_callee_module (module, sig, MONO_PATCH_INFO_JIT_ICALL_ID, GUINT_TO_POINTER (icall_id));
 	} else {
 		MonoJitICallInfo * const info = mono_find_jit_icall_info (icall_id);
 		gpointer target = (gpointer)mono_icall_get_wrapper_full (info, TRUE);
