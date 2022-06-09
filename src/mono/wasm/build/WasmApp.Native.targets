@@ -189,8 +189,6 @@
 
       <EmccInitialHeapSize Condition="'$(EmccInitialHeapSize)' == ''">$(EmccTotalMemory)</EmccInitialHeapSize>
       <EmccInitialHeapSize Condition="'$(EmccInitialHeapSize)' == ''">536870912</EmccInitialHeapSize>
-
-      <_WasmOptAdditionalFlags Condition="'$(WasmSIMD)' == 'true'">--enable-simd</_WasmOptAdditionalFlags>
     </PropertyGroup>
 
     <ItemGroup>
