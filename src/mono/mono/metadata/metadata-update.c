@@ -62,7 +62,7 @@ mono_metadata_update_cleanup_on_close (MonoImage *base_image)
 }
 
 void
-mono_image_effective_table_slow (const MonoTableInfo **t, int idx)
+mono_image_effective_table_slow (const MonoTableInfo **t, uint32_t idx)
 {
 	mono_component_hot_reload ()->effective_table_slow (t, idx);
 }

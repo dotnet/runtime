@@ -63,7 +63,7 @@ static void
 hot_reload_cleanup_on_close (MonoImage *image);
 
 static void
-hot_reload_effective_table_slow (const MonoTableInfo **t, int idx);
+hot_reload_effective_table_slow (const MonoTableInfo **t, uint32_t idx);
 
 static void
 hot_reload_apply_changes (int origin, MonoImage *base_image, gconstpointer dmeta, uint32_t dmeta_len, gconstpointer dil, uint32_t dil_len, gconstpointer dpdb_bytes_orig, uint32_t dpdb_length, MonoError *error);
@@ -1041,7 +1041,7 @@ effective_table_mutant (MonoImage *base, BaselineInfo *info, int tbl_index, cons
 }
 
 void
-hot_reload_effective_table_slow (const MonoTableInfo **t, int idx)
+hot_reload_effective_table_slow (const MonoTableInfo **t, uint32_t idx G_GNUC_UNUSED)
 {
 	/* FIXME: don't let any thread other than the updater thread see values from a delta image
 	 * with a generation past update_published

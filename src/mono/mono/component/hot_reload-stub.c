@@ -39,7 +39,7 @@ static void
 hot_reload_stub_cleanup_on_close (MonoImage *image);
 
 static void
-hot_reload_stub_effective_table_slow (const MonoTableInfo **t, int idx);
+hot_reload_stub_effective_table_slow (const MonoTableInfo **t, uint32_t idx);
 
 static void
 hot_reload_stub_close_except_pools_all (MonoImage *base_image);
@@ -183,7 +183,7 @@ hot_reload_stub_cleanup_on_close (MonoImage *image)
 }
 
 void
-hot_reload_stub_effective_table_slow (const MonoTableInfo **t, int idx)
+hot_reload_stub_effective_table_slow (const MonoTableInfo **t, uint32_t idx)
 {
 	g_assert_not_reached ();
 }

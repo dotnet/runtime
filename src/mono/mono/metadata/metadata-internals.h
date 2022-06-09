@@ -790,13 +790,13 @@ gboolean
 mono_metadata_has_updates_api (void);
 
 void
-mono_image_effective_table_slow (const MonoTableInfo **t, int idx);
+mono_image_effective_table_slow (const MonoTableInfo **t, uint32_t idx);
 
 gboolean
 mono_metadata_update_has_modified_rows (const MonoTableInfo *t);
 
 static inline void
-mono_image_effective_table (const MonoTableInfo **t, int idx)
+mono_image_effective_table (const MonoTableInfo **t, uint32_t idx)
 {
 	if (G_UNLIKELY (mono_metadata_has_updates ())) {
 		if (G_UNLIKELY (idx >= table_info_get_rows ((*t)) || mono_metadata_update_has_modified_rows (*t))) {
