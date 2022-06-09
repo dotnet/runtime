@@ -4049,7 +4049,7 @@ BuildCreateDumpCommandLine(
         }
     }
 
-    commandLine.AppendASCII(DumpGeneratorName);
+    commandLine.Append(DumpGeneratorName);
 
     if (dumpName != nullptr)
     {
