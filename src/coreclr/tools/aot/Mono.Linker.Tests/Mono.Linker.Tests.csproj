@@ -22,7 +22,8 @@
     <PackageReference Include="System.Reflection.MetadataLoadContext" Version="5.0.1" />
     <ProjectReference Include="../Mono.Linker.Tests.Cases/Mono.Linker.Tests.Cases.csproj" />
     <ProjectReference Include="../Mono.Linker.Tests.Cases.Expectations/Mono.Linker.Tests.Cases.Expectations.csproj" />
-    <ProjectReference Include="../ILCompiler/ILCompiler.csproj" />
+    <ProjectReference Include="../ILCompiler.Compiler/ILCompiler.Compiler.csproj" />
+    <ProjectReference Include="../ILCompiler.RyuJit/ILCompiler.RyuJit.csproj" />
 
     <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.RuntimeBinDirectory">
       <Value>$(RuntimeBinDir)</Value>
