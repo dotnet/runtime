@@ -18,7 +18,8 @@ public:
         const host_startup_info_t& host_info,
         const runtime_config_t::settings_t& override_settings,
         const runtime_config_t& app_config,
-        fx_definition_vector_t& fx_definitions);
+        fx_definition_vector_t& fx_definitions,
+        const pal::char_t* app_display_name = nullptr);
 
     static bool is_config_compatible_with_frameworks(
         const runtime_config_t& config,
@@ -34,7 +35,8 @@ private:
         const runtime_config_t::settings_t& override_settings,
         const runtime_config_t& config,
         const fx_reference_t * effective_parent_fx_ref,
-        fx_definition_vector_t& fx_definitions);
+        fx_definition_vector_t& fx_definitions,
+        const pal::char_t* app_display_name);
 
     static StatusCode reconcile_fx_references_helper(
         const fx_reference_t& lower_fx_ref,

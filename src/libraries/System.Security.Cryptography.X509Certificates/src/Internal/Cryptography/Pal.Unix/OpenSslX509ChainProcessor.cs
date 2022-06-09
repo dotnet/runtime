@@ -823,6 +823,7 @@ namespace Internal.Cryptography.Pal
 
             List<X509ChainStatus>? statusBuilder = null;
 
+            bool overallHasNotSignatureValid = false;
             using (SafeX509StackHandle chainStack = Interop.Crypto.X509StoreCtxGetChain(_storeCtx))
             {
                 int chainSize = Interop.Crypto.GetX509StackFieldCount(chainStack);
@@ -839,7 +840,20 @@ namespace Internal.Cryptography.Pal
                         statusBuilder ??= new List<X509ChainStatus>();
                         overallStatus ??= new List<X509ChainStatus>();
 
-                        AddElementStatus(elementErrors.Value, statusBuilder, overallStatus);
+                        bool hadSignatureNotValid = overallHasNotSignatureValid;
+                        AddElementStatus(elementErrors.Value, statusBuilder, overallStatus, ref overallHasNotSignatureValid);
+
+                        // Clear NotSignatureValid for the last element when overall chain is not PartialChain or UntrustedRoot.
+                        bool isLastElement = i == chainSize - 1;
+                        if (isLastElement && !hadSignatureNotValid && overallHasNotSignatureValid)
+                        {
+                            if (!ContainsStatus(overallStatus, X509ChainStatusFlags.PartialChain) &&
+                                !ContainsStatus(overallStatus, X509ChainStatusFlags.UntrustedRoot))
+                            {
+                                RemoveStatus(statusBuilder, X509ChainStatusFlags.NotSignatureValid);
+                                RemoveStatus(overallStatus, X509ChainStatusFlags.NotSignatureValid);
+                            }
+                        }
                         status = statusBuilder.ToArray();
                         statusBuilder.Clear();
                     }
@@ -931,11 +945,12 @@ namespace Internal.Cryptography.Pal
         private static void AddElementStatus(
             ErrorCollection errorCodes,
             List<X509ChainStatus> elementStatus,
-            List<X509ChainStatus> overallStatus)
+            List<X509ChainStatus> overallStatus,
+            ref bool overallHasNotSignatureValid)
         {
-            foreach (var errorCode in errorCodes)
+            foreach (Interop.Crypto.X509VerifyStatusCode errorCode in errorCodes)
             {
-                AddElementStatus(errorCode, elementStatus, overallStatus);
+                AddElementStatus(errorCode, elementStatus, overallStatus, ref overallHasNotSignatureValid);
             }
 
             foreach (X509ChainStatus element in elementStatus)
@@ -960,7 +975,8 @@ namespace Internal.Cryptography.Pal
         private static void AddElementStatus(
             Interop.Crypto.X509VerifyStatusCode errorCode,
             List<X509ChainStatus> elementStatus,
-            List<X509ChainStatus> overallStatus)
+            List<X509ChainStatus> overallStatus,
+            ref bool overallHasNotSignatureValid)
         {
             X509ChainStatusFlags statusFlag = MapVerifyErrorToChainStatus(errorCode);
 
@@ -987,6 +1003,36 @@ namespace Internal.Cryptography.Pal
 
             elementStatus.Add(chainStatus);
             AddUniqueStatus(overallStatus, ref chainStatus);
+
+            if (statusFlag == X509ChainStatusFlags.NotSignatureValid)
+            {
+                overallHasNotSignatureValid = true;
+            }
+        }
+
+        private static bool ContainsStatus(List<X509ChainStatus> list, X509ChainStatusFlags statusCode)
+        {
+            for (int i = 0; i < list.Count; i++)
+            {
+                if (list[i].Status == statusCode)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static void RemoveStatus(List<X509ChainStatus> list, X509ChainStatusFlags statusCode)
+        {
+            for (int i = 0; i < list.Count; i++)
+            {
+                if (list[i].Status == statusCode)
+                {
+                    list.RemoveAt(i);
+                    return;
+                }
+            }
         }
 
         private static void AddUniqueStatus(List<X509ChainStatus> list, ref X509ChainStatus status)

@@ -474,8 +474,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                         .BinPath;
 
                     expectedErrorCode = Constants.ErrorCode.FrameworkMissingFailure;
-                    expectedStdErr = $"The framework '{Constants.MicrosoftNETCoreApp}', " +
-                        $"version '{sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}' ({fixture.RepoDirProvider.BuildArchitecture}) was not found.";
+                    expectedStdErr = $"Framework: '{Constants.MicrosoftNETCoreApp}', " +
+                        $"version '{sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}' ({fixture.RepoDirProvider.BuildArchitecture})";
                     expectedUrlQuery = $"framework={Constants.MicrosoftNETCoreApp}&framework_version={sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}";
                 }
 
@@ -487,7 +487,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
                 var result = command.WaitForExit(true);
                     result.Should().Fail()
-                    .And.HaveStdErrContaining($"- https://aka.ms/dotnet-core-applaunch?{expectedUrlQuery}")
+                    .And.HaveStdErrContaining($"https://aka.ms/dotnet-core-applaunch?{expectedUrlQuery}")
                     .And.HaveStdErrContaining(expectedStdErr);
 
                 // Some Unix systems will have 8 bit exit codes.
@@ -529,11 +529,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 WindowsUtils.WaitForPopupFromProcess(command.Process);
                 command.Process.Kill();
 
+                string expectedMissingFramework = $"'{Constants.MicrosoftNETCoreApp}', version '{sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}' ({fixture.RepoDirProvider.BuildArchitecture})";
                 var result = command.WaitForExit(true)
                     .Should().Fail()
                     .And.HaveStdErrContaining($"Showing error dialog for application: '{Path.GetFileName(appExe)}' - error code: 0x{expectedErrorCode}")
                     .And.HaveStdErrContaining($"url: 'https://aka.ms/dotnet-core-applaunch?{expectedUrlQuery}")
-                    .And.HaveStdErrContaining("&gui=true");
+                    .And.HaveStdErrContaining("&gui=true")
+                    .And.HaveStdErrMatching($"dialog message: (?>.|\\s)*{System.Text.RegularExpressions.Regex.Escape(expectedMissingFramework)}");
             }
         }
 

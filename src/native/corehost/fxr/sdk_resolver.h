@@ -41,6 +41,7 @@ public:
 
     pal::string_t resolve(const pal::string_t& dotnet_root, bool print_errors = true) const;
 
+    void print_global_file_path();
     void print_resolution_error(const pal::string_t& dotnet_root, const pal::char_t *prefix) const;
 
     static sdk_resolver from_nearest_global_file(bool allow_prerelease = true);
