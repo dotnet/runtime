@@ -1425,6 +1425,20 @@ namespace DebuggerTests
             int? x_val = x;
         }
     }
+
+    public static class TypeProperties
+    {
+        public class InstanceProperties
+        {
+            public string str = "aB.c[";
+        }
+
+        public static void Run()
+        {
+            var instance = new InstanceProperties();
+            var localString = "aB.c[";
+        }
+    }
 }
 
 namespace DebuggerTestsV2

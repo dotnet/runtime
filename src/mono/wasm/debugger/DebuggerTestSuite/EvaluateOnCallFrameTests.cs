@@ -1149,7 +1149,7 @@ namespace DebuggerTests
 
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task EvaluateNullObjectPropertiesPositive() => await CheckInspectLocalsAtBreakpointSite(
-            $"DebuggerTests.EvaluateNullableProperties", "Evaluate", 6, "Evaluate",
+            $"DebuggerTests.EvaluateNullableProperties", "Evaluate", 11, "Evaluate",
             $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.EvaluateNullableProperties:Evaluate'); 1 }})",
             wait_for_event_fn: async (pause_location) =>
             {
@@ -1168,7 +1168,11 @@ namespace DebuggerTests
                    ("tc!.MemberList!.Count", TNumber(2)),
                    ("tc?.MemberListNull?.Count", TObject("System.Collections.Generic.List<int>", is_null: true)),
                    ("tc.MemberListNull?.Count", TObject("System.Collections.Generic.List<int>", is_null: true)),
-                   ("tcNull?.MemberListNull?.Count", TObject("DebuggerTests.EvaluateNullableProperties.TestClass", is_null: true)));
+                   ("tcNull?.MemberListNull?.Count", TObject("DebuggerTests.EvaluateNullableProperties.TestClass", is_null: true)),
+                   ("str!.Length", TNumber(9)),
+                   ("str?.Length", TNumber(9)),
+                   ("str_null?.Length", TObject("string", is_null: true))
+                );
             });
 
         [ConditionalFact(nameof(RunningOnChrome))]
@@ -1194,6 +1198,8 @@ namespace DebuggerTests
                 await CheckEvaluateFail("listNull?", "Expected expression.");
                 await CheckEvaluateFail("listNull!.Count", GetNullReferenceErrorOn("\"Count\""));
                 await CheckEvaluateFail("x?.p", "Operation '?' not allowed on primitive type - 'x?'");
+                await CheckEvaluateFail("str_null.Length", GetNullReferenceErrorOn("\"Length\""));
+                await CheckEvaluateFail("str_null!.Length", GetNullReferenceErrorOn("\"Length\""));
 
                 string GetNullReferenceErrorOn(string name) => $"Expression threw NullReferenceException trying to access {name} on a null-valued object.";
 
@@ -1294,5 +1300,20 @@ namespace DebuggerTests
                     ("this", TObject("DIMClass")),
                     ("this.dimClassMember", TNumber(123)));
             });
+
+        [Fact]
+        public async Task EvaluateStringProperties() => await CheckInspectLocalsAtBreakpointSite(
+             $"DebuggerTests.TypeProperties", "Run", 3, "Run",
+            $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.TypeProperties:Run'); 1 }})",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+                await EvaluateOnCallFrameAndCheck(id,
+                   ("localString.Length", TNumber(5)),
+                   ("localString[1]", TChar('B')),
+                   ("instance.str.Length", TNumber(5)),
+                   ("instance.str[3]", TChar('c'))
+                );
+           });
     }
 }
