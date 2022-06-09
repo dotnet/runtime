@@ -291,7 +291,6 @@ namespace System.Drawing
             }
         }
 
-#if NET7_0_OR_GREATER
         /// <summary>
         /// Update the given LOGFONT with data from given graphics.
         /// </summary>
@@ -311,7 +310,6 @@ namespace System.Drawing
 
             *(Interop.User32.LOGFONT*)&logFont = ToLogFontInternal(graphics);
         }
-#endif
 
         private unsafe Interop.User32.LOGFONT ToLogFontInternal(Graphics graphics)
         {
@@ -573,7 +571,6 @@ namespace System.Drawing
             }
         }
 
-#if NET7_0_OR_GREATER
         /// <summary>
         /// Creates a <see cref="Font"/> from the given LOGFONT using the screen device context.
         /// </summary>
@@ -587,7 +584,6 @@ namespace System.Drawing
                 return FromLogFont<T>(in logFont, dc);
             }
         }
-#endif
 
         internal static Font FromLogFont(ref Interop.User32.LOGFONT logFont)
         {
@@ -654,7 +650,6 @@ namespace System.Drawing
             return FromLogFontInternal(ref logFont, hdc);
         }
 
-#if NET7_0_OR_GREATER
         /// <summary>
         /// Creates a <see cref="Font"/> from the given LOGFONT using the given device context.
         /// </summary>
@@ -675,7 +670,6 @@ namespace System.Drawing
 
             return FromLogFontInternal(ref *(Interop.User32.LOGFONT*)&logFont, hdc);
         }
-#endif
 
         /// <summary>
         /// Creates a <see cref="Font"/> from the specified handle to a device context (HDC).
@@ -742,7 +736,6 @@ namespace System.Drawing
             }
         }
 
-#if NET7_0_OR_GREATER
         /// <summary>
         /// Update the given LOGFONT with data from the screen device context.
         /// </summary>
@@ -756,7 +749,6 @@ namespace System.Drawing
                 ToLogFont<T>(ref logFont, graphics);
             }
         }
-#endif
 
         /// <summary>
         /// Returns a handle to this <see cref='Font'/>.
