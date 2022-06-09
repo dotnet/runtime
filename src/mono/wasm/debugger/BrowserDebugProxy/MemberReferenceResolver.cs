@@ -290,8 +290,12 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                     if (!DotnetObjectId.TryParse(resolvedObject?["objectId"]?.Value<string>(), out DotnetObjectId objectId))
                     {
-                        if (resolvedObject["type"].Value<string>() == "string")
-                            throw new ReturnAsErrorException($"String properties evaluation is not supported yet.", "ReferenceError"); // Issue #66823
+                        if (resolvedObject["type"].Value<string>() == "string" && i == parts.Count - 1)
+                        {
+                            JObject resolvedProperty = await ResolveAsStringProperty(resolvedObject);
+                            if (resolvedProperty != null)
+                                return resolvedProperty;
+                        }
                         if (!throwOnNullReference)
                             throw new ReturnAsErrorException($"Operation '?' not allowed on primitive type - '{parts[i - 1]}'", "ReferenceError");
                         throw new ReturnAsErrorException($"Cannot find member '{part}' on a primitive type", "ReferenceError");
@@ -318,10 +322,33 @@ namespace Microsoft.WebAssembly.Diagnostics
                     throwOnNullReference = !hasCurrentPartNullCondition;
                 }
                 return resolvedObject;
+
+                // checks for string properties, e.g. obj.str.Length or str.Length
+                async Task<JObject> ResolveAsStringProperty(JObject obj)
+                {
+                    if (parts[0][^1] == '!' || parts[0][^1] == '?')
+                        parts[0] = parts[0].Remove(parts[0].Length - 1);
+                    var replacedExpression = parts[0];
+                    var resolvedExpression = varName;
+                    if (parts.Count > 2)
+                    {
+                        replacedExpression = string.Join("_", parts[0..^2]); //obj_str
+                        resolvedExpression = replacedExpression + $".{parts[parts.Count - 1]}"; //obj_str.Length
+                    }
+                    try
+                    {
+                        var replacement = ExpressionEvaluator.ConvertJSToCSharpLocalVariableAssignment(replacedExpression, obj);
+                        return await ExpressionEvaluator.EvaluateSimpleExpression(resolvedExpression, varName, new List<string>() { replacement }, logger, token);
+                    }
+                    catch
+                    {
+                        return null;
+                    }
+                }
             }
         }
 
-        public async Task<JObject> Resolve(ElementAccessExpressionSyntax elementAccess, Dictionary<string, JObject> memberAccessValues, JObject indexObject, CancellationToken token)
+        public async Task<JObject> Resolve(ElementAccessExpressionSyntax elementAccess, Dictionary<string, JObject> memberAccessValues, JObject indexObject, List<string> variableDefinitions, CancellationToken token)
         {
             try
             {
@@ -337,6 +364,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 {
                     string elementIdxStr;
                     int elementIdx = 0;
+                    var elementAccessStr = elementAccess.ToString();
                     // x[1] or x[a] or x[a.b]
                     if (indexObject == null)
                     {
@@ -353,7 +381,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                                 }
 
                                 // e.g. x[a] or x[a.b]
-                                if (arg.Expression is IdentifierNameSyntax)
+                                else if (arg.Expression is IdentifierNameSyntax)
                                 {
                                     var argParm = arg.Expression as IdentifierNameSyntax;
 
@@ -368,6 +396,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                                     elementIdxStr = indexObject["value"].ToString();
                                     int.TryParse(elementIdxStr, out elementIdx);
                                 }
+
+                                // FixMe: indexing with expressions, e.g. x[a + 1]
                             }
                         }
                     }
@@ -380,6 +410,21 @@ namespace Microsoft.WebAssembly.Diagnostics
                     if (elementIdx >= 0)
                     {
                         DotnetObjectId.TryParse(rootObject?["objectId"]?.Value<string>(), out DotnetObjectId objectId);
+                        // primitive types do not have objectIds
+                        if (objectId == null)
+                        {
+                            var type = rootObject?["type"]?.Value<string>();
+                            switch (type)
+                            {
+                                case "string":
+                                    var eaExpressionFormatted = elementAccessStrExpression.Replace('.', '_'); // instance_str
+                                    variableDefinitions.Add(ExpressionEvaluator.ConvertJSToCSharpLocalVariableAssignment(eaExpressionFormatted, rootObject));
+                                    var eaFormatted = elementAccessStr.Replace('.', '_'); // instance_str[1]
+                                    return await ExpressionEvaluator.EvaluateSimpleExpression(eaFormatted, elementAccessStr, variableDefinitions, logger, token);
+                                default:
+                                    throw new InvalidOperationException($"Cannot apply indexing with [] to an expression of type '{type}'");
+                            }
+                        }
                         switch (objectId.Scheme)
                         {
                             case "array":
