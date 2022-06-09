@@ -16,12 +16,12 @@ namespace System.Formats.Tar
     internal partial struct TarHeader
     {
         // POSIX fields (shared by Ustar and PAX)
-        internal const string UstarMagic = "ustar\0";
-        internal const string UstarVersion = "00";
+        private const string UstarMagic = "ustar\0";
+        private const string UstarVersion = "00";
 
         // GNU-specific fields
-        internal const string GnuMagic = "ustar ";
-        internal const string GnuVersion = " \0";
+        private const string GnuMagic = "ustar ";
+        private const string GnuVersion = " \0";
 
         // Names of PAX extended attributes commonly found fields
         private const string PaxEaName = "path";
