@@ -13,7 +13,6 @@
 
 #include "utilcode.h"
 #include "metadata.h"
-#include "holderinst.h"
 #include "clrdata.h"
 #include "xclrdata.h"
 #include "posterror.h"

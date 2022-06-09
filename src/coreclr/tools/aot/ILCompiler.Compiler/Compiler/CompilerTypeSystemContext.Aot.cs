@@ -186,7 +186,7 @@ namespace ILCompiler
             {
                 if (!type.IsArrayTypeWithoutGenericInterfaces())
                 {
-                    MetadataType arrayShadowType = _arrayOfTType ?? (_arrayOfTType = SystemModule.GetType("System", "Array`1"));
+                    MetadataType arrayShadowType = _arrayOfTType ??= SystemModule.GetType("System", "Array`1");
                     return arrayShadowType.MakeInstantiatedType(((ArrayType)type).ElementType);
                 }
 

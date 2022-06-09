@@ -1171,7 +1171,7 @@ namespace System.Data
         [Browsable(false)]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public DataRelationCollection ChildRelations =>
-            _childRelationsCollection ?? (_childRelationsCollection = new DataRelationCollection.DataTableRelationCollection(this, false));
+            _childRelationsCollection ??= new DataRelationCollection.DataTableRelationCollection(this, false);
 
         /// <summary>
         /// Gets the collection of columns that belong to this table.
@@ -1186,7 +1186,7 @@ namespace System.Data
             Columns.Clear();
         }
 
-        private CompareInfo CompareInfo => _compareInfo ?? (_compareInfo = Locale.CompareInfo);
+        private CompareInfo CompareInfo => _compareInfo ??= Locale.CompareInfo;
 
         /// <summary>
         /// Gets the collection of constraints maintained by this table.
@@ -1346,7 +1346,7 @@ namespace System.Data
         /// Gets the collection of customized user information.
         /// </summary>
         [Browsable(false)]
-        public PropertyCollection ExtendedProperties => _extendedProperties ?? (_extendedProperties = new PropertyCollection());
+        public PropertyCollection ExtendedProperties => _extendedProperties ??= new PropertyCollection();
 
         internal IFormatProvider FormatProvider
         {
@@ -1543,8 +1543,7 @@ namespace System.Data
         /// </summary>
         [Browsable(false)]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public DataRelationCollection ParentRelations => _parentRelationsCollection ??
-            (_parentRelationsCollection = new DataRelationCollection.DataTableRelationCollection(this, true));
+        public DataRelationCollection ParentRelations => _parentRelationsCollection ??= new DataRelationCollection.DataTableRelationCollection(this, true);
 
         internal bool MergingData
         {

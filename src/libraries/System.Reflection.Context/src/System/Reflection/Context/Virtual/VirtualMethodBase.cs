@@ -55,7 +55,7 @@ namespace System.Reflection.Context.Virtual
 
         public override sealed ParameterInfo ReturnParameter
         {
-            get { return _returnParameter ?? (_returnParameter = new VirtualReturnParameter(this)); }
+            get { return _returnParameter ??= new VirtualReturnParameter(this); }
         }
 
         public override sealed ICustomAttributeProvider ReturnTypeCustomAttributes
