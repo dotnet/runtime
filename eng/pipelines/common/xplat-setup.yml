@@ -9,13 +9,16 @@ parameters:
   platform: ''
   targetRid: ''
   jobParameters: {}
-  shouldContinueOnError: false
+  shouldContinueOnError: '' # defaults to being true for `runtime-staging` on PRs
   variables: []
 
 jobs:
 - template: ${{ coalesce(parameters.helixQueuesTemplate, parameters.jobTemplate) }}
   parameters:
-    shouldContinueOnError: ${{ or(eq(parameters.shouldContinueOnError, true), and(endsWith(variables['Build.DefinitionName'], 'staging'), eq(variables['Build.Reason'], 'PullRequest'))) }}
+    ${{ if eq(parameters.shouldContinueOnError, '') }}:
+      shouldContinueOnError: ${{ and(endsWith(variables['Build.DefinitionName'], 'staging'), eq(variables['Build.Reason'], 'PullRequest')) }}
+    ${{ if ne(parameters.shouldContinueOnError, '') }}:
+      shouldContinueOnError: ${{ eq(parameters.shouldContinueOnError, true) }}
 
     # keep in sync with /eng/pipelines/common/variables.yml
     dependOnEvaluatePaths: ${{ and(eq(variables['Build.Reason'], 'PullRequest'), in(variables['Build.DefinitionName'], 'runtime', 'runtime-staging', 'runtime-community', 'runtime-extra-platforms')) }}
