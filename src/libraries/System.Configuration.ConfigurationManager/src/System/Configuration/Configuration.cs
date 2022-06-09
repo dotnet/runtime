@@ -84,10 +84,10 @@ namespace System.Configuration
         public bool HasFile => _configRecord.HasStream;
 
         public ConfigurationLocationCollection Locations
-            => _locations ?? (_locations = _configRecord.GetLocationCollection(this));
+            => _locations ??= _configRecord.GetLocationCollection(this);
 
         public ContextInformation EvaluationContext
-            => _evalContext ?? (_evalContext = new ContextInformation(_configRecord));
+            => _evalContext ??= new ContextInformation(_configRecord);
 
         public ConfigurationSectionGroup RootSectionGroup
         {
@@ -152,7 +152,7 @@ namespace System.Configuration
 
         internal bool AssemblyStringTransformerIsSet { get; private set; }
 
-        internal Stack SectionsStack => _sectionsStack ?? (_sectionsStack = new Stack());
+        internal Stack SectionsStack => _sectionsStack ??= new Stack();
 
         // Create a new instance of Configuration for the locationSubPath,
         // with the initialization parameters that were used to create this configuration.

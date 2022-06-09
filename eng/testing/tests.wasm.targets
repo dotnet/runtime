@@ -5,6 +5,10 @@
     <WasmGenerateAppBundle Condition="'$(WasmGenerateAppBundle)' == ''">true</WasmGenerateAppBundle>
     <BundleTestAppTargets>$(BundleTestAppTargets);BundleTestWasmApp</BundleTestAppTargets>
     <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(Configuration)' == 'Debug'">true</DebuggerSupport>
+    <!-- suppress warnings as these are tests, and not expected to be trim-safe -->
+    <SuppressTrimAnalysisWarnings Condition="'$(EnableAggressiveTrimming)' == 'true'">true</SuppressTrimAnalysisWarnings>
+    <!-- This warning code isn't yet included in SuppressTrimAnalysisWarnings -->
+    <NoWarn Condition="'$(EnableAggressiveTrimming)' == 'true'">$(NoWarn);IL2118</NoWarn>
 
     <!-- set this when provisioning emsdk on CI -->
     <EMSDK_PATH Condition="'$(EMSDK_PATH)' == '' and '$(ContinuousIntegrationBuild)' == 'true' and '$(MonoProjectRoot)' != ''">$([MSBuild]::NormalizeDirectory($(MonoProjectRoot), 'wasm', 'emsdk'))</EMSDK_PATH>

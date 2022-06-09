@@ -231,7 +231,7 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-                return _lazyGeneratedName ?? (_lazyGeneratedName = BlockedRuntimeTypeNameGenerator.GetNameForBlockedRuntimeType(_typeHandle));
+                return _lazyGeneratedName ??= BlockedRuntimeTypeNameGenerator.GetNameForBlockedRuntimeType(_typeHandle);
             }
         }
 
