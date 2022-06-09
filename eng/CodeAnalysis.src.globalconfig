@@ -1356,7 +1356,7 @@ dotnet_diagnostic.IDE0018.severity = suggestion
 dotnet_diagnostic.IDE0019.severity = suggestion
 
 # IDE0020: Use pattern matching to avoid is check followed by a cast (with variable)
-dotnet_diagnostic.IDE0020.severity = suggestion
+dotnet_diagnostic.IDE0020.severity = warning
 
 # IDE0021: Use expression body for constructors
 dotnet_diagnostic.IDE0021.severity = silent

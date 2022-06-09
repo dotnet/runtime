@@ -513,9 +513,8 @@ namespace System.Data
 
             for (XmlNode? n = parentElement.FirstChild; n != null; n = n.NextSibling)
             {
-                if (n is XmlElement)
+                if (n is XmlElement e)
                 {
-                    XmlElement e = (XmlElement)n;
                     object? schema = _nodeToSchemaMap!.GetSchemaForNode(e, FIgnoreNamespace(e));
 
                     if (schema != null && schema is DataTable)

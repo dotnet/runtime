@@ -257,10 +257,8 @@ namespace System.Data.SqlTypes
         // If object is not of same type, this method throws an ArgumentException.
         public int CompareTo(object? value)
         {
-            if (value is SqlGuid)
+            if (value is SqlGuid i)
             {
-                SqlGuid i = (SqlGuid)value;
-
                 return CompareTo(i);
             }
             throw ADP.WrongType(value!.GetType(), typeof(SqlGuid));
