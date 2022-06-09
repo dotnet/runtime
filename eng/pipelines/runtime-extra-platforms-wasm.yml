@@ -60,6 +60,7 @@ jobs:
         - Browser_wasm_win
       # Don't run for rolling builds, as this is covered
       alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+      shouldContinueOnError: false
       scenarios:
         - normal
         - WasmTestOnBrowser
@@ -107,6 +108,7 @@ jobs:
       nameSuffix: _EAT
       runAOT: false
       alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+      shouldContinueOnError: false
 
   # AOT Library tests
   - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
@@ -117,6 +119,7 @@ jobs:
       nameSuffix: _AOT
       runAOT: true
       alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+      shouldContinueOnError: false
 
   # High resource AOT Library tests
   - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
@@ -129,6 +132,7 @@ jobs:
       buildAOTOnHelix: false
       runAOT: true
       alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+      shouldContinueOnError: false
 
   # Wasm.Build.Tests
   - template: /eng/pipelines/common/templates/wasm-build-tests.yml
@@ -137,6 +141,8 @@ jobs:
         - Browser_wasm
         - Browser_wasm_win
       alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+      # override the default for runtime-staging
+      shouldContinueOnError: false
 
   # Debugger tests
   - template: /eng/pipelines/common/templates/wasm-debugger-tests.yml
@@ -145,6 +151,8 @@ jobs:
         - Browser_wasm
         - Browser_wasm_win
       alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+      # override the default for runtime-staging
+      shouldContinueOnError: false
 
   - template: /eng/pipelines/common/templates/wasm-runtime-tests.yml
     parameters:
