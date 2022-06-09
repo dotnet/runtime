@@ -241,6 +241,32 @@ namespace System.Linq
                     CachedReflectionInfo.GroupJoin_TOuter_TInner_TKey_TResult_6(typeof(TOuter), typeof(TInner), typeof(TKey), typeof(TResult)), outer.Expression, GetSourceExpression(inner), Expression.Quote(outerKeySelector), Expression.Quote(innerKeySelector), Expression.Quote(resultSelector), Expression.Constant(comparer, typeof(IEqualityComparer<TKey>))));
         }
 
+        [DynamicDependency("Order`1", typeof(Enumerable))]
+        public static IOrderedQueryable<T> Order<T>(this IQueryable<T> source)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+
+            return (IOrderedQueryable<T>)source.Provider.CreateQuery<T>(
+                Expression.Call(
+                    null,
+                    CachedReflectionInfo.Order_T_1(typeof(T)),
+                    source.Expression
+                    ));
+        }
+
+        [DynamicDependency("Order`1", typeof(Enumerable))]
+        public static IOrderedQueryable<T> Order<T>(this IQueryable<T> source, IComparer<T> comparer)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+
+            return (IOrderedQueryable<T>)source.Provider.CreateQuery<T>(
+                Expression.Call(
+                    null,
+                    CachedReflectionInfo.Order_T_2(typeof(T)),
+                    source.Expression, Expression.Constant(comparer, typeof(IComparer<T>))
+                    ));
+        }
+
         [DynamicDependency("OrderBy`2", typeof(Enumerable))]
         public static IOrderedQueryable<TSource> OrderBy<TSource, TKey>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector)
         {
@@ -266,6 +292,32 @@ namespace System.Linq
                     null,
                     CachedReflectionInfo.OrderBy_TSource_TKey_3(typeof(TSource), typeof(TKey)),
                     source.Expression, Expression.Quote(keySelector), Expression.Constant(comparer, typeof(IComparer<TKey>))
+                    ));
+        }
+
+        [DynamicDependency("OrderDescending`1", typeof(Enumerable))]
+        public static IOrderedQueryable<T> OrderDescending<T>(this IQueryable<T> source)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+
+            return (IOrderedQueryable<T>)source.Provider.CreateQuery<T>(
+                Expression.Call(
+                    null,
+                    CachedReflectionInfo.OrderDescending_T_1(typeof(T)),
+                    source.Expression
+                    ));
+        }
+
+        [DynamicDependency("OrderDescending`1", typeof(Enumerable))]
+        public static IOrderedQueryable<T> OrderDescending<T>(this IQueryable<T> source, IComparer<T> comparer)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+
+            return (IOrderedQueryable<T>)source.Provider.CreateQuery<T>(
+                Expression.Call(
+                    null,
+                    CachedReflectionInfo.OrderDescending_T_2(typeof(T)),
+                    source.Expression, Expression.Constant(comparer, typeof(IComparer<T>))
                     ));
         }
 

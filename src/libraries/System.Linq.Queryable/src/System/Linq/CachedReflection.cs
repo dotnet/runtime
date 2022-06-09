@@ -530,11 +530,35 @@ namespace System.Linq
              (s_OfType_TResult_1 ??= new Func<IQueryable, IQueryable<object>>(Queryable.OfType<object>).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TResult);
 
+        private static MethodInfo? s_Order_T_1;
+
+        public static MethodInfo Order_T_1(Type T) =>
+             (s_Order_T_1 ??= new Func<IQueryable<object>, IOrderedQueryable<object>>(Queryable.Order).GetMethodInfo().GetGenericMethodDefinition())
+              .MakeGenericMethod(T);
+
+        private static MethodInfo? s_Order_T_2;
+
+        public static MethodInfo Order_T_2(Type T) =>
+             (s_Order_T_2 ??= new Func<IQueryable<object>, IComparer<object>, IOrderedQueryable<object>>(Queryable.Order).GetMethodInfo().GetGenericMethodDefinition())
+              .MakeGenericMethod(T);
+
         private static MethodInfo? s_OrderBy_TSource_TKey_2;
 
         public static MethodInfo OrderBy_TSource_TKey_2(Type TSource, Type TKey) =>
              (s_OrderBy_TSource_TKey_2 ??= new Func<IQueryable<object>, Expression<Func<object, object>>, IOrderedQueryable<object>>(Queryable.OrderBy).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource, TKey);
+
+        private static MethodInfo? s_OrderDescending_T_1;
+
+        public static MethodInfo OrderDescending_T_1(Type T) =>
+             (s_OrderDescending_T_1 ??= new Func<IQueryable<object>, IOrderedQueryable<object>>(Queryable.OrderDescending).GetMethodInfo().GetGenericMethodDefinition())
+              .MakeGenericMethod(T);
+
+        private static MethodInfo? s_OrderDescending_T_2;
+
+        public static MethodInfo OrderDescending_T_2(Type T) =>
+             (s_OrderDescending_T_2 ??= new Func<IQueryable<object>, IComparer<object>, IOrderedQueryable<object>>(Queryable.OrderDescending).GetMethodInfo().GetGenericMethodDefinition())
+              .MakeGenericMethod(T);
 
         private static MethodInfo? s_OrderBy_TSource_TKey_3;
 
