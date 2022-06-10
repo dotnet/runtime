@@ -120,7 +120,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     return SyntaxFactory.IdentifierName(id_name);
                 });
 
-                // 1.1 Replace all this.a() occurrences with this_a_ABDE
+                 // 1.1 Replace all this.a() occurrences with this_a_ABDE
                 root = root.ReplaceNodes(methodCalls, (m, _) =>
                 {
                     string iesStr = m.ToString();
@@ -448,18 +448,18 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (expressionTree == null)
                 throw new Exception($"BUG: Unable to evaluate {expression}, could not get expression from the syntax tree");
 
-            return await EvaluateSimpleExpression(syntaxTree.ToString(), expression, replacer.variableDefinitions, logger, token);
+            return await EvaluateSimpleExpression(resolver, syntaxTree.ToString(), expression, replacer.variableDefinitions, logger, token);
         }
 
         internal static async Task<JObject> EvaluateSimpleExpression(
-            string compiledExpression, string orginalExpression, List<string> variableDefinitions, ILogger logger, CancellationToken token)
+            MemberReferenceResolver resolver, string compiledExpression, string orginalExpression, List<string> variableDefinitions, ILogger logger, CancellationToken token)
         {
             Script<object> newScript = script;
             try
             {
                 newScript = script.ContinueWith(string.Join("\n", variableDefinitions) + "\nreturn " + compiledExpression + ";");
                 var state = await newScript.RunAsync(cancellationToken: token);
-                return JObject.FromObject(ConvertCLRToJSType(state.ReturnValue));
+                return JObject.FromObject(resolver.ConvertCSharpToJSType(state.ReturnValue, state.ReturnValue.GetType()));
             }
             catch (CompilationErrorException cee)
             {
@@ -470,24 +470,6 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 throw new Exception($"Internal Error: Unable to run {orginalExpression}, error: {ex.Message}.", ex);
             }
-        }
-
-        private static JObject ConvertCLRToJSType(object v)
-        {
-            if (v is JObject jobj)
-                return jobj;
-
-            if (v is null)
-                return JObjectValueCreator.CreateNull("<unknown>")?["value"] as JObject;
-
-            string typeName = v.GetType().ToString();
-            jobj = JObjectValueCreator.CreateFromPrimitiveType(v);
-            return jobj is not null
-                ? jobj["value"] as JObject
-                : JObjectValueCreator.Create<object>(value: null,
-                                                    type: "object",
-                                                    description: v.ToString(),
-                                                    className: typeName)?["value"] as JObject;
         }
     }
 

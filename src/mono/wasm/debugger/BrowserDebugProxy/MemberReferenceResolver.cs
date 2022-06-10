@@ -338,7 +338,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                     try
                     {
                         var replacement = ExpressionEvaluator.ConvertJSToCSharpLocalVariableAssignment(replacedExpression, obj);
-                        return await ExpressionEvaluator.EvaluateSimpleExpression(resolvedExpression, varName, new List<string>() { replacement }, logger, token);
+                        return await ExpressionEvaluator.EvaluateSimpleExpression(
+                            this, resolvedExpression, varName, new List<string>() { replacement }, logger, token);
                     }
                     catch
                     {
@@ -420,7 +421,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                                     var eaExpressionFormatted = elementAccessStrExpression.Replace('.', '_'); // instance_str
                                     variableDefinitions.Add(ExpressionEvaluator.ConvertJSToCSharpLocalVariableAssignment(eaExpressionFormatted, rootObject));
                                     var eaFormatted = elementAccessStr.Replace('.', '_'); // instance_str[1]
-                                    return await ExpressionEvaluator.EvaluateSimpleExpression(eaFormatted, elementAccessStr, variableDefinitions, logger, token);
+                                    return await ExpressionEvaluator.EvaluateSimpleExpression(this, eaFormatted, elementAccessStr, variableDefinitions, logger, token);
                                 default:
                                     throw new InvalidOperationException($"Cannot apply indexing with [] to an expression of type '{type}'");
                             }
@@ -618,28 +619,14 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        private static readonly HashSet<Type> NumericTypes = new HashSet<Type>
+        public JObject ConvertCSharpToJSType(object v, Type type)
         {
-            typeof(decimal), typeof(byte), typeof(sbyte),
-            typeof(short), typeof(ushort),
-            typeof(int), typeof(uint),
-            typeof(float), typeof(double)
-        };
+            if (v is JObject jobj)
+                return jobj;
 
-        public object ConvertCSharpToJSType(object v, Type type)
-        {
-            if (v == null)
-                return new { type = "object", subtype = "null", className = type?.ToString(), description = type?.ToString() };
-            if (v is string s)
-                return new { type = "string", value = s, description = s };
-            if (v is char c)
-                return new { type = "symbol", value = c, description = $"{(int)c} '{c}'" };
-            if (NumericTypes.Contains(v.GetType()))
-                return new { type = "number", value = v, description = Convert.ToDouble(v).ToString(CultureInfo.InvariantCulture) };
-            if (v is bool)
-                return new { type = "boolean", value = v, description = v.ToString().ToLowerInvariant(), className = type.ToString() };
-            if (v is JObject)
-                return v;
+            if (v is null)
+                return JObjectValueCreator.CreateNull("<unknown>")?["value"] as JObject;
+
             if (v is Array arr)
             {
                 return CacheEvaluationResult(
@@ -658,7 +645,15 @@ namespace Microsoft.WebAssembly.Diagnostics
                             className = type.ToString()
                         }));
             }
-            return new { type = "object", value = v, description = v.ToString(), className = type.ToString() };
+
+            string typeName = v.GetType().ToString();
+            jobj = JObjectValueCreator.CreateFromPrimitiveType(v);
+            return jobj is not null
+                ? jobj["value"] as JObject
+                : JObjectValueCreator.Create<object>(value: null,
+                                                    type: "object",
+                                                    description: v.ToString(),
+                                                    className: typeName)?["value"] as JObject;
         }
 
         private JObject CacheEvaluationResult(JObject value)
