@@ -784,11 +784,10 @@ bool Compiler::optValnumCSE_Locate()
                     optCseUpdateCheckedBoundMap(tree);
                 }
 
-                // Don't allow CSE of constants if it is disabled
-                //
+                // Don't allow CSE of constants if it is disabled (except class handles)
                 if (tree->IsIntegralConst())
                 {
-                    if (!enableConstCSE && !tree->IsIconHandle(GTF_ICON_CLASS_HDL) && !tree->IsIconHandle(GTF_ICON_STR_HDL))
+                    if (!enableConstCSE && !tree->IsIconHandle(GTF_ICON_CLASS_HDL))
                     {
                         continue;
                     }
