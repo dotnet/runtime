@@ -132,7 +132,12 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			// The remaining cases don't have a dataflow value that represents LValues, so we need
 			// to handle the LHS specially.
 			case IPropertyReferenceOperation propertyRef: {
-					var setMethod = propertyRef.Property.SetMethod;
+					IPropertySymbol? property = propertyRef.Property;
+					IMethodSymbol? setMethod;
+					while ((setMethod = property.SetMethod) == null) {
+						if ((property = property.OverriddenProperty) == null)
+							break;
+					}
 					if (setMethod == null) {
 						// This can happen in a constructor - there it is possible to assign to a property
 						// without a setter. This turns into an assignment to the compiler-generated backing field.
@@ -249,8 +254,14 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			// Accessing property for reading is really a call to the getter
 			// The setter case is handled in assignment operation since here we don't have access to the value to pass to the setter
 			TValue instanceValue = Visit (operation.Instance, state);
+			IPropertySymbol? property = operation.Property;
+			IMethodSymbol? getMethod;
+			while ((getMethod = property.GetMethod) == null) {
+				if ((property = property.OverriddenProperty) == null)
+					break;
+			}
 			return HandleMethodCall (
-				operation.Property.GetMethod!,
+				getMethod!,
 				instanceValue,
 				ImmutableArray<TValue>.Empty,
 				operation);

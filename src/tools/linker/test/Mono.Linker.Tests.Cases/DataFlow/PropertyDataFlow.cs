@@ -41,6 +41,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			PropertyWithAttributeMarkingItself.Test ();
 			WriteToGetOnlyProperty.Test ();
+
+			BasePropertyAccess.Test ();
 		}
 
 		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)]
@@ -544,6 +546,45 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			public static void Test ()
 			{
 				(PublicMethods ?? PublicFields).RequiresAll ();
+			}
+		}
+
+		class BasePropertyAccess
+		{
+			class Base
+			{
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)]
+				public virtual Type DerivedGetOnly { get; set; }
+
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+				public virtual Type DerivedSetOnly { get; set; }
+			}
+
+			class Derived : Base
+			{
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)]
+				public override Type DerivedGetOnly { get => null; }
+
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+				public override Type DerivedSetOnly { set => throw null; }
+			}
+
+			[ExpectedWarning ("IL2072", nameof (Derived.DerivedGetOnly) + ".set", nameof (GetTypeWithNonPublicConstructors))]
+			static void TestWriteToDerivedGetOnly ()
+			{
+				new Derived ().DerivedGetOnly = GetTypeWithNonPublicConstructors ();
+			}
+
+			[ExpectedWarning ("IL2072", nameof (Derived.DerivedSetOnly) + ".get", nameof (DataFlowTypeExtensions.RequiresAll))]
+			static void TestReadFromDerivedSetOnly ()
+			{
+				new Derived ().DerivedSetOnly.RequiresAll ();
+			}
+
+			public static void Test ()
+			{
+				TestWriteToDerivedGetOnly ();
+				TestReadFromDerivedSetOnly ();
 			}
 		}
 
