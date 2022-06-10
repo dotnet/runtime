@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace System
 {
@@ -48,7 +49,13 @@ namespace System
 
                     HasFlagsAttribute = hasFlagsAttribute;
                     Values = values!;
-                    Names = names!;
+
+                    // This path can be run concurrently by multiple threads. This is not an issue for the previous two
+                    // fields, as their value is always retrieved (so even replacing already initialized fields just sets
+                    // them to equivalent values again anyway), but with the names it's possible a thread that didn't
+                    // request them is racing against one that did, so this field might end up being set back to null.
+                    // To avoid this, this field is only set with a compare exchange if its value was already null.
+                    _ = Interlocked.CompareExchange(ref Names, names, null);
 
                     _isReflectionInfoInitialized = true;
                 }
