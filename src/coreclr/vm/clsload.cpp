@@ -128,6 +128,11 @@ PTR_Module ClassLoader::ComputeLoaderModuleWorker(
         // System.__Canon does not contribute to logical loader module
         if (classArg == TypeHandle(g_pCanonMethodTableClass))
             continue;
+
+        CorElementType ety = classArg.GetSignatureCorElementType();
+        if (CorTypeInfo::IsPrimitiveType(ety))
+            continue;
+
         Module* pModule = classArg.GetLoaderModule();
         if (pModule->IsCollectible())
             goto ComputeCollectibleLoaderModule;
@@ -142,6 +147,11 @@ PTR_Module ClassLoader::ComputeLoaderModuleWorker(
         // System.__Canon does not contribute to logical loader module
         if (methodArg == TypeHandle(g_pCanonMethodTableClass))
             continue;
+
+        CorElementType ety = methodArg.GetSignatureCorElementType();
+        if (CorTypeInfo::IsPrimitiveType(ety))
+            continue;
+
         Module *pModule = methodArg.GetLoaderModule();
         if (pModule->IsCollectible())
             goto ComputeCollectibleLoaderModule;
