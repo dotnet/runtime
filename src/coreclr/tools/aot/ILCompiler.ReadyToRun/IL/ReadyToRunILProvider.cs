@@ -128,7 +128,14 @@ namespace Internal.IL
             Debug.Assert(_manifestMutableModule != null);
             Debug.Assert(!_compilationModuleGroup.VersionsWithMethodBody(method) &&
                     _compilationModuleGroup.CrossModuleInlineable(method));
-            var wrappedMethodIL = new ManifestModuleWrappedMethodIL(_manifestMutableModule, EcmaMethodIL.Create(method));
+            var wrappedMethodIL = new ManifestModuleWrappedMethodIL();
+            if (!wrappedMethodIL.Initialize(_manifestMutableModule, EcmaMethodIL.Create(method)))
+            {
+                // If we could not initialize the wrapped method IL, we should store a null.
+                // That will result in the IL code for the method being unavailable for use in
+                // the compilation, which is version safe.
+                wrappedMethodIL = null;
+            }
             _manifestModuleWrappedMethods.Add(method, wrappedMethodIL);
             IncrementVersion();
         }
@@ -155,6 +162,13 @@ namespace Internal.IL
                         return result;
                 }
 
+                // Check to see if there is an override for the EcmaMethodIL. If there is not
+                // then simply return the EcmaMethodIL. In theory this could call 
+                // CreateCrossModuleInlineableTokensForILBody, but we explicitly do not want
+                // to do that. The reason is that this method is called during the multithreaded
+                // portion of compilation, and CreateCrossModuleInlineableTokensForILBody
+                // will produce tokens which are order dependent thus violating the determinism
+                // principles of the compiler.
                 if (!_manifestModuleWrappedMethods.TryGetValue(ecmaMethod, out var methodIL))
                 {
                     methodIL = EcmaMethodIL.Create(ecmaMethod);
@@ -201,9 +215,14 @@ namespace Internal.IL
 
             MutableModule _mutableModule;
 
-            public ManifestModuleWrappedMethodIL(MutableModule mutableModule, EcmaMethodIL wrappedMethod)
+            public ManifestModuleWrappedMethodIL() {}
+            
+            public bool Initialize(MutableModule mutableModule, EcmaMethodIL wrappedMethod)
             {
-                mutableModule.TryGetEntityHandle(wrappedMethod.OwningMethod);
+                bool failedToReplaceToken = false;
+                var owningMethodHandle = mutableModule.TryGetEntityHandle(wrappedMethod.OwningMethod);
+                if (!owningMethodHandle.HasValue)
+                    return false;
                 _mutableModule = mutableModule;
                 _maxStack = wrappedMethod.MaxStack;
                 _isInitLocals = wrappedMethod.IsInitLocals;
@@ -220,7 +239,7 @@ namespace Internal.IL
                         var newHandle = _mutableModule.TryGetHandle((TypeSystemEntity)wrappedMethod.GetObject(region.ClassToken));
                         if (!newHandle.HasValue)
                         {
-                            throw new Exception("Nope");
+                            return false;
                         }
                         _exceptionRegions[i] = new ILExceptionRegion(region.Kind, region.TryOffset, region.TryLength, region.HandlerOffset, region.HandlerLength, newHandle.Value, newHandle.Value);
                     }
@@ -231,7 +250,7 @@ namespace Internal.IL
                 Debug.Assert(ReadyToRunStandaloneMethodMetadata.Compute((EcmaMethod)_owningMethod) != null);
 #endif // DEBUG
 
-                return;
+                return !failedToReplaceToken;
 
                 int GetMutableModuleToken(int token)
                 {
@@ -247,7 +266,9 @@ namespace Internal.IL
                     }
                     if (!newToken.HasValue)
                     {
-                        throw new Exception("Nope2");
+                        // Toekn replacement has failed. Do not attempt to use this IL.
+                        failedToReplaceToken = true;
+                        return 1;
                     }
                     return newToken.Value;
                 }

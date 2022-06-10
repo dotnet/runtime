@@ -3705,16 +3705,17 @@ public:
 };
 #endif
 
-struct MethodBlock
+#ifdef FEATURE_READYTORUN
+struct ReadyToRunStandaloneMethodMetadata
 {
-    MethodBlock() :
+    ReadyToRunStandaloneMethodMetadata() :
         pByteData(nullptr),
         cByteData(0),
         pTypes(nullptr),
         cTypes(0)
     {}
 
-    ~MethodBlock()
+    ~ReadyToRunStandaloneMethodMetadata()
     {
         if (pByteData != nullptr)
             delete[] pByteData;
@@ -3727,8 +3728,10 @@ struct MethodBlock
     const TypeHandle * pTypes;
     size_t cTypes;
 };
-MethodBlock* GetMethodBlock(MethodDesc *pMD);
-void InitMethodBlocks();
+
+ReadyToRunStandaloneMethodMetadata* GetReadyToRunStandaloneMethodMetadata(MethodDesc *pMD);
+void InitReadyToRunStandaloneMethodMetadata();
+#endif // FEATURE_READYTORUN
 
 #include "method.inl"
 

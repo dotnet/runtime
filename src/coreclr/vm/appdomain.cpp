@@ -1040,7 +1040,9 @@ void SystemDomain::Attach()
     // initialization to run
     ReJitManager::InitStatic();
 
-    InitMethodBlocks();
+#ifdef FEATURE_READYTORUN
+    InitReadyToRunStandaloneMethodMetadata();
+#endif // FEATURE_READYTORUN
 }
 
 

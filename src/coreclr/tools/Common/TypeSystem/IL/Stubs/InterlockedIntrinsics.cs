@@ -22,7 +22,8 @@ namespace Internal.IL.Stubs
             {
                 // Check to see if the tokens needed to describe the CompareExchange are naturally present within
                 // the compilation. The current implementation of stable tokens used by cross module inlining is not
-                // compatible with rewriting the IL of an compiler generated intrinsic.
+                // compatible with rewriting the IL of a compiler generated intrinsic. Fortunately, it turns out
+                // that the managed implementation of this intrinsic is correct, just a few more IL instructions.
                 if (compilationModuleGroup.ContainsType(method.OwningType))
                 {
                     TypeDesc objectType = method.Context.GetWellKnownType(WellKnownType.Object);

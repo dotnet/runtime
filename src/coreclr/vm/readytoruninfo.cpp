@@ -636,12 +636,12 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
         m_pComposite = &m_component;
         m_isComponentAssembly = false;
         IMDInternalImport *pNativeMDImport;
-        IMAGE_DATA_DIRECTORY * pNativeMetadatSection = m_pComposite->FindSection(ReadyToRunSectionType::ManifestMetadata);
-        if (pNativeMetadatSection != NULL)
+        IMAGE_DATA_DIRECTORY * pNativeMetadataSection = m_pComposite->FindSection(ReadyToRunSectionType::ManifestMetadata);
+        if (pNativeMetadataSection != NULL)
         {
             pNativeMDImport = NULL;
-            IfFailThrow(GetMetaDataInternalInterface((void *) m_pComposite->GetLayout()->GetDirectoryData(pNativeMetadatSection),
-                                                        pNativeMetadatSection->Size,
+            IfFailThrow(GetMetaDataInternalInterface((void *) m_pComposite->GetLayout()->GetDirectoryData(pNativeMetadataSection),
+                                                        pNativeMetadataSection->Size,
                                                         ofRead,
                                                         IID_IMDInternalImport,
                                                         (void **) &pNativeMDImport));
@@ -935,8 +935,6 @@ bool ReadyToRunInfo::GetPgoInstrumentationData(MethodDesc * pMD, BYTE** pAllocat
     return false;
 }
 
-//#define LOG_R2R_ENTRYPOINT
-
 PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig, BOOL fFixups)
 {
     STANDARD_VM_CONTRACT;
@@ -959,17 +957,6 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     // If R2R code is disabled for this module, simply behave as if it is never found
     if (ReadyToRunCodeDisabled())
         goto done;
-
-#ifdef LOG_R2R_ENTRYPOINT
-    pMD->GetMethodInfo(tNamespace, tMethodName, tMethodSignature);
-    tFullname.Append(tNamespace);
-    tFullname.Append(tMethodName);
-    tFullname.Append(tMethodSignature);
-    szFullName = tFullname.GetUTF8(scratch);
-
-    printf("ReadyToRunInfo::GetEntryPoint %s\n", szFullName);
-    printedStart = true;
-#endif
 
     ETW::MethodLog::GetR2RGetEntryPointStart(pMD);
 
@@ -1073,11 +1060,6 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     }
 
 done:
-#ifdef LOG_R2R_ENTRYPOINT
-    if (printedStart)
-        printf("ReadyToRunInfo::GetEntryPoint Found: %p %s\n", (void*)pEntryPoint, szFullName);
-#endif
-
     if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, R2RGetEntryPoint))
     {
         ETW::MethodLog::GetR2RGetEntryPoint(pMD, pEntryPoint);
@@ -1468,7 +1450,6 @@ public:
 
 ModuleBase* CreateNativeManifestModule(LoaderAllocator* pLoaderAllocator, IMDInternalImport *pManifestMetadata, AllocMemTracker *pamTracker)
 {
-    // Should be moved to ModuleBase initialization
     void *mem = pamTracker->Track(pLoaderAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(NativeManifestModule))));
     return new (mem) NativeManifestModule(pLoaderAllocator, pManifestMetadata, pamTracker);
 }

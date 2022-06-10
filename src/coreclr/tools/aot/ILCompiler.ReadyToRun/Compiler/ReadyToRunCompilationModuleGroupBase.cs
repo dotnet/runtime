@@ -387,7 +387,7 @@ namespace ILCompiler
 
         private bool CrossModuleCompileableUncached(MethodDesc method)
         {
-            if (!CrossModuleInlineable(method))
+            if (!CrossModuleInlineableInternal(method))
                 return false;
 
             // Only allow generics, non-generics should be compiled into the defining module
@@ -431,7 +431,13 @@ namespace ILCompiler
         {
             if (!_crossModuleInlining)
                 return false;
+            
+            return CrossModuleInlineableInternal(method);
+        }
 
+        // Internal predicate so that the switches controlling cross module inlining and compilation are independent
+        private bool CrossModuleInlineableInternal(MethodDesc method)
+        {
             return _crossModuleInlineableCache.GetOrAdd(method, CrossModuleInlineableUncached);
         }
 

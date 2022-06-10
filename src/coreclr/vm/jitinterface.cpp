@@ -13997,31 +13997,31 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                 }
             }
 
-            MethodBlock *pMethodBlock = NULL;
+            ReadyToRunStandaloneMethodMetadata *pMethodMetadata = NULL;
             if (!fail)
             {
-                pMethodBlock = GetMethodBlock(pMDCompare);
-                if (pMethodBlock == NULL)
+                pMethodMetadata = GetReadyToRunStandaloneMethodMetadata(pMDCompare);
+                if (pMethodMetadata == NULL)
                     fail = true;
 
-                fail = fail || (pMethodBlock->cByteData != dwBlobSize);
+                fail = fail || (pMethodMetadata->cByteData != dwBlobSize);
             }
             
             if (!fail)
             {
-                fail = 0 != memcmp(pBlobStart, pMethodBlock->pByteData, dwBlobSize);
+                fail = 0 != memcmp(pBlobStart, pMethodMetadata->pByteData, dwBlobSize);
             }
 
             if (!fail)
             {
-                fail = cTypes != pMethodBlock->cTypes;
+                fail = cTypes != pMethodMetadata->cTypes;
             }
 
             if (!fail)
             {
                 for (COUNT_T i = 0; i < cTypes && !fail; i++)
                 {
-                    fail = types[i] != pMethodBlock->pTypes[i];
+                    fail = types[i] != pMethodMetadata->pTypes[i];
                 }
             }
 
@@ -14047,9 +14047,9 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                         methodName.GetUnicode(),
                         GetFullyQualifiedNameForClassW(pMDCompare->GetMethodTable()),
                         (int)dwBlobSize, pBlobStart,
-                        pMethodBlock != NULL ? (int)pMethodBlock->cByteData : 0, pMethodBlock != NULL ? (void*)pMethodBlock->pByteData : (void*)NULL,
+                        pMethodMetadata != NULL ? (int)pMethodMetadata->cByteData : 0, pMethodMetadata != NULL ? (void*)pMethodMetadata->pByteData : (void*)NULL,
                         (int)cTypes, compileTimeTypes,
-                        pMethodBlock != NULL ? (int)pMethodBlock->cTypes : 0, pMethodBlock != NULL ? (void*)pMethodBlock->pTypes : (void*)NULL
+                        pMethodMetadata != NULL ? (int)pMethodMetadata->cTypes : 0, pMethodMetadata != NULL ? (void*)pMethodMetadata->pTypes : (void*)NULL
                         );
 
 #ifdef _DEBUG

@@ -421,7 +421,7 @@ Module* PersistentInlineTrackingMapR2R2::GetModuleByIndex(DWORD index)
 
     // This "black magic spell" has in fact nothing to do with GenericInstantiationCompare per se, but just sets a thread flag
     // that later activates more thorough search inside Module::GetAssemblyIfLoaded, which is indirectly called from GetModuleFromIndexIfLoaded.
-    // This is useful when ngen image was compiler against a different assembly version than the one loaded now.
+    // This is useful when a R2R image was compiled against a different assembly version than the one loaded now.
     ClrFlsThreadTypeSwitch genericInstantionCompareHolder(ThreadType_GenericInstantiationCompare);
 
     _ASSERTE(m_module->GetModuleFromIndexIfLoaded(index)->IsFullModule());
@@ -444,8 +444,6 @@ BOOL CrossModulePersistentInlineTrackingMapR2R::TryLoad(Module* pModule, LoaderA
     return TRUE;
 }
 
-// Read a Module/MethodDef token pair from the parser. Optionally check to see if it matches expectedToken. 
-// (0 for expectedToken indicates that no checking is to be performed)
 void CrossModulePersistentInlineTrackingMapR2R::GetILBodySection(MethodDesc*** pppMethods, COUNT_T* pcMethods)
 {
     COUNT_T countImportSections;
@@ -648,7 +646,7 @@ Module* CrossModulePersistentInlineTrackingMapR2R::GetModuleByIndex(DWORD index)
 
     // This "black magic spell" has in fact nothing to do with GenericInstantiationCompare per se, but just sets a thread flag
     // that later activates more thorough search inside Module::GetAssemblyIfLoaded, which is indirectly called from GetModuleFromIndexIfLoaded.
-    // This is useful when ngen image was compiler against a different assembly version than the one loaded now.
+    // This is useful when a R2R image was compiled against a different assembly version than the one loaded now.
     ClrFlsThreadTypeSwitch genericInstantionCompareHolder(ThreadType_GenericInstantiationCompare);
 
     _ASSERTE(m_module->GetModuleFromIndexIfLoaded(index)->IsFullModule());

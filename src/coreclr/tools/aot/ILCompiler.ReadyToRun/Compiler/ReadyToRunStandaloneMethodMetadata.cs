@@ -15,6 +15,8 @@ using Internal.TypeSystem.Ecma;
 namespace ILCompiler
 {
     // Alternate form of metadata that represents a single method. Self contained except for type references
+    // The behavior of this code must exactly match that of the logic in the VM
+    // That code can be found in src\coreclr\vm\readytorunstandalonemethodmetadata.cpp
     public class ReadyToRunStandaloneMethodMetadata
     {
         public byte[] ConstantData;

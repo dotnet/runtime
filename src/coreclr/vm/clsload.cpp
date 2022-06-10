@@ -159,7 +159,7 @@ PTR_Module ClassLoader::ComputeLoaderModuleWorker(
             pLoaderModule = pModule;
     }
 
-    if ((pLoaderModule == NULL) && pDefinitionModule)
+    if (pLoaderModule == NULL)
     {
         pLoaderModule = pDefinitionModule;
     }

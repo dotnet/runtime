@@ -435,18 +435,9 @@ typedef DPTR(class ReadyToRunInfo)      PTR_ReadyToRunInfo;
 
 struct ThreadLocalModule;
 
-// A code:Module represents a DLL or EXE file loaded from the disk. It could either be a IL module or a
-// Native code (NGEN module). A module live in a code:Assembly
-//
-// Some important fields are
-//    * code:Module.m_pPEAssembly - this points at a code:PEAssembly that understands the layout of a PE assembly. The most
-//        important part is getting at the code:Module (see file:..\inc\corhdr.h#ManagedHeader) from there
-//        you can get at the Meta-data and IL)
-//    * code:Module.m_pAvailableClasses - this is a table that lets you look up the types (the code:EEClass)
-//        for all the types in the module
-//
-// See file:..\inc\corhdr.h#ManagedHeader for more on the layout of managed exectuable files.
-
+// A ModuleBase represents the ability to reference code via tokens
+// This abstraction exists to allow the R2R manifest metadata to have
+// tokens which can be resolved at runtime.
 class ModuleBase
 {
 #ifdef DACCESS_COMPILE
@@ -592,6 +583,17 @@ private:
 
 };
 
+// A code:Module represents a DLL or EXE file loaded from the disk. It could either be a IL module or a
+// Native code (NGEN module). A module live in a code:Assembly
+//
+// Some important fields are
+//    * code:Module.m_pPEAssembly - this points at a code:PEAssembly that understands the layout of a PE assembly. The most
+//        important part is getting at the code:Module (see file:..\inc\corhdr.h#ManagedHeader) from there
+//        you can get at the Meta-data and IL)
+//    * code:Module.m_pAvailableClasses - this is a table that lets you look up the types (the code:EEClass)
+//        for all the types in the module
+//
+// See file:..\inc\corhdr.h#ManagedHeader for more on the layout of managed exectuable files.
 class Module : public ModuleBase
 {
 #ifdef DACCESS_COMPILE
