@@ -164,11 +164,20 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         isInitialized = await context.SdbAgent.TypeInitialize(typeId, token);
                     }
-                    var staticFieldValue = await context.SdbAgent.GetFieldValue(typeId, field.Id, token);
-                    var valueRet = await GetValueFromObject(staticFieldValue, token);
-                    // we need the full name here
-                    valueRet["className"] = classNameToFind;
-                    return valueRet;
+                    try
+                    {
+                        var staticFieldValue = await context.SdbAgent.GetFieldValue(typeId, field.Id, token);
+                        var valueRet = await GetValueFromObject(staticFieldValue, token);
+                        // we need the full name here
+                        valueRet["className"] = classNameToFind;
+                        return valueRet;
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogDebug(ex, $"Failed to get value of field {field.Name} on {classNameToFind} " +
+                            $"because {field.Name} is not a static member of {classNameToFind}.");
+                    }
+                    return null;
                 }
 
                 var methodId = await context.SdbAgent.GetPropertyMethodIdByName(typeId, name, token);
@@ -176,8 +185,16 @@ namespace Microsoft.WebAssembly.Diagnostics
                 {
                     using var commandParamsObjWriter = new MonoBinaryWriter();
                     commandParamsObjWriter.Write(0); //param count
-                    var retMethod = await context.SdbAgent.InvokeMethod(commandParamsObjWriter.GetParameterBuffer(), methodId, token);
-                    return await GetValueFromObject(retMethod, token);
+                    try
+                    {
+                        var retMethod = await context.SdbAgent.InvokeMethod(commandParamsObjWriter.GetParameterBuffer(), methodId, token);
+                        return await GetValueFromObject(retMethod, token);
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogDebug(ex, $"Failed to invoke getter of id={methodId} on {classNameToFind}.{name} " +
+                            $"because {name} is not a static member of {classNameToFind}.");
+                    }
                 }
                 return null;
             }
