@@ -377,7 +377,7 @@ IErrorMarshalTesting : IUnknown
         /*[in]*/ int hresultToReturn ) = 0;
       virtual HRESULT STDMETHODCALLTYPE Throw_HResult_HelpLink (
         /*[in]*/ int hresultToReturn,
-        /*[in]*/ BSTR helpLink,
+        /*[in]*/ LPCWSTR helpLink,
         /*[in]*/ DWORD helpContext ) = 0;
 };
 

@@ -28,19 +28,20 @@ public: // IErrorMarshalTesting
 
     DEF_FUNC(Throw_HResult_HelpLink)(
         /*[in]*/ int hresultToReturn,
-        /*[in]*/ BSTR helpLink,
+        /*[in]*/ LPCWSTR helpLink,
         /*[in]*/ DWORD helpContext)
     {
-        ICreateErrorInfo* pCreateErrInfo;
-        CreateErrorInfo(&pCreateErrInfo);
-        pCreateErrInfo->SetHelpFile(helpLink);
-        pCreateErrInfo->SetHelpContext(helpContext);
+        HRESULT hr;
 
-        IErrorInfo* pErrInfo;
-        pCreateErrInfo->QueryInterface(IID_IErrorInfo, (void**)&pErrInfo);
-        SetErrorInfo(0, pErrInfo);
-        pErrInfo->Release();
-        pCreateErrInfo->Release();
+        ComSmartPtr<ICreateErrorInfo> pCreateErrInfo;
+        BSTR bstrHelpLink = SysAllocString(helpLink);
+        RETURN_IF_FAILED(::CreateErrorInfo(&pCreateErrInfo));
+        RETURN_IF_FAILED(pCreateErrInfo->SetHelpFile(bstrHelpLink));
+        RETURN_IF_FAILED(pCreateErrInfo->SetHelpContext(helpContext));
+
+        ComSmartPtr<IErrorInfo> pErrInfo;
+        RETURN_IF_FAILED(pCreateErrInfo->QueryInterface(IID_IErrorInfo, (void**)&pErrInfo));
+        RETURN_IF_FAILED(SetErrorInfo(0, pErrInfo));
 
         return HRESULT{ hresultToReturn };
     }

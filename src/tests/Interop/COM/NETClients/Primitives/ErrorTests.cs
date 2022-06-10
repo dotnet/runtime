@@ -60,7 +60,7 @@ namespace NetClient
 
         private void VerifyHelpLink()
         {
-            string helpLink = "C:\\Windows\\system32\\dummy.hlp";
+            string helpLink = "X:\\NotA\\RealPath\\dummy.hlp";
             uint helpContext = 5678;
             var ex = Assert.Throws<COMException>(() => { this.server.Throw_HResult_HelpLink(unchecked((int)-1), helpLink, helpContext); });
             Assert.Equal($"{helpLink}#{helpContext}", ex.HelpLink);
