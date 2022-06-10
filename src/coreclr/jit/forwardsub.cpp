@@ -673,7 +673,13 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
             return false;
         }
 
-        if (!isHWSIMDClass(fwdHnd) || !isHWSIMDClass(useHnd))
+#ifdef FEATURE_SIMD
+        const bool bothHWSIMD = isHWSIMDClass(fwdHnd) && isHWSIMDClass(useHnd);
+#else
+        const bool bothHWSIMD = false;
+#endif
+
+        if (!bothHWSIMD)
         {
             JITDUMP(" would change struct handle (substitution)\n");
             return false;
