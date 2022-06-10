@@ -28,6 +28,7 @@ namespace System.Security.Cryptography
         private static volatile Oid? _enhancedKeyUsageOid;
         private static volatile Oid? _keyUsageOid;
         private static volatile Oid? _subjectKeyIdentifierOid;
+        private static volatile Oid? _authorityInformationAccessOid;
 
         internal static Oid RsaOid => _rsaOid ??= InitializeOid(Rsa);
         internal static Oid EcPublicKeyOid => _ecPublicKeyOid ??= InitializeOid(EcPublicKey);
@@ -51,6 +52,7 @@ namespace System.Security.Cryptography
         internal static Oid EnhancedKeyUsageOid => _enhancedKeyUsageOid ??= InitializeOid(EnhancedKeyUsage);
         internal static Oid KeyUsageOid => _keyUsageOid ??= InitializeOid(KeyUsage);
         internal static Oid SubjectKeyIdentifierOid => _subjectKeyIdentifierOid ??= InitializeOid(SubjectKeyIdentifier);
+        internal static Oid AuthorityInformationAccessOid => _authorityInformationAccessOid ??= InitializeOid(AuthorityInformationAccess);
 
         private static Oid InitializeOid(string oidValue)
         {
