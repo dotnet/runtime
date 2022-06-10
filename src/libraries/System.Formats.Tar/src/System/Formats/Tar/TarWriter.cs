@@ -13,7 +13,7 @@ namespace System.Formats.Tar
     /// <summary>
     /// Writes a tar archive into a stream.
     /// </summary>
-    public sealed partial class TarWriter : IDisposable
+    public sealed partial class TarWriter : IDisposable, IAsyncDisposable
     {
         private bool _wroteEntries;
         private bool _isDisposed;
@@ -89,13 +89,14 @@ namespace System.Formats.Tar
             GC.SuppressFinalize(this);
         }
 
-        // /// <summary>
-        // /// Asynchronously disposes the current <see cref="TarWriter"/> instance, and closes the archive stream if the <c>leaveOpen</c> argument was set to <see langword="false"/> in the constructor.
-        // /// </summary>
-        // public ValueTask DisposeAsync()
-        // {
-        //     throw new NotImplementedException();
-        // }
+        /// <summary>
+        /// Asynchronously disposes the current <see cref="TarWriter"/> instance, and closes the archive stream if the <c>leaveOpen</c> argument was set to <see langword="false"/> in the constructor.
+        /// </summary>
+        public async ValueTask DisposeAsync()
+        {
+            await DisposeAsync(disposing: true).ConfigureAwait(false);
+            GC.SuppressFinalize(this);
+        }
 
         /// <summary>
         /// Writes the specified file into the archive stream as a tar entry.
@@ -320,6 +321,34 @@ namespace System.Formats.Tar
             }
         }
 
+        // Asynchronously disposes the current instance.
+        // If 'disposing' is 'false', the method was called from the finalizer.
+        private async ValueTask DisposeAsync(bool disposing)
+        {
+            if (disposing && !_isDisposed)
+            {
+                try
+                {
+                    await WriteGlobalExtendedAttributesEntryIfNeededAsync(cancellationToken: default).ConfigureAwait(false);
+
+                    if (_wroteEntries)
+                    {
+                        await WriteFinalRecordsAsync().ConfigureAwait(false);
+                    }
+
+
+                    if (!_leaveOpen)
+                    {
+                        await _archiveStream.DisposeAsync().ConfigureAwait(false);
+                    }
+                }
+                finally
+                {
+                    _isDisposed = true;
+                }
+            }
+        }
+
         // If the underlying archive stream is disposed, throws 'ObjectDisposedException'.
         private void ThrowIfDisposed()
         {
@@ -336,6 +365,15 @@ namespace System.Formats.Tar
             byte[] emptyRecord = new byte[TarHelpers.RecordSize];
             _archiveStream.Write(emptyRecord);
             _archiveStream.Write(emptyRecord);
+        }
+
+        // The spec indicates that the end of the archive is indicated
+        // by two records consisting entirely of zero bytes.
+        private async ValueTask WriteFinalRecordsAsync()
+        {
+            byte[] emptyRecord = new byte[TarHelpers.RecordSize];
+            await _archiveStream.WriteAsync(emptyRecord, cancellationToken: default).ConfigureAwait(false);
+            await _archiveStream.WriteAsync(emptyRecord, cancellationToken: default).ConfigureAwait(false);
         }
 
         // Partial method for reading an entry from disk and writing it into the archive stream.

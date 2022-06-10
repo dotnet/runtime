@@ -318,7 +318,8 @@ namespace System.Formats.Tar
             Debug.Assert(Path.IsPathFullyQualified(sourceDirectoryName));
             Debug.Assert(destination.CanWrite);
 
-            using (TarWriter writer = new TarWriter(destination, TarEntryFormat.Pax, leaveOpen))
+            TarWriter writer = new TarWriter(destination, TarEntryFormat.Pax, leaveOpen);
+            await using (writer.ConfigureAwait(false))
             {
                 bool baseDirectoryIsEmpty = true;
                 DirectoryInfo di = new(sourceDirectoryName);
