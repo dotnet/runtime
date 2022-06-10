@@ -1,6 +1,6 @@
 # Mono code guidelines
 
-This document is meant to capture guidlines for contributing code to
+This document is meant to capture guidelines for contributing code to
 the [src/mono/mono/](../../src/mono/mono),
 [src/native/public/mono](../../src/native/public/mono) areas of the
 dotnet/runtime repo.
@@ -22,7 +22,7 @@ We follow the [Mono Coding guidelines](https://www.mono-project.com/community/co
 
 ## Naming
 
-Mono reserves the following prefixes for symbols: `mono_`, `monovm_`, `m_`, `monoeg_` (use to remap `eglib`
+Mono reserves the following prefixes for symbols: `mono_`, `monovm_`, `m_`, `monoeg_` (used to remap [`eglib`](../../src/mono/mono/eglib)
 functions which in source code have a `g_` prefix).
 
 All non-`static` symbols should use one of these prefixes.  We generally use `mono_` for most
@@ -36,14 +36,14 @@ Public API symbols and types *must* be prefixed.
 
 For types Mono generally uses `typedef struct _MonoWhatever { ... } MonoWhatever`.  Opaque types may
 define `typedef struct _MonoWhatever MonoWhatever` in a client header and define `struct
-_MonoWhatever {...}` in an implementation header.  Occasionally we break `#include` cyles by adding
+_MonoWhatever {...}` in an implementation header.  Occasionally we break `#include` cycles by adding
 forward declarations for some types.
 
 ## Macros
 
 Mono derives from an autotools-style project so we generally write `HOST_XYZ` for the machine on
 which the runtime is executing (as opposed to the machine on which the runtime was compiled), and
-`TARGET_XYZ` for the machine that will be targets by the JIT and AOT compilers.  In the case of AOT
+`TARGET_XYZ` for the machine that will be targeted by the JIT and AOT compilers.  In the case of AOT
 compilation host and target might be different: the host might be Windows, and the target might be
 Browser WebAssembly, for example.
 
@@ -59,11 +59,11 @@ There are actually three boolean types to keep in mind:
 
 * `gboolean` used internally in the runtime
 * `MonoBoolean` used as an interop type with C# bool in internal calls
-* `mono_bool` used by the public C API - generally new code shouldn't use it except if adding a new public API function.
+* `mono_bool` used by the public C API - generally new code shouldn't use it except when adding a new public API function.
 
 ## Utility and platform abstraction functions
 
-Mono genrally tries to fill in POSIX-like abstractions on platforms that lack them (for example, Windows).
+Mono generally tries to fill in POSIX-like abstractions on platforms that lack them (for example, Windows).
 This is in contrast to the CoreCLR PAL which generally tries to add Windows API abstractions on top
 of POSIX.
 
@@ -97,7 +97,7 @@ in utils but in metadata.
 The `mini` directory contains execution engines.  If the execution engine has to provide some
 functionality to `metadata` it generally does so by installing some callback that is invoked by
 `metadata`.  For example, `mini` knows how to unwind exceptions and perform stack walks - while
-`metadata` decides *when*_* to unwind or perform a stackwalk.  To coordinate, `metadata` exposes an
+`metadata` decides *when* to unwind or perform a stackwalk.  To coordinate, `metadata` exposes an
 API to install hooks and `mini` provides the implementations.
 
 ## Error handling
@@ -106,9 +106,9 @@ New code should prefer to use the `MonoError` functions.
 
 * A non-public-API function should take a `MonoError *` argument.
 * In case of an error the function should call one of the `mono_error_set_` functions from [../../src/mono/mono/utils/mono-error-internals.h](../../src/mono/mono/utils/mono-error-internals.h)
-* Inside the runtime check if there was an error by calling `is_ok (error)`, `mono_error_assert_ok (error)`, `goto_if_nok` or `return_if_nok`/`return_val_if_nok`
+* Inside the runtime check whether there was an error by calling `is_ok (error)`, `mono_error_assert_ok (error)`, `goto_if_nok` or `return_if_nok`/`return_val_if_nok`
 * If there is an error and you're handling it, call `mono_error_cleanup (error)` to dispose of the resources.
-* `MonoError*` is generally one-shot: after it's been cleaned up it need to be re-inited with `mono_error_init_reuse`, but this is discouraged.
+* `MonoError*` is generally one-shot: after it's been cleaned up it needs to be re-inited with `mono_error_init_reuse`, but this is discouraged.
 * Instead if you intend to deal with an error, use `ERROR_DECL (local_error)` then call the
   possibly-failing function and pass it `local_error`, then call `mono_error_assert_ok
   (local_error)` if it "can't fail" or `mono_error_cleanup (local_error)` if you want to ignore the
@@ -127,7 +127,7 @@ There are two circumstances when you might need to call `mono_error_set_pending_
 1. You're working with a public Mono API that sets a pending exception
 2. You're implementing an icall, but can't use `HANDLES()` (see the [internal calls](#internal-calls) section below)
 
-## Internal calls <a name="internal-calls"></a>
+## Internal calls
 
 Prefer P/Invokes or QCalls over internal calls.  That is, if your function only takes arguments that
 are not managed objects, and does not need to interact with the runtime, it is better to define it
@@ -137,7 +137,7 @@ Internal calls generally have at least one argument that is a managed object, or
 
 Internal calls are declared in [`icall-def.h`](../../src/mono/mono/metadata/icall-def.h) See the comment in the header for details.
 
-There are two styles of internal calls: `NOHANDLES` and `HANDLES`.  (This is a simplification there
+There are two styles of internal calls: `NOHANDLES` and `HANDLES`.  (This is a simplification as there
 are also JIT internal calls added by the execution engines)
 
 The difference is that `HANDLES` icalls receive references to managed objects wrapped in a handle
@@ -167,7 +167,7 @@ responsible for switching to GC Safe mode when doing blocking operations in that
 
 We have explored many different policies on how to safely access managed memory from the runtime.  The existing code is not uniform.
 
-This is the current policy (but check with a team member if this document needs to be updated):
+This is the current policy (but check with a team member as this document may need to be updated):
 
 1. It is never ok to access a managed object from GC Safe code.
 2. Mono's GC scans the managed heap precisely.  Mono does not allow heap objects to contain pointers into the interior of other managed obejcts.
@@ -179,22 +179,22 @@ In general one of the following should be used to ensure that an object is kept 
 across a call back into managed from native, or across a call that may trigger a GC (effectively
 nearly any runtime internal API, due to assembly loading potentially triggering managed callbacks):
 
-* The object is pinned in managed code using `fixed` (common with strings) and the native code gets a `guinchar2*`
+* The object is pinned in managed code using `fixed` (common with strings) and the native code gets a `gunichar2*`
 * a `ref` local is passed into native code and the native code gets a `MonoObject * volatile *` (the `volatile` is important)
 * a `Span<T>` is passed into native code and the native code gets a `MonoSpanOfObjects*`
 * an icall is declared with `HANDLES()` and a `MonoObjectHandle` (or a more specific type such as `MonoReflectionTypeHandle` is passed in).
 * a GCHandle is passed in
 
-Generally only function on the boundary between managed and native should use one of the above
+Generally only functions on the boundary between managed and native should use one of the above
 mechanisms (that is, it's enough that an object is pinned once). Callees can take a `MonoObject*`
 argument and assume that it was pinned by the caller.
 
 In cases where an object is created in native code, it should be kept alive:
 
-1. By assigning into a `MonoObject *volatile *` (ie: use `out` or `ref` arugments in C#)
-2. By creating a local handle using `MONO_HANDLE_NEW` or `MONO_HANDLE_PIN` (the function should then use `HANDLE_FUNCTION_ENTER`/`HANDLE_FUNCTION_RETURN` to set up and tear down a handle frame.)
+1. By assigning into a `MonoObject * volatile *` (ie: use `out` or `ref` arguments in C#)
+2. By creating a local handle using `MONO_HANDLE_NEW` or `MONO_HANDLE_PIN` (the function should then use `HANDLE_FUNCTION_ENTER`/`HANDLE_FUNCTION_RETURN` to set up and tear down a handle frame)
 3. By creating a GCHandle
-4. By assigning to a field of another managed objet.
+4. By assigning to a field of another managed object
 
 In all cases, if there is any intervening internal API call or a call to managed code, the object
 must be kept alive before the call using one of the above methods.
@@ -211,7 +211,7 @@ Mono code should use `g_assert`, `mono_error_assert_ok`, `g_assertf`, `g_assert_
 
 Unlike CoreCLR, Mono assertions are always included in the runtime - both in Debug and in Release builds.
 
-New could should try not to rely on side-effects of assert conditions. (That is, one day we may want
+New code should try not to rely on the side-effects of assert conditions. (That is, one day we may want
 to turn off assertions in Release builds.)
 
 ## Mono Public API
