@@ -394,12 +394,14 @@ namespace System.Formats.Tar
             Debug.Assert(Path.IsPathFullyQualified(destinationDirectoryPath));
             Debug.Assert(source.CanRead);
 
-            using TarReader reader = new TarReader(source, leaveOpen);
-
-            TarEntry? entry;
-            while ((entry = await reader.GetNextEntryAsync(cancellationToken: cancellationToken).ConfigureAwait(false)) != null)
+            TarReader reader = new TarReader(source, leaveOpen);
+            await using (reader.ConfigureAwait(false))
             {
-                await entry.ExtractRelativeToDirectoryAsync(destinationDirectoryPath, overwriteFiles, cancellationToken).ConfigureAwait(false);
+                TarEntry? entry;
+                while ((entry = await reader.GetNextEntryAsync(cancellationToken: cancellationToken).ConfigureAwait(false)) != null)
+                {
+                    await entry.ExtractRelativeToDirectoryAsync(destinationDirectoryPath, overwriteFiles, cancellationToken).ConfigureAwait(false);
+                }
             }
         }
     }

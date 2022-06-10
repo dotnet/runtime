@@ -12,7 +12,7 @@ namespace System.Formats.Tar
     /// <summary>
     /// Reads a tar archive from a stream.
     /// </summary>
-    public sealed class TarReader : IDisposable
+    public sealed class TarReader : IDisposable, IAsyncDisposable
     {
         private bool _isDisposed;
         private readonly bool _leaveOpen;
@@ -57,14 +57,15 @@ namespace System.Formats.Tar
             GC.SuppressFinalize(this);
         }
 
-        // /// <summary>
-        // /// Asynchronously disposes the current <see cref="TarReader"/> instance, and disposes the streams of all the entries that were read from the archive.
-        // /// </summary>
-        // /// <remarks>The <see cref="TarEntry.DataStream"/> property of any entry can be replaced with a new stream. If the user decides to replace it on a <see cref="TarEntry"/> instance that was obtained using a <see cref="TarReader"/>, the underlying stream gets disposed immediately, freeing the <see cref="TarReader"/> of origin from the responsibility of having to dispose it.</remarks>
-        // public ValueTask DisposeAsync()
-        // {
-        //     throw new NotImplementedException();
-        // }
+        /// <summary>
+        /// Asynchronously disposes the current <see cref="TarReader"/> instance, and disposes the streams of all the entries that were read from the archive.
+        /// </summary>
+        /// <remarks>The <see cref="TarEntry.DataStream"/> property of any entry can be replaced with a new stream. If the user decides to replace it on a <see cref="TarEntry"/> instance that was obtained using a <see cref="TarReader"/>, the underlying stream gets disposed immediately, freeing the <see cref="TarReader"/> of origin from the responsibility of having to dispose it.</remarks>
+        public async ValueTask DisposeAsync()
+        {
+            await DisposeAsync(disposing: true).ConfigureAwait(false);
+            GC.SuppressFinalize(this);
+        }
 
         /// <summary>
         /// Retrieves the next entry from the archive stream.
@@ -276,6 +277,29 @@ namespace System.Formats.Tar
                         foreach (Stream s in _dataStreamsToDispose)
                         {
                             s.Dispose();
+                        }
+                    }
+                }
+                finally
+                {
+                    _isDisposed = true;
+                }
+            }
+        }
+
+        // Asynchronously disposes the current instance.
+        // If 'disposing' is 'false', the method was called from the finalizer.
+        private async ValueTask DisposeAsync(bool disposing)
+        {
+            if (disposing && !_isDisposed)
+            {
+                try
+                {
+                    if (!_leaveOpen && _dataStreamsToDispose?.Count > 0)
+                    {
+                        foreach (Stream s in _dataStreamsToDispose)
+                        {
+                            await s.DisposeAsync().ConfigureAwait(false);
                         }
                     }
                 }
