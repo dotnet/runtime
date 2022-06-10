@@ -5,7 +5,7 @@ namespace System.IO
 {
     internal partial struct FileStatus
     {
-        private int ChModNoFollowLink(string path, int mode) =>
+        private static int ChModNoFollowLink(string path, int mode) =>
             Interop.Sys.LChMod(path!, mode);
     }
 }
