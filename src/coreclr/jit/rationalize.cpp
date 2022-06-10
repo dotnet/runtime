@@ -556,13 +556,6 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             RewriteAssignment(use);
             break;
 
-        case GT_BOX:
-        case GT_ARR_ADDR:
-            // BOX/ARR_ADDR at this level are just NOPs.
-            use.ReplaceWith(node->gtGetOp1());
-            BlockRange().Remove(node);
-            break;
-
         case GT_ADDR:
             RewriteAddress(use);
             break;
@@ -594,9 +587,11 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             break;
 
         case GT_NOP:
-            // fgMorph sometimes inserts NOP nodes between defs and uses
-            // supposedly 'to prevent constant folding'. In this case, remove the
-            // NOP.
+        case GT_BOX:
+        case GT_ARR_ADDR:
+            // "optNarrowTree" sometimes inserts NOP nodes between defs and uses.
+            // In this case, remove the NOP. BOX/ARR_ADDR are such "passthrough"
+            // nodes by design, and at this point we no longer need them.
             if (node->gtGetOp1() != nullptr)
             {
                 use.ReplaceWith(node->gtGetOp1());

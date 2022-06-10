@@ -13,9 +13,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data
 {
-#pragma warning disable CA1052 // TODO: https://github.com/dotnet/roslyn-analyzers/issues/4968
-    internal class XMLSchema
-#pragma warning restore CA1052
+    internal abstract class XMLSchema
     {
         [RequiresUnreferencedCode("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
         internal static TypeConverter GetConverter(Type type)
@@ -1349,9 +1347,9 @@ namespace System.Data
 
                     if (FromInference && relation.Nested)
                     {
-                        if (_tableDictionary!.ContainsKey(relation.ParentTable))
+                        if (_tableDictionary!.TryGetValue(relation.ParentTable, out List<DataTable>? value))
                         {
-                            _tableDictionary[relation.ParentTable].Add(relation.ChildTable);
+                            value.Add(relation.ChildTable);
                         }
                     }
 
@@ -1762,9 +1760,9 @@ namespace System.Data
                 _tableChild.DataSet!.Relations.Add(relation);
                 if (FromInference && relation.Nested)
                 {
-                    if (_tableDictionary!.ContainsKey(relation.ParentTable))
+                    if (_tableDictionary!.TryGetValue(relation.ParentTable, out List<DataTable>? value))
                     {
-                        _tableDictionary[relation.ParentTable].Add(relation.ChildTable);
+                        value.Add(relation.ChildTable);
                     }
                 }
             }

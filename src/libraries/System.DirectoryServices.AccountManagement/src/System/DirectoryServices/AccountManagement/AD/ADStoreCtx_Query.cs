@@ -44,11 +44,10 @@ namespace System.DirectoryServices.AccountManagement
 
         protected void BuildPropertySet(Type p, StringCollection propertySet)
         {
-            if (TypeToLdapPropListMap[this.MappingTableIndex].ContainsKey(p))
+            if (TypeToLdapPropListMap[this.MappingTableIndex].TryGetValue(p, out StringCollection value))
             {
-                Debug.Assert(TypeToLdapPropListMap[this.MappingTableIndex].ContainsKey(p));
-                string[] props = new string[TypeToLdapPropListMap[this.MappingTableIndex][p].Count];
-                TypeToLdapPropListMap[this.MappingTableIndex][p].CopyTo(props, 0);
+                string[] props = new string[value.Count];
+                value.CopyTo(props, 0);
                 propertySet.AddRange(props);
             }
             else

@@ -1499,7 +1499,7 @@ namespace Internal.Runtime
 
     // Wrapper around pointers
     [StructLayout(LayoutKind.Sequential)]
-    internal unsafe readonly struct Pointer<T> where T : unmanaged
+    internal readonly unsafe struct Pointer<T> where T : unmanaged
     {
         private readonly T* _value;
 
@@ -1514,7 +1514,7 @@ namespace Internal.Runtime
 
     // Wrapper around pointers that might be indirected through IAT
     [StructLayout(LayoutKind.Sequential)]
-    internal unsafe readonly struct IatAwarePointer<T> where T : unmanaged
+    internal readonly unsafe struct IatAwarePointer<T> where T : unmanaged
     {
         private readonly T* _value;
 
@@ -1546,7 +1546,7 @@ namespace Internal.Runtime
 
     // Wrapper around relative pointers
     [StructLayout(LayoutKind.Sequential)]
-    internal unsafe readonly struct RelativePointer<T> where T : unmanaged
+    internal readonly unsafe struct RelativePointer<T> where T : unmanaged
     {
         private readonly int _value;
 
@@ -1561,7 +1561,7 @@ namespace Internal.Runtime
 
     // Wrapper around relative pointers that might be indirected through IAT
     [StructLayout(LayoutKind.Sequential)]
-    internal unsafe readonly struct IatAwareRelativePointer<T> where T : unmanaged
+    internal readonly unsafe struct IatAwareRelativePointer<T> where T : unmanaged
     {
         private readonly int _value;
 

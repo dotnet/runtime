@@ -14,12 +14,12 @@ namespace System.Reflection.Context.Virtual
             {
             }
 
-            public override sealed string Name
+            public sealed override string Name
             {
                 get { return "set_" + DeclaringProperty.Name; }
             }
 
-            public override sealed Type ReturnType
+            public sealed override Type ReturnType
             {
                 get { return DeclaringProperty.ReflectionContext.MapType(IntrospectionExtensions.GetTypeInfo(typeof(void))); }
             }
