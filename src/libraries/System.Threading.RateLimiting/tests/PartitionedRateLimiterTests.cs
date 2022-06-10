@@ -774,7 +774,7 @@ namespace System.Threading.RateLimiting.Tests
             Assert.NotNull(newTimer);
             innerTimer.SetValue(limiter, newTimer);
 
-            var timerLoopMethod = limiter.GetType().GetMethod("TimerLoop", Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance);
+            var timerLoopMethod = limiter.GetType().GetMethod("Heartbeat", Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance);
             Assert.NotNull(timerLoopMethod);
             return () => (Task)timerLoopMethod.Invoke(limiter, Array.Empty<object>());
         }
