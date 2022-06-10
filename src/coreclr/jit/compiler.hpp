@@ -587,17 +587,6 @@ inline var_types genActualType(T value)
 }
 
 /*****************************************************************************
- *
- *  Return the size in bytes of the given type as seen by the VM.
- */
-
-template <class T>
-inline unsigned genActualTypeSize(T value)
-{
-    return genTypeSize(genActualType(value));
-}
-
-/*****************************************************************************
  *  Can this type be passed as a parameter in a register?
  */
 
