@@ -1260,6 +1260,8 @@ public:
     }
 
     static int64_t SymbolicToRealValue(SymbolicIntegerValue value);
+    static size_t GetUpperBound(GenTree* node, var_types type, Compiler* compiler);
+    static size_t GetLowerBound(GenTree* node, var_types type, Compiler* compiler);
     static SymbolicIntegerValue LowerBoundForType(var_types type);
     static SymbolicIntegerValue UpperBoundForType(var_types type);
 
@@ -5690,6 +5692,7 @@ private:
     GenTree* fgOptimizeCast(GenTreeCast* cast);
     GenTree* fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp);
     GenTree* fgOptimizeRelationalComparisonWithConst(GenTreeOp* cmp);
+    GenTree* fgOptimizeRelationalComparisonWithFullRangeConst(GenTreeOp* cmp);
 #ifdef FEATURE_HW_INTRINSICS
     GenTree* fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node);
 #endif
