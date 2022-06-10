@@ -4466,10 +4466,7 @@ BOOL InstallUnhandledExceptionFilter() {
     STATIC_CONTRACT_FORBID_FAULT;
 
 #ifndef TARGET_UNIX
-    #pragma prefast(push)
-    #pragma prefast(suppress:28725, "Calling to SetUnhandledExceptionFilter is intentional in this case.")
     g_pOriginalUnhandledExceptionFilter = SetUnhandledExceptionFilter(COMUnhandledExceptionFilter);
-    #pragma prefast(pop)
 
     LOG((LF_EH, LL_INFO10, "InstallUnhandledExceptionFilter registered UEF with OS for CoreCLR!\n"));
 #endif // !TARGET_UNIX
