@@ -385,13 +385,13 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
     bool     isSharedConst        = false;
     int      configValue          = JitConfig.JitConstCSE();
 
-#if defined(TARGET_ARM64)
-    // ARM64 - allow to combine with nearby offsets, when config is not 2 or 4
-    if ((configValue != CONST_CSE_ENABLE_ARM64_NO_SHARING) && (configValue != CONST_CSE_ENABLE_ALL_NO_SHARING))
+#if defined(TARGET_ARMARCH)
+    // ARMARCH - allow to combine with nearby offsets, when config is not 2 or 4
+    if ((configValue != CONST_CSE_ENABLE_ARM_NO_SHARING) && (configValue != CONST_CSE_ENABLE_ALL_NO_SHARING))
     {
         enableSharedConstCSE = true;
     }
-#endif // TARGET_ARM64
+#endif // TARGET_ARMARCH
 
     // All Platforms - also allow to combine with nearby offsets, when config is 3
     if (configValue == CONST_CSE_ENABLE_ALL)
