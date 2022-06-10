@@ -69,50 +69,6 @@ bool IntegralRange::Contains(int64_t value) const
 }
 
 //------------------------------------------------------------------------
-// GetUpperBound: Get the largest possible value "type" can represent
-//
-// Arguments:
-//    node     - the node, of an integral type, in question
-//    type     - the integral type in question
-//    compiler - the Compiler, used to retrieve additional info
-//    
-// Return Value:
-//    the largest possible value "type" can represent.
-//
-/* static */ size_t IntegralRange::GetUpperBound(GenTree* node, var_types type, Compiler* compiler)
-{
-    IntegralRange valRange = IntegralRange::ForNode(node, compiler);
-#if defined(HOST_X86) || defined(HOST_ARM)
-    return (int32_t)IntegralRange::SymbolicToRealValue(valRange.UpperBoundForType(type));
-#else
-    return IntegralRange::SymbolicToRealValue(valRange.UpperBoundForType(type));
-#endif
-
-}
-
-//------------------------------------------------------------------------
-// GetUpperBound: Get the smallest possible value "type" can represent
-//
-// Arguments:
-//    node     - the node, of an integral type, in question
-//    type     - the integral type in question
-//    compiler - the Compiler, used to retrieve additional info
-//
-// Return Value:
-//    the smallest possible value "type" can represent.
-//
-/* static */ size_t IntegralRange::GetLowerBound(GenTree* node, var_types type, Compiler* compiler)
-{
-    IntegralRange valRange = IntegralRange::ForNode(node, compiler);
-#if defined(HOST_X86) || defined(HOST_ARM)
-    return (int32_t)IntegralRange::SymbolicToRealValue(valRange.LowerBoundForType(type));
-#else
-    return IntegralRange::SymbolicToRealValue(valRange.LowerBoundForType(type));
-
-#endif
-}
-
-//------------------------------------------------------------------------
 // LowerBoundForType: Get the symbolic lower bound for a type.
 //
 // Arguments:

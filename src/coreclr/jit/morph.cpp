@@ -12667,25 +12667,18 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithFullRangeConst(GenTreeOp* c
     assert(cmp->OperIs(GT_LT, GT_GT));
     assert(cmp->gtGetOp2()->IsIntegralConst() || cmp->gtGetOp1()->IsIntegralConst());
 
-    GenTree*  conNode   = cmp->gtGetOp2()->IsIntegralConst() ? cmp->gtGetOp2() : cmp->gtGetOp1();
-    GenTree*  varNode   = cmp->gtGetOp2()->IsIntegralConst() ? cmp->gtGetOp1() : cmp->gtGetOp2();
-    var_types limitType = varNode->TypeGet();
+    GenTree* conNode = cmp->gtGetOp2()->IsIntegralConst() ? cmp->gtGetOp2() : cmp->gtGetOp1();
+    GenTree* varNode = cmp->gtGetOp2()->IsIntegralConst() ? cmp->gtGetOp1() : cmp->gtGetOp2();
 
-    if (varNode->OperIs(GT_CAST))
-    {
-        limitType = varNode->CastToType();
-        switch (limitType)
-        {
-            case TYP_UBYTE:
-            case TYP_SHORT:
-            case TYP_USHORT:
-            default:
-                return cmp;
-        }
-    }
+    IntegralRange valRange = IntegralRange::ForNode(varNode, this);
 
-    ssize_t valMin   = IntegralRange::GetLowerBound(varNode, limitType, this);
-    ssize_t valMax   = IntegralRange::GetUpperBound(varNode, limitType, this);
+#if defined(HOST_X86) || defined(HOST_ARM)
+    ssize_t valMin = (int32_t)IntegralRange::SymbolicToRealValue(valRange.GetLowerBound());
+    ssize_t valMax = (int32_t)IntegralRange::SymbolicToRealValue(valRange.GetUpperBound());
+#else
+    ssize_t  valMin      = IntegralRange::SymbolicToRealValue(valRange.GetLowerBound());
+    ssize_t  valMax      = IntegralRange::SymbolicToRealValue(valRange.GetUpperBound());
+#endif
 
     bool fold = false;
     // Folds
@@ -13161,7 +13154,7 @@ GenTree* Compiler::fgOptimizeMultiply(GenTreeOp* mul)
         // Should we try to replace integer multiplication with lea/add/shift sequences?
         bool mulShiftOpt = compCodeOpt() != SMALL_CODE;
 #else  // !TARGET_XARCH
-        bool    mulShiftOpt = false;
+        bool mulShiftOpt = false;
 #endif // !TARGET_XARCH
 
         size_t abs_mult      = (mult >= 0) ? mult : -mult;

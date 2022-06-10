@@ -1242,6 +1242,16 @@ public:
         assert(lowerBound <= upperBound);
     }
 
+    SymbolicIntegerValue GetLowerBound()
+    {
+        return m_lowerBound;
+    }
+
+    SymbolicIntegerValue GetUpperBound()
+    {
+        return m_upperBound;
+    }
+
     bool Contains(int64_t value) const;
 
     bool Contains(IntegralRange other) const
@@ -1260,8 +1270,6 @@ public:
     }
 
     static int64_t SymbolicToRealValue(SymbolicIntegerValue value);
-    static size_t GetUpperBound(GenTree* node, var_types type, Compiler* compiler);
-    static size_t GetLowerBound(GenTree* node, var_types type, Compiler* compiler);
     static SymbolicIntegerValue LowerBoundForType(var_types type);
     static SymbolicIntegerValue UpperBoundForType(var_types type);
 
