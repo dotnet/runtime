@@ -77,8 +77,9 @@ namespace System.Reflection.Runtime.MethodInfos
 
                         map.AddMethod(type, nameof(Nullable<int>.GetValueOrDefault), Array.Empty<Type>(), NullableGetValueOrDefault);
 
+                        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:ParameterDoesntMeetParameterRequirements",
+                            Justification = "Constructed MethodTable of a Nullable forces a constructed MethodTable of the element type")]
                         static object NullableGetValueOrDefault(object thisObject, object[] args,
-                            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
                             Type thisType)
                         {
                             if (thisObject == null)

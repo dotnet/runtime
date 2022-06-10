@@ -135,7 +135,7 @@ namespace System.Reflection.Runtime.MethodInfos
                     throw new ArgumentNullException();
 
                 if (typeArgument is not RuntimeType)
-                    throw new ArgumentException(SR.Format(SR.Reflection_CustomReflectionObjectsNotSupported, typeArguments[i]), "typeArguments[" + i + "]"); // Not a runtime type.
+                    throw new PlatformNotSupportedException(SR.Format(SR.Reflection_CustomReflectionObjectsNotSupported, typeArguments[i]));
 
                 if (typeArgument.IsByRefLike)
                     throw new BadImageFormatException(SR.CannotUseByRefLikeTypeInInstantiation);

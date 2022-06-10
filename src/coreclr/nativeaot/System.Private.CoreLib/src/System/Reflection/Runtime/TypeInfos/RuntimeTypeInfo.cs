@@ -465,7 +465,7 @@ namespace System.Reflection.Runtime.TypeInfos
                     }
                     else
                     {
-                        throw new PlatformNotSupportedException(SR.PlatformNotSupported_MakeGenericType); // "PlatformNotSupported" because on desktop, passing in a foreign type is allowed and creates a RefEmit.TypeBuilder
+                        throw new PlatformNotSupportedException(SR.Format(SR.Reflection_CustomReflectionObjectsNotSupported, typeArguments[i]));
                     }
                 }
             }
