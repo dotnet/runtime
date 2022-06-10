@@ -4967,20 +4967,10 @@ LONG InternalUnhandledExceptionFilter(
         return retval;
     }
 
-    // Chaining back to previous UEF handler could be a potential security risk. See
-    // http://uninformed.org/index.cgi?v=4&a=5&p=1 for details.
-    // Thus we are allowing only C++ exceptions to be chained to the previous handler.
     if (g_pOriginalUnhandledExceptionFilter != FILTER_NOT_INSTALLED
         && g_pOriginalUnhandledExceptionFilter != NULL)
     {
-        if (pExceptionInfo->ExceptionRecord->ExceptionCode == EXCEPTION_MSVC)
-        {
-            return g_pOriginalUnhandledExceptionFilter(pExceptionInfo);
-        }
-        else
-        {
-            STRESS_LOG1(LF_EH, LL_INFO100, "InternalUnhandledExceptionFilter: Not chaining back to previous UEF at address %p on CoreCLR!\n", g_pOriginalUnhandledExceptionFilter);
-        }
+        return g_pOriginalUnhandledExceptionFilter(pExceptionInfo);
     }
 
     return retval;
