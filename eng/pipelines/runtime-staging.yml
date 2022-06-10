@@ -119,7 +119,7 @@ jobs:
     jobParameters:
       testScope: innerloop
       nameSuffix: AllSubsets_Mono
-      buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:ArchiveTests=true /p:UseLiveBuiltDotNetHost=true
+      buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
       timeoutInMinutes: 120
       condition: >-
         or(
