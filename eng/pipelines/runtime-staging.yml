@@ -125,8 +125,7 @@ jobs:
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
-          eq(variables['isRollingBuild'], true))
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true))
 
 #
 # Build the whole product using Mono and run libraries tests
