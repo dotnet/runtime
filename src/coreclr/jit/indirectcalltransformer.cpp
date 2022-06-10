@@ -591,6 +591,9 @@ private:
                 // which case the check will be moved into the success case of
                 // a previous GDV and thus may not execute when we hit the cold
                 // path.
+                // TODO-GDV: Consider duplicating the store at the end of the
+                // cold case for the previous GDV. Then we can reuse the target
+                // if the second check of a chained GDV fails.
                 bool reuseTarget = (origCall->gtCallMoreFlags & GTF_CALL_M_GUARDED_DEVIRT_CHAIN) == 0;
                 if (origCall->IsVirtualVtable())
                 {
@@ -617,10 +620,12 @@ private:
                 }
                 else
                 {
-                    // Reusing the call target for delegates is more complicated.
-                    // Essentially we need to do the transformation done in
-                    // LowerDelegateInvoke here by converting the call to
-                    // CT_INDIRECT and reusing the target address.
+                    // Reusing the call target for delegates is more
+                    // complicated. Essentially we need to do the
+                    // transformation done in LowerDelegateInvoke by converting
+                    // the call to CT_INDIRECT and reusing the target address.
+                    // We will do that transformation in CreateElse, but here
+                    // we need to stash the target.
                     CLANG_FORMAT_COMMENT_ANCHOR;
 #ifdef TARGET_ARM
                     // Not impossible to support, but would additionally
@@ -638,7 +643,6 @@ private:
                     if (reuseTarget)
                     {
                         m_targetLclNum = compiler->lvaGrabTemp(false DEBUGARG("guarded devirt call target temp"));
-                        compiler->lvaGetDesc(m_targetLclNum)->lvSingleDef = 1;
 
                         GenTree*   asgTree = compiler->gtNewTempAssign(m_targetLclNum, tarTree);
                         Statement* asgStmt = compiler->fgNewStmtFromTree(asgTree, stmt->GetDebugInfo());
@@ -826,7 +830,8 @@ private:
                 call->gtCallType                = CT_USER_FUNC;
                 call->gtCallMoreFlags |= GTF_CALL_M_DEVIRTUALIZED;
                 call->gtCallMoreFlags &= ~GTF_CALL_M_DELEGATE_INV;
-                // TODO: R2R entry point
+                // TODO-GDV: To support R2R we need to get the entry point
+                // here. We should unify with the tail of impDevirtualizeCall.
 
                 if (origCall->IsVirtual())
                 {
@@ -961,9 +966,7 @@ private:
                         compiler->gtNewIconNode((ssize_t)compiler->eeGetEEInfo()->offsetOfDelegateInstance, TYP_I_IMPL);
                     CallArg* thisArg     = call->gtArgs.GetThisArg();
                     GenTree* delegateObj = thisArg->GetNode();
-                    // TODO: Is it worth it to create a local for this before
-                    // the check as well? In many cases it will end up unused
-                    // after inlining.
+
                     assert(delegateObj->OperIsLocal());
                     GenTree* newThis =
                         compiler->gtNewOperNode(GT_ADD, TYP_BYREF, compiler->gtCloneExpr(delegateObj), thisOffset);
@@ -1183,6 +1186,16 @@ private:
         unsigned   returnTemp;
         Statement* lastStmt;
 
+        //------------------------------------------------------------------------
+        // CreateTreeForLookup: Create a tree representing a lookup of a method address.
+        //
+        // Arguments:
+        //   methHnd - the handle for the method the lookup is for
+        //   lookup  - lookup information for the address
+        //
+        // Returns:
+        //   A node representing the lookup.
+        //
         GenTree* CreateTreeForLookup(CORINFO_METHOD_HANDLE methHnd, const CORINFO_CONST_LOOKUP& lookup)
         {
             switch (lookup.accessType)

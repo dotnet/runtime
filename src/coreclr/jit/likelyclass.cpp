@@ -105,6 +105,14 @@ LikelyClassMethodHistogram::LikelyClassMethodHistogram(INT_PTR* histogramEntries
     }
 }
 
+//------------------------------------------------------------------------
+// getLikelyClassesOrMethods:
+//   Find class/method profile data for an IL offset, and return the most
+//   likely classes/methods.
+//
+//   This is a common entrypoint for getLikelyClasses and getLikelyMethods.
+//   See documentation for those for more information.
+//
 static unsigned getLikelyClassesOrMethods(LikelyClassMethodRecord*               pLikelyEntries,
                                           UINT32                                 maxLikelyClasses,
                                           ICorJitInfo::PgoInstrumentationSchema* schema,
@@ -293,6 +301,11 @@ extern "C" DLLEXPORT UINT32 WINAPI getLikelyClasses(LikelyClassMethodRecord*    
                                      ilOffset, true);
 }
 
+//------------------------------------------------------------------------
+// getLikelyMethods: find method profile data for an IL offset, and return the most likely methods
+//
+// See documentation on getLikelyClasses above.
+//
 extern "C" DLLEXPORT UINT32 WINAPI getLikelyMethods(LikelyClassMethodRecord*               pLikelyMethods,
                                                     UINT32                                 maxLikelyMethods,
                                                     ICorJitInfo::PgoInstrumentationSchema* schema,

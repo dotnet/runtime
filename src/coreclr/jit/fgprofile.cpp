@@ -1599,42 +1599,44 @@ public:
         compiler->lvaTable[tmpNum].lvType = TYP_REF;
 
         GenTree* helperCallNode = nullptr;
-        if (methodHistogram != nullptr)
-        {
-            GenTree* const tmpNode           = compiler->gtNewLclvNode(tmpNum, TYP_REF);
-            GenTree* const methodProfileNode = compiler->gtNewIconNode((ssize_t)methodHistogram, TYP_I_IMPL);
-
-            if (call->IsDelegateInvoke())
-            {
-                helperCallNode = compiler->gtNewHelperCallNode(is32 ? CORINFO_HELP_DELEGATEPROFILE32
-                                                                    : CORINFO_HELP_DELEGATEPROFILE64,
-                                                               TYP_VOID, tmpNode, methodProfileNode);
-            }
-            else
-            {
-                assert(call->IsVirtualVtable());
-                GenTree* const baseMethodNode = compiler->gtNewIconEmbMethHndNode(call->gtCallMethHnd);
-                helperCallNode =
-                    compiler->gtNewHelperCallNode(is32 ? CORINFO_HELP_VTABLEPROFILE32 : CORINFO_HELP_VTABLEPROFILE64,
-                                                  TYP_VOID, tmpNode, baseMethodNode, methodProfileNode);
-            }
-        }
 
         if (typeHistogram != nullptr)
         {
             GenTree* const tmpNode          = compiler->gtNewLclvNode(tmpNum, TYP_REF);
             GenTree* const classProfileNode = compiler->gtNewIconNode((ssize_t)typeHistogram, TYP_I_IMPL);
-            GenTree*       classProfileCall =
+            helperCallNode =
                 compiler->gtNewHelperCallNode(is32 ? CORINFO_HELP_CLASSPROFILE32 : CORINFO_HELP_CLASSPROFILE64,
                                               TYP_VOID, tmpNode, classProfileNode);
+        }
 
-            if (helperCallNode == nullptr)
+        if (methodHistogram != nullptr)
+        {
+            GenTree* const tmpNode           = compiler->gtNewLclvNode(tmpNum, TYP_REF);
+            GenTree* const methodProfileNode = compiler->gtNewIconNode((ssize_t)methodHistogram, TYP_I_IMPL);
+
+            GenTree* methodProfileCallNode;
+            if (call->IsDelegateInvoke())
             {
-                helperCallNode = classProfileCall;
+                methodProfileCallNode = compiler->gtNewHelperCallNode(is32 ? CORINFO_HELP_DELEGATEPROFILE32
+                                                                           : CORINFO_HELP_DELEGATEPROFILE64,
+                                                                      TYP_VOID, tmpNode, methodProfileNode);
             }
             else
             {
-                helperCallNode = compiler->gtNewOperNode(GT_COMMA, TYP_REF, classProfileCall, helperCallNode);
+                assert(call->IsVirtualVtable());
+                GenTree* const baseMethodNode = compiler->gtNewIconEmbMethHndNode(call->gtCallMethHnd);
+                methodProfileCallNode =
+                    compiler->gtNewHelperCallNode(is32 ? CORINFO_HELP_VTABLEPROFILE32 : CORINFO_HELP_VTABLEPROFILE64,
+                                                  TYP_VOID, tmpNode, baseMethodNode, methodProfileNode);
+            }
+
+            if (helperCallNode == nullptr)
+            {
+                helperCallNode = methodProfileCallNode;
+            }
+            else
+            {
+                helperCallNode = compiler->gtNewOperNode(GT_COMMA, TYP_REF, helperCallNode, methodProfileCallNode);
             }
         }
 
@@ -1664,7 +1666,7 @@ private:
             return;
         }
 
-        ICorJitInfo::PgoInstrumentationSchema& countEntry = m_schema[*m_currentSchemaIndex + 0];
+        ICorJitInfo::PgoInstrumentationSchema& countEntry = m_schema[*m_currentSchemaIndex];
 
         bool is32 = countEntry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::HandleHistogramIntCount;
         bool is64 = countEntry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::HandleHistogramLongCount;

@@ -22074,6 +22074,16 @@ bool Compiler::impConsiderCallProbe(GenTreeCall* call, IL_OFFSET ilOffset)
     return true;
 }
 
+//------------------------------------------------------------------------
+// compClassifyGDVProbeType:
+//   Classify the type of GDV probe to use for a call site.
+//
+// Arguments:
+//     call - The call
+//
+// Returns:
+//     The type of probe to use.
+//
 Compiler::GDVProbeType Compiler::compClassifyGDVProbeType(GenTreeCall* call)
 {
     if (call->gtCallType == CT_INDIRECT)
@@ -22290,6 +22300,17 @@ void Compiler::addFatPointerCandidate(GenTreeCall* call)
     helper.StoreRetExprResultsInArgs(call);
 }
 
+//------------------------------------------------------------------------
+// pickGDV: Use profile information to pick a GDV candidate for a call site.
+//
+// Arguments:
+//    call        - the call
+//    ilOffset    - exact IL offset of the call
+//    isInterface - whether or not the call target is defined on an interface
+//    classGuess  - [out] the class to guess for (mutually exclusive with methodGuess)
+//    methodGuess - [out] the method to guess for (mutually exclusive with classGuess)
+//    likelihood  - [out] an estimate of the likelihood that the guess will succeed
+//
 void Compiler::pickGDV(GenTreeCall*           call,
                        IL_OFFSET              ilOffset,
                        bool                   isInterface,
@@ -22398,6 +22419,8 @@ void Compiler::pickGDV(GenTreeCall*           call,
         //
         CLRRandom* const random =
             impInlineRoot()->m_inlineStrategy->GetRandom(JitConfig.JitRandomGuardedDevirtualization());
+        // TODO-GDV: This can be simplified to just use likelyClasses and
+        // likelyMethods now that we have multiple candidates here.
         getRandomGDV(fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset, random, classGuess, methodGuess);
         if (*classGuess != NO_CLASS_HANDLE)
         {
