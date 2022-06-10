@@ -10,23 +10,35 @@ namespace System.Security.Cryptography.Cose.Tests
         [Fact]
         public void CoseHeaderLabel_GetHashCode()
         {
-            CoseHeaderLabel label = default;
-            Assert.Equal(0, label.GetHashCode()); // There's no need to call GetHashCode on integers as they are their own hashcode.
+            // First, construct a COSE header of (0) using several different methods.
+            // They should all have the same hash code, though we don't know what
+            // the hash code is.
 
-            label = new CoseHeaderLabel();
-            Assert.Equal(0, label.GetHashCode());
+            CoseHeaderLabel label1 = default;
+            CoseHeaderLabel label2 = new CoseHeaderLabel();
+            CoseHeaderLabel label3 = new CoseHeaderLabel(0);
 
-            label = new CoseHeaderLabel(0);
-            Assert.Equal(0, label.GetHashCode());
+            int label1HashCode = label1.GetHashCode();
+            Assert.Equal(label1HashCode, label2.GetHashCode());
+            Assert.Equal(label1HashCode, label3.GetHashCode());
 
-            label = new CoseHeaderLabel("");
-            Assert.Equal("".GetHashCode(), label.GetHashCode());
+            // Make sure the integer hash code calculation really is randomized.
+            // Checking 1 & 2 together rather than independently cuts the false
+            // positive rate down to nearly 1 in 2^64.
 
-            label = new CoseHeaderLabel(1);
-            Assert.Equal(1, label.GetHashCode());
+            bool isReturningNormalInt32HashCode =
+                (new CoseHeaderLabel(1).GetHashCode() == 1)
+                && (new CoseHeaderLabel(2).GetHashCode() == 2);
+            Assert.False(isReturningNormalInt32HashCode);
 
-            label = new CoseHeaderLabel("content-type");
-            Assert.Equal("content-type".GetHashCode(), label.GetHashCode());
+            // Make sure the string hash code calculation really is randomized.
+            // Checking 1 & 2 together rather than independently cuts the false
+            // positive rate down to nearly 1 in 2^64.
+
+            bool isReturningNormalStringHashCode =
+                (new CoseHeaderLabel("Hello").GetHashCode() == "Hello".GetHashCode())
+                && (new CoseHeaderLabel("World").GetHashCode() == "World".GetHashCode());
+            Assert.Equal(PlatformDetection.IsNetCore, isReturningNormalStringHashCode);
         }
 
         [Fact]
