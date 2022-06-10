@@ -113,7 +113,7 @@ namespace System
     }
 
     public static class ExponentialFunctionsHelper<TSelf>
-        where TSelf : IExponentialFunctions<TSelf>
+        where TSelf : IExponentialFunctions<TSelf>, INumberBase<TSelf>
     {
         public static TSelf Exp(TSelf x) => TSelf.Exp(x);
 
@@ -223,7 +223,7 @@ namespace System
     }
 
     public static class HyperbolicFunctionsHelper<TSelf>
-        where TSelf : IHyperbolicFunctions<TSelf>
+        where TSelf : IHyperbolicFunctions<TSelf>, INumberBase<TSelf>
     {
         public static TSelf Acosh(TSelf x) => TSelf.Acosh(x);
 
@@ -247,7 +247,7 @@ namespace System
     }
 
     public static class LogarithmicFunctionsHelper<TSelf>
-        where TSelf : ILogarithmicFunctions<TSelf>
+        where TSelf : ILogarithmicFunctions<TSelf>, INumberBase<TSelf>
     {
         public static TSelf Log(TSelf x) => TSelf.Log(x);
 
@@ -390,13 +390,13 @@ namespace System
     }
 
     public static class PowerFunctionsHelper<TSelf>
-        where TSelf : IPowerFunctions<TSelf>
+        where TSelf : IPowerFunctions<TSelf>, INumberBase<TSelf>
     {
         public static TSelf Pow(TSelf x, TSelf y) => TSelf.Pow(x, y);
     }
 
     public static class RootFunctionsHelper<TSelf>
-        where TSelf : IRootFunctions<TSelf>
+        where TSelf : IRootFunctions<TSelf>, INumberBase<TSelf>
     {
         public static TSelf Cbrt(TSelf x) => TSelf.Cbrt(x);
 
@@ -436,7 +436,7 @@ namespace System
     }
 
     public static class TrigonometricFunctionsHelper<TSelf>
-        where TSelf : ITrigonometricFunctions<TSelf>
+        where TSelf : ITrigonometricFunctions<TSelf>, INumberBase<TSelf>
     {
         public static TSelf Acos(TSelf x) => TSelf.Acos(x);
 

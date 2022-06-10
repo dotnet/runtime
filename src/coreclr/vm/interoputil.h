@@ -55,11 +55,11 @@ struct IUnkEntry;
 interface IStream;
 class ComCallWrapper;
 class InteropSyncBlockInfo;
+struct ExceptionData;
 
 #endif //FEATURE_COMINTEROP
 
 class FieldDesc;
-struct ExceptionData;
 
 //------------------------------------------------------------------
  // setup error info for exception object
@@ -100,12 +100,14 @@ int  InternalWideToAnsi(_In_reads_(iNumWideChars) LPCWSTR szWideString, int iNum
 //---------------------------------------------------------
 CorClassIfaceAttr ReadClassInterfaceTypeCustomAttribute(TypeHandle type);
 
+#ifdef FEATURE_COMINTEROP
 //-------------------------------------------------------------------
  // Used to populate ExceptionData with COM data
 //-------------------------------------------------------------------
 void FillExceptionData(
     _Inout_ ExceptionData* pedata,
     _In_ IErrorInfo* pErrInfo);
+#endif // FEATURE_COMINTEROP
 
 //---------------------------------------------------------------------------
 // If pImport has the DefaultDllImportSearchPathsAttribute,

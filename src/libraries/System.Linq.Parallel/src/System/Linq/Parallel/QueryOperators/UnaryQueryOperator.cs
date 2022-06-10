@@ -62,7 +62,7 @@ namespace System.Linq.Parallel
             get { return _child; }
         }
 
-        internal override sealed OrdinalIndexState OrdinalIndexState
+        internal sealed override OrdinalIndexState OrdinalIndexState
         {
             get { return _indexState; }
         }

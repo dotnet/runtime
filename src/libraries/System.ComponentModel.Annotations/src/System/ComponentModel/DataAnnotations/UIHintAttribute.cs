@@ -99,7 +99,7 @@ namespace System.ComponentModel.DataAnnotations
             // If the method throws (indicating that the input params are invalid) this property will throw
             // every time it's accessed.
             public IDictionary<string, object?> ControlParameters =>
-                _controlParameters ?? (_controlParameters = BuildControlParametersDictionary());
+                _controlParameters ??= BuildControlParametersDictionary();
 
             /// <summary>
             ///     Returns the hash code for this UIHintAttribute.

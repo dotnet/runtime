@@ -572,6 +572,7 @@ jobs:
           - jitosr_stress
           - jitosr_pgo
           - jitosr_stress_random
+          - jit_stress_splitting
           - jitpartialcompilation
           - jitpartialcompilation_osr
           - jitpartialcompilation_osr_pgo

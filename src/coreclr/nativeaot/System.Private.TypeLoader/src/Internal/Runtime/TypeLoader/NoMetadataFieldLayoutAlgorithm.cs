@@ -19,7 +19,7 @@ namespace Internal.Runtime.TypeLoader
 #endif
         private static NativeLayoutFieldAlgorithm s_nativeLayoutFieldAlgorithm = new NativeLayoutFieldAlgorithm();
 
-        public unsafe override bool ComputeContainsGCPointers(DefType type)
+        public override unsafe bool ComputeContainsGCPointers(DefType type)
         {
             return type.RuntimeTypeHandle.ToEETypePtr()->HasGCPointers;
         }
@@ -28,7 +28,7 @@ namespace Internal.Runtime.TypeLoader
         /// Reads the minimal information about type layout encoded in the
         /// MethodTable. That doesn't include field information.
         /// </summary>
-        public unsafe override ComputedInstanceFieldLayout ComputeInstanceLayout(DefType type, InstanceLayoutKind layoutKind)
+        public override unsafe ComputedInstanceFieldLayout ComputeInstanceLayout(DefType type, InstanceLayoutKind layoutKind)
         {
             // If we need the field information, delegate to the native layout algorithm or metadata algorithm
             if (layoutKind != InstanceLayoutKind.TypeOnly)

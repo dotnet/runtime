@@ -260,7 +260,6 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
 
         // These should have been morphed away to become GT_INDs:
         case GT_FIELD:
-        case GT_INDEX:
             unreached();
             break;
 

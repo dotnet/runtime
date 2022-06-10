@@ -240,7 +240,7 @@ namespace System.Text
         }
 
         // Read in our best fit table
-        protected unsafe override void ReadBestFitTable()
+        protected override unsafe void ReadBestFitTable()
         {
             // Lock so we don't confuse ourselves.
             lock (InternalSyncObject)
