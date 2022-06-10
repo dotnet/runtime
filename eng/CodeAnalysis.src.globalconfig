@@ -1404,7 +1404,7 @@ dotnet_diagnostic.IDE0034.severity = suggestion
 dotnet_diagnostic.IDE0035.severity = suggestion
 
 # IDE0036: Order modifiers
-dotnet_diagnostic.IDE0036.severity = suggestion
+dotnet_diagnostic.IDE0036.severity = warning
 
 # IDE0037: Use inferred member name
 dotnet_diagnostic.IDE0037.severity = silent

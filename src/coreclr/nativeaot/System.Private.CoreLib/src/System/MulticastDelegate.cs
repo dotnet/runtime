@@ -46,7 +46,7 @@ namespace System
             return true;
         }
 
-        public override sealed bool Equals([NotNullWhen(true)] object? obj)
+        public sealed override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (obj == null)
                 return false;
@@ -90,7 +90,7 @@ namespace System
             }
         }
 
-        public override sealed int GetHashCode()
+        public sealed override int GetHashCode()
         {
             Delegate[]? invocationList = m_helperObject as Delegate[];
             if (invocationList == null)
