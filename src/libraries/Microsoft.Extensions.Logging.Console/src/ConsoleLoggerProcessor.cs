@@ -16,7 +16,8 @@ namespace Microsoft.Extensions.Logging.Console
     {
         private static int s_processorCount;
         private int _processorId;
-        private static readonly Meter s_meter = new Meter("Microsoft-Extension-Logging-Console-Queue", "1.0.0");
+        private static List<ConsoleLoggerProcessor> s_processors = new List<ConsoleLoggerProcessor>();
+        private static readonly Meter s_meter = new Meter("Microsoft.Extensions.Logging.Console", "1.0.0");
         private const string WarningMessageOnDrop = " message(s) dropped because of queue size limit. Increase the queue size or decrease logging verbosity to avoid this. You may change `ConsoleLoggerBufferFullMode` to stop dropping messages.";
         private readonly Queue<LogMessageEntry> _messageQueue;
         private int _messagesDropped;
@@ -73,6 +74,11 @@ namespace Microsoft.Extensions.Logging.Console
             };
             _outputThread.Start();
             _processorId = ++s_processorCount;
+            s_processors.Add(this);
+        }
+
+        static ConsoleLoggerProcessor()
+        {
             s_meter.CreateObservableGauge<long>("queue-size", GetQueueSize);
         }
 
@@ -204,12 +210,16 @@ namespace Microsoft.Extensions.Logging.Console
             }
         }
 
-        private IEnumerable<Measurement<long>> GetQueueSize()
+        private static IEnumerable<Measurement<long>> GetQueueSize()
         {
-            return new Measurement<long>[]
+            var measures = new Measurement<long>[s_processorCount];
+            for (int i = 0; i < s_processorCount; i++)
             {
-                new Measurement<long>(_messageQueue.Count, new KeyValuePair<string, object?>("queue-name", nameof(ConsoleLoggerProcessor) + _processorId)),
-            };
+                ConsoleLoggerProcessor p = s_processors[i];
+                measures[i] = new Measurement<long>(p._messageQueue.Count, new KeyValuePair<string, object?>("queue-name", nameof(ConsoleLoggerProcessor) + p._processorId));
+            }
+
+            return measures;
         }
     }
 }
