@@ -94,4 +94,196 @@
   <data name="PromoterTypeInvalid" xml:space="preserve"><value>The specified PromoterType is invalid.</value></data>
   <data name="PromoterTypeUnrecognized" xml:space="preserve"><value>There is a promotable enlistment for the transaction which has a PromoterType value that is not recognized by System.Transactions. {0}</value></data>
   <data name="DistributedNotSupported" xml:space="preserve"><value>This platform does not support distributed transactions.</value></data>
+  <data name="TraceSourceOletx" xml:space="preserve">
+    <value>[Distributed]</value>
+  </data>
+  <data name="TraceConfiguredDefaultTimeoutAdjusted" xml:space="preserve">
+    <value>Configured DefaultTimeout is greater than configured DefaultMaximumTimeout - adjusting down to DefaultMaximumTimeout</value>
+  </data>
+  <data name="TraceMethodEntered" xml:space="preserve">
+    <value>Method Entered</value>
+  </data>
+  <data name="TraceMethodExited" xml:space="preserve">
+    <value>Method Exited</value>
+  </data>
+  <data name="OperationInvalidOnAnEmptyDocument" xml:space="preserve">
+    <value>The operation is invalid because the document is empty.</value>
+  </data>
+  <data name="CannotAddToClosedDocument" xml:space="preserve">
+    <value>Cannot add an element to a closed document.</value>
+  </data>
+  <data name="TextNodeAlreadyPopulated" xml:space="preserve">
+    <value>The text node already has a value.</value>
+  </data>
+  <data name="TraceEnlistment" xml:space="preserve">
+    <value>Enlistment Created</value>
+  </data>
+  <data name="TraceTransactionPromoted" xml:space="preserve">
+    <value>Transaction Promoted</value>
+  </data>
+  <data name="TraceEnlistmentNotificationCall" xml:space="preserve">
+    <value>Enlistment Notification Call</value>
+  </data>
+  <data name="TraceEnlistmentCallbackPositive" xml:space="preserve">
+    <value>Enlistment Callback Positive</value>
+  </data>
+  <data name="TraceEnlistmentCallbackNegative" xml:space="preserve">
+    <value>Enlistment Callback Negative</value>
+  </data>
+  <data name="DocumentAlreadyClosed" xml:space="preserve">
+    <value>Cannot close an element on a closed document.</value>
+  </data>
+  <data name="TraceInternalError" xml:space="preserve">
+    <value>Internal Error</value>
+  </data>
+  <data name="TraceInvalidOperationException" xml:space="preserve">
+    <value>InvalidOperationException Thrown</value>
+  </data>
+  <data name="TraceExceptionConsumed" xml:space="preserve">
+    <value>Exception Consumed</value>
+  </data>
+  <data name="TraceTransactionException" xml:space="preserve">
+    <value>TransactionException Thrown</value>
+  </data>
+  <data name="TraceTransactionDeserialized" xml:space="preserve">
+    <value>Transaction Deserialized</value>
+  </data>
+  <data name="TraceTransactionSerialized" xml:space="preserve">
+    <value>Transaction Serialized</value>
+  </data>
+  <data name="TraceTransactionManagerCreated" xml:space="preserve">
+    <value>Transaction Manager Instance Created</value>
+  </data>
+  <data name="TraceReenlist" xml:space="preserve">
+    <value>TransactionManager.Reenlist Called</value>
+  </data>
+  <data name="TraceTransactionCreated" xml:space="preserve">
+    <value>Transaction Created</value>
+  </data>
+  <data name="TraceTransactionCommitCalled" xml:space="preserve">
+    <value>CommittableTransaction.Commit Called</value>
+  </data>
+  <data name="TraceTransactionCommitted" xml:space="preserve">
+    <value>Transaction Committed</value>
+  </data>
+  <data name="TraceTransactionAborted" xml:space="preserve">
+    <value>Transaction Aborted</value>
+  </data>
+  <data name="TraceTransactionInDoubt" xml:space="preserve">
+    <value>Transaction InDoubt</value>
+  </data>
+  <data name="TraceTransactionScopeCreated" xml:space="preserve">
+    <value>TransactionScope Created</value>
+  </data>
+  <data name="TraceTransactionScopeDisposed" xml:space="preserve">
+    <value>TransactionScope Disposed</value>
+  </data>
+  <data name="ProxyCannotSupportMultipleNodeNames" xml:space="preserve">
+    <value>MSDTC Proxy cannot support specification of different node names in the same process.</value>
+  </data>
+  <data name="CannotSupportNodeNameSpecification" xml:space="preserve">
+    <value>Cannot support specification of node name for the distributed transaction manager through System.Transactions due to MSDTC Proxy version.</value>
+  </data>
+  <data name="FailedToCreateTraceSource" xml:space="preserve">
+    <value>Failed to create trace source.</value>
+  </data>
+  <data name="FailedToInitializeTraceSource" xml:space="preserve">
+    <value>Failed to initialize trace source.</value>
+  </data>
+  <data name="TraceRecoveryComplete" xml:space="preserve">
+    <value>TransactionManager.RecoveryComplete Called</value>
+  </data>
+  <data name="TraceCloneCreated" xml:space="preserve">
+    <value>Clone Created</value>
+  </data>
+  <data name="TraceDependentCloneComplete" xml:space="preserve">
+    <value>Dependent Clone Completed</value>
+  </data>
+  <data name="TraceDependentCloneCreated" xml:space="preserve">
+    <value>Dependent Clone Created</value>
+  </data>
+  <data name="TraceTransactionScopeTimeout" xml:space="preserve">
+    <value>TransactionScope Timeout</value>
+  </data>
+  <data name="TraceTransactionRollbackCalled" xml:space="preserve">
+    <value>Transaction.Rollback Called</value>
+  </data>
+  <data name="TraceFailure" xml:space="preserve">
+    <value>Trace Event Type: {0}\nTrace Code: {1}\nTrace Description {2}\nObject: {3}</value>
+  </data>
+  <data name="OletxEnlistmentUnexpectedTransactionStatus" xml:space="preserve">
+    <value>Internal Error - Unexpected transaction status value in enlistment constructor.</value>
+  </data>
+  <data name="UnableToDeserializeTransaction" xml:space="preserve">
+    <value>Unable to deserialize the transaction.</value>
+  </data>
+  <data name="UnableToDeserializeTransactionInternalError" xml:space="preserve">
+    <value>Internal Error - Unable to deserialize the transaction.</value>
+  </data>
+  <data name="TransactionAlreadyOver" xml:space="preserve">
+    <value>The transaction has already been implicitly or explicitly committed or aborted.</value>
+  </data>
+  <data name="EventLogValue" xml:space="preserve">
+    <value>Process Name: {0}\nProcess Id: {1}\nCode: {2}\nDescription: {3}</value>
+  </data>
+  <data name="EventLogSourceValue" xml:space="preserve">
+    <value>Source: {0}</value>
+  </data>
+  <data name="EventLogExceptionValue" xml:space="preserve">
+    <value>Exception: {0}</value>
+  </data>
+  <data name="EventLogEventIdValue" xml:space="preserve">
+    <value>Event ID: {0}</value>
+  </data>
+  <data name="EventLogTraceValue" xml:space="preserve">
+    <value>Other information : {0}</value>
+  </data>
+  <data name="TraceTransactionScopeCurrentTransactionChanged" xml:space="preserve">
+    <value>TransactionScope Current Transaction Changed</value>
+  </data>
+  <data name="TraceTransactionScopeNestedIncorrectly" xml:space="preserve">
+    <value>TransactionScope Nested Incorrectly</value>
+  </data>
+  <data name="TraceTransactionScopeIncomplete" xml:space="preserve">
+    <value>TransactionScope Incomplete</value>
+  </data>
+  <data name="UnableToGetNotificationShimFactory" xml:space="preserve">
+    <value>Distributed transaction manager is unable to create the NotificationShimFactory object.</value>
+  </data>
+  <data name="CannotGetTransactionIdentifier" xml:space="preserve">
+    <value>Unable to obtain the transaction identifier.</value>
+  </data>
+  <data name="ReenlistAfterRecoveryComplete" xml:space="preserve">
+    <value>Calling TransactionManager.Reenlist is not allowed after TransactionManager.RecoveryComplete is called for a given resource manager identifier.</value>
+  </data>
+  <data name="DuplicateRecoveryComplete" xml:space="preserve">
+    <value>RecoveryComplete must not be called twice by the same resource manager identifier instance.</value>
+  </data>
+  <data name="DtcTransactionManagerUnavailable" xml:space="preserve">
+    <value>MSDTC Transaction Manager is unavailable.</value>
+  </data>
+  <data name="NetworkTransactionsDisabled" xml:space="preserve">
+    <value>Network access for Distributed Transaction Manager (MSDTC) has been disabled. Please enable DTC for network access in the security configuration for MSDTC using the Component Services Administrative tool.</value>
+  </data>
+  <data name="TraceSourceLtm" xml:space="preserve">
+    <value>[Lightweight]</value>
+  </data>
+  <data name="TraceCodeAppDomainUnloading" xml:space="preserve">
+    <value>AppDomain unloading.</value>
+  </data>
+  <data name="UnhandledException" xml:space="preserve">
+    <value>Unhandled Exception</value>
+  </data>
+  <data name="ResourceManagerIdDoesNotMatchRecoveryInformation" xml:space="preserve">
+    <value>The resourceManagerIdentifier does not match the contents of the specified recovery information.</value>
+  </data>
+  <data name="OletxTooManyEnlistments" xml:space="preserve">
+    <value>The distributed transaction manager does not allow any more durable enlistments on the transaction.</value>
+  </data>
+  <data name="FailedToTraceEvent" xml:space="preserve">
+    <value>Failed to trace event: {0}.</value>
+  </data>
+  <data name="TraceSourceBase" xml:space="preserve">
+    <value>[Base]</value>
+  </data>
 </root>

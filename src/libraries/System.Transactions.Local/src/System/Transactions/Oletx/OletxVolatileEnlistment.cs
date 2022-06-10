@@ -13,6 +13,8 @@ using System.Threading;
 using System.Transactions;
 using System.Transactions.Diagnostics;
 
+#nullable disable
+
 namespace System.Transactions.Oletx
 {
     internal abstract class OletxVolatileEnlistmentContainer
@@ -85,7 +87,7 @@ namespace System.Transactions.Oletx
         {
             if ( DiagnosticTrace.Verbose )
             {
-                MethodEnteredTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                MethodEnteredTraceRecord.Trace( SR.TraceSourceOletx,
                     "OletxPhase0VolatileEnlistmentContainer.TMDown"
                     );
             }
@@ -94,7 +96,7 @@ namespace System.Transactions.Oletx
 
             if ( DiagnosticTrace.Verbose )
             {
-                MethodExitedTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                MethodExitedTraceRecord.Trace( SR.TraceSourceOletx,
                     "OletxPhase0VolatileEnlistmentContainer.TMDown"
                     );
             }
@@ -119,8 +121,7 @@ namespace System.Transactions.Oletx
             {
                 if ( -1 != phase )
                 {
-                    throw TransactionException.Create( SR.GetString( SR.TraceSourceOletx ),
-                        SR.GetString( SR.TooLate ), null );
+                    throw TransactionException.Create(SR.TooLate, null );
                 }
 
                 this.enlistmentList.Add( enlistment );
@@ -135,7 +136,7 @@ namespace System.Transactions.Oletx
             {
                 if ( -1 != phase )
                 {
-                    throw TransactionException.CreateTransactionStateException( SR.GetString( SR.TraceSourceOletx ), null );
+                    throw TransactionException.CreateTransactionStateException(null);
                 }
 
                 this.incompleteDependentClones++;
@@ -155,7 +156,7 @@ namespace System.Transactions.Oletx
                         ", incompleteDependentClones = " +
                         this.incompleteDependentClones.ToString( CultureInfo.CurrentCulture ) +
                         ", phase = " + this.phase.ToString( CultureInfo.CurrentCulture );
-                    MethodEnteredTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                    MethodEnteredTraceRecord.Trace( SR.TraceSourceOletx,
                         description
                         );
                 }
@@ -176,7 +177,7 @@ namespace System.Transactions.Oletx
             if ( DiagnosticTrace.Verbose )
             {
                 string description = "OletxPhase0VolatileEnlistmentContainer.DependentCloneCompleted";
-                MethodExitedTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                MethodExitedTraceRecord.Trace( SR.TraceSourceOletx,
                     description
                     );
             }
@@ -191,7 +192,7 @@ namespace System.Transactions.Oletx
                     string description = "OletxPhase0VolatileEnlistmentContainer.RollbackFromTransaction, outstandingNotifications = " +
                         this.outstandingNotifications.ToString( CultureInfo.CurrentCulture ) +
                         ", incompleteDependentClones = " + this.incompleteDependentClones.ToString( CultureInfo.CurrentCulture );
-                    MethodEnteredTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                    MethodEnteredTraceRecord.Trace( SR.TraceSourceOletx,
                         description
                         );
                 }
@@ -209,7 +210,7 @@ namespace System.Transactions.Oletx
             if ( DiagnosticTrace.Verbose )
             {
                 string description = "OletxPhase0VolatileEnlistmentContainer.RollbackFromTransaction";
-                MethodExitedTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                MethodExitedTraceRecord.Trace( SR.TraceSourceOletx,
                     description
                     );
             }
@@ -256,7 +257,7 @@ namespace System.Transactions.Oletx
                         this.outstandingNotifications.ToString( CultureInfo.CurrentCulture ) +
                         ", incompleteDependentClones = " +
                         this.incompleteDependentClones.ToString( CultureInfo.CurrentCulture );
-                    MethodEnteredTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                    MethodEnteredTraceRecord.Trace( SR.TraceSourceOletx,
                         description
                         );
                 }
@@ -294,7 +295,7 @@ namespace System.Transactions.Oletx
                 {
                     if ( DiagnosticTrace.Verbose )
                     {
-                        ExceptionConsumedTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                        ExceptionConsumedTraceRecord.Trace( SR.TraceSourceOletx,
                             ex );
                     }
                 }
@@ -310,7 +311,7 @@ namespace System.Transactions.Oletx
                     this.phase0EnlistmentShim = null;
                     if ( DiagnosticTrace.Verbose )
                     {
-                        ExceptionConsumedTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                        ExceptionConsumedTraceRecord.Trace( SR.TraceSourceOletx,
                             ex );
                     }
                 }
@@ -323,7 +324,7 @@ namespace System.Transactions.Oletx
             if ( DiagnosticTrace.Verbose )
             {
                 string description = "OletxPhase0VolatileEnlistmentContainer.DecrementOutstandingNotifications";
-                MethodExitedTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                MethodExitedTraceRecord.Trace( SR.TraceSourceOletx,
                     description
                     );
             }
@@ -369,13 +370,13 @@ namespace System.Transactions.Oletx
                 {
                     if ( DiagnosticTrace.Critical )
                     {
-                        InternalErrorTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                        InternalErrorTraceRecord.Trace( SR.TraceSourceOletx,
                             ""
                             );
                     }
 
                     Debug.Assert( false, "OletxPhase1VolatileEnlistmentContainer.Committed, enlistmentList element is not an OletxVolatileEnlistment." );
-                    throw new InvalidOperationException( SR.GetString( SR.InternalError ) );
+                    throw new InvalidOperationException( SR.InternalError);
                 }
 
                 enlistment.Commit();
@@ -402,13 +403,13 @@ namespace System.Transactions.Oletx
                 {
                     if ( DiagnosticTrace.Critical )
                     {
-                        InternalErrorTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                        InternalErrorTraceRecord.Trace( SR.TraceSourceOletx,
                             ""
                             );
                     }
 
                     Debug.Assert( false, "OletxPhase1VolatileEnlistmentContainer.Aborted, enlistmentList element is not an OletxVolatileEnlistment." );
-                    throw new InvalidOperationException( SR.GetString( SR.InternalError ) );
+                    throw new InvalidOperationException( SR.InternalError);
                 }
 
                 enlistment.Rollback();
@@ -436,13 +437,13 @@ namespace System.Transactions.Oletx
                 {
                     if ( DiagnosticTrace.Critical )
                     {
-                        InternalErrorTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                        InternalErrorTraceRecord.Trace( SR.TraceSourceOletx,
                             ""
                             );
                     }
 
                     Debug.Assert( false, "OletxPhase1VolatileEnlistmentContainer.InDoubt, enlistmentList element is not an OletxVolatileEnlistment." );
-                    throw new InvalidOperationException( SR.GetString( SR.InternalError ) );
+                    throw new InvalidOperationException( SR.InternalError);
                 }
 
                 enlistment.InDoubt();
@@ -466,7 +467,7 @@ namespace System.Transactions.Oletx
                     string description = "OletxPhase0VolatileEnlistmentContainer.Phase0Request, abortHint = " +
                         abortHint.ToString( CultureInfo.CurrentCulture ) +
                         ", phase = " + this.phase.ToString( CultureInfo.CurrentCulture );
-                    MethodEnteredTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                    MethodEnteredTraceRecord.Trace( SR.TraceSourceOletx,
                         description
                         );
                 }
@@ -519,7 +520,7 @@ namespace System.Transactions.Oletx
                             {
                                 if ( DiagnosticTrace.Verbose )
                                 {
-                                    ExceptionConsumedTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                                    ExceptionConsumedTraceRecord.Trace( SR.TraceSourceOletx,
                                         ex );
                                 }
                             }
@@ -539,13 +540,13 @@ namespace System.Transactions.Oletx
                 {
                     if ( DiagnosticTrace.Critical )
                     {
-                        InternalErrorTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                        InternalErrorTraceRecord.Trace( SR.TraceSourceOletx,
                             "OletxPhase0VolatileEnlistmentContainer.Phase0Request, phase != -1"
                             );
                     }
 
                     Debug.Assert( false, "OletxPhase0VolatileEnlistmentContainer.Phase0Request, phase != -1" );
-                    throw new InvalidOperationException( SR.GetString( SR.InternalError ) );
+                    throw new InvalidOperationException( SR.InternalError);
                 }
             }
 
@@ -565,13 +566,13 @@ namespace System.Transactions.Oletx
                     {
                         if ( DiagnosticTrace.Critical )
                         {
-                            InternalErrorTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                            InternalErrorTraceRecord.Trace( SR.TraceSourceOletx,
                                 ""
                                 );
                         }
 
                         Debug.Assert( false, "OletxPhase0VolatileEnlistmentContainer.Phase0Request, enlistmentList element is not an OletxVolatileEnlistment.");
-                        throw new InvalidOperationException( SR.GetString( SR.InternalError ) );
+                        throw new InvalidOperationException( SR.InternalError);
                     }
 
                     // Do the notification outside any locks.
@@ -585,7 +586,7 @@ namespace System.Transactions.Oletx
             if ( DiagnosticTrace.Verbose )
             {
                 string description = "OletxPhase0VolatileEnlistmentContainer.Phase0Request, abortHint = " + abortHint.ToString( CultureInfo.CurrentCulture );
-                MethodExitedTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                MethodExitedTraceRecord.Trace( SR.TraceSourceOletx,
                     description
                     );
             }
@@ -636,8 +637,7 @@ namespace System.Transactions.Oletx
             {
                 if ( -1 != phase )
                 {
-                    throw TransactionException.Create( SR.GetString( SR.TraceSourceOletx ),
-                        SR.GetString( SR.TooLate ), null );
+                    throw TransactionException.Create( SR.TooLate, null );
                 }
 
                 enlistmentList.Add( enlistment );
@@ -653,7 +653,7 @@ namespace System.Transactions.Oletx
             {
                 if ( -1 != phase )
                 {
-                    throw TransactionException.CreateTransactionStateException( SR.GetString( SR.TraceSourceOletx ), null );
+                    throw TransactionException.CreateTransactionStateException(null, Guid.Empty); // TODO
                 }
 
                 // We simply need to block the response to the proxy until all clone is completed.
@@ -671,7 +671,7 @@ namespace System.Transactions.Oletx
                     ", incompleteDependentClones = " +
                     this.incompleteDependentClones.ToString( CultureInfo.CurrentCulture ) +
                     ", phase = " + this.phase.ToString( CultureInfo.CurrentCulture );
-                MethodEnteredTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                MethodEnteredTraceRecord.Trace( SR.TraceSourceOletx,
                     description
                     );
             }
@@ -688,7 +688,7 @@ namespace System.Transactions.Oletx
             if ( DiagnosticTrace.Verbose )
             {
                 string description = "OletxPhase1VolatileEnlistmentContainer.DependentCloneCompleted";
-                MethodExitedTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                MethodExitedTraceRecord.Trace( SR.TraceSourceOletx,
                     description
                     );
             }
@@ -707,7 +707,7 @@ namespace System.Transactions.Oletx
                     string description = "OletxPhase1VolatileEnlistmentContainer.RollbackFromTransaction, outstandingNotifications = " +
                         this.outstandingNotifications.ToString( CultureInfo.CurrentCulture ) +
                         ", incompleteDependentClones = " + this.incompleteDependentClones.ToString( CultureInfo.CurrentCulture );
-                    MethodEnteredTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                    MethodEnteredTraceRecord.Trace( SR.TraceSourceOletx,
                         description
                         );
                 }
@@ -749,7 +749,7 @@ namespace System.Transactions.Oletx
                         }
                         if ( DiagnosticTrace.Verbose )
                         {
-                            ExceptionConsumedTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                            ExceptionConsumedTraceRecord.Trace( SR.TraceSourceOletx,
                                 ex );
                         }
                     }
@@ -771,7 +771,7 @@ namespace System.Transactions.Oletx
             if ( DiagnosticTrace.Verbose )
             {
                 string description = "OletxPhase1VolatileEnlistmentContainer.RollbackFromTransaction";
-                MethodExitedTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                MethodExitedTraceRecord.Trace( SR.TraceSourceOletx,
                     description
                     );
             }
@@ -811,7 +811,7 @@ namespace System.Transactions.Oletx
                         this.outstandingNotifications.ToString( CultureInfo.CurrentCulture ) +
                         ", incompleteDependentClones = " +
                         this.incompleteDependentClones.ToString( CultureInfo.CurrentCulture );
-                    MethodEnteredTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                    MethodEnteredTraceRecord.Trace( SR.TraceSourceOletx,
                         description
                         );
                 }
@@ -884,7 +884,7 @@ namespace System.Transactions.Oletx
                     }
                     if ( DiagnosticTrace.Verbose )
                     {
-                        ExceptionConsumedTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                        ExceptionConsumedTraceRecord.Trace( SR.TraceSourceOletx,
                             ex );
                     }
                 }
@@ -897,7 +897,7 @@ namespace System.Transactions.Oletx
             if ( DiagnosticTrace.Verbose )
             {
                 string description = "OletxPhase1VolatileEnlistmentContainer.DecrementOutstandingNotifications";
-                MethodExitedTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                MethodExitedTraceRecord.Trace( SR.TraceSourceOletx,
                     description
                     );
             }
@@ -962,13 +962,13 @@ namespace System.Transactions.Oletx
                 {
                     if ( DiagnosticTrace.Critical )
                     {
-                        InternalErrorTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                        InternalErrorTraceRecord.Trace( SR.TraceSourceOletx,
                             ""
                             );
                     }
 
                     Debug.Assert( false, "OletxPhase1VolatileEnlistmentContainer.Committed, enlistmentList element is not an OletxVolatileEnlistment." );
-                    throw new InvalidOperationException( SR.GetString( SR.InternalError ) );
+                    throw new InvalidOperationException( SR.InternalError);
                 }
 
                 enlistment.Commit();
@@ -993,13 +993,13 @@ namespace System.Transactions.Oletx
                 {
                     if ( DiagnosticTrace.Critical )
                     {
-                        InternalErrorTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                        InternalErrorTraceRecord.Trace( SR.TraceSourceOletx,
                             ""
                             );
                     }
 
                     Debug.Assert( false, "OletxPhase1VolatileEnlistmentContainer.Aborted, enlistmentList element is not an OletxVolatileEnlistment." );
-                    throw new InvalidOperationException( SR.GetString( SR.InternalError ) );
+                    throw new InvalidOperationException( SR.InternalError);
                 }
 
                 enlistment.Rollback();
@@ -1025,13 +1025,13 @@ namespace System.Transactions.Oletx
                 {
                     if ( DiagnosticTrace.Critical )
                     {
-                        InternalErrorTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                        InternalErrorTraceRecord.Trace( SR.TraceSourceOletx,
                             ""
                             );
                     }
 
                     Debug.Assert( false, "OletxPhase1VolatileEnlistmentContainer.InDoubt, enlistmentList element is not an OletxVolatileEnlistment." );
-                    throw new InvalidOperationException( SR.GetString( SR.InternalError ) );
+                    throw new InvalidOperationException( SR.InternalError);
                 }
 
                 enlistment.InDoubt();
@@ -1050,7 +1050,7 @@ namespace System.Transactions.Oletx
                 if ( DiagnosticTrace.Verbose )
                 {
                     string description = "OletxPhase1VolatileEnlistmentContainer.VoteRequest";
-                    MethodEnteredTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                    MethodEnteredTraceRecord.Trace( SR.TraceSourceOletx,
                         description
                         );
                 }
@@ -1096,13 +1096,13 @@ namespace System.Transactions.Oletx
                     {
                         if ( DiagnosticTrace.Critical )
                         {
-                            InternalErrorTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                            InternalErrorTraceRecord.Trace( SR.TraceSourceOletx,
                                 ""
                                 );
                         }
 
                     Debug.Assert( false, "OletxPhase1VolatileEnlistmentContainer.VoteRequest, enlistmentList element is not an OletxVolatileEnlistment." );
-                        throw new InvalidOperationException( SR.GetString( SR.InternalError ) );
+                        throw new InvalidOperationException( SR.InternalError);
                     }
 
                     enlistment.Prepare( this );
@@ -1112,7 +1112,7 @@ namespace System.Transactions.Oletx
             if ( DiagnosticTrace.Verbose )
             {
                 string description = "OletxPhase1VolatileEnlistmentContainer.VoteRequest";
-                MethodExitedTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                MethodExitedTraceRecord.Trace( SR.TraceSourceOletx,
                     description
                     );
             }
@@ -1164,7 +1164,7 @@ namespace System.Transactions.Oletx
 
             if ( DiagnosticTrace.Information )
             {
-                EnlistmentTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                EnlistmentTraceRecord.Trace( SR.TraceSourceOletx,
                     this.InternalTraceIdentifier,
                     EnlistmentType.Volatile,
                     enlistmentOptions
@@ -1203,7 +1203,7 @@ namespace System.Transactions.Oletx
                 {
                     if ( DiagnosticTrace.Verbose )
                     {
-                        EnlistmentNotificationCallTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                        EnlistmentNotificationCallTraceRecord.Trace( SR.TraceSourceOletx,
                             this.InternalTraceIdentifier,
                             NotificationCall.Prepare
                             );
@@ -1215,13 +1215,13 @@ namespace System.Transactions.Oletx
                 {
                     if ( DiagnosticTrace.Critical )
                     {
-                        InternalErrorTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                        InternalErrorTraceRecord.Trace( SR.TraceSourceOletx,
                             ""
                             );
                     }
 
                     Debug.Assert( false, "OletxVolatileEnlistment.Prepare, no enlistmentNotification member." );
-                    throw new InvalidOperationException( SR.GetString( SR.InternalError ) );
+                    throw new InvalidOperationException( SR.InternalError);
                 }
             }
             else if ( OletxVolatileEnlistmentState.Done == localState )
@@ -1253,13 +1253,13 @@ namespace System.Transactions.Oletx
             {
                 if ( DiagnosticTrace.Critical )
                 {
-                    InternalErrorTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                    InternalErrorTraceRecord.Trace( SR.TraceSourceOletx,
                         ""
                         );
                 }
 
                 Debug.Assert( false, "OletxVolatileEnlistment.Prepare, invalid state." );
-                throw new InvalidOperationException( SR.GetString( SR.InternalError ) );
+                throw new InvalidOperationException( SR.InternalError);
             }
 
         }
@@ -1291,7 +1291,7 @@ namespace System.Transactions.Oletx
                 {
                     if ( DiagnosticTrace.Verbose )
                     {
-                        EnlistmentNotificationCallTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                        EnlistmentNotificationCallTraceRecord.Trace( SR.TraceSourceOletx,
                             this.InternalTraceIdentifier,
                             NotificationCall.Commit
                             );
@@ -1303,13 +1303,13 @@ namespace System.Transactions.Oletx
                 {
                     if ( DiagnosticTrace.Critical )
                     {
-                        InternalErrorTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                        InternalErrorTraceRecord.Trace( SR.TraceSourceOletx,
                             ""
                             );
                     }
 
                     Debug.Assert( false, "OletxVolatileEnlistment.Commit, no enlistmentNotification member." );
-                    throw new InvalidOperationException( SR.GetString( SR.InternalError ) );
+                    throw new InvalidOperationException( SR.InternalError);
                 }
             }
             else if ( OletxVolatileEnlistmentState.Done == localState )
@@ -1320,13 +1320,13 @@ namespace System.Transactions.Oletx
             {
                 if ( DiagnosticTrace.Critical )
                 {
-                    InternalErrorTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                    InternalErrorTraceRecord.Trace( SR.TraceSourceOletx,
                         ""
                         );
                 }
 
                 Debug.Assert( false, "OletxVolatileEnlistment.Commit, invalid state." );
-                throw new InvalidOperationException( SR.GetString( SR.InternalError ) );
+                throw new InvalidOperationException( SR.InternalError);
             }
 
         }
@@ -1364,7 +1364,7 @@ namespace System.Transactions.Oletx
                 {
                     if ( DiagnosticTrace.Verbose )
                     {
-                        EnlistmentNotificationCallTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                        EnlistmentNotificationCallTraceRecord.Trace( SR.TraceSourceOletx,
                             this.InternalTraceIdentifier,
                             NotificationCall.Rollback
                             );
@@ -1391,13 +1391,13 @@ namespace System.Transactions.Oletx
             {
                 if ( DiagnosticTrace.Critical )
                 {
-                    InternalErrorTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                    InternalErrorTraceRecord.Trace( SR.TraceSourceOletx,
                         ""
                         );
                 }
 
                 Debug.Assert( false, "OletxVolatileEnlistment.Rollback, invalid state." );
-                throw new InvalidOperationException( SR.GetString( SR.InternalError ) );
+                throw new InvalidOperationException( SR.InternalError);
             }
 
         }
@@ -1433,7 +1433,7 @@ namespace System.Transactions.Oletx
                 {
                     if ( DiagnosticTrace.Verbose )
                     {
-                        EnlistmentNotificationCallTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                        EnlistmentNotificationCallTraceRecord.Trace( SR.TraceSourceOletx,
                             this.InternalTraceIdentifier,
                             NotificationCall.InDoubt
                             );
@@ -1445,13 +1445,13 @@ namespace System.Transactions.Oletx
                 {
                     if ( DiagnosticTrace.Critical )
                     {
-                        InternalErrorTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                        InternalErrorTraceRecord.Trace( SR.TraceSourceOletx,
                             ""
                             );
                     }
 
                     Debug.Assert( false, "OletxVolatileEnlistment.InDoubt, no enlistmentNotification member." );
-                    throw new InvalidOperationException( SR.GetString( SR.InternalError ) );
+                    throw new InvalidOperationException( SR.InternalError);
                 }
             }
             else if ( OletxVolatileEnlistmentState.Preparing == localState )
@@ -1466,13 +1466,13 @@ namespace System.Transactions.Oletx
             {
                 if ( DiagnosticTrace.Critical )
                 {
-                    InternalErrorTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                    InternalErrorTraceRecord.Trace( SR.TraceSourceOletx,
                         ""
                         );
                 }
 
                 Debug.Assert( false, "OletxVolatileEnlistment.InDoubt, invalid state." );
-                throw new InvalidOperationException( SR.GetString( SR.InternalError ) );
+                throw new InvalidOperationException( SR.InternalError);
             }
 
         }
@@ -1481,10 +1481,10 @@ namespace System.Transactions.Oletx
         {
             if ( DiagnosticTrace.Verbose )
             {
-                MethodEnteredTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                MethodEnteredTraceRecord.Trace( SR.TraceSourceOletx,
                     "OletxEnlistment.EnlistmentDone"
                     );
-                EnlistmentCallbackPositiveTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                EnlistmentCallbackPositiveTraceRecord.Trace( SR.TraceSourceOletx,
                     this.InternalTraceIdentifier,
                     EnlistmentCallback.Done
                     );
@@ -1505,7 +1505,7 @@ namespace System.Transactions.Oletx
                      ( OletxVolatileEnlistmentState.InDoubt != state )
                    )
                 {
-                    throw TransactionException.CreateEnlistmentStateException( SR.GetString( SR.TraceSourceOletx ), null, this.DistributedTxId );
+                    throw TransactionException.CreateEnlistmentStateException(null, this.DistributedTxId);
                 }
 
                 state = OletxVolatileEnlistmentState.Done;
@@ -1526,7 +1526,7 @@ namespace System.Transactions.Oletx
 
             if ( DiagnosticTrace.Verbose )
             {
-                MethodExitedTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                MethodExitedTraceRecord.Trace( SR.TraceSourceOletx,
                     "OletxEnlistment.EnlistmentDone"
                     );
             }
@@ -1536,10 +1536,10 @@ namespace System.Transactions.Oletx
         {
             if ( DiagnosticTrace.Verbose )
             {
-                MethodEnteredTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                MethodEnteredTraceRecord.Trace( SR.TraceSourceOletx,
                     "OletxPreparingEnlistment.Prepared"
                     );
-                EnlistmentCallbackPositiveTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                EnlistmentCallbackPositiveTraceRecord.Trace( SR.TraceSourceOletx,
                     this.InternalTraceIdentifier,
                     EnlistmentCallback.Prepared
                     );
@@ -1552,7 +1552,7 @@ namespace System.Transactions.Oletx
             {
                 if ( OletxVolatileEnlistmentState.Preparing != state )
                 {
-                    throw TransactionException.CreateEnlistmentStateException( SR.GetString( SR.TraceSourceOletx ), null, this.DistributedTxId );
+                    throw TransactionException.CreateEnlistmentStateException(null, this.DistributedTxId );
                 }
 
                 state = OletxVolatileEnlistmentState.Prepared;
@@ -1562,13 +1562,13 @@ namespace System.Transactions.Oletx
                 {
                     if ( DiagnosticTrace.Critical )
                     {
-                        InternalErrorTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                        InternalErrorTraceRecord.Trace( SR.TraceSourceOletx,
                             ""
                             );
                     }
 
                     Debug.Assert( false, "OletxVolatileEnlistment.Prepared, no container member." );
-                    throw new InvalidOperationException( SR.GetString( SR.InternalError ) );
+                    throw new InvalidOperationException( SR.InternalError);
                 }
 
                 localContainer = container;
@@ -1603,20 +1603,20 @@ namespace System.Transactions.Oletx
                     // This shouldn't happen.
                     if ( DiagnosticTrace.Critical )
                     {
-                        InternalErrorTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                        InternalErrorTraceRecord.Trace( SR.TraceSourceOletx,
                             ""
                             );
                     }
 
                     Debug.Assert( false, "OletxVolatileEnlistment.Prepared, invalid pending outcome value." );
-                    throw new InvalidOperationException( SR.GetString( SR.InternalError ) );
+                    throw new InvalidOperationException( SR.InternalError);
                 }
             }
 
 
             if ( DiagnosticTrace.Verbose )
             {
-                MethodExitedTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                MethodExitedTraceRecord.Trace( SR.TraceSourceOletx,
                     "OletxPreparingEnlistment.Prepared"
                     );
             }
@@ -1632,14 +1632,14 @@ namespace System.Transactions.Oletx
         {
             if ( DiagnosticTrace.Verbose )
             {
-                MethodEnteredTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                MethodEnteredTraceRecord.Trace( SR.TraceSourceOletx,
                     "OletxPreparingEnlistment.ForceRollback"
                     );
             }
 
             if ( DiagnosticTrace.Warning )
             {
-                EnlistmentCallbackNegativeTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                EnlistmentCallbackNegativeTraceRecord.Trace( SR.TraceSourceOletx,
                     this.InternalTraceIdentifier,
                     EnlistmentCallback.ForceRollback
                     );
@@ -1651,7 +1651,7 @@ namespace System.Transactions.Oletx
             {
                 if ( OletxVolatileEnlistmentState.Preparing != state )
                 {
-                    throw TransactionException.CreateEnlistmentStateException( SR.GetString( SR.TraceSourceOletx ), null, this.DistributedTxId );
+                    throw TransactionException.CreateEnlistmentStateException(null, this.DistributedTxId );
                 }
 
                 // There are no more notifications that need to happen on this enlistment.
@@ -1661,13 +1661,13 @@ namespace System.Transactions.Oletx
                 {
                     if ( DiagnosticTrace.Critical )
                     {
-                        InternalErrorTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                        InternalErrorTraceRecord.Trace( SR.TraceSourceOletx,
                             ""
                             );
                     }
 
                     Debug.Assert( false, "OletxVolatileEnlistment.ForceRollback, no container member." );
-                    throw new InvalidOperationException( SR.GetString( SR.InternalError ) );
+                    throw new InvalidOperationException( SR.InternalError);
                 }
 
                 localContainer = container;
@@ -1680,7 +1680,7 @@ namespace System.Transactions.Oletx
 
             if ( DiagnosticTrace.Verbose )
             {
-                MethodExitedTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                MethodExitedTraceRecord.Trace( SR.TraceSourceOletx,
                     "OletxPreparingEnlistment.ForceRollback"
                     );
             }
@@ -1713,8 +1713,8 @@ namespace System.Transactions.Oletx
 
         byte[] IPromotedEnlistment.GetRecoveryInformation()
         {
-            throw TransactionException.CreateInvalidOperationException( SR.GetString( SR.TraceSourceOletx ),
-                SR.GetString( SR.VolEnlistNoRecoveryInfo), null, this.DistributedTxId );
+            throw TransactionException.CreateInvalidOperationException( TraceSourceType.TraceSourceDistributed,
+                SR.VolEnlistNoRecoveryInfo, null, this.DistributedTxId );
         }
 
         InternalEnlistment IPromotedEnlistment.InternalEnlistment

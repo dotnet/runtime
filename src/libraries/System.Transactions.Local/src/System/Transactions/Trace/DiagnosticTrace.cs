@@ -1,6 +1,22 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
+// using System.Runtime.Remoting.Messaging;
+using System.Security;
+using System.Text;
+using System.Threading;
+// using System.Web;
+using System.Xml;
+using System.Xml.XPath;
+using System.ComponentModel;
+
+#nullable disable
+
 namespace System.Transactions.Diagnostics
 {
     /// <summary>
@@ -11,21 +27,6 @@ namespace System.Transactions.Diagnostics
     /// that can be accessed by Indigo infrastructure code to provide
     /// instrumentation.
     /// </summary>
-
-    using System;
-    using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.Globalization;
-    using System.IO;
-    using System.Runtime.Remoting.Messaging;
-    using System.Security;
-    using System.Text;
-    using System.Threading;
-    using System.Web;
-    using System.Xml;
-    using System.Xml.XPath;
-    using System.ComponentModel;
-
     internal static class DiagnosticTrace
     {
         internal const string DefaultTraceListenerName = "Default";
@@ -270,12 +271,12 @@ namespace System.Transactions.Diagnostics
             {
                 if (DiagnosticTrace.TraceSource == null)
                 {
-                    LogEvent(TraceEventType.Error, String.Format(CultureInfo.CurrentCulture, SR.GetString(SR.FailedToCreateTraceSource), e), true);
+                    LogEvent(TraceEventType.Error, String.Format(CultureInfo.CurrentCulture, SR.FailedToCreateTraceSource, e), true);
                 }
                 else
                 {
                     DiagnosticTrace.TraceSource = null;
-                    LogEvent(TraceEventType.Error, String.Format(CultureInfo.CurrentCulture, SR.GetString(SR.FailedToInitializeTraceSource), e), true);
+                    LogEvent(TraceEventType.Error, String.Format(CultureInfo.CurrentCulture, SR.FailedToInitializeTraceSource, e), true);
                 }
             }
         }
@@ -365,7 +366,7 @@ namespace System.Transactions.Diagnostics
                     }
                     catch (Exception e)
                     {
-                        string traceString = SR.GetString(SR.TraceFailure,
+                        string traceString = string.Format(SR.TraceFailure,
                             type.ToString(),
                             code,
                             description,
@@ -470,25 +471,25 @@ namespace System.Transactions.Diagnostics
 
         static void LogEvent(TraceEventType type, string code, string description, TraceRecord trace, Exception exception, object source)
         {
-            StringBuilder traceString = new StringBuilder(SR.GetString(SR.EventLogValue,
+            StringBuilder traceString = new StringBuilder(string.Format(SR.EventLogValue,
                 DiagnosticTrace.ProcessName,
                 DiagnosticTrace.ProcessId.ToString(CultureInfo.CurrentCulture),
                 code,
                 description));
             if (source != null)
             {
-                traceString.AppendLine(SR.GetString(SR.EventLogSourceValue, DiagnosticTrace.CreateSourceString(source)));
+                traceString.AppendLine(SR.GetResourceString(SR.EventLogSourceValue, DiagnosticTrace.CreateSourceString(source)));
             }
 
             if (exception != null)
             {
-                traceString.AppendLine(SR.GetString(SR.EventLogExceptionValue, exception.ToString()));
+                traceString.AppendLine(SR.GetResourceString(SR.EventLogExceptionValue, exception.ToString()));
             }
 
             if (trace != null)
             {
-                traceString.AppendLine(SR.GetString(SR.EventLogEventIdValue, trace.EventId));
-                traceString.AppendLine(SR.GetString(SR.EventLogTraceValue, trace.ToString()));
+                traceString.AppendLine(SR.GetResourceString(SR.EventLogEventIdValue, trace.EventId));
+                traceString.AppendLine(SR.GetResourceString(SR.EventLogTraceValue, trace.ToString()));
             }
 
             LogEvent(type, traceString.ToString(), false);
@@ -563,7 +564,7 @@ namespace System.Transactions.Diagnostics
         {
             if (e != null)
             {
-                traceString = String.Format(CultureInfo.CurrentCulture, SR.GetString(SR.FailedToTraceEvent), e, traceString != null ? traceString : "");
+                traceString = String.Format(CultureInfo.CurrentCulture, SR.FailedToTraceEvent, e, traceString != null ? traceString : "");
             }
             lock (DiagnosticTrace.localSyncObject)
             {
@@ -594,7 +595,7 @@ namespace System.Transactions.Diagnostics
                             values["AppDomain.FriendlyName"] = AppDomain.CurrentDomain.FriendlyName;
                             values["ProcessName"] = DiagnosticTrace.ProcessName;
                             values["ProcessId"] = DiagnosticTrace.ProcessId.ToString(CultureInfo.CurrentCulture);
-                            DiagnosticTrace.TraceEvent(TraceEventType.Information, DiagnosticTraceCode.AppDomainUnload, SR.GetString(SR.TraceCodeAppDomainUnloading),
+                            DiagnosticTrace.TraceEvent(TraceEventType.Information, DiagnosticTraceCode.AppDomainUnload, SR.TraceCodeAppDomainUnloading,
                                 new DictionaryTraceRecord(values), null, ref DiagnosticTrace.EmptyGuid, false, null);
                         }
                         DiagnosticTrace.calledShutdown = true;
@@ -628,7 +629,7 @@ namespace System.Transactions.Diagnostics
         static void UnhandledExceptionHandler(object sender, UnhandledExceptionEventArgs args)
         {
             Exception e = (Exception)args.ExceptionObject;
-            TraceEvent(TraceEventType.Critical, DiagnosticTraceCode.UnhandledException, SR.GetString(SR.UnhandledException), null, e, ref DiagnosticTrace.EmptyGuid, false, null);
+            TraceEvent(TraceEventType.Critical, DiagnosticTraceCode.UnhandledException, SR.UnhandledException, null, e, ref DiagnosticTrace.EmptyGuid, false, null);
             ShutdownTracing();
         }
 
@@ -687,6 +688,9 @@ namespace System.Transactions.Diagnostics
 
         static void AddExceptionToTraceString(XmlWriter xml, Exception exception)
         {
+            throw new NotImplementedException();
+
+#if TODO_WINDOWS
             xml.WriteElementString(DiagnosticStrings.ExceptionTypeTag, DiagnosticTrace.XmlEncode(exception.GetType().AssemblyQualifiedName));
             xml.WriteElementString(DiagnosticStrings.MessageTag, DiagnosticTrace.XmlEncode(exception.Message));
             xml.WriteElementString(DiagnosticStrings.StackTraceTag, DiagnosticTrace.XmlEncode(DiagnosticTrace.StackTraceString(exception)));
@@ -720,6 +724,7 @@ namespace System.Transactions.Diagnostics
                 DiagnosticTrace.AddExceptionToTraceString(xml, exception.InnerException);
                 xml.WriteEndElement();
             }
+#endif
         }
 
         static string StackTraceString(Exception exception)

@@ -1,16 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Text;
+using System.Xml.XPath;
+using System.Xml;
+
+#nullable disable
+
 namespace System.Transactions.Diagnostics
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Globalization;
-    using System.IO;
-    using System.Text;
-    using System.Xml.XPath;
-    using System.Xml;
-
     class TraceXPathNavigator : XPathNavigator
     {
         ElementNode root = null;
@@ -117,7 +119,7 @@ namespace System.Transactions.Diagnostics
             ElementNode node = new ElementNode(name, prefix, xmlns, this.current);
             if (this.closed)
             {
-                throw new InvalidOperationException(SR.GetString(SR.CannotAddToClosedDocument));
+                throw new InvalidOperationException(SR.CannotAddToClosedDocument);
             }
             else
             {
@@ -138,15 +140,15 @@ namespace System.Transactions.Diagnostics
         {
             if (this.closed)
             {
-                throw new InvalidOperationException(SR.GetString(SR.CannotAddToClosedDocument));
+                throw new InvalidOperationException(SR.CannotAddToClosedDocument);
             }
             if (this.current == null)
             {
-                throw new InvalidOperationException(SR.GetString(SR.OperationInvalidOnAnEmptyDocument));
+                throw new InvalidOperationException(SR.OperationInvalidOnAnEmptyDocument);
             }
             else if (this.current.text != null)
             {
-                throw new InvalidOperationException(SR.GetString(SR.TextNodeAlreadyPopulated));
+                throw new InvalidOperationException(SR.TextNodeAlreadyPopulated);
             }
             else
             {
@@ -158,11 +160,11 @@ namespace System.Transactions.Diagnostics
         {
             if (this.closed)
             {
-                throw new InvalidOperationException(SR.GetString(SR.CannotAddToClosedDocument));
+                throw new InvalidOperationException(SR.CannotAddToClosedDocument);
             }
             if (this.current == null)
             {
-                throw new InvalidOperationException(SR.GetString(SR.OperationInvalidOnAnEmptyDocument));
+                throw new InvalidOperationException(SR.OperationInvalidOnAnEmptyDocument);
             }
             AttributeNode node = new AttributeNode(name, prefix, xmlns, value);
             this.current.attributes.Add(node);
@@ -172,7 +174,7 @@ namespace System.Transactions.Diagnostics
         {
             if (this.closed)
             {
-                throw new InvalidOperationException(SR.GetString(SR.DocumentAlreadyClosed));
+                throw new InvalidOperationException(SR.DocumentAlreadyClosed);
             }
             else
             {
@@ -226,7 +228,7 @@ namespace System.Transactions.Diagnostics
         {
             if (this.current == null)
             {
-                throw new InvalidOperationException(SR.GetString(SR.OperationInvalidOnAnEmptyDocument));
+                throw new InvalidOperationException(SR.OperationInvalidOnAnEmptyDocument);
             }
             bool retval = this.current.MoveToFirstAttribute();
             if (retval)
@@ -240,7 +242,7 @@ namespace System.Transactions.Diagnostics
         {
             if (this.current == null)
             {
-                throw new InvalidOperationException(SR.GetString(SR.OperationInvalidOnAnEmptyDocument));
+                throw new InvalidOperationException(SR.OperationInvalidOnAnEmptyDocument);
             }
             bool retval = false;
             if (this.current.childNodes.Count > 0)
@@ -272,7 +274,7 @@ namespace System.Transactions.Diagnostics
         {
             if (this.current == null)
             {
-                throw new InvalidOperationException(SR.GetString(SR.OperationInvalidOnAnEmptyDocument));
+                throw new InvalidOperationException(SR.OperationInvalidOnAnEmptyDocument);
             }
             bool retval = false;
             if (this.state != XPathNodeType.Text)
@@ -302,7 +304,7 @@ namespace System.Transactions.Diagnostics
         {
             if (this.current == null)
             {
-                throw new InvalidOperationException(SR.GetString(SR.OperationInvalidOnAnEmptyDocument));
+                throw new InvalidOperationException(SR.OperationInvalidOnAnEmptyDocument);
             }
             bool retval = this.current.MoveToNextAttribute();
             if (retval)
@@ -321,7 +323,7 @@ namespace System.Transactions.Diagnostics
         {
             if (this.current == null)
             {
-                throw new InvalidOperationException(SR.GetString(SR.OperationInvalidOnAnEmptyDocument));
+                throw new InvalidOperationException(SR.OperationInvalidOnAnEmptyDocument);
             }
             bool retval = false;
             switch (this.state)
@@ -368,7 +370,7 @@ namespace System.Transactions.Diagnostics
             {
                 if (this.current == null)
                 {
-                    throw new InvalidOperationException(SR.GetString(SR.OperationInvalidOnAnEmptyDocument));
+                    throw new InvalidOperationException(SR.OperationInvalidOnAnEmptyDocument);
                 }
                 string retval = null;
                 switch (this.state)
@@ -405,7 +407,7 @@ namespace System.Transactions.Diagnostics
             {
                 if (this.current == null)
                 {
-                    throw new InvalidOperationException(SR.GetString(SR.OperationInvalidOnAnEmptyDocument));
+                    throw new InvalidOperationException(SR.OperationInvalidOnAnEmptyDocument);
                 }
                 string retval = null;
                 switch (this.state)
@@ -430,7 +432,7 @@ namespace System.Transactions.Diagnostics
             {
                 if (this.current == null)
                 {
-                    throw new InvalidOperationException(SR.GetString(SR.OperationInvalidOnAnEmptyDocument));
+                    throw new InvalidOperationException(SR.OperationInvalidOnAnEmptyDocument);
                 }
                 string retval = null;
                 switch (this.state)

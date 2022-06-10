@@ -4,33 +4,35 @@
 using System;
 using System.Xml;
 using System.Collections;
-using System.Collections.Specialized;
+// using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Globalization;
 using System.Threading;
 
+#nullable disable
+
 namespace System.Transactions.Diagnostics
 {
-    internal enum EnlistmentType
-    {
-        Volatile = 0,
-        Durable = 1,
-        PromotableSinglePhase = 2
-    }
-
-    internal enum NotificationCall
-    {
-        // IEnlistmentNotification
-        Prepare = 0,
-        Commit = 1,
-        Rollback = 2,
-        InDoubt = 3,
-        // ISinglePhaseNotification
-        SinglePhaseCommit = 4,
-        // IPromotableSinglePhaseNotification
-        Promote = 5
-
-    }
+    // internal enum EnlistmentType
+    // {
+    //     Volatile = 0,
+    //     Durable = 1,
+    //     PromotableSinglePhase = 2
+    // }
+    //
+    // internal enum NotificationCall
+    // {
+    //     // IEnlistmentNotification
+    //     Prepare = 0,
+    //     Commit = 1,
+    //     Rollback = 2,
+    //     InDoubt = 3,
+    //     // ISinglePhaseNotification
+    //     SinglePhaseCommit = 4,
+    //     // IPromotableSinglePhaseNotification
+    //     Promote = 5
+    //
+    // }
 
     internal enum EnlistmentCallback
     {
@@ -118,7 +120,7 @@ namespace System.Transactions.Diagnostics
                 record.txTraceId = txTraceId;
                 DiagnosticTrace.TraceEvent(TraceEventType.Information,
                     TransactionsTraceCode.TransactionCreated,
-                    SR.GetString( SR.TraceTransactionCreated ),
+                    SR.TraceTransactionCreated,
                     record);
             }
         }
@@ -154,7 +156,7 @@ namespace System.Transactions.Diagnostics
                 record.distTxTraceId = distTxTraceId;
                 DiagnosticTrace.TraceEvent(TraceEventType.Information,
                     TransactionsTraceCode.TransactionPromoted,
-                    SR.GetString( SR.TraceTransactionPromoted ),
+                    SR.TraceTransactionPromoted,
                     record);
             }
         }
@@ -198,7 +200,7 @@ namespace System.Transactions.Diagnostics
                 record.enOptions = enOptions;
                 DiagnosticTrace.TraceEvent(TraceEventType.Information,
                     TransactionsTraceCode.Enlistment,
-                    SR.GetString( SR.TraceEnlistment ),
+                    SR.TraceEnlistment,
                     record);
             }
         }
@@ -236,7 +238,7 @@ namespace System.Transactions.Diagnostics
                 record.notCall = notCall;
                 DiagnosticTrace.TraceEvent(TraceEventType.Verbose,
                     TransactionsTraceCode.EnlistmentNotificationCall,
-                    SR.GetString( SR.TraceEnlistmentNotificationCall ),
+                    SR.TraceEnlistmentNotificationCall,
                     record);
             }
         }
@@ -273,7 +275,7 @@ namespace System.Transactions.Diagnostics
                 record.callback = callback;
                 DiagnosticTrace.TraceEvent(TraceEventType.Verbose,
                     TransactionsTraceCode.EnlistmentCallbackPositive,
-                    SR.GetString( SR.TraceEnlistmentCallbackPositive ),
+                    SR.TraceEnlistmentCallbackPositive,
                     record);
             }
         }
@@ -310,7 +312,7 @@ namespace System.Transactions.Diagnostics
                 record.callback = callback;
                 DiagnosticTrace.TraceEvent(TraceEventType.Warning,
                     TransactionsTraceCode.EnlistmentCallbackNegative,
-                    SR.GetString( SR.TraceEnlistmentCallbackNegative ),
+                    SR.TraceEnlistmentCallbackNegative,
                     record);
             }
         }
@@ -347,7 +349,7 @@ namespace System.Transactions.Diagnostics
                 record.txTraceId = txTraceId;
                 DiagnosticTrace.TraceEvent(TraceEventType.Verbose,
                     TransactionsTraceCode.TransactionCommitCalled,
-                    SR.GetString( SR.TraceTransactionCommitCalled ),
+                    SR.TraceTransactionCommitCalled,
                     record);
             }
         }
@@ -381,7 +383,7 @@ namespace System.Transactions.Diagnostics
                 record.txTraceId = txTraceId;
                 DiagnosticTrace.TraceEvent(TraceEventType.Warning,
                     TransactionsTraceCode.TransactionRollbackCalled,
-                    SR.GetString( SR.TraceTransactionRollbackCalled ),
+                    SR.TraceTransactionRollbackCalled,
                     record);
             }
         }
@@ -415,7 +417,7 @@ namespace System.Transactions.Diagnostics
                 record.txTraceId = txTraceId;
                 DiagnosticTrace.TraceEvent(TraceEventType.Verbose,
                     TransactionsTraceCode.TransactionCommitted,
-                    SR.GetString( SR.TraceTransactionCommitted ),
+                    SR.TraceTransactionCommitted,
                     record);
             }
         }
@@ -449,7 +451,7 @@ namespace System.Transactions.Diagnostics
                 record.txTraceId = txTraceId;
                 DiagnosticTrace.TraceEvent(TraceEventType.Warning,
                     TransactionsTraceCode.TransactionAborted,
-                    SR.GetString( SR.TraceTransactionAborted ),
+                    SR.TraceTransactionAborted,
                     record);
             }
         }
@@ -483,7 +485,7 @@ namespace System.Transactions.Diagnostics
                 record.txTraceId = txTraceId;
                 DiagnosticTrace.TraceEvent(TraceEventType.Warning,
                     TransactionsTraceCode.TransactionInDoubt,
-                    SR.GetString( SR.TraceTransactionInDoubt ),
+                    SR.TraceTransactionInDoubt,
                     record);
             }
         }
@@ -519,7 +521,7 @@ namespace System.Transactions.Diagnostics
                 record.txScopeResult = txScopeResult;
                 DiagnosticTrace.TraceEvent(TraceEventType.Information,
                     TransactionsTraceCode.TransactionScopeCreated,
-                    SR.GetString( SR.TraceTransactionScopeCreated ),
+                    SR.TraceTransactionScopeCreated,
                     record);
             }
         }
@@ -554,7 +556,7 @@ namespace System.Transactions.Diagnostics
                 record.txTraceId = txTraceId;
                 DiagnosticTrace.TraceEvent(TraceEventType.Information,
                     TransactionsTraceCode.TransactionScopeDisposed,
-                    SR.GetString( SR.TraceTransactionScopeDisposed ),
+                    SR.TraceTransactionScopeDisposed,
                     record);
             }
         }
@@ -588,7 +590,7 @@ namespace System.Transactions.Diagnostics
                 record.txTraceId = txTraceId;
                 DiagnosticTrace.TraceEvent(TraceEventType.Warning,
                     TransactionsTraceCode.TransactionScopeIncomplete,
-                    SR.GetString( SR.TraceTransactionScopeIncomplete ),
+                    SR.TraceTransactionScopeIncomplete,
                     record);
             }
         }
@@ -622,7 +624,7 @@ namespace System.Transactions.Diagnostics
                 record.txTraceId = txTraceId;
                 DiagnosticTrace.TraceEvent(TraceEventType.Warning,
                     TransactionsTraceCode.TransactionScopeNestedIncorrectly,
-                    SR.GetString( SR.TraceTransactionScopeNestedIncorrectly ),
+                    SR.TraceTransactionScopeNestedIncorrectly,
                     record);
             }
         }
@@ -659,7 +661,7 @@ namespace System.Transactions.Diagnostics
                 record.currentTxTraceId = currentTxTraceId;
                 DiagnosticTrace.TraceEvent(TraceEventType.Warning,
                     TransactionsTraceCode.TransactionScopeCurrentTransactionChanged,
-                    SR.GetString( SR.TraceTransactionScopeCurrentTransactionChanged ),
+                    SR.TraceTransactionScopeCurrentTransactionChanged,
                     record);
             }
         }
@@ -694,7 +696,7 @@ namespace System.Transactions.Diagnostics
                 record.txTraceId = txTraceId;
                 DiagnosticTrace.TraceEvent(TraceEventType.Warning,
                     TransactionsTraceCode.TransactionScopeTimeout,
-                    SR.GetString( SR.TraceTransactionScopeTimeout ),
+                    SR.TraceTransactionScopeTimeout,
                     record);
             }
         }
@@ -729,7 +731,7 @@ namespace System.Transactions.Diagnostics
                 record.txTraceId = txTraceId;
                 DiagnosticTrace.TraceEvent(TraceEventType.Warning,
                     TransactionsTraceCode.TransactionTimeout,
-                    SR.GetString( SR.TraceTransactionTimeout ),
+                    SR.TraceTransactionTimeout,
                     record);
             }
         }
@@ -767,7 +769,7 @@ namespace System.Transactions.Diagnostics
                 record.option = option;
                 DiagnosticTrace.TraceEvent(TraceEventType.Information,
                     TransactionsTraceCode.DependentCloneCreated,
-                    SR.GetString( SR.TraceDependentCloneCreated ),
+                    SR.TraceDependentCloneCreated,
                     record);
             }
         }
@@ -802,7 +804,7 @@ namespace System.Transactions.Diagnostics
                 record.txTraceId = txTraceId;
                 DiagnosticTrace.TraceEvent(TraceEventType.Information,
                     TransactionsTraceCode.DependentCloneComplete,
-                    SR.GetString( SR.TraceDependentCloneComplete ),
+                    SR.TraceDependentCloneComplete,
                     record);
             }
         }
@@ -837,7 +839,7 @@ namespace System.Transactions.Diagnostics
                 record.txTraceId = txTraceId;
                 DiagnosticTrace.TraceEvent(TraceEventType.Verbose,
                     TransactionsTraceCode.CloneCreated,
-                    SR.GetString( SR.TraceCloneCreated ),
+                    SR.TraceCloneCreated,
                     record);
             }
         }
@@ -874,7 +876,7 @@ namespace System.Transactions.Diagnostics
                 record.rmId = rmId;
                 DiagnosticTrace.TraceEvent(TraceEventType.Information,
                     TransactionsTraceCode.RecoveryComplete,
-                    SR.GetString( SR.TraceRecoveryComplete ),
+                    SR.TraceRecoveryComplete,
                     record);
             }
         }
@@ -910,7 +912,7 @@ namespace System.Transactions.Diagnostics
                 record.rmId = rmId;
                 DiagnosticTrace.TraceEvent(TraceEventType.Information,
                     TransactionsTraceCode.Reenlist,
-                    SR.GetString( SR.TraceReenlist ),
+                    SR.TraceReenlist,
                     record);
             }
         }
@@ -945,7 +947,7 @@ namespace System.Transactions.Diagnostics
                 record.nodeName = nodeName;
                 DiagnosticTrace.TraceEvent(TraceEventType.Verbose,
                     TransactionsTraceCode.TransactionManagerCreated,
-                    SR.GetString( SR.TraceTransactionManagerCreated ),
+                    SR.TraceTransactionManagerCreated,
                     record);
             }
         }
@@ -985,7 +987,7 @@ namespace System.Transactions.Diagnostics
                 record.txTraceId = txTraceId;
                 DiagnosticTrace.TraceEvent(TraceEventType.Information,
                     TransactionsTraceCode.TransactionSerialized,
-                    SR.GetString( SR.TraceTransactionSerialized ),
+                    SR.TraceTransactionSerialized,
                     record);
             }
         }
@@ -1019,7 +1021,7 @@ namespace System.Transactions.Diagnostics
                 record.txTraceId = txTraceId;
                 DiagnosticTrace.TraceEvent(TraceEventType.Verbose,
                     TransactionsTraceCode.TransactionDeserialized,
-                    SR.GetString( SR.TraceTransactionDeserialized ),
+                    SR.TraceTransactionDeserialized,
                     record);
             }
         }
@@ -1053,7 +1055,7 @@ namespace System.Transactions.Diagnostics
                 record.exceptionMessage = exceptionMessage;
                 DiagnosticTrace.TraceEvent(TraceEventType.Error,
                     TransactionsTraceCode.TransactionException,
-                    SR.GetString( SR.TraceTransactionException ),
+                    SR.TraceTransactionException,
                     record);
             }
         }
@@ -1126,7 +1128,7 @@ namespace System.Transactions.Diagnostics
                 record.exception = exception;
                 DiagnosticTrace.TraceEvent(TraceEventType.Verbose,
                     TransactionsTraceCode.ExceptionConsumed,
-                    SR.GetString( SR.TraceExceptionConsumed ),
+                    SR.TraceExceptionConsumed,
                     record);
             }
         }
@@ -1162,7 +1164,7 @@ namespace System.Transactions.Diagnostics
                 record.exceptionMessage = exceptionMessage;
                 DiagnosticTrace.TraceEvent(TraceEventType.Error,
                     TransactionsTraceCode.InvalidOperationException,
-                    SR.GetString( SR.TraceInvalidOperationException ),
+                    SR.TraceInvalidOperationException,
                     record);
             }
         }
@@ -1197,7 +1199,7 @@ namespace System.Transactions.Diagnostics
                 record.exceptionMessage = exceptionMessage;
                 DiagnosticTrace.TraceEvent(TraceEventType.Critical,
                     TransactionsTraceCode.InternalError,
-                    SR.GetString( SR.TraceInternalError ),
+                    SR.TraceInternalError,
                     record);
             }
         }
@@ -1231,7 +1233,7 @@ namespace System.Transactions.Diagnostics
                 record.methodName = methodName;
                 DiagnosticTrace.TraceEvent(TraceEventType.Verbose,
                     TransactionsTraceCode.MethodEntered,
-                    SR.GetString( SR.TraceMethodEntered ),
+                    SR.TraceMethodEntered,
                     record);
             }
         }
@@ -1266,7 +1268,7 @@ namespace System.Transactions.Diagnostics
                 record.methodName = methodName;
                 DiagnosticTrace.TraceEvent(TraceEventType.Verbose,
                     TransactionsTraceCode.MethodExited,
-                    SR.GetString( SR.TraceMethodExited ),
+                    SR.TraceMethodExited,
                     record);
             }
         }
@@ -1298,7 +1300,7 @@ namespace System.Transactions.Diagnostics
                 record.traceSource = traceSource;
                 DiagnosticTrace.TraceEvent(TraceEventType.Warning,
                     TransactionsTraceCode.ConfiguredDefaultTimeoutAdjusted,
-                    SR.GetString( SR.TraceConfiguredDefaultTimeoutAdjusted ),
+                    SR.TraceConfiguredDefaultTimeoutAdjusted,
                     record);
             }
         }

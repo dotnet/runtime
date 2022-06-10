@@ -1,13 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Runtime.ConstrainedExecution;
+using System.Runtime.InteropServices;
+using System.Security;
+
+#nullable disable
+
 namespace System.Transactions.Oletx
 {
-    using System;
-    using System.Runtime.ConstrainedExecution;
-    using System.Runtime.InteropServices;
-    using System.Security;
-
     internal sealed class CoTaskMemHandle : SafeHandle
     {
         // FXCop is complaining because we don't have any callers to the constructor.  But they are created by COMInterop when we use them

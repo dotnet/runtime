@@ -7,11 +7,13 @@ using System.Configuration;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.Remoting.Messaging;
+// using System.Runtime.Remoting.Messaging;
 using System.Runtime.Serialization;
 using System.Security.Permissions;
 using System.Threading;
 using System.Transactions.Diagnostics;
+
+#nullable disable
 
 namespace System.Transactions.Oletx
 {
@@ -68,14 +70,14 @@ namespace System.Transactions.Oletx
             {
                 if ( DiagnosticTrace.Verbose )
                 {
-                    MethodEnteredTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                    MethodEnteredTraceRecord.Trace( SR.TraceSourceOletx,
                         "OletxTransaction.get_Identifier"
                         );
                 }
                 Guid returnValue = this.realOletxTransaction.Identifier;
                 if ( DiagnosticTrace.Verbose )
                 {
-                    MethodExitedTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                    MethodExitedTraceRecord.Trace( SR.TraceSourceOletx,
                         "OletxTransaction.get_Identifier"
                         );
                 }
@@ -103,14 +105,14 @@ namespace System.Transactions.Oletx
             {
                 if ( DiagnosticTrace.Verbose )
                 {
-                    MethodEnteredTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                    MethodEnteredTraceRecord.Trace( SR.TraceSourceOletx,
                         "OletxTransaction.get_Status"
                         );
                 }
                 TransactionStatus returnValue = this.realOletxTransaction.Status;
                 if ( DiagnosticTrace.Verbose )
                 {
-                    MethodExitedTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                    MethodExitedTraceRecord.Trace( SR.TraceSourceOletx,
                         "OletxTransaction.get_Status"
                         );
                 }
@@ -147,7 +149,7 @@ namespace System.Transactions.Oletx
 
             if ( propagationTokenForDeserialize.Length < 24 )
             {
-                throw new ArgumentException( SR.GetString( SR.InvalidArgument ), "serializationInfo" );
+                throw new ArgumentException( SR.InvalidArgument, "serializationInfo" );
             }
 
         }
@@ -158,7 +160,7 @@ namespace System.Transactions.Oletx
         {
             if ( DiagnosticTrace.Verbose )
             {
-                MethodEnteredTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                MethodEnteredTraceRecord.Trace( SR.TraceSourceOletx,
                     "IObjectReference.GetRealObject"
                     );
             }
@@ -167,12 +169,11 @@ namespace System.Transactions.Oletx
             {
                 if ( DiagnosticTrace.Critical )
                 {
-                    InternalErrorTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
-                        SR.GetString( SR.UnableToDeserializeTransaction )
-                        );
+                    InternalErrorTraceRecord.Trace( SR.TraceSourceOletx,
+                        SR.UnableToDeserializeTransaction);
                 }
 
-                throw TransactionException.Create( SR.GetString( SR.TraceSourceOletx ), SR.GetString( SR.UnableToDeserializeTransactionInternalError ), null );
+                throw TransactionException.Create( SR.UnableToDeserializeTransactionInternalError, null );
             }
 
             // This may be a second call.  If so, just return.
@@ -180,7 +181,7 @@ namespace System.Transactions.Oletx
             {
                 if ( DiagnosticTrace.Verbose )
                 {
-                    MethodExitedTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                    MethodExitedTraceRecord.Trace( SR.TraceSourceOletx,
                         "IObjectReference.GetRealObject"
                         );
                 }
@@ -194,14 +195,14 @@ namespace System.Transactions.Oletx
 
             if ( DiagnosticTrace.Verbose )
             {
-                TransactionDeserializedTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
-                    returnValue.internalTransaction.PromotedTransaction.TransactionTraceId
+                TransactionDeserializedTraceRecord.Trace( SR.TraceSourceOletx,
+                    returnValue._internalTransaction.PromotedTransaction.TransactionTraceId
                     );
             }
 
             if ( DiagnosticTrace.Verbose )
             {
-                MethodExitedTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                MethodExitedTraceRecord.Trace( SR.TraceSourceOletx,
                     "IObjectReference.GetRealObject"
                     );
             }
@@ -217,7 +218,7 @@ namespace System.Transactions.Oletx
         {
             if ( DiagnosticTrace.Verbose )
             {
-                MethodEnteredTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                MethodEnteredTraceRecord.Trace( SR.TraceSourceOletx,
                     "IDisposable.Dispose"
                     );
             }
@@ -230,7 +231,7 @@ namespace System.Transactions.Oletx
             GC.SuppressFinalize (this);
             if ( DiagnosticTrace.Verbose )
             {
-                MethodExitedTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                MethodExitedTraceRecord.Trace( SR.TraceSourceOletx,
                     "IDisposable.Dispose"
                     );
             }
@@ -256,14 +257,14 @@ namespace System.Transactions.Oletx
         {
             if ( DiagnosticTrace.Verbose )
             {
-                MethodEnteredTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                MethodEnteredTraceRecord.Trace( SR.TraceSourceOletx,
                     "OletxTransaction.Rollback"
                     );
             }
 
             if ( DiagnosticTrace.Warning )
             {
-                TransactionRollbackCalledTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                TransactionRollbackCalledTraceRecord.Trace( SR.TraceSourceOletx,
                     this.TransactionTraceId
                     );
             }
@@ -274,7 +275,7 @@ namespace System.Transactions.Oletx
 
             if ( DiagnosticTrace.Verbose )
             {
-                MethodExitedTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                MethodExitedTraceRecord.Trace( SR.TraceSourceOletx,
                     "OletxTransaction.Rollback"
                     );
             }
@@ -287,7 +288,7 @@ namespace System.Transactions.Oletx
         {
             if ( DiagnosticTrace.Verbose )
             {
-                MethodEnteredTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                MethodEnteredTraceRecord.Trace( SR.TraceSourceOletx,
                     "OletxTransaction.EnlistVolatile( ISinglePhaseNotificationInternal )"
                     );
             }
@@ -297,8 +298,7 @@ namespace System.Transactions.Oletx
 
             if ( this.realOletxTransaction == null || this.realOletxTransaction.TooLateForEnlistments )
             {
-                throw TransactionException.Create(SR.GetString(SR.TraceSourceOletx),
-                    SR.GetString(SR.TooLate), null, this.DistributedTxId);
+                throw TransactionException.Create(SR.TooLate, null, this.DistributedTxId);
             }
 
             IPromotedEnlistment enlistment = realOletxTransaction.EnlistVolatile(
@@ -309,7 +309,7 @@ namespace System.Transactions.Oletx
 
             if ( DiagnosticTrace.Verbose )
             {
-                MethodExitedTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                MethodExitedTraceRecord.Trace( SR.TraceSourceOletx,
                     "OletxTransaction.EnlistVolatile( ISinglePhaseNotificationInternal )"
                     );
             }
@@ -323,7 +323,7 @@ namespace System.Transactions.Oletx
         {
             if ( DiagnosticTrace.Verbose )
             {
-                MethodEnteredTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                MethodEnteredTraceRecord.Trace( SR.TraceSourceOletx,
                     "OletxTransaction.EnlistVolatile( IEnlistmentNotificationInternal )"
                     );
             }
@@ -333,8 +333,7 @@ namespace System.Transactions.Oletx
 
             if ( this.realOletxTransaction == null || this.realOletxTransaction.TooLateForEnlistments )
             {
-                throw TransactionException.Create(SR.GetString(SR.TraceSourceOletx),
-                    SR.GetString(SR.TooLate), null, this.DistributedTxId);
+                throw TransactionException.Create(SR.TooLate, null, this.DistributedTxId);
             }
 
             IPromotedEnlistment enlistment = realOletxTransaction.EnlistVolatile(
@@ -345,7 +344,7 @@ namespace System.Transactions.Oletx
 
             if ( DiagnosticTrace.Verbose )
             {
-                MethodExitedTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                MethodExitedTraceRecord.Trace( SR.TraceSourceOletx,
                     "OletxTransaction.EnlistVolatile( IEnlistmentNotificationInternal )"
                     );
             }
@@ -361,7 +360,7 @@ namespace System.Transactions.Oletx
         {
             if ( DiagnosticTrace.Verbose )
             {
-                MethodEnteredTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                MethodEnteredTraceRecord.Trace( SR.TraceSourceOletx,
                     "OletxTransaction.EnlistDurable( ISinglePhaseNotificationInternal )"
                     );
             }
@@ -370,8 +369,7 @@ namespace System.Transactions.Oletx
 
             if ( this.realOletxTransaction == null || this.realOletxTransaction.TooLateForEnlistments )
             {
-                throw TransactionException.Create( SR.GetString( SR.TraceSourceOletx ),
-                    SR.GetString( SR.TooLate ), null, this.DistributedTxId);
+                throw TransactionException.Create(SR.TooLate, null, this.DistributedTxId);
             }
 
             // get the Oletx TM from the real class
@@ -390,7 +388,7 @@ namespace System.Transactions.Oletx
 
             if ( DiagnosticTrace.Verbose )
             {
-                MethodExitedTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                MethodExitedTraceRecord.Trace( SR.TraceSourceOletx,
                     "OletxTransaction.EnlistDurable( ISinglePhaseNotificationInternal )"
                     );
             }
@@ -406,7 +404,7 @@ namespace System.Transactions.Oletx
 
             if ( DiagnosticTrace.Verbose )
             {
-                MethodEnteredTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                MethodEnteredTraceRecord.Trace( SR.TraceSourceOletx,
                     "OletxTransaction.DependentClone"
                     );
             }
@@ -415,22 +413,22 @@ namespace System.Transactions.Oletx
 
             if (TransactionStatus.Aborted == Status)
             {
-                throw TransactionAbortedException.Create(SR.GetString(SR.TraceSourceOletx), SR.GetString(SR.TransactionAborted), realOletxTransaction.innerException, this.DistributedTxId);
+                throw TransactionAbortedException.Create(SR.TransactionAborted, realOletxTransaction.innerException, this.DistributedTxId);
             }
             if (TransactionStatus.InDoubt == Status)
             {
-                throw TransactionInDoubtException.Create(SR.GetString(SR.TraceSourceOletx), SR.GetString(SR.TransactionIndoubt), realOletxTransaction.innerException, this.DistributedTxId);
+                throw TransactionInDoubtException.Create(SR.TransactionIndoubt, realOletxTransaction.innerException, this.DistributedTxId);
             }
             if (TransactionStatus.Active != Status)
             {
-                throw TransactionException.Create(SR.GetString(SR.TraceSourceOletx), SR.GetString(SR.TransactionAlreadyOver), null, this.DistributedTxId);
+                throw TransactionException.Create(SR.TransactionAlreadyOver, null, this.DistributedTxId);
             }
 
             dependentClone = new OletxDependentTransaction( realOletxTransaction, delayCommit );
 
             if ( DiagnosticTrace.Verbose )
             {
-                MethodExitedTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                MethodExitedTraceRecord.Trace( SR.TraceSourceOletx,
                     "OletxTransaction.DependentClone"
                     );
             }
@@ -463,7 +461,7 @@ namespace System.Transactions.Oletx
                                 // the TransactionTraceIdentifier.Empty.
                                 if ( DiagnosticTrace.Verbose )
                                 {
-                                    ExceptionConsumedTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                                    ExceptionConsumedTraceRecord.Trace( SR.TraceSourceOletx,
                                         ex );
                                 }
                             }
@@ -487,7 +485,7 @@ namespace System.Transactions.Oletx
 
             if ( DiagnosticTrace.Verbose )
             {
-                MethodEnteredTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                MethodEnteredTraceRecord.Trace( SR.TraceSourceOletx,
                     "OletxTransaction.GetObjectData"
                     );
             }
@@ -501,14 +499,14 @@ namespace System.Transactions.Oletx
 
             if ( DiagnosticTrace.Information )
             {
-                TransactionSerializedTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                TransactionSerializedTraceRecord.Trace( SR.TraceSourceOletx,
                     this.TransactionTraceId
                     );
             }
 
             if ( DiagnosticTrace.Verbose )
             {
-                MethodExitedTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                MethodExitedTraceRecord.Trace( SR.TraceSourceOletx,
                     "OletxTransaction.GetObjectData"
                     );
             }
@@ -633,7 +631,7 @@ namespace System.Transactions.Oletx
                 // for COM+ interop purposes, but we can't get the guid or the status of the transaction.
                 if ( txGuid.Equals( Guid.Empty ) )
                 {
-                    throw TransactionException.Create( SR.GetString( SR.TraceSourceOletx ), SR.GetString ( SR.CannotGetTransactionIdentifier ), null );
+                    throw TransactionException.Create(SR.GetResourceString ( SR.CannotGetTransactionIdentifier ), null );
                 }
                 return this.txGuid;
             }
@@ -728,7 +726,7 @@ namespace System.Transactions.Oletx
                 ITransactionShim shim = this.transactionShim;
                 if ( null == shim )
                 {
-                    throw TransactionInDoubtException.Create( SR.GetString( SR.TraceSourceOletx ), SR.GetString(SR.TransactionIndoubt), null, this.DistributedTxId );
+                    throw TransactionInDoubtException.Create( SR.TransactionIndoubt, null, this.DistributedTxId );
                 }
 
                 return shim;
@@ -1227,13 +1225,13 @@ namespace System.Transactions.Oletx
 
                     if ( DiagnosticTrace.Verbose )
                     {
-                        ExceptionConsumedTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                        ExceptionConsumedTraceRecord.Trace( SR.TraceSourceOletx,
                             comException );
                     }
                 }
                 else if ( NativeMethods.XACT_E_ALREADYINPROGRESS == comException.ErrorCode )
                 {
-                    throw TransactionException.Create( SR.GetString( SR.TraceSourceOletx ), SR.GetString( SR.TransactionAlreadyOver ), comException );
+                    throw TransactionException.Create(SR.TransactionAlreadyOver, comException );
                 }
                 else
                 {
@@ -1254,8 +1252,7 @@ namespace System.Transactions.Oletx
                     TransactionStatus.Active != status)
                 {
                     throw TransactionException.Create(
-                        SR.GetString( SR.TraceSourceOletx ),
-                        SR.GetString( SR.TransactionAlreadyOver ),
+                        SR.TransactionAlreadyOver,
                         null,
                         this.DistributedTxId
                         );
@@ -1280,8 +1277,7 @@ namespace System.Transactions.Oletx
                 {
                     // It's too late for rollback to be called here.
                     throw TransactionException.Create(
-                        SR.GetString( SR.TraceSourceOletx ),
-                        SR.GetString( SR.TransactionAlreadyOver ),
+                        SR.TransactionAlreadyOver,
                         null,
                         this.DistributedTxId
                         );
@@ -1318,14 +1314,14 @@ namespace System.Transactions.Oletx
                     {
                         if ( DiagnosticTrace.Verbose )
                         {
-                            ExceptionConsumedTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                            ExceptionConsumedTraceRecord.Trace( SR.TraceSourceOletx,
                                 comException );
                         }
                     }
                     else
                     {
-                        throw TransactionException.Create( SR.GetString( SR.TraceSourceOletx ),
-                            SR.GetString( SR.TransactionAlreadyOver ),
+                        throw TransactionException.Create(
+                            SR.TransactionAlreadyOver,
                             comException,
                             this.DistributedTxId
                             );
@@ -1360,7 +1356,7 @@ namespace System.Transactions.Oletx
                 {
                     if ( DiagnosticTrace.Verbose )
                     {
-                        TransactionCommittedTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                        TransactionCommittedTraceRecord.Trace( SR.TraceSourceOletx,
                             this.TransactionTraceId
                             );
                     }
@@ -1371,7 +1367,7 @@ namespace System.Transactions.Oletx
                 {
                     if ( DiagnosticTrace.Warning )
                     {
-                        TransactionAbortedTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                        TransactionAbortedTraceRecord.Trace( SR.TraceSourceOletx,
                             this.TransactionTraceId
                             );
                     }
@@ -1382,7 +1378,7 @@ namespace System.Transactions.Oletx
                 {
                     if ( DiagnosticTrace.Warning )
                     {
-                        TransactionInDoubtTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                        TransactionInDoubtTraceRecord.Trace( SR.TraceSourceOletx,
                             this.TransactionTraceId
                             );
                     }

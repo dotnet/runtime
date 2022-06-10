@@ -7,6 +7,8 @@ using System.Runtime.CompilerServices;
 using System.Reflection;
 using System.Threading;
 
+#nullable disable
+
 namespace System.Transactions.Oletx
 {
     [System.Security.SuppressUnmanagedCodeSecurity]

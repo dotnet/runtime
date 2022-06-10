@@ -8,6 +8,8 @@ using System.Security.Permissions;
 using System.Runtime.CompilerServices;
 using System.Transactions.Diagnostics;
 
+#nullable disable
+
 namespace System.Transactions.Oletx
 {
     internal class DtcTransactionManager
@@ -60,7 +62,7 @@ namespace System.Transactions.Oletx
                 // If the node name does not match, throw.
                 if ( ! nodeNameMatches )
                 {
-                    throw new NotSupportedException( SR.GetString( SR.ProxyCannotSupportMultipleNodeNames ) );
+                    throw new NotSupportedException( SR.ProxyCannotSupportMultipleNodeNames);
                 }
 
                 // Make a managed copy of the whereabouts.
@@ -81,7 +83,7 @@ namespace System.Transactions.Oletx
             {
                 if ( NativeMethods.XACT_E_NOTSUPPORTED == ex.ErrorCode )
                 {
-                    throw new NotSupportedException( SR.GetString( SR.CannotSupportNodeNameSpecification ) );
+                    throw new NotSupportedException( SR.CannotSupportNodeNameSpecification);
                 }
 
                 OletxTransactionManager.ProxyException( ex );
@@ -89,8 +91,7 @@ namespace System.Transactions.Oletx
                 // Unfortunately MSDTCPRX may return unknown error codes when attempting to connect to MSDTC
                 // that error should be propagated back as a TransactionManagerCommunicationException.
                 throw TransactionManagerCommunicationException.Create(
-                    SR.GetString( SR.TraceSourceOletx ),
-                    SR.GetString( SR.TransactionManagerCommunicationException ),
+                    SR.TransactionManagerCommunicationException,
                     ex
                     );
             }
@@ -174,7 +175,7 @@ namespace System.Transactions.Oletx
             {
                 if ( DiagnosticTrace.Verbose )
                 {
-                    ExceptionConsumedTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                    ExceptionConsumedTraceRecord.Trace( SR.TraceSourceOletx,
                         caughtEx );
                 }
                 returnTimeout = UInt32.MaxValue;

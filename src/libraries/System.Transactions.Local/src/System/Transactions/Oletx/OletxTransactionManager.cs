@@ -3,7 +3,7 @@
 
 using System;
 using System.Collections;
-using System.Collections.Specialized;
+// using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.CompilerServices;
@@ -12,25 +12,27 @@ using System.Security.Permissions;
 using System.Threading;
 using System.Transactions.Diagnostics;
 
+#nullable disable
+
 namespace System.Transactions.Oletx
 {
     internal class OletxTransactionManager
     {
-        System.Transactions.IsolationLevel isolationLevelProperty;
+        private System.Transactions.IsolationLevel isolationLevelProperty;
 
-        TimeSpan timeoutProperty;
+        private TimeSpan timeoutProperty;
 
-        TransactionOptions configuredTransactionOptions = new TransactionOptions();
+        private TransactionOptions configuredTransactionOptions = new TransactionOptions();
 
         // Object for synchronizing access to the entire class( avoiding lock( typeof( ... )) )
         private static object classSyncObject;
 
         // These have to be static because we can only add an RM with the proxy once, even if we
         // have multiple OletxTransactionManager instances.
-        static internal Hashtable resourceManagerHashTable;
-        static internal System.Threading.ReaderWriterLock resourceManagerHashTableLock;
+        internal static Hashtable resourceManagerHashTable;
+        public static System.Threading.ReaderWriterLock resourceManagerHashTableLock;
 
-        volatile static internal bool processingTmDown = false;
+        internal static volatile bool processingTmDown = false;
 
         internal ReaderWriterLock dtcTransactionManagerLock;
         DtcTransactionManager dtcTransactionManager;
@@ -84,7 +86,7 @@ namespace System.Transactions.Oletx
 
             if ( DiagnosticTrace.Verbose )
             {
-                MethodEnteredTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                MethodEnteredTraceRecord.Trace( SR.TraceSourceOletx,
                     "OletxTransactionManager.ShimNotificationCallback"
                     );
             }
@@ -183,7 +185,7 @@ namespace System.Transactions.Oletx
                                             }
                                             else
                                             {
-                                                Environment.FailFast( SR.GetString( SR.InternalError ));
+                                                Environment.FailFast( SR.InternalError);
                                             }
                                         }
                                     }
@@ -206,7 +208,7 @@ namespace System.Transactions.Oletx
                                     }
                                     else
                                     {
-                                        Environment.FailFast( SR.GetString( SR.InternalError ));
+                                        Environment.FailFast( SR.InternalError);
                                     }
 
                                     break;
@@ -234,7 +236,7 @@ namespace System.Transactions.Oletx
                                             }
                                             else
                                             {
-                                                Environment.FailFast( SR.GetString( SR.InternalError ));
+                                                Environment.FailFast( SR.InternalError);
                                             }
                                         }
                                     }
@@ -308,7 +310,7 @@ namespace System.Transactions.Oletx
                                             }
                                             else
                                             {
-                                                Environment.FailFast( SR.GetString( SR.InternalError ));
+                                                Environment.FailFast( SR.InternalError);
                                             }
                                         }
                                     }
@@ -340,7 +342,7 @@ namespace System.Transactions.Oletx
                                         }
                                         else
                                         {
-                                            Environment.FailFast( SR.GetString( SR.InternalError ));
+                                            Environment.FailFast( SR.InternalError);
                                         }
                                     }
                                     finally
@@ -367,7 +369,7 @@ namespace System.Transactions.Oletx
                                         }
                                         else
                                         {
-                                            Environment.FailFast( SR.GetString( SR.InternalError ));
+                                            Environment.FailFast( SR.InternalError);
                                         }
                                     }
                                     finally
@@ -392,7 +394,7 @@ namespace System.Transactions.Oletx
                                         }
                                         else
                                         {
-                                            Environment.FailFast( SR.GetString( SR.InternalError ));
+                                            Environment.FailFast( SR.InternalError);
                                         }
                                     }
                                     finally
@@ -417,7 +419,7 @@ namespace System.Transactions.Oletx
                                         }
                                         else
                                         {
-                                            Environment.FailFast( SR.GetString( SR.InternalError ));
+                                            Environment.FailFast( SR.InternalError);
                                         }
                                     }
                                     finally
@@ -448,7 +450,7 @@ namespace System.Transactions.Oletx
                                             }
                                             else
                                             {
-                                                Environment.FailFast(SR.GetString(SR.InternalError ));
+                                                Environment.FailFast(SR.InternalError);
                                             }
                                         }
                                     }
@@ -464,7 +466,7 @@ namespace System.Transactions.Oletx
 
                                 default:
                                 {
-                                    Environment.FailFast(SR.GetString(SR.InternalError ));
+                                    Environment.FailFast(SR.InternalError);
                                     break;
                                 }
                             }
@@ -508,7 +510,7 @@ namespace System.Transactions.Oletx
 
             if ( DiagnosticTrace.Verbose )
             {
-                MethodExitedTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                MethodExitedTraceRecord.Trace( SR.TraceSourceOletx,
                     "OletxTransactionManager.ShimNotificationCallback"
                     );
             }
@@ -533,7 +535,7 @@ namespace System.Transactions.Oletx
 
                     if ( 0 != error )
                     {
-                        throw TransactionException.Create( SR.GetString( SR.TraceSourceOletx ), SR.GetString( SR.UnableToGetNotificationShimFactory ), null );
+                        throw TransactionException.Create( SR.UnableToGetNotificationShimFactory, null );
                     }
 
                         ThreadPool.UnsafeRegisterWaitForSingleObject(
@@ -561,7 +563,7 @@ namespace System.Transactions.Oletx
 
             if ( DiagnosticTrace.Verbose )
             {
-                DistributedTransactionManagerCreatedTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                DistributedTransactionManagerCreatedTraceRecord.Trace( SR.TraceSourceOletx,
                     this.GetType(),
                     this.nodeNameField
                     );
@@ -601,12 +603,6 @@ namespace System.Transactions.Oletx
             ITransactionShim transactionShim = null;
             Guid txIdentifier = Guid.Empty;
             OutcomeEnlistment outcomeEnlistment = null;
-
-            // Demand the distributed transation permission to create one of
-            // these.
-            DistributedTransactionPermission txPerm =
-                new DistributedTransactionPermission( PermissionState.Unrestricted );
-            txPerm.Demand();
 
             TransactionManager.ValidateIsolationLevel( properties.IsolationLevel );
 
@@ -664,7 +660,7 @@ namespace System.Transactions.Oletx
                 tx = new OletxCommittableTransaction( realTransaction );
                 if ( DiagnosticTrace.Information )
                 {
-                    TransactionCreatedTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                    TransactionCreatedTraceRecord.Trace( SR.TraceSourceOletx,
                         tx.TransactionTraceId
                         );
                 }
@@ -699,12 +695,12 @@ namespace System.Transactions.Oletx
             OletxResourceManager oletxResourceManager = RegisterResourceManager( resourceManagerIdentifier );
             if ( null == oletxResourceManager )
             {
-                throw new ArgumentException( SR.GetString( SR.InvalidArgument ), "resourceManagerIdentifier" );
+                throw new ArgumentException( SR.InvalidArgument, "resourceManagerIdentifier" );
             }
 
             if ( oletxResourceManager.RecoveryCompleteCalledByApplication )
             {
-                throw new InvalidOperationException( SR.GetString( SR.ReenlistAfterRecoveryComplete ));
+                throw new InvalidOperationException( SR.ReenlistAfterRecoveryComplete);
             }
 
             // Now ask the resource manager to reenlist.
@@ -728,7 +724,7 @@ namespace System.Transactions.Oletx
 
             if ( oletxRm.RecoveryCompleteCalledByApplication )
             {
-                throw new InvalidOperationException( SR.GetString( SR.DuplicateRecoveryComplete ));
+                throw new InvalidOperationException( SR.DuplicateRecoveryComplete);
             }
 
             oletxRm.RecoveryComplete();
@@ -782,7 +778,7 @@ namespace System.Transactions.Oletx
         {
             if ( resourceManagerIdentifier == Guid.Empty )
             {
-                throw new ArgumentException( SR.GetString( SR.BadResourceManagerId ), "resourceManagerIdentifier" );
+                throw new ArgumentException( SR.BadResourceManagerId, "resourceManagerIdentifier" );
             }
 
             OletxResourceManager oletxResourceManager = null;
@@ -815,8 +811,7 @@ namespace System.Transactions.Oletx
                     if ( null == this.dtcTransactionManager )
                     {
                         throw TransactionException.Create(
-                            SR.GetString( SR.TraceSourceOletx ),
-                            SR.GetString( SR.DtcTransactionManagerUnavailable ),
+                            SR.DtcTransactionManagerUnavailable,
                             null );
                     }
                     return this.dtcTransactionManager;
@@ -824,7 +819,7 @@ namespace System.Transactions.Oletx
                 else
                 {
                     // Internal programming error.  A reader or writer lock should be held when this property is invoked.
-                    throw TransactionException.Create ( SR.GetString( SR.TraceSourceOletx ), SR.GetString( SR.InternalError ), null );
+                    throw TransactionException.Create ( SR.InternalError, null );
                 }
             }
         }
@@ -843,16 +838,14 @@ namespace System.Transactions.Oletx
                 )
             {
                 throw TransactionManagerCommunicationException.Create(
-                    SR.GetString( SR.TraceSourceOletx ),
-                    SR.GetString( SR.TransactionManagerCommunicationException ),
+                    SR.TransactionManagerCommunicationException,
                     comException
                     );
             }
             if (( NativeMethods.XACT_E_NETWORK_TX_DISABLED == comException.ErrorCode ))
             {
                 throw TransactionManagerCommunicationException.Create(
-                    SR.GetString( SR.TraceSourceOletx ),
-                    SR.GetString( SR.NetworkTransactionsDisabled ),
+                    SR.NetworkTransactionsDisabled,
                     comException
                     );
             }
@@ -864,14 +857,12 @@ namespace System.Transactions.Oletx
                 if ( NativeMethods.XACT_E_NOTRANSACTION == comException.ErrorCode )
                 {
                     throw TransactionException.Create(
-                        SR.GetString( SR.TraceSourceOletx ),
-                        SR.GetString( SR.TransactionAlreadyOver ),
+                        SR.TransactionAlreadyOver,
                         comException
                         );
                 }
 
                 throw TransactionException.Create(
-                    SR.GetString( SR.TraceSourceOletx ),
                     comException.Message,
                     comException
                     );
@@ -1000,7 +991,7 @@ namespace System.Transactions.Oletx
 
             if ( DiagnosticTrace.Verbose )
             {
-                MethodEnteredTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                MethodEnteredTraceRecord.Trace( SR.TraceSourceOletx,
                     "OletxInternalResourceManager.TMDown"
                     );
             }
@@ -1023,7 +1014,7 @@ namespace System.Transactions.Oletx
                     tx = (Transaction)txWeakRef.Target;
                     if ( null != tx )
                     {
-                        realTx = tx.internalTransaction.PromotedTransaction.realOletxTransaction;
+                        realTx = tx._internalTransaction.PromotedTransaction.realOletxTransaction;
                         // Only deal with transactions owned by my OletxTm.
                         if ( realTx.OletxTransactionManagerInstance == this.oletxTm )
                         {
@@ -1079,7 +1070,7 @@ namespace System.Transactions.Oletx
 
             if ( DiagnosticTrace.Verbose )
             {
-                MethodExitedTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                MethodExitedTraceRecord.Trace( SR.TraceSourceOletx,
                     "OletxInternalResourceManager.TMDown"
                     );
             }

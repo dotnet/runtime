@@ -6,6 +6,8 @@ using System.Diagnostics;
 using System.Threading;
 using System.Transactions.Diagnostics;
 
+#nullable disable
+
 namespace System.Transactions.Oletx
 {
     [Serializable]
@@ -29,7 +31,7 @@ namespace System.Transactions.Oletx
 
             if ( DiagnosticTrace.Information )
             {
-                DependentCloneCreatedTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                DependentCloneCreatedTraceRecord.Trace( SR.TraceSourceOletx,
                     this.TransactionTraceId,
                     delayCommit ? DependentCloneOption.BlockCommitUntilComplete : DependentCloneOption.RollbackIfNotComplete
                     );
@@ -40,7 +42,7 @@ namespace System.Transactions.Oletx
         {
             if ( DiagnosticTrace.Verbose )
             {
-                MethodEnteredTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                MethodEnteredTraceRecord.Trace( SR.TraceSourceOletx,
                     "DependentTransaction.Complete"
                     );
             }
@@ -50,12 +52,12 @@ namespace System.Transactions.Oletx
             int localCompleted = Interlocked.CompareExchange( ref this.completed, 1, 0 );
             if ( 1 == localCompleted )
             {
-                throw TransactionException.CreateTransactionCompletedException( SR.GetString( SR.TraceSourceOletx ), this.DistributedTxId);
+                throw TransactionException.CreateTransactionCompletedException(this.DistributedTxId);
             }
 
             if ( DiagnosticTrace.Information )
             {
-                DependentCloneCompleteTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                DependentCloneCompleteTraceRecord.Trace( SR.TraceSourceOletx,
                     this.TransactionTraceId
                     );
             }
@@ -64,7 +66,7 @@ namespace System.Transactions.Oletx
 
             if ( DiagnosticTrace.Verbose )
             {
-                MethodExitedTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                MethodExitedTraceRecord.Trace( SR.TraceSourceOletx,
                     "DependentTransaction.Complete"
                     );
             }

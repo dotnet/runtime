@@ -1,18 +1,20 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Configuration;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
+// using System.Runtime.Remoting.Messaging;
+using System.Runtime.Serialization;
+using System.Security.Permissions;
+using System.Threading;
+using System.Transactions.Diagnostics;
+
+#nullable disable
+
 namespace System.Transactions.Oletx
 {
-    using System;
-    using System.Configuration;
-    using System.Diagnostics;
-    using System.Runtime.InteropServices;
-    using System.Runtime.Remoting.Messaging;
-    using System.Runtime.Serialization;
-    using System.Security.Permissions;
-    using System.Threading;
-    using System.Transactions.Diagnostics;
-
     /// <summary>
     /// A Transaction object represents a single transaction.  It is created by TransactionManager
     /// objects through CreateTransaction or UnmarshalTransaction.  Alternatively, the static Create
@@ -54,10 +56,10 @@ namespace System.Transactions.Oletx
         {
             if ( DiagnosticTrace.Verbose )
             {
-                MethodEnteredTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                MethodEnteredTraceRecord.Trace( SR.TraceSourceOletx,
                     "CommittableTransaction.BeginCommit"
                     );
-                TransactionCommitCalledTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                TransactionCommitCalledTraceRecord.Trace( SR.TraceSourceOletx,
                     this.TransactionTraceId
                     );
             }
@@ -71,7 +73,7 @@ namespace System.Transactions.Oletx
 
             if ( DiagnosticTrace.Verbose )
             {
-                MethodExitedTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                MethodExitedTraceRecord.Trace( SR.TraceSourceOletx,
                     "CommittableTransaction.BeginCommit"
                     );
             }

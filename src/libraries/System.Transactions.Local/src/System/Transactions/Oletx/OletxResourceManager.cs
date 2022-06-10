@@ -9,14 +9,15 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
-using System.Runtime.Serialization.Formatters.Binary;
+// using System.Runtime.Serialization.Formatters.Binary;
 using System.Security.Permissions;
 using System.Threading;
 using System.Transactions.Diagnostics;
 
+#nullable disable
+
 namespace System.Transactions.Oletx
 {
-
     internal sealed class OletxResourceManager
     {
         internal Guid resourceManagerIdentifier;
@@ -125,7 +126,7 @@ namespace System.Transactions.Oletx
                                     localResourceManagerShim = null;
                                     if ( DiagnosticTrace.Verbose )
                                     {
-                                        ExceptionConsumedTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                                        ExceptionConsumedTraceRecord.Trace( SR.TraceSourceOletx,
                                             ex );
                                     }
                                 }
@@ -149,7 +150,7 @@ namespace System.Transactions.Oletx
                                         localResourceManagerShim = null;
                                         if ( DiagnosticTrace.Verbose )
                                         {
-                                            ExceptionConsumedTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                                            ExceptionConsumedTraceRecord.Trace( SR.TraceSourceOletx,
                                                 ex );
                                         }
                                     }
@@ -209,7 +210,7 @@ namespace System.Transactions.Oletx
                         success = false;
                         if ( DiagnosticTrace.Verbose )
                         {
-                            ExceptionConsumedTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                            ExceptionConsumedTraceRecord.Trace( SR.TraceSourceOletx,
                                 ex );
                         }
                     }
@@ -359,7 +360,7 @@ namespace System.Transactions.Oletx
                         if ( null == localResourceManagerShim )
                         {
                             // The TM must be down.  Throw the appropriate exception.
-                            throw TransactionManagerCommunicationException.Create( SR.GetString( SR.TraceSourceOletx),  null );
+                            throw TransactionManagerCommunicationException.Create( SR.TraceSourceOletx,  null );
                         }
 
                         if ( (enlistmentOptions & EnlistmentOptions.EnlistDuringPrepareRequired) != 0 )
@@ -393,9 +394,9 @@ namespace System.Transactions.Oletx
                         if ( NativeMethods.XACT_E_TOOMANY_ENLISTMENTS == comException.ErrorCode )
                         {
                             throw TransactionException.Create(
-                                SR.GetString( SR.TraceSourceOletx ),
-                                SR.GetString( SR.OletxTooManyEnlistments ),
-                                comException, enlistment == null ? Guid.Empty : enlistment.DistributedTxId );
+                                SR.OletxTooManyEnlistments,
+                                comException,
+                                 enlistment == null ? Guid.Empty : enlistment.DistributedTxId );
                         }
 
                         OletxTransactionManager.ProxyException( comException );
@@ -448,6 +449,9 @@ namespace System.Transactions.Oletx
             IEnlistmentNotificationInternal enlistmentNotification
             )
         {
+            throw new NotImplementedException();
+
+#if BINARY_FORMATTER_YAY
             OletxTransactionOutcome outcome = OletxTransactionOutcome.NotKnownYet;
             OletxTransactionStatus xactStatus = OletxTransactionStatus.OLETX_TRANSACTION_STATUS_NONE;
 
@@ -463,12 +467,12 @@ namespace System.Transactions.Oletx
             }
             catch (SerializationException se)
             {
-                throw new ArgumentException( SR.GetString( SR.InvalidArgument ), "prepareInfo", se );
+                throw new ArgumentException( SR.InvalidArgument, "prepareInfo", se );
             }
 
             if ( null == oletxRecoveryInformation )
             {
-                throw new ArgumentException( SR.GetString( SR.InvalidArgument ), "prepareInfo" );
+                throw new ArgumentException( SR.InvalidArgument, "prepareInfo" );
             }
 
             // Verify that the resource manager guid in the recovery info matches that of the calling resource manager.
@@ -480,7 +484,7 @@ namespace System.Transactions.Oletx
             Guid rmGuid = new Guid( rmGuidArray );
             if ( rmGuid != this.resourceManagerIdentifier )
             {
-                throw TransactionException.Create( SR.GetString( SR.TraceSourceOletx ), SR.GetString( SR.ResourceManagerIdDoesNotMatchRecoveryInformation ), null );
+                throw TransactionException.Create(TraceSourceType.TraceSourceDistributed, SR.ResourceManagerIdDoesNotMatchRecoveryInformation, null );
             }
 
             // Ask the proxy resource manager to reenlist.
@@ -493,7 +497,7 @@ namespace System.Transactions.Oletx
                     // The TM must be down.  Throw the exception that will get caught below and will cause
                     // the enlistment to start the ReenlistThread.  The TMDown thread will be trying to reestablish
                     // connection with the TM and will start the reenlist thread when it does.
-                    throw new COMException( SR.GetString( SR.DtcTransactionManagerUnavailable ), NativeMethods.XACT_E_CONNECTION_DOWN );
+                    throw new COMException( SR.DtcTransactionManagerUnavailable, NativeMethods.XACT_E_CONNECTION_DOWN );
                 }
 
                 // Only wait for 5 milliseconds.  If the TM doesn't have the outcome now, we will
@@ -527,7 +531,7 @@ namespace System.Transactions.Oletx
                     StartReenlistThread();
                     if ( DiagnosticTrace.Verbose )
                     {
-                        ExceptionConsumedTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                        ExceptionConsumedTraceRecord.Trace( SR.TraceSourceOletx,
                             ex );
                     }
 
@@ -551,6 +555,7 @@ namespace System.Transactions.Oletx
                 );
 
             return enlistment;
+#endif
         }
 
         internal void RecoveryComplete()
@@ -656,8 +661,8 @@ namespace System.Transactions.Oletx
                         if ( !this.reenlistThreadTimer.Change( 0, Timeout.Infinite ))
                         {
                             throw TransactionException.CreateInvalidOperationException(
-                                SR.GetString( SR.TraceSourceLtm ),
-                                SR.GetString(SR.UnexpectedTimerFailure),
+                                TraceSourceType.TraceSourceDistributed,
+                                SR.UnexpectedTimerFailure,
                                 null
                                 );
                         }
@@ -682,7 +687,7 @@ namespace System.Transactions.Oletx
             {
                 if ( DiagnosticTrace.Information )
                 {
-                    MethodEnteredTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                    MethodEnteredTraceRecord.Trace( SR.TraceSourceOletx,
                         "OletxResourceManager.ReenlistThread"
                         );
                 }
@@ -723,12 +728,12 @@ namespace System.Transactions.Oletx
                                     //TODO need resource string for this exception.
                                     if ( DiagnosticTrace.Critical )
                                     {
-                                        InternalErrorTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                                        InternalErrorTraceRecord.Trace( SR.TraceSourceOletx,
                                             ""
                                             );
                                     }
 
-                                    throw TransactionException.Create( SR.GetString( SR.TraceSourceOletx), SR.GetString( SR.InternalError ), null );
+                                    throw TransactionException.Create( SR.InternalError, null );
                                 }
 
                                 resourceManager.reenlistList.RemoveAt( 0 );
@@ -769,12 +774,12 @@ namespace System.Transactions.Oletx
                                     Debug.Assert( false, string.Format( null, "this.prepareInfoByteArray == null in RecoveryInformation()" ));
                                     if ( DiagnosticTrace.Critical )
                                     {
-                                        InternalErrorTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                                        InternalErrorTraceRecord.Trace( SR.TraceSourceOletx,
                                             ""
                                             );
                                     }
 
-                                    throw TransactionException.Create( SR.GetString( SR.TraceSourceOletx), SR.GetString( SR.InternalError ), null );
+                                    throw TransactionException.Create( SR.InternalError, null );
                                 }
                                 localResourceManagerShim.Reenlist(
                                     (UInt32) localEnlistment.ProxyPrepareInfoByteArray.Length,
@@ -813,7 +818,7 @@ namespace System.Transactions.Oletx
                                 {
                                     if ( DiagnosticTrace.Verbose )
                                     {
-                                        ExceptionConsumedTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                                        ExceptionConsumedTraceRecord.Trace( SR.TraceSourceOletx,
                                             ex );
                                     }
                                     if ( NativeMethods.XACT_E_CONNECTION_DOWN == ex.ErrorCode )
@@ -863,7 +868,7 @@ namespace System.Transactions.Oletx
                                             localEnlistment.State = OletxEnlistment.OletxEnlistmentState.Committing;
                                             if ( DiagnosticTrace.Verbose )
                                             {
-                                                EnlistmentNotificationCallTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                                                EnlistmentNotificationCallTraceRecord.Trace( SR.TraceSourceOletx,
                                                     localEnlistment.EnlistmentTraceId,
                                                     NotificationCall.Commit
                                                     );
@@ -876,7 +881,7 @@ namespace System.Transactions.Oletx
                                             localEnlistment.State = OletxEnlistment.OletxEnlistmentState.Aborting;
                                             if ( DiagnosticTrace.Verbose )
                                             {
-                                                EnlistmentNotificationCallTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                                                EnlistmentNotificationCallTraceRecord.Trace( SR.TraceSourceOletx,
                                                     localEnlistment.EnlistmentTraceId,
                                                     NotificationCall.Rollback
                                                     );
@@ -888,12 +893,12 @@ namespace System.Transactions.Oletx
                                         {
                                             if ( DiagnosticTrace.Critical )
                                             {
-                                                InternalErrorTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                                                InternalErrorTraceRecord.Trace( SR.TraceSourceOletx,
                                                     ""
                                                     );
                                             }
 
-                                            throw TransactionException.Create( SR.GetString( SR.TraceSourceOletx ), SR.GetString( SR.InternalError ), null );
+                                            throw TransactionException.Create( SR.InternalError, null );
                                         }
                                     }
                                 }
@@ -932,8 +937,8 @@ namespace System.Transactions.Oletx
                                 if ( !localTimer.Change( 10000, Timeout.Infinite ))
                                 {
                                     throw TransactionException.CreateInvalidOperationException(
-                                        SR.GetString( SR.TraceSourceLtm ),
-                                        SR.GetString(SR.UnexpectedTimerFailure),
+                                        TraceSourceType.TraceSourceLtm,
+                                        SR.UnexpectedTimerFailure,
                                         null
                                         );
                                 }
@@ -947,8 +952,8 @@ namespace System.Transactions.Oletx
                             if ( !localTimer.Change( 10000, Timeout.Infinite ))
                             {
                                 throw TransactionException.CreateInvalidOperationException(
-                                    SR.GetString( SR.TraceSourceLtm ),
-                                    SR.GetString(SR.UnexpectedTimerFailure),
+                                    TraceSourceType.TraceSourceLtm,
+                                    SR.UnexpectedTimerFailure,
                                     null
                                     );
                             }
@@ -959,7 +964,7 @@ namespace System.Transactions.Oletx
                     }
                     if ( DiagnosticTrace.Information )
                     {
-                        MethodExitedTraceRecord.Trace( SR.GetString( SR.TraceSourceOletx ),
+                        MethodExitedTraceRecord.Trace( SR.TraceSourceOletx,
                             "OletxResourceManager.ReenlistThread"
                             );
                     }

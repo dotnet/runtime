@@ -3,6 +3,8 @@
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <NoWarn>CA1507;CA1805;CA1822;CA1823;CA1852;SA1121;SA1129;SA1206;SA1207;SA1400;SA1404;SA1411;IDE0029;IDE0036;IDE0059;IL2026;IL2050</NoWarn>
+    <NoWarn>$(NoWarn);CA1416</NoWarn> <!-- This call site is reachable on all platforms. Resolve by moving this code to Windows-only -->
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Transactions\CommittableTransaction.cs" />
@@ -51,17 +53,25 @@
     <Compile Include="System\Transactions\Oletx\OleTxTransaction.cs" />
     <Compile Include="System\Transactions\Oletx\OletxTransactionManager.cs" />
     <Compile Include="System\Transactions\Oletx\OletxVolatileEnlistment.cs" />
-<!--    <Compile Include="System\Transactions\Trace\Activity.cs" />-->
-<!--    <Compile Include="System\Transactions\Trace\DiagnosticStrings.cs" />-->
-<!--    <Compile Include="System\Transactions\Trace\DiagnosticTraceCode.cs" />-->
-<!--    <Compile Include="System\Transactions\Trace\DiagnosticTrace.cs" />-->
-<!--    <Compile Include="System\Transactions\Trace\PlainXmlWriter.cs" />-->
-<!--    <Compile Include="System\Transactions\Trace\TraceCode.cs" />-->
-<!--    <Compile Include="System\Transactions\Trace\TraceRecord.cs" />-->
-<!--    <Compile Include="System\Transactions\Trace\TraceRecords.cs" />-->
-<!--    <Compile Include="System\Transactions\Trace\TraceXPathNavigator.cs" />-->
+    <Compile Include="System\Transactions\Trace\Activity.cs" />
+    <Compile Include="System\Transactions\Trace\DiagnosticStrings.cs" />
+    <Compile Include="System\Transactions\Trace\DiagnosticTraceCode.cs" />
+    <Compile Include="System\Transactions\Trace\DiagnosticTrace.cs" />
+    <Compile Include="System\Transactions\Trace\PlainXmlWriter.cs" />
+    <Compile Include="System\Transactions\Trace\TraceCode.cs" />
+    <Compile Include="System\Transactions\Trace\TraceRecord.cs" />
+    <Compile Include="System\Transactions\Trace\TraceRecords.cs" />
+    <Compile Include="System\Transactions\Trace\TraceXPathNavigator.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\System.Collections\src\System.Collections.csproj" />
+    <ProjectReference Include="..\..\System.Diagnostics.EventLog\src\System.Diagnostics.EventLog.csproj" />
+    <ProjectReference Include="..\..\System.Configuration.ConfigurationManager\src\System.Configuration.ConfigurationManager.csproj" />
+    <Reference Include="System.ComponentModel" />
+    <Reference Include="System.ComponentModel.Primitives" />
+    <Reference Include="System.Diagnostics.Process" />
+    <Reference Include="System.Diagnostics.StackTrace" />
+    <Reference Include="System.Diagnostics.TraceSource" />
     <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Runtime" />
@@ -69,5 +79,6 @@
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Thread" />
     <Reference Include="System.Threading.ThreadPool" />
+    <Reference Include="System.Xml.ReaderWriter" />
   </ItemGroup>
 </Project>
