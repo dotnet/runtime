@@ -4968,47 +4968,19 @@ LONG InternalUnhandledExceptionFilter(
     }
 
     // Chaining back to previous UEF handler could be a potential security risk. See
-    // http://uninformed.org/index.cgi?v=4&a=5&p=1 for details. We are not alone in
-    // stopping the chain - CRT (as of Orcas) is also doing that.
-    //
-    // The change below applies to a thread that starts in native mode and transitions to managed.
-
-    // Let us assume the process loaded two CoreCLRs, C1 and C2, in that order. Thus, in the UEF chain
-    // (assuming no other entity setup their UEF), C2?s UEF will be the topmost.
-    //
-    // Now, assume the stack looks like the following (stack grows down):
-    //
-    // Native frame
-    // Managed Frame (C1)
-    // Managed Frame (C2)
-    // Managed Frame (C1)
-    // Managed Frame (C2)
-    // Managed Frame (C1)
-    //
-    // Suppose an exception is thrown in C1 instance in the last managed frame and it goes unhandled. Eventually
-    // it will reach the OS which will invoke the UEF.  Note that the topmost UEF belongs to C2 instance and it
-    // will start processing the exception. C2?s UEF could return EXCEPTION_CONTINUE_SEARCH to indicate
-    // that we should handoff the processing to the last installed UEF. In the example above, we would handoff
-    // the control to the UEF of the CoreCLR instance that actually threw the exception today. In reality, it
-    // could be some unknown code too.
-    //
-    // Not chaining back to the last UEF, in the case of this example, would imply that certain notifications
-    // (e.g. Unhandled Exception Notification to the  AppDomain) specific to the instance that raised the exception
-    // will not get fired. However, similar behavior can happen today if another UEF sits between
-    // C1 and C2 and that may not callback to C1 or perhaps just terminate process.
-    //
-    // For CoreCLR, this will not be an issue. See
-    // http://sharepoint/sites/clros/Shared%20Documents/Design%20Documents/EH/Chaining%20in%20%20UEF%20-%20One%20Pager.docx
-    // for details.
-    //
-    // Note: Also see the conditional UEF registration with the OS in EEStartupHelper.
-
-    // We would be here only on CoreCLR for WLC since we dont register
-    // the UEF with the OS for SL.
+    // http://uninformed.org/index.cgi?v=4&a=5&p=1 for details.
+    // Thus we are allowing only C++ exceptions to be chained to the previous handler.
     if (g_pOriginalUnhandledExceptionFilter != FILTER_NOT_INSTALLED
         && g_pOriginalUnhandledExceptionFilter != NULL)
     {
-        STRESS_LOG1(LF_EH, LL_INFO100, "InternalUnhandledExceptionFilter: Not chaining back to previous UEF at address %p on CoreCLR!\n", g_pOriginalUnhandledExceptionFilter);
+        if (pExceptionInfo->ExceptionRecord->ExceptionCode == EXCEPTION_MSVC)
+        {
+            return g_pOriginalUnhandledExceptionFilter(pExceptionInfo);
+        }
+        else
+        {
+            STRESS_LOG1(LF_EH, LL_INFO100, "InternalUnhandledExceptionFilter: Not chaining back to previous UEF at address %p on CoreCLR!\n", g_pOriginalUnhandledExceptionFilter);
+        }
     }
 
     return retval;
