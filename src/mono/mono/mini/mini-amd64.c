@@ -310,9 +310,7 @@ merge_argument_class_from_type (MonoType *type, ArgumentClass class1)
 		/* fall through */
 	case MONO_TYPE_VALUETYPE: {
 		MonoMarshalType *info = mono_marshal_load_type_info (ptype->data.klass);
-		guint32 i;
-
-		for (i = 0; i < info->num_fields; ++i) {
+		for (guint32 i = 0; i < info->num_fields; ++i) {
 			class2 = class1;
 			class2 = merge_argument_class_from_type (info->fields [i].field->type, class2);
 		}
@@ -351,12 +349,11 @@ static void
 collect_field_info_nested (MonoClass *klass, GArray *fields_array, int offset, gboolean pinvoke, gboolean unicode)
 {
 	MonoMarshalType *info;
-	guint32 i;
 
 	if (pinvoke) {
 		info = mono_marshal_load_type_info (klass);
 		g_assert(info);
-		for (i = 0; i < info->num_fields; ++i) {
+		for (guint32 i = 0; i < info->num_fields; ++i) {
 			if (MONO_TYPE_ISSTRUCT (info->fields [i].field->type)) {
 				collect_field_info_nested (mono_class_from_mono_type_internal (info->fields [i].field->type), fields_array, info->fields [i].offset, pinvoke, unicode);
 			} else {
@@ -1503,9 +1500,8 @@ GList *
 mono_arch_get_allocatable_int_vars (MonoCompile *cfg)
 {
 	GList *vars = NULL;
-	guint i;
 
-	for (i = 0; i < cfg->num_varinfo; i++) {
+	for (guint i = 0; i < cfg->num_varinfo; i++) {
 		MonoInst *ins = cfg->varinfo [i];
 		MonoMethodVar *vmv = MONO_VARINFO (cfg, i);
 
@@ -1538,7 +1534,6 @@ mono_arch_compute_omit_fp (MonoCompile *cfg)
 {
 	MonoMethodSignature *sig;
 	MonoMethodHeader *header;
-	guint16 i;
 	CallInfo *cinfo;
 
 	if (cfg->arch.omit_fp_computed)
@@ -1575,7 +1570,7 @@ mono_arch_compute_omit_fp (MonoCompile *cfg)
 		cfg->arch.omit_fp = FALSE;
 	if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG))
 		cfg->arch.omit_fp = FALSE;
-	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
+	for (guint i = 0; i < sig->param_count + sig->hasthis; ++i) {
 		ArgInfo *ainfo = &cinfo->args [i];
 
 		if (ainfo->storage == ArgOnStack || ainfo->storage == ArgValuetypeAddrInIReg || ainfo->storage == ArgValuetypeAddrOnStack) {
@@ -1644,7 +1639,6 @@ mono_arch_fill_argument_info (MonoCompile *cfg)
 {
 	MonoMethodSignature *sig;
 	MonoInst *ins;
-	guint16 i;
 	CallInfo *cinfo;
 
 	sig = mono_method_signature_internal (cfg->method);
@@ -1675,7 +1669,7 @@ mono_arch_fill_argument_info (MonoCompile *cfg)
 		g_assert_not_reached ();
 	}
 
-	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
+	for (guint i = 0; i < sig->param_count + sig->hasthis; ++i) {
 		ArgInfo *ainfo = &cinfo->args [i];
 
 		ins = cfg->args [i];
@@ -1709,7 +1703,6 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	MonoMethodSignature *sig;
 	MonoInst *ins;
 	int offset;
-	guint i;
 	guint32 locals_stack_size, locals_stack_align;
 	gint32 *offsets;
 	CallInfo *cinfo;
@@ -1757,7 +1750,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	if (cfg->arch.omit_fp)
 		cfg->arch.reg_save_area_offset = offset;
 	/* Reserve space for callee saved registers */
-	for (i = 0; i < AMD64_NREG; ++i)
+	for (guint i = 0; i < AMD64_NREG; ++i)
 		if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->arch.saved_iregs & (1 << i))) {
 			offset += sizeof (target_mgreg_t);
 		}
@@ -1821,7 +1814,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		cfg->locals_max_stack_offset = - offset;
 	}
 
-	for (i = cfg->locals_start; i < cfg->num_varinfo; i++) {
+	for (guint i = cfg->locals_start; i < cfg->num_varinfo; i++) {
 		if (offsets [i] != -1) {
 			ins = cfg->varinfo [i];
 			ins->opcode = OP_REGOFFSET;
@@ -1841,7 +1834,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		cfg->sig_cookie = cinfo->sig_cookie.offset + ARGS_OFFSET;
 	}
 
-	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
+	for (guint i = 0; i < sig->param_count + sig->hasthis; ++i) {
 		ins = cfg->args [i];
 		if (ins->opcode != OP_REGVAR) {
 			ArgInfo *ainfo = &cinfo->args [i];
@@ -5420,7 +5413,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_TAILCALL_MEMBASE: {
 			call = (MonoCallInst*)ins;
 			int save_area_offset;
-			guint i;
 			gboolean tailcall_membase = (ins->opcode == OP_TAILCALL_MEMBASE);
 			gboolean tailcall_reg = (ins->opcode == OP_TAILCALL_REG);
 
@@ -5457,7 +5449,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			/* Restore callee saved registers */
 			save_area_offset = cfg->arch.reg_save_area_offset;
-			for (i = 0; i < AMD64_NREG; ++i)
+			for (guint i = 0; i < AMD64_NREG; ++i)
 				if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->used_int_regs & ((regmask_t)1 << i))) {
 					amd64_mov_reg_membase (code, i, cfg->frame_reg, save_area_offset, 8);
 					save_area_offset += 8;
@@ -5474,7 +5466,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				/* Copy arguments on the stack to our argument area */
 				// FIXME use rep mov for constant code size, before nonvolatiles
 				// restored, first saving rsi, rdi into volatiles
-				for (i = 0; i < call->stack_usage; i += sizeof (target_mgreg_t)) {
+				for (guint i = 0; i < call->stack_usage; i += sizeof (target_mgreg_t)) {
 					amd64_mov_reg_membase (code, AMD64_RAX, AMD64_RSP, i + 8, sizeof (target_mgreg_t));
 					amd64_mov_membase_reg (code, AMD64_RBP, ARGS_OFFSET + i, AMD64_RAX, sizeof (target_mgreg_t));
 				}
@@ -8441,7 +8433,6 @@ get_delegate_invoke_impl (MonoTrampInfo **info, gboolean has_target, guint32 par
 {
 	guint8 *code, *start;
 	GSList *unwind_ops = NULL;
-	guint32 i;
 
 	unwind_ops = mono_arch_get_cie_program ();
 
@@ -8462,7 +8453,7 @@ get_delegate_invoke_impl (MonoTrampInfo **info, gboolean has_target, guint32 par
 		} else {
 			/* We have to shift the arguments left */
 			amd64_mov_reg_reg (code, AMD64_RAX, AMD64_ARG_REG1, 8);
-			for (i = 0; i < param_count; ++i) {
+			for (guint32 i = 0; i < param_count; ++i) {
 #ifdef TARGET_WIN32
 				if (i < 3)
 					amd64_mov_reg_reg (code, param_regs [i], param_regs [i + 1], 8);
