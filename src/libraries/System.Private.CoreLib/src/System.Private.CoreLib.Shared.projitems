@@ -1954,8 +1954,8 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetCwd.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetCwd.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetDefaultTimeZone.Android.cs" Condition="'$(TargetsAndroid)' == 'true'">
-      <Link>Common\Interop\Unix\System.Native\Interop.GetDefaultTimeZone.Android.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetDefaultTimeZone.AnyMobile.cs" Condition="'$(TargetsAndroid)' == 'true' or '$(IsiOSLike)' == 'true'">
+      <Link>Common\Interop\Unix\System.Native\Interop.GetDefaultTimeZone.AnyMobile.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetEGid.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetEGid.cs</Link>
