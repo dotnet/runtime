@@ -22350,8 +22350,8 @@ void Compiler::pickGDV(GenTreeCall*           call,
         for (UINT32 i = 0; i < numberOfClasses; i++)
         {
             const char* className = eeGetClassName((CORINFO_CLASS_HANDLE)likelyClasses[i].handle);
-            JITDUMP("  %u) %p (%s) [likelihood:%u%%]\n", i + 1, likelyClasses[i].handle,
-                    className, likelyClasses[i].likelihood);
+            JITDUMP("  %u) %p (%s) [likelihood:%u%%]\n", i + 1, likelyClasses[i].handle, className,
+                    likelyClasses[i].likelihood);
         }
     }
 
@@ -22607,23 +22607,41 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
 
         likelyMethod = dvInfo.devirtualizedMethod;
     }
-    else
+
+    uint32_t likelyMethodAttribs = info.compCompHnd->getMethodAttribs(likelyMethod);
+
+    if (likelyClass == NO_CLASS_HANDLE)
     {
-        // Verify that this is a reasonable looking call target.
+        // For method GDV do a few more checks that we get for free in the
+        // resolve call above for class-based GDV.
+        if ((likelyMethodAttribs & CORINFO_FLG_STATIC) != 0)
+        {
+            assert(call->IsDelegateInvoke());
+            JITDUMP("Cannot currently handle devirtualizing static delegate calls, sorry\n");
+            return;
+        }
+
+        // Verify that the call target and args look reasonable so that the JIT
+        // does not blow up during inlining/call morphing.
+        //
+        // NOTE: Once we want to support devirtualization of delegate calls to
+        // static methods and remove the check above we will start failing here
+        // for delegates pointing to static methods that have the first arg
+        // bound. For example:
+        //
+        // public static void E(this C c) ...
+        // Action a = new C().E;
+        //
+        // The delegate instance looks exactly like one pointing to an instance
+        // method in this case and the call will have zero args while the
+        // signature has 1 arg.
+        //
         if (!isCompatibleMethodGDV(call, likelyMethod))
         {
             JITDUMP("Target for method-based GDV is incompatible (stale profile?)\n");
             assert((fgPgoSource != ICorJitInfo::PgoSource::Dynamic) && "Unexpected stale profile in dynamic PGO data");
             return;
         }
-    }
-
-    uint32_t likelyMethodAttribs = info.compCompHnd->getMethodAttribs(likelyMethod);
-    if ((likelyMethodAttribs & CORINFO_FLG_STATIC) != 0)
-    {
-        assert(call->IsDelegateInvoke());
-        JITDUMP("Cannot currently handle devirtualizing static delegate calls, sorry\n");
-        return;
     }
 
     JITDUMP("%s call would invoke method %s\n",
