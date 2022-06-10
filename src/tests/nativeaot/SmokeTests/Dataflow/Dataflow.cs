@@ -580,8 +580,7 @@ class Program
         {
             // Check we detect these as intrinsics
             IntPtr pBytes = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(ClassWithLayout1)));
-            // https://github.com/dotnet/runtime/issues/70072
-            //object o = Marshal.PtrToStructure(pBytes, typeof(ClassWithLayout2));
+            object o = Marshal.PtrToStructure(pBytes, typeof(ClassWithLayout2));
             Marshal.DestroyStructure(pBytes, typeof(ClassWithLayout3));
             Marshal.OffsetOf(typeof(ClassWithLayout4), "Field");
 
