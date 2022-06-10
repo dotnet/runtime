@@ -4453,18 +4453,10 @@ LONG DefaultCatchNoSwallowFilter(EXCEPTION_POINTERS *ep, PVOID pv)
     return EXCEPTION_CONTINUE_SEARCH;
 } // LONG DefaultCatchNoSwallowFilter()
 
-// Note: This is used only for CoreCLR on WLC.
-//
 // We keep a pointer to the previous unhandled exception filter.  After we install, we use
-// this to call the previous guy.  When we un-install, we put them back.  Putting them back
-// is a bug -- we have no guarantee that the DLL unload order matches the DLL load order -- we
-// may in fact be putting back a pointer to a DLL that has been unloaded.
-//
+// this to call the previous guy.
 
-// initialize to -1 because NULL won't detect difference between us not having installed our handler
-// yet and having installed it but the original handler was NULL.
-static LPTOP_LEVEL_EXCEPTION_FILTER g_pOriginalUnhandledExceptionFilter = (LPTOP_LEVEL_EXCEPTION_FILTER)-1;
-#define FILTER_NOT_INSTALLED (LPTOP_LEVEL_EXCEPTION_FILTER) -1
+static LPTOP_LEVEL_EXCEPTION_FILTER g_pOriginalUnhandledExceptionFilter = NULL;
 
 
 BOOL InstallUnhandledExceptionFilter() {
@@ -4474,44 +4466,16 @@ BOOL InstallUnhandledExceptionFilter() {
     STATIC_CONTRACT_FORBID_FAULT;
 
 #ifndef TARGET_UNIX
-    // We will be here only for CoreCLR on WLC since we dont
-    // register UEF for SL.
-    if (g_pOriginalUnhandledExceptionFilter == FILTER_NOT_INSTALLED) {
+    #pragma prefast(push)
+    #pragma prefast(suppress:28725, "Calling to SetUnhandledExceptionFilter is intentional in this case.")
+    g_pOriginalUnhandledExceptionFilter = SetUnhandledExceptionFilter(COMUnhandledExceptionFilter);
+    #pragma prefast(pop)
 
-        #pragma prefast(push)
-        #pragma prefast(suppress:28725, "Calling to SetUnhandledExceptionFilter is intentional in this case.")
-        g_pOriginalUnhandledExceptionFilter = SetUnhandledExceptionFilter(COMUnhandledExceptionFilter);
-        #pragma prefast(pop)
-
-        // make sure is set (ie. is not our special value to indicate unset)
-        LOG((LF_EH, LL_INFO10, "InstallUnhandledExceptionFilter registered UEF with OS for CoreCLR!\n"));
-    }
-    _ASSERTE(g_pOriginalUnhandledExceptionFilter != FILTER_NOT_INSTALLED);
+    LOG((LF_EH, LL_INFO10, "InstallUnhandledExceptionFilter registered UEF with OS for CoreCLR!\n"));
 #endif // !TARGET_UNIX
 
     // All done - successfully!
     return TRUE;
-}
-
-void UninstallUnhandledExceptionFilter() {
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_ANY;
-    STATIC_CONTRACT_FORBID_FAULT;
-
-#ifndef TARGET_UNIX
-    // We will be here only for CoreCLR on WLC or on Mac SL.
-    if (g_pOriginalUnhandledExceptionFilter != FILTER_NOT_INSTALLED) {
-
-        #pragma prefast(push)
-        #pragma prefast(suppress:28725, "Calling to SetUnhandledExceptionFilter is intentional in this case.")
-        SetUnhandledExceptionFilter(g_pOriginalUnhandledExceptionFilter);
-        #pragma prefast(pop)
-
-        g_pOriginalUnhandledExceptionFilter = FILTER_NOT_INSTALLED;
-        LOG((LF_EH, LL_INFO10, "UninstallUnhandledExceptionFilter unregistered UEF from OS for CoreCLR!\n"));
-    }
-#endif // !TARGET_UNIX
 }
 
 //
@@ -4967,8 +4931,7 @@ LONG InternalUnhandledExceptionFilter(
         return retval;
     }
 
-    if (g_pOriginalUnhandledExceptionFilter != FILTER_NOT_INSTALLED
-        && g_pOriginalUnhandledExceptionFilter != NULL)
+    if (g_pOriginalUnhandledExceptionFilter != NULL)
     {
         return g_pOriginalUnhandledExceptionFilter(pExceptionInfo);
     }
