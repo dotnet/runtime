@@ -92,6 +92,7 @@ namespace System.Formats.Tar
         public TarReader(System.IO.Stream archiveStream, bool leaveOpen = false) { }
         public void Dispose() { }
         public System.Formats.Tar.TarEntry? GetNextEntry(bool copyData = false) { throw null; }
+        public System.Threading.Tasks.ValueTask<System.Formats.Tar.TarEntry?> GetNextEntryAsync(bool copyData = false, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
     public sealed partial class TarWriter : System.IDisposable
     {
