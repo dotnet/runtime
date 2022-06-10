@@ -98,13 +98,14 @@ namespace System.Formats.Tar
         public System.Formats.Tar.TarEntry? GetNextEntry(bool copyData = false) { throw null; }
         public System.Threading.Tasks.ValueTask<System.Formats.Tar.TarEntry?> GetNextEntryAsync(bool copyData = false, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
-    public sealed partial class TarWriter : System.IDisposable
+    public sealed partial class TarWriter : System.IAsyncDisposable, System.IDisposable
     {
         public TarWriter(System.IO.Stream archiveStream) { }
         public TarWriter(System.IO.Stream archiveStream, bool leaveOpen = false) { }
         public TarWriter(System.IO.Stream archiveStream, System.Formats.Tar.TarEntryFormat format = System.Formats.Tar.TarEntryFormat.Pax, bool leaveOpen = false) { }
         public System.Formats.Tar.TarEntryFormat Format { get { throw null; } }
         public void Dispose() { }
+        public System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
         public void WriteEntry(System.Formats.Tar.TarEntry entry) { }
         public void WriteEntry(string fileName, string? entryName) { }
         public System.Threading.Tasks.Task WriteEntryAsync(System.Formats.Tar.TarEntry entry, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
