@@ -2199,6 +2199,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Directory.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\File.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStatus.Unix.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStatus.SetUnixFileMode.Linux.cs" Condition="'$(TargetsLinux)' == 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStatus.SetUnixFileMode.NonLinux.cs" Condition="'$(TargetsLinux)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileSystem.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileSystem.Exists.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileSystemInfo.Unix.cs" />

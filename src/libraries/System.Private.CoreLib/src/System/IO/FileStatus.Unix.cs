@@ -430,13 +430,8 @@ namespace System.IO
                 throw new ArgumentException(SR.Arg_InvalidUnixFileMode, nameof(UnixFileMode));
             }
 
-            EnsureCachesInitialized(handle, path);
-
-            if (!EntryExists)
-                FileSystemInfo.ThrowNotFound(path);
-
             int rv = handle is not null ? Interop.Sys.FChMod(handle, (int)mode) :
-                                          Interop.Sys.LChMod(path!, (int)mode);
+                                          ChModNoFollowLink(path!, (int)mode);
             Interop.CheckIo(rv, path);
 
             InvalidateCaches();
