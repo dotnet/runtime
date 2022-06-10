@@ -55,6 +55,123 @@ Abstract:
 
 ******************************************************************************/
 
+/******************************************************************************
+RangeSection storage description: 
+
+    The model of RangeSection storage on a highest level is sorted array of (LowAddress, pRS)
+    pairs (logically they are triplets according to pRS->HighAddress) and binary search over it.
+    
+    This would be simple unless some synchronization takes place. Actually, there are two
+    arrays, one for readers, another one for writers. Any number of readers at a time can
+    run over reader's copy of an array, while just one writer at a time can access writer's
+    copy. Writers exclude each other by critical section guarding all write access to the
+    storage.
+    
+    Readers can simultaneously perform any number of search runs over reader's copy of
+    an array (we call it reader's array or reader's header (as the meta of an array
+    resides in a header structure). There is only fast interlocked reference counting
+    of how many readers are running. Once a reader leaves the reader array there is fast
+    interlocked decrement of the reference counter. Reading is asymptotically log2 N by
+    the nature of an algorithm or unit by the nature of last_used_index optimization
+    (depending on the load model).
+    
+    Writers can perform O(N) (due to memcpy of the whole array) simultaneously with any
+    number of readers traversing the reader's array. Writers use the copy of the reader's
+    array (we call it writer's array of writer's header). There is only one writer at a
+    time using writer's array, but O(N) writing is NOT preventing readers from traversing
+    reader's array. Once a writer finishes preparing proper writer's array with all necessary
+    changes, the WriterLockHolder (wlh) goes to it's destructor and performs the substitution
+    of writer's array header pointer to the reader's one (wh->rh substitution). Till now,
+    all old readers still running over the old reader's array and decrement old reader's
+    array reference counter on ReaderLockHolder destructor (~rlh), and all new readers will
+    run over the new reader's array incrementing new reader's reference counter on
+    a ReaderLockHolder constructor. Once the latest old-reader leaves old-reader-array,
+    rlh destructor returns reader's array header pointer to the writer's slot, and the
+    swap of arrays completes (the wlh destructor can perform same action if there are
+    no old-readers when it substitutes reader's <- writer's header pointers).
+    
+    So we have almost seamless reader's copy and some writing work in a background.
+    Now let's go into details.
+    
+    There are two kinds of write operations: adding new RangeSection to the storage and
+    deleting RangeSection from the storage. Adding in no way affects any reader,
+    so it is safe to just subtitute writer's header to reader's slot and vice versa
+    (this almost seamless lockfree action is performed by rlh and wlh destructors).
+    Deleting of RangeSection in case some user is reading it's fields is not safe even
+    if the storage remains consistent, so there is a special synchronization holder
+    for enabling writer lock until the protecting reader leaves: ForbidDeletionHolder.
+    (The fdh is the only holder remaining public in the whole schema: rlh and wlh are
+    privately used in core storage access functions and do not traditional
+    reader/writer lock: they are more subtle things making no blocking readers at all.)
+    The fdh is spreading through codebase and signalling wlh destructors that they can
+    not perform wh->rh substitution (and further deleting of the removed RangeSection).
+    Once writer thread wakes up and sees no fdhs are held it performs substitution,
+    conditionally cleans up RangeSection stored in old_rh->pDelete and returns.
+    
+    Storage description:
+    
+    m_RangeSectionHandleReaderHeader - pointer to reader's array meta,
+        "reader header" (rh), owns reader's array
+    m_RangeSectionHandleWriterHeader - pointer to writer's array meta,
+        "writer header" (wh), owns writer's array
+    m_dwForbidDeletionCounter - atomic integer for ForbidDeletionHolder implementation.
+    RangeSectionHandleHeader - array meta struct, containing reference counter
+        used in so called rlh and wlh
+    RangeSectionHandle - an element of sorted array, (LowAddress, pRS) pair
+        (logically it holds HighAddress too, through pRS)
+    RangeSection - stored unit
+
+----------------------------------------------------------------------------
+    m_RangeSectionHandleReaderHeader
+             |
+	     v
+    RangeSectionHandleHeader -> [RangeSectionHandle][...][RangeSectionHandle]
+           |                                 |                        |     
+	   v                                 v                        v    
+(del)RangeSection RangeSection(del)    RangeSection       ...   RangeSection
+                        ^                    ^                        ^    
+                        |                    |                        |   
+    RangeSectionHandleHeader -> [RangeSectionHandle][...][RangeSectionHandle]
+             ^
+             |
+    m_RangeSectionHandleWriterHeader 
+----------------------------------------------------------------------------
+
+    Synchronization description:
+    
+    ReaderLockHolder, rlh - actually lockfree mechanism unconditionally picking in
+    GetRangeSection. A constructor parameter passes to the destructor a host call
+    preference information. A constructor always succeeds to go further, waiting
+    a few cycles on registering new reader in RangeSectionHandleHeader pointed
+    by m_RangeSectionHandleReaderHeader. A destructor waits a few cycles on
+    unregistering the rlh from the reader header; if there was wh->rh substitution
+    and this destructor is the last leaving the reader's array it performs rh->wh
+    substitution and conditionally cleans up RangeSection stored in rh->pDelete.
+    
+    WriterLockHolder, wlh - the constructor may yield (if previous writer already
+    completes wh->rh, but ~rlh still did not rh->wh). wlh always enter after
+    acquiring crst, so there are no additional sync among writers. A constructor
+    parameter passes to the destructor whether deletion has happened and the destructor
+    should care about fdhs (see below). A destructor waits a few cycles on unregistering
+    the, say, ExecutionManager as a whole from the reader header (this "EM's unit"
+    it decrements from m_RangeSectionHandleReaderHeader->count was set before previous
+    wh->rh substitution); it performs wh->rh substitution while wh->count already
+    set to 1 (EM's unit). If rh it just replaced was clear of readers (count became zero
+    after decrementing EM's unit from it) the destructor performs rh->wh (with old rh)
+    substitution and conditionally cleans up RangeSection stored in old_rh->pDelete
+    just like ~rlh does.
+    
+    ForbidDeletionHolder, fdh - the only public element of the schema. A constructor
+    just increments m_dwForbidDeletionCounter and always succeeds. It may wait a few
+    cycles if counter is set to -1 by ~wlh for almost instant wh->rh substitution.
+    ~wlh decrements m_dwForbidDeletionCounter by CAS and checks if the decrement set
+    it to -1, if it did, does wh->rh, if CAS failed, it yields. ~wlh cares about
+    m_dwForbidDeletionCounter only in case of deletion was performed, so there
+    is no friction on much more regular read/add workflow.
+    
+    So we have almost seamless read/add workflow and possibility of yields by deleters.
+******************************************************************************/
+
 #ifndef __CODEMAN_HPP__
 
 #define __CODEMAN_HPP__
@@ -631,6 +748,7 @@ struct RangeSectionHandleHeader
     int count;
     int last_used_index;
     RangeSectionHandle *array;
+    RangeSection *pDelete;
 
     RangeSectionHandleHeader():
         size(0),
@@ -660,11 +778,7 @@ struct RangeSection
 #endif
     };
 
-    union
-    {
-        DWORD               flags;
-	PTR_RangeSection pNextPendingDeletion;
-    };
+    DWORD               flags;
 
     // union
     // {
@@ -1367,12 +1481,10 @@ private:
     static CrstStatic       m_JumpStubCrst;
     static CrstStatic       m_RangeCrst;        // Aquire before writing into m_CodeRangeList and m_DataRangeList
 
-    // infrastructure to manage readers so we can lock them out and delete domain data
-    // make ReaderCount volatile because we have order dependency in READER_INCREMENT
+    // rlh/wlh/fdh infrastructure (see comment in top of the document)
     SVAL_DECL(LONG, m_dwForbidDeletionCounter);
     SPTR_DECL(RangeSectionHandleHeader, m_RangeSectionHandleReaderHeader);
     SPTR_DECL(RangeSectionHandleHeader, m_RangeSectionHandleWriterHeader);
-    VOLATILE_SPTR_DECL(RangeSection, m_RangeSectionPendingDeletion);
 
     class ReaderLockHolder {
      public:

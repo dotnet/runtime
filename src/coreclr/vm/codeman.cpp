@@ -52,7 +52,6 @@ SPTR_IMPL(ReadyToRunJitManager, ExecutionManager, m_pReadyToRunJitManager);
 SVAL_IMPL_INIT(LONG, ExecutionManager, m_dwForbidDeletionCounter, 0);
 SPTR_IMPL_INIT(RangeSectionHandleHeader, ExecutionManager, m_RangeSectionHandleReaderHeader, nullptr);
 SPTR_IMPL_INIT(RangeSectionHandleHeader, ExecutionManager, m_RangeSectionHandleWriterHeader, nullptr);
-VOLATILE_SPTR_IMPL_INIT(RangeSection, ExecutionManager, m_RangeSectionPendingDeletion, nullptr);
 
 #ifndef DACCESS_COMPILE
 
@@ -678,14 +677,10 @@ ExecutionManager::ForbidDeletionHolder::~ForbidDeletionHolder()
 
 //---------------------------------------------------------------------------------------
 //
-// ReaderLockHolder::ReaderLockHolder takes the reader lock, checks for the writer lock
-// and either aborts if the writer lock is held, or yields until the writer lock is released,
-// keeping the reader lock.  This is normally called in the constructor for the
-// ReaderLockHolder.
-//
-// The writer cannot be taken if there are any readers. The WriterLockHolder functions take the
-// writer lock and check for any readers. If there are any, the WriterLockHolder functions
-// release the writer and yield to wait for the readers to be done.
+// ReaderLockHolder::ReaderLockHolder Increments rh->count.
+// This is normally called in the constructor for the ReaderLockHolder.
+// Always succeeds and never yields.
+// Detailed explanation provided in codeman.h on top of the document.
 
 ExecutionManager::ReaderLockHolder::ReaderLockHolder(HostCallPreference pref): m_pref(pref)
 {
@@ -713,7 +708,8 @@ INCREMENT:
 
 //---------------------------------------------------------------------------------------
 //
-// See code:ExecutionManager::ReaderLockHolder::ReaderLockHolder. This just decrements the reader count.
+// Decrements the reader count.
+// Detailed explanation provided in codeman.h on top of the document.
 
 ExecutionManager::ReaderLockHolder::~ReaderLockHolder()
 {
@@ -738,19 +734,15 @@ ExecutionManager::ReaderLockHolder::~ReaderLockHolder()
     {
         //we are here in relatively rare case
         //such code executes once per swap of arrays,
-        //so we should not worry about enormous amount
-        //of m_RangeSectionPendingDeletion accesses
         if (m_pref == AllowHostCalls)
         {
-            while((RangeSection*)m_RangeSectionPendingDeletion != NULL)
+            if(h->pDelete != NULL)
             {
-                RangeSection* pNext = ((RangeSection*)m_RangeSectionPendingDeletion)->pNextPendingDeletion;
 #if defined(TARGET_AMD64)
-                if (((RangeSection*)m_RangeSectionPendingDeletion)->pUnwindInfoTable != 0)
-                    delete ((RangeSection*)m_RangeSectionPendingDeletion)->pUnwindInfoTable;
+                if (h->pDelete->pUnwindInfoTable != 0)
+                    delete (h->pDelete->pUnwindInfoTable);
 #endif // defined(TARGET_AMD64)
-                delete (RangeSection*)m_RangeSectionPendingDeletion;
-                m_RangeSectionPendingDeletion = pNext;
+                delete h->pDelete;
             }
         }
 
@@ -762,6 +754,11 @@ ExecutionManager::ReaderLockHolder::~ReaderLockHolder()
     EE_LOCK_RELEASED((void*)h);
 }
 
+
+//---------------------------------------------------------------------------------------
+//
+// WriterLockHolder::WriterLockHolder wraps wh->rh substitution logic
+// Detailed explanation provided in codeman.h on top of the document.
 
 ExecutionManager::WriterLockHolder::WriterLockHolder(int purpose): m_purpose(purpose)
 {
@@ -792,6 +789,11 @@ ExecutionManager::WriterLockHolder::WriterLockHolder(int purpose): m_purpose(pur
 
     EE_LOCK_TAKEN((void*)h);
 }
+
+//---------------------------------------------------------------------------------------
+//
+// WriterLockHolder::~WriterLockHolder wraps wh->rh substitution logic
+// Detailed explanation provided in codeman.h on top of the document.
 
 ExecutionManager::WriterLockHolder::~WriterLockHolder()
 {
@@ -837,15 +839,13 @@ ExecutionManager::WriterLockHolder::~WriterLockHolder()
     if (count == 1)// h->count == 0, all readers left, we've just removed EM's unit,
                    //now attach the header to writer's slot:
     {
-        while((RangeSection*)m_RangeSectionPendingDeletion != NULL)
+        if(old_rh->pDelete != NULL)
         {
-            RangeSection* pNext = ((RangeSection*)m_RangeSectionPendingDeletion)->pNextPendingDeletion;
 #if defined(TARGET_AMD64)
-            if (((RangeSection*)m_RangeSectionPendingDeletion)->pUnwindInfoTable != 0)
-                delete ((RangeSection*)m_RangeSectionPendingDeletion)->pUnwindInfoTable;
+            if (old_rh->pDelete->pUnwindInfoTable != 0)
+                delete (old_rh->pDelete->pUnwindInfoTable);
 #endif // defined(TARGET_AMD64)
-            delete (RangeSection*)m_RangeSectionPendingDeletion;
-            m_RangeSectionPendingDeletion = pNext;
+            delete old_rh->pDelete;
         }
 
         VolatileStore(&m_RangeSectionHandleWriterHeader, old_rh);
@@ -864,7 +864,6 @@ ExecutionManager::WriterLockHolder::~WriterLockHolder()
 }
 #else
 
-// For DAC builds we never actually take the lock.
 // Note: Throws
 ExecutionManager::ReaderLockHolder::ReaderLockHolder(HostCallPreference pref)
 {
@@ -910,21 +909,30 @@ ExecutionManager::ForbidDeletionHolder::~ForbidDeletionHolder()
 //-----------------------------------------------------------------------------
 
 ==============================================================================
-ExecutionManger::ReaderLockHolder and ExecutionManger::WriterLockHolder
-Protects the callers of ExecutionManager::GetRangeSection from heap deletions
-while walking RangeSections.  You need to take a reader lock before reading the
-values: m_CodeRangeList and hold it while walking the lists
+ExecutionManger::ReaderLockHolder, ExecutionManger::WriterLockHolder
+and ExecutionManger::ForbidDeletionHolder
+protect the callers of ExecutionManager::GetRangeSection from heap deletions
+while walking RangeSections. You need to initialize a ForbidDeletionHolder
+if someone simultaneously may call DeleteRange
 
-Uses ReaderLockHolder (allows multiple reeaders with no writers)
+Detailed explanation provided in codeman.h on top of the document.
+
+
+Uses ReaderLockHolder
 -----------------------------------------
-ExecutionManager::FindCodeRange
+ExecutionManager::GetRangeSection
+
+Uses WriterLockHolder
+-----------------------------------------
+ExecutionManager::AddRangeSection
+ExecutionManager::DeleteRange
+
+Uses ForbidDeletionHolder
+-----------------------------------------
+ExecutionManager::IsManagedCodeWithLock
+ExecutionManager::IsManagedCode
 ExecutionManager::FindZapModule
-ExecutionManager::EnumMemoryRegions
-
-Uses WriterLockHolder (allows single writer and no readers)
------------------------------------------
-ExecutionManager::AddRangeHelper
-ExecutionManager::DeleteRangeHelper
+ExecutionManager::FindReadyToRunModule
 
 */
 
@@ -1087,10 +1095,10 @@ IJitManager::IJitManager()
 #endif // #ifndef DACCESS_COMPILE
 
 // When we unload an appdomain, we need to make sure that any threads that are crawling through
-// our heap or rangelist are out. For cooperative-mode threads, we know that they will have
+// our heap list or range storage are out. For cooperative-mode threads, we know that they will have
 // been stopped when we suspend the EE so they won't be touching an element that is about to be deleted.
 // However for pre-emptive mode threads, they could be stalled right on top of the element we want
-// to delete, so we need to apply the reader lock to them and wait for them to drain.
+// to delete, so we need to apply the ForbidDeletionHolder to them and wait for them to drain.
 ExecutionManager::ScanFlag ExecutionManager::GetScanFlags()
 {
     CONTRACTL {
@@ -2419,7 +2427,7 @@ void CodeFragmentHeap::RealBackoutMem(void *pMem
 //**************************************************************************
 
 LoaderCodeHeap::LoaderCodeHeap()
-    : m_LoaderHeap(NULL,                    // RangeList *pRangeList
+    : m_LoaderHeap(NULL,
                    TRUE),                   // BOOL fMakeExecutable
     m_cbMinNextPad(0)
 {
@@ -4730,8 +4738,8 @@ BOOL ExecutionManager::IsManagedCode(PCODE currentPC, HostCallPreference hostCal
 }
 
 //**************************************************************************
-// Assumes that the ExecutionManager reader/writer lock is taken or that
-// it is safe not to take it. //TODO edit comment
+// Assumes that the ExecutionManager ForbidDeletionHolder is taken or that
+// it is safe not to take it.
 BOOL ExecutionManager::IsManagedCodeWorker(PCODE currentPC, HostCallPreference pref)
 {
     CONTRACTL {
@@ -4772,7 +4780,7 @@ BOOL ExecutionManager::IsManagedCodeWorker(PCODE currentPC, HostCallPreference p
 }
 
 //**************************************************************************
-// Assumes that it is safe not to take it the ExecutionManager reader/writer lock
+// Assumes that it is safe not to take the ForbidDeletionHolder
 BOOL ExecutionManager::IsReadyToRunCode(PCODE currentPC)
 {
     CONTRACTL{
@@ -5130,12 +5138,14 @@ void ExecutionManager::AddRangeSection(RangeSection *pRS)
         wh->array[0].pRS = pRS; 
         wh->count = 0;
         wh->last_used_index = 0;
+        wh->pDelete = nullptr;
 
         RangeSectionHandleHeader *rh =  new RangeSectionHandleHeader();
         rh->capacity = wh->capacity; 
         rh->size = wh->size;
         rh->count = 1; //EM's unit
         rh->last_used_index = wh->last_used_index;
+        rh->pDelete = nullptr;
         rh->array = new RangeSectionHandle[rh->capacity];
 
         rh->array[0] = wh->array[0];
@@ -5192,6 +5202,7 @@ void ExecutionManager::AddRangeSection(RangeSection *pRS)
         wh->array[size].LowAddress = pRS->LowAddress;
         wh->array[size].pRS = pRS;
         wh->size = size + 1;
+        wh->pDelete = nullptr;
         //last used index was not changed by this operation
         return; //assume that ~WriterLockHolder() executes before ~CrstHolder()
     }
@@ -5206,11 +5217,13 @@ void ExecutionManager::AddRangeSection(RangeSection *pRS)
         wh->array[index].LowAddress = pRS->LowAddress;
         wh->array[index].pRS = pRS;
         wh->size = size + 1;
+        wh->pDelete = nullptr;
 	int ri = VolatileLoad(&(rh->last_used_index));
         if (ri >= index)
             wh->last_used_index = ri + 1;
         return;
     }
+    wh->pDelete = nullptr;
     return;
 }
 
@@ -5253,24 +5266,28 @@ void ExecutionManager::DeleteRange(TADDR pStartRange)
     } CONTRACTL_END;
 
     {
-        // Acquire the Crst before unlinking a RangeList.
-        // NOTE: The Crst must be acquired BEFORE we grab the writer lock, as the
-        // writer lock forces us into a forbid suspend thread region, and it's illegal
-        // to enter a Crst after the forbid suspend thread region is entered
+        // Acquire the Crst to protect writers from each other.
+        // NOTE: The Crst must be acquired BEFORE we grab the wlh, as the
+        // wlh us into a forbid suspend thread region, and it's illegal
+        // to enter a Crst after the forbid suspend thread region is entered.
+	// Also wlh acts as a wrapper of reader/writer header interchanging
+	// logic and depends on Crst to allow only one wlh accessor at a time.
         CrstHolder ch(&m_RangeCrst);
 
-        // Acquire the WriterLock and prevent any readers from walking the RangeList.
-        // This also forces us to enter a forbid suspend thread region, to prevent
+        // Acquirnig the wlh DOES NOT prevent any readers from walking the RangeSectionStorage.
+        // Wlh forces us to enter a forbid suspend thread region, to prevent
         // hijacking profilers from grabbing this thread and walking it (the walk may
         // require the reader lock, which would cause a deadlock).
+
+        // Detailed explanation of rlh/wlh/fdh model provided in codeman.h on top of the document.
+
         WriterLockHolder wlh(1); //1 for deletion purpose
         RangeSectionHandleHeader *rh = VolatileLoad(&m_RangeSectionHandleReaderHeader);
         int index = FindRangeSectionHandleHelper(rh, pStartRange);
 
         if (index >= 0)
         {
-            rh->array[index].pRS->pNextPendingDeletion = (RangeSection*)m_RangeSectionPendingDeletion;
-            m_RangeSectionPendingDeletion = rh->array[index].pRS;
+            wlh.h->pDelete = rh->array[index].pRS;
             DeleteRangeSection(wlh.h, rh, index);
         }
     }
