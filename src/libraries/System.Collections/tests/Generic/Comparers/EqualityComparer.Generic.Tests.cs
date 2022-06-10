@@ -65,7 +65,6 @@ namespace System.Collections.Generic.Tests
 
             // Since comparer and cloned should have the same type, they should have the same hash
             Assert.Equal(comparer.GetHashCode(), cloned.GetHashCode());
-            throw new ArgumentException("FAIL test to investigate helix error return");
         }
 
         [Fact]
