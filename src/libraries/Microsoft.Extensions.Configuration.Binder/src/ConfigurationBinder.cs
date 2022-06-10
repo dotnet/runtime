@@ -767,7 +767,7 @@ namespace Microsoft.Extensions.Configuration
                 {
                     foreach (var property in baseTypeProperties)
                     {
-                        if (property.GetMethod?.IsVirtual == false || !allProperties.Exists(p => p.Name == property.Name))
+                        if (!allProperties.Exists(p => p.Name == property.Name))
                         {
                             allProperties.Add(property);
                         }
