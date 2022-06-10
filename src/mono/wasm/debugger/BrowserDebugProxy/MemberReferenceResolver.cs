@@ -77,7 +77,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return null;
         }
 
-        public async Task<(JObject containerObject, ArraySegment<string> remaining)> ResolveStaticMembersInStaticTypes(ArraySegment<string> parts, CancellationToken token)
+        public async Task<(JObject containerObject, ArraySegment<string> remaining)> ResolveStaticMembersInStaticTypes(ArraySegment<string> expressionParts, bool includeFullName, CancellationToken token)
         {
             string classNameToFind = "";
             var store = await proxy.LoadStore(sessionId, token);
@@ -86,8 +86,28 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (methodInfo == null)
                 return (null, null);
 
+            string[] parts;
+            if (includeFullName)
+            {
+                string fullName = methodInfo.IsAsync == 0 ? methodInfo.TypeInfo?.FullName : StripAsyncPartOfFullName(methodInfo.TypeInfo?.FullName);
+                string[] fullNameParts = fullName.Split(".", StringSplitOptions.TrimEntries);
+                int overlappingPartIdx = Enumerable.Range(0, fullNameParts.Length).LastOrDefault(i => fullNameParts[i] == expressionParts[0]);
+                if (overlappingPartIdx == 0)
+                {
+                    // default val was returned for overlappingPartIdx
+                    overlappingPartIdx = fullNameParts.Length;
+                }
+                parts = new string[fullNameParts[..overlappingPartIdx].Length + expressionParts.Count];
+                Array.Copy(fullNameParts[..overlappingPartIdx], parts, fullNameParts[..overlappingPartIdx].Length);
+                Array.Copy(expressionParts.Array, 0, parts, fullNameParts[..overlappingPartIdx].Length, expressionParts.Count);
+            }
+            else
+            {
+                parts = expressionParts.Array;
+            }
+
             int typeId = -1;
-            for (int i = 0; i < parts.Count; i++)
+            for (int i = 0; i < parts.Length; i++)
             {
                 string part = parts[i];
 
@@ -97,7 +117,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     if (memberObject != null)
                     {
                         ArraySegment<string> remaining = null;
-                        if (i < parts.Count - 1)
+                        if (i < parts.Length - 1)
                             remaining = parts[i..];
 
                         return (memberObject, remaining);
@@ -121,6 +141,12 @@ namespace Microsoft.WebAssembly.Diagnostics
                         continue;
                 }
                 typeId = await FindStaticTypeId(classNameToFind);
+            }
+
+            string StripAsyncPartOfFullName(string fullName)
+            {
+                // async function full name has a form: namespaceName.<currentFrame'sMethodName>d__integer
+                return fullName.Split(".<")[0];
             }
 
             return (null, null);
@@ -201,7 +227,9 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             if (retObject == null)
             {
-                (retObject, ArraySegment<string> remaining) = await ResolveStaticMembersInStaticTypes(parts, token);
+                (retObject, ArraySegment<string> remaining) = await ResolveStaticMembersInStaticTypes(parts, includeFullName: false, token);
+                if (retObject == null && remaining == null)
+                    (retObject, remaining) = await ResolveStaticMembersInStaticTypes(parts, includeFullName: true, token);
                 if (remaining != null && remaining.Count != 0)
                 {
                     if (retObject.IsNullValuedObject())
