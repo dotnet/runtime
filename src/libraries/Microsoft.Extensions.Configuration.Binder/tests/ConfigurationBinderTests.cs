@@ -1750,6 +1750,21 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.True(bound.NullableNestedStruct.Value.DeeplyNested.Boolean);
         }
 
+        [Fact]
+        public void CanBindVirtualPropertiesWithoutDuplicates()
+        {
+            ConfigurationBuilder configurationBuilder = new();
+            configurationBuilder.AddInMemoryCollection(new Dictionary<string, string>
+            {
+                { "Test:0", "1" }
+            });
+            IConfiguration config = configurationBuilder.Build();
+
+            var test = new ClassOverridingVirtualProperty();
+            config.Bind(test);
+            Assert.Equal("1", Assert.Single(test.Test));
+        }
+
 
         private interface ISomeInterface
         {
@@ -1826,6 +1841,16 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
                 public int Int32 { get; set; }
                 public bool Boolean { get; set; }
             }
+        }
+
+        public class BaseClassWithVirtualProperty
+        {
+            public virtual string[] Test { get; set; } = System.Array.Empty<string>();
+        }
+
+        public class ClassOverridingVirtualProperty : BaseClassWithVirtualProperty
+        {
+            public override string[] Test { get => base.Test; set => base.Test = value; }
         }
     }
 }

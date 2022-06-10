@@ -761,7 +761,23 @@ namespace Microsoft.Extensions.Configuration
             Type? baseType = type;
             do
             {
-                allProperties.AddRange(baseType!.GetProperties(DeclaredOnlyLookup));
+                PropertyInfo[] baseTypeProperties = baseType!.GetProperties(DeclaredOnlyLookup);
+
+                if (baseType != type)
+                {
+                    foreach (var property in baseTypeProperties)
+                    {
+                        if (property.GetMethod?.IsVirtual == false || !allProperties.Exists(p => p.Name == property.Name))
+                        {
+                            allProperties.Add(property);
+                        }
+                    }
+                }
+                else
+                {
+                    allProperties.AddRange(baseTypeProperties);
+                }
+
                 baseType = baseType.BaseType;
             }
             while (baseType != typeof(object));
