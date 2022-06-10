@@ -87,7 +87,7 @@ namespace Microsoft.Interop
                                     LiteralExpression(SyntaxKind.NullLiteralExpression))));
                     }
                     break;
-                case StubCodeContext.Stage.KeepAlive:
+                case StubCodeContext.Stage.NotifyForSuccessfulInvoke:
                     if (info.RefKind != RefKind.Out)
                     {
                         yield return ExpressionStatement(
