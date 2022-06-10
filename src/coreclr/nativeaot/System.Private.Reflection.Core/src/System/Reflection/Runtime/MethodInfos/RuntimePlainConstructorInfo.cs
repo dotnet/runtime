@@ -88,7 +88,7 @@ namespace System.Reflection.Runtime.MethodInfos
             object newObject = ReflectionCoreExecution.ExecutionEnvironment.NewObject(this.DeclaringType.TypeHandle);
             object ctorAllocatedObject = this.MethodInvoker.Invoke(newObject, parameters, binder, invokeAttr, culture);
             System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
-            return newObject != null ? newObject : ctorAllocatedObject;
+            return newObject ?? ctorAllocatedObject;
         }
 
         public sealed override MethodBase MetadataDefinitionMethod

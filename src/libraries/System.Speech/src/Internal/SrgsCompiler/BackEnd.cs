@@ -358,7 +358,7 @@ namespace System.Speech.Internal.SrgsCompiler
                 }
             }
 
-            return rule != null ? rule : null;
+            return rule ?? null;
         }
 
         /// <summary>

@@ -705,7 +705,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             if (result != 0)
             {
-                throw ExceptionHelper.GetExceptionFromErrorCode(result, (domainControllerName != null) ? domainControllerName : domainName);
+                throw ExceptionHelper.GetExceptionFromErrorCode(result, domainControllerName ?? domainName);
             }
             return handle;
         }
