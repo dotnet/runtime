@@ -22333,35 +22333,37 @@ void Compiler::pickGDV(GenTreeCall*           call,
     }
 
 #ifdef DEBUG
-    if (verbose && (numberOfClasses > 0))
+    if ((verbose || JitConfig.EnableExtraSuperPmiQueries()) && (numberOfClasses > 0))
     {
         bool                 isExact;
         bool                 isNonNull;
         CallArg*             thisArg            = call->gtArgs.GetThisArg();
         CORINFO_CLASS_HANDLE declaredThisClsHnd = gtGetClassHandle(thisArg->GetNode(), &isExact, &isNonNull);
-        printf("Likely classes for call [%06u]", dspTreeID(call));
+        JITDUMP("Likely classes for call [%06u]", dspTreeID(call));
         if (declaredThisClsHnd != NO_CLASS_HANDLE)
         {
-            printf(" on class %p (%s)", declaredThisClsHnd, eeGetClassName(declaredThisClsHnd));
+            const char* baseClassName = eeGetClassName(declaredThisClsHnd);
+            JITDUMP(" on class %p (%s)", declaredThisClsHnd, baseClassName);
         }
-        printf("\n");
+        JITDUMP("\n");
 
         for (UINT32 i = 0; i < numberOfClasses; i++)
         {
-            printf("  %u) %p (%s) [likelihood:%u%%]\n", i + 1, likelyClasses[i].handle,
-                   eeGetClassName((CORINFO_CLASS_HANDLE)likelyClasses[i].handle), likelyClasses[i].likelihood);
+            const char* className = eeGetClassName((CORINFO_CLASS_HANDLE)likelyClasses[i].handle);
+            JITDUMP("  %u) %p (%s) [likelihood:%u%%]\n", i + 1, likelyClasses[i].handle,
+                    className, likelyClasses[i].likelihood);
         }
     }
 
-    if (verbose && (numberOfMethods > 0))
+    if ((verbose || JitConfig.EnableExtraSuperPmiQueries()) && (numberOfMethods > 0))
     {
         assert(call->gtCallType == CT_USER_FUNC);
-        printf("Likely methods for call [%06u] to method %s\n", dspTreeID(call),
-               eeGetMethodFullName(call->gtCallMethHnd));
+        const char* baseMethName = eeGetMethodFullName(call->gtCallMethHnd);
+        JITDUMP("Likely methods for call [%06u] to method %s\n", dspTreeID(call), baseMethName);
 
         for (UINT32 i = 0; i < numberOfMethods; i++)
         {
-            CORINFO_CONST_LOOKUP lookup;
+            CORINFO_CONST_LOOKUP lookup = {};
             info.compCompHnd->getFunctionFixedEntryPoint((CORINFO_METHOD_HANDLE)likelyMethods[i].handle, false,
                                                          &lookup);
 
@@ -22369,19 +22371,19 @@ void Compiler::pickGDV(GenTreeCall*           call,
             switch (lookup.accessType)
             {
                 case IAT_VALUE:
-                    printf("  %u) %p (%s) [likelihood:%u%%]\n", i + 1, lookup.addr, methName,
-                           likelyMethods[i].likelihood);
+                    JITDUMP("  %u) %p (%s) [likelihood:%u%%]\n", i + 1, lookup.addr, methName,
+                            likelyMethods[i].likelihood);
                     break;
                 case IAT_PVALUE:
-                    printf("  %u) [%p] (%s) [likelihood:%u%%]\n", i + 1, lookup.addr, methName,
-                           likelyMethods[i].likelihood);
+                    JITDUMP("  %u) [%p] (%s) [likelihood:%u%%]\n", i + 1, lookup.addr, methName,
+                            likelyMethods[i].likelihood);
                     break;
                 case IAT_PPVALUE:
-                    printf("  %u) [[%p]] (%s) [likelihood:%u%%]\n", i + 1, lookup.addr, methName,
-                           likelyMethods[i].likelihood);
+                    JITDUMP("  %u) [[%p]] (%s) [likelihood:%u%%]\n", i + 1, lookup.addr, methName,
+                            likelyMethods[i].likelihood);
                     break;
                 default:
-                    printf("  %u) %s [likelihood:%u%%]\n", i + 1, methName, likelyMethods[i].likelihood);
+                    JITDUMP("  %u) %s [likelihood:%u%%]\n", i + 1, methName, likelyMethods[i].likelihood);
                     break;
             }
         }
