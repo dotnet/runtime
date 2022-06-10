@@ -16,59 +16,99 @@ namespace System.Net.Http.Json
     public static partial class HttpClientJsonExtensions
     {
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
-        public static Task<object?> DeleteFromJsonAsync(this HttpClient client!!, string? requestUri, Type type, JsonSerializerOptions? options, CancellationToken cancellationToken = default)
+        public static Task<object?> DeleteFromJsonAsync(this HttpClient client, [StringSyntax("Uri")] string? requestUri, Type type, JsonSerializerOptions? options, CancellationToken cancellationToken = default)
         {
-            Task<HttpResponseMessage> taskResponse = client.DeleteAsync(requestUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+            if (client is null)
+            {
+                throw new ArgumentNullException(nameof(client));
+            }
+
+            Task<HttpResponseMessage> taskResponse = client.DeleteAsync(requestUri, cancellationToken);
             return DeleteFromJsonAsyncCore(taskResponse, type, options, cancellationToken);
         }
 
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
-        public static Task<object?> DeleteFromJsonAsync(this HttpClient client!!, Uri? requestUri, Type type, JsonSerializerOptions? options, CancellationToken cancellationToken = default)
+        public static Task<object?> DeleteFromJsonAsync(this HttpClient client, Uri? requestUri, Type type, JsonSerializerOptions? options, CancellationToken cancellationToken = default)
         {
-            Task<HttpResponseMessage> taskResponse = client.DeleteAsync(requestUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+            if (client is null)
+            {
+                throw new ArgumentNullException(nameof(client));
+            }
+
+            Task<HttpResponseMessage> taskResponse = client.DeleteAsync(requestUri, cancellationToken);
             return DeleteFromJsonAsyncCore(taskResponse, type, options, cancellationToken);
         }
 
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
-        public static Task<TValue?> DeleteFromJsonAsync<TValue>(this HttpClient client!!, string? requestUri, JsonSerializerOptions? options, CancellationToken cancellationToken = default)
+        public static Task<TValue?> DeleteFromJsonAsync<TValue>(this HttpClient client, [StringSyntax("Uri")] string? requestUri, JsonSerializerOptions? options, CancellationToken cancellationToken = default)
         {
-            Task<HttpResponseMessage> taskResponse = client.DeleteAsync(requestUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+            if (client is null)
+            {
+                throw new ArgumentNullException(nameof(client));
+            }
+
+            Task<HttpResponseMessage> taskResponse = client.DeleteAsync(requestUri, cancellationToken);
             return DeleteFromJsonAsyncCore<TValue>(taskResponse, options, cancellationToken);
         }
 
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
-        public static Task<TValue?> DeleteFromJsonAsync<TValue>(this HttpClient client!!, Uri? requestUri, JsonSerializerOptions? options, CancellationToken cancellationToken = default)
+        public static Task<TValue?> DeleteFromJsonAsync<TValue>(this HttpClient client, Uri? requestUri, JsonSerializerOptions? options, CancellationToken cancellationToken = default)
         {
-            Task<HttpResponseMessage> taskResponse = client.DeleteAsync(requestUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+            if (client is null)
+            {
+                throw new ArgumentNullException(nameof(client));
+            }
+
+            Task<HttpResponseMessage> taskResponse = client.DeleteAsync(requestUri, cancellationToken);
             return DeleteFromJsonAsyncCore<TValue>(taskResponse, options, cancellationToken);
         }
 
-        public static Task<object?> DeleteFromJsonAsync(this HttpClient client!!, string? requestUri, Type type, JsonSerializerContext context, CancellationToken cancellationToken = default)
+        public static Task<object?> DeleteFromJsonAsync(this HttpClient client, [StringSyntax("Uri")] string? requestUri, Type type, JsonSerializerContext context, CancellationToken cancellationToken = default)
         {
-            Task<HttpResponseMessage> taskResponse = client.DeleteAsync(requestUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+            if (client is null)
+            {
+                throw new ArgumentNullException(nameof(client));
+            }
+
+            Task<HttpResponseMessage> taskResponse = client.DeleteAsync(requestUri, cancellationToken);
             return DeleteFromJsonAsyncCore(taskResponse, type, context, cancellationToken);
         }
 
-        public static Task<object?> DeleteFromJsonAsync(this HttpClient client!!, Uri? requestUri, Type type, JsonSerializerContext context, CancellationToken cancellationToken = default)
+        public static Task<object?> DeleteFromJsonAsync(this HttpClient client, Uri? requestUri, Type type, JsonSerializerContext context, CancellationToken cancellationToken = default)
         {
-            Task<HttpResponseMessage> taskResponse = client.DeleteAsync(requestUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+            if (client is null)
+            {
+                throw new ArgumentNullException(nameof(client));
+            }
+
+            Task<HttpResponseMessage> taskResponse = client.DeleteAsync(requestUri, cancellationToken);
             return DeleteFromJsonAsyncCore(taskResponse, type, context, cancellationToken);
         }
 
-        public static Task<TValue?> DeleteFromJsonAsync<TValue>(this HttpClient client!!, string? requestUri, JsonTypeInfo<TValue> jsonTypeInfo, CancellationToken cancellationToken = default)
+        public static Task<TValue?> DeleteFromJsonAsync<TValue>(this HttpClient client, [StringSyntax("Uri")] string? requestUri, JsonTypeInfo<TValue> jsonTypeInfo, CancellationToken cancellationToken = default)
         {
-            Task<HttpResponseMessage> taskResponse = client.DeleteAsync(requestUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+            if (client is null)
+            {
+                throw new ArgumentNullException(nameof(client));
+            }
+
+            Task<HttpResponseMessage> taskResponse = client.DeleteAsync(requestUri, cancellationToken);
             return DeleteFromJsonAsyncCore(taskResponse, jsonTypeInfo, cancellationToken);
         }
 
-        public static Task<TValue?> DeleteFromJsonAsync<TValue>(this HttpClient client!!, Uri? requestUri, JsonTypeInfo<TValue> jsonTypeInfo, CancellationToken cancellationToken = default)
+        public static Task<TValue?> DeleteFromJsonAsync<TValue>(this HttpClient client, Uri? requestUri, JsonTypeInfo<TValue> jsonTypeInfo, CancellationToken cancellationToken = default)
         {
-            Task<HttpResponseMessage> taskResponse = client.DeleteAsync(requestUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+            if (client is null)
+            {
+                throw new ArgumentNullException(nameof(client));
+            }
+
+            Task<HttpResponseMessage> taskResponse = client.DeleteAsync(requestUri, cancellationToken);
             return DeleteFromJsonAsyncCore<TValue>(taskResponse, jsonTypeInfo, cancellationToken);
         }
 
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
-        public static Task<object?> DeleteFromJsonAsync(this HttpClient client, string? requestUri, Type type, CancellationToken cancellationToken = default)
+        public static Task<object?> DeleteFromJsonAsync(this HttpClient client, [StringSyntax("Uri")] string? requestUri, Type type, CancellationToken cancellationToken = default)
             => client.DeleteFromJsonAsync(requestUri, type, options: null, cancellationToken);
 
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
@@ -76,7 +116,7 @@ namespace System.Net.Http.Json
             => client.DeleteFromJsonAsync(requestUri, type, options: null, cancellationToken);
 
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
-        public static Task<TValue?> DeleteFromJsonAsync<TValue>(this HttpClient client, string? requestUri, CancellationToken cancellationToken = default)
+        public static Task<TValue?> DeleteFromJsonAsync<TValue>(this HttpClient client, [StringSyntax("Uri")] string? requestUri, CancellationToken cancellationToken = default)
             => client.DeleteFromJsonAsync<TValue>(requestUri, options: null, cancellationToken);
 
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
@@ -117,18 +157,6 @@ namespace System.Net.Http.Json
                 return await ReadFromJsonAsyncHelper<T>(response.Content!, options, cancellationToken).ConfigureAwait(false);
             }
         }
-
-        // Workaround for https://github.com/mono/linker/issues/1416, extracting the offending call into a separate method
-        // which can be annotated with suppressions.
-        // Note that in this case it can't be a local function since that inherits a generic parameter from the parent method
-        // which causes a trimmer warning coming from compiler generated code, which is very hard to suppress.
-        // Avoid that by declaring it a normal method which fully defines its own generic parameters.
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "Workaround for https://github.com/mono/linker/issues/1416. The outer method is marked as RequiresUnreferencedCode.")]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2091:UnrecognizedReflectionPattern",
-            Justification = "Workaround for https://github.com/mono/linker/issues/1416. The outer method is marked as RequiresUnreferencedCode.")]
-        private static Task<T?> ReadFromJsonAsyncHelper<T>(HttpContent content, JsonSerializerOptions? options, CancellationToken cancellationToken)
-            => content.ReadFromJsonAsync<T>(options, cancellationToken);
 
         private static async Task<object?> DeleteFromJsonAsyncCore(Task<HttpResponseMessage> taskResponse, Type type, JsonSerializerContext context, CancellationToken cancellationToken)
         {
