@@ -665,25 +665,31 @@ void Lowering::LowerRotate(GenTree* tree)
 //    A new tree node if it changed.
 //
 // Notes:
+//     {expr} % {cns}
+//     Logically turns into:
+//         let a = {expr}
+//         if a > 0 then (a & ({cns} - 1)) else -(-a & ({cns} - 1))
+//     which then turns into:
+//         and   reg1, reg0, #({cns} - 1)
+//         negs  reg0, reg0
+//         and   reg0, reg0, #({cns} - 1)
+//         csneg reg0, reg1, reg0, mi
 //     TODO: We could do this optimization in morph but we do not have
 //           a conditional select op in HIR. At some point, we may
 //           introduce such an op.
-GenTree* Lowering::LowerModPow2(GenTree* node)
+void Lowering::LowerModPow2(GenTree* node)
 {
     assert(node->OperIs(GT_MOD));
     GenTreeOp* mod      = node->AsOp();
     GenTree*   dividend = mod->gtGetOp1();
     GenTree*   divisor  = mod->gtGetOp2();
 
-    JITDUMP("Lower: optimize X MOD POW2");
-
     assert(divisor->IsIntegralConstPow2());
 
     const var_types type = mod->TypeGet();
     assert((type == TYP_INT) || (type == TYP_LONG));
 
-    ssize_t divisorCnsValue         = static_cast<ssize_t>(divisor->AsIntConCommon()->IntegralValue());
-    ssize_t divisorCnsValueMinusOne = divisorCnsValue - 1;
+    ssize_t cnsValue = static_cast<ssize_t>(divisor->AsIntConCommon()->IntegralValue()) - 1;
 
     BlockRange().Remove(divisor);
 
@@ -695,72 +701,33 @@ GenTree* Lowering::LowerModPow2(GenTree* node)
     GenTree* dividend2 = comp->gtClone(dividend);
     BlockRange().InsertAfter(dividend, dividend2);
 
-    if (divisorCnsValue == 2)
-    {
-        // {expr} % 2
+    GenTreeIntCon* cns = comp->gtNewIconNode(cnsValue, type);
+    BlockRange().InsertAfter(dividend2, cns);
 
-        GenTreeIntCon* cns = comp->gtNewIconNode(divisorCnsValueMinusOne, type);
-        BlockRange().InsertAfter(dividend2, cns);
+    GenTree* const trueExpr = comp->gtNewOperNode(GT_AND, type, dividend, cns);
+    BlockRange().InsertAfter(cns, trueExpr);
+    LowerNode(trueExpr);
 
-        GenTree* const trueExpr = comp->gtNewOperNode(GT_AND, type, dividend, cns);
-        BlockRange().InsertAfter(cns, trueExpr);
-        LowerNode(trueExpr);
+    GenTree* const neg = comp->gtNewOperNode(GT_NEG, type, dividend2);
+    neg->gtFlags |= GTF_SET_FLAGS;
+    BlockRange().InsertAfter(trueExpr, neg);
 
-        GenTreeIntCon* cnsZero = comp->gtNewIconNode(0, type);
-        BlockRange().InsertAfter(trueExpr, cnsZero);
+    GenTreeIntCon* cns2 = comp->gtNewIconNode(cnsValue, type);
+    BlockRange().InsertAfter(neg, cns2);
 
-        GenTree* const cmp = comp->gtNewOperNode(GT_CMP, type, dividend2, cnsZero);
-        cmp->gtFlags |= GTF_SET_FLAGS;
-        BlockRange().InsertAfter(cnsZero, cmp);
-        LowerNode(cmp);
+    GenTree* const falseExpr = comp->gtNewOperNode(GT_AND, type, neg, cns2);
+    BlockRange().InsertAfter(cns2, falseExpr);
+    LowerNode(falseExpr);
 
-        mod->ChangeOper(GT_CNEG_LT);
-        mod->gtOp1 = trueExpr;
-        mod->gtFlags |= GTF_USE_FLAGS;
+    mod->ChangeOper(GT_CSNEG_MI);
+    mod->gtOp1 = trueExpr;
+    mod->gtOp2 = falseExpr;
+    mod->gtFlags |= GTF_USE_FLAGS;
 
-        ContainCheckNode(mod);
+    JITDUMP("Lower: optimize X MOD POW2");
+    DISPNODE(mod);
 
-        return mod->gtNext;
-    }
-    else
-    {
-        // {expr} % {cns}
-        // Logically turns into:
-        //     let a = {expr}
-        //     if a > 0 then (a & ({cns} - 1)) else -(-a & ({cns} - 1))
-        // which then turns into:
-        //     and   reg1, reg0, #({cns} - 1)
-        //     negs  reg0, reg0
-        //     and   reg0, reg0, #({cns} - 1)
-        //     csneg reg0, reg1, reg0, mi
-
-        GenTreeIntCon* cns = comp->gtNewIconNode(divisorCnsValueMinusOne, type);
-        BlockRange().InsertAfter(dividend2, cns);
-
-        GenTree* const trueExpr = comp->gtNewOperNode(GT_AND, type, dividend, cns);
-        BlockRange().InsertAfter(cns, trueExpr);
-        LowerNode(trueExpr);
-
-        GenTree* const neg = comp->gtNewOperNode(GT_NEG, type, dividend2);
-        neg->gtFlags |= GTF_SET_FLAGS;
-        BlockRange().InsertAfter(trueExpr, neg);
-
-        GenTreeIntCon* cns2 = comp->gtNewIconNode(divisorCnsValueMinusOne, type);
-        BlockRange().InsertAfter(neg, cns2);
-
-        GenTree* const falseExpr = comp->gtNewOperNode(GT_AND, type, neg, cns2);
-        BlockRange().InsertAfter(cns2, falseExpr);
-        LowerNode(falseExpr);
-
-        mod->ChangeOper(GT_CSNEG_MI);
-        mod->gtOp1 = trueExpr;
-        mod->gtOp2 = falseExpr;
-        mod->gtFlags |= GTF_USE_FLAGS;
-
-        ContainCheckNode(mod);
-
-        return mod->gtNext;
-    }
+    ContainCheckNode(mod);
 }
 
 //------------------------------------------------------------------------
