@@ -1464,7 +1464,6 @@ mono_metadata_decode_row_col_slow (const MonoTableInfo *t, int idx, guint col)
 guint32
 mono_metadata_decode_row_col_raw (const MonoTableInfo *t, int idx, guint col)
 {
-	guint i;
 	const char *data;
 	int n;
 
@@ -1475,7 +1474,7 @@ mono_metadata_decode_row_col_raw (const MonoTableInfo *t, int idx, guint col)
 	data = t->base + idx * t->row_size;
 
 	n = mono_metadata_table_size (bitfield, 0);
-	for (i = 0; i < col; ++i) {
+	for (guint i = 0; i < col; ++i) {
 		data += n;
 		n = mono_metadata_table_size (bitfield, i + 1);
 	}
@@ -1871,11 +1870,10 @@ mono_metadata_generic_inst_hash (gconstpointer data)
 {
 	const MonoGenericInst *ginst = (const MonoGenericInst *) data;
 	guint hash = 0;
-	guint i;
 	g_assert (ginst);
 	g_assert (ginst->type_argv);
 
-	for (i = 0; i < ginst->type_argc; ++i) {
+	for (guint i = 0; i < ginst->type_argc; ++i) {
 		hash *= 13;
 		g_assert (ginst->type_argv [i]);
 		hash += mono_metadata_type_hash (ginst->type_argv [i]);
@@ -1887,8 +1885,6 @@ mono_metadata_generic_inst_hash (gconstpointer data)
 static gboolean
 mono_generic_inst_equal_full (const MonoGenericInst *a, const MonoGenericInst *b, gboolean signature_only)
 {
-	guint i;
-
 	// An optimization: if the ids of two insts are the same, we know they are the same inst and don't check contents.
 	// Furthermore, because we perform early de-duping, if the ids differ, we know the contents differ.
 #ifndef MONO_SMALL_CONFIG // Optimization does not work in MONO_SMALL_CONFIG: There are no IDs
@@ -1904,7 +1900,7 @@ mono_generic_inst_equal_full (const MonoGenericInst *a, const MonoGenericInst *b
 
 	if (a->is_open != b->is_open || a->type_argc != b->type_argc)
 		return FALSE;
-	for (i = 0; i < a->type_argc; ++i) {
+	for (guint i = 0; i < a->type_argc; ++i) {
 		if (!do_mono_metadata_type_equal (a->type_argv [i], b->type_argv [i], signature_only))
 			return FALSE;
 	}
@@ -2907,9 +2903,7 @@ signature_in_image (MonoMethodSignature *sig, MonoImage *image)
 static gboolean
 ginst_in_image (MonoGenericInst *ginst, MonoImage *image)
 {
-	guint i;
-
-	for (i = 0; i < ginst->type_argc; ++i) {
+	for (guint i = 0; i < ginst->type_argc; ++i) {
 		if (type_in_image (ginst->type_argv [i], image))
 			return TRUE;
 	}
@@ -3037,9 +3031,7 @@ collect_type_images (MonoType *type, CollectData *data);
 static void
 collect_ginst_images (MonoGenericInst *ginst, CollectData *data)
 {
-	guint i;
-
-	for (i = 0; i < ginst->type_argc; ++i) {
+	for (guint i = 0; i < ginst->type_argc; ++i) {
 		collect_type_images (ginst->type_argv [i], data);
 	}
 }
@@ -3236,10 +3228,8 @@ check_gmethod (gpointer key, gpointer value, gpointer data)
 static void
 free_generic_inst (MonoGenericInst *ginst)
 {
-	guint i;
-
 	/* The ginst itself is allocated from the image set mempool */
-	for (i = 0; i < ginst->type_argc; ++i)
+	for (guint i = 0; i < ginst->type_argc; ++i)
 		mono_metadata_free_type (ginst->type_argv [i]);
 }
 
@@ -3572,7 +3562,7 @@ mono_metadata_inflate_generic_inst (MonoGenericInst *ginst, MonoGenericContext *
 {
 	MonoType **type_argv;
 	MonoGenericInst *nginst = NULL;
-	guint i, count = 0;
+	guint count = 0;
 
 	error_init (error);
 
@@ -3581,7 +3571,7 @@ mono_metadata_inflate_generic_inst (MonoGenericInst *ginst, MonoGenericContext *
 
 	type_argv = g_new0 (MonoType*, ginst->type_argc);
 
-	for (i = 0; i < ginst->type_argc; i++) {
+	for (guint i = 0; i < ginst->type_argc; i++) {
 		type_argv [i] = mono_class_inflate_generic_type_checked (ginst->type_argv [i], context, error);
 		if (!is_ok (error))
 			goto cleanup;
@@ -3591,7 +3581,7 @@ mono_metadata_inflate_generic_inst (MonoGenericInst *ginst, MonoGenericContext *
 	nginst = mono_metadata_get_generic_inst (ginst->type_argc, type_argv);
 
 cleanup:
-	for (i = 0; i < count; i++)
+	for (guint i = 0; i < count; i++)
 		mono_metadata_free_type (type_argv [i]);
 	g_free (type_argv);
 
@@ -6286,7 +6276,7 @@ mono_metadata_get_constant_index (MonoImage *meta, guint32 token, guint32 hint)
 
 	/* FIXME: Index translation */
 
-	if ((hint > 0) && (hint < GINT_TO_UINT32(table_info_get_rows (tdef))) && (mono_metadata_decode_row_col (tdef, hint - 1, MONO_CONSTANT_PARENT) == index))
+	if ((hint > 0) && (hint < table_info_get_rows (tdef)) && (mono_metadata_decode_row_col (tdef, hint - 1, MONO_CONSTANT_PARENT) == index))
 		return hint;
 
 	if (tdef->base && mono_binary_search (&loc, tdef->base, table_info_get_rows (tdef), tdef->row_size, table_locator)) {
@@ -6342,7 +6332,7 @@ mono_metadata_events_from_typedef (MonoImage *meta, guint32 index, guint *end_id
 	}
 
 	start = mono_metadata_decode_row_col (tdef, loc.result, MONO_EVENT_MAP_EVENTLIST);
-	if (loc.result + 1 < GINT_TO_UINT32(table_info_get_rows (tdef))) {
+	if (loc.result + 1 < table_info_get_rows (tdef)) {
 		end = mono_metadata_decode_row_col (tdef, loc.result + 1, MONO_EVENT_MAP_EVENTLIST) - 1;
 	} else {
 		end = table_info_get_rows (&meta->tables [MONO_TABLE_EVENT]);
@@ -7226,12 +7216,11 @@ mono_metadata_load_generic_param_constraints_checked (MonoImage *image, guint32 
 {
 
 	guint32 start_row, owner;
-	int i;
 	error_init (error);
 
 	if (! (start_row = mono_metadata_get_generic_param_row (image, token, &owner)))
 		return TRUE;
-	for (i = 0; i < container->type_argc; i++) {
+	for (int i = 0; i < container->type_argc; i++) {
 		if (!get_constraints (image, start_row + i, &mono_generic_container_get_param_info (container, i)->constraints, container, error)) {
 			return FALSE;
 		}
@@ -7261,7 +7250,7 @@ mono_metadata_load_generic_params (MonoImage *image, guint32 token, MonoGenericC
 {
 	MonoTableInfo *tdef  = &image->tables [MONO_TABLE_GENERICPARAM];
 	guint32 cols [MONO_GENERICPARAM_SIZE];
-	guint32 owner = 0, n, i;
+	guint32 owner = 0, i;
 	MonoGenericContainer *container;
 	MonoGenericParamFull *params;
 	MonoGenericContext *context;
@@ -7272,7 +7261,6 @@ mono_metadata_load_generic_params (MonoImage *image, guint32 token, MonoGenericC
 		return NULL;
 	mono_metadata_decode_row (tdef, i - 1, cols, MONO_GENERICPARAM_SIZE);
 	params = NULL;
-	n = 0;
 	container = (MonoGenericContainer *)mono_image_alloc0 (image, sizeof (MonoGenericContainer));
 	container->is_anonymous = is_anonymous;
 	if (is_anonymous) {
@@ -7295,6 +7283,7 @@ mono_metadata_load_generic_params (MonoImage *image, guint32 token, MonoGenericC
 	params = (MonoGenericParamFull *)mono_image_alloc0 (image, sizeof (MonoGenericParamFull) * type_argc);
 
 	/* second pass, fill in the gparam data */
+	guint32 n = 0;
 	mono_metadata_decode_row (tdef, i - 1, cols, MONO_GENERICPARAM_SIZE);
 	do {
 		n++;
