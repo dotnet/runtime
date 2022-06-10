@@ -118,10 +118,10 @@ namespace System
 
         private static string? GetEnumName(EnumInfo enumInfo, ulong ulValue)
         {
-            int index = FindDefinedIndex(enumInfo.Values, ulValue);
+            int index = FindDefinedIndex(enumInfo.Values!, ulValue);
             if (index >= 0)
             {
-                return enumInfo.Names[index];
+                return enumInfo.Names![index];
             }
 
             return null; // return null so the caller knows to .ToString() the input
@@ -148,8 +148,8 @@ namespace System
 
         private static string? InternalFlagsFormat(EnumInfo enumInfo, ulong resultValue)
         {
-            string[] names = enumInfo.Names;
-            ulong[] values = enumInfo.Values;
+            string[] names = enumInfo.Names!;
+            ulong[] values = enumInfo.Values!;
             Debug.Assert(names.Length == values.Length);
 
             // Values are sorted, so if the incoming value is 0, we can check to see whether
@@ -302,7 +302,7 @@ namespace System
 
         internal static string[] InternalGetNames(RuntimeType enumType) =>
             // Get all of the names
-            GetEnumInfo(enumType, true).Names;
+            GetEnumInfo(enumType, true).Names!;
 
         public static Type GetUnderlyingType(Type enumType)
         {
@@ -380,7 +380,7 @@ namespace System
         internal static ulong[] InternalGetValues(RuntimeType enumType)
         {
             // Get all of the values
-            return GetEnumInfo(enumType, false).Values;
+            return GetEnumInfo(enumType, false).Values!;
         }
 
         public static bool IsDefined<TEnum>(TEnum value) where TEnum : struct, Enum
@@ -929,8 +929,8 @@ namespace System
 
             // Find the field. Let's assume that these are always static classes because the class is an enum.
             EnumInfo enumInfo = GetEnumInfo(enumType);
-            string[] enumNames = enumInfo.Names;
-            ulong[] enumValues = enumInfo.Values;
+            string[] enumNames = enumInfo.Names!;
+            ulong[] enumValues = enumInfo.Values!;
 
             bool parsed = true;
             ulong localResult = 0;
