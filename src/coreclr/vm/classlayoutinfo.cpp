@@ -56,7 +56,7 @@ namespace
                 pfwalk->m_sequence = (ULONG)-1;
 
                 // Treat base class as an initial member.
-                if (!SafeAddUINT32(&(pfwalk->m_placement.m_offset), cbAdjustedParentLayoutNativeSize))
+                if (!ClrSafeInt<UINT32>::addition(pfwalk->m_placement.m_offset, cbAdjustedParentLayoutNativeSize, pfwalk->m_placement.m_offset))
                     COMPlusThrowOM();
             }
         }
@@ -172,7 +172,7 @@ namespace
                 // Insert enough padding to align the current data member.
                 while (cbCurOffset % alignmentRequirement)
                 {
-                    if (!SafeAddUINT32(&cbCurOffset, 1))
+                    if (ClrSafeInt<UINT32>::addition(cbCurOffset, 1, cbCurOffset))
                         COMPlusThrowOM();
                 }
 
