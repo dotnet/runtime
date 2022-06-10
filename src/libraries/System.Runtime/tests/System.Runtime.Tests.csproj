@@ -11,7 +11,7 @@
   </PropertyGroup>
 
   <!-- 
-    Add special trait to run local timezone validation test on devices.  We want to make sure the local timezone is correct and not UTC
+    Add special trait for running local timezone validation tests on certain devices e.g. in CI to make sure the local timezone is correct and not UTC. Disable these tests otherwise.
   -->
   <PropertyGroup>
     <WithoutCategories Condition="'$(EnableAdditionalTimezoneChecks)' != 'true'">$(WithoutCategories);AdditionalTimezoneChecks</WithoutCategories>
