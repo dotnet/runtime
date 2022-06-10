@@ -20,6 +20,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RequirePublicParameterlessConstructor ((object) typeof (C1) as MyReflect);
 			s_requirePublicNestedTypes = ((object) typeof (C2)) as MyReflectDerived;
 			RequirePrivateMethods (typeof (C3));
+			ReflectOverType.Test ();
 		}
 
 		[Kept]
@@ -65,29 +66,53 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		[Kept]
 		[KeptInterface (typeof (IReflect))]
+		[KeptMember (".ctor()")]
 		class MyReflect : IReflect
 		{
-			public Type UnderlyingSystemType => throw new NotImplementedException ();
+			[Kept]
+			public Type UnderlyingSystemType { [Kept] get => throw new NotImplementedException (); }
+			[Kept]
+			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
 			public FieldInfo GetField (string name, BindingFlags bindingAttr) => throw new NotImplementedException ();
+			[Kept]
+			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
 			public FieldInfo[] GetFields (BindingFlags bindingAttr) => throw new NotImplementedException ();
+			[Kept]
+			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
 			[DynamicallyAccessedMembers ((DynamicallyAccessedMemberTypes) 8191)]
 			public MemberInfo[] GetMember (string name, BindingFlags bindingAttr) => throw new NotImplementedException ();
+			[Kept]
+			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
 			[DynamicallyAccessedMembers ((DynamicallyAccessedMemberTypes) 8191)]
 			public MemberInfo[] GetMembers (BindingFlags bindingAttr) => throw new NotImplementedException ();
+			[Kept]
+			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
 			public MethodInfo GetMethod (string name, BindingFlags bindingAttr) => throw new NotImplementedException ();
+			[Kept]
+			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
 			public MethodInfo GetMethod (string name, BindingFlags bindingAttr, Binder binder, Type[] types, ParameterModifier[] modifiers) => throw new NotImplementedException ();
+			[Kept]
+			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
 			public MethodInfo[] GetMethods (BindingFlags bindingAttr) => throw new NotImplementedException ();
+			[Kept]
+			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
 			public PropertyInfo[] GetProperties (BindingFlags bindingAttr) => throw new NotImplementedException ();
+			[Kept]
+			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
 			public PropertyInfo GetProperty (string name, BindingFlags bindingAttr) => throw new NotImplementedException ();
+			[Kept]
+			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
 			public PropertyInfo GetProperty (string name, BindingFlags bindingAttr, Binder binder, Type returnType, Type[] types, ParameterModifier[] modifiers) => throw new NotImplementedException ();
+			[Kept]
+			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)]
 			public object InvokeMember (string name, BindingFlags invokeAttr, Binder binder, object target, object[] args, ParameterModifier[] modifiers, CultureInfo culture, string[] namedParameters) => throw new NotImplementedException ();
 		}
@@ -96,6 +121,54 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[KeptBaseType (typeof (MyReflect))]
 		class MyReflectDerived : MyReflect
 		{
+		}
+
+		// This is effectively an E2E test for a situation encountered in https://github.com/dotnet/winforms/blob/main/src/System.Windows.Forms/src/System/Windows/Forms/HtmlToClrEventProxy.cs
+		// Validates that by using IReflect there's no escaping the annotations system.
+		[Kept]
+		class ReflectOverType
+		{
+			[Kept]
+			[KeptBaseType (typeof (MyReflect))]
+			class MyReflectOverType : MyReflect
+			{
+				[Kept]
+				[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
+				Type _underlyingType;
+				[Kept]
+				[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
+				IReflect _underlyingReflect;
+
+				[Kept]
+				public MyReflectOverType (
+					[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+					[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
+					Type type)
+				{
+					_underlyingType = type;
+					_underlyingReflect = _underlyingType as IReflect;
+				}
+
+				[Kept]
+				[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
+				public FieldInfo[] GetFields (BindingFlags bindingAttr) => _underlyingReflect.GetFields (bindingAttr);
+			}
+
+			[Kept]
+			class TestType
+			{
+				[Kept]
+				public int Field;
+			}
+
+			[Kept]
+			public static void Test ()
+			{
+				new MyReflectOverType (typeof (TestType)).GetFields (BindingFlags.Instance | BindingFlags.Public);
+			}
 		}
 	}
 }
