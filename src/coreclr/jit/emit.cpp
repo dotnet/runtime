@@ -3910,7 +3910,12 @@ void emitter::emitDispJumpList()
         printf("IG%02u IN%04x %3s[%u] -> IG%02u %s\n", jmp->idjIG->igNum, jmp->idDebugOnlyInfo()->idNum,
                codeGen->genInsDisplayName(jmp), jmp->idCodeSize(),
                ((insGroup*)emitCodeGetCookie(jmp->idAddr()->iiaBBlabel))->igNum,
-               jmp->idjIsRemovableJmpCandidate ? " ; removal candidate" : "");
+#if defined(TARGET_XARCH)
+               jmp->idjIsRemovableJmpCandidate ? " ; removal candidate" : ""
+#else
+               ""
+#endif
+        );
 #endif
         jmpCount += 1;
     }
