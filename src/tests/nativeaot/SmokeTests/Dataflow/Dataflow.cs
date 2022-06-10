@@ -108,8 +108,8 @@ class Program
             Assert.NotNull(typeof(TestType1).GetMethod(nameof(TestType1.TestMethod)));
             Assert.Equal(1, typeof(TestType1).CountMethods());
 
-            //Assert.NotNull(typeof(TestType1).GetField(nameof(TestType1.TestField)));
-            //Assert.Equal(1, typeof(TestType1).CountFields());
+            Assert.NotNull(typeof(TestType1).GetField(nameof(TestType1.TestField)));
+            Assert.Equal(1, typeof(TestType1).CountFields());
 
             Assert.NotNull(typeof(TestType2).GetProperty(nameof(TestType2.TestProperty)));
             Assert.NotNull(typeof(TestType2).GetProperty(nameof(TestType2.TestProperty)).GetGetMethod());
