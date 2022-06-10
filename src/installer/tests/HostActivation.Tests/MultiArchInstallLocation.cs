@@ -283,39 +283,42 @@ namespace HostActivation.Tests
         [Fact]
         public void RegisteredInstallLocation_DotNetInfo_ListOtherArchitectures()
         {
-            var dotnet = new DotNetCli(sharedTestState.RepoDirectories.BuiltDotnet);
-            using (var registeredInstallLocationOverride = new RegisteredInstallLocationOverride(dotnet.GreatestVersionHostFxrFilePath))
+            using (var testArtifact = new TestArtifact(SharedFramework.CalculateUniqueTestDirectory(Path.Combine(TestArtifact.TestArtifactsPath, "listOtherArchs"))))
             {
-                var installLocations = new (string, string)[] {
-                    ("arm64", "/arm64/install/path"),
-                    ("x64", "/x64/install/path"),
-                    ("x86", "/x86/install/path")
-                };
-                (string Architecture, string Path) unknownArchInstall = ("unknown", "/unknown/install/path");
-                registeredInstallLocationOverride.SetInstallLocation(installLocations);
-                registeredInstallLocationOverride.SetInstallLocation(unknownArchInstall);
-
-                var result = dotnet.Exec("--info")
-                    .CaptureStdOut()
-                    .ApplyRegisteredInstallLocationOverride(registeredInstallLocationOverride)
-                    .Execute();
-
-                result.Should().Pass()
-                    .And.HaveStdOutContaining("Other architectures found:")
-                    .And.NotHaveStdOutContaining(unknownArchInstall.Architecture)
-                    .And.NotHaveStdOutContaining($"[{unknownArchInstall.Path}]");
-
-                string pathOverride = OperatingSystem.IsWindows() // Host uses short form of base key for Windows
-                    ? registeredInstallLocationOverride.PathValueOverride.Replace(Microsoft.Win32.Registry.CurrentUser.Name, "HKCU")
-                    : registeredInstallLocationOverride.PathValueOverride;
-                pathOverride = System.Text.RegularExpressions.Regex.Escape(pathOverride);
-                foreach ((string arch, string path) in installLocations)
+                var dotnet = new DotNetBuilder(testArtifact.Location, sharedTestState.RepoDirectories.BuiltDotnet, "exe").Build();
+                using (var registeredInstallLocationOverride = new RegisteredInstallLocationOverride(dotnet.GreatestVersionHostFxrFilePath))
                 {
-                    if (arch == sharedTestState.RepoDirectories.BuildArchitecture)
-                        continue;
+                    var installLocations = new (string, string)[] {
+                        ("arm64", "/arm64/install/path"),
+                        ("x64", "/x64/install/path"),
+                        ("x86", "/x86/install/path")
+                    };
+                    (string Architecture, string Path) unknownArchInstall = ("unknown", "/unknown/install/path");
+                    registeredInstallLocationOverride.SetInstallLocation(installLocations);
+                    registeredInstallLocationOverride.SetInstallLocation(unknownArchInstall);
 
-                    result.Should()
-                        .HaveStdOutMatching($@"{arch}\s*\[{path}\]\r?$\s*registered at \[{pathOverride}.*{arch}.*\]", System.Text.RegularExpressions.RegexOptions.Multiline);
+                    var result = dotnet.Exec("--info")
+                        .CaptureStdOut()
+                        .ApplyRegisteredInstallLocationOverride(registeredInstallLocationOverride)
+                        .Execute();
+
+                    result.Should().Pass()
+                        .And.HaveStdOutContaining("Other architectures found:")
+                        .And.NotHaveStdOutContaining(unknownArchInstall.Architecture)
+                        .And.NotHaveStdOutContaining($"[{unknownArchInstall.Path}]");
+
+                    string pathOverride = OperatingSystem.IsWindows() // Host uses short form of base key for Windows
+                        ? registeredInstallLocationOverride.PathValueOverride.Replace(Microsoft.Win32.Registry.CurrentUser.Name, "HKCU")
+                        : registeredInstallLocationOverride.PathValueOverride;
+                    pathOverride = System.Text.RegularExpressions.Regex.Escape(pathOverride);
+                    foreach ((string arch, string path) in installLocations)
+                    {
+                        if (arch == sharedTestState.RepoDirectories.BuildArchitecture)
+                            continue;
+
+                        result.Should()
+                            .HaveStdOutMatching($@"{arch}\s*\[{path}\]\r?$\s*registered at \[{pathOverride}.*{arch}.*\]", System.Text.RegularExpressions.RegexOptions.Multiline);
+                    }
                 }
             }
         }
