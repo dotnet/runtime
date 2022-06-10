@@ -50,7 +50,7 @@ namespace System.Net
             _encoder = new Base64Encoder(_writeState, writeStateInfo.MaxLineLength);
         }
 
-        private ReadStateInfo ReadState => _readState ?? (_readState = new ReadStateInfo());
+        private ReadStateInfo ReadState => _readState ??= new ReadStateInfo();
 
         internal WriteStateInfoBase WriteState
         {

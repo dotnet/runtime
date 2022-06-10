@@ -27,7 +27,7 @@ namespace System.Security.Cryptography.Pkcs
         {
             get
             {
-                return _lazyContentType ?? (_lazyContentType = Decode(RawData));
+                return _lazyContentType ??= Decode(RawData);
             }
         }
 

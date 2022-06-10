@@ -18,7 +18,7 @@ namespace System.Configuration
             _thisElement = thisElement;
         }
 
-        private ConfigurationProperty Prop => _prop ?? (_prop = _thisElement.Properties[Name]);
+        private ConfigurationProperty Prop => _prop ??= _thisElement.Properties[Name];
 
 
         public string Name { get; }

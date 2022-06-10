@@ -45,7 +45,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets the list of event handlers that are attached to this component.
         /// </summary>
-        protected EventHandlerList Events => _events ?? (_events = new EventHandlerList());
+        protected EventHandlerList Events => _events ??= new EventHandlerList();
 
         /// <summary>
         /// Gets or sets the site of the component.

@@ -411,6 +411,9 @@ dotnet_diagnostic.CA1852.severity = warning
 # CA1853: Unnecessary call to 'Dictionary.ContainsKey(key)'
 dotnet_diagnostic.CA1853.severity = warning
 
+# CA1854: Prefer the 'IDictionary.TryGetValue(TKey, out TValue)' method
+dotnet_diagnostic.CA1854.severity = warning
+
 # CA2000: Dispose objects before losing scope
 dotnet_diagnostic.CA2000.severity = none
 
@@ -1507,7 +1510,7 @@ dotnet_diagnostic.IDE0072.severity = silent
 dotnet_diagnostic.IDE0073.severity = warning
 
 # IDE0074: Use compound assignment
-dotnet_diagnostic.IDE0074.severity = suggestion
+dotnet_diagnostic.IDE0074.severity = warning
 
 # IDE0075: Simplify conditional expression
 dotnet_diagnostic.IDE0075.severity = silent
@@ -1546,7 +1549,7 @@ dotnet_diagnostic.IDE0090.severity = silent
 dotnet_diagnostic.IDE0100.severity = suggestion
 
 # IDE0110: Remove unnecessary discard
-dotnet_diagnostic.IDE0110.severity = suggestion
+dotnet_diagnostic.IDE0110.severity = warning
 
 # IDE0120: Simplify LINQ expression
 dotnet_diagnostic.IDE0120.severity = none

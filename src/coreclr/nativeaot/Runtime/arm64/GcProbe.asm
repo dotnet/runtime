@@ -8,7 +8,7 @@
     EXTERN      RhpGcPoll2
     EXTERN      g_fGcStressStarted
 
-PROBE_SAVE_FLAGS_EVERYTHING     equ DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_ALL_SCRATCH
+PROBE_SAVE_FLAGS_EVERYTHING     equ DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_ALL_SCRATCH + PTFF_SAVE_LR
 
     ;; Build a map of symbols representing offsets into the transition frame (see PInvokeTransitionFrame in
     ;; rhbinder.h) and keep these two in sync.

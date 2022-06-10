@@ -15714,15 +15714,6 @@ void Compiler::gtExtractSideEffList(GenTree*     expr,
                         PushSideEffects(node);
                         return Compiler::WALK_SKIP_SUBTREES;
                     }
-
-                    // TODO-ADDR: remove this quirk added to avoid diffs.
-                    if (node->OperIs(GT_IND) && node->AsIndir()->Addr()->OperIs(GT_INDEX_ADDR) &&
-                        !m_compiler->fgGlobalMorph)
-                    {
-                        JITDUMP("Keep the GT_INDEX_ADDR and GT_IND together:\n");
-                        PushSideEffects(node);
-                        return Compiler::WALK_SKIP_SUBTREES;
-                    }
                 }
 
                 // Generally all GT_CALL nodes are considered to have side-effects.

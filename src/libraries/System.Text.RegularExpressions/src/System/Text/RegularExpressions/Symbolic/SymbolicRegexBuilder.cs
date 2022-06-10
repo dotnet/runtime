@@ -118,41 +118,16 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>
         /// Maps state IDs to context-independent information for all states in <see cref="_stateArray"/>.
         /// </summary>
-        internal byte[]? _stateInfo;
+        private ContextIndependentState[] _stateInfo = Array.Empty<ContextIndependentState>();
 
-        // Bit masks for decoding elements of _stateInfo
-        private const int isInitialMask = 0b0001;
-        private const int isDeadendMask = 0b0010;
-        private const int isNullableMask = 0b0100;
-        private const int canBeNullableMask = 0b1000;
-
-        /// <summary>Assign the context-independent information for the given state.</summary>
-        internal void SetStateInfo(int stateId, bool isInitial, bool isDeadend, bool isNullable, bool canBeNullable)
+        /// <summary>Context-independent information available for every state.</summary>
+        [Flags]
+        private enum ContextIndependentState : byte
         {
-            Debug.Assert(_stateInfo is not null);
-            byte info = 0;
-            if (isInitial)
-                info |= isInitialMask;
-            if (isDeadend)
-                info |= isDeadendMask;
-            if (isNullable)
-                info |= isNullableMask;
-            if (canBeNullable)
-                info |= canBeNullableMask;
-            _stateInfo[stateId] = info;
-        }
-
-        /// <summary>Get context-independent information for the given state.</summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal (bool IsInitial, bool IsDeadend, bool IsNullable, bool CanBeNullable) GetStateInfo(int stateId)
-        {
-            Debug.Assert(_stateInfo is not null);
-            byte info = _stateInfo[stateId];
-            return (
-                (info & isInitialMask) != 0,
-                (info & isDeadendMask) != 0,
-                (info & isNullableMask) != 0,
-                (info & canBeNullableMask) != 0);
+            IsInitial = 1,
+            IsDeadend = 2,
+            IsNullable = 4,
+            CanBeNullable = 8,
         }
 
         /// <remarks>
@@ -211,7 +186,7 @@ namespace System.Text.RegularExpressions.Symbolic
             {
                 _stateArray = new DfaMatchingState<TSet>[InitialStateLimit];
                 _capturingStateArray = new DfaMatchingState<TSet>[InitialStateLimit];
-                _stateInfo = new byte[InitialStateLimit];
+                _stateInfo = new ContextIndependentState[InitialStateLimit];
 
                 // the extra +1 slot with id minterms.Length is reserved for \Z (last occurrence of \n)
                 _mintermsLog = BitOperations.Log2((uint)_minterms.Length) + 1;
@@ -238,6 +213,49 @@ namespace System.Text.RegularExpressions.Symbolic
             _singletonCache[_solver.Full] = _anyChar;
         }
 
+        /// <summary>Assign the context-independent information for the given state.</summary>
+        internal void SetStateInfo(int stateId, bool isInitial, bool isDeadend, bool isNullable, bool canBeNullable)
+        {
+            Debug.Assert(stateId > 0);
+            Debug.Assert(!isNullable || canBeNullable);
+
+            ContextIndependentState info = 0;
+
+            if (isInitial)
+            {
+                info |= ContextIndependentState.IsInitial;
+            }
+
+            if (isDeadend)
+            {
+                info |= ContextIndependentState.IsDeadend;
+            }
+
+            if (canBeNullable)
+            {
+                info |= ContextIndependentState.CanBeNullable;
+                if (isNullable)
+                {
+                    info |= ContextIndependentState.IsNullable;
+                }
+            }
+
+            _stateInfo[stateId] = info;
+        }
+
+        /// <summary>Get context-independent information for the given state.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal (bool IsInitial, bool IsDeadend, bool IsNullable, bool CanBeNullable) GetStateInfo(int stateId)
+        {
+            Debug.Assert(stateId > 0);
+
+            ContextIndependentState info = _stateInfo[stateId];
+            return ((info & ContextIndependentState.IsInitial) != 0,
+                    (info & ContextIndependentState.IsDeadend) != 0,
+                    (info & ContextIndependentState.IsNullable) != 0,
+                    (info & ContextIndependentState.CanBeNullable) != 0);
+        }
+
         /// <summary>Lookup the actual minterm based on its ID.</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal TSet GetMinterm(int mintermId)
@@ -253,8 +271,16 @@ namespace System.Text.RegularExpressions.Symbolic
         internal Span<int> GetDeltasFor(DfaMatchingState<TSet> state)
         {
             if (_delta is null || _minterms is null)
-                return Span<int>.Empty;
-            int numMinterms = state.StartsWithLineAnchor ? _minterms.Length + 1 : _minterms.Length;
+            {
+                return default;
+            }
+
+            int numMinterms = _minterms.Length;
+            if (state.StartsWithLineAnchor)
+            {
+                numMinterms++;
+            }
+
             return _delta.AsSpan(state.Id << _mintermsLog, numMinterms);
         }
 
@@ -262,8 +288,16 @@ namespace System.Text.RegularExpressions.Symbolic
         internal Span<int[]?> GetNfaDeltasFor(DfaMatchingState<TSet> state)
         {
             if (_nfaDelta is null || _minterms is null || !_nfaStateArrayInverse.TryGetValue(state.Id, out int nfaState))
-                return Span<int[]?>.Empty;
-            int numMinterms = state.StartsWithLineAnchor ? _minterms.Length + 1 : _minterms.Length;
+            {
+                return default;
+            }
+
+            int numMinterms = _minterms.Length;
+            if (state.StartsWithLineAnchor)
+            {
+                numMinterms++;
+            }
+
             return _nfaDelta.AsSpan(nfaState << _mintermsLog, numMinterms);
         }
 
@@ -298,20 +332,6 @@ namespace System.Text.RegularExpressions.Symbolic
             return or;
         }
 
-        /// <summary>
-        /// Make a concatenation of given nodes, if any regex is nothing then return nothing, eliminate
-        /// intermediate epsilons, if tryCreateFixedLengthMarker and length is fixed, add a fixed length
-        /// marker at the end.
-        /// </summary>
-        internal SymbolicRegexNode<TSet> CreateConcat(List<SymbolicRegexNode<TSet>> nodes) =>
-            CreateConcatAlreadyReversed(EnumerateNodesInReverse(nodes));
-
-        private static IEnumerable<SymbolicRegexNode<TSet>> EnumerateNodesInReverse(List<SymbolicRegexNode<TSet>> nodes)
-        {
-            for (int i = nodes.Count - 1; i >= 0; i--)
-                yield return nodes[i];
-        }
-
         /// <summary>Create a concatenation of given nodes already given in reverse order.</summary>
         /// <remarks>
         /// If any regex is nothing, then return nothing.
@@ -320,6 +340,7 @@ namespace System.Text.RegularExpressions.Symbolic
         internal SymbolicRegexNode<TSet> CreateConcatAlreadyReversed(IEnumerable<SymbolicRegexNode<TSet>> nodes)
         {
             SymbolicRegexNode<TSet> result = Epsilon;
+
             // Iterate through all the nodes concatenating them together in reverse order.
             // Here the nodes enumeration is already reversed, so reversing it back to the original concatenation order.
             foreach (SymbolicRegexNode<TSet> node in nodes)
@@ -526,7 +547,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 cache.Add(state); // Add to cache first to make 1 the first state ID
                 state.Id = cache.Count;
 
-                Debug.Assert(_stateArray is not null && _capturingStateArray is not null && _stateInfo is not null);
+                Debug.Assert(_stateArray is not null && _capturingStateArray is not null);
 
                 const int GrowthSize = 1024;
                 if (capturing)

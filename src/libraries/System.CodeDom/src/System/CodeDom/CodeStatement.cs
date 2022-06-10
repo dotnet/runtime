@@ -10,8 +10,8 @@ namespace System.CodeDom
 
         public CodeLinePragma LinePragma { get; set; }
 
-        public CodeDirectiveCollection StartDirectives => _startDirectives ?? (_startDirectives = new CodeDirectiveCollection());
+        public CodeDirectiveCollection StartDirectives => _startDirectives ??= new CodeDirectiveCollection();
 
-        public CodeDirectiveCollection EndDirectives => _endDirectives ?? (_endDirectives = new CodeDirectiveCollection());
+        public CodeDirectiveCollection EndDirectives => _endDirectives ??= new CodeDirectiveCollection();
     }
 }
