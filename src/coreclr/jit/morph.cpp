@@ -10284,22 +10284,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
         case GT_MUL:
             noway_assert(op2 != nullptr);
 
-            if (opts.OptimizationEnabled() && !optValnumCSE_phase && !tree->gtOverflow())
-            {
-                // MUL(NEG(a), C) => MUL(a, NEG(C))
-                if (op1->OperIs(GT_NEG) && !op1->gtGetOp1()->IsCnsIntOrI() && op2->IsCnsIntOrI() &&
-                    !op2->IsIconHandle())
-                {
-                    GenTree* newOp1   = op1->gtGetOp1();
-                    GenTree* newConst = gtNewIconNode(-op2->AsIntCon()->IconValue(), op2->TypeGet());
-                    DEBUG_DESTROY_NODE(op1);
-                    DEBUG_DESTROY_NODE(op2);
-                    tree->AsOp()->gtOp1 = newOp1;
-                    tree->AsOp()->gtOp2 = newConst;
-                    return fgMorphSmpOp(tree, mac);
-                }
-            }
-
 #ifndef TARGET_64BIT
             if (typ == TYP_LONG)
             {
@@ -12910,6 +12894,20 @@ GenTree* Compiler::fgOptimizeMultiply(GenTreeOp* mul)
 
     if (op2->IsIntegralConst())
     {
+        // We should not get here for 64-bit multiplications on 32-bit.
+        assert(op2->IsCnsIntOrI());
+
+        // MUL(NEG(a), C) => MUL(a, NEG(C))
+        if (opts.OptimizationEnabled() && op1->OperIs(GT_NEG) && !op2->IsIconHandle())
+        {
+            mul->gtOp1                 = op1->AsUnOp()->gtGetOp1();
+            op2->AsIntCon()->gtIconVal = -op2->AsIntCon()->gtIconVal;
+            fgUpdateConstTreeValueNumber(op2);
+            DEBUG_DESTROY_NODE(op1);
+
+            op1 = mul->gtOp1;
+        }
+
         ssize_t mult = op2->AsIntConCommon()->IconValue();
 
         if (mult == 0)
