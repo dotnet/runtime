@@ -8,7 +8,7 @@ using System.Threading;
 
 namespace System.IO.Enumeration
 {
-    public unsafe abstract partial class FileSystemEnumerator<TResult> : CriticalFinalizerObject, IEnumerator<TResult>
+    public abstract unsafe partial class FileSystemEnumerator<TResult> : CriticalFinalizerObject, IEnumerator<TResult>
     {
         // The largest supported path on Unix is 4K bytes of UTF-8 (most only support 1K)
         private const int StandardBufferSize = 4096;

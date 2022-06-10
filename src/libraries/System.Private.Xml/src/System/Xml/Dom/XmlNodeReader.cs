@@ -1027,7 +1027,7 @@ namespace System.Xml
 
             if (scope != XmlNamespaceScope.Local)
             {
-                if (dict.ContainsKey(string.Empty) && dict[string.Empty] == string.Empty)
+                if (dict.TryGetValue(string.Empty, out string? value) && value == string.Empty)
                 {
                     dict.Remove(string.Empty);
                 }

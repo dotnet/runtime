@@ -11831,7 +11831,7 @@ emit_method_inner (EmitContext *ctx)
 	}
 	ctx->has_safepoints = requires_safepoint;
 
-	if (!cfg->llvm_only && mono_threads_are_safepoints_enabled () && requires_safepoint) {
+	if (requires_safepoint && mini_safepoints_enabled ()) {
 		if (!cfg->compile_aot) {
 			LLVMSetGC (method, "coreclr");
 			emit_gc_safepoint_poll (ctx->module, ctx->lmodule, cfg);
