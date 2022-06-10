@@ -488,8 +488,7 @@ namespace System.IO
             // Check if the main path is a directory, or a link to a directory.
             int fileType = _fileCache.Mode & Interop.Sys.FileTypes.S_IFMT;
             bool isDirectory = fileType == Interop.Sys.FileTypes.S_IFDIR ||
-                               (handle is null && // Don't follow links for SafeHandle APIs.
-                                fileType == Interop.Sys.FileTypes.S_IFLNK &&
+                               (fileType == Interop.Sys.FileTypes.S_IFLNK &&
                                 Interop.Sys.Stat(path, out Interop.Sys.FileStatus target) == 0 &&
                                 (target.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR);
 
