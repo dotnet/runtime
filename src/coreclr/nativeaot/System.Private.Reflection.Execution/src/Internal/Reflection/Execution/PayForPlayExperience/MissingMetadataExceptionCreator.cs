@@ -249,7 +249,7 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
                     {
                         genericParameterOffsets.Add(s.Length);
                         if (genericArgCount > 0)
-                            s = s + ",";
+                            s += ",";
                     }
                     s += "]";
                 }
@@ -283,7 +283,7 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
             // Similarly, if we found too few, add them at the end.
             while (genericTypeArguments.Length > genericParameterOffsets.Count)
             {
-                genericTypeDefinitionString = genericTypeDefinitionString + ",";
+                genericTypeDefinitionString += ",";
                 genericParameterOffsets.Add(genericTypeDefinitionString.Length);
             }
 

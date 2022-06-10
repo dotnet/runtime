@@ -2253,7 +2253,7 @@ namespace System.Xml.Serialization
         [RequiresUnreferencedCode("Calls TypeScope.GetTypeDesc(Type) which has RequiresUnreferencedCode")]
         internal static XmlTypeMapping GetTopLevelMapping(Type type, string? defaultNamespace)
         {
-            defaultNamespace = defaultNamespace ?? string.Empty;
+            defaultNamespace ??= string.Empty;
             XmlAttributes a = new XmlAttributes(type);
             TypeDesc typeDesc = new TypeScope().GetTypeDesc(type);
             ElementAccessor element = new ElementAccessor();

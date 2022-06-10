@@ -150,7 +150,7 @@ namespace System.Data.SqlTypes
             long ret = _value / (s_lTickBase / 10);
             bool fPositive = (ret >= 0);
             long remainder = ret % 10;
-            ret = ret / 10;
+            ret /= 10;
 
             if (remainder >= 5)
             {

@@ -1009,8 +1009,8 @@ namespace System.Runtime.Serialization
 
         internal static XmlNode CreateWrapperXmlElement(XmlDocument document, IList<XmlAttribute>? xmlAttributes, IList<XmlNode> xmlChildNodes, string? prefix, string? localName, string? ns)
         {
-            localName = localName ?? "wrapper";
-            ns = ns ?? string.Empty;
+            localName ??= "wrapper";
+            ns ??= string.Empty;
             XmlElement wrapperElement = document.CreateElement(prefix, localName, ns);
             if (xmlAttributes != null)
             {

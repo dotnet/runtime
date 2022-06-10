@@ -455,7 +455,7 @@ Error:
         {
             if (val < 0)
                 goto Error;
-            val = val / 4; // trim indicator bits
+            val /= 4; // trim indicator bits
             int totalMin = (int)(val % (29 * 60)) - 60 * 14;
             long totalDays = val / (29 * 60);
 
@@ -480,7 +480,7 @@ Error:
         {
             if (val < 0)
                 goto Error;
-            val = val / 4; // trim indicator bits
+            val /= 4; // trim indicator bits
             ms = (int)(val % 1000);
             val /= 1000;
             sec = (int)(val % 60);

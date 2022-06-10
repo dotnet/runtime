@@ -31,7 +31,7 @@ namespace System.IO
 
             OriginalPath = originalPath;
 
-            fullPath = fullPath ?? originalPath;
+            fullPath ??= originalPath;
             fullPath = isNormalized ? fullPath : Path.GetFullPath(fullPath);
 
             _name = fileName ?? (PathInternal.IsRoot(fullPath.AsSpan()) ?
