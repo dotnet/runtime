@@ -788,7 +788,7 @@ bool Compiler::optValnumCSE_Locate()
                 //
                 if (tree->IsIntegralConst())
                 {
-                    if (!enableConstCSE)
+                    if (!enableConstCSE && !tree->IsIconHandle(GTF_ICON_CLASS_HDL) && !tree->IsIconHandle(GTF_ICON_STR_HDL))
                     {
                         continue;
                     }

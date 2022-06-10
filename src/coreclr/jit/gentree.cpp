@@ -4399,6 +4399,11 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 {
                     costSz = 10;
                     costEx = 2;
+                    if (con->IsIconHandle(GTF_ICON_CLASS_HDL) ||
+                        con->IsIconHandle(GTF_ICON_STR_HDL))
+                    {
+                        costEx++;
+                    }
                 }
 #endif // TARGET_AMD64
                 else
