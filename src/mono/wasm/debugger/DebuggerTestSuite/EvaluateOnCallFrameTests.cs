@@ -1307,7 +1307,8 @@ namespace DebuggerTests
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
                 await EvaluateOnCallFrameAndCheck(id,
                     ("localString", TString($"{pauseMethod}()")),
-                    ("IDefaultInterface.defaultInterfaceMember", TString("defaultInterfaceMember")) //without interface name: "defaultInterfaceMember" fails; Issue #70135
+                    ("IDefaultInterface.defaultInterfaceMember", TString("defaultInterfaceMember")),
+                    ("defaultInterfaceMember", TString("defaultInterfaceMember"))
                 );
             });
     }
