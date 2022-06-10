@@ -2284,7 +2284,13 @@ void * MAPMapPEFile(HANDLE hFile, off_t offset)
     // more efficient code (by avoiding usage of jump stubs). Alignment to a 64 KB granularity should
     // not be necessary (alignment to page size should be sufficient), but see
     // ExecutableMemoryAllocator::AllocateMemory() for the reason why it is done.
-    loadedBase = ReserveMemoryFromExecutableAllocator(pThread, ALIGN_UP(reserveSize, VIRTUAL_64KB));
+
+#ifdef FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION
+    if (!g_useDefaultBaseAddr)
+#endif // FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION
+    {
+        loadedBase = ReserveMemoryFromExecutableAllocator(pThread, ALIGN_UP(reserveSize, VIRTUAL_64KB));
+    }
 #endif // HOST_64BIT
 
     if (loadedBase == NULL)
