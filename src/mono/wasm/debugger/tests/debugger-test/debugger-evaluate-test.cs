@@ -421,23 +421,23 @@ namespace DebuggerTests
         {
             TestEvaluate f = new TestEvaluate();
             f.run(100, 200, "9000", "test", 45);
-            DebuggerTestsV2.EvaluateStaticClass.Run();
+            DebuggerTestsV2.EvaluateStaticFieldsInStaticClass.Run();
             var a = 0;
         }
 
         public static void EvaluateAsyncMethods()
         {
-            var staticClass = new EvaluateNonStaticClassWithStaticFields();
-            staticClass.run();
+            var instanceWithStaticFields = new EvaluateStaticFieldsInInstanceClass();
+            instanceWithStaticFields.RunAsync();
         }
 
     }
 
-    public static class EvaluateStaticClass
+    public static class EvaluateStaticFieldsInStaticClass
     {
         public static int StaticField1 = 10;
         public static string StaticProperty1 => "StaticProperty1";
-        public static string StaticPropertyWithError => throw new Exception("not implemented");
+        public static string StaticPropertyWithError => throw new Exception("not implemented 1");
 
         public static class NestedClass1
         {
@@ -453,20 +453,15 @@ namespace DebuggerTests
         }
     }
 
-    public class EvaluateNonStaticClassWithStaticFields
+    public class EvaluateStaticFieldsInInstanceClass
     {
-        public static int StaticField1 = 10;
-        public static string StaticProperty1 => "StaticProperty1";
-        public static string StaticPropertyWithError => throw new Exception("not implemented");
+        public static int StaticField1 = 70;
+        public static string StaticProperty1 => "StaticProperty7";
+        public static string StaticPropertyWithError => throw new Exception("not implemented 7");
 
-        private int HelperMethod()
+        public async void RunAsync()
         {
-            return 5;
-        }
-
-        public async void run()
-        {
-            var makeAwaitable = await Task.Run(() => HelperMethod());
+            await Task.FromResult(0);
         }
     }
 
@@ -1429,11 +1424,11 @@ namespace DebuggerTests
 
 namespace DebuggerTestsV2
 {
-    public static class EvaluateStaticClass
+    public static class EvaluateStaticFieldsInStaticClass
     {
         public static int StaticField1 = 20;
         public static string StaticProperty1 => "StaticProperty2";
-        public static string StaticPropertyWithError => throw new Exception("not implemented");
+        public static string StaticPropertyWithError => throw new Exception("not implemented 2");
 
         public static void Run()
         {

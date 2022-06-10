@@ -700,7 +700,7 @@ namespace DebuggerTests
            });
 
         [Fact]
-        public async Task EvaluateStaticClass() => await CheckInspectLocalsAtBreakpointSite(
+        public async Task EvaluateStaticFieldsInStaticClass() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.EvaluateMethodTestsClass.TestEvaluate", "run", 9, "run",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateMethods'); })",
             wait_for_event_fn: async (pause_location) =>
@@ -710,11 +710,11 @@ namespace DebuggerTests
                var frame = pause_location["callFrames"][0];
 
                await EvaluateOnCallFrameAndCheck(id,
-                   ("DebuggerTests.EvaluateStaticClass.StaticField1", TNumber(10)));
+                   ("DebuggerTests.EvaluateStaticFieldsInStaticClass.StaticField1", TNumber(10)));
                await EvaluateOnCallFrameAndCheck(id,
-                   ("DebuggerTests.EvaluateStaticClass.StaticProperty1", TString("StaticProperty1")));
+                   ("DebuggerTests.EvaluateStaticFieldsInStaticClass.StaticProperty1", TString("StaticProperty1")));
                await EvaluateOnCallFrameAndCheck(id,
-                   ("DebuggerTests.EvaluateStaticClass.StaticPropertyWithError", TString("System.Exception: not implemented")));
+                   ("DebuggerTests.EvaluateStaticFieldsInStaticClass.StaticPropertyWithError", TString("System.Exception: not implemented 1")));
            });
 
         [Theory]
@@ -731,16 +731,16 @@ namespace DebuggerTests
                var frame = pause_location["callFrames"][0];
 
                await EvaluateOnCallFrameAndCheck(id,
-                   ("EvaluateStaticClass.StaticField1", TNumber(10)),
-                   ("EvaluateStaticClass.StaticProperty1", TString("StaticProperty1")),
-                   ("EvaluateStaticClass.StaticPropertyWithError", TString("System.Exception: not implemented")),
-                   ("DebuggerTests.EvaluateStaticClass.StaticField1", TNumber(10)),
-                   ("DebuggerTests.EvaluateStaticClass.StaticProperty1", TString("StaticProperty1")),
-                   ("DebuggerTests.EvaluateStaticClass.StaticPropertyWithError", TString("System.Exception: not implemented")));
+                   ("EvaluateStaticFieldsInStaticClass.StaticField1", TNumber(10)),
+                   ("EvaluateStaticFieldsInStaticClass.StaticProperty1", TString("StaticProperty1")),
+                   ("EvaluateStaticFieldsInStaticClass.StaticPropertyWithError", TString("System.Exception: not implemented 1")),
+                   ("DebuggerTests.EvaluateStaticFieldsInStaticClass.StaticField1", TNumber(10)),
+                   ("DebuggerTests.EvaluateStaticFieldsInStaticClass.StaticProperty1", TString("StaticProperty1")),
+                   ("DebuggerTests.EvaluateStaticFieldsInStaticClass.StaticPropertyWithError", TString("System.Exception: not implemented 1")));
            });
 
         [Fact]
-        public async Task EvaluateNonStaticClassWithStaticFields() => await CheckInspectLocalsAtBreakpointSite(
+        public async Task EvaluateStaticFieldsInInstanceClass() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.EvaluateMethodTestsClass", "EvaluateAsyncMethods", 3, "EvaluateAsyncMethods",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateAsyncMethods'); })",
             wait_for_event_fn: async (pause_location) =>
@@ -750,12 +750,12 @@ namespace DebuggerTests
                var frame = pause_location["callFrames"][0];
 
                await EvaluateOnCallFrameAndCheck(id,
-                   ("DebuggerTests.EvaluateNonStaticClassWithStaticFields.StaticField1", TNumber(10)),
-                   ("DebuggerTests.EvaluateNonStaticClassWithStaticFields.StaticProperty1", TString("StaticProperty1")),
-                   ("DebuggerTests.EvaluateNonStaticClassWithStaticFields.StaticPropertyWithError", TString("System.Exception: not implemented")),
-                   ("EvaluateNonStaticClassWithStaticFields.StaticField1", TNumber(10)),
-                   ("EvaluateNonStaticClassWithStaticFields.StaticProperty1", TString("StaticProperty1")),
-                   ("EvaluateNonStaticClassWithStaticFields.StaticPropertyWithError", TString("System.Exception: not implemented")));
+                   ("DebuggerTests.EvaluateStaticFieldsInInstanceClass.StaticField1", TNumber(70)),
+                   ("DebuggerTests.EvaluateStaticFieldsInInstanceClass.StaticProperty1", TString("StaticProperty7")),
+                   ("DebuggerTests.EvaluateStaticFieldsInInstanceClass.StaticPropertyWithError", TString("System.Exception: not implemented 7")),
+                   ("EvaluateStaticFieldsInInstanceClass.StaticField1", TNumber(70)),
+                   ("EvaluateStaticFieldsInInstanceClass.StaticProperty1", TString("StaticProperty7")),
+                   ("EvaluateStaticFieldsInInstanceClass.StaticPropertyWithError", TString("System.Exception: not implemented 7")));
            });
 
         [ConditionalFact(nameof(RunningOnChrome))]
@@ -769,12 +769,12 @@ namespace DebuggerTests
                var frame = pause_location["callFrames"][0];
 
                await EvaluateOnCallFrameAndCheck(id,
-                   ("DebuggerTests.EvaluateStaticClass.NestedClass1.NestedClass2.NestedClass3.StaticField1", TNumber(3)),
-                   ("DebuggerTests.EvaluateStaticClass.NestedClass1.NestedClass2.NestedClass3.StaticProperty1", TString("StaticProperty3")),
-                   ("DebuggerTests.EvaluateStaticClass.NestedClass1.NestedClass2.NestedClass3.StaticPropertyWithError", TString("System.Exception: not implemented 3")),
-                   ("EvaluateStaticClass.NestedClass1.NestedClass2.NestedClass3.StaticField1", TNumber(3)),
-                   ("EvaluateStaticClass.NestedClass1.NestedClass2.NestedClass3.StaticProperty1", TString("StaticProperty3")),
-                   ("EvaluateStaticClass.NestedClass1.NestedClass2.NestedClass3.StaticPropertyWithError", TString("System.Exception: not implemented 3")));
+                   ("DebuggerTests.EvaluateStaticFieldsInStaticClass.NestedClass1.NestedClass2.NestedClass3.StaticField1", TNumber(3)),
+                   ("DebuggerTests.EvaluateStaticFieldsInStaticClass.NestedClass1.NestedClass2.NestedClass3.StaticProperty1", TString("StaticProperty3")),
+                   ("DebuggerTests.EvaluateStaticFieldsInStaticClass.NestedClass1.NestedClass2.NestedClass3.StaticPropertyWithError", TString("System.Exception: not implemented 3")),
+                   ("EvaluateStaticFieldsInStaticClass.NestedClass1.NestedClass2.NestedClass3.StaticField1", TNumber(3)),
+                   ("EvaluateStaticFieldsInStaticClass.NestedClass1.NestedClass2.NestedClass3.StaticProperty1", TString("StaticProperty3")),
+                   ("EvaluateStaticFieldsInStaticClass.NestedClass1.NestedClass2.NestedClass3.StaticPropertyWithError", TString("System.Exception: not implemented 3")));
            });
 
         [Fact]
@@ -795,7 +795,7 @@ namespace DebuggerTests
 
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task EvaluateStaticClassesFromDifferentNamespaceInDifferentFrames() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTestsV2.EvaluateStaticClass", "Run", 1, "Run",
+            "DebuggerTestsV2.EvaluateStaticFieldsInStaticClass", "Run", 1, "Run",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateMethods'); })",
             wait_for_event_fn: async (pause_location) =>
             {
@@ -803,16 +803,16 @@ namespace DebuggerTests
                 var frame = pause_location["callFrames"][0];
 
                 await EvaluateOnCallFrameAndCheck(id_top,
-                    ("EvaluateStaticClass.StaticField1", TNumber(20)),
-                    ("EvaluateStaticClass.StaticProperty1", TString("StaticProperty2")),
-                    ("EvaluateStaticClass.StaticPropertyWithError", TString("System.Exception: not implemented")));
+                    ("EvaluateStaticFieldsInStaticClass.StaticField1", TNumber(20)),
+                    ("EvaluateStaticFieldsInStaticClass.StaticProperty1", TString("StaticProperty2")),
+                    ("EvaluateStaticFieldsInStaticClass.StaticPropertyWithError", TString("System.Exception: not implemented 2")));
 
                 var id_second = pause_location["callFrames"][1]["callFrameId"].Value<string>();
 
                 await EvaluateOnCallFrameAndCheck(id_second,
-                    ("EvaluateStaticClass.StaticField1", TNumber(10)),
-                    ("EvaluateStaticClass.StaticProperty1", TString("StaticProperty1")),
-                    ("EvaluateStaticClass.StaticPropertyWithError", TString("System.Exception: not implemented")));
+                    ("EvaluateStaticFieldsInStaticClass.StaticField1", TNumber(10)),
+                    ("EvaluateStaticFieldsInStaticClass.StaticProperty1", TString("StaticProperty1")),
+                    ("EvaluateStaticFieldsInStaticClass.StaticPropertyWithError", TString("System.Exception: not implemented 1")));
             });
 
         [ConditionalFact(nameof(RunningOnChrome))]
@@ -825,8 +825,8 @@ namespace DebuggerTests
 
                var frame = pause_location["callFrames"][0];
 
-               var (_, res) = await EvaluateOnCallFrame(id, "DebuggerTests.EvaluateStaticClass.StaticProperty2", expect_ok: false);
-               AssertEqual("Failed to resolve member access for DebuggerTests.EvaluateStaticClass.StaticProperty2", res.Error["result"]?["description"]?.Value<string>(), "wrong error message");
+               var (_, res) = await EvaluateOnCallFrame(id, "DebuggerTests.EvaluateStaticFieldsInStaticClass.StaticProperty2", expect_ok: false);
+               AssertEqual("Failed to resolve member access for DebuggerTests.EvaluateStaticFieldsInStaticClass.StaticProperty2", res.Error["result"]?["description"]?.Value<string>(), "wrong error message");
 
                (_, res) = await EvaluateOnCallFrame(id, "DebuggerTests.InvalidEvaluateStaticClass.StaticProperty2", expect_ok: false);
                AssertEqual("Failed to resolve member access for DebuggerTests.InvalidEvaluateStaticClass.StaticProperty2", res.Error["result"]?["description"]?.Value<string>(), "wrong error message");
@@ -1178,30 +1178,24 @@ namespace DebuggerTests
             wait_for_event_fn: async (pause_location) =>
             {
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
-                await CheckEvaluateFail("list.Count.x", "Cannot find member 'x' on a primitive type");
-                await CheckEvaluateFail("listNull.Count", GetNullReferenceErrorOn("\"Count\""));
-                await CheckEvaluateFail("listNull!.Count", GetNullReferenceErrorOn("\"Count\""));
-                await CheckEvaluateFail("tcNull.MemberListNull.Count", GetNullReferenceErrorOn("\"MemberListNull\""));
-                await CheckEvaluateFail("tc.MemberListNull.Count", GetNullReferenceErrorOn("\"Count\""));
-                await CheckEvaluateFail("tcNull?.MemberListNull.Count", GetNullReferenceErrorOn("\"Count\""));
-                await CheckEvaluateFail("listNull?.Count.NonExistingProperty", GetNullReferenceErrorOn("\"NonExistingProperty\""));
-                await CheckEvaluateFail("tc?.MemberListNull! .Count", GetNullReferenceErrorOn("\"Count\""));
-                await CheckEvaluateFail("tc?. MemberListNull!.Count", GetNullReferenceErrorOn("\"Count\""));
-                await CheckEvaluateFail("tc?.MemberListNull.Count", GetNullReferenceErrorOn("\"Count\""));
-                await CheckEvaluateFail("tc! .MemberListNull!.Count", GetNullReferenceErrorOn("\"Count\""));
-                await CheckEvaluateFail("tc!.MemberListNull. Count", GetNullReferenceErrorOn("\"Count\""));
-                await CheckEvaluateFail("tcNull?.Sibling.MemberListNull?.Count", GetNullReferenceErrorOn("\"MemberListNull?\""));
-                await CheckEvaluateFail("listNull?", "Expected expression.");
-                await CheckEvaluateFail("listNull!.Count", GetNullReferenceErrorOn("\"Count\""));
-                await CheckEvaluateFail("x?.p", "Operation '?' not allowed on primitive type - 'x?'");
+                await CheckEvaluateFail(id, "list.Count.x", "Cannot find member 'x' on a primitive type");
+                await CheckEvaluateFail(id, "listNull.Count", GetNullReferenceErrorOn("\"Count\""));
+                await CheckEvaluateFail(id, "listNull!.Count", GetNullReferenceErrorOn("\"Count\""));
+                await CheckEvaluateFail(id, "tcNull.MemberListNull.Count", GetNullReferenceErrorOn("\"MemberListNull\""));
+                await CheckEvaluateFail(id, "tc.MemberListNull.Count", GetNullReferenceErrorOn("\"Count\""));
+                await CheckEvaluateFail(id, "tcNull?.MemberListNull.Count", GetNullReferenceErrorOn("\"Count\""));
+                await CheckEvaluateFail(id, "listNull?.Count.NonExistingProperty", GetNullReferenceErrorOn("\"NonExistingProperty\""));
+                await CheckEvaluateFail(id, "tc?.MemberListNull! .Count", GetNullReferenceErrorOn("\"Count\""));
+                await CheckEvaluateFail(id, "tc?. MemberListNull!.Count", GetNullReferenceErrorOn("\"Count\""));
+                await CheckEvaluateFail(id, "tc?.MemberListNull.Count", GetNullReferenceErrorOn("\"Count\""));
+                await CheckEvaluateFail(id, "tc! .MemberListNull!.Count", GetNullReferenceErrorOn("\"Count\""));
+                await CheckEvaluateFail(id, "tc!.MemberListNull. Count", GetNullReferenceErrorOn("\"Count\""));
+                await CheckEvaluateFail(id, "tcNull?.Sibling.MemberListNull?.Count", GetNullReferenceErrorOn("\"MemberListNull?\""));
+                await CheckEvaluateFail(id, "listNull?", "Expected expression.");
+                await CheckEvaluateFail(id, "listNull!.Count", GetNullReferenceErrorOn("\"Count\""));
+                await CheckEvaluateFail(id, "x?.p", "Operation '?' not allowed on primitive type - 'x?'");
 
                 string GetNullReferenceErrorOn(string name) => $"Expression threw NullReferenceException trying to access {name} on a null-valued object.";
-
-                async Task CheckEvaluateFail(string expr, string message)
-                {
-                    (_, Result _res) = await EvaluateOnCallFrame(id, expr, expect_ok: false);
-                    AssertEqual(message, _res.Error["result"]?["description"]?.Value<string>(), $"Expression '{expr}' - wrong error message");
-                }
             });
 
         [Fact]

@@ -1408,6 +1408,12 @@ namespace DebuggerTests
             Assert.True(res.IsOk);
             Assert.Equal(res.Value["justMyCodeEnabled"], enabled);
         }
+
+        internal async Task CheckEvaluateFail(string id, string expr, string message)
+        {
+            (_, Result _res) = await EvaluateOnCallFrame(id, expr, expect_ok: false);
+            AssertEqual(message, _res.Error["result"]?["description"]?.Value<string>(), $"Expression '{expr}' - wrong error message");
+        }
     }
 
     class DotnetObjectId
