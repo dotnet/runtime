@@ -71,7 +71,7 @@ namespace System.Threading.RateLimiting
             {
                 try
                 {
-                    await TimerLoop().ConfigureAwait(false);
+                    await Heartbeat().ConfigureAwait(false);
                 }
                 // TODO: Can we log to EventSource or somewhere? Maybe dispatch throwing the exception so it is at least an unhandled exception?
                 catch { }
@@ -214,7 +214,7 @@ namespace System.Threading.RateLimiting
             }
         }
 
-        private async Task TimerLoop()
+        private async Task Heartbeat()
         {
             lock (Lock)
             {
