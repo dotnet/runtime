@@ -295,9 +295,6 @@ void Rationalizer::RewriteSubLshDiv(GenTree** use)
     if (!op2->OperIs(GT_LSH))
         return;
 
-    if (op2->IsReverseOp())
-        return;
-
     GenTree* lsh   = op2;
     GenTree* div   = lsh->gtGetOp1();
     GenTree* shift = lsh->gtGetOp2();
