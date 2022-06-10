@@ -5,7 +5,7 @@ namespace System.Runtime
 {
     public sealed partial class MemoryFailPoint
     {
-        private static ulong GetTopOfMemory()
+        private static unsafe ulong GetTopOfMemory()
         {
             // These values are optimistic assumptions. In reality the value will
             // often be lower.
