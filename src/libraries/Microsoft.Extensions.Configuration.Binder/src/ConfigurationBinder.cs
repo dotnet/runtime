@@ -757,6 +757,7 @@ namespace Microsoft.Extensions.Configuration
             Type type)
         {
             var allProperties = new List<PropertyInfo>();
+            HashSet<string>? propertyNames = null;
 
             Type? baseType = type;
             do
@@ -767,7 +768,7 @@ namespace Microsoft.Extensions.Configuration
                 {
                     foreach (var property in baseTypeProperties)
                     {
-                        if (!allProperties.Exists(p => p.Name == property.Name))
+                        if (propertyNames!.Add(property.Name))
                         {
                             allProperties.Add(property);
                         }
@@ -775,6 +776,8 @@ namespace Microsoft.Extensions.Configuration
                 }
                 else
                 {
+                    propertyNames = new(baseTypeProperties.Select(mp => mp.Name),
+                    StringComparer.Ordinal);
                     allProperties.AddRange(baseTypeProperties);
                 }
 
