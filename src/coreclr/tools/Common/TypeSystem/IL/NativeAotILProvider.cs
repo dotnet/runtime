@@ -3,6 +3,8 @@
 
 using System;
 
+using ILCompiler;
+
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -14,6 +16,13 @@ namespace Internal.IL
 {
     public sealed class NativeAotILProvider : ILProvider
     {
+        private readonly CompilationModuleGroup _compilationGroup;
+
+        public NativeAotILProvider(CompilationModuleGroup group)
+        {
+            _compilationGroup = group;
+        }
+
         private MethodIL TryGetRuntimeImplementedMethodIL(MethodDesc method)
         {
             // Provides method bodies for runtime implemented methods. It can return null for
@@ -49,7 +58,7 @@ namespace Internal.IL
                 case "Interlocked":
                     {
                         if (owningType.Namespace == "System.Threading")
-                            return InterlockedIntrinsics.EmitIL(method);
+                            return InterlockedIntrinsics.EmitIL(_compilationGroup, method);
                     }
                     break;
                 case "Unsafe":

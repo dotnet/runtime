@@ -637,6 +637,8 @@ namespace ILCompiler
                     groupConfig.CompilationModuleSet = inputModules;
                     groupConfig.VersionBubbleModuleSet = versionBubbleModules;
                     groupConfig.CompileGenericDependenciesFromVersionBubbleModuleSet = _commandLineOptions.CompileBubbleGenerics;
+                    groupConfig.CrossModuleGenericCompilation = _commandLineOptions.CrossModuleGenericCompilation;
+                    groupConfig.CrossModuleInlining = _commandLineOptions.CrossModuleInlining;
 
                     if (singleMethod != null)
                     {
@@ -729,7 +731,7 @@ namespace ILCompiler
                     string compilationUnitPrefix = "";
                     builder.UseCompilationUnitPrefix(compilationUnitPrefix);
 
-                    ILProvider ilProvider = new ReadyToRunILProvider();
+                    ILProvider ilProvider = new ReadyToRunILProvider(compilationGroup);
 
                     DependencyTrackingLevel trackingLevel = _commandLineOptions.DgmlLogFileName == null ?
                         DependencyTrackingLevel.None : (_commandLineOptions.GenerateFullDgmlLog ? DependencyTrackingLevel.All : DependencyTrackingLevel.First);

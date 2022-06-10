@@ -7,6 +7,9 @@ bool GetVersionResilientTypeHashCode(IMDInternalImport *pMDImport, mdExportedTyp
 
 int GetVersionResilientMethodHashCode(MethodDesc *pMD);
 
+// Compute hashCode for a MethodDef (Note, this is not current capable of computing a hashcode for a MethodSpec, or MemberRef)
+bool GetVersionResilientMethodDefHashCode(IMDInternalImport *pMDImport, mdExportedType token, int * pdwHashCode);
+
 int GetVersionResilientModuleHashCode(Module* pModule);
 
 bool GetVersionResilientILCodeHashCode(MethodDesc *pMD, int* hashCode, unsigned* ilSize);

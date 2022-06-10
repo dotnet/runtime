@@ -105,6 +105,7 @@
     <Compile Include="..\ILCompiler.Reflection.ReadyToRun\PEReaderExtensions.cs" Link="Reflection\PEReaderExtensions.cs" />
     <Compile Include="Compiler\AssemblyExtensions.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DeferredTillPhaseNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ILBodyFixupSignature.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ManifestAssemblyMvidHeaderNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DelayLoadMethodCallThunkNodeRange.cs" />
     <Compile Include="Compiler\CallChainProfile.cs" />
@@ -207,6 +208,7 @@
     <Compile Include="Compiler\ReadyToRunFileLayoutOptimizer.cs" />
     <Compile Include="Compiler\ReadyToRunMetadataFieldLayoutAlgorithm.cs" />
     <Compile Include="Compiler\ReadyToRunSingleAssemblyCompilationModuleGroup.cs" />
+    <Compile Include="Compiler\ReadyToRunStandaloneMethodMetadata.cs" />
     <Compile Include="Compiler\ReadyToRunTableManager.cs" />
     <Compile Include="IBC\IBCProfileData.cs" />
     <Compile Include="IBC\IBCProfileParser.cs" />

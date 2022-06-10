@@ -66,7 +66,7 @@ namespace ILCompiler.Compiler.Tests
             var context = (CompilerTypeSystemContext)method.Context;
             CompilationModuleGroup compilationGroup = new SingleFileCompilationModuleGroup();
 
-            NativeAotILProvider ilProvider = new NativeAotILProvider();
+            NativeAotILProvider ilProvider = new NativeAotILProvider(compilationGroup);
 
             UsageBasedMetadataManager metadataManager = new UsageBasedMetadataManager(compilationGroup, context,
                 new FullyBlockedMetadataBlockingPolicy(), new FullyBlockedManifestResourceBlockingPolicy(),

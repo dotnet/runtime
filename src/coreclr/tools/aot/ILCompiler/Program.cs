@@ -724,7 +724,7 @@ namespace ILCompiler
 
             PInvokeILEmitterConfiguration pinvokePolicy = new ConfigurablePInvokePolicy(typeSystemContext.Target, _directPInvokes, _directPInvokeLists);
 
-            ILProvider ilProvider = new NativeAotILProvider();
+            ILProvider ilProvider = new NativeAotILProvider(compilationGroup);
 
             List<KeyValuePair<string, bool>> featureSwitches = new List<KeyValuePair<string, bool>>();
             foreach (var switchPair in _featureSwitches)

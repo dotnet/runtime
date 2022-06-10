@@ -122,7 +122,7 @@ BOOL LookupMap<TYPE>::TrySetElement(DWORD rid, TYPE value, TADDR flags)
 
 // Stores an association in a map. Grows the map as necessary.
 template<typename TYPE>
-void LookupMap<TYPE>::AddElement(Module * pModule, DWORD rid, TYPE value, TADDR flags)
+void LookupMap<TYPE>::AddElement(ModuleBase * pModule, DWORD rid, TYPE value, TADDR flags)
 {
     CONTRACTL
     {
@@ -275,12 +275,12 @@ inline MethodDesc *Module::LookupMemberRefAsMethod(mdMemberRef token)
     LIMITED_METHOD_DAC_CONTRACT;
 
     _ASSERTE(TypeFromToken(token) == mdtMemberRef);
-    BOOL flags = FALSE;
-    PTR_MemberRef pMemberRef = m_pMemberRefToDescHashTable->GetValue(token, &flags);
-    return flags ? dac_cast<PTR_MethodDesc>(pMemberRef) : NULL;
+    TADDR flags = FALSE;
+    TADDR pMemberRef = m_MemberRefMap.GetElementAndFlags(RidFromToken(token), &flags);
+    return (flags & IS_FIELD_MEMBER_REF) ? NULL : dac_cast<PTR_MethodDesc>(pMemberRef);
 }
 
-inline Assembly *Module::LookupAssemblyRef(mdAssemblyRef token)
+inline Assembly *ModuleBase::LookupAssemblyRef(mdAssemblyRef token)
 {
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
@@ -453,12 +453,6 @@ BOOL Module::FixupDelayListAux(TADDR pFixupList,
     } // Done with all entries in this table
 
     return TRUE;
-}
-
-inline PTR_LoaderAllocator Module::GetLoaderAllocator()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-    return GetAssembly()->GetLoaderAllocator();
 }
 
 inline MethodTable* Module::GetDynamicClassMT(DWORD dynamicClassID)

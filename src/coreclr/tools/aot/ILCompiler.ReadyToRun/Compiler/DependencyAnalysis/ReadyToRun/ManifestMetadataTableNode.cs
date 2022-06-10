@@ -79,6 +79,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         /// </summary>
         private readonly NodeFactory _nodeFactory;
 
+        public readonly MutableModule _mutableModule;
+
         public ManifestMetadataTableNode(NodeFactory nodeFactory)
             : base(nodeFactory.Target)
         {
@@ -87,12 +89,34 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _manifestAssemblyMvids = new List<Guid>();
             _signatureEmitters = new List<ISignatureEmitter>();
             _nodeFactory = nodeFactory;
-            _nextModuleId = 1;
+            _nextModuleId = 2;
+
+            AssemblyHashAlgorithm hashAlgorithm = AssemblyHashAlgorithm.None;
+            byte[] publicKeyBlob = null;
+            AssemblyFlags manifestAssemblyFlags = default(AssemblyFlags);
+            Version manifestAssemblyVersion = new Version(0, 0, 0, 0);
+
+            if ((nodeFactory.CompositeImageSettings != null) && nodeFactory.CompilationModuleGroup.IsCompositeBuildMode)
+            {
+                if (nodeFactory.CompositeImageSettings.PublicKey != null)
+                {
+                    hashAlgorithm = AssemblyHashAlgorithm.Sha1;
+                    publicKeyBlob = nodeFactory.CompositeImageSettings.PublicKey.ToArray();
+                    manifestAssemblyFlags |= AssemblyFlags.PublicKey;
+                }
+
+                if (nodeFactory.CompositeImageSettings.AssemblyVersion != null)
+                {
+                    manifestAssemblyVersion = nodeFactory.CompositeImageSettings.AssemblyVersion;
+                }
+            }
+
+            _mutableModule = new MutableModule(nodeFactory.TypeSystemContext, "ManifestMetadata", manifestAssemblyFlags, publicKeyBlob, manifestAssemblyVersion, hashAlgorithm);
 
             if (!_nodeFactory.CompilationModuleGroup.IsCompositeBuildMode)
             {
                 MetadataReader mdReader = _nodeFactory.CompilationModuleGroup.CompilationModuleSet.Single().MetadataReader;
-                _assemblyRefCount = mdReader.GetTableRowCount(TableIndex.AssemblyRef) + 1;
+                _assemblyRefCount = mdReader.GetTableRowCount(TableIndex.AssemblyRef);
 
                 if (!_nodeFactory.CompilationModuleGroup.IsInputBubble)
                 {
@@ -105,14 +129,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     }
                 }
 
-                // AssemblyRefCount + 1 corresponds to ROWID 0 in the manifest metadata
+                // AssemblyRefCount + 1 corresponds to rid 0 in the manifest metadata which indicates to use the manifest metadata itself
+                // AssemblyRefCount + 2 corresponds to ROWID 1 in the manifest metadata
                 _nextModuleId += _assemblyRefCount;
             }
 
             if (_nodeFactory.CompilationModuleGroup.IsCompositeBuildMode)
             {
                 // Fill in entries for all input modules right away to make sure they have parallel indices
-                int nextExpectedId = 1;
+                int nextExpectedId = 2;
                 foreach (EcmaModule inputModule in _nodeFactory.CompilationModuleGroup.CompilationModuleSet)
                 {
                     int acquiredId = ModuleToIndexInternal(inputModule);
@@ -123,6 +148,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     nextExpectedId++;
                 }
             }
+
         }
 
         public void RegisterEmitter(ISignatureEmitter emitter)
@@ -130,7 +156,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _signatureEmitters.Add(emitter);
         }
 
-        public int ModuleToIndex(EcmaModule module)
+        public int ModuleToIndex(IEcmaModule module)
         {
             if (!_nodeFactory.MarkingComplete)
             {
@@ -155,9 +181,23 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
         }
 
-        private int ModuleToIndexInternal(EcmaModule module)
+        private int ModuleToIndexInternal(IEcmaModule module)
         {
-            AssemblyName assemblyName = module.Assembly.GetName();
+            Debug.Assert(module != null);
+            EcmaModule emodule = module as EcmaModule;
+            if (emodule == null)
+            {
+                Debug.Assert(module == _mutableModule);
+                return _assemblyRefCount + 1;
+            }
+
+            if (!_nodeFactory.CompilationModuleGroup.IsCompositeBuildMode && (_nodeFactory.CompilationModuleGroup.CompilationModuleSet.Single() == module))
+            {
+                // Must be a reference to the only module being compiled
+                return 0;
+            }
+
+            AssemblyName assemblyName = emodule.Assembly.GetName();
             int assemblyRefIndex;
             if (!_assemblyRefToModuleIdMap.TryGetValue(assemblyName.Name, out assemblyRefIndex))
             {
@@ -165,7 +205,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 _assemblyRefToModuleIdMap.Add(assemblyName.Name, assemblyRefIndex);
             }
 
-            if (assemblyRefIndex >= _assemblyRefCount && !_moduleIdToAssemblyNameMap.ContainsKey(assemblyRefIndex))
+            if (assemblyRefIndex > _assemblyRefCount && !_moduleIdToAssemblyNameMap.ContainsKey(assemblyRefIndex))
             {
                 if (_emissionCompleted)
                 {
@@ -174,7 +214,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                 // If we're going to add a module to the manifest, it has to be part of the version bubble, otherwise
                 // the verification logic would be broken at runtime.
-                Debug.Assert(_nodeFactory.CompilationModuleGroup.VersionsWithModule(module));
+                Debug.Assert(_nodeFactory.CompilationModuleGroup.VersionsWithModule(emodule));
 
                 _moduleIdToAssemblyNameMap.Add(assemblyRefIndex, assemblyName);
                 _manifestAssemblyMvids.Add(module.MetadataReader.GetGuid(module.MetadataReader.GetModuleDefinition().Mvid));
@@ -218,85 +258,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             ComputeLastSetOfModuleIndices();
 
-            MetadataBuilder metadataBuilder = new MetadataBuilder();
-
-            AssemblyHashAlgorithm hashAlgorithm = AssemblyHashAlgorithm.None;
-            BlobHandle publicKeyBlob = default(BlobHandle);
-            AssemblyFlags manifestAssemblyFlags = default(AssemblyFlags);
-            Version manifestAssemblyVersion = new Version(0, 0, 0, 0);
-
-            if ((factory.CompositeImageSettings != null) && factory.CompilationModuleGroup.IsCompositeBuildMode)
-            {
-                if (factory.CompositeImageSettings.PublicKey != null)
-                {
-                    hashAlgorithm = AssemblyHashAlgorithm.Sha1;
-                    publicKeyBlob = metadataBuilder.GetOrAddBlob(factory.CompositeImageSettings.PublicKey);
-                    manifestAssemblyFlags |= AssemblyFlags.PublicKey;
-                }
-
-                if (factory.CompositeImageSettings.AssemblyVersion != null)
-                {
-                    manifestAssemblyVersion = factory.CompositeImageSettings.AssemblyVersion;
-                }
-            }
-
-            string manifestMetadataAssemblyName = "ManifestMetadata";
-            metadataBuilder.AddAssembly(
-                metadataBuilder.GetOrAddString(manifestMetadataAssemblyName),
-                manifestAssemblyVersion,
-                culture: default(StringHandle),
-                publicKey: publicKeyBlob,
-                flags: manifestAssemblyFlags,
-                hashAlgorithm: hashAlgorithm);
-
-            metadataBuilder.AddModule(
-                0,
-                metadataBuilder.GetOrAddString(manifestMetadataAssemblyName),
-                default(GuidHandle), default(GuidHandle), default(GuidHandle));
-
-            // Module type
-            metadataBuilder.AddTypeDefinition(
-                default(TypeAttributes),
-                default(StringHandle),
-                metadataBuilder.GetOrAddString("<Module>"),
-                baseType: default(EntityHandle),
-                fieldList: MetadataTokens.FieldDefinitionHandle(1),
-                methodList: MetadataTokens.MethodDefinitionHandle(1));
-
             foreach (var idAndAssemblyName in _moduleIdToAssemblyNameMap.OrderBy(x => x.Key))
             {
                 AssemblyName assemblyName = idAndAssemblyName.Value;
-                AssemblyFlags assemblyFlags = 0;
-                byte[] publicKeyOrToken;
-                if ((assemblyName.Flags & AssemblyNameFlags.PublicKey) != 0)
-                {
-                    assemblyFlags |= AssemblyFlags.PublicKey;
-                    publicKeyOrToken = assemblyName.GetPublicKey();
-                }
-                else
-                {
-                    publicKeyOrToken = assemblyName.GetPublicKeyToken();
-                }
-                if ((assemblyName.Flags & AssemblyNameFlags.Retargetable) != 0)
-                {
-                    assemblyFlags |= AssemblyFlags.Retargetable;
-                }
-
-                AssemblyReferenceHandle newHandle = metadataBuilder.AddAssemblyReference(
-                    name: metadataBuilder.GetOrAddString(assemblyName.Name),
-                    version: assemblyName.Version,
-                    culture: metadataBuilder.GetOrAddString(assemblyName.CultureName),
-                    publicKeyOrToken: metadataBuilder.GetOrAddBlob(publicKeyOrToken),
-                    flags: assemblyFlags,
-                    hashValue: default(BlobHandle) /* TODO */);
+                var handle = _mutableModule.TryGetAssemblyRefHandle(assemblyName);
+                Debug.Assert(handle.HasValue);
+                Debug.Assert(((handle.Value & 0xFFFFFF) + (_assemblyRefCount)) == (idAndAssemblyName.Key - 1));
             }
 
-            MetadataRootBuilder metadataRootBuilder = new MetadataRootBuilder(metadataBuilder);
-            BlobBuilder metadataBlobBuilder = new BlobBuilder();
-            metadataRootBuilder.Serialize(metadataBlobBuilder, methodBodyStreamRva: 0, mappedFieldDataStreamRva: 0);
+            // After this point new tokens will not be embedded in the final image
+            _mutableModule.DisableNewTokens = true;
 
             return new ObjectData(
-                data: metadataBlobBuilder.ToArray(),
+                data: _mutableModule.MetadataBlob,
                 relocs: Array.Empty<Relocation>(),
                 alignment: 1,
                 definedSymbols: new ISymbolDefinitionNode[] { this });

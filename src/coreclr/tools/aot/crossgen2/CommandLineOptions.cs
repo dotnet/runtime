@@ -30,6 +30,8 @@ namespace ILCompiler
         public bool OptimizeDisabled;
         public bool OptimizeSpace;
         public bool OptimizeTime;
+        public bool CrossModuleInlining;
+        public bool CrossModuleGenericCompilation;
         public bool InputBubble;
         public bool CompileBubbleGenerics;
         public bool Verbose;
@@ -89,6 +91,10 @@ namespace ILCompiler
             PerfMapFormatVersion = DefaultPerfMapFormatVersion;
             Parallelism = Environment.ProcessorCount;
             SingleMethodGenericArg = null;
+
+            // These behaviors default to enabled
+            CrossModuleInlining = true;
+            CrossModuleGenericCompilation = true;
 
             bool forceHelp = false;
             if (args.Length == 0)
@@ -163,6 +169,9 @@ namespace ILCompiler
                 syntax.DefineOption("perfmap", ref PerfMap, SR.PerfMapFileOption);
                 syntax.DefineOption("perfmap-path", ref PerfMapPath, SR.PerfMapFilePathOption);
                 syntax.DefineOption("perfmap-format-version", ref PerfMapFormatVersion, SR.PerfMapFormatVersionOption);
+
+                syntax.DefineOption("opt-cross-module-inlining", ref CrossModuleInlining, SR.CrossModuleInlining);
+                syntax.DefineOption("opt-cross-module-generic-compilation", ref CrossModuleGenericCompilation, SR.CrossModuleGenericCompilation);
 
                 syntax.DefineOption("method-layout", ref MethodLayout, SR.MethodLayoutOption);
                 syntax.DefineOption("file-layout", ref FileLayout, SR.FileLayoutOption);

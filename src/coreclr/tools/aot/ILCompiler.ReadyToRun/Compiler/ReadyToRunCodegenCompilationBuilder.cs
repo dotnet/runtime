@@ -47,7 +47,7 @@ namespace ILCompiler
         // These need to provide reasonable defaults so that the user can optionally skip
         // calling the Use/Configure methods and still get something reasonable back.
         private KeyValuePair<string, string>[] _ryujitOptions = Array.Empty<KeyValuePair<string, string>>();
-        private ILProvider _ilProvider = new ReadyToRunILProvider();
+        private ILProvider _ilProvider;
 
         public ReadyToRunCodegenCompilationBuilder(
             CompilerTypeSystemContext context,
@@ -56,6 +56,7 @@ namespace ILCompiler
             string compositeRootPath)
             : base(context, group, new NativeAotNameMangler())
         {
+            _ilProvider = new ReadyToRunILProvider(group);
             _inputFiles = inputFiles;
             _compositeRootPath = compositeRootPath;
 

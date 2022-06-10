@@ -11,6 +11,12 @@ namespace Internal.IL
     /// </summary>
     public abstract class ILProvider
     {
+        private int _version = 0;
+        protected void IncrementVersion()
+        {
+            _version++;
+        }
+        public int Version => _version;
         public abstract MethodIL GetMethodIL(MethodDesc method);
     }
 }

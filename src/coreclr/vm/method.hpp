@@ -3705,6 +3705,31 @@ public:
 };
 #endif
 
+struct MethodBlock
+{
+    MethodBlock() :
+        pByteData(nullptr),
+        cByteData(0),
+        pTypes(nullptr),
+        cTypes(0)
+    {}
+
+    ~MethodBlock()
+    {
+        if (pByteData != nullptr)
+            delete[] pByteData;
+        if (pTypes != nullptr)
+            delete[] pTypes;
+    }
+
+    const uint8_t * pByteData;
+    size_t cByteData;
+    const TypeHandle * pTypes;
+    size_t cTypes;
+};
+MethodBlock* GetMethodBlock(MethodDesc *pMD);
+void InitMethodBlocks();
+
 #include "method.inl"
 
 #endif // !_METHOD_H
