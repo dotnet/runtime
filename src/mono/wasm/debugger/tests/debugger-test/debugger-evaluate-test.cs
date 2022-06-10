@@ -422,15 +422,14 @@ namespace DebuggerTests
             TestEvaluate f = new TestEvaluate();
             f.run(100, 200, "9000", "test", 45);
             DebuggerTestsV2.EvaluateStaticFieldsInStaticClass.Run();
-            var a = 0;
-        }
-
-        public static void EvaluateAsyncMethods()
-        {
+            DebuggerTests.EvaluateStaticFieldsInStaticClass.Run();
+            DebuggerTests.EvaluateStaticFieldsInStaticClass.RunAsync();
+            DebuggerTests.EvaluateStaticFieldsInInstanceClass.RunStatic();
+            DebuggerTests.EvaluateStaticFieldsInInstanceClass.RunStaticAsync();
             var instanceWithStaticFields = new EvaluateStaticFieldsInInstanceClass();
+            instanceWithStaticFields.Run();
             instanceWithStaticFields.RunAsync();
         }
-
     }
 
     public static class EvaluateStaticFieldsInStaticClass
@@ -438,6 +437,16 @@ namespace DebuggerTests
         public static int StaticField1 = 10;
         public static string StaticProperty1 => "StaticProperty1";
         public static string StaticPropertyWithError => throw new Exception("not implemented 1");
+
+        public static void Run()
+        {
+            bool stop = true;
+        }
+
+        public async static void RunAsync()
+        {
+            await Task.FromResult(0);
+        }
 
         public static class NestedClass1
         {
@@ -459,7 +468,22 @@ namespace DebuggerTests
         public static string StaticProperty1 => "StaticProperty7";
         public static string StaticPropertyWithError => throw new Exception("not implemented 7");
 
+        public void Run()
+        {
+            bool stop = true;
+        }
+
         public async void RunAsync()
+        {
+            await Task.FromResult(0);
+        }
+
+        public static void RunStatic()
+        {
+            bool stop = true;
+        }
+
+        public static async void RunStaticAsync()
         {
             await Task.FromResult(0);
         }
@@ -1434,6 +1458,36 @@ namespace DebuggerTestsV2
         {
             var a = 0;
         }
+    }
+}
+
+public static class NestedWithSameNames
+{
+    public static int StaticField1 = 30;
+    public static string StaticProperty1 => "StaticProperty3";
+    public static string StaticPropertyWithError => throw new Exception("not implemented V3");
+
+    public static class B
+    {
+        public static class NestedWithSameNames
+        {
+            public static class B
+            {
+                public static int StaticField1 = 40;
+                public static string StaticProperty1 => "StaticProperty4";
+                public static string StaticPropertyWithError => throw new Exception("not implemented V4");
+
+                public static void Run()
+                {
+                    var a = 0;
+                }
+            }
+        }
+    }
+
+    public static void Evaluate()
+    {
+        B.NestedWithSameNames.B.Run();
     }
 }
 
