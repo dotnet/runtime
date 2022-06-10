@@ -174,8 +174,7 @@ namespace System.Xml.Xsl.XsltOld
             Debug.Assert(processor != null && frame != null);
             Debug.Assert(frame.State == Initialized);
 
-            processor.AddSort(_sort != null ?
-                _sort :
+            processor.AddSort(_sort ??
                 new Sort(
                     _selectKey,
                     _langAvt == null ? _lang : ParseLang(_langAvt.Evaluate(processor, frame)),

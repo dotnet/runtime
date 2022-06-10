@@ -848,7 +848,7 @@ namespace System.Net
                 // See if we found an acceptable auth header
                 if (headerScheme == AuthenticationSchemes.None)
                 {
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, SR.Format(SR.net_log_listener_unmatched_authentication_scheme, authenticationScheme.ToString(), (authorizationHeader == null ? "<null>" : authorizationHeader)));
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, SR.Format(SR.net_log_listener_unmatched_authentication_scheme, authenticationScheme.ToString(), authorizationHeader ?? "<null>"));
 
                     // If anonymous is allowed, just return the context.  Otherwise go for the 401.
                     if ((authenticationScheme & AuthenticationSchemes.Anonymous) != AuthenticationSchemes.None)
