@@ -5,19 +5,26 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Diagnostics;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Microsoft.Diagnostics.Tracing.Session;
 
 namespace DependencyLogViewer
 {
     public partial class DependencyGraphs : Form
     {
-        public DependencyGraphs()
+        private int fileCount = -1;
+        private DGMLGraphProcessing currentFile = null;
+        public DependencyGraphs(string argPath)
         {
             InitializeComponent();
+            textBox1.Text = argPath;
+            openFile();
         }
 
         private void explore_Click(object sender, EventArgs e)
@@ -50,11 +57,11 @@ namespace DependencyLogViewer
             {
                 ETWGraphProcessing.Singleton.Stop();
             }
-            if (DGMLGraphProcessing.Singleton is not null)
-            {
-                DGMLGraphProcessing.Singleton.Stop();
-            }
-            
+            //if (DGMLGraphProcessing.Singleton is not null)
+            //{
+            //    DGMLGraphProcessing.Singleton.Stop();
+            //}
+
             Application.Exit();
         }
 
@@ -84,6 +91,46 @@ Once the interesting node(s) have been identified in the dependency graph window
   - Select a node to explore further and press the corresponding button to make it happen.
 ";
             MessageBox.Show(helpMessage);
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            openFile();
+        }
+
+        private void openFile()
+        {
+            string argPath = textBox1.Text;
+            if (currentFile is null)
+            {
+                DGMLGraphProcessing dgml = new DGMLGraphProcessing(fileCount);
+                currentFile = dgml;
+                fileCount -= 1;
+                dgml.FindXML(argPath);
+                dgml.Complete += (fileID) =>
+                {
+                    Debug.Assert(fileID == currentFile.FileID);
+                    currentFile = null;
+                };
+            }
+            else
+            {
+                MessageBox.Show("File is already processing. Please Wait.");
+            }
+            textBox1.Text = "";
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            if (!(TraceEventSession.IsElevated() ?? false))
+            {
+                MessageBox.Show("To turn on ETW events you need to be Administrator, please close the program and run from an Admin process.");
+            } else
+            {
+                ETWGraphProcessing.Singleton = new ETWGraphProcessing();
+            }
+            
+
         }
     }
 }

@@ -148,24 +148,68 @@ namespace DependencyLogViewer
     }
     class DGMLGraphProcessing
     {
-        public static DGMLGraphProcessing Singleton;
-        int fileCount = -1;
         ConcurrentQueue<GraphEvent> events = new ConcurrentQueue<GraphEvent>();
 
-        public DGMLGraphProcessing(Object fileStream)
+        public delegate void OnCompleted(int currFileID);
+        public event OnCompleted Complete;
+
+        public DGMLGraphProcessing(int file)
         {
-            Thread th = new Thread(FindXML);
-            th.Start(fileStream);
+            FileID = file;
+        }
+        public int FileID
+        {
+            get; init;
         }
 
-        public void FindXML(object fileStream)
+        public void FindXML(string argPath)
         {
-            
+            var fileContent = string.Empty;
+            var filePath = string.Empty;
+            var fileStream = System.IO.Stream.Null;
+
+            using (OpenFileDialog openFileDialog = new OpenFileDialog())
+            {
+                openFileDialog.InitialDirectory = argPath;
+                openFileDialog.Filter = @"All Files|*.*|DGML(*.dgml)|*.dgml|XML(*.xml)|*xml";
+                openFileDialog.FilterIndex = 2;
+                openFileDialog.RestoreDirectory = true;
+
+                if (!argPath.EndsWith(".dgml") && !argPath.EndsWith(".xml"))
+                {
+                    if (openFileDialog.ShowDialog() == DialogResult.OK)
+                    {
+                        //Get the path of specified file
+                        filePath = openFileDialog.FileName;
+                        fileStream = openFileDialog.OpenFile();
+                    }
+                }
+                else
+                {
+                    if (argPath.EndsWith(".dgml")) // all .dgml files in the path need to have .xml added for XmlReader to function
+                    {
+                        argPath += ".xml";
+                    }
+                    fileStream = new FileStream(argPath, FileMode.Open);
+                }
+
+            }
+            Thread th = new Thread(ParseXML);
+            if (fileStream != System.IO.Stream.Null)
+            {
+                th.Start(fileStream);
+            }
+
+        }
+
+        private void ParseXML(object fileStream)
+        {
+            System.IO.FileStream fileContents = (System.IO.FileStream)fileStream;
             GraphCollection collection = GraphCollection.Singleton;
             XmlReaderSettings settings = new XmlReaderSettings();
             settings.IgnoreWhitespace = true;
 
-            using (XmlReader reader = XmlReader.Create((System.IO.Stream)fileStream, settings))
+            using (XmlReader reader = XmlReader.Create(fileContents, settings))
             {
                 while (reader.Read())
                 {
@@ -181,17 +225,17 @@ namespace DependencyLogViewer
                                 if (reader.Name == "Node")
                                 {
                                     int id = int.Parse(reader.GetAttribute("Id"));
-                                    collection.AddNodeToGraph(fileCount, fileCount, id, reader.GetAttribute("Label")); 
+                                    collection.AddNodeToGraph(FileID, FileID, id, reader.GetAttribute("Label")); 
                                 }
                                 else if (reader.Name == "Link")
                                 {
                                     int source = int.Parse(reader.GetAttribute("Source"));
                                     int target = int.Parse(reader.GetAttribute("Target"));
-                                    collection.AddEdgeToGraph(fileCount, fileCount, source, target, reader.GetAttribute("Reason"));
+                                    collection.AddEdgeToGraph(FileID, FileID, source, target, reader.GetAttribute("Reason"));
                                 }
                                 else if (reader.Name == "DirectedGraph")
                                 {
-                                    collection.AddGraph(fileCount, fileCount, reader.GetAttribute("xmlns"));
+                                    collection.AddGraph(FileID, FileID, fileContents.Name);
                                     break;
                                 }
                                 break;
@@ -201,16 +245,14 @@ namespace DependencyLogViewer
                     }
 
                 }
-                fileCount -= 1;
+                
             }
+            Stop();
         }
-        public void FileReading(System.IO.Stream fileStream)
-        {
-           
-        }
+
         public void Stop()
         {
-            //stopped = true;
+            Complete(FileID);
         }
     }
 
@@ -341,6 +383,8 @@ namespace DependencyLogViewer
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
+        ///
+        
         [STAThread]
         static int Main(string[] args)
         {
@@ -354,69 +398,15 @@ namespace DependencyLogViewer
                 argPath = args[0];
             }
             
-            string message = "Use ETW events?";
-            string caption = "";
-            MessageBoxButtons buttons = MessageBoxButtons.YesNo;
-            DialogResult result;
-            result = MessageBox.Show(message, caption, buttons);
-            
             // Today you have to be Admin to turn on ETW events (anyone can write ETW events). If user elects to use ETW events, they must be Admin.
             
-            if (!(TraceEventSession.IsElevated() ?? false) && result == System.Windows.Forms.DialogResult.Yes)
-            {
-                MessageBox.Show("To turn on ETW events you need to be Administrator, please run from an Admin process.");
-                return -1;
-            }
+
 
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
+ 
+            GraphCollection.DependencyGraphsUI = new DependencyGraphs(argPath);
 
-
-            GraphCollection.DependencyGraphsUI = new DependencyGraphs();
-            if (result == System.Windows.Forms.DialogResult.Yes)
-            {
-                ETWGraphProcessing.Singleton = new ETWGraphProcessing();
-            }
-            else
-            {
-                var fileContent = string.Empty;
-                var filePath = string.Empty;
-                var fileStream = System.IO.Stream.Null;
-
-                using (OpenFileDialog openFileDialog = new OpenFileDialog())
-                {
-                    openFileDialog.InitialDirectory = argPath;
-                    openFileDialog.Filter = @"All Files|*.*|DGML(*.dgml)|*.dgml|XML(*.xml)|*xml";
-                    openFileDialog.FilterIndex = 2;
-                    openFileDialog.RestoreDirectory = true;
-
-                    Console.WriteLine(argPath);
-
-
-                    if (!argPath.EndsWith(".dgml") && !argPath.EndsWith(".xml"))
-                    {
-                        if (openFileDialog.ShowDialog() == DialogResult.OK)
-                        {
-                            //Get the path of specified file
-                            filePath = openFileDialog.FileName;
-                            fileStream = openFileDialog.OpenFile();
-
-                        }
-                    }
-                    else
-                    {
-                        if (argPath.EndsWith(".dgml")) // all .dgml files in the path need to have .xml added for XmlReader to function
-                        {
-                            argPath += ".xml";
-                        }
-                        fileStream = new FileStream(argPath, FileMode.Open);
-                    }
-                    DGMLGraphProcessing.Singleton = new DGMLGraphProcessing((Object)fileStream);
-                }
-
-
-                
-            }
             Application.Run(GraphCollection.DependencyGraphsUI);
 
             return 0;
