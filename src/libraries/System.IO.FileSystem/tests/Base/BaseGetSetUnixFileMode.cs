@@ -23,13 +23,30 @@ namespace System.IO.Tests
         // When false, the Get API returns (UnixFileMode)(-1) when the platform is not supported.
         protected virtual bool GetModeThrowsPNSE => true;
 
+        // Determines if the derived Test class is for directories or files.
+        protected virtual bool IsDirectory => false;
+
         // Linux doesn't support setting UnixFileMode on links.
         private bool SetModeSupportsLink => PlatformDetection.IsBsdLike;
 
-        protected virtual string CreateTestItem(string path = null, [CallerMemberName] string memberName = null, [CallerLineNumber] int lineNumber = 0)
+        // On OSX, directories created under /tmp have same group as /tmp.
+        // Because that group is different from the test user's group, chmod
+        // returns EPERM when trying to setgid on directories, and for files
+        // chmod filters out the bit.
+        // We skip the tests with setgid.
+        private bool CanSetGroup => !PlatformDetection.IsBsdLike;
+
+        private string CreateTestItem(string path = null, [CallerMemberName] string memberName = null, [CallerLineNumber] int lineNumber = 0)
         {
             path = path ?? GetTestFilePath(null, memberName, lineNumber);
-            File.Create(path).Dispose();
+            if (IsDirectory)
+            {
+                Directory.CreateDirectory(path);
+            }
+            else
+            {
+                File.Create(path).Dispose();
+            }
             return path;
         }
 
@@ -38,6 +55,10 @@ namespace System.IO.Tests
         [MemberData(nameof(TestUnixFileModes))]
         public void SetThenGet(UnixFileMode mode)
         {
+            if (!CanSetGroup && (mode & UnixFileMode.SetGroup) != 0)
+            {
+                return; // Skip
+            }
             if (GetModeNeedsReadableFile)
             {
                 // Ensure the file remains readable.
@@ -56,6 +77,10 @@ namespace System.IO.Tests
         [MemberData(nameof(TestUnixFileModes))]
         public void SetThenGet_SymbolicLink(UnixFileMode mode)
         {
+            if (!CanSetGroup && (mode & UnixFileMode.SetGroup) != 0)
+            {
+                return; // Skip
+            }
             if (GetModeNeedsReadableFile)
             {
                 // Ensure the file remains readable.
@@ -138,12 +163,9 @@ namespace System.IO.Tests
                     return;
                 }
 
-                UnixFileMode initialMode = GetMode(path);
-
                 SetMode(linkPath, mode);
 
                 Assert.Equal(mode, GetMode(linkPath));
-                Assert.Equal(initialMode, GetMode(path));
             }
         }
 

@@ -9,12 +9,7 @@ namespace System.IO.Tests
     {
         protected override bool GetModeThrowsPNSE => false;
 
-        protected override string CreateTestItem(string path = null, [CallerMemberName] string memberName = null, [CallerLineNumber] int lineNumber = 0)
-        {
-            path =  path ?? GetTestFilePath(null, memberName, lineNumber);
-            Directory.CreateDirectory(path);
-            return path;
-        }
+        protected override bool IsDirectory => true;
 
         protected override UnixFileMode GetMode(string path)
             => new DirectoryInfo(path).UnixFileMode;

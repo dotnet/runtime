@@ -5,7 +5,14 @@ namespace System.IO
 {
     internal partial struct FileStatus
     {
-        private static int ChModNoFollowLink(string path, int mode) =>
-            Interop.Sys.LChMod(path!, mode);
+        private int ChModNoFollowLink(string path, int mode)
+        {
+            EnsureCachesInitialized(path);
+
+            if (!EntryExists)
+                FileSystemInfo.ThrowNotFound(path);
+
+            return Interop.Sys.LChMod(path, mode);
+        }
     }
 }
