@@ -3209,7 +3209,7 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
 }
 
 //------------------------------------------------------------------------------
-// optIsProfitableToPropagate: Checks if value worth substituting to lcl location
+// optIsProfitableToSubstitute: Checks if value worth substituting to lcl location
 //
 // Arguments:
 //    lcl       - lcl to replace with value if profitable
