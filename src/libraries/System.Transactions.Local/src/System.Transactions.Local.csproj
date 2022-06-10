@@ -39,6 +39,27 @@
     <Compile Include="System\Transactions\Configuration\ConfigurationStrings.cs" />
     <Compile Include="System\Transactions\Configuration\DefaultSettingsSection.cs" />
     <Compile Include="System\Transactions\Configuration\MachineSettingsSection.cs" />
+    <Compile Include="System\Transactions\Oletx\CoTaskMemHandle.cs" />
+    <Compile Include="System\Transactions\Oletx\DtcInterfaces.cs" />
+    <Compile Include="System\Transactions\Oletx\DTCTransactionManager.cs" />
+    <Compile Include="System\Transactions\Oletx\HandleTable.cs" />
+    <Compile Include="System\Transactions\Oletx\OletxCommittableTransaction.cs" />
+    <Compile Include="System\Transactions\Oletx\OletxDependentTransaction.cs" />
+    <Compile Include="System\Transactions\Oletx\OletxEnlistment.cs" />
+    <Compile Include="System\Transactions\Oletx\OletxResourceManager.cs" />
+    <Compile Include="System\Transactions\Oletx\OletxEnlistment.cs" />
+    <Compile Include="System\Transactions\Oletx\OleTxTransaction.cs" />
+    <Compile Include="System\Transactions\Oletx\OletxTransactionManager.cs" />
+    <Compile Include="System\Transactions\Oletx\OletxVolatileEnlistment.cs" />
+<!--    <Compile Include="System\Transactions\Trace\Activity.cs" />-->
+<!--    <Compile Include="System\Transactions\Trace\DiagnosticStrings.cs" />-->
+<!--    <Compile Include="System\Transactions\Trace\DiagnosticTraceCode.cs" />-->
+<!--    <Compile Include="System\Transactions\Trace\DiagnosticTrace.cs" />-->
+<!--    <Compile Include="System\Transactions\Trace\PlainXmlWriter.cs" />-->
+<!--    <Compile Include="System\Transactions\Trace\TraceCode.cs" />-->
+<!--    <Compile Include="System\Transactions\Trace\TraceRecord.cs" />-->
+<!--    <Compile Include="System\Transactions\Trace\TraceRecords.cs" />-->
+<!--    <Compile Include="System\Transactions\Trace\TraceXPathNavigator.cs" />-->
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Diagnostics.Tracing" />
