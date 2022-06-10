@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Numerics;
+using Internal;
 
 namespace System
 {
@@ -141,20 +142,12 @@ namespace System
             //      3. verify that it is between 0 and 28
             //      4. build a decimal with scaledValue and our calculated exponent
 
-            /*            if ((state.scaledValue > (2 << 96)) || (state.scaledValue < -(2 << 96)))
-                        {
-                            throw;
-                        }
-
-                        state.scale.*/
-
-            var lenScale = state.scale.GetLength();
+/*            var lenScale = state.scale.GetLength();
 
             uint lowScale = 0;
             uint midScale = 0;
             uint highScale = 0;
             uint idkScale = 0;
-            //UInt128
 
             if (lenScale > 0)
             {
@@ -173,7 +166,25 @@ namespace System
                 idkScale = state.scale.GetBlock(3);
             }
 
-            var len = state.scaledValue.GetLength();
+            UInt128 scaleUInt128 = 0;
+            scaleUInt128 += idkScale;
+            scaleUInt128 = scaleUInt128 << 32;
+            scaleUInt128 += highScale;
+            scaleUInt128 = scaleUInt128 << 32;
+            scaleUInt128 += midScale;
+            scaleUInt128 = scaleUInt128 << 32;
+            scaleUInt128 += lowScale;
+            Console.WriteLine(scaleUInt128.ToString());*/
+
+
+
+            Debug.Assert(state.scaledValue.GetLength() < 5);
+            // scaledValue is scaled up by 2, undo that
+            BigInteger.SetUInt32(out BigInteger Two, 2);
+            BigInteger.DivRem(ref state.scaledValue, ref Two, out BigInteger descaledValue, out _); // TODO this could be optimized as a right shift
+            Debug.Assert(descaledValue.GetLength() < 4);
+
+            var len = descaledValue.GetLength();
 
             uint low = 0;
             uint mid = 0;
@@ -181,23 +192,33 @@ namespace System
 
             if (len > 0)
             {
-                low = state.scaledValue.GetBlock(0);
+                low = descaledValue.GetBlock(0);
             }
             if (len > 1)
             {
-                mid = state.scaledValue.GetBlock(1);
+                mid = descaledValue.GetBlock(1);
             }
             if (len > 2)
             {
-                high = state.scaledValue.GetBlock(2);
+                high = descaledValue.GetBlock(2);
             }
             if (len > 3)
             {
-                uint idk = state.scaledValue.GetBlock(3);
-                throw new Exception("TODO handle this somehow" + idk + lowScale + midScale + highScale + idkScale);
+                uint idk = descaledValue.GetBlock(3);
+                throw new Exception("TODO handle this somehowww" + idk);
             }
 
-            uint decimalScale = (uint)state.digitExponent - 1;
+            UInt128 valueUInt128 = 0;
+            valueUInt128 += high;
+            valueUInt128 = valueUInt128 << 32;
+            valueUInt128 += mid;
+            valueUInt128 = valueUInt128 << 32;
+            valueUInt128 += low;
+            Console.WriteLine(valueUInt128.ToString());
+
+            // Since the scale in the Decimal type is representing dividing by 10^e, we want to invert decimalScale
+            uint decimalScale = 28 - ((uint)state.digitExponent - 1);
+            Debug.Assert(decimalScale <= 28 && decimalScale > 0);
             return (low, mid, high, decimalScale);
 
         }

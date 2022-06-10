@@ -1693,7 +1693,23 @@ ReturnZero:
             {
                 result = default;
 
-                (result.Low, result.Mid, result.High, uint scale) = Number.Dragon4DoubleToDecimal(input, 29, true);
+                // The smallest non-zero decimal we can represent is 10^-28, which is just slightly more
+                // than 2^-93.  So a float with an exponent of -94 could just
+                // barely reach 0.5, but smaller exponents will always round to zero.
+                // This is a shortcut to catch doubles that are too small efficiently.
+                //
+                if (input.Exponent < -94)
+                {
+                    return; // result should be zeroed out
+                }
+
+                // The smallest double with an exponent of 96 is just over decimal.MaxValue. This
+                // means that an exponent of 96 and above should overflow.
+                //
+                if (input.Exponent >= 96)
+                {
+                    Number.ThrowOverflowException(TypeCode.Decimal);
+                }
 
                 uint flags = 0;
                 if (input < 0)
@@ -1701,29 +1717,11 @@ ReturnZero:
                     flags = SignMask;
                 }
 
+                (result.Low, result.Mid, result.High, uint scale) = Number.Dragon4DoubleToDecimal(input, 29, true);
+
                 flags |= scale << ScaleShift;
                 result.uflags = flags;
-                // Span<char> destination = new Span<char>(new char[100]);
-                // input.TryFormat(destination, out int charsWritten);
-                // Debug.Assert(charsWritten != 0);
-                // string s = destination.ToString();
-                // Console.WriteLine(s);
-                // //Number.TryFormatDouble(input);
-                //Console.WriteLine(dec.ToString());
-                //result = AsMutable(ref dec);
 
-                // DREW NOTE: Early Exit if the float is too small, we could keep a version of this
-                // // The most we can scale by is 10^28, which is just slightly more
-                // // than 2^93.  So a float with an exponent of -94 could just
-                // // barely reach 0.5, but smaller exponents will always round to zero.
-                // //
-                // const uint DBLBIAS = 1022;
-                // int exp = (int)(GetExponent(input) - DBLBIAS);
-                // if (exp < -94)
-                //     return; // result should be zeroed out
-                //
-                // if (exp > 96)
-                //     Number.ThrowOverflowException(TypeCode.Decimal);
                 return;
             }
             internal static void VarDecFromR8_Old(double input, out DecCalc result)
