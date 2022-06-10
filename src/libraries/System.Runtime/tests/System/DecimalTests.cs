@@ -224,6 +224,7 @@ namespace System.Tests
         [InlineData(double.MinValue)]
         [InlineData(double.PositiveInfinity)]
         [InlineData(double.NegativeInfinity)]
+        [InlineData(79228162514264337593543950335.0)]
         public void Ctor_LargeDouble_ThrowsOverlowException(double value)
         {
             Assert.Throws<OverflowException>(() => new decimal(value));
@@ -247,6 +248,22 @@ namespace System.Tests
             double z = (double)y;
             Assert.Equal(x, z);
 
+        }
+
+        [Fact]
+        public void Ctor_SmallDoubleRoundsUp()
+        {
+            // Create a double with decimal's smallest non-zero value
+            double x = .0000000000000000000000000001;
+
+            // Cast to a decimal
+            decimal y = new decimal(x);
+
+            Assert.NotEqual(decimal.Zero, y);
+
+            // Use strings to ensure decimal is correct
+            string y_string = y.ToString("G99");
+            Assert.Equal(".0000000000000000000000000001", y_string);
         }
 
         [Fact]
