@@ -240,25 +240,13 @@ namespace System.Threading
         {
             Debug.Assert(t_ContentionCountObject == null);
 
-            // we use "s_lockContentionCounter" as a sentinel value to prevent reentrancy.
-            t_ContentionCountObject = s_lockContentionCounter;
-
             object threadLocalContentionCountObject = s_lockContentionCounter.CreateThreadLocalCountObject();
             t_ContentionCountObject = threadLocalContentionCountObject;
             return threadLocalContentionCountObject;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void IncrementLockContentionCount()
-        {
-            // CreateThreadLocalCountObject may indirectly take locks and in rare cases may have contentions.
-            // we use "s_lockContentionCounter" as a sentinel value to prevent re-entering CreateThreadLocalContentionCountObject,
-            // which would otherwise deadlock.
-            if (t_ContentionCountObject != s_lockContentionCounter)
-            {
-                ThreadInt64PersistentCounter.Increment(t_ContentionCountObject ?? CreateThreadLocalContentionCountObject());
-            }
-        }
+        internal static void IncrementLockContentionCount() => ThreadInt64PersistentCounter.Increment(t_ContentionCountObject ?? CreateThreadLocalContentionCountObject());
 
         /// <summary>
         /// Gets the number of times there was contention upon trying to take a <see cref="Monitor"/>'s lock so far.
