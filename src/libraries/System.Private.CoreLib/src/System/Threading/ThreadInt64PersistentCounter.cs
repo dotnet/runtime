@@ -15,7 +15,10 @@ namespace System.Threading
         private static List<ThreadLocalNodeFinalizationHelper>? t_nodeFinalizationHelpers;
 
         private long _overflowCount;
-        private HashSet<ThreadLocalNode> _nodes = new HashSet<ThreadLocalNode>();
+
+        // we pass comparer explicitly so that in NativeAOT case we would not end up
+        // calling into the type system when lock contention increments its counter
+        private HashSet<ThreadLocalNode> _nodes = new HashSet<ThreadLocalNode>(ObjectEqualityComparer<object>.Default);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Increment(object threadLocalCountObject)
