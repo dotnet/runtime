@@ -39,8 +39,7 @@ namespace System
         {
             get
             {
-                string name = InternalNameIfAvailable;
-                return name != null ? name : DefaultTypeNameWhenMissingMetadata;
+                return InternalNameIfAvailable ?? DefaultTypeNameWhenMissingMetadata;
             }
         }
 
@@ -87,8 +86,7 @@ namespace System
                     rootElementType = rootElementType.GetElementType()!;
                 if (rootElementType.IsNested)
                 {
-                    string name = InternalNameIfAvailable;
-                    return name == null ? DefaultTypeNameWhenMissingMetadata : name;
+                    return InternalNameIfAvailable ?? DefaultTypeNameWhenMissingMetadata;
                 }
 
                 // Legacy: why removing "System"? Is it just because C# has keywords for these types?

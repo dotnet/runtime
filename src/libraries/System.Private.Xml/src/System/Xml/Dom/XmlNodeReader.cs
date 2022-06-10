@@ -228,16 +228,17 @@ namespace System.Xml
             {
                 string? retValue;
                 XmlNodeType nt = _curNode.NodeType;
+
                 if (_nAttrInd != -1)
                 {
                     //Pointing at the one of virtual attributes of Declaration or DocumentType nodes
                     Debug.Assert(nt == XmlNodeType.XmlDeclaration || nt == XmlNodeType.DocumentType);
                     Debug.Assert(_nAttrInd >= 0 && _nAttrInd < AttributeCount);
-                    if (_curNode.NodeType == XmlNodeType.XmlDeclaration)
-                        return decNodeAttributes[_nAttrInd].value!;
-                    else
-                        return docTypeNodeAttributes[_nAttrInd].value!;
+                    return _curNode.NodeType == XmlNodeType.XmlDeclaration ?
+                        decNodeAttributes[_nAttrInd].value! :
+                        docTypeNodeAttributes[_nAttrInd].value!;
                 }
+
                 if (nt == XmlNodeType.DocumentType)
                 {
                     retValue = ((XmlDocumentType)_curNode).InternalSubset; //in this case nav.Value will be null
@@ -246,19 +247,26 @@ namespace System.Xml
                 {
                     StringBuilder strb = new StringBuilder(string.Empty);
                     if (_nDeclarationAttrCount == -1)
+                    {
                         InitDecAttr();
+                    }
+
                     for (int i = 0; i < _nDeclarationAttrCount; i++)
                     {
                         strb.Append($"{decNodeAttributes[i].name}=\"{decNodeAttributes[i].value}\"");
                         if (i != (_nDeclarationAttrCount - 1))
+                        {
                             strb.Append(' ');
+                        }
                     }
+
                     retValue = strb.ToString();
                 }
                 else
                 {
                     retValue = _curNode.Value;
                 }
+
                 return retValue ?? string.Empty;
             }
         }

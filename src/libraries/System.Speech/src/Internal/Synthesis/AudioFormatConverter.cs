@@ -252,7 +252,7 @@ namespace System.Speech.Internal.Synthesis
         internal static byte[] ConvertLinear2ALaw(short[] data, int size)
         {
             byte[] newData = new byte[size];
-            s_aLawCompTableCached = s_aLawCompTableCached ?? CalcLinear2ALawTable();
+            s_aLawCompTableCached ??= CalcLinear2ALawTable();
 
             for (int i = 0; i < size; i++)
             {
@@ -262,6 +262,7 @@ namespace System.Speech.Internal.Synthesis
                     newData[i] = s_aLawCompTableCached[(ushort)data[i] >> 2];
                 }
             }
+
             return newData;
         }
 
