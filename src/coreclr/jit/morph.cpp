@@ -2111,6 +2111,15 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         indirectCellAddress->AsIntCon()->gtTargetHandle = (size_t)call->gtCallMethHnd;
 #endif
 
+#ifdef TARGET_ARM
+        // TODO-ARM: We currently do not properly kill this register in LSRA
+        // (see getKillSetForCall which does so only for VSD calls).
+        // We should be able to remove these two workarounds once we do so,
+        // however when this was tried there were significant regressions.
+        indirectCellAddress->SetRegNum(REG_R2R_INDIRECT_PARAM);
+        indirectCellAddress->SetDoNotCSE();
+#endif
+
         // Push the stub address onto the list of arguments.
         NewCallArg indirCellAddrArg =
             NewCallArg::Primitive(indirectCellAddress).WellKnown(WellKnownArg::R2RIndirectionCell);
@@ -7911,7 +7920,7 @@ void Compiler::fgMorphTailCallViaJitHelper(GenTreeCall* call)
 //    call - a call that needs virtual stub dispatching.
 //
 // Return Value:
-//    addr tree with set resister requirements.
+//    addr tree
 //
 GenTree* Compiler::fgGetStubAddrArg(GenTreeCall* call)
 {
