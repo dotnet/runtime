@@ -81,7 +81,7 @@ For the code in `src/mono/mono`:
 
 * `sgen` depends on `eglib` and `utils`
 
-* `metadata` depends on all of the above (but note that some Boehm-GC exists that should not depend on `sgen`)
+* `metadata` depends on all of the above (but note that some Boehm-GC files in this directory should not depend on `sgen`)
 
 * `mini` depends on all of the above
 
@@ -149,7 +149,7 @@ exception when the function returns.  `NOHANDLES` functions generally have to ca
 
 ## Suspend Safety
 
-See [Cooperative Suspend at mono-project.com](https://www.mono-project.com/docs/advanced/runtime/docs/coop-suspend/).
+See [Cooperative Suspend at mono-project.com](https://www.mono-project.com/docs/advanced/runtime/docs/coop-suspend/) and the [mono thread state machine design document](../design/mono/mono-thread-state-machine.md)
 
 In general runtime functions that may be called from the public Mono API should call
 `MONO_ENTER_GC_UNSAFE`/`MONO_EXIT_GC_UNSAFE` if they call any other runtime API.  Internal calls are
