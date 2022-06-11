@@ -64,7 +64,12 @@ namespace System
 
         public bool IsHomogenous => true;
 
-        public event EventHandler? DomainUnload;
+        // This event is no longer raised by the runtime.
+        public event EventHandler? DomainUnload
+        {
+            add { }
+            remove { }
+        }
 
         public event EventHandler<FirstChanceExceptionEventArgs>? FirstChanceException
         {
@@ -242,7 +247,12 @@ namespace System
             remove { AssemblyLoadContext.AssemblyResolve -= value; }
         }
 
-        public event ResolveEventHandler? ReflectionOnlyAssemblyResolve;
+        // This event is no longer raised by the runtime.
+        public event ResolveEventHandler? ReflectionOnlyAssemblyResolve
+        {
+            add { }
+            remove { }
+        }
 
         public event ResolveEventHandler? TypeResolve
         {
