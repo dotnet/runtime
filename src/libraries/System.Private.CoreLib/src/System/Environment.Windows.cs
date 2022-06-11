@@ -180,5 +180,30 @@ namespace System
                 return (long)memoryCounters.WorkingSetSize;
             }
         }
+
+        private static unsafe string[] GetCommandLineArgsNative()
+        {
+            char* lpCmdLine = Interop.Kernel32.GetCommandLine();
+            if (lpCmdLine == null)
+            {
+                ThrowHelper.ThrowOutOfMemoryException();
+            }
+
+            int numArgs = 0;
+            char** argvW = Interop.Shell32.CommandLineToArgv(lpCmdLine, &numArgs);
+            if (argvW == null)
+            {
+                ThrowHelper.ThrowOutOfMemoryException();
+            }
+
+            string[] result = new string[numArgs];
+            for (int i = 0; i < result.Length; i++)
+            {
+                result[i] = new string(*(argvW + i));
+            }
+
+            Interop.Kernel32.LocalFree((nint)argvW);
+            return result;
+        }
     }
 }
