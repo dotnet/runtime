@@ -16,7 +16,7 @@ namespace System.Threading
 
         private long _overflowCount;
 
-        // dummy node serving as a start of the list
+        // dummy node serving as a start and end of the ring list
         private ThreadLocalNode _first;
 
         public ThreadInt64PersistentCounter()
