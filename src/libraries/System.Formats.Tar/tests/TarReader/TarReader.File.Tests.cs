@@ -553,9 +553,9 @@ namespace System.Formats.Tar.Tests
             Assert.Equal(TarEntryFormat.Pax, pax.Format);
             Assert.True(pax.ExtendedAttributes.Count() >= 3); // Expect to at least collect mtime, ctime and atime
 
-            VerifyExtendedAttributeTimestamp(pax, PaxEaMTime);
-            VerifyExtendedAttributeTimestamp(pax, PaxEaATime);
-            VerifyExtendedAttributeTimestamp(pax, PaxEaCTime);
+            VerifyExtendedAttributeTimestamp(pax, PaxEaMTime, MinimumTime);
+            VerifyExtendedAttributeTimestamp(pax, PaxEaATime, MinimumTime);
+            VerifyExtendedAttributeTimestamp(pax, PaxEaCTime, MinimumTime);
         }
 
         private void VerifyGnuFields(GnuTarEntry gnu)

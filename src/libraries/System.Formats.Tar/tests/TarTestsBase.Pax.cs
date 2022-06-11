@@ -109,18 +109,10 @@ namespace System.Formats.Tar.Tests
             return secondsSinceEpoch.ToString("F6", CultureInfo.InvariantCulture);
         }
 
-        protected void VerifyExtendedAttributeTimestamp(PaxTarEntry entry, string fieldName, DateTimeOffset precedingTime = default)
+        protected void VerifyExtendedAttributeTimestamp(PaxTarEntry paxEntry, string fieldName, DateTimeOffset minimumTime)
         {
-            DateTimeOffset timestamp = GetDateTimeOffsetFromTimestampString(entry.ExtendedAttributes, fieldName);
-
-            if (precedingTime != default)
-            {
-                Assert.True(timestamp >= precedingTime, $"Extended attribute timestamp '{fieldName}' is not greater than or equal to the preceding time.");
-            }
-            else
-            {
-                Assert.True(timestamp > DateTimeOffset.UnixEpoch, $"Extended attribute timestamp '{fieldName}' is not greater than the Unix epoch.");
-            }
+            DateTimeOffset converted = GetDateTimeOffsetFromTimestampString(paxEntry.ExtendedAttributes, fieldName);
+            AssertExtensions.GreaterThanOrEqualTo(converted, minimumTime);
         }
     }
 }

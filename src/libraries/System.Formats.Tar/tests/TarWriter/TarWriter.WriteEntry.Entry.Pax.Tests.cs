@@ -215,7 +215,30 @@ namespace System.Formats.Tar.Tests
         }
 
         [Fact]
-        public void WritePaxAttributes_Timestamps()
+        public void WritePaxAttributes_Timestamps_AutomaticallyAdded()
+        {
+            DateTimeOffset minimumTime = DateTimeOffset.UtcNow - TimeSpan.FromHours(1);
+            using MemoryStream archiveStream = new MemoryStream();
+            using (TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.Pax, leaveOpen: true))
+            {
+                PaxTarEntry regularFile = new PaxTarEntry(TarEntryType.RegularFile, InitialEntryName);
+                writer.WriteEntry(regularFile);
+            }
+
+            archiveStream.Position = 0;
+            using (TarReader reader = new TarReader(archiveStream))
+            {
+                PaxTarEntry regularFile = reader.GetNextEntry() as PaxTarEntry;
+
+                AssertExtensions.GreaterThanOrEqualTo(regularFile.ExtendedAttributes.Count, 4);
+                VerifyExtendedAttributeTimestamp(regularFile, PaxEaMTime, minimumTime);
+                VerifyExtendedAttributeTimestamp(regularFile, PaxEaATime, minimumTime);
+                VerifyExtendedAttributeTimestamp(regularFile, PaxEaCTime, minimumTime);
+            }
+        }
+
+        [Fact]
+        public void WritePaxAttributes_Timestamps_UserProvided()
         {
             Dictionary<string, string> extendedAttributes = new();
             extendedAttributes.Add(PaxEaATime, GetTimestampStringFromDateTimeOffset(TestAccessTime));
@@ -225,8 +248,7 @@ namespace System.Formats.Tar.Tests
             using (TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.Pax, leaveOpen: true))
             {
                 PaxTarEntry regularFile = new PaxTarEntry(TarEntryType.RegularFile, InitialEntryName, extendedAttributes);
-                SetRegularFile(regularFile);
-                VerifyRegularFile(regularFile, isWritable: true);
+                regularFile.ModificationTime = TestModificationTime;
                 writer.WriteEntry(regularFile);
             }
 
@@ -234,12 +256,8 @@ namespace System.Formats.Tar.Tests
             using (TarReader reader = new TarReader(archiveStream))
             {
                 PaxTarEntry regularFile = reader.GetNextEntry() as PaxTarEntry;
-                VerifyRegularFile(regularFile, isWritable: false);
 
-                Assert.NotNull(regularFile.ExtendedAttributes);
-                Assert.True(regularFile.ExtendedAttributes.Count >= 4);
-
-                Assert.Contains(PaxEaName, regularFile.ExtendedAttributes);
+                AssertExtensions.GreaterThanOrEqualTo(regularFile.ExtendedAttributes.Count, 4);
                 VerifyExtendedAttributeTimestamp(regularFile, PaxEaMTime, TestModificationTime);
                 VerifyExtendedAttributeTimestamp(regularFile, PaxEaATime, TestAccessTime);
                 VerifyExtendedAttributeTimestamp(regularFile, PaxEaCTime, TestChangeTime);

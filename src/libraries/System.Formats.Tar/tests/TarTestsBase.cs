@@ -29,12 +29,15 @@ namespace System.Formats.Tar.Tests
         protected const int TestBlockDeviceMinor = 65;
         protected const int TestCharacterDeviceMajor = 51;
         protected const int TestCharacterDeviceMinor = 42;
-        protected readonly DateTimeOffset TestModificationTime = new DateTimeOffset(2003, 3, 3, 3, 33, 33, TimeSpan.Zero);
-        protected readonly DateTimeOffset TestAccessTime = new DateTimeOffset(2022, 2, 2, 2, 22, 22, TimeSpan.Zero);
-        protected readonly DateTimeOffset TestChangeTime = new DateTimeOffset(2011, 11, 11, 11, 11, 11, TimeSpan.Zero);
+
+        protected readonly DateTimeOffset MinimumTime = new(2022, 1, 1, 1, 1, 1, TimeSpan.Zero);
+        protected readonly DateTimeOffset TestModificationTime = new DateTimeOffset(2022, 2, 2, 2, 2, 2, TimeSpan.Zero);
+        protected readonly DateTimeOffset TestAccessTime = new DateTimeOffset(2022, 3, 3, 3, 3, 3, TimeSpan.Zero);
+        protected readonly DateTimeOffset TestChangeTime = new DateTimeOffset(2022, 4, 4, 4, 4, 4, TimeSpan.Zero);
+
         protected readonly string TestLinkName = "TestLinkName";
         protected const TarFileMode TestMode = TarFileMode.UserRead | TarFileMode.UserWrite | TarFileMode.GroupRead | TarFileMode.GroupWrite | TarFileMode.OtherRead | TarFileMode.OtherWrite;
-        protected readonly DateTimeOffset TestTimestamp = DateTimeOffset.UtcNow;
+
         protected const string TestGName = "group";
         protected const string TestUName = "user";
 

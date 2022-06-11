@@ -214,9 +214,10 @@ namespace System.Formats.Tar.Tests
         {
             Assert.True(pax.ExtendedAttributes.Count >= 4);
             Assert.Contains(PaxEaName, pax.ExtendedAttributes);
-            VerifyExtendedAttributeTimestamp(pax, PaxEaMTime);
-            VerifyExtendedAttributeTimestamp(pax, PaxEaATime);
-            VerifyExtendedAttributeTimestamp(pax, PaxEaCTime);
+
+            VerifyExtendedAttributeTimestamp(pax, PaxEaMTime, MinimumTime);
+            VerifyExtendedAttributeTimestamp(pax, PaxEaATime, MinimumTime);
+            VerifyExtendedAttributeTimestamp(pax, PaxEaCTime, MinimumTime);
         }
 
         protected void VerifyGnuTimestamps(GnuTarEntry gnu)

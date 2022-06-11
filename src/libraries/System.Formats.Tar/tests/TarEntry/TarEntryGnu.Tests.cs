@@ -155,7 +155,7 @@ namespace System.Formats.Tar.Tests
         [Fact]
         public void Constructor_ConversionV7_BackAndForth()
         {
-            DateTimeOffset firstNow = DateTimeOffset.UtcNow - TimeSpan.FromMilliseconds(10);
+            DateTimeOffset firstNow = DateTimeOffset.UtcNow - TimeSpan.FromHours(1);
             // V7 does not support blockdev, so can't verify transfer of DeviceMajor/DeviceMinor fields
             GnuTarEntry firstEntry = new GnuTarEntry(TarEntryType.RegularFile, "file.txt")
             {
@@ -165,8 +165,8 @@ namespace System.Formats.Tar.Tests
                 UserName = TestUName,
             };
 
-            Assert.True(firstEntry.AccessTime > firstNow);
-            Assert.True(firstEntry.ChangeTime > firstNow);
+            AssertExtensions.GreaterThan(firstEntry.AccessTime, firstNow);
+            AssertExtensions.GreaterThan(firstEntry.ChangeTime, firstNow);
 
             DateTimeOffset secondNow = firstEntry.AccessTime;
 
@@ -176,8 +176,8 @@ namespace System.Formats.Tar.Tests
             GnuTarEntry secondEntry = new GnuTarEntry(other: otherEntry);
             Assert.Equal(TarEntryType.RegularFile, secondEntry.EntryType);
 
-            Assert.True(secondEntry.AccessTime > secondNow, "secondEntry.AccessTime is not greater than secondNow");
-            Assert.True(secondEntry.ChangeTime > secondNow, "secondEntry.ChangeTime is not greater than secondNow");
+            AssertExtensions.GreaterThan(secondEntry.AccessTime, secondNow);
+            AssertExtensions.GreaterThan(secondEntry.ChangeTime, secondNow);
             Assert.Equal(TestGid, secondEntry.Gid);
             Assert.Equal(DefaultGName, secondEntry.GroupName);
             Assert.Equal(TestUid, secondEntry.Uid);
@@ -187,7 +187,7 @@ namespace System.Formats.Tar.Tests
         [Fact]
         public void Constructor_ConversionUstar_BackAndForth()
         {
-            DateTimeOffset firstNow = DateTimeOffset.UtcNow - TimeSpan.FromMilliseconds(10);
+            DateTimeOffset firstNow = DateTimeOffset.UtcNow - TimeSpan.FromHours(1);
             GnuTarEntry firstEntry = new GnuTarEntry(TarEntryType.BlockDevice, "blockdev")
             {
                 DeviceMajor = TestBlockDeviceMajor,
@@ -198,8 +198,8 @@ namespace System.Formats.Tar.Tests
                 UserName = TestUName,
             };
 
-            Assert.True(firstEntry.AccessTime > firstNow);
-            Assert.True(firstEntry.ChangeTime > firstNow);
+            AssertExtensions.GreaterThan(firstEntry.AccessTime, firstNow);
+            AssertExtensions.GreaterThan(firstEntry.ChangeTime, firstNow);
 
             DateTimeOffset secondNow = firstEntry.AccessTime;
 
@@ -207,8 +207,8 @@ namespace System.Formats.Tar.Tests
 
             GnuTarEntry secondEntry = new GnuTarEntry(other: otherEntry);
 
-            Assert.True(secondEntry.AccessTime > secondNow, "secondEntry.AccessTime is not greater than secondNow");
-            Assert.True(secondEntry.ChangeTime > secondNow, "secondEntry.ChangeTime is not greater than secondNow");
+            AssertExtensions.GreaterThan(secondEntry.AccessTime, secondNow);
+            AssertExtensions.GreaterThan(secondEntry.ChangeTime, secondNow);
             Assert.Equal(TestBlockDeviceMajor, secondEntry.DeviceMajor);
             Assert.Equal(TestBlockDeviceMinor, secondEntry.DeviceMinor);
             Assert.Equal(TestGid, secondEntry.Gid);
@@ -220,7 +220,7 @@ namespace System.Formats.Tar.Tests
         [Fact]
         public void Constructor_ConversionPax_BackAndForth()
         {
-            DateTimeOffset firstNow = DateTimeOffset.UtcNow - TimeSpan.FromMilliseconds(10);
+            DateTimeOffset firstNow = DateTimeOffset.UtcNow - TimeSpan.FromHours(1);
             GnuTarEntry firstEntry = new GnuTarEntry(TarEntryType.BlockDevice, "blockdev")
             {
                 DeviceMajor = TestBlockDeviceMajor,
@@ -231,8 +231,8 @@ namespace System.Formats.Tar.Tests
                 UserName = TestUName,
             };
 
-            Assert.True(firstEntry.AccessTime > firstNow);
-            Assert.True(firstEntry.ChangeTime > firstNow);
+            AssertExtensions.GreaterThan(firstEntry.AccessTime, firstNow);
+            AssertExtensions.GreaterThan(firstEntry.ChangeTime, firstNow);
 
             PaxTarEntry otherEntry = new PaxTarEntry(other: firstEntry);
 
