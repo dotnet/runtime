@@ -114,7 +114,11 @@ namespace System.Threading
 
             if (NativeRuntimeEventSource.Log.IsEnabled())
             {
-                NativeRuntimeEventSource.Log.ThreadPoolMinMaxThreads((ushort)_minThreads, (ushort)_maxThreads, (ushort)_legacy_minIOCompletionThreads, (ushort)_legacy_maxIOCompletionThreads);
+                NativeRuntimeEventSource.Log.ThreadPoolMinMaxThreads(
+                    (ushort)_minThreads, 
+                    (ushort)_maxThreads, 
+                    (ushort)_legacy_minIOCompletionThreads, 
+                    (ushort)_legacy_maxIOCompletionThreads);
             }
 
             _separated.counts.NumThreadsGoal = _minThreads;
@@ -195,7 +199,11 @@ namespace System.Threading
 
                 if (NativeRuntimeEventSource.Log.IsEnabled())
                 {
-                    NativeRuntimeEventSource.Log.ThreadPoolMinMaxThreads((ushort)_minThreads, (ushort)_maxThreads, (ushort)_legacy_minIOCompletionThreads, (ushort)_legacy_maxIOCompletionThreads);
+                    NativeRuntimeEventSource.Log.ThreadPoolMinMaxThreads(
+                        (ushort)_minThreads, 
+                        (ushort)_maxThreads, 
+                        (ushort)_legacy_minIOCompletionThreads, 
+                        (ushort)_legacy_maxIOCompletionThreads);
                 }
             }
             finally
@@ -270,7 +278,11 @@ namespace System.Threading
 
                 if (NativeRuntimeEventSource.Log.IsEnabled())
                 {
-                    NativeRuntimeEventSource.Log.ThreadPoolMinMaxThreads((ushort)_minThreads, (ushort)_maxThreads, (ushort)_legacy_minIOCompletionThreads, (ushort)_legacy_maxIOCompletionThreads);
+                    NativeRuntimeEventSource.Log.ThreadPoolMinMaxThreads(
+                        (ushort)_minThreads, 
+                        (ushort)_maxThreads, 
+                        (ushort)_legacy_minIOCompletionThreads, 
+                        (ushort)_legacy_maxIOCompletionThreads);
                 }
                 return true;
             }
