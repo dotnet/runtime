@@ -1210,11 +1210,11 @@ namespace System.Runtime.Serialization
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal static bool IsTypeSerializable(Type type)
         {
-            return IsTypeSerializable(type, new HashSet<Type>());
+            return IsTypeSerializable(type, null);
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        private static bool IsTypeSerializable(Type type, HashSet<Type> previousCollectionTypes)
+        private static bool IsTypeSerializable(Type type, HashSet<Type>? previousCollectionTypes)
         {
             Type? itemType;
 
@@ -1231,6 +1231,7 @@ namespace System.Runtime.Serialization
             }
             if (CollectionDataContract.IsCollection(type, out itemType))
             {
+                previousCollectionTypes ??= new HashSet<Type>();
                 ValidatePreviousCollectionTypes(type, itemType, previousCollectionTypes);
                 if (IsTypeSerializable(itemType, previousCollectionTypes))
                 {
