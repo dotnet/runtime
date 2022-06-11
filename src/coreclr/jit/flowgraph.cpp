@@ -711,6 +711,16 @@ bool Compiler::fgIsBlockCold(BasicBlock* blk)
     return ((blk->bbFlags & BBF_COLD) != 0);
 }
 
+//------------------------------------------------------------------------
+// fgIsSafeToRemoveCastOnAssignment: Determine whether "tree" is an assignment whose
+//                                   right-hand side is a cast that can be removed.
+//
+// Arguments:
+//    tree - The tree node under consideration
+//
+// Return Value:
+//    Returns true if the cast can be safely removed.
+//
 bool Compiler::fgIsSafeToRemoveCastOnAssignment(GenTree* tree)
 {
     assert(tree->OperIs(GT_ASG));
