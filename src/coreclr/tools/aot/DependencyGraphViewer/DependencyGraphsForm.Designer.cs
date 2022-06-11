@@ -95,11 +95,14 @@ namespace DependencyLogViewer
             // 
             // listBox1
             // 
+            this.listBox1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.listBox1.FormattingEnabled = true;
             this.listBox1.ItemHeight = 30;
-            this.listBox1.Location = new System.Drawing.Point(6, 45);
+            this.listBox1.Location = new System.Drawing.Point(3, 31);
             this.listBox1.Name = "listBox1";
-            this.listBox1.Size = new System.Drawing.Size(1105, 424);
+            this.listBox1.Size = new System.Drawing.Size(1108, 460);
             this.listBox1.TabIndex = 4;
             // 
             // groupBox1
@@ -109,19 +112,19 @@ namespace DependencyLogViewer
             this.groupBox1.Controls.Add(this.label1);
             this.groupBox1.Controls.Add(this.button1);
             this.groupBox1.Controls.Add(this.textBox1);
-            this.groupBox1.Location = new System.Drawing.Point(2, 3);
+            this.groupBox1.Location = new System.Drawing.Point(0, 0);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(1125, 186);
+            this.groupBox1.Size = new System.Drawing.Size(1117, 170);
             this.groupBox1.TabIndex = 12;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "File Select";
             // 
             // button2
             // 
-            this.button2.Location = new System.Drawing.Point(893, 116);
+            this.button2.Location = new System.Drawing.Point(898, 100);
             this.button2.Name = "button2";
             this.button2.RightToLeft = System.Windows.Forms.RightToLeft.Yes;
-            this.button2.Size = new System.Drawing.Size(216, 64);
+            this.button2.Size = new System.Drawing.Size(193, 64);
             this.button2.TabIndex = 10;
             this.button2.Text = "Use ETW Events";
             this.button2.UseVisualStyleBackColor = true;
@@ -130,7 +133,7 @@ namespace DependencyLogViewer
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(6, 49);
+            this.label2.Location = new System.Drawing.Point(9, 37);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(54, 30);
             this.label2.TabIndex = 9;
@@ -139,7 +142,7 @@ namespace DependencyLogViewer
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(65, 96);
+            this.label1.Location = new System.Drawing.Point(69, 90);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(336, 30);
             this.label1.TabIndex = 8;
@@ -147,9 +150,9 @@ namespace DependencyLogViewer
             // 
             // button1
             // 
-            this.button1.Location = new System.Drawing.Point(893, 30);
+            this.button1.Location = new System.Drawing.Point(898, 24);
             this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(216, 64);
+            this.button1.Size = new System.Drawing.Size(193, 63);
             this.button1.TabIndex = 6;
             this.button1.Text = "Browse Files";
             this.button1.UseVisualStyleBackColor = true;
@@ -157,17 +160,21 @@ namespace DependencyLogViewer
             // 
             // textBox1
             // 
-            this.textBox1.Location = new System.Drawing.Point(65, 44);
+            this.textBox1.Location = new System.Drawing.Point(69, 37);
             this.textBox1.Name = "textBox1";
-            this.textBox1.Size = new System.Drawing.Size(822, 35);
+            this.textBox1.Size = new System.Drawing.Size(823, 35);
             this.textBox1.TabIndex = 7;
             // 
             // groupBox2
             // 
+            this.groupBox2.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupBox2.AutoSize = true;
             this.groupBox2.Controls.Add(this.listBox1);
-            this.groupBox2.Location = new System.Drawing.Point(0, 195);
+            this.groupBox2.Location = new System.Drawing.Point(3, 179);
             this.groupBox2.Name = "groupBox2";
-            this.groupBox2.Size = new System.Drawing.Size(1125, 496);
+            this.groupBox2.Size = new System.Drawing.Size(1117, 525);
             this.groupBox2.TabIndex = 13;
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "Loaded Graphs";
@@ -191,6 +198,7 @@ namespace DependencyLogViewer
             this.groupBox1.PerformLayout();
             this.groupBox2.ResumeLayout(false);
             this.ResumeLayout(false);
+            this.PerformLayout();
 
         }
 
