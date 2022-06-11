@@ -135,7 +135,6 @@
     <HelixCommandPrefixItem Condition="'$(WindowsShell)' == 'true'" Include="SDK_FOR_WORKLOAD_TESTING_PATH=%HELIX_CORRELATION_PAYLOAD%\$(SdkForWorkloadTestingDirName)" />
 
     <HelixCommandPrefixItem Include="DOTNET_CLI_TELEMETRY_OPTOUT=1" />
-    <HelixCommandPrefixItem Condition="'$(TestUsingWorkloads)' == 'true'" Include="TEST_USING_WORKLOADS=true" />
   </ItemGroup>
 
   <PropertyGroup Condition="$(TargetRuntimeIdentifier.ToLowerInvariant().StartsWith('linux-bionic'))">
@@ -162,6 +161,8 @@
       <GlobalJsonContent>$([System.IO.File]::ReadAllText('$(RepoRoot)global.json'))</GlobalJsonContent>
       <DotNetCliVersion>$([System.Text.RegularExpressions.Regex]::Match($(GlobalJsonContent), '(%3F&lt;="dotnet": ").*(%3F=")'))</DotNetCliVersion>
     </PropertyGroup>
+
+    <Message Text="HelixPreCommand: %(HelixPreCommand.Identity)" Importance="High" />
 
     <PropertyGroup>
       <HelixPreCommands>@(HelixPreCommand)</HelixPreCommands>
@@ -242,7 +243,7 @@
       <HelixCorrelationPayload Include="$(MicrosoftNetCoreAppRefPackDir)"     Destination="microsoft.netcore.app.ref" />
     </ItemGroup>
 
-    <ItemGroup>
+    <ItemGroup Condition="'$(TargetOS)' != 'Browser'">
       <HelixCorrelationPayload Include="openssl" Uri="https://netcorenativeassets.blob.core.windows.net/resource-packages/external/android/openssl-1.1.1l-beta-1.zip" Destination="openssl" />
     </ItemGroup>
 

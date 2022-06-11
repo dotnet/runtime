@@ -1,6 +1,5 @@
 <Project>
   <PropertyGroup>
-    <_workItemTimeout Condition="'$(Scenario)' == 'BuildWasmApps' and '$(_workItemTimeout)' == ''">01:30:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(NeedsToBuildWasmAppsOnHelix)' == 'true'">01:00:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(Scenario)' == 'WasmDebuggerTests'">01:00:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(Scenario)' == 'WasmTestOnBrowser' and '$(BrowserHost)' == 'windows'">00:45:00</_workItemTimeout>
@@ -13,28 +12,32 @@
     <IncludeHelixCorrelationPayload>false</IncludeHelixCorrelationPayload>
     <EnableDefaultBuildHelixWorkItems>false</EnableDefaultBuildHelixWorkItems>
 
-    <BuildWasmAppsJobsList>$(RepositoryEngineeringDir)\testing\scenarios\BuildWasmAppsJobsList.txt</BuildWasmAppsJobsList>
-
     <!-- on unix CI has emscripten provisioned in $(EMSDK_PATH) as `/usr/local/emscripten`. -->
     <EMSDK_PATH Condition="$([MSBuild]::IsOSPlatform('WINDOWS')) and '$(EMSDK_PATH)' == ''">$(RepoRoot)src\mono\wasm\emsdk\</EMSDK_PATH>
     <EmSdkDirForHelixPayload>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasm', 'emsdk'))</EmSdkDirForHelixPayload>
     <FirefoxForHelixPayload>$(TestArchiveRoot)firefox.zip</FirefoxForHelixPayload>
     <DebuggerHost Condition="'$(DebuggerHost)' == ''">chrome</DebuggerHost>
 
-    <NeedsWorkload Condition="'$(Scenario)' == 'BuildWasmApps'">true</NeedsWorkload>
-    <NeedsEMSDK Condition="'$(NeedsToBuildWasmAppsOnHelix)' == 'true'">true</NeedsEMSDK>
-    <NeedsEMSDKNode Condition="'$(Scenario)' == 'WasmTestOnNodeJs' or '$(Scenario)' == 'BuildWasmApps'">true</NeedsEMSDKNode>
-    <NeedsToRunOnBrowser Condition="'$(Scenario)' == 'WasmTestOnBrowser' or '$(Scenario)' == 'BuildWasmApps'">true</NeedsToRunOnBrowser>
-    <NeedsToRunOnBrowser Condition="'$(NeedsToRunOnBrowser)' == '' and '$(IsWasmDebuggerTests)' == 'true'">true</NeedsToRunOnBrowser>
-
     <IncludeXHarnessCli>true</IncludeXHarnessCli>
     <EnableXHarnessTelemetry>false</EnableXHarnessTelemetry>
-    <IncludeNodePayload Condition="'$(NeedsEMSDKNode)' == 'true' and '$(NeedsEMSDK)' != 'true'">true</IncludeNodePayload>
+
+    <WasmBuildTargetsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasm', 'build'))</WasmBuildTargetsDir>
+    <TestEchoMiddleware>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'bin', 'NetCoreServer', '$(Configuration)', '$(AspNetCoreAppCurrent)'))</TestEchoMiddleware>
+    <RemoteLoopMiddleware>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'bin', 'RemoteLoopServer', '$(Configuration)', '$(AspNetCoreAppCurrent)'))</RemoteLoopMiddleware>
+    <WorkItemPrefix Condition="'$(IsWasmDebuggerTests)' == 'true'">$(DebuggerHost)-</WorkItemPrefix>
+    <WorkItemPrefix Condition="'$(WorkItemPrefix)' == '' and '$(Scenario)' != ''">$(Scenario)-</WorkItemPrefix>
   </PropertyGroup>
 
-  <Import Condition="'$(IsRunningLibraryTests)' == 'true'" Project="$(TestArchiveTestsDir)*.helix.targets" />
+  <Import Project="$(TestArchiveTestsDir)*.helix.targets" />
 
   <PropertyGroup>
+    <NeedsEMSDK Condition="'$(NeedsEMSDK)' == '' and '$(NeedsToBuildWasmAppsOnHelix)' == 'true'">true</NeedsEMSDK>
+    <NeedsEMSDKNode Condition="'$(NeedsEMSDKNode)' == '' and '$(Scenario)' == 'WasmTestOnNodeJs'">true</NeedsEMSDKNode>
+    <NeedsToRunOnBrowser Condition="'$(NeedsToRunOnBrowser)' == '' and '$(Scenario)' == 'WasmTestOnBrowser'">true</NeedsToRunOnBrowser>
+    <NeedsToRunOnBrowser Condition="'$(NeedsToRunOnBrowser)' == '' and '$(IsWasmDebuggerTests)' == 'true'">true</NeedsToRunOnBrowser>
+
+    <IncludeNodePayload Condition="'$(NeedsEMSDKNode)' == 'true' and '$(NeedsEMSDK)' != 'true'">true</IncludeNodePayload>
+
     <_HelixLocalNodePath Condition="'$(NeedsEMSDKNode)' == 'true' and '$(WindowsShell)' != 'true'">$HELIX_CORRELATION_PAYLOAD/build/emsdk-node</_HelixLocalNodePath>
     <_HelixLocalNodePath Condition="'$(NeedsEMSDKNode)' == 'true' and '$(WindowsShell)' == 'true'">%HELIX_CORRELATION_PAYLOAD%\build\emsdk-node</_HelixLocalNodePath>
 
@@ -84,15 +87,6 @@
     <HelixPreCommand Include="set PATH=$(_HelixLocalNodePath)/%_HELIX_NODEJS_VERSION%/bin%3B%PATH%" />
   </ItemGroup>
 
-  <PropertyGroup Condition="'$(Scenario)' == 'BuildWasmApps'">
-    <_XUnitTraitArg Condition="'$(TestUsingWorkloads)' == 'true'">-notrait category=no-workload</_XUnitTraitArg>
-    <_XUnitTraitArg Condition="'$(TestUsingWorkloads)' != 'true'">-trait category=no-workload</_XUnitTraitArg>
-  </PropertyGroup>
-  <ItemGroup Condition="'$(Scenario)' == 'BuildWasmApps'">
-    <HelixPreCommand Condition="'$(WindowsShell)' == 'true'" Include="set &quot;XUnitTraitArg=$(_XUnitTraitArg)&quot;" />
-    <HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="export &quot;XUnitTraitArg=$(_XUnitTraitArg)&quot;" />
-  </ItemGroup>
-
   <PropertyGroup>
 
     <!--
@@ -127,17 +121,7 @@
 
   <Import Project="$(RepositoryEngineeringDir)testing\ProvisioningVersions.props" />
 
-  <Target Name="PrepareForBuildHelixWorkItems_Wasm">
-    <PropertyGroup>
-      <WasmBuildTargetsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasm', 'build'))</WasmBuildTargetsDir>
-      <TestEchoMiddleware>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'bin', 'NetCoreServer', '$(Configuration)', '$(AspNetCoreAppCurrent)'))</TestEchoMiddleware>
-      <RemoteLoopMiddleware>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'bin', 'RemoteLoopServer', '$(Configuration)', '$(AspNetCoreAppCurrent)'))</RemoteLoopMiddleware>
-      <WorkItemPrefix Condition="'$(Scenario)' == 'BuildWasmApps' and '$(TestUsingWorkloads)' == 'true'">Workloads-</WorkItemPrefix>
-      <WorkItemPrefix Condition="'$(Scenario)' == 'BuildWasmApps' and '$(TestUsingWorkloads)' != 'true'">NoWorkload-</WorkItemPrefix>
-      <WorkItemPrefix Condition="'$(IsWasmDebuggerTests)' == 'true'">$(DebuggerHost)-</WorkItemPrefix>
-      <WorkItemPrefix Condition="'$(WorkItemPrefix)' == '' and '$(Scenario)' != ''">$(Scenario)-</WorkItemPrefix>
-    </PropertyGroup>
-
+  <Target Name="PrepareHelixCorrelationPayload_Wasm">
     <ItemGroup Condition="'$(NeedsToRunOnBrowser)' == 'true'">
       <HelixCorrelationPayload Condition="'$(DebuggerHost)' == 'chrome'" Include="chromium" Uri="$(ChromiumUrl)" />
       <HelixCorrelationPayload Condition="'$(DebuggerHost)' == 'chrome'" Include="chromedriver" Uri="$(ChromeDriverUrl)" />
@@ -165,21 +149,15 @@
       <HelixCorrelationPayload Include="$(TestEchoMiddleware)" Destination="xharness/TestEchoMiddleware" Condition="Exists('$(TestEchoMiddleware)')" />
       <HelixCorrelationPayload Include="$(RemoteLoopMiddleware)" Destination="xharness/RemoteLoopMiddleware" Condition="Exists('$(RemoteLoopMiddleware)')" />
     </ItemGroup>
+  </Target>
 
-    <ReadLinesFromFile File="$(BuildWasmAppsJobsList)" Condition="Exists($(BuildWasmAppsJobsList)) and '$(Scenario)' == 'BuildWasmApps' and '$(TestUsingWorkloads)' == 'true'">
-      <Output TaskParameter="Lines" ItemName="BuildWasmApps_PerJobList" />
-    </ReadLinesFromFile>
-
+  <Target Name="PrepareForBuildHelixWorkItems_Wasm" DependsOnTargets="PrepareHelixCorrelationPayload_Wasm">
     <!-- library tests get added as default work items -->
-    <ItemGroup Condition="'$(IsRunningLibraryTests)' != 'true'">
-      <!-- for buildwasmapps, the archive path is set in src/libraries/Directory.Build.props, so use that -->
-      <_WasmWorkItem Include="$(WorkItemArchiveWildCard)" Exclude="$(HelixCorrelationPayload)" Condition="'$(Scenario)' == 'BuildWasmApps'" />
-
-      <_WasmWorkItem Include="$(TestArchiveTestsRoot)**/Wasm.Debugger.Tests.zip"               Condition="'$(IsWasmDebuggerTests)' == 'true'" />
+    <ItemGroup>
+      <_WasmWorkItem Include="$(TestArchiveTestsRoot)**/Wasm.Debugger.Tests.zip" Condition="'$(IsWasmDebuggerTests)' == 'true'" />
     </ItemGroup>
 
     <PropertyGroup>
-      <_BuildWasmAppsPayloadArchive>@(_WasmWorkItem)</_BuildWasmAppsPayloadArchive>
       <_WasmDebuggerTestsPayloadArchive>@(_WasmWorkItem)</_WasmDebuggerTestsPayloadArchive>
     </PropertyGroup>
 
@@ -218,22 +196,24 @@
                 Targets="$(%(_TestWithCustomTarget.PropertyName))">
     </CallTarget>
 
-    <!-- for testing with workloads, we use separate items -->
-    <ItemGroup Condition="'$(Scenario)' == 'BuildWasmApps'">
-      <HelixWorkItem Include="@(BuildWasmApps_PerJobList->'$(WorkItemPrefix)%(Extension)')" Condition="'$(TestUsingWorkloads)' == 'true'">
-        <PayloadArchive>$(_BuildWasmAppsPayloadArchive)</PayloadArchive>
-        <PreCommands Condition="'$(OS)' == 'Windows_NT'">set &quot;HELIX_XUNIT_ARGS=-class %(Identity)&quot;</PreCommands>
-        <PreCommands Condition="'$(OS)' != 'Windows_NT'">export &quot;HELIX_XUNIT_ARGS=-class %(Identity)&quot;</PreCommands>
-        <Command>$(HelixCommand)</Command>
-        <Timeout>$(_workItemTimeout)</Timeout>
-      </HelixWorkItem>
+    <ItemGroup Label="Prepare extension targets">
+      <!-- collect the targets files for the tests -->
+      <_TestWithCustomTarget Condition="'$(IsRunningLibraryTests)' == 'true'" Include="$(TestArchiveTestsDir)\*.helix.targets" />
+      <_TestWithCustomTarget Condition="'$(Scenario)' == 'BuildWasmApps'"     Include="$(TestArchiveTestsRoot)/**/*.helix.targets" />
+      <_TestWithCustomTarget
+          TestName="$([System.IO.Path]::GetFileNameWithoutExtension(%(FileName)))"
+          ArchivePath="$([System.String]::new(%(Identity)).Replace('.helix.targets', '.zip'))" />
 
-      <HelixWorkItem Include="NoWorkload-Wasm.Build.Tests" Condition="'$(TestUsingWorkloads)' != 'true'">
-        <PayloadArchive>$(_BuildWasmAppsPayloadArchive)</PayloadArchive>
-        <Command>$(HelixCommand)</Command>
-        <Timeout>$(_workItemTimeout)</Timeout>
-      </HelixWorkItem>
+      <!-- construct the property name that will contain the target to call for adding
+           helix items -->
+      <_TestWithCustomTarget PropertyName="$([System.String]::new(%(TestName)).Replace('.', '_').Replace('-', '_'))_TargetName" />
+
+      <!-- Remove any empty ones. This can happen if the targets file wants to use the default
+           items. For example, it might want to add custom helix items only for a nodejs scenario -->
+      <_TestWithCustomTarget Remove="@(_TestWithCustomTarget)" Condition="'$(%(_TestWithCustomTarget.PropertyName))' == ''" />
     </ItemGroup>
+
+    <CallTarget RunEachTargetSeparately="true" Targets="$(%(_TestWithCustomTarget.PropertyName))" />
 
     <ItemGroup Condition="'$(Scenario)' == 'WasmDebuggerTests'">
       <HelixWorkItem Include="$(DebuggerHost)-DebuggerTests">
