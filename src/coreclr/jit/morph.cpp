@@ -11410,7 +11410,7 @@ DONE_MORPHING_CHILDREN:
             {
                 if (op2->IsIntegralConst() || op1->IsIntegralConst())
                 {
-                    if (tree->OperIs(GT_GT, GT_LT))
+                    if (tree->OperIs(GT_GT, GT_LT, GT_LE, GT_GE))
                     {
                         tree = fgOptimizeRelationalComparisonWithFullRangeConst(tree->AsOp());
                         if (tree->OperIs(GT_CNS_INT, GT_COMMA))
@@ -12664,91 +12664,61 @@ SKIP:
 //
 GenTree* Compiler::fgOptimizeRelationalComparisonWithFullRangeConst(GenTreeOp* cmp)
 {
-    assert(cmp->OperIs(GT_LT, GT_GT));
-    assert(cmp->gtGetOp2()->IsIntegralConst() || cmp->gtGetOp1()->IsIntegralConst());
 
-    GenTree* conNode = cmp->gtGetOp2()->IsIntegralConst() ? cmp->gtGetOp2() : cmp->gtGetOp1();
-    GenTree* varNode = cmp->gtGetOp2()->IsIntegralConst() ? cmp->gtGetOp1() : cmp->gtGetOp2();
+    int64_t lhsMin;
+    int64_t lhsMax;
+    if (cmp->gtGetOp1()->IsIntegralConst())
+    {
+        lhsMin = cmp->gtGetOp1()->AsIntConCommon()->IntegralValue();
+        lhsMax = lhsMin;
+    }
+    else
+    {
+        IntegralRange lhsRange = IntegralRange::ForNode(cmp->gtGetOp1(), this);
+        lhsMin                 = IntegralRange::SymbolicToRealValue(lhsRange.GetLowerBound());
+        lhsMax                 = IntegralRange::SymbolicToRealValue(lhsRange.GetUpperBound());
+    }
 
-    IntegralRange valRange = IntegralRange::ForNode(varNode, this);
-
-#if defined(HOST_X86) || defined(HOST_ARM)
-    ssize_t valMin = (int32_t)IntegralRange::SymbolicToRealValue(valRange.GetLowerBound());
-    ssize_t valMax = (int32_t)IntegralRange::SymbolicToRealValue(valRange.GetUpperBound());
-#else
-    ssize_t  valMin      = IntegralRange::SymbolicToRealValue(valRange.GetLowerBound());
-    ssize_t  valMax      = IntegralRange::SymbolicToRealValue(valRange.GetUpperBound());
-#endif
-
-    bool fold = false;
-    // Folds
-    // 1.   byte    x <= 0 => false
-    // 2.   short   x <= short.MinValue => false
-    // 3.   ushort  x <= ushort.MinValue => false
-    // 4.   int     x <= int.MinValue => false
-    // 5.   uint    x <= uint.MinValue => false
-    // 6.   long    x <= long.MinValue => false
-    // 7.   ulong   x <= ulong.MinValue => false
-    //
-    // 8.   byte    x >= byte.MaxValue => false
-    // 9.   short   x <= short.MinValue => false
-    // 10.  ushort  x <= ushort.MinValue => false
-    // 11.  int     x >= int.MaxValue => false
-    // 12.  int     x >= int.MaxValue => false
-    // 13.  long    x >= long.MaxValue => false
-    // 14.  long    x >= long.MaxValue => false
-    //
-    // when const is RHS:
+    int64_t rhsMin;
+    int64_t rhsMax;
     if (cmp->gtGetOp2()->IsIntegralConst())
     {
-        if ((cmp->OperIs(GT_GT) && conNode->IsIntegralConst(valMax)) ||
-            (cmp->OperIs(GT_LT) && conNode->IsIntegralConst(valMin)))
-        {
-            fold = true;
-        }
-
-        // when const is RHS and cmp is unsigned
-        if (cmp->IsUnsigned())
-        {
-            if (cmp->OperIs(GT_GT) && conNode->IsIntegralConst(-1))
-            {
-                fold = true;
-            }
-        }
+        rhsMin = cmp->gtGetOp2()->AsIntConCommon()->IntegralValue();
+        rhsMax = rhsMin;
     }
-    // when const is LHS:
-    else if (cmp->gtGetOp1()->IsIntegralConst())
+    else
     {
-        if ((cmp->OperIs(GT_GT) && conNode->IsIntegralConst(valMin)) ||
-            (cmp->OperIs(GT_LT) && conNode->IsIntegralConst(valMax)))
-        {
-            fold = true;
-        }
-
-        // when const is LHS and cmp is unsigned
-        if (cmp->IsUnsigned())
-        {
-            if (cmp->OperIs(GT_LT) && conNode->IsIntegralConst(-1))
-            {
-                fold = true;
-            }
-        }
+        IntegralRange rhsRange = IntegralRange::ForNode(cmp->gtGetOp2(), this);
+        rhsMin                 = IntegralRange::SymbolicToRealValue(rhsRange.GetLowerBound());
+        rhsMax                 = IntegralRange::SymbolicToRealValue(rhsRange.GetUpperBound());
     }
 
-    if (fold)
+    genTreeOps op = cmp->gtOper;
+    if ((op != GT_LT) && (op != GT_LE))
+    {
+        op = GenTree::SwapRelop(op);
+        std::swap(lhsMin, rhsMin);
+        std::swap(lhsMax, rhsMax);
+    }
+
+    int64_t lefOpValue   = lhsMin;
+    int64_t rightOpValue = rhsMax;
+
+    if (cmp->IsUnsigned() && lefOpValue == -1 && lhsMax == -1)
+    {
+        rightOpValue = -1;
+    }
+
+    if ((op == GT_LT && lefOpValue == rightOpValue) || (op == GT_LE && lefOpValue > rightOpValue))
     {
         GenTree* ret = gtNewZeroConNode(TYP_INT);
 
-        ret->SetVNsFromNode(cmp);
-
-        GenTree* cmpSideEffects = nullptr;
-
-        gtExtractSideEffList(cmp, &cmpSideEffects);
-
-        if (cmpSideEffects != nullptr)
+        if (gtTreeHasSideEffects(cmp, GTF_SIDE_EFFECT))
         {
-            ret = gtNewOperNode(GT_COMMA, TYP_INT, cmpSideEffects, ret);
+            return cmp;
         }
+
+        ret->SetVNsFromNode(cmp);
 
         DEBUG_DESTROY_NODE(cmp);
 
