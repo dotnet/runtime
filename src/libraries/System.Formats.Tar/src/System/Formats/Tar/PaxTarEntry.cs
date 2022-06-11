@@ -90,6 +90,7 @@ namespace System.Formats.Tar
             _header._prefix = string.Empty;
             _header._extendedAttributes = new Dictionary<string, string>(extendedAttributes);
 
+            Debug.Assert(_header._mTime != default);
             AddNewAccessAndChangeTimestampsIfNotExist(useMTime: true);
         }
 
@@ -157,6 +158,7 @@ namespace System.Formats.Tar
         private void AddNewAccessAndChangeTimestampsIfNotExist(bool useMTime)
         {
             Debug.Assert(_header._extendedAttributes != null);
+            Debug.Assert(!useMTime || (useMTime && _header._mTime != default));
 
             bool containsATime = _header._extendedAttributes.ContainsKey(TarHeader.PaxEaATime);
             bool containsCTime = _header._extendedAttributes.ContainsKey(TarHeader.PaxEaCTime);
