@@ -103,7 +103,6 @@ FCFuncStart(gEnvironmentFuncs)
     FCFuncElement("get_TickCount64", SystemNative::GetTickCount64)
     FCFuncElement("set_ExitCode", SystemNative::SetExitCode)
     FCFuncElement("get_ExitCode", SystemNative::GetExitCode)
-    FCFuncElement("GetCommandLineArgsNative", SystemNative::GetCommandLineArgs)
 
     FCFuncElementSig("FailFast", &gsig_SM_Str_RetVoid, SystemNative::FailFast)
     FCFuncElementSig("FailFast", &gsig_SM_Str_Exception_RetVoid, SystemNative::FailFastWithException)
