@@ -5585,6 +5585,8 @@ private:
     void fgMoveOpsLeft(GenTree* tree);
 #endif
 
+    bool fgIsSafeToRemoveCastOnAssignment(GenTree* tree);
+
     bool fgIsCommaThrow(GenTree* tree, bool forFolding = false);
 
     bool fgIsThrow(GenTree* tree);

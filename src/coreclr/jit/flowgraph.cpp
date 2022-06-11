@@ -711,6 +711,61 @@ bool Compiler::fgIsBlockCold(BasicBlock* blk)
     return ((blk->bbFlags & BBF_COLD) != 0);
 }
 
+bool Compiler::fgIsSafeToRemoveCastOnAssignment(GenTree* tree)
+{
+    assert(tree->OperIs(GT_ASG));
+
+    GenTree* const op1 = tree->gtGetOp1();
+    GenTree* const op2 = tree->gtGetOp2();
+
+    GenTree* const effectiveOp1 = op1->gtEffectiveVal();
+
+    if (!effectiveOp1->OperIs(GT_IND, GT_LCL_VAR))
+        return false;
+
+    if (effectiveOp1->OperIs(GT_LCL_VAR) &&
+        !lvaGetDesc(effectiveOp1->AsLclVarCommon()->GetLclNum())->lvNormalizeOnLoad())
+        return false;
+
+    // If we are storing a small type, we might be able to omit a cast.
+    if (!varTypeIsSmall(effectiveOp1))
+        return false;
+
+    if (!op2->OperIs(GT_CAST))
+        return false;
+
+    if (op2->gtOverflow())
+        return false;
+
+    if (gtIsActiveCSE_Candidate(op2))
+        return false;
+
+    GenTreeCast* cast         = op2->AsCast();
+    var_types    castToType   = cast->CastToType();
+    var_types    castFromType = cast->CastFromType();
+
+    if (!varTypeIsIntegral(effectiveOp1))
+        return false;
+
+    if (!varTypeIsIntegral(castToType))
+        return false;
+
+    if (!varTypeIsIntegral(castFromType))
+        return false;
+
+    // If we are performing a narrowing cast and
+    // castType is larger or the same as op1's type
+    // then we can discard the cast.
+
+    if (!varTypeIsSmall(castToType))
+        return false;
+
+    if (genTypeSize(castToType) < genTypeSize(effectiveOp1))
+        return false;
+
+    return true;
+}
+
 /*****************************************************************************
  * This function returns true if tree is a GT_COMMA node with a call
  * that unconditionally throws an exception
