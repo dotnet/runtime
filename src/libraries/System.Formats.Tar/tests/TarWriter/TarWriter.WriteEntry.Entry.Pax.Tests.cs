@@ -308,5 +308,66 @@ namespace System.Formats.Tar.Tests
                 Assert.Equal(userName, regularFile.UserName);
             }
         }
+
+        [Fact]
+        public void WritePaxAttributes_Name_AutomaticallyAdded()
+        {
+            using MemoryStream archiveStream = new MemoryStream();
+            using (TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.Pax, leaveOpen: true))
+            {
+                PaxTarEntry regularFile = new PaxTarEntry(TarEntryType.RegularFile, InitialEntryName);
+                writer.WriteEntry(regularFile);
+            }
+
+            archiveStream.Position = 0;
+            using (TarReader reader = new TarReader(archiveStream))
+            {
+                PaxTarEntry regularFile = reader.GetNextEntry() as PaxTarEntry;
+
+                AssertExtensions.GreaterThanOrEqualTo(regularFile.ExtendedAttributes.Count, 4);
+                Assert.Contains(PaxEaName, regularFile.ExtendedAttributes);
+            }
+        }
+
+        [Fact]
+        public void WritePaxAttributes_LongLinkName_AutomaticallyAdded()
+        {
+            using MemoryStream archiveStream = new MemoryStream();
+
+            string longSymbolicLinkName = new string('a', 101);
+            string longHardLinkName = new string('b', 101);
+            using (TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.Pax, leaveOpen: true))
+            {
+                PaxTarEntry symlink = new PaxTarEntry(TarEntryType.SymbolicLink, "symlink");
+                symlink.LinkName = longSymbolicLinkName;
+                writer.WriteEntry(symlink);
+
+                PaxTarEntry hardlink = new PaxTarEntry(TarEntryType.HardLink, "hardlink");
+                hardlink.LinkName = longHardLinkName;
+                writer.WriteEntry(hardlink);
+            }
+
+            archiveStream.Position = 0;
+            using (TarReader reader = new TarReader(archiveStream))
+            {
+                PaxTarEntry symlink = reader.GetNextEntry() as PaxTarEntry;
+
+                AssertExtensions.GreaterThanOrEqualTo(symlink.ExtendedAttributes.Count, 5);
+
+                Assert.Contains(PaxEaName, symlink.ExtendedAttributes);
+                Assert.Equal("symlink", symlink.ExtendedAttributes[PaxEaName]);
+                Assert.Contains(PaxEaLinkName, symlink.ExtendedAttributes);
+                Assert.Equal(longSymbolicLinkName, symlink.ExtendedAttributes[PaxEaLinkName]);
+
+                PaxTarEntry hardlink = reader.GetNextEntry() as PaxTarEntry;
+
+                AssertExtensions.GreaterThanOrEqualTo(hardlink.ExtendedAttributes.Count, 5);
+
+                Assert.Contains(PaxEaName, hardlink.ExtendedAttributes);
+                Assert.Equal("hardlink", hardlink.ExtendedAttributes[PaxEaName]);
+                Assert.Contains(PaxEaLinkName, hardlink.ExtendedAttributes);
+                Assert.Equal(longHardLinkName, hardlink.ExtendedAttributes[PaxEaLinkName]);
+            }
+        }
     }
 }
