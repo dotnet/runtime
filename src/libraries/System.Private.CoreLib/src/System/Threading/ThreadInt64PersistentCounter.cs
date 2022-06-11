@@ -22,10 +22,8 @@ namespace System.Threading
         public ThreadInt64PersistentCounter()
         {
             _first = new ThreadLocalNode(this);
-            // terminator dummy, to simplify inserting/removing
-            ThreadLocalNode last = new ThreadLocalNode(this);
-            _first._next = last;
-            last._prev = _first;
+            _first._next = _first;
+            _first._prev = _first;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -73,11 +71,12 @@ namespace System.Threading
                 long count = _overflowCount;
                 try
                 {
-                    ThreadLocalNode node = _first._next!;
-                    while (node._next != null)
+                    ThreadLocalNode first = _first;
+                    ThreadLocalNode node = first._next!;
+                    while (node != first)
                     {
                         count += node.Count;
-                        node = node._next;
+                        node = node._next!;
                     }
                 }
                 finally
