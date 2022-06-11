@@ -54,7 +54,7 @@ namespace System.Xml.Xsl.XsltOld
         {
             Debug.Assert(output != null);
             _output = output;
-            _nameTable = nameTable != null ? nameTable : new NameTable();
+            _nameTable = nameTable ?? new NameTable();
             _atoms = new OutKeywords(_nameTable);
             _scopeManager = new OutputScopeManager(_nameTable, _atoms);
         }

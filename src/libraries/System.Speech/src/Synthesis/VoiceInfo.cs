@@ -189,7 +189,7 @@ namespace System.Speech.Synthesis
         {
             get
             {
-                return _description != null ? _description : string.Empty;
+                return _description ?? string.Empty;
             }
         }
         [EditorBrowsable(EditorBrowsableState.Advanced)]

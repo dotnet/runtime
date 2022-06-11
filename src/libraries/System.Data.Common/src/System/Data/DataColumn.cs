@@ -315,7 +315,7 @@ namespace System.Data
         [AllowNull]
         public string Caption
         {
-            get { return (_caption != null) ? _caption : _columnName; }
+            get { return _caption ?? _columnName; }
             set
             {
                 if (value == null)
@@ -695,7 +695,7 @@ namespace System.Data
                         throw ExceptionBuilder.DefaultValueAndAutoIncrement();
                     }
 
-                    object newDefaultValue = (value == null) ? DBNull.Value : value;
+                    object newDefaultValue = value ?? DBNull.Value;
                     if (newDefaultValue != DBNull.Value && DataType != typeof(object))
                     {
                         // If the DefualtValue is different from the Column DataType, we will coerce the value to the DataType

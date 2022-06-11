@@ -14,7 +14,7 @@ using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Testing;
 using Microsoft.CodeAnalysis.Testing.Verifiers;
 
-namespace System.Text.RegularExpressions.Unit.Tests
+namespace System.Text.RegularExpressions.Tests
 {
     public static class CSharpCodeFixVerifier<TAnalyzer, TCodeFix>
         where TAnalyzer : DiagnosticAnalyzer, new()
@@ -85,7 +85,7 @@ namespace System.Text.RegularExpressions.Unit.Tests
                     // Clear out the default reference assemblies. We explicitly add references from the live ref pack,
                     // so we don't want the Roslyn test infrastructure to resolve/add any default reference assemblies
                     ReferenceAssemblies = new ReferenceAssemblies(string.Empty);
-                    TestState.AdditionalReferences.AddRange(SourceGenerators.Tests.LiveReferencePack.GetMetadataReferences());
+                    TestState.AdditionalReferences.AddRange(RegexGeneratorHelper.References);
                 }
 
                 NumberOfFixAllIterations = numberOfIterations;
