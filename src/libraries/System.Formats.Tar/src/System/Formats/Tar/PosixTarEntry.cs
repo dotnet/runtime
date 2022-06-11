@@ -1,6 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+
 namespace System.Formats.Tar
 {
     /// <summary>
@@ -32,18 +34,15 @@ namespace System.Formats.Tar
         {
             if (other is PosixTarEntry)
             {
+                Debug.Assert(other._header._uName != null);
+                Debug.Assert(other._header._gName != null);
                 _header._uName = other._header._uName;
                 _header._gName = other._header._gName;
                 _header._devMajor = other._header._devMajor;
                 _header._devMinor = other._header._devMinor;
             }
-            else
-            {
-                _header._uName = string.Empty;
-                _header._gName = string.Empty;
-                _header._devMajor = 0;
-                _header._devMinor = 0;
-            }
+            _header._uName ??= string.Empty;
+            _header._gName ??= string.Empty;
         }
 
         /// <summary>

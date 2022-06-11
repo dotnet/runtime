@@ -39,11 +39,7 @@ namespace System.Formats.Tar
             // Default values for fields shared by all supported formats
             _header._name = entryName;
             _header._mode = (int)TarHelpers.DefaultMode;
-            _header._uid = 0;
-            _header._gid = 0;
-            _header._size = 0;
             _header._mTime = DateTimeOffset.UtcNow;
-            _header._checksum = 0;
             _header._typeFlag = entryType;
             _header._linkName = string.Empty;
         }
