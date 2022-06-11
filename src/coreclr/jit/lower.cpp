@@ -5838,7 +5838,8 @@ GenTree* Lowering::LowerConstIntDivOrMod(GenTree* node)
 #if defined(TARGET_ARM64)
     if (divMod->OperIs(GT_MOD) && divisor->IsIntegralConstPow2())
     {
-        return LowerModPow2(node);
+        LowerModPow2(node);
+        return node->gtNext;
     }
     assert(node->OperGet() != GT_MOD);
 #endif // TARGET_ARM64
