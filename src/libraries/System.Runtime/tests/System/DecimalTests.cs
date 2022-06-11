@@ -266,25 +266,6 @@ namespace System.Tests
             Assert.Equal(".0000000000000000000000000001", y_string);
         }
 
-        [Fact]
-        public void Ctor_DoubleOverflowBug_RoundtripCastSucceeds() // TODO this should fail, fix it
-        {
-            double x = 0.55555555555555555555555;
-
-            // Cast to a decimal
-            decimal y = new decimal(x);
-
-            // Use strings to compare values of double and decimal, ensuring no precision loss
-            string x_string = x.ToString("G99");
-            string y_string =  y.ToString("G99");
-            Assert.Equal(x_string, y_string);
-
-            // Cast back to double, ensuring no precision loss
-            double z = (double)y;
-            Assert.Equal(x, z);
-            
-        }
-
         public static IEnumerable<object[]> Ctor_Int_Int_Int_Bool_Byte_TestData()
         {
             decimal expected = 3;

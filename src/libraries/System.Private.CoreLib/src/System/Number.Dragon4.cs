@@ -106,7 +106,7 @@ namespace System
             double v = double.IsNegative(value) ? -value : value;
 
             Debug.Assert(v > 0);
-            Debug.Assert(double.IsFinite(v)); // TODO do we need to validate this somewhere?
+            Debug.Assert(double.IsFinite(v));
 
             ulong mantissa = ExtractFractionAndBiasedExponent(value, out int exponent);
 
@@ -124,62 +124,10 @@ namespace System
                 mantissaHighBitIdx = (uint)BitOperations.Log2(mantissa);
             }
 
-
-
             Dragon4State state = Dragon4GetScaleValueMargin(mantissa, exponent, mantissaHighBitIdx, hasUnequalMargins, cutoffNumber, isSignificantDigits);
 
-            // At this point, this is the state that we are working with
-            //      value     = scaledValue / scale
-            //      marginLow = scaledMarginLow / scale (TODO what is this, do we even need this for our purpose)
-            //
-            // The finite set of values of type Decimal are of the form m / 10^e,
-            // where m is an integer such that -2^96 <; m <; 2^96,
-            // and e is an integer between 0 and 28 inclusive.
-            //
-            // To convert our state into a decimal, we do the following:
-            //      1. verify that -2^96 <; scaledValue <; 2^96, so that scaledValue can be directly cast to our mantissa
-            //      2. convert scale to e, by taking log10(scale) (TODO do we lose precision here?)
-            //      3. verify that it is between 0 and 28
-            //      4. build a decimal with scaledValue and our calculated exponent
-
-/*            var lenScale = state.scale.GetLength();
-
-            uint lowScale = 0;
-            uint midScale = 0;
-            uint highScale = 0;
-            uint idkScale = 0;
-
-            if (lenScale > 0)
-            {
-                lowScale = state.scale.GetBlock(0);
-            }
-            if (lenScale > 1)
-            {
-                midScale = state.scale.GetBlock(1);
-            }
-            if (lenScale > 2)
-            {
-                highScale = state.scale.GetBlock(2);
-            }
-            if (lenScale > 3)
-            {
-                idkScale = state.scale.GetBlock(3);
-            }
-
-            UInt128 scaleUInt128 = 0;
-            scaleUInt128 += idkScale;
-            scaleUInt128 = scaleUInt128 << 32;
-            scaleUInt128 += highScale;
-            scaleUInt128 = scaleUInt128 << 32;
-            scaleUInt128 += midScale;
-            scaleUInt128 = scaleUInt128 << 32;
-            scaleUInt128 += lowScale;
-            Console.WriteLine(scaleUInt128.ToString());*/
-
-
-
             Debug.Assert(state.scaledValue.GetLength() < 5);
-            // scaledValue is scaled up by 2, undo that
+            // scaledValue is scaled up by 2 by the Dragon4 algorithm, undo that
             BigInteger.SetUInt32(out BigInteger Two, 2);
             BigInteger.DivRem(ref state.scaledValue, ref Two, out BigInteger descaledValue, out _); // TODO this could be optimized as a right shift
             Debug.Assert(descaledValue.GetLength() < 4);
@@ -205,16 +153,17 @@ namespace System
             if (len > 3)
             {
                 uint idk = descaledValue.GetBlock(3);
-                throw new Exception("TODO handle this somehowww" + idk);
+                throw new Exception("TODO handle this somehow" + idk);
             }
 
-            UInt128 valueUInt128 = 0;
+/*          UInt128 valueUInt128 = 0;
             valueUInt128 += high;
             valueUInt128 = valueUInt128 << 32;
             valueUInt128 += mid;
             valueUInt128 = valueUInt128 << 32;
             valueUInt128 += low;
             Console.WriteLine(valueUInt128.ToString());
+*/ 
 
             // Since the scale in the Decimal type is representing dividing by 10^e, we want to invert decimalScale
             uint decimalScale = 28 - ((uint)state.digitExponent - 1);
