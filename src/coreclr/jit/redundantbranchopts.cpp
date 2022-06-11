@@ -148,28 +148,92 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
     // VNs are not directly related. See if dominating
     // compare encompasses a related VN.
     //
-    VNFuncApp funcApp;
-    if (!vnStore->GetVNFunc(rii->domCmpNormVN, &funcApp))
+    VNFuncApp domCmpFuncApp;
+    if (!vnStore->GetVNFunc(rii->domCmpNormVN, &domCmpFuncApp))
     {
         return;
     }
 
-    genTreeOps const oper = genTreeOps(funcApp.m_func);
+    genTreeOps const domOper = (genTreeOps)domCmpFuncApp.m_func;
+
+    // Look for "X relop1 Y" dominated by "X relop2 Y" (or "Y relop2 X")
+    // See if we can catch cases like "X >= Y" dominating over "X <= Y"
+    VNFuncApp treeFuncApp;
+    if (vnStore->GetVNFunc(rii->treeNormVN, &treeFuncApp))
+    {
+        auto treeOper = (genTreeOps)treeFuncApp.m_func;
+
+        // TODO: this currently doesn't handle unsigned comparisons (e.g. VNF_GE_UN)
+        if (GenTree::OperIsCompare(domOper) && GenTree::OperIsCompare(treeOper))
+        {
+            assert(vnStore->IsVNRelop(rii->treeNormVN));
+            assert(vnStore->IsVNRelop(rii->domCmpNormVN));
+            assert((domCmpFuncApp.m_arity == 2) && (treeFuncApp.m_arity == 2));
+
+            ValueNum domOp1 = domCmpFuncApp.m_args[0];
+            ValueNum domOp2 = domCmpFuncApp.m_args[1];
+            ValueNum treeOp1 = treeFuncApp.m_args[0];
+            ValueNum treeOp2 = treeFuncApp.m_args[1];
+
+            // Check that operands of domCmp and treeCmp are the same (and have VNs)
+            if (((domOp1 != ValueNumStore::NoVN) && (domOp2 != ValueNumStore::NoVN)) &&
+                (((domOp1 == treeOp1) && (domOp2 == treeOp2)) ||
+                    ((domOp1 == treeOp2) && (domOp2 == treeOp1))))
+            {
+                if (domOp1 == treeOp2)
+                {
+                    // Normalize treeOper to be of the same form as domOper, e.g.
+                    // domOp is "X >= Y", treeOp is "Y == X", normalize treeOp to "X == Y"
+                    std::swap(treeOp1, treeOp2);
+                    treeOper = GenTree::ReverseRelop(treeOper);
+                }
+
+                struct ImpliedRelops
+                {
+                    genTreeOps domOper;
+                    genTreeOps treeOper;
+                    ValueNumStore::VN_RELATION_KIND relationKind;
+                };
+
+                ImpliedRelops rules[] = {
+                    // To explain it, the first rule means:
+                    // if domOp is "X GE Y" and treeOp is "X LE Y" than treeOp is implied by domOp
+                    { GT_GE, GT_LE, ValueNumStore::VN_RELATION_KIND::VRK_Same},
+                    { GT_GE, GT_EQ, ValueNumStore::VN_RELATION_KIND::VRK_Same},
+                    { GT_LE, GT_LE, ValueNumStore::VN_RELATION_KIND::VRK_Same},
+                    { GT_LE, GT_EQ, ValueNumStore::VN_RELATION_KIND::VRK_Same},
+                    { GT_EQ, GT_LE, ValueNumStore::VN_RELATION_KIND::VRK_Same},
+                    { GT_EQ, GT_GE, ValueNumStore::VN_RELATION_KIND::VRK_Same},
+                    // TODO: more rules
+                };
+
+                for (const ImpliedRelops& rule : rules)
+                {
+                    if ((rule.domOper == domOper) && (rule.treeOper == treeOper))
+                    {
+                        rii->canInfer = true;
+                        rii->vnRelation = rule.relationKind;
+                        return;
+                    }
+                }
+            }
+        }
+    }
 
     // Look for {EQ,NE}({AND,OR,NOT}, 0)
     //
-    if (!GenTree::StaticOperIs(oper, GT_EQ, GT_NE))
+    if (!GenTree::StaticOperIs(domOper, GT_EQ, GT_NE))
     {
         return;
     }
 
-    const ValueNum constantVN = funcApp.m_args[1];
+    const ValueNum constantVN = domCmpFuncApp.m_args[1];
     if (constantVN != vnStore->VNZeroForType(TYP_INT))
     {
         return;
     }
 
-    const ValueNum predVN = funcApp.m_args[0];
+    const ValueNum predVN = domCmpFuncApp.m_args[0];
     VNFuncApp      predFuncApp;
     if (!vnStore->GetVNFunc(predVN, &predFuncApp))
     {
@@ -205,7 +269,7 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
                 //
                 // And if the dom predicate is GT_NOT we reverse yet again.
                 //
-                rii->reverseSense = (oper == GT_EQ) ^ (predOper == GT_NOT);
+                rii->reverseSense = (domOper == GT_EQ) ^ (predOper == GT_NOT);
 
                 // We only get partial knowledge in these cases.
                 //
