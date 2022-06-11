@@ -212,6 +212,7 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
                     {
                         rii->canInfer   = true;
                         rii->vnRelation = rule.relationKind;
+                        rii->canInferFromFalse = false;
                         return;
                     }
                 }
