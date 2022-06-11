@@ -5965,7 +5965,7 @@ protected:
     // Do hoisting of all loops nested within loop "lnum" (an index into the optLoopTable), followed
     // by the loop "lnum" itself.
     //
-    // Both "m_pHoistedInCurLoop" helps a lot in eliminating duplicate expressions getting hoisted
+    // "m_pHoistedInCurLoop" helps a lot in eliminating duplicate expressions getting hoisted
     // and reducing the count of total expressions hoisted out of loop. When calculating the
     // profitability, we compare this with number of registers and hence, lower the number of expressions
     // getting hoisted, better chances that they will get enregistered and CSE considering them.

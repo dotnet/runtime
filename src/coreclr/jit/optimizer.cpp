@@ -6450,8 +6450,11 @@ void Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt, Basi
 
         // Push dominators, until we reach "entry" or exit the loop.
         // Also push the preheaders that were added for the nested loops,
-        // if any, along the way such that the final block list is arranged
-        // in execution order
+        // if any, along the way such that in the final list, the dominating
+        // blocks are visited before the dominated blocks.
+        //
+        // TODO-CQ: In future, we should create preheaders upfront before building
+        // dominators so we don't have to do this extra work here.
         BasicBlock*     cur            = pLoopDsc->lpExit;
         BasicBlockList* preHeadersList = existingPreHeaders;
 

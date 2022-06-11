@@ -4520,7 +4520,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     // We generate `xorp* tgtReg, tgtReg` which is 3-5 bytes
                     // but which can be elided by the instruction decoder.
 
-                    costEx = 1; // 2;
+                    costEx = 1;
                     costSz = 2;
                 }
                 else
