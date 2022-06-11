@@ -17,16 +17,13 @@ using System.Reflection.Runtime.CustomAttributes;
 using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
 
-using Internal.Reflection.Tracing;
-
-
 namespace System.Reflection.Runtime.PropertyInfos
 {
     //
     // The runtime's implementation of PropertyInfo's
     //
     [DebuggerDisplay("{_debugName}")]
-    internal abstract partial class RuntimePropertyInfo : PropertyInfo, ITraceableTypeMember
+    internal abstract partial class RuntimePropertyInfo : PropertyInfo
     {
         //
         // propertyHandle - the "tkPropertyDef" that identifies the property.
@@ -73,11 +70,6 @@ namespace System.Reflection.Runtime.PropertyInfos
         {
             get
             {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.PropertyInfo_DeclaringType(this);
-#endif
-
                 return ContextTypeInfo;
             }
         }
@@ -123,11 +115,6 @@ namespace System.Reflection.Runtime.PropertyInfos
         {
             get
             {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.PropertyInfo_GetMethod(this);
-#endif
-
                 return Getter;
             }
         }
@@ -138,10 +125,6 @@ namespace System.Reflection.Runtime.PropertyInfos
 
         public sealed override object GetValue(object obj, BindingFlags invokeAttr, Binder binder, object[] index, CultureInfo culture)
         {
-#if ENABLE_REFLECTION_TRACE
-            if (ReflectionTrace.Enabled)
-                ReflectionTrace.PropertyInfo_GetValue(this, obj, index);
-#endif
             if (_lazyGetterInvoker == null)
             {
                 if (!CanRead)
@@ -168,11 +151,6 @@ namespace System.Reflection.Runtime.PropertyInfos
         {
             get
             {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.PropertyInfo_Name(this);
-#endif
-
                 return MetadataName;
             }
         }
@@ -181,11 +159,6 @@ namespace System.Reflection.Runtime.PropertyInfos
         {
             get
             {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.PropertyInfo_PropertyType(this);
-#endif
-
                 Type propertyType = _lazyPropertyType;
                 if (propertyType == null)
                 {
@@ -209,21 +182,12 @@ namespace System.Reflection.Runtime.PropertyInfos
         {
             get
             {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.PropertyInfo_SetMethod(this);
-#endif
-
                 return Setter;
             }
         }
 
         public sealed override void SetValue(object obj, object value, BindingFlags invokeAttr, Binder binder, object[] index, CultureInfo culture)
         {
-#if ENABLE_REFLECTION_TRACE
-            if (ReflectionTrace.Enabled)
-                ReflectionTrace.PropertyInfo_SetValue(this, obj, value, index);
-#endif
             if (_lazySetterInvoker == null)
             {
                 if (!CanWrite)
@@ -268,22 +232,6 @@ namespace System.Reflection.Runtime.PropertyInfos
             }
 
             return sb.ToString();
-        }
-
-        string ITraceableTypeMember.MemberName
-        {
-            get
-            {
-                return MetadataName;
-            }
-        }
-
-        Type ITraceableTypeMember.ContainingType
-        {
-            get
-            {
-                return ContextTypeInfo;
-            }
         }
 
         private RuntimeNamedMethodInfo Getter
@@ -386,11 +334,6 @@ namespace System.Reflection.Runtime.PropertyInfos
 
         private object GetConstantValue(bool raw)
         {
-#if ENABLE_REFLECTION_TRACE
-            if (ReflectionTrace.Enabled)
-                ReflectionTrace.PropertyInfo_GetConstantValue(this);
-#endif
-
             object defaultValue;
             if (!GetDefaultValueIfAny(raw, out defaultValue))
             {

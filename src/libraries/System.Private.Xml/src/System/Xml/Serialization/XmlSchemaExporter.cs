@@ -513,7 +513,7 @@ namespace System.Xml.Serialization
                             seq.Items.Add(any);
                             type.Particle = seq;
                             string? anyNs = serializableMapping.Schema.TargetNamespace;
-                            any.Namespace = anyNs == null ? "" : anyNs;
+                            any.Namespace = anyNs ?? "";
                             XmlSchema? existingSchema = _schemas[anyNs];
                             if (existingSchema == null)
                             {
@@ -786,7 +786,7 @@ namespace System.Xml.Serialization
                         }
                         else
                         {
-                            list.ItemTypeName = ExportPrimitiveMapping(pm, accessor.Namespace == null ? ns : accessor.Namespace);
+                            list.ItemTypeName = ExportPrimitiveMapping(pm, accessor.Namespace ?? ns);
                         }
                         dataType.Content = list;
                         attribute.SchemaType = dataType;
@@ -799,7 +799,7 @@ namespace System.Xml.Serialization
                         }
                         else
                         {
-                            attribute.SchemaTypeName = ExportPrimitiveMapping(pm, accessor.Namespace == null ? ns : accessor.Namespace);
+                            attribute.SchemaTypeName = ExportPrimitiveMapping(pm, accessor.Namespace ?? ns);
                         }
                     }
                 }

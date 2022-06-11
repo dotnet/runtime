@@ -1179,23 +1179,35 @@ get_call_info (MonoMethodSignature *sig)
 				} else
 #endif
 				{
-					align_size += (sizeof (target_mgreg_t) - 1);
-					align_size &= ~(sizeof (target_mgreg_t) - 1);
-					nregs = (align_size + sizeof (target_mgreg_t) -1 ) / sizeof (target_mgreg_t);
-					n_in_regs = MIN (rest, nregs);
-					if (n_in_regs < 0)
-						n_in_regs = 0;
+					if (is_all_floats && (mbr_cnt > 0)) {
+						rest = PPC_LAST_ARG_REG - gr + 1;
+						nregs = mbr_cnt;
+						n_in_regs = (rest >= mbr_cnt) ? MIN (rest, nregs) : 0;
+						cinfo->args [n].regtype = RegTypeStructByVal;
+						cinfo->args [n].vtregs = n_in_regs;
+						cinfo->args [n].size = mbr_size;
+						cinfo->args [n].vtsize = nregs - n_in_regs;
+						cinfo->args [n].reg = gr;
+						gr += n_in_regs;
+					} else {
+						align_size += (sizeof (target_mgreg_t) - 1);
+						align_size &= ~(sizeof (target_mgreg_t) - 1);
+						nregs = (align_size + sizeof (target_mgreg_t) -1 ) / sizeof (target_mgreg_t);
+						n_in_regs = MIN (rest, nregs);
+						if (n_in_regs < 0)
+							n_in_regs = 0;
 #ifdef __APPLE__
-					/* FIXME: check this */
-					if (size >= 3 && size % 4 != 0)
-						n_in_regs = 0;
+						/* FIXME: check this */
+						if (size >= 3 && size % 4 != 0)
+							n_in_regs = 0;
 #endif
-					cinfo->args [n].regtype = RegTypeStructByVal;
-					cinfo->args [n].vtregs = n_in_regs;
-					cinfo->args [n].size = n_in_regs;
-					cinfo->args [n].vtsize = nregs - n_in_regs;
-					cinfo->args [n].reg = gr;
-					gr += n_in_regs;
+						cinfo->args [n].regtype = RegTypeStructByVal;
+						cinfo->args [n].vtregs = n_in_regs;
+						cinfo->args [n].size = n_in_regs;
+						cinfo->args [n].vtsize = nregs - n_in_regs;
+						cinfo->args [n].reg = gr;
+						gr += n_in_regs;
+					}
 				}
 
 #ifdef __mono_ppc64__
@@ -1824,7 +1836,7 @@ void
 mono_arch_emit_setret (MonoCompile *cfg, MonoMethod *method, MonoInst *val)
 {
 	MonoType *ret = mini_get_underlying_type (mono_method_signature_internal (method)->ret);
-	if (!rm_type_is_byref (ret)) {
+	if (!m_type_is_byref (ret)) {
 #ifndef __mono_ppc64__
 		if (ret->type == MONO_TYPE_I8 || ret->type == MONO_TYPE_U8) {
 			MonoInst *ins;
@@ -1963,7 +1975,7 @@ mono_arch_peephole_pass_2 (MonoCompile *cfg, MonoBasicBlock *bb)
 					MONO_DELETE_INS (bb, ins);
 					continue;
 				}
-			} else if (inst->inst_imm > 0) {
+			} else if (ins->inst_imm > 0) {
 				int power2 = mono_is_power_of_two (ins->inst_imm);
 				if (power2 > 0) {
 					ins->opcode = OP_SHL_IMM;
@@ -3116,7 +3128,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_STORE_MEMBASE_REG:
 			if (ppc_is_imm16 (ins->inst_offset)) {
-				ppc_stptr (code, ins->sreg1, ins->inst_offset, ins->inst_destbasereg);
+				if (ppc_is_dsoffset_valid(ins->inst_offset)) {
+					ppc_stptr (code, ins->sreg1, ins->inst_offset, ins->inst_destbasereg);
+				} else {
+					ppc_load (code, ppc_r0, ins->inst_offset);
+					ppc_stptr_indexed(code, ins->sreg1, ins->inst_destbasereg, ppc_r0);
+				}
 			} else {
 				if (ppc_is_imm32 (ins->inst_offset)) {
 					ppc_addis (code, ppc_r11, ins->inst_destbasereg, ppc_ha(ins->inst_offset));
@@ -3151,7 +3168,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_LOAD_MEMBASE:
 			if (ppc_is_imm16 (ins->inst_offset)) {
-				ppc_ldptr (code, ins->dreg, ins->inst_offset, ins->inst_basereg);
+				if( ppc_is_dsoffset_valid (ins->inst_offset)) {
+					ppc_ldptr (code, ins->dreg, ins->inst_offset, ins->inst_basereg);
+				} else {
+					ppc_load (code, ppc_r0, ins->inst_offset);
+                                        ppc_ldptr_indexed (code, ins->dreg, ins->inst_basereg, ppc_r0);
+				}
 			} else {
 				if (ppc_is_imm32 (ins->inst_offset) && (ins->dreg > 0)) {
 					ppc_addis (code, ins->dreg, ins->inst_basereg, ppc_ha(ins->inst_offset));
@@ -3165,7 +3187,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_LOADI4_MEMBASE:
 #ifdef __mono_ppc64__
 			if (ppc_is_imm16 (ins->inst_offset)) {
-				ppc_lwa (code, ins->dreg, ins->inst_offset, ins->inst_basereg);
+				if(ppc_is_dsoffset_valid (ins->inst_offset)) {
+					ppc_lwa (code, ins->dreg, ins->inst_offset, ins->inst_basereg);
+				} else {
+					ppc_load (code, ppc_r0, ins->inst_offset);
+                                        ppc_lwax (code, ins->dreg, ins->inst_basereg, ppc_r0);
+				}
 			} else {
 				if (ppc_is_imm32 (ins->inst_offset) && (ins->dreg > 0)) {
 					ppc_addis (code, ins->dreg, ins->inst_basereg, ppc_ha(ins->inst_offset));
@@ -5309,6 +5336,10 @@ exception_id_by_name (const char *name)
 		return MONO_EXC_ARRAY_TYPE_MISMATCH;
 	if (strcmp (name, "ArgumentException") == 0)
 		return MONO_EXC_ARGUMENT;
+	if (strcmp (name, "ArgumentOutOfRangeException") == 0)
+                return MONO_EXC_ARGUMENT_OUT_OF_RANGE;
+        if (strcmp (name, "OutOfMemoryException") == 0)
+                return MONO_EXC_ARGUMENT_OUT_OF_MEMORY;
 	g_error ("Unknown intrinsic exception %s\n", name);
 	return 0;
 }
@@ -5753,7 +5784,7 @@ host_mgreg_t*
 mono_arch_context_get_int_reg_address (MonoContext *ctx, int reg)
 {
 	if (reg == ppc_r1)
-		return (host_mgreg_t)(gsize)&MONO_CONTEXT_GET_SP (ctx);
+		return (host_mgreg_t)(gsize)MONO_CONTEXT_GET_SP (ctx);
 
 	return &ctx->regs [reg];
 }

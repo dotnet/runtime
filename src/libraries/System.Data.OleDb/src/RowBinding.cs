@@ -191,7 +191,7 @@ namespace System.Data.OleDb
                 }
             }
 
-            return ((null != value) ? value : DBNull.Value);
+            return value ?? DBNull.Value;
         }
 
         // translate to native

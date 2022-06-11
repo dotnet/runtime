@@ -8,7 +8,7 @@
     EXTERN      RhpGcPoll2
     EXTERN      g_fGcStressStarted
 
-PROBE_SAVE_FLAGS_EVERYTHING     equ DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_ALL_SCRATCH
+PROBE_SAVE_FLAGS_EVERYTHING     equ DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_ALL_SCRATCH + PTFF_SAVE_LR
 
     ;; Build a map of symbols representing offsets into the transition frame (see PInvokeTransitionFrame in
     ;; rhbinder.h) and keep these two in sync.
@@ -175,7 +175,7 @@ __PPF_ThreadReg SETS "x2"
         ; Perform the rest of the PInvokeTransitionFrame initialization.
         INIT_PROBE_FRAME $__PPF_ThreadReg, $trashReg, $savedRegsMask, $gcFlags, PROBE_FRAME_SIZE
         mov         $trashReg, sp
-        str         $trashReg, [$__PPF_ThreadReg, #OFFSETOF__Thread__m_pHackPInvokeTunnel]
+        str         $trashReg, [$__PPF_ThreadReg, #OFFSETOF__Thread__m_pDeferredTransitionFrame]
     MEND
 
     ; Simple macro to use when PROLOG_PROBE_FRAME was used to set up and initialize the prolog and
@@ -312,7 +312,7 @@ EXTRA_SAVE_SIZE equ (32*16)
         tst         w2, #TSF_SuppressGcStress__OR__TSF_DoNotTriggerGC
         bne         %ft0
 
-        ldr         x9, [x4, #OFFSETOF__Thread__m_pHackPInvokeTunnel]
+        ldr         x9, [x4, #OFFSETOF__Thread__m_pDeferredTransitionFrame]
         bl          RhpWaitForGCNoAbort
 0
     MEND

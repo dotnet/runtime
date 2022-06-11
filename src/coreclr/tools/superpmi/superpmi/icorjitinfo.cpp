@@ -100,6 +100,11 @@ CorInfoInline MyICJI::canInline(CORINFO_METHOD_HANDLE callerHnd,    /* IN  */
     return result;
 }
 
+void MyICJI::beginInlining(CORINFO_METHOD_HANDLE inlinerHnd,
+                           CORINFO_METHOD_HANDLE inlineeHnd)
+{
+    // do nothing
+}
 // Reports whether or not a method can be inlined, and why.  canInline is responsible for reporting all
 // inlining results when it returns INLINE_FAIL and INLINE_NEVER.  All other results are reported by the
 // JIT.
@@ -1574,13 +1579,6 @@ uint32_t MyICJI::getJitFlags(CORJIT_FLAGS* jitFlags, uint32_t sizeInBytes)
         jitFlags->Set(CORJIT_FLAGS::CORJIT_FLAG_ALT_JIT);
     }
     return ret;
-}
-
-bool MyICJI::doesFieldBelongToClass(CORINFO_FIELD_HANDLE fldHnd, CORINFO_CLASS_HANDLE cls)
-{
-    jitInstance->mc->cr->AddCall("doesFieldBelongToClass");
-    bool result = jitInstance->mc->repDoesFieldBelongToClass(fldHnd, cls);
-    return result;
 }
 
 // Runs the given function with the given parameter under an error trap

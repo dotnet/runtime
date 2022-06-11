@@ -115,7 +115,7 @@ namespace System.Net
 
         public CookieCollection Cookies
         {
-            get => _cookies ?? (_cookies = new CookieCollection());
+            get => _cookies ??= new CookieCollection();
             set => _cookies = value;
         }
 

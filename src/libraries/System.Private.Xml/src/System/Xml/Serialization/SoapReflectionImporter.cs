@@ -89,7 +89,7 @@ namespace System.Xml.Serialization
             element.IsSoap = true;
             element.Mapping = ImportTypeMapping(_modelScope.GetTypeModel(type), new RecursionLimiter());
             element.Name = element.Mapping.DefaultElementName;
-            element.Namespace = element.Mapping.Namespace == null ? defaultNamespace : element.Mapping.Namespace;
+            element.Namespace = element.Mapping.Namespace ?? defaultNamespace;
             element.Form = XmlSchemaForm.Qualified;
             XmlTypeMapping xmlMapping = new XmlTypeMapping(_typeScope, element);
             xmlMapping.SetKeyInternal(XmlMapping.GenerateKey(type, null, defaultNamespace));
@@ -125,7 +125,7 @@ namespace System.Xml.Serialization
 
             element.Mapping = ImportMembersMapping(members, ns, hasWrapperElement, writeAccessors, validate, new RecursionLimiter());
             element.Mapping.TypeName = elementName;
-            element.Namespace = element.Mapping.Namespace == null ? ns : element.Mapping.Namespace;
+            element.Namespace = element.Mapping.Namespace ?? ns;
             element.Form = XmlSchemaForm.Qualified;
             XmlMembersMapping xmlMapping = new XmlMembersMapping(_typeScope, element, access);
             xmlMapping.IsSoap = true;

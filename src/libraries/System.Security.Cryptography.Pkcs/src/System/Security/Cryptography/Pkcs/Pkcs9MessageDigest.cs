@@ -33,7 +33,7 @@ namespace System.Security.Cryptography.Pkcs
         {
             get
             {
-                return _lazyMessageDigest ?? (_lazyMessageDigest = Decode(RawData));
+                return _lazyMessageDigest ??= Decode(RawData);
             }
         }
 

@@ -77,10 +77,9 @@ namespace Microsoft.WebAssembly.Diagnostics
             return null;
         }
 
-        public async Task<(JObject containerObject, string remaining)> ResolveStaticMembersInStaticTypes(string varName, CancellationToken token)
+        public async Task<(JObject containerObject, ArraySegment<string> remaining)> ResolveStaticMembersInStaticTypes(ArraySegment<string> parts, CancellationToken token)
         {
             string classNameToFind = "";
-            string[] parts = varName.Split(".", StringSplitOptions.TrimEntries);
             var store = await proxy.LoadStore(sessionId, token);
             var methodInfo = context.CallStack.FirstOrDefault(s => s.Id == scopeId)?.Method?.Info;
 
@@ -88,7 +87,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return (null, null);
 
             int typeId = -1;
-            for (int i = 0; i < parts.Length; i++)
+            for (int i = 0; i < parts.Count; i++)
             {
                 string part = parts[i];
 
@@ -97,9 +96,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                     JObject memberObject = await FindStaticMemberInType(classNameToFind, part, typeId);
                     if (memberObject != null)
                     {
-                        string remaining = null;
-                        if (i < parts.Length - 1)
-                            remaining = string.Join('.', parts[(i + 1)..]);
+                        ArraySegment<string> remaining = null;
+                        if (i < parts.Count - 1)
+                            remaining = parts[i..];
 
                         return (memberObject, remaining);
                     }
@@ -177,6 +176,10 @@ namespace Microsoft.WebAssembly.Diagnostics
         // Checks Locals, followed by `this`
         public async Task<JObject> Resolve(string varName, CancellationToken token)
         {
+            // question mark at the end of expression is invalid
+            if (varName[^1] == '?')
+                throw new ReturnAsErrorException($"Expected expression.", "ReferenceError");
+
             //has method calls
             if (varName.Contains('('))
                 return null;
@@ -187,18 +190,19 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (scopeCache.ObjectFields.TryGetValue(varName, out JObject valueRet))
                 return await GetValueFromObject(valueRet, token);
 
-            string[] parts = varName.Split(".");
-            if (parts.Length == 0)
-                return null;
+            string[] parts = varName.Split(".", StringSplitOptions.TrimEntries);
+            if (parts.Length == 0 || string.IsNullOrEmpty(parts[0]))
+                throw new ReturnAsErrorException($"Failed to resolve expression: {varName}", "ReferenceError");
 
             JObject retObject = await ResolveAsLocalOrThisMember(parts[0]);
+            bool throwOnNullReference = parts[0][^1] != '?';
             if (retObject != null && parts.Length > 1)
-                retObject = await ResolveAsInstanceMember(string.Join('.', parts[1..]), retObject);
+                retObject = await ResolveAsInstanceMember(parts, retObject, throwOnNullReference);
 
             if (retObject == null)
             {
-                (retObject, string remaining) = await ResolveStaticMembersInStaticTypes(varName, token);
-                if (!string.IsNullOrEmpty(remaining))
+                (retObject, ArraySegment<string> remaining) = await ResolveStaticMembersInStaticTypes(parts, token);
+                if (remaining != null && remaining.Count != 0)
                 {
                     if (retObject.IsNullValuedObject())
                     {
@@ -207,7 +211,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                     else
                     {
-                        retObject = await ResolveAsInstanceMember(remaining, retObject);
+                        retObject = await ResolveAsInstanceMember(remaining, retObject, throwOnNullReference);
                     }
                 }
             }
@@ -217,7 +221,6 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             async Task<JObject> ResolveAsLocalOrThisMember(string name)
             {
-                var nameTrimmed = name.Trim();
                 if (scopeCache.Locals.Count == 0 && !localsFetched)
                 {
                     Result scope_res = await proxy.GetScopeProperties(sessionId, scopeId, token);
@@ -226,7 +229,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                     localsFetched = true;
                 }
 
-                if (scopeCache.Locals.TryGetValue(nameTrimmed, out JObject obj))
+                // remove null-condition, otherwise TryGet by name fails
+                if (name[^1] == '?' || name[^1] == '!')
+                    name = name.Remove(name.Length - 1);
+
+                if (scopeCache.Locals.TryGetValue(name, out JObject obj))
                     return obj["value"]?.Value<JObject>();
 
                 if (!scopeCache.Locals.TryGetValue("this", out JObject objThis))
@@ -242,54 +249,74 @@ namespace Microsoft.WebAssembly.Diagnostics
                     return null;
                 }
 
-                JToken objRet = valueOrError.Value.FirstOrDefault(objPropAttr => objPropAttr["name"].Value<string>() == nameTrimmed);
+                JToken objRet = valueOrError.Value.FirstOrDefault(objPropAttr => objPropAttr["name"].Value<string>() == name);
                 if (objRet != null)
                     return await GetValueFromObject(objRet, token);
 
                 return null;
             }
 
-            async Task<JObject> ResolveAsInstanceMember(string expr, JObject baseObject)
+            async Task<JObject> ResolveAsInstanceMember(ArraySegment<string> parts, JObject baseObject, bool throwOnNullReference)
             {
                 JObject resolvedObject = baseObject;
-                string[] parts = expr.Split('.');
-                for (int i = 0; i < parts.Length; i++)
+                // parts[0] - name of baseObject
+                for (int i = 1; i < parts.Count; i++)
                 {
-                    string partTrimmed = parts[i].Trim();
-                    if (partTrimmed.Length == 0)
+                    string part = parts[i];
+                    if (part.Length == 0)
                         return null;
+
+                    bool hasCurrentPartNullCondition = part[^1] == '?';
+
+                    // current value of resolvedObject is on parts[i - 1]
+                    if (resolvedObject.IsNullValuedObject())
+                    {
+                        // trying null.$member
+                        if (throwOnNullReference)
+                            throw new ReturnAsErrorException($"Expression threw NullReferenceException trying to access \"{part}\" on a null-valued object.", "ReferenceError");
+
+                        if (i == parts.Count - 1)
+                        {
+                            // this is not ideal, it returns the last object
+                            // that had objectId and was null-valued,
+                            // so the class/description of object are not of the last part
+                            return resolvedObject;
+                        }
+
+                        // check if null condition is correctly applied: should we throw or return null-object
+                        throwOnNullReference = !hasCurrentPartNullCondition;
+                        continue;
+                    }
 
                     if (!DotnetObjectId.TryParse(resolvedObject?["objectId"]?.Value<string>(), out DotnetObjectId objectId))
-                        return null;
+                    {
+                        if (resolvedObject["type"].Value<string>() == "string")
+                            throw new ReturnAsErrorException($"String properties evaluation is not supported yet.", "ReferenceError"); // Issue #66823
+                        if (!throwOnNullReference)
+                            throw new ReturnAsErrorException($"Operation '?' not allowed on primitive type - '{parts[i - 1]}'", "ReferenceError");
+                        throw new ReturnAsErrorException($"Cannot find member '{part}' on a primitive type", "ReferenceError");
+                    }
 
-                    ValueOrError<GetMembersResult> valueOrError = await proxy.RuntimeGetObjectMembers(sessionId, objectId, null, token);
+                    var args = JObject.FromObject(new { forDebuggerDisplayAttribute = true });
+                    ValueOrError<GetMembersResult> valueOrError = await proxy.RuntimeGetObjectMembers(sessionId, objectId, args, token);
                     if (valueOrError.IsError)
                     {
                         logger.LogDebug($"ResolveAsInstanceMember failed with : {valueOrError.Error}");
                         return null;
                     }
 
-                    JToken objRet = valueOrError.Value.FirstOrDefault(objPropAttr => objPropAttr["name"]?.Value<string>() == partTrimmed);
+                    if (part[^1] == '!' || part[^1] == '?')
+                        part = part.Remove(part.Length - 1);
+
+                    JToken objRet = valueOrError.Value.FirstOrDefault(objPropAttr => objPropAttr["name"]?.Value<string>() == part);
                     if (objRet == null)
                         return null;
 
                     resolvedObject = await GetValueFromObject(objRet, token);
                     if (resolvedObject == null)
                         return null;
-
-                    if (resolvedObject.IsNullValuedObject())
-                    {
-                        if (i < parts.Length - 1)
-                        {
-                            // there is some parts remaining, and can't
-                            // do null.$remaining
-                            return null;
-                        }
-
-                        return resolvedObject;
-                    }
+                    throwOnNullReference = !hasCurrentPartNullCondition;
                 }
-
                 return resolvedObject;
             }
         }

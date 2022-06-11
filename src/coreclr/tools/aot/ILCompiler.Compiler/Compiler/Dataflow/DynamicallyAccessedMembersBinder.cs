@@ -352,7 +352,7 @@ namespace ILCompiler.Dataflow
                 type = type.BaseType;
                 onBaseType = true;
             }
-            
+
             while (type != null)
             {
                 if (type.GetTypeDefinition() is not EcmaType ecmaType)

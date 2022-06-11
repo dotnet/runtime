@@ -152,10 +152,8 @@ namespace System.Security.Cryptography
                     // don't match the public key fields.
                     //
                     // Public import should go off without a hitch.
-                    ImportPrivateKey(
-                        parameters,
-                        out SafeSecKeyRefHandle privateKey,
-                        out SafeSecKeyRefHandle publicKey);
+                    SafeSecKeyRefHandle privateKey = ImportKey(parameters);
+                    SafeSecKeyRefHandle publicKey = Interop.AppleCrypto.CopyPublicKey(privateKey);
                     SetKey(SecKeyPair.PublicPrivatePair(publicKey, privateKey));
                 }
                 else

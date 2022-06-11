@@ -184,7 +184,6 @@ namespace System.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.OSX)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49106", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         public void OSVersion_ValidVersion_OSX()
         {
             Version version = Environment.OSVersion.Version;
@@ -193,6 +192,7 @@ namespace System.Tests
             // As of 12.0, only major version numbers are included in the RID
             Assert.Contains(version.ToString(1), RuntimeInformation.RuntimeIdentifier);
 
+            Assert.True(version.Minor >= 0, "OSVersion Minor should be non-negative");
             Assert.True(version.Build >= 0, "OSVersion Build should be non-negative");
             Assert.Equal(-1, version.Revision); // Revision is never set on OSX
         }

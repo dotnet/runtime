@@ -1230,7 +1230,7 @@ namespace System.Management
 
             IEnumWbemClassObject enumWbem = null;
 
-            EnumerationOptions o = (null != options) ? options : new EnumerationOptions();
+            EnumerationOptions o = options ?? new EnumerationOptions();
             //Ensure EnumerateDeep flag is turned off as it's invalid for queries
             o.EnumerateDeep = true;
 
