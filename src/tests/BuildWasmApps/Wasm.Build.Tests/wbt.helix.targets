@@ -1,0 +1,76 @@
+<Project>
+  <PropertyGroup Condition="'$(Scenario)' == 'BuildWasmApps'">
+    <_CryptoProjectName>Wasm.Build.Tests</_CryptoProjectName>
+    <Wasm_Build_Tests_TargetName>Wasm_Build_Tests_Target</Wasm_Build_Tests_TargetName>
+
+    <BuildWasmAppsJobsList>$(RepoRoot)src\tests\BuildWasmApps\Wasm.Build.Tests\data\BuildWasmAppsJobsList.txt</BuildWasmAppsJobsList>
+
+    <_workItemTimeout>01:30:00</_workItemTimeout>
+    <NeedsWorkload>true</NeedsWorkload>
+    <NeedsEMSDKNode>true</NeedsEMSDKNode>
+    <NeedsToRunOnBrowser>true</NeedsToRunOnBrowser>
+
+    <WorkItemPrefix Condition="'$(TestUsingWorkloads)' == 'true'">Workloads-</WorkItemPrefix>
+    <WorkItemPrefix Condition="'$(TestUsingWorkloads)' != 'true'">NoWorkload-</WorkItemPrefix>
+  </PropertyGroup>
+
+  <Target Name="Wasm_Build_Tests_Target" Condition="'$(Scenario)' == 'BuildWasmApps'">
+    <!-- is TestUsingWorkloads used anymore? -->
+    <ReadLinesFromFile File="$(BuildWasmAppsJobsList)" Condition="'$(TestUsingWorkloads)' == 'true'">
+      <Output TaskParameter="Lines" ItemName="WasmBuildTests_PerJobList" />
+    </ReadLinesFromFile>
+
+    <ItemGroup>
+      <_WBTWorkItem Include="$(TestArchiveTestsRoot)**/*.zip" Exclude="$(HelixCorrelationPayload)" />
+    </ItemGroup>
+    <PropertyGroup>
+      <_WBTPayloadArchive>@(_WBTWorkItem)</_WBTPayloadArchive>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <!-- for testing with workloads, we use separate items -->
+      <HelixWorkItem Include="@(WasmBuildTests_PerJobList->'$(WorkItemPrefix)%(Extension)')" Condition="'$(TestUsingWorkloads)' == 'true'">
+        <PayloadArchive>$(_WBTPayloadArchive)</PayloadArchive>
+         <!-- PreCommands are run after HelixPreCommand -->
+        <PreCommands Condition="'$(OS)' == 'Windows_NT'">set &quot;HELIX_XUNIT_ARGS=-class %(Identity)&quot;</PreCommands>
+        <PreCommands Condition="'$(OS)' != 'Windows_NT'">export &quot;HELIX_XUNIT_ARGS=-class %(Identity)&quot;</PreCommands>
+        <Command>$(HelixCommand)</Command>
+        <Timeout>$(_workItemTimeout)</Timeout>
+      </HelixWorkItem>
+
+      <HelixWorkItem Include="NoWorkload-Wasm.Build.Tests" Condition="'$(TestUsingWorkloads)' != 'true'">
+        <PayloadArchive>$(_WBTPayloadArchive)</PayloadArchive>
+        <Command>$(HelixCommand)</Command>
+        <Timeout>$(_workItemTimeout)</Timeout>
+      </HelixWorkItem>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="WBT_AddHelixPreCommand" BeforeTargets="BuildHelixCommand" Condition="'$(Scenario)' == 'BuildWasmApps'">
+    <PropertyGroup>
+      <_XUnitTraitArg Condition="'$(TestUsingWorkloads)' == 'true'">-notrait category=no-workload</_XUnitTraitArg>
+      <_XUnitTraitArg Condition="'$(TestUsingWorkloads)' != 'true'">-trait category=no-workload</_XUnitTraitArg>
+
+      <WBT_ExtraRunCommandArgs>-nocolor</WBT_ExtraRunCommandArgs>
+      <WBT_ExtraRunCommandArgs Condition="'$(WindowsShell)' == 'true'">$(WBT_ExtraRunCommandArgs) -parallel none</WBT_ExtraRunCommandArgs>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <!-- HelixPreCommand are run first -->
+      <HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="export &quot;ExtraRunCommandArgs=%24{ExtraRunCommandArgs} $(WBT_ExtraRunCommandArgs)&quot;" />
+      <HelixPreCommand Condition="'$(WindowsShell)' == 'true'" Include="set &quot;ExtraRunCommandArgs=%ExtraRunCommandArgs% $(WBT_ExtraRunCommandArgs)&quot;" />
+
+      <HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="export BASE_DIR=%24{HELIX_CORRELATION_PAYLOAD}" />
+      <HelixPreCommand Condition="'$(WindowsShell)' == 'true'" Include="set BASE_DIR=%HELIX_CORRELATION_PAYLOAD%" />
+
+      <HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="export BROWSER_PATH_FOR_TESTS=$HELIX_CORRELATION_PAYLOAD/chrome-linux/chrome" />
+      <HelixPreCommand Condition="'$(WindowsShell)' == 'true'" Include="set BROWSER_PATH_FOR_TESTS=%HELIX_CORRELATION_PAYLOAD%\chrome-win\chrome.exe" />
+
+      <HelixPreCommand Condition="'$(WindowsShell)' == 'true'" Include="set &quot;XUnitTraitArg=$(_XUnitTraitArg)&quot;" />
+      <HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="export &quot;XUnitTraitArg=$(_XUnitTraitArg)&quot;" />
+
+      <HelixPreCommand Condition="'$(TestUsingWorkloads)' == 'true' and '$(WindowsShell)' == 'true'" Include="set TEST_USING_WORKLOADS=true" />
+      <HelixPreCommand Condition="'$(TestUsingWorkloads)' == 'true' and '$(WindowsShell)' != 'true'" Include="export TEST_USING_WORKLOADS=true" />
+    </ItemGroup>
+  </Target>
+</Project>
