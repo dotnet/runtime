@@ -1109,6 +1109,11 @@ public:
         return true;
     }
 
+    bool IsNotGcDef() const
+    {
+        return IsIntegralConst(0) || IsLocalAddrExpr();
+    }
+
     // LIR flags
     //   These helper methods, along with the flag values they manipulate, are defined in lir.h
     //

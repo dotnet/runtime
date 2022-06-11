@@ -361,13 +361,20 @@ namespace Internal.JitInterface
         private MethodWithGCInfo _methodCodeNode;
         private OffsetMapping[] _debugLocInfos;
         private NativeVarInfo[] _debugVarInfos;
-        private ArrayBuilder<MethodDesc> _inlinedMethods;
+        private HashSet<MethodDesc> _inlinedMethods;
         private UnboxingMethodDescFactory _unboxingThunkFactory = new UnboxingMethodDescFactory();
+        private List<ISymbolNode> _precodeFixups;
 
         public CorInfoImpl(ReadyToRunCodegenCompilation compilation)
             : this()
         {
             _compilation = compilation;
+        }
+
+        private void AddPrecodeFixup(ISymbolNode node)
+        {
+            _precodeFixups = _precodeFixups ?? new List<ISymbolNode>();
+            _precodeFixups.Add(node);
         }
 
         private static mdToken FindGenericMethodArgTypeSpec(EcmaModule module)
@@ -1327,7 +1334,7 @@ namespace Internal.JitInterface
                     if (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout && (fieldOffset <= FieldFixupSignature.MaxCheckableOffset))
                     {
                         // ENCODE_CHECK_FIELD_OFFSET
-                        _methodCodeNode.Fixups.Add(_compilation.SymbolNodeFactory.CheckFieldOffset(field));
+                        AddPrecodeFixup(_compilation.SymbolNodeFactory.CheckFieldOffset(field));
                     }
                 }
                 else
@@ -1381,7 +1388,7 @@ namespace Internal.JitInterface
                         if (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout && (fieldOffset <= FieldFixupSignature.MaxCheckableOffset))
                         {
                             // ENCODE_CHECK_FIELD_OFFSET
-                            _methodCodeNode.Fixups.Add(_compilation.SymbolNodeFactory.CheckFieldOffset(field));
+                            AddPrecodeFixup(_compilation.SymbolNodeFactory.CheckFieldOffset(field));
                         }
 
                         pResult->fieldLookup = CreateConstLookupToSymbol(
@@ -1843,7 +1850,7 @@ namespace Internal.JitInterface
             if (!type.IsPrimitive)
             {
                 ISymbolNode node = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.TypeHandle, type);
-                _methodCodeNode.Fixups.Add(node);
+                AddPrecodeFixup(node);
             }
         }
 
@@ -2365,7 +2372,7 @@ namespace Internal.JitInterface
                     if (pResult->offset > FieldFixupSignature.MaxCheckableOffset)
                         throw new RequiresRuntimeJitException(callerMethod.ToString() + " -> " + field.ToString());
 
-                    _methodCodeNode.Fixups.Add(_compilation.SymbolNodeFactory.CheckFieldOffset(field));
+                    AddPrecodeFixup(_compilation.SymbolNodeFactory.CheckFieldOffset(field));
                     // No-op other than generating the check field offset fixup
                 }
                 else
@@ -2383,7 +2390,7 @@ namespace Internal.JitInterface
                 if (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout && !callerMethod.IsNonVersionable() && (pResult->offset <= FieldFixupSignature.MaxCheckableOffset))
                 {
                     // ENCODE_CHECK_FIELD_OFFSET
-                    _methodCodeNode.Fixups.Add(_compilation.SymbolNodeFactory.CheckFieldOffset(field));
+                    AddPrecodeFixup(_compilation.SymbolNodeFactory.CheckFieldOffset(field));
                 }
                 // ENCODE_NONE
             }
@@ -2392,7 +2399,7 @@ namespace Internal.JitInterface
                 if (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout && !callerMethod.IsNonVersionable() && (pResult->offset <= FieldFixupSignature.MaxCheckableOffset))
                 {
                     // ENCODE_CHECK_FIELD_OFFSET
-                    _methodCodeNode.Fixups.Add(_compilation.SymbolNodeFactory.CheckFieldOffset(field));
+                    AddPrecodeFixup(_compilation.SymbolNodeFactory.CheckFieldOffset(field));
                 }
                 // ENCODE_NONE
             }
@@ -2403,7 +2410,7 @@ namespace Internal.JitInterface
                 if (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout && !callerMethod.IsNonVersionable() && (pResult->offset <= FieldFixupSignature.MaxCheckableOffset))
                 {
                     // ENCODE_CHECK_FIELD_OFFSET
-                    _methodCodeNode.Fixups.Add(_compilation.SymbolNodeFactory.CheckFieldOffset(field));
+                    AddPrecodeFixup(_compilation.SymbolNodeFactory.CheckFieldOffset(field));
                 }
 
                 // ENCODE_FIELD_BASE_OFFSET
@@ -2636,13 +2643,55 @@ namespace Internal.JitInterface
             _ehClauses[EHnumber] = clause;
         }
 
+        private readonly Stack<List<ISymbolNode>> _stashedPrecodeFixups = new Stack<List<ISymbolNode>>();
+        private readonly Stack<HashSet<MethodDesc>> _stashedInlinedMethods = new Stack<HashSet<MethodDesc>>();
+
+        private void beginInlining(CORINFO_METHOD_STRUCT_* inlinerHnd, CORINFO_METHOD_STRUCT_* inlineeHnd)
+        {
+            _stashedPrecodeFixups.Push(_precodeFixups);
+            _precodeFixups = null;
+            _stashedInlinedMethods.Push(_inlinedMethods);
+            _inlinedMethods = null;
+        }
+
         private void reportInliningDecision(CORINFO_METHOD_STRUCT_* inlinerHnd, CORINFO_METHOD_STRUCT_* inlineeHnd, CorInfoInline inlineResult, byte* reason)
         {
             if (inlineResult == CorInfoInline.INLINE_PASS)
             {
                 // We deliberately ignore inlinerHnd because we have no interest to track intermediate links now.
                 MethodDesc inlinee = HandleToObject(inlineeHnd);
+
+                // If during inlining we found Precode fixups, then only if the inline was successful, add them to the set of
+                // fixups that will be used for the entire method
+                List<ISymbolNode> previouslyStashedFixups = _stashedPrecodeFixups.Pop();
+
+                if (_precodeFixups != null)
+                {
+                    previouslyStashedFixups = previouslyStashedFixups ?? new List<ISymbolNode>();
+                    previouslyStashedFixups.AddRange(_precodeFixups);
+                }
+                _precodeFixups = previouslyStashedFixups;
+
+                // If during inlining we found new inlinees, then if the inline was successful, add them to the set of fixups
+                // for the entire method.
+                HashSet<MethodDesc> previouslyStashedInlinees = _stashedInlinedMethods.Pop();
+                if (_inlinedMethods != null)
+                {
+                    previouslyStashedInlinees = previouslyStashedInlinees ?? new HashSet<MethodDesc>();
+                    foreach (var inlineeInHashSet in _inlinedMethods)
+                        previouslyStashedInlinees.Add(inlineeInHashSet);
+                }
+                _inlinedMethods = previouslyStashedInlinees;
+
+                // Then add the fact we inlined this method.
+                _inlinedMethods = _inlinedMethods ?? new HashSet<MethodDesc>();
                 _inlinedMethods.Add(inlinee);
+            }
+            else
+            {
+                // If we didn't succeed on the inline, just pop back to the state before inlining
+                _precodeFixups = _stashedPrecodeFixups.Pop();
+                _inlinedMethods = _stashedInlinedMethods.Pop();
             }
         }
 
