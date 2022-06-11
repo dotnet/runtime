@@ -331,12 +331,11 @@ DEFINE_FIELD_U(_xcode,             ExceptionObject,    _xcode)
 DEFINE_FIELD_U(_HResult,           ExceptionObject,    _HResult)
 DEFINE_CLASS(EXCEPTION,             System,                 Exception)
 DEFINE_METHOD(EXCEPTION,            INTERNAL_PRESERVE_STACK_TRACE, InternalPreserveStackTrace, IM_RetVoid)
-#ifdef FEATURE_COMINTEROP
+// Following Exception members are only used when FEATURE_COMINTEROP
 DEFINE_METHOD(EXCEPTION,            GET_CLASS_NAME,         GetClassName,               IM_RetStr)
 DEFINE_PROPERTY(EXCEPTION,          MESSAGE,                Message,                    Str)
 DEFINE_PROPERTY(EXCEPTION,          SOURCE,                 Source,                     Str)
 DEFINE_METHOD(EXCEPTION,            GET_HELP_CONTEXT,       GetHelpContext,             IM_RefInt_RetStr)
-#endif
 
 
 DEFINE_CLASS(SYSTEM_EXCEPTION,      System,                 SystemException)
