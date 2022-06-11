@@ -17,13 +17,11 @@ namespace System.Threading
         private long _overflowCount;
 
         // dummy node serving as a start and end of the ring list
-        private ThreadLocalNode _first;
+        private ThreadLocalNode _nodes;
 
         public ThreadInt64PersistentCounter()
         {
-            _first = new ThreadLocalNode(this);
-            _first._next = _first;
-            _first._prev = _first;
+            _nodes = new ThreadLocalNode(this);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -50,10 +48,10 @@ namespace System.Threading
             _lock.Acquire();
             try
             {
-                node._next = _first._next;
-                node._prev = _first;
-                _first._next!._prev = node;
-                _first._next = node;
+                node._next = _nodes._next;
+                node._prev = _nodes;
+                _nodes._next._prev = node;
+                _nodes._next = node;
             }
             finally
             {
@@ -71,12 +69,12 @@ namespace System.Threading
                 long count = _overflowCount;
                 try
                 {
-                    ThreadLocalNode first = _first;
-                    ThreadLocalNode node = first._next!;
+                    ThreadLocalNode first = _nodes;
+                    ThreadLocalNode node = first._next;
                     while (node != first)
                     {
                         count += node.Count;
-                        node = node._next!;
+                        node = node._next;
                     }
                 }
                 finally
@@ -93,13 +91,15 @@ namespace System.Threading
             private uint _count;
             private readonly ThreadInt64PersistentCounter _counter;
 
-            internal ThreadLocalNode? _prev;
-            internal ThreadLocalNode? _next;
+            internal ThreadLocalNode _prev;
+            internal ThreadLocalNode _next;
 
             public ThreadLocalNode(ThreadInt64PersistentCounter counter)
             {
                 Debug.Assert(counter != null);
                 _counter = counter;
+                _prev = this;
+                _next = this;
             }
 
             public void Dispose()
@@ -110,8 +110,8 @@ namespace System.Threading
                 {
                     counter._overflowCount += _count;
 
-                    _prev!._next = _next;
-                    _next!._prev = _prev;
+                    _prev._next = _next;
+                    _next._prev = _prev;
                 }
                 finally
                 {
