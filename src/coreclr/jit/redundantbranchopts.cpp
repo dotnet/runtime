@@ -170,15 +170,14 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
             assert(vnStore->IsVNRelop(rii->domCmpNormVN));
             assert((domCmpFuncApp.m_arity == 2) && (treeFuncApp.m_arity == 2));
 
-            ValueNum domOp1 = domCmpFuncApp.m_args[0];
-            ValueNum domOp2 = domCmpFuncApp.m_args[1];
+            ValueNum domOp1  = domCmpFuncApp.m_args[0];
+            ValueNum domOp2  = domCmpFuncApp.m_args[1];
             ValueNum treeOp1 = treeFuncApp.m_args[0];
             ValueNum treeOp2 = treeFuncApp.m_args[1];
 
             // Check that operands of domCmp and treeCmp are the same (and have VNs)
             if (((domOp1 != ValueNumStore::NoVN) && (domOp2 != ValueNumStore::NoVN)) &&
-                (((domOp1 == treeOp1) && (domOp2 == treeOp2)) ||
-                    ((domOp1 == treeOp2) && (domOp2 == treeOp1))))
+                (((domOp1 == treeOp1) && (domOp2 == treeOp2)) || ((domOp1 == treeOp2) && (domOp2 == treeOp1))))
             {
                 if (domOp1 == treeOp2)
                 {
@@ -190,20 +189,20 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
 
                 struct ImpliedRelops
                 {
-                    genTreeOps domOper;
-                    genTreeOps treeOper;
+                    genTreeOps                      domOper;
+                    genTreeOps                      treeOper;
                     ValueNumStore::VN_RELATION_KIND relationKind;
                 };
 
                 ImpliedRelops rules[] = {
                     // To explain it, the first rule means:
-                    // if domOp is "X GE Y" and treeOp is "X LE Y" than treeOp is implied by domOp
-                    { GT_GE, GT_LE, ValueNumStore::VN_RELATION_KIND::VRK_Same},
-                    { GT_GE, GT_EQ, ValueNumStore::VN_RELATION_KIND::VRK_Same},
-                    { GT_LE, GT_LE, ValueNumStore::VN_RELATION_KIND::VRK_Same},
-                    { GT_LE, GT_EQ, ValueNumStore::VN_RELATION_KIND::VRK_Same},
-                    { GT_EQ, GT_LE, ValueNumStore::VN_RELATION_KIND::VRK_Same},
-                    { GT_EQ, GT_GE, ValueNumStore::VN_RELATION_KIND::VRK_Same},
+                    // if domOp is "X GE Y" and treeOp is "X LE Y" then treeOp is implied by domOp
+                    {GT_GE, GT_LE, ValueNumStore::VN_RELATION_KIND::VRK_Same},
+                    {GT_GE, GT_EQ, ValueNumStore::VN_RELATION_KIND::VRK_Same},
+                    {GT_LE, GT_LE, ValueNumStore::VN_RELATION_KIND::VRK_Same},
+                    {GT_LE, GT_EQ, ValueNumStore::VN_RELATION_KIND::VRK_Same},
+                    {GT_EQ, GT_LE, ValueNumStore::VN_RELATION_KIND::VRK_Same},
+                    {GT_EQ, GT_GE, ValueNumStore::VN_RELATION_KIND::VRK_Same},
                     // TODO: more rules
                 };
 
@@ -211,7 +210,7 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
                 {
                     if ((rule.domOper == domOper) && (rule.treeOper == treeOper))
                     {
-                        rii->canInfer = true;
+                        rii->canInfer   = true;
                         rii->vnRelation = rule.relationKind;
                         return;
                     }
