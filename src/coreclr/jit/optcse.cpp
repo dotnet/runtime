@@ -789,9 +789,8 @@ bool Compiler::optValnumCSE_Locate()
                 {
                     if (!enableConstCSE &&
                         // Unconditionally allow these constant handles to be CSE'd
-                        !tree->IsIconHandle(GTF_ICON_FIELD_HDL) && !tree->IsIconHandle(GTF_ICON_STATIC_HDL) &&
-                        !tree->IsIconHandle(GTF_ICON_CLASS_HDL) && !tree->IsIconHandle(GTF_ICON_STR_HDL) &&
-                        !tree->IsIconHandle(GTF_ICON_CONST_PTR) && !tree->IsIconHandle(GTF_ICON_GLOBAL_PTR))
+                        !tree->IsIconHandle(GTF_ICON_STATIC_HDL) && !tree->IsIconHandle(GTF_ICON_CLASS_HDL) &&
+                        !tree->IsIconHandle(GTF_ICON_STR_HDL))
                     {
                         continue;
                     }
