@@ -732,28 +732,6 @@ namespace ILCompiler
         }
 
         /// <summary>
-        /// Return true when the type in question is marked with the NonVersionable attribute.
-        /// </summary>
-        /// <param name="type">Type to check</param>
-        /// <returns>True when the type is marked with the non-versionable custom attribute, false otherwise.</returns>
-        public static bool IsNonVersionable(this MetadataType type)
-        {
-            return type.HasCustomAttribute("System.Runtime.Versioning", "NonVersionableAttribute");
-        }
-
-        /// <summary>
-        /// Return true when the method is marked as non-versionable. Non-versionable methods
-        /// may be freely inlined into ReadyToRun images even when they don't reside in the
-        /// same version bubble as the module being compiled.
-        /// </summary>
-        /// <param name="method">Method to check</param>
-        /// <returns>True when the method is marked as non-versionable, false otherwise.</returns>
-        public static bool IsNonVersionable(this MethodDesc method)
-        {
-            return method.HasCustomAttribute("System.Runtime.Versioning", "NonVersionableAttribute");
-        }
-
-        /// <summary>
         /// Returns true if <paramref name="method"/> is an actual native entrypoint.
         /// There's a distinction between when a method reports it's a PInvoke in the metadata
         /// versus how it's treated in the compiler. For many PInvoke methods the compiler will generate

@@ -351,7 +351,7 @@ namespace System.Data.SqlTypes
                 throw new SqlTypeException(SQLResource.ConcatDiffCollationMessage);
 
             return new SqlString(x.m_lcid, x.m_flag, x.m_value + y.m_value,
-                    (x.m_cmpInfo == null) ? y.m_cmpInfo : x.m_cmpInfo);
+                    x.m_cmpInfo ?? y.m_cmpInfo);
         }
 
         // StringCompare: Common compare function which is used by Compare and CompareTo

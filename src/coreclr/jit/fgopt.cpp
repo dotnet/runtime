@@ -3221,8 +3221,10 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
         if (verbose)
         {
             printf("\nConverting a switch (" FMT_BB ") with only one significant clause besides a default target to a "
-                   "conditional branch\n",
+                   "conditional branch. Before:\n",
                    block->bbNum);
+
+            gtDispTree(switchTree);
         }
 #endif // DEBUG
 
@@ -3246,6 +3248,9 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
 
         block->bbJumpDest = block->bbJumpSwt->bbsDstTab[0];
         block->bbJumpKind = BBJ_COND;
+
+        JITDUMP("After:\n");
+        DISPNODE(switchTree);
 
         return true;
     }

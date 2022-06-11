@@ -61,11 +61,11 @@ namespace System.Text.RegularExpressions.Symbolic
                         // Singletons and multis
 
                         case RegexNodeKind.One:
-                            result.AddLast(_builder.CreateSingleton(_builder._solver.CreateFromChar(node.Ch)));
+                            result.AddLast(_builder.CreateSingleton(_builder._charSetSolver.CreateBDDFromChar(node.Ch)));
                             break;
 
                         case RegexNodeKind.Notone:
-                            result.AddLast(_builder.CreateSingleton(_builder._solver.Not(_builder._solver.CreateFromChar(node.Ch))));
+                            result.AddLast(_builder.CreateSingleton(_builder._solver.Not(_builder._charSetSolver.CreateBDDFromChar(node.Ch))));
                             break;
 
                         case RegexNodeKind.Set:
@@ -79,7 +79,7 @@ namespace System.Text.RegularExpressions.Symbolic
                                 Debug.Assert(str is not null);
                                 foreach (char c in str)
                                 {
-                                    result.AddLast(_builder.CreateSingleton(_builder._solver.CreateFromChar(c)));
+                                    result.AddLast(_builder.CreateSingleton(_builder._charSetSolver.CreateBDDFromChar(c)));
                                 }
                                 break;
                             }
@@ -115,7 +115,7 @@ namespace System.Text.RegularExpressions.Symbolic
                         case RegexNodeKind.Notonelazy:
                             {
                                 // Create a BDD that represents the character, then create a loop around it.
-                                BDD bdd = _builder._solver.CreateFromChar(node.Ch);
+                                BDD bdd = _builder._charSetSolver.CreateBDDFromChar(node.Ch);
                                 if (node.IsNotoneFamily)
                                 {
                                     bdd = _builder._solver.Not(bdd);
@@ -239,7 +239,7 @@ namespace System.Text.RegularExpressions.Symbolic
                                     // If childResult is a non-singleton list, then it denotes a concatenation that must be constructed at this point.
                                     SymbolicRegexNode<BDD> elem = childResult.Count == 1 ?
                                         childResult.FirstElement :
-                                        _builder.CreateConcatAlreadyReversed(childResult.EnumerateLastToFirst());
+                                        _builder.CreateConcatAlreadyReversed(childResult);
                                     if (elem.IsNothing)
                                     {
                                         continue;
@@ -262,7 +262,7 @@ namespace System.Text.RegularExpressions.Symbolic
                                 // Convert a list of nodes into a concatenation
                                 SymbolicRegexNode<BDD> body = childResult.Count == 1 ?
                                     childResult.FirstElement :
-                                    _builder.CreateConcatAlreadyReversed(childResult.EnumerateLastToFirst());
+                                    _builder.CreateConcatAlreadyReversed(childResult);
                                 result.AddLast(_builder.CreateLoop(body, node.Kind == RegexNodeKind.Lazyloop, node.M, node.N));
                                 break;
                             }
@@ -292,14 +292,14 @@ namespace System.Text.RegularExpressions.Symbolic
 
             return rootResult.Count == 1 ?
                 rootResult.FirstElement :
-                _builder.CreateConcatAlreadyReversed(rootResult.EnumerateLastToFirst());
+                _builder.CreateConcatAlreadyReversed(rootResult);
 
             void EnsureNewlinePredicateInitialized()
             {
                 // Initialize the \n set in the builder if it has not been updated already
                 if (_builder._newLineSet.Equals(_builder._solver.Empty))
                 {
-                    _builder._newLineSet = _builder._solver.CreateFromChar('\n');
+                    _builder._newLineSet = _builder._charSetSolver.CreateBDDFromChar('\n');
                 }
             }
 
@@ -369,7 +369,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 {
                     foreach ((char first, char last) in ranges)
                     {
-                        BDD bdd = charSetSolver.CreateSetFromRange(first, last);
+                        BDD bdd = charSetSolver.CreateBDDFromRange(first, last);
                         if (negate)
                         {
                             bdd = charSetSolver.Not(bdd);

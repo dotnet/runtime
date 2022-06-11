@@ -1545,7 +1545,7 @@ namespace System.Xml.Serialization
 
             MemberMapping member = new MemberMapping();
             member.Elements = new ElementAccessor[] { xmlns };
-            member.Name = CodeIdentifier.MakeValid(xmlnsMemberName == null ? "Namespaces" : xmlnsMemberName);
+            member.Name = CodeIdentifier.MakeValid(xmlnsMemberName ?? "Namespaces");
             member.Name = membersScope.AddUnique(member.Name, member);
             members.Add(member.Name, member);
             member.TypeDesc = xmlnsTypeDesc;

@@ -92,7 +92,18 @@ StackFrameIterator::StackFrameIterator(Thread * pThreadToWalk, PInvokeTransition
 {
     STRESS_LOG0(LF_STACKWALK, LL_INFO10000, "----Init---- [ GC ]\n");
     ASSERT(!pThreadToWalk->DangerousCrossThreadIsHijacked());
-    InternalInit(pThreadToWalk, pInitialTransitionFrame, GcStackWalkFlags);
+
+#ifdef FEATURE_SUSPEND_REDIRECTION
+    if (pInitialTransitionFrame == REDIRECTED_THREAD_MARKER)
+    {
+        InternalInit(pThreadToWalk, pThreadToWalk->GetRedirectionContext(), GcStackWalkFlags | ActiveStackFrame);
+    }
+    else
+#endif
+    {
+        InternalInit(pThreadToWalk, pInitialTransitionFrame, GcStackWalkFlags);
+    }
+
     PrepareToYieldFrame();
 }
 
@@ -491,6 +502,112 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PAL_LIMITED_CO
     m_RegDisplay.pR9  = NULL;
     m_RegDisplay.pR10 = NULL;
     m_RegDisplay.pR11 = NULL;
+#endif // TARGET_AMD64
+#else
+    PORTABILITY_ASSERT("StackFrameIterator::InternalInit");
+#endif // TARGET_ARM
+}
+
+// Prepare to start a stack walk from the context listed in the supplied CONTEXT.
+// The supplied context can describe a location in either managed or unmanaged code.  In the
+// latter case the iterator is left in an invalid state when this function returns.
+void StackFrameIterator::InternalInit(Thread * pThreadToWalk, CONTEXT* pCtx, uint32_t dwFlags)
+{
+    ASSERT((dwFlags & MethodStateCalculated) == 0);
+
+    EnterInitialInvalidState(pThreadToWalk);
+
+    m_dwFlags = dwFlags;
+
+    // We need to walk the ExInfo chain in parallel with the stackwalk so that we know when we cross over
+    // exception throw points.  So we must find our initial point in the ExInfo chain here so that we can
+    // properly walk it in parallel.
+    ResetNextExInfoForSP(pCtx->GetSp());
+
+    // This codepath is used by the hijack stackwalk and we can get arbitrary ControlPCs from there.  If this
+    // context has a non-managed control PC, then we're done.
+    if (!m_pInstance->IsManaged(dac_cast<PTR_VOID>(pCtx->GetIp())))
+        return;
+
+    //
+    // control state
+    //
+    SetControlPC(dac_cast<PTR_VOID>(pCtx->GetIp()));
+    m_RegDisplay.SP   = pCtx->GetSp();
+    m_RegDisplay.IP   = pCtx->GetIp();
+
+#ifdef TARGET_ARM64
+
+    m_RegDisplay.pIP  = PTR_TO_MEMBER(CONTEXT, pCtx, Pc);
+
+    //
+    // preserved regs
+    //
+    m_RegDisplay.pX19 = PTR_TO_MEMBER(CONTEXT, pCtx, X19);
+    m_RegDisplay.pX20 = PTR_TO_MEMBER(CONTEXT, pCtx, X20);
+    m_RegDisplay.pX21 = PTR_TO_MEMBER(CONTEXT, pCtx, X21);
+    m_RegDisplay.pX22 = PTR_TO_MEMBER(CONTEXT, pCtx, X22);
+    m_RegDisplay.pX23 = PTR_TO_MEMBER(CONTEXT, pCtx, X23);
+    m_RegDisplay.pX24 = PTR_TO_MEMBER(CONTEXT, pCtx, X24);
+    m_RegDisplay.pX25 = PTR_TO_MEMBER(CONTEXT, pCtx, X25);
+    m_RegDisplay.pX26 = PTR_TO_MEMBER(CONTEXT, pCtx, X26);
+    m_RegDisplay.pX27 = PTR_TO_MEMBER(CONTEXT, pCtx, X27);
+    m_RegDisplay.pX28 = PTR_TO_MEMBER(CONTEXT, pCtx, X28);
+    m_RegDisplay.pFP = PTR_TO_MEMBER(CONTEXT, pCtx, Fp);
+    m_RegDisplay.pLR = PTR_TO_MEMBER(CONTEXT, pCtx, Lr);
+
+    //
+    // scratch regs
+    //
+    m_RegDisplay.pX0 = PTR_TO_MEMBER(CONTEXT, pCtx, X0);
+    m_RegDisplay.pX1 = PTR_TO_MEMBER(CONTEXT, pCtx, X1);
+    m_RegDisplay.pX2 = PTR_TO_MEMBER(CONTEXT, pCtx, X2);
+    m_RegDisplay.pX3 = PTR_TO_MEMBER(CONTEXT, pCtx, X3);
+    m_RegDisplay.pX4 = PTR_TO_MEMBER(CONTEXT, pCtx, X4);
+    m_RegDisplay.pX5 = PTR_TO_MEMBER(CONTEXT, pCtx, X5);
+    m_RegDisplay.pX6 = PTR_TO_MEMBER(CONTEXT, pCtx, X6);
+    m_RegDisplay.pX7 = PTR_TO_MEMBER(CONTEXT, pCtx, X7);
+    m_RegDisplay.pX8 = PTR_TO_MEMBER(CONTEXT, pCtx, X8);
+    m_RegDisplay.pX9 = PTR_TO_MEMBER(CONTEXT, pCtx, X9);
+    m_RegDisplay.pX10 = PTR_TO_MEMBER(CONTEXT, pCtx, X10);
+    m_RegDisplay.pX11 = PTR_TO_MEMBER(CONTEXT, pCtx, X11);
+    m_RegDisplay.pX12 = PTR_TO_MEMBER(CONTEXT, pCtx, X12);
+    m_RegDisplay.pX13 = PTR_TO_MEMBER(CONTEXT, pCtx, X13);
+    m_RegDisplay.pX14 = PTR_TO_MEMBER(CONTEXT, pCtx, X14);
+    m_RegDisplay.pX15 = PTR_TO_MEMBER(CONTEXT, pCtx, X15);
+    m_RegDisplay.pX16 = PTR_TO_MEMBER(CONTEXT, pCtx, X16);
+    m_RegDisplay.pX17 = PTR_TO_MEMBER(CONTEXT, pCtx, X17);
+    m_RegDisplay.pX18 = PTR_TO_MEMBER(CONTEXT, pCtx, X18);
+
+#elif defined(TARGET_X86) || defined(TARGET_AMD64)
+
+    m_RegDisplay.pIP  = (PTR_PCODE)PTR_TO_MEMBER(CONTEXT, pCtx, Rip);
+
+    //
+    // preserved regs
+    //
+    m_RegDisplay.pRbp = (PTR_UIntNative)PTR_TO_MEMBER(CONTEXT, pCtx, Rbp);
+    m_RegDisplay.pRsi = (PTR_UIntNative)PTR_TO_MEMBER(CONTEXT, pCtx, Rsi);
+    m_RegDisplay.pRdi = (PTR_UIntNative)PTR_TO_MEMBER(CONTEXT, pCtx, Rdi);
+    m_RegDisplay.pRbx = (PTR_UIntNative)PTR_TO_MEMBER(CONTEXT, pCtx, Rbx);
+#ifdef TARGET_AMD64     
+    m_RegDisplay.pR12 = (PTR_UIntNative)PTR_TO_MEMBER(CONTEXT, pCtx, R12);
+    m_RegDisplay.pR13 = (PTR_UIntNative)PTR_TO_MEMBER(CONTEXT, pCtx, R13);
+    m_RegDisplay.pR14 = (PTR_UIntNative)PTR_TO_MEMBER(CONTEXT, pCtx, R14);
+    m_RegDisplay.pR15 = (PTR_UIntNative)PTR_TO_MEMBER(CONTEXT, pCtx, R15);
+#endif // TARGET_AMD64  
+                        
+    //                  
+    // scratch regs     
+    //                  
+    m_RegDisplay.pRax = (PTR_UIntNative)PTR_TO_MEMBER(CONTEXT, pCtx, Rax);
+    m_RegDisplay.pRcx = (PTR_UIntNative)PTR_TO_MEMBER(CONTEXT, pCtx, Rcx);
+    m_RegDisplay.pRdx = (PTR_UIntNative)PTR_TO_MEMBER(CONTEXT, pCtx, Rdx);
+#ifdef TARGET_AMD64     
+    m_RegDisplay.pR8  = (PTR_UIntNative)PTR_TO_MEMBER(CONTEXT, pCtx, R8);
+    m_RegDisplay.pR9  = (PTR_UIntNative)PTR_TO_MEMBER(CONTEXT, pCtx, R9);
+    m_RegDisplay.pR10 = (PTR_UIntNative)PTR_TO_MEMBER(CONTEXT, pCtx, R10);
+    m_RegDisplay.pR11 = (PTR_UIntNative)PTR_TO_MEMBER(CONTEXT, pCtx, R11);
 #endif // TARGET_AMD64
 #else
     PORTABILITY_ASSERT("StackFrameIterator::InternalInit");
@@ -1290,7 +1407,7 @@ void StackFrameIterator::NextInternal()
 {
 UnwindOutOfCurrentManagedFrame:
     ASSERT(m_dwFlags & MethodStateCalculated);
-    m_dwFlags &= ~(ExCollide|MethodStateCalculated|UnwoundReversePInvoke);
+    m_dwFlags &= ~(ExCollide|MethodStateCalculated|UnwoundReversePInvoke|ActiveStackFrame);
     ASSERT(IsValid());
 
     m_pHijackedReturnValue = NULL;
@@ -1638,6 +1755,12 @@ MethodInfo * StackFrameIterator::GetMethodInfo()
 {
     ASSERT(IsValid());
     return &m_methodInfo;
+}
+
+bool StackFrameIterator::IsActiveStackFrame()
+{
+    ASSERT(IsValid());
+    return (m_dwFlags & ActiveStackFrame) != 0;
 }
 
 #ifdef DACCESS_COMPILE

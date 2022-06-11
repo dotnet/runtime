@@ -14,7 +14,7 @@ namespace System.Reflection.Internal
         /// <summary>
         /// Pointer to the underlying data (not valid after disposal).
         /// </summary>
-        public unsafe abstract byte* Pointer { get; }
+        public abstract unsafe byte* Pointer { get; }
 
         /// <summary>
         /// Size of the block.
@@ -32,7 +32,7 @@ namespace System.Reflection.Internal
         /// Only creates a copy of the data if they are not represented by a managed byte array,
         /// or if the specified range doesn't span the entire block.
         /// </remarks>
-        public unsafe virtual ImmutableArray<byte> GetContentUnchecked(int start, int length)
+        public virtual unsafe ImmutableArray<byte> GetContentUnchecked(int start, int length)
         {
             var result = BlobUtilities.ReadImmutableBytes(Pointer + start, length);
             GC.KeepAlive(this);

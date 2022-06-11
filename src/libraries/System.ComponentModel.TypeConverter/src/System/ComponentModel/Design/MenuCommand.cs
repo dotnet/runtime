@@ -89,7 +89,7 @@ namespace System.ComponentModel.Design
             }
         }
 
-        public virtual IDictionary Properties => _properties ?? (_properties = new HybridDictionary());
+        public virtual IDictionary Properties => _properties ??= new HybridDictionary();
 
         /// <summary>
         /// Gets or sets a value indicating whether this menu item is supported.

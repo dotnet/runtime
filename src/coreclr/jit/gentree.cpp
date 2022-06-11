@@ -6745,8 +6745,8 @@ GenTree* Compiler::gtNewIndOfIconHandleNode(var_types indType, size_t addr, GenT
 
 GenTree* Compiler::gtNewIconEmbHndNode(void* value, void* pValue, GenTreeFlags iconFlags, void* compileTimeHandle)
 {
-    GenTree* iconNode;
-    GenTree* handleNode;
+    GenTreeIntCon* iconNode;
+    GenTree*       handleNode;
 
     if (value != nullptr)
     {
@@ -6779,7 +6779,13 @@ GenTree* Compiler::gtNewIconEmbHndNode(void* value, void* pValue, GenTreeFlags i
         handleNode->gtFlags |= GTF_IND_INVARIANT;
     }
 
-    iconNode->AsIntCon()->gtCompileTimeHandle = (size_t)compileTimeHandle;
+    iconNode->gtCompileTimeHandle = (size_t)compileTimeHandle;
+#ifdef DEBUG
+    if (iconFlags == GTF_ICON_FTN_ADDR)
+    {
+        iconNode->gtTargetHandle = (size_t)compileTimeHandle;
+    }
+#endif
 
     return handleNode;
 }
@@ -15711,15 +15717,6 @@ void Compiler::gtExtractSideEffList(GenTree*     expr,
                         (node->gtGetOp1()->TypeGet() == TYP_STRUCT))
                     {
                         JITDUMP("Keep the GT_ADDR and GT_IND together:\n");
-                        PushSideEffects(node);
-                        return Compiler::WALK_SKIP_SUBTREES;
-                    }
-
-                    // TODO-ADDR: remove this quirk added to avoid diffs.
-                    if (node->OperIs(GT_IND) && node->AsIndir()->Addr()->OperIs(GT_INDEX_ADDR) &&
-                        !m_compiler->fgGlobalMorph)
-                    {
-                        JITDUMP("Keep the GT_INDEX_ADDR and GT_IND together:\n");
                         PushSideEffects(node);
                         return Compiler::WALK_SKIP_SUBTREES;
                     }

@@ -177,8 +177,7 @@ namespace System.Data.OleDb
             get
             {
                 OleDbConnectionString? constr = this.OleDbConnectionStringValue;
-                string? value = ((null != constr) ? constr.ConvertValueToString(ODB.Provider, null) : null);
-                return ((null != value) ? value : string.Empty);
+                return constr?.ConvertValueToString(ODB.Provider, null) ?? string.Empty;
             }
         }
 

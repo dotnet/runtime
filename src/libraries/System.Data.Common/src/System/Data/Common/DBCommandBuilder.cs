@@ -477,8 +477,7 @@ namespace System.Data.Common
         {
             get
             {
-                string? quoteSuffix = _quoteSuffix;
-                return ((null != quoteSuffix) ? quoteSuffix : string.Empty);
+                return (_quoteSuffix ?? string.Empty);
             }
             set
             {

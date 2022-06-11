@@ -1050,7 +1050,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 // get the dns name of the domain
                 DomainControllerInfo domainControllerInfo;
-                int errorCode = Locator.DsGetDcNameWrapper(null, (domainName != null) ? domainName : DirectoryContext.GetLoggedOnDomain(), null, (long)PrivateLocatorFlags.DirectoryServicesRequired, out domainControllerInfo);
+                int errorCode = Locator.DsGetDcNameWrapper(null, domainName ?? DirectoryContext.GetLoggedOnDomain(), null, (long)PrivateLocatorFlags.DirectoryServicesRequired, out domainControllerInfo);
 
                 if (errorCode == NativeMethods.ERROR_NO_SUCH_DOMAIN)
                 {

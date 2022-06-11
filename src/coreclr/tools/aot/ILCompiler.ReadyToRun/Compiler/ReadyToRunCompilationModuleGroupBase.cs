@@ -6,10 +6,12 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
+using ILCompiler.DependencyAnalysis;
+using ILCompiler.DependencyAnalysis.ReadyToRun;
+using Internal.IL;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 using Internal.TypeSystem.Interop;
-using ILCompiler.DependencyAnalysis.ReadyToRun;
 using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler
@@ -39,6 +41,7 @@ namespace ILCompiler
         private readonly Dictionary<ModuleDesc, CompilationUnitIndex> _moduleCompilationUnits = new Dictionary<ModuleDesc, CompilationUnitIndex>();
         private CompilationUnitIndex _nextCompilationUnit = CompilationUnitIndex.FirstDynamicallyAssigned;
         private ModuleTokenResolver _tokenResolver = null;
+        private ConcurrentDictionary<EcmaMethod, bool> _tokenTranslationFreeNonVersionable = new ConcurrentDictionary<EcmaMethod, bool>();
 
         public ReadyToRunCompilationModuleGroupBase(ReadyToRunCompilationModuleGroupConfig config)
         {
@@ -342,9 +345,161 @@ namespace ILCompiler
             // (because otherwise we may not be able to encode its tokens)
             // and if the callee is either in the same version bubble or is marked as non-versionable.
             bool canInline = VersionsWithMethodBody(callerMethod) &&
-                (VersionsWithMethodBody(calleeMethod) || calleeMethod.IsNonVersionable());
+                (VersionsWithMethodBody(calleeMethod) || IsNonVersionableWithILTokensThatDoNotNeedTranslation(calleeMethod));
 
             return canInline;
+        }
+
+        public bool IsNonVersionableWithILTokensThatDoNotNeedTranslation(MethodDesc method)
+        {
+            if (!method.IsNonVersionable())
+                return false;
+
+            return _tokenTranslationFreeNonVersionable.GetOrAdd((EcmaMethod)method.GetTypicalMethodDefinition(), IsNonVersionableWithILTokensThatDoNotNeedTranslationUncached);
+        }
+
+        private bool IsNonVersionableWithILTokensThatDoNotNeedTranslationUncached(EcmaMethod method)
+        {
+            bool result = false;
+            try
+            {
+
+                // Validate that there are no tokens in the IL other than tokens associated with the following
+                // instructions with the 
+                // 1. ldfld, ldflda, and stfld to instance fields of NonVersionable structs and NonVersionable classes
+                // 2. cpobj, initobj, ldobj, stobj, ldelem, ldelema or sizeof, to NonVersionable structures, signature variables, pointers, function pointers, byrefs, classes, or arrays
+                // 3. stelem, to NonVersionable structures
+                // In addition, the method must not have any EH.
+                // The method may only have locals which are NonVersionable structures, or classes
+
+                MethodIL methodIL = new ReadyToRunILProvider().GetMethodIL(method);
+                if (methodIL.GetExceptionRegions().Length > 0)
+                    return false;
+
+                foreach (var local in methodIL.GetLocals())
+                {
+                    if (local.Type.IsPrimitive)
+                        continue;
+
+                    if (local.Type.IsArray)
+                        continue;
+
+                    if (local.Type.IsSignatureVariable)
+                        continue;
+                    MetadataType metadataType = local.Type as MetadataType;
+
+                    if (metadataType == null)
+                        return false;
+
+                    if (metadataType.IsValueType)
+                    {
+                        if (metadataType.IsNonVersionable())
+                            continue;
+                        else
+                            return false;
+                    }
+                }
+
+                ILReader ilReader = new ILReader(methodIL.GetILBytes());
+                while (ilReader.HasNext)
+                {
+                    ILOpcode opcode = ilReader.ReadILOpcode();
+                    switch (opcode)
+                    {
+                        case ILOpcode.ldfld:
+                        case ILOpcode.ldflda:
+                        case ILOpcode.stfld:
+                            {
+                                int token = ilReader.ReadILToken();
+                                FieldDesc field = methodIL.GetObject(token) as FieldDesc;
+                                if (field == null)
+                                    return false;
+                                if (field.IsStatic)
+                                    return false;
+                                MetadataType owningMetadataType = (MetadataType)field.OwningType;
+                                if (!owningMetadataType.IsNonVersionable())
+                                    return false;
+                                break;
+                            }
+
+                        case ILOpcode.ldelem:
+                        case ILOpcode.ldelema:
+                        case ILOpcode.stobj:
+                        case ILOpcode.ldobj:
+                        case ILOpcode.initobj:
+                        case ILOpcode.cpobj:
+                        case ILOpcode.sizeof_:
+                            {
+                                int token = ilReader.ReadILToken();
+                                TypeDesc type = methodIL.GetObject(token) as TypeDesc;
+                                if (type == null)
+                                    return false;
+
+                                MetadataType metadataType = type as MetadataType;
+                                if (metadataType == null)
+                                    continue; // Types which are not metadata types are all well defined in size
+
+                                if (!metadataType.IsValueType)
+                                    continue; // Reference types are all well defined in size for the sizeof instruction
+
+                                if (metadataType.IsNonVersionable())
+                                    continue;
+                                return false;
+                            }
+
+                        case ILOpcode.stelem:
+                            {
+                                int token = ilReader.ReadILToken();
+                                MetadataType type = methodIL.GetObject(token) as MetadataType;
+                                if (type == null)
+                                    return false;
+
+                                if (!type.IsValueType)
+                                    return false;
+                                if (!type.IsNonVersionable())
+                                    return false;
+                                break;
+                            }
+
+                        // IL instructions which refer to tokens which are not safe for NonVersionable methods
+                        case ILOpcode.box:
+                        case ILOpcode.call:
+                        case ILOpcode.calli:
+                        case ILOpcode.callvirt:
+                        case ILOpcode.castclass:
+                        case ILOpcode.jmp:
+                        case ILOpcode.isinst:
+                        case ILOpcode.ldstr:
+                        case ILOpcode.ldsfld:
+                        case ILOpcode.ldsflda:
+                        case ILOpcode.ldtoken:
+                        case ILOpcode.ldvirtftn:
+                        case ILOpcode.ldftn:
+                        case ILOpcode.mkrefany:
+                        case ILOpcode.newarr:
+                        case ILOpcode.newobj:
+                        case ILOpcode.refanyval:
+                        case ILOpcode.stsfld:
+                        case ILOpcode.unbox:
+                        case ILOpcode.unbox_any:
+                        case ILOpcode.constrained:
+                            return false;
+
+                        default:
+                            // Unless its a opcode known to be permitted with a 
+                            ilReader.Skip(opcode);
+                            break;
+                    }
+                }
+
+                result = true;
+            }
+            catch (TypeSystemException)
+            {
+                return false;
+            }
+
+            return result;
         }
 
         public sealed override bool GeneratesPInvoke(MethodDesc method)
