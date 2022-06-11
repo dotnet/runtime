@@ -115,9 +115,9 @@ namespace System.Threading
             if (NativeRuntimeEventSource.Log.IsEnabled())
             {
                 NativeRuntimeEventSource.Log.ThreadPoolMinMaxThreads(
-                    (ushort)_minThreads, 
-                    (ushort)_maxThreads, 
-                    (ushort)_legacy_minIOCompletionThreads, 
+                    (ushort)_minThreads,
+                    (ushort)_maxThreads,
+                    (ushort)_legacy_minIOCompletionThreads,
                     (ushort)_legacy_maxIOCompletionThreads);
             }
 
@@ -200,9 +200,9 @@ namespace System.Threading
                 if (NativeRuntimeEventSource.Log.IsEnabled())
                 {
                     NativeRuntimeEventSource.Log.ThreadPoolMinMaxThreads(
-                        (ushort)_minThreads, 
-                        (ushort)_maxThreads, 
-                        (ushort)_legacy_minIOCompletionThreads, 
+                        (ushort)_minThreads,
+                        (ushort)_maxThreads,
+                        (ushort)_legacy_minIOCompletionThreads,
                         (ushort)_legacy_maxIOCompletionThreads);
                 }
             }
@@ -279,9 +279,9 @@ namespace System.Threading
                 if (NativeRuntimeEventSource.Log.IsEnabled())
                 {
                     NativeRuntimeEventSource.Log.ThreadPoolMinMaxThreads(
-                        (ushort)_minThreads, 
-                        (ushort)_maxThreads, 
-                        (ushort)_legacy_minIOCompletionThreads, 
+                        (ushort)_minThreads,
+                        (ushort)_maxThreads,
+                        (ushort)_legacy_minIOCompletionThreads,
                         (ushort)_legacy_maxIOCompletionThreads);
                 }
                 return true;
