@@ -831,8 +831,8 @@ namespace System.Configuration
         {
             Debug.Assert(elem != null);
 
-            if ((s_perTypeValidators != null) && s_perTypeValidators.ContainsKey(elem.GetType()))
-                elem._elementProperty = new ConfigurationElementProperty(s_perTypeValidators[elem.GetType()]);
+            if ((s_perTypeValidators != null) && s_perTypeValidators.TryGetValue(elem.GetType(), out ConfigurationValidatorBase value))
+                elem._elementProperty = new ConfigurationElementProperty(value);
         }
 
         protected void SetPropertyValue(ConfigurationProperty prop, object value, bool ignoreLocks)

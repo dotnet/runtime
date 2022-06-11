@@ -12,16 +12,8 @@
     <EnableAOTAnalyzer>true</EnableAOTAnalyzer>
     <PackageDescription>Provides high-performance and low-allocating types that serialize objects to JavaScript Object Notation (JSON) text and deserialize JSON text to objects, with UTF-8 support built-in. Also provides types to read and write JSON text encoded as UTF-8, and to create an in-memory document object model (DOM), that is read-only, for random access of the JSON elements within a structured view of the data.
 
-Commonly Used Types:
-System.Text.Json.JsonSerializer
-System.Text.Json.JsonDocument
-System.Text.Json.JsonElement
-System.Text.Json.Utf8JsonWriter
-System.Text.Json.Utf8JsonReader
-System.Text.Json.Nodes.JsonNode
-System.Text.Json.Nodes.JsonArray
-System.Text.Json.Nodes.JsonObject
-System.Text.Json.Nodes.JsonValue</PackageDescription>
+The System.Text.Json library is built-in as part of the shared framework in .NET Runtime. The package can be installed when you need to use it in other target frameworks.</PackageDescription>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
@@ -319,6 +311,7 @@ System.Text.Json.Nodes.JsonValue</PackageDescription>
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.UnsignedNumber.cs" />
     <Compile Include="System\ReflectionExtensions.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
+    <None Include="README.md" Pack="true" PackagePath="\"/>
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">

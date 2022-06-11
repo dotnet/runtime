@@ -536,7 +536,7 @@ namespace System.Speech.Internal.Synthesis
         /// </summary>
         internal TTSVoice GetEngine(string name, CultureInfo culture, VoiceGender gender, VoiceAge age, int variant, bool switchContext)
         {
-            TTSVoice defaultVoice = _currentVoice != null ? _currentVoice : GetVoice(switchContext);
+            TTSVoice defaultVoice = _currentVoice ?? GetVoice(switchContext);
 
             return GetEngineWithVoice(defaultVoice, null, name, culture, gender, age, variant, switchContext);
         }
@@ -758,7 +758,7 @@ namespace System.Speech.Internal.Synthesis
                                         List<LexiconEntry> lexicons = new();
 
                                         //--- Create a single speak info structure for all the text
-                                        TTSVoice voice = _currentVoice != null ? _currentVoice : GetVoice(false);
+                                        TTSVoice voice = _currentVoice ?? GetVoice(false);
                                         //--- Create the speak info
 
                                         SpeakInfo speakInfo = new(this, voice);
