@@ -97,18 +97,6 @@ namespace System.Formats.Tar
                 _linkName = paxEaLinkName;
             }
 
-            // PAX has no 'atime' header field, so it is always stored in the extended attributes
-            if (TarHelpers.TryGetDateTimeOffsetFromTimestampString(_extendedAttributes, PaxEaATime, out DateTimeOffset aTime))
-            {
-                _aTime = aTime;
-            }
-
-            // PAX has no 'ctime' header field, so it is always stored in the extended attributes
-            if (TarHelpers.TryGetDateTimeOffsetFromTimestampString(_extendedAttributes, PaxEaCTime, out DateTimeOffset cTime))
-            {
-                _cTime = cTime;
-            }
-
             // The 'mtime' header field only fits 12 bytes, so a more precise timestamp goes in the extended attributes
             if (TarHelpers.TryGetDateTimeOffsetFromTimestampString(_extendedAttributes, PaxEaMTime, out DateTimeOffset mTime))
             {
