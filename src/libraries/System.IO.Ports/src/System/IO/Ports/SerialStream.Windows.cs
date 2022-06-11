@@ -765,14 +765,12 @@ namespace System.IO.Ports
                     // If we are disposing synchronize closing with raising SerialPort events
                     if (disposing)
                     {
-#pragma warning disable CA2002
                         lock (this)
                         {
                             _handle.Close();
                             _handle = null;
                             _threadPoolBinding.Dispose();
                         }
-#pragma warning restore CA2002
                     }
                     else
                     {
