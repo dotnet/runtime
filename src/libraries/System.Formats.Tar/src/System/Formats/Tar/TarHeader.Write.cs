@@ -397,9 +397,24 @@ namespace System.Formats.Tar
             _extendedAttributes ??= new Dictionary<string, string>();
             _extendedAttributes.Add(PaxEaName, _name);
 
-            AddTimestampAsUnixSeconds(_extendedAttributes, PaxEaATime, _aTime);
-            AddTimestampAsUnixSeconds(_extendedAttributes, PaxEaCTime, _cTime);
-            AddTimestampAsUnixSeconds(_extendedAttributes, PaxEaMTime, _mTime);
+            bool containsATime = _extendedAttributes.ContainsKey(PaxEaATime);
+            bool containsCTime = _extendedAttributes.ContainsKey(PaxEaATime);
+            if (!containsATime || !containsCTime)
+            {
+                DateTimeOffset now = DateTimeOffset.UtcNow;
+                if (!containsATime)
+                {
+                    AddTimestampAsUnixSeconds(_extendedAttributes, PaxEaATime, now);
+                }
+                if (!containsCTime)
+                {
+                    AddTimestampAsUnixSeconds(_extendedAttributes, PaxEaCTime, now);
+                }
+            }
+            if (!_extendedAttributes.ContainsKey(PaxEaMTime))
+            {
+                AddTimestampAsUnixSeconds(_extendedAttributes, PaxEaMTime, _mTime);
+            }
             TryAddStringField(_extendedAttributes, PaxEaGName, _gName, FieldLengths.GName);
             TryAddStringField(_extendedAttributes, PaxEaUName, _uName, FieldLengths.UName);
 
@@ -416,11 +431,7 @@ namespace System.Formats.Tar
             // Adds the specified datetime to the dictionary as a decimal number.
             static void AddTimestampAsUnixSeconds(Dictionary<string, string> extendedAttributes, string key, DateTimeOffset value)
             {
-                // Avoid overwriting if the user already added it before
-                if (!extendedAttributes.ContainsKey(key))
-                {
-                    extendedAttributes.Add(key, TarHelpers.GetTimestampStringFromDateTimeOffset(value));
-                }
+                extendedAttributes.Add(key, TarHelpers.GetTimestampStringFromDateTimeOffset(value));
             }
 
             // Adds the specified string to the dictionary if it's longer than the specified max byte length.
