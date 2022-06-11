@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -10,7 +11,6 @@ using System.Threading.Tasks;
 using System.Threading.Tests;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
-using System.Diagnostics.Tracing;
 
 namespace System.Threading.ThreadPools.Tests
 {
