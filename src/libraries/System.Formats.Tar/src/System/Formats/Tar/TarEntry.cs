@@ -27,7 +27,7 @@ namespace System.Formats.Tar
             _readerOfOrigin = readerOfOrigin;
         }
 
-        // Constructor called when creating a new TarEntry.
+        // Constructor called when the user creates a TarEntry instance from scratch.
         internal TarEntry(TarEntryType entryType, string entryName, TarEntryFormat format)
         {
             ArgumentException.ThrowIfNullOrEmpty(entryName);
@@ -48,6 +48,7 @@ namespace System.Formats.Tar
             _header._linkName = string.Empty;
         }
 
+        // Constructor called when converting an entry to the selected format.
         internal TarEntry(TarEntry other, TarEntryFormat format)
         {
             TarEntryType compatibleEntryType;

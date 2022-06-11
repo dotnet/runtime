@@ -16,6 +16,7 @@ namespace System.Formats.Tar
         {
         }
 
+        // Constructor called when the user creates a TarEntry instance from scratch.
         internal PosixTarEntry(TarEntryType entryType, string entryName, TarEntryFormat format)
             : base(entryType, entryName, format)
         {
@@ -25,11 +26,10 @@ namespace System.Formats.Tar
             _header._devMinor = 0;
         }
 
-        // Constructor called when creating a new TarEntry.
+        // Constructor called when converting an entry to the selected format.
         internal PosixTarEntry(TarEntry other, TarEntryFormat format)
             : base(other, format)
         {
-            // Avoid transferring if entry was V7
             if (other is PosixTarEntry)
             {
                 _header._uName = other._header._uName;

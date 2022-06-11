@@ -85,13 +85,13 @@ namespace System.Formats.Tar
 
             // Find all the extended attributes with known names and save them in the expected standard attribute.
 
-            // The 'name' header field only fits 100 bytes
+            // The 'name' header field only fits 100 bytes, so we always store the full name text to the dictionary.
             if (_extendedAttributes.TryGetValue(PaxEaName, out string? paxEaName))
             {
                 _name = paxEaName;
             }
 
-            // The 'linkName' header field only fits 100 bytes
+            // The 'linkName' header field only fits 100 bytes, so we always store the full linkName text to the dictionary.
             if (_extendedAttributes.TryGetValue(PaxEaLinkName, out string? paxEaLinkName))
             {
                 _linkName = paxEaLinkName;

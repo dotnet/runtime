@@ -151,7 +151,9 @@ namespace System.Formats.Tar
         // Determines if the current instance's entry type supports setting a data stream.
         internal override bool IsDataStreamSetterSupported() => EntryType == TarEntryType.RegularFile;
 
-        // Checks if the extended attributes dictionary contains 'atime' and 'ctime'. If any of them is not found, it is added with the value of either the current entry's 'mtime', or 'DateTimeOffset.UtcNow', depending on the value of 'useMTime'.
+        // Checks if the extended attributes dictionary contains 'atime' and 'ctime'.
+        // If any of them is not found, it is added with the value of either the current entry's 'mtime',
+        // or 'DateTimeOffset.UtcNow', depending on the value of 'useMTime'.
         private void AddNewAccessAndChangeTimestampsIfNotExist(bool useMTime)
         {
             Debug.Assert(_header._extendedAttributes != null);
