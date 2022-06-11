@@ -122,33 +122,6 @@ BOOL inline FitsInU4(unsigned __int64 val)
     return val == (unsigned __int64)(unsigned __int32)val;
 }
 
-// returns FALSE if overflow: otherwise, (*pa) is incremented by b
-BOOL inline SafeAddUINT32(UINT32 *pa, UINT32 b)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    UINT32 a = *pa;
-    if ( ((UINT32)(a + b)) < a)
-    {
-        return FALSE;
-    }
-    (*pa) += b;
-    return TRUE;
-}
-
-// returns FALSE if overflow: otherwise, (*pa) is incremented by b
-BOOL inline SafeAddULONG(ULONG *pa, ULONG b)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    ULONG a = *pa;
-    if ( ((ULONG)(a + b)) < a)
-    {
-        return FALSE;
-    }
-    (*pa) += b;
-    return TRUE;
-}
 
 
 //************************************************************************
