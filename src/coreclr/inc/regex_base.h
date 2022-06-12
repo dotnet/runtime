@@ -15,11 +15,6 @@
 //       internal GRETA regular expressions (http://toolbox/sites/987/default.aspx) because they
 //       both rely heavily on the STL, which can not currently be used within the CLR.
 //
-// NOTE: If this becomes non-debug-only, then read the comment on WCHARItemTraits for what
-//       what needs fixing.
-//
-
-//
 
 #ifndef _REGEX_BASE_H_
 #define _REGEX_BASE_H_
@@ -618,15 +613,7 @@ public:
     typedef typename ITEM_TRAITS::InputIterator InputIterator;
 
     // This is a convenience typedef that allows a caller to easily declare a grouping container
-    // to be passed to a call to Match. An example would be (see regex_util.h for a definition of
-    // SStringRegEx):
-    //
-    //      SString input(SL"Simmons");
-    //      SStringRegEx::GroupingContainer container;
-    //      if (SStringRegEx::Match(SL"(Sim+on)", input, container)) {
-    //          printf("%S", container[1].GetSString(input).GetUnicode());
-    //      }
-    //
+    // to be passed to a call to Match.
     typedef GroupContainer<InputIterator, Group<InputIterator> > GroupingContainer;
 
     // Pulls down the typedef for MatchFlags and initialized a static representing the default flags.
@@ -742,122 +729,6 @@ protected:
     //   static Item GetItem(const RegexIterator& regex, const RegexIterator& regexEnd);
     //   static bool MatchItem(const Item& c, const InputIterator& input, const InputIterator& inputEnd);
 };
-
-//=======================================================================================================
-// Implements ItemTraitsBase, provides matching for UNICODE characters.
-//
-// !!!IMPORTANT!!!
-// This is not a complete unicode implementation - only the equivalent of ASCII alpha characters are
-// consider to be part of the alpha set, and this is also the only set on which case insensitive
-// operations will correctly work. If RegEx is moved out of DEBUG ONLY, then this will have to be fixed
-// to properly address these issues.
-// !!!IMPORTANT!!!
-
-template <typename ITERATOR_TYPE>
-class WCHARItemTraits : public ItemTraitsBase<ITERATOR_TYPE, WCHAR>
-{
-public:
-    typedef ItemTraitsBase<ITERATOR_TYPE, WCHAR> PARENT_TYPE;
-    typedef typename PARENT_TYPE::RegexIterator RegexIterator;
-    typedef typename PARENT_TYPE::InputIterator InputIterator;
-    typedef typename PARENT_TYPE::Item          Item;
-    typedef typename PARENT_TYPE::MatchFlags    MatchFlags;
-
-    static Item GetItem(const RegexIterator& regex, const RegexIterator& regexEnd, MatchFlags flags);
-    static bool MatchItem(const Item& c, const InputIterator& input, const InputIterator& inputEnd, MatchFlags flags);
-
-protected:
-    WCHARItemTraits()
-        {}
-
-private:
-    static inline bool IS_UPPER_A_TO_Z(WCHAR x)
-        { WRAPPER_NO_CONTRACT; return (((x) >= W('A')) && ((x) <= W('Z'))); }
-
-    static inline bool IS_LOWER_A_TO_Z(WCHAR x)
-        { WRAPPER_NO_CONTRACT; return (((x) >= W('a')) && ((x) <= W('z'))); }
-
-    static inline WCHAR UPCASE(WCHAR x)
-        { WRAPPER_NO_CONTRACT; return (IS_LOWER_A_TO_Z(x) ? ((x) - W('a') + W('A')) : (x)); }
-
-    static inline WCHAR DOWNCASE(WCHAR x)
-        { WRAPPER_NO_CONTRACT; return (IS_UPPER_A_TO_Z(x) ? ((x) - W('A') + W('a')) : (x)); }
-
-    static bool MatchCharacter(WCHAR c1, WCHAR c2, MatchFlags flags)
-        { WRAPPER_NO_CONTRACT; return (flags & PARENT_TYPE::MF_CASE_INSENSITIVE) ? (DOWNCASE(c1) == DOWNCASE(c2)) : (c1 == c2); }
-};
-
-//-------------------------------------------------------------------------------------------------------
-// Reads the next item from regex, recognizing special characters outlined in ItemTraitsBase.
-
-template <typename ITERATOR_TYPE>
-typename WCHARItemTraits<ITERATOR_TYPE>::Item
-WCHARItemTraits<ITERATOR_TYPE>::GetItem(
-    const RegexIterator& regex,
-    const RegexIterator& regexEnd,
-    MatchFlags           flags)
-{
-    WRAPPER_NO_CONTRACT;
-
-    if (*regex == W('\\'))
-    {
-        const RegexIterator regexNext = regex+1;
-        if (regexNext == regexEnd)
-            return Item(PARENT_TYPE::CHARACTER, W('\\'), regexNext);
-        if (*regexNext == W('d'))
-            return Item(PARENT_TYPE::DIGIT, regexNext+1);
-        if (*regexNext == W('w'))
-            return Item(PARENT_TYPE::ALPHA, regexNext+1);
-        if (*regexNext == W('s'))
-            return Item(PARENT_TYPE::WHITESPACE, regexNext+1);
-        if (*regexNext == W('S'))
-            return Item(PARENT_TYPE::NON_WHITESPACE, regexNext+1);
-        return Item(PARENT_TYPE::CHARACTER, *regexNext, regexNext+1);
-    }
-    else if (*regex == W('.'))
-        return Item(PARENT_TYPE::DOT, W('.'), regex+1);
-    else if (*regex == W('^'))
-        return Item(PARENT_TYPE::CARET, W('^'), regex+1);
-    else if (*regex == W('$'))
-        return Item(PARENT_TYPE::DOLLAR, W('$'), regex+1);
-    else if (*regex == W('*'))
-        return Item(PARENT_TYPE::STAR, W('*'), regex+1);
-    else if (*regex == W('?'))
-        return Item(PARENT_TYPE::QUESTION_MARK, W('?'), regex+1);
-    else if (*regex == W('+'))
-        return Item(PARENT_TYPE::PLUS, W('+'), regex+1);
-    else if (*regex == W('('))
-        return Item(PARENT_TYPE::PAREN_OPEN, W('('), regex+1);
-    else if (*regex == W(')'))
-        return Item(PARENT_TYPE::PAREN_CLOSE, W(')'), regex+1);
-    else
-        return Item(PARENT_TYPE::CHARACTER, *regex, regex + 1);
-}
-
-//-------------------------------------------------------------------------------------------------------
-// Returns true if the next character point to by input matches the character class described by c.
-
-template <typename ITERATOR_TYPE>
-bool
-WCHARItemTraits<ITERATOR_TYPE>::MatchItem(
-    const Item& c,
-    const InputIterator& input,
-    const InputIterator& inputEnd,
-    MatchFlags           flags)
-{
-    WRAPPER_NO_CONTRACT;
-
-    if (c.GetType() == PARENT_TYPE::DIGIT)
-        return *input >= W('0') && *input <= W('9');
-    else if (c.GetType() == PARENT_TYPE::ALPHA)
-        return (*input >= W('a') && *input <= W('z')) || (*input >= W('A') && *input <= W('Z'));
-    else if (c.GetType() == PARENT_TYPE::WHITESPACE)
-        return *input == W(' ') || *input == W('\t');
-    else if (c.GetType() == PARENT_TYPE::NON_WHITESPACE)
-        return !(*input == W(' ') || *input == W('\t'));
-    else
-        return c.GetType() == PARENT_TYPE::DOT || MatchCharacter(c.GetValue(), *input, flags);
-}
 
 //=======================================================================================================
 // Implements ItemTraitsBase, provides matching for ASCII (*not* UTF8) characters.
