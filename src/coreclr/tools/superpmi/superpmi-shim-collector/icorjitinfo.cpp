@@ -1937,6 +1937,12 @@ bool interceptor_ICJI::logMsg(unsigned level, const char* fmt, va_list args)
 int interceptor_ICJI::doAssert(const char* szFile, int iLine, const char* szExpr)
 {
     mc->cr->AddCall("doAssert");
+
+    m_compiler->finalizeAndCommitCollection(mc, CORJIT_INTERNALERROR, nullptr, 0);
+    // The following assert may not always fail fast, so make sure we do not
+    // save the collection twice if it throws an unwindable exception.
+    m_savedCollectionEarly = true;
+
     return original_ICorJitInfo->doAssert(szFile, iLine, szExpr);
 }
 
@@ -2027,14 +2033,4 @@ uint32_t interceptor_ICJI::getExpectedTargetArchitecture()
 bool interceptor_ICJI::notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supported)
 {
     return original_ICorJitInfo->notifyInstructionSetUsage(instructionSet, supported);
-}
-
-bool interceptor_ICJI::doesFieldBelongToClass(
-    CORINFO_FIELD_HANDLE fldHnd,
-    CORINFO_CLASS_HANDLE cls)
-{
-    mc->cr->AddCall("doesFieldBelongToClass");
-    bool result = original_ICorJitInfo->doesFieldBelongToClass(fldHnd, cls);
-    mc->recDoesFieldBelongToClass(fldHnd, cls, result);
-    return result;
 }

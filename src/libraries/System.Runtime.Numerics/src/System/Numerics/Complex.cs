@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.Numerics
 {
@@ -799,6 +800,67 @@ namespace System.Numerics
             return new Complex(realResult, imaginaryResuilt);
         }
 
+        //
+        // Explicit Conversions To Complex
+        //
+
+        public static explicit operator Complex(decimal value)
+        {
+            return new Complex((double)value, 0.0);
+        }
+
+        /// <summary>Explicitly converts a <see cref="Int128" /> value to a double-precision complex number.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to a double-precision complex number.</returns>
+        public static explicit operator Complex(Int128 value)
+        {
+            return new Complex((double)value, 0.0);
+        }
+
+        public static explicit operator Complex(BigInteger value)
+        {
+            return new Complex((double)value, 0.0);
+        }
+
+        /// <summary>Explicitly converts a <see cref="UInt128" /> value to a double-precision complex number.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to a double-precision complex number.</returns>
+        [CLSCompliant(false)]
+        public static explicit operator Complex(UInt128 value)
+        {
+            return new Complex((double)value, 0.0);
+        }
+
+        //
+        // Implicit Conversions To Complex
+        //
+
+        public static implicit operator Complex(byte value)
+        {
+            return new Complex(value, 0.0);
+        }
+
+        /// <summary>Implicitly converts a <see cref="char" /> value to a double-precision complex number.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to a double-precision complex number.</returns>
+        public static implicit operator Complex(char value)
+        {
+            return new Complex(value, 0.0);
+        }
+
+        public static implicit operator Complex(double value)
+        {
+            return new Complex(value, 0.0);
+        }
+
+        /// <summary>Implicitly converts a <see cref="Half" /> value to a double-precision complex number.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to a double-precision complex number.</returns>
+        public static implicit operator Complex(Half value)
+        {
+            return new Complex((double)value, 0.0);
+        }
+
         public static implicit operator Complex(short value)
         {
             return new Complex(value, 0.0);
@@ -810,6 +872,25 @@ namespace System.Numerics
         }
 
         public static implicit operator Complex(long value)
+        {
+            return new Complex(value, 0.0);
+        }
+
+        /// <summary>Implicitly converts a <see cref="IntPtr" /> value to a double-precision complex number.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to a double-precision complex number.</returns>
+        public static implicit operator Complex(nint value)
+        {
+            return new Complex(value, 0.0);
+        }
+
+        [CLSCompliant(false)]
+        public static implicit operator Complex(sbyte value)
+        {
+            return new Complex(value, 0.0);
+        }
+
+        public static implicit operator Complex(float value)
         {
             return new Complex(value, 0.0);
         }
@@ -832,35 +913,13 @@ namespace System.Numerics
             return new Complex(value, 0.0);
         }
 
+        /// <summary>Implicitly converts a <see cref="UIntPtr" /> value to a double-precision complex number.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to a double-precision complex number.</returns>
         [CLSCompliant(false)]
-        public static implicit operator Complex(sbyte value)
+        public static implicit operator Complex(nuint value)
         {
             return new Complex(value, 0.0);
-        }
-
-        public static implicit operator Complex(byte value)
-        {
-            return new Complex(value, 0.0);
-        }
-
-        public static implicit operator Complex(float value)
-        {
-            return new Complex(value, 0.0);
-        }
-
-        public static implicit operator Complex(double value)
-        {
-            return new Complex(value, 0.0);
-        }
-
-        public static explicit operator Complex(BigInteger value)
-        {
-            return new Complex((double)value, 0.0);
-        }
-
-        public static explicit operator Complex(decimal value)
-        {
-            return new Complex((double)value, 0.0);
         }
 
         //
@@ -925,218 +984,32 @@ namespace System.Numerics
         /// <inheritdoc cref="INumberBase{TSelf}.One" />
         static Complex INumberBase<Complex>.One => new Complex(1.0, 0.0);
 
+        /// <inheritdoc cref="INumberBase{TSelf}.Radix" />
+        static int INumberBase<Complex>.Radix => 2;
+
         /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
         static Complex INumberBase<Complex>.Zero => new Complex(0.0, 0.0);
 
         /// <inheritdoc cref="INumberBase{TSelf}.Abs(TSelf)" />
         static Complex INumberBase<Complex>.Abs(Complex value) => Abs(value);
 
-        /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Complex CreateChecked<TOther>(TOther value)
-            where TOther : INumberBase<TOther>
-        {
-            if (typeof(TOther) == typeof(byte))
-            {
-                return (byte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(char))
-            {
-                return (char)(object)value;
-            }
-            else if (typeof(TOther) == typeof(decimal))
-            {
-                return (Complex)(decimal)(object)value;
-            }
-            else if (typeof(TOther) == typeof(double))
-            {
-                return (double)(object)value;
-            }
-            else if (typeof(TOther) == typeof(short))
-            {
-                return (short)(object)value;
-            }
-            else if (typeof(TOther) == typeof(int))
-            {
-                return (int)(object)value;
-            }
-            else if (typeof(TOther) == typeof(long))
-            {
-                return (long)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nint))
-            {
-                return (nint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(sbyte))
-            {
-                return (sbyte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(float))
-            {
-                return (float)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ushort))
-            {
-                return (ushort)(object)value;
-            }
-            else if (typeof(TOther) == typeof(uint))
-            {
-                return (uint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ulong))
-            {
-                return (ulong)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nuint))
-            {
-                return (nuint)(object)value;
-            }
-            else
-            {
-                ThrowHelper.ThrowNotSupportedException();
-                return default;
-            }
-        }
+        /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
+        static bool INumberBase<Complex>.IsCanonical(Complex value) => true;
 
-        /// <inheritdoc cref="INumberBase{TSelf}.CreateSaturating{TOther}(TOther)" />
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Complex CreateSaturating<TOther>(TOther value)
-            where TOther : INumberBase<TOther>
-        {
-            if (typeof(TOther) == typeof(byte))
-            {
-                return (byte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(char))
-            {
-                return (char)(object)value;
-            }
-            else if (typeof(TOther) == typeof(decimal))
-            {
-                return (Complex)(decimal)(object)value;
-            }
-            else if (typeof(TOther) == typeof(double))
-            {
-                return (double)(object)value;
-            }
-            else if (typeof(TOther) == typeof(short))
-            {
-                return (short)(object)value;
-            }
-            else if (typeof(TOther) == typeof(int))
-            {
-                return (int)(object)value;
-            }
-            else if (typeof(TOther) == typeof(long))
-            {
-                return (long)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nint))
-            {
-                return (nint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(sbyte))
-            {
-                return (sbyte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(float))
-            {
-                return (float)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ushort))
-            {
-                return (ushort)(object)value;
-            }
-            else if (typeof(TOther) == typeof(uint))
-            {
-                return (uint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ulong))
-            {
-                return (ulong)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nuint))
-            {
-                return (nuint)(object)value;
-            }
-            else
-            {
-                ThrowHelper.ThrowNotSupportedException();
-                return default;
-            }
-        }
+        /// <inheritdoc cref="INumberBase{TSelf}.IsComplexNumber(TSelf)" />
+        public static bool IsComplexNumber(Complex value) => (value.m_real != 0.0) && (value.m_imaginary != 0.0);
 
-        /// <inheritdoc cref="INumberBase{TSelf}.CreateTruncating{TOther}(TOther)" />
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Complex CreateTruncating<TOther>(TOther value)
-            where TOther : INumberBase<TOther>
-        {
-            if (typeof(TOther) == typeof(byte))
-            {
-                return (byte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(char))
-            {
-                return (char)(object)value;
-            }
-            else if (typeof(TOther) == typeof(decimal))
-            {
-                return (Complex)(decimal)(object)value;
-            }
-            else if (typeof(TOther) == typeof(double))
-            {
-                return (double)(object)value;
-            }
-            else if (typeof(TOther) == typeof(short))
-            {
-                return (short)(object)value;
-            }
-            else if (typeof(TOther) == typeof(int))
-            {
-                return (int)(object)value;
-            }
-            else if (typeof(TOther) == typeof(long))
-            {
-                return (long)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nint))
-            {
-                return (nint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(sbyte))
-            {
-                return (sbyte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(float))
-            {
-                return (float)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ushort))
-            {
-                return (ushort)(object)value;
-            }
-            else if (typeof(TOther) == typeof(uint))
-            {
-                return (uint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ulong))
-            {
-                return (ulong)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nuint))
-            {
-                return (nuint)(object)value;
-            }
-            else
-            {
-                ThrowHelper.ThrowNotSupportedException();
-                return default;
-            }
-        }
+        /// <inheritdoc cref="INumberBase{TSelf}.IsEvenInteger(TSelf)" />
+        public static bool IsEvenInteger(Complex value) => (value.m_imaginary == 0) && double.IsEvenInteger(value.m_real);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsImaginaryNumber(TSelf)" />
+        public static bool IsImaginaryNumber(Complex value) => (value.m_real == 0.0) && double.IsRealNumber(value.m_imaginary);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsInteger(TSelf)" />
+        public static bool IsInteger(Complex value) => (value.m_imaginary == 0) && double.IsInteger(value.m_real);
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsNegative(TSelf)" />
-        static bool INumberBase<Complex>.IsNegative(Complex value)
+        public static bool IsNegative(Complex value)
         {
             // since complex numbers do not have a well-defined concept of
             // negative we report false if this value has an imaginary part
@@ -1145,7 +1018,7 @@ namespace System.Numerics
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsNegativeInfinity(TSelf)" />
-        static bool INumberBase<Complex>.IsNegativeInfinity(Complex value)
+        public static bool IsNegativeInfinity(Complex value)
         {
             // since complex numbers do not have a well-defined concept of
             // negative we report false if this value has an imaginary part
@@ -1154,7 +1027,7 @@ namespace System.Numerics
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsNormal(TSelf)" />
-        static bool INumberBase<Complex>.IsNormal(Complex value)
+        public static bool IsNormal(Complex value)
         {
             // much as IsFinite requires both part to be finite, we require both
             // part to be "normal" (finite, non-zero, and non-subnormal) to be true
@@ -1163,8 +1036,20 @@ namespace System.Numerics
                 && ((value.m_imaginary == 0.0) || double.IsNormal(value.m_imaginary));
         }
 
+        /// <inheritdoc cref="INumberBase{TSelf}.IsOddInteger(TSelf)" />
+        public static bool IsOddInteger(Complex value) => (value.m_imaginary == 0) && double.IsOddInteger(value.m_real);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsPositive(TSelf)" />
+        public static bool IsPositive(Complex value)
+        {
+            // since complex numbers do not have a well-defined concept of
+            // negative we report false if this value has an imaginary part
+
+            return (value.m_imaginary == 0.0) && double.IsPositive(value.m_real);
+        }
+
         /// <inheritdoc cref="INumberBase{TSelf}.IsPositiveInfinity(TSelf)" />
-        static bool INumberBase<Complex>.IsPositiveInfinity(Complex value)
+        public static bool IsPositiveInfinity(Complex value)
         {
             // since complex numbers do not have a well-defined concept of
             // positive we report false if this value has an imaginary part
@@ -1172,14 +1057,20 @@ namespace System.Numerics
             return (value.m_imaginary == 0.0) && double.IsPositiveInfinity(value.m_real);
         }
 
+        /// <inheritdoc cref="INumberBase{TSelf}.IsRealNumber(TSelf)" />
+        public static bool IsRealNumber(Complex value) => (value.m_imaginary == 0.0) && double.IsRealNumber(value.m_real);
+
         /// <inheritdoc cref="INumberBase{TSelf}.IsSubnormal(TSelf)" />
-        static bool INumberBase<Complex>.IsSubnormal(Complex value)
+        public static bool IsSubnormal(Complex value)
         {
             // much as IsInfinite allows either part to be infinite, we allow either
             // part to be "subnormal" (finite, non-zero, and non-normal) to be true
 
             return double.IsSubnormal(value.m_real) || double.IsSubnormal(value.m_imaginary);
         }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsZero(TSelf)" />
+        static bool INumberBase<Complex>.IsZero(Complex value) => (value.m_real == 0.0) && (value.m_imaginary == 0.0);
 
         /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitude(TSelf, TSelf)" />
         public static Complex MaxMagnitude(Complex x, Complex y)
@@ -1562,85 +1453,617 @@ namespace System.Numerics
             return Parse(s.AsSpan(), style, provider);
         }
 
-        /// <inheritdoc cref="INumberBase{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool TryCreate<TOther>(TOther value, out Complex result)
+        static bool INumberBase<Complex>.TryConvertFromChecked<TOther>(TOther value, out Complex result)
+        {
+            return TryConvertFrom<TOther>(value, out result);
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromSaturating{TOther}(TOther, out TSelf)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<Complex>.TryConvertFromSaturating<TOther>(TOther value, out Complex result)
+        {
+            return TryConvertFrom<TOther>(value, out result);
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromTruncating{TOther}(TOther, out TSelf)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<Complex>.TryConvertFromTruncating<TOther>(TOther value, out Complex result)
+        {
+            return TryConvertFrom<TOther>(value, out result);
+        }
+
+        private static bool TryConvertFrom<TOther>(TOther value, out Complex result)
             where TOther : INumberBase<TOther>
         {
+            // We don't want to defer to `double.Create*(value)` because some type might have its own
+            // `TOther.ConvertTo*(value, out Complex result)` handling that would end up bypassed.
+
             if (typeof(TOther) == typeof(byte))
             {
-                result = (byte)(object)value;
+                byte actualValue = (byte)(object)value;
+                result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(char))
             {
-                result = (char)(object)value;
+                char actualValue = (char)(object)value;
+                result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(decimal))
             {
-                result = (Complex)(decimal)(object)value;
+                decimal actualValue = (decimal)(object)value;
+                result = (Complex)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(double))
             {
-                result = (double)(object)value;
+                double actualValue = (double)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Half))
+            {
+                Half actualValue = (Half)(object)value;
+                result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(short))
             {
-                result = (short)(object)value;
+                short actualValue = (short)(object)value;
+                result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(int))
             {
-                result = (int)(object)value;
+                int actualValue = (int)(object)value;
+                result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(long))
             {
-                result = (long)(object)value;
+                long actualValue = (long)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                Int128 actualValue = (Int128)(object)value;
+                result = (Complex)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(nint))
             {
-                result = (nint)(object)value;
+                nint actualValue = (nint)(object)value;
+                result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(sbyte))
             {
-                result = (sbyte)(object)value;
+                sbyte actualValue = (sbyte)(object)value;
+                result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(float))
             {
-                result = (float)(object)value;
+                float actualValue = (float)(object)value;
+                result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(ushort))
             {
-                result = (ushort)(object)value;
+                ushort actualValue = (ushort)(object)value;
+                result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(uint))
             {
-                result = (uint)(object)value;
+                uint actualValue = (uint)(object)value;
+                result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(ulong))
             {
-                result = (ulong)(object)value;
+                ulong actualValue = (ulong)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                UInt128 actualValue = (UInt128)(object)value;
+                result = (Complex)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(nuint))
             {
-                result = (nuint)(object)value;
+                nuint actualValue = (nuint)(object)value;
+                result = actualValue;
                 return true;
             }
             else
             {
-                ThrowHelper.ThrowNotSupportedException();
                 result = default;
+                return false;
+            }
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToChecked{TOther}(TSelf, out TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<Complex>.TryConvertToChecked<TOther>(Complex value, [NotNullWhen(true)] out TOther result)
+        {
+            // Complex numbers with an imaginary part can't be represented as a "real number"
+            // so we'll throw an OverflowException for this scenario for integer types and
+            // for decimal. However, we will convert it to NaN for the floating-point types,
+            // since that's what Sqrt(-1) (which is `new Complex(0, 1)`) results in.
+
+            if (typeof(TOther) == typeof(byte))
+            {
+                if (value.m_imaginary != 0)
+                {
+                    ThrowHelper.ThrowOverflowException();
+                }
+
+                byte actualResult = checked((byte)value.m_real);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                if (value.m_imaginary != 0)
+                {
+                    ThrowHelper.ThrowOverflowException();
+                }
+
+                char actualResult = checked((char)value.m_real);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                if (value.m_imaginary != 0)
+                {
+                    ThrowHelper.ThrowOverflowException();
+                }
+
+                decimal actualResult = checked((decimal)value.m_real);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(double))
+            {
+                double actualResult = (value.m_imaginary != 0) ? double.NaN : value.m_real;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Half))
+            {
+                Half actualResult = (value.m_imaginary != 0) ? Half.NaN : (Half)value.m_real;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                if (value.m_imaginary != 0)
+                {
+                    ThrowHelper.ThrowOverflowException();
+                }
+
+                short actualResult = checked((short)value.m_real);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                if (value.m_imaginary != 0)
+                {
+                    ThrowHelper.ThrowOverflowException();
+                }
+
+                int actualResult = checked((int)value.m_real);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                if (value.m_imaginary != 0)
+                {
+                    ThrowHelper.ThrowOverflowException();
+                }
+
+                long actualResult = checked((long)value.m_real);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                if (value.m_imaginary != 0)
+                {
+                    ThrowHelper.ThrowOverflowException();
+                }
+
+                Int128 actualResult = checked((Int128)value.m_real);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                if (value.m_imaginary != 0)
+                {
+                    ThrowHelper.ThrowOverflowException();
+                }
+
+                nint actualResult = checked((nint)value.m_real);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(BigInteger))
+            {
+                if (value.m_imaginary != 0)
+                {
+                    ThrowHelper.ThrowOverflowException();
+                }
+
+                BigInteger actualResult = checked((BigInteger)value.m_real);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                if (value.m_imaginary != 0)
+                {
+                    ThrowHelper.ThrowOverflowException();
+                }
+
+                sbyte actualResult = checked((sbyte)value.m_real);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                float actualResult = (value.m_imaginary != 0) ? float.NaN : (float)value.m_real;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                if (value.m_imaginary != 0)
+                {
+                    ThrowHelper.ThrowOverflowException();
+                }
+
+                ushort actualResult = checked((ushort)value.m_real);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                if (value.m_imaginary != 0)
+                {
+                    ThrowHelper.ThrowOverflowException();
+                }
+
+                uint actualResult = checked((uint)value.m_real);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                if (value.m_imaginary != 0)
+                {
+                    ThrowHelper.ThrowOverflowException();
+                }
+
+                ulong actualResult = checked((ulong)value.m_real);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                if (value.m_imaginary != 0)
+                {
+                    ThrowHelper.ThrowOverflowException();
+                }
+
+                UInt128 actualResult = checked((UInt128)value.m_real);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                if (value.m_imaginary != 0)
+                {
+                    ThrowHelper.ThrowOverflowException();
+                }
+
+                nuint actualResult = checked((nuint)value.m_real);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else
+            {
+                result = default!;
+                return false;
+            }
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToSaturating{TOther}(TSelf, out TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<Complex>.TryConvertToSaturating<TOther>(Complex value, [NotNullWhen(true)] out TOther result)
+        {
+            // Complex numbers with an imaginary part can't be represented as a "real number"
+            // and there isn't really a well-defined way to "saturate" to just a real value.
+            //
+            // The two potential options are that we either treat complex numbers with a non-
+            // zero imaginary part as NaN and then convert that to 0 -or- we ignore the imaginary
+            // part and only consider the real part.
+            //
+            // We use the latter below since that is "more useful" given an unknown number type.
+            // Users who want 0 instead can always check `IsComplexNumber` and special-case the
+            // handling.
+
+            if (typeof(TOther) == typeof(byte))
+            {
+                byte actualResult = (value.m_real >= byte.MaxValue) ? byte.MaxValue :
+                                    (value.m_real <= byte.MinValue) ? byte.MinValue : (byte)value.m_real;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                char actualResult = (value.m_real >= char.MaxValue) ? char.MaxValue :
+                                    (value.m_real <= char.MinValue) ? char.MinValue : (char)value.m_real;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                decimal actualResult = (value.m_real >= (double)decimal.MaxValue) ? decimal.MaxValue :
+                                       (value.m_real <= (double)decimal.MinValue) ? decimal.MinValue : (decimal)value.m_real;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(double))
+            {
+                double actualResult = value.m_real;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Half))
+            {
+                Half actualResult = (Half)value.m_real;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                short actualResult = (value.m_real >= short.MaxValue) ? short.MaxValue :
+                                     (value.m_real <= short.MinValue) ? short.MinValue : (short)value.m_real;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                int actualResult = (value.m_real >= int.MaxValue) ? int.MaxValue :
+                                   (value.m_real <= int.MinValue) ? int.MinValue : (int)value.m_real;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                long actualResult = (value.m_real >= long.MaxValue) ? long.MaxValue :
+                                    (value.m_real <= long.MinValue) ? long.MinValue : (long)value.m_real;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                Int128 actualResult = (value.m_real >= +170141183460469231731687303715884105727.0) ? Int128.MaxValue :
+                                      (value.m_real <= -170141183460469231731687303715884105728.0) ? Int128.MinValue : (Int128)value.m_real;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                nint actualResult = (value.m_real >= nint.MaxValue) ? nint.MaxValue :
+                                    (value.m_real <= nint.MinValue) ? nint.MinValue : (nint)value.m_real;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(BigInteger))
+            {
+                BigInteger actualResult = (BigInteger)value.m_real;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                sbyte actualResult = (value.m_real >= sbyte.MaxValue) ? sbyte.MaxValue :
+                                     (value.m_real <= sbyte.MinValue) ? sbyte.MinValue : (sbyte)value.m_real;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                float actualResult = (float)value.m_real;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                ushort actualResult = (value.m_real >= ushort.MaxValue) ? ushort.MaxValue :
+                                      (value.m_real <= ushort.MinValue) ? ushort.MinValue : (ushort)value.m_real;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                uint actualResult = (value.m_real >= uint.MaxValue) ? uint.MaxValue :
+                                    (value.m_real <= uint.MinValue) ? uint.MinValue : (uint)value.m_real;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                ulong actualResult = (value.m_real >= ulong.MaxValue) ? ulong.MaxValue :
+                                     (value.m_real <= ulong.MinValue) ? ulong.MinValue : (ulong)value.m_real;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                UInt128 actualResult = (value.m_real >= 340282366920938463463374607431768211455.0) ? UInt128.MaxValue :
+                                       (value.m_real <= 0.0) ? UInt128.MinValue : (UInt128)value.m_real;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                nuint actualResult = (value.m_real >= nuint.MaxValue) ? nuint.MaxValue :
+                                     (value.m_real <= nuint.MinValue) ? nuint.MinValue : (nuint)value.m_real;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else
+            {
+                result = default!;
+                return false;
+            }
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToTruncating{TOther}(TSelf, out TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<Complex>.TryConvertToTruncating<TOther>(Complex value, [NotNullWhen(true)] out TOther result)
+        {
+            // Complex numbers with an imaginary part can't be represented as a "real number"
+            // so we'll only consider the real part for the purposes of truncation.
+
+            if (typeof(TOther) == typeof(byte))
+            {
+                byte actualResult = (value.m_real >= byte.MaxValue) ? byte.MaxValue :
+                                    (value.m_real <= byte.MinValue) ? byte.MinValue : (byte)value.m_real;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                char actualResult = (value.m_real >= char.MaxValue) ? char.MaxValue :
+                                    (value.m_real <= char.MinValue) ? char.MinValue : (char)value.m_real;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                decimal actualResult = (value.m_real >= (double)decimal.MaxValue) ? decimal.MaxValue :
+                                       (value.m_real <= (double)decimal.MinValue) ? decimal.MinValue : (decimal)value.m_real;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(double))
+            {
+                double actualResult = value.m_real;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Half))
+            {
+                Half actualResult = (Half)value.m_real;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                short actualResult = (value.m_real >= short.MaxValue) ? short.MaxValue :
+                                     (value.m_real <= short.MinValue) ? short.MinValue : (short)value.m_real;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                int actualResult = (value.m_real >= int.MaxValue) ? int.MaxValue :
+                                   (value.m_real <= int.MinValue) ? int.MinValue : (int)value.m_real;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                long actualResult = (value.m_real >= long.MaxValue) ? long.MaxValue :
+                                    (value.m_real <= long.MinValue) ? long.MinValue : (long)value.m_real;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                Int128 actualResult = (value.m_real >= +170141183460469231731687303715884105727.0) ? Int128.MaxValue :
+                                      (value.m_real <= -170141183460469231731687303715884105728.0) ? Int128.MinValue : (Int128)value.m_real;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                nint actualResult = (value.m_real >= nint.MaxValue) ? nint.MaxValue :
+                                    (value.m_real <= nint.MinValue) ? nint.MinValue : (nint)value.m_real;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(BigInteger))
+            {
+                BigInteger actualResult = (BigInteger)value.m_real;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                sbyte actualResult = (value.m_real >= sbyte.MaxValue) ? sbyte.MaxValue :
+                                     (value.m_real <= sbyte.MinValue) ? sbyte.MinValue : (sbyte)value.m_real;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                float actualResult = (float)value.m_real;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                ushort actualResult = (value.m_real >= ushort.MaxValue) ? ushort.MaxValue :
+                                      (value.m_real <= ushort.MinValue) ? ushort.MinValue : (ushort)value.m_real;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                uint actualResult = (value.m_real >= uint.MaxValue) ? uint.MaxValue :
+                                    (value.m_real <= uint.MinValue) ? uint.MinValue : (uint)value.m_real;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                ulong actualResult = (value.m_real >= ulong.MaxValue) ? ulong.MaxValue :
+                                     (value.m_real <= ulong.MinValue) ? ulong.MinValue : (ulong)value.m_real;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                UInt128 actualResult = (value.m_real >= 340282366920938463463374607431768211455.0) ? UInt128.MaxValue :
+                                       (value.m_real <= 0.0) ? UInt128.MinValue : (UInt128)value.m_real;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                nuint actualResult = (value.m_real >= nuint.MaxValue) ? nuint.MaxValue :
+                                     (value.m_real <= nuint.MinValue) ? nuint.MinValue : (nuint)value.m_real;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else
+            {
+                result = default!;
                 return false;
             }
         }

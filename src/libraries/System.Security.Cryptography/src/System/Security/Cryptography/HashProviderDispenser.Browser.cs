@@ -1,17 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
-using System.Security.Cryptography;
-using Microsoft.Win32.SafeHandles;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
     internal static partial class HashProviderDispenser
     {
+        internal static readonly bool CanUseSubtleCryptoImpl = Interop.BrowserCrypto.CanUseSimpleDigestHash() == 1;
+
         public static HashProvider CreateHashProvider(string hashAlgorithmId)
         {
             switch (hashAlgorithmId)
@@ -20,7 +17,9 @@ namespace System.Security.Cryptography
                 case HashAlgorithmNames.SHA256:
                 case HashAlgorithmNames.SHA384:
                 case HashAlgorithmNames.SHA512:
-                    return new SHAHashProvider(hashAlgorithmId);
+                    return CanUseSubtleCryptoImpl
+                        ? new SHANativeHashProvider(hashAlgorithmId)
+                        : new SHAManagedHashProvider(hashAlgorithmId);
             }
             throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmId));
         }
@@ -38,7 +37,7 @@ namespace System.Security.Cryptography
 
             public static int HashData(string hashAlgorithmId, ReadOnlySpan<byte> source, Span<byte> destination)
             {
-                HashProvider provider = HashProviderDispenser.CreateHashProvider(hashAlgorithmId);
+                HashProvider provider = CreateHashProvider(hashAlgorithmId);
                 provider.AppendHashData(source);
                 return provider.FinalizeHashAndReset(destination);
             }

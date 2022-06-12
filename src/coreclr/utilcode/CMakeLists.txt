@@ -40,7 +40,6 @@ set(UTILCODE_COMMON_SOURCES
   sigparser.cpp
   sstring.cpp
   util_nodependencies.cpp
-  utilmessagebox.cpp
   safewrap.cpp
   clrhost.cpp
   cycletimer.cpp

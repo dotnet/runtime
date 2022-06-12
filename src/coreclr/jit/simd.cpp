@@ -1701,7 +1701,7 @@ bool Compiler::areArgumentsContiguous(GenTree* op1, GenTree* op2)
 }
 
 //--------------------------------------------------------------------------------------------------------
-// createAddressNodeForSIMDInit: Generate the address node(GT_LEA) if we want to intialize vector2, vector3 or vector4
+// createAddressNodeForSIMDInit: Generate the address node if we want to intialize vector2, vector3 or vector4
 // from first argument's address.
 //
 // Arguments:
@@ -1715,15 +1715,13 @@ bool Compiler::areArgumentsContiguous(GenTree* op1, GenTree* op2)
 // TODO-CQ:
 //      1. Currently just support for GT_FIELD and GT_INDEX, because we can only verify the GT_INDEX node or GT_Field
 //         are located contiguously or not. In future we should support more cases.
-//      2. Though it happens to just work fine front-end phases are not aware of GT_LEA node.  Therefore, convert these
-//         to use GT_ADDR.
+//
 GenTree* Compiler::createAddressNodeForSIMDInit(GenTree* tree, unsigned simdSize)
 {
     assert(tree->OperGet() == GT_FIELD || tree->OperGet() == GT_INDEX);
-    GenTree*  byrefNode  = nullptr;
-    GenTree*  startIndex = nullptr;
-    unsigned  offset     = 0;
-    var_types baseType   = tree->gtType;
+    GenTree*  byrefNode = nullptr;
+    unsigned  offset    = 0;
+    var_types baseType  = tree->gtType;
 
     if (tree->OperGet() == GT_FIELD)
     {
@@ -1781,8 +1779,9 @@ GenTree* Compiler::createAddressNodeForSIMDInit(GenTree* tree, unsigned simdSize
     {
         unreached();
     }
-    GenTree* address =
-        new (this, GT_LEA) GenTreeAddrMode(TYP_BYREF, byrefNode, startIndex, genTypeSize(tree->TypeGet()), offset);
+
+    GenTree* address = gtNewOperNode(GT_ADD, TYP_BYREF, byrefNode, gtNewIconNode(offset, TYP_I_IMPL));
+
     return address;
 }
 
@@ -2227,12 +2226,21 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
                 assert(op1->TypeGet() == simdType);
 
                 // copy vector (op1) to array (op2) starting at index (op3)
-                simdTree = op1;
+                simdTree   = op1;
+                copyBlkDst = op2;
+                if (op3 != nullptr)
+                {
+#ifdef TARGET_64BIT
+                    // Upcast the index: it is safe to use a zero-extending cast since we've bounds checked it above.
+                    op3 = gtNewCastNode(TYP_I_IMPL, op3, /* fromUnsigned */ true, TYP_I_IMPL);
+#endif // !TARGET_64BIT
+                    GenTree* elemSizeNode = gtNewIconNode(genTypeSize(simdBaseType), TYP_I_IMPL);
+                    GenTree* indexOffs    = gtNewOperNode(GT_MUL, TYP_I_IMPL, op3, elemSizeNode);
+                    copyBlkDst            = gtNewOperNode(GT_ADD, TYP_BYREF, copyBlkDst, indexOffs);
+                }
 
-                // TODO-Cleanup: Though it happens to just work fine front-end phases are not aware of GT_LEA node.
-                // Therefore, convert these to use GT_ADDR .
-                copyBlkDst = new (this, GT_LEA)
-                    GenTreeAddrMode(TYP_BYREF, op2, op3, genTypeSize(simdBaseType), OFFSETOF__CORINFO_Array__data);
+                copyBlkDst = gtNewOperNode(GT_ADD, TYP_BYREF, copyBlkDst,
+                                           gtNewIconNode(OFFSETOF__CORINFO_Array__data, TYP_I_IMPL));
                 doCopyBlk = true;
             }
         }

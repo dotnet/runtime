@@ -530,7 +530,8 @@
             "area-CodeGen-coreclr"
           ],
           "mentionees": [
-            "JulieLeeMSFT"
+            "JulieLeeMSFT",
+            "jakobbotsch"
           ]
         },
         {
@@ -1307,7 +1308,7 @@
         {
           "name": "addReply",
           "parameters": {
-            "comment": "Due to lack of recent activity, this issue has been marked as a candidate for backlog cleanup.  It will be closed if no further activity occurs within 14 more days. Any new comment (by anyone, not necessarily the author) will undo this process.\n\nThis process is part of the experimental [issue cleanup initiative](https://github.com/dotnet/runtime/issues/60288) we are currently trialing. Please share any feedback you might have in the linked issue."
+            "comment": "Due to lack of recent activity, this issue has been marked as a candidate for backlog cleanup.  It will be closed if no further activity occurs within 14 more days. Any new comment (by anyone, not necessarily the author) will undo this process.\n\nThis process is part of our [issue cleanup automation](https://github.com/dotnet/runtime/blob/main/docs/issue-cleanup.md)."
           }
         },
         {
@@ -1422,16 +1423,16 @@
       "taskName": "Automated Issue cleanup",
       "actions": [
         {
-          "name": "addLabel",
+          "name": "addReply",
           "parameters": {
-            "label": "backlog-cleanup-candidate"
+            "comment": "Due to lack of recent activity, this issue has been marked as a candidate for backlog cleanup.  It will be closed if no further activity occurs within 14 more days. Any new comment (by anyone, not necessarily the author) will undo this process.\n\nThis process is part of our [issue cleanup automation](https://github.com/dotnet/runtime/blob/main/docs/issue-cleanup.md)."
           }
         },
         {
-          "name": "addReply",
-          "parameters": {
-            "comment": "Due to lack of recent activity, this issue has been marked as a candidate for backlog cleanup.  It will be closed if no further activity occurs within 14 more days. Any new comment (by anyone, not necessarily the author) will undo this process.\n\nThis process is part of the experimental [issue cleanup initiative](https://github.com/dotnet/runtime/issues/60288) we are currently trialing. Please share any feedback you might have in the linked issue."
-          }
+            "name": "addLabel",
+            "parameters": {
+              "label": "backlog-cleanup-candidate"
+            }
         },
         {
           "name": "addLabel",
@@ -2346,6 +2347,12 @@
           "parameters": {
             "label": "no-recent-activity"
           }
+        },
+        {
+            "name": "removeLabel",
+            "parameters": {
+              "label": "backlog-cleanup-candidate"
+            }
         }
       ],
       "eventType": "issue",
@@ -2401,6 +2408,12 @@
           "parameters": {
             "label": "no-recent-activity"
           }
+        },
+        {
+            "name": "removeLabel",
+            "parameters": {
+              "label": "backlog-cleanup-candidate"
+            }
         }
       ],
       "eventType": "issue",

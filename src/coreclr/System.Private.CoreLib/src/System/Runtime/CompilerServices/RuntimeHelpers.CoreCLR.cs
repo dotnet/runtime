@@ -264,6 +264,16 @@ namespace System.Runtime.CompilerServices
             return GetMethodTable(obj)->HasComponentSize;
         }
 
+        /// <summary>
+        /// Boxes a given value using an input <see cref="MethodTable"/> to determine its type.
+        /// </summary>
+        /// <param name="methodTable">The <see cref="MethodTable"/> pointer to use to create the boxed instance.</param>
+        /// <param name="data">A reference to the data to box.</param>
+        /// <returns>A boxed instance of the value at <paramref name="data"/>.</returns>
+        /// <remarks>This method includes proper handling for nullable value types as well.</remarks>
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern unsafe object? Box(MethodTable* methodTable, ref byte data);
+
         // Given an object reference, returns its MethodTable*.
         //
         // WARNING: The caller has to ensure that MethodTable* does not get unloaded. The most robust way
@@ -284,6 +294,11 @@ namespace System.Runtime.CompilerServices
 
             return (MethodTable *)Unsafe.Add(ref Unsafe.As<byte, IntPtr>(ref obj.GetRawData()), -1);
         }
+
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MethodTable_AreTypesEquivalent")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static unsafe partial bool AreTypesEquivalent(MethodTable* pMTa, MethodTable* pMTb);
 
         /// <summary>
         /// Allocate memory that is associated with the <paramref name="type"/> and
@@ -410,18 +425,63 @@ namespace System.Runtime.CompilerServices
     [StructLayout(LayoutKind.Explicit)]
     internal unsafe struct MethodTable
     {
+        /// <summary>
+        /// The low WORD of the first field is the component size for array and string types.
+        /// </summary>
         [FieldOffset(0)]
         public ushort ComponentSize;
+
+        /// <summary>
+        /// The flags for the current method table (only for not array or string types).
+        /// </summary>
         [FieldOffset(0)]
         private uint Flags;
+
+        /// <summary>
+        /// The base size of the type (used when allocating an instance on the heap).
+        /// </summary>
         [FieldOffset(4)]
         public uint BaseSize;
-        [FieldOffset(0x0e)]
+
+        // See additional native members in methodtable.h, not needed here yet.
+        // 0x8: m_wFlags2 (additional flags)
+        // 0xA: m_wToken (class token if it fits in 16 bits)
+        // 0xC: m_wNumVirtuals
+
+        /// <summary>
+        /// The number of interfaces implemented by the current type.
+        /// </summary>
+        [FieldOffset(0x0E)]
         public ushort InterfaceCount;
+
+        // For DEBUG builds, there is a conditional field here (see methodtable.h again).
+        // 0x10: debug_m_szClassName (display name of the class, for the debugger)
+
+        /// <summary>
+        /// A pointer to the parent method table for the current one.
+        /// </summary>
         [FieldOffset(ParentMethodTableOffset)]
         public MethodTable* ParentMethodTable;
+
+        // Additional conditional fields (see methodtable.h).
+        // m_pLoaderModule
+        // m_pWriteableData
+        // union {
+        //   m_pEEClass (pointer to the EE class)
+        //   m_pCanonMT (pointer to the canonical method table)
+        // }
+
+        /// <summary>
+        /// This element type handle is in a union with additional info or a pointer to the interface map.
+        /// Which one is used is based on the specific method table being in used (so this field is not
+        /// always guaranteed to actually be a pointer to a type handle for the element type of this type).
+        /// </summary>
         [FieldOffset(ElementTypeOffset)]
         public void* ElementType;
+
+        /// <summary>
+        /// This interface map is a union with a multipurpose slot, so should be checked before use.
+        /// </summary>
         [FieldOffset(InterfaceMapOffset)]
         public MethodTable** InterfaceMap;
 
@@ -429,6 +489,8 @@ namespace System.Runtime.CompilerServices
         private const uint enum_flag_ContainsPointers = 0x01000000;
         private const uint enum_flag_HasComponentSize = 0x80000000;
         private const uint enum_flag_HasTypeEquivalence = 0x02000000;
+        private const uint enum_flag_Category_ValueType = 0x00040000;
+        private const uint enum_flag_Category_ValueType_Mask = 0x000C0000;
         // Types that require non-trivial interface cast have this bit set in the category
         private const uint enum_flag_NonTrivialInterfaceCast = 0x00080000 // enum_flag_Category_Array
                                                              | 0x40000000 // enum_flag_ComObject
@@ -516,6 +578,75 @@ namespace System.Runtime.CompilerServices
                 return (int)((BaseSize - (uint)(3 * sizeof(IntPtr))) / (uint)(2 * sizeof(int)));
             }
         }
+
+        public bool IsValueType
+        {
+            get
+            {
+                return (Flags & enum_flag_Category_ValueType_Mask) == enum_flag_Category_ValueType;
+            }
+        }
+
+        /// <summary>
+        /// Gets a <see cref="TypeHandle"/> for the element type of the current type.
+        /// </summary>
+        /// <remarks>This method should only be called when the current <see cref="MethodTable"/> instance represents an array or string type.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public TypeHandle GetArrayElementTypeHandle()
+        {
+            Debug.Assert(HasComponentSize);
+
+            return new(ElementType);
+        }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public extern uint GetNumInstanceFieldBytes();
+    }
+
+    /// <summary>
+    /// A type handle, which can wrap either a pointer to a <c>TypeDesc</c> or to a <see cref="MethodTable"/>.
+    /// </summary>
+    internal unsafe struct TypeHandle
+    {
+        // Subset of src\vm\typehandle.h
+
+        /// <summary>
+        /// The address of the current type handle object.
+        /// </summary>
+        private readonly void* m_asTAddr;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public TypeHandle(void* tAddr)
+        {
+            m_asTAddr = tAddr;
+        }
+
+        /// <summary>
+        /// Gets whether the current instance wraps a <see langword="null"/> pointer.
+        /// </summary>
+        public bool IsNull => m_asTAddr is null;
+
+        /// <summary>
+        /// Gets whether or not this <see cref="TypeHandle"/> wraps a <c>TypeDesc</c> pointer.
+        /// Only if this returns <see langword="false"/> it is safe to call <see cref="AsMethodTable"/>.
+        /// </summary>
+        public bool IsTypeDesc
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => ((nint)m_asTAddr & 2) != 0;
+        }
+
+        /// <summary>
+        /// Gets the <see cref="MethodTable"/> pointer wrapped by the current instance.
+        /// </summary>
+        /// <remarks>This is only safe to call if <see cref="IsTypeDesc"/> returned <see langword="false"/>.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public MethodTable* AsMethodTable()
+        {
+            Debug.Assert(!IsTypeDesc);
+
+            return (MethodTable*)m_asTAddr;
+        }
     }
 
     // Helper structs used for tail calls via helper.
@@ -532,5 +663,4 @@ namespace System.Runtime.CompilerServices
         public PortableTailCallFrame* Frame;
         public IntPtr ArgBuffer;
     }
-
 }

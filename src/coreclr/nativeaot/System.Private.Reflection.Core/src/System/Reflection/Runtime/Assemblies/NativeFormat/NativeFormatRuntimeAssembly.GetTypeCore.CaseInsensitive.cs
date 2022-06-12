@@ -17,8 +17,6 @@ using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
 using Internal.Metadata.NativeFormat;
 
-using Internal.Reflection.Tracing;
-
 namespace System.Reflection.Runtime.Assemblies.NativeFormat
 {
     internal partial class NativeFormatRuntimeAssembly

@@ -838,6 +838,38 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                 assert(op->isContainedIntOrIImmed());
                 return OperandDesc(op->AsIntCon()->IconValue(), op->AsIntCon()->ImmedValNeedsReloc(compiler));
 
+            case GT_CNS_VEC:
+            {
+                switch (op->TypeGet())
+                {
+#if defined(FEATURE_SIMD)
+                    case TYP_SIMD8:
+                    {
+                        simd8_t constValue = op->AsVecCon()->gtSimd8Val;
+                        return OperandDesc(emit->emitSimd8Const(constValue));
+                    }
+
+                    case TYP_SIMD12:
+                    case TYP_SIMD16:
+                    {
+                        simd16_t constValue = op->AsVecCon()->gtSimd16Val;
+                        return OperandDesc(emit->emitSimd16Const(constValue));
+                    }
+
+                    case TYP_SIMD32:
+                    {
+                        simd32_t constValue = op->AsVecCon()->gtSimd32Val;
+                        return OperandDesc(emit->emitSimd32Const(constValue));
+                    }
+#endif // FEATURE_SIMD
+
+                    default:
+                    {
+                        unreached();
+                    }
+                }
+            }
+
             default:
                 unreached();
         }

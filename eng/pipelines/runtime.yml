@@ -97,7 +97,7 @@ jobs:
     buildConfig: checked
     platforms:
     - Linux_x64
-    container: debian-11-gcc11-amd64-20210916125744-f42d766
+    container: debian-11-gcc12-amd64-20220511124845-b7a6185
     jobParameters:
       testGroup: innerloop
       compilerName: gcc
@@ -246,7 +246,7 @@ jobs:
 
 #
 # CoreCLR NativeAOT release build and libraries tests
-# Only when CoreCLR is changed
+# Only when CoreCLR or library is changed
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -269,6 +269,7 @@ jobs:
         testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
       condition: >-
         or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
           eq(variables['isFullMatrix'], true))
 
@@ -738,15 +739,11 @@ jobs:
     - OSX_x64
     - windows_x64
     - FreeBSD_x64
-    - ${{ if eq(variables['isRollingBuild'], false) }}:
-      # we need to build windows_x86 for debug on PRs in order to test
-      # against a checked runtime when the PR contains coreclr changes
-      - windows_x86
     jobParameters:
       testScope: innerloop
 
 #
-# Libraries Build that only run when coreclr is changed
+# Libraries debug build that only runs when coreclr is changed
 # Only do this on PR builds since we use the Release builds for these test runs in CI
 # and those are already built above
 #
@@ -756,9 +753,23 @@ jobs:
       jobTemplate: /eng/pipelines/libraries/build-job.yml
       buildConfig: Debug
       platforms:
-        - Linux_arm
-        - Linux_musl_arm
-        - Linux_musl_arm64
+      - windows_x86
+      jobParameters:
+        condition: >-
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true)
+
+#
+# Libraries release build that only runs when coreclr is changed in PRs
+# We need these for checked coreclr + release libraries tests runs.
+#
+- ${{ if eq(variables['isRollingBuild'], false) }}:
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/libraries/build-job.yml
+      buildConfig: Release
+      platforms:
+      - Linux_x64
+      - windows_x64
       jobParameters:
         condition: >-
           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true)
@@ -803,12 +814,12 @@ jobs:
   parameters:
     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
     platforms:
-      - Linux_arm
       - Linux_musl_arm
       - Linux_musl_arm64
       - windows_x86
       - windows_arm
       - windows_arm64
+      - Linux_arm
     jobParameters:
       liveRuntimeBuildConfig: release
       liveLibrariesBuildConfig: Release
@@ -1115,8 +1126,23 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
           eq(variables['isRollingBuild'], true))
 
+# The next three jobs run checked coreclr + <either debug or release in PR> libraries tests.
+# The matrix looks like the following, where the right columns specify which configurations
+# the libraries tests are built in.
+# ________________________________________
+# | Platform         | PR      | Rolling |
+# | ---------------- | ------- | ------- |
+# | linux-arm64      | Debug   | Release |
+# | windows-x86      | Debug   | Release |
+# | linux-musl-x64   | Debug   | Release |
+# | OSX-x64          | Debug   | Release |
+# | linux-musl-arm   | Release | Release |
+# | linux-musl-arm64 | Release | Release |
+# | linux-x64        | Release | Release |
+# | windows-x64      | Release | Release |
+
 #
-# Libraries Test Execution against a checked runtime
+# Debug (PR) / Release (rolling) Libraries Test Execution against a checked runtime
 # Only when the PR contains a coreclr change
 #
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -1124,11 +1150,9 @@ jobs:
     jobTemplate: /eng/pipelines/libraries/run-test-job.yml
     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
     platforms:
-    # - windows_arm return this when https://github.com/dotnet/runtime/issues/1097 is fixed.
-    - Linux_arm
-    - Linux_musl_arm
-    - Linux_musl_arm64
+    - Linux_arm64
     - windows_x86
+    - Linux_musl_x64
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     helixQueueGroup: libraries
     jobParameters:
@@ -1140,17 +1164,18 @@ jobs:
           eq(variables['isRollingBuild'], true))
 
 #
-# Libraries Test Execution against a checked runtime
+# Release Libraries Test Execution against a checked runtime
 # Only if CoreCLR or Libraries is changed
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/libraries/run-test-job.yml
-    buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+    buildConfig: Release
     platforms:
-    - windows_x64
+    - Linux_musl_arm
+    - Linux_musl_arm64
     - Linux_x64
-    - Linux_musl_x64
+    - windows_x64
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     helixQueueGroup: libraries
     jobParameters:

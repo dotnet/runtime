@@ -2174,7 +2174,7 @@ namespace System.Text.RegularExpressions.Generator
                 }
 
                 // Save off pos.  We'll need to reset this upon successful completion of the lookaround.
-                string startingPos = ReserveName("positivelookaround_starting_pos");
+                string startingPos = ReserveName((node.Options & RegexOptions.RightToLeft) != 0 ? "positivelookbehind_starting_pos" : "positivelookahead_starting_pos");
                 writer.WriteLine($"int {startingPos} = pos;");
                 writer.WriteLine();
                 int startingSliceStaticPos = sliceStaticPos;
@@ -2224,7 +2224,7 @@ namespace System.Text.RegularExpressions.Generator
                 string originalDoneLabel = doneLabel;
 
                 // Save off pos.  We'll need to reset this upon successful completion of the lookaround.
-                string startingPos = ReserveName("negativelookaround_starting_pos");
+                string startingPos = ReserveName((node.Options & RegexOptions.RightToLeft) != 0 ? "negativelookbehind_starting_pos" : "negativelookahead_starting_pos");
                 writer.WriteLine($"int {startingPos} = pos;");
                 int startingSliceStaticPos = sliceStaticPos;
 
@@ -3379,8 +3379,9 @@ namespace System.Text.RegularExpressions.Generator
                     // and thus it needs to be pushed on to the backtracking stack.
                     bool isInLoop = rm.Analysis.IsInLoop(node);
                     EmitStackPush(
-                        !isInLoop ? new[] { "pos" } :
-                        iterationMayBeEmpty ? new[] { "pos", iterationCount, startingPos!, sawEmpty! } :
+                        !isInLoop ? (expressionHasCaptures ? new[] { "pos", "base.Crawlpos()" } : new[] { "pos" }) :
+                        iterationMayBeEmpty ? (expressionHasCaptures ? new[] { "pos", iterationCount, startingPos!, sawEmpty!, "base.Crawlpos()" } : new[] { "pos", iterationCount, startingPos!, sawEmpty! }) :
+                        expressionHasCaptures ? new[] { "pos", iterationCount, "base.Crawlpos()"} :
                         new[] { "pos", iterationCount });
 
                     string skipBacktrack = ReserveName("LazyLoopSkipBacktrack");
@@ -3395,6 +3396,10 @@ namespace System.Text.RegularExpressions.Generator
                     // We're backtracking.  Check the timeout.
                     EmitTimeoutCheckIfNeeded(writer, rm);
 
+                    if (expressionHasCaptures)
+                    {
+                        EmitUncaptureUntil(StackPop());
+                    }
                     EmitStackPop(
                         !isInLoop ? new[] { "pos" } :
                         iterationMayBeEmpty ? new[] { sawEmpty!, startingPos!, iterationCount, "pos" } :
@@ -4633,6 +4638,7 @@ namespace System.Text.RegularExpressions.Generator
         private static string DescribeNode(RegexNode node, RegexMethod rm)
         {
             bool rtl = (node.Options & RegexOptions.RightToLeft) != 0;
+            string direction = rtl ? " right-to-left" : "";
             return node.Kind switch
             {
                 RegexNodeKind.Alternate => $"Match with {node.ChildCount()} alternative expressions{(rm.Analysis.IsAtomicByAncestor(node) ? ", atomically" : "")}.",
@@ -4649,20 +4655,20 @@ namespace System.Text.RegularExpressions.Generator
                 RegexNodeKind.End => "Match if at the end of the string.",
                 RegexNodeKind.EndZ => "Match if at the end of the string or if before an ending newline.",
                 RegexNodeKind.Eol => "Match if at the end of a line.",
-                RegexNodeKind.Loop or RegexNodeKind.Lazyloop => node.M == 0 && node.N == 1 ? $"Optional ({(node.Kind is RegexNodeKind.Loop ? "greedy" : "lazy")})." : $"Loop {DescribeLoop(node, rm)}.",
-                RegexNodeKind.Multi => $"Match the string {Literal(node.Str!)}{(rtl ? " backwards" : "")}.",
+                RegexNodeKind.Loop or RegexNodeKind.Lazyloop => node.M == 0 && node.N == 1 ? $"Optional ({(node.Kind is RegexNodeKind.Loop ? "greedy" : "lazy")})." : $"Loop {DescribeLoop(node, rm)}{direction}.",
+                RegexNodeKind.Multi => $"Match the string {Literal(node.Str!)}{direction}.",
                 RegexNodeKind.NonBoundary => $"Match if at anything other than a word boundary.",
                 RegexNodeKind.NonECMABoundary => $"Match if at anything other than a word boundary (according to ECMAScript rules).",
                 RegexNodeKind.Nothing => $"Fail to match.",
-                RegexNodeKind.Notone => $"Match any character other than {Literal(node.Ch)}{(rtl ? " backwards" : "")}.",
-                RegexNodeKind.Notoneloop or RegexNodeKind.Notoneloopatomic or RegexNodeKind.Notonelazy => $"Match a character other than {Literal(node.Ch)} {DescribeLoop(node, rm)}.",
-                RegexNodeKind.One => $"Match {Literal(node.Ch)}{(rtl ? " backwards" : "")}.",
-                RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic or RegexNodeKind.Onelazy => $"Match {Literal(node.Ch)} {DescribeLoop(node, rm)}.",
+                RegexNodeKind.Notone => $"Match any character other than {Literal(node.Ch)}{direction}.",
+                RegexNodeKind.Notoneloop or RegexNodeKind.Notoneloopatomic or RegexNodeKind.Notonelazy => $"Match a character other than {Literal(node.Ch)} {DescribeLoop(node, rm)}{direction}.",
+                RegexNodeKind.One => $"Match {Literal(node.Ch)}{direction}.",
+                RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic or RegexNodeKind.Onelazy => $"Match {Literal(node.Ch)} {DescribeLoop(node, rm)}{direction}.",
                 RegexNodeKind.NegativeLookaround => $"Zero-width negative {(rtl ? "lookbehind" : "lookahead")}.",
-                RegexNodeKind.Backreference => $"Match the same text as matched by the {DescribeCapture(node.M, rm)}.",
+                RegexNodeKind.Backreference => $"Match the same text as matched by the {DescribeCapture(node.M, rm)}{direction}.",
                 RegexNodeKind.PositiveLookaround => $"Zero-width positive {(rtl ? "lookbehind" : "lookahead")}.",
-                RegexNodeKind.Set => $"Match {DescribeSet(node.Str!)}{(rtl ? " backwards" : "")}.",
-                RegexNodeKind.Setloop or RegexNodeKind.Setloopatomic or RegexNodeKind.Setlazy => $"Match {DescribeSet(node.Str!)} {DescribeLoop(node, rm)}.",
+                RegexNodeKind.Set => $"Match {DescribeSet(node.Str!)}{direction}.",
+                RegexNodeKind.Setloop or RegexNodeKind.Setloopatomic or RegexNodeKind.Setlazy => $"Match {DescribeSet(node.Str!)} {DescribeLoop(node, rm)}{direction}.",
                 RegexNodeKind.Start => "Match if at the start position.",
                 RegexNodeKind.ExpressionConditional => $"Conditionally match one of two expressions depending on whether an initial expression matches.",
                 RegexNodeKind.BackreferenceConditional => $"Conditionally match one of two expressions depending on whether the {DescribeCapture(node.M, rm)} matched.",

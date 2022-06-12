@@ -287,20 +287,6 @@ g_find_program_in_path (const gchar *program)
 	return NULL;
 }
 
-static char *name;
-
-void
-g_set_prgname (const gchar *prgname)
-{
-	name = g_strdup (prgname);
-}
-
-gchar *
-g_get_prgname (void)
-{
-	return name;
-}
-
 gboolean
 g_ensure_directory_exists (const gchar *filename)
 {

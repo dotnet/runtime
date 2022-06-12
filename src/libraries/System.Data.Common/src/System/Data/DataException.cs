@@ -352,6 +352,17 @@ namespace System.Data
         public static Exception ArgumentContainsNull(string paramName) => _Argument(paramName, SR.Format(SR.Data_ArgumentContainsNull, paramName));
         public static Exception TypeNotAllowed(Type type) => _InvalidOperation(SR.Format(SR.Data_TypeNotAllowed, type.AssemblyQualifiedName));
 
+        //
+        // Batch
+        //
+
+        public static Exception NotSupportedOnDataSourceBatch() => Common.ADP.NotSupported(SR.Batch_NotSupportedOnDataSourceBatch);
+
+        //
+        // Command
+        //
+
+        public static Exception NotSupportedOnDataSourceCommand() => Common.ADP.NotSupported(SR.Command_NotSupportedOnDataSourceCommand);
 
         //
         // Collections

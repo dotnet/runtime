@@ -1,16 +1,14 @@
 <Project>
   <!-- not really meant to be used w/o WasmApp.targets -->
 
-  <UsingTask TaskName="PInvokeTableGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
-  <UsingTask TaskName="IcallTableGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
+  <UsingTask TaskName="ManagedToNativeGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.EmccCompile" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
 
   <PropertyGroup>
     <_WasmBuildNativeCoreDependsOn>
       _PrepareForWasmBuildNative;
       _GenerateDriverGenC;
-      _GeneratePInvokeTable;
-      _GenerateICallTable;
+      _GenerateManagedToNative;
       _WasmCompileNativeFiles;
       _WasmLinkDotNet;
       _CompleteWasmBuildNative
@@ -162,12 +160,15 @@
       <_WasmICallTablePath>$(_WasmIntermediateOutputPath)icall-table.h</_WasmICallTablePath>
       <_WasmRuntimeICallTablePath>$(_WasmIntermediateOutputPath)runtime-icall-table.h</_WasmRuntimeICallTablePath>
       <_WasmPInvokeTablePath>$(_WasmIntermediateOutputPath)pinvoke-table.h</_WasmPInvokeTablePath>
+      <_WasmInterpToNativeTablePath>$(_WasmIntermediateOutputPath)wasm_m2n_invoke.g.h</_WasmInterpToNativeTablePath>
       <_WasmPInvokeHPath>$(_WasmRuntimePackIncludeDir)wasm\pinvoke.h</_WasmPInvokeHPath>
       <_DriverGenCPath>$(_WasmIntermediateOutputPath)driver-gen.c</_DriverGenCPath>
       <DisableParallelAot Condition="'$(DisableParallelAot)' == ''">false</DisableParallelAot>
       <DisableParallelEmccCompile Condition="'$(DisableParallelEmccCompile)' == ''">$(DisableParallelAot)</DisableParallelEmccCompile>
 
       <_DriverGenCNeeded Condition="'$(_DriverGenCNeeded)' == '' and '$(_WasmShouldAOT)' == 'true'">true</_DriverGenCNeeded>
+
+      <_WasmDevel Condition="'$(WasmBuildNative)' == 'true' and '$(Configuration)' == 'Debug'">true</_WasmDevel>
 
       <_EmccAssertionLevelDefault Condition="'$(_EmccAssertionLevelDefault)' == ''">0</_EmccAssertionLevelDefault>
       <_EmccOptimizationFlagDefault Condition="'$(_WasmDevel)' == 'true'">-O0 -s ASSERTIONS=$(_EmccAssertionLevelDefault)</_EmccOptimizationFlagDefault>
@@ -199,6 +200,7 @@
       <_EmccCommonFlags Include="-v"                                Condition="'$(EmccVerbose)' != 'false'" />
       <_EmccCommonFlags Include="-s DISABLE_EXCEPTION_CATCHING=0"   Condition="'$(WasmExceptionHandling)' == 'false'" />
       <_EmccCommonFlags Include="-fwasm-exceptions"                 Condition="'$(WasmExceptionHandling)' == 'true'" />
+      <_EmccCommonFlags Include="-msimd128"                         Condition="'$(WasmSIMD)' == 'true'" />
 
       <_EmccIncludePaths Include="$(_WasmIntermediateOutputPath.TrimEnd('\/'))" />
       <_EmccIncludePaths Include="$(_WasmRuntimePackIncludeDir)mono-2.0" />
@@ -264,24 +266,21 @@
     <Error Text="Could not find NativeFileReference %(NativeFileReference.Identity)" Condition="'%(NativeFileReference.Identity)' != '' and !Exists(%(NativeFileReference.Identity))" />
   </Target>
 
-  <Target Name="_GeneratePInvokeTable">
+  <Target Name="_GenerateManagedToNative">
     <ItemGroup>
       <_WasmPInvokeModules Include="%(_WasmNativeFileForLinking.FileName)" Condition="'%(_WasmNativeFileForLinking.ScanForPInvokes)' != 'false'" />
 
       <_WasmPInvokeModules Include="libSystem.Native" />
       <_WasmPInvokeModules Include="libSystem.IO.Compression.Native" />
       <_WasmPInvokeModules Include="libSystem.Globalization.Native" />
+      <_WasmPInvokeModules Include="libSystem.Security.Cryptography.Native.Browser" />
     </ItemGroup>
 
-    <PInvokeTableGenerator
-      Modules="@(_WasmPInvokeModules)"
-      Assemblies="@(_WasmAssembliesInternal)"
-      OutputPath="$(_WasmPInvokeTablePath)">
-      <Output TaskParameter="FileWrites" ItemName="FileWrites" />
-    </PInvokeTableGenerator>
-  </Target>
+    <PropertyGroup>
+      <_HasMscorlib Condition="'%(_WasmAssembliesInternal.FileName)%(_WasmAssembliesInternal.Extension)' == 'mscorlib.dll'">true</_HasMscorlib>
+      <_MscorlibPath Condition="'$(_HasMscorlib)' != 'true'">$(MicrosoftNetCoreAppRuntimePackRidDir)lib\net7.0\mscorlib.dll</_MscorlibPath>
+    </PropertyGroup>
 
-  <Target Name="_GenerateICallTable" Condition="'$(WasmLinkIcalls)' == 'true'">
     <Error Condition="'$(_MonoAotCrossCompilerPath)' == '' or !Exists('$(_MonoAotCrossCompilerPath)')"
            Text="Could not find AOT cross compiler at %24(_MonoAotCrossCompilerPath)=$(_MonoAotCrossCompilerPath)" />
 
@@ -290,15 +289,17 @@
       <FileWrites Include="$(_WasmRuntimeICallTablePath)" />
     </ItemGroup>
 
-    <IcallTableGenerator
-      RuntimeIcallTableFile="$(_WasmRuntimeICallTablePath)"
-      Assemblies="@(_WasmAssembliesInternal)"
-      OutputPath="$(_WasmICallTablePath)" />
+    <MakeDir Directories="$(_WasmIntermediateOutputPath)" Condition="!Exists('$(_WasmIntermediateOutputPath)')"  />
 
-    <!-- Writing this explicitly, so it gets picked up when the target is skipped -->
-    <ItemGroup>
-      <FileWrites Include="$(_WasmICallTablePath)" />
-    </ItemGroup>
+    <ManagedToNativeGenerator
+      Assemblies="@(_WasmAssembliesInternal);$(_MscorlibPath)"
+      RuntimeIcallTableFile="$(_WasmRuntimeICallTablePath)"
+      IcallOutputPath="$(_WasmICallTablePath)"
+      PInvokeModules="@(_WasmPInvokeModules)"
+      PInvokeOutputPath="$(_WasmPInvokeTablePath)"
+      InterpToNativeOutputPath="$(_WasmInterpToNativeTablePath)">
+      <Output TaskParameter="FileWrites" ItemName="FileWrites" />
+    </ManagedToNativeGenerator>
   </Target>
 
   <Target Name="_WasmSelectRuntimeComponentsForLinking" Condition="'$(WasmNativeWorkload)' == 'true'" DependsOnTargets="_MonoSelectRuntimeComponents" />
@@ -427,7 +428,7 @@
     </ItemGroup>
 
     <Message Text="Stripping symbols from dotnet.wasm ..." Importance="High" Condition="'$(WasmNativeStrip)' == 'true'" />
-    <Exec Command='wasm-opt$(_ExeExt) --enable-exception-handling --strip-dwarf "$(_WasmIntermediateOutputPath)dotnet.wasm" -o "$(_WasmIntermediateOutputPath)dotnet.wasm"'
+    <Exec Command='wasm-opt$(_ExeExt) --enable-simd --enable-exception-handling --strip-dwarf "$(_WasmIntermediateOutputPath)dotnet.wasm" -o "$(_WasmIntermediateOutputPath)dotnet.wasm"'
           Condition="'$(WasmNativeStrip)' == 'true'"
           IgnoreStandardErrorWarningFormat="true"
           EnvironmentVariables="@(EmscriptenEnvVars)" />
@@ -517,6 +518,7 @@
       <MonoAOTCompilerDefaultAotArguments Include="static" />
       <MonoAOTCompilerDefaultAotArguments Include="direct-icalls" />
       <MonoAOTCompilerDefaultAotArguments Include="deterministic" />
+      <MonoAOTCompilerDefaultAotArguments Include="mattr=simd" Condition="'$(WasmSIMD)' == 'true'" />
       <MonoAOTCompilerDefaultProcessArguments Include="--wasm-exceptions" Condition="'$(WasmExceptionHandling)' == 'true'" />
       <AotProfilePath Include="$(WasmAotProfilePath)"/>
     </ItemGroup>

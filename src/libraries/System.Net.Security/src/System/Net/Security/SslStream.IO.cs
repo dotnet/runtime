@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
@@ -117,7 +117,7 @@ namespace System.Net.Security
 
         private async Task ProcessAuthenticationWithTelemetryAsync(bool isAsync, CancellationToken cancellationToken)
         {
-            NetSecurityTelemetry.Log.HandshakeStart(IsServer, _sslAuthenticationOptions!.TargetHost);
+            NetSecurityTelemetry.Log.HandshakeStart(IsServer, _sslAuthenticationOptions.TargetHost);
             long startingTimestamp = Stopwatch.GetTimestamp();
 
             try
@@ -185,7 +185,7 @@ namespace System.Net.Security
                     throw new InvalidOperationException(SR.net_ssl_renegotiate_buffer);
                 }
 
-                _sslAuthenticationOptions!.RemoteCertRequired = true;
+                _sslAuthenticationOptions.RemoteCertRequired = true;
                 _isRenego = true;
 
 
@@ -222,7 +222,7 @@ namespace System.Net.Security
                 }
                 while (message.Status.ErrorCode == SecurityStatusPalErrorCode.ContinueNeeded);
 
-                CompleteHandshake(_sslAuthenticationOptions!);
+                CompleteHandshake(_sslAuthenticationOptions);
             }
             finally
             {
@@ -332,7 +332,7 @@ namespace System.Net.Security
                     }
                 }
 
-                CompleteHandshake(_sslAuthenticationOptions!);
+                CompleteHandshake(_sslAuthenticationOptions);
             }
             finally
             {
@@ -394,7 +394,7 @@ namespace System.Net.Security
                             // SNI if it exist. Even if we could not parse the hello, we can fall-back to default certificate.
                             if (_lastFrame.TargetName != null)
                             {
-                                _sslAuthenticationOptions!.TargetHost = _lastFrame.TargetName;
+                                _sslAuthenticationOptions.TargetHost = _lastFrame.TargetName;
                             }
 
                             if (_sslAuthenticationOptions.ServerOptionDelegate != null)
@@ -504,7 +504,7 @@ namespace System.Net.Security
                 return true;
             }
 
-            if (!VerifyRemoteCertificate(_sslAuthenticationOptions!.CertValidationDelegate, _sslAuthenticationOptions!.CertificateContext?.Trust, ref alertToken, out sslPolicyErrors, out chainStatus))
+            if (!VerifyRemoteCertificate(_sslAuthenticationOptions.CertValidationDelegate, _sslAuthenticationOptions.CertificateContext?.Trust, ref alertToken, out sslPolicyErrors, out chainStatus))
             {
                 _handshakeCompleted = false;
                 return false;
@@ -675,7 +675,7 @@ namespace System.Net.Security
             return _buffer.EncryptedLength >= frameSize;
         }
 
-
+        [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))]
         private async ValueTask<int> EnsureFullTlsFrameAsync<TIOAdapter>(CancellationToken cancellationToken)
             where TIOAdapter : IReadWriteAdapter
         {
@@ -746,7 +746,7 @@ namespace System.Net.Security
                     // If that happen before EncryptData() runs, _handshakeWaiter will be set to null
                     // and EncryptData() will work normally e.g. no waiting, just exclusion with DecryptData()
 
-                    if (_sslAuthenticationOptions!.AllowRenegotiation || SslProtocol == SslProtocols.Tls13 || _nestedAuth != 0)
+                    if (_sslAuthenticationOptions.AllowRenegotiation || SslProtocol == SslProtocols.Tls13 || _nestedAuth != 0)
                     {
                         // create TCS only if we plan to proceed. If not, we will throw later outside of the lock.
                         // Tls1.3 does not have renegotiation. However on Windows this error code is used
@@ -760,6 +760,7 @@ namespace System.Net.Security
             return status;
         }
 
+        [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))]
         private async ValueTask<int> ReadAsyncInternal<TIOAdapter>(Memory<byte> buffer, CancellationToken cancellationToken)
             where TIOAdapter : IReadWriteAdapter
         {
