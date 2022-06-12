@@ -57,6 +57,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             }
 
             public ISet<string> NonInstantiatedISet { get; set; } = null!;
+            public HashSet<string> NonInstantiatedHashSet { get; set; } = null!;
             public IDictionary<string, ISet<string>> NonInstantiatedDictionaryWithISet { get; set; } = null!;
             public IDictionary<string, HashSet<string>> InstantiatedDictionaryWithHashSet { get; set; } =
                 new Dictionary<string, HashSet<string>>();
@@ -68,10 +69,20 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
                 };
 
             public IEnumerable<string> NonInstantiatedIEnumerable { get; set; } = null!;
+
             public ISet<string> InstantiatedISet { get; set; } = new HashSet<string>();
+
+            public HashSet<string> InstantiatedHashSetWithSomeValues { get; set; } =
+                new HashSet<string>(new[] {"existing1", "existing2"});
+
+            public SortedSet<string> InstantiatedSortedSetWithSomeValues { get; set; } =
+                new SortedSet<string>(new[] {"existing1", "existing2"});
+
+            public SortedSet<string> NonInstantiatedSortedSetWithSomeValues { get; set; } = null!;
+
             public ISet<string> InstantiatedISetWithSomeValues { get; set; } =
                 new HashSet<string>(new[] { "existing1", "existing2" });
-
+            
             public ISet<UnsupportedTypeInHashSet> HashSetWithUnsupportedKey { get; set; } =
                 new HashSet<UnsupportedTypeInHashSet>();
 
@@ -177,7 +188,6 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
 
             public IReadOnlyDictionary<string, int> Dictionary { get; set; } =
                 _existingDictionary;
-
         }
 
         public class ConfigWithNonInstantiatedReadOnlyDictionary
@@ -195,7 +205,6 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
 
             public Dictionary<string, int> Dictionary { get; set; } =
                 _existingDictionary;
-
         }
 
         public interface ICustomDictionary<T, T1> : IDictionary<T, T1>
@@ -1046,6 +1055,90 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal("existing2", options.InstantiatedISetWithSomeValues.ElementAt(1));
             Assert.Equal("Yo1", options.InstantiatedISetWithSomeValues.ElementAt(2));
             Assert.Equal("Yo2", options.InstantiatedISetWithSomeValues.ElementAt(3));
+        }
+
+        [Fact]
+        public void CanBindInstantiatedHashSetWithSomeValues()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"InstantiatedHashSetWithSomeValues:0", "Yo1"},
+                {"InstantiatedHashSetWithSomeValues:1", "Yo2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexOptions>()!;
+
+            Assert.Equal(4, options.InstantiatedHashSetWithSomeValues.Count);
+            Assert.Equal("existing1", options.InstantiatedHashSetWithSomeValues.ElementAt(0));
+            Assert.Equal("existing2", options.InstantiatedHashSetWithSomeValues.ElementAt(1));
+            Assert.Equal("Yo1", options.InstantiatedHashSetWithSomeValues.ElementAt(2));
+            Assert.Equal("Yo2", options.InstantiatedHashSetWithSomeValues.ElementAt(3));
+        }
+
+        [Fact]
+        public void CanBindNonInstantiatedHashSet()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"NonInstantiatedHashSet:0", "Yo1"},
+                {"NonInstantiatedHashSet:1", "Yo2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexOptions>()!;
+
+            Assert.Equal(2, options.NonInstantiatedHashSet.Count);
+            Assert.Equal("Yo1", options.NonInstantiatedHashSet.ElementAt(0));
+            Assert.Equal("Yo2", options.NonInstantiatedHashSet.ElementAt(1));
+        }
+
+        [Fact]
+        public void CanBindInstantiatedSortedSetWithSomeValues()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"InstantiatedSortedSetWithSomeValues:0", "Yo1"},
+                {"InstantiatedSortedSetWithSomeValues:1", "Yo2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexOptions>()!;
+
+            Assert.Equal(4, options.InstantiatedSortedSetWithSomeValues.Count);
+            Assert.Equal("existing1", options.InstantiatedSortedSetWithSomeValues.ElementAt(0));
+            Assert.Equal("existing2", options.InstantiatedSortedSetWithSomeValues.ElementAt(1));
+            Assert.Equal("Yo1", options.InstantiatedSortedSetWithSomeValues.ElementAt(2));
+            Assert.Equal("Yo2", options.InstantiatedSortedSetWithSomeValues.ElementAt(3));
+        }
+
+        [Fact]
+        public void CanBindNonInstantiatedSortedSetWithSomeValues()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"NonInstantiatedSortedSetWithSomeValues:0", "Yo1"},
+                {"NonInstantiatedSortedSetWithSomeValues:1", "Yo2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexOptions>()!;
+
+            Assert.Equal(2, options.NonInstantiatedSortedSetWithSomeValues.Count);
+            Assert.Equal("Yo1", options.NonInstantiatedSortedSetWithSomeValues.ElementAt(0));
+            Assert.Equal("Yo2", options.NonInstantiatedSortedSetWithSomeValues.ElementAt(1));
         }
 
         [Fact]
