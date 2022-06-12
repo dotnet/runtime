@@ -211,17 +211,7 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
                     rii->vnRelation        = rule.relationKind;
                     rii->canInferFromTrue  = rule.canInferFromTrue;
                     rii->canInferFromFalse = rule.canInferFromFalse;
-                    if (swapped)
-                    {
-                        if (rule.relationKind == ValueNumStore::VN_RELATION_KIND::VRK_Reverse)
-                        {
-                            rii->vnRelation = ValueNumStore::VN_RELATION_KIND::VRK_SwapReverse;
-                        }
-                        if (rule.relationKind == ValueNumStore::VN_RELATION_KIND::VRK_Same)
-                        {
-                            rii->vnRelation = ValueNumStore::VN_RELATION_KIND::VRK_Swap;
-                        }
-                    }
+                    rii->reverseSense      = false;
                     return;
                 }
             }
@@ -381,7 +371,7 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
                 // We can use liberal VNs here, as bounds checks are not yet
                 // manifest explicitly as relops.
                 //
-                RelopImplicationInfo rii;
+                RelopImplicationInfo rii = {};
                 rii.treeNormVN = treeNormVN;
                 vnStore->VNUnpackExc(domCmpTree->GetVN(VNK_Liberal), &rii.domCmpNormVN, &domCmpExcVN);
 
