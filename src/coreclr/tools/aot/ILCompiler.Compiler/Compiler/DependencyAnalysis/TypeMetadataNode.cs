@@ -59,7 +59,8 @@ namespace ILCompiler.DependencyAnalysis
                 // so for enums also include their MethodTable.
                 dependencies.Add(factory.MaximallyConstructableType(_type), "Reflectable enum");
 
-                // Enums are not useful without their literal fields
+                // Enums are not useful without their literal fields. The literal fields are not referenced
+                // from anywhere (source code reference to enums compiles to the underlying numerical constants in IL).
                 foreach (FieldDesc enumField in _type.GetFields())
                 {
                     if (enumField.IsLiteral)

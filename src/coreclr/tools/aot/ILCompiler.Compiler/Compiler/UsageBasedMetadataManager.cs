@@ -416,7 +416,7 @@ namespace ILCompiler
             {
                 foreach (FieldDesc field in type.GetFields())
                 {
-                    // Tiny optimization: no get/set for literal fields
+                    // Tiny optimization: no get/set for literal fields since they only exist in metadata
                     if (field.IsLiteral)
                         continue;
 
