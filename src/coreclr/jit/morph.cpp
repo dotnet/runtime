@@ -11194,7 +11194,6 @@ DONE_MORPHING_CHILDREN:
      */
 
     GenTree*      temp;
-    size_t        ival1;
     GenTree*      lclVarTree;
     GenTree*      effectiveOp1;
     FieldSeqNode* fieldSeq = nullptr;
@@ -11571,15 +11570,14 @@ DONE_MORPHING_CHILDREN:
 
             bool foldAndReturnTemp = false;
             temp                   = nullptr;
-            ival1                  = 0;
 
             // Don't remove a volatile GT_IND, even if the address points to a local variable.
-            if ((tree->gtFlags & GTF_IND_VOLATILE) == 0)
+            //
+            if (!tree->AsIndir()->IsVolatile())
             {
                 /* Try to Fold *(&X) into X */
                 if (op1->gtOper == GT_ADDR)
                 {
-                    // Can not remove a GT_ADDR if it is currently a CSE candidate.
                     if (gtIsActiveCSE_Candidate(op1))
                     {
                         break;
@@ -11679,98 +11677,34 @@ DONE_MORPHING_CHILDREN:
                         }
                     }
 #endif // TARGET_ARM
-
-                    /* Try to change *(&lcl + cns) into lcl[cns] to prevent materialization of &lcl */
-
-                    if (op1->AsOp()->gtOp1->OperGet() == GT_ADDR && op1->AsOp()->gtOp2->OperGet() == GT_CNS_INT &&
-                        opts.OptimizationEnabled())
-                    {
-                        // No overflow arithmetic with pointers
-                        noway_assert(!op1->gtOverflow());
-
-                        temp = op1->AsOp()->gtOp1->AsOp()->gtOp1;
-                        if (!temp->OperIsLocal())
-                        {
-                            temp = nullptr;
-                            break;
-                        }
-
-                        // Can not remove the GT_ADDR if it is currently a CSE candidate.
-                        if (gtIsActiveCSE_Candidate(op1->AsOp()->gtOp1))
-                        {
-                            break;
-                        }
-
-                        ival1    = op1->AsOp()->gtOp2->AsIntCon()->gtIconVal;
-                        fieldSeq = op1->AsOp()->gtOp2->AsIntCon()->gtFieldSeq;
-
-                        if (ival1 == 0 && typ == temp->TypeGet() && temp->TypeGet() != TYP_STRUCT)
-                        {
-                            noway_assert(!varTypeIsGC(temp->TypeGet()));
-                            foldAndReturnTemp = true;
-                        }
-                        else
-                        {
-                            // The emitter can't handle large offsets
-                            if (ival1 != (unsigned short)ival1)
-                            {
-                                break;
-                            }
-
-                            // The emitter can get confused by invalid offsets
-                            if (ival1 >= Compiler::lvaLclSize(temp->AsLclVarCommon()->GetLclNum()))
-                            {
-                                break;
-                            }
-                        }
-                        // Now we can fold this into a GT_LCL_FLD below
-                        //   where we check (temp != nullptr)
-                    }
                 }
             }
 
-            // At this point we may have a lclVar or lclFld that might be foldable with a bit of extra massaging:
-            // - We may have a load of a local where the load has a different type than the local
-            // - We may have a load of a local plus an offset
-            //
-            // In these cases, we will change the lclVar or lclFld into a lclFld of the appropriate type and
-            // offset if doing so is legal. The only cases in which this transformation is illegal are if the load
-            // begins before the local or if the load extends beyond the end of the local (i.e. if the load is
-            // out-of-bounds w.r.t. the local).
+            // At this point we may have a lclVar or lclFld of some mismatched type. In this case, we will change
+            // the lclVar or lclFld into a lclFld of the appropriate type if doing so is legal. The only cases in
+            // which this transformation is illegal is when we have a STRUCT indirection, as we do not have the
+            // necessary layout information, or if the load would extend beyond the local.
             if ((temp != nullptr) && !foldAndReturnTemp)
             {
-                assert(temp->OperIsLocal());
+                assert(temp->OperIs(GT_LCL_VAR, GT_LCL_FLD));
 
-                unsigned lclNum = temp->AsLclVarCommon()->GetLclNum();
+                unsigned lclNum  = temp->AsLclVarCommon()->GetLclNum();
+                unsigned lclOffs = temp->AsLclVarCommon()->GetLclOffs();
 
                 // Make sure we do not enregister this lclVar.
                 lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LocalField));
 
-                // If the size of the load is greater than the size of the lclVar, we cannot fold this access into
-                // a lclFld: the access represented by an lclFld node must begin at or after the start of the
-                // lclVar and must not extend beyond the end of the lclVar.
-                if ((ival1 >= 0) && ((ival1 + genTypeSize(typ)) <= lvaLclExactSize(lclNum)))
+                if ((typ != TYP_STRUCT) && ((lclOffs + genTypeSize(typ)) <= lvaLclExactSize(lclNum)))
                 {
-                    GenTreeLclFld* lclFld;
-
-                    // We will turn a GT_LCL_VAR into a GT_LCL_FLD with an gtLclOffs of 'ival'
-                    // or if we already have a GT_LCL_FLD we will adjust the gtLclOffs by adding 'ival'
-                    // Then we change the type of the GT_LCL_FLD to match the orginal GT_IND type.
+                    // We will change the type of the node to match the orginal GT_IND type.
                     //
-                    if (temp->OperGet() == GT_LCL_FLD)
+                    temp->gtType = typ;
+
+                    if (temp->OperIs(GT_LCL_VAR))
                     {
-                        lclFld = temp->AsLclFld();
-                        lclFld->SetLclOffs(lclFld->GetLclOffs() + static_cast<unsigned>(ival1));
-                    }
-                    else // We have a GT_LCL_VAR.
-                    {
-                        assert(temp->OperGet() == GT_LCL_VAR);
-                        temp->ChangeOper(GT_LCL_FLD); // Note that this makes the gtFieldSeq "NotAField".
-                        lclFld = temp->AsLclFld();
-                        lclFld->SetLclOffs(static_cast<unsigned>(ival1));
+                        temp->ChangeOper(GT_LCL_FLD);
                     }
 
-                    temp->gtType      = tree->gtType;
                     foldAndReturnTemp = true;
                 }
             }
@@ -11779,7 +11713,7 @@ DONE_MORPHING_CHILDREN:
             {
                 assert(temp != nullptr);
                 assert(temp->TypeGet() == typ);
-                assert((op1->OperGet() == GT_ADD) || (op1->OperGet() == GT_ADDR));
+                assert(op1->OperIs(GT_ADDR));
 
                 // Copy the value of GTF_DONT_CSE from the original tree to `temp`: it can be set for
                 // 'temp' because a GT_ADDR always marks it for its operand.
@@ -11787,12 +11721,7 @@ DONE_MORPHING_CHILDREN:
                 temp->gtFlags |= (tree->gtFlags & GTF_DONT_CSE);
                 temp->SetVNsFromNode(tree);
 
-                if (op1->OperGet() == GT_ADD)
-                {
-                    DEBUG_DESTROY_NODE(op1->AsOp()->gtOp1); // GT_ADDR
-                    DEBUG_DESTROY_NODE(op1->AsOp()->gtOp2); // GT_CNS_INT
-                }
-                DEBUG_DESTROY_NODE(op1);  // GT_ADD or GT_ADDR
+                DEBUG_DESTROY_NODE(op1);  // GT_ADDR
                 DEBUG_DESTROY_NODE(tree); // GT_IND
 
                 // If the result of the fold is a local var, we may need to perform further adjustments e.g. for
@@ -12794,9 +12723,39 @@ GenTree* Compiler::fgOptimizeAddition(GenTreeOp* add)
         return op1;
     }
 
-    // Note that these transformations are legal for floating-point ADDs as well.
     if (opts.OptimizationEnabled())
     {
+        // Reduce local addresses: "ADD(ADDR(LCL_VAR), OFFSET)" => "ADDR(LCL_FLD OFFSET)".
+        // TODO-ADDR: do "ADD(LCL_FLD/VAR_ADDR, OFFSET)" => "LCL_FLD_ADDR" instead.
+        //
+        if (op1->OperIs(GT_ADDR) && op2->IsCnsIntOrI() && op1->gtGetOp1()->OperIsLocalRead())
+        {
+            GenTreeUnOp*         addrNode   = op1->AsUnOp();
+            GenTreeLclVarCommon* lclNode    = addrNode->gtGetOp1()->AsLclVarCommon();
+            GenTreeIntCon*       offsetNode = op2->AsIntCon();
+            if (FitsIn<uint16_t>(offsetNode->IconValue()))
+            {
+                unsigned offset = lclNode->GetLclOffs() + static_cast<uint16_t>(offsetNode->IconValue());
+
+                // Note: the emitter does not expect out-of-bounds access for LCL_FLD_ADDR.
+                if (FitsIn<uint16_t>(offset) && (offset < lvaLclExactSize(lclNode->GetLclNum())))
+                {
+                    // Types of location nodes under ADDRs do not matter. We arbitrarily choose TYP_UBYTE.
+                    lclNode->ChangeType(TYP_UBYTE);
+                    lclNode->SetOper(GT_LCL_FLD);
+                    lclNode->AsLclFld()->SetLclOffs(offset);
+                    lvaSetVarDoNotEnregister(lclNode->GetLclNum() DEBUGARG(DoNotEnregisterReason::LocalField));
+
+                    addrNode->SetVNsFromNode(add);
+
+                    DEBUG_DESTROY_NODE(offsetNode);
+                    DEBUG_DESTROY_NODE(add);
+
+                    return addrNode;
+                }
+            }
+        }
+
         // - a + b = > b - a
         // ADD((NEG(a), b) => SUB(b, a)
 
