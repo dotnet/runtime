@@ -316,12 +316,12 @@ namespace System.IO.Packaging
 
             PackUriHelper.ValidatedPartUri validatedPartUri = (PackUriHelper.ValidatedPartUri)PackUriHelper.ValidatePartUri(partUri);
 
-            if (_partList.ContainsKey(validatedPartUri))
+            if (_partList.TryGetValue(validatedPartUri, out PackagePart? value))
             {
                 //This will get the actual casing of the part that
                 //is stored in the partList which is equivalent to the
                 //partUri provided by the user
-                validatedPartUri = (PackUriHelper.ValidatedPartUri)_partList[validatedPartUri].Uri;
+                validatedPartUri = (PackUriHelper.ValidatedPartUri)value.Uri;
                 _partList[validatedPartUri].IsDeleted = true;
                 _partList[validatedPartUri].Close();
 
@@ -1125,9 +1125,9 @@ namespace System.IO.Packaging
 
             PackUriHelper.ValidatedPartUri validatePartUri = PackUriHelper.ValidatePartUri(partUri);
 
-            if (_partList.ContainsKey(validatePartUri))
+            if (_partList.TryGetValue(validatePartUri, out PackagePart? value))
             {
-                return _partList[validatePartUri];
+                return value;
             }
             else
             {

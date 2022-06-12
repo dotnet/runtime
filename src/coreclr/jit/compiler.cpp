@@ -6563,7 +6563,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
         {
             // This looks like a viable inline candidate.  Since
             // we're not actually inlining, don't report anything.
-            prejitResult.SetReported();
+            prejitResult.SetSuccessResult(INLINE_PREJIT_SUCCESS);
         }
     }
     else
@@ -9373,13 +9373,6 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 }
                 break;
 
-            case GT_INDEX:
-
-                if (tree->gtFlags & GTF_INX_STRING_LAYOUT)
-                {
-                    chars += printf("[INX_STRING_LAYOUT]");
-                }
-                FALLTHROUGH;
             case GT_INDEX_ADDR:
                 if (tree->gtFlags & GTF_INX_RNGCHK)
                 {

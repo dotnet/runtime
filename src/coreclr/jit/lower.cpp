@@ -3686,6 +3686,10 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
             LowerRetSingleRegStructLclVar(ret);
             break;
 
+        case GT_LCL_FLD:
+            retVal->ChangeType(nativeReturnType);
+            break;
+
 #if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
 #ifdef FEATURE_SIMD
         case GT_SIMD:
@@ -3705,16 +3709,6 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
         }
         break;
 #endif // FEATURE_SIMD || FEATURE_HW_INTRINSICS
-
-        case GT_LCL_FLD:
-        {
-#ifdef DEBUG
-            LclVarDsc* varDsc = comp->lvaGetDesc(retVal->AsLclFld());
-            assert(varDsc->lvDoNotEnregister);
-#endif
-            retVal->ChangeType(nativeReturnType);
-        }
-        break;
 
         default:
             assert(varTypeIsEnregisterable(retVal));
@@ -5844,7 +5838,8 @@ GenTree* Lowering::LowerConstIntDivOrMod(GenTree* node)
 #if defined(TARGET_ARM64)
     if (divMod->OperIs(GT_MOD) && divisor->IsIntegralConstPow2())
     {
-        return LowerModPow2(node);
+        LowerModPow2(node);
+        return node->gtNext;
     }
     assert(node->OperGet() != GT_MOD);
 #endif // TARGET_ARM64

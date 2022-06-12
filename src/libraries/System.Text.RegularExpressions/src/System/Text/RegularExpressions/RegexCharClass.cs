@@ -389,10 +389,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         private void AddRanges(ReadOnlySpan<char> set)
         {
-            if (set.Length == 0)
-            {
-                return;
-            }
+            Debug.Assert(!set.IsEmpty);
 
             List<(char First, char Last)> rangeList = EnsureRangeList();
 

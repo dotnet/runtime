@@ -16,7 +16,7 @@ namespace System.Xml.Schema
         public XmlQualifiedName RefName
         {
             get { return _refName; }
-            set { _refName = (value == null ? XmlQualifiedName.Empty : value); }
+            set { _refName = value ?? XmlQualifiedName.Empty; }
         }
     }
 }

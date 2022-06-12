@@ -34,7 +34,7 @@ namespace System.Reflection.TypeLoading
 
         public sealed override Type ReflectedType => _reflectedType;
 
-        public sealed override string Name => _lazyName ?? (_lazyName = ComputeName());
+        public sealed override string Name => _lazyName ??= ComputeName();
         protected abstract string ComputeName();
         private volatile string? _lazyName;
 
@@ -82,7 +82,7 @@ namespace System.Reflection.TypeLoading
         private const FieldAttributes FieldAttributesSentinel = (FieldAttributes)(-1);
         private volatile FieldAttributes _lazyFieldAttributes = FieldAttributesSentinel;
 
-        public sealed override Type FieldType => _lazyFieldType ?? (_lazyFieldType = ComputeFieldType());
+        public sealed override Type FieldType => _lazyFieldType ??= ComputeFieldType();
         protected abstract Type ComputeFieldType();
         private volatile Type? _lazyFieldType;
 

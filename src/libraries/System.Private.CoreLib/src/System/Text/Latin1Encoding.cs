@@ -192,7 +192,7 @@ namespace System.Text
             return GetBytesCommon(chars, charCount, bytes, byteCount);
         }
 
-        public unsafe override int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex)
+        public override unsafe int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex)
         {
             if (chars is null || bytes is null)
             {
@@ -391,7 +391,7 @@ namespace System.Text
          * We never consult the fallback mechanism during decoding.
          */
 
-        public unsafe override int GetChars(byte* bytes, int byteCount, char* chars, int charCount)
+        public override unsafe int GetChars(byte* bytes, int byteCount, char* chars, int charCount)
         {
             if (bytes is null || chars is null)
             {
@@ -410,7 +410,7 @@ namespace System.Text
             return GetCharsCommon(bytes, byteCount, chars, charCount);
         }
 
-        public unsafe override char[] GetChars(byte[] bytes)
+        public override unsafe char[] GetChars(byte[] bytes)
         {
             if (bytes is null)
             {
@@ -435,7 +435,7 @@ namespace System.Text
             return chars;
         }
 
-        public unsafe override int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex)
+        public override unsafe int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex)
         {
             if (bytes is null || chars is null)
             {
@@ -468,7 +468,7 @@ namespace System.Text
             }
         }
 
-        public unsafe override char[] GetChars(byte[] bytes, int index, int count)
+        public override unsafe char[] GetChars(byte[] bytes, int index, int count)
         {
             if (bytes is null)
             {
@@ -502,7 +502,7 @@ namespace System.Text
             return chars;
         }
 
-        public unsafe override int GetChars(ReadOnlySpan<byte> bytes, Span<char> chars)
+        public override unsafe int GetChars(ReadOnlySpan<byte> bytes, Span<char> chars)
         {
             // It's ok for us to pass null pointers down to the workhorse below.
 
@@ -513,7 +513,7 @@ namespace System.Text
             }
         }
 
-        public unsafe override string GetString(byte[] bytes)
+        public override unsafe string GetString(byte[] bytes)
         {
             if (bytes is null)
             {
@@ -532,7 +532,7 @@ namespace System.Text
             });
         }
 
-        public unsafe override string GetString(byte[] bytes, int index, int count)
+        public override unsafe string GetString(byte[] bytes, int index, int count)
         {
             if (bytes is null)
             {

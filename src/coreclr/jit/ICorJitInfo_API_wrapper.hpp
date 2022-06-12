@@ -69,6 +69,15 @@ CorInfoInline WrapICorJitInfo::canInline(
     return temp;
 }
 
+void WrapICorJitInfo::beginInlining(
+          CORINFO_METHOD_HANDLE inlinerHnd,
+          CORINFO_METHOD_HANDLE inlineeHnd)
+{
+    API_ENTER(beginInlining);
+    wrapHnd->beginInlining(inlinerHnd, inlineeHnd);
+    API_LEAVE(beginInlining);
+}
+
 void WrapICorJitInfo::reportInliningDecision(
           CORINFO_METHOD_HANDLE inlinerHnd,
           CORINFO_METHOD_HANDLE inlineeHnd,
@@ -1687,16 +1696,6 @@ uint32_t WrapICorJitInfo::getJitFlags(
     API_ENTER(getJitFlags);
     uint32_t temp = wrapHnd->getJitFlags(flags, sizeInBytes);
     API_LEAVE(getJitFlags);
-    return temp;
-}
-
-bool WrapICorJitInfo::doesFieldBelongToClass(
-          CORINFO_FIELD_HANDLE fldHnd,
-          CORINFO_CLASS_HANDLE cls)
-{
-    API_ENTER(doesFieldBelongToClass);
-    bool temp = wrapHnd->doesFieldBelongToClass(fldHnd, cls);
-    API_LEAVE(doesFieldBelongToClass);
     return temp;
 }
 

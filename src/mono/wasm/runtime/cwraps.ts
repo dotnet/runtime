@@ -135,7 +135,7 @@ export interface t_Cwraps {
     mono_wasm_try_unbox_primitive_and_get_type_ref(obj: MonoObjectRef, buffer: VoidPtr, buffer_size: number): number;
     mono_wasm_box_primitive_ref(klass: MonoClass, value: VoidPtr, value_size: number, result: MonoObjectRef): void;
     mono_wasm_intern_string_ref(strRef: MonoStringRef): void;
-    mono_wasm_assembly_get_entry_point(assembly: MonoAssembly): MonoMethod;
+    mono_wasm_assembly_get_entry_point(assembly: MonoAssembly, idx: number): MonoMethod;
     mono_wasm_string_array_new_ref(size: number, result: MonoObjectRef): void;
     mono_wasm_typed_array_new_ref(arr: VoidPtr, length: number, size: number, type: number, result: MonoObjectRef): void;
     mono_wasm_class_get_type(klass: MonoClass): MonoType;

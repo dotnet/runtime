@@ -215,6 +215,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo
         public static int GenerateMibcFile(TypeSystemContext tsc, FileInfo outputFileName, IEnumerable<MethodProfileData> methodsToAttemptToPlaceIntoProfileData, bool validate, bool uncompressed)
         {
             TypeSystemMetadataEmitter emitter = new TypeSystemMetadataEmitter(new AssemblyName(outputFileName.Name), tsc);
+            emitter.InjectSystemPrivateCanon();
+            emitter.AllowUseOfAddGlobalMethod();
 
             SortedDictionary<string, MIbcGroup> groups = new SortedDictionary<string, MIbcGroup>();
             StringBuilder mibcGroupNameBuilder = new StringBuilder();

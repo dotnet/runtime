@@ -11,7 +11,7 @@ namespace System.Formats.Tar
     {
         /// <summary>
         /// <para>Regular file.</para>
-        /// <para>This entry type is specific to the <see cref="TarFormat.Ustar"/>, <see cref="TarFormat.Pax"/> and <see cref="TarFormat.Gnu"/> formats.</para>
+        /// <para>This entry type is specific to the <see cref="TarEntryFormat.Ustar"/>, <see cref="TarEntryFormat.Pax"/> and <see cref="TarEntryFormat.Gnu"/> formats.</para>
         /// </summary>
         RegularFile = (byte)'0',
         /// <summary>
@@ -43,7 +43,7 @@ namespace System.Formats.Tar
         Fifo = (byte)'6',
         /// <summary>
         /// <para>GNU contiguous file</para>
-        /// <para>This entry type is specific to the <see cref="TarFormat.Gnu"/> format, and is treated as a <see cref="RegularFile"/> entry type.</para>
+        /// <para>This entry type is specific to the <see cref="TarEntryFormat.Gnu"/> format, and is treated as a <see cref="RegularFile"/> entry type.</para>
         /// </summary>
         // According to the GNU spec, it's extremely rare to encounter a contiguous entry.
         ContiguousFile = (byte)'7',
@@ -59,7 +59,7 @@ namespace System.Formats.Tar
         GlobalExtendedAttributes = (byte)'g',
         /// <summary>
         /// <para>GNU directory with a list of entries.</para>
-        /// <para>This entry type is specific to the <see cref="TarFormat.Gnu"/> format, and is treated as a <see cref="Directory"/> entry type that contains a data section.</para>
+        /// <para>This entry type is specific to the <see cref="TarEntryFormat.Gnu"/> format, and is treated as a <see cref="Directory"/> entry type that contains a data section.</para>
         /// </summary>
         DirectoryList = (byte)'D',
         /// <summary>
@@ -74,27 +74,27 @@ namespace System.Formats.Tar
         LongPath = (byte)'L',
         /// <summary>
         /// <para>GNU multi-volume file.</para>
-        /// <para>This entry type is specific to the <see cref="TarFormat.Gnu"/> format and is not supported for writing.</para>
+        /// <para>This entry type is specific to the <see cref="TarEntryFormat.Gnu"/> format and is not supported for writing.</para>
         /// </summary>
         MultiVolume = (byte)'M',
         /// <summary>
         /// <para>V7 Regular file.</para>
-        /// <para>This entry type is specific to the <see cref="TarFormat.V7"/> format.</para>
+        /// <para>This entry type is specific to the <see cref="TarEntryFormat.V7"/> format.</para>
         /// </summary>
         V7RegularFile = (byte)'\0',
         /// <summary>
         /// <para>GNU file to be renamed/symlinked.</para>
-        /// <para>This entry type is specific to the <see cref="TarFormat.Gnu"/> format. It is considered unsafe and is ignored by other tools.</para>
+        /// <para>This entry type is specific to the <see cref="TarEntryFormat.Gnu"/> format. It is considered unsafe and is ignored by other tools.</para>
         /// </summary>
         RenamedOrSymlinked = (byte)'N',
         /// <summary>
         /// <para>GNU sparse file.</para>
-        /// <para>This entry type is specific to the <see cref="TarFormat.Gnu"/> format and is not supported for writing.</para>
+        /// <para>This entry type is specific to the <see cref="TarEntryFormat.Gnu"/> format and is not supported for writing.</para>
         /// </summary>
         SparseFile = (byte)'S',
         /// <summary>
         /// <para>GNU tape volume.</para>
-        /// <para>This entry type is specific to the <see cref="TarFormat.Gnu"/> format and is not supported for writing.</para>
+        /// <para>This entry type is specific to the <see cref="TarEntryFormat.Gnu"/> format and is not supported for writing.</para>
         /// </summary>
         TapeVolume = (byte)'V',
     }

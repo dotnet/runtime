@@ -63,6 +63,6 @@ namespace System.Reflection.Metadata
         private static extern int ApplyUpdateEnabled (int justComponentCheck);
 
         [MethodImpl (MethodImplOptions.InternalCall)]
-        private static unsafe extern void ApplyUpdate_internal (IntPtr base_assm, byte* dmeta_bytes, int dmeta_length, byte *dil_bytes, int dil_length, byte *dpdb_bytes, int dpdb_length);
+        private static extern unsafe void ApplyUpdate_internal (IntPtr base_assm, byte* dmeta_bytes, int dmeta_length, byte *dil_bytes, int dil_length, byte *dpdb_bytes, int dpdb_length);
     }
 }

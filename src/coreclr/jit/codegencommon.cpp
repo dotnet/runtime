@@ -1944,11 +1944,12 @@ void CodeGen::genGenerateMachineCode()
 #endif // DEBUG
 
     /* We can now generate the function prolog and epilog */
-
     genGeneratePrologsAndEpilogs();
 
-    /* Bind jump distances */
+    // check to see if any jumps can be removed
+    GetEmitter()->emitRemoveJumpToNextInst();
 
+    /* Bind jump distances */
     GetEmitter()->emitJumpDistBind();
 
 #if FEATURE_LOOP_ALIGN

@@ -62,7 +62,7 @@ namespace System.Data
         {
             get
             {
-                return (_originalExpression != null ? _originalExpression : ""); // CONSIDER: return optimized expression here (if bound)
+                return _originalExpression ?? ""; // CONSIDER: return optimized expression here (if bound)
             }
         }
 

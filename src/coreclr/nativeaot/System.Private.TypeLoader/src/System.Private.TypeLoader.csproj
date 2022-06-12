@@ -10,7 +10,6 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
-    <ProjectReference Include="..\..\System.Private.Reflection.Metadata\src\System.Private.Reflection.Metadata.csproj" />
   </ItemGroup>
   <PropertyGroup>
     <NativeFormatCommonPath>$(CompilerCommonPath)\Internal\NativeFormat</NativeFormatCommonPath>

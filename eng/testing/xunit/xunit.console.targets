@@ -41,7 +41,6 @@
     <RunScriptCommand>$(RunScriptCommand) -xml $(TestResultsName)</RunScriptCommand>
   </PropertyGroup>
 
-
   <ItemGroup Condition="'$(TestSingleFile)' != 'true'">
     <PackageReference Include="Microsoft.DotNet.XUnitConsoleRunner"
                       Version="$(MicrosoftDotNetXUnitConsoleRunnerVersion)"

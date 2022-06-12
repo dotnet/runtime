@@ -7005,7 +7005,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_TIER_ENTER_METHOD) {
 			frame->imethod->entry_count++;
 			if (frame->imethod->entry_count > INTERP_TIER_ENTRY_LIMIT)
-				mono_interp_tier_up_frame_enter (frame, context, &ip);
+				ip = mono_interp_tier_up_frame_enter (frame, context);
 			else
 				ip++;
 			MINT_IN_BREAK;
@@ -7013,7 +7013,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_TIER_PATCHPOINT) {
 			frame->imethod->entry_count++;
 			if (frame->imethod->entry_count > INTERP_TIER_ENTRY_LIMIT)
-				mono_interp_tier_up_frame_patchpoint (frame, context, &ip);
+				ip = mono_interp_tier_up_frame_patchpoint (frame, context, ip [1]);
 			else
 				ip += 2;
 			MINT_IN_BREAK;

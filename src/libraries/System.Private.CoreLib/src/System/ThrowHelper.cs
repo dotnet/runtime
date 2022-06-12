@@ -562,6 +562,12 @@ namespace System
             throw ex;
         }
 
+        [DoesNotReturn]
+        internal static void ThrowFormatInvalidString()
+        {
+            throw new FormatException(SR.Format_InvalidString);
+        }
+
         private static Exception GetArraySegmentCtorValidationFailedException(Array? array, int offset, int count)
         {
             if (array == null)

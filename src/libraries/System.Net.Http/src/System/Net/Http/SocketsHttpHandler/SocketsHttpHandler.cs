@@ -56,7 +56,7 @@ namespace System.Net.Http
         [AllowNull]
         public CookieContainer CookieContainer
         {
-            get => _settings._cookieContainer ?? (_settings._cookieContainer = new CookieContainer());
+            get => _settings._cookieContainer ??= new CookieContainer();
             set
             {
                 CheckDisposedOrStarted();
@@ -213,7 +213,7 @@ namespace System.Net.Http
         [AllowNull]
         public SslClientAuthenticationOptions SslOptions
         {
-            get => _settings._sslOptions ?? (_settings._sslOptions = new SslClientAuthenticationOptions());
+            get => _settings._sslOptions ??= new SslClientAuthenticationOptions();
             set
             {
                 CheckDisposedOrStarted();
@@ -422,7 +422,7 @@ namespace System.Net.Http
         /// Gets a writable dictionary (that is, a map) of custom properties for the HttpClient requests. The dictionary is initialized empty; you can insert and query key-value pairs for your custom handlers and special processing.
         /// </summary>
         public IDictionary<string, object?> Properties =>
-            _settings._properties ?? (_settings._properties = new Dictionary<string, object?>());
+            _settings._properties ??= new Dictionary<string, object?>();
 
         /// <summary>
         /// Gets or sets a callback that returns the <see cref="Encoding"/> to encode the value for the specified request header name,

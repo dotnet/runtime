@@ -41,7 +41,7 @@ namespace System.ComponentModel
         /// </summary>
         public static CategoryAttribute Action
         {
-            get => s_action ?? (s_action = new CategoryAttribute(nameof(Action)));
+            get => s_action ??= new CategoryAttribute(nameof(Action));
         }
 
         /// <summary>
@@ -49,7 +49,7 @@ namespace System.ComponentModel
         /// </summary>
         public static CategoryAttribute Appearance
         {
-            get => s_appearance ?? (s_appearance = new CategoryAttribute(nameof(Appearance)));
+            get => s_appearance ??= new CategoryAttribute(nameof(Appearance));
         }
 
         /// <summary>
@@ -57,7 +57,7 @@ namespace System.ComponentModel
         /// </summary>
         public static CategoryAttribute Asynchronous
         {
-            get => s_asynchronous ?? (s_asynchronous = new CategoryAttribute(nameof(Asynchronous)));
+            get => s_asynchronous ??= new CategoryAttribute(nameof(Asynchronous));
         }
 
         /// <summary>
@@ -65,7 +65,7 @@ namespace System.ComponentModel
         /// </summary>
         public static CategoryAttribute Behavior
         {
-            get => s_behavior ?? (s_behavior = new CategoryAttribute(nameof(Behavior)));
+            get => s_behavior ??= new CategoryAttribute(nameof(Behavior));
         }
 
         /// <summary>
@@ -73,7 +73,7 @@ namespace System.ComponentModel
         /// </summary>
         public static CategoryAttribute Data
         {
-            get => s_data ?? (s_data = new CategoryAttribute(nameof(Data)));
+            get => s_data ??= new CategoryAttribute(nameof(Data));
         }
 
         /// <summary>
@@ -81,7 +81,7 @@ namespace System.ComponentModel
         /// </summary>
         public static CategoryAttribute Default
         {
-            get => s_defAttr ?? (s_defAttr = new CategoryAttribute());
+            get => s_defAttr ??= new CategoryAttribute();
         }
 
         /// <summary>
@@ -89,7 +89,7 @@ namespace System.ComponentModel
         /// </summary>
         public static CategoryAttribute Design
         {
-            get => s_design ?? (s_design = new CategoryAttribute(nameof(Design)));
+            get => s_design ??= new CategoryAttribute(nameof(Design));
         }
 
         /// <summary>
@@ -97,7 +97,7 @@ namespace System.ComponentModel
         /// </summary>
         public static CategoryAttribute DragDrop
         {
-            get => s_dragDrop ?? (s_dragDrop = new CategoryAttribute(nameof(DragDrop)));
+            get => s_dragDrop ??= new CategoryAttribute(nameof(DragDrop));
         }
 
         /// <summary>
@@ -105,7 +105,7 @@ namespace System.ComponentModel
         /// </summary>
         public static CategoryAttribute Focus
         {
-            get => s_focus ?? (s_focus = new CategoryAttribute(nameof(Focus)));
+            get => s_focus ??= new CategoryAttribute(nameof(Focus));
         }
 
         /// <summary>
@@ -113,7 +113,7 @@ namespace System.ComponentModel
         /// </summary>
         public static CategoryAttribute Format
         {
-            get => s_format ?? (s_format = new CategoryAttribute(nameof(Format)));
+            get => s_format ??= new CategoryAttribute(nameof(Format));
         }
 
         /// <summary>
@@ -121,7 +121,7 @@ namespace System.ComponentModel
         /// </summary>
         public static CategoryAttribute Key
         {
-            get => s_key ?? (s_key = new CategoryAttribute(nameof(Key)));
+            get => s_key ??= new CategoryAttribute(nameof(Key));
         }
 
         /// <summary>
@@ -129,7 +129,7 @@ namespace System.ComponentModel
         /// </summary>
         public static CategoryAttribute Layout
         {
-            get => s_layout ?? (s_layout = new CategoryAttribute(nameof(Layout)));
+            get => s_layout ??= new CategoryAttribute(nameof(Layout));
         }
 
         /// <summary>
@@ -137,7 +137,7 @@ namespace System.ComponentModel
         /// </summary>
         public static CategoryAttribute Mouse
         {
-            get => s_mouse ?? (s_mouse = new CategoryAttribute(nameof(Mouse)));
+            get => s_mouse ??= new CategoryAttribute(nameof(Mouse));
         }
 
         /// <summary>
@@ -145,7 +145,7 @@ namespace System.ComponentModel
         /// </summary>
         public static CategoryAttribute WindowStyle
         {
-            get => s_windowStyle ?? (s_windowStyle = new CategoryAttribute(nameof(WindowStyle)));
+            get => s_windowStyle ??= new CategoryAttribute(nameof(WindowStyle));
         }
 
         /// <summary>

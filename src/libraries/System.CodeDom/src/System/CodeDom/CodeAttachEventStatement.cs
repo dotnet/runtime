@@ -22,7 +22,7 @@ namespace System.CodeDom
 
         public CodeEventReferenceExpression Event
         {
-            get => _eventRef ?? (_eventRef = new CodeEventReferenceExpression());
+            get => _eventRef ??= new CodeEventReferenceExpression();
             set => _eventRef = value;
         }
 

@@ -44,6 +44,10 @@ CorInfoInline canInline(
           CORINFO_METHOD_HANDLE callerHnd,
           CORINFO_METHOD_HANDLE calleeHnd) override;
 
+void beginInlining(
+          CORINFO_METHOD_HANDLE inlinerHnd,
+          CORINFO_METHOD_HANDLE inlineeHnd) override;
+
 void reportInliningDecision(
           CORINFO_METHOD_HANDLE inlinerHnd,
           CORINFO_METHOD_HANDLE inlineeHnd,
@@ -709,10 +713,6 @@ uint32_t getExpectedTargetArchitecture() override;
 uint32_t getJitFlags(
           CORJIT_FLAGS* flags,
           uint32_t sizeInBytes) override;
-
-bool doesFieldBelongToClass(
-          CORINFO_FIELD_HANDLE fldHnd,
-          CORINFO_CLASS_HANDLE cls) override;
 
 /**********************************************************************************/
 // clang-format on
