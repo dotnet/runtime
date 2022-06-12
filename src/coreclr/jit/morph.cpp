@@ -11690,7 +11690,10 @@ DONE_MORPHING_CHILDREN:
                 /* Try to Fold *(&X) into X */
                 if (op1->gtOper == GT_ADDR)
                 {
-                    assert(!gtIsActiveCSE_Candidate(op1)); // GT_ADDRs cannot be CSE candidates.
+                    if (gtIsActiveCSE_Candidate(op1))
+                    {
+                        break;
+                    }
 
                     temp = op1->AsOp()->gtOp1; // X
 
