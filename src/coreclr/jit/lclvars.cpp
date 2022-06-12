@@ -4181,57 +4181,49 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
 
             /* Is this an assignment to a local variable? */
 
-            if (op1->gtOper == GT_LCL_VAR)
+            if (op1->gtOper == GT_LCL_VAR && op2->gtType != TYP_BOOL)
             {
-                LclVarDsc* varDsc = lvaGetDesc(op1->AsLclVarCommon());
+                /* Only simple assignments allowed for booleans */
 
-                if (varDsc->lvPinned && varDsc->lvAllDefsAreNoGc)
+                if (tree->gtOper != GT_ASG)
                 {
-                    if (!op2->IsNotGcDef())
-                    {
-                        varDsc->lvAllDefsAreNoGc = false;
-                    }
+                    goto NOT_BOOL;
                 }
 
-                if (op2->gtType != TYP_BOOL)
+                /* Is the RHS clearly a boolean value? */
+
+                switch (op2->gtOper)
                 {
-                    /* Only simple assignments allowed for booleans */
+                    unsigned lclNum;
 
-                    if (tree->gtOper != GT_ASG)
-                    {
-                        goto NOT_BOOL;
-                    }
+                    case GT_CNS_INT:
 
-                    /* Is the RHS clearly a boolean value? */
-
-                    switch (op2->gtOper)
-                    {
-                        case GT_CNS_INT:
-
-                            if (op2->AsIntCon()->gtIconVal == 0)
-                            {
-                                break;
-                            }
-                            if (op2->AsIntCon()->gtIconVal == 1)
-                            {
-                                break;
-                            }
-
-                            // Not 0 or 1, fall through ....
-                            FALLTHROUGH;
-
-                        default:
-
-                            if (op2->OperIsCompare())
-                            {
-                                break;
-                            }
-
-                        NOT_BOOL:
-
-                            varDsc->lvIsBoolean = false;
+                        if (op2->AsIntCon()->gtIconVal == 0)
+                        {
                             break;
-                    }
+                        }
+                        if (op2->AsIntCon()->gtIconVal == 1)
+                        {
+                            break;
+                        }
+
+                        // Not 0 or 1, fall through ....
+                        FALLTHROUGH;
+
+                    default:
+
+                        if (op2->OperIsCompare())
+                        {
+                            break;
+                        }
+
+                    NOT_BOOL:
+
+                        lclNum = op1->AsLclVarCommon()->GetLclNum();
+                        noway_assert(lclNum < lvaCount);
+
+                        lvaTable[lclNum].lvIsBoolean = false;
+                        break;
                 }
             }
         }
@@ -4286,8 +4278,7 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
     {
         if (lvaVarAddrExposed(lclNum))
         {
-            varDsc->lvIsBoolean      = false;
-            varDsc->lvAllDefsAreNoGc = false;
+            varDsc->lvIsBoolean = false;
         }
 
         if (tree->gtOper == GT_LCL_FLD)
@@ -4712,8 +4703,6 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
             varDsc->setLvRefCnt(0);
             varDsc->setLvRefCntWtd(BB_ZERO_WEIGHT);
 
-            varDsc->lvAllDefsAreNoGc = true;
-
             // Special case for some varargs params ... these must
             // remain unreferenced.
             const bool isSpecialVarargsParam = varDsc->lvIsParam && raIsVarargsStackArg(lclNum);
@@ -4761,8 +4750,6 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
         {
             varDsc->lvSingleDef             = varDsc->lvIsParam;
             varDsc->lvSingleDefRegCandidate = varDsc->lvIsParam;
-
-            varDsc->lvAllDefsAreNoGc = true;
         }
     }
 
@@ -4880,13 +4867,6 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
             {
                 varDsc->lvImplicitlyReferenced = 1;
             }
-        }
-
-        if (varDsc->lvPinned && varDsc->lvAllDefsAreNoGc)
-        {
-            varDsc->lvPinned = 0;
-
-            JITDUMP("V%02u was unpinned as all def candidates were local.\n", lclNum);
         }
     }
 }
