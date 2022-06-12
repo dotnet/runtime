@@ -348,7 +348,7 @@ namespace System.Runtime.Serialization
             private static readonly Dictionary<TypeHandleRef, IntRef> s_typeToIDCache = new Dictionary<TypeHandleRef, IntRef>(new TypeHandleRefEqualityComparer());
             private static DataContract[] s_dataContractCache = new DataContract[32];
             private static int s_dataContractID;
-            private static Dictionary<Type, DataContract?>? s_typeToBuiltInContract;
+            private static ConcurrentDictionary<Type, DataContract?> s_typeToBuiltInContract = new();
             private static Dictionary<XmlQualifiedName, DataContract?>? s_nameToBuiltInContract;
             private static Dictionary<string, string>? s_namespaces;
             private static Dictionary<string, XmlDictionaryString>? s_clrTypeStrings;
@@ -637,19 +637,12 @@ namespace System.Runtime.Serialization
                 if (type.IsInterface && !CollectionDataContract.IsCollectionInterface(type))
                     type = Globals.TypeOfObject;
 
-                lock (s_initBuiltInContractsLock)
-                {
-                    if (s_typeToBuiltInContract == null)
-                        s_typeToBuiltInContract = new Dictionary<Type, DataContract?>();
 
-                    DataContract? dataContract;
-                    if (!s_typeToBuiltInContract.TryGetValue(type, out dataContract))
-                    {
-                        TryCreateBuiltInDataContract(type, out dataContract);
-                        s_typeToBuiltInContract.Add(type, dataContract);
-                    }
+                return s_typeToBuiltInContract.GetOrAdd(type, static (Type key) =>
+                {
+                    TryCreateBuiltInDataContract(key, out var dataContract);
                     return dataContract;
-                }
+                });
             }
 
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
