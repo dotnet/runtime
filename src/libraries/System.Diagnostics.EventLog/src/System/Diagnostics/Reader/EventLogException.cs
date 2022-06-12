@@ -50,7 +50,7 @@ namespace System.Diagnostics.Eventing.Reader
         public EventLogException() { }
         public EventLogException(string message) : base(message) { }
         public EventLogException(string message, Exception innerException) : base(message, innerException) { }
-        protected EventLogException(int errorCode) { _errorCode = errorCode; }
+        protected EventLogException(int errorCode) { _errorCode = errorCode; HResult = errorCode; }
 
         public override string Message
         {

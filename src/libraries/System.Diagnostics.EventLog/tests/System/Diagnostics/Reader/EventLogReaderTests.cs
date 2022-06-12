@@ -48,14 +48,18 @@ namespace System.Diagnostics.Tests
             if (PlatformDetection.IsWindows7) // Null events in PowerShell log
                 return;
             var query = new EventLogQuery(null, PathType.FilePath, "*[System[(Level=2)]]") { ReverseDirection = true };
+            EventLogException exception = null;
             if (useBookmark)
             {
-                Assert.Throws<EventLogException>(() => new EventLogReader(query, bookmark: null));
-                Assert.Throws<EventLogException>(() => new EventLogReader(query, bookmark: Helpers.GetBookmark("Application", PathType.LogName)));
+                exception = Assert.Throws<EventLogException>(() => new EventLogReader(query, bookmark: null));
+                Assert.Equal(15000, exception.HResult);
+                exception = Assert.Throws<EventLogException>(() => new EventLogReader(query, bookmark: Helpers.GetBookmark("Application", PathType.LogName)));
+                Assert.Equal(15000, exception.HResult);
             }
             else
             {
-                Assert.Throws<EventLogException>(() => new EventLogReader(query));
+                exception = Assert.Throws<EventLogException>(() => new EventLogReader(query));
+                Assert.Equal(15000, exception.HResult);
             }
         }
 
@@ -67,14 +71,19 @@ namespace System.Diagnostics.Tests
             if (PlatformDetection.IsWindows7) // Null events in PowerShell log
                 return;
             var query = new EventLogQuery(null, PathType.FilePath, "*[System[(Level=2)]]") { TolerateQueryErrors = true };
+            EventLogException exception = null;
+
             if (useBookmark)
             {
-                Assert.Throws<EventLogException>(() => new EventLogReader(query, bookmark: null));
-                Assert.Throws<EventLogException>(() => new EventLogReader(query, bookmark: Helpers.GetBookmark("Application", PathType.LogName)));
+                exception = Assert.Throws<EventLogException>(() => new EventLogReader(query, bookmark: null));
+                Assert.Equal(15000, exception.HResult);
+                exception = Assert.Throws<EventLogException>(() => new EventLogReader(query, bookmark: Helpers.GetBookmark("Application", PathType.LogName)));
+                Assert.Equal(15000, exception.HResult);
             }
             else
             {
-                Assert.Throws<EventLogException>(() => new EventLogReader(query));
+                exception = Assert.Throws<EventLogException>(() => new EventLogReader(query));
+                Assert.Equal(15000, exception.HResult);
             }
         }
 

@@ -50,7 +50,8 @@ namespace System.Diagnostics.Tests
                 Assert.Throws<ArgumentNullException>(() => session.ExportLog(null, PathType.LogName, LogName, GetTestFilePath()));
                 Assert.Throws<ArgumentNullException>(() => session.ExportLog(LogName, PathType.LogName, LogName, null));
                 Assert.Throws<ArgumentOutOfRangeException>(() => session.ExportLog(LogName, (PathType)0, LogName, GetTestFilePath()));
-                Assert.Throws<EventLogNotFoundException>(() => session.ExportLog(LogName, PathType.FilePath, LogName, GetTestFilePath()));
+                EventLogNotFoundException exception = Assert.Throws<EventLogNotFoundException>(() => session.ExportLog(LogName, PathType.FilePath, LogName, GetTestFilePath()));
+                Assert.Equal(2, exception.HResult);
                 // Does not throw:
                 session.ExportLog(LogName, PathType.LogName, LogName, GetTestFilePath(), tolerateQueryErrors: true);
                 session.CancelCurrentOperations();
@@ -76,7 +77,8 @@ namespace System.Diagnostics.Tests
                 Assert.Throws<ArgumentNullException>(() => session.ClearLog(null));
                 Assert.Throws<ArgumentNullException>(() => session.ClearLog(null, backupPath: GetTestFilePath()));
                 Assert.Throws<EventLogException>(() => session.ClearLog(""));
-                Assert.Throws<EventLogNotFoundException>(() => session.ClearLog(logName: nameof(ClearLog_LogNameNullEmptyOrNotExist_Throws)));
+                EventLogNotFoundException exception = Assert.Throws<EventLogNotFoundException>(() => session.ClearLog(logName: nameof(ClearLog_LogNameNullEmptyOrNotExist_Throws)));
+                Assert.Equal(15007, exception.HResult);
             }
         }
 
