@@ -2281,8 +2281,15 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             !callIsVararg && (isHfaArg || varTypeUsesFloatReg(argSigType)) && !comp->opts.compUseSoftFP;
         bool passUsingIntRegs = passUsingFloatRegs ? false : (intArgRegNum < MAX_REG_ARG);
 
-        // TODO-Bug: this should use the signature type/class instead of "argx".
-        comp->codeGen->InferOpSizeAlign(argx, &argAlignBytes);
+        // TODO-Cleanup: use "eeGetArgSizeAlignment" here. See also: https://github.com/dotnet/runtime/issues/46026.
+        if (varTypeIsStruct(argSigType))
+        {
+            argAlignBytes = comp->info.compCompHnd->getClassAlignmentRequirement(argSigClass);
+        }
+        else
+        {
+            argAlignBytes = genTypeSize(argSigType);
+        }
 
         argAlignBytes = roundUp(argAlignBytes, TARGET_POINTER_SIZE);
 
