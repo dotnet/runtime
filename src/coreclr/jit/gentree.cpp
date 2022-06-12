@@ -22569,13 +22569,13 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad(GenTree** pAddr) const
 #endif // TARGET_XARCH
 #endif // TARGET_XARCH || TARGET_ARM64
 
+    if (pAddr != nullptr)
+    {
+        *pAddr = addr;
+    }
+
     if (addr != nullptr)
     {
-        if (pAddr != nullptr)
-        {
-            *pAddr = addr;
-        }
-
         assert(varTypeIsI(addr));
         return true;
     }
@@ -22643,13 +22643,13 @@ bool GenTreeHWIntrinsic::OperIsMemoryStore(GenTree** pAddr) const
 #endif // TARGET_XARCH
 #endif // TARGET_XARCH || TARGET_ARM64
 
+    if (pAddr != nullptr)
+    {
+        *pAddr = addr;
+    }
+
     if (addr != nullptr)
     {
-        if (pAddr != nullptr)
-        {
-            *pAddr = addr;
-        }
-
         assert(varTypeIsI(addr));
         return true;
     }

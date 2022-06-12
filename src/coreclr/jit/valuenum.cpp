@@ -9347,8 +9347,7 @@ void Compiler::fgValueNumberHWIntrinsic(GenTreeHWIntrinsic* tree)
     NamedIntrinsic intrinsicId   = tree->GetHWIntrinsicId();
     GenTree*       addr          = nullptr;
     const bool     isMemoryLoad  = tree->OperIsMemoryLoad(&addr);
-    const bool     isMemoryStore = tree->OperIsMemoryStore(&addr);
-    assert(!isMemoryLoad || !isMemoryStore); // Not both at the same time.
+    const bool     isMemoryStore = !isMemoryLoad && tree->OperIsMemoryStore(&addr);
 
     // We do not model HWI stores precisely.
     if (isMemoryStore)
