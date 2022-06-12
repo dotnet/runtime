@@ -946,7 +946,7 @@ namespace
 {
     //
     // Slight modification of Rob Pike's minimal regex from The Practice of Programming.
-    // https://en.wikipedia.org/wiki/The_Practice_of_Programming
+    // See https://www.cs.princeton.edu/~bwk/tpop.webpage/code.html - 'Grep program from Chapter 9'
     //
     bool matchhere(const char *regexp, const char* regexe, const char *text);
     bool matchstar(char c, const char *regexp, const char* regexe, const char *text);
@@ -1007,7 +1007,7 @@ bool EEConfig::RegexOrExactMatch(LPCUTF8 regex, LPCUTF8 input)
         CONTRACT_VIOLATION(ThrowsViolation);
 
         regex++;
-        char* end = strchr(regex, '/');
+        const char* end = strchr(regex, '/');
         if (end != NULL)
             return match(regex, end, input);
     }
