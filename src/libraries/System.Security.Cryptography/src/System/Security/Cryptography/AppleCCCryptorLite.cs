@@ -79,7 +79,7 @@ namespace System.Security.Cryptography
             // Apple documentation:
 
             // In the following cases, the CCCryptorFinal() is superfluous as
-            //     it will not yield any data nor return an error:
+            // it will not yield any data nor return an error:
             //     1. Encrypting or decrypting with a block cipher with padding
             //        disabled, when the total amount of data provided to
             //        CCCryptorUpdate() is an integral multiple of the block size.
