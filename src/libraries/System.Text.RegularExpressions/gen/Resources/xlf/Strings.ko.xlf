@@ -92,11 +92,6 @@
         <target state="translated">16진수가 충분하지 않습니다.</target>
         <note />
       </trans-unit>
-      <trans-unit id="InternalError_ScanRegex">
-        <source>Internal error in ScanRegex.</source>
-        <target state="translated">ScanRegex에 내부 오류가 있습니다.</target>
-        <note>{Locked="ScanRegex"}</note>
-      </trans-unit>
       <trans-unit id="InvalidGroupingConstruct">
         <source>Unrecognized grouping construct.</source>
         <target state="translated">인식할 수 없는 그룹화 구성입니다.</target>
@@ -210,11 +205,6 @@
       <trans-unit id="RegexMethodMustHaveValidSignatureMessage">
         <source>RegexGenerator method must be partial, parameterless, non-generic, non-abstract, and return Regex</source>
         <target state="translated">RegexGenerator 메서드는 부분적이고 매개 변수가 없고 제네릭이 아니어야 하며 비추상적이고 regex 반환이어야 합니다.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="ReplacementError">
-        <source>Replacement pattern error.</source>
-        <target state="translated">교체 패턴 오류입니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="ReversedCharacterRange">

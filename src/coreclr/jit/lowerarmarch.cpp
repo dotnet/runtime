@@ -669,7 +669,7 @@ void Lowering::LowerRotate(GenTree* tree)
 //     TODO: We could do this optimization in morph but we do not have
 //           a conditional select op in HIR. At some point, we may
 //           introduce such an op.
-GenTree* Lowering::LowerModPow2(GenTree* node)
+void Lowering::LowerModPow2(GenTree* node)
 {
     assert(node->OperIs(GT_MOD));
     GenTreeOp* mod      = node->AsOp();

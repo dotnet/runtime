@@ -1109,6 +1109,11 @@ public:
         return true;
     }
 
+    bool IsNotGcDef() const
+    {
+        return IsIntegralConst(0) || IsLocalAddrExpr();
+    }
+
     // LIR flags
     //   These helper methods, along with the flag values they manipulate, are defined in lir.h
     //
@@ -3056,8 +3061,7 @@ struct GenTreeIntCon : public GenTreeIntConCommon
     FieldSeqNode* gtFieldSeq;
 
 #ifdef DEBUG
-    // If the value represents target address, holds the method handle to that target which is used
-    // to fetch target method name and display in the disassembled code.
+    // If the value represents target address (for a field or call), holds the handle of the field (or call).
     size_t gtTargetHandle = 0;
 #endif
 

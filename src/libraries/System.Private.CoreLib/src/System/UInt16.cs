@@ -428,9 +428,6 @@ namespace System
         /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_Division(TSelf, TOther)" />
         static ushort IDivisionOperators<ushort, ushort, ushort>.operator /(ushort left, ushort right) => (ushort)(left / right);
 
-        /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
-        static ushort IDivisionOperators<ushort, ushort, ushort>.operator checked /(ushort left, ushort right) => (ushort)(left / right);
-
         //
         // IEqualityOperators
         //

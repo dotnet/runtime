@@ -26,6 +26,7 @@ namespace ILCompiler
         public override DefType OwningType => _fieldType.Context.SystemModule.GetGlobalModuleType();
 
         public override TypeDesc FieldType => _fieldType;
+        public override EmbeddedSignatureData[] GetEmbeddedSignatureData() => null;
 
         public override bool IsStatic => true;
 

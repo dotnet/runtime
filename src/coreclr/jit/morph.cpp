@@ -2107,9 +2107,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
 
         size_t   addrValue           = (size_t)call->gtEntryPoint.addr;
         GenTree* indirectCellAddress = comp->gtNewIconHandleNode(addrValue, GTF_ICON_FTN_ADDR);
-#ifdef DEBUG
-        indirectCellAddress->AsIntCon()->gtTargetHandle = (size_t)call->gtCallMethHnd;
-#endif
+        INDEBUG(indirectCellAddress->AsIntCon()->gtTargetHandle = (size_t)call->gtCallMethHnd);
         indirectCellAddress->SetRegNum(REG_R2R_INDIRECT_PARAM);
 #ifdef TARGET_ARM
         // Issue #xxxx : Don't attempt to CSE this constant on ARM32
@@ -5494,7 +5492,8 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
             {
                 handleKind = GTF_ICON_STATIC_HDL;
             }
-            GenTree* addr = gtNewIconHandleNode((size_t)fldAddr, handleKind, fieldSeq);
+            GenTreeIntCon* addr = gtNewIconHandleNode((size_t)fldAddr, handleKind, fieldSeq);
+            INDEBUG(addr->gtTargetHandle = reinterpret_cast<size_t>(symHnd));
 
             // Translate GTF_FLD_INITCLASS to GTF_ICON_INITCLASS, if we need to.
             if (((tree->gtFlags & GTF_FLD_INITCLASS) != 0) && !isStaticReadOnlyInited)
@@ -7057,20 +7056,6 @@ void Compiler::fgValidateIRForTailCall(GenTreeCall* call)
             if (tree->OperIs(GT_NOP))
             {
             }
-            // No-op casts may appear due to normalization during inlining. Example:
-            //  *  RETURN    int
-            //  \--*  CAST      int <- bool <- int
-            //     \--*  CALL      int    Attribute.IsDefined (with gtReturnType = TYP_BOOL)
-            //        +--*  LCL_VAR   ref    V00 arg0
-            //        +--*  LCL_VAR   ref    V01 arg1
-            //        \--*  CNS_INT   int    1
-            else if (tree->OperIs(GT_CAST))
-            {
-                assert(ValidateUse(tree->AsCast()->CastOp()) && "Expected cast op to be from result of tailcall");
-                assert((tree->AsCast()->gtCastType == m_tailcall->gtReturnType) &&
-                       "Expected cast after tailcall to be no-op");
-                m_prevVal = tree;
-            }
             // We might see arbitrary chains of assignments that trivially
             // propagate the result. Example:
             //
@@ -7947,9 +7932,7 @@ GenTree* Compiler::fgGetStubAddrArg(GenTreeCall* call)
         assert(call->gtCallMoreFlags & GTF_CALL_M_VIRTSTUB_REL_INDIRECT);
         ssize_t addr = ssize_t(call->gtStubCallStubAddr);
         stubAddrArg  = gtNewIconHandleNode(addr, GTF_ICON_FTN_ADDR);
-#ifdef DEBUG
-        stubAddrArg->AsIntCon()->gtTargetHandle = (size_t)call->gtCallMethHnd;
-#endif
+        INDEBUG(stubAddrArg->AsIntCon()->gtTargetHandle = (size_t)call->gtCallMethHnd);
     }
     assert(stubAddrArg != nullptr);
     stubAddrArg->SetRegNum(virtualStubParamInfo->GetReg());
@@ -8836,7 +8819,8 @@ GenTree* Compiler::fgMorphLeaf(GenTree* tree)
         // target of a Delegate or a raw function pointer.
         bool isUnsafeFunctionPointer = !fptrValTree->gtFptrDelegateTarget;
 
-        CORINFO_CONST_LOOKUP addrInfo;
+        CORINFO_CONST_LOOKUP  addrInfo;
+        CORINFO_METHOD_HANDLE funcHandle = fptrValTree->gtFptrMethod;
 
 #ifdef FEATURE_READYTORUN
         if (fptrValTree->gtEntryPoint.addr != nullptr)
@@ -8846,7 +8830,7 @@ GenTree* Compiler::fgMorphLeaf(GenTree* tree)
         else
 #endif
         {
-            info.compCompHnd->getFunctionFixedEntryPoint(fptrValTree->gtFptrMethod, isUnsafeFunctionPointer, &addrInfo);
+            info.compCompHnd->getFunctionFixedEntryPoint(funcHandle, isUnsafeFunctionPointer, &addrInfo);
         }
 
         GenTree* indNode = nullptr;
@@ -8865,6 +8849,7 @@ GenTree* Compiler::fgMorphLeaf(GenTree* tree)
 
             case IAT_PVALUE:
                 indNode = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)addrInfo.handle, GTF_ICON_FTN_ADDR, true);
+                INDEBUG(indNode->gtGetOp1()->AsIntCon()->gtTargetHandle = reinterpret_cast<size_t>(funcHandle));
                 break;
 
             case IAT_VALUE:
@@ -8873,6 +8858,7 @@ GenTree* Compiler::fgMorphLeaf(GenTree* tree)
                 tree->SetOper(GT_CNS_INT);
                 tree->AsIntConCommon()->SetIconValue(ssize_t(addrInfo.handle));
                 tree->gtFlags |= GTF_ICON_FTN_ADDR;
+                INDEBUG(tree->AsIntCon()->gtTargetHandle = reinterpret_cast<size_t>(funcHandle));
                 break;
 
             default:
@@ -10297,22 +10283,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
 
         case GT_MUL:
             noway_assert(op2 != nullptr);
-
-            if (opts.OptimizationEnabled() && !optValnumCSE_phase && !tree->gtOverflow())
-            {
-                // MUL(NEG(a), C) => MUL(a, NEG(C))
-                if (op1->OperIs(GT_NEG) && !op1->gtGetOp1()->IsCnsIntOrI() && op2->IsCnsIntOrI() &&
-                    !op2->IsIconHandle())
-                {
-                    GenTree* newOp1   = op1->gtGetOp1();
-                    GenTree* newConst = gtNewIconNode(-op2->AsIntCon()->IconValue(), op2->TypeGet());
-                    DEBUG_DESTROY_NODE(op1);
-                    DEBUG_DESTROY_NODE(op2);
-                    tree->AsOp()->gtOp1 = newOp1;
-                    tree->AsOp()->gtOp2 = newConst;
-                    return fgMorphSmpOp(tree, mac);
-                }
-            }
 
 #ifndef TARGET_64BIT
             if (typ == TYP_LONG)
@@ -12921,6 +12891,20 @@ GenTree* Compiler::fgOptimizeMultiply(GenTreeOp* mul)
 
     if (op2->IsIntegralConst())
     {
+        // We should not get here for 64-bit multiplications on 32-bit.
+        assert(op2->IsCnsIntOrI());
+
+        // MUL(NEG(a), C) => MUL(a, NEG(C))
+        if (opts.OptimizationEnabled() && op1->OperIs(GT_NEG) && !op2->IsIconHandle())
+        {
+            mul->gtOp1                 = op1->AsUnOp()->gtGetOp1();
+            op2->AsIntCon()->gtIconVal = -op2->AsIntCon()->gtIconVal;
+            fgUpdateConstTreeValueNumber(op2);
+            DEBUG_DESTROY_NODE(op1);
+
+            op1 = mul->gtOp1;
+        }
+
         ssize_t mult = op2->AsIntConCommon()->IconValue();
 
         if (mult == 0)
@@ -14935,18 +14919,16 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
 
         noway_assert(lastStmt->GetRootNode()->gtOper == GT_SWITCH);
 
-        /* Did we fold the conditional */
+        // Did we fold the conditional
 
         noway_assert(lastStmt->GetRootNode()->AsOp()->gtOp1);
-        GenTree* condTree;
-        condTree = lastStmt->GetRootNode()->AsOp()->gtOp1;
-        GenTree* cond;
-        cond = condTree->gtEffectiveVal(true);
+        GenTree* condTree = lastStmt->GetRootNode()->AsOp()->gtOp1;
+        GenTree* cond     = condTree->gtEffectiveVal(true);
 
         if (cond->OperIsConst())
         {
-            /* Yupee - we folded the conditional!
-             * Remove the conditional statement */
+            // Yupee - we folded the conditional!
+            // Remove the conditional statement
 
             noway_assert(cond->gtOper == GT_CNS_INT);
 
@@ -14964,17 +14946,13 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                 result = FoldResult::FOLD_REMOVED_LAST_STMT;
             }
 
-            /* modify the flow graph */
+            // modify the flow graph
 
-            /* Find the actual jump target */
-            unsigned switchVal;
-            switchVal = (unsigned)cond->AsIntCon()->gtIconVal;
-            unsigned jumpCnt;
-            jumpCnt = block->bbJumpSwt->bbsCount;
-            BasicBlock** jumpTab;
-            jumpTab = block->bbJumpSwt->bbsDstTab;
-            bool foundVal;
-            foundVal = false;
+            // Find the actual jump target
+            size_t       switchVal = (size_t)cond->AsIntCon()->gtIconVal;
+            unsigned     jumpCnt   = block->bbJumpSwt->bbsCount;
+            BasicBlock** jumpTab   = block->bbJumpSwt->bbsDstTab;
+            bool         foundVal  = false;
 
             for (unsigned val = 0; val < jumpCnt; val++, jumpTab++)
             {
@@ -14989,20 +14967,20 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                 {
                     if (curJump != block->bbNext)
                     {
-                        /* transform the basic block into a BBJ_ALWAYS */
+                        // transform the basic block into a BBJ_ALWAYS
                         block->bbJumpKind = BBJ_ALWAYS;
                         block->bbJumpDest = curJump;
                     }
                     else
                     {
-                        /* transform the basic block into a BBJ_NONE */
+                        // transform the basic block into a BBJ_NONE
                         block->bbJumpKind = BBJ_NONE;
                     }
                     foundVal = true;
                 }
                 else
                 {
-                    /* Remove 'block' from the predecessor list of 'curJump' */
+                    // Remove 'block' from the predecessor list of 'curJump'
                     fgRemoveRefPred(curJump, block);
                 }
             }

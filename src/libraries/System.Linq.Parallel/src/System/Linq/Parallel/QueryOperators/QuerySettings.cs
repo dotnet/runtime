@@ -123,7 +123,7 @@ namespace System.Linq.Parallel
                 throw new InvalidOperationException(SR.ParallelQuery_DuplicateMergeOptions);
             }
 
-            TaskScheduler? tm = (this.TaskScheduler == null) ? settings2.TaskScheduler : this.TaskScheduler;
+            TaskScheduler? tm = this.TaskScheduler ?? settings2.TaskScheduler;
             int? dop = this.DegreeOfParallelism.HasValue ? this.DegreeOfParallelism : settings2.DegreeOfParallelism;
             CancellationToken externalCancellationToken = (this.CancellationState.ExternalCancellationToken.CanBeCanceled) ? this.CancellationState.ExternalCancellationToken : settings2.CancellationState.ExternalCancellationToken;
             ParallelExecutionMode? executionMode = this.ExecutionMode.HasValue ? this.ExecutionMode : settings2.ExecutionMode;

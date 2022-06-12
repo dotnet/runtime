@@ -59,6 +59,14 @@ CorInfoInline interceptor_ICJI::canInline(
     return original_ICorJitInfo->canInline(callerHnd, calleeHnd);
 }
 
+void interceptor_ICJI::beginInlining(
+          CORINFO_METHOD_HANDLE inlinerHnd,
+          CORINFO_METHOD_HANDLE inlineeHnd)
+{
+    mcs->AddCall("beginInlining");
+    original_ICorJitInfo->beginInlining(inlinerHnd, inlineeHnd);
+}
+
 void interceptor_ICJI::reportInliningDecision(
           CORINFO_METHOD_HANDLE inlinerHnd,
           CORINFO_METHOD_HANDLE inlineeHnd,

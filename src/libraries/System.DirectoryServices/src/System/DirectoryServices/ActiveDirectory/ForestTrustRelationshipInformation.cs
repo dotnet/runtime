@@ -35,7 +35,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (unmanagedTrust.NetbiosDomainName != (IntPtr)0)
                 tmpNetBIOSName = Marshal.PtrToStringUni(unmanagedTrust.NetbiosDomainName);
 
-            this.target = (tmpDNSName == null ? tmpNetBIOSName : tmpDNSName);
+            this.target = tmpDNSName ?? tmpNetBIOSName;
             // direction
             if ((unmanagedTrust.Flags & (int)DS_DOMAINTRUST_FLAG.DS_DOMAIN_DIRECT_OUTBOUND) != 0 &&
                 (unmanagedTrust.Flags & (int)DS_DOMAINTRUST_FLAG.DS_DOMAIN_DIRECT_INBOUND) != 0)

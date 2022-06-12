@@ -2268,7 +2268,6 @@ namespace System.Text.RegularExpressions.Generator
             void EmitNode(RegexNode node, RegexNode? subsequent = null, bool emitLengthChecksIfRequired = true)
             {
                 // Before we handle general-purpose matching logic for nodes, handle any special-casing.
-                // -
                 if (rm.Tree.FindOptimizations.FindMode == FindNextStartingPositionMode.LiteralAfterLoop_LeftToRight &&
                     rm.Tree.FindOptimizations.LiteralAfterLoop?.LoopNode == node)
                 {
