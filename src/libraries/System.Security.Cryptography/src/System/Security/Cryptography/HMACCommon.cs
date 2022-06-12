@@ -57,12 +57,33 @@ namespace System.Security.Cryptography
             if (key.Length > _blockSize && _blockSize > 0)
             {
                 // Perform RFC 2104, section 2 key adjustment.
-                if (_lazyHashProvider == null)
+
+                switch (_hashAlgorithmId)
                 {
-                    _lazyHashProvider = HashProviderDispenser.CreateHashProvider(_hashAlgorithmId);
+                    case HashAlgorithmNames.SHA256:
+                        modifiedKey = SHA256.HashData(key);
+                        break;
+                    case HashAlgorithmNames.SHA384:
+                        modifiedKey = SHA384.HashData(key);
+                        break;
+                    case HashAlgorithmNames.SHA512:
+                        modifiedKey = SHA512.HashData(key);
+                        break;
+                    case HashAlgorithmNames.SHA1:
+                        modifiedKey = SHA1.HashData(key);
+                        break;
+                    case HashAlgorithmNames.MD5 when Helpers.HasMD5:
+                        // If the platform doesn't support MD5, let it fall in to the default case where
+                        // HashProviderDispenser.CreateHashProvider will throw the appropriate "unknown hash algorithm"
+                        // exception.
+                        modifiedKey = MD5.HashData(key);
+                        break;
+                    default:
+                        _lazyHashProvider ??= HashProviderDispenser.CreateHashProvider(_hashAlgorithmId);
+                        _lazyHashProvider.AppendHashData(key);
+                        modifiedKey = _lazyHashProvider.FinalizeHashAndReset();
+                        break;
                 }
-                _lazyHashProvider.AppendHashData(key);
-                modifiedKey = _lazyHashProvider.FinalizeHashAndReset();
             }
 
             HashProvider? oldHashProvider = _hMacProvider;
