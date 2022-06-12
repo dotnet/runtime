@@ -948,6 +948,10 @@ namespace
     // Slight modification of Rob Pike's minimal regex from The Practice of Programming.
     // See https://www.cs.princeton.edu/~bwk/tpop.webpage/code.html - 'Grep program from Chapter 9'
     //
+
+    /* Copyright (C) 1999 Lucent Technologies */
+    /* Excerpted from 'The Practice of Programming' */
+    /* by Brian W. Kernighan and Rob Pike */
     bool matchhere(const char *regexp, const char* regexe, const char *text);
     bool matchstar(char c, const char *regexp, const char* regexe, const char *text);
 
