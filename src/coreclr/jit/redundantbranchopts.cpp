@@ -199,6 +199,7 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
 
             ImpliedRelops rules[] = {
                 {GT_GE, GT_LE, false, true, ValueNumStore::VN_RELATION_KIND::VRK_Reverse},
+                {GT_LE, GT_GE, false, true, ValueNumStore::VN_RELATION_KIND::VRK_Reverse},
                 // TODO: more rules
             };
 
