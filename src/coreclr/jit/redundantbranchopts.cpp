@@ -159,62 +159,69 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
     // Look for "X relop1 Y" dominated by "X relop2 Y" (or "Y relop2 X")
     // See if we can catch cases like "X >= Y" dominating over "X <= Y"
     VNFuncApp treeFuncApp;
-    if (vnStore->GetVNFunc(rii->treeNormVN, &treeFuncApp))
+    if (vnStore->GetVNFunc(rii->treeNormVN, &treeFuncApp) && vnStore->IsVNRelop(rii->domCmpNormVN) &&
+        vnStore->IsVNRelop(rii->treeNormVN))
     {
-        auto treeOper = (genTreeOps)treeFuncApp.m_func;
+        bool treeOperIsUnsigned;
+        auto treeOper = vnStore->VNFuncToRelopOp(treeFuncApp.m_func, treeOperIsUnsigned);
 
-        // TODO: this currently doesn't handle unsigned comparisons (e.g. VNF_GE_UN)
-        if (GenTree::OperIsCompare(domOper) && GenTree::OperIsCompare(treeOper))
+        bool dommOperIsUnsigned;
+        auto dommOper = vnStore->VNFuncToRelopOp(domCmpFuncApp.m_func, dommOperIsUnsigned);
+
+        ValueNum domOp1  = domCmpFuncApp.m_args[0];
+        ValueNum domOp2  = domCmpFuncApp.m_args[1];
+        ValueNum treeOp1 = treeFuncApp.m_args[0];
+        ValueNum treeOp2 = treeFuncApp.m_args[1];
+
+        // Check that operands of domCmp and treeCmp are the same (and have VNs)
+        if (((domOp1 != ValueNumStore::NoVN) && (domOp2 != ValueNumStore::NoVN) &&
+             (treeOperIsUnsigned == dommOperIsUnsigned)) &&
+            (((domOp1 == treeOp1) && (domOp2 == treeOp2)) || ((domOp1 == treeOp2) && (domOp2 == treeOp1))))
         {
-            assert(vnStore->IsVNRelop(rii->treeNormVN));
-            assert(vnStore->IsVNRelop(rii->domCmpNormVN));
-            assert((domCmpFuncApp.m_arity == 2) && (treeFuncApp.m_arity == 2));
-
-            ValueNum domOp1  = domCmpFuncApp.m_args[0];
-            ValueNum domOp2  = domCmpFuncApp.m_args[1];
-            ValueNum treeOp1 = treeFuncApp.m_args[0];
-            ValueNum treeOp2 = treeFuncApp.m_args[1];
-
-            // Check that operands of domCmp and treeCmp are the same (and have VNs)
-            if (((domOp1 != ValueNumStore::NoVN) && (domOp2 != ValueNumStore::NoVN)) &&
-                (((domOp1 == treeOp1) && (domOp2 == treeOp2)) || ((domOp1 == treeOp2) && (domOp2 == treeOp1))))
+            bool swapped = false;
+            if (domOp1 == treeOp2)
             {
-                if (domOp1 == treeOp2)
-                {
-                    // Normalize treeOper to be of the same form as domOper, e.g.
-                    // domOp is "X >= Y", treeOp is "Y == X", normalize treeOp to "X == Y"
-                    std::swap(treeOp1, treeOp2);
-                    treeOper = GenTree::ReverseRelop(treeOper);
-                }
+                swapped = true;
+                // Normalize treeOper to be of the same form as domOper, e.g.
+                // domOp is "X >= Y", treeOp is "Y == X", normalize treeOp to "X == Y"
+                std::swap(treeOp1, treeOp2);
+                treeOper = GenTree::ReverseRelop(treeOper);
+            }
 
-                struct ImpliedRelops
-                {
-                    genTreeOps                      domOper;
-                    genTreeOps                      treeOper;
-                    ValueNumStore::VN_RELATION_KIND relationKind;
-                };
+            struct ImpliedRelops
+            {
+                genTreeOps                      domOper;
+                genTreeOps                      treeOper;
+                bool                            canInferFromTrue;
+                bool                            canInferFromFalse;
+                ValueNumStore::VN_RELATION_KIND relationKind;
+            };
 
-                ImpliedRelops rules[] = {
-                    // To explain it, the first rule means:
-                    // if domOp is "X GE Y" and treeOp is "X LE Y" then treeOp is implied by domOp
-                    {GT_GE, GT_LE, ValueNumStore::VN_RELATION_KIND::VRK_Same},
-                    {GT_GE, GT_EQ, ValueNumStore::VN_RELATION_KIND::VRK_Same},
-                    {GT_LE, GT_LE, ValueNumStore::VN_RELATION_KIND::VRK_Same},
-                    {GT_LE, GT_EQ, ValueNumStore::VN_RELATION_KIND::VRK_Same},
-                    {GT_EQ, GT_LE, ValueNumStore::VN_RELATION_KIND::VRK_Same},
-                    {GT_EQ, GT_GE, ValueNumStore::VN_RELATION_KIND::VRK_Same},
-                    // TODO: more rules
-                };
+            ImpliedRelops rules[] = {
+                {GT_GE, GT_LE, false, true, ValueNumStore::VN_RELATION_KIND::VRK_Reverse},
+                // TODO: more rules
+            };
 
-                for (const ImpliedRelops& rule : rules)
+            for (const ImpliedRelops& rule : rules)
+            {
+                if ((rule.domOper == dommOper) && (rule.treeOper == treeOper))
                 {
-                    if ((rule.domOper == domOper) && (rule.treeOper == treeOper))
+                    rii->canInfer          = true;
+                    rii->vnRelation        = rule.relationKind;
+                    rii->canInferFromTrue  = rule.canInferFromTrue;
+                    rii->canInferFromFalse = rule.canInferFromFalse;
+                    if (swapped)
                     {
-                        rii->canInfer   = true;
-                        rii->vnRelation = rule.relationKind;
-                        rii->canInferFromFalse = false;
-                        return;
+                        if (rule.relationKind == ValueNumStore::VN_RELATION_KIND::VRK_Reverse)
+                        {
+                            rii->vnRelation = ValueNumStore::VN_RELATION_KIND::VRK_SwapReverse;
+                        }
+                        if (rule.relationKind == ValueNumStore::VN_RELATION_KIND::VRK_Same)
+                        {
+                            rii->vnRelation = ValueNumStore::VN_RELATION_KIND::VRK_Swap;
+                        }
                     }
+                    return;
                 }
             }
         }

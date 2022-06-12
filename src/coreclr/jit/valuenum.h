@@ -719,6 +719,8 @@ public:
 
     ValueNumPair VNPairForLoadStoreBitCast(ValueNumPair value, var_types indType, unsigned indSize);
 
+    genTreeOps VNFuncToRelopOp(VNFunc vnf, bool& isUnsigned);
+
     // Compute the ValueNumber for a cast
     ValueNum VNForCast(ValueNum  srcVN,
                        var_types castToType,

@@ -4531,6 +4531,28 @@ ValueNumPair ValueNumStore::VNPairForLoadStoreBitCast(ValueNumPair value, var_ty
     return ValueNumPair(liberalVN, conservVN);
 }
 
+genTreeOps ValueNumStore::VNFuncToRelopOp(VNFunc vnf, bool& isUnsigned)
+{
+    assert(VNFuncIsComparison(vnf));
+
+    isUnsigned = true;
+    switch (vnf)
+    {
+        case VNF_LT_UN:
+            return GT_LT;
+        case VNF_LE_UN:
+            return GT_LE;
+        case VNF_GT_UN:
+            return GT_GT;
+        case VNF_GE_UN:
+            return GT_GE;
+        default:
+            isUnsigned = false;
+            break;
+    }
+    return (genTreeOps)vnf;
+}
+
 //------------------------------------------------------------------------
 // IsVNNotAField: Is the value number a "NotAField" field sequence?
 //
