@@ -11248,6 +11248,11 @@ DONE_MORPHING_CHILDREN:
                 lclVarTree->gtFlags |= GTF_VAR_DEF;
             }
 
+            if (fgIsSafeToRemoveCastOnAssignment(tree))
+            {
+                tree->AsOp()->gtOp2 = op2 = op2->AsCast()->CastOp();
+            }
+
             fgAssignSetVarDef(tree);
 
             /* We can't CSE the LHS of an assignment */

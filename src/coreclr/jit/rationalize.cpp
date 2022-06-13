@@ -369,13 +369,6 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
     GenTreeOp* assignment = use.Def()->AsOp();
     assert(assignment->OperGet() == GT_ASG);
 
-    if (comp->fgIsSafeToRemoveCastOnAssignment(assignment))
-    {
-        GenTreeCast* cast = assignment->gtGetOp2()->AsCast();
-        assignment->gtOp2 = cast->CastOp();
-        BlockRange().Remove(cast);
-    }
-
     GenTree* location = assignment->gtGetOp1();
     GenTree* value    = assignment->gtGetOp2();
 
