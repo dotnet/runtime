@@ -14,12 +14,6 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
-		public Task MethodByRefReturnDataFlow ()
-		{
-			return RunTest (allowMissingWarnings: true);
-		}
-
-		[Fact]
 		public Task MethodOutParameterDataFlow ()
 		{
 			return RunTest (allowMissingWarnings: true);

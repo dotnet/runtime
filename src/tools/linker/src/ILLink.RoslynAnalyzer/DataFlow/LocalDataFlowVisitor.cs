@@ -72,6 +72,10 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			HandleReturnValue (branchValue, branchValueOperation);
 		}
 
+		public abstract TValue GetFieldTargetValue (IFieldSymbol field);
+
+		public abstract TValue GetParameterTargetValue (IParameterSymbol parameter);
+
 		public abstract void HandleAssignment (TValue source, TValue target, IOperation operation);
 
 		public abstract TValue HandleArrayElementRead (TValue arrayValue, TValue indexValue, IOperation operation);
@@ -97,21 +101,16 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
 		public override TValue VisitSimpleAssignment (ISimpleAssignmentOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
 		{
-			// Visiting the target operation is a no-op except for operations which produce
-			// dataflow values that have the same representation as LValues or RValues.
-			// For example, field references.
-			var targetValue = Visit (operation.Target, state);
-
 			var targetOperation = operation.Target;
 			if (targetOperation is IFlowCaptureReferenceOperation flowCaptureReference) {
 				Debug.Assert (IsLValueFlowCapture (flowCaptureReference.Id));
+				Debug.Assert (!flowCaptureReference.GetValueUsageInfo (Context.OwningSymbol).HasFlag (ValueUsageInfo.Read));
 				var capturedReference = state.Current.CapturedReferences.Get (flowCaptureReference.Id).Reference;
 				targetOperation = capturedReference;
 				if (targetOperation == null)
 					throw new InvalidOperationException ();
 
-				targetValue = Visit (targetOperation, state);
-				// Note: technically we should avoid visiting the target operation when assigning to a flow capture reference,
+				// Note: technically we should avoid visiting the target operation below when assigning to a flow capture reference,
 				// because this should be done when the capture is created. For example, a flow capture used as both an LValue and a RValue
 				// should only evaluate the expression that computes the object instance of a property reference once.
 				// However, we just visit the instance again below for simplicity. This could be generalized if we encounter a dataflow
@@ -121,9 +120,11 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			switch (targetOperation) {
 			case IFieldReferenceOperation:
 			case IParameterReferenceOperation: {
-					// These assignment targets have the same dataflow representation for LValues and RValues,
-					// so we can use the target value that we already computed. This simplification is specific
-					// to the trim analysis, so would ideally be moved into TrimAnalysisVisitor.
+					TValue targetValue = targetOperation switch {
+						IFieldReferenceOperation fieldRef => GetFieldTargetValue (fieldRef.Field),
+						IParameterReferenceOperation parameterRef => GetParameterTargetValue (parameterRef.Parameter),
+						_ => throw new InvalidOperationException ()
+					};
 					TValue value = Visit (operation.Value, state);
 					HandleAssignment (value, targetValue, operation);
 					return value;
@@ -132,6 +133,9 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			// The remaining cases don't have a dataflow value that represents LValues, so we need
 			// to handle the LHS specially.
 			case IPropertyReferenceOperation propertyRef: {
+					// Avoid visiting the property reference because for captured properties, we can't
+					// correctly detect whether it is used for reading or writing inside of VisitPropertyReference.
+					// https://github.com/dotnet/roslyn/issues/25057
 					IPropertySymbol? property = propertyRef.Property;
 					IMethodSymbol? setMethod;
 					while ((setMethod = property.SetMethod) == null) {
@@ -178,20 +182,24 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 				Debug.Assert (operation.Target is not IFlowCaptureReferenceOperation);
 				break;
 			case IInvalidOperation:
-				// This can happen for a field assignment in an attribute instance.
-				// TODO: validate against the field attributes.
-				break;
+			// This can happen for a field assignment in an attribute instance.
+			// TODO: validate against the field attributes.
 			case IInstanceReferenceOperation:
-				// Assignment to 'this' is not tracked currently.
-				// Not relevant for trimming dataflow.
-				break;
+			// Assignment to 'this' is not tracked currently.
+			// Not relevant for trimming dataflow.
 			case IInvocationOperation:
-				// This can happen for an assignment to a ref return. Skip for now.
-				// The analyzer doesn't handle refs yet. This should be fixed once the analyzer
-				// also produces warnings for ref params/locals/returns.
-				// https://github.com/dotnet/linker/issues/2632
-				// https://github.com/dotnet/linker/issues/2158
+			// This can happen for an assignment to a ref return. Skip for now.
+			// The analyzer doesn't handle refs yet. This should be fixed once the analyzer
+			// also produces warnings for ref params/locals/returns.
+			// https://github.com/dotnet/linker/issues/2632
+			// https://github.com/dotnet/linker/issues/2158
+			case IEventReferenceOperation:
+				// An event assignment is an assignment to the generated backing field for
+				// auto-implemented events. There is no Roslyn API to access the field, so
+				// skip this. https://github.com/dotnet/roslyn/issues/40103
+				Visit (targetOperation, state);
 				break;
+
 			// Keep these cases in sync with those in CapturedReferenceValue, for any that
 			// can show up in a flow capture reference (for example, where the right-hand side
 			// is a null-coalescing operator).
@@ -209,7 +217,10 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		public override TValue VisitFlowCaptureReference (IFlowCaptureReferenceOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
 		{
 			if (!operation.GetValueUsageInfo (Context.OwningSymbol).HasFlag (ValueUsageInfo.Read)) {
-				Debug.Assert (IsLValueFlowCapture (operation.Id));
+				// There are known cases where this assert doesn't hold, because LValueFlowCaptureProvider
+				// produces the wrong result in some cases for flow captures with IsInitialization = true.
+				// https://github.com/dotnet/linker/issues/2749 
+				// Debug.Assert (IsLValueFlowCapture (operation.Id));
 				return TopValue;
 			}
 
@@ -222,7 +233,10 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		// is like a local reference.
 		public override TValue VisitFlowCapture (IFlowCaptureOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
 		{
-			TValue value = Visit (operation.Value, state);
+			// If the captured value is a property reference, we can't easily tell inside of
+			// VisitPropertyReference whether it is accessed for reads or writes.
+			// https://github.com/dotnet/roslyn/issues/25057
+			// Avoid visiting the captured value unless it is an RValue.
 			if (IsLValueFlowCapture (operation.Id)) {
 				// Note: technically we should save some information about the value for LValue flow captures
 				// (for example, the object instance of a property reference) and avoid re-computing it when
@@ -231,8 +245,12 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 				currentState.CapturedReferences.Set (operation.Id, new CapturedReferenceValue (operation.Value));
 				state.Current = currentState;
 			}
-			if (IsRValueFlowCapture (operation.Id))
+
+			if (IsRValueFlowCapture (operation.Id)) {
+				TValue value = Visit (operation.Value, state);
 				state.Set (new LocalKey (operation.Id), value);
+				return value;
+			}
 
 			return TopValue;
 		}
