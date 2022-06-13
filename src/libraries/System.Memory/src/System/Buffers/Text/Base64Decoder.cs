@@ -481,6 +481,7 @@ namespace System.Buffers.Text
         // Note that for performance reasons this is not functionally identical on SSE3 and Arm64. On both, the input
         // right is truncated to 4bits per lane. In addition on SSE3, the shuffle will return 0 for each input in right
         // where the top bit is set. On Arm64 the top bit will be ignored.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector128<byte> SimdShuffle(Vector128<byte> left, Vector128<byte> right, Vector128<byte> maskf)
         {
             Debug.Assert((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) && BitConverter.IsLittleEndian);
