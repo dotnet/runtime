@@ -554,12 +554,7 @@ namespace Mono.Linker.Steps
 		{
 			while (!QueueIsEmpty ()) {
 				(MethodDefinition method, DependencyInfo reason, MessageOrigin origin) = _methods.Dequeue ();
-				try {
-					ProcessMethod (method, reason, origin);
-				} catch (Exception e) when (!(e is LinkerFatalErrorException)) {
-					throw new LinkerFatalErrorException (
-						MessageContainer.CreateErrorMessage (origin, DiagnosticId.CouldNotFindMethodInAssembly, method.GetDisplayName (), method.Module.Name), e);
-				}
+				ProcessMethod (method, reason, origin);
 			}
 		}
 
