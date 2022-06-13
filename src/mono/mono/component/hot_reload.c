@@ -3131,7 +3131,6 @@ hot_reload_get_num_fields_added (MonoClass *klass)
 static uint32_t
 hot_reload_get_num_methods_added (MonoClass *klass)
 {
-	printf("olha thays - to pedingo o numero de metodos");
 	uint32_t count = 0;
 	GSList *members = hot_reload_get_added_members (klass);
 	for (GSList *ptr = members; ptr; ptr = ptr->next) {
@@ -3140,7 +3139,6 @@ hot_reload_get_num_methods_added (MonoClass *klass)
 			continue;
 		count++;
 	}
-	printf("olha thays - to retornando - %d\n", count);
 	return count;
 }
 
