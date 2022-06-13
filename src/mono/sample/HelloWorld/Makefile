@@ -4,6 +4,7 @@ DOTNET_Q_ARGS=--nologo -v:q -consoleloggerparameters:NoSummary
 
 MONO_CONFIG ?=Debug
 MONO_ARCH=x64
+AOT?=false
 
 OS := $(shell uname -s)
 ifeq ($(OS),Darwin)
@@ -12,10 +13,10 @@ else
 	TARGET_OS=linux
 endif
 
-MONO_ENV_OPTIONS ?=--llvm
+MONO_ENV_OPTIONS ?=
 
 publish:
-	$(DOTNET) publish -c $(MONO_CONFIG) -r $(TARGET_OS)-$(MONO_ARCH)
+	$(DOTNET) publish -c $(MONO_CONFIG) -r $(TARGET_OS)-$(MONO_ARCH) /p:RunAOTCompilation=$(AOT)
 
 run: publish
 	COMPlus_DebugWriteToStdErr=1 \
