@@ -288,8 +288,8 @@ namespace Microsoft.Extensions.Configuration
 
             if (config != null && config.GetChildren().Any())
             {
-                // for arrays and read-only list-like interfaces, we concatenate on to what is already there
-                if (type.IsArray || IsArrayCompatibleReadOnlyInterface(type))
+                // for arrays, collections, and read-only list-like interfaces, we concatenate on to what is already there
+                if (type.IsArray || IsArrayCompatibleInterface(type))
                 {
                     if (!bindingPoint.IsReadOnly)
                     {
@@ -298,7 +298,7 @@ namespace Microsoft.Extensions.Configuration
                     return;
                 }
 
-                // for sets and read-only set interfaces, we concatenate on to what is already there
+                // for sets and read-only set interfaces, we clone what's there into a new collection.
                 if (TypeIsASetInterface(type))
                 {
                     if (!bindingPoint.IsReadOnly)
@@ -312,13 +312,10 @@ namespace Microsoft.Extensions.Configuration
                     return;
                 }
 
-                bool typeIsADictionaryInterface = TypeIsADictionaryInterface(type);
-
-                // For other mutable interfaces like ICollection<> and ISet<>, we prefer copying values and setting them
+                // For other mutable interfaces like ICollection<>, IDictionary<,> and ISet<>, we prefer copying values and setting them
                 // on a new instance of the interface over populating the existing instance implementing the interface.
-                // This has already been done, so there's not need to check again. For dictionaries, we fill the existing
-                // instance if there is one (which hasn't happened yet), and only create a new instance if necessary.
-                if (typeIsADictionaryInterface)
+                // This has already been done, so there's not need to check again.
+                if (TypeIsADictionaryInterface(type))
                 {
                     if (!bindingPoint.IsReadOnly)
                     {
@@ -344,15 +341,6 @@ namespace Microsoft.Extensions.Configuration
                     // on a new instance of the interface over populating the existing instance implementing the interface.
                     // This has already been done, so there's not need to check again. For dictionaries, we fill the existing
                     // instance if there is one (which hasn't happened yet), and only create a new instance if necessary.
-                    if (typeIsADictionaryInterface)
-                    {
-                        Type typeOfKey = type.GenericTypeArguments[0];
-                        Type typeOfValue = type.GenericTypeArguments[1];
-                        // Overwrite type in case it was a IReadOnlyDictionary<>. We still want to be able to bind items.
-                        // REVIEW: What about settable IReadOnlyDictionary<> instances with an initial value?
-                        // I think we should consider preferring copying like we do for all other collection interfaces.
-                        type = typeof(Dictionary<,>).MakeGenericType(typeOfKey, typeOfValue);
-                    }
 
                     bindingPoint.SetValue(CreateInstance(type, config, options));
                 }
@@ -360,12 +348,10 @@ namespace Microsoft.Extensions.Configuration
                 // At this point we know that we have a non-null bindingPoint.Value, we just have to populate the items
                 // using the IDictionary<> or ICollection<> interfaces, or properties using reflection.
                 Type? dictionaryInterface = FindOpenGenericInterface(typeof(IDictionary<,>), type);
-                Type? dictionaryInterface2 = FindOpenGenericInterface(typeof(IReadOnlyDictionary<,>), type);
 
-                Type? di = dictionaryInterface ?? dictionaryInterface2;
-                if (di != null)
+                if (dictionaryInterface != null)
                 {
-                    BindConcreteDictionary(bindingPoint.Value!, di, config, options);
+                    BindConcreteDictionary(bindingPoint.Value!, dictionaryInterface, config, options);
                 }
                 else
                 {
@@ -812,7 +798,7 @@ namespace Microsoft.Extensions.Configuration
                 || genericTypeDefinition == typeof(IReadOnlyDictionary<,>);
         }
 
-        private static bool IsArrayCompatibleReadOnlyInterface(Type type)
+        private static bool IsArrayCompatibleInterface(Type type)
         {
             if (!type.IsInterface || !type.IsConstructedGenericType) { return false; }
 

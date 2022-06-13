@@ -4,6 +4,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using Xunit;
 
@@ -1130,6 +1131,38 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         }
 
         [Fact]
+        public void CanBindInitializedIReadOnlyDictionaryAndDoesNotMofifyTheOriginal()
+        {
+            // A field declared as IEnumerable<T> that is instantiated with a class
+            // that indirectly implements IEnumerable<T> is still bound, but with
+            // a new List<T> with the original values copied over.
+
+            var input = new Dictionary<string, string>
+            {
+                {"AlreadyInitializedDictionary:existing_key_1", "overridden!"},
+            };
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(input);
+            var config = configurationBuilder.Build();
+
+            var options = new InitializedCollectionsOptions();
+            config.Bind(options);
+
+            var array = options.AlreadyInitializedDictionary.ToArray();
+
+            Assert.Equal(2, array.Length);
+
+            Assert.Equal("overridden!", options.AlreadyInitializedDictionary["existing_key_1"]);
+            Assert.Equal("val_2", options.AlreadyInitializedDictionary["existing_key_2"]);
+
+            Assert.NotEqual(options.AlreadyInitializedDictionary, InitializedCollectionsOptions.ExistingDictionary);
+
+            Assert.Equal("val_1", InitializedCollectionsOptions.ExistingDictionary["existing_key_1"]);
+            Assert.Equal("val_2", InitializedCollectionsOptions.ExistingDictionary["existing_key_2"]);
+        }
+
+        [Fact]
         public void CanBindUninitializedICollection()
         {
             var input = new Dictionary<string, string>
@@ -1322,13 +1355,21 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             public InitializedCollectionsOptions()
             {
                 AlreadyInitializedIEnumerableInterface = ListUsedInIEnumerableFieldAndShouldNotBeTouched;
+                AlreadyInitializedDictionary = ExistingDictionary;
             }
 
-            public List<string> ListUsedInIEnumerableFieldAndShouldNotBeTouched = new List<string>
+            public List<string> ListUsedInIEnumerableFieldAndShouldNotBeTouched = new()
             {
                 "This was here too",
                 "Don't touch me!"
             };
+
+            public static ReadOnlyDictionary<string, string> ExistingDictionary = new(
+                new Dictionary<string, string>
+                {
+                    {"existing_key_1", "val_1"},
+                    {"existing_key_2", "val_2"}
+                });
 
             public IEnumerable<string> AlreadyInitializedIEnumerableInterface { get; set; }
 
@@ -1337,6 +1378,8 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
 
             public IEnumerable<string> AlreadyInitializedCustomListIndirectlyDerivedFromIEnumerable { get; set; } =
                 new CustomListIndirectlyDerivedFromIEnumerable();
+
+            public IReadOnlyDictionary<string, string> AlreadyInitializedDictionary { get; set; }
         }
 
         private class CustomList : List<string>
