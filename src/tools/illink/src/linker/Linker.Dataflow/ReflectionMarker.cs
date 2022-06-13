@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using ILLink.Shared.TrimAnalysis;
@@ -52,22 +53,55 @@ namespace Mono.Linker.Dataflow
 			}
 		}
 
+		// Resolve a (potentially assembly qualified) type name based on the current context (taken from DiagnosticContext) and mark the type for reflection.
+		// This method will probe the current context assembly and if that fails CoreLib for the specified type. Emulates behavior of Type.GetType.
 		internal bool TryResolveTypeNameAndMark (string typeName, in DiagnosticContext diagnosticContext, bool needsAssemblyName, [NotNullWhen (true)] out TypeDefinition? type)
 		{
-			if (!_context.TypeNameResolver.TryResolveTypeName (typeName, diagnosticContext, out TypeReference? typeRef, out AssemblyDefinition? typeAssembly, needsAssemblyName)
+			if (!_context.TypeNameResolver.TryResolveTypeName (typeName, diagnosticContext, out TypeReference? typeRef, out var typeResolutionRecords, needsAssemblyName)
 				|| typeRef.ResolveToTypeDefinition (_context) is not TypeDefinition foundType) {
 				type = default;
 				return false;
 			}
 
-			if (_enabled) {
-				var origin = diagnosticContext.Origin;
-				_markStep.MarkTypeVisibleToReflection (typeRef, foundType, new DependencyInfo (DependencyKind.AccessedViaReflection, origin.Provider), origin);
-				_context.MarkingHelpers.MarkMatchingExportedType (foundType, typeAssembly, new DependencyInfo (DependencyKind.DynamicallyAccessedMember, foundType), origin);
-			}
+			MarkResolvedType (diagnosticContext, typeRef, foundType, typeResolutionRecords);
 
 			type = foundType;
 			return true;
+		}
+
+		// Resolve a type from the specified assembly and mark it for reflection.
+		internal bool TryResolveTypeNameAndMark (AssemblyDefinition assembly, string typeName, in DiagnosticContext diagnosticContext, [NotNullWhen (true)] out TypeDefinition? type)
+		{
+			if (!_context.TypeNameResolver.TryResolveTypeName (assembly, typeName, out TypeReference? typeRef, out var typeResolutionRecords)
+				|| typeRef.ResolveToTypeDefinition (_context) is not TypeDefinition foundType) {
+				type = default;
+				return false;
+			}
+
+			MarkResolvedType (diagnosticContext, typeRef, foundType, typeResolutionRecords);
+
+			type = foundType;
+			return true;
+		}
+
+		void MarkResolvedType (
+			in DiagnosticContext diagnosticContext,
+			TypeReference typeReference,
+			TypeDefinition typeDefinition,
+			List<TypeNameResolver.TypeResolutionRecord> typeResolutionRecords)
+		{
+			if (_enabled) {
+				// Mark the resolved type for reflection access, but also go over all types which were resolved in the process
+				// of resolving the outer type (typically generic arguments) and make sure we mark all type forwarders
+				// used for that resolution.
+				// This is necessary because if the app's code contains the input string as literal (which is pretty much always the case)
+				// that string has to work at runtime, and if it relies on type forwarders we need to preserve those as well.
+				var origin = diagnosticContext.Origin;
+				_markStep.MarkTypeVisibleToReflection (typeReference, typeDefinition, new DependencyInfo (DependencyKind.AccessedViaReflection, origin.Provider), origin);
+				foreach (var typeResolutionRecord in typeResolutionRecords) {
+					_context.MarkingHelpers.MarkMatchingExportedType (typeResolutionRecord.ResolvedType, typeResolutionRecord.ReferringAssembly, new DependencyInfo (DependencyKind.DynamicallyAccessedMember, typeDefinition), origin);
+				}
+			}
 		}
 
 		internal void MarkType (in MessageOrigin origin, TypeDefinition type, DependencyKind dependencyKind = DependencyKind.AccessedViaReflection)

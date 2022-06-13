@@ -67,7 +67,7 @@ namespace ILLink.Shared.TrimAnalysis
 			return false;
 		}
 
-		private partial bool TryResolveTypeNameForCreateInstance (in MethodProxy calledMethod, string assemblyName, string typeName, out TypeProxy resolvedType)
+		private partial bool TryResolveTypeNameForCreateInstanceAndMark (in MethodProxy calledMethod, string assemblyName, string typeName, out TypeProxy resolvedType)
 		{
 			// Intentionally never resolve anything. Analyzer can really only see types from the current compilation unit. For other assemblies
 			// it typically only sees reference assemblies and thus just public API. It's not worth (at least for now) to try to resolve
