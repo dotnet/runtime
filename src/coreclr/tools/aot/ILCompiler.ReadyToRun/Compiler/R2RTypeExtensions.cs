@@ -38,15 +38,6 @@ namespace ILCompiler
                 result = true;
             }
 
-            // REMOVE BEFORE CHECKIN!!!!
-            // As a temporary measure to ease testing of this work with an existing SDK, fix up the IsNonVersionable flag on these types in the compiler, without relying on an update to System.Private.CoreLib
-            // This work also contains a modification to System.Private.CoreLib to do exactly this, so this isn't actually wrong, but its slow, and in the wrong place.
-            if (!result && type.Module == type.Context.SystemModule && type.Namespace == "System.Runtime.CompilerServices" && (type.Name == "RawArrayData" || type.Name == "RawData"))
-            {
-                result = true;
-            }
-            // REMOVE BEFORE CHECKIN!!!!
-
             return result;
         }
 
