@@ -62,6 +62,8 @@
              Link="Common\Interop\Unix\Interop.FileDescriptors.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.IOErrors.cs"
              Link="Common\Interop\Unix\Interop.IOErrors.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.cs"
+             Link="Common\Interop\Unix\Interop.Stat.cs" />
   </ItemGroup>
   <!-- Windows -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
