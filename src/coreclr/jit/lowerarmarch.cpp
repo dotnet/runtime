@@ -663,7 +663,7 @@ void Lowering::LowerRotate(GenTree* tree)
 //    tree - the node to lower
 //
 // Return Value:
-//    A new tree node if it changed.
+//    The next tree.
 //
 // Notes:
 //     TODO: We could do this optimization in morph but we do not have
@@ -756,8 +756,6 @@ void Lowering::LowerModPow2(GenTree* node)
     }
 
     ContainCheckNode(mod);
-
-    return mod->gtNext;
 }
 
 //------------------------------------------------------------------------
