@@ -3814,18 +3814,18 @@ void Lowering::LowerCallStruct(GenTreeCall* call)
 
     if (GlobalJitOptions::compFeatureHfa)
     {
-        if (comp->IsHfa(call))
+        if (comp->IsHfa(call->gtRetClsHnd))
         {
 #if defined(TARGET_ARM64)
-            assert(comp->GetHfaCount(call) == 1);
+            assert(comp->GetHfaCount(call->gtRetClsHnd) == 1);
 #elif defined(TARGET_ARM)
             // ARM returns double in 2 float registers, but
             // `call->HasMultiRegRetVal()` count double registers.
-            assert(comp->GetHfaCount(call) <= 2);
+            assert(comp->GetHfaCount(call->gtRetClsHnd) <= 2);
 #else  // !TARGET_ARM64 && !TARGET_ARM
             NYI("Unknown architecture");
 #endif // !TARGET_ARM64 && !TARGET_ARM
-            var_types hfaType = comp->GetHfaType(call);
+            var_types hfaType = comp->GetHfaType(call->gtRetClsHnd);
             if (call->TypeIs(hfaType))
             {
                 return;
