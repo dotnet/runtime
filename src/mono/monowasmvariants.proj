@@ -26,10 +26,10 @@
 
     <MSBuild Targets="BuildMono"
              Projects="$(MSBuildThisFileDirectory)mono.proj"
-             Properties="RealTargetOS=$(TargetOS);RealTargetArchitecture=$(TargetArchitecture);TargetArchitecture=$(TargetArchitecture);TargetOS=$(TargetOS);MonoWasmBuildVariant=$(MonoWasmBuildVariant)" />
+             Properties="RealTargetOS=$(TargetOS);RealTargetArchitecture=$(TargetArchitecture);TargetArchitecture=$(TargetArchitecture);TargetOS=$(TargetOS);MonoWasmBuildVariant=$(MonoWasmBuildVariant);BuildMonoAOTCrossCompiler=false" />
 
     <ItemGroup>
-      <_MonoWasmFiles Include="$(ArtifactsBinDir)mono\$(TargetOS).$(TargetArchitecture).$(Configuration)\**" />
+      <_MonoWasmFiles Include="$(ArtifactsBinDir)mono\$(TargetOS).$(TargetArchitecture).$(Configuration).$(MonoWasmBuildVariant.ToLower())\**" />
     </ItemGroup>
 
     <Message Text="Copying @(_MonoWasmFiles) to $(RealRuntimeBinDir)wasm\$(MonoWasmBuildVariant.ToLower())" Importance="High" />
