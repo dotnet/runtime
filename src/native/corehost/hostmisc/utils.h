@@ -16,7 +16,7 @@
 #else
 #define DOTNET_CORE_INSTALL_PREREQUISITES_URL _X("https://go.microsoft.com/fwlink/?linkid=2063370")
 #endif
-#define DOTNET_CORE_DOWNLOAD_URL _X("https://aka.ms/dotnet-download")
+#define DOTNET_CORE_DOWNLOAD_URL _X("https://aka.ms/dotnet/download")
 #define DOTNET_CORE_APPLAUNCH_URL _X("https://aka.ms/dotnet-core-applaunch")
 
 #define DOTNET_INFO_URL _X("https://aka.ms/dotnet/info")
