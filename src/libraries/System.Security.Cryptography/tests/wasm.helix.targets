@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
     <_CryptoProjectName>System.Security.Cryptography.Tests</_CryptoProjectName>
-    <System_Security_Cryptography_Tests_TargetName Condition="'$(Scenario)' == 'WasmTestOnBrowser'">System_Security_Cryptography_Tests_Target</System_Security_Cryptography_Tests_TargetName>
+    <System_Security_Cryptography_Tests_HelixTargetName Condition="'$(Scenario)' == 'WasmTestOnBrowser'">System_Security_Cryptography_Tests_Target</System_Security_Cryptography_Tests_HelixTargetName>
   </PropertyGroup>
 
   <Target Name="System_Security_Cryptography_Tests_Target">

@@ -205,7 +205,7 @@
 
       <!-- construct the property name that will contain the target to call for adding
            helix items -->
-      <_TestWithCustomTarget PropertyName="$([System.String]::new(%(TestName)).Replace('.', '_').Replace('-', '_'))_TargetName" />
+      <_TestWithCustomTarget PropertyName="$([System.String]::new(%(TestName)).Replace('.', '_').Replace('-', '_'))_HelixTargetName" />
 
       <!-- Remove any empty ones. This can happen if the targets file wants to use the default
            items. For example, it might want to add custom helix items only for a nodejs scenario -->
