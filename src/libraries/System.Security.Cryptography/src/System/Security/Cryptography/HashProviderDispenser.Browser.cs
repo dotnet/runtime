@@ -39,9 +39,16 @@ namespace System.Security.Cryptography
 
             public static int HashData(string hashAlgorithmId, ReadOnlySpan<byte> source, Span<byte> destination)
             {
-                HashProvider provider = CreateHashProvider(hashAlgorithmId);
-                provider.AppendHashData(source);
-                return provider.FinalizeHashAndReset(destination);
+                if (CanUseSubtleCryptoImpl)
+                {
+                    return SHANativeHashProvider.HashOneShot(hashAlgorithmId, source, destination);
+                }
+                else
+                {
+                    HashProvider provider = CreateHashProvider(hashAlgorithmId);
+                    provider.AppendHashData(source);
+                    return provider.FinalizeHashAndReset(destination);
+                }
             }
         }
 
