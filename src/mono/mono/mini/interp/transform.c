@@ -762,9 +762,9 @@ handle_branch (TransformData *td, int long_op, int offset)
 	if (offset < 0 && td->sp == td->stack && !td->inlined_method) {
 		// Backwards branch inside unoptimized method where the IL stack is empty
 		// This is candidate for a patchpoint
-		if (!td->rtm->optimized)
+		if (!td->optimized)
 			target_bb->emit_patchpoint = TRUE;
-		if (mono_interp_tiering_enabled () && !target_bb->patchpoint_data && td->rtm->optimized) {
+		if (mono_interp_tiering_enabled () && !target_bb->patchpoint_data && td->optimized) {
 			// The optimized imethod will store mapping from bb index to native offset so it
 			// can resume execution in the optimized method, once we tier up in patchpoint
 			td->patchpoint_data_n++;
@@ -4304,7 +4304,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		if (td->verbose_level) {
 			char *tmp = mono_disasm_code (NULL, method, td->ip, end);
 			char *name = mono_method_full_name (method, TRUE);
-			g_print ("Method %s, optimized %d, original code:\n", name, rtm->optimized);
+			g_print ("Method %s, optimized %d, original code:\n", name, td->optimized);
 			g_print ("%s\n", tmp);
 			g_free (tmp);
 			g_free (name);
@@ -7718,7 +7718,7 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 static int
 add_patchpoint_data (TransformData *td, int patchpoint_data_index, int native_offset, int key)
 {
-	if (td->rtm->optimized) {
+	if (td->optimized) {
 		td->patchpoint_data [patchpoint_data_index++] = key;
 		td->patchpoint_data [patchpoint_data_index++] = native_offset;
 	} else {
