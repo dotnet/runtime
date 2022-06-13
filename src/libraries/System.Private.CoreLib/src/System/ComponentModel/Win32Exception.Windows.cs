@@ -5,6 +5,6 @@ namespace System.ComponentModel
 {
     public partial class Win32Exception
     {
-        private static string GetErrorMessage(int error) => Interop.Kernel32.GetMessage(error);
+        internal static string GetErrorMessage(int error) => Interop.Kernel32.GetMessage(error);
     }
 }
