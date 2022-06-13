@@ -473,13 +473,7 @@ namespace System
                 length -= numIters * numElements * 2;
             }
 
-            // Store any remaining values one-by-one
-            for (nuint i = 0; i < (length / 2); i++)
-            {
-                ref int firstInt = ref Unsafe.Add(ref buf, i);
-                ref int lastInt = ref Unsafe.Add(ref buf, length - 1 - i);
-                (lastInt, firstInt) = (firstInt, lastInt);
-            }
+            ReverseInner(ref buf, length);
         }
 
         public static void Reverse(ref long buf, nuint length)
@@ -549,12 +543,7 @@ namespace System
             }
 
             // Store any remaining values one-by-one
-            for (nuint i = 0; i < (length / 2); i++)
-            {
-                ref long firstLong = ref Unsafe.Add(ref buf, i);
-                ref long lastLong = ref Unsafe.Add(ref buf, length - 1 - i);
-                (lastLong, firstLong) = (firstLong, lastLong);
-            }
+            ReverseInner(ref buf, length);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
