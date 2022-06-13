@@ -4,12 +4,14 @@
 namespace System
 {
     // Contains helpers for calculating randomized hash codes of common types.
-    // These hash codes must not be persisted between AppDomain restarts.
-    // There's still the potential for two distinct types with the same bit
-    // pattern (for example, string.Empty and int.Zero) to produce the same
-    // hash code, since the HashCode seed is global per AppDomain and not per type.
-    // This shouldn't be a problem for most callers since the number of
-    // possible types is expected to be small anyway for realistic scenarios.
+    // Since these hash codes are randomized, callers must not persist them between
+    // AppDomain restarts. There's still the potential for limited collisions
+    // if two distinct types have the same bit pattern (e.g., string.Empty and (int)0).
+    // This should be acceptable because the number of practical collisions is
+    // limited by the number of distinct types used here, and we expect callers to
+    // have a small, fixed set of accepted types for any hash-based collection.
+    // If we really do need to address this in the future, we can use a seed per type
+    // rather than a global seed for the entire AppDomain.
     internal static class HashCodeRandomization
     {
         public static int GetRandomizedOrdinalHashCode(this string value)
@@ -19,10 +21,13 @@ namespace System
 
             return value.GetHashCode();
 #else
-            // Downlevel, we need to perform randomization ourselves.
-            // This allows "Hello!" and "Hello!\0" to have the same hash
-            // code, which is acceptable for the scenarios we care about.
-            // We'll pull out pairs of chars and write 32-bit ints at a time.
+            // Downlevel, we need to perform randomization ourselves. There's still
+            // the potential for limited collisions ("Hello!" and "Hello!\0"), but
+            // this shouldn't be a problem in practice. If we need to address it,
+            // we can mix the string length into the accumulator before running the
+            // string contents through.
+            //
+            // We'll pull out pairs of chars and write 32 bits at a time.
 
             HashCode hashCode = default;
             int pair = 0;
@@ -40,7 +45,7 @@ namespace System
                     pair = 0;
                 }
             }
-            hashCode.Add(pair); // flush any leftover data (could be 0)
+            hashCode.Add(pair); // flush any leftover data (could be 0 or 1 chars)
             return hashCode.ToHashCode();
 #endif
         }
