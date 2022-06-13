@@ -53,13 +53,13 @@ namespace System.Formats.Tar
             }
             else if (other is PaxTarEntry paxOther)
             {
-                changedATime = TarHelpers.TryGetDateTimeOffsetFromTimestampString(paxOther.ExtendedAttributes, TarHeader.PaxEaATime, out DateTimeOffset aTime);
+                changedATime = TarHelpers.TryGetDateTimeOffsetFromTimestampString(paxOther._header._extendedAttributes, TarHeader.PaxEaATime, out DateTimeOffset aTime);
                 if (changedATime)
                 {
                     _header._aTime = aTime;
                 }
 
-                changedCTime = TarHelpers.TryGetDateTimeOffsetFromTimestampString(paxOther.ExtendedAttributes, TarHeader.PaxEaCTime, out DateTimeOffset cTime);
+                changedCTime = TarHelpers.TryGetDateTimeOffsetFromTimestampString(paxOther._header._extendedAttributes, TarHeader.PaxEaCTime, out DateTimeOffset cTime);
                 if (changedCTime)
                 {
                     _header._cTime = cTime;

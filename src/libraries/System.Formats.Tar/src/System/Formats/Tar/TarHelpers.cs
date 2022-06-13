@@ -123,10 +123,11 @@ namespace System.Formats.Tar
             ((double)(dateTimeOffset.UtcDateTime - DateTime.UnixEpoch).Ticks) / TimeSpan.TicksPerSecond;
 
         // If the specified fieldName is found in the provided dictionary and it is a valid double number, returns true and sets the value in 'dateTimeOffset'.
-        internal static bool TryGetDateTimeOffsetFromTimestampString(IReadOnlyDictionary<string, string> dict, string fieldName, out DateTimeOffset dateTimeOffset)
+        internal static bool TryGetDateTimeOffsetFromTimestampString(Dictionary<string, string>? dict, string fieldName, out DateTimeOffset dateTimeOffset)
         {
             dateTimeOffset = default;
-            if (dict.TryGetValue(fieldName, out string? value) &&
+            if (dict != null &&
+                dict.TryGetValue(fieldName, out string? value) &&
                 double.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out double secondsSinceEpoch))
             {
                 dateTimeOffset = GetDateTimeOffsetFromSecondsSinceEpoch(secondsSinceEpoch);
