@@ -79,7 +79,7 @@ namespace System.Net.Tests
 
         private const string absoluteUri = "ftp://localhost/";
 
-        private static readonly byte[] helloWorldBytes = Encoding.UTF8.GetBytes("Hello world");
+        private static readonly byte[] helloWorldBytes = "Hello world"u8.ToArray();
         private static readonly byte[] largeFileBytes = Enumerable.Range(0, 10 * 1024 * 1024).Select((i) => (byte)(i % 256)).ToArray();
 
         [ConditionalTheory(nameof(LocalServerAvailable))]

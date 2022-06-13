@@ -31,11 +31,11 @@ namespace System.Xml
 
         // UTF-8 is fastpath, so that's how these are stored
         // Compare methods adapt to Unicode.
-        private static readonly byte[] s_encodingAttr = new byte[] { (byte)'e', (byte)'n', (byte)'c', (byte)'o', (byte)'d', (byte)'i', (byte)'n', (byte)'g' };
-        private static readonly byte[] s_encodingUTF8 = new byte[] { (byte)'u', (byte)'t', (byte)'f', (byte)'-', (byte)'8' };
-        private static readonly byte[] s_encodingUnicode = new byte[] { (byte)'u', (byte)'t', (byte)'f', (byte)'-', (byte)'1', (byte)'6' };
-        private static readonly byte[] s_encodingUnicodeLE = new byte[] { (byte)'u', (byte)'t', (byte)'f', (byte)'-', (byte)'1', (byte)'6', (byte)'l', (byte)'e' };
-        private static readonly byte[] s_encodingUnicodeBE = new byte[] { (byte)'u', (byte)'t', (byte)'f', (byte)'-', (byte)'1', (byte)'6', (byte)'b', (byte)'e' };
+        private static readonly byte[] s_encodingAttr = "encoding"u8.ToArray();
+        private static readonly byte[] s_encodingUTF8 = "utf-8"u8.ToArray();
+        private static readonly byte[] s_encodingUnicode = "utf-16"u8.ToArray();
+        private static readonly byte[] s_encodingUnicodeLE = "utf-16le"u8.ToArray();
+        private static readonly byte[] s_encodingUnicodeBE = "utf-16be"u8.ToArray();
 
         private SupportedEncoding _encodingCode;
         private Encoding? _encoding;

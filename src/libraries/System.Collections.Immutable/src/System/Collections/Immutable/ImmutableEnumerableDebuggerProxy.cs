@@ -58,6 +58,6 @@ namespace System.Collections.Immutable
         /// Gets the contents of the enumerable for display in the debugger.
         /// </summary>
         [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-        public T[] Contents => _cachedContents ?? (_cachedContents = _enumerable.ToArray());
+        public T[] Contents => _cachedContents ??= _enumerable.ToArray();
     }
 }

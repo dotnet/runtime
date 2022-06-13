@@ -97,6 +97,7 @@ namespace Wasm.Build.Tests
             EnvVars["_WasmStrictVersionMatch"] = "true";
             EnvVars["MSBuildSDKsPath"] = string.Empty;
             EnvVars["PATH"] = $"{sdkForWorkloadPath}{Path.PathSeparator}{Environment.GetEnvironmentVariable("PATH")}";
+            EnvVars["EM_WORKAROUND_PYTHON_BUG_34780"] = "1";
 
             // helps with debugging
             EnvVars["WasmNativeStrip"] = "false";

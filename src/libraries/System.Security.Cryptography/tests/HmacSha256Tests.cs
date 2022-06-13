@@ -9,7 +9,6 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public class HmacSha256Tests : Rfc4231HmacTests
     {
         protected override int BlockSize => 64;

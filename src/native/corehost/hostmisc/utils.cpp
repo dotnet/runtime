@@ -196,13 +196,13 @@ pal::string_t get_replaced_char(const pal::string_t& path, pal::char_t match, pa
 
 namespace
 {
-
     const pal::char_t* s_all_architectures[] =
     {
         _X("arm"),
         _X("arm64"),
         _X("armv6"),
         _X("loongarch64"),
+        _X("ppc64le"),
         _X("s390x"),
         _X("x64"),
         _X("x86")
@@ -226,6 +226,8 @@ pal::architecture get_current_arch()
     return pal::architecture::loongarch64;
 #elif defined(TARGET_S390X)
     return pal::architecture::s390X;
+#elif defined(TARGET_POWERPC64)
+    return pal::architecture::ppc64le;
 #else
 #error "Unknown target"
 #endif

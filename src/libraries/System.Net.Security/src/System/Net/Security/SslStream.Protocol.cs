@@ -100,7 +100,7 @@ namespace System.Net.Security
         {
             get
             {
-                return _sslAuthenticationOptions!.RemoteCertRequired;
+                return _sslAuthenticationOptions.RemoteCertRequired;
             }
         }
 
@@ -119,7 +119,6 @@ namespace System.Net.Security
 
             _securityContext?.Dispose();
             _credentialsHandle?.Dispose();
-            GC.SuppressFinalize(this);
         }
 
         //
@@ -251,7 +250,7 @@ namespace System.Net.Security
                 try
                 {
                     issuers = GetRequestCertificateAuthorities();
-                    remoteCert = CertificateValidationPal.GetRemoteCertificate(_securityContext!);
+                    remoteCert = CertificateValidationPal.GetRemoteCertificate(_securityContext);
                     if (_sslAuthenticationOptions.ClientCertificates == null)
                     {
                         _sslAuthenticationOptions.ClientCertificates = new X509CertificateCollection();
@@ -563,7 +562,7 @@ namespace System.Net.Security
             return cachedCred;
         }
 
-        private static List<T> EnsureInitialized<T>(ref List<T>? list) => list ?? (list = new List<T>());
+        private static List<T> EnsureInitialized<T>(ref List<T>? list) => list ??= new List<T>();
 
         //
         // Acquire Server Side Certificate information and set it on the class.
@@ -929,7 +928,7 @@ namespace System.Net.Security
 
             try
             {
-                X509Certificate2? certificate = CertificateValidationPal.GetRemoteCertificate(_securityContext!, ref chain);
+                X509Certificate2? certificate = CertificateValidationPal.GetRemoteCertificate(_securityContext, ref chain);
                 if (_remoteCertificate != null && certificate != null &&
                     certificate.RawDataMemory.Span.SequenceEqual(_remoteCertificate.RawDataMemory.Span))
                 {

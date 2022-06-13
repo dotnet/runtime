@@ -92,11 +92,6 @@
         <target state="translated">Nedostatek šestnáctkových číslic.</target>
         <note />
       </trans-unit>
-      <trans-unit id="InternalError_ScanRegex">
-        <source>Internal error in ScanRegex.</source>
-        <target state="translated">Vnitřní chyba v modulu ScanRegex.</target>
-        <note>{Locked="ScanRegex"}</note>
-      </trans-unit>
       <trans-unit id="InvalidGroupingConstruct">
         <source>Unrecognized grouping construct.</source>
         <target state="translated">Nerozpoznaný seskupovací konstrukt.</target>
@@ -212,11 +207,6 @@
         <target state="translated">Metoda RegexGenerator musí být částečná, bez parametrů, negenerická, neabstraktní a musí vracet regulární výraz.</target>
         <note />
       </trans-unit>
-      <trans-unit id="ReplacementError">
-        <source>Replacement pattern error.</source>
-        <target state="translated">Chyba vzorku pro náhradu.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="ReversedCharacterRange">
         <source>[x-y] range in reverse order.</source>
         <target state="translated">Rozsah [x-y] je v obráceném pořadí.</target>
@@ -274,12 +264,12 @@
       </trans-unit>
       <trans-unit id="UseRegexSourceGeneratorMessage">
         <source>Use 'RegexGeneratorAttribute' to generate the regular expression implementation at compile-time.</source>
-        <target state="new">Use 'RegexGeneratorAttribute' to generate the regular expression implementation at compile-time.</target>
+        <target state="translated">Pomocí regexGeneratorAttribute vygenerujte implementaci regulárního výrazu za kompilace.</target>
         <note />
       </trans-unit>
       <trans-unit id="UseRegexSourceGeneratorTitle">
         <source>Convert to 'RegexGenerator'.</source>
-        <target state="new">Convert to 'RegexGenerator'.</target>
+        <target state="translated">Převod na RegexGenerator</target>
         <note />
       </trans-unit>
     </body>

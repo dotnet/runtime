@@ -9,6 +9,7 @@
 #define __MONO_THREADS_WASM_H__
 
 #include <glib.h>
+#include <mono/utils/mono-threads.h>
 
 #ifdef HOST_WASM
 
@@ -21,6 +22,9 @@
 
 gboolean
 mono_threads_wasm_is_browser_thread (void);
+
+MonoNativeThreadId
+mono_threads_wasm_browser_thread_tid (void);
 
 #ifndef DISABLE_THREADS
 /**

@@ -79,21 +79,21 @@ namespace System.ServiceModel.Syndication
 
         public Collection<SyndicationPerson> Authors
         {
-            get => _authors ?? (_authors = new NullNotAllowedCollection<SyndicationPerson>());
+            get => _authors ??= new NullNotAllowedCollection<SyndicationPerson>();
         }
 
         public Uri BaseUri { get; set; }
 
         public Collection<SyndicationCategory> Categories
         {
-            get => _categories ?? (_categories = new NullNotAllowedCollection<SyndicationCategory>());
+            get => _categories ??= new NullNotAllowedCollection<SyndicationCategory>();
         }
 
         public SyndicationContent Content { get; set; }
 
         public Collection<SyndicationPerson> Contributors
         {
-            get => _contributors ?? (_contributors = new NullNotAllowedCollection<SyndicationPerson>());
+            get => _contributors ??= new NullNotAllowedCollection<SyndicationPerson>();
         }
 
         public TextSyndicationContent Copyright { get; set; }
@@ -124,7 +124,7 @@ namespace System.ServiceModel.Syndication
 
         public Collection<SyndicationLink> Links
         {
-            get => _links ?? (_links = new NullNotAllowedCollection<SyndicationLink>());
+            get => _links ??= new NullNotAllowedCollection<SyndicationLink>();
         }
 
         internal Exception PublishDateException { get; set; }

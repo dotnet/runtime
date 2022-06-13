@@ -3,14 +3,16 @@
 
 using System.Collections.Generic;
 using Xunit;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection.Emit.Tests
 {
+    [RequiresUnreferencedCode("Uses reflection to construct test cases")]
     public class ModuleBuilderDefineType
     {
         public static IEnumerable<object[]> TestData()
         {
-            foreach (string name in new string[] { "TestName", "testname", "class", "\uD800\uDC00", "a\0b\0c" })
+            foreach (string name in new string[] { "TestName", "testname", "class", "\uD800\uDC00" })
             {
                 foreach (TypeAttributes attributes in new TypeAttributes[] { TypeAttributes.NotPublic, TypeAttributes.Interface | TypeAttributes.Abstract, TypeAttributes.Class })
                 {

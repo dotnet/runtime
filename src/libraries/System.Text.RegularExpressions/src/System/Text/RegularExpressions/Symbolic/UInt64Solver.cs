@@ -10,7 +10,6 @@ namespace System.Text.RegularExpressions.Symbolic
     internal sealed class UInt64Solver : ISolver<ulong>
     {
         private readonly BDD[] _minterms;
-        private readonly MintermGenerator<ulong> _mintermGenerator;
         internal readonly MintermClassifier _classifier;
 
         public UInt64Solver(BDD[] minterms, CharSetSolver solver)
@@ -18,8 +17,6 @@ namespace System.Text.RegularExpressions.Symbolic
             Debug.Assert(minterms.Length <= 64);
 
             _minterms = minterms;
-
-            _mintermGenerator = new MintermGenerator<ulong>(this);
             _classifier = new MintermClassifier(minterms, solver);
 
             Full = minterms.Length == 64 ? ulong.MaxValue : ulong.MaxValue >> (64 - minterms.Length);
@@ -33,7 +30,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
         public bool IsEmpty(ulong set) => set == 0;
 
-        public List<ulong> GenerateMinterms(HashSet<ulong> constraints) => _mintermGenerator.GenerateMinterms(constraints);
+        public List<ulong> GenerateMinterms(HashSet<ulong> constraints) => MintermGenerator<ulong>.GenerateMinterms(this, constraints);
 
         public ulong And(ulong set1, ulong set2) => set1 & set2;
 
@@ -57,8 +54,6 @@ namespace System.Text.RegularExpressions.Symbolic
 
         public ulong Or(ulong set1, ulong set2) => set1 | set2;
 
-        public ulong CreateFromChar(char c) => ((ulong)1) << _classifier.GetMintermID(c);
-
         /// <summary>
         /// Assumes that set is a union of some minterms (or empty).
         /// If null then 0 is returned.
@@ -80,6 +75,24 @@ namespace System.Text.RegularExpressions.Symbolic
             return result;
         }
 
+        /// <summary>
+        /// Return an array of bitvectors representing each of the minterms.
+        /// </summary>
+        public ulong[] GetMinterms()
+        {
+            ulong[] minterms = new ulong[_minterms.Length];
+            for (int i = 0; i < minterms.Length; i++)
+            {
+                minterms[i] = (ulong)1 << i;
+            }
+
+            return minterms;
+        }
+
+#if DEBUG
+        /// <summary>Pretty print the bitvector bv as the character set it represents.</summary>
+        public string PrettyPrint(ulong bv, CharSetSolver solver) => solver.PrettyPrint(ConvertToBDD(bv, solver));
+
         public BDD ConvertToBDD(ulong set, CharSetSolver solver)
         {
             BDD[] partition = _minterms;
@@ -100,22 +113,6 @@ namespace System.Text.RegularExpressions.Symbolic
 
             return result;
         }
-
-        /// <summary>
-        /// Return an array of bitvectors representing each of the minterms.
-        /// </summary>
-        public ulong[] GetMinterms()
-        {
-            ulong[] minterms = new ulong[_minterms.Length];
-            for (int i = 0; i < minterms.Length; i++)
-            {
-                minterms[i] = (ulong)1 << i;
-            }
-
-            return minterms;
-        }
-
-        /// <summary>Pretty print the bitvector bv as the character set it represents.</summary>
-        public string PrettyPrint(ulong bv, CharSetSolver solver) => solver.PrettyPrint(ConvertToBDD(bv, solver));
+#endif
     }
 }

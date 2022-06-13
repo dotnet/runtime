@@ -1,21 +1,15 @@
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
+// Copyright (c) .NET Foundation and contributors. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using ILLink.Shared;
 using Mono.Cecil;
 
 namespace Mono.Linker
 {
-	// Temporary workaround - should be removed once linker can be upgraded to build against
-	// high enough version of the framework which has this enum value.
-	internal static class DynamicallyAccessedMemberTypesOverlay
-	{
-		public const DynamicallyAccessedMemberTypes Interfaces = (DynamicallyAccessedMemberTypes) 0x2000;
-	}
-
 	internal static class DynamicallyAccessedMembersBinder
 	{
 		// Returns the members of the type bound by memberTypes. For DynamicallyAccessedMemberTypes.All, this returns all members of the type and its

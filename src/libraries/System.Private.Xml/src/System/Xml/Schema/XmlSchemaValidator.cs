@@ -1238,7 +1238,7 @@ namespace System.Xml.Schema
                 // for each level in the stack, endchildren and fill value from element
                 if (HasIdentityConstraints)
                 {
-                    XmlSchemaType xmlType = memberType == null ? contextElementDecl.SchemaType! : memberType;
+                    XmlSchemaType xmlType = memberType ?? contextElementDecl.SchemaType!;
                     EndElementIdentityConstraints(typedValue!, stringValue, xmlType.Datatype!);
                 }
 

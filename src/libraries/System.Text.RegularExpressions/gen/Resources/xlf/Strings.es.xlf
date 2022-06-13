@@ -92,11 +92,6 @@
         <target state="translated">Dígitos hexadecimales insuficientes.</target>
         <note />
       </trans-unit>
-      <trans-unit id="InternalError_ScanRegex">
-        <source>Internal error in ScanRegex.</source>
-        <target state="translated">Error interno en ScanRegex.</target>
-        <note>{Locked="ScanRegex"}</note>
-      </trans-unit>
       <trans-unit id="InvalidGroupingConstruct">
         <source>Unrecognized grouping construct.</source>
         <target state="translated">Construcción de agrupación no reconocida.</target>
@@ -212,11 +207,6 @@
         <target state="translated">El método RegexGenerator debe ser parcial, sin parámetros, no genérico, no abstracto y devolver Regex</target>
         <note />
       </trans-unit>
-      <trans-unit id="ReplacementError">
-        <source>Replacement pattern error.</source>
-        <target state="translated">Error de patrón de reemplazo.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="ReversedCharacterRange">
         <source>[x-y] range in reverse order.</source>
         <target state="translated">Intervalo [x-y] en orden inverso.</target>
@@ -274,12 +264,12 @@
       </trans-unit>
       <trans-unit id="UseRegexSourceGeneratorMessage">
         <source>Use 'RegexGeneratorAttribute' to generate the regular expression implementation at compile-time.</source>
-        <target state="new">Use 'RegexGeneratorAttribute' to generate the regular expression implementation at compile-time.</target>
+        <target state="translated">Use 'RegexGeneratorAttribute' para generar la implementación de expresiones regulares en tiempo de compilación.</target>
         <note />
       </trans-unit>
       <trans-unit id="UseRegexSourceGeneratorTitle">
         <source>Convert to 'RegexGenerator'.</source>
-        <target state="new">Convert to 'RegexGenerator'.</target>
+        <target state="translated">Convertir en 'RegexGenerator'.</target>
         <note />
       </trans-unit>
     </body>

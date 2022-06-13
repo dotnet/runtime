@@ -15,5 +15,13 @@ namespace System
         private readonly IntPtr _type;
         #pragma warning restore CA1823
         #endregion
+
+        public static unsafe object? ToObject(TypedReference value)
+        {
+            return InternalToObject(&value);
+        }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern unsafe object InternalToObject(void* value);
     }
 }

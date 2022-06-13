@@ -299,6 +299,7 @@ namespace pal
         arm64,
         armv6,
         loongarch64,
+        ppc64le,
         s390X,
         x64,
         x86,

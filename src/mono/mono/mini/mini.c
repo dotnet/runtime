@@ -3756,6 +3756,9 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		NULLIFY_INS (cfg->init_method_rgctx_ins);
 		/* Needed by the assert in get_gshared_info_slot () */
 		cfg->init_method_rgctx_ins = NULL;
+		cfg->init_method_rgctx_ins_arg->opcode = OP_PCONST;
+		cfg->init_method_rgctx_ins_arg->inst_p0 = NULL;
+		MONO_INST_NULLIFY_SREGS (cfg->init_method_rgctx_ins_arg);
 	}
 
 	if (cfg->got_var) {

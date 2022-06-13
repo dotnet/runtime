@@ -169,14 +169,14 @@ namespace System.IO.Compression.Tests
                 {
                     s.Seek(0, SeekOrigin.End);
 
-                    byte[] data = Encoding.ASCII.GetBytes("\r\n\r\nThe answer my friend, is blowin' in the wind.");
+                    byte[] data = "\r\n\r\nThe answer my friend, is blowin' in the wind."u8.ToArray();
                     if (writeWithSpans)
                     {
-                        s.Write(data, 0, data.Length);
+                        s.Write(new ReadOnlySpan<byte>(data));
                     }
                     else
                     {
-                        s.Write(new ReadOnlySpan<byte>(data));
+                        s.Write(data, 0, data.Length);
                     }
                 }
 
