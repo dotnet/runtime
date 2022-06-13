@@ -10,7 +10,7 @@ namespace System.Runtime.Intrinsics.Wasm
     [Intrinsic]
     public abstract class WasmBase
     {
-        public bool IsSupported { get; }
+        public static bool IsSupported { get => IsSupported; }
 
         // Constructing SIMD Values
 

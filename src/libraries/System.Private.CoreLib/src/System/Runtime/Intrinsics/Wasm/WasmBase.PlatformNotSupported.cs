@@ -9,7 +9,7 @@ namespace System.Runtime.Intrinsics.Wasm
     [CLSCompliant(false)]
     public abstract class WasmBase
     {
-        public bool IsSupported { get; }
+        public static bool IsSupported { [Intrinsic] get { return false; } }
 
         public static Vector128<byte> Constant(Vector128<byte> v) { throw new PlatformNotSupportedException(); }
 
