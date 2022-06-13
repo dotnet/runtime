@@ -38,5 +38,27 @@ namespace System.Runtime.InteropServices.Tests
             string expected = new Win32Exception(error).Message;
             Assert.Equal(expected, Marshal.GetPInvokeErrorMessage(error));
         }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void PInvokeErrorMessage_Returns_UniqueMessage_Windows()
+        {
+            var err1 = Marshal.GetPInvokeErrorMessage(unchecked((int)0x80070057)); // E_INVALIDARG
+            var err2 = Marshal.GetPInvokeErrorMessage(unchecked((int)0x80004001)); // E_NOTIMPL
+            Assert.NotNull(err1);
+            Assert.NotNull(err2);
+            Assert.NotEqual(err1, err2);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void PInvokeErrorMessage_Returns_UniqueMessage_Unix()
+        {
+            var err1 = Marshal.GetPInvokeErrorMessage(0x10002); // EACCES
+            var err2 = Marshal.GetPInvokeErrorMessage(0x10014); // EEXIST
+            Assert.NotNull(err1);
+            Assert.NotNull(err2);
+            Assert.NotEqual(err1, err2);
+        }
     }
 }
