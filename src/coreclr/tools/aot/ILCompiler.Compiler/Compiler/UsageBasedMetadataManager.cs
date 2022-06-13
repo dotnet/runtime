@@ -600,7 +600,7 @@ namespace ILCompiler
                 dependencies.Add(factory.DataflowAnalyzedMethod(methodIL.GetMethodILDefinition()), "Access to interesting field");
             }
 
-            if ((_generationOptions & UsageBasedMetadataGenerationOptions.ReflectedMembersOnly) == 0
+            if ((_generationOptions & UsageBasedMetadataGenerationOptions.CreateReflectableArtifacts) != 0
                 && !IsReflectionBlocked(writtenField))
             {
                 FieldDesc fieldToReport = writtenField;
