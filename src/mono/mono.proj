@@ -53,6 +53,7 @@
     <_CompilerTargetArch Condition="'$(RealTargetArchitecture)' != ''">$(RealTargetArchitecture)</_CompilerTargetArch>
     <RepositoryEngineeringCommonDir>$([MSBuild]::NormalizeDirectory('$(RepositoryEngineeringDir)', 'common'))</RepositoryEngineeringCommonDir>
     <CrossToolchainFile>$([MSBuild]::NormalizePath('$(RepositoryEngineeringCommonDir)', 'cross', 'toolchain.cmake'))</CrossToolchainFile>
+    <MonoWasmThreads Condition="'$(MonoWasmBuildVariant)' == 'singlethread'">false</MonoWasmThreads>
     <MonoWasmThreads Condition="'$(WasmEnableThreads)' == 'true' or '$(WasmEnablePerfTracing)' == 'true' or '$(MonoWasmBuildVariant)' == 'multithread' or '$(MonoWasmBuildVariant)' == 'perftrace'">true</MonoWasmThreads>
     <MonoWasmThreadsNoUser Condition="('$(WasmEnableThreads)' != 'true' and '$(WasmEnablePerfTracing)' == 'true') or '$(MonoWasmBuildVariant)' == 'perftrace'">true</MonoWasmThreadsNoUser>
   </PropertyGroup>
