@@ -534,6 +534,12 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 		MonoExceptionHandle exch = MONO_HANDLE_NEW (MonoException, exc);
 		mono_threads_end_abort_protected_block ();
 
+		if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_TYPE)) {
+			char* type_name = mono_type_full_name (m_class_get_byval_arg (klass));
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_TYPE, "Returned  from running class .cctor for %s from '%s'", type_name, m_class_get_image (klass)->name);
+			g_free (type_name);
+		}
+
 		//exception extracted, error will be set to the right value later
 		if (exc == NULL && !is_ok (error)) { // invoking failed but exc was not set
 			exc = mono_error_convert_to_exception (error);

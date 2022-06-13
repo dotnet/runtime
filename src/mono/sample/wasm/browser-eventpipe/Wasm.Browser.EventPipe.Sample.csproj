@@ -15,10 +15,10 @@
 
   <ItemGroup>
     <WasmExtraFilesToDeploy Include="index.html" />
-    <WasmExtraConfig Condition="false" Include="environment_variables" Value='
+    <WasmExtraConfig Condition="true" Include="environment_variables" Value='
 {
   "MONO_LOG_LEVEL": "debug",
-  "MONO_LOG_MASK": "diagnostics"
+  "MONO_LOG_MASK": "all"
 }' />
     <WasmExtraConfig Condition="false" Include="diagnostic_options" Value='
 {

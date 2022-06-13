@@ -32,6 +32,8 @@ export const mono_wasm_runtime_is_initialized = new GuardedPromise<void>((resolv
     runtime_is_initialized_reject = reject;
 });
 
+const IS_WORKER = typeof (self) !== "undefined" && typeof ((<any>self).importScripts) !== "undefined";
+
 let ctx: DownloadAssetsContext | null = null;
 
 export function configure_emscripten_startup(module: DotnetModule, exportedAPI: DotnetPublicAPI): void {
@@ -124,6 +126,11 @@ export function configure_emscripten_startup(module: DotnetModule, exportedAPI: 
 
 async function mono_wasm_pre_init(): Promise<void> {
     const moduleExt = Module as DotnetModule;
+
+    if (IS_WORKER) {
+        console.debug("mono_wasm_pre_init running in a worker");
+
+    }
 
     Module.addRunDependency("mono_wasm_pre_init");
 
@@ -359,10 +366,13 @@ function finalize_startup(config: MonoConfig | MonoConfigError | undefined): voi
         }
 
         try {
+            console.debug("MONO_WASM: Initializing mono runtime");
             _apply_configuration_from_args(config);
-
+            console.debug("MONO_WASM: applied config from args");
             mono_wasm_globalization_init(config.globalization_mode!, config.diagnostic_tracing!);
+            console.debug("MONO_WASM: globalization init");
             cwraps.mono_wasm_load_runtime("unused", config.debug_level || 0);
+            console.debug("MONO_WASM: loaded runtime");
             runtimeHelpers.wait_for_debugger = config.wait_for_debugger;
         } catch (err: any) {
             _print_error("MONO_WASM: mono_wasm_load_runtime () failed", err);
@@ -372,8 +382,11 @@ function finalize_startup(config: MonoConfig | MonoConfigError | undefined): voi
                 const wasm_exit = cwraps.mono_wasm_exit;
                 wasm_exit(1);
             }
+            console.debug("returning after calling runtime initialization rejection");
+            return;
         }
 
+        console.debug("got to before bindings_lazy_init");
         bindings_lazy_init();
 
         let tz;

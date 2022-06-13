@@ -273,9 +273,12 @@ let startup_session_configs: (EventPipeSessionOptions & EventPipeSessionAutoStop
 let startup_sessions: (EventPipeSession | null)[] | null = null;
 
 export function mono_wasm_event_pipe_early_startup_callback(): void {
+    console.debug("in mono_wasm_event_pipe_early_startup_callback in typescript");
     if (startup_session_configs === null || startup_session_configs.length == 0) {
+        console.debug("no sessions, returning from mono_wasm_event_pipe_early_startup_callback");
         return;
     }
+    console.debug("setting startup sessions based on startup session configs");
     startup_sessions = startup_session_configs.map(config => createAndStartEventPipeSession(config));
     startup_session_configs = [];
 }

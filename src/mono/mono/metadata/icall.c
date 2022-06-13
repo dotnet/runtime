@@ -6093,13 +6093,22 @@ ves_icall_System_Diagnostics_Debugger_IsAttached_internal (void)
 MonoBoolean
 ves_icall_System_Diagnostics_Debugger_IsLogging (void)
 {
-	return mono_get_runtime_callbacks ()->debug_log_is_enabled
+        printf ("in Debugger.IsLogging\n");
+	gboolean res =  mono_get_runtime_callbacks ()->debug_log_is_enabled
 		&& mono_get_runtime_callbacks ()->debug_log_is_enabled ();
+        printf ("in Debugger.IsLogging returning %s\n", res ? "True" : "False");
+        return res;
 }
 
 void
 ves_icall_System_Diagnostics_Debugger_Log (int level, MonoString *volatile* category, MonoString *volatile* message)
 {
+        ERROR_DECL (error);
+        printf ("in Debugger.Log\n");
+        gchar *msg = mono_string_to_utf8_checked_internal (*message, error);
+        mono_error_assert_ok (error);
+        printf ("in Debugger.Log with message '%s'\n", msg);
+        g_free (msg);
 	if (mono_get_runtime_callbacks ()->debug_log)
 		mono_get_runtime_callbacks ()->debug_log (level, *category, *message);
 }
