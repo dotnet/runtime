@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Xml.Xsl;
 using XmlCoreTest.Common;
 using OLEDB.Test.ModuleCore;
@@ -88,7 +89,7 @@ namespace System.Xml.Tests
                 string actual = actualReader.ReadToEnd().ReplaceLineEndings();
                 string expected = expectedReader.ReadToEnd().ReplaceLineEndings();
 
-                if (actual.Equals(expected))
+                if (Regex.IsMatch(input:actual, pattern:expected))
                 {
                     return;
                 }

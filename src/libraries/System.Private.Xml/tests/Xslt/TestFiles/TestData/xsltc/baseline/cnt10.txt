@@ -1,2 +1,2 @@
-	DIFFERENT	    
+\tDIFFERENT\t    
         Hello, world!
