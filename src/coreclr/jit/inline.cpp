@@ -643,7 +643,8 @@ void InlineContext::DumpXml(FILE* file, unsigned indent)
 //   stmt          - statement containing the call (if known)
 //   description   - string describing the context of the decision
 
-InlineResult::InlineResult(Compiler* compiler, GenTreeCall* call, Statement* stmt, const char* description)
+InlineResult::InlineResult(
+    Compiler* compiler, GenTreeCall* call, Statement* stmt, const char* description, bool doNotReport)
     : m_RootCompiler(nullptr)
     , m_Policy(nullptr)
     , m_Call(call)
@@ -652,7 +653,9 @@ InlineResult::InlineResult(Compiler* compiler, GenTreeCall* call, Statement* stm
     , m_Callee(nullptr)
     , m_ImportedILSize(0)
     , m_Description(description)
-    , m_Reported(false)
+    , m_successResult(INLINE_PASS)
+    , m_DoNotReport(doNotReport)
+    , m_reportFailureAsVmFailure(false)
 {
     // Set the compiler instance
     m_RootCompiler = compiler->impInlineRoot();
@@ -683,6 +686,12 @@ InlineResult::InlineResult(Compiler* compiler, GenTreeCall* call, Statement* stm
     {
         m_Callee = m_Call->AsCall()->gtCallMethHnd;
     }
+
+    if (!m_DoNotReport)
+    {
+        COMP_HANDLE comp = m_RootCompiler->info.compCompHnd;
+        comp->beginInlining(m_Caller, m_Callee);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -701,7 +710,7 @@ InlineResult::InlineResult(Compiler* compiler, GenTreeCall* call, Statement* stm
 //    We use the inlCallee member to track the method since logically
 //    it is the callee here.
 
-InlineResult::InlineResult(Compiler* compiler, CORINFO_METHOD_HANDLE method, const char* description)
+InlineResult::InlineResult(Compiler* compiler, CORINFO_METHOD_HANDLE method, const char* description, bool doNotReport)
     : m_RootCompiler(nullptr)
     , m_Policy(nullptr)
     , m_Call(nullptr)
@@ -709,7 +718,9 @@ InlineResult::InlineResult(Compiler* compiler, CORINFO_METHOD_HANDLE method, con
     , m_Caller(nullptr)
     , m_Callee(method)
     , m_Description(description)
-    , m_Reported(false)
+    , m_successResult(INLINE_PASS)
+    , m_DoNotReport(doNotReport)
+    , m_reportFailureAsVmFailure(false)
 {
     // Set the compiler instance
     m_RootCompiler = compiler->impInlineRoot();
@@ -717,6 +728,12 @@ InlineResult::InlineResult(Compiler* compiler, CORINFO_METHOD_HANDLE method, con
     // Set the policy
     const bool isPrejitRoot = true;
     m_Policy                = InlinePolicy::GetPolicy(m_RootCompiler, isPrejitRoot);
+
+    if (!m_DoNotReport)
+    {
+        COMP_HANDLE comp = m_RootCompiler->info.compCompHnd;
+        comp->beginInlining(m_Caller, m_Callee);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -731,8 +748,6 @@ InlineResult::InlineResult(Compiler* compiler, CORINFO_METHOD_HANDLE method, con
 //    EE. Optionally update the method attribute to NOINLINE if
 //    observation and policy warrant.
 //
-//    All this can be suppressed if desired by calling setReported()
-//    before the InlineResult goes out of scope.
 
 void InlineResult::Report()
 {
@@ -753,13 +768,13 @@ void InlineResult::Report()
 #endif // DEBUG
 
     // If we weren't actually inlining, user may have suppressed
-    // reporting via setReported(). If so, do nothing.
-    if (m_Reported)
+    // reporting. If so, do nothing.
+    if (m_DoNotReport)
     {
         return;
     }
 
-    m_Reported = true;
+    m_DoNotReport = true;
 
 #ifdef DEBUG
     const char* callee = nullptr;
@@ -798,7 +813,7 @@ void InlineResult::Report()
         }
     }
 
-    if (IsDecided())
+    if (IsDecided() || m_reportFailureAsVmFailure || m_successResult != INLINE_PASS)
     {
         const char* format = "INLINER: during '%s' result '%s' reason '%s'\n";
         JITLOG_THIS(m_RootCompiler, (LL_INFO100000, format, m_Description, ResultString(), ReasonString()));

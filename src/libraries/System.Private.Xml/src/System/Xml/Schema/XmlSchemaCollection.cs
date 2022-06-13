@@ -195,7 +195,7 @@ namespace System.Xml.Schema
         {
             get
             {
-                XmlSchemaCollectionNode? node = (XmlSchemaCollectionNode?)_collection[(ns != null) ? ns : string.Empty];
+                XmlSchemaCollectionNode? node = (XmlSchemaCollectionNode?)_collection[ns ?? string.Empty];
                 return (node != null) ? node.Schema : null;
             }
         }
@@ -209,7 +209,7 @@ namespace System.Xml.Schema
 
         public bool Contains(string? ns)
         {
-            return _collection[(ns != null) ? ns : string.Empty] != null;
+            return _collection[ns ?? string.Empty] != null;
         }
 
         /// <summary>
@@ -279,7 +279,7 @@ namespace System.Xml.Schema
 
         internal SchemaInfo? GetSchemaInfo(string? ns)
         {
-            XmlSchemaCollectionNode? node = (XmlSchemaCollectionNode?)_collection[(ns != null) ? ns : string.Empty];
+            XmlSchemaCollectionNode? node = (XmlSchemaCollectionNode?)_collection[ns ?? string.Empty];
             return (node != null) ? node.SchemaInfo : null;
         }
 
@@ -316,7 +316,7 @@ namespace System.Xml.Schema
                         errorCount = 1;
                     }
 
-                    ns = schema.TargetNamespace == null ? string.Empty : schema.TargetNamespace;
+                    ns = schema.TargetNamespace ?? string.Empty;
                 }
                 errorCount += schema.ErrorCount;
             }

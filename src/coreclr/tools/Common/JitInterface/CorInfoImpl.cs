@@ -431,7 +431,18 @@ namespace Internal.JitInterface
             _methodCodeNode.InitializeDebugLocInfos(_debugLocInfos);
             _methodCodeNode.InitializeDebugVarInfos(_debugVarInfos);
 #if READYTORUN
-            _methodCodeNode.InitializeInliningInfo(_inlinedMethods.ToArray(), _compilation.NodeFactory);
+            MethodDesc[] inlineeArray;
+            if (_inlinedMethods != null)
+            {
+                inlineeArray = new MethodDesc[_inlinedMethods.Count];
+                _inlinedMethods.CopyTo(inlineeArray);
+                Array.Sort(inlineeArray, TypeSystemComparer.Instance.Compare);
+            }
+            else
+            {
+                inlineeArray = Array.Empty<MethodDesc>();
+            }
+            _methodCodeNode.InitializeInliningInfo(inlineeArray, _compilation.NodeFactory);
 
             // Detect cases where the instruction set support used is a superset of the baseline instruction set specification
             var baselineSupport = _compilation.InstructionSetSupport;
@@ -460,7 +471,20 @@ namespace Internal.JitInterface
 
                 InstructionSetSupport actualSupport = new InstructionSetSupport(_actualInstructionSetSupported, _actualInstructionSetUnsupported, architecture);
                 var node = _compilation.SymbolNodeFactory.PerMethodInstructionSetSupportFixup(actualSupport);
-                _methodCodeNode.Fixups.Add(node);
+                AddPrecodeFixup(node);
+            }
+
+            Debug.Assert(_stashedPrecodeFixups.Count == 0);
+            if (_precodeFixups != null)
+            {
+                HashSet<ISymbolNode> computedNodes = new HashSet<ISymbolNode>();
+                foreach (var fixup in _precodeFixups)
+                {
+                    if (computedNodes.Add(fixup))
+                    {
+                        _methodCodeNode.Fixups.Add(fixup);
+                    }
+                }
             }
 #else
             var methodIL = (MethodIL)HandleToObject((IntPtr)_methodScope);
@@ -566,9 +590,12 @@ namespace Internal.JitInterface
             _lastException = null;
 
 #if READYTORUN
-            _inlinedMethods = new ArrayBuilder<MethodDesc>();
+            _inlinedMethods = null;
             _actualInstructionSetSupported = default(InstructionSetFlags);
             _actualInstructionSetUnsupported = default(InstructionSetFlags);
+            _precodeFixups = null;
+            _stashedPrecodeFixups.Clear();
+            _stashedInlinedMethods.Clear();
 #endif
 
             _instantiationToJitVisibleInstantiation = null;
@@ -1381,7 +1408,7 @@ namespace Internal.JitInterface
             if (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout)
             {
                 ISymbolNode virtualResolutionNode = _compilation.SymbolNodeFactory.CheckVirtualFunctionOverride(methodWithTokenDecl, objType, methodWithTokenImpl);
-                _methodCodeNode.Fixups.Add(virtualResolutionNode);
+                AddPrecodeFixup(virtualResolutionNode);
             }
 #endif
             info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_SUCCESS;
@@ -2084,7 +2111,7 @@ namespace Internal.JitInterface
             if (NeedsTypeLayoutCheck(type))
             {
                 ISymbolNode node = _compilation.SymbolNodeFactory.CheckTypeLayout(type);
-                _methodCodeNode.Fixups.Add(node);
+                AddPrecodeFixup(node);
             }
 #endif
             return (uint)classSize.AsInt;

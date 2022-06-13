@@ -3062,7 +3062,7 @@ namespace System.Security.AccessControl
         //
 
         internal DiscretionaryAcl(bool isContainer, bool isDS, RawAcl? rawAcl, bool trusted)
-            : base(isContainer, isDS, rawAcl == null ? new RawAcl(isDS ? AclRevisionDS : AclRevision, 0) : rawAcl, trusted, true)
+            : base(isContainer, isDS, rawAcl ?? new RawAcl(isDS ? AclRevisionDS : AclRevision, 0), trusted, true)
         {
         }
 

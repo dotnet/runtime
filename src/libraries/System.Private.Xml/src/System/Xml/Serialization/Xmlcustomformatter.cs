@@ -201,7 +201,7 @@ namespace System.Xml.Serialization
             if (val != 0)
             {
                 // failed to parse the enum value
-                throw new InvalidOperationException(SR.Format(SR.XmlUnknownConstant, originalValue, typeName == null ? "enum" : typeName));
+                throw new InvalidOperationException(SR.Format(SR.XmlUnknownConstant, originalValue, typeName ?? "enum"));
             }
             if (sb.Length == 0 && iZero >= 0)
             {

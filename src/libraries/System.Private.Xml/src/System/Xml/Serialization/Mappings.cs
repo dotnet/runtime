@@ -54,7 +54,7 @@ namespace System.Xml.Serialization
         [AllowNull]
         internal virtual string Name
         {
-            get { return _name == null ? string.Empty : _name; }
+            get { return _name ?? string.Empty; }
             set { _name = value; }
         }
 
@@ -132,7 +132,7 @@ namespace System.Xml.Serialization
         {
             if (Any)
             {
-                return $"{(Namespace == null ? "##any" : Namespace)}:{Name}";
+                return $"{Namespace ?? "##any"}:{Name}";
             }
             else
             {
@@ -446,14 +446,14 @@ namespace System.Xml.Serialization
         [AllowNull]
         internal string XmlName
         {
-            get { return _xmlName == null ? string.Empty : _xmlName; }
+            get { return _xmlName ?? string.Empty; }
             set { _xmlName = value; }
         }
 
         [AllowNull]
         internal string Name
         {
-            get { return _name == null ? string.Empty : _name; }
+            get { return _name ?? string.Empty; }
             set { _name = value; }
         }
 
@@ -953,7 +953,7 @@ namespace System.Xml.Serialization
 
         internal string Name
         {
-            get { return _name == null ? string.Empty : _name; }
+            get { return _name ?? string.Empty; }
             set { _name = value; }
         }
 
@@ -1358,7 +1358,7 @@ namespace System.Xml.Serialization
                             {
                                 throw new InvalidOperationException(SR.Format(SR.XmlGetSchemaTypeMissing, _getSchemaMethod.DeclaringType!.FullName, _getSchemaMethod.Name, _xsiType.Name, _xsiType.Namespace));
                             }
-                            _xsdType = _xsdType.Redefined != null ? _xsdType.Redefined : _xsdType;
+                            _xsdType = _xsdType.Redefined ?? _xsdType;
                         }
                     }
                 }

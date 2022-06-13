@@ -274,7 +274,7 @@ void Compiler::fgNoteNonInlineCandidate(Statement* stmt, GenTreeCall* call)
         return;
     }
 
-    InlineResult      inlineResult(this, call, nullptr, "fgNoteNonInlineCandidate");
+    InlineResult      inlineResult(this, call, nullptr, "fgNoteNonInlineCandidate", false);
     InlineObservation currentObservation = InlineObservation::CALLSITE_NOT_CANDIDATE;
 
     // Try and recover the reason left behind when the jit decided
@@ -288,7 +288,6 @@ void Compiler::fgNoteNonInlineCandidate(Statement* stmt, GenTreeCall* call)
 
     // Propagate the prior failure observation to this result.
     inlineResult.NotePriorFailure(currentObservation);
-    inlineResult.SetReported();
 
     if (call->gtCallType == CT_USER_FUNC)
     {

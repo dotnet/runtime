@@ -45,7 +45,7 @@ namespace System.Data.Common
         {
             _useOdbcRules = useOdbcRules;
             _parsetable = new Dictionary<string, string?>();
-            _usersConnectionString = ((null != connectionString) ? connectionString : "");
+            _usersConnectionString = connectionString ?? "";
 
             // first pass on parsing, initial syntax check
             if (0 < _usersConnectionString.Length)
@@ -248,8 +248,7 @@ namespace System.Data.Common
 
         public string ConvertValueToString(string keyName, string defaultValue)
         {
-            string? value = _parsetable[keyName];
-            return ((null != value) ? value : defaultValue);
+            return _parsetable[keyName] ?? defaultValue;
         }
 
         public bool ContainsKey(string keyword)
