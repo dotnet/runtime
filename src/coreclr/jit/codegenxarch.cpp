@@ -3471,36 +3471,34 @@ unsigned CodeGen::genMove1IfNeeded(unsigned size, regNumber intTmpReg, GenTree* 
 void CodeGen::genStructPutArgUnroll(GenTreePutArgStk* putArgNode)
 {
     GenTree* src = putArgNode->AsOp()->gtOp1;
-    // We will never call this method for SIMD types, which are stored directly
-    // in genPutStructArgStk().
+    // We will never call this method for SIMD types, which are stored directly in genPutStructArgStk().
     assert(src->isContained() && src->OperIs(GT_OBJ) && src->TypeIs(TYP_STRUCT));
-    assert(!src->AsObj()->GetLayout()->HasGCPtr());
 #ifdef TARGET_X86
     assert(!m_pushStkArg);
 #endif
-
-    unsigned size = putArgNode->GetStackByteSize();
-#ifdef TARGET_X86
-    assert((XMM_REGSIZE_BYTES <= size) && (size <= CPBLK_UNROLL_LIMIT));
-#else  // !TARGET_X86
-    assert(size <= CPBLK_UNROLL_LIMIT);
-#endif // !TARGET_X86
 
     if (src->AsOp()->gtOp1->isUsedFromReg())
     {
         genConsumeReg(src->AsOp()->gtOp1);
     }
 
+    unsigned loadSize = putArgNode->GetArgLoadSize();
+    assert(!src->AsObj()->GetLayout()->HasGCPtr() && (loadSize <= CPBLK_UNROLL_LIMIT));
+
     unsigned  offset     = 0;
     regNumber xmmTmpReg  = REG_NA;
     regNumber intTmpReg  = REG_NA;
     regNumber longTmpReg = REG_NA;
 
-    if (size >= XMM_REGSIZE_BYTES)
+#ifdef TARGET_X86
+    if (loadSize >= 8)
+#else
+    if (loadSize >= XMM_REGSIZE_BYTES)
+#endif
     {
         xmmTmpReg = putArgNode->GetSingleTempReg(RBM_ALLFLOAT);
     }
-    if ((size % XMM_REGSIZE_BYTES) != 0)
+    if ((loadSize % XMM_REGSIZE_BYTES) != 0)
     {
         intTmpReg = putArgNode->GetSingleTempReg(RBM_ALLINT);
     }
@@ -3512,7 +3510,7 @@ void CodeGen::genStructPutArgUnroll(GenTreePutArgStk* putArgNode)
 #endif
 
     // Let's use SSE2 to be able to do 16 byte at a time with loads and stores.
-    size_t slots = size / XMM_REGSIZE_BYTES;
+    size_t slots = loadSize / XMM_REGSIZE_BYTES;
     while (slots-- > 0)
     {
         // TODO: In the below code the load and store instructions are for 16 bytes, but the
@@ -3528,13 +3526,13 @@ void CodeGen::genStructPutArgUnroll(GenTreePutArgStk* putArgNode)
     }
 
     // Fill the remainder (15 bytes or less) if there's one.
-    if ((size % XMM_REGSIZE_BYTES) != 0)
+    if ((loadSize % XMM_REGSIZE_BYTES) != 0)
     {
-        offset += genMove8IfNeeded(size, longTmpReg, src->AsOp()->gtOp1, offset);
-        offset += genMove4IfNeeded(size, intTmpReg, src->AsOp()->gtOp1, offset);
-        offset += genMove2IfNeeded(size, intTmpReg, src->AsOp()->gtOp1, offset);
-        offset += genMove1IfNeeded(size, intTmpReg, src->AsOp()->gtOp1, offset);
-        assert(offset == size);
+        offset += genMove8IfNeeded(loadSize, longTmpReg, src->AsOp()->gtOp1, offset);
+        offset += genMove4IfNeeded(loadSize, intTmpReg, src->AsOp()->gtOp1, offset);
+        offset += genMove2IfNeeded(loadSize, intTmpReg, src->AsOp()->gtOp1, offset);
+        offset += genMove1IfNeeded(loadSize, intTmpReg, src->AsOp()->gtOp1, offset);
+        assert(offset == loadSize);
     }
 }
 
@@ -3570,8 +3568,9 @@ void CodeGen::genStructPutArgRepMovs(GenTreePutArgStk* putArgNode)
 //     putArgNode  - the PutArgStk tree.
 //
 // Notes:
-//     Used only on x86, in two cases:
+//     Used (only) on x86 for:
 //      - Structs 4, 8, or 12 bytes in size (less than XMM_REGSIZE_BYTES, multiple of TARGET_POINTER_SIZE).
+//      - Local structs less than 16 bytes in size (it is ok to load "too much" from our stack frame).
 //      - Structs that contain GC pointers - they are guaranteed to be sized correctly by the VM.
 //
 void CodeGen::genStructPutArgPush(GenTreePutArgStk* putArgNode)
@@ -3605,9 +3604,9 @@ void CodeGen::genStructPutArgPush(GenTreePutArgStk* putArgNode)
     }
 
     ClassLayout*   layout   = src->AsObj()->GetLayout();
-    const unsigned byteSize = putArgNode->GetStackByteSize();
-    assert((byteSize % TARGET_POINTER_SIZE == 0) && ((byteSize < XMM_REGSIZE_BYTES) || layout->HasGCPtr()));
-    const unsigned numSlots = byteSize / TARGET_POINTER_SIZE;
+    const unsigned loadSize = putArgNode->GetArgLoadSize();
+    assert(((loadSize < XMM_REGSIZE_BYTES) || layout->HasGCPtr()) && ((loadSize % TARGET_POINTER_SIZE) == 0));
+    const unsigned numSlots = loadSize / TARGET_POINTER_SIZE;
 
     for (int i = numSlots - 1; i >= 0; --i)
     {
@@ -3654,9 +3653,9 @@ void CodeGen::genStructPutArgPartialRepMovs(GenTreePutArgStk* putArgNode)
 #endif // DEBUG
 
     assert(layout->HasGCPtr());
-    const unsigned byteSize = putArgNode->GetStackByteSize();
-    assert(byteSize % TARGET_POINTER_SIZE == 0);
-    const unsigned numSlots = byteSize / TARGET_POINTER_SIZE;
+    const unsigned argSize = putArgNode->GetStackByteSize();
+    assert(argSize % TARGET_POINTER_SIZE == 0);
+    const unsigned numSlots = argSize / TARGET_POINTER_SIZE;
 
     // No need to disable GC the way COPYOBJ does. Here the refs are copied in atomic operations always.
     for (unsigned i = 0; i < numSlots;)
@@ -5525,23 +5524,17 @@ void CodeGen::genCall(GenTreeCall* call)
         GenTree* argNode = arg.GetEarlyNode();
         if (argNode->OperIs(GT_PUTARG_STK) && (arg.GetLateNode() == nullptr))
         {
-            GenTree* source = argNode->AsPutArgStk()->gtGetOp1();
-            unsigned size   = argNode->AsPutArgStk()->GetStackByteSize();
-            stackArgBytes += size;
+            GenTree* source  = argNode->AsPutArgStk()->gtGetOp1();
+            unsigned argSize = argNode->AsPutArgStk()->GetStackByteSize();
+            stackArgBytes += argSize;
+
 #ifdef DEBUG
-            assert(size == arg.AbiInfo.ByteSize);
+            assert(argSize == arg.AbiInfo.ByteSize);
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
-            if (!source->OperIs(GT_FIELD_LIST) && (source->TypeGet() == TYP_STRUCT))
+            if (source->TypeIs(TYP_STRUCT) && !source->OperIs(GT_FIELD_LIST))
             {
-                GenTreeObj* obj      = source->AsObj();
-                unsigned    argBytes = roundUp(obj->GetLayout()->GetSize(), TARGET_POINTER_SIZE);
-#ifdef TARGET_X86
-                // If we have an OBJ, we must have created a copy if the original arg was not a
-                // local and was not a multiple of TARGET_POINTER_SIZE.
-                // Note that on x64/ux this will be handled by unrolling in genStructPutArgUnroll.
-                assert((argBytes == obj->GetLayout()->GetSize()) || obj->Addr()->IsLocalAddrExpr());
-#endif // TARGET_X86
-                assert(arg.AbiInfo.ByteSize == argBytes);
+                unsigned loadSize = source->AsObj()->GetLayout()->GetSize();
+                assert(argSize == roundUp(loadSize, TARGET_POINTER_SIZE));
             }
 #endif // FEATURE_PUT_STRUCT_ARG_STK
 #endif // DEBUG

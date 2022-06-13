@@ -3437,36 +3437,6 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                     assert(varTypeIsEnregisterable(argObj->TypeGet()) ||
                            (makeOutArgCopy && varTypeIsEnregisterable(structBaseType)));
                 }
-
-#if !defined(UNIX_AMD64_ABI) && !defined(TARGET_ARMARCH) && !defined(TARGET_LOONGARCH64)
-                // TODO-CQ-XARCH: there is no need for a temp copy if we improve our code generation in
-                // `genPutStructArgStk` for xarch like we did it for Arm/Arm64.
-
-                // We still have a struct unless we converted the GT_OBJ into a GT_IND above...
-                if (isHfaArg && passUsingFloatRegs)
-                {
-                }
-                else if (structBaseType == TYP_STRUCT)
-                {
-                    // If the valuetype size is not a multiple of TARGET_POINTER_SIZE,
-                    // we must copyblk to a temp before doing the obj to avoid
-                    // the obj reading memory past the end of the valuetype
-                    if (roundupSize > originalSize)
-                    {
-                        makeOutArgCopy = true;
-
-                        // There are a few special cases where we can omit using a CopyBlk
-                        // where we normally would need to use one.
-
-                        if (argObj->OperIs(GT_OBJ) &&
-                            argObj->AsObj()->gtGetOp1()->IsLocalAddrExpr() != nullptr) // Is the source a LclVar?
-                        {
-                            makeOutArgCopy = false;
-                        }
-                    }
-                }
-
-#endif // !UNIX_AMD64_ABI
             }
         }
 
