@@ -199,7 +199,8 @@ namespace System.Net.Http
                                     authContext.GetOutgoingBlob(challengeData, throwOnError: false, out statusCode);
                                     if (statusCode.ErrorCode != SecurityStatusPalErrorCode.OK)
                                     {
-                                        await connection.DrainResponseAsync(response!, cancellationToken).ConfigureAwait(false);
+                                        isNewConnection = false;
+                                        connection.Dispose();
                                         throw new HttpRequestException(SR.Format(SR.net_http_authvalidationfailure, statusCode.ErrorCode), null, HttpStatusCode.Unauthorized);
                                     }
                                     break;
