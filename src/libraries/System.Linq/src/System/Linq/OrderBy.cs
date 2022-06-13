@@ -23,7 +23,7 @@ namespace System.Linq
         /// This method compares elements by using the default comparer <see cref="Comparer{T}.Default"/>.
         /// </remarks>
         public static IOrderedEnumerable<T> Order<T>(this IEnumerable<T> source) =>
-            new OrderedKeylessEnumerable<T>(source, null, false, null);
+            OrderBy(source, static element => element);
 
         /// <summary>
         /// Sorts the elements of a sequence in ascending order.
@@ -42,7 +42,7 @@ namespace System.Linq
         /// If comparer is <see langword="null"/>, the default comparer <see cref="Comparer{T}.Default"/> is used to compare elements.
         /// </remarks>
         public static IOrderedEnumerable<T> Order<T>(this IEnumerable<T> source, IComparer<T> comparer) =>
-            new OrderedKeylessEnumerable<T>(source, comparer, false, null);
+            OrderBy(source, static element => element, comparer);
 
         public static IOrderedEnumerable<TSource> OrderBy<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector) =>
             new OrderedEnumerable<TSource, TKey>(source, keySelector, null, false, null);
@@ -66,7 +66,7 @@ namespace System.Linq
         /// This method compares elements by using the default comparer <see cref="Comparer{T}.Default"/>.
         /// </remarks>
         public static IOrderedEnumerable<T> OrderDescending<T>(this IEnumerable<T> source) =>
-            new OrderedKeylessEnumerable<T>(source, null, true, null);
+            OrderByDescending(source, static element => element);
 
         /// <summary>
         /// Sorts the elements of a sequence in descending order.
@@ -85,7 +85,7 @@ namespace System.Linq
         /// If comparer is <see langword="null"/>, the default comparer <see cref="Comparer{T}.Default"/> is used to compare elements.
         /// </remarks>
         public static IOrderedEnumerable<T> OrderDescending<T>(this IEnumerable<T> source, IComparer<T> comparer) =>
-            new OrderedKeylessEnumerable<T>(source, comparer, true, null);
+            OrderByDescending(source, static element => element, comparer);
 
         public static IOrderedEnumerable<TSource> OrderByDescending<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector) =>
             new OrderedEnumerable<TSource, TKey>(source, keySelector, null, true, null);

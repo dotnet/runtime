@@ -106,53 +106,6 @@ namespace System.Linq
         }
     }
 
-    internal sealed class OrderedKeylessEnumerable<TElement> : OrderedEnumerable<TElement>
-    {
-        private readonly OrderedEnumerable<TElement>? _parent;
-        private readonly IComparer<TElement> _comparer;
-        private readonly bool _descending;
-
-        internal OrderedKeylessEnumerable(IEnumerable<TElement> source, IComparer<TElement>? comparer, bool descending, OrderedEnumerable<TElement>? parent) : base(source)
-        {
-            if (source is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
-            }
-
-            _parent = parent;
-            _comparer = comparer ?? Comparer<TElement>.Default;
-            _descending = descending;
-        }
-
-        internal override EnumerableSorter<TElement> GetEnumerableSorter(EnumerableSorter<TElement>? next)
-        {
-            // Special case the common use of string with default comparer. Comparer<string>.Default checks the
-            // thread's Culture on each call which is an overhead which is not required, because we are about to
-            // do a sort which remains on the current thread (and EnumerableSorter is not used afterwards).
-            IComparer<TElement> comparer = _comparer;
-            if (typeof(TElement) == typeof(string) && comparer == Comparer<string>.Default)
-            {
-                comparer = (IComparer<TElement>)StringComparer.CurrentCulture;
-            }
-
-            EnumerableSorter<TElement> sorter = new EnumerableSorter<TElement, TElement>(static item => item, comparer, _descending, next);
-            if (_parent != null)
-            {
-                sorter = _parent.GetEnumerableSorter(sorter);
-            }
-
-            return sorter;
-        }
-
-        internal override CachingComparer<TElement> GetComparer(CachingComparer<TElement>? childComparer)
-        {
-            CachingComparer<TElement> cmp = childComparer == null
-                ? new KeylessCachingComparer<TElement>(_comparer, _descending)
-                : new KeylessCachingComparerWithChild<TElement>(_comparer, _descending, childComparer);
-            return _parent != null ? _parent.GetComparer(cmp) : cmp;
-        }
-    }
-
     internal sealed class OrderedEnumerable<TElement, TKey> : OrderedEnumerable<TElement>
     {
         private readonly OrderedEnumerable<TElement>? _parent;
@@ -249,35 +202,6 @@ namespace System.Linq
         }
     }
 
-    internal sealed class KeylessCachingComparer<TElement> : CachingComparer<TElement>
-    {
-        private readonly IComparer<TElement> _comparer;
-        private readonly bool _descending;
-        private TElement? _lastElement;
-
-        public KeylessCachingComparer(IComparer<TElement> comparer, bool descending)
-        {
-            _comparer = comparer;
-            _descending = descending;
-        }
-
-        internal override int Compare(TElement element, bool cacheLower)
-        {
-            int cmp = _descending ? _comparer.Compare(_lastElement, element) : _comparer.Compare(element, _lastElement);
-            if (cacheLower == cmp < 0)
-            {
-                _lastElement = element;
-            }
-
-            return cmp;
-        }
-
-        internal override void SetElement(TElement element)
-        {
-            _lastElement = element;
-        }
-    }
-
     internal sealed class CachingComparerWithChild<TElement, TKey> : CachingComparer<TElement, TKey>
     {
         private readonly CachingComparer<TElement> _child;
@@ -310,43 +234,6 @@ namespace System.Linq
         {
             base.SetElement(element);
             _child.SetElement(element);
-        }
-    }
-
-    internal sealed class KeylessCachingComparerWithChild<TElement> : CachingComparer<TElement>
-    {
-        private readonly IComparer<TElement> _comparer;
-        private readonly bool _descending;
-        private readonly CachingComparer<TElement> _child;
-        private TElement? _lastElement;
-
-        public KeylessCachingComparerWithChild(IComparer<TElement> comparer, bool descending, CachingComparer<TElement> child)
-        {
-            _comparer = comparer;
-            _descending = descending;
-            _child = child;
-        }
-
-        internal override int Compare(TElement element, bool cacheLower)
-        {
-            int cmp = _descending ? _comparer.Compare(_lastElement, element) : _comparer.Compare(element, _lastElement);
-            if (cmp == 0)
-            {
-                return _child.Compare(element, cacheLower);
-            }
-
-            if (cacheLower == cmp < 0)
-            {
-                _lastElement = element;
-                _child.SetElement(element);
-            }
-
-            return cmp;
-        }
-
-        internal override void SetElement(TElement element)
-        {
-            _lastElement = element;
         }
     }
 
