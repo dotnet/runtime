@@ -517,22 +517,28 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
 
             if (vecCon->IsAllBitsSet())
             {
+                if ((attr != EA_32BYTE) || compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2))
+                {
 #if defined(FEATURE_SIMD)
-                emit->emitIns_SIMD_R_R_R(INS_pcmpeqd, attr, targetReg, targetReg, targetReg);
+                    emit->emitIns_SIMD_R_R_R(INS_pcmpeqd, attr, targetReg, targetReg, targetReg);
 #else
-                emit->emitIns_R_R(INS_pcmpeqd, attr, targetReg, targetReg);
+                    emit->emitIns_R_R(INS_pcmpeqd, attr, targetReg, targetReg);
 #endif // FEATURE_SIMD
-                break;
+                    break;
+                }
             }
 
             if (vecCon->IsZero())
             {
+                if ((attr != EA_32BYTE) || compiler->compOpportunisticallyDependsOn(InstructionSet_AVX))
+                {
 #if defined(FEATURE_SIMD)
-                emit->emitIns_SIMD_R_R_R(INS_xorps, attr, targetReg, targetReg, targetReg);
+                    emit->emitIns_SIMD_R_R_R(INS_xorps, attr, targetReg, targetReg, targetReg);
 #else
-                emit->emitIns_R_R(INS_xorps, attr, targetReg, targetReg);
+                    emit->emitIns_R_R(INS_xorps, attr, targetReg, targetReg);
 #endif // FEATURE_SIMD
-                break;
+                    break;
+                }
             }
 
             switch (tree->TypeGet())
