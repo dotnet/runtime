@@ -335,7 +335,7 @@ DEFINE_METHOD(EXCEPTION,            INTERNAL_PRESERVE_STACK_TRACE, InternalPrese
 DEFINE_METHOD(EXCEPTION,            GET_CLASS_NAME,         GetClassName,               IM_RetStr)
 DEFINE_PROPERTY(EXCEPTION,          MESSAGE,                Message,                    Str)
 DEFINE_PROPERTY(EXCEPTION,          SOURCE,                 Source,                     Str)
-DEFINE_METHOD(EXCEPTION,            GET_HELP_CONTEXT,       GetHelpContext,             IM_RefInt_RetStr)
+DEFINE_METHOD(EXCEPTION,            GET_HELP_CONTEXT,       GetHelpContext,             IM_RefUInt_RetStr)
 
 
 DEFINE_CLASS(SYSTEM_EXCEPTION,      System,                 SystemException)
