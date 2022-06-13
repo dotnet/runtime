@@ -927,6 +927,7 @@ namespace System.Net
                 // message with the challenge blob.
                 if (!NtlmOid.Equals(mech))
                 {
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Server requested unknown mechanism {mech}");
                     statusCode = SecurityStatusPalPackageNotFound;
                     return null;
                 }
