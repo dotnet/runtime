@@ -44,6 +44,11 @@ namespace ILCompiler.DependencyAnalysis
         }
     }
 
+    public sealed class NodeFactoryOptimizationFlags
+    {
+        public bool OptimizeAsyncMethods;
+    }
+
     // To make the code future compatible to the composite R2R story
     // do NOT attempt to pass and store _inputModule here
     public sealed class NodeFactory
@@ -63,6 +68,8 @@ namespace ILCompiler.DependencyAnalysis
         public MetadataManager MetadataManager { get; }
 
         public CompositeImageSettings CompositeImageSettings { get; set; }
+
+        public readonly NodeFactoryOptimizationFlags OptimizationFlags;
 
         public ulong ImageBase;
 
@@ -168,8 +175,10 @@ namespace ILCompiler.DependencyAnalysis
             DebugDirectoryNode debugDirectoryNode,
             ResourceData win32Resources,
             ReadyToRunFlags flags,
+            NodeFactoryOptimizationFlags nodeFactoryOptimizationFlags,
             ulong imageBase)
         {
+            OptimizationFlags = nodeFactoryOptimizationFlags;
             TypeSystemContext = context;
             CompilationModuleGroup = compilationModuleGroup;
             ProfileDataManager = profileDataManager;

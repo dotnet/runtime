@@ -40,6 +40,7 @@ namespace ILCompiler
         private bool _verifyTypeAndFieldLayout;
         private CompositeImageSettings _compositeImageSettings;
         private ulong _imageBase;
+        private NodeFactoryOptimizationFlags _nodeFactoryOptimizationFlags = new NodeFactoryOptimizationFlags();
 
         private string _jitPath;
         private string _outputFile;
@@ -199,6 +200,12 @@ namespace ILCompiler
             return this;
         }
 
+        public ReadyToRunCodegenCompilationBuilder UseNodeFactoryOptimizationFlags(NodeFactoryOptimizationFlags flags)
+        {
+            _nodeFactoryOptimizationFlags = flags;
+            return this;
+        }
+
         public override ICompilation ToCompilation()
         {
             // TODO: only copy COR headers for single-assembly build and for composite build with embedded MSIL
@@ -242,6 +249,7 @@ namespace ILCompiler
                 debugDirectoryNode,
                 win32Resources,
                 flags,
+                _nodeFactoryOptimizationFlags,
                 _imageBase
                 );
 

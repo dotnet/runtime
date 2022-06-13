@@ -373,9 +373,12 @@
     <value>Hexademical value to set target PE-file ImageBase field</value>
   </data>
   <data name="CrossModuleGenericCompilation" xml:space="preserve">
-    <value>When compiling, compile generic code defined in other modules in a version resilient manner. Defaults to enabled. Specify --opt-cross-module-generic-compilation:false to disable.</value>
+    <value>EXPERIMENTAL: When compiling, compile generic code defined in other modules in a version resilient manner. Defaults to disabled.</value>
   </data>
   <data name="CrossModuleInlining" xml:space="preserve">
-    <value>When compiling, inline code from other modules in a version resilient manner. Defaults to enabled.  Specify --opt-cross-module-inlining:false to disable.</value>
+    <value>EXPERIMENTAL: When compiling, inline code from other modules in a version resilient manner. Defaults to disabled.</value>
+  </data>
+  <data name="AsyncModuleOptimization" xml:space="preserve">
+    <value>EXPERIMENTAL: Attempt to compile as much async infrastructure as possible for async methods. Defaults to disabled.</value>
   </data>
 </root>

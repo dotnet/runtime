@@ -161,7 +161,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // If adding a typehandle to the AsyncStateMachineBox, pre-compile the most commonly used methods.
             // As long as we haven't already reached compilation phase 7, which is an arbitrary number of phases of compilation chosen so that
             // simple examples of async will get compiled
-            if (type.GetTypeDefinition() == context.AsyncStateMachineBoxType && !type.IsGenericDefinition && factory.CompilationCurrentPhase <= 7)
+            if (factory.OptimizationFlags.OptimizeAsyncMethods && type.GetTypeDefinition() == context.AsyncStateMachineBoxType && !type.IsGenericDefinition && factory.CompilationCurrentPhase <= 7)
             {
                 if (dependencies == null)
                     dependencies = new DependencyList();

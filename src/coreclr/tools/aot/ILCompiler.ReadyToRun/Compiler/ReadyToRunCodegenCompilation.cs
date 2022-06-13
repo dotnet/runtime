@@ -421,6 +421,7 @@ namespace ILCompiler
                 debugDirectory,
                 win32Resources: new Win32Resources.ResourceData(inputModule),
                 flags,
+                _nodeFactory.OptimizationFlags,
                 _nodeFactory.ImageBase);
 
             IComparer<DependencyNodeCore<NodeFactory>> comparer = new SortableDependencyNode.ObjectNodeComparer(CompilerComparer.Instance);

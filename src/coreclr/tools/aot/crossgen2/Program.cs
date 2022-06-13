@@ -17,6 +17,7 @@ using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
 using ILCompiler.Reflection.ReadyToRun;
+using ILCompiler.DependencyAnalysis;
 
 namespace ILCompiler
 {
@@ -736,6 +737,9 @@ namespace ILCompiler
                     DependencyTrackingLevel trackingLevel = _commandLineOptions.DgmlLogFileName == null ?
                         DependencyTrackingLevel.None : (_commandLineOptions.GenerateFullDgmlLog ? DependencyTrackingLevel.All : DependencyTrackingLevel.First);
 
+                    NodeFactoryOptimizationFlags nodeFactoryFlags = new NodeFactoryOptimizationFlags();
+                    nodeFactoryFlags.OptimizeAsyncMethods = _commandLineOptions.AsyncMethodOptimization;
+
                     builder
                         .UseMapFile(_commandLineOptions.Map)
                         .UseMapCsvFile(_commandLineOptions.MapCsv)
@@ -743,6 +747,7 @@ namespace ILCompiler
                         .UsePerfMapFile(_commandLineOptions.PerfMap, _commandLineOptions.PerfMapPath, _commandLineOptions.PerfMapFormatVersion)
                         .UseProfileFile(jsonProfile != null)
                         .UseProfileData(profileDataManager)
+                        .UseNodeFactoryOptimizationFlags(nodeFactoryFlags)
                         .FileLayoutAlgorithms(_methodLayout, _fileLayout)
                         .UseCompositeImageSettings(compositeImageSettings)
                         .UseJitPath(_commandLineOptions.JitPath)

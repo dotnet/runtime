@@ -32,6 +32,7 @@ namespace ILCompiler
         public bool OptimizeTime;
         public bool CrossModuleInlining;
         public bool CrossModuleGenericCompilation;
+        public bool AsyncMethodOptimization;
         public bool InputBubble;
         public bool CompileBubbleGenerics;
         public bool Verbose;
@@ -93,8 +94,9 @@ namespace ILCompiler
             SingleMethodGenericArg = null;
 
             // These behaviors default to enabled
-            CrossModuleInlining = true;
-            CrossModuleGenericCompilation = true;
+            CrossModuleInlining = false;
+            CrossModuleGenericCompilation = false;
+            AsyncMethodOptimization = false;
 
             bool forceHelp = false;
             if (args.Length == 0)
@@ -172,6 +174,7 @@ namespace ILCompiler
 
                 syntax.DefineOption("opt-cross-module-inlining", ref CrossModuleInlining, SR.CrossModuleInlining);
                 syntax.DefineOption("opt-cross-module-generic-compilation", ref CrossModuleGenericCompilation, SR.CrossModuleGenericCompilation);
+                syntax.DefineOption("opt-async-methods", ref AsyncMethodOptimization, SR.AsyncModuleOptimization);
 
                 syntax.DefineOption("method-layout", ref MethodLayout, SR.MethodLayoutOption);
                 syntax.DefineOption("file-layout", ref FileLayout, SR.FileLayoutOption);
