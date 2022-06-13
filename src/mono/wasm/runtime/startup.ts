@@ -17,11 +17,24 @@ import { mono_on_abort } from "./run";
 import { mono_wasm_new_root } from "./roots";
 import { init_crypto } from "./crypto-worker";
 
-export let runtime_is_initialized_resolve: Function;
-export let runtime_is_initialized_reject: Function;
-export const mono_wasm_runtime_is_initialized = new Promise((resolve, reject) => {
-    runtime_is_initialized_resolve = resolve;
-    runtime_is_initialized_reject = reject;
+/// Given a function name (for diagnostic purposes) and a function, returns a function that invokes the original function
+/// the first time it is called, and otherwise throws an exception.
+function oneShot<T extends any[], TRes>(name: string, f: (...args: [...T]) => TRes): (...args: [...T]) => TRes {
+    let wasCalled = false;
+    function guardedF(...args: [...T]): TRes {
+        if (wasCalled)
+            throw new Error(`${name} called more than once`);
+        wasCalled = true;
+        return f(...args);
+    }
+    return guardedF;
+}
+
+export let runtime_is_initialized_resolve: () => void;
+export let runtime_is_initialized_reject: (reason?: any) => void;
+export const mono_wasm_runtime_is_initialized = new Promise<void>((resolve, reject) => {
+    runtime_is_initialized_resolve = oneShot("resolve", resolve);
+    runtime_is_initialized_reject = oneShot("reject", reject);
 });
 
 let ctx: DownloadAssetsContext | null = null;
