@@ -130,8 +130,9 @@ namespace System.Formats.Tar
                 double.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out double secondsSinceEpoch))
             {
                 dateTimeOffset = GetDateTimeOffsetFromSecondsSinceEpoch(secondsSinceEpoch);
+                return true;
             }
-            return dateTimeOffset != default;
+            return false;
         }
 
         // Converts the specified DateTimeOffset to the string representation of seconds since the Unix Epoch.
