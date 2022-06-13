@@ -17,7 +17,7 @@ namespace System.Reflection.Emit
     {
         internal ILGenerator() { }
         public virtual int ILOffset { get { throw null; } }
-        public virtual void BeginCatchBlock(System.Type exceptionType) { }
+        public virtual void BeginCatchBlock(System.Type? exceptionType) { }
         public virtual void BeginExceptFilterBlock() { }
         public virtual System.Reflection.Emit.Label BeginExceptionBlock() { throw null; }
         public virtual void BeginFaultBlock() { }

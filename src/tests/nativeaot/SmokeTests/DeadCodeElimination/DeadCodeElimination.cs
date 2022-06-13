@@ -47,9 +47,7 @@ class Program
             public Type DoSomething() => typeof(UnreferencedType);
         }
 
-#if DEBUG
-        static NeverAllocatedType s_instance = null;
-#else
+#if !DEBUG
         static object s_instance = new object[10];
 #endif
 
@@ -58,8 +56,9 @@ class Program
             Console.WriteLine("Testing instance methods on unallocated types");
 
 #if DEBUG
-            if (s_instance != null)
-                s_instance.DoSomething();
+            NeverAllocatedType instance = null;
+            if (instance != null)
+                instance.DoSomething();
 #else
             // In release builds additionally test that the "is" check didn't introduce the constructed type
             if (s_instance is NeverAllocatedType never)

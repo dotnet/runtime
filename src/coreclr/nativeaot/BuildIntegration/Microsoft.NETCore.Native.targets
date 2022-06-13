@@ -46,7 +46,6 @@ The .NET Foundation licenses this file to you under the MIT license.
 
   <!-- Set up default feature switches -->
   <PropertyGroup>
-    <EnableUnsafeBinaryFormatterSerialization Condition="'$(EnableUnsafeBinaryFormatterSerialization)' == ''">false</EnableUnsafeBinaryFormatterSerialization>
     <UseSystemResourceKeys Condition="$(IlcDisableReflection) == 'true'">true</UseSystemResourceKeys>
     <EventSourceSupport Condition="$(IlcDisableReflection) == 'true'">false</EventSourceSupport>
   </PropertyGroup>
@@ -109,8 +108,7 @@ The .NET Foundation licenses this file to you under the MIT license.
   </ItemGroup>
 
   <ItemGroup>
-    <_ExcludedPrivateSdkAssemblies Include="$(IlcSdkPath)System.Private.Reflection.Core.dll" Condition="$(IlcDisableReflection) == 'true'" />
-    <PrivateSdkAssemblies Include="$(IlcSdkPath)*.dll" Exclude="@(_ExcludedPrivateSdkAssemblies)"/>
+    <PrivateSdkAssemblies Include="$(IlcSdkPath)*.dll" />
 
     <!-- Exclude unmanaged dlls -->
     <FrameworkAssemblies Include="$(IlcFrameworkPath)*.dll" Exclude="$(IlcFrameworkPath)*.Native.dll;$(IlcFrameworkPath)msquic.dll" />
@@ -150,8 +148,7 @@ The .NET Foundation licenses this file to you under the MIT license.
 
     <!-- If running from a package these values need to be set again with the resolved IlcXYZPath -->
     <ItemGroup>
-      <_ExcludedPrivateSdkAssemblies Include="$(IlcSdkPath)System.Private.Reflection.Core.dll" Condition="$(IlcDisableReflection) == 'true'" />
-      <PrivateSdkAssemblies Include="$(IlcSdkPath)*.dll" Exclude="@(_ExcludedPrivateSdkAssemblies)"/>
+      <PrivateSdkAssemblies Include="$(IlcSdkPath)*.dll" />
 
       <!-- Exclude unmanaged dlls -->
       <FrameworkAssemblies Include="$(IlcFrameworkPath)*.dll" Exclude="$(IlcFrameworkPath)*.Native.dll;$(IlcFrameworkPath)msquic.dll" />

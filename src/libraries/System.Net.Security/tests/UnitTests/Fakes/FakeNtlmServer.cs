@@ -36,11 +36,12 @@ namespace System.Net.Security
         public byte[] Version { get; set; } = new byte[] { 0x06, 0x00, 0x70, 0x17, 0x00, 0x00, 0x00, 0x0f }; // 6.0.6000 / 15
         public bool TargetIsServer { get; set; } = false;
         public bool PreferUnicode { get; set; } = true;
+        public bool ForceNegotiateVersion { get; set; } = true;
 
         // Negotiation results
-        public bool IsAuthenticated { get; set; }
-        public bool IsMICPresent { get; set; }
-        public string? ClientSpecifiedSpn { get; set; }
+        public bool IsAuthenticated { get; private set; }
+        public bool IsMICPresent { get; private set; }
+        public string? ClientSpecifiedSpn { get; private set; }
 
         private NetworkCredential _expectedCredential;
 
@@ -53,6 +54,7 @@ namespace System.Net.Security
         private byte[]? _serverSigningKey;
         internal RC4? _clientSeal;
         internal RC4? _serverSeal;
+        private Flags _negotiatedFlags;
 
         private MessageType _expectedMessageType = MessageType.Negotiate;
 
@@ -211,6 +213,10 @@ namespace System.Net.Security
             if (PreferUnicode && flags.HasFlag(Flags.NegotiateUnicode))
             {
                 flags &= ~Flags.NegotiateOEM;
+            }
+            if (ForceNegotiateVersion)
+            {
+                flags |= Flags.NegotiateVersion;
             }
             // Remove any unsupported flags here
             flags &= Flags.AllSupported;
@@ -379,6 +385,7 @@ namespace System.Net.Security
             _serverSigningKey = DeriveKey(exportedSessionKey, ServerSigningKeyMagic);
             _clientSeal = new RC4(DeriveKey(exportedSessionKey, ClientSealingKeyMagic));
             _serverSeal = new RC4(DeriveKey(exportedSessionKey, ServerSealingKeyMagic));
+            _negotiatedFlags = flags;
             CryptographicOperations.ZeroMemory(exportedSessionKey);
         }
 
@@ -397,7 +404,14 @@ namespace System.Net.Security
                 hmac.AppendData(message);
                 Span<byte> hmacResult = stackalloc byte[hmac.HashLengthInBytes];
                 hmac.GetHashAndReset(hmacResult);
-                seal.Transform(hmacResult.Slice(0, 8), signature.Slice(4, 8));
+                if (_negotiatedFlags.HasFlag(Flags.NegotiateKeyExchange))
+                {
+                    seal.Transform(hmacResult.Slice(0, 8), signature.Slice(4, 8));
+                }
+                else
+                {
+                    hmacResult.Slice(0, 8).CopyTo(signature.Slice(4, 8));
+                }
             }
         }
 

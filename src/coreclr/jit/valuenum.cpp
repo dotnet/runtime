@@ -8490,8 +8490,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 {
                     unsigned lclNum = lclFld->GetLclNum();
 
-                    // TODO-ADDR: delete the "GetSize" check once location nodes are no more.
-                    if (!lvaInSsa(lclFld->GetLclNum()) || !lclFld->HasSsaName() || (lclFld->GetSize() == 0))
+                    if (!lvaInSsa(lclFld->GetLclNum()) || !lclFld->HasSsaName())
                     {
                         lclFld->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, lclFld->TypeGet()));
                     }

@@ -494,7 +494,7 @@ namespace System.Xml
         {
             ConvertAbsoluteUnixPathToAbsoluteUri(ref url, resolver: null);
             _namespaceManager = new XmlNamespaceManager(nt);
-            _reportedBaseUri = (url != null) ? url : string.Empty;
+            _reportedBaseUri = url ?? string.Empty;
             InitTextReaderInput(_reportedBaseUri, input);
             _reportedEncoding = _ps.encoding;
         }
@@ -2599,7 +2599,7 @@ namespace System.Xml
 
         private XmlResolver GetTempResolver()
         {
-            return _xmlResolver == null ? new XmlUrlResolver() : _xmlResolver;
+            return _xmlResolver ?? new XmlUrlResolver();
         }
 
         internal bool DtdParserProxy_PushEntity(IDtdEntityInfo entity, out int entityId)
@@ -8031,7 +8031,7 @@ namespace System.Xml
 
             if (entityName == null)
             {
-                ThrowWithoutLineInfo(SR.Xml_CannotResolveExternalSubset, new string?[] { (publicId != null ? publicId : string.Empty), systemId }, null);
+                ThrowWithoutLineInfo(SR.Xml_CannotResolveExternalSubset, new string?[] { publicId ?? string.Empty, systemId }, null);
             }
             else
             {

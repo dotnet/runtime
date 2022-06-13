@@ -48,6 +48,10 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
                     Assert.Equal(Architecture.Armv6, processArch);
                     break;
 
+                case Architecture.Ppc64le:
+                    Assert.Equal(Architecture.Ppc64le, processArch);
+                    break;
+
                 default:
                     Assert.False(true, "Unexpected Architecture.");
                     break;

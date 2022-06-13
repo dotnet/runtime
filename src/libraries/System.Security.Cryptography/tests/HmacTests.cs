@@ -9,7 +9,6 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public abstract class HmacTests
     {
         // RFC2202 defines the test vectors for HMACMD5 and HMACSHA1
