@@ -11,6 +11,9 @@ using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Session;
 using System.Collections.Concurrent;
 using System.Threading;
+using static System.Collections.Specialized.BitVector32;
+using System.Xml;
+using System.IO;
 
 namespace DependencyLogViewer
 {
@@ -143,16 +146,91 @@ namespace DependencyLogViewer
         public int Num3;
         public string Str;
     }
-
-    class GraphProcessing
+    class DGMLGraphProcessing
     {
-        public static GraphProcessing Singleton;
+        
+        public static DGMLGraphProcessing Singleton;
+
+        ConcurrentQueue<GraphEvent> events = new ConcurrentQueue<GraphEvent>();
+
+        public DGMLGraphProcessing(string filePath)
+        {
+            Thread t = new Thread(FileReadingThread);
+            t.Start(filePath);
+
+        }
+        public System.IO.Stream FindXML(string fp)
+        {
+            var fileContent = string.Empty;
+            var filePath = string.Empty;
+            var fileStream = System.IO.Stream.Null;
+
+            using (OpenFileDialog openFileDialog = new OpenFileDialog())
+            {
+                openFileDialog.InitialDirectory = fp;
+                openFileDialog.Filter = @"All Files|*.*|DGML(*.dgml)|*.dgml|XML(*.xml)|*xml";
+                openFileDialog.FilterIndex = 2;
+                openFileDialog.RestoreDirectory = true;
+
+                if (!filePath.EndsWith(".dgml") && !filePath.EndsWith(".xml"))
+                {
+                    if (openFileDialog.ShowDialog() == DialogResult.OK)
+                    {
+                        //Get the path of specified file
+                        filePath = openFileDialog.FileName;
+                    }
+                }
+                fileStream = openFileDialog.OpenFile();
+            }
+            return fileStream;
+        }
+        public void FileReadingThread(System.IO.Stream fileStream)
+        {
+            XmlReaderSettings settings = new XmlReaderSettings();
+            settings.IgnoreWhitespace = true;
+
+            using (XmlReader reader = XmlReader.Create(fileStream, settings))
+            {
+                while (reader.Read())
+                {
+                    if (!(reader.Name.StartsWith("P")))
+                    {
+                        switch (reader.NodeType)
+                        {
+                            case XmlNodeType.Element:
+                                if (reader.Name.EndsWith("s"))
+                                {
+                                    Console.WriteLine("Begin {0}", reader.Name);
+                                }
+                                else
+                                {
+                                    //String id = reader.GetAttribute("Id");
+                                    //String src = reader.GetAttribute("Source");
+                                    //Console.WriteLine("{0}: {1} {2}", reader.Name, id, src);
+
+                                }
+                                break;
+                            case XmlNodeType.EndElement:
+                                Console.WriteLine("End {0}", reader.Name);
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+
+                }
+            }
+        }
+    }
+    class ETWGraphProcessing
+    {
+        public static ETWGraphProcessing Singleton;
 
         ConcurrentQueue<GraphEvent> events = new ConcurrentQueue<GraphEvent>();
         TraceEventSession session;
         volatile bool stopped;
 
-        public GraphProcessing()
+        public ETWGraphProcessing()
         {
             var sessionName = "GraphETWEventProcessingSession";
 
@@ -272,10 +350,26 @@ namespace DependencyLogViewer
         /// The main entry point for the application.
         /// </summary>
         [STAThread]
-        static int Main()
+        static int Main(string[] args)
         {
-            // Today you have to be Admin to turn on ETW events (anyone can write ETW events).   
-            if (!(TraceEventSession.IsElevated() ?? false))
+            if (args.Length == 0)
+            {
+                string argPath = "c:\\Users";
+            }
+            else
+            {
+                string argPath = args[0];
+            }
+            
+            string message = "Use ETW events?";
+            string caption = "";
+            MessageBoxButtons buttons = MessageBoxButtons.YesNo;
+            DialogResult result;
+            result = MessageBox.Show(message, caption, buttons);
+            
+            // Today you have to be Admin to turn on ETW events (anyone can write ETW events).
+            
+            if (!(TraceEventSession.IsElevated() ?? false) && result == System.Windows.Forms.DialogResult.Yes)
             {
                 MessageBox.Show("To turn on ETW events you need to be Administrator, please run from an Admin process.");
                 return -1;
@@ -285,7 +379,15 @@ namespace DependencyLogViewer
             Application.SetCompatibleTextRenderingDefault(false);
 
             GraphCollection.DependencyGraphsUI = new DependencyGraphs();
-            GraphProcessing.Singleton = new GraphProcessing();
+            if (result == System.Windows.Forms.DialogResult.Yes)
+            {
+                ETWGraphProcessing.Singleton = new ETWGraphProcessing();
+            }
+            else
+            {
+                DGMLGraphProcessing.Singleton = new DGMLGraphProcessing(argPath);
+            }
+            
 
             Application.Run(GraphCollection.DependencyGraphsUI);
 

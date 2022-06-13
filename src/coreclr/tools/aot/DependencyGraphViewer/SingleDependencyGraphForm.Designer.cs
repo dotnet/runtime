@@ -48,6 +48,7 @@ namespace DependencyLogViewer
             // 
             this.splitContainer1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.splitContainer1.Location = new System.Drawing.Point(0, 0);
+            this.splitContainer1.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.splitContainer1.Name = "splitContainer1";
             this.splitContainer1.Orientation = System.Windows.Forms.Orientation.Horizontal;
             // 
@@ -58,18 +59,20 @@ namespace DependencyLogViewer
             // splitContainer1.Panel2
             // 
             this.splitContainer1.Panel2.Controls.Add(this.tableLayoutPanel1);
-            this.splitContainer1.Size = new System.Drawing.Size(920, 581);
-            this.splitContainer1.SplitterDistance = 359;
+            this.splitContainer1.Size = new System.Drawing.Size(1227, 872);
+            this.splitContainer1.SplitterDistance = 538;
+            this.splitContainer1.SplitterWidth = 6;
             this.splitContainer1.TabIndex = 0;
             // 
             // filteredNodes
             // 
             this.filteredNodes.Dock = System.Windows.Forms.DockStyle.Fill;
             this.filteredNodes.FormattingEnabled = true;
-            this.filteredNodes.ItemHeight = 20;
+            this.filteredNodes.ItemHeight = 30;
             this.filteredNodes.Location = new System.Drawing.Point(0, 0);
+            this.filteredNodes.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.filteredNodes.Name = "filteredNodes";
-            this.filteredNodes.Size = new System.Drawing.Size(920, 359);
+            this.filteredNodes.Size = new System.Drawing.Size(1227, 538);
             this.filteredNodes.TabIndex = 0;
             this.filteredNodes.DoubleClick += new System.EventHandler(this.exploreNode_Click);
             // 
@@ -83,19 +86,21 @@ namespace DependencyLogViewer
             this.tableLayoutPanel1.Controls.Add(this.exploreNode, 0, 1);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(0, 0);
+            this.tableLayoutPanel1.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
             this.tableLayoutPanel1.RowCount = 2;
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel1.Size = new System.Drawing.Size(920, 218);
+            this.tableLayoutPanel1.Size = new System.Drawing.Size(1227, 328);
             this.tableLayoutPanel1.TabIndex = 0;
             // 
             // filterButton
             // 
             this.filterButton.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.filterButton.Location = new System.Drawing.Point(3, 3);
+            this.filterButton.Location = new System.Drawing.Point(4, 4);
+            this.filterButton.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.filterButton.Name = "filterButton";
-            this.filterButton.Size = new System.Drawing.Size(454, 103);
+            this.filterButton.Size = new System.Drawing.Size(605, 156);
             this.filterButton.TabIndex = 0;
             this.filterButton.Text = "Filter";
             this.filterButton.UseVisualStyleBackColor = true;
@@ -103,18 +108,21 @@ namespace DependencyLogViewer
             // 
             // filterTextBox
             // 
+            this.filterTextBox.AllowDrop = true;
             this.filterTextBox.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.filterTextBox.Location = new System.Drawing.Point(463, 3);
+            this.filterTextBox.Location = new System.Drawing.Point(617, 4);
+            this.filterTextBox.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.filterTextBox.Name = "filterTextBox";
-            this.filterTextBox.Size = new System.Drawing.Size(454, 26);
+            this.filterTextBox.Size = new System.Drawing.Size(606, 35);
             this.filterTextBox.TabIndex = 1;
             // 
             // exploreNode
             // 
             this.exploreNode.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.exploreNode.Location = new System.Drawing.Point(3, 112);
+            this.exploreNode.Location = new System.Drawing.Point(4, 168);
+            this.exploreNode.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.exploreNode.Name = "exploreNode";
-            this.exploreNode.Size = new System.Drawing.Size(454, 103);
+            this.exploreNode.Size = new System.Drawing.Size(605, 156);
             this.exploreNode.TabIndex = 2;
             this.exploreNode.Text = "Explore Node";
             this.exploreNode.UseVisualStyleBackColor = true;
@@ -122,10 +130,11 @@ namespace DependencyLogViewer
             // 
             // SingleDependencyGraphForm
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(12F, 30F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(920, 581);
+            this.ClientSize = new System.Drawing.Size(1227, 872);
             this.Controls.Add(this.splitContainer1);
+            this.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.Name = "SingleDependencyGraphForm";
             this.Text = "SingleDependencyGraphForm";
             this.splitContainer1.Panel1.ResumeLayout(false);
