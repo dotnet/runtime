@@ -202,7 +202,7 @@ namespace Server.Contract
         [PreserveSig]
         HResult Return_As_HResult_Struct(int hresultToReturn);
 
-        void Throw_HResult_HelpLink(int hresultToReturn, string helpLink, uint helpContext);
+        void Throw_HResult_HelpLink(int hresultToReturn, [MarshalAs(UnmanagedType.LPWStr)] string helpLink, uint helpContext);
     }
 
     public enum IDispatchTesting_Exception
