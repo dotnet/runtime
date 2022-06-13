@@ -75,7 +75,7 @@ namespace System.Buffers.Text
                     }
 
                     end = srcMax - 24;
-                    if (BitConverter.IsLittleEndian && AdvSimd.Arm64.IsSupported && (end >= src))
+                    if ((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) && BitConverter.IsLittleEndian && (end >= src))
                     {
                         Vector128Decode(ref src, ref dest, end, maxSrcLength, destLength, srcBytes, destBytes);
 
@@ -477,6 +477,7 @@ namespace System.Buffers.Text
             destBytes = dest;
         }
 
+        // This can be replaced once https://github.com/dotnet/runtime/issues/63331 is implemented.
         private static Vector128<byte> SimdShuffle(Vector128<byte> left, Vector128<byte> right, Vector128<byte> maskf)
         {
             Debug.Assert((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) && BitConverter.IsLittleEndian);
@@ -621,16 +622,8 @@ namespace System.Buffers.Text
 
                 // Check for invalid input: if any "and" values from lo and hi are not zero,
                 // fall back on bytewise code to do error checking and reporting:
-                if (Ssse3.IsSupported)
-                {
-                    if (Sse2.MoveMask(Vector128.GreaterThan(Vector128.BitwiseAnd(lo, hi), zero)) != 0)
-                        break;
-                }
-                else
-                {
-                    if (Vector128.BitwiseAnd(lo, hi).AsUInt64().ToScalar() != 0)
-                        break;
-                }
+                if (Vector128.BitwiseAnd(lo, hi).AsUInt64().ToScalar() != 0)
+                    break;
 
                 Vector128<byte> eq2F = Vector128.Equals(str, mask2F);
                 Vector128<byte> shift = SimdShuffle(lutShift.AsByte(), Vector128.Add(eq2F, hiNibbles), f);
