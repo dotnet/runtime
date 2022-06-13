@@ -6844,7 +6844,7 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
             return vnIsInvariant;
         }
 
-        bool IsHoistingOverExcepSibling(GenTree* node, bool siblingHasExcep)
+        bool IsHoistableOverExcepSibling(GenTree* node, bool siblingHasExcep)
         {
             JITDUMP("      [%06u]", dspTreeID(node));
 
@@ -7283,7 +7283,7 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
                     {
                         assert(value.Node() != tree);
 
-                        if (!isCommaTree || IsHoistingOverExcepSibling(value.Node(), hasExcep))
+                        if (IsHoistableOverExcepSibling(value.Node(), hasExcep))
                         {
                             m_compiler->optHoistCandidate(value.Node(), m_currentBlock, m_loopNum, m_hoistContext);
                         }
