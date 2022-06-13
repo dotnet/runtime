@@ -3141,4 +3141,3 @@ hot_reload_get_num_methods_added (MonoClass *klass)
 	}
 	return count;
 }
-
