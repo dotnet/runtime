@@ -90,8 +90,7 @@ namespace System.Formats.Tar
             TarHeader extendedAttributesHeader = default;
             // Fill the current header's dict
             CollectExtendedAttributesFromStandardFieldsIfNeeded();
-            // And pass them to the extended attributes header for writing
-            _extendedAttributes ??= new Dictionary<string, string>();
+            Debug.Assert(_extendedAttributes != null);
             extendedAttributesHeader.WriteAsPaxExtendedAttributes(archiveStream, buffer, _extendedAttributes, isGea: false);
 
             buffer.Clear(); // Reset it to reuse it

@@ -74,14 +74,17 @@ namespace System.Formats.Tar
         // If any of the dictionary entries use the name of a standard attribute, that attribute's value gets replaced with the one from the dictionary.
         // Unlike the historic header, numeric values in extended attributes are stored using decimal, not octal.
         // Throws if any conversion from string to the expected data type fails.
-        internal void ReplaceNormalAttributesWithExtended(IEnumerable<KeyValuePair<string, string>> extendedAttributesEnumerable)
+        internal void ReplaceNormalAttributesWithExtended(Dictionary<string, string>? dictionaryFromExtendedAttributesHeader)
         {
+            // At this point, the header is being created, so this should be the first time we fill the extended attributes dictionary
             Debug.Assert(_extendedAttributes == null);
-            _extendedAttributes = new Dictionary<string, string>(extendedAttributesEnumerable);
-            if (_extendedAttributes.Count == 0)
+
+            if (dictionaryFromExtendedAttributesHeader == null || dictionaryFromExtendedAttributesHeader.Count == 0)
             {
                 return;
             }
+
+            _extendedAttributes = dictionaryFromExtendedAttributesHeader;
 
             // Find all the extended attributes with known names and save them in the expected standard attribute.
 
@@ -411,8 +414,8 @@ namespace System.Formats.Tar
         {
             Debug.Assert(_typeFlag is TarEntryType.ExtendedAttributes or TarEntryType.GlobalExtendedAttributes);
 
-            // Regardless of the size, this entry should always have a valid dictionary object
-            _extendedAttributes ??= new Dictionary<string, string>();
+            // This should be the first time we read the extended attributes directly from the stream block
+            Debug.Assert(_extendedAttributes == null);
 
             if (_size == 0)
             {
@@ -436,7 +439,6 @@ namespace System.Formats.Tar
             while (TryGetNextExtendedAttribute(reader, out string? key, out string? value))
             {
                 _extendedAttributes ??= new Dictionary<string, string>();
-
                 if (_extendedAttributes.ContainsKey(key))
                 {
                     throw new FormatException(string.Format(SR.TarDuplicateExtendedAttribute, _name));

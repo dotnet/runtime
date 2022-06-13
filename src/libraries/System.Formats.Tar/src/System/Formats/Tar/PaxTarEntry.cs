@@ -18,7 +18,6 @@ namespace System.Formats.Tar
         internal PaxTarEntry(TarHeader header, TarReader readerOfOrigin)
             : base(header, readerOfOrigin, TarEntryFormat.Pax)
         {
-            _header._extendedAttributes ??= new Dictionary<string, string>();
         }
 
         /// <summary>
@@ -144,7 +143,7 @@ namespace System.Formats.Tar
         {
             get
             {
-                Debug.Assert(_header._extendedAttributes != null);
+                _header._extendedAttributes ??= new Dictionary<string, string>();
                 return _readOnlyExtendedAttributes ??= _header._extendedAttributes.AsReadOnly();
             }
         }
@@ -157,24 +156,26 @@ namespace System.Formats.Tar
         // or 'DateTimeOffset.UtcNow', depending on the value of 'useMTime'.
         private void AddNewAccessAndChangeTimestampsIfNotExist(bool useMTime)
         {
-            Debug.Assert(_header._extendedAttributes != null);
             Debug.Assert(!useMTime || (useMTime && _header._mTime != default));
 
-            bool containsATime = _header._extendedAttributes.ContainsKey(TarHeader.PaxEaATime);
-            bool containsCTime = _header._extendedAttributes.ContainsKey(TarHeader.PaxEaCTime);
-
-            if (!containsATime || !containsCTime)
+            if (_header._extendedAttributes != null)
             {
-                string secondsFromEpochString = TarHelpers.GetTimestampStringFromDateTimeOffset(useMTime ? _header._mTime : DateTimeOffset.UtcNow);
+                bool containsATime = _header._extendedAttributes.ContainsKey(TarHeader.PaxEaATime);
+                bool containsCTime = _header._extendedAttributes.ContainsKey(TarHeader.PaxEaCTime);
 
-                if (!containsATime)
+                if (!containsATime || !containsCTime)
                 {
-                    _header._extendedAttributes[TarHeader.PaxEaATime] = secondsFromEpochString;
-                }
+                    string secondsFromEpochString = TarHelpers.GetTimestampStringFromDateTimeOffset(useMTime ? _header._mTime : DateTimeOffset.UtcNow);
 
-                if (!containsCTime)
-                {
-                    _header._extendedAttributes[TarHeader.PaxEaCTime] = secondsFromEpochString;
+                    if (!containsATime)
+                    {
+                        _header._extendedAttributes[TarHeader.PaxEaATime] = secondsFromEpochString;
+                    }
+
+                    if (!containsCTime)
+                    {
+                        _header._extendedAttributes[TarHeader.PaxEaCTime] = secondsFromEpochString;
+                    }
                 }
             }
         }

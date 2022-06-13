@@ -288,34 +288,33 @@ namespace System.Formats.Tar
             return true;
         }
 
-        private bool TryProcessExtendedAttributesHeader(TarHeader firstHeader, bool copyData, out TarHeader secondHeader)
+        private bool TryProcessExtendedAttributesHeader(TarHeader extendedAttributesHeader, bool copyData, out TarHeader actualHeader)
         {
-            secondHeader = default;
-            secondHeader._format = TarEntryFormat.Pax;
+            actualHeader = default;
+            actualHeader._format = TarEntryFormat.Pax;
 
             // Now get the actual entry
-            if (!secondHeader.TryGetNextHeader(_archiveStream, copyData))
+            if (!actualHeader.TryGetNextHeader(_archiveStream, copyData))
             {
                 return false;
             }
 
             // Should never read a GEA entry at this point
-            if (secondHeader._typeFlag == TarEntryType.GlobalExtendedAttributes)
+            if (actualHeader._typeFlag == TarEntryType.GlobalExtendedAttributes)
             {
                 throw new FormatException(SR.TarTooManyGlobalExtendedAttributesEntries);
             }
 
             // Can't have two extended attribute metadata entries in a row
-            if (secondHeader._typeFlag is TarEntryType.ExtendedAttributes)
+            if (actualHeader._typeFlag is TarEntryType.ExtendedAttributes)
             {
                 throw new FormatException(string.Format(SR.TarUnexpectedMetadataEntry, TarEntryType.ExtendedAttributes, TarEntryType.ExtendedAttributes));
             }
 
-            Debug.Assert(firstHeader._extendedAttributes != null);
+            Debug.Assert(extendedAttributesHeader._extendedAttributes != null);
 
             // Replace all the standard attributes with the extended attributes ones,
-            // overwriting the previous global replacements if needed
-            secondHeader.ReplaceNormalAttributesWithExtended(firstHeader._extendedAttributes);
+            actualHeader.ReplaceNormalAttributesWithExtended(extendedAttributesHeader._extendedAttributes);
 
             return true;
         }
