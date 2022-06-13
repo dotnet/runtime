@@ -19,6 +19,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			AssignToAnnotatedTypeReference ();
 			AssignDirectlyToAnnotatedTypeReference ();
 			AssignToCapturedAnnotatedTypeReference ();
+			AssignToAnnotatedTypeReferenceWithRequirements ();
 		}
 
 		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
@@ -31,6 +32,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 		static ref Type ReturnAnnotatedTypeReferenceAsAnnotated () { return ref _annotatedField; }
+
+		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+		static ref Type ReturnAnnotatedTypeWithRequirements ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] Type t) => ref _annotatedField;
 
 		// Correct behavior in the linker, but needs to be added in analyzer
 		// Bug link: https://github.com/dotnet/linker/issues/2158
@@ -57,6 +61,13 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 			// In this testcase, the Roslyn analyzer sees an assignment to a flow-capture reference.
 			ReturnAnnotatedTypeReferenceAsAnnotated () = GetWithPublicMethods () ?? GetWithPublicFields ();
+		}
+
+		[ExpectedWarning ("IL2072", nameof (GetWithPublicMethods), nameof (ReturnAnnotatedTypeWithRequirements))]
+		[ExpectedWarning ("IL2073", nameof (ReturnAnnotatedTypeWithRequirements), nameof (GetWithPublicFields), ProducedBy = ProducedBy.Trimmer)]
+		static void AssignToAnnotatedTypeReferenceWithRequirements ()
+		{
+			ReturnAnnotatedTypeWithRequirements (GetWithPublicMethods ()) = GetWithPublicFields ();
 		}
 
 		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
