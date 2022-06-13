@@ -551,7 +551,7 @@ namespace System.Formats.Tar.Tests
         {
             Assert.NotNull(pax.ExtendedAttributes);
             Assert.Equal(TarEntryFormat.Pax, pax.Format);
-            Assert.True(pax.ExtendedAttributes.Count() >= 3); // Expect to at least collect mtime, ctime and atime
+            AssertExtensions.GreaterThanOrEqualTo(pax.ExtendedAttributes.Count(), 3); // Expect to at least collect mtime, ctime and atime
 
             VerifyExtendedAttributeTimestamp(pax, PaxEaMTime, MinimumTime);
             VerifyExtendedAttributeTimestamp(pax, PaxEaATime, MinimumTime);
@@ -561,8 +561,8 @@ namespace System.Formats.Tar.Tests
         private void VerifyGnuFields(GnuTarEntry gnu)
         {
             Assert.Equal(TarEntryFormat.Gnu, gnu.Format);
-            Assert.True(gnu.AccessTime >= DateTimeOffset.UnixEpoch);
-            Assert.True(gnu.ChangeTime >= DateTimeOffset.UnixEpoch);
+            AssertExtensions.GreaterThanOrEqualTo(gnu.AccessTime, DateTimeOffset.UnixEpoch);
+            AssertExtensions.GreaterThanOrEqualTo(gnu.ChangeTime, DateTimeOffset.UnixEpoch);
         }
     }
 }

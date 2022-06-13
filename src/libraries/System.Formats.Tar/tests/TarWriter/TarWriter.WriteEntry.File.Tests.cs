@@ -212,7 +212,7 @@ namespace System.Formats.Tar.Tests
 
         protected void VerifyPaxTimestamps(PaxTarEntry pax)
         {
-            Assert.True(pax.ExtendedAttributes.Count >= 4);
+            AssertExtensions.GreaterThanOrEqualTo(pax.ExtendedAttributes.Count, 4);
             Assert.Contains(PaxEaName, pax.ExtendedAttributes);
 
             VerifyExtendedAttributeTimestamp(pax, PaxEaMTime, MinimumTime);

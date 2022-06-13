@@ -202,7 +202,7 @@ namespace System.Formats.Tar.Tests
                 Assert.NotNull(regularFile.ExtendedAttributes);
 
                 // path, mtime, atime and ctime are always collected by default
-                Assert.True(regularFile.ExtendedAttributes.Count >= 5);
+                AssertExtensions.GreaterThanOrEqualTo(regularFile.ExtendedAttributes.Count, 5);
 
                 Assert.Contains(PaxEaName, regularFile.ExtendedAttributes);
                 Assert.Contains(PaxEaMTime, regularFile.ExtendedAttributes);
@@ -290,7 +290,7 @@ namespace System.Formats.Tar.Tests
                 Assert.NotNull(regularFile.ExtendedAttributes);
 
                 // path, mtime, atime and ctime are always collected by default
-                Assert.True(regularFile.ExtendedAttributes.Count >= 6);
+                AssertExtensions.GreaterThanOrEqualTo(regularFile.ExtendedAttributes.Count, 6);
 
                 Assert.Contains(PaxEaName, regularFile.ExtendedAttributes);
                 Assert.Contains(PaxEaMTime, regularFile.ExtendedAttributes);
