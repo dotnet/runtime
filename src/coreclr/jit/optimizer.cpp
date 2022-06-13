@@ -7272,6 +7272,12 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
                 // cctor dependent node is initially not hoistable and may become hoistable later,
                 // when its parent comma node is visited.
                 //
+                // TODO-CQ: Ideally, we should be hoisting all the nodes having side-effects in execution
+                // order as well as the ones that don't have side-effects at all. However, currently, we
+                // just restrict hoisting a node(s) (that are children of `comma`) if one of the siblings
+                // (which is executed before the given node) has side-effects (exceptions). "Descendants
+                // of ancestors might have side-effects and we might hoist nodes past them. This needs
+                // to be addressed properly.
                 bool visitedCurr = false;
                 bool isCommaTree = tree->OperIs(GT_COMMA);
                 bool hasExcep    = false;
