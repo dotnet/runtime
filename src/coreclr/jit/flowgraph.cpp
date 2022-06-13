@@ -773,6 +773,14 @@ bool Compiler::fgIsSafeToRemoveCastOnAssignment(GenTree* tree)
     if (genTypeSize(castToType) < genTypeSize(effectiveOp1))
         return false;
 
+    // The VM types must be the same.
+
+    if (genActualType(castToType) != genActualType(effectiveOp1))
+        return false;
+
+    if (genActualType(castToType) != genActualType(castFromType))
+        return false;
+
     return true;
 }
 
