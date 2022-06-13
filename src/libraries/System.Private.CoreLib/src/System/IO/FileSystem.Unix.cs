@@ -290,7 +290,10 @@ namespace System.IO
                 return; // fullPath is '/'.
             }
 
-            int result = Interop.Sys.MkDir(fullPath, (int)Interop.Sys.Permissions.Mask);
+            // macOS returns ENOTDIR when the path refers to a file and ends with '/'.
+            // Trim the separator so we get EEXIST instead.
+            ReadOnlySpan<char> path = PathInternal.TrimEndingDirectorySeparator(fullPath.AsSpan());
+            int result = Interop.Sys.MkDir(path, (int)Interop.Sys.Permissions.Mask);
             if (result == 0)
             {
                 return; // Created directory.
