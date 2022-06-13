@@ -150,16 +150,21 @@ namespace System.Reflection.PortableExecutable
             return result.MoveToImmutable();
         }
 
-        private static void WritePESignature(BlobBuilder builder)
+        private static unsafe void WritePESignature(BlobBuilder builder)
         {
             // MS-DOS stub (128 bytes)
-            builder.WriteBytes(s_dosHeader);
+            ReadOnlySpan<byte> header = DosHeader;
+            Debug.Assert(DosHeader.Length == DosHeaderSize);
+            fixed (byte* ptr = header)
+            {
+                builder.WriteBytes(ptr, header.Length);
+            }
 
             // PE Signature "PE\0\0"
             builder.WriteUInt32(PEHeaders.PESignature);
         }
 
-        private static readonly byte[] s_dosHeader = new byte[]
+        private static ReadOnlySpan<byte> DosHeader => new byte[0x80]
         {
             0x4d, 0x5a, 0x90, 0x00, 0x03, 0x00, 0x00, 0x00,
             0x04, 0x00, 0x00, 0x00, 0xff, 0xff, 0x00, 0x00,
@@ -170,7 +175,7 @@ namespace System.Reflection.PortableExecutable
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00,
 
-            0x80, 0x00, 0x00, 0x00, // NT Header offset (0x80 == s_dosHeader.Length)
+            0x80, 0x00, 0x00, 0x00, // NT Header offset (0x80 == DosHeader.Length)
 
             0x0e, 0x1f, 0xba, 0x0e, 0x00, 0xb4, 0x09, 0xcd,
             0x21, 0xb8, 0x01, 0x4c, 0xcd, 0x21, 0x54, 0x68,
@@ -182,7 +187,7 @@ namespace System.Reflection.PortableExecutable
             0x24, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
         };
 
-        internal static int DosHeaderSize = s_dosHeader.Length;
+        internal const int DosHeaderSize = 0x80;
 
         private void WriteCoffHeader(BlobBuilder builder, ImmutableArray<SerializedSection> sections, out Blob stampFixup)
         {

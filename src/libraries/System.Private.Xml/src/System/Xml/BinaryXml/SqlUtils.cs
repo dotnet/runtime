@@ -121,8 +121,7 @@ namespace System.Xml
         //    20-28        3
         //    29-38        4
         // The array in Shiloh. Listed here for comparison.
-        //private static readonly byte[] rgCLenFromPrec = new byte[] {5,5,5,5,5,5,5,5,5,9,9,9,9,9,
-        //    9,9,9,9,9,13,13,13,13,13,13,13,13,13,17,17,17,17,17,17,17,17,17,17};
+        // {5,5,5,5,5,5,5,5,5,9,9,9,9,9,9,9,9,9,9,13,13,13,13,13,13,13,13,13,17,17,17,17,17,17,17,17,17,17};
         private static ReadOnlySpan<byte> RgCLenFromPrec => new byte[] { // rely on C# compiler optimization to eliminate allocation
             1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4
         };
