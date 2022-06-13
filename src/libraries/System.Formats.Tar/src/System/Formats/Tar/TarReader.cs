@@ -215,7 +215,6 @@ namespace System.Formats.Tar
             Debug.Assert(!_reachedEndMarkers);
 
             header = default;
-            header._format = TarEntryFormat.Unknown;
 
             if (!header.TryGetNextHeader(_archiveStream, copyData))
             {
