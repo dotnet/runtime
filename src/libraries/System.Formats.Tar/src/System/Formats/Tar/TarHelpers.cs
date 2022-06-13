@@ -115,6 +115,10 @@ namespace System.Formats.Tar
         }
 
         // Converts the specified number of seconds that have passed since the Unix Epoch to a DateTimeOffset.
+        internal static DateTimeOffset GetDateTimeOffsetFromSecondsSinceEpoch(long secondsSinceUnixEpoch) =>
+            new DateTimeOffset((secondsSinceUnixEpoch * TimeSpan.TicksPerSecond) + DateTime.UnixEpoch.Ticks, TimeSpan.Zero);
+
+        // Converts the specified number of seconds that have passed since the Unix Epoch to a DateTimeOffset.
         internal static DateTimeOffset GetDateTimeOffsetFromSecondsSinceEpoch(double secondsSinceUnixEpoch) =>
             new DateTimeOffset((long)(secondsSinceUnixEpoch * TimeSpan.TicksPerSecond) + DateTime.UnixEpoch.Ticks, TimeSpan.Zero);
 
