@@ -311,5 +311,17 @@ namespace System.Formats.Tar.Tests
             Assert.Equal(expected.Second, actual.Second);
             Assert.Equal(expected.Offset, actual.Offset);
         }
+
+        protected Type GetTypeForFormat(TarEntryFormat expectedFormat)
+        {
+            return expectedFormat switch
+            {
+                TarEntryFormat.V7 => typeof(V7TarEntry),
+                TarEntryFormat.Ustar => typeof(UstarTarEntry),
+                TarEntryFormat.Pax => typeof(PaxTarEntry),
+                TarEntryFormat.Gnu => typeof(GnuTarEntry),
+                _ => throw new FormatException($"Unrecognized format: {expectedFormat}"),
+            };
+        }
     }
 }
