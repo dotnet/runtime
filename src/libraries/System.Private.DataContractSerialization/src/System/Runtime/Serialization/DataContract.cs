@@ -345,7 +345,7 @@ namespace System.Runtime.Serialization
 
         internal class DataContractCriticalHelper
         {
-            private static readonly Dictionary<TypeHandleRef, IntRef> s_typeToIDCache = new Dictionary<TypeHandleRef, IntRef>(new TypeHandleRefEqualityComparer());
+            private static readonly ConcurrentDictionary<TypeHandleRef, IntRef> s_typeToIDCache = new(new TypeHandleRefEqualityComparer());
             private static DataContract[] s_dataContractCache = new DataContract[32];
             private static int s_dataContractID;
             private static ConcurrentDictionary<Type, DataContract?> s_typeToBuiltInContract = new();
@@ -353,7 +353,8 @@ namespace System.Runtime.Serialization
             private static Dictionary<string, string>? s_namespaces;
             private static Dictionary<string, XmlDictionaryString>? s_clrTypeStrings;
             private static XmlDictionary? s_clrTypeStringsDictionary;
-            private static readonly TypeHandleRef s_typeHandleRef = new TypeHandleRef();
+            [ThreadStatic]
+            private static TypeHandleRef? s_typeHandleRef;
 
             private static readonly object s_cacheLock = new object();
             private static readonly object s_createDataContractLock = new object();
@@ -377,6 +378,13 @@ namespace System.Runtime.Serialization
             /// Critical - in deserialization, we initialize an object instance passing this Type to GetUninitializedObject method
             /// </SecurityNote>
             private Type _typeForInitialization;
+
+            private static TypeHandleRef GetThreadLocalTypeHandleRef(RuntimeTypeHandle runtimeTypeHandle)
+            {
+                var typeHandleRef = (s_typeHandleRef ??= new TypeHandleRef());
+                typeHandleRef.Value = GetDataContractAdapterTypeHandle(runtimeTypeHandle);
+                return typeHandleRef;
+            }
 
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             internal static DataContract GetDataContractSkipValidation(int id, RuntimeTypeHandle typeHandle, Type? type)
@@ -441,35 +449,33 @@ namespace System.Runtime.Serialization
 
             internal static int GetId(RuntimeTypeHandle typeHandle)
             {
-                lock (s_cacheLock)
+                var typeHandleRef = GetThreadLocalTypeHandleRef(typeHandle);
+
+                try
                 {
-                    IntRef? id;
-                    typeHandle = GetDataContractAdapterTypeHandle(typeHandle);
-                    s_typeHandleRef.Value = typeHandle;
-                    if (!s_typeToIDCache.TryGetValue(s_typeHandleRef, out id))
+                    var id = s_typeToIDCache.GetOrAdd(typeHandleRef, static (key) =>
                     {
-                        int value = s_dataContractID++;
-                        if (value >= s_dataContractCache.Length)
+                        lock (s_cacheLock)
                         {
-                            int newSize = (value < int.MaxValue / 2) ? value * 2 : int.MaxValue;
-                            if (newSize <= value)
+                            int value = s_dataContractID++;
+                            if (value >= s_dataContractCache.Length)
                             {
-                                DiagnosticUtility.DebugAssert("DataContract cache overflow");
-                                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new SerializationException(SR.DataContractCacheOverflow));
+                                int newSize = (value < int.MaxValue / 2) ? value * 2 : int.MaxValue;
+                                if (newSize <= value)
+                                {
+                                    DiagnosticUtility.DebugAssert("DataContract cache overflow");
+                                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new SerializationException(SR.DataContractCacheOverflow));
+                                }
+                                Array.Resize<DataContract>(ref s_dataContractCache, newSize);
                             }
-                            Array.Resize<DataContract>(ref s_dataContractCache, newSize);
+                            return new IntRef(value);
                         }
-                        id = new IntRef(value);
-                        try
-                        {
-                            s_typeToIDCache.Add(new TypeHandleRef(typeHandle), id);
-                        }
-                        catch (Exception ex)
-                        {
-                            throw DiagnosticUtility.ExceptionUtility.ThrowHelperFatal(ex.Message, ex);
-                        }
-                    }
+                    });
                     return id.Value;
+                }
+                catch (Exception ex)
+                {
+                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperFatal(ex.Message, ex);
                 }
             }
 
@@ -1007,17 +1013,14 @@ namespace System.Runtime.Serialization
             {
                 if (type != null)
                 {
-                    lock (s_cacheLock)
+                    TypeHandleRef typeHandleRef = GetThreadLocalTypeHandleRef(type.TypeHandle);
+                    try
                     {
-                        s_typeHandleRef.Value = GetDataContractAdapterTypeHandle(type.TypeHandle);
-                        try
-                        {
-                            s_typeToIDCache.Remove(s_typeHandleRef);
-                        }
-                        catch (Exception ex)
-                        {
-                            throw DiagnosticUtility.ExceptionUtility.ThrowHelperFatal(ex.Message, ex);
-                        }
+                        s_typeToIDCache.TryRemove(typeHandleRef, out IntRef _);
+                    }
+                    catch (Exception ex)
+                    {
+                        throw DiagnosticUtility.ExceptionUtility.ThrowHelperFatal(ex.Message, ex);
                     }
                 }
 
