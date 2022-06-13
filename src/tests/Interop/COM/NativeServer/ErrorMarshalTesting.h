@@ -5,7 +5,7 @@
 
 #include "Servers.h"
 
-class ErrorMarshalTesting : public UnknownImpl, public IErrorMarshalTesting
+class ErrorMarshalTesting : public UnknownImpl, public IErrorMarshalTesting, public ISupportErrorInfo
 {
 public: // IErrorMarshalTesting
     DEF_FUNC(Throw_HResult)(
@@ -46,12 +46,18 @@ public: // IErrorMarshalTesting
         return HRESULT{ hresultToReturn };
     }
 
+    DEF_FUNC(InterfaceSupportsErrorInfo)(
+        /* [in] */ __RPC__in REFIID riid)
+    {
+        return S_OK;
+    }
+
 public: // IUnknown
     STDMETHOD(QueryInterface)(
         /* [in] */ REFIID riid,
         /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR *__RPC_FAR *ppvObject)
     {
-        return DoQueryInterface(riid, ppvObject, static_cast<IErrorMarshalTesting *>(this));
+        return DoQueryInterface(riid, ppvObject, static_cast<IErrorMarshalTesting *>(this), static_cast<ISupportErrorInfo *>(this));
     }
 
     DEFINE_REF_COUNTING();
