@@ -168,7 +168,8 @@ namespace ILCompiler.DependencyAnalysis
             {
                 if (decodedArgument.Kind == CustomAttributeNamedArgumentKind.Field)
                 {
-                    // This is an instance field. We don't track them right now.
+                    if (!AddDependenciesFromField(dependencies, factory, attributeType, decodedArgument.Name))
+                        return false;
                 }
                 else
                 {
@@ -183,6 +184,29 @@ namespace ILCompiler.DependencyAnalysis
                     return false;
             }
 
+            return true;
+        }
+
+        private static bool AddDependenciesFromField(DependencyList dependencies, NodeFactory factory, TypeDesc attributeType, string fieldName)
+        {
+            FieldDesc field = attributeType.GetField(fieldName);
+            if (field is not null)
+            {
+                if (factory.MetadataManager.IsReflectionBlocked(field))
+                    return false;
+
+                dependencies.Add(factory.ReflectableField(field), "Custom attribute blob");
+
+                return true;
+            }
+
+            // Haven't found it in current type. Check the base type.
+            TypeDesc baseType = attributeType.BaseType;
+
+            if (baseType != null)
+                return AddDependenciesFromField(dependencies, factory, baseType, fieldName);
+
+            // Not found. This is bad metadata that will result in a runtime failure, but we shouldn't fail the compilation.
             return true;
         }
 

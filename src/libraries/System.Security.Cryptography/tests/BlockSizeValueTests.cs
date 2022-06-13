@@ -5,10 +5,10 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public class BlockSizeValueTests
     {
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
         public static void BlockSizeValueTest_HMACMD5()
         {
             int hmacBlockSizeValue = new HMACMD5Test().GetBlockSizeValue();
