@@ -587,7 +587,7 @@ namespace System
             // Runtime types are never equal to non-runtime types
             // If `left` is a non-runtime type with a weird Equals implementation
             // this is where operator `==` would differ from `Equals` call.
-            if (left is null || right is null || left is RuntimeType || right is RuntimeType)
+            if (left is null || right is null || left.GetType() == typeof(RuntimeType) || right.GetType() == typeof(RuntimeType))
                 return false;
 
             return left.Equals(right);
