@@ -4401,6 +4401,11 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 {
                     costSz = 10;
                     costEx = 2;
+                    if (con->IsIconHandle())
+                    {
+                        // A sort of a hint for CSE to try harder for class handles
+                        costEx += 1;
+                    }
                 }
 #endif // TARGET_AMD64
                 else
