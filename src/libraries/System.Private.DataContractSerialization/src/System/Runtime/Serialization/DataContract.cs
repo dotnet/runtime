@@ -1208,13 +1208,7 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        internal static bool IsTypeSerializable(Type type)
-        {
-            return IsTypeSerializable(type, null);
-        }
-
-        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        private static bool IsTypeSerializable(Type type, HashSet<Type>? previousCollectionTypes)
+        internal static bool IsTypeSerializable(Type type, HashSet<Type>? previousCollectionTypes = null)
         {
             Type? itemType;
 
