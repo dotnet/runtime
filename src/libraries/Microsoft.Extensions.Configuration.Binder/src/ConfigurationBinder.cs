@@ -755,38 +755,7 @@ namespace Microsoft.Extensions.Configuration
         private static List<PropertyInfo> GetAllProperties(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
             Type type)
-        {
-            var allProperties = new List<PropertyInfo>();
-            HashSet<string>? propertyNames = null;
-
-            Type? baseType = type;
-            do
-            {
-                PropertyInfo[] baseTypeProperties = baseType!.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
-
-                if (baseType != type)
-                {
-                    foreach (var property in baseTypeProperties)
-                    {
-                        if (propertyNames!.Add(property.Name))
-                        {
-                            allProperties.Add(property);
-                        }
-                    }
-                }
-                else
-                {
-                    propertyNames = new(baseTypeProperties.Select(mp => mp.Name),
-                    StringComparer.Ordinal);
-                    allProperties.AddRange(baseTypeProperties);
-                }
-
-                baseType = baseType.BaseType;
-            }
-            while (baseType != typeof(object));
-
-            return allProperties;
-        }
+        => type.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static).ToList();
 
         [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
         private static object? BindParameter(ParameterInfo parameter, Type type, IConfiguration config,
