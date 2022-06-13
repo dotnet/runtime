@@ -2323,8 +2323,7 @@ mono_metadata_get_param_attrs (MonoImage *m, int def, guint32 param_count)
 		return NULL;
 
 	/* FIXME: metadata-update */
-	guint32 rows = mono_metadata_table_num_rows (m, MONO_TABLE_METHOD);
-	if (GINT_TO_UINT32(def) < rows)
+	if (GINT_TO_UINT32(def) < mono_metadata_table_num_rows (m, MONO_TABLE_METHOD))
 		lastp = mono_metadata_decode_row_col (methodt, def, MONO_METHOD_PARAMLIST);
 	else
 		lastp = table_info_get_rows (paramt) + 1;
@@ -4648,7 +4647,7 @@ mono_metadata_token_from_dor (guint32 dor_index)
 typedef struct {
 	guint32 idx;			/* The index that we are trying to locate */
 	guint32 col_idx;		/* The index in the row where idx may be stored */
-	MonoTableInfo *t;	/* pointer to the table */
+	MonoTableInfo *t;		/* pointer to the table */
 	guint32 result;
 } locator_t;
 
@@ -4805,7 +4804,7 @@ mono_metadata_typedef_from_field (MonoImage *meta, guint32 index)
 		loc.idx = search_ptr_table (meta, MONO_TABLE_FIELD_POINTER, loc.idx);
 
 	/* if it's not in the base image, look in the hot reload table */
-	gboolean added = (loc.idx > GINT_TO_UINT32(table_info_get_rows (&meta->tables [MONO_TABLE_FIELD])));
+	gboolean added = (loc.idx > table_info_get_rows (&meta->tables [MONO_TABLE_FIELD]));
 	if (added) {
 		uint32_t res = mono_component_hot_reload()->field_parent (meta, loc.idx);
 		return res; /* 0 if not found, otherwise 1-based */
@@ -4842,7 +4841,7 @@ mono_metadata_typedef_from_method (MonoImage *meta, guint32 index)
 		loc.idx = search_ptr_table (meta, MONO_TABLE_METHOD_POINTER, loc.idx);
 
 	/* if it's not in the base image, look in the hot reload table */
-	gboolean added = (loc.idx > GINT_TO_UINT32(table_info_get_rows (&meta->tables [MONO_TABLE_METHOD])));
+	gboolean added = (loc.idx > table_info_get_rows (&meta->tables [MONO_TABLE_METHOD]));
 	if (added) {
 		uint32_t res = mono_component_hot_reload ()->method_parent (meta, loc.idx);
 		return res; /* 0 if not found, otherwise 1-based */
@@ -6391,8 +6390,7 @@ mono_metadata_methods_from_event   (MonoImage *meta, guint32 index, guint *end_i
 			break;
 	}
 	end = start + 1;
-	guint32 rows = mono_metadata_table_num_rows (meta, MONO_TABLE_METHODSEMANTICS);
-	while (end < rows) {
+	while (end < mono_metadata_table_num_rows (meta, MONO_TABLE_METHODSEMANTICS)) {
 		mono_metadata_decode_row (msemt, end, cols, MONO_METHOD_SEMA_SIZE);
 		if (cols [MONO_METHOD_SEMA_ASSOCIATION] != loc.idx)
 			break;
@@ -6504,8 +6502,7 @@ mono_metadata_methods_from_property   (MonoImage *meta, guint32 index, guint *en
 			break;
 	}
 	end = start + 1;
-	guint32 rows = mono_metadata_table_num_rows (meta, MONO_TABLE_METHODSEMANTICS);
-	while (end < rows) {
+	while (end < mono_metadata_table_num_rows (meta, MONO_TABLE_METHODSEMANTICS)) {
 		mono_metadata_decode_row (msemt, end, cols, MONO_METHOD_SEMA_SIZE);
 		if (cols [MONO_METHOD_SEMA_ASSOCIATION] != loc.idx)
 			break;
@@ -7037,8 +7034,7 @@ mono_class_get_overrides_full (MonoImage *image, guint32 type_token, MonoMethod 
 		else
 			break;
 	}
-	guint32 rows = table_info_get_rows (tdef);
-	while (end < rows) {
+	while (end < table_info_get_rows (tdef)) {
 		if (loc.idx == mono_metadata_decode_row_col (tdef, end, MONO_METHODIMPL_CLASS))
 			end++;
 		else
@@ -7120,8 +7116,7 @@ get_constraints (MonoImage *image, int owner, MonoClass ***constraints, MonoGene
 	*constraints = NULL;
 	found = 0;
 	/* FIXME: metadata-update */
-	guint32 rows = table_info_get_rows (tdef);
-	for (i = 0; i < rows; ++i) {
+	for (i = 0; i < table_info_get_rows (tdef); ++i) {
 		mono_metadata_decode_row (tdef, i, cols, MONO_GENPARCONSTRAINT_SIZE);
 		if (cols [MONO_GENPARCONSTRAINT_GENERICPAR] == owner) {
 			token = mono_metadata_token_from_dor (cols [MONO_GENPARCONSTRAINT_CONSTRAINT]);
