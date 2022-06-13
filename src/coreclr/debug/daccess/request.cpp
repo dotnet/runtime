@@ -2855,6 +2855,15 @@ ClrDataAccess::GetHeapSegmentData(CLRDATA_ADDRESS seg, struct DacpHeapSegmentDat
             heapSegment->flags = pSegment->flags;
             heapSegment->gc_heap = NULL;
             heapSegment->background_allocated = (CLRDATA_ADDRESS)(ULONG_PTR)pSegment->background_allocated;
+
+            if (seg == (CLRDATA_ADDRESS)*g_gcDacGlobals->ephemeral_heap_segment)
+            {
+                heapSegment->highAllocMark = (CLRDATA_ADDRESS)*g_gcDacGlobals->alloc_allocated;
+            }
+            else
+            {
+                heapSegment->highAllocMark = heapSegment->allocated;
+            }
         }
     }
 

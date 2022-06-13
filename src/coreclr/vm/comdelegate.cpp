@@ -1488,34 +1488,6 @@ MethodDesc* COMDelegate::GetILStubMethodDesc(EEImplMethodDesc* pDelegateMD, DWOR
     return NDirect::CreateCLRToNativeILStub(&sigInfo, dwStubFlags, pDelegateMD);
 }
 
-
-
-FCIMPL2(FC_BOOL_RET, COMDelegate::CompareUnmanagedFunctionPtrs, Object *refDelegate1UNSAFE, Object *refDelegate2UNSAFE)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(refDelegate1UNSAFE != NULL);
-        PRECONDITION(refDelegate2UNSAFE != NULL);
-    }
-    CONTRACTL_END;
-
-    DELEGATEREF refD1 = (DELEGATEREF) ObjectToOBJECTREF(refDelegate1UNSAFE);
-    DELEGATEREF refD2 = (DELEGATEREF) ObjectToOBJECTREF(refDelegate2UNSAFE);
-    BOOL ret = FALSE;
-
-    // Make sure this is an unmanaged function pointer wrapped in a delegate.
-    CONSISTENCY_CHECK(DELEGATE_MARKER_UNMANAGEDFPTR == refD1->GetInvocationCount());
-    CONSISTENCY_CHECK(DELEGATE_MARKER_UNMANAGEDFPTR == refD2->GetInvocationCount());
-
-    ret = (refD1->GetMethodPtr() == refD2->GetMethodPtr() &&
-           refD1->GetMethodPtrAux() == refD2->GetMethodPtrAux());
-
-    FC_RETURN_BOOL(ret);
-}
-FCIMPLEND
-
-
 void COMDelegate::RemoveEntryFromFPtrHash(UPTR key)
 {
     WRAPPER_NO_CONTRACT;
@@ -2028,30 +2000,6 @@ FCIMPL1(Object*, COMDelegate::InternalAllocLike, Object* pThis)
     return OBJECTREFToObject(refRetVal);
 }
 FCIMPLEND
-
-FCIMPL2(FC_BOOL_RET, COMDelegate::InternalEqualTypes, Object* pThis, Object *pThat)
-{
-    FCALL_CONTRACT;
-
-    MethodTable *pThisMT = pThis->GetMethodTable();
-    MethodTable *pThatMT = pThat->GetMethodTable();
-
-    _ASSERTE(pThisMT != NULL && pThisMT->IsDelegate());
-    _ASSERTE(pThatMT != NULL);
-
-    BOOL bResult = (pThisMT == pThatMT);
-
-    if (!bResult)
-    {
-        HELPER_METHOD_FRAME_BEGIN_RET_0();
-        bResult = pThisMT->IsEquivalentTo(pThatMT);
-        HELPER_METHOD_FRAME_END();
-    }
-
-    FC_RETURN_BOOL(bResult);
-}
-FCIMPLEND
-
 
 void COMDelegate::ThrowIfInvalidUnmanagedCallersOnlyUsage(MethodDesc* pMD)
 {

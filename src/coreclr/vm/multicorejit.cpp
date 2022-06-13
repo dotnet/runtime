@@ -996,9 +996,9 @@ HRESULT MulticoreJitRecorder::StartProfile(const WCHAR * pRoot, const WCHAR * pF
         // Append separator if root does not end with one
         unsigned len = m_fullFileName.GetCount();
 
-        if ((len != 0) && (m_fullFileName[len - 1] != '\\'))
+        if ((len != 0) && (m_fullFileName[len - 1] != W('\\')))
         {
-            m_fullFileName.Append('\\');
+            m_fullFileName.Append(W('\\'));
         }
 
         m_fullFileName.Append(pFile);
@@ -1006,10 +1006,17 @@ HRESULT MulticoreJitRecorder::StartProfile(const WCHAR * pRoot, const WCHAR * pF
         // Suffix for AutoStartProfile, used for multiple appdomain
         if (suffix >= 0)
         {
-             m_fullFileName.AppendPrintf(W("_%s_%s_%d.prof"),
-                SystemDomain::System()->DefaultDomain()->GetFriendlyName(),
-                m_pDomain->GetFriendlyName(),
-                suffix);
+            m_fullFileName.Append(W('_'));
+            m_fullFileName.Append(SystemDomain::System()->DefaultDomain()->GetFriendlyName());
+            m_fullFileName.Append(W('_'));
+            m_fullFileName.Append(m_pDomain->GetFriendlyName());
+            m_fullFileName.Append(W('_'));
+
+            WCHAR buff[MaxSigned32BitDecString + 1];
+            FormatInteger(buff, ARRAY_SIZE(buff), "%d", suffix);
+            m_fullFileName.Append(buff);
+
+            m_fullFileName.Append(W(".prof"));
         }
 
         NewHolder<MulticoreJitProfilePlayer> player(new (nothrow) MulticoreJitProfilePlayer(

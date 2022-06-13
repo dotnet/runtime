@@ -39,7 +39,27 @@ namespace System.Security.Cryptography.X509Certificates
 
         public void FindByThumbprint(byte[] thumbprint)
         {
-            FindCore(thumbprint, static (thumbprint, cert) => cert.GetCertHash().ContentsEqual(thumbprint));
+            static bool FindPredicate(byte[] thumbprint, X509Certificate2 certificate)
+            {
+                // Bail up front if the length is incorrect to avoid any hash work.
+                if (thumbprint.Length != SHA1.HashSizeInBytes)
+                {
+                    return false;
+                }
+
+                Span<byte> hashBuffer = stackalloc byte[SHA1.HashSizeInBytes];
+
+                if (!certificate.TryGetCertHash(HashAlgorithmName.SHA1, hashBuffer, out int hashBytesWritten) ||
+                    hashBytesWritten != SHA1.HashSizeInBytes)
+                {
+                    Debug.Fail("Presized hash buffer was not the correct size.");
+                    throw new CryptographicException();
+                }
+
+                return hashBuffer.SequenceEqual(thumbprint);
+            }
+
+            FindCore(thumbprint, FindPredicate);
         }
 
         public void FindBySubjectName(string subjectName)

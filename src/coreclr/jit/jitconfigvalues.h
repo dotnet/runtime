@@ -42,6 +42,8 @@ CONFIG_INTEGER(JitBreakOnBadCode, W("JitBreakOnBadCode"), 0)
 CONFIG_INTEGER(JitBreakOnMinOpts, W("JITBreakOnMinOpts"), 0) // Halt if jit switches to MinOpts
 CONFIG_INTEGER(JitBreakOnUnsafeCode, W("JitBreakOnUnsafeCode"), 0)
 CONFIG_INTEGER(JitCloneLoops, W("JitCloneLoops"), 1) // If 0, don't clone. Otherwise clone loops for optimizations.
+CONFIG_INTEGER(JitCloneLoopsWithTypeTests, W("JitCloneLoopsWithTypeTests"), 1) // If 0, don't clone loops based on
+                                                                               // invariant type tests
 CONFIG_INTEGER(JitDebugLogLoopCloning, W("JitDebugLogLoopCloning"), 0) // In debug builds log places where loop cloning
                                                                        // optimizations are performed on the fast path.
 CONFIG_INTEGER(JitDefaultFill, W("JitDefaultFill"), 0xdd) // In debug builds, initialize the memory allocated by the nra
@@ -196,11 +198,6 @@ CONFIG_INTEGER(JitDumpInlinePhases, W("JitDumpInlinePhases"), 1) // Dump inline 
 CONFIG_METHODSET(JitEHDump, W("JitEHDump")) // Dump the EH table for the method, as reported to the VM
 CONFIG_METHODSET(JitExclude, W("JitExclude"))
 CONFIG_INTEGER(JitFakeProcedureSplitting, W("JitFakeProcedureSplitting"), 0) // Do code splitting independent of VM.
-                                                                             // For now, this disables unwind info for
-                                                                             // cold sections, breaking stack walks.
-                                                                             // Set COMPlus_GCgen0size=1000000 to avoid
-                                                                             // running the GC, which requires
-                                                                             // stack-walking.
 CONFIG_METHODSET(JitForceProcedureSplitting, W("JitForceProcedureSplitting"))
 CONFIG_METHODSET(JitGCDump, W("JitGCDump"))
 CONFIG_METHODSET(JitDebugDump, W("JitDebugDump"))
@@ -248,6 +245,8 @@ CONFIG_INTEGER(JitDumpFgBlockID, W("JitDumpFgBlockID"), 0) // 0 == display block
                                                            // bbNum and bbID
 CONFIG_INTEGER(JitDumpFgBlockFlags, W("JitDumpFgBlockFlags"), 0) // 0 == don't display block flags; 1 == display flags
 CONFIG_INTEGER(JitDumpFgLoopFlags, W("JitDumpFgLoopFlags"), 0)   // 0 == don't display loop flags; 1 == display flags
+CONFIG_INTEGER(JitDumpFgBlockOrder, W("JitDumpFgBlockOrder"), 0) // 0 == bbNext order;  1 == bbNum order; 2 == bbID
+                                                                 // order
 
 CONFIG_STRING(JitDumpPreciseDebugInfoFile, W("JitDumpPreciseDebugInfoFile"))
 CONFIG_INTEGER(JitDisasmWithDebugInfo, W("JitDisasmWithDebugInfo"), 0)
@@ -355,9 +354,9 @@ CONFIG_INTEGER(JitDisableSimdVN, W("JitDisableSimdVN"), 0) // Default 0, ValueNu
 //
 CONFIG_INTEGER(JitConstCSE, W("JitConstCSE"), 0)
 
-#define CONST_CSE_ENABLE_ARM64 0
+#define CONST_CSE_ENABLE_ARM 0
 #define CONST_CSE_DISABLE_ALL 1
-#define CONST_CSE_ENABLE_ARM64_NO_SHARING 2
+#define CONST_CSE_ENABLE_ARM_NO_SHARING 2
 #define CONST_CSE_ENABLE_ALL 3
 #define CONST_CSE_ENABLE_ALL_NO_SHARING 4
 

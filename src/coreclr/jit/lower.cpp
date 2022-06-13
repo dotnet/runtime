@@ -318,8 +318,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
 
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
-            LowerHWIntrinsic(node->AsHWIntrinsic());
-            break;
+            return LowerHWIntrinsic(node->AsHWIntrinsic());
 #endif // FEATURE_HW_INTRINSICS
 
         case GT_LCL_FLD:
@@ -2284,10 +2283,58 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
     }
 
     GenTree* callTarget = call->gtCallType == CT_INDIRECT ? call->gtCallAddr : call->gtControlExpr;
-    if ((callTarget == nullptr) || callTarget->IsIntegralConst())
+    if (callTarget == nullptr)
     {
-        // This is a direct call, no CFG check is necessary.
-        return;
+        assert((call->gtCallType != CT_INDIRECT) && (!call->IsVirtual() || call->IsVirtualStubRelativeIndir()));
+        if (!call->IsVirtual())
+        {
+            // Direct call with stashed address
+            return;
+        }
+
+        // This is a VSD call with the call target being null because we are
+        // supposed to load it from the indir cell. Due to CFG we will need
+        // this address twice, and at least on ARM64 we do not want to
+        // materialize the constant both times.
+        CallArg* indirCellArg = call->gtArgs.FindWellKnownArg(WellKnownArg::VirtualStubCell);
+        assert((indirCellArg != nullptr) && indirCellArg->GetNode()->OperIs(GT_PUTARG_REG));
+
+        GenTreeOp* putArgNode = indirCellArg->GetNode()->AsOp();
+        LIR::Use   indirCellArgUse(BlockRange(), &putArgNode->gtOp1, putArgNode);
+
+        // On non-xarch, we create a local even for constants. On xarch cloning
+        // the constant is better since it can be contained in the load below.
+        bool cloneConsts = false;
+#ifdef TARGET_XARCH
+        cloneConsts = true;
+#endif
+
+        GenTree* indirCellClone;
+
+        if (indirCellArgUse.Def()->OperIs(GT_LCL_VAR) || (cloneConsts && indirCellArgUse.Def()->IsCnsIntOrI()))
+        {
+            indirCellClone = comp->gtClone(indirCellArgUse.Def());
+        }
+        else
+        {
+            unsigned newLcl = indirCellArgUse.ReplaceWithLclVar(comp);
+            indirCellClone  = comp->gtNewLclvNode(newLcl, TYP_I_IMPL);
+        }
+
+        callTarget                  = Ind(indirCellClone);
+        LIR::Range controlExprRange = LIR::SeqTree(comp, callTarget);
+        ContainCheckRange(controlExprRange);
+
+        BlockRange().InsertBefore(call, std::move(controlExprRange));
+        call->gtControlExpr = callTarget;
+    }
+    else
+    {
+        if (callTarget->IsIntegralConst())
+        {
+            // This is a direct call, no CFG check is necessary.
+            return;
+        }
     }
 
     CFGCallKind cfgKind = call->GetCFGCallKind();
@@ -3502,28 +3549,21 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
         else if (src->OperIs(GT_CNS_INT))
         {
             assert(src->IsIntegralConst(0) && "expected an INIT_VAL for non-zero init.");
+
 #ifdef FEATURE_SIMD
             if (varTypeIsSIMD(lclRegType))
             {
-                CorInfoType simdBaseJitType = comp->getBaseJitTypeOfSIMDLocal(lclStore);
-                if (simdBaseJitType == CORINFO_TYPE_UNDEF)
-                {
-                    // Lie about the type if we don't know/have it.
-                    simdBaseJitType = CORINFO_TYPE_FLOAT;
-                }
-                GenTreeSIMD* simdTree =
-                    comp->gtNewSIMDNode(lclRegType, src, SIMDIntrinsicInit, simdBaseJitType, varDsc->lvExactSize);
-                BlockRange().InsertAfter(src, simdTree);
-                LowerSIMD(simdTree);
-                src               = simdTree;
-                lclStore->gtOp1   = src;
-                convertToStoreObj = false;
+                GenTree* zeroCon = comp->gtNewZeroConNode(lclRegType, CORINFO_TYPE_FLOAT);
+
+                BlockRange().InsertAfter(src, zeroCon);
+                BlockRange().Remove(src);
+
+                src             = zeroCon;
+                lclStore->gtOp1 = src;
             }
-            else
 #endif // FEATURE_SIMD
-            {
-                convertToStoreObj = false;
-            }
+
+            convertToStoreObj = false;
         }
         else if (src->OperIs(GT_LCL_VAR))
         {
@@ -3694,6 +3734,10 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
             LowerRetSingleRegStructLclVar(ret);
             break;
 
+        case GT_LCL_FLD:
+            retVal->ChangeType(nativeReturnType);
+            break;
+
 #if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
 #ifdef FEATURE_SIMD
         case GT_SIMD:
@@ -3713,16 +3757,6 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
         }
         break;
 #endif // FEATURE_SIMD || FEATURE_HW_INTRINSICS
-
-        case GT_LCL_FLD:
-        {
-#ifdef DEBUG
-            LclVarDsc* varDsc = comp->lvaGetDesc(retVal->AsLclFld());
-            assert(varDsc->lvDoNotEnregister);
-#endif
-            retVal->ChangeType(nativeReturnType);
-        }
-        break;
 
         default:
             assert(varTypeIsEnregisterable(retVal));
@@ -3828,18 +3862,18 @@ void Lowering::LowerCallStruct(GenTreeCall* call)
 
     if (GlobalJitOptions::compFeatureHfa)
     {
-        if (comp->IsHfa(call))
+        if (comp->IsHfa(call->gtRetClsHnd))
         {
 #if defined(TARGET_ARM64)
-            assert(comp->GetHfaCount(call) == 1);
+            assert(comp->GetHfaCount(call->gtRetClsHnd) == 1);
 #elif defined(TARGET_ARM)
             // ARM returns double in 2 float registers, but
             // `call->HasMultiRegRetVal()` count double registers.
-            assert(comp->GetHfaCount(call) <= 2);
+            assert(comp->GetHfaCount(call->gtRetClsHnd) <= 2);
 #else  // !TARGET_ARM64 && !TARGET_ARM
             NYI("Unknown architecture");
 #endif // !TARGET_ARM64 && !TARGET_ARM
-            var_types hfaType = comp->GetHfaType(call);
+            var_types hfaType = comp->GetHfaType(call->gtRetClsHnd);
             if (call->TypeIs(hfaType))
             {
                 return;
@@ -4935,11 +4969,21 @@ GenTree* Lowering::LowerVirtualVtableCall(GenTreeCall* call)
 {
     noway_assert(call->gtCallType == CT_USER_FUNC);
 
-    assert(call->gtArgs.HasThisPointer());
-    CallArg* thisArg = call->gtArgs.GetThisArg();
+    GenTree* thisArgNode;
+    if (call->IsTailCallViaJitHelper())
+    {
+        assert(call->gtArgs.CountArgs() > 0);
+        thisArgNode = call->gtArgs.GetArgByIndex(0)->GetNode();
+    }
+    else
+    {
+        assert(call->gtArgs.HasThisPointer());
+        thisArgNode = call->gtArgs.GetThisArg()->GetNode();
+    }
+
     // get a reference to the thisPtr being passed
-    assert(thisArg->GetNode()->OperIs(GT_PUTARG_REG));
-    GenTree* thisPtr = thisArg->GetNode()->AsUnOp()->gtGetOp1();
+    assert(thisArgNode->OperIs(GT_PUTARG_REG));
+    GenTree* thisPtr = thisArgNode->AsUnOp()->gtGetOp1();
 
     // If what we are passing as the thisptr is not already a local, make a new local to place it in
     // because we will be creating expressions based on it.
@@ -4956,7 +5000,7 @@ GenTree* Lowering::LowerVirtualVtableCall(GenTreeCall* call)
             vtableCallTemp = comp->lvaGrabTemp(true DEBUGARG("virtual vtable call"));
         }
 
-        LIR::Use thisPtrUse(BlockRange(), &thisArg->GetNode()->AsUnOp()->gtOp1, thisArg->GetNode());
+        LIR::Use thisPtrUse(BlockRange(), &thisArgNode->AsUnOp()->gtOp1, thisArgNode);
         ReplaceWithLclVar(thisPtrUse, vtableCallTemp);
 
         lclNum = vtableCallTemp;
@@ -5131,7 +5175,7 @@ GenTree* Lowering::LowerVirtualStubCall(GenTreeCall* call)
             // Skip inserting the indirection node to load the address that is already
             // computed in the VSD stub arg register as a hidden parameter. Instead during the
             // codegen, just load the call target from there.
-            shouldOptimizeVirtualStubCall = !comp->opts.IsCFGEnabled();
+            shouldOptimizeVirtualStubCall = true;
 #endif
 
             if (!shouldOptimizeVirtualStubCall)
@@ -5842,7 +5886,8 @@ GenTree* Lowering::LowerConstIntDivOrMod(GenTree* node)
 #if defined(TARGET_ARM64)
     if (divMod->OperIs(GT_MOD) && divisor->IsIntegralConstPow2())
     {
-        return LowerModPow2(node);
+        LowerModPow2(node);
+        return node->gtNext;
     }
     assert(node->OperGet() != GT_MOD);
 #endif // TARGET_ARM64

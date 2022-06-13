@@ -87,7 +87,7 @@ namespace System.Net.Sockets
         }
 
         private Action<int, byte[]?, int, SocketFlags, SocketError> TransferCompletionCallback =>
-            _transferCompletionCallback ?? (_transferCompletionCallback = TransferCompletionCallbackCore);
+            _transferCompletionCallback ??= TransferCompletionCallbackCore;
 
         private void TransferCompletionCallbackCore(int bytesTransferred, byte[]? socketAddress, int socketAddressSize, SocketFlags receivedFlags, SocketError socketError)
         {

@@ -153,6 +153,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "ServerCertificateCustomValidationCallback not supported on Browser")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task GetAsync_IPv6LinkLocalAddressUri_Success()
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -187,6 +188,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Theory]
         [MemberData(nameof(GetAsync_IPBasedUri_Success_MemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task GetAsync_IPBasedUri_Success(IPAddress address)
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -278,6 +280,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Theory]
         [MemberData(nameof(SecureAndNonSecure_IPBasedUri_MemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task GetAsync_SecureAndNonSecureIPBasedUri_CorrectlyFormatted(IPAddress address, bool useSsl)
         {
             if (LoopbackServerFactory.Version >= HttpVersion20.Value)
@@ -324,6 +327,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("WWW-Authenticate", "CustomAuth")]
         [InlineData("", "")] // RFC7235 requires servers to send this header with 401 but some servers don't.
         [SkipOnPlatform(TestPlatforms.Browser, "Credentials is not supported on Browser")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task GetAsync_ServerNeedsNonStandardAuthAndSetCredential_StatusCodeUnauthorized(string authHeadrName, string authHeaderValue)
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -407,6 +411,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task PostAsync_ManyDifferentRequestHeaders_SentCorrectly()
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -986,6 +991,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(false, false)]
         [InlineData(null, false)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/65429", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task ReadAsStreamAsync_HandlerProducesWellBehavedResponseStream(bool? chunked, bool enableWasmStreaming)
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -1198,6 +1204,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task ReadAsStreamAsync_EmptyResponseBody_HandlerProducesWellBehavedResponseStream()
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -1293,6 +1300,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/58812", TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task Dispose_DisposingHandlerCancelsActiveOperationsWithoutResponses()
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -1413,6 +1421,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "ExpectContinue not supported on Browser")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task GetAsync_ExpectContinueTrue_NoContent_StillSendsHeader()
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -1465,6 +1474,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [MemberData(nameof(Interim1xxStatusCode))]
         [SkipOnPlatform(TestPlatforms.Browser, "CookieContainer is not supported on Browser")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task SendAsync_1xxResponsesWithHeaders_InterimResponsesHeadersIgnored(HttpStatusCode responseStatusCode)
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -1540,6 +1550,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Theory]
         [MemberData(nameof(Interim1xxStatusCode))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task SendAsync_Unexpected1xxResponses_DropAllInterimResponses(HttpStatusCode responseStatusCode)
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -1591,6 +1602,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "ExpectContinue not supported on Browser")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task SendAsync_MultipleExpected100Responses_ReceivesCorrectResponse()
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -1641,6 +1653,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/54160", TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task SendAsync_Expect100Continue_RequestBodyFails_ThrowsContentException()
         {
             if (IsWinHttpHandler)
@@ -1690,6 +1703,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "ExpectContinue not supported on Browser")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task SendAsync_No100ContinueReceived_RequestBodySentEventually()
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -1922,6 +1936,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task SendAsync_RequestVersion20_HttpNotHttps_NoUpgradeRequest()
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -1957,6 +1972,7 @@ namespace System.Net.Http.Functional.Tests
 
         #region Uri wire transmission encoding tests
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task SendRequest_UriPathHasReservedChars_ServerReceivedExpectedPath()
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)

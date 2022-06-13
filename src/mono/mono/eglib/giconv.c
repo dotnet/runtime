@@ -246,7 +246,7 @@ encode_utf16_endian (gunichar c, char *outbuf, size_t outleft, unsigned endian)
 			return -1;
 		}
 
-		write_uint16_endian (outptr, c, endian);
+		write_uint16_endian (outptr, GUNICHAR_TO_UINT16 (c), endian);
 		return 2;
 	} else {
 		if (outleft < 4) {
@@ -343,7 +343,7 @@ encode_utf8 (gunichar c, char *outbuf, size_t outleft)
 	int base, n, i;
 
 	if (c < 0x80) {
-		outptr[0] = c;
+		outptr[0] = GUNICHAR_TO_UINT8 (c);
 		return 1;
 	} else if (c < 0x800) {
 		base = 192;
@@ -382,7 +382,7 @@ encode_utf8 (gunichar c, char *outbuf, size_t outleft)
 		c >>= 6;
 	}
 
-	outptr[0] = c | base;
+	outptr[0] = GUNICHAR_TO_UINT8 (c | base);
 #endif
 
 	return n;
@@ -469,7 +469,7 @@ g_unichar_to_utf8 (gunichar c, gchar *outbuf)
 		}
 
 		/* first character has a different base */
-		outbuf[0] = c | base;
+		outbuf[0] = GUNICHAR_TO_CHAR (c | base);
 	}
 
 	return n;
@@ -579,7 +579,7 @@ eg_utf8_to_utf16_general (const gchar *str, glong len, glong *items_read, glong 
 	}
 
 	if (items_read)
-		*items_read = inptr - str;
+		*items_read = GPTRDIFF_TO_LONG (inptr - str);
 
 	if (items_written)
 		*items_written = (glong)outlen;
@@ -635,7 +635,7 @@ error:
 	}
 
 	if (items_read)
-		*items_read = inptr - str;
+		*items_read = GPTRDIFF_TO_LONG (inptr - str);
 
 	if (items_written)
 		*items_written = 0;
@@ -699,7 +699,7 @@ g_utf8_to_ucs4 (const gchar *str, glong len, glong *items_read, glong *items_wri
 			}
 
 			if (items_read)
-				*items_read = inptr - str;
+				*items_read = GPTRDIFF_TO_LONG (inptr - str);
 
 			if (items_written)
 				*items_written = 0;
@@ -717,7 +717,7 @@ g_utf8_to_ucs4 (const gchar *str, glong len, glong *items_read, glong *items_wri
 		*items_written = (glong)(outlen / 4);
 
 	if (items_read)
-		*items_read = inptr - str;
+		*items_read = GPTRDIFF_TO_LONG (inptr - str);
 
 	outptr = outbuf = g_malloc (outlen + 4);
 	inptr = (char *) str;
@@ -780,7 +780,7 @@ eg_utf16_to_utf8_general (const gunichar2 *str, glong len, glong *items_read, gl
 			}
 
 			if (items_read)
-				*items_read = (inptr - (char *) str) / 2;
+				*items_read = GPTRDIFF_TO_LONG ((inptr - (char *) str) / 2);
 
 			if (items_written)
 				*items_written = 0;
@@ -795,7 +795,7 @@ eg_utf16_to_utf8_general (const gunichar2 *str, glong len, glong *items_read, gl
 	}
 
 	if (items_read)
-		*items_read = (inptr - (char *) str) / 2;
+		*items_read = GPTRDIFF_TO_LONG ((inptr - (char *) str) / 2);
 
 	if (items_written)
 		*items_written = (glong)outlen;
@@ -884,7 +884,7 @@ g_utf16_to_ucs4 (const gunichar2 *str, glong len, glong *items_read, glong *item
 			}
 
 			if (items_read)
-				*items_read = (inptr - (char *) str) / 2;
+				*items_read = GPTRDIFF_TO_LONG ((inptr - (char *) str) / 2);
 
 			if (items_written)
 				*items_written = 0;
@@ -899,7 +899,7 @@ g_utf16_to_ucs4 (const gunichar2 *str, glong len, glong *items_read, glong *item
 	}
 
 	if (items_read)
-		*items_read = (inptr - (char *) str) / 2;
+		*items_read = GPTRDIFF_TO_LONG ((inptr - (char *) str) / 2);
 
 	if (items_written)
 		*items_written = (glong)(outlen / 4);

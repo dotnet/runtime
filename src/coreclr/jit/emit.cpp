@@ -1006,6 +1006,15 @@ insGroup* emitter::emitSavIG(bool emitAdd)
         assert(emitLastIns != nullptr);
         assert(emitCurIGfreeBase <= (BYTE*)emitLastIns);
         assert((BYTE*)emitLastIns < emitCurIGfreeBase + sz);
+
+#if defined(TARGET_XARCH)
+        assert(emitLastIns != nullptr);
+        if (emitLastIns->idIns() == INS_jmp)
+        {
+            ig->igFlags |= IGF_HAS_REMOVABLE_JMP;
+        }
+#endif
+
         emitLastIns = (instrDesc*)((BYTE*)id + ((BYTE*)emitLastIns - (BYTE*)emitCurIGfreeBase));
     }
 
@@ -1073,10 +1082,11 @@ void emitter::emitBegFN(bool hasFramePtr
     emitJumpList = emitJumpLast = nullptr;
     emitCurIGjmpList            = nullptr;
 
-    emitFwdJumps         = false;
-    emitNoGCRequestCount = 0;
-    emitNoGCIG           = false;
-    emitForceNewIG       = false;
+    emitFwdJumps                       = false;
+    emitNoGCRequestCount               = 0;
+    emitNoGCIG                         = false;
+    emitForceNewIG                     = false;
+    emitContainsRemovableJmpCandidates = false;
 
 #if FEATURE_LOOP_ALIGN
     /* We don't have any align instructions */
@@ -3811,10 +3821,21 @@ void emitter::emitDispIG(insGroup* ig, insGroup* igPrev, bool verbose)
                 {
                     instrDesc* id = (instrDesc*)ins;
 
+#ifdef TARGET_XARCH
+                    if (emitJmpInstHasNoCode(id))
+                    {
+                        // an instruction with no code prevents us being able to iterate to the
+                        // next instructions so we must be certain that when we find one it is
+                        // the last instruction in a group
+                        assert(cnt == 1);
+                        break;
+                    }
+#endif
                     emitDispIns(id, false, true, false, ofs, nullptr, 0, ig);
 
                     ins += emitSizeOfInsDsc(id);
                     ofs += id->idCodeSize();
+
                 } while (--cnt);
 
                 printf("\n");
@@ -3862,6 +3883,29 @@ void emitter::emitDispGCinfo()
     printRegMaskInt(emitThisByrefRegs);
     emitDispRegSet(emitThisByrefRegs);
     printf("\n\n");
+}
+
+//------------------------------------------------------------------------
+// emitDispJumpList: displays the current emitter jump list
+//
+void emitter::emitDispJumpList()
+{
+    printf("Emitter Jump List:\n");
+    unsigned int jmpCount = 0;
+    for (instrDescJmp* jmp = emitJumpList; jmp != nullptr; jmp = jmp->idjNext)
+    {
+        printf("IG%02u IN%04x %3s[%u] -> IG%02u %s\n", jmp->idjIG->igNum, jmp->idDebugOnlyInfo()->idNum,
+               codeGen->genInsDisplayName(jmp), jmp->idCodeSize(),
+               ((insGroup*)emitCodeGetCookie(jmp->idAddr()->iiaBBlabel))->igNum,
+#if defined(TARGET_XARCH)
+               jmp->idjIsRemovableJmpCandidate ? " ; removal candidate" : ""
+#else
+               ""
+#endif
+               );
+        jmpCount += 1;
+    }
+    printf("  total jump count: %u\n", jmpCount);
 }
 
 #endif // DEBUG
@@ -4001,16 +4045,12 @@ void emitter::emitRecomputeIGoffsets()
 //
 // Arguments:
 //    handle - a constant value to display a comment for
+//    cookie - the cookie stored with the handle
 //    flags  - a flag that the describes the handle
 //
-void emitter::emitDispCommentForHandle(size_t handle, GenTreeFlags flag)
+void emitter::emitDispCommentForHandle(size_t handle, size_t cookie, GenTreeFlags flag)
 {
 #ifdef DEBUG
-    if (handle == 0)
-    {
-        return;
-    }
-
 #ifdef TARGET_XARCH
     const char* commentPrefix = "      ;";
 #else
@@ -4018,8 +4058,35 @@ void emitter::emitDispCommentForHandle(size_t handle, GenTreeFlags flag)
 #endif
 
     flag &= GTF_ICON_HDL_MASK;
-    const char* str = nullptr;
 
+    if (cookie != 0)
+    {
+        if (flag == GTF_ICON_FTN_ADDR)
+        {
+            const char* className = nullptr;
+            const char* methName =
+                emitComp->eeGetMethodName(reinterpret_cast<CORINFO_METHOD_HANDLE>(cookie), &className);
+            printf("%s code for %s:%s", commentPrefix, className, methName);
+            return;
+        }
+
+        if ((flag == GTF_ICON_STATIC_HDL) || (flag == GTF_ICON_STATIC_BOX_PTR))
+        {
+            const char* className = nullptr;
+            const char* fieldName =
+                emitComp->eeGetFieldName(reinterpret_cast<CORINFO_FIELD_HANDLE>(cookie), &className);
+            printf("%s %s for %s%s%s", commentPrefix, flag == GTF_ICON_STATIC_HDL ? "data" : "box", className,
+                   className != nullptr ? ":" : "", fieldName);
+            return;
+        }
+    }
+
+    if (handle == 0)
+    {
+        return;
+    }
+
+    const char* str = nullptr;
     if (flag == GTF_ICON_STR_HDL)
     {
         const WCHAR* wstr = emitComp->eeGetCPString(handle);
@@ -4059,8 +4126,6 @@ void emitter::emitDispCommentForHandle(size_t handle, GenTreeFlags flag)
     {
         str = emitComp->eeGetClassName(reinterpret_cast<CORINFO_CLASS_HANDLE>(handle));
     }
-#ifndef TARGET_XARCH
-    // These are less useful for xarch:
     else if (flag == GTF_ICON_CONST_PTR)
     {
         str = "const ptr";
@@ -4089,17 +4154,211 @@ void emitter::emitDispCommentForHandle(size_t handle, GenTreeFlags flag)
     {
         str = "token handle";
     }
-    else
-    {
-        str = "unknown";
-    }
-#endif // TARGET_XARCH
 
     if (str != nullptr)
     {
         printf("%s %s", commentPrefix, str);
     }
 #endif // DEBUG
+}
+
+//****************************************************************************
+// emitRemoveJumpToNextInst:  Checks all jumps in the jump list to see if they are
+//   unconditional jumps marked with idjIsRemovableJmpCandidate,generated from
+//   BBJ_ALWAYS blocks. Any such candidate that jumps to the next instruction
+//   will be removed from the jump list.
+//
+// Assumptions:
+//    the jump list must be ordered by increasing igNum+insNo
+//
+void emitter::emitRemoveJumpToNextInst()
+{
+#ifdef TARGET_XARCH
+    if (!emitContainsRemovableJmpCandidates)
+    {
+        return;
+    }
+
+    JITDUMP("*************** In emitRemoveJumpToNextInst()\n");
+#ifdef DEBUG
+    if (EMIT_INSTLIST_VERBOSE)
+    {
+        JITDUMP("\nInstruction group list before unconditional jump to next instruction removal:\n\n");
+        emitDispIGlist(true);
+    }
+    if (EMITVERBOSE)
+    {
+        emitDispJumpList();
+    }
+#endif // DEBUG
+
+    UNATIVE_OFFSET totalRemovedSize = 0;
+    instrDescJmp*  jmp              = emitJumpList;
+    instrDescJmp*  previousJmp      = nullptr;
+#if DEBUG
+    UNATIVE_OFFSET previousJumpIgNum  = (UNATIVE_OFFSET)-1;
+    unsigned int   previousJumpInsNum = -1;
+#endif // DEBUG
+
+    while (jmp)
+    {
+        insGroup*     jmpGroup = jmp->idjIG;
+        instrDescJmp* nextJmp  = jmp->idjNext;
+
+        if (jmp->idInsFmt() == IF_LABEL && emitIsUncondJump(jmp) && jmp->idjIsRemovableJmpCandidate)
+        {
+#if DEBUG
+            assert((jmpGroup->igFlags & IGF_HAS_ALIGN) == 0);
+            assert((jmpGroup->igNum > previousJumpIgNum) || (previousJumpIgNum == (UNATIVE_OFFSET)-1) ||
+                   ((jmpGroup->igNum == previousJumpIgNum) && (jmp->idDebugOnlyInfo()->idNum > previousJumpInsNum)));
+            previousJumpIgNum  = jmpGroup->igNum;
+            previousJumpInsNum = jmp->idDebugOnlyInfo()->idNum;
+#endif // DEBUG
+
+            // target group is not bound yet so use the cookie to fetch it
+            insGroup* targetGroup = (insGroup*)emitCodeGetCookie(jmp->idAddr()->iiaBBlabel);
+
+            assert(targetGroup != nullptr);
+
+            if ((jmpGroup->igNext == targetGroup) && ((jmpGroup->igFlags & IGF_HAS_REMOVABLE_JMP) != 0))
+            {
+                // the last instruction in the group is the jmp we're looking for
+                // and it jumps to the next instruction group so we don't need it
+                CLANG_FORMAT_COMMENT_ANCHOR
+
+#ifdef DEBUG
+                unsigned instructionCount = jmpGroup->igInsCnt;
+                assert(instructionCount > 0);
+                instrDesc* id = nullptr;
+                {
+                    BYTE* dataPtr = jmpGroup->igData;
+                    while (instructionCount > 0)
+                    {
+                        id = (instrDesc*)dataPtr;
+                        dataPtr += emitSizeOfInsDsc(id);
+                        instructionCount -= 1;
+                    }
+                }
+                assert(id != nullptr);
+                if (jmp != id)
+                {
+                    printf("jmp != id, dumping context information\n");
+                    printf("method: %s\n", emitComp->impInlineRoot()->info.compMethodName);
+                    printf("  jmp: %u: ", jmp->idDebugOnlyInfo()->idNum);
+                    emitDispIns(jmp, false, true, false, 0, nullptr, 0, jmpGroup);
+                    printf("   id: %u: ", id->idDebugOnlyInfo()->idNum);
+                    emitDispIns(id, false, true, false, 0, nullptr, 0, jmpGroup);
+                    printf("jump group:\n");
+                    emitDispIG(jmpGroup, nullptr, true);
+                    printf("target group:\n");
+                    emitDispIG(targetGroup, nullptr, false);
+                    assert(jmp == id);
+                }
+#endif // DEBUG
+
+                JITDUMP("IG%02u IN%04x is the last instruction in the group and jumps to the next instruction group "
+                        "IG%02u %s, removing.\n",
+                        jmpGroup->igNum, jmp->idDebugOnlyInfo()->idNum, targetGroup->igNum,
+                        emitLabelString(targetGroup));
+
+                // Unlink the jump from emitJumpList while keeping the previousJmp the same.
+                if (previousJmp != nullptr)
+                {
+                    previousJmp->idjNext = jmp->idjNext;
+                    if (jmp == emitJumpLast)
+                    {
+                        emitJumpLast = previousJmp;
+                    }
+                }
+                else
+                {
+                    assert(jmp == emitJumpList);
+                    emitJumpList = jmp->idjNext;
+                }
+
+                UNATIVE_OFFSET codeSize = jmp->idCodeSize();
+                jmp->idCodeSize(0);
+
+                jmpGroup->igSize -= (unsigned short)codeSize;
+                jmpGroup->igFlags |= IGF_UPD_ISZ;
+
+                emitTotalCodeSize -= codeSize;
+                totalRemovedSize += codeSize;
+            }
+            else
+            {
+                // Update the previousJmp
+                previousJmp = jmp;
+#if DEBUG
+                if (targetGroup == nullptr)
+                {
+                    JITDUMP("IG%02u IN%04x jump target is not set!, keeping.\n", jmpGroup->igNum,
+                            jmp->idDebugOnlyInfo()->idNum);
+                }
+                else if ((jmpGroup->igFlags & IGF_HAS_ALIGN) != 0)
+                {
+                    JITDUMP("IG%02u IN%04x containing instruction group has alignment, keeping.\n", jmpGroup->igNum,
+                            jmp->idDebugOnlyInfo()->idNum);
+                }
+                else if (jmpGroup->igNext != targetGroup)
+                {
+                    JITDUMP("IG%02u IN%04x does not jump to the next instruction group, keeping.\n", jmpGroup->igNum,
+                            jmp->idDebugOnlyInfo()->idNum);
+                }
+                else if ((jmpGroup->igFlags & IGF_HAS_REMOVABLE_JMP) == 0)
+                {
+                    JITDUMP("IG%02u IN%04x containing instruction group is not marked with IGF_HAS_REMOVABLE_JMP, "
+                            "keeping.\n",
+                            jmpGroup->igNum, jmp->idDebugOnlyInfo()->idNum);
+                }
+#endif // DEBUG
+            }
+        }
+        else
+        {
+            // Update the previousJmp
+            previousJmp = jmp;
+        }
+
+        if (totalRemovedSize > 0)
+        {
+            insGroup* adjOffIG     = jmpGroup->igNext;
+            insGroup* adjOffUptoIG = nextJmp != nullptr ? nextJmp->idjIG : emitIGlast;
+            while ((adjOffIG != nullptr) && (adjOffIG->igNum <= adjOffUptoIG->igNum))
+            {
+                JITDUMP("Adjusted offset of IG%02u from %04X to %04X\n", adjOffIG->igNum, adjOffIG->igOffs,
+                        (adjOffIG->igOffs - totalRemovedSize));
+                adjOffIG->igOffs -= totalRemovedSize;
+                adjOffIG = adjOffIG->igNext;
+            }
+        }
+
+        jmp = nextJmp;
+    }
+
+#ifdef DEBUG
+    if (totalRemovedSize > 0)
+    {
+        emitCheckIGoffsets();
+
+        if (EMIT_INSTLIST_VERBOSE)
+        {
+            printf("\nInstruction group list after unconditional jump to next instruction removal:\n\n");
+            emitDispIGlist(false);
+        }
+        if (EMITVERBOSE)
+        {
+            emitDispJumpList();
+        }
+
+        JITDUMP("emitRemoveJumpToNextInst removed %u bytes of unconditional jumps\n", totalRemovedSize);
+    }
+    else
+    {
+        JITDUMP("emitRemoveJumpToNextInst removed no unconditional jumps\n");
+    }
+#endif // DEBUG
+#endif // TARGET_XARCH
 }
 
 /*****************************************************************************
@@ -4125,6 +4384,10 @@ void emitter::emitJumpDistBind()
     {
         printf("\nInstruction list before jump distance binding:\n\n");
         emitDispIGlist(true);
+    }
+    if (EMITVERBOSE)
+    {
+        emitDispJumpList();
     }
 #endif
 
@@ -5201,8 +5464,8 @@ unsigned emitter::getLoopSize(insGroup* igLoopHeader, unsigned maxLoopSize DEBUG
                 JITDUMP(" -- loopSize exceeded the threshold of %u bytes.", maxLoopSize);
             }
             JITDUMP("\n");
-            break;
 #endif
+            break;
         }
         JITDUMP("\n");
     }
@@ -6617,7 +6880,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 #ifdef DEBUG
         if (emitComp->opts.disAsm || emitComp->verbose)
         {
-            printf("\t\t\t\t\t\t;; size=%d bbWeight=%s PerfScore %.2f", ig->igSize, refCntWtd2str(ig->igWeight),
+            printf("\t\t\t\t\t\t;; size=%d bbWeight=%s PerfScore %.2f", (cp - bp), refCntWtd2str(ig->igWeight),
                    ig->igPerfScore);
         }
         *instrCount += ig->igInsCnt;
@@ -6638,10 +6901,13 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
             {
                 // The allocated chunk is bigger than used, fill in unused space in it.
                 unsigned unusedSize = allocatedHotCodeSize - emitCurCodeOffs(cp);
+                BYTE*    cpRW       = cp + writeableOffset;
                 for (unsigned i = 0; i < unusedSize; ++i)
                 {
-                    *cp++ = DEFAULT_CODE_BUFFER_INIT;
+                    *cpRW++ = DEFAULT_CODE_BUFFER_INIT;
                 }
+
+                cp = cpRW - writeableOffset;
                 assert(allocatedHotCodeSize == emitCurCodeOffs(cp));
             }
         }
@@ -7292,6 +7558,90 @@ CORINFO_FIELD_HANDLE emitter::emitFltOrDblConst(double constValue, emitAttr attr
 
     UNATIVE_OFFSET cnum = emitDataConst(cnsAddr, cnsSize, cnsAlign, dataType);
     return emitComp->eeFindJitDataOffs(cnum);
+}
+
+//------------------------------------------------------------------------
+// emitSimd8Const: Create a simd8 data section constant.
+//
+// Arguments:
+//    constValue - constant value
+//
+// Return Value:
+//    A field handle representing the data offset to access the constant.
+//
+CORINFO_FIELD_HANDLE emitter::emitSimd8Const(simd8_t constValue)
+{
+    // Access to inline data is 'abstracted' by a special type of static member
+    // (produced by eeFindJitDataOffs) which the emitter recognizes as being a reference
+    // to constant data, not a real static field.
+    CLANG_FORMAT_COMMENT_ANCHOR;
+
+#if defined(FEATURE_SIMD)
+    unsigned cnsSize  = 8;
+    unsigned cnsAlign = cnsSize;
+
+#ifdef TARGET_XARCH
+    if (emitComp->compCodeOpt() == Compiler::SMALL_CODE)
+    {
+        cnsAlign = dataSection::MIN_DATA_ALIGN;
+    }
+#endif // TARGET_XARCH
+
+    UNATIVE_OFFSET cnum = emitDataConst(&constValue, cnsSize, cnsAlign, TYP_SIMD8);
+    return emitComp->eeFindJitDataOffs(cnum);
+#else
+    unreached();
+#endif // !FEATURE_SIMD
+}
+
+CORINFO_FIELD_HANDLE emitter::emitSimd16Const(simd16_t constValue)
+{
+    // Access to inline data is 'abstracted' by a special type of static member
+    // (produced by eeFindJitDataOffs) which the emitter recognizes as being a reference
+    // to constant data, not a real static field.
+    CLANG_FORMAT_COMMENT_ANCHOR;
+
+#if defined(FEATURE_SIMD)
+    unsigned cnsSize  = 16;
+    unsigned cnsAlign = cnsSize;
+
+#ifdef TARGET_XARCH
+    if (emitComp->compCodeOpt() == Compiler::SMALL_CODE)
+    {
+        cnsAlign = dataSection::MIN_DATA_ALIGN;
+    }
+#endif // TARGET_XARCH
+
+    UNATIVE_OFFSET cnum = emitDataConst(&constValue, cnsSize, cnsAlign, TYP_SIMD16);
+    return emitComp->eeFindJitDataOffs(cnum);
+#else
+    unreached();
+#endif // !FEATURE_SIMD
+}
+
+CORINFO_FIELD_HANDLE emitter::emitSimd32Const(simd32_t constValue)
+{
+    // Access to inline data is 'abstracted' by a special type of static member
+    // (produced by eeFindJitDataOffs) which the emitter recognizes as being a reference
+    // to constant data, not a real static field.
+    CLANG_FORMAT_COMMENT_ANCHOR;
+
+#if defined(FEATURE_SIMD)
+    unsigned cnsSize  = 32;
+    unsigned cnsAlign = cnsSize;
+
+#ifdef TARGET_XARCH
+    if (emitComp->compCodeOpt() == Compiler::SMALL_CODE)
+    {
+        cnsAlign = dataSection::MIN_DATA_ALIGN;
+    }
+#endif // TARGET_XARCH
+
+    UNATIVE_OFFSET cnum = emitDataConst(&constValue, cnsSize, cnsAlign, TYP_SIMD32);
+    return emitComp->eeFindJitDataOffs(cnum);
+#else
+    unreached();
+#endif // !FEATURE_SIMD
 }
 
 /*****************************************************************************

@@ -31,7 +31,9 @@
 //
 //
 
+#ifdef FEATURE_COMINTEROP
 void FreeExceptionData(ExceptionData *pedata);
+#endif
 
 class ExceptionNative
 {
@@ -44,8 +46,10 @@ public:
     static FCDECL3(VOID, SaveStackTracesFromDeepCopy, Object* pExceptionObjectUnsafe, Object *pStackTraceUnsafe, Object *pDynamicMethodsUnsafe);
 
 
+#ifdef FEATURE_COMINTEROP
     // NOTE: caller cleans up any partially initialized BSTRs in pED
     static void      GetExceptionData(OBJECTREF, ExceptionData *);
+#endif
 
     // Note: these are on the PInvoke class to hide these from the user.
     static FCDECL0(EXCEPTION_POINTERS*, GetExceptionPointers);
@@ -218,10 +222,15 @@ extern "C" void QCALLTYPE Interlocked_MemoryBarrierProcessWide();
 class ValueTypeHelper {
 public:
     static FCDECL1(FC_BOOL_RET, CanCompareBits, Object* obj);
-    static FCDECL2(FC_BOOL_RET, FastEqualsCheck, Object* obj1, Object* obj2);
     static FCDECL1(INT32, GetHashCode, Object* objRef);
-    static FCDECL1(INT32, GetHashCodeOfPtr, LPVOID ptr);
 };
+
+class MethodTableNative {
+public:
+    static FCDECL1(UINT32, GetNumInstanceFieldBytes, MethodTable* mt);
+};
+
+extern "C" BOOL QCALLTYPE MethodTable_AreTypesEquivalent(MethodTable* mta, MethodTable* mtb);
 
 class StreamNative {
 public:

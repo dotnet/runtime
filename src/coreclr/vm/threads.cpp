@@ -1126,11 +1126,11 @@ extern "C" void *JIT_WriteBarrier_Loc;
 void *JIT_WriteBarrier_Loc = 0;
 #endif
 
-#ifdef TARGET_ARM64
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 extern "C" void (*JIT_WriteBarrier_Table)();
 extern "C" void *JIT_WriteBarrier_Table_Loc;
 void *JIT_WriteBarrier_Table_Loc = 0;
-#endif // TARGET_ARM64
+#endif // TARGET_ARM64 || TARGET_LOONGARCH64
 
 #ifndef TARGET_UNIX
 // g_TlsIndex is only used by the DAC. Disable optimizations around it to prevent it from getting optimized out.
@@ -1194,17 +1194,17 @@ void InitThreadManager()
         SetJitHelperFunction(CORINFO_HELP_ASSIGN_REF, GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier));
         ETW::MethodLog::StubInitialized((ULONGLONG)GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier), W("@WriteBarrier"));
 
-#ifdef TARGET_ARM64
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
         // Store the JIT_WriteBarrier_Table copy location to a global variable so that it can be updated.
         JIT_WriteBarrier_Table_Loc = GetWriteBarrierCodeLocation((void*)&JIT_WriteBarrier_Table);
-#endif // TARGET_ARM64
+#endif // TARGET_ARM64 || TARGET_LOONGARCH64
 
-#if defined(TARGET_ARM64) || defined(TARGET_ARM)
+#if defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64)
         SetJitHelperFunction(CORINFO_HELP_CHECKED_ASSIGN_REF, GetWriteBarrierCodeLocation((void*)JIT_CheckedWriteBarrier));
         ETW::MethodLog::StubInitialized((ULONGLONG)GetWriteBarrierCodeLocation((void*)JIT_CheckedWriteBarrier), W("@CheckedWriteBarrier"));
         SetJitHelperFunction(CORINFO_HELP_ASSIGN_BYREF, GetWriteBarrierCodeLocation((void*)JIT_ByRefWriteBarrier));
         ETW::MethodLog::StubInitialized((ULONGLONG)GetWriteBarrierCodeLocation((void*)JIT_ByRefWriteBarrier), W("@ByRefWriteBarrier"));
-#endif // TARGET_ARM64 || TARGET_ARM
+#endif // TARGET_ARM64 || TARGET_ARM || TARGET_LOONGARCH64
 
     }
     else
@@ -1228,10 +1228,10 @@ void InitThreadManager()
 #else
         JIT_WriteBarrier_Loc = (void*)JIT_WriteBarrier;
 #endif
-#ifdef TARGET_ARM64
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
         // Store the JIT_WriteBarrier_Table copy location to a global variable so that it can be updated.
         JIT_WriteBarrier_Table_Loc = (void*)&JIT_WriteBarrier_Table;
-#endif // TARGET_ARM64
+#endif // TARGET_ARM64 || TARGET_LOONGARCH64
     }
 
 #ifndef TARGET_UNIX

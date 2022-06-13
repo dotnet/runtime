@@ -44,6 +44,6 @@ To aid in troubleshooting some of the most common problems related to trimming a
 
 ## Special considerations for Linux/macOS
 
-Debugging symbols (data about your program required for debugging) is by default part of native executable files on Unix-like operating systems. To minimize the size of your native executable, you can run the `strip` tool to remove the debugging symbols.
+Debugging symbols (data about your program required for debugging) is by default part of native executable files on Unix-like operating systems. To strip symbols into a separate file (`*.dbg` on Linux and `*.dwarf` on macOS), set `<StripSymbols>true</StripSymbols>`.
 
 No action is needed on Windows since the platform convention is to generate debug information into a separate file (`*.pdb`).

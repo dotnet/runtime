@@ -16,7 +16,7 @@ using System.Reflection;
 [assembly: TestAssembly]
 [module: TestModule]
 
-internal class ReflectionTest
+internal static class ReflectionTest
 {
     private static int Main()
     {
@@ -27,7 +27,10 @@ internal class ReflectionTest
         //
         // Tests for dependency graph in the compiler
         //
+        TestSimpleDelegateTargets.Run();
+        TestVirtualDelegateTargets.Run();
         TestRunClassConstructor.Run();
+        TestFieldMetadata.Run();
 #if !OPTIMIZED_MODE_WITHOUT_SCANNER
         TestContainment.Run();
         TestInterfaceMethod.Run();
@@ -1215,7 +1218,7 @@ internal class ReflectionTest
 
             PropertyInfo p = typeof(TestClassIntPointer).GetProperty(nameof(TestClassIntPointer.NullRefReturningProp));
             Assert.NotNull(p);
-            Assert.Throws<NullReferenceException>(() => p.GetValue(tc));
+            Assert.Throws<TargetInvocationException>(() => p.GetValue(tc));
         }
 
         public static unsafe void TestByRefLikeRefReturn()
@@ -1656,6 +1659,202 @@ internal class ReflectionTest
         }
     }
 
+    class TestSimpleDelegateTargets
+    {
+        class TestClass
+        {
+            public static void StaticMethod() { }
+            public void InstanceMethod() { }
+            public static void SimplyCalledMethod() { }
+        }
+
+        class TestClass<T>
+        {
+            public static void StaticMethod() { }
+        }
+
+        static void CheckGeneric<T>()
+        {
+            Action staticMethod = TestClass<T>.StaticMethod;
+            if (staticMethod.GetMethodInfo().Name != nameof(TestClass<T>.StaticMethod))
+                throw new Exception();
+        }
+
+        public static void Run()
+        {
+            Console.WriteLine("Testing delegate targets are reflectable...");
+
+            Action staticMethod = TestClass.StaticMethod;
+            if (staticMethod.GetMethodInfo().Name != nameof(TestClass.StaticMethod))
+                throw new Exception();
+
+            Action instanceMethod = new TestClass().InstanceMethod;
+            if (instanceMethod.GetMethodInfo().Name != nameof(TestClass.InstanceMethod))
+                throw new Exception();
+
+            TestClass.SimplyCalledMethod();
+
+            Assert.Equal(
+#if REFLECTION_FROM_USAGE
+                3,
+#else
+                2,
+#endif
+                typeof(TestClass).CountMethods());
+
+            CheckGeneric<object>();
+        }
+    }
+
+    class TestVirtualDelegateTargets
+    {
+        abstract class Base
+        {
+            public virtual void VirtualMethod() { }
+            public abstract void AbstractMethod();
+        }
+
+        class Derived : Base, IBar
+        {
+            public override void AbstractMethod() { }
+            public override void VirtualMethod() { }
+            void IFoo.InterfaceMethod() { }
+        }
+
+        interface IFoo
+        {
+            void InterfaceMethod();
+            void DefaultInterfaceMethod() { }
+        }
+
+        interface IBar : IFoo
+        {
+            void IFoo.DefaultInterfaceMethod() { }
+        }
+
+        static Base s_baseInstance = new Derived();
+        static IFoo s_ifooInstance = new Derived();
+
+        public static void Run()
+        {
+            Console.WriteLine("Testing virtual delegate targets are reflectable...");
+
+            Action abstractMethod = s_baseInstance.AbstractMethod;
+            if (abstractMethod.GetMethodInfo().Name != nameof(Derived.AbstractMethod))
+                throw new Exception();
+
+            Action virtualMethod = s_baseInstance.VirtualMethod;
+            if (virtualMethod.GetMethodInfo().Name != nameof(Derived.VirtualMethod))
+                throw new Exception();
+
+            Action interfaceMethod = s_ifooInstance.InterfaceMethod;
+            if (!interfaceMethod.GetMethodInfo().Name.EndsWith("IFoo.InterfaceMethod"))
+                throw new Exception();
+
+            Action defaultMethod = s_ifooInstance.DefaultInterfaceMethod;
+            if (!defaultMethod.GetMethodInfo().Name.EndsWith("IFoo.DefaultInterfaceMethod"))
+                throw new Exception();
+        }
+    }
+
+    class TestFieldMetadata
+    {
+        class ClassWithTwoFields
+        {
+            public static int UsedField;
+            public static UnusedClass UnusedField;
+        }
+
+        class UnusedClass { }
+
+        interface IMessWithYou { }
+        class GenericTypeWithUnsatisfiableConstrains<T> where T : struct, IMessWithYou
+        {
+            public static int SomeField;
+        }
+
+        class GenericClass<T>
+        {
+            public static string SomeField;
+        }
+
+        struct Atom1 { }
+        struct Atom2 { }
+        struct Atom3 { }
+
+        public static void Run()
+        {
+            ClassWithTwoFields.UsedField = 123;
+
+#if REFLECTION_FROM_USAGE
+            // Merely accessing a field should trigger full reflectability of it when reflection from
+            // usage is active.
+            Type classWithTwoFields = GetTestType(nameof(TestFieldMetadata), nameof(ClassWithTwoFields));
+            if ((int)classWithTwoFields.GetField(nameof(ClassWithTwoFields.UsedField)).GetValue(null) != 123)
+            {
+                throw new Exception();
+            }
+
+            // But the unused field should not exist
+            if (classWithTwoFields.GetField(nameof(ClassWithTwoFields.UnusedField)) != null)
+            {
+                throw new Exception();
+            }
+#else
+            // If reflection from usage is not active, we shouldn't even see the owning type, despite the field use
+            if (SecretGetType(nameof(TestFieldMetadata), nameof(ClassWithTwoFields)) != null)
+            {
+                throw new Exception();
+            }
+#endif
+            // The type of the unused field shouldn't be generated under any circumstances
+            if (SecretGetType(nameof(TestFieldMetadata), nameof(UnusedClass)) != null)
+            {
+                throw new Exception();
+            }
+
+            // The compiler cannot fulfil this instantiation without universal shared code.
+            // We should get a working metadata-only type that can be inspected.
+            if (typeof(GenericTypeWithUnsatisfiableConstrains<>).GetField("SomeField").Name != "SomeField")
+            {
+                throw new Exception();
+            }
+
+            // Access a field on a generic type in an obvious way
+            if (typeof(GenericClass<Atom1>).GetField(nameof(GenericClass<Atom1>.SomeField)).Name != "SomeField")
+            {
+                throw new Exception();
+            }
+
+            // We should be able to reflection-see the field on other reflection visible generic instances
+            // of the same generic type definition.
+            GetGenericClassOfAtom2().GetField("SomeField").SetValue(null, "Cookie");
+            static Type GetGenericClassOfAtom2() => typeof(GenericClass<Atom2>);
+
+            GenericClass<Atom3>.SomeField = "1234";
+#if REFLECTION_FROM_USAGE
+            // If we're doing reflection from usage, we used the field and we expect it to be reflectable
+            typeof(GenericClass<>).MakeGenericType(GetAtom3()).GetField("SomeField").SetValue(null, "Cookie");
+#else
+            // If we're not doing reflection from usage, the generic instance shouldn't even exist.
+            // We only touched the static base of the type, not the whole type.
+            bool exists = false;
+            try
+            {
+                typeof(GenericClass<>).MakeGenericType(GetAtom3());
+                exists = true;
+            }
+            catch
+            {
+                exists = false;
+            }
+            if (exists)
+                throw new Exception();
+#endif
+            static Type GetAtom3() => typeof(Atom3);
+        }
+    }
+
     class TestRunClassConstructor
     {
         static class TypeWithNoStaticFieldsButACCtor
@@ -1678,12 +1877,17 @@ internal class ReflectionTest
 
     #region Helpers
 
-    private static Type GetTestType(string testName, string typeName)
+    private static Type SecretGetType(string testName, string typeName)
     {
         string fullTypeName = $"{nameof(ReflectionTest)}+{testName}+{typeName}";
-        Type result = Type.GetType(fullTypeName);
+        return Type.GetType(fullTypeName);
+    }
+
+    private static Type GetTestType(string testName, string typeName)
+    {
+        Type result = SecretGetType(testName, typeName);
         if (result == null)
-            throw new Exception($"'{fullTypeName}' could not be located");
+            throw new Exception($"'{testName}.{typeName}' could not be located");
         return result;
     }
 
@@ -1708,6 +1912,11 @@ internal class ReflectionTest
         }
         return true;
     }
+
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+        Justification = "That's the point")]
+    public static int CountMethods(this Type t)
+        => t.GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly).Length;
 
     class Assert
     {

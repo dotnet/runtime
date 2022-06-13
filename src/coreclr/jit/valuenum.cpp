@@ -442,6 +442,12 @@ ValueNumStore::ValueNumStore(Compiler* comp, CompAllocator alloc)
     , m_floatCnsMap(nullptr)
     , m_doubleCnsMap(nullptr)
     , m_byrefCnsMap(nullptr)
+#if defined(FEATURE_SIMD)
+    , m_simd8CnsMap(nullptr)
+    , m_simd12CnsMap(nullptr)
+    , m_simd16CnsMap(nullptr)
+    , m_simd32CnsMap(nullptr)
+#endif // FEATURE_SIMD
     , m_VNFunc0Map(nullptr)
     , m_VNFunc1Map(nullptr)
     , m_VNFunc2Map(nullptr)
@@ -1672,6 +1678,33 @@ ValueNumStore::Chunk::Chunk(CompAllocator alloc, ValueNum* pNextBaseVN, var_type
                     // Since this value is always the same, we represent it as a static.
                     m_defs = &s_specialRefConsts[0];
                     break; // Nothing to do.
+
+#if defined(FEATURE_SIMD)
+                case TYP_SIMD8:
+                {
+                    m_defs = new (alloc) Alloc<TYP_SIMD8>::Type[ChunkSize];
+                    break;
+                }
+
+                case TYP_SIMD12:
+                {
+                    m_defs = new (alloc) Alloc<TYP_SIMD12>::Type[ChunkSize];
+                    break;
+                }
+
+                case TYP_SIMD16:
+                {
+                    m_defs = new (alloc) Alloc<TYP_SIMD16>::Type[ChunkSize];
+                    break;
+                }
+
+                case TYP_SIMD32:
+                {
+                    m_defs = new (alloc) Alloc<TYP_SIMD32>::Type[ChunkSize];
+                    break;
+                }
+#endif // FEATURE_SIMD
+
                 default:
                     assert(false); // Should not reach here.
             }
@@ -1807,6 +1840,28 @@ ValueNum ValueNumStore::VNForByrefCon(target_size_t cnsVal)
     return VnForConst(cnsVal, GetByrefCnsMap(), TYP_BYREF);
 }
 
+#if defined(FEATURE_SIMD)
+ValueNum ValueNumStore::VNForSimd8Con(simd8_t cnsVal)
+{
+    return VnForConst(cnsVal, GetSimd8CnsMap(), TYP_SIMD8);
+}
+
+ValueNum ValueNumStore::VNForSimd12Con(simd12_t cnsVal)
+{
+    return VnForConst(cnsVal, GetSimd12CnsMap(), TYP_SIMD12);
+}
+
+ValueNum ValueNumStore::VNForSimd16Con(simd16_t cnsVal)
+{
+    return VnForConst(cnsVal, GetSimd16CnsMap(), TYP_SIMD16);
+}
+
+ValueNum ValueNumStore::VNForSimd32Con(simd32_t cnsVal)
+{
+    return VnForConst(cnsVal, GetSimd32CnsMap(), TYP_SIMD32);
+}
+#endif // FEATURE_SIMD
+
 ValueNum ValueNumStore::VNForCastOper(var_types castToType, bool srcIsUnsigned)
 {
     assert(castToType != TYP_STRUCT);
@@ -1889,15 +1944,24 @@ ValueNum ValueNumStore::VNZeroForType(var_types typ)
 
 #ifdef FEATURE_SIMD
         case TYP_SIMD8:
+        {
+            return VNForSimd8Con({});
+        }
+
         case TYP_SIMD12:
+        {
+            return VNForSimd12Con({});
+        }
+
         case TYP_SIMD16:
+        {
+            return VNForSimd16Con({});
+        }
+
         case TYP_SIMD32:
-            // We do not have the base type - a "fake" one will have to do. Note that we cannot
-            // use the HWIntrinsic "get_Zero" VNFunc here. This is because they only represent
-            // "fully zeroed" vectors, and here we may be loading one from memory, leaving upper
-            // bits undefined. So using "SIMD_Init" is "the next best thing", so to speak, and
-            // TYP_FLOAT is one of the more popular base types, so that's why we use it here.
-            return VNForFunc(typ, VNF_SIMD_Init, VNForFloatCon(0), VNForSimdType(genTypeSize(typ), CORINFO_TYPE_FLOAT));
+        {
+            return VNForSimd32Con({});
+        }
 #endif // FEATURE_SIMD
 
         // These should be unreached.
@@ -2805,13 +2869,15 @@ ValueNum ValueNumStore::EvalFuncForConstantArgs(var_types typ, VNFunc func, Valu
         {
             int resVal = EvalOp<int>(func, ConstantValue<int>(arg0VN));
             // Unary op on a handle results in a handle.
-            return IsVNHandle(arg0VN) ? VNForHandle(ssize_t(resVal), GetHandleFlags(arg0VN)) : VNForIntCon(resVal);
+            return IsVNHandle(arg0VN) ? VNForHandle(ssize_t(resVal), GetFoldedArithOpResultHandleFlags(arg0VN))
+                                      : VNForIntCon(resVal);
         }
         case TYP_LONG:
         {
             INT64 resVal = EvalOp<INT64>(func, ConstantValue<INT64>(arg0VN));
             // Unary op on a handle results in a handle.
-            return IsVNHandle(arg0VN) ? VNForHandle(ssize_t(resVal), GetHandleFlags(arg0VN)) : VNForLongCon(resVal);
+            return IsVNHandle(arg0VN) ? VNForHandle(ssize_t(resVal), GetFoldedArithOpResultHandleFlags(arg0VN))
+                                      : VNForLongCon(resVal);
         }
         case TYP_FLOAT:
         {
@@ -2939,6 +3005,48 @@ float ValueNumStore::GetConstantSingle(ValueNum argVN)
     return ConstantValue<float>(argVN);
 }
 
+#if defined(FEATURE_SIMD)
+// Given a simd8 constant value number return its value as a simd8.
+//
+simd8_t ValueNumStore::GetConstantSimd8(ValueNum argVN)
+{
+    assert(IsVNConstant(argVN));
+    assert(TypeOfVN(argVN) == TYP_SIMD8);
+
+    return ConstantValue<simd8_t>(argVN);
+}
+
+// Given a simd12 constant value number return its value as a simd12.
+//
+simd12_t ValueNumStore::GetConstantSimd12(ValueNum argVN)
+{
+    assert(IsVNConstant(argVN));
+    assert(TypeOfVN(argVN) == TYP_SIMD12);
+
+    return ConstantValue<simd12_t>(argVN);
+}
+
+// Given a simd16 constant value number return its value as a simd16.
+//
+simd16_t ValueNumStore::GetConstantSimd16(ValueNum argVN)
+{
+    assert(IsVNConstant(argVN));
+    assert(TypeOfVN(argVN) == TYP_SIMD16);
+
+    return ConstantValue<simd16_t>(argVN);
+}
+
+// Given a simd32 constant value number return its value as a simd32.
+//
+simd32_t ValueNumStore::GetConstantSimd32(ValueNum argVN)
+{
+    assert(IsVNConstant(argVN));
+    assert(TypeOfVN(argVN) == TYP_SIMD32);
+
+    return ConstantValue<simd32_t>(argVN);
+}
+#endif // FEATURE_SIMD
+
 // Compute the proper value number when the VNFunc has all constant arguments
 // This essentially performs constant folding at value numbering time
 //
@@ -3000,7 +3108,7 @@ ValueNum ValueNumStore::EvalFuncForConstantArgs(var_types typ, VNFunc func, Valu
                 ValueNum handleVN = IsVNHandle(arg0VN) ? arg0VN : IsVNHandle(arg1VN) ? arg1VN : NoVN;
                 if (handleVN != NoVN)
                 {
-                    result = VNForHandle(ssize_t(resultVal), GetHandleFlags(handleVN)); // Use VN for Handle
+                    result = VNForHandle(ssize_t(resultVal), GetFoldedArithOpResultHandleFlags(handleVN));
                 }
                 else
                 {
@@ -3026,7 +3134,7 @@ ValueNum ValueNumStore::EvalFuncForConstantArgs(var_types typ, VNFunc func, Valu
 
                 if (handleVN != NoVN)
                 {
-                    result = VNForHandle(ssize_t(resultVal), GetHandleFlags(handleVN)); // Use VN for Handle
+                    result = VNForHandle(ssize_t(resultVal), GetFoldedArithOpResultHandleFlags(handleVN));
                 }
                 else
                 {
@@ -4994,114 +5102,6 @@ bool ValueNumStore::IsVNConstant(ValueNum vn)
     }
 }
 
-//------------------------------------------------------------------------
-// IsVNVectorZero: Checks if the value number is a Vector*_get_Zero.
-//
-// Arguments:
-//    vn - The value number.
-//
-// Return Value:
-//    true  - The value number is a Vector*_get_Zero.
-//    false - The value number is not a Vector*_get_Zero.
-bool ValueNumStore::IsVNVectorZero(ValueNum vn)
-{
-#ifdef FEATURE_SIMD
-    VNSimdTypeInfo vnInfo = GetVectorZeroSimdTypeOfVN(vn);
-    // Check the size to see if we got a valid SIMD type.
-    // '0' means it is not valid.
-    if (vnInfo.m_simdSize != 0)
-    {
-        return true;
-    }
-#endif
-    return false;
-}
-
-#ifdef FEATURE_SIMD
-//------------------------------------------------------------------------
-// GetSimdTypeOfVN: Returns the SIMD type information based on the given value number.
-//
-// Arguments:
-//    vn - The value number.
-//
-// Return Value:
-//    Returns VNSimdTypeInfo(0, CORINFO_TYPE_UNDEF) if the given value number has not been given a SIMD type.
-VNSimdTypeInfo ValueNumStore::GetSimdTypeOfVN(ValueNum vn)
-{
-    VNSimdTypeInfo vnInfo;
-
-    // The SIMD type is encoded as a function,
-    // even though it is not actually a function.
-    VNFuncApp simdType;
-    if (GetVNFunc(vn, &simdType) && simdType.m_func == VNF_SimdType)
-    {
-        assert(simdType.m_arity == 2);
-        vnInfo.m_simdSize        = GetConstantInt32(simdType.m_args[0]);
-        vnInfo.m_simdBaseJitType = (CorInfoType)GetConstantInt32(simdType.m_args[1]);
-        return vnInfo;
-    }
-
-    vnInfo.m_simdSize        = 0;
-    vnInfo.m_simdBaseJitType = CORINFO_TYPE_UNDEF;
-    return vnInfo;
-}
-
-//------------------------------------------------------------------------
-// GetVectorZeroSimdTypeOfVN: Returns the SIMD type information based on the given value number
-//                            if it's Vector*_get_Zero.
-//
-// Arguments:
-//    vn - The value number.
-//
-// Return Value:
-//    Returns VNSimdTypeInfo(0, CORINFO_TYPE_UNDEF) if the given value number has not been given a SIMD type
-//    for a Vector*_get_Zero value number.
-//
-// REVIEW: Vector*_get_Zero nodes in VN currently encode their SIMD type for
-//         conservative reasons. In the future, it might be possible not do this
-//         on most platforms since Vector*_get_Zero's base type does not matter.
-VNSimdTypeInfo ValueNumStore::GetVectorZeroSimdTypeOfVN(ValueNum vn)
-{
-#ifdef FEATURE_HW_INTRINSICS
-    // REVIEW: This will only return true if Vector*_get_Zero encodes
-    //         its base type as an argument. On XARCH there may be
-    //         scenarios where Vector*_get_Zero will not encode its base type;
-    //         therefore, returning false here.
-    // Vector*_get_Zero does not have any arguments,
-    // but its SIMD type is encoded as an argument.
-    VNFuncApp funcApp;
-    if (GetVNFunc(vn, &funcApp) && funcApp.m_arity == 1)
-    {
-        switch (funcApp.m_func)
-        {
-            case VNF_HWI_Vector128_get_Zero:
-#if defined(TARGET_XARCH)
-            case VNF_HWI_Vector256_get_Zero:
-#elif defined(TARGET_ARM64)
-            case VNF_HWI_Vector64_get_Zero:
-#endif
-            {
-                return GetSimdTypeOfVN(funcApp.m_args[0]);
-            }
-
-            default:
-            {
-                VNSimdTypeInfo vnInfo;
-                vnInfo.m_simdSize        = 0;
-                vnInfo.m_simdBaseJitType = CORINFO_TYPE_UNDEF;
-                return vnInfo;
-            }
-        }
-    }
-#endif
-
-    VNSimdTypeInfo vnInfo;
-    vnInfo.m_simdSize        = 0;
-    vnInfo.m_simdBaseJitType = CORINFO_TYPE_UNDEF;
-    return vnInfo;
-}
-#endif // FEATURE_SIMD
-
 bool ValueNumStore::IsVNInt32Constant(ValueNum vn)
 {
     if (!IsVNConstant(vn))
@@ -5119,6 +5119,37 @@ GenTreeFlags ValueNumStore::GetHandleFlags(ValueNum vn)
     unsigned  offset = ChunkOffset(vn);
     VNHandle* handle = &reinterpret_cast<VNHandle*>(c->m_defs)[offset];
     return handle->m_flags;
+}
+
+GenTreeFlags ValueNumStore::GetFoldedArithOpResultHandleFlags(ValueNum vn)
+{
+    GenTreeFlags flags = GetHandleFlags(vn);
+    assert((flags & GTF_ICON_HDL_MASK) == flags);
+
+    switch (flags)
+    {
+        case GTF_ICON_SCOPE_HDL:
+        case GTF_ICON_CLASS_HDL:
+        case GTF_ICON_METHOD_HDL:
+        case GTF_ICON_FIELD_HDL:
+        case GTF_ICON_TOKEN_HDL:
+        case GTF_ICON_STR_HDL:
+        case GTF_ICON_CONST_PTR:
+        case GTF_ICON_VARG_HDL:
+        case GTF_ICON_PINVKI_HDL:
+        case GTF_ICON_FTN_ADDR:
+        case GTF_ICON_CIDMID_HDL:
+        case GTF_ICON_TLS_HDL:
+        case GTF_ICON_STATIC_BOX_PTR:
+            return GTF_ICON_CONST_PTR;
+        case GTF_ICON_STATIC_HDL:
+        case GTF_ICON_GLOBAL_PTR:
+        case GTF_ICON_BBC_PTR:
+            return GTF_ICON_GLOBAL_PTR;
+        default:
+            assert(!"Unexpected handle type");
+            return flags;
+    }
 }
 
 bool ValueNumStore::IsVNHandle(ValueNum vn)
@@ -6464,17 +6495,34 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
 
 #ifdef FEATURE_SIMD
             case TYP_SIMD8:
+            {
+                simd8_t cnsVal = GetConstantSimd8(vn);
+                printf("Simd8Cns[0x%08x, 0x%08x]", cnsVal.u32[0], cnsVal.u32[1]);
+                break;
+            }
+
             case TYP_SIMD12:
+            {
+                simd12_t cnsVal = GetConstantSimd12(vn);
+                printf("Simd12Cns[0x%08x, 0x%08x, 0x%08x]", cnsVal.u32[0], cnsVal.u32[1], cnsVal.u32[2]);
+                break;
+            }
+
             case TYP_SIMD16:
+            {
+                simd16_t cnsVal = GetConstantSimd16(vn);
+                printf("Simd16Cns[0x%08x, 0x%08x, 0x%08x, 0x%08x]", cnsVal.u32[0], cnsVal.u32[1], cnsVal.u32[2],
+                       cnsVal.u32[3]);
+                break;
+            }
+
             case TYP_SIMD32:
             {
-                // Only the zero constant is currently allowed for SIMD types
-                //
-                INT64 val = ConstantValue<INT64>(vn);
-                assert(val == 0);
-                printf(" 0");
+                simd32_t cnsVal = GetConstantSimd32(vn);
+                printf("Simd32Cns[0x%016llx, 0x%016llx, 0x%016llx, 0x%016llx]", cnsVal.u64[0], cnsVal.u64[1],
+                       cnsVal.u64[2], cnsVal.u64[3]);
+                break;
             }
-            break;
 #endif // FEATURE_SIMD
 
             // These should be unreached.
@@ -7956,28 +8004,90 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
 
 #ifdef FEATURE_SIMD
         case TYP_SIMD8:
-        case TYP_SIMD12:
-        case TYP_SIMD16:
-        case TYP_SIMD32:
+        {
+            simd8_t simd8Val;
 
-#ifdef TARGET_64BIT
-            // Only the zero constant is currently allowed for SIMD types
-            //
-            assert(tree->AsIntConCommon()->LngValue() == 0);
-            tree->gtVNPair.SetBoth(vnStore->VNForLongCon(tree->AsIntConCommon()->LngValue()));
-#else // 32BIT
-            assert(tree->AsIntConCommon()->IconValue() == 0);
-            tree->gtVNPair.SetBoth(vnStore->VNForIntCon(int(tree->AsIntConCommon()->IconValue())));
-#endif
+            // TODO-Cleanup: delete SIMD-typed CNS_INT nodes
+            if (tree->IsIntegralConst(0))
+            {
+                simd8Val = {};
+            }
+            else
+            {
+                simd8Val = tree->AsVecCon()->gtSimd8Val;
+            }
+
+            tree->gtVNPair.SetBoth(vnStore->VNForSimd8Con(simd8Val));
             break;
+        }
+
+        case TYP_SIMD12:
+        {
+            simd12_t simd12Val;
+
+            // TODO-Cleanup: delete SIMD-typed CNS_INT nodes
+            if (tree->IsIntegralConst(0))
+            {
+                simd12Val = {};
+            }
+            else
+            {
+                simd12Val = tree->AsVecCon()->gtSimd12Val;
+            }
+
+            tree->gtVNPair.SetBoth(vnStore->VNForSimd12Con(simd12Val));
+            break;
+        }
+
+        case TYP_SIMD16:
+        {
+            simd16_t simd16Val;
+
+            // TODO-Cleanup: delete SIMD-typed CNS_INT nodes
+            if (tree->IsIntegralConst(0))
+            {
+                simd16Val = {};
+            }
+            else
+            {
+                simd16Val = tree->AsVecCon()->gtSimd16Val;
+            }
+
+            tree->gtVNPair.SetBoth(vnStore->VNForSimd16Con(simd16Val));
+            break;
+        }
+
+        case TYP_SIMD32:
+        {
+            simd32_t simd32Val;
+
+            // TODO-Cleanup: delete SIMD-typed CNS_INT nodes
+            if (tree->IsIntegralConst(0))
+            {
+                simd32Val = {};
+            }
+            else
+            {
+                simd32Val = tree->AsVecCon()->gtSimd32Val;
+            }
+
+            tree->gtVNPair.SetBoth(vnStore->VNForSimd32Con(simd32Val));
+            break;
+        }
 #endif // FEATURE_SIMD
 
         case TYP_FLOAT:
+        {
             tree->gtVNPair.SetBoth(vnStore->VNForFloatCon((float)tree->AsDblCon()->gtDconVal));
             break;
+        }
+
         case TYP_DOUBLE:
+        {
             tree->gtVNPair.SetBoth(vnStore->VNForDoubleCon(tree->AsDblCon()->gtDconVal));
             break;
+        }
+
         case TYP_REF:
             if (tree->AsIntConCommon()->IconValue() == 0)
             {
@@ -8380,8 +8490,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 {
                     unsigned lclNum = lclFld->GetLclNum();
 
-                    // TODO-ADDR: delete the "GetSize" check once location nodes are no more.
-                    if (!lvaInSsa(lclFld->GetLclNum()) || !lclFld->HasSsaName() || (lclFld->GetSize() == 0))
+                    if (!lvaInSsa(lclFld->GetLclNum()) || !lclFld->HasSsaName())
                     {
                         lclFld->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, lclFld->TypeGet()));
                     }
@@ -8708,17 +8817,6 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 {
                     assert(oper != GT_ASG); // We handled assignments earlier.
                     assert(GenTree::OperIsBinary(oper));
-                    // Standard binary operator.
-                    ValueNumPair op2VNPair;
-                    if (tree->AsOp()->gtOp2 == nullptr)
-                    {
-                        // Handle any GT_LEA nodes as they can have a nullptr for op2.
-                        op2VNPair.SetBoth(ValueNumStore::VNForNull());
-                    }
-                    else
-                    {
-                        op2VNPair = tree->AsOp()->gtOp2->gtVNPair;
-                    }
 
                     // Handle a few special cases: if we add a field offset constant to a PtrToXXX, we will get back a
                     // new
@@ -8730,7 +8828,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
 
                     ValueNumPair op2vnp;
                     ValueNumPair op2Xvnp;
-                    vnStore->VNPUnpackExc(op2VNPair, &op2vnp, &op2Xvnp);
+                    vnStore->VNPUnpackExc(tree->AsOp()->gtOp2->gtVNPair, &op2vnp, &op2Xvnp);
                     ValueNumPair excSetPair = vnStore->VNPExcSetUnion(op1Xvnp, op2Xvnp);
 
                     ValueNum newVN = ValueNumStore::NoVN;
@@ -9584,19 +9682,14 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
         vnpUniq.SetBoth(vnStore->VNForExpr(compCurBB, call->TypeGet()));
     }
 
-#if defined(FEATURE_READYTORUN) && (defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64))
-    if (call->IsR2RRelativeIndir())
+    if (call->GetIndirectionCellArgKind() != WellKnownArg::None)
     {
-#ifdef DEBUG
-        GenTree* indirectCellAddress = args->GetArgByIndex(0)->GetNode();
-        assert(indirectCellAddress->IsCnsIntOrI() && indirectCellAddress->GetRegNum() == REG_R2R_INDIRECT_PARAM);
-#endif // DEBUG
-
-        // For ARM indirectCellAddress is consumed by the call itself, so it should have added as an implicit argument
-        // in morph. So we do not need to use EntryPointAddrAsArg0, because arg0 is already an entry point addr.
+        // If we are VN'ing a call with indirection cell arg (e.g. because this
+        // is a helper in a R2R compilation) then morph should already have
+        // added this arg, so we do not need to use EntryPointAddrAsArg0
+        // because the indirection cell itself allows us to disambiguate.
         useEntryPointAddrAsArg0 = false;
     }
-#endif // FEATURE_READYTORUN && (TARGET_ARMARCH || TARGET_LOONGARCH64)
 
     CallArg* curArg = &*args->Args().begin();
     if (nArgs == 0)

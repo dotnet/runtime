@@ -102,7 +102,7 @@ stub_get_resume_state (const MonoJitTlsData *jit_tls, gboolean *has_resume_state
 }
 
 static gboolean
-stub_run_finally (StackFrameInfo *frame, int clause_index, gpointer handler_ip, gpointer handler_ip_end)
+stub_run_finally (StackFrameInfo *frame, int clause_index)
 {
 	g_assert_not_reached ();
 }

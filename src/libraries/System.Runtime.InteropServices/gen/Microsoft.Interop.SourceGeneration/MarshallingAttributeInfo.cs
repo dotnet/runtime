@@ -455,7 +455,7 @@ namespace Microsoft.Interop
                     }
                 }
             }
-            else if (_contextSymbol is INamedTypeSymbol _)
+            else if (_contextSymbol is INamedTypeSymbol)
             {
                 // TODO: Handle when we create a struct marshalling generator
                 // Do we want to support CountElementName pointing to only fields, or properties as well?

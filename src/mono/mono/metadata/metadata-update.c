@@ -212,3 +212,9 @@ mono_metadata_update_added_fields_iter (MonoClass *klass, gboolean lazy, gpointe
 {
 	return mono_component_hot_reload()->added_fields_iter (klass, lazy, iter);
 }
+
+uint32_t
+mono_metadata_update_get_num_fields_added (MonoClass *klass)
+{
+	return mono_component_hot_reload()->get_num_fields_added (klass);
+}

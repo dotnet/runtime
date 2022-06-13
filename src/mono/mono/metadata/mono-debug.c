@@ -491,7 +491,7 @@ mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDoma
 		}
 	}
 
-	size = ptr - oldptr;
+	size = GPTRDIFF_TO_UINT32 (ptr - oldptr);
 	g_assert (size < max_size);
 	total_size = size + sizeof (MonoDebugMethodAddress);
 

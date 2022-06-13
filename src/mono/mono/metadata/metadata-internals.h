@@ -305,6 +305,9 @@ struct _MonoImage {
 	/* Whenever this is a dynamically emitted module */
 	guint8 dynamic : 1;
 
+	/* Whenever this image is not an executable, such as .mibc */
+	guint8 not_executable : 1;
+
 	/* Whenever this image contains uncompressed metadata */
 	guint8 uncompressed_metadata : 1;
 
@@ -1069,7 +1072,7 @@ MonoWrapperCaches*
 mono_method_get_wrapper_cache (MonoMethod *method);
 
 MonoType*
-mono_metadata_parse_type_checked (MonoImage *m, MonoGenericContainer *container, short opt_attrs, gboolean transient, const char *ptr, const char **rptr, MonoError *error);
+mono_metadata_parse_type_checked (MonoImage *m, MonoGenericContainer *container, guint32 opt_attrs, gboolean transient, const char *ptr, const char **rptr, MonoError *error);
 
 MonoGenericContainer *
 mono_get_anonymous_container_for_image (MonoImage *image, gboolean is_mvar);

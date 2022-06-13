@@ -74,7 +74,7 @@ decompose_long_opcode (MonoCompile *cfg, MonoInst *ins, MonoInst **repl_ins)
 		NULLIFY_INS (ins);
 		break;
 	case OP_LADD_OVF: {
-		int opcode;
+		guint16 opcode;
 
 		if (COMPILE_LLVM (cfg))
 			break;
@@ -88,7 +88,7 @@ decompose_long_opcode (MonoCompile *cfg, MonoInst *ins, MonoInst **repl_ins)
 		break;
 	}
 	case OP_LADD_OVF_UN: {
-		int opcode;
+		guint16 opcode;
 
 		if (COMPILE_LLVM (cfg))
 			break;
@@ -101,9 +101,9 @@ decompose_long_opcode (MonoCompile *cfg, MonoInst *ins, MonoInst **repl_ins)
 		NULLIFY_INS (ins);
 		break;
 	}
-#ifndef __mono_ppc64__
+#ifndef TARGET_POWERPC64
 	case OP_LSUB_OVF: {
-		int opcode;
+		guint16 opcode;
 
 		if (COMPILE_LLVM (cfg))
 			break;
@@ -117,7 +117,7 @@ decompose_long_opcode (MonoCompile *cfg, MonoInst *ins, MonoInst **repl_ins)
 		break;
 	}
 	case OP_LSUB_OVF_UN: {
-		int opcode;
+		guint16 opcode;
 
 		if (COMPILE_LLVM (cfg))
 			break;
@@ -306,7 +306,7 @@ MonoInst*
 mono_decompose_opcode (MonoCompile *cfg, MonoInst *ins)
 {
 	MonoInst *repl = NULL;
-	int type = ins->type;
+	guint8 type = ins->type;
 	int dreg = ins->dreg;
 	gboolean emulate = FALSE;
 

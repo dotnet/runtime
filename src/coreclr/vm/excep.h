@@ -146,7 +146,6 @@ BOOL IsCOMPlusExceptionHandlerInstalled();
 #endif
 
 BOOL InstallUnhandledExceptionFilter();
-void UninstallUnhandledExceptionFilter();
 
 #if !defined(TARGET_UNIX)
 // Section naming is a strategy by itself. Ideally, we could have named the UEF section

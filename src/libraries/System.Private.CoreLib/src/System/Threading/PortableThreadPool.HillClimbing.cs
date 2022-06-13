@@ -72,7 +72,7 @@ namespace System.Threading
             private readonly double[] _threadCounts;
             private int _currentSampleMs;
 
-            private readonly Random _randomIntervalGenerator = new Random();
+            private readonly Random.XoshiroImpl _randomIntervalGenerator = new Random.XoshiroImpl();
 
             private readonly LogEntry[] _log = new LogEntry[LogCapacity]; // SOS's ThreadPool command depends on this name
             private int _logStart; // SOS's ThreadPool command depends on this name

@@ -344,6 +344,8 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         factory.MetadataManager.NoteOverridingMethod(decl, impl);
                     }
+
+                    factory.MetadataManager.GetDependenciesForOverridingMethod(ref result, factory, decl, impl);
                 }
 
                 Debug.Assert(
@@ -389,6 +391,8 @@ namespace ILCompiler.DependencyAnalysis
                             }
 
                             factory.MetadataManager.NoteOverridingMethod(interfaceMethod, implMethod);
+
+                            factory.MetadataManager.GetDependenciesForOverridingMethod(ref result, factory, interfaceMethod, implMethod);
                         }
                         else
                         {
@@ -414,6 +418,8 @@ namespace ILCompiler.DependencyAnalysis
                                 result.Add(new CombinedDependencyListEntry(factory.MethodEntrypoint(defaultIntfMethod), factory.VirtualMethodUse(interfaceMethod), "Interface method"));
 
                                 factory.MetadataManager.NoteOverridingMethod(interfaceMethod, implMethod);
+
+                                factory.MetadataManager.GetDependenciesForOverridingMethod(ref result, factory, interfaceMethod, implMethod);
                             }
                         }
                     }

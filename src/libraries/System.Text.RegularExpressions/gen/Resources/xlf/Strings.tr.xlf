@@ -92,11 +92,6 @@
         <target state="translated">Yetersiz sayıda onaltılık basamak.</target>
         <note />
       </trans-unit>
-      <trans-unit id="InternalError_ScanRegex">
-        <source>Internal error in ScanRegex.</source>
-        <target state="translated">ScanRegex iç hatası.</target>
-        <note>{Locked="ScanRegex"}</note>
-      </trans-unit>
       <trans-unit id="InvalidGroupingConstruct">
         <source>Unrecognized grouping construct.</source>
         <target state="translated">Tanınmayan gruplama yapısı.</target>
@@ -212,11 +207,6 @@
         <target state="translated">RegexGenerator yöntemi kısmi, parametresiz, genel olmayan, soyut olmayan özellikler taşımalıdır ve Normal ifade döndürmelidir</target>
         <note />
       </trans-unit>
-      <trans-unit id="ReplacementError">
-        <source>Replacement pattern error.</source>
-        <target state="translated">Değiştirme deseni hatası.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="ReversedCharacterRange">
         <source>[x-y] range in reverse order.</source>
         <target state="translated">[x-y] aralığı ters sırada.</target>
@@ -274,12 +264,12 @@
       </trans-unit>
       <trans-unit id="UseRegexSourceGeneratorMessage">
         <source>Use 'RegexGeneratorAttribute' to generate the regular expression implementation at compile-time.</source>
-        <target state="new">Use 'RegexGeneratorAttribute' to generate the regular expression implementation at compile-time.</target>
+        <target state="translated">Derleme zamanında normal ifade uygulamasını oluşturmak için “RegexGeneratorAttribute” kullanın.</target>
         <note />
       </trans-unit>
       <trans-unit id="UseRegexSourceGeneratorTitle">
         <source>Convert to 'RegexGenerator'.</source>
-        <target state="new">Convert to 'RegexGenerator'.</target>
+        <target state="translated">“RegexGenerator”a dönüştürün.</target>
         <note />
       </trans-unit>
     </body>

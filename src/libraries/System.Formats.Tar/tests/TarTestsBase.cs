@@ -99,15 +99,8 @@ namespace System.Formats.Tar.Tests
         protected static MemoryStream GetTarMemoryStream(CompressionMethod compressionMethod, TestTarFormat format, string testCaseName)
         {
             string path = GetTarFilePath(compressionMethod, format, testCaseName);
-            FileStreamOptions options = new()
-            {
-                Access = FileAccess.Read,
-                Mode = FileMode.Open,
-                Share = FileShare.Read
-
-            };
             MemoryStream ms = new();
-            using (FileStream fs = new FileStream(path, options))
+            using (FileStream fs = File.OpenRead(path))
             {
                 fs.CopyTo(ms);
             }

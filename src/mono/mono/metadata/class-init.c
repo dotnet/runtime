@@ -618,7 +618,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 		g_assert(icount <= 65535);
 
 		klass->interfaces = interfaces;
-		klass->interface_count = icount;
+		klass->interface_count = GUINT_TO_UINT16 (icount);
 		klass->interfaces_inited = 1;
 	}
 
@@ -1103,7 +1103,7 @@ mono_class_create_bounded_array (MonoClass *eclass, guint32 rank, gboolean bound
 	klass->type_token = 0;
 	klass->parent = parent;
 	klass->instance_size = mono_class_instance_size (klass->parent);
-	klass->rank = rank;
+	klass->rank = GUINT32_TO_UINT8 (rank);
 	klass->element_class = eclass;
 
 	if (m_class_get_byval_arg (eclass)->type == MONO_TYPE_TYPEDBYREF) {
@@ -1151,7 +1151,7 @@ mono_class_create_bounded_array (MonoClass *eclass, guint32 rank, gboolean bound
 		klass->_byval_arg.type = MONO_TYPE_ARRAY;
 		klass->_byval_arg.data.array = at;
 		at->eklass = eclass;
-		at->rank = rank;
+		at->rank = GUINT32_TO_UINT8 (rank);
 		/* FIXME: complete.... */
 	} else {
 		klass->_byval_arg.type = MONO_TYPE_SZARRAY;
@@ -1313,7 +1313,7 @@ make_generic_param_class (MonoGenericParam *param)
 	}
 
 	if (count - pos > 0) {
-		klass->interface_count = count - pos;
+		klass->interface_count = GINT_TO_UINT16 (count - pos);
 		CHECKED_METADATA_WRITE_PTR_LOCAL ( klass->interfaces , (MonoClass **)mono_image_alloc0 (image, sizeof (MonoClass *) * (count - pos)) );
 		klass->interfaces_inited = TRUE;
 		for (i = pos; i < count; i++)
@@ -1346,7 +1346,7 @@ make_generic_param_class (MonoGenericParam *param)
 	 * constrained to, the JIT depends on this.
 	 */
 	klass->instance_size = MONO_ABI_SIZEOF (MonoObject) + mono_type_size (m_class_get_byval_arg (klass), &min_align);
-	klass->min_align = min_align;
+	klass->min_align = GINT_TO_UINT8 (min_align);
 	mono_memory_barrier ();
 	klass->size_inited = 1;
 
@@ -1589,7 +1589,7 @@ int
 mono_class_setup_count_virtual_methods (MonoClass *klass)
 {
 	int i, mcount, vcount = 0;
-	guint32 flags;
+	guint16 flags;
 	klass = mono_class_get_generic_type_definition (klass); /*We can find this information by looking at the GTD*/
 
 	if (klass->methods || !MONO_CLASS_HAS_STATIC_METADATA (klass)) {
@@ -1610,7 +1610,7 @@ mono_class_setup_count_virtual_methods (MonoClass *klass)
 		int first_idx = mono_class_get_first_method_idx (klass);
 		mcount = mono_class_get_method_count (klass);
 		for (i = 0; i < mcount; ++i) {
-			flags = mono_metadata_decode_table_row_col (klass->image, MONO_TABLE_METHOD, first_idx + i, MONO_METHOD_FLAGS);
+			flags = GUINT32_TO_UINT16 (mono_metadata_decode_table_row_col (klass->image, MONO_TABLE_METHOD, first_idx + i, MONO_METHOD_FLAGS));
 
 			if ((flags & METHOD_ATTRIBUTE_VIRTUAL)) {
 				if (method_is_reabstracted (flags))
@@ -1751,7 +1751,7 @@ init_sizes_with_info (MonoClass *klass, MonoCachedClassInfo *cached_info)
 		klass->instance_size = cached_info->instance_size;
 		klass->sizes.class_size = cached_info->class_size;
 		klass->packing_size = cached_info->packing_size;
-		klass->min_align = cached_info->min_align;
+		klass->min_align = GUINT32_TO_UINT8 (cached_info->min_align);
 		klass->blittable = cached_info->blittable;
 		klass->has_references = cached_info->has_references;
 		klass->has_static_refs = cached_info->has_static_refs;
@@ -2382,7 +2382,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 	klass->has_references = has_references;
 	klass->has_ref_fields = has_ref_fields;
 	klass->packing_size = packing_size;
-	klass->min_align = min_align;
+	klass->min_align = GINT_TO_UINT8 (min_align);
 	klass->any_field_has_auto_layout = any_field_has_auto_layout;
 	for (i = 0; i < top; ++i) {
 		field = &klass->fields [i];
@@ -3920,7 +3920,7 @@ mono_class_setup_interfaces (MonoClass *klass, MonoError *error)
 
 	mono_loader_lock ();
 	if (!klass->interfaces_inited) {
-		klass->interface_count = interface_count;
+		klass->interface_count = GINT_TO_UINT16 (interface_count);
 		klass->interfaces = interfaces;
 
 		mono_memory_barrier ();
@@ -4009,7 +4009,7 @@ mono_class_setup_has_finalizer (MonoClass *klass)
 void
 mono_class_setup_supertypes (MonoClass *klass)
 {
-	int ms, idepth;
+	guint16 ms, idepth;
 	MonoClass **supertypes;
 
 	mono_atomic_load_acquire (supertypes, MonoClass **, &klass->supertypes);

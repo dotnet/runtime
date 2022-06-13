@@ -1014,7 +1014,7 @@ namespace System.Xml
 
             return _node.IsNamespaceUri(namespaceUri);
         }
-        public override sealed bool IsStartElement()
+        public sealed override bool IsStartElement()
         {
             XmlNodeType nodeType = _node.NodeType;
             if (nodeType == XmlNodeType.Element)

@@ -78,7 +78,7 @@ Sometimes it's handy to be able to rebuild the managed test manually or run the 
 For more advanced scenarios, look for at [Building Test Subsets](../../testing/coreclr/windows-test-instructions.md#building-test-subsets) and [Generating Core_Root](../../testing/coreclr/windows-test-instructions.md#generating-core_root)
 
 ### Running library tests
-Build library tests by passing the `libs.tests` subset together with the `/p:TestNativeAot=true` to build the libraries, i.e. `clr.alljits+clr.tools+clr.nativeaotlibs+clr.nativeaotruntime+libs+libs.tests /p:TestNativeAot=true` together with the full arguments as specified [above](#building). Then, to run a specific library, go to the tests directory of the library and run the usual command to run tests for the library (see [Running tests for a single library](../../testing/libraries/testing.md#running-tests-for-a-single-library)) but add the `/p:TestNativeAot=true`, i.e. `dotnet.cmd build /t:Test /p:TestNativeAot=true`.
+Build library tests by passing the `libs.tests` subset together with the `/p:TestNativeAot=true` to build the libraries, i.e. `clr.alljits+clr.tools+clr.nativeaotlibs+clr.nativeaotruntime+libs+libs.tests /p:TestNativeAot=true` together with the full arguments as specified [above](#building). Then, to run a specific library, go to the tests directory of the library and run the usual command to run tests for the library (see [Running tests for a single library](../../testing/libraries/testing.md#running-tests-for-a-single-library)) but add the `/p:TestNativeAot=true` and the build configuration that was used, i.e. `dotnet.cmd build /t:Test /p:TestNativeAot=true -c Release`.
 
 ## Design Documentation
 

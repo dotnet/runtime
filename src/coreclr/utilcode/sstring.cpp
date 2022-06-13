@@ -2016,16 +2016,6 @@ void SString::VPrintf(const CHAR *format, va_list args)
 
 void SString::Printf(const WCHAR *format, ...)
 {
-    WRAPPER_NO_CONTRACT;
-
-    va_list args;
-    va_start(args, format);
-    VPrintf(format, args);
-    va_end(args);
-}
-
-void SString::VPrintf(const WCHAR *format, va_list args)
-{
     CONTRACT_VOID
     {
         INSTANCE_CHECK;
@@ -2035,16 +2025,16 @@ void SString::VPrintf(const WCHAR *format, va_list args)
     }
     CONTRACT_END;
 
-    va_list ap;
     // sprintf gives us no means to know how many characters are written
     // other than guessing and trying
 
     if (GetRawCount() > 0)
     {
         // First, try to use the existing buffer
-        va_copy(ap, args);
-        int result = _vsnwprintf_s(GetRawUnicode(), GetRawCount()+1, _TRUNCATE, format, ap);
-        va_end(ap);
+        va_list args;
+        va_start(args, format);
+        int result = _vsnwprintf_s(GetRawUnicode(), GetRawCount()+1, _TRUNCATE, format, args);
+        va_end(args);
 
         if (result >= 0)
         {
@@ -2073,9 +2063,10 @@ void SString::VPrintf(const WCHAR *format, va_list args)
         // Clear errno to avoid false alarms
         errno = 0;
 
-        va_copy(ap, args);
-        int result = _vsnwprintf_s(GetRawUnicode(), GetRawCount()+1, _TRUNCATE, format, ap);
-        va_end(ap);
+        va_list args;
+        va_start(args, format);
+        int result = _vsnwprintf_s(GetRawUnicode(), GetRawCount()+1, _TRUNCATE, format, args);
+        va_end(args);
 
         if (result >= 0)
         {
@@ -2110,25 +2101,6 @@ void SString::AppendPrintf(const CHAR *format, ...)
 }
 
 void SString::AppendVPrintf(const CHAR *format, va_list args)
-{
-    WRAPPER_NO_CONTRACT;
-
-    StackSString s;
-    s.VPrintf(format, args);
-    Append(s);
-}
-
-void SString::AppendPrintf(const WCHAR *format, ...)
-{
-    WRAPPER_NO_CONTRACT;
-
-    va_list args;
-    va_start(args, format);
-    AppendVPrintf(format, args);
-    va_end(args);
-}
-
-void SString::AppendVPrintf(const WCHAR *format, va_list args)
 {
     WRAPPER_NO_CONTRACT;
 

@@ -753,7 +753,24 @@ void CodeGen::genCodeForBBlist()
                 break;
 
             case BBJ_ALWAYS:
-                inst_JMP(EJ_jmp, block->bbJumpDest);
+                inst_JMP(EJ_jmp, block->bbJumpDest
+#ifdef TARGET_AMD64
+                         // AMD64 requires an instruction after a call instruction for unwinding
+                         // inside an EH region so if the last instruction generated was a call instruction
+                         // do not allow this jump to be marked for possible later removal.
+                         //
+                         // If a block was selected to place an alignment instruction because it ended
+                         // with a jump, do not remove jumps from such blocks.
+                         ,
+                         /* isRemovableJmpCandidate */ !GetEmitter()->emitIsLastInsCall() && !block->hasAlign()
+#else
+#ifdef TARGET_XARCH
+                         ,
+                         /* isRemovableJmpCandidate */ !block->hasAlign()
+#endif
+
+#endif
+                             );
                 FALLTHROUGH;
 
             case BBJ_COND:
@@ -1660,7 +1677,7 @@ void CodeGen::genConsumeRegs(GenTree* tree)
 #ifdef FEATURE_SIMD
             // (In)Equality operation that produces bool result, when compared
             // against Vector zero, marks its Vector Zero operand as contained.
-            assert(tree->OperIsLeaf() || tree->IsSIMDZero() || tree->IsVectorZero());
+            assert(tree->OperIsLeaf() || tree->IsVectorZero());
 #else
             assert(tree->OperIsLeaf());
 #endif

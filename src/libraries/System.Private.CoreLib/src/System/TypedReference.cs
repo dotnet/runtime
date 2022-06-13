@@ -75,14 +75,6 @@ namespace System
             throw new NotSupportedException(SR.NotSupported_NYI);
         }
 
-        public static unsafe object ToObject(TypedReference value)
-        {
-            return InternalToObject(&value);
-        }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe object InternalToObject(void* value);
-
         internal bool IsNull => Unsafe.IsNullRef(ref _value.Value) && _type == IntPtr.Zero;
 
         public static Type GetTargetType(TypedReference value)

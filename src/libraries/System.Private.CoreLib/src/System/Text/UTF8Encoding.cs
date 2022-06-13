@@ -761,8 +761,20 @@ namespace System.Text
                 throw new ArgumentOutOfRangeException(nameof(charCount),
                      SR.ArgumentOutOfRange_NeedNonNegNum);
 
-            // Characters would be # of characters + 1 in case left over high surrogate is ? * max fallback
-            long byteCount = (long)charCount + 1;
+            // GetMaxByteCount assumes that the caller might have a stateful Encoder instance. If the
+            // Encoder instance already has a captured high surrogate, then one of two things will
+            // happen:
+            //
+            // - The next char is a low surrogate, at which point the two chars together result in 4
+            //   UTF-8 bytes in the output; or
+            // - The next char is not a low surrogate (or the input reaches EOF), at which point the
+            //   standalone captured surrogate will go through the fallback routine.
+            //
+            // The second case is the worst-case scenario for expansion, so it's what we use for any
+            // pessimistic "max byte count" calculation: assume there's a captured surrogate and that
+            // it must fall back.
+
+            long byteCount = (long)charCount + 1; // +1 to account for captured surrogate, per above
 
             if (EncoderFallback.MaxCharCount > 1)
                 byteCount *= EncoderFallback.MaxCharCount;
@@ -782,8 +794,23 @@ namespace System.Text
                 throw new ArgumentOutOfRangeException(nameof(byteCount),
                      SR.ArgumentOutOfRange_NeedNonNegNum);
 
-            // Figure out our length, 1 char per input byte + 1 char if 1st byte is last byte of 4 byte surrogate pair
-            long charCount = ((long)byteCount + 1);
+            // GetMaxCharCount assumes that the caller might have a stateful Decoder instance. If the
+            // Decoder instance already has a captured partial UTF-8 subsequence, then one of two
+            // thngs will happen:
+            //
+            // - The next byte(s) won't complete the subsequence but will instead be consumed into
+            //   the Decoder's internal state, resulting in no character output; or
+            // - The next byte(s) will complete the subsequence, and the previously captured
+            //   subsequence and the next byte(s) will result in 1 - 2 chars output; or
+            // - The captured subsequence will be treated as a singular ill-formed subsequence, at
+            //   which point the captured subsequence will go through the fallback routine.
+            //   (See The Unicode Standard, Sec. 3.9 for more information on this.)
+            //
+            // The third case is the worst-case scenario for expansion, since it means 0 bytes of
+            // new input could cause any existing captured state to expand via fallback. So it's
+            // what we'll use for any pessimistic "max char count" calculation.
+
+            long charCount = ((long)byteCount + 1); // +1 to account for captured subsequence, as above
 
             // Non-shortest form would fall back, so get max count from fallback.
             // So would 11... followed by 11..., so you could fall back every byte

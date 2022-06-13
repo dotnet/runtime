@@ -32,7 +32,9 @@ namespace System.Security.Cryptography
                 ReadOnlySpan<byte> source,
                 Span<byte> destination)
             {
-                throw new PlatformNotSupportedException(SR.SystemSecurityCryptography_PlatformNotSupported);
+                HashProvider provider = CreateMacProvider(hashAlgorithmId, key);
+                provider.AppendHashData(source);
+                return provider.FinalizeHashAndReset(destination);
             }
 
             public static int HashData(string hashAlgorithmId, ReadOnlySpan<byte> source, Span<byte> destination)
@@ -45,7 +47,15 @@ namespace System.Security.Cryptography
 
         public static unsafe HashProvider CreateMacProvider(string hashAlgorithmId, ReadOnlySpan<byte> key)
         {
-            throw new PlatformNotSupportedException(SR.SystemSecurityCryptography_PlatformNotSupported);
+            switch (hashAlgorithmId)
+            {
+                case HashAlgorithmNames.SHA1:
+                case HashAlgorithmNames.SHA256:
+                case HashAlgorithmNames.SHA384:
+                case HashAlgorithmNames.SHA512:
+                    return new HMACManagedHashProvider(hashAlgorithmId, key);
+            }
+            throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmId));
         }
     }
 }

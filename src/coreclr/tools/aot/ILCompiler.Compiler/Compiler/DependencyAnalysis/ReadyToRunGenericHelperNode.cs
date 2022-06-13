@@ -215,6 +215,12 @@ namespace ILCompiler.DependencyAnalysis
                 dependencies.Add(new DependencyListEntry(dependency, "GenericLookupResultDependency"));
             }
 
+            if (_id == ReadyToRunHelperId.DelegateCtor)
+            {
+                MethodDesc targetMethod = ((DelegateCreationInfo)_target).PossiblyUnresolvedTargetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                factory.MetadataManager.GetDependenciesDueToDelegateCreation(ref dependencies, factory, targetMethod);
+            }
+
             return dependencies;
         }
 

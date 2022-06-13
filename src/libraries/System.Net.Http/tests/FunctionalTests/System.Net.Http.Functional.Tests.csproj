@@ -345,6 +345,7 @@
     <Compile Include="HPackTest.cs" />
     <Compile Include="HttpClientHandlerTest.Http1.cs" />
     <Compile Include="HttpClientHandlerTest.Http2.cs" />
+    <Compile Include="HttpClientHandlerTest.Url.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.AcceptAllCerts.cs"
              Link="Common\System\Net\Http\HttpClientHandlerTest.AcceptAllCerts.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.Decompression.cs"

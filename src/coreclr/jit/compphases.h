@@ -55,6 +55,7 @@ CompPhaseNameMacro(PHASE_CREATE_FUNCLETS,        "Create EH funclets",          
 #endif // FEATURE_EH_FUNCLETS
 CompPhaseNameMacro(PHASE_MERGE_THROWS,           "Merge throw blocks",             "MRGTHROW", false, -1, false)
 CompPhaseNameMacro(PHASE_INVERT_LOOPS,           "Invert loops",                   "LOOP-INV", false, -1, false)
+CompPhaseNameMacro(PHASE_OPTIMIZE_FLOW,          "Optimize control flow",          "OPT-FLOW", false, -1, false)
 CompPhaseNameMacro(PHASE_OPTIMIZE_LAYOUT,        "Optimize layout",                "LAYOUT",   false, -1, false)
 CompPhaseNameMacro(PHASE_COMPUTE_REACHABILITY,   "Compute blocks reachability",    "BL_REACH", false, -1, false)
 CompPhaseNameMacro(PHASE_SET_BLOCK_WEIGHTS,      "Set block weights",              "BL-WEIGHTS", false, -1, false)

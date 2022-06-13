@@ -2489,8 +2489,6 @@ public:
     //****************************************************************************************
     // Methods used to get the callers module and hence assembly and app domain.
 
-    static MethodDesc* GetCallersMethod(StackCrawlMark* stackMark);
-    static MethodTable* GetCallersType(StackCrawlMark* stackMark);
     static Module* GetCallersModule(StackCrawlMark* stackMark);
     static Assembly* GetCallersAssembly(StackCrawlMark* stackMark);
 
@@ -2650,8 +2648,6 @@ private:
     static CrstStatic       m_SystemDomainCrst;
 
     static GlobalStringLiteralMap *m_pGlobalStringLiteralMap;
-
-    static DWORD        m_dwLowestFreeIndex;
 #endif // DACCESS_COMPILE
 
 public:

@@ -1864,7 +1864,7 @@ namespace Internal.JitInterface
                 }
                 else
                 {
-                    *pCookieVal = (IntPtr)0x216D6F6D202C6948;
+                    *pCookieVal = unchecked((IntPtr)0x216D6F6D202C6948);
                 }
                 *ppCookieVal = null;
             }
@@ -1977,6 +1977,10 @@ namespace Internal.JitInterface
         private void setEHinfo(uint EHnumber, ref CORINFO_EH_CLAUSE clause)
         {
             _ehClauses[EHnumber] = clause;
+        }
+
+        private void beginInlining(CORINFO_METHOD_STRUCT_* inlinerHnd, CORINFO_METHOD_STRUCT_* inlineeHnd)
+        {
         }
 
         private void reportInliningDecision(CORINFO_METHOD_STRUCT_* inlinerHnd, CORINFO_METHOD_STRUCT_* inlineeHnd, CorInfoInline inlineResult, byte* reason)

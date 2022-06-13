@@ -151,16 +151,16 @@ namespace System.Net.Http.Headers
 
         public override string ToString()
         {
-            StringBuilder sb = StringBuilderCache.Acquire();
+            var sb = new ValueStringBuilder(stackalloc char[256]);
             sb.Append(_unit);
             sb.Append(' ');
 
             if (HasRange)
             {
-                sb.Append(_from!.Value);
+                sb.AppendSpanFormattable(_from!.Value);
                 sb.Append('-');
                 Debug.Assert(_to.HasValue);
-                sb.Append(_to.Value);
+                sb.AppendSpanFormattable(_to.Value);
             }
             else
             {
@@ -170,14 +170,14 @@ namespace System.Net.Http.Headers
             sb.Append('/');
             if (HasLength)
             {
-                sb.Append(_length!.Value);
+                sb.AppendSpanFormattable(_length!.Value);
             }
             else
             {
                 sb.Append('*');
             }
 
-            return StringBuilderCache.GetStringAndRelease(sb);
+            return sb.ToString();
         }
 
         public static ContentRangeHeaderValue Parse(string? input)

@@ -147,6 +147,7 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_CNS_INT:
         case GT_CNS_LNG:
         case GT_CNS_DBL:
+        case GT_CNS_VEC:
         {
             srcCount = 0;
             assert(dstCount == 1);
@@ -1560,21 +1561,31 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* putArgStk)
         return BuildOperandUses(src);
     }
 
-    ssize_t size = putArgStk->GetStackByteSize();
+    unsigned loadSize = putArgStk->GetArgLoadSize();
     switch (putArgStk->gtPutArgStkKind)
     {
         case GenTreePutArgStk::Kind::Unroll:
             // If we have a remainder smaller than XMM_REGSIZE_BYTES, we need an integer temp reg.
-            if ((size % XMM_REGSIZE_BYTES) != 0)
+            if ((loadSize % XMM_REGSIZE_BYTES) != 0)
             {
                 regMaskTP regMask = allRegs(TYP_INT);
+#ifdef TARGET_X86
+                // Storing at byte granularity requires a byteable register.
+                if ((loadSize & 1) != 0)
+                {
+                    regMask &= allByteRegs();
+                }
+#endif // TARGET_X86
                 buildInternalIntRegisterDefForNode(putArgStk, regMask);
             }
 
-            if (size >= XMM_REGSIZE_BYTES)
+#ifdef TARGET_X86
+            if (loadSize >= 8)
+#else
+            if (loadSize >= XMM_REGSIZE_BYTES)
+#endif
             {
-                // If we have a buffer larger than or equal to XMM_REGSIZE_BYTES, reserve
-                // an XMM register to use it for a series of 16-byte loads and stores.
+                // See "genStructPutArgUnroll" -- we will use this XMM register for wide stores.
                 buildInternalFloatRegisterDefForNode(putArgStk, internalFloatRegCandidates());
                 SetContainsAVXFlags();
             }

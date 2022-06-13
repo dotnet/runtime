@@ -149,7 +149,7 @@ namespace System.Xml.Schema
                     {
                         SchemaInfo inlineSchemaInfo = new SchemaInfo();
                         inlineSchemaInfo.SchemaType = SchemaType.XSD;
-                        inlineNS = schema.TargetNamespace == null ? string.Empty : schema.TargetNamespace;
+                        inlineNS = schema.TargetNamespace ?? string.Empty;
                         if (!SchemaInfo!.TargetNamespaces.ContainsKey(inlineNS))
                         {
                             if (SchemaCollection!.Add(inlineNS, inlineSchemaInfo, schema, true) != null)
