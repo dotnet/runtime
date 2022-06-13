@@ -712,8 +712,8 @@ bool Compiler::fgIsBlockCold(BasicBlock* blk)
 }
 
 //------------------------------------------------------------------------
-// fgIsSafeToRemoveCastOnAssignment: Determine whether "tree" is an assignment whose
-//                                   right-hand side is a cast that can be removed.
+// fgIsSafeToRemoveIntToIntCastOnAssignment: Determine whether "tree" is an assignment whose
+//                                           right-hand side is a cast that can be removed.
 //
 // Arguments:
 //    tree - The tree node under consideration
@@ -721,12 +721,14 @@ bool Compiler::fgIsBlockCold(BasicBlock* blk)
 // Return Value:
 //    Returns true if the cast can be safely removed.
 //
-bool Compiler::fgIsSafeToRemoveCastOnAssignment(GenTree* tree)
+bool Compiler::fgIsSafeToRemoveIntToIntCastOnAssignment(GenTree* tree)
 {
     assert(tree->OperIs(GT_ASG));
 
     GenTree* const op1 = tree->gtGetOp1();
     GenTree* const op2 = tree->gtGetOp2();
+
+    assert(op2->OperIs(GT_CAST));
 
     GenTree* const effectiveOp1 = op1->gtEffectiveVal();
 
@@ -735,13 +737,6 @@ bool Compiler::fgIsSafeToRemoveCastOnAssignment(GenTree* tree)
 
     if (effectiveOp1->OperIs(GT_LCL_VAR) &&
         !lvaGetDesc(effectiveOp1->AsLclVarCommon()->GetLclNum())->lvNormalizeOnLoad())
-        return false;
-
-    // If we are storing a small type, we might be able to omit a cast.
-    if (!varTypeIsSmall(effectiveOp1))
-        return false;
-
-    if (!op2->OperIs(GT_CAST))
         return false;
 
     if (op2->gtOverflow())
@@ -754,7 +749,7 @@ bool Compiler::fgIsSafeToRemoveCastOnAssignment(GenTree* tree)
     var_types    castToType   = cast->CastToType();
     var_types    castFromType = cast->CastFromType();
 
-    if (!varTypeIsIntegral(effectiveOp1))
+    if (gtIsActiveCSE_Candidate(cast->CastOp()))
         return false;
 
     if (!varTypeIsIntegral(castToType))
@@ -763,22 +758,14 @@ bool Compiler::fgIsSafeToRemoveCastOnAssignment(GenTree* tree)
     if (!varTypeIsIntegral(castFromType))
         return false;
 
+    if (!varTypeIsIntegral(effectiveOp1))
+        return false;
+
     // If we are performing a narrowing cast and
     // castType is larger or the same as op1's type
     // then we can discard the cast.
 
-    if (!varTypeIsSmall(castToType))
-        return false;
-
     if (genTypeSize(castToType) < genTypeSize(effectiveOp1))
-        return false;
-
-    // The VM types must be the same.
-
-    if (genActualType(castToType) != genActualType(effectiveOp1))
-        return false;
-
-    if (genActualType(castToType) != genActualType(castFromType))
         return false;
 
     return true;

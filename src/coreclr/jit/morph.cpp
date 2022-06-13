@@ -11214,9 +11214,14 @@ DONE_MORPHING_CHILDREN:
                 lclVarTree->gtFlags |= GTF_VAR_DEF;
             }
 
-            if (fgIsSafeToRemoveCastOnAssignment(tree))
+            if (op2->OperIs(GT_CAST))
             {
-                tree->AsOp()->gtOp2 = op2 = op2->AsCast()->CastOp();
+                tree = fgOptimizeCastOnAssignment(tree->AsOp());
+
+                assert(tree->OperIs(GT_ASG));
+
+                op1 = tree->gtGetOp1();
+                op2 = tree->gtGetOp2();
             }
 
             fgAssignSetVarDef(tree);
@@ -12181,6 +12186,74 @@ GenTree* Compiler::fgOptimizeCast(GenTreeCast* cast)
     }
 
     return cast;
+}
+
+//------------------------------------------------------------------------
+// fgOptimizeCastOnAssignment: Optimizes the supplied GT_ASG tree with a GT_CAST node.
+//
+// Arguments:
+//    tree - the cast tree to optimize
+//
+// Return Value:
+//    The optimized tree (that can have any shape).
+//
+GenTree* Compiler::fgOptimizeCastOnAssignment(GenTreeOp* asg)
+{
+    assert(asg->OperIs(GT_ASG));
+    assert(asg->gtGetOp2()->OperIs(GT_CAST));
+
+    if (fgIsSafeToRemoveIntToIntCastOnAssignment(asg))
+    {
+        var_types castToType = asg->gtGetOp2()->AsCast()->CastToType();
+
+        // Removes the cast.
+        asg->AsOp()->gtOp2 = asg->gtGetOp2()->AsCast()->CastOp();
+
+        GenTree* effectiveOp2 = asg->gtGetOp2()->gtEffectiveVal();
+
+        // Normalizes the constant value.
+        if (effectiveOp2->IsIntegralConst())
+        {
+            GenTreeIntConCommon* effectiveConOp2 = effectiveOp2->AsIntConCommon();
+
+            ssize_t iconValue = effectiveConOp2->IconValue();
+            switch (castToType)
+            {
+                case TYP_UBYTE:
+                    iconValue = UINT8(iconValue);
+                    break;
+                case TYP_BYTE:
+                    iconValue = INT8(iconValue);
+                    break;
+                case TYP_USHORT:
+                    iconValue = UINT16(iconValue);
+                    break;
+                case TYP_SHORT:
+                    iconValue = INT16(iconValue);
+                    break;
+                case TYP_INT:
+                    iconValue = INT32(iconValue);
+                    break;
+                case TYP_UINT:
+                    iconValue = UINT32(iconValue);
+                    break;
+                case TYP_ULONG:
+                    iconValue = UINT64(iconValue);
+                    break;
+                case TYP_LONG:
+                    iconValue = INT64(iconValue);
+                    break;
+
+                default:
+                    unreached();
+            }
+
+            asg->gtGetOp2()->ChangeType(castToType);
+            effectiveConOp2->SetIconValue(iconValue);
+        }
+    }
+
+    return asg;
 }
 
 //------------------------------------------------------------------------

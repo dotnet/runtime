@@ -5587,7 +5587,7 @@ private:
     void fgMoveOpsLeft(GenTree* tree);
 #endif
 
-    bool fgIsSafeToRemoveCastOnAssignment(GenTree* tree);
+    bool fgIsSafeToRemoveIntToIntCastOnAssignment(GenTree* tree);
 
     bool fgIsCommaThrow(GenTree* tree, bool forFolding = false);
 
@@ -5719,6 +5719,7 @@ private:
     GenTree* fgMorphForRegisterFP(GenTree* tree);
     GenTree* fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac = nullptr);
     GenTree* fgOptimizeCast(GenTreeCast* cast);
+    GenTree* fgOptimizeCastOnAssignment(GenTreeOp* asg);
     GenTree* fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp);
     GenTree* fgOptimizeRelationalComparisonWithConst(GenTreeOp* cmp);
 #ifdef FEATURE_HW_INTRINSICS
