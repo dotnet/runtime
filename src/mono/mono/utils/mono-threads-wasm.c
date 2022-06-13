@@ -229,13 +229,14 @@ mono_thread_platform_create_thread (MonoThreadStart thread_fn, gpointer thread_d
 	pthread_attr_t attr;
 	pthread_t thread;
 	gint res;
-	gsize set_stack_size;
 
 	res = pthread_attr_init (&attr);
 	if (res != 0)
 		g_error ("%s: pthread_attr_init failed, error: \"%s\" (%d)", __func__, g_strerror (res), res);
 
 #if 0
+	gsize set_stack_size;
+
 	if (stack_size)
 		set_stack_size = *stack_size;
 	else

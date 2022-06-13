@@ -7,6 +7,7 @@ parameters:
   platforms: []
   runSmokeOnlyArg: ''
   scenarios: ['normal']
+  shouldContinueOnError: false
 
 jobs:
 
@@ -20,6 +21,7 @@ jobs:
     buildConfig: Release
     runtimeFlavor: mono
     platforms: ${{ parameters.platforms }}
+    shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
     variables:
       # map dependencies variables to local variables
       - name: librariesContainsChange

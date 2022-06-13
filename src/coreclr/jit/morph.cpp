@@ -2107,9 +2107,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
 
         size_t   addrValue           = (size_t)call->gtEntryPoint.addr;
         GenTree* indirectCellAddress = comp->gtNewIconHandleNode(addrValue, GTF_ICON_FTN_ADDR);
-#ifdef DEBUG
-        indirectCellAddress->AsIntCon()->gtTargetHandle = (size_t)call->gtCallMethHnd;
-#endif
+        INDEBUG(indirectCellAddress->AsIntCon()->gtTargetHandle = (size_t)call->gtCallMethHnd);
         indirectCellAddress->SetRegNum(REG_R2R_INDIRECT_PARAM);
 #ifdef TARGET_ARM
         // Issue #xxxx : Don't attempt to CSE this constant on ARM32
@@ -5494,7 +5492,8 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
             {
                 handleKind = GTF_ICON_STATIC_HDL;
             }
-            GenTree* addr = gtNewIconHandleNode((size_t)fldAddr, handleKind, fieldSeq);
+            GenTreeIntCon* addr = gtNewIconHandleNode((size_t)fldAddr, handleKind, fieldSeq);
+            INDEBUG(addr->gtTargetHandle = reinterpret_cast<size_t>(symHnd));
 
             // Translate GTF_FLD_INITCLASS to GTF_ICON_INITCLASS, if we need to.
             if (((tree->gtFlags & GTF_FLD_INITCLASS) != 0) && !isStaticReadOnlyInited)
@@ -7057,20 +7056,6 @@ void Compiler::fgValidateIRForTailCall(GenTreeCall* call)
             if (tree->OperIs(GT_NOP))
             {
             }
-            // No-op casts may appear due to normalization during inlining. Example:
-            //  *  RETURN    int
-            //  \--*  CAST      int <- bool <- int
-            //     \--*  CALL      int    Attribute.IsDefined (with gtReturnType = TYP_BOOL)
-            //        +--*  LCL_VAR   ref    V00 arg0
-            //        +--*  LCL_VAR   ref    V01 arg1
-            //        \--*  CNS_INT   int    1
-            else if (tree->OperIs(GT_CAST))
-            {
-                assert(ValidateUse(tree->AsCast()->CastOp()) && "Expected cast op to be from result of tailcall");
-                assert((tree->AsCast()->gtCastType == m_tailcall->gtReturnType) &&
-                       "Expected cast after tailcall to be no-op");
-                m_prevVal = tree;
-            }
             // We might see arbitrary chains of assignments that trivially
             // propagate the result. Example:
             //
@@ -7947,9 +7932,7 @@ GenTree* Compiler::fgGetStubAddrArg(GenTreeCall* call)
         assert(call->gtCallMoreFlags & GTF_CALL_M_VIRTSTUB_REL_INDIRECT);
         ssize_t addr = ssize_t(call->gtStubCallStubAddr);
         stubAddrArg  = gtNewIconHandleNode(addr, GTF_ICON_FTN_ADDR);
-#ifdef DEBUG
-        stubAddrArg->AsIntCon()->gtTargetHandle = (size_t)call->gtCallMethHnd;
-#endif
+        INDEBUG(stubAddrArg->AsIntCon()->gtTargetHandle = (size_t)call->gtCallMethHnd);
     }
     assert(stubAddrArg != nullptr);
     stubAddrArg->SetRegNum(virtualStubParamInfo->GetReg());
@@ -8836,7 +8819,8 @@ GenTree* Compiler::fgMorphLeaf(GenTree* tree)
         // target of a Delegate or a raw function pointer.
         bool isUnsafeFunctionPointer = !fptrValTree->gtFptrDelegateTarget;
 
-        CORINFO_CONST_LOOKUP addrInfo;
+        CORINFO_CONST_LOOKUP  addrInfo;
+        CORINFO_METHOD_HANDLE funcHandle = fptrValTree->gtFptrMethod;
 
 #ifdef FEATURE_READYTORUN
         if (fptrValTree->gtEntryPoint.addr != nullptr)
@@ -8846,7 +8830,7 @@ GenTree* Compiler::fgMorphLeaf(GenTree* tree)
         else
 #endif
         {
-            info.compCompHnd->getFunctionFixedEntryPoint(fptrValTree->gtFptrMethod, isUnsafeFunctionPointer, &addrInfo);
+            info.compCompHnd->getFunctionFixedEntryPoint(funcHandle, isUnsafeFunctionPointer, &addrInfo);
         }
 
         GenTree* indNode = nullptr;
@@ -8865,6 +8849,7 @@ GenTree* Compiler::fgMorphLeaf(GenTree* tree)
 
             case IAT_PVALUE:
                 indNode = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)addrInfo.handle, GTF_ICON_FTN_ADDR, true);
+                INDEBUG(indNode->gtGetOp1()->AsIntCon()->gtTargetHandle = reinterpret_cast<size_t>(funcHandle));
                 break;
 
             case IAT_VALUE:
@@ -8873,6 +8858,7 @@ GenTree* Compiler::fgMorphLeaf(GenTree* tree)
                 tree->SetOper(GT_CNS_INT);
                 tree->AsIntConCommon()->SetIconValue(ssize_t(addrInfo.handle));
                 tree->gtFlags |= GTF_ICON_FTN_ADDR;
+                INDEBUG(tree->AsIntCon()->gtTargetHandle = reinterpret_cast<size_t>(funcHandle));
                 break;
 
             default:
@@ -10298,22 +10284,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
         case GT_MUL:
             noway_assert(op2 != nullptr);
 
-            if (opts.OptimizationEnabled() && !optValnumCSE_phase && !tree->gtOverflow())
-            {
-                // MUL(NEG(a), C) => MUL(a, NEG(C))
-                if (op1->OperIs(GT_NEG) && !op1->gtGetOp1()->IsCnsIntOrI() && op2->IsCnsIntOrI() &&
-                    !op2->IsIconHandle())
-                {
-                    GenTree* newOp1   = op1->gtGetOp1();
-                    GenTree* newConst = gtNewIconNode(-op2->AsIntCon()->IconValue(), op2->TypeGet());
-                    DEBUG_DESTROY_NODE(op1);
-                    DEBUG_DESTROY_NODE(op2);
-                    tree->AsOp()->gtOp1 = newOp1;
-                    tree->AsOp()->gtOp2 = newConst;
-                    return fgMorphSmpOp(tree, mac);
-                }
-            }
-
 #ifndef TARGET_64BIT
             if (typ == TYP_LONG)
             {
@@ -10574,10 +10544,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
 #ifdef TARGET_ARM64
                 // ARM64 architecture manual suggests this transformation
                 // for the mod operator.
-                // However, we do skip this optimization for ARM64 if the second operand
-                // is an integral constant power of 2 because there is an even better
-                // optimization in lowering that is specific for ARM64.
-                else if (!(tree->OperIs(GT_MOD) && op2->IsIntegralConstPow2()))
+                else
 #else
                 // XARCH only applies this transformation if we know
                 // that magic division will be used - which is determined
@@ -11227,7 +11194,6 @@ DONE_MORPHING_CHILDREN:
      */
 
     GenTree*      temp;
-    size_t        ival1;
     GenTree*      lclVarTree;
     FieldSeqNode* fieldSeq = nullptr;
 
@@ -11584,15 +11550,14 @@ DONE_MORPHING_CHILDREN:
 
             bool foldAndReturnTemp = false;
             temp                   = nullptr;
-            ival1                  = 0;
 
             // Don't remove a volatile GT_IND, even if the address points to a local variable.
-            if ((tree->gtFlags & GTF_IND_VOLATILE) == 0)
+            //
+            if (!tree->AsIndir()->IsVolatile())
             {
                 /* Try to Fold *(&X) into X */
                 if (op1->gtOper == GT_ADDR)
                 {
-                    // Can not remove a GT_ADDR if it is currently a CSE candidate.
                     if (gtIsActiveCSE_Candidate(op1))
                     {
                         break;
@@ -11692,98 +11657,34 @@ DONE_MORPHING_CHILDREN:
                         }
                     }
 #endif // TARGET_ARM
-
-                    /* Try to change *(&lcl + cns) into lcl[cns] to prevent materialization of &lcl */
-
-                    if (op1->AsOp()->gtOp1->OperGet() == GT_ADDR && op1->AsOp()->gtOp2->OperGet() == GT_CNS_INT &&
-                        opts.OptimizationEnabled())
-                    {
-                        // No overflow arithmetic with pointers
-                        noway_assert(!op1->gtOverflow());
-
-                        temp = op1->AsOp()->gtOp1->AsOp()->gtOp1;
-                        if (!temp->OperIsLocal())
-                        {
-                            temp = nullptr;
-                            break;
-                        }
-
-                        // Can not remove the GT_ADDR if it is currently a CSE candidate.
-                        if (gtIsActiveCSE_Candidate(op1->AsOp()->gtOp1))
-                        {
-                            break;
-                        }
-
-                        ival1    = op1->AsOp()->gtOp2->AsIntCon()->gtIconVal;
-                        fieldSeq = op1->AsOp()->gtOp2->AsIntCon()->gtFieldSeq;
-
-                        if (ival1 == 0 && typ == temp->TypeGet() && temp->TypeGet() != TYP_STRUCT)
-                        {
-                            noway_assert(!varTypeIsGC(temp->TypeGet()));
-                            foldAndReturnTemp = true;
-                        }
-                        else
-                        {
-                            // The emitter can't handle large offsets
-                            if (ival1 != (unsigned short)ival1)
-                            {
-                                break;
-                            }
-
-                            // The emitter can get confused by invalid offsets
-                            if (ival1 >= Compiler::lvaLclSize(temp->AsLclVarCommon()->GetLclNum()))
-                            {
-                                break;
-                            }
-                        }
-                        // Now we can fold this into a GT_LCL_FLD below
-                        //   where we check (temp != nullptr)
-                    }
                 }
             }
 
-            // At this point we may have a lclVar or lclFld that might be foldable with a bit of extra massaging:
-            // - We may have a load of a local where the load has a different type than the local
-            // - We may have a load of a local plus an offset
-            //
-            // In these cases, we will change the lclVar or lclFld into a lclFld of the appropriate type and
-            // offset if doing so is legal. The only cases in which this transformation is illegal are if the load
-            // begins before the local or if the load extends beyond the end of the local (i.e. if the load is
-            // out-of-bounds w.r.t. the local).
+            // At this point we may have a lclVar or lclFld of some mismatched type. In this case, we will change
+            // the lclVar or lclFld into a lclFld of the appropriate type if doing so is legal. The only cases in
+            // which this transformation is illegal is when we have a STRUCT indirection, as we do not have the
+            // necessary layout information, or if the load would extend beyond the local.
             if ((temp != nullptr) && !foldAndReturnTemp)
             {
-                assert(temp->OperIsLocal());
+                assert(temp->OperIs(GT_LCL_VAR, GT_LCL_FLD));
 
-                unsigned lclNum = temp->AsLclVarCommon()->GetLclNum();
+                unsigned lclNum  = temp->AsLclVarCommon()->GetLclNum();
+                unsigned lclOffs = temp->AsLclVarCommon()->GetLclOffs();
 
                 // Make sure we do not enregister this lclVar.
                 lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LocalField));
 
-                // If the size of the load is greater than the size of the lclVar, we cannot fold this access into
-                // a lclFld: the access represented by an lclFld node must begin at or after the start of the
-                // lclVar and must not extend beyond the end of the lclVar.
-                if ((ival1 >= 0) && ((ival1 + genTypeSize(typ)) <= lvaLclExactSize(lclNum)))
+                if ((typ != TYP_STRUCT) && ((lclOffs + genTypeSize(typ)) <= lvaLclExactSize(lclNum)))
                 {
-                    GenTreeLclFld* lclFld;
-
-                    // We will turn a GT_LCL_VAR into a GT_LCL_FLD with an gtLclOffs of 'ival'
-                    // or if we already have a GT_LCL_FLD we will adjust the gtLclOffs by adding 'ival'
-                    // Then we change the type of the GT_LCL_FLD to match the orginal GT_IND type.
+                    // We will change the type of the node to match the orginal GT_IND type.
                     //
-                    if (temp->OperGet() == GT_LCL_FLD)
+                    temp->gtType = typ;
+
+                    if (temp->OperIs(GT_LCL_VAR))
                     {
-                        lclFld = temp->AsLclFld();
-                        lclFld->SetLclOffs(lclFld->GetLclOffs() + static_cast<unsigned>(ival1));
-                    }
-                    else // We have a GT_LCL_VAR.
-                    {
-                        assert(temp->OperGet() == GT_LCL_VAR);
-                        temp->ChangeOper(GT_LCL_FLD); // Note that this makes the gtFieldSeq "NotAField".
-                        lclFld = temp->AsLclFld();
-                        lclFld->SetLclOffs(static_cast<unsigned>(ival1));
+                        temp->ChangeOper(GT_LCL_FLD);
                     }
 
-                    temp->gtType      = tree->gtType;
                     foldAndReturnTemp = true;
                 }
             }
@@ -11792,7 +11693,7 @@ DONE_MORPHING_CHILDREN:
             {
                 assert(temp != nullptr);
                 assert(temp->TypeGet() == typ);
-                assert((op1->OperGet() == GT_ADD) || (op1->OperGet() == GT_ADDR));
+                assert(op1->OperIs(GT_ADDR));
 
                 // Copy the value of GTF_DONT_CSE from the original tree to `temp`: it can be set for
                 // 'temp' because a GT_ADDR always marks it for its operand.
@@ -11800,12 +11701,7 @@ DONE_MORPHING_CHILDREN:
                 temp->gtFlags |= (tree->gtFlags & GTF_DONT_CSE);
                 temp->SetVNsFromNode(tree);
 
-                if (op1->OperGet() == GT_ADD)
-                {
-                    DEBUG_DESTROY_NODE(op1->AsOp()->gtOp1); // GT_ADDR
-                    DEBUG_DESTROY_NODE(op1->AsOp()->gtOp2); // GT_CNS_INT
-                }
-                DEBUG_DESTROY_NODE(op1);  // GT_ADD or GT_ADDR
+                DEBUG_DESTROY_NODE(op1);  // GT_ADDR
                 DEBUG_DESTROY_NODE(tree); // GT_IND
 
                 // If the result of the fold is a local var, we may need to perform further adjustments e.g. for
@@ -12807,9 +12703,39 @@ GenTree* Compiler::fgOptimizeAddition(GenTreeOp* add)
         return op1;
     }
 
-    // Note that these transformations are legal for floating-point ADDs as well.
     if (opts.OptimizationEnabled())
     {
+        // Reduce local addresses: "ADD(ADDR(LCL_VAR), OFFSET)" => "ADDR(LCL_FLD OFFSET)".
+        // TODO-ADDR: do "ADD(LCL_FLD/VAR_ADDR, OFFSET)" => "LCL_FLD_ADDR" instead.
+        //
+        if (op1->OperIs(GT_ADDR) && op2->IsCnsIntOrI() && op1->gtGetOp1()->OperIsLocalRead())
+        {
+            GenTreeUnOp*         addrNode   = op1->AsUnOp();
+            GenTreeLclVarCommon* lclNode    = addrNode->gtGetOp1()->AsLclVarCommon();
+            GenTreeIntCon*       offsetNode = op2->AsIntCon();
+            if (FitsIn<uint16_t>(offsetNode->IconValue()))
+            {
+                unsigned offset = lclNode->GetLclOffs() + static_cast<uint16_t>(offsetNode->IconValue());
+
+                // Note: the emitter does not expect out-of-bounds access for LCL_FLD_ADDR.
+                if (FitsIn<uint16_t>(offset) && (offset < lvaLclExactSize(lclNode->GetLclNum())))
+                {
+                    // Types of location nodes under ADDRs do not matter. We arbitrarily choose TYP_UBYTE.
+                    lclNode->ChangeType(TYP_UBYTE);
+                    lclNode->SetOper(GT_LCL_FLD);
+                    lclNode->AsLclFld()->SetLclOffs(offset);
+                    lvaSetVarDoNotEnregister(lclNode->GetLclNum() DEBUGARG(DoNotEnregisterReason::LocalField));
+
+                    addrNode->SetVNsFromNode(add);
+
+                    DEBUG_DESTROY_NODE(offsetNode);
+                    DEBUG_DESTROY_NODE(add);
+
+                    return addrNode;
+                }
+            }
+        }
+
         // - a + b = > b - a
         // ADD((NEG(a), b) => SUB(b, a)
 
@@ -12904,6 +12830,20 @@ GenTree* Compiler::fgOptimizeMultiply(GenTreeOp* mul)
 
     if (op2->IsIntegralConst())
     {
+        // We should not get here for 64-bit multiplications on 32-bit.
+        assert(op2->IsCnsIntOrI());
+
+        // MUL(NEG(a), C) => MUL(a, NEG(C))
+        if (opts.OptimizationEnabled() && op1->OperIs(GT_NEG) && !op2->IsIconHandle())
+        {
+            mul->gtOp1                 = op1->AsUnOp()->gtGetOp1();
+            op2->AsIntCon()->gtIconVal = -op2->AsIntCon()->gtIconVal;
+            fgUpdateConstTreeValueNumber(op2);
+            DEBUG_DESTROY_NODE(op1);
+
+            op1 = mul->gtOp1;
+        }
+
         ssize_t mult = op2->AsIntConCommon()->IconValue();
 
         if (mult == 0)
@@ -14918,18 +14858,16 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
 
         noway_assert(lastStmt->GetRootNode()->gtOper == GT_SWITCH);
 
-        /* Did we fold the conditional */
+        // Did we fold the conditional
 
         noway_assert(lastStmt->GetRootNode()->AsOp()->gtOp1);
-        GenTree* condTree;
-        condTree = lastStmt->GetRootNode()->AsOp()->gtOp1;
-        GenTree* cond;
-        cond = condTree->gtEffectiveVal(true);
+        GenTree* condTree = lastStmt->GetRootNode()->AsOp()->gtOp1;
+        GenTree* cond     = condTree->gtEffectiveVal(true);
 
         if (cond->OperIsConst())
         {
-            /* Yupee - we folded the conditional!
-             * Remove the conditional statement */
+            // Yupee - we folded the conditional!
+            // Remove the conditional statement
 
             noway_assert(cond->gtOper == GT_CNS_INT);
 
@@ -14947,17 +14885,13 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                 result = FoldResult::FOLD_REMOVED_LAST_STMT;
             }
 
-            /* modify the flow graph */
+            // modify the flow graph
 
-            /* Find the actual jump target */
-            unsigned switchVal;
-            switchVal = (unsigned)cond->AsIntCon()->gtIconVal;
-            unsigned jumpCnt;
-            jumpCnt = block->bbJumpSwt->bbsCount;
-            BasicBlock** jumpTab;
-            jumpTab = block->bbJumpSwt->bbsDstTab;
-            bool foundVal;
-            foundVal = false;
+            // Find the actual jump target
+            size_t       switchVal = (size_t)cond->AsIntCon()->gtIconVal;
+            unsigned     jumpCnt   = block->bbJumpSwt->bbsCount;
+            BasicBlock** jumpTab   = block->bbJumpSwt->bbsDstTab;
+            bool         foundVal  = false;
 
             for (unsigned val = 0; val < jumpCnt; val++, jumpTab++)
             {
@@ -14972,20 +14906,20 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                 {
                     if (curJump != block->bbNext)
                     {
-                        /* transform the basic block into a BBJ_ALWAYS */
+                        // transform the basic block into a BBJ_ALWAYS
                         block->bbJumpKind = BBJ_ALWAYS;
                         block->bbJumpDest = curJump;
                     }
                     else
                     {
-                        /* transform the basic block into a BBJ_NONE */
+                        // transform the basic block into a BBJ_NONE
                         block->bbJumpKind = BBJ_NONE;
                     }
                     foundVal = true;
                 }
                 else
                 {
-                    /* Remove 'block' from the predecessor list of 'curJump' */
+                    // Remove 'block' from the predecessor list of 'curJump'
                     fgRemoveRefPred(curJump, block);
                 }
             }

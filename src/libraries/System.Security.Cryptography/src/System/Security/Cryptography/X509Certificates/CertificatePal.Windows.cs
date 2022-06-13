@@ -305,7 +305,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             set
             {
-                string friendlyName = (value == null) ? string.Empty : value;
+                string friendlyName = value ?? string.Empty;
                 unsafe
                 {
                     IntPtr pFriendlyName = Marshal.StringToHGlobalUni(friendlyName);

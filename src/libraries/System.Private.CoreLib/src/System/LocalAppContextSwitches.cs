@@ -41,6 +41,20 @@ namespace System
             get => GetCachedSwitchValue("Switch.System.Diagnostics.EventSource.PreserveEventListnerObjectIdentity", ref s_preserveEventListnerObjectIdentity);
         }
 
+        private static int s_forceEmitInvoke;
+        public static bool ForceEmitInvoke
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => GetCachedSwitchValue("Switch.System.Reflection.ForceEmitInvoke", ref s_forceEmitInvoke);
+        }
+
+        private static int s_forceInterpretedInvoke;
+        public static bool ForceInterpretedInvoke
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => GetCachedSwitchValue("Switch.System.Reflection.ForceInterpretedInvoke", ref s_forceInterpretedInvoke);
+        }
+
         private static int s_serializationGuard;
         public static bool SerializationGuard
         {

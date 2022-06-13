@@ -122,6 +122,6 @@ namespace System.CodeDom
             }
         }
 
-        public CodeTypeParameterCollection TypeParameters => _typeParameters ?? (_typeParameters = new CodeTypeParameterCollection());
+        public CodeTypeParameterCollection TypeParameters => _typeParameters ??= new CodeTypeParameterCollection();
     }
 }

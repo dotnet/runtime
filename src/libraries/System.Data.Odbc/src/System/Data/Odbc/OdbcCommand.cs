@@ -163,8 +163,7 @@ namespace System.Data.Odbc
         {
             get
             {
-                string? value = _commandText;
-                return ((null != value) ? value : string.Empty);
+                return _commandText ?? string.Empty;
             }
             set
             {

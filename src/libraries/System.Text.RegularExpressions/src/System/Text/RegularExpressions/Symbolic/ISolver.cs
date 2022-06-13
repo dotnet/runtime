@@ -11,20 +11,11 @@ namespace System.Text.RegularExpressions.Symbolic
     /// </summary>
     internal interface ISolver<TSet>
     {
-        /// <summary>Creates a set containing the single character <paramref name="c"/>.</summary>
-        TSet CreateFromChar(char c);
-
         /// <summary>Creates a set from a <see cref="BDD"/> representation.</summary>
         TSet ConvertFromBDD(BDD set, CharSetSolver solver);
 
-        /// <summary>Converts the set into a <see cref="BDD"/> representation.</summary>
-        BDD ConvertToBDD(TSet set, CharSetSolver solver);
-
         /// <summary>Gets the minterms from the set.</summary>
         TSet[]? GetMinterms();
-
-        /// <summary>Formats the contents of the specified set for human consumption.</summary>
-        string PrettyPrint(TSet set, CharSetSolver solver);
 
         /// <summary>Gets a full set (one that contains all values).</summary>
         TSet Full { get; }
@@ -50,15 +41,12 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>Gets whether the set contains every element.</summary>
         bool IsFull(TSet set);
 
-        /// <summary>
-        /// Given an array of constraints {c_1, c_2, ..., c_n} where n&gt;=0.
-        /// Enumerate all satisfiable Boolean combinations Tuple({b_1, b_2, ..., b_n}, c)
-        /// where c is satisfisable and equivalent to c'_1 &amp; c'_2 &amp; ... &amp; c'_n,
-        /// where c'_i = c_i if b_i = true and c'_i is Not(c_i) otherwise.
-        /// If n=0 return Tuple({},True)
-        /// </summary>
-        /// <param name="constraints">constraints</param>
-        /// <returns>constraints that are satisfiable</returns>
-        List<TSet> GenerateMinterms(HashSet<TSet> constraints);
+#if DEBUG
+        /// <summary>Formats the contents of the specified set for human consumption.</summary>
+        string PrettyPrint(TSet set, CharSetSolver solver);
+
+        /// <summary>Converts the set into a <see cref="BDD"/> representation.</summary>
+        BDD ConvertToBDD(TSet set, CharSetSolver solver);
+#endif
     }
 }

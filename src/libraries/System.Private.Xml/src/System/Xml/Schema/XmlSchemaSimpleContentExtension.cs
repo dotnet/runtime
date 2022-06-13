@@ -15,7 +15,7 @@ namespace System.Xml.Schema
         public XmlQualifiedName BaseTypeName
         {
             get { return _baseTypeName; }
-            set { _baseTypeName = (value == null ? XmlQualifiedName.Empty : value); }
+            set { _baseTypeName = value ?? XmlQualifiedName.Empty; }
         }
 
         [XmlElement("attribute", typeof(XmlSchemaAttribute)),

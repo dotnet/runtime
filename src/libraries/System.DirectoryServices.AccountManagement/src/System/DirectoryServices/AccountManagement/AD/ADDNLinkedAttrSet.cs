@@ -44,7 +44,7 @@ namespace System.DirectoryServices.AccountManagement
                                     "ADDNLinkedAttrSet",
                                     "ADDNLinkedAttrSet: groupDN={0}, primaryGroupDN={1}, recursive={2}, PG queryFilter={3}, PG queryBase={4}",
                                     groupDN,
-                                    (primaryGroupDN != null ? primaryGroupDN : "NULL"),
+                                    primaryGroupDN ?? "NULL",
                                     recursive,
                                     (primaryGroupMembersSearcher != null ? primaryGroupMembersSearcher.Filter : "NULL"),
                                     (primaryGroupMembersSearcher != null ? primaryGroupMembersSearcher.SearchRoot.Path : "NULL"));
@@ -89,7 +89,7 @@ namespace System.DirectoryServices.AccountManagement
                                     "ADDNLinkedAttrSet",
                                     "ADDNLinkedAttrSet: groupDN={0}, primaryGroupDN={1}, recursive={2}, M queryFilter={3}, M queryBase={4}, PG queryFilter={5}, PG queryBase={6}",
                                     groupDN,
-                                    (primaryGroupDN != null ? primaryGroupDN : "NULL"),
+                                    primaryGroupDN ?? "NULL",
                                     recursive,
                                     (membersSearcher != null ? membersSearcher[0].Filter : "NULL"),
                                     (membersSearcher != null ? membersSearcher[0].SearchRoot.Path : "NULL"),

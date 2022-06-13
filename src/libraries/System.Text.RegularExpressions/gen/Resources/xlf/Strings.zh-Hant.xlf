@@ -92,11 +92,6 @@
         <target state="translated">十六進位數字不足。</target>
         <note />
       </trans-unit>
-      <trans-unit id="InternalError_ScanRegex">
-        <source>Internal error in ScanRegex.</source>
-        <target state="translated">ScanRegex 發生內部錯誤。</target>
-        <note>{Locked="ScanRegex"}</note>
-      </trans-unit>
       <trans-unit id="InvalidGroupingConstruct">
         <source>Unrecognized grouping construct.</source>
         <target state="translated">無法識別的分組建構。</target>
@@ -210,11 +205,6 @@
       <trans-unit id="RegexMethodMustHaveValidSignatureMessage">
         <source>RegexGenerator method must be partial, parameterless, non-generic, non-abstract, and return Regex</source>
         <target state="translated">RegexGenerator 方法必須是部分、無參數、非泛型、非抽象，並且傳回 Regex</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="ReplacementError">
-        <source>Replacement pattern error.</source>
-        <target state="translated">取代模式錯誤。</target>
         <note />
       </trans-unit>
       <trans-unit id="ReversedCharacterRange">

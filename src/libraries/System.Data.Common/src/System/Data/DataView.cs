@@ -1702,7 +1702,7 @@ namespace System.Data
             DataTable dt = new DataTable();
             dt.Locale = _table!.Locale;
             dt.CaseSensitive = _table.CaseSensitive;
-            dt.TableName = ((null != tableName) ? tableName : _table.TableName);
+            dt.TableName = tableName ?? _table.TableName;
             dt.Namespace = _table.Namespace;
             dt.Prefix = _table.Prefix;
 
