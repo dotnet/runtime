@@ -68,7 +68,7 @@ namespace ILLink.Shared.TrimAnalysis
 			return false;
 		}
 
-		private partial bool TryResolveTypeNameForCreateInstance (in MethodProxy calledMethod, string assemblyName, string typeName, out TypeProxy resolvedType)
+		private partial bool TryResolveTypeNameForCreateInstanceAndMark (in MethodProxy calledMethod, string assemblyName, string typeName, out TypeProxy resolvedType)
 		{
 			var resolvedAssembly = _context.TryResolve (assemblyName);
 			if (resolvedAssembly == null) {
@@ -79,9 +79,8 @@ namespace ILLink.Shared.TrimAnalysis
 				return false;
 			}
 
-			if (!_context.TypeNameResolver.TryResolveTypeName (resolvedAssembly, typeName, out TypeReference? typeRef)
-				|| _context.TryResolve (typeRef) is not TypeDefinition resolvedTypeDefinition
-				|| typeRef is ArrayType) {
+			if (!_reflectionMarker.TryResolveTypeNameAndMark (resolvedAssembly, typeName, _diagnosticContext, out TypeDefinition? resolvedTypeDefinition)
+				|| resolvedTypeDefinition.IsTypeOf (WellKnownType.System_Array)) {
 				// It's not wrong to have a reference to non-existing type - the code may well expect to get an exception in this case
 				// Note that we did find the assembly, so it's not a linker config problem, it's either intentional, or wrong versions of assemblies
 				// but linker can't know that. In case a user tries to create an array using System.Activator we should simply ignore it, the user

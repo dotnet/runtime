@@ -245,21 +245,21 @@ namespace Mono.Linker.Tests.TestCasesRunner
 						switch (attributeTypeName) {
 						case nameof (RemovedTypeInAssemblyAttribute):
 							if (linkedType != null)
-								Assert.Fail ($"Type `{expectedTypeName}' should have been removed");
+								Assert.Fail ($"Type `{expectedTypeName}' should have been removed from assembly {assemblyName}");
 							GetOriginalTypeFromInAssemblyAttribute (checkAttrInAssembly);
 							break;
 						case nameof (KeptTypeInAssemblyAttribute):
 							if (linkedType == null)
-								Assert.Fail ($"Type `{expectedTypeName}' should have been kept");
+								Assert.Fail ($"Type `{expectedTypeName}' should have been kept in assembly {assemblyName}");
 							break;
 						case nameof (RemovedInterfaceOnTypeInAssemblyAttribute):
 							if (linkedType == null)
-								Assert.Fail ($"Type `{expectedTypeName}' should have been kept");
+								Assert.Fail ($"Type `{expectedTypeName}' should have been kept in assembly {assemblyName}");
 							VerifyRemovedInterfaceOnTypeInAssembly (checkAttrInAssembly, linkedType);
 							break;
 						case nameof (KeptInterfaceOnTypeInAssemblyAttribute):
 							if (linkedType == null)
-								Assert.Fail ($"Type `{expectedTypeName}' should have been kept");
+								Assert.Fail ($"Type `{expectedTypeName}' should have been kept in assembly {assemblyName}");
 							VerifyKeptInterfaceOnTypeInAssembly (checkAttrInAssembly, linkedType);
 							break;
 						case nameof (RemovedMemberInAssemblyAttribute):
@@ -270,24 +270,24 @@ namespace Mono.Linker.Tests.TestCasesRunner
 							break;
 						case nameof (KeptBaseOnTypeInAssemblyAttribute):
 							if (linkedType == null)
-								Assert.Fail ($"Type `{expectedTypeName}' should have been kept");
+								Assert.Fail ($"Type `{expectedTypeName}' should have been kept in assembly {assemblyName}");
 							VerifyKeptBaseOnTypeInAssembly (checkAttrInAssembly, linkedType);
 							break;
 						case nameof (KeptMemberInAssemblyAttribute):
 							if (linkedType == null)
-								Assert.Fail ($"Type `{expectedTypeName}' should have been kept");
+								Assert.Fail ($"Type `{expectedTypeName}' should have been kept in assembly {assemblyName}");
 
 							VerifyKeptMemberInAssembly (checkAttrInAssembly, linkedType);
 							break;
 						case nameof (RemovedForwarderAttribute):
 							if (linkedAssembly.MainModule.ExportedTypes.Any (l => l.Name == expectedTypeName))
-								Assert.Fail ($"Forwarder `{expectedTypeName}' should have been removed");
+								Assert.Fail ($"Forwarder `{expectedTypeName}' should have been removed from assembly {assemblyName}");
 
 							break;
 
 						case nameof (RemovedAssemblyReferenceAttribute):
 							Assert.False (linkedAssembly.MainModule.AssemblyReferences.Any (l => l.Name == expectedTypeName),
-								$"AssemblyRef '{expectedTypeName}' should have been removed");
+								$"AssemblyRef '{expectedTypeName}' should have been removed from assembly {assemblyName}");
 							break;
 
 						case nameof (KeptResourceInAssemblyAttribute):
@@ -301,7 +301,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 							break;
 						case nameof (ExpectedInstructionSequenceOnMemberInAssemblyAttribute):
 							if (linkedType == null)
-								Assert.Fail ($"Type `{expectedTypeName}` should have been kept");
+								Assert.Fail ($"Type `{expectedTypeName}` should have been kept in assembly {assemblyName}");
 							VerifyExpectedInstructionSequenceOnMemberInAssembly (checkAttrInAssembly, linkedType);
 							break;
 						default:

@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Runtime.TypeParsing;
@@ -15,6 +16,8 @@ namespace Mono.Linker
 	{
 		readonly LinkContext _context;
 
+		public readonly record struct TypeResolutionRecord (AssemblyDefinition ReferringAssembly, TypeDefinition ResolvedType);
+
 		public TypeNameResolver (LinkContext context)
 		{
 			_context = context;
@@ -24,11 +27,11 @@ namespace Mono.Linker
 			string typeNameString,
 			in DiagnosticContext diagnosticContext,
 			[NotNullWhen (true)] out TypeReference? typeReference,
-			[NotNullWhen (true)] out AssemblyDefinition? typeAssembly,
+			[NotNullWhen (true)] out List<TypeResolutionRecord>? typeResolutionRecords,
 			bool needsAssemblyName = true)
 		{
 			typeReference = null;
-			typeAssembly = null;
+			typeResolutionRecords = null;
 			if (string.IsNullOrEmpty (typeNameString))
 				return false;
 
@@ -41,12 +44,20 @@ namespace Mono.Linker
 				return false;
 			}
 
+			typeResolutionRecords = new List<TypeResolutionRecord> ();
+			AssemblyDefinition? typeAssembly;
 			if (parsedTypeName is AssemblyQualifiedTypeName assemblyQualifiedTypeName) {
 				typeAssembly = _context.TryResolve (assemblyQualifiedTypeName.AssemblyName.Name);
-				if (typeAssembly == null)
+				if (typeAssembly == null) {
+					typeResolutionRecords = null;
 					return false;
+				}
 
-				typeReference = ResolveTypeName (typeAssembly, assemblyQualifiedTypeName.TypeName);
+				typeReference = ResolveTypeName (typeAssembly, assemblyQualifiedTypeName.TypeName, typeResolutionRecords);
+				if (typeReference == null) {
+					typeResolutionRecords = null;
+				}
+
 				return typeReference != null;
 			}
 
@@ -62,12 +73,12 @@ namespace Mono.Linker
 				_ => throw new NotSupportedException ()
 			};
 
-			if (typeAssembly != null && TryResolveTypeName (typeAssembly, parsedTypeName, out typeReference))
+			if (typeAssembly != null && TryResolveTypeName (typeAssembly, parsedTypeName, out typeReference, typeResolutionRecords))
 				return true;
 
 			// If type is not found in the caller's assembly, try in core assembly.
 			typeAssembly = _context.TryResolve (PlatformAssemblies.CoreLib);
-			if (typeAssembly != null && TryResolveTypeName (typeAssembly, parsedTypeName, out typeReference))
+			if (typeAssembly != null && TryResolveTypeName (typeAssembly, parsedTypeName, out typeReference, typeResolutionRecords))
 				return true;
 
 			// It is common to use Type.GetType for looking if a type is available.
@@ -75,46 +86,55 @@ namespace Mono.Linker
 			if (needsAssemblyName && provider != null)
 				diagnosticContext.AddDiagnostic (DiagnosticId.TypeWasNotFoundInAssemblyNorBaseLibrary, typeNameString);
 
-			typeAssembly = null;
+			typeResolutionRecords = null;
 			return false;
 
-			bool TryResolveTypeName (AssemblyDefinition assemblyDefinition, TypeName typeName, [NotNullWhen (true)] out TypeReference? typeReference)
+			bool TryResolveTypeName (AssemblyDefinition assemblyDefinition, TypeName typeName, [NotNullWhen (true)] out TypeReference? typeReference, List<TypeResolutionRecord> typeResolutionRecords)
 			{
 				typeReference = null;
 				if (assemblyDefinition == null)
 					return false;
 
-				typeReference = ResolveTypeName (assemblyDefinition, typeName);
+				typeReference = ResolveTypeName (assemblyDefinition, typeName, typeResolutionRecords);
 				return typeReference != null;
 			}
 		}
 
-		public bool TryResolveTypeName (AssemblyDefinition assembly, string typeNameString, [NotNullWhen (true)] out TypeReference? typeReference)
+		public bool TryResolveTypeName (
+			AssemblyDefinition assembly,
+			string typeNameString,
+			[NotNullWhen (true)] out TypeReference? typeReference,
+			[NotNullWhen (true)] out List<TypeResolutionRecord>? typeResolutionRecords)
 		{
-			typeReference = ResolveTypeName (assembly, TypeParser.ParseTypeName (typeNameString));
+			typeResolutionRecords = new List<TypeResolutionRecord> ();
+			typeReference = ResolveTypeName (assembly, TypeParser.ParseTypeName (typeNameString), typeResolutionRecords);
+
+			if (typeReference == null)
+				typeResolutionRecords = null;
+
 			return typeReference != null;
 		}
 
-		TypeReference? ResolveTypeName (AssemblyDefinition assembly, TypeName typeName)
+		TypeReference? ResolveTypeName (AssemblyDefinition assembly, TypeName typeName, List<TypeResolutionRecord> typeResolutionRecords)
 		{
 			if (typeName is AssemblyQualifiedTypeName assemblyQualifiedTypeName) {
 				// In this case we ignore the assembly parameter since the type name has assembly in it
 				var assemblyFromName = _context.TryResolve (assemblyQualifiedTypeName.AssemblyName.Name);
-				return assemblyFromName == null ? null : ResolveTypeName (assemblyFromName, assemblyQualifiedTypeName.TypeName);
+				return assemblyFromName == null ? null : ResolveTypeName (assemblyFromName, assemblyQualifiedTypeName.TypeName, typeResolutionRecords);
 			}
 
 			if (assembly == null || typeName == null)
 				return null;
 
 			if (typeName is ConstructedGenericTypeName constructedGenericTypeName) {
-				var genericTypeRef = ResolveTypeName (assembly, constructedGenericTypeName.GenericType);
+				var genericTypeRef = ResolveTypeName (assembly, constructedGenericTypeName.GenericType, typeResolutionRecords);
 				if (genericTypeRef == null)
 					return null;
 
 				Debug.Assert (genericTypeRef is TypeDefinition);
 				var genericInstanceType = new GenericInstanceType (genericTypeRef);
 				foreach (var arg in constructedGenericTypeName.GenericArguments) {
-					var genericArgument = ResolveTypeName (assembly, arg);
+					var genericArgument = ResolveTypeName (assembly, arg, typeResolutionRecords);
 					if (genericArgument == null)
 						return null;
 
@@ -123,7 +143,7 @@ namespace Mono.Linker
 
 				return genericInstanceType;
 			} else if (typeName is HasElementTypeName elementTypeName) {
-				var elementType = ResolveTypeName (assembly, elementTypeName.ElementTypeName);
+				var elementType = ResolveTypeName (assembly, elementTypeName.ElementTypeName, typeResolutionRecords);
 				if (elementType == null)
 					return null;
 
@@ -136,7 +156,15 @@ namespace Mono.Linker
 				};
 			}
 
-			return assembly.MainModule.ResolveType (typeName.ToString (), _context);
+			TypeDefinition? resolvedType = assembly.MainModule.ResolveType (typeName.ToString (), _context);
+
+			// True type references (like generics and arrays) don't count as actually resolved types, they're just wrappers
+			// so only record type resolutions for types which are actually resolved.
+			if (resolvedType != null) {
+				typeResolutionRecords.Add (new (assembly, resolvedType));
+			}
+
+			return resolvedType;
 		}
 	}
 }
