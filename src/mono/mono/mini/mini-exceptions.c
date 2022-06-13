@@ -2272,11 +2272,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 			mini_set_abort_threshold (&catch_frame);
 			mono_unhandled_exception_internal (obj);
 		} else {
-			gboolean unhandled = FALSE;
-
-			if (unhandled)
-				mono_component_debugger ()->handle_exception ((MonoException *)obj, ctx, NULL, NULL);
-			else if (!ji || (jinfo_get_method (ji)->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE)) {
+			if (!ji || (jinfo_get_method (ji)->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE)) {
 				if (last_mono_wrapper_runtime_invoke && !mono_thread_internal_current ()->threadpool_thread) {
 					mono_component_debugger ()->handle_exception ((MonoException *)obj, ctx, NULL, NULL);
 					if (mini_get_debug_options ()->top_runtime_invoke_unhandled) {
