@@ -11,9 +11,9 @@ public class ProxyOptions
 {
     public Uri DevToolsUrl { get; set; } = new Uri($"http://localhost:9222");
     public int? OwnerPid { get; set; }
-    public int FirefoxProxyPort { get; set; } = 6300;
+    public int FirefoxProxyPort { get; set; }
     public int FirefoxDebugPort { get; set; } = 6000;
-    public int DevToolsProxyPort { get; set; } = 9300;
+    public int DevToolsProxyPort { get; set; }
     public int DevToolsDebugPort
     {
         get => DevToolsUrl.Port;
