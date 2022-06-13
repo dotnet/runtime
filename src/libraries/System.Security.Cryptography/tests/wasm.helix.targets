@@ -12,7 +12,7 @@
         <Timeout>$(_workItemTimeout)</Timeout>
       </HelixWorkItem>
 
-      <HelixWorkItem Include="$(Scenario)-subtlecrypto-System.Security.Cryptography.Tests">
+      <HelixWorkItem Include="$(Scenario)-subtlecrypto-$(_CryptoProjectName)">
         <PayloadArchive>$(TestArchiveTestsDir)$(_CryptoProjectName).zip</PayloadArchive>
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_workItemTimeout)</Timeout>
