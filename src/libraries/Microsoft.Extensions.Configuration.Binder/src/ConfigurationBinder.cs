@@ -312,11 +312,13 @@ namespace Microsoft.Extensions.Configuration
                     return;
                 }
 
+                bool typeIsADictionaryInterface = TypeIsADictionaryInterface(type);
+
                 // For other mutable interfaces like ICollection<> and ISet<>, we prefer copying values and setting them
                 // on a new instance of the interface over populating the existing instance implementing the interface.
                 // This has already been done, so there's not need to check again. For dictionaries, we fill the existing
                 // instance if there is one (which hasn't happened yet), and only create a new instance if necessary.
-                if (TypeIsADictionaryInterface(type))
+                if (typeIsADictionaryInterface)
                 {
                     if (!bindingPoint.IsReadOnly)
                     {
@@ -342,7 +344,7 @@ namespace Microsoft.Extensions.Configuration
                     // on a new instance of the interface over populating the existing instance implementing the interface.
                     // This has already been done, so there's not need to check again. For dictionaries, we fill the existing
                     // instance if there is one (which hasn't happened yet), and only create a new instance if necessary.
-                    if (TypeIsADictionaryInterface(type))
+                    if (typeIsADictionaryInterface)
                     {
                         Type typeOfKey = type.GenericTypeArguments[0];
                         Type typeOfValue = type.GenericTypeArguments[1];
