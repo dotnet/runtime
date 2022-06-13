@@ -85,11 +85,10 @@ namespace
             E_NOTIMPL,
             E_POINTER,
             E_ACCESSDENIED,
+            E_OUTOFMEMORY,
             E_INVALIDARG,
             E_UNEXPECTED,
-            HRESULT{-1},
-            S_FALSE,
-            HRESULT{2}
+            HRESULT{-1}
         };
 
         LPCWSTR helpLink = L"X:\\NotA\\RealPath\\dummy.hlp";
