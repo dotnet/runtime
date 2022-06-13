@@ -762,7 +762,7 @@ namespace Microsoft.Extensions.Configuration
             Type? baseType = type;
             do
             {
-                PropertyInfo[] baseTypeProperties = baseType!.GetProperties(DeclaredOnlyLookup);
+                PropertyInfo[] baseTypeProperties = baseType!.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
 
                 if (baseType != type)
                 {
