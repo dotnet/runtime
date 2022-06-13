@@ -110,12 +110,9 @@ namespace System.Net.Http.Functional.Tests
             await connection.SendResponseAsync(HttpStatusCode.OK);
         }
 
-        [ConditionalTheory(nameof(IsNtlmInstalled))]
-        [InlineData(true, true)]
-        [InlineData(true, false)]
-        [InlineData(false, true)]
-        [InlineData(false, false)]
-        public async Task SendAsync_FakeServer_Success(bool useDefaultHandler, bool useNtlm)
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task DefaultHandler_FakeServer_Success(bool useNtlm)
         {
             await LoopbackServer.CreateClientAndServerAsync(
                 async uri =>
@@ -123,9 +120,7 @@ namespace System.Net.Http.Functional.Tests
                     HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, uri);
                     requestMessage.Version = new Version(1, 1);
 
-                    HttpMessageHandler handler = useDefaultHandler ? 
-                        new HttpClientHandler() { Credentials = s_testCredentialRight } :
-                        new SocketsHttpHandler { Credentials = s_testCredentialRight };
+                    HttpMessageHandler handler = new HttpClientHandler() { Credentials = s_testCredentialRight };
                     using (var client = new HttpClient(handler))
                     {
                         HttpResponseMessage response = await client.SendAsync(requestMessage);
