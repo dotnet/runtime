@@ -17,7 +17,7 @@ using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
 using ILLink.Shared;
 
-using FlowAnnotations = ILCompiler.Dataflow.FlowAnnotations;
+using FlowAnnotations = ILLink.Shared.TrimAnalysis.FlowAnnotations;
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
 using CombinedDependencyList = System.Collections.Generic.List<ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.CombinedDependencyListEntry>;
 using Debug = System.Diagnostics.Debug;

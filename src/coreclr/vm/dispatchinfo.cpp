@@ -1261,7 +1261,7 @@ void DispatchInfo::InvokeMemberWorker(DispatchMemberInfo*   pDispMemberInfo,
     Thread* pThread = GetThread();
     AppDomain* pAppDomain = pThread->GetDomain();
 
-    SafeArrayHolder pSA(NULL);
+    SafeArrayPtrHolder pSA = NULL;
     VARIANT safeArrayVar;
     HRESULT hr;
 

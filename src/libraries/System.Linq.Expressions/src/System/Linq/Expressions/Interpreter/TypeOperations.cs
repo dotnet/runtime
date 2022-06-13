@@ -230,10 +230,10 @@ namespace System.Linq.Expressions.Interpreter
         {
             switch (method)
             {
-                case "get_HasValue": return s_hasValue ?? (s_hasValue = new HasValue());
-                case "get_Value": return s_value ?? (s_value = new GetValue());
-                case "Equals": return s_equals ?? (s_equals = new EqualsClass());
-                case "GetHashCode": return s_getHashCode ?? (s_getHashCode = new GetHashCodeClass());
+                case "get_HasValue": return s_hasValue ??= new HasValue();
+                case "get_Value": return s_value ??= new GetValue();
+                case "Equals": return s_equals ??= new EqualsClass();
+                case "GetHashCode": return s_getHashCode ??= new GetHashCodeClass();
                 case "GetValueOrDefault":
                     if (argCount == 0)
                     {
@@ -241,9 +241,9 @@ namespace System.Linq.Expressions.Interpreter
                     }
                     else
                     {
-                        return s_getValueOrDefault1 ?? (s_getValueOrDefault1 = new GetValueOrDefault1());
+                        return s_getValueOrDefault1 ??= new GetValueOrDefault1();
                     }
-                case "ToString": return s_toString ?? (s_toString = new ToStringClass());
+                case "ToString": return s_toString ??= new ToStringClass();
                 default:
                     // System.Nullable doesn't have other instance methods
                     throw ContractUtils.Unreachable;
@@ -252,7 +252,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public static Instruction CreateGetValue()
         {
-            return s_value ?? (s_value = new GetValue());
+            return s_value ??= new GetValue();
         }
     }
 
@@ -356,21 +356,21 @@ namespace System.Linq.Expressions.Interpreter
             Debug.Assert(!t.IsEnum);
             return t.GetTypeCode() switch
             {
-                TypeCode.Boolean => s_Boolean ?? (s_Boolean = new CastInstructionT<bool>()),
-                TypeCode.Byte => s_Byte ?? (s_Byte = new CastInstructionT<byte>()),
-                TypeCode.Char => s_Char ?? (s_Char = new CastInstructionT<char>()),
-                TypeCode.DateTime => s_DateTime ?? (s_DateTime = new CastInstructionT<DateTime>()),
-                TypeCode.Decimal => s_Decimal ?? (s_Decimal = new CastInstructionT<decimal>()),
-                TypeCode.Double => s_Double ?? (s_Double = new CastInstructionT<double>()),
-                TypeCode.Int16 => s_Int16 ?? (s_Int16 = new CastInstructionT<short>()),
-                TypeCode.Int32 => s_Int32 ?? (s_Int32 = new CastInstructionT<int>()),
-                TypeCode.Int64 => s_Int64 ?? (s_Int64 = new CastInstructionT<long>()),
-                TypeCode.SByte => s_SByte ?? (s_SByte = new CastInstructionT<sbyte>()),
-                TypeCode.Single => s_Single ?? (s_Single = new CastInstructionT<float>()),
-                TypeCode.String => s_String ?? (s_String = new CastInstructionT<string>()),
-                TypeCode.UInt16 => s_UInt16 ?? (s_UInt16 = new CastInstructionT<ushort>()),
-                TypeCode.UInt32 => s_UInt32 ?? (s_UInt32 = new CastInstructionT<uint>()),
-                TypeCode.UInt64 => s_UInt64 ?? (s_UInt64 = new CastInstructionT<ulong>()),
+                TypeCode.Boolean => s_Boolean ??= new CastInstructionT<bool>(),
+                TypeCode.Byte => s_Byte ??= new CastInstructionT<byte>(),
+                TypeCode.Char => s_Char ??= new CastInstructionT<char>(),
+                TypeCode.DateTime => s_DateTime ??= new CastInstructionT<DateTime>(),
+                TypeCode.Decimal => s_Decimal ??= new CastInstructionT<decimal>(),
+                TypeCode.Double => s_Double ??= new CastInstructionT<double>(),
+                TypeCode.Int16 => s_Int16 ??= new CastInstructionT<short>(),
+                TypeCode.Int32 => s_Int32 ??= new CastInstructionT<int>(),
+                TypeCode.Int64 => s_Int64 ??= new CastInstructionT<long>(),
+                TypeCode.SByte => s_SByte ??= new CastInstructionT<sbyte>(),
+                TypeCode.Single => s_Single ??= new CastInstructionT<float>(),
+                TypeCode.String => s_String ??= new CastInstructionT<string>(),
+                TypeCode.UInt16 => s_UInt16 ??= new CastInstructionT<ushort>(),
+                TypeCode.UInt32 => s_UInt32 ??= new CastInstructionT<uint>(),
+                TypeCode.UInt64 => s_UInt64 ??= new CastInstructionT<ulong>(),
 
                 _ => CastInstructionNoT.Create(t),
             };

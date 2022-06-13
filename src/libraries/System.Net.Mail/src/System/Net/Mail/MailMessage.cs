@@ -165,7 +165,7 @@ namespace System.Net.Mail
         {
             get
             {
-                return (_message.Subject != null ? _message.Subject : string.Empty);
+                return _message.Subject ?? string.Empty;
             }
             set
             {
@@ -210,7 +210,7 @@ namespace System.Net.Mail
         {
             get
             {
-                return (_body != null ? _body : string.Empty);
+                return _body ?? string.Empty;
             }
 
             set

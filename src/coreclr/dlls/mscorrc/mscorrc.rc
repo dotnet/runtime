@@ -415,7 +415,6 @@ BEGIN
     IDS_EE_SIZECONTROLBADTYPE               "Array size control parameter type not supported."
     IDS_EE_SAFEARRAYSZARRAYMISMATCH         "SafeArray cannot be marshaled to this array type because it has either nonzero lower bounds or more than one dimension."
 
-    IDS_EE_ASSEMBLY_GETTYPE_CANNONT_HAVE_ASSEMBLY_SPEC "Type names passed to Assembly.GetType() must not specify an assembly."
     IDS_EE_NEEDS_ASSEMBLY_SPEC              "Typename needs an assembly qualifier."
 
     IDS_EE_FILELOAD_ERROR_GENERIC           "Could not load file or assembly '%1'. %2"

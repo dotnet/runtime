@@ -505,9 +505,8 @@ enum GenTreeFlags : unsigned int
     GTF_FLD_INITCLASS           = 0x20000000, // GT_FIELD -- field access requires preceding class/static init helper
     GTF_FLD_TGT_HEAP            = 0x10000000, // GT_FIELD -- same as GTF_IND_TGT_HEAP
 
-    GTF_INX_RNGCHK              = 0x80000000, // GT_INDEX/GT_INDEX_ADDR -- the array reference should be range-checked.
-    GTF_INX_STRING_LAYOUT       = 0x40000000, // GT_INDEX -- this uses the special string array layout
-    GTF_INX_NOFAULT             = 0x20000000, // GT_INDEX -- the INDEX does not throw an exception (morph to GTF_IND_NONFAULTING)
+    GTF_INX_RNGCHK              = 0x80000000, // GT_INDEX_ADDR -- this array address should be range-checked
+    GTF_INX_ADDR_NONNULL        = 0x40000000, // GT_INDEX_ADDR -- this array address is not null
 
     GTF_IND_TGT_NOT_HEAP        = 0x80000000, // GT_IND   -- the target is not on the heap
     GTF_IND_VOLATILE            = 0x40000000, // GT_IND   -- the load or store must use volatile sematics (this is a nop on X86)
@@ -1108,6 +1107,11 @@ public:
         }
 
         return true;
+    }
+
+    bool IsNotGcDef() const
+    {
+        return IsIntegralConst(0) || IsLocalAddrExpr();
     }
 
     // LIR flags
@@ -2075,6 +2079,17 @@ public:
         assert((sourceFlags & ~GTF_ALL_EFFECT) == 0);
 
         gtFlags &= ~GTF_ALL_EFFECT;
+        gtFlags |= sourceFlags;
+    }
+
+    void AddAllEffectsFlags(GenTree* firstSource, GenTree* secondSource)
+    {
+        AddAllEffectsFlags((firstSource->gtFlags | secondSource->gtFlags) & GTF_ALL_EFFECT);
+    }
+
+    void AddAllEffectsFlags(GenTreeFlags sourceFlags)
+    {
+        assert((sourceFlags & ~GTF_ALL_EFFECT) == 0);
         gtFlags |= sourceFlags;
     }
 
@@ -3046,8 +3061,7 @@ struct GenTreeIntCon : public GenTreeIntConCommon
     FieldSeqNode* gtFieldSeq;
 
 #ifdef DEBUG
-    // If the value represents target address, holds the method handle to that target which is used
-    // to fetch target method name and display in the disassembled code.
+    // If the value represents target address (for a field or call), holds the handle of the field (or call).
     size_t gtTargetHandle = 0;
 #endif
 
@@ -3667,9 +3681,10 @@ private:
 
 public:
     GenTreeLclFld(genTreeOps oper, var_types type, unsigned lclNum, unsigned lclOffs, ClassLayout* layout = nullptr)
-        : GenTreeLclVarCommon(oper, type, lclNum), m_lclOffs(static_cast<uint16_t>(lclOffs)), m_layout(layout)
+        : GenTreeLclVarCommon(oper, type, lclNum), m_lclOffs(static_cast<uint16_t>(lclOffs))
     {
         assert(lclOffs <= UINT16_MAX);
+        SetLayout(layout);
     }
 
     uint16_t GetLclOffs() const
@@ -3685,6 +3700,7 @@ public:
 
     ClassLayout* GetLayout() const
     {
+        assert(!TypeIs(TYP_STRUCT) || (m_layout != nullptr));
         return m_layout;
     }
 
@@ -6231,50 +6247,9 @@ private:
 };
 #endif // FEATURE_HW_INTRINSICS
 
-/* gtIndex -- array access */
-
-struct GenTreeIndex : public GenTreeOp
-{
-    GenTree*& Arr()
-    {
-        return gtOp1;
-    }
-    GenTree*& Index()
-    {
-        return gtOp2;
-    }
-
-    unsigned             gtIndElemSize;     // size of elements in the array
-    CORINFO_CLASS_HANDLE gtStructElemClass; // If the element type is a struct, this is the struct type.
-
-    GenTreeIndex(var_types type, GenTree* arr, GenTree* ind, unsigned indElemSize)
-        : GenTreeOp(GT_INDEX, type, arr, ind)
-        , gtIndElemSize(indElemSize)
-        , gtStructElemClass(nullptr) // We always initialize this after construction.
-    {
-#ifdef DEBUG
-        if (JitConfig.JitSkipArrayBoundCheck() == 1)
-        {
-            // Skip bounds check
-        }
-        else
-#endif
-        {
-            // Do bounds check
-            gtFlags |= GTF_INX_RNGCHK;
-        }
-
-        gtFlags |= GTF_EXCEPT | GTF_GLOB_REF;
-    }
-#if DEBUGGABLE_GENTREE
-    GenTreeIndex() : GenTreeOp()
-    {
-    }
-#endif
-};
-
-// gtIndexAddr: given an array object and an index, checks that the index is within the bounds of the array if
-//              necessary and produces the address of the value at that index of the array.
+// GenTreeIndexAddr: Given an array object and an index, checks that the index is within the bounds of the array if
+//                   necessary and produces the address of the value at that index of the array.
+//
 struct GenTreeIndexAddr : public GenTreeOp
 {
     GenTree*& Arr()
@@ -6310,6 +6285,7 @@ struct GenTreeIndexAddr : public GenTreeOp
         , gtLenOffset(lenOffset)
         , gtElemOffset(elemOffset)
     {
+        assert(!varTypeIsStruct(elemType) || (structElemClass != NO_CLASS_HANDLE));
 #ifdef DEBUG
         if (JitConfig.JitSkipArrayBoundCheck() == 1)
         {
@@ -6338,7 +6314,7 @@ struct GenTreeIndexAddr : public GenTreeOp
 
     bool IsNotNull() const
     {
-        return IsBoundsChecked();
+        return IsBoundsChecked() || ((gtFlags & GTF_INX_ADDR_NONNULL) != 0);
     }
 };
 
@@ -6363,10 +6339,6 @@ public:
         assert(addr->TypeIs(TYP_BYREF));
         assert(((elemType == TYP_STRUCT) && (elemClassHandle != NO_CLASS_HANDLE)) ||
                (elemClassHandle == NO_CLASS_HANDLE));
-
-        // We will only consider "addr" for CSE. This is more profitable and precise
-        // because ARR_ADDR can get its VN "polluted" by zero-offset field sequences.
-        SetDoNotCSE();
     }
 
 #if DEBUGGABLE_GENTREE
@@ -6448,10 +6420,10 @@ struct GenTreeBoundsChk : public GenTreeOp
     BasicBlock*     gtIndRngFailBB; // Basic block to jump to for index-out-of-range
     SpecialCodeKind gtThrowKind;    // Kind of throw block to branch to on failure
 
-    // Store some information about the array element type that was in the GT_INDEX node before morphing.
-    // Note that this information is also stored in the m_arrayInfoMap of the morphed IND node (that
-    // is marked with GTF_IND_ARR_INDEX), but that can be hard to find.
-    var_types gtInxType; // Save the GT_INDEX type
+    // Store some information about the array element type that was in the GT_INDEX_ADDR node before morphing.
+    // Note that this information is also stored in the ARR_ADDR node of the morphed tree, but that can be hard
+    // to find.
+    var_types gtInxType; // The array element type.
 
     GenTreeBoundsChk(GenTree* index, GenTree* length, SpecialCodeKind kind)
         : GenTreeOp(GT_BOUNDS_CHECK, TYP_VOID, index, length)
@@ -8487,7 +8459,6 @@ inline GenTree* GenTree::gtGetOp1() const
         case GT_RSZ:
         case GT_ROL:
         case GT_ROR:
-        case GT_INDEX:
         case GT_ASG:
         case GT_EQ:
         case GT_NE:
@@ -8498,6 +8469,7 @@ inline GenTree* GenTree::gtGetOp1() const
         case GT_COMMA:
         case GT_QMARK:
         case GT_COLON:
+        case GT_INDEX_ADDR:
         case GT_MKREFANY:
             return true;
         default:

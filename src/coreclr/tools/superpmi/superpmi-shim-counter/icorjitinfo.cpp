@@ -59,6 +59,14 @@ CorInfoInline interceptor_ICJI::canInline(
     return original_ICorJitInfo->canInline(callerHnd, calleeHnd);
 }
 
+void interceptor_ICJI::beginInlining(
+          CORINFO_METHOD_HANDLE inlinerHnd,
+          CORINFO_METHOD_HANDLE inlineeHnd)
+{
+    mcs->AddCall("beginInlining");
+    original_ICorJitInfo->beginInlining(inlinerHnd, inlineeHnd);
+}
+
 void interceptor_ICJI::reportInliningDecision(
           CORINFO_METHOD_HANDLE inlinerHnd,
           CORINFO_METHOD_HANDLE inlineeHnd,
@@ -1387,13 +1395,5 @@ uint32_t interceptor_ICJI::getJitFlags(
 {
     mcs->AddCall("getJitFlags");
     return original_ICorJitInfo->getJitFlags(flags, sizeInBytes);
-}
-
-bool interceptor_ICJI::doesFieldBelongToClass(
-          CORINFO_FIELD_HANDLE fldHnd,
-          CORINFO_CLASS_HANDLE cls)
-{
-    mcs->AddCall("doesFieldBelongToClass");
-    return original_ICorJitInfo->doesFieldBelongToClass(fldHnd, cls);
 }
 

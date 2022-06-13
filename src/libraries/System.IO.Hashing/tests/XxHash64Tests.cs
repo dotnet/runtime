@@ -45,17 +45,17 @@ namespace System.IO.Hashing.Tests
                 //https://asecuritysite.com/encryption/xxHash, Example 1
                 new TestCase(
                     "Nobody inspects the spammish repetition",
-                    Encoding.ASCII.GetBytes("Nobody inspects the spammish repetition"),
+                    "Nobody inspects the spammish repetition"u8.ToArray(),
                     "FBCEA83C8A378BF1"),
                 //https://asecuritysite.com/encryption/xxHash, Example 2
                 new TestCase(
                     "The quick brown fox jumps over the lazy dog",
-                    Encoding.ASCII.GetBytes("The quick brown fox jumps over the lazy dog"),
+                    "The quick brown fox jumps over the lazy dog"u8.ToArray(),
                     "0B242D361FDA71BC"),
                 //https://asecuritysite.com/encryption/xxHash, Example 3
                 new TestCase(
                     "The quick brown fox jumps over the lazy dog.",
-                    Encoding.ASCII.GetBytes("The quick brown fox jumps over the lazy dog."),
+                    "The quick brown fox jumps over the lazy dog."u8.ToArray(),
                     "44AD33705751AD73"),
 
                 // Manual exploration to force boundary conditions in code coverage.
@@ -64,7 +64,7 @@ namespace System.IO.Hashing.Tests
                 // The "in three pieces" test causes this to build up in the accumulator every time.
                 new TestCase(
                     "abc",
-                    Encoding.ASCII.GetBytes("abc"),
+                    "abc"u8.ToArray(),
                     "44BC2CF5AD770999"),
                 // Accumulates every time.
                 new TestCase(

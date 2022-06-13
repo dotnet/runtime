@@ -12,7 +12,7 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         public X509BasicConstraintsExtension(bool certificateAuthority, bool hasPathLengthConstraint, int pathLengthConstraint, bool critical)
-            : base(Oids.BasicConstraints2Oid, EncodeExtension(certificateAuthority, hasPathLengthConstraint, pathLengthConstraint), critical)
+            : base(Oids.BasicConstraints2Oid, EncodeExtension(certificateAuthority, hasPathLengthConstraint, pathLengthConstraint), critical, skipCopy: true)
         {
         }
 

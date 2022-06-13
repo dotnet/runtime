@@ -30,9 +30,7 @@ namespace System
             info.AddValue("AssemblyName", string.Empty);
         }
 
-#pragma warning disable CA2229 // public for compat
         public UnitySerializationHolder(SerializationInfo info, StreamingContext context)
-#pragma warning restore CA2229
         {
             ArgumentNullException.ThrowIfNull(info);
 

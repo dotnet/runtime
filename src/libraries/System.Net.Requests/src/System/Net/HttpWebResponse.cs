@@ -347,7 +347,7 @@ namespace System.Net
         {
             CheckDisposed();
             string? headerValue = Headers[headerName];
-            return (headerValue == null) ? string.Empty : headerValue;
+            return headerValue ?? string.Empty;
         }
 
         public override void Close()

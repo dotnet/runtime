@@ -42,7 +42,7 @@ namespace System
 
         /// <summary>Constructor used by <see cref="ThreadSafeRandom"/>.</summary>
         /// <param name="isThreadSafeRandom">Must be true.</param>
-        protected private Random(bool isThreadSafeRandom)
+        private protected Random(bool isThreadSafeRandom)
         {
             Debug.Assert(isThreadSafeRandom);
             _impl = null!; // base implementation isn't used at all
