@@ -15,7 +15,8 @@ namespace System.Net.Http.Functional.Tests
     public partial class NtAuthTests : IClassFixture<NtAuthServers>
     {
         //internal const string UserHeaderName = "X-User";
-        public static bool IsNtlmInstalled => Capability.IsNtlmInstalled();
+        public static bool IsNtlmAvailable =>
+            Capability.IsNtlmInstalled() || OperatingSystem.IsAndroid() || OperatingSystem.IsTvOS();
 
         private static NetworkCredential s_testCredentialRight = new NetworkCredential("rightusername", "rightpassword");
 
@@ -110,6 +111,7 @@ namespace System.Net.Http.Functional.Tests
             await connection.SendResponseAsync(HttpStatusCode.OK);
         }
 
+        [ConditionalTheory(nameof(IsNtlmAvailable))]
         [InlineData(true)]
         [InlineData(false)]
         public async Task DefaultHandler_FakeServer_Success(bool useNtlm)
