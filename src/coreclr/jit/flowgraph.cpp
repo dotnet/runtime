@@ -752,13 +752,13 @@ bool Compiler::fgIsSafeToRemoveIntToIntCastOnAssignment(GenTree* tree)
     if (gtIsActiveCSE_Candidate(cast->CastOp()))
         return false;
 
-    if (!varTypeIsIntegral(castToType))
+    if (!varTypeIsSmall(effectiveOp1))
+        return false;
+
+    if (!varTypeIsSmall(castToType))
         return false;
 
     if (!varTypeIsIntegral(castFromType))
-        return false;
-
-    if (!varTypeIsIntegral(effectiveOp1))
         return false;
 
     // If we are performing a narrowing cast and
