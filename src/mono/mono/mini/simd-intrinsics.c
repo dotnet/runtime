@@ -3994,6 +3994,7 @@ static SimdIntrinsic wasmbase_methods [] = {
 	{SN_Shuffle},
 	{SN_Splat},
 	{SN_Swizzle},
+	{SN_get_IsSupported},
 };
 
 static const IntrinGroup supported_wasm_intrinsics [] = {
