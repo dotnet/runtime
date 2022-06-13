@@ -25,7 +25,10 @@
       Assemblies="@(AotInputAssemblies)"
       OutputDir="$(PublishDir)"
       IntermediateOutputPath="$(IntermediateOutputPath)"
-      UseAotDataFile="$(UseAotDataFile)">
+      UseAotDataFile="$(UseAotDataFile)"
+      NetTracePath="$(NetTracePath)"
+      PgoBinaryPath="$(PgoBinaryPath)"
+      MibcProfilePath="$(MibcProfilePath)">
       <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />
     </MonoAOTCompiler>
   </Target>

@@ -112,6 +112,16 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     public bool UseDwarfDebug { get; set; }
 
     /// <summary>
+    /// Path to Dotnet PGO binary (dotnet-pgo)
+    /// </summary>
+    public string? PgoBinaryPath { get; set; }
+
+    /// <summary>
+    /// NetTrace file to use when invoking dotnet-pgo for
+    /// </summary>
+    public string? NetTracePath { get; set; }
+
+    /// <summary>
     /// File to use for profile-guided optimization, *only* the methods described in the file will be AOT compiled.
     /// </summary>
     public string[]? AotProfilePath { get; set; }
@@ -119,7 +129,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     /// <summary>
     /// Mibc file to use for profile-guided optimization, *only* the methods described in the file will be AOT compiled.
     /// </summary>
-    public string[]? MibcProfilePath { get; set; }
+    public string[] MibcProfilePath { get; set; } = Array.Empty<string>();
 
     /// <summary>
     /// List of profilers to use.
@@ -271,6 +281,20 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         if (!Directory.Exists(IntermediateOutputPath))
             Directory.CreateDirectory(IntermediateOutputPath);
 
+        if (!string.IsNullOrEmpty(NetTracePath))
+        {
+            if (!File.Exists(NetTracePath))
+            {
+                Log.LogError($"NetTracePath={nameof(NetTracePath)} doesn't exist");
+                return false;
+            }
+            if (!File.Exists(PgoBinaryPath))
+            {
+                Log.LogError($"NetTracePath was provided, but {nameof(PgoBinaryPath)}='{PgoBinaryPath}' doesn't exist");
+                return false;
+            }
+        }
+
         if (AotProfilePath != null)
         {
             foreach (var path in AotProfilePath)
@@ -283,15 +307,12 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             }
         }
 
-        if (MibcProfilePath != null)
+        foreach (var path in MibcProfilePath)
         {
-            foreach (var path in MibcProfilePath)
+            if (!File.Exists(path))
             {
-                if (!File.Exists(path))
-                {
-                    Log.LogError($"MibcProfilePath '{path}' doesn't exist.");
-                    return false;
-                }
+                Log.LogError($"MibcProfilePath '{path}' doesn't exist.");
+                return false;
             }
         }
 
@@ -400,6 +421,25 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         }
     }
 
+    private bool ProcessNettrace(string netTraceFile)
+    {
+        var outputMibcPath = Path.Combine(OutputDir, Path.ChangeExtension(Path.GetFileName(netTraceFile), ".mibc"));
+
+        (int exitCode, string output) = Utils.TryRunProcess(Log,
+                                                            PgoBinaryPath!,
+                                                            $"create-mibc --trace {netTraceFile} --output {outputMibcPath}");
+
+        if (exitCode != 0)
+        {
+            Log.LogError($"dotnet-pgo({PgoBinaryPath}) failed for {netTraceFile}:{output}");
+            return false;
+        }
+
+        MibcProfilePath = MibcProfilePath.Append(outputMibcPath).ToArray();
+        Log.LogMessage(MessageImportance.Low, $"Generated {outputMibcPath} from {PgoBinaryPath}");
+        return true;
+    }
+
     private bool ExecuteInternal()
     {
         if (!ProcessAndValidateArguments())
@@ -416,6 +456,9 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             monoPaths = string.Join(Path.PathSeparator.ToString(), AdditionalAssemblySearchPaths);
 
         _cache = new FileCache(CacheFilePath, Log);
+
+        if (!string.IsNullOrEmpty(NetTracePath) && !ProcessNettrace(NetTracePath))
+            return false;
 
         List<PrecompileArguments> argsList = new();
         foreach (var assemblyItem in _assembliesToCompile)
@@ -756,7 +799,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             }
         }
 
-        if (MibcProfilePath?.Length > 0)
+        if (MibcProfilePath.Length > 0)
         {
             aotArgs.Add("profile-only");
             foreach (var path in MibcProfilePath)
