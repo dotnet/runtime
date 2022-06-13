@@ -316,7 +316,7 @@ namespace System.Net
             {
                 Debug.Assert(decodedIncomingBlob != null);
 
-                if (_isSpNego)
+                if (!_isSpNego)
                 {
                     IsCompleted = true;
                 }
@@ -918,12 +918,12 @@ namespace System.Net
                     {
                         using (writer.PushSequence())
                         {
-                            using (writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, (int)NegTokenInit.MechToken)))
+                            using (writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, (int)NegTokenResp.ResponseToken)))
                             {
                                 writer.WriteOctetString(response);
                             }
 
-                            using (writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, (int)NegTokenInit.MechListMIC)))
+                            using (writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, (int)NegTokenResp.MechListMIC)))
                             {
                                 writer.WriteOctetString(GetMIC(_spnegoMechList));
                             }
