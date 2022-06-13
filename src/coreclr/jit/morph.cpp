@@ -9869,7 +9869,7 @@ GenTree* Compiler::fgMorphFieldToSimdGetElement(GenTree* tree)
         var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
         GenTree*  op2          = gtNewIconNode(index, TYP_INT);
 
-        assert(simdSize <= 16);
+        assert(simdSize <= 32);
         assert(simdSize >= ((index + 1) * genTypeSize(simdBaseType)));
 
 #if defined(TARGET_XARCH)
@@ -9944,7 +9944,7 @@ GenTree* Compiler::fgMorphFieldAssignToSimdSetElement(GenTree* tree)
         var_types simdType     = simdStructNode->gtType;
         var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
 
-        assert(simdSize <= 16);
+        assert(simdSize <= 32);
         assert(simdSize >= ((index + 1) * genTypeSize(simdBaseType)));
 
         GenTree*       op2         = gtNewIconNode(index, TYP_INT);
