@@ -57,10 +57,6 @@ namespace DependencyLogViewer
             {
                 ETWGraphProcessing.Singleton.Stop();
             }
-            //if (DGMLGraphProcessing.Singleton is not null)
-            //{
-            //    DGMLGraphProcessing.Singleton.Stop();
-            //}
 
             Application.Exit();
         }
@@ -93,7 +89,7 @@ Once the interesting node(s) have been identified in the dependency graph window
             MessageBox.Show(helpMessage);
         }
 
-        private void button1_Click(object sender, EventArgs e)
+        private void browseButton_Click(object sender, EventArgs e)
         {
             openFile();
         }
@@ -120,7 +116,7 @@ Once the interesting node(s) have been identified in the dependency graph window
             textBox1.Text = "";
         }
 
-        private void button2_Click(object sender, EventArgs e)
+        private void ETWButton_Click(object sender, EventArgs e)
         {
             if (!(TraceEventSession.IsElevated() ?? false))
             {
@@ -129,8 +125,6 @@ Once the interesting node(s) have been identified in the dependency graph window
             {
                 ETWGraphProcessing.Singleton = new ETWGraphProcessing();
             }
-            
-
         }
     }
 }
