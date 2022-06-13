@@ -114,18 +114,21 @@ internal static partial class Interop
         switch (errorInfo.Error)
         {
             case Error.ENOENT:
-                if (isDirectory)
-                {
-                    return !string.IsNullOrEmpty(path) ?
-                        new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, path)) :
-                        new DirectoryNotFoundException(SR.IO_PathNotFound_NoPathName);
-                }
-                else
+                // For Windows compatibility, throw DirectoryNotFoundException instead of FileNotFoundException
+                // when the parent folder does not exist.
+                if (!isDirectory && (path is null ||
+                                     DirectoryExists(Path.GetDirectoryName(Path.TrimEndingDirectorySeparator(path)))))
                 {
                     return !string.IsNullOrEmpty(path) ?
                         new FileNotFoundException(SR.Format(SR.IO_FileNotFound_FileName, path), path) :
                         new FileNotFoundException(SR.IO_FileNotFound);
                 }
+                goto case Error.ENOTDIR;
+
+            case Error.ENOTDIR:
+                return !string.IsNullOrEmpty(path) ?
+                    new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, path)) :
+                    new DirectoryNotFoundException(SR.IO_PathNotFound_NoPathName);
 
             case Error.EACCES:
             case Error.EBADF:
@@ -160,6 +163,23 @@ internal static partial class Interop
 
             default:
                 return GetIOException(errorInfo, path);
+
+            static bool DirectoryExists(string? fullPath)
+            {
+                if (fullPath is null)
+                {
+                    return false;
+                }
+
+                Interop.Sys.FileStatus fileinfo;
+
+                if (Interop.Sys.Stat(fullPath, out fileinfo) < 0)
+                {
+                    return false;
+                }
+
+                return ((fileinfo.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR);
+            }
         }
     }
 

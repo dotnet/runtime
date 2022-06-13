@@ -580,7 +580,7 @@ namespace System.IO
             FileAttributes attributes = new FileInfo(fullPath, null).Attributes;
 
             if (attributes == (FileAttributes)(-1))
-                FileSystemInfo.ThrowNotFound(fullPath);
+                throw Interop.GetExceptionForIoErrno(new Interop.ErrorInfo(Interop.Error.ENOENT), fullPath, isDirectory: false);
 
             return attributes;
         }

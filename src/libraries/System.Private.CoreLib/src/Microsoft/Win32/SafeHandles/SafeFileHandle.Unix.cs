@@ -82,37 +82,13 @@ namespace Microsoft.Win32.SafeHandles
                     throw ex;
                 }
 
-                // If we fail to open the file due to a path not existing, we need to know whether to blame
-                // the file itself or its directory.  If we're creating the file, then we blame the directory,
-                // otherwise we blame the file.
-                //
-                // When opening, we need to align with Windows, which considers a missing path to be
-                // FileNotFound only if the containing directory exists.
-
-                bool isDirectory = (error.Error == Interop.Error.ENOENT) &&
-                    ((flags & Interop.Sys.OpenFlags.O_CREAT) != 0
-                    || !DirectoryExists(System.IO.Path.GetDirectoryName(System.IO.Path.TrimEndingDirectorySeparator(path!))!));
-
                 Interop.CheckIo(
                     error.Error,
                     path,
-                    isDirectory,
                     errorRewriter: e => (e.Error == Interop.Error.EISDIR) ? Interop.Error.EACCES.Info() : e);
             }
 
             return handle;
-        }
-
-        private static bool DirectoryExists(string fullPath)
-        {
-            Interop.Sys.FileStatus fileinfo;
-
-            if (Interop.Sys.Stat(fullPath, out fileinfo) < 0)
-            {
-                return false;
-            }
-
-            return ((fileinfo.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR);
         }
 
         // Each thread will have its own copy. This prevents race conditions if the handle had the last error.
