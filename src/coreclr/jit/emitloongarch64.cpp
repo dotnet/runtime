@@ -3912,7 +3912,7 @@ static const char* const RegNames[] =
 
 void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
 {
-    const BYTE*       insAdr      = addr;
+    const BYTE*       insAdr      = addr - writeableOffset;
     const char* const CFregName[] = {"fcc0", "fcc1", "fcc2", "fcc3", "fcc4", "fcc5", "fcc6", "fcc7"};
 
     unsigned int opcode = (code >> 26) & 0x3f;

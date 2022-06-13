@@ -216,6 +216,7 @@ typedef struct {
 	GHashTable *jit_callees;
 	LLVMValueRef long_bb_break_var;
 	int *gc_var_indexes;
+	int gc_var_indexes_len;
 	Address *gc_pin_area;
 	LLVMValueRef il_state;
 	LLVMValueRef il_state_ret;
@@ -3858,11 +3859,10 @@ emit_gc_pin (EmitContext *ctx, LLVMBuilderRef builder, int vreg)
 {
 	if (ctx->values [vreg] == LLVMConstNull (IntPtrType ()))
 		return;
-#if 0
 	MonoInst *var = get_vreg_to_inst (ctx->cfg, vreg);
 	if (var && var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT|MONO_INST_IS_DEAD))
 		return;
-#endif
+	g_assert (vreg < ctx->gc_var_indexes_len);
 	LLVMValueRef index0 = const_int32 (0);
 	LLVMValueRef index1 = const_int32 (ctx->gc_var_indexes [vreg] - 1);
 	LLVMValueRef indexes [] = { index0, index1 };
@@ -3905,6 +3905,7 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 		if (vreg_is_ref (cfg, i)) {
 			ctx->gc_var_indexes [i] = ngc_vars + 1;
 			ngc_vars ++;
+			ctx->gc_var_indexes_len = i + 1;
 			/*
 			MonoInst *var = get_vreg_to_inst (ctx->cfg, i);
 			if (!(var && var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT|MONO_INST_IS_DEAD))) {
@@ -11339,8 +11340,8 @@ MONO_RESTORE_WARNING
 			if (!skip_volatile_store)
 				emit_volatile_store (ctx, ins->dreg);
 #ifdef TARGET_WASM
-			//if (vreg_is_ref (cfg, ins->dreg) && ctx->values [ins->dreg] && ins->opcode != OP_MOVE)
-			if (vreg_is_ref (cfg, ins->dreg) && ctx->values [ins->dreg])
+			//if (vreg_is_ref (cfg, ins->dreg) && ctx->values [ins->dreg])
+			if (vreg_is_ref (cfg, ins->dreg) && ctx->values [ins->dreg] && ins->opcode != OP_MOVE)
 				emit_gc_pin (ctx, builder, ins->dreg);
 #endif
 		}
@@ -11831,12 +11832,13 @@ emit_method_inner (EmitContext *ctx)
 	}
 	ctx->has_safepoints = requires_safepoint;
 
-	if (!cfg->llvm_only && mono_threads_are_safepoints_enabled () && requires_safepoint) {
+	if (requires_safepoint && mini_safepoints_enabled ()) {
 		if (!cfg->compile_aot) {
 			LLVMSetGC (method, "coreclr");
 			emit_gc_safepoint_poll (ctx->module, ctx->lmodule, cfg);
 		} else {
-			LLVMSetGC (method, "coreclr");
+			if (!cfg->llvm_only)
+				LLVMSetGC (method, "coreclr");
 		}
 	}
 	LLVMSetLinkage (method, LLVMPrivateLinkage);

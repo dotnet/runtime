@@ -442,7 +442,7 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr  size,
         }
         else
         {
-            GetEmitter()->emitIns_R_I(INS_mov, size, reg, imm DEBUGARG(gtFlags));
+            GetEmitter()->emitIns_R_I(INS_mov, size, reg, imm DEBUGARG(targetHandle) DEBUGARG(gtFlags));
         }
     }
     regSet.verifyRegUsed(reg);
@@ -462,8 +462,8 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
         {
             // relocatable values tend to come down as a CNS_INT of native int type
             // so the line between these two opcodes is kind of blurry
-            GenTreeIntConCommon* con    = tree->AsIntConCommon();
-            ssize_t              cnsVal = con->IconValue();
+            GenTreeIntCon* con    = tree->AsIntCon();
+            ssize_t        cnsVal = con->IconValue();
 
             emitAttr attr = emitActualTypeSize(targetType);
             // Currently this cannot be done for all handles due to
@@ -482,7 +482,8 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                 attr = EA_SET_FLG(attr, EA_BYREF_FLG);
             }
 
-            instGen_Set_Reg_To_Imm(attr, targetReg, cnsVal, INS_FLAGS_DONT_CARE DEBUGARG(0) DEBUGARG(tree->gtFlags));
+            instGen_Set_Reg_To_Imm(attr, targetReg, cnsVal,
+                                   INS_FLAGS_DONT_CARE DEBUGARG(con->gtTargetHandle) DEBUGARG(con->gtFlags));
             regSet.verifyRegUsed(targetReg);
         }
         break;

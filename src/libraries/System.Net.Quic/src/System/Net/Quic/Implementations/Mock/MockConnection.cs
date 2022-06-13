@@ -164,7 +164,7 @@ namespace System.Net.Quic.Implementations.Mock
             return ValueTask.CompletedTask;
         }
 
-        internal async override ValueTask<QuicStreamProvider> OpenUnidirectionalStreamAsync(CancellationToken cancellationToken)
+        internal override async ValueTask<QuicStreamProvider> OpenUnidirectionalStreamAsync(CancellationToken cancellationToken)
         {
             PeerStreamLimit? streamLimit = RemoteStreamLimit;
             if (streamLimit is null)
@@ -187,7 +187,7 @@ namespace System.Net.Quic.Implementations.Mock
             return OpenStream(streamId, false);
         }
 
-        internal async override ValueTask<QuicStreamProvider> OpenBidirectionalStreamAsync(CancellationToken cancellationToken)
+        internal override async ValueTask<QuicStreamProvider> OpenBidirectionalStreamAsync(CancellationToken cancellationToken)
         {
             PeerStreamLimit? streamLimit = RemoteStreamLimit;
             if (streamLimit is null)

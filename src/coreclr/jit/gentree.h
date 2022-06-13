@@ -3056,8 +3056,7 @@ struct GenTreeIntCon : public GenTreeIntConCommon
     FieldSeqNode* gtFieldSeq;
 
 #ifdef DEBUG
-    // If the value represents target address, holds the method handle to that target which is used
-    // to fetch target method name and display in the disassembled code.
+    // If the value represents target address (for a field or call), holds the handle of the field (or call).
     size_t gtTargetHandle = 0;
 #endif
 
@@ -3677,9 +3676,10 @@ private:
 
 public:
     GenTreeLclFld(genTreeOps oper, var_types type, unsigned lclNum, unsigned lclOffs, ClassLayout* layout = nullptr)
-        : GenTreeLclVarCommon(oper, type, lclNum), m_lclOffs(static_cast<uint16_t>(lclOffs)), m_layout(layout)
+        : GenTreeLclVarCommon(oper, type, lclNum), m_lclOffs(static_cast<uint16_t>(lclOffs))
     {
         assert(lclOffs <= UINT16_MAX);
+        SetLayout(layout);
     }
 
     uint16_t GetLclOffs() const
@@ -3695,6 +3695,7 @@ public:
 
     ClassLayout* GetLayout() const
     {
+        assert(!TypeIs(TYP_STRUCT) || (m_layout != nullptr));
         return m_layout;
     }
 

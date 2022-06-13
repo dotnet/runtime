@@ -5490,7 +5490,7 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 		if (acfg->aot_opts.log_generics)
 			aot_printf (acfg, "%*sAdding method %s.\n", depth, "", mono_method_get_full_name (method));
 
-		add_method (acfg, method);
+		add_extra_method_with_depth (acfg, method, 0);
 	}
 
 	/* Add superclasses */

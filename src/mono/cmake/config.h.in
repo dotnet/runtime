@@ -707,9 +707,6 @@
 #cmakedefine TARGET_PS3 1
 
 /* ... */
-#cmakedefine __mono_ppc64__ 1
-
-/* ... */
 #cmakedefine TARGET_XBOX360 1
 
 /* ... */

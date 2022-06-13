@@ -211,7 +211,7 @@ namespace System.Net.NetworkInformation
         }
 
         /// Gets the active UDP listeners. Uses the native GetUdpTable API.
-        public unsafe override IPEndPoint[] GetActiveUdpListeners()
+        public override unsafe IPEndPoint[] GetActiveUdpListeners()
         {
             uint size = 0;
             uint result;

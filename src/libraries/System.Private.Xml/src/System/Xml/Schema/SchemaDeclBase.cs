@@ -55,7 +55,7 @@ namespace System.Xml.Schema
         [AllowNull]
         internal string Prefix
         {
-            get { return (prefix == null) ? string.Empty : prefix; }
+            get { return prefix ?? string.Empty; }
             set { prefix = value; }
         }
 
@@ -112,7 +112,7 @@ namespace System.Xml.Schema
 
         internal string DefaultValueRaw
         {
-            get { return (defaultValueRaw != null) ? defaultValueRaw : string.Empty; }
+            get { return defaultValueRaw ?? string.Empty; }
             set { defaultValueRaw = value; }
         }
 

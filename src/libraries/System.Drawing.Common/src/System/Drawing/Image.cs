@@ -85,9 +85,7 @@ namespace System.Drawing
 
         private protected Image() { }
 
-#pragma warning disable CA2229 // Implement Serialization constructor
         private protected Image(SerializationInfo info, StreamingContext context)
-#pragma warning restore CA2229
         {
             byte[] dat = (byte[])info.GetValue("Data", typeof(byte[]))!; // Do not rename (binary serialization)
 
