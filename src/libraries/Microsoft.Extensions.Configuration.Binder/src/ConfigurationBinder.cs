@@ -753,9 +753,8 @@ namespace Microsoft.Extensions.Configuration
         }
 
         private static List<PropertyInfo> GetAllProperties(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-            Type type)
-        => type.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static).ToList();
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
+            => type.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static).ToList();
 
         [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
         private static object? BindParameter(ParameterInfo parameter, Type type, IConfiguration config,
