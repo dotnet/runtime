@@ -4712,8 +4712,6 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
             varDsc->setLvRefCnt(0);
             varDsc->setLvRefCntWtd(BB_ZERO_WEIGHT);
 
-            varDsc->lvAllDefsAreNoGc = true;
-
             // Special case for some varargs params ... these must
             // remain unreferenced.
             const bool isSpecialVarargsParam = varDsc->lvIsParam && raIsVarargsStackArg(lclNum);
@@ -4762,7 +4760,7 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
             varDsc->lvSingleDef             = varDsc->lvIsParam;
             varDsc->lvSingleDefRegCandidate = varDsc->lvIsParam;
 
-            varDsc->lvAllDefsAreNoGc = true;
+            varDsc->lvAllDefsAreNoGc = (varDsc->lvImplicitlyReferenced == false);
         }
     }
 
