@@ -2108,18 +2108,20 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         size_t   addrValue           = (size_t)call->gtEntryPoint.addr;
         GenTree* indirectCellAddress = comp->gtNewIconHandleNode(addrValue, GTF_ICON_FTN_ADDR);
         INDEBUG(indirectCellAddress->AsIntCon()->gtTargetHandle = (size_t)call->gtCallMethHnd);
-        indirectCellAddress->SetRegNum(REG_R2R_INDIRECT_PARAM);
+
 #ifdef TARGET_ARM
-        // Issue #xxxx : Don't attempt to CSE this constant on ARM32
-        //
-        // This constant has specific register requirements, and LSRA doesn't currently correctly
-        // handle them when the value is in a CSE'd local.
+        // TODO-ARM: We currently do not properly kill this register in LSRA
+        // (see getKillSetForCall which does so only for VSD calls).
+        // We should be able to remove these two workarounds once we do so,
+        // however when this was tried there were significant regressions.
+        indirectCellAddress->SetRegNum(REG_R2R_INDIRECT_PARAM);
         indirectCellAddress->SetDoNotCSE();
-#endif // TARGET_ARM
+#endif
 
         // Push the stub address onto the list of arguments.
-        InsertAfterThisOrFirst(comp,
-                               NewCallArg::Primitive(indirectCellAddress).WellKnown(WellKnownArg::R2RIndirectionCell));
+        NewCallArg indirCellAddrArg =
+            NewCallArg::Primitive(indirectCellAddress).WellKnown(WellKnownArg::R2RIndirectionCell);
+        InsertAfterThisOrFirst(comp, indirCellAddrArg);
     }
 #endif
 
@@ -7917,7 +7919,7 @@ void Compiler::fgMorphTailCallViaJitHelper(GenTreeCall* call)
 //    call - a call that needs virtual stub dispatching.
 //
 // Return Value:
-//    addr tree with set resister requirements.
+//    addr tree
 //
 GenTree* Compiler::fgGetStubAddrArg(GenTreeCall* call)
 {
@@ -7935,7 +7937,6 @@ GenTree* Compiler::fgGetStubAddrArg(GenTreeCall* call)
         INDEBUG(stubAddrArg->AsIntCon()->gtTargetHandle = (size_t)call->gtCallMethHnd);
     }
     assert(stubAddrArg != nullptr);
-    stubAddrArg->SetRegNum(virtualStubParamInfo->GetReg());
     return stubAddrArg;
 }
 

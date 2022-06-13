@@ -5309,7 +5309,7 @@ struct GenTreeCall final : public GenTree
 
 #if defined(TARGET_ARMARCH)
         // For ARM architectures, we always use an indirection cell for R2R calls.
-        if (IsR2RRelativeIndir())
+        if (IsR2RRelativeIndir() && !IsDelegateInvoke())
         {
             return WellKnownArg::R2RIndirectionCell;
         }
