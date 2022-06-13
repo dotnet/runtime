@@ -558,6 +558,7 @@
     <Compile Include="System\Security\Cryptography\ECDiffieHellman.Create.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\ECDsa.Create.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\HashProviderDispenser.Browser.cs" />
+    <Compile Include="System\Security\Cryptography\HMACHashProvider.Browser.Managed.cs" />
     <Compile Include="System\Security\Cryptography\LiteHash.Browser.cs" />
     <Compile Include="System\Security\Cryptography\OidLookup.NoFallback.cs" />
     <Compile Include="System\Security\Cryptography\OpenSsl.NotSupported.cs" />
