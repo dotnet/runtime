@@ -14,7 +14,6 @@ namespace System.Net.Http.Functional.Tests
 {
     public partial class NtAuthTests : IClassFixture<NtAuthServers>
     {
-        //internal const string UserHeaderName = "X-User";
         public static bool IsNtlmAvailable =>
             Capability.IsNtlmInstalled() || OperatingSystem.IsAndroid() || OperatingSystem.IsTvOS();
 
