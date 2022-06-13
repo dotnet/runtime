@@ -662,9 +662,6 @@ void Lowering::LowerRotate(GenTree* tree)
 // Arguments:
 //    tree - the node to lower
 //
-// Return Value:
-//    The next tree.
-//
 // Notes:
 //     TODO: We could do this optimization in morph but we do not have
 //           a conditional select op in HIR. At some point, we may
