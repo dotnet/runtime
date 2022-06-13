@@ -1984,16 +1984,16 @@ mono_arch_finish_dyn_call (MonoDynCallInfo *info, guint8 *buf)
 		*(gpointer*)ret = (gpointer)res;
 		break;
 	case MONO_TYPE_I1:
-		*(gint8*)ret = (gint8)res;
+		*(gint8*)ret = GHMREG_TO_UINT8 (res);
 		break;
 	case MONO_TYPE_U1:
-		*(guint8*)ret = (guint8)res;
+		*(guint8*)ret = GHMREG_TO_UINT8 (res);
 		break;
 	case MONO_TYPE_I2:
-		*(gint16*)ret = (gint16)res;
+		*(gint16*)ret = GHMREG_TO_INT16 (res);
 		break;
 	case MONO_TYPE_U2:
-		*(guint16*)ret = (guint16)res;
+		*(guint16*)ret = GHMREG_TO_UINT16 (res);
 		break;
 	case MONO_TYPE_I4:
 		*(gint32*)ret = res;
@@ -2931,7 +2931,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				temp->inst_c0 = ins->inst_imm;
 				temp->dreg = mono_alloc_ireg (cfg);
 				ins->sreg1 = temp->dreg;
-				ins->opcode = (guint16)mono_op_imm_to_op (ins->opcode);
+				ins->opcode = GINT_TO_OPCODE (mono_op_imm_to_op (ins->opcode));
 			}
 			break;
 		case OP_ICOMPARE_IMM:
@@ -5041,7 +5041,7 @@ emit_store_regset_cfa (MonoCompile *cfg, guint8 *code, guint64 regs, int basereg
 
 			for (j = 0; j < nregs; ++j) {
 				if (cfa_regset & (1 << (i + j)))
-					mono_emit_unwind_op_offset (cfg, code, (guint16)(i + j), (- cfa_offset) + offset + ((pos + j) * 8));
+					mono_emit_unwind_op_offset (cfg, code, (i + j), (- cfa_offset) + offset + ((pos + j) * 8));
 			}
 
 			i += nregs - 1;

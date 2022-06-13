@@ -3271,7 +3271,7 @@ proflog_icall_SetSampleMode (MonoProfilerSampleMode mode, gint32 frequency)
 
 	mono_coop_mutex_unlock (&log_profiler.api_mutex);
 
-	return (MonoBoolean) result;
+	return !!result;
 }
 
 ICALL_EXPORT MonoBoolean

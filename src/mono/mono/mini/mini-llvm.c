@@ -1983,13 +1983,13 @@ get_aotconst_name (MonoJumpInfoType type, gconstpointer data, int got_offset)
 		name = g_strdup_printf ("%s", mono_ji_type_to_string (type));
 		len = strlen (name);
 		for (size_t i = 0; i < len; ++i)
-			name [i] = (char) tolower (name [i]);
+			name [i] = GINT_TO_CHAR (tolower (name [i]));
 		break;
 	default:
 		name = g_strdup_printf ("%s_%d", mono_ji_type_to_string (type), got_offset);
 		len = strlen (name);
 		for (size_t i = 0; i < len; ++i)
-			name [i] = (char) tolower (name [i]);
+			name [i] = GINT_TO_CHAR (tolower (name [i]));
 		break;
 	}
 

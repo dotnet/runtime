@@ -3449,7 +3449,7 @@ loop_start:
 				ins->sreg2 = temp->dreg;
 				if (opcode2 == -1)
 					g_error ("mono_op_imm_to_op failed for %s\n", mono_inst_name (ins->opcode));
-				ins->opcode = GINT32_TO_UINT16 (opcode2);
+				ins->opcode = GUINT32_TO_OPCODE (opcode2);
 			}
 			if (ins->opcode == OP_SBB || ins->opcode == OP_ISBB || ins->opcode == OP_SUBCC)
 				goto loop_start;

@@ -175,7 +175,7 @@ add_pool_entry (MonoCompile *cfg, ConstantPoolEntry *entry)
 			write_short (cfg, NUM_SUCCESSOR);
 			for (int i = 0; i < NUM_SUCCESSOR; i++) {
 				char *str = g_strdup ("successor1");
-				str[9] = '0' + (char)i;
+				str[9] = '0' + GINT_TO_CHAR (i);
 				write_byte (cfg, 0);
 				write_pool (cfg, create_cp_entry (cfg, (void *) str, PT_STRING));
 			}
