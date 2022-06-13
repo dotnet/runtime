@@ -51,7 +51,7 @@ namespace Microsoft.Interop
                 statementsToUpdate.AddRange(retStatements);
             }
 
-            if (context.CurrentStage is StubCodeContext.Stage.Unmarshal or StubCodeContext.Stage.GuaranteedUnmarshal)
+            if (context.CurrentStage is StubCodeContext.Stage.UnmarshalCapture or StubCodeContext.Stage.Unmarshal or StubCodeContext.Stage.GuaranteedUnmarshal)
             {
                 // For Unmarshal and GuaranteedUnmarshal stages, use the topologically sorted
                 // marshaller list to generate the marshalling statements
