@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.Build.NoTargets">
+
+  <PropertyGroup>
+    <MonoWasmTargets>singlethread;multithread;perftrace</MonoWasmTargets>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <MonoWasmTargetItems Include="$(MonoWasmTargets.Split(';'))" />
+  </ItemGroup>
+
+  <Target Name="BuildMonoWasmAllTargets" AfterTargets="Build">
+    <MSBuild Targets="Restore"
+             Projects="$(MSBuildThisFileDirectory)mono.proj" />
+    <MSBuild Targets="Restore"
+             Projects="$(MSBuildThisFileDirectory)wasm\wasm.proj" />
+    <MSBuild Targets="BuildMonoWasmTarget"
+             Projects="$(MSBuildThisFileFullPath)"
+             BuildInParallel="true"
+             Properties="MonoWasmBuildVariant=%(MonoWasmTargetItems.Identity);RealRuntimeBinDir=$(RuntimeBinDir)" />
+  </Target>
+
+  <Target Name="BuildMonoWasmTarget">
+    <MSBuild Targets="Build"
+             Projects="$(MSBuildThisFileDirectory)llvm\llvm-init.proj"
+             Properties="TargetArchitecture=$(TargetArchitecture);TargetOS=$(TargetOS)" />
+
+    <MSBuild Targets="BuildMono"
+             Projects="$(MSBuildThisFileDirectory)mono.proj"
+             Properties="RealTargetOS=$(TargetOS);RealTargetArchitecture=$(TargetArchitecture);TargetArchitecture=$(TargetArchitecture);TargetOS=$(TargetOS);MonoWasmBuildVariant=$(MonoWasmBuildVariant)" />
+
+    <ItemGroup>
+      <_MonoWasmFiles Include="$(ArtifactsBinDir)mono\$(TargetOS).$(TargetArchitecture).$(Configuration)\**" />
+    </ItemGroup>
+
+    <Message Text="Copying @(_MonoWasmFiles) to $(RealRuntimeBinDir)wasm\$(MonoWasmBuildVariant.ToLower())" Importance="High" />
+
+    <Copy SourceFiles="@(_MonoWasmFiles)" DestinationFolder="$(RealRuntimeBinDir)wasm\$(MonoWasmBuildVariant.ToLower())">
+      <Output TaskParameter="DestinationFiles" ItemName="FileWrites"/>
+    </Copy>
+  </Target>
+</Project>

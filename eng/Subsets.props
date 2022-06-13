@@ -129,6 +129,7 @@
     <SubsetName Include="Mono" Description="The Mono runtime and CoreLib. Equivalent to: $(DefaultMonoSubsets)" />
     <SubsetName Include="Mono.Runtime" Description="The Mono .NET runtime." />
     <SubsetName Include="Mono.AotCross" Description="The cross-compiler runtime for Mono AOT." />
+    <SubsetName Include="Mono.WasmVariants" Description="The different thread configurations of Mono WASM." />
     <SubsetName Include="Mono.CoreLib" Description="The managed System.Private.CoreLib library for Mono." />
     <SubsetName Include="Mono.Packages" Description="The projects that produce NuGet packages for the Mono runtime." />
     <SubsetName Include="Mono.WasmRuntime" Description="The WebAssembly runtime." />
@@ -347,6 +348,10 @@
 
   <ItemGroup Condition="$(_subset.Contains('+mono.aotcross+'))">
     <ProjectToBuild Include="$(MonoProjectRoot)monoaotcross.proj" Category="mono" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(_subset.Contains('+mono.wasmvariants+'))">
+    <ProjectToBuild Include="$(MonoProjectRoot)monowasmvariants.proj" Category="mono" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+mono.corelib+'))">
