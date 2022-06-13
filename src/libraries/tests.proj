@@ -481,6 +481,10 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Channels\tests\System.Threading.Channels.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Overlapped\tests\System.Threading.Overlapped.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Tasks.Dataflow\tests\System.Threading.Tasks.Dataflow.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection\tests\InvokeEmit\System.Reflection.InvokeEmit.Tests.csproj" \>
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection\tests\InvokeInterpreted\System.Reflection.InvokeInterpreted.Tests.csproj" \>
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System\Reflection\InvokeEmit\System.Runtime.ReflectionInvokeEmit.Tests.csproj" \>
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System\Reflection\InvokeInterpreted\System.Runtime.ReflectionInvokeInterpreted.Tests.csproj" \>
     <!--These tests don't build-->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.CSharp\tests\Microsoft.CSharp.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Diagnostics.Tracing.EventSource.Redist\tests\Microsoft.Diagnostics.Tracing.EventSource.Redist.Tests.csproj" />
