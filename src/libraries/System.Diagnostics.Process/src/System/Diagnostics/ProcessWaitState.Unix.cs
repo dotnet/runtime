@@ -216,6 +216,8 @@ namespace System.Diagnostics
         private DateTime _exitTime;
         /// <summary>A lazily-initialized event set when the process exits.</summary>
         private ManualResetEvent? _exitedEvent;
+        /// <summary>Whether allow reaping by other thread.</summary>
+        private static readonly bool s_allowReapingByOthers = Environment.GetEnvironmentVariable("DOTNET_AllowReapingByOthers") == "1";
 
         /// <summary>Initialize the wait state object.</summary>
         /// <param name="processId">The associated process' ID.</param>
@@ -581,6 +583,21 @@ namespace System.Diagnostics
                 else if (waitResult == 0)
                 {
                     // Process is still running
+                }
+                else if (s_allowReapingByOthers && Interop.Sys.GetLastError() == Interop.Error.ECHILD)
+                {
+                    // Process is reapped by other thread(library). Continue execution.
+                    _exitCode = null;
+
+                    if (_usesTerminal)
+                    {
+                        // Update terminal settings before calling SetExited.
+                        Process.ConfigureTerminalForChildProcesses(-1, configureConsole);
+                    }
+
+                    SetExited();
+
+                    return true;
                 }
                 else
                 {
