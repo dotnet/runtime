@@ -329,7 +329,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
 #if defined(TARGET_XARCH)
     else if (isa == InstructionSet_Vector256)
     {
-        if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX2))
+        if (!comp->compOpportunisticallyDependsOn(InstructionSet_AVX2))
         {
             return NI_Illegal;
         }
