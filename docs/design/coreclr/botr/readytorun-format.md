@@ -544,7 +544,7 @@ For R2R version 6.2 and above
 | *i* = 0                     | Global context - assembly containing the signature
 | 1 <= *i* <= **ILAR**        | *i* is the index into the MSIL `AssemblyRef` table
 | *i* = **ILAR** + 1          | *i* is the index which refers to the Manifest metadata itself
-| *i* > **ILAR** + 1          | *i* - **ILAR** - 2 is the zero-based index into the `AssemblyRef` table in the manifest metadata 
+| *i* > **ILAR** + 1          | *i* - **ILAR** - 2 is the zero-based index into the `AssemblyRef` table in the manifest metadata
 
 In addition, a ModuleRef within the module which refers to `System.Private.CoreLib` may be used to serve as the *ResolutionContext* of a *TypeRef* within the manifest metadata. This will always refer to the module which contains the `System.Object` type.
 
