@@ -20,17 +20,7 @@ namespace System.Linq
         /// The query represented by this method is not executed until the object is enumerated by calling
         /// its <see cref="IEnumerable{T}.GetEnumerator"/> method.
         ///
-        /// Two methods are defined to extend the type <see cref="IOrderedEnumerable{TElement}"/>, which is the return type of this method.
-        /// These two methods, namely <see cref="ThenBy{TSource, TKey}(IOrderedEnumerable{TSource}, Func{TSource, TKey})"/>
-        /// and <see cref="ThenByDescending{TSource, TKey}(IOrderedEnumerable{TSource}, Func{TSource, TKey})"/>, enable you to specify additional
-        /// sort criteria to sort a sequence.
-        /// <see cref="ThenBy{TSource, TKey}(IOrderedEnumerable{TSource}, Func{TSource, TKey})"/>
-        /// and <see cref="ThenByDescending{TSource, TKey}(IOrderedEnumerable{TSource}, Func{TSource, TKey})"/> also return
-        /// an <see cref="IOrderedEnumerable{TElement}"/>, which means any number of consecutive calls
-        /// to <see cref="ThenBy{TSource, TKey}(IOrderedEnumerable{TSource}, Func{TSource, TKey})"/>
-        /// or <see cref="ThenByDescending{TSource, TKey}(IOrderedEnumerable{TSource}, Func{TSource, TKey})"/> can be made.
-        ///
-        /// This method compares keys by using the default comparer <see cref="Comparer{T}.Default"/>.
+        /// This method compares elements by using the default comparer <see cref="Comparer{T}.Default"/>.
         /// </remarks>
         public static IOrderedEnumerable<T> Order<T>(this IEnumerable<T> source) =>
             new OrderedKeylessEnumerable<T>(source, null, false, null);
@@ -49,17 +39,7 @@ namespace System.Linq
         /// The query represented by this method is not executed until the object is enumerated by calling
         /// its <see cref="IEnumerable{T}.GetEnumerator"/> method.
         ///
-        /// Two methods are defined to extend the type <see cref="IOrderedEnumerable{TElement}"/>, which is the return type of this method.
-        /// These two methods, namely <see cref="ThenBy{TSource, TKey}(IOrderedEnumerable{TSource}, Func{TSource, TKey})"/>
-        /// and <see cref="ThenByDescending{TSource, TKey}(IOrderedEnumerable{TSource}, Func{TSource, TKey})"/>, enable you to specify additional
-        /// sort criteria to sort a sequence.
-        /// <see cref="ThenBy{TSource, TKey}(IOrderedEnumerable{TSource}, Func{TSource, TKey})"/>
-        /// and <see cref="ThenByDescending{TSource, TKey}(IOrderedEnumerable{TSource}, Func{TSource, TKey})"/> also return
-        /// an <see cref="IOrderedEnumerable{TElement}"/>, which means any number of consecutive calls
-        /// to <see cref="ThenBy{TSource, TKey}(IOrderedEnumerable{TSource}, Func{TSource, TKey})"/>
-        /// or <see cref="ThenByDescending{TSource, TKey}(IOrderedEnumerable{TSource}, Func{TSource, TKey})"/> can be made.
-        ///
-        /// If comparer is <see langword="null"/>, the default comparer <see cref="Comparer{T}.Default"/> is used to compare keys.
+        /// If comparer is <see langword="null"/>, the default comparer <see cref="Comparer{T}.Default"/> is used to compare elements.
         /// </remarks>
         public static IOrderedEnumerable<T> Order<T>(this IEnumerable<T> source, IComparer<T> comparer) =>
             new OrderedKeylessEnumerable<T>(source, comparer, false, null);
@@ -83,17 +63,7 @@ namespace System.Linq
         /// The query represented by this method is not executed until the object is enumerated by calling
         /// its <see cref="IEnumerable{T}.GetEnumerator"/> method.
         ///
-        /// Two methods are defined to extend the type <see cref="IOrderedEnumerable{TElement}"/>, which is the return type of this method.
-        /// These two methods, namely <see cref="ThenBy{TSource, TKey}(IOrderedEnumerable{TSource}, Func{TSource, TKey})"/>
-        /// and <see cref="ThenByDescending{TSource, TKey}(IOrderedEnumerable{TSource}, Func{TSource, TKey})"/>, enable you to specify additional
-        /// sort criteria to sort a sequence.
-        /// <see cref="ThenBy{TSource, TKey}(IOrderedEnumerable{TSource}, Func{TSource, TKey})"/>
-        /// and <see cref="ThenByDescending{TSource, TKey}(IOrderedEnumerable{TSource}, Func{TSource, TKey})"/> also return
-        /// an <see cref="IOrderedEnumerable{TElement}"/>, which means any number of consecutive calls
-        /// to <see cref="ThenBy{TSource, TKey}(IOrderedEnumerable{TSource}, Func{TSource, TKey})"/>
-        /// or <see cref="ThenByDescending{TSource, TKey}(IOrderedEnumerable{TSource}, Func{TSource, TKey})"/> can be made.
-        ///
-        /// This method compares keys by using the default comparer <see cref="Comparer{T}.Default"/>.
+        /// This method compares elements by using the default comparer <see cref="Comparer{T}.Default"/>.
         /// </remarks>
         public static IOrderedEnumerable<T> OrderDescending<T>(this IEnumerable<T> source) =>
             new OrderedKeylessEnumerable<T>(source, null, true, null);
@@ -112,17 +82,7 @@ namespace System.Linq
         /// The query represented by this method is not executed until the object is enumerated by calling
         /// its <see cref="IEnumerable{T}.GetEnumerator"/> method.
         ///
-        /// Two methods are defined to extend the type <see cref="IOrderedEnumerable{TElement}"/>, which is the return type of this method.
-        /// These two methods, namely <see cref="ThenBy{TSource, TKey}(IOrderedEnumerable{TSource}, Func{TSource, TKey})"/>
-        /// and <see cref="ThenByDescending{TSource, TKey}(IOrderedEnumerable{TSource}, Func{TSource, TKey})"/>, enable you to specify additional
-        /// sort criteria to sort a sequence.
-        /// <see cref="ThenBy{TSource, TKey}(IOrderedEnumerable{TSource}, Func{TSource, TKey})"/>
-        /// and <see cref="ThenByDescending{TSource, TKey}(IOrderedEnumerable{TSource}, Func{TSource, TKey})"/> also return
-        /// an <see cref="IOrderedEnumerable{TElement}"/>, which means any number of consecutive calls
-        /// to <see cref="ThenBy{TSource, TKey}(IOrderedEnumerable{TSource}, Func{TSource, TKey})"/>
-        /// or <see cref="ThenByDescending{TSource, TKey}(IOrderedEnumerable{TSource}, Func{TSource, TKey})"/> can be made.
-        ///
-        /// If comparer is <see langword="null"/>, the default comparer <see cref="Comparer{T}.Default"/> is used to compare keys.
+        /// If comparer is <see langword="null"/>, the default comparer <see cref="Comparer{T}.Default"/> is used to compare elements.
         /// </remarks>
         public static IOrderedEnumerable<T> OrderDescending<T>(this IEnumerable<T> source, IComparer<T> comparer) =>
             new OrderedKeylessEnumerable<T>(source, comparer, true, null);
