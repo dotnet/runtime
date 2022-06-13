@@ -2461,7 +2461,8 @@ namespace Internal.JitInterface
                 if (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout && !callerMethod.IsNonVersionable() && (pResult->offset <= FieldFixupSignature.MaxCheckableOffset))
                 {
                     // ENCODE_CHECK_FIELD_OFFSET
-                    AddPrecodeFixup(_compilation.SymbolNodeFactory.CheckFieldOffset(field));
+                    if (_compilation.CompilationModuleGroup.VersionsWithType(field.OwningType)) // Only verify versions with types
+                        AddPrecodeFixup(_compilation.SymbolNodeFactory.CheckFieldOffset(field));
                 }
                 // ENCODE_NONE
             }
@@ -2470,7 +2471,8 @@ namespace Internal.JitInterface
                 if (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout && !callerMethod.IsNonVersionable() && (pResult->offset <= FieldFixupSignature.MaxCheckableOffset))
                 {
                     // ENCODE_CHECK_FIELD_OFFSET
-                    AddPrecodeFixup(_compilation.SymbolNodeFactory.CheckFieldOffset(field));
+                    if (_compilation.CompilationModuleGroup.VersionsWithType(field.OwningType)) // Only verify versions with types
+                        AddPrecodeFixup(_compilation.SymbolNodeFactory.CheckFieldOffset(field));
                 }
                 // ENCODE_NONE
             }
@@ -2481,7 +2483,8 @@ namespace Internal.JitInterface
                 if (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout && !callerMethod.IsNonVersionable() && (pResult->offset <= FieldFixupSignature.MaxCheckableOffset))
                 {
                     // ENCODE_CHECK_FIELD_OFFSET
-                    AddPrecodeFixup(_compilation.SymbolNodeFactory.CheckFieldOffset(field));
+                    if (_compilation.CompilationModuleGroup.VersionsWithType(field.OwningType)) // Only verify versions with types
+                        AddPrecodeFixup(_compilation.SymbolNodeFactory.CheckFieldOffset(field));
                 }
 
                 // ENCODE_FIELD_BASE_OFFSET

@@ -130,7 +130,7 @@ PTR_Module ClassLoader::ComputeLoaderModuleWorker(
             continue;
 
         CorElementType ety = classArg.GetSignatureCorElementType();
-        if (CorTypeInfo::IsPrimitiveType(ety))
+        if (CorTypeInfo::IsPrimitiveType_NoThrow(ety))
             continue;
 
         Module* pModule = classArg.GetLoaderModule();
@@ -149,7 +149,7 @@ PTR_Module ClassLoader::ComputeLoaderModuleWorker(
             continue;
 
         CorElementType ety = methodArg.GetSignatureCorElementType();
-        if (CorTypeInfo::IsPrimitiveType(ety))
+        if (CorTypeInfo::IsPrimitiveType_NoThrow(ety))
             continue;
 
         Module *pModule = methodArg.GetLoaderModule();
