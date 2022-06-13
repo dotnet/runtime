@@ -247,7 +247,6 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/40536", TestPlatforms.Browser)]
         public void RecursiveDeleteWithTrailingSlash()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
