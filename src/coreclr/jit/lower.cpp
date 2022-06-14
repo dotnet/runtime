@@ -3602,6 +3602,15 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
         BlockRange().InsertBefore(lclStore, bitcast);
         ContainCheckBitCast(bitcast);
     }
+    else if (src->OperIs(GT_CAST) && varTypeIsIntegral(src) && varTypeIsIntegral(lclRegType) &&
+             !varTypeUsesFloatReg(lclRegType) && !varTypeUsesFloatReg(src->gtGetOp1()) &&
+             genActualType(lclRegType) == genActualType(src->gtGetOp1()))
+    {
+        GenTree* cast   = src;
+        src             = src->gtGetOp1();
+        lclStore->gtOp1 = src;
+        BlockRange().Remove(cast);
+    }
 
     LowerStoreLoc(lclStore);
     JITDUMP("lowering store lcl var/field (after):\n");
