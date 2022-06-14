@@ -159,10 +159,12 @@ static int32_t ensure_gss_shim_initialized()
 FOR_ALL_REQUIRED_GSS_FUNCTIONS
 #undef PER_FUNCTION_BLOCK
     // for optional functions skip the error check
+#if HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X
 #define PER_FUNCTION_BLOCK(fn) \
     fn##_ptr = (TYPEOF(fn)*)dlsym(s_gssLib, #fn);
 FOR_ALL_OPTIONAL_GSS_FUNCTIONS
 #undef PER_FUNCTION_BLOCK
+#endif
 
     return 0;
 }
