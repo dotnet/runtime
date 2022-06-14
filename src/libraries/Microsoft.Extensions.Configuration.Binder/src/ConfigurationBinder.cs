@@ -204,7 +204,7 @@ namespace Microsoft.Extensions.Configuration
         [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
         private static void BindNonScalar(this IConfiguration configuration, object instance, BinderOptions options)
         {
-            List<PropertyInfo> modelProperties = GetAllProperties(instance.GetType());
+            PropertyInfo[] modelProperties = GetAllProperties(instance.GetType());
 
             if (options.ErrorOnUnknownConfiguration)
             {
@@ -451,7 +451,7 @@ namespace Microsoft.Extensions.Configuration
                 }
 
 
-                List<PropertyInfo> properties = GetAllProperties(type);
+                PropertyInfo[] properties = GetAllProperties(type);
 
                 if (!DoAllParametersHaveEquivalentProperties(parameters, properties, out string nameOfInvalidParameters))
                 {
@@ -482,7 +482,7 @@ namespace Microsoft.Extensions.Configuration
         }
 
         private static bool DoAllParametersHaveEquivalentProperties(ParameterInfo[] parameters,
-            List<PropertyInfo> properties, out string missing)
+            PropertyInfo[] properties, out string missing)
         {
             HashSet<string> propertyNames = new(StringComparer.OrdinalIgnoreCase);
             foreach (PropertyInfo prop in properties)
@@ -752,22 +752,8 @@ namespace Microsoft.Extensions.Configuration
             return null;
         }
 
-        private static List<PropertyInfo> GetAllProperties(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-            Type type)
-        {
-            var allProperties = new List<PropertyInfo>();
-
-            Type? baseType = type;
-            do
-            {
-                allProperties.AddRange(baseType!.GetProperties(DeclaredOnlyLookup));
-                baseType = baseType.BaseType;
-            }
-            while (baseType != typeof(object));
-
-            return allProperties;
-        }
+        private static PropertyInfo[] GetAllProperties([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
+            => type.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
 
         [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
         private static object? BindParameter(ParameterInfo parameter, Type type, IConfiguration config,
