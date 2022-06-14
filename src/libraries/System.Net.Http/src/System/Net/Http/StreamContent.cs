@@ -171,6 +171,12 @@ namespace System.Net.Http
 
             public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default) =>
                 throw new NotSupportedException(SR.net_http_content_readonly_stream);
+
+            public override int WriteTimeout
+            {
+                get => throw new InvalidOperationException(SR.net_http_content_readonly_stream);
+                set => throw new InvalidOperationException(SR.net_http_content_readonly_stream);
+            }
         }
     }
 }
