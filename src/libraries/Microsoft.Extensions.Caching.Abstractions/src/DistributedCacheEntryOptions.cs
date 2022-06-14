@@ -40,13 +40,7 @@ namespace Microsoft.Extensions.Caching.Distributed
             }
             set
             {
-                if (value <= TimeSpan.Zero)
-                {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(AbsoluteExpirationRelativeToNow),
-                        value,
-                        "The relative expiration value must be positive.");
-                }
+                ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(value, TimeSpan.Zero);
 
                 _absoluteExpirationRelativeToNow = value;
             }
@@ -64,13 +58,7 @@ namespace Microsoft.Extensions.Caching.Distributed
             }
             set
             {
-                if (value <= TimeSpan.Zero)
-                {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(SlidingExpiration),
-                        value,
-                        "The sliding expiration value must be positive.");
-                }
+                ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(value, TimeSpan.Zero);
                 _slidingExpiration = value;
             }
         }

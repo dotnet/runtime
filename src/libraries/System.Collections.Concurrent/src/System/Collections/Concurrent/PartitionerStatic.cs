@@ -181,7 +181,7 @@ namespace System.Collections.Concurrent
         /// <remarks>if ProccessorCount == 1, for correct rangeSize calculation the const CoreOversubscriptionRate must be > 1 (avoid division by 1)</remarks>
         public static OrderablePartitioner<Tuple<long, long>> Create(long fromInclusive, long toExclusive)
         {
-            if (toExclusive <= fromInclusive) throw new ArgumentOutOfRangeException(nameof(toExclusive));
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(toExclusive, fromInclusive);
             decimal range = (decimal)toExclusive - fromInclusive;
             long rangeSize = (long)(range / (Environment.ProcessorCount * CoreOversubscriptionRate));
             if (rangeSize == 0) rangeSize = 1;
@@ -199,7 +199,7 @@ namespace System.Collections.Concurrent
         /// less than or equal to 0.</exception>
         public static OrderablePartitioner<Tuple<long, long>> Create(long fromInclusive, long toExclusive, long rangeSize)
         {
-            if (toExclusive <= fromInclusive) throw new ArgumentOutOfRangeException(nameof(toExclusive));
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(toExclusive, fromInclusive);
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(rangeSize);
             return Partitioner.Create(CreateRanges(fromInclusive, toExclusive, rangeSize), EnumerablePartitionerOptions.NoBuffering); // chunk one range at a time
         }
@@ -235,7 +235,7 @@ namespace System.Collections.Concurrent
         /// and the same issue could occur with rangeSize == -1 when fromInclusive = int.MinValue and toExclusive = int.MaxValue.</remarks>
         public static OrderablePartitioner<Tuple<int, int>> Create(int fromInclusive, int toExclusive)
         {
-            if (toExclusive <= fromInclusive) throw new ArgumentOutOfRangeException(nameof(toExclusive));
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(toExclusive, fromInclusive);
             long range = (long)toExclusive - fromInclusive;
             int rangeSize = (int)(range / (Environment.ProcessorCount * CoreOversubscriptionRate));
             if (rangeSize == 0) rangeSize = 1;
@@ -253,7 +253,7 @@ namespace System.Collections.Concurrent
         /// less than or equal to 0.</exception>
         public static OrderablePartitioner<Tuple<int, int>> Create(int fromInclusive, int toExclusive, int rangeSize)
         {
-            if (toExclusive <= fromInclusive) throw new ArgumentOutOfRangeException(nameof(toExclusive));
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(toExclusive, fromInclusive);
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(rangeSize);
             return Partitioner.Create(CreateRanges(fromInclusive, toExclusive, rangeSize), EnumerablePartitionerOptions.NoBuffering); // chunk one range at a time
         }
