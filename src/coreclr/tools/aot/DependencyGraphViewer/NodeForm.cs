@@ -55,5 +55,11 @@ namespace DependencyLogViewer
         {
             ExploreSelectedItem(_graph, dependentsListBox);
         }
+
+        private void infoButton_LinkClicked(object sender, EventArgs e)
+        {
+            string dMessage = "Dependent nodes depend on the current node. The current node depends on the dependees.";
+            MessageBox.Show(dMessage);
+        }
     }
 }

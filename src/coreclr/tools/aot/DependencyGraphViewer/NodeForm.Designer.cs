@@ -37,6 +37,7 @@ namespace DependencyLogViewer
             this.exploreDependent = new System.Windows.Forms.Button();
             this.dependeesListBox = new System.Windows.Forms.ListBox();
             this.exploreDependee = new System.Windows.Forms.Button();
+            this.infoButton = new System.Windows.Forms.LinkLabel();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
@@ -58,8 +59,7 @@ namespace DependencyLogViewer
             // 
             // splitContainer1
             // 
-            this.splitContainer1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.splitContainer1.Location = new System.Drawing.Point(0, 30);
+            this.splitContainer1.Location = new System.Drawing.Point(0, 109);
             this.splitContainer1.Margin = new System.Windows.Forms.Padding(4);
             this.splitContainer1.Name = "splitContainer1";
             this.splitContainer1.Orientation = System.Windows.Forms.Orientation.Horizontal;
@@ -73,8 +73,8 @@ namespace DependencyLogViewer
             // 
             this.splitContainer1.Panel2.Controls.Add(this.dependeesListBox);
             this.splitContainer1.Panel2.Controls.Add(this.exploreDependee);
-            this.splitContainer1.Size = new System.Drawing.Size(1499, 1338);
-            this.splitContainer1.SplitterDistance = 696;
+            this.splitContainer1.Size = new System.Drawing.Size(1499, 1259);
+            this.splitContainer1.SplitterDistance = 659;
             this.splitContainer1.SplitterWidth = 6;
             this.splitContainer1.TabIndex = 1;
             // 
@@ -87,14 +87,14 @@ namespace DependencyLogViewer
             this.dependentsListBox.Location = new System.Drawing.Point(0, 0);
             this.dependentsListBox.Margin = new System.Windows.Forms.Padding(4);
             this.dependentsListBox.Name = "dependentsListBox";
-            this.dependentsListBox.Size = new System.Drawing.Size(1499, 638);
+            this.dependentsListBox.Size = new System.Drawing.Size(1499, 601);
             this.dependentsListBox.TabIndex = 0;
             this.dependentsListBox.DoubleClick += new System.EventHandler(this.exploreDependent_Click);
             // 
             // exploreDependent
             // 
             this.exploreDependent.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.exploreDependent.Location = new System.Drawing.Point(0, 638);
+            this.exploreDependent.Location = new System.Drawing.Point(0, 601);
             this.exploreDependent.Margin = new System.Windows.Forms.Padding(4);
             this.exploreDependent.Name = "exploreDependent";
             this.exploreDependent.Size = new System.Drawing.Size(1499, 58);
@@ -112,14 +112,14 @@ namespace DependencyLogViewer
             this.dependeesListBox.Location = new System.Drawing.Point(0, 0);
             this.dependeesListBox.Margin = new System.Windows.Forms.Padding(4);
             this.dependeesListBox.Name = "dependeesListBox";
-            this.dependeesListBox.Size = new System.Drawing.Size(1499, 584);
+            this.dependeesListBox.Size = new System.Drawing.Size(1499, 542);
             this.dependeesListBox.TabIndex = 0;
             this.dependeesListBox.DoubleClick += new System.EventHandler(this.exploreDependee_Click);
             // 
             // exploreDependee
             // 
             this.exploreDependee.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.exploreDependee.Location = new System.Drawing.Point(0, 584);
+            this.exploreDependee.Location = new System.Drawing.Point(0, 542);
             this.exploreDependee.Margin = new System.Windows.Forms.Padding(4);
             this.exploreDependee.Name = "exploreDependee";
             this.exploreDependee.Size = new System.Drawing.Size(1499, 52);
@@ -128,11 +128,23 @@ namespace DependencyLogViewer
             this.exploreDependee.UseVisualStyleBackColor = true;
             this.exploreDependee.Click += new System.EventHandler(this.exploreDependee_Click);
             // 
+            // infoButton
+            // 
+            this.infoButton.AutoSize = true;
+            this.infoButton.Location = new System.Drawing.Point(1236, 75);
+            this.infoButton.Name = "infoButton";
+            this.infoButton.Size = new System.Drawing.Size(263, 30);
+            this.infoButton.TabIndex = 2;
+            this.infoButton.TabStop = true;
+            this.infoButton.Text = "Depnendent vs Dependee?";
+            this.infoButton.Click += new System.EventHandler(this.infoButton_LinkClicked);
+            // 
             // NodeForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(12F, 30F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1499, 1368);
+            this.Controls.Add(this.infoButton);
             this.Controls.Add(this.splitContainer1);
             this.Controls.Add(this.nodeTitle);
             this.Margin = new System.Windows.Forms.Padding(4);
@@ -155,5 +167,6 @@ namespace DependencyLogViewer
         private System.Windows.Forms.ListBox dependeesListBox;
         private System.Windows.Forms.Button exploreDependent;
         private System.Windows.Forms.ListBox dependentsListBox;
+        private System.Windows.Forms.LinkLabel infoButton;
     }
 }

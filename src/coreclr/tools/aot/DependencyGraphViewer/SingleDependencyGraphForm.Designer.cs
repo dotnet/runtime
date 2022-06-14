@@ -57,20 +57,24 @@ namespace DependencyLogViewer
             // 
             // groupBox1
             // 
+            this.groupBox1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupBox1.AutoSize = true;
             this.groupBox1.Controls.Add(this.filterButton);
             this.groupBox1.Controls.Add(this.label2);
             this.groupBox1.Controls.Add(this.exploreNode);
             this.groupBox1.Controls.Add(this.filterTextBox);
             this.groupBox1.Location = new System.Drawing.Point(3, 2);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(1212, 152);
+            this.groupBox1.Size = new System.Drawing.Size(1220, 162);
             this.groupBox1.TabIndex = 3;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Select and Explore Nodes";
             // 
             // filterButton
             // 
-            this.filterButton.Location = new System.Drawing.Point(837, 25);
+            this.filterButton.Location = new System.Drawing.Point(837, 29);
             this.filterButton.Margin = new System.Windows.Forms.Padding(4);
             this.filterButton.Name = "filterButton";
             this.filterButton.Size = new System.Drawing.Size(184, 71);
@@ -91,7 +95,7 @@ namespace DependencyLogViewer
             // 
             // exploreNode
             // 
-            this.exploreNode.Location = new System.Drawing.Point(1029, 25);
+            this.exploreNode.Location = new System.Drawing.Point(1029, 29);
             this.exploreNode.Margin = new System.Windows.Forms.Padding(4);
             this.exploreNode.Name = "exploreNode";
             this.exploreNode.Size = new System.Drawing.Size(184, 71);
@@ -103,7 +107,7 @@ namespace DependencyLogViewer
             // filterTextBox
             // 
             this.filterTextBox.AllowDrop = true;
-            this.filterTextBox.Location = new System.Drawing.Point(7, 43);
+            this.filterTextBox.Location = new System.Drawing.Point(3, 47);
             this.filterTextBox.Margin = new System.Windows.Forms.Padding(4);
             this.filterTextBox.Name = "filterTextBox";
             this.filterTextBox.Size = new System.Drawing.Size(822, 35);
@@ -137,6 +141,7 @@ namespace DependencyLogViewer
             this.groupBox1.PerformLayout();
             this.groupBox2.ResumeLayout(false);
             this.ResumeLayout(false);
+            this.PerformLayout();
 
         }
 

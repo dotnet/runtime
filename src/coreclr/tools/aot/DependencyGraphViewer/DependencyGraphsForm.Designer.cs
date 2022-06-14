@@ -36,11 +36,10 @@ namespace DependencyLogViewer
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.listBox1 = new System.Windows.Forms.ListBox();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
-            this.ETWButton = new System.Windows.Forms.Button();
             this.label2 = new System.Windows.Forms.Label();
+            this.ETWButton = new System.Windows.Forms.Button();
             this.label1 = new System.Windows.Forms.Label();
             this.browseButton = new System.Windows.Forms.Button();
-            this.textBox1 = new System.Windows.Forms.TextBox();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
             this.splitContainer1.Panel1.SuspendLayout();
@@ -57,8 +56,7 @@ namespace DependencyLogViewer
             this.help.Margin = new System.Windows.Forms.Padding(4);
             this.help.Name = "help";
             this.help.Size = new System.Drawing.Size(374, 150);
-            this.help.TabIndex = 4;
-            this.help.TabStop = false;
+            this.help.TabIndex = 3;
             this.help.Text = "Information on DependencyGraphViewer";
             this.help.UseVisualStyleBackColor = true;
             this.help.Click += new System.EventHandler(this.help_Click);
@@ -70,7 +68,7 @@ namespace DependencyLogViewer
             this.explore.Margin = new System.Windows.Forms.Padding(4);
             this.explore.Name = "explore";
             this.explore.Size = new System.Drawing.Size(746, 150);
-            this.explore.TabIndex = 1;
+            this.explore.TabIndex = 4;
             this.explore.Text = "Explore Selected Graph";
             this.explore.UseVisualStyleBackColor = true;
             this.explore.Click += new System.EventHandler(this.explore_Click);
@@ -93,6 +91,7 @@ namespace DependencyLogViewer
             this.splitContainer1.SplitterDistance = 374;
             this.splitContainer1.SplitterWidth = 5;
             this.splitContainer1.TabIndex = 7;
+            this.splitContainer1.TabStop = false;
             // 
             // listBox1
             // 
@@ -103,69 +102,61 @@ namespace DependencyLogViewer
             this.listBox1.ItemHeight = 30;
             this.listBox1.Location = new System.Drawing.Point(3, 31);
             this.listBox1.Name = "listBox1";
-            this.listBox1.Size = new System.Drawing.Size(1108, 454);
-            this.listBox1.TabIndex = 3;
+            this.listBox1.Size = new System.Drawing.Size(1108, 514);
+            this.listBox1.TabIndex = 2;
             this.listBox1.DoubleClick += new System.EventHandler(this.explore_Click);
             // 
             // groupBox1
             // 
-            this.groupBox1.Controls.Add(this.ETWButton);
             this.groupBox1.Controls.Add(this.label2);
+            this.groupBox1.Controls.Add(this.ETWButton);
             this.groupBox1.Controls.Add(this.label1);
             this.groupBox1.Controls.Add(this.browseButton);
-            this.groupBox1.Controls.Add(this.textBox1);
             this.groupBox1.Location = new System.Drawing.Point(0, 0);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(1117, 170);
+            this.groupBox1.Size = new System.Drawing.Size(1117, 123);
             this.groupBox1.TabIndex = 12;
             this.groupBox1.TabStop = false;
-            this.groupBox1.Text = "File Select";
-            // 
-            // ETWButton
-            // 
-            this.ETWButton.Location = new System.Drawing.Point(898, 100);
-            this.ETWButton.Name = "ETWButton";
-            this.ETWButton.RightToLeft = System.Windows.Forms.RightToLeft.Yes;
-            this.ETWButton.Size = new System.Drawing.Size(193, 63);
-            this.ETWButton.TabIndex = 2;
-            this.ETWButton.Text = "Use ETW Events";
-            this.ETWButton.UseVisualStyleBackColor = true;
-            this.ETWButton.Click += new System.EventHandler(this.ETWButton_Click);
+            this.groupBox1.Text = "Graph Creation";
             // 
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(9, 39);
+            this.label2.Location = new System.Drawing.Point(672, 39);
             this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(54, 30);
+            this.label2.Size = new System.Drawing.Size(209, 60);
             this.label2.TabIndex = 9;
-            this.label2.Text = "Path";
+            this.label2.Text = "Or compile programs\r\nwith ETW events";
+            // 
+            // ETWButton
+            // 
+            this.ETWButton.Location = new System.Drawing.Point(901, 38);
+            this.ETWButton.Name = "ETWButton";
+            this.ETWButton.RightToLeft = System.Windows.Forms.RightToLeft.Yes;
+            this.ETWButton.Size = new System.Drawing.Size(193, 63);
+            this.ETWButton.TabIndex = 1;
+            this.ETWButton.Text = "Use ETW Events";
+            this.ETWButton.UseVisualStyleBackColor = true;
+            this.ETWButton.Click += new System.EventHandler(this.ETWButton_Click);
             // 
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(69, 90);
+            this.label1.Location = new System.Drawing.Point(51, 39);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(336, 30);
+            this.label1.Size = new System.Drawing.Size(300, 60);
             this.label1.TabIndex = 8;
-            this.label1.Text = "Select a .DGML or .XML file to load";
+            this.label1.Text = "Select a .DGML or .DGML.XML \r\nfile to load";
             // 
             // browseButton
             // 
-            this.browseButton.Location = new System.Drawing.Point(898, 23);
+            this.browseButton.Location = new System.Drawing.Point(368, 38);
             this.browseButton.Name = "browseButton";
             this.browseButton.Size = new System.Drawing.Size(193, 63);
             this.browseButton.TabIndex = 0;
             this.browseButton.Text = "Browse Files";
             this.browseButton.UseVisualStyleBackColor = true;
             this.browseButton.Click += new System.EventHandler(this.browseButton_Click);
-            // 
-            // textBox1
-            // 
-            this.textBox1.Location = new System.Drawing.Point(69, 37);
-            this.textBox1.Name = "textBox1";
-            this.textBox1.Size = new System.Drawing.Size(823, 35);
-            this.textBox1.TabIndex = 5;
             // 
             // groupBox2
             // 
@@ -174,9 +165,9 @@ namespace DependencyLogViewer
             | System.Windows.Forms.AnchorStyles.Right)));
             this.groupBox2.AutoSize = true;
             this.groupBox2.Controls.Add(this.listBox1);
-            this.groupBox2.Location = new System.Drawing.Point(3, 179);
+            this.groupBox2.Location = new System.Drawing.Point(3, 129);
             this.groupBox2.Name = "groupBox2";
-            this.groupBox2.Size = new System.Drawing.Size(1117, 525);
+            this.groupBox2.Size = new System.Drawing.Size(1117, 562);
             this.groupBox2.TabIndex = 13;
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "Loaded Graphs";
@@ -211,12 +202,11 @@ namespace DependencyLogViewer
         private System.Windows.Forms.SplitContainer splitContainer1;
         private System.Windows.Forms.ListBox listBox1;
         private System.Windows.Forms.GroupBox groupBox1;
-        private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Button browseButton;
-        private System.Windows.Forms.TextBox textBox1;
         private System.Windows.Forms.GroupBox groupBox2;
         private System.Windows.Forms.Button ETWButton;
+        private System.Windows.Forms.Label label2;
     }
 }
 
