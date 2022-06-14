@@ -137,20 +137,5 @@ Once the interesting node(s) have been identified in the dependency graph window
                 MessageBox.Show("ETW Events have been enabled");
             }
         }
-
-        public enum Destination {UI, Console};
-
-        public static void ShowErrorMessage(Destination d, string error)
-        {
-            if (d == Destination.Console)
-            {
-                Console.WriteLine(error);
-            }
-            else
-            {
-                Debug.Assert(d == Destination.UI);
-                MessageBox.Show(error);
-            }
-        }
     }
 }

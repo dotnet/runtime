@@ -176,21 +176,10 @@ namespace DependencyLogViewer
                 {
                     fileStream = new FileStream(argPath, FileMode.Open);
                 }
-                catch (FileNotFoundException e)
+                catch (Exception e)
                 {
-                    string _errorMsg = $"Unable to find file. Check file extension. \n {e}";
-                    DependencyGraphs.ShowErrorMessage(DependencyGraphs.Destination.Console, _errorMsg);
-                    return false;
-                }
-                catch (UnauthorizedAccessException e)
-                {
-                    string _errorMsg = $"Specify a file, not a path \n {e}";
-                    DependencyGraphs.ShowErrorMessage(DependencyGraphs.Destination.Console, _errorMsg);
-                    return false;
-                } catch (Exception e)
-                {
-                    string _errorMsg = $"\n{e}";
-                    DependencyGraphs.ShowErrorMessage(DependencyGraphs.Destination.Console, _errorMsg);
+                    string _errorMsg = $"Failure to open file {argPath} \n{e}";
+                    Console.WriteLine(_errorMsg);
                     return false;
                 }
             }
