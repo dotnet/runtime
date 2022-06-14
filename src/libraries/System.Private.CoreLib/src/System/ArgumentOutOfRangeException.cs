@@ -66,6 +66,19 @@ namespace System
             _actualValue = info.GetValue("ActualValue", typeof(object));
         }
 
+        public static void ThrowIf(bool condition)
+        {
+            if (condition)
+                throw new ArgumentOutOfRangeException(paramName);
+        }
+
+        public static void ThrowIfZero<T>(T value, [CallerArgumentExpression("value")] string? paramName = null)
+            where T : struct, INumberBase<T>, ISignedNumber<T>, IComparisonOperators<T, T>
+        {
+            if (value == T.Zero)
+                throw new ArgumentOutOfRangeException(paramName);
+        }
+
         public static void ThrowIfNegative<T>(T value, [CallerArgumentExpression("value")] string? paramName = null)
             where T : struct, INumberBase<T>, ISignedNumber<T>, IComparisonOperators<T, T>
         {
@@ -101,11 +114,6 @@ namespace System
                 throw new ArgumentOutOfRangeException(paramName);
         }
 
-        public static void ThrowIfNotBetween<T>(T value, T left, T right)
-            where T : struct, Enum
-        {
-            return;
-        }
 
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {

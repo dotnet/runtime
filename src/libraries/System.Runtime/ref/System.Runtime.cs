@@ -298,12 +298,16 @@ namespace System
         public ArgumentOutOfRangeException(string? message, System.Exception? innerException) { }
         public ArgumentOutOfRangeException(string? paramName, object? actualValue, string? message) { }
         public ArgumentOutOfRangeException(string? paramName, string? message) { }
+        public static void ThrowIf(bool condition) {throw null;}
+        public static void ThrowIfEnum(bool condition) {throw null;}
         public static void ThrowIfNegative<T>(T value, [System.Runtime.CompilerServices.CallerArgumentExpression("value")] string? paramName = null) where T : struct, System.Numerics.INumberBase<T>, System.Numerics.ISignedNumber<T>, System.Numerics.IComparisonOperators<T, T> {}
+        public static void ThrowIfZero<T>(T value, [System.Runtime.CompilerServices.CallerArgumentExpression("value")] string? paramName = null) where T : struct, System.Numerics.INumberBase<T>, System.Numerics.ISignedNumber<T>, System.Numerics.IComparisonOperators<T, T> {}
         public static void ThrowIfNegativeOrZero<T>(T value, [System.Runtime.CompilerServices.CallerArgumentExpression("value")] string? paramName = null) where T : struct, System.Numerics.INumberBase<T>, System.Numerics.ISignedNumber<T>, System.Numerics.IComparisonOperators<T, T> {}
         public static void ThrowIfGreaterThan<T>(T value, T other, [System.Runtime.CompilerServices.CallerArgumentExpression("value")] string? paramName = null) where T : struct, System.Numerics.IComparisonOperators<T, T> {}
+        public static void ThrowIfGreaterThanOrEqual<T>(T value, T other, [System.Runtime.CompilerServices.CallerArgumentExpression("value")] string? paramName = null) where T : struct, System.Numerics.IComparisonOperators<T, T> {}
+        public static void ThrowIfLessThanOrEqual<T>(T value, T other, [System.Runtime.CompilerServices.CallerArgumentExpression("value")] string? paramName = null) where T : struct, System.Numerics.IComparisonOperators<T, T> {}
         public static void ThrowIfLessThan<T>(T value, T other, [System.Runtime.CompilerServices.CallerArgumentExpression("value")] string? paramName = null) where T : struct, System.Numerics.IComparisonOperators<T, T> {}
         public static void ThrowIfNotBetween<T>(T value, T left, T right, [System.Runtime.CompilerServices.CallerArgumentExpression("value")] string? paramName = null) where T : struct, System.Numerics.IComparisonOperators<T, T> {}
-        public static void ThrowIfNotBetween<T>(T value, T left, T right) where T : struct, System.Enum {}
         public virtual object? ActualValue { get { throw null; } }
         public override string Message { get { throw null; } }
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
