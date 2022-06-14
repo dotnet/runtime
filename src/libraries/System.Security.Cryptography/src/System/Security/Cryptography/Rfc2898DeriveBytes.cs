@@ -73,8 +73,7 @@ namespace System.Security.Cryptography
         public Rfc2898DeriveBytes(string password, int saltSize, int iterations, HashAlgorithmName hashAlgorithm)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(saltSize);
-            if (iterations <= 0)
-                throw new ArgumentOutOfRangeException(nameof(iterations), SR.ArgumentOutOfRange_NeedPosNum);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(iterations);
 
             _salt = new byte[saltSize + sizeof(uint)];
             RandomNumberGenerator.Fill(_salt.AsSpan(0, saltSize));
@@ -94,8 +93,7 @@ namespace System.Security.Cryptography
         {
             ArgumentNullException.ThrowIfNull(salt);
 
-            if (iterations <= 0)
-                throw new ArgumentOutOfRangeException(nameof(iterations), SR.ArgumentOutOfRange_NeedPosNum);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(iterations);
             if (password is null)
                 throw new NullReferenceException();  // This "should" be ArgumentNullException but for compat, we throw NullReferenceException.
 
@@ -124,8 +122,7 @@ namespace System.Security.Cryptography
 
             set
             {
-                if (value <= 0)
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NeedPosNum);
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
                 _iterations = (uint)value;
                 Initialize();
             }
@@ -169,8 +166,7 @@ namespace System.Security.Cryptography
         {
             Debug.Assert(_blockSize > 0);
 
-            if (cb <= 0)
-                throw new ArgumentOutOfRangeException(nameof(cb), SR.ArgumentOutOfRange_NeedPosNum);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(cb);
             byte[] password = new byte[cb];
 
             int offset = 0;

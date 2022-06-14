@@ -155,10 +155,7 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
             set
             {
-                if (value <= 0.0f)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.Get(SRID.InvalidWeight, value));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
 
                 _weight = value;
             }

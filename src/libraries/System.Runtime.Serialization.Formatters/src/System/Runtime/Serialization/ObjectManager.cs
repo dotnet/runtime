@@ -613,10 +613,7 @@ namespace System.Runtime.Serialization
 
         public virtual object? GetObject(long objectID)
         {
-            if (objectID <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(objectID), SR.ArgumentOutOfRange_ObjectID);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(objectID);
 
             //Find the bin in which we're interested.  IObjectReference's shouldn't be returned -- the graph
             //needs to link to the objects to which they refer, not to the references themselves.
@@ -662,10 +659,7 @@ namespace System.Runtime.Serialization
         {
             ArgumentNullException.ThrowIfNull(obj);
 
-            if (objectID <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(objectID), SR.ArgumentOutOfRange_ObjectID);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(objectID);
             if (member != null && !(member is FieldInfo)) // .NET Framework checks specifically for RuntimeFieldInfo and SerializationFieldInfo, but the former is an implementation detail in corelib
             {
                 throw new SerializationException(SR.Serialization_UnknownMemberInfo);
@@ -923,9 +917,9 @@ namespace System.Runtime.Serialization
         public virtual void RecordFixup(long objectToBeFixed, MemberInfo member, long objectRequired)
         {
             //Verify our arguments
-            if (objectToBeFixed <= 0 ) throw new ArgumentOutOfRangeException(nameof(objectToBeFixed) ;
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(objectToBeFixed);
             //Verify our arguments
-            if (objectRequired <= 0) throw new ArgumentOutOfRangeException(nameof(objectRequired);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(objectRequired);
             ArgumentNullException.ThrowIfNull(member);
             if (!(member is FieldInfo)) // .NET Framework checks specifically for RuntimeFieldInfo and SerializationFieldInfo, but the former is an implementation detail in corelib
             {
@@ -940,9 +934,9 @@ namespace System.Runtime.Serialization
         public virtual void RecordDelayedFixup(long objectToBeFixed, string memberName, long objectRequired)
         {
             //Verify our arguments
-            if (objectToBeFixed <= 0 ) throw new ArgumentOutOfRangeException(nameof(objectToBeFixed) ;
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(objectToBeFixed);
             //Verify our arguments
-            if (objectRequired <= 0) throw new ArgumentOutOfRangeException(nameof(objectRequired);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(objectRequired);
             ArgumentNullException.ThrowIfNull(memberName);
 
             //Create a new fixup holder
@@ -960,9 +954,9 @@ namespace System.Runtime.Serialization
         public virtual void RecordArrayElementFixup(long arrayToBeFixed, int[] indices, long objectRequired)
         {
             //Verify our arguments
-            if (arrayToBeFixed <= 0 ) throw new ArgumentOutOfRangeException(nameof(arrayToBeFixed) ;
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(arrayToBeFixed);
             //Verify our arguments
-            if (objectRequired <= 0) throw new ArgumentOutOfRangeException(nameof(objectRequired);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(objectRequired);
             ArgumentNullException.ThrowIfNull(indices);
 
             FixupHolder fixup = new FixupHolder(objectRequired, indices, FixupHolder.ArrayFixup);

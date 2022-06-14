@@ -148,10 +148,7 @@ namespace System.IO
                 throw new ArgumentOutOfRangeException(nameof(share), SR.ArgumentOutOfRange_Enum);
             }
 
-            if (bufferSize <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bufferSize);
 
             // Do not combine writing modes with exclusively read rights
             // Write contains AppendData, WriteAttributes, WriteData and WriteExtendedAttributes

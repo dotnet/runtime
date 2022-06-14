@@ -394,8 +394,7 @@ namespace System.Security.Cryptography
         {
             ArgumentOutOfRangeException.ThrowIfNegative(plaintextLength);
 
-            if (feedbackSizeInBits <= 0)
-                throw new ArgumentOutOfRangeException(nameof(feedbackSizeInBits), SR.ArgumentOutOfRange_NeedPosNum);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(feedbackSizeInBits);
 
             if ((feedbackSizeInBits & 0b111) != 0)
                 throw new ArgumentException(SR.Argument_BitsMustBeWholeBytes, nameof(feedbackSizeInBits));

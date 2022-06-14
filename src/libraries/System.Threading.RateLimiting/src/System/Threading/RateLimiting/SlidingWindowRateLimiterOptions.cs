@@ -32,10 +32,7 @@ namespace System.Threading.RateLimiting
         {
             ArgumentOutOfRangeException.ThrowIfNegative(permitLimit);
             ArgumentOutOfRangeException.ThrowIfNegative(queueLimit);
-            if (segmentsPerWindow <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(segmentsPerWindow));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(segmentsPerWindow);
 
             PermitLimit = permitLimit;
             QueueProcessingOrder = queueProcessingOrder;

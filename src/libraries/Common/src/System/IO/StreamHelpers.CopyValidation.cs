@@ -14,10 +14,7 @@ namespace System.IO
                 throw new ArgumentNullException(nameof(destination));
             }
 
-            if (bufferSize <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(bufferSize), bufferSize, SR.ArgumentOutOfRange_NeedPosNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bufferSize);
 
             bool sourceCanRead = source.CanRead;
             if (!sourceCanRead && !source.CanWrite)

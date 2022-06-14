@@ -351,8 +351,7 @@ namespace System.Management
             set
             {
                 //Unfortunately BlockSize was defined as int, but valid values are only  > 0
-                if (value <= 0)
-                    throw new ArgumentOutOfRangeException(nameof(value));
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
 
                 blockSize = value;
             }

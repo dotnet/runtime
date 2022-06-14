@@ -29,10 +29,7 @@ namespace System.Net.Http
         {
             ArgumentNullException.ThrowIfNull(content);
 
-            if (bufferSize <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(bufferSize));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bufferSize);
 
             InitializeContent(content, bufferSize);
         }

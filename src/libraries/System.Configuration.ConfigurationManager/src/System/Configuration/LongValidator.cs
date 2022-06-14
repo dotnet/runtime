@@ -20,7 +20,7 @@ namespace System.Configuration
 
         public LongValidator(long minValue, long maxValue, bool rangeIsExclusive, long resolution)
         {
-            if (resolution <= 0) throw new ArgumentOutOfRangeException(nameof(resolution));
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(resolution);
 
             if (minValue > maxValue)
                 throw new ArgumentOutOfRangeException(nameof(minValue), SR.Validator_min_greater_than_max);

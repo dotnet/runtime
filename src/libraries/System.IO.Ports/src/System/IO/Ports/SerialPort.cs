@@ -123,8 +123,7 @@ namespace System.IO.Ports
             get { return _baudRate; }
             set
             {
-                if (value <= 0)
-                    throw new ArgumentOutOfRangeException(nameof(BaudRate), SR.ArgumentOutOfRange_NeedPosNum);
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
 
                 if (IsOpen)
                     _internalSerialStream.BaudRate = value;
@@ -381,8 +380,7 @@ namespace System.IO.Ports
             }
             set
             {
-                if (value <= 0)
-                    throw new ArgumentOutOfRangeException(nameof(ReadBufferSize));
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
 
                 if (IsOpen)
                     throw new InvalidOperationException(SR.Format(SR.Cant_be_set_when_open, nameof(ReadBufferSize)));
@@ -420,8 +418,7 @@ namespace System.IO.Ports
             }
             set
             {
-                if (value <= 0)
-                    throw new ArgumentOutOfRangeException(nameof(ReceivedBytesThreshold), SR.ArgumentOutOfRange_NeedPosNum);
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
 
                 _receivedBytesThreshold = value;
 
@@ -479,8 +476,7 @@ namespace System.IO.Ports
             }
             set
             {
-                if (value <= 0)
-                    throw new ArgumentOutOfRangeException(nameof(WriteBufferSize));
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
 
                 if (IsOpen)
                     throw new InvalidOperationException(SR.Format(SR.Cant_be_set_when_open, nameof(WriteBufferSize)));

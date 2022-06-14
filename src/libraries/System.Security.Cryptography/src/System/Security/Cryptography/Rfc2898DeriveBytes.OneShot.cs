@@ -79,8 +79,7 @@ namespace System.Security.Cryptography
             HashAlgorithmName hashAlgorithm,
             int outputLength)
         {
-            if (iterations <= 0)
-                throw new ArgumentOutOfRangeException(nameof(iterations), SR.ArgumentOutOfRange_NeedPosNum);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(iterations);
             ArgumentOutOfRangeException.ThrowIfNegative(outputLength);
 
             ValidateHashAlgorithm(hashAlgorithm);
@@ -117,8 +116,7 @@ namespace System.Security.Cryptography
             int iterations,
             HashAlgorithmName hashAlgorithm)
         {
-            if (iterations <= 0)
-                throw new ArgumentOutOfRangeException(nameof(iterations), SR.ArgumentOutOfRange_NeedPosNum);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(iterations);
 
             ValidateHashAlgorithm(hashAlgorithm);
 
@@ -209,8 +207,7 @@ namespace System.Security.Cryptography
             int outputLength)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(outputLength);
-            if (iterations <= 0)
-                throw new ArgumentOutOfRangeException(nameof(iterations), SR.ArgumentOutOfRange_NeedPosNum);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(iterations);
 
             ValidateHashAlgorithm(hashAlgorithm);
 
@@ -254,8 +251,7 @@ namespace System.Security.Cryptography
             int iterations,
             HashAlgorithmName hashAlgorithm)
         {
-            if (iterations <= 0)
-                throw new ArgumentOutOfRangeException(nameof(iterations), SR.ArgumentOutOfRange_NeedPosNum);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(iterations);
 
             ValidateHashAlgorithm(hashAlgorithm);
 

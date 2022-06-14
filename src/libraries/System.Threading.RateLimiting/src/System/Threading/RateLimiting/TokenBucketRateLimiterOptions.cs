@@ -32,10 +32,7 @@ namespace System.Threading.RateLimiting
         {
             ArgumentOutOfRangeException.ThrowIfNegative(tokenLimit);
             ArgumentOutOfRangeException.ThrowIfNegative(queueLimit);
-            if (tokensPerPeriod <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(tokensPerPeriod));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(tokensPerPeriod);
 
             TokenLimit = tokenLimit;
             QueueProcessingOrder = queueProcessingOrder;

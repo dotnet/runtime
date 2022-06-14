@@ -137,8 +137,7 @@ namespace System.Security.Cryptography
 
         public static int GetInt32(int toExclusive)
         {
-            if (toExclusive <= 0)
-                throw new ArgumentOutOfRangeException(nameof(toExclusive), SR.ArgumentOutOfRange_NeedPosNum);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(toExclusive);
 
             return GetInt32(0, toExclusive);
         }

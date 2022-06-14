@@ -724,8 +724,7 @@ namespace System.Security.Cryptography
 
             if (!destination.CanWrite)
                 throw new NotSupportedException(SR.NotSupported_UnwritableStream);
-            if (bufferSize <= 0)
-                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bufferSize);
             if (!CanRead)
                 throw new NotSupportedException(SR.NotSupported_UnreadableStream);
         }

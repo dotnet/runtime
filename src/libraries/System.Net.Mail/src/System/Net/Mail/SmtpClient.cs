@@ -190,10 +190,7 @@ namespace System.Net.Mail
                     throw new InvalidOperationException(SR.SmtpInvalidOperationDuringSend);
                 }
 
-                if (value <= 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
 
                 if (value != _port)
                 {

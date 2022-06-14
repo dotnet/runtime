@@ -876,11 +876,9 @@ namespace System.Numerics
         /// <paramref name="nearPlaneDistance" /> is greater than or equal to <paramref name="farPlaneDistance" />.</exception>
         public static Matrix4x4 CreatePerspective(float width, float height, float nearPlaneDistance, float farPlaneDistance)
         {
-            if (nearPlaneDistance <= 0.0f)
-                throw new ArgumentOutOfRangeException(nameof(nearPlaneDistance));
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(nearPlaneDistance);
 
-            if (farPlaneDistance <= 0.0f)
-                throw new ArgumentOutOfRangeException(nameof(farPlaneDistance));
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(farPlaneDistance);
 
             if (nearPlaneDistance >= farPlaneDistance)
                 throw new ArgumentOutOfRangeException(nameof(nearPlaneDistance));
@@ -923,11 +921,9 @@ namespace System.Numerics
             if (fieldOfView <= 0.0f || fieldOfView >= MathF.PI)
                 throw new ArgumentOutOfRangeException(nameof(fieldOfView));
 
-            if (nearPlaneDistance <= 0.0f)
-                throw new ArgumentOutOfRangeException(nameof(nearPlaneDistance));
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(nearPlaneDistance);
 
-            if (farPlaneDistance <= 0.0f)
-                throw new ArgumentOutOfRangeException(nameof(farPlaneDistance));
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(farPlaneDistance);
 
             if (nearPlaneDistance >= farPlaneDistance)
                 throw new ArgumentOutOfRangeException(nameof(nearPlaneDistance));
@@ -969,11 +965,9 @@ namespace System.Numerics
         /// <paramref name="nearPlaneDistance" /> is greater than or equal to <paramref name="farPlaneDistance" />.</exception>
         public static Matrix4x4 CreatePerspectiveOffCenter(float left, float right, float bottom, float top, float nearPlaneDistance, float farPlaneDistance)
         {
-            if (nearPlaneDistance <= 0.0f)
-                throw new ArgumentOutOfRangeException(nameof(nearPlaneDistance));
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(nearPlaneDistance);
 
-            if (farPlaneDistance <= 0.0f)
-                throw new ArgumentOutOfRangeException(nameof(farPlaneDistance));
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(farPlaneDistance);
 
             if (nearPlaneDistance >= farPlaneDistance)
                 throw new ArgumentOutOfRangeException(nameof(nearPlaneDistance));

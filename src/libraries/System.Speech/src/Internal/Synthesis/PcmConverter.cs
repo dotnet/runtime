@@ -249,15 +249,9 @@ namespace System.Speech.Internal.Synthesis
         {
             int iLimitFactor;
 
-            if (inHz <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(inHz));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(inHz);
 
-            if (outHz <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(outHz));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(outHz);
 
             FindResampleFactors(inHz, outHz);
             iLimitFactor = (_iUpFactor > _iDownFactor) ? _iUpFactor : _iDownFactor;

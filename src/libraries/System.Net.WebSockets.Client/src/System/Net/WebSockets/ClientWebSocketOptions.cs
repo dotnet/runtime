@@ -169,14 +169,8 @@ namespace System.Net.WebSockets
         {
             ThrowIfReadOnly();
 
-            if (receiveBufferSize <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(receiveBufferSize), receiveBufferSize, SR.Format(SR.net_WebSockets_ArgumentOutOfRange_TooSmall, 1));
-            }
-            if (sendBufferSize <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(sendBufferSize), sendBufferSize, SR.Format(SR.net_WebSockets_ArgumentOutOfRange_TooSmall, 1));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(receiveBufferSize);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(sendBufferSize);
 
             _receiveBufferSize = receiveBufferSize;
             _buffer = null;
@@ -187,14 +181,8 @@ namespace System.Net.WebSockets
         {
             ThrowIfReadOnly();
 
-            if (receiveBufferSize <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(receiveBufferSize), receiveBufferSize, SR.Format(SR.net_WebSockets_ArgumentOutOfRange_TooSmall, 1));
-            }
-            if (sendBufferSize <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(sendBufferSize), sendBufferSize, SR.Format(SR.net_WebSockets_ArgumentOutOfRange_TooSmall, 1));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(receiveBufferSize);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(sendBufferSize);
 
             WebSocketValidate.ValidateArraySegment(buffer, nameof(buffer));
             ArgumentOutOfRangeException.ThrowIfZero(buffer.Count);

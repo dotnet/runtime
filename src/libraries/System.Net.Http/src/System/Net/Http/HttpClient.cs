@@ -116,10 +116,7 @@ namespace System.Net.Http
             get => _maxResponseContentBufferSize;
             set
             {
-                if (value <= 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
                 if (value > HttpContent.MaxBufferSize)
                 {
                     throw new ArgumentOutOfRangeException(nameof(value), value,

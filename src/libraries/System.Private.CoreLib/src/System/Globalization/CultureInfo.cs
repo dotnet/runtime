@@ -1017,10 +1017,7 @@ namespace System.Globalization
         /// </summary>
         public static CultureInfo GetCultureInfo(int culture)
         {
-            if (culture <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(culture), SR.ArgumentOutOfRange_NeedPosNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(culture);
 
             Dictionary<int, CultureInfo> lcidTable = CachedCulturesByLcid;
             CultureInfo? result;

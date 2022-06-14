@@ -200,7 +200,7 @@ namespace System.Collections.Concurrent
         public static OrderablePartitioner<Tuple<long, long>> Create(long fromInclusive, long toExclusive, long rangeSize)
         {
             if (toExclusive <= fromInclusive) throw new ArgumentOutOfRangeException(nameof(toExclusive));
-            if (rangeSize <= 0) throw new ArgumentOutOfRangeException(nameof(rangeSize));
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(rangeSize);
             return Partitioner.Create(CreateRanges(fromInclusive, toExclusive, rangeSize), EnumerablePartitionerOptions.NoBuffering); // chunk one range at a time
         }
 
@@ -254,7 +254,7 @@ namespace System.Collections.Concurrent
         public static OrderablePartitioner<Tuple<int, int>> Create(int fromInclusive, int toExclusive, int rangeSize)
         {
             if (toExclusive <= fromInclusive) throw new ArgumentOutOfRangeException(nameof(toExclusive));
-            if (rangeSize <= 0) throw new ArgumentOutOfRangeException(nameof(rangeSize));
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(rangeSize);
             return Partitioner.Create(CreateRanges(fromInclusive, toExclusive, rangeSize), EnumerablePartitionerOptions.NoBuffering); // chunk one range at a time
         }
 
@@ -500,10 +500,7 @@ namespace System.Collections.Concurrent
             /// <returns>A list containing <paramref name="partitionCount"/> enumerators.</returns>
             public override IList<IEnumerator<KeyValuePair<long, TSource>>> GetOrderablePartitions(int partitionCount)
             {
-                if (partitionCount <= 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(partitionCount));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(partitionCount);
                 IEnumerator<KeyValuePair<long, TSource>>[] partitions
                     = new IEnumerator<KeyValuePair<long, TSource>>[partitionCount];
 
@@ -1020,10 +1017,7 @@ namespace System.Collections.Concurrent
             /// <returns>A list containing <paramref name="partitionCount"/> enumerators.</returns>
             public override IList<IEnumerator<KeyValuePair<long, TSource>>> GetOrderablePartitions(int partitionCount)
             {
-                if (partitionCount <= 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(partitionCount));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(partitionCount);
                 IEnumerator<KeyValuePair<long, TSource>>[] partitions
                     = new IEnumerator<KeyValuePair<long, TSource>>[partitionCount];
                 IEnumerable<KeyValuePair<long, TSource>> partitionEnumerable = GetOrderableDynamicPartitions_Factory(_data);
@@ -1379,10 +1373,7 @@ namespace System.Collections.Concurrent
             /// <returns>a list of partitions</returns>
             public override IList<IEnumerator<KeyValuePair<long, TSource>>> GetOrderablePartitions(int partitionCount)
             {
-                if (partitionCount <= 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(partitionCount));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(partitionCount);
 
                 int quotient, remainder;
                 quotient = SourceCount / partitionCount;

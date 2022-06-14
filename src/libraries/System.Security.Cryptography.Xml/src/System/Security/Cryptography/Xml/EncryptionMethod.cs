@@ -35,8 +35,7 @@ namespace System.Security.Cryptography.Xml
             get { return _keySize; }
             set
             {
-                if (value <= 0)
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.Cryptography_Xml_InvalidKeySize);
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
                 _keySize = value;
                 _cachedXml = null;
             }

@@ -81,10 +81,7 @@ namespace System.Net
             get { return _connectionLimit; }
             set
             {
-                if (value <= 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
                 _connectionLimit = value;
             }
         }
@@ -101,14 +98,8 @@ namespace System.Net
         {
             if (enabled)
             {
-                if (keepAliveTime <= 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(keepAliveTime));
-                }
-                if (keepAliveInterval <= 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(keepAliveInterval));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(keepAliveTime);
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(keepAliveInterval);
             }
         }
     }

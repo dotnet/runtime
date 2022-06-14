@@ -213,10 +213,7 @@ namespace System.Threading
         /// disposed.</exception>
         public bool Signal(int signalCount)
         {
-            if (signalCount <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(signalCount));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(signalCount);
 
             ThrowIfDisposed();
             Debug.Assert(_event != null);
@@ -320,10 +317,7 @@ namespace System.Threading
         /// disposed.</exception>
         public bool TryAddCount(int signalCount)
         {
-            if (signalCount <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(signalCount));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(signalCount);
 
             ThrowIfDisposed();
 

@@ -121,13 +121,7 @@ namespace System.Net.Http
 
             set
             {
-                if (value <= 0)
-                {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(value),
-                        value,
-                        SR.Format(SR.net_http_value_must_be_greater_than, 0));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
 
                 CheckDisposedOrStarted();
                 _maxAutomaticRedirections = value;
@@ -490,13 +484,7 @@ namespace System.Net.Http
 
             set
             {
-                if (value <= 0)
-                {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(value),
-                        value,
-                        SR.Format(SR.net_http_value_must_be_greater_than, 0));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
 
                 CheckDisposedOrStarted();
                 _maxResponseHeadersLength = value;
@@ -512,13 +500,7 @@ namespace System.Net.Http
 
             set
             {
-                if (value <= 0)
-                {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(value),
-                        value,
-                        SR.Format(SR.net_http_value_must_be_greater_than, 0));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
 
                 CheckDisposedOrStarted();
                 _maxResponseDrainSize = value;

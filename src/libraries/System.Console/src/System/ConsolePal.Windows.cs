@@ -651,8 +651,7 @@ namespace System
 
             if (frequency < MinBeepFrequency || frequency > MaxBeepFrequency)
                 throw new ArgumentOutOfRangeException(nameof(frequency), frequency, SR.Format(SR.ArgumentOutOfRange_BeepFrequency, MinBeepFrequency, MaxBeepFrequency));
-            if (duration <= 0)
-                throw new ArgumentOutOfRangeException(nameof(duration), duration, SR.ArgumentOutOfRange_NeedPosNum);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(duration);
 
             Interop.Kernel32.Beep(frequency, duration);
         }
@@ -948,10 +947,8 @@ namespace System
 
         public static unsafe void SetWindowSize(int width, int height)
         {
-            if (width <= 0)
-                throw new ArgumentOutOfRangeException(nameof(width), width, SR.ArgumentOutOfRange_NeedPosNum);
-            if (height <= 0)
-                throw new ArgumentOutOfRangeException(nameof(height), height, SR.ArgumentOutOfRange_NeedPosNum);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(width);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(height);
 
             // Get the position of the current console window
             Interop.Kernel32.CONSOLE_SCREEN_BUFFER_INFO csbi = GetBufferInfo();

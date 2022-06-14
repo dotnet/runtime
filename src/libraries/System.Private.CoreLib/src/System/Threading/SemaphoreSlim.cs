@@ -155,10 +155,7 @@ namespace System.Threading
             }
 
             // validate input
-            if (maxCount <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(maxCount), maxCount, SR.SemaphoreSlim_ctor_MaxCountWrong);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxCount);
 
             m_maxCount = maxCount;
             m_currentCount = initialCount;

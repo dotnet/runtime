@@ -21,14 +21,8 @@ namespace System.Buffers
 
         internal ConfigurableArrayPool(int maxArrayLength, int maxArraysPerBucket)
         {
-            if (maxArrayLength <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(maxArrayLength));
-            }
-            if (maxArraysPerBucket <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(maxArraysPerBucket));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxArrayLength);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxArraysPerBucket);
 
             // Our bucketing algorithm has a min length of 2^4 and a max length of 2^30.
             // Constrain the actual max used to those values.

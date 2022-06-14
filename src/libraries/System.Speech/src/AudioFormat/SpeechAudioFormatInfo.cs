@@ -17,18 +17,9 @@ namespace System.Speech.AudioFormat
             {
                 throw new ArgumentException(SR.Get(SRID.CannotUseCustomFormat), nameof(encodingFormat));
             }
-            if (samplesPerSecond <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(samplesPerSecond), SR.Get(SRID.MustBeGreaterThanZero));
-            }
-            if (bitsPerSample <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(bitsPerSample), SR.Get(SRID.MustBeGreaterThanZero));
-            }
-            if (channelCount <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(channelCount), SR.Get(SRID.MustBeGreaterThanZero));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(samplesPerSecond);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bitsPerSample);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(channelCount);
 
             _encodingFormat = encodingFormat;
             _samplesPerSecond = samplesPerSecond;
@@ -63,14 +54,8 @@ namespace System.Speech.AudioFormat
             : this(encodingFormat, samplesPerSecond, (short)bitsPerSample, (short)channelCount, formatSpecificData)
         {
             // Don't explicitly check these are sensible values - allow flexibility here as some formats may do unexpected things here.
-            if (averageBytesPerSecond <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(averageBytesPerSecond), SR.Get(SRID.MustBeGreaterThanZero));
-            }
-            if (blockAlign <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(blockAlign), SR.Get(SRID.MustBeGreaterThanZero));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(averageBytesPerSecond);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(blockAlign);
             _averageBytesPerSecond = averageBytesPerSecond;
             _blockAlign = (short)blockAlign;
         }
