@@ -98,6 +98,14 @@ namespace System.IO
 
                         errorCode = FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
                     }
+                    else
+                    {
+                        // The initial errorCode was neither ERROR_IO_PENDING nor ERROR_SUCCESS, so the operation
+                        // failed with an error and the callback won't be invoked.  We thus need to decrement the
+                        // ref count on the resetEvent that was initialized to a value under the expectation that
+                        // the callback would be invoked and decrement it.
+                        resetEvent.ReleaseRefCount(overlapped);
+                    }
 
                     switch (errorCode)
                     {
@@ -118,7 +126,7 @@ namespace System.IO
             {
                 if (overlapped != null)
                 {
-                    resetEvent.FreeNativeOverlapped(overlapped);
+                    resetEvent.ReleaseRefCount(overlapped);
                 }
 
                 resetEvent.Dispose();
@@ -196,6 +204,14 @@ namespace System.IO
 
                         errorCode = FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
                     }
+                    else
+                    {
+                        // The initial errorCode was neither ERROR_IO_PENDING nor ERROR_SUCCESS, so the operation
+                        // failed with an error and the callback won't be invoked.  We thus need to decrement the
+                        // ref count on the resetEvent that was initialized to a value under the expectation that
+                        // the callback would be invoked and decrement it.
+                        resetEvent.ReleaseRefCount(overlapped);
+                    }
 
                     switch (errorCode)
                     {
@@ -218,7 +234,7 @@ namespace System.IO
             {
                 if (overlapped != null)
                 {
-                    resetEvent.FreeNativeOverlapped(overlapped);
+                    resetEvent.ReleaseRefCount(overlapped);
                 }
 
                 resetEvent.Dispose();
@@ -702,7 +718,7 @@ namespace System.IO
         {
             // After SafeFileHandle is bound to ThreadPool, we need to use ThreadPoolBinding
             // to allocate a native overlapped and provide a valid callback.
-            NativeOverlapped* result = handle.ThreadPoolBinding!.AllocateNativeOverlapped(s_callback, resetEvent, null);
+            NativeOverlapped* result = handle.ThreadPoolBinding!.UnsafeAllocateNativeOverlapped(s_callback, resetEvent, null);
 
             if (handle.CanSeek)
             {
@@ -742,11 +758,11 @@ namespace System.IO
             static unsafe void Callback(uint errorCode, uint numBytes, NativeOverlapped* pOverlapped)
             {
                 CallbackResetEvent state = (CallbackResetEvent)ThreadPoolBoundHandle.GetNativeOverlappedState(pOverlapped)!;
-                state.FreeNativeOverlapped(pOverlapped);
+                state.ReleaseRefCount(pOverlapped);
             }
         }
 
-        // We need to store the reference count (see the comment in FreeNativeOverlappedIfItIsSafe) and an EventHandle to signal the completion.
+        // We need to store the reference count (see the comment in ReleaseRefCount) and an EventHandle to signal the completion.
         // We could keep these two things separate, but since ManualResetEvent is sealed and we want to avoid any extra allocations, this type has been created.
         // It's basically ManualResetEvent with reference count.
         private sealed class CallbackResetEvent : EventWaitHandle
@@ -759,7 +775,7 @@ namespace System.IO
                 _threadPoolBoundHandle = threadPoolBoundHandle;
             }
 
-            internal unsafe void FreeNativeOverlapped(NativeOverlapped* pOverlapped)
+            internal unsafe void ReleaseRefCount(NativeOverlapped* pOverlapped)
             {
                 // Each SafeFileHandle opened for async IO is bound to ThreadPool.
                 // It requires us to provide a callback even if we want to use EventHandle and use GetOverlappedResult to obtain the result.
