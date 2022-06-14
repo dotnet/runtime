@@ -168,7 +168,7 @@ namespace Microsoft.Interop
                     LiteralExpression(SyntaxKind.TrueLiteralExpression))));
             }
 
-            tryStatements.AddRange(statements.KeepAlive);
+            tryStatements.AddRange(statements.NotifyForSuccessfulInvoke);
             tryStatements.AddRange(statements.Unmarshal);
 
             List<StatementSyntax> allStatements = setupStatements;
