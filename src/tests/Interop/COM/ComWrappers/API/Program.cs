@@ -539,6 +539,10 @@ namespace ComWrappersTests
             refCount = MockReferenceTrackerRuntime.TrackerTarget_ReleaseFromReferenceTracker(refTrackerTarget);
             Assert.Equal(0, refCount);
 
+            // Inlining this method could unintentionally extend the lifetime of
+            // the Test instance. This extension makes clean-up of the CCW impossible
+            // because the GC seems the object as reachable.
+            [MethodImpl(MethodImplOptions.NoInlining)]
             static IntPtr CreateWrapper(TestComWrappers cw)
             {
                 return cw.GetOrCreateComInterfaceForObject(new Test(), CreateComInterfaceFlags.TrackerSupport);
