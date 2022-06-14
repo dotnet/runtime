@@ -677,23 +677,17 @@ void Lowering::LowerRotate(GenTree* tree)
 //     TODO: We could do this optimization in morph but we do not have
 //           a conditional select op in HIR. At some point, we may
 //           introduce such an op.
-GenTree* Lowering::LowerModPow2(GenTree* node)
+void Lowering::LowerModPow2(GenTree* node)
 {
     assert(node->OperIs(GT_MOD));
-    GenTree* mod      = node;
-    GenTree* dividend = mod->gtGetOp1();
-    GenTree* divisor  = mod->gtGetOp2();
+    GenTreeOp* mod      = node->AsOp();
+    GenTree*   dividend = mod->gtGetOp1();
+    GenTree*   divisor  = mod->gtGetOp2();
 
     assert(divisor->IsIntegralConstPow2());
 
     const var_types type = mod->TypeGet();
     assert((type == TYP_INT) || (type == TYP_LONG));
-
-    LIR::Use use;
-    if (!BlockRange().TryGetUse(node, &use))
-    {
-        return nullptr;
-    }
 
     ssize_t cnsValue = static_cast<ssize_t>(divisor->AsIntConCommon()->IntegralValue()) - 1;
 
@@ -725,21 +719,15 @@ GenTree* Lowering::LowerModPow2(GenTree* node)
     BlockRange().InsertAfter(cns2, falseExpr);
     LowerNode(falseExpr);
 
-    GenTree* const cc = comp->gtNewOperNode(GT_CSNEG_MI, type, trueExpr, falseExpr);
-    cc->gtFlags |= GTF_USE_FLAGS;
+    mod->ChangeOper(GT_CSNEG_MI);
+    mod->gtOp1 = trueExpr;
+    mod->gtOp2 = falseExpr;
+    mod->gtFlags |= GTF_USE_FLAGS;
 
     JITDUMP("Lower: optimize X MOD POW2");
     DISPNODE(mod);
-    JITDUMP("to:\n");
-    DISPNODE(cc);
 
-    BlockRange().InsertBefore(mod, cc);
-    ContainCheckNode(cc);
-    BlockRange().Remove(mod);
-
-    use.ReplaceWith(cc);
-
-    return cc->gtNext;
+    ContainCheckNode(mod);
 }
 
 //------------------------------------------------------------------------

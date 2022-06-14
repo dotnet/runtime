@@ -212,7 +212,7 @@ ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetSessionInfo (
 MonoBoolean
 ves_icall_System_Diagnostics_Tracing_EventPipeInternal_SignalSession (uint64_t session_id)
 {
-	return (intptr_t) mono_component_event_pipe()->signal_session ((EventPipeSessionID)session_id);
+	return mono_component_event_pipe()->signal_session ((EventPipeSessionID)session_id) ? TRUE : FALSE;
 }
 
 MonoBoolean
@@ -220,7 +220,7 @@ ves_icall_System_Diagnostics_Tracing_EventPipeInternal_WaitForSessionSignal (
 	uint64_t session_id,
 	int32_t timeout)
 {
-	return (intptr_t) mono_component_event_pipe()->wait_for_session_signal ((EventPipeSessionID)session_id, (uint32_t)timeout);
+	return mono_component_event_pipe()->wait_for_session_signal ((EventPipeSessionID)session_id, (uint32_t)timeout) ? TRUE : FALSE;
 }
 
 void

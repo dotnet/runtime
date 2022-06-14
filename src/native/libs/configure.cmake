@@ -1031,6 +1031,17 @@ check_include_files(
     HAVE_GSSFW_HEADERS)
 
 if (HAVE_GSSFW_HEADERS)
+     find_library(LIBGSS NAMES GSS)
+elseif (HAVE_HEIMDAL_HEADERS)
+     find_library(LIBGSS NAMES gssapi)
+else ()
+     find_library(LIBGSS NAMES gssapi_krb5)
+endif ()
+
+set (PREVIOUS_CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES})
+set (CMAKE_REQUIRED_LIBRARIES ${LIBGSS})
+
+if (HAVE_GSSFW_HEADERS)
     check_symbol_exists(
         GSS_SPNEGO_MECHANISM
         "GSS/GSS.h"
@@ -1053,6 +1064,8 @@ else ()
         "gssapi/gssapi_krb5.h"
         HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X)
 endif ()
+
+set (CMAKE_REQUIRED_LIBRARIES ${PREVIOUS_CMAKE_REQUIRED_LIBRARIES})
 
 check_symbol_exists(getauxval sys/auxv.h HAVE_GETAUXVAL)
 check_include_files(crt_externs.h HAVE_CRT_EXTERNS_H)
