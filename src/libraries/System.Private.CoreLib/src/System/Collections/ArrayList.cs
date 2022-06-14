@@ -475,8 +475,7 @@ namespace System.Collections
         //
         public virtual int LastIndexOf(object? value, int startIndex)
         {
-            if (startIndex >= _size)
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexMustBeLess);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(startIndex, _size);
             return LastIndexOf(value, startIndex, startIndex + 1);
         }
 
@@ -2451,8 +2450,7 @@ namespace System.Collections
                 if (_baseSize == 0)
                     return -1;
 
-                if (startIndex >= _baseSize)
-                    throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexMustBeLess);
+                ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(startIndex, _baseSize);
                 ArgumentOutOfRangeException.ThrowIfNegative(startIndex);
 
                 int i = _baseList.LastIndexOf(value, _baseIndex + startIndex, count);

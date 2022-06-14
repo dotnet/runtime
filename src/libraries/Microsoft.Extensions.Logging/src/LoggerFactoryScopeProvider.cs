@@ -174,10 +174,7 @@ namespace Microsoft.Extensions.Logging
             {
                 get
                 {
-                    if (index >= Count)
-                    {
-                        throw new ArgumentOutOfRangeException(nameof(index));
-                    }
+                    ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, Count);
 
                     return _items[index];
                 }

@@ -302,10 +302,7 @@ namespace System.IO
             uint sizeOfT = SafeBuffer.SizeOf<T>();
             if (position > _capacity - sizeOfT)
             {
-                if (position >= _capacity)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(position), SR.ArgumentOutOfRange_PositionLessThanCapacityRequired);
-                }
+                ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(position, _capacity);
                 throw new ArgumentException(SR.Argument_NotEnoughBytesToRead, nameof(position));
             }
 
@@ -338,10 +335,7 @@ namespace System.IO
             uint sizeOfT = SafeBuffer.AlignedSizeOf<T>();
 
             // only check position and ask for fewer Ts if count is too big
-            if (position >= _capacity)
-            {
-                throw new ArgumentOutOfRangeException(nameof(position), SR.ArgumentOutOfRange_PositionLessThanCapacityRequired);
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(position, _capacity);
 
             int n = count;
             long spaceLeft = _capacity - position;
@@ -527,10 +521,7 @@ namespace System.IO
             uint sizeOfT = SafeBuffer.SizeOf<T>();
             if (position > _capacity - sizeOfT)
             {
-                if (position >= _capacity)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(position), SR.ArgumentOutOfRange_PositionLessThanCapacityRequired);
-                }
+                ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(position, _capacity);
                 throw new ArgumentException(SR.Argument_NotEnoughBytesToWrite, nameof(position));
             }
 
@@ -549,10 +540,7 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
             }
             ArgumentOutOfRangeException.ThrowIfNegative(position);
-            if (position >= Capacity)
-            {
-                throw new ArgumentOutOfRangeException(nameof(position), SR.ArgumentOutOfRange_PositionLessThanCapacityRequired);
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(position, Capacity);
 
             if (!_isOpen)
             {
@@ -579,10 +567,7 @@ namespace System.IO
             ArgumentOutOfRangeException.ThrowIfNegative(position);
             if (position > _capacity - sizeOfType)
             {
-                if (position >= _capacity)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(position), SR.ArgumentOutOfRange_PositionLessThanCapacityRequired);
-                }
+                ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(position, _capacity);
                 throw new ArgumentException(SR.Argument_NotEnoughBytesToRead, nameof(position));
             }
         }
@@ -600,10 +585,7 @@ namespace System.IO
             ArgumentOutOfRangeException.ThrowIfNegative(position);
             if (position > _capacity - sizeOfType)
             {
-                if (position >= _capacity)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(position), SR.ArgumentOutOfRange_PositionLessThanCapacityRequired);
-                }
+                ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(position, _capacity);
                 throw new ArgumentException(SR.Argument_NotEnoughBytesToWrite, nameof(position));
             }
         }

@@ -237,10 +237,7 @@ namespace System
         public DateTimeOffset(int year, int month, int day, int hour, int minute, int second, int millisecond, int microsecond, TimeSpan offset)
             : this(year, month, day, hour, minute, second, millisecond, offset)
         {
-            if ((uint)microsecond >= DateTime.MicrosecondsPerMillisecond)
-            {
-                throw new ArgumentOutOfRangeException(nameof(microsecond), SR.ArgumentOutOfRange_BadHourMinuteSecond);
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual((uint)microsecond, DateTime.MicrosecondsPerMillisecond);
             _dateTime = _dateTime.AddMicroseconds(microsecond);
         }
 
@@ -314,10 +311,7 @@ namespace System
         public DateTimeOffset(int year, int month, int day, int hour, int minute, int second, int millisecond, int microsecond, Calendar calendar, TimeSpan offset)
         : this(year, month, day, hour, minute, second, millisecond, calendar, offset)
         {
-            if ((uint)microsecond >= DateTime.MicrosecondsPerMillisecond)
-            {
-                throw new ArgumentOutOfRangeException(nameof(microsecond), SR.ArgumentOutOfRange_BadHourMinuteSecond);
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual((uint)microsecond, DateTime.MicrosecondsPerMillisecond);
             _dateTime = _dateTime.AddMicroseconds(microsecond);
         }
 

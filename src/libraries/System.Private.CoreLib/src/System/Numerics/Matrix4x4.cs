@@ -880,8 +880,7 @@ namespace System.Numerics
 
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(farPlaneDistance);
 
-            if (nearPlaneDistance >= farPlaneDistance)
-                throw new ArgumentOutOfRangeException(nameof(nearPlaneDistance));
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(nearPlaneDistance, farPlaneDistance);
 
             Matrix4x4 result;
 
@@ -925,8 +924,7 @@ namespace System.Numerics
 
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(farPlaneDistance);
 
-            if (nearPlaneDistance >= farPlaneDistance)
-                throw new ArgumentOutOfRangeException(nameof(nearPlaneDistance));
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(nearPlaneDistance, farPlaneDistance);
 
             float yScale = 1.0f / MathF.Tan(fieldOfView * 0.5f);
             float xScale = yScale / aspectRatio;
@@ -969,8 +967,7 @@ namespace System.Numerics
 
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(farPlaneDistance);
 
-            if (nearPlaneDistance >= farPlaneDistance)
-                throw new ArgumentOutOfRangeException(nameof(nearPlaneDistance));
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(nearPlaneDistance, farPlaneDistance);
 
             Matrix4x4 result;
 

@@ -694,13 +694,7 @@ namespace System.Globalization
             {
                 throw new ArgumentOutOfRangeException(null, SR.ArgumentOutOfRange_BadHourMinuteSecond);
             }
-            if ((uint)millisecond >= MillisPerSecond)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(millisecond),
-                    millisecond,
-                    SR.Format(SR.ArgumentOutOfRange_Range, 0, MillisPerSecond - 1));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual((uint)millisecond, MillisPerSecond);
 
             int totalSeconds = hour * 3600 + minute * 60 + second;
             return totalSeconds * TicksPerSecond + millisecond * TicksPerMillisecond;

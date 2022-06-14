@@ -726,10 +726,7 @@ namespace System.IO
                     get
                     {
                         string[] items = Items;
-                        if ((uint)index >= (uint)items.Length)
-                        {
-                            throw new ArgumentOutOfRangeException(nameof(index));
-                        }
+                        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual((uint)index, (uint)items.Length);
                         return items[index];
                     }
                     set

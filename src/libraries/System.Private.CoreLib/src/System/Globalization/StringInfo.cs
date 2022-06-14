@@ -75,10 +75,7 @@ namespace System.Globalization
         {
             int[] indexes = Indexes ?? Array.Empty<int>();
 
-            if ((uint)startingTextElement >= (uint)indexes.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(startingTextElement), startingTextElement, SR.Arg_ArgumentOutOfRangeException);
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual((uint)startingTextElement, (uint)indexes.Length);
             ArgumentOutOfRangeException.ThrowIfGreaterThan((uint)lengthInTextElements, (uint)(indexes.Length - startingTextElement));
 
             int start = indexes[startingTextElement];

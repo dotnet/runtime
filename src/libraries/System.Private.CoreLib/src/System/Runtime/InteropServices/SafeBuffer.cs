@@ -91,8 +91,7 @@ namespace System.Runtime.InteropServices
             if (IntPtr.Size == 4 && numBytes > uint.MaxValue)
                 throw new ArgumentOutOfRangeException(nameof(numBytes), SR.ArgumentOutOfRange_AddressSpace);
 
-            if (numBytes >= (ulong)Uninitialized)
-                throw new ArgumentOutOfRangeException(nameof(numBytes), SR.ArgumentOutOfRange_UIntPtrMax);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(numBytes, (ulong)Uninitialized);
 
             _numBytes = (nuint)numBytes;
         }

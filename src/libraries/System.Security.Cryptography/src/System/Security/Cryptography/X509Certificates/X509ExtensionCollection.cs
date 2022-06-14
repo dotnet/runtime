@@ -41,8 +41,7 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 if (index < 0)
                     throw new InvalidOperationException(SR.InvalidOperation_EnumNotStarted);
-                if (index >= _list.Count)
-                    throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLess);
+                ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, _list.Count);
 
                 return _list[index];
             }

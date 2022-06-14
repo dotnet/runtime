@@ -458,10 +458,7 @@ namespace System.Text
                     int indexInBlock = index - chunk.m_ChunkOffset;
                     if (indexInBlock >= 0)
                     {
-                        if (indexInBlock >= chunk.m_ChunkLength)
-                        {
-                            throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLess);
-                        }
+                        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(indexInBlock, chunk.m_ChunkLength);
                         chunk.m_ChunkChars[indexInBlock] = value;
                         return;
                     }

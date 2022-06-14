@@ -111,10 +111,7 @@ namespace System.Diagnostics
         {
             readonly get
             {
-                if ((uint)index >= (uint)_tagsCount)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(index));
-                }
+                ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual((uint)index, (uint)_tagsCount);
 
                 if (_overflowTags is not null)
                 {
@@ -140,10 +137,7 @@ namespace System.Diagnostics
 
             set
             {
-                if ((uint)index >= (uint)_tagsCount)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(index));
-                }
+                ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual((uint)index, (uint)_tagsCount);
 
                 if (_overflowTags is not null)
                 {
@@ -268,10 +262,7 @@ namespace System.Diagnostics
                 throw new ArgumentNullException(nameof(array));
             }
 
-            if ((uint)arrayIndex >= array.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(arrayIndex));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual((uint)arrayIndex, array.Length);
 
             CopyTo(array.AsSpan().Slice(arrayIndex));
         }
@@ -339,10 +330,7 @@ namespace System.Diagnostics
         /// <exception cref="T:System.ArgumentOutOfRangeException"> <paramref name="index" /> index is less than 0 or <paramref name="index" /> is greater than <see cref="M:System.Diagnostics.TagList.Count" />.</exception>
         public void RemoveAt(int index)
         {
-            if ((uint)index >= (uint)_tagsCount)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual((uint)index, (uint)_tagsCount);
 
             if (_overflowTags is not null)
             {

@@ -601,10 +601,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             {
                 get
                 {
-                    if (index >= Count)
-                    {
-                        throw new ArgumentOutOfRangeException(nameof(index));
-                    }
+                    ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, Count);
 
                     if (index == 0)
                     {

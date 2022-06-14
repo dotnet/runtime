@@ -790,10 +790,8 @@ namespace System
                 // Give a nice error message for out of range sizes
                 int errorCode = Marshal.GetLastPInvokeError();
                 Interop.Kernel32.CONSOLE_SCREEN_BUFFER_INFO csbi = GetBufferInfo();
-                if (left >= csbi.dwSize.X)
-                    throw new ArgumentOutOfRangeException(nameof(left), left, SR.ArgumentOutOfRange_ConsoleBufferBoundaries);
-                if (top >= csbi.dwSize.Y)
-                    throw new ArgumentOutOfRangeException(nameof(top), top, SR.ArgumentOutOfRange_ConsoleBufferBoundaries);
+                ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(left, csbi.dwSize.X);
+                ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(top, csbi.dwSize.Y);
 
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode);
             }
@@ -961,15 +959,13 @@ namespace System
             size.Y = csbi.dwSize.Y;
             if (csbi.dwSize.X < csbi.srWindow.Left + width)
             {
-                if (csbi.srWindow.Left >= short.MaxValue - width)
-                    throw new ArgumentOutOfRangeException(nameof(width), SR.Format(SR.ArgumentOutOfRange_ConsoleWindowBufferSize, short.MaxValue - width));
+                ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(csbi.srWindow.Left, short.MaxValue - width);
                 size.X = (short)(csbi.srWindow.Left + width);
                 resizeBuffer = true;
             }
             if (csbi.dwSize.Y < csbi.srWindow.Top + height)
             {
-                if (csbi.srWindow.Top >= short.MaxValue - height)
-                    throw new ArgumentOutOfRangeException(nameof(height), SR.Format(SR.ArgumentOutOfRange_ConsoleWindowBufferSize, short.MaxValue - height));
+                ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(csbi.srWindow.Top, short.MaxValue - height);
                 size.Y = (short)(csbi.srWindow.Top + height);
                 resizeBuffer = true;
             }

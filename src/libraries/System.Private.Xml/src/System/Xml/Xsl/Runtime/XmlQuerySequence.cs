@@ -246,8 +246,7 @@ namespace System.Xml.Xsl.Runtime
         {
             get
             {
-                if (index >= _size)
-                    throw new ArgumentOutOfRangeException(nameof(index));
+                ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, _size);
 
                 return _items[index];
             }
@@ -322,8 +321,7 @@ namespace System.Xml.Xsl.Runtime
         {
             get
             {
-                if (index >= _size)
-                    throw new ArgumentOutOfRangeException(nameof(index));
+                ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, _size);
 
                 return _items[index];
             }
@@ -727,8 +725,7 @@ namespace System.Xml.Xsl.Runtime
         {
             get
             {
-                if (index >= Count)
-                    throw new ArgumentOutOfRangeException(nameof(index));
+                ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, Count);
 
                 return base[index];
             }

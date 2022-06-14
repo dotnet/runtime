@@ -166,15 +166,13 @@ namespace System.Runtime.CompilerServices
         {
             get
             {
-                if (index >= _size)
-                    throw new ArgumentOutOfRangeException(nameof(index));
+                ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, _size);
 
                 return _items[index];
             }
             set
             {
-                if (index >= _size)
-                    throw new ArgumentOutOfRangeException(nameof(index));
+                ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, _size);
 
                 _items[index] = value;
                 _version++;

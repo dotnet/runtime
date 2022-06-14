@@ -43,8 +43,7 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 if (index < 0)
                     throw new InvalidOperationException(SR.InvalidOperation_EnumNotStarted);
-                if (index >= _elements.Length)
-                    throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLess);
+                ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, _elements.Length);
 
                 return _elements[index];
             }
