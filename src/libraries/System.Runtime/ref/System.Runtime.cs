@@ -498,6 +498,7 @@ namespace System
     public delegate void AssemblyLoadEventHandler(object? sender, System.AssemblyLoadEventArgs args);
     public delegate void AsyncCallback(System.IAsyncResult ar);
     [System.AttributeUsageAttribute(System.AttributeTargets.All, Inherited=true, AllowMultiple=false)]
+    [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields)]
     public abstract partial class Attribute
     {
         protected Attribute() { }

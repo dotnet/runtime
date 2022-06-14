@@ -10,12 +10,11 @@ namespace System
     [AttributeUsage(AttributeTargets.All, Inherited = true, AllowMultiple = false)]
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicFields | DynamicallyAccessedMemberTypes.PublicFields)]
     public abstract partial class Attribute
     {
         protected Attribute() { }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
-            Justification = "Unused fields don't make a difference for equality")]
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (obj == null)
@@ -48,8 +47,6 @@ namespace System
             return true;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
-            Justification = "Unused fields don't make a difference for hashcode quality")]
         public override int GetHashCode()
         {
             Type type = GetType();
