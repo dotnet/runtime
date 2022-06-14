@@ -243,6 +243,10 @@ CONFIG_DWORD_INFO(INTERNAL_ContinueOnAssert, W("ContinueOnAssert"), 0, "If set, 
 CONFIG_DWORD_INFO(INTERNAL_InjectFatalError, W("InjectFatalError"), 0, "")
 CONFIG_DWORD_INFO(INTERNAL_InjectFault, W("InjectFault"), 0, "")
 CONFIG_DWORD_INFO(INTERNAL_SuppressChecks, W("SuppressChecks"),0,  "")
+
+// If we manage to reserve the initial memory close to coreclr we might get a better performance
+// but it's better to turn it off when we run benchmarks for more stable results (always reserve far from coreclr)
+RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_ReserveInitialMemoryNearClr, W("UNSUPPORTED_DontReserveInitialMemoryNearClr"), 0, "Don't try to reserve the initial memory close to coreclr")
 #ifdef FEATURE_EH_FUNCLETS
 CONFIG_DWORD_INFO(INTERNAL_SuppressLockViolationsOnReentryFromOS, W("SuppressLockViolationsOnReentryFromOS"), 0, "64 bit OOM tests re-enter the CLR via RtlVirtualUnwind.  This indicates whether to suppress resulting locking violations.")
 #endif // FEATURE_EH_FUNCLETS

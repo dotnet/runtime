@@ -38,6 +38,7 @@ SET_DEFAULT_DEBUG_CHANNEL(VIRTUAL); // some headers have code with asserts, so d
 #include <string.h>
 #include <unistd.h>
 #include <limits.h>
+#include <clrconfignocache.h>
 
 #if HAVE_VM_ALLOCATE
 #include <mach/vm_map.h>
@@ -2140,7 +2141,15 @@ void ExecutableMemoryAllocator::TryReserveInitialMemory()
     int32_t preferredStartAddressIncrement;
     UINT_PTR preferredStartAddress;
     UINT_PTR coreclrLoadAddress;
-    const int32_t MemoryProbingIncrement = 128 * 1024 * 1024;
+
+    // If we manage to reserve the initial memory close to coreclr we might get a better performance
+    // but it's better to turn it off when we run benchmarks for more stable results (always reserve far from coreclr)
+    CLRConfigNoCache dontReserve = CLRConfigNoCache::Get("DontReserveInitialMemoryNearClr", /*noprefix*/ false, &getenv);
+    if (dontReserve.IsSet())
+    {
+        m_startAddress = nullptr;
+        goto FALLBACK;
+    }
 
     // Try to find and reserve an available region of virtual memory that is located
     // within 2GB range (defined by the MaxExecutableMemorySizeNearCoreClr constant) from the
@@ -2157,6 +2166,9 @@ void ExecutableMemoryAllocator::TryReserveInitialMemory()
     // (thus avoiding reserving memory below 4GB; besides some operating systems do not allow that).
     // If libcoreclr is loaded at high addresses then try to reserve memory below its location.
     coreclrLoadAddress = (UINT_PTR)PAL_GetSymbolModuleBase((void*)VirtualAlloc);
+
+#ifdef TARGET_XARCH
+    const int32_t MemoryProbingIncrement = 128 * 1024 * 1024;
     if ((coreclrLoadAddress < 0xFFFFFFFF) || ((coreclrLoadAddress - MaxExecutableMemorySizeNearCoreClr) < 0xFFFFFFFF))
     {
         // Try to allocate above the location of libcoreclr
@@ -2184,9 +2196,39 @@ void ExecutableMemoryAllocator::TryReserveInitialMemory()
         preferredStartAddress += preferredStartAddressIncrement;
 
     } while (sizeOfAllocation >= MemoryProbingIncrement);
+#else
+
+    // Always try to allocate above the location of libcoreclr on arm - we want to start allocating near it (withih 128Mb distance)
+    // however, we want to reserve as much as possible (ideally, 1Gb)
+    preferredStartAddress = coreclrLoadAddress + CoreClrLibrarySize;
+
+    do
+    {
+        m_startAddress = ReserveVirtualMemory(pthrCurrent, (void*)preferredStartAddress, sizeOfAllocation, MEM_RESERVE_EXECUTABLE);
+        if (m_startAddress != nullptr)
+        {
+            break;
+        }
+
+        // Try to allocate a smaller region...
+        sizeOfAllocation -= 64 * 1024 * 1024;
+        const int32_t smallestAllocSize = MaxExecutableMemorySizeNearCoreClr / 3 * 2;
+        if (sizeOfAllocation < smallestAllocSize)
+        {
+            // ...but not less than 2/3rd of what we initially planned
+            sizeOfAllocation = smallestAllocSize;
+        }
+
+        // Probe each 8Mb
+        preferredStartAddress += 8 * 1024 * 1024;
+
+        // bail out if preferredStartAddress is already too far from coreclr and we won't be able to use relocs
+    } while ((preferredStartAddress - coreclrLoadAddress) < (100 * 1024 * 1024));
+#endif
 
     if (m_startAddress == nullptr)
     {
+    FALLBACK:
         // We were not able to reserve any memory near libcoreclr. Try to reserve approximately 2 GB of address space somewhere
         // anyway:
         //   - This sets aside address space that can be used for executable code, such that jumps/calls between such code may
