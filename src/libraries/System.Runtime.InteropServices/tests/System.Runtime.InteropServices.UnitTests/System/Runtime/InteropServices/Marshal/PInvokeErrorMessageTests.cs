@@ -58,7 +58,9 @@ namespace System.Runtime.InteropServices.Tests
             var err2 = Marshal.GetPInvokeErrorMessage(0x10014); // EEXIST
             Assert.NotNull(err1);
             Assert.NotNull(err2);
-            Assert.NotEqual(err1, err2);
+            // It is difficult to determine which error codes do or do not have
+            // translations on non-Windows. For now, we will just confirm the
+            // message is non-null.
         }
     }
 }
