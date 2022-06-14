@@ -9,6 +9,7 @@ export type EventPipeSessionIDImpl = number;
 export type DiagnosticServerControlCommand = DiagnosticServerControlCommandStart | DiagnosticServerControlCommandSetSessionID;
 export type DiagnosticServerControlCommandStart = {
     type: "start";
+    url: string; // websocket url to connect to
 };
 
 export type DiagnosticServerControlCommandSetSessionID = {
