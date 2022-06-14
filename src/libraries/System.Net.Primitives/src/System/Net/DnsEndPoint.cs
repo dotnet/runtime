@@ -18,10 +18,7 @@ namespace System.Net
         {
             ArgumentException.ThrowIfNullOrEmpty(host);
 
-            if (port < IPEndPoint.MinPort || port > IPEndPoint.MaxPort)
-            {
-                throw new ArgumentOutOfRangeException(nameof(port));
-            }
+            ArgumentOutOfRangeException.ThrowIfEnum(port < IPEndPoint.MinPort || port > IPEndPoint.MaxPort);
 
             if (addressFamily != AddressFamily.InterNetwork &&
                 addressFamily != AddressFamily.InterNetworkV6 &&

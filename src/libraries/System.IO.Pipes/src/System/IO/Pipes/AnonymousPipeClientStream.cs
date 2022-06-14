@@ -87,10 +87,7 @@ namespace System.IO.Pipes
             {
                 CheckPipePropertyOperations();
 
-                if (value < PipeTransmissionMode.Byte || value > PipeTransmissionMode.Message)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_TransmissionModeByteOrMsg);
-                }
+                ArgumentOutOfRangeException.ThrowIfEnum(value < PipeTransmissionMode.Byte || value > PipeTransmissionMode.Message);
                 if (value == PipeTransmissionMode.Message)
                 {
                     throw new NotSupportedException(SR.NotSupported_AnonymousPipeMessagesNotSupported);

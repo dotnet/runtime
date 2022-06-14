@@ -95,14 +95,8 @@ namespace System.IO.Pipes
             HandleInheritability inheritability)
         {
             ArgumentException.ThrowIfNullOrEmpty(pipeName);
-            if (direction < PipeDirection.In || direction > PipeDirection.InOut)
-            {
-                throw new ArgumentOutOfRangeException(nameof(direction), SR.ArgumentOutOfRange_DirectionModeInOutOrInOut);
-            }
-            if (transmissionMode < PipeTransmissionMode.Byte || transmissionMode > PipeTransmissionMode.Message)
-            {
-                throw new ArgumentOutOfRangeException(nameof(transmissionMode), SR.ArgumentOutOfRange_TransmissionModeByteOrMsg);
-            }
+            ArgumentOutOfRangeException.ThrowIfEnum(direction < PipeDirection.In || direction > PipeDirection.InOut);
+            ArgumentOutOfRangeException.ThrowIfEnum(transmissionMode < PipeTransmissionMode.Byte || transmissionMode > PipeTransmissionMode.Message);
             ArgumentOutOfRangeException.ThrowIf((options & ~(PipeOptions.WriteThrough | PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly)) != 0);
             ArgumentOutOfRangeException.ThrowIfNegative(inBufferSize);
             ArgumentOutOfRangeException.ThrowIfNegative(outBufferSize);
@@ -111,10 +105,7 @@ namespace System.IO.Pipes
             // inheritability will always be None since this private constructor is only called from other constructors from which
             // inheritability is always set to None. Desktop has a public constructor to allow setting it to something else, but Core
             // doesn't.
-            if (inheritability < HandleInheritability.None || inheritability > HandleInheritability.Inheritable)
-            {
-                throw new ArgumentOutOfRangeException(nameof(inheritability), SR.ArgumentOutOfRange_HandleInheritabilityNoneOrInheritable);
-            }
+            ArgumentOutOfRangeException.ThrowIfEnum(inheritability < HandleInheritability.None || inheritability > HandleInheritability.Inheritable);
 
             if ((options & PipeOptions.CurrentUserOnly) != 0)
             {

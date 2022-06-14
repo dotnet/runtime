@@ -329,8 +329,7 @@ namespace System.IO.Ports
             }
             set
             {
-                if (value < Parity.None || value > Parity.Space)
-                    throw new ArgumentOutOfRangeException(nameof(Parity), SR.ArgumentOutOfRange_Enum);
+                ArgumentOutOfRangeException.ThrowIfEnum(value < Parity.None || value > Parity.Space);
 
                 if (IsOpen)
                     _internalSerialStream.Parity = value;
@@ -456,8 +455,7 @@ namespace System.IO.Ports
             set
             {
                 // this range check looks wrong, but it really is correct.  One = 1, Two = 2, and OnePointFive = 3
-                if (value < StopBits.One || value > StopBits.OnePointFive)
-                    throw new ArgumentOutOfRangeException(nameof(StopBits), SR.ArgumentOutOfRange_Enum);
+                ArgumentOutOfRangeException.ThrowIfEnum(value < StopBits.One || value > StopBits.OnePointFive);
 
                 if (IsOpen)
                     _internalSerialStream.StopBits = value;

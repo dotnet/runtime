@@ -92,10 +92,7 @@ namespace System.IO
             {
                 throw new ArgumentException(SR.Argument_InvalidSafeBufferOffLen);
             }
-            if (access < FileAccess.Read || access > FileAccess.ReadWrite)
-            {
-                throw new ArgumentOutOfRangeException(nameof(access));
-            }
+            ArgumentOutOfRangeException.ThrowIfEnum(access < FileAccess.Read || access > FileAccess.ReadWrite);
 
             if (_isOpen)
             {
@@ -163,8 +160,7 @@ namespace System.IO
             ArgumentOutOfRangeException.ThrowIfGreaterThan(length, capacity);
             // Check for wraparound.
             ArgumentOutOfRangeException.ThrowIfLessThan(((byte*)((long)pointer + capacity)), pointer);
-            if (access < FileAccess.Read || access > FileAccess.ReadWrite)
-                throw new ArgumentOutOfRangeException(nameof(access), SR.ArgumentOutOfRange_Enum);
+            ArgumentOutOfRangeException.ThrowIfEnum(access < FileAccess.Read || access > FileAccess.ReadWrite);
             if (_isOpen)
                 throw new InvalidOperationException(SR.InvalidOperation_CalledTwice);
 

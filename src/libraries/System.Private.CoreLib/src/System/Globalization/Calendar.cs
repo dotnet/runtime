@@ -494,13 +494,7 @@ namespace System.Globalization
         /// </summary>
         public virtual int GetWeekOfYear(DateTime time, CalendarWeekRule rule, DayOfWeek firstDayOfWeek)
         {
-            if (firstDayOfWeek < DayOfWeek.Sunday || firstDayOfWeek > DayOfWeek.Saturday)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(firstDayOfWeek),
-                    firstDayOfWeek,
-                    SR.Format(SR.ArgumentOutOfRange_Range, DayOfWeek.Sunday, DayOfWeek.Saturday));
-            }
+            ArgumentOutOfRangeException.ThrowIfEnum(firstDayOfWeek < DayOfWeek.Sunday || firstDayOfWeek > DayOfWeek.Saturday);
 
             return rule switch
             {

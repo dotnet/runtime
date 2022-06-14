@@ -67,10 +67,7 @@ namespace System.IO.Pipes
             {
                 throw new NotSupportedException(SR.NotSupported_AnonymousPipeUnidirectional);
             }
-            if (inheritability < HandleInheritability.None || inheritability > HandleInheritability.Inheritable)
-            {
-                throw new ArgumentOutOfRangeException(nameof(inheritability), SR.ArgumentOutOfRange_HandleInheritabilityNoneOrInheritable);
-            }
+            ArgumentOutOfRangeException.ThrowIfEnum(inheritability < HandleInheritability.None || inheritability > HandleInheritability.Inheritable);
 
             Create(direction, inheritability, bufferSize);
         }
@@ -145,10 +142,7 @@ namespace System.IO.Pipes
             {
                 CheckPipePropertyOperations();
 
-                if (value < PipeTransmissionMode.Byte || value > PipeTransmissionMode.Message)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_TransmissionModeByteOrMsg);
-                }
+                ArgumentOutOfRangeException.ThrowIfEnum(value < PipeTransmissionMode.Byte || value > PipeTransmissionMode.Message);
                 if (value == PipeTransmissionMode.Message)
                 {
                     throw new NotSupportedException(SR.NotSupported_AnonymousPipeMessagesNotSupported);

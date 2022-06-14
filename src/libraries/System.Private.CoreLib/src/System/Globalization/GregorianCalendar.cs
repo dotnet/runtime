@@ -46,13 +46,7 @@ namespace System.Globalization
 
         public GregorianCalendar(GregorianCalendarTypes type)
         {
-            if (type < GregorianCalendarTypes.Localized || type > GregorianCalendarTypes.TransliteratedFrench)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(type),
-                    type,
-                    SR.Format(SR.ArgumentOutOfRange_Range, GregorianCalendarTypes.Localized, GregorianCalendarTypes.TransliteratedFrench));
-            }
+            ArgumentOutOfRangeException.ThrowIfEnum(type < GregorianCalendarTypes.Localized || type > GregorianCalendarTypes.TransliteratedFrench);
 
             _type = type;
         }
@@ -63,13 +57,7 @@ namespace System.Globalization
             set
             {
                 VerifyWritable();
-                if (value < GregorianCalendarTypes.Localized || value > GregorianCalendarTypes.TransliteratedFrench)
-                {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(value),
-                        value,
-                        SR.Format(SR.ArgumentOutOfRange_Range, GregorianCalendarTypes.Localized, GregorianCalendarTypes.TransliteratedFrench));
-                }
+                ArgumentOutOfRangeException.ThrowIfEnum(value < GregorianCalendarTypes.Localized || value > GregorianCalendarTypes.TransliteratedFrench);
 
                 _type = value;
             }

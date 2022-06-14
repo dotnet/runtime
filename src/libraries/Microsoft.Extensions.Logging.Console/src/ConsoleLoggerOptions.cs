@@ -27,10 +27,7 @@ namespace Microsoft.Extensions.Logging.Console
             get => _format;
             set
             {
-                if (value < ConsoleLoggerFormat.Default || value > ConsoleLoggerFormat.Systemd)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfEnum(value < ConsoleLoggerFormat.Default || value > ConsoleLoggerFormat.Systemd);
                 _format = value;
             }
 #pragma warning restore CS0618

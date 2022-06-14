@@ -638,13 +638,7 @@ namespace System.Globalization
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 }
 
-                if (value < DayOfWeek.Sunday || value > DayOfWeek.Saturday)
-                {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(value),
-                        value,
-                        SR.Format(SR.ArgumentOutOfRange_Range, DayOfWeek.Sunday, DayOfWeek.Saturday));
-                }
+                ArgumentOutOfRangeException.ThrowIfEnum(value < DayOfWeek.Sunday || value > DayOfWeek.Saturday);
 
                 firstDayOfWeek = (int)value;
             }
@@ -668,13 +662,7 @@ namespace System.Globalization
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 }
-                if (value < CalendarWeekRule.FirstDay || value > CalendarWeekRule.FirstFourDayWeek)
-                {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(value),
-                        value,
-                        SR.Format(SR.ArgumentOutOfRange_Range, CalendarWeekRule.FirstDay, CalendarWeekRule.FirstFourDayWeek));
-                }
+                ArgumentOutOfRangeException.ThrowIfEnum(value < CalendarWeekRule.FirstDay || value > CalendarWeekRule.FirstFourDayWeek);
 
                 calendarWeekRule = (int)value;
             }
@@ -1225,13 +1213,7 @@ namespace System.Globalization
 
         public string GetAbbreviatedDayName(DayOfWeek dayofweek)
         {
-            if (dayofweek < DayOfWeek.Sunday || dayofweek > DayOfWeek.Saturday)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(dayofweek),
-                    dayofweek,
-                    SR.Format(SR.ArgumentOutOfRange_Range, DayOfWeek.Sunday, DayOfWeek.Saturday));
-            }
+            ArgumentOutOfRangeException.ThrowIfEnum(dayofweek < DayOfWeek.Sunday || dayofweek > DayOfWeek.Saturday);
 
             // Don't call the public property AbbreviatedDayNames here since a clone is needed in that
             // property, so it will be slower. Instead, use GetAbbreviatedDayOfWeekNames() directly.
@@ -1243,13 +1225,7 @@ namespace System.Globalization
         /// </summary>
         public string GetShortestDayName(DayOfWeek dayOfWeek)
         {
-            if (dayOfWeek < DayOfWeek.Sunday || dayOfWeek > DayOfWeek.Saturday)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(dayOfWeek),
-                    dayOfWeek,
-                    SR.Format(SR.ArgumentOutOfRange_Range, DayOfWeek.Sunday, DayOfWeek.Saturday));
-            }
+            ArgumentOutOfRangeException.ThrowIfEnum(dayOfWeek < DayOfWeek.Sunday || dayOfWeek > DayOfWeek.Saturday);
 
             // Don't call the public property SuperShortDayNames here since a clone is needed in that
             // property, so it will be slower. Instead, use internalGetSuperShortDayNames() directly.

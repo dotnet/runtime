@@ -138,10 +138,7 @@ namespace System.IO
             // don't include inheritable in our bounds check for share
             FileShare tempshare = share & ~FileShare.Inheritable;
 
-            if (mode < FileMode.CreateNew || mode > FileMode.Append)
-            {
-                throw new ArgumentOutOfRangeException(nameof(mode), SR.ArgumentOutOfRange_Enum);
-            }
+            ArgumentOutOfRangeException.ThrowIfEnum(mode < FileMode.CreateNew || mode > FileMode.Append);
 
             ArgumentOutOfRangeException.ThrowIfNotBetween(tempshare, FileShare.None, (FileShare.ReadWrite | FileShare.Delete));
 

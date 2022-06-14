@@ -1130,10 +1130,7 @@ namespace System.Transactions
         // Validate a given interop Option
         private static void ValidateInteropOption(EnterpriseServicesInteropOption interopOption)
         {
-            if (interopOption < EnterpriseServicesInteropOption.None || interopOption > EnterpriseServicesInteropOption.Full)
-            {
-                throw new ArgumentOutOfRangeException(nameof(interopOption));
-            }
+            ArgumentOutOfRangeException.ThrowIfEnum(interopOption < EnterpriseServicesInteropOption.None || interopOption > EnterpriseServicesInteropOption.Full);
         }
 
 
@@ -1147,10 +1144,7 @@ namespace System.Transactions
 
         private void ValidateAndSetAsyncFlowOption(TransactionScopeAsyncFlowOption asyncFlowOption)
         {
-            if (asyncFlowOption < TransactionScopeAsyncFlowOption.Suppress || asyncFlowOption > TransactionScopeAsyncFlowOption.Enabled)
-            {
-                throw new ArgumentOutOfRangeException(nameof(asyncFlowOption));
-            }
+            ArgumentOutOfRangeException.ThrowIfEnum(asyncFlowOption < TransactionScopeAsyncFlowOption.Suppress || asyncFlowOption > TransactionScopeAsyncFlowOption.Enabled);
 
             if (asyncFlowOption == TransactionScopeAsyncFlowOption.Enabled)
             {

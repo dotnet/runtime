@@ -554,10 +554,7 @@ namespace System.IO.Pipes
                 // and the AnonymousPipeStreams override this.
 
                 CheckPipePropertyOperations();
-                if (value < PipeTransmissionMode.Byte || value > PipeTransmissionMode.Message)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_TransmissionModeByteOrMsg);
-                }
+                ArgumentOutOfRangeException.ThrowIfEnum(value < PipeTransmissionMode.Byte || value > PipeTransmissionMode.Message);
 
                 unsafe
                 {

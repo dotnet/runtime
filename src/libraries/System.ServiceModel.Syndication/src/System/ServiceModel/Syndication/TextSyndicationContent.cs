@@ -17,10 +17,7 @@ namespace System.ServiceModel.Syndication
 
         public TextSyndicationContent(string text, TextSyndicationContentKind textKind)
         {
-            if (textKind < TextSyndicationContentKind.Plaintext || textKind > TextSyndicationContentKind.XHtml)
-            {
-                throw new ArgumentOutOfRangeException(nameof(textKind));
-            }
+            ArgumentOutOfRangeException.ThrowIfEnum(textKind < TextSyndicationContentKind.Plaintext || textKind > TextSyndicationContentKind.XHtml);
 
             Text = text;
             _textKind = textKind;

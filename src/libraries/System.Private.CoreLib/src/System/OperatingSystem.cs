@@ -50,10 +50,7 @@ namespace System
 
         internal OperatingSystem(PlatformID platform, Version version, string? servicePack)
         {
-            if (platform < PlatformID.Win32S || platform > PlatformID.Other)
-            {
-                throw new ArgumentOutOfRangeException(nameof(platform), platform, SR.Format(SR.Arg_EnumIllegalVal, platform));
-            }
+            ArgumentOutOfRangeException.ThrowIfEnum(platform < PlatformID.Win32S || platform > PlatformID.Other);
 
             ArgumentNullException.ThrowIfNull(version);
 

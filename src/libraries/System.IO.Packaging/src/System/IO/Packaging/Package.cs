@@ -794,22 +794,19 @@ namespace System.IO.Packaging
         internal static void ThrowIfFileModeInvalid(FileMode mode)
         {
             //We do the enum check as suggested by the following condition for performance reasons.
-            if (mode < FileMode.CreateNew || mode > FileMode.Append)
-                throw new ArgumentOutOfRangeException(nameof(mode));
+            ArgumentOutOfRangeException.ThrowIfEnum(mode < FileMode.CreateNew || mode > FileMode.Append);
         }
 
         internal static void ThrowIfFileAccessInvalid(FileAccess access)
         {
             //We do the enum check as suggested by the following condition for performance reasons.
-            if (access < FileAccess.Read || access > FileAccess.ReadWrite)
-                throw new ArgumentOutOfRangeException(nameof(access));
+            ArgumentOutOfRangeException.ThrowIfEnum(access < FileAccess.Read || access > FileAccess.ReadWrite);
         }
 
         internal static void ThrowIfCompressionOptionInvalid(CompressionOption compressionOption)
         {
             //We do the enum check as suggested by the following condition for performance reasons.
-            if (compressionOption < CompressionOption.NotCompressed || compressionOption > CompressionOption.SuperFast)
-                throw new ArgumentOutOfRangeException(nameof(compressionOption));
+            ArgumentOutOfRangeException.ThrowIfEnum(compressionOption < CompressionOption.NotCompressed || compressionOption > CompressionOption.SuperFast);
         }
 
         /// <summary>
