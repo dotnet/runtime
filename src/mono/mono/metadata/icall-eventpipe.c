@@ -501,7 +501,6 @@ ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolIOPac
 		clr_instance_id);
 }
 
-
 #else /* ENABLE_PERFTRACING */
 
 gconstpointer
