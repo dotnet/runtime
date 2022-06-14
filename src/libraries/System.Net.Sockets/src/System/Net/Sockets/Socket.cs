@@ -600,10 +600,7 @@ namespace System.Net.Sockets
             set
             {
                 // Valid values are from 0 to 255 since TTL is really just a byte value on the wire.
-                if (value < 0 || value > 255)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfNotBetween(value, 0, 255);
 
                 if (_addressFamily == AddressFamily.InterNetwork)
                 {
@@ -2165,10 +2162,7 @@ namespace System.Net.Sockets
         private static int ToTimeoutMicroseconds(TimeSpan timeout)
         {
             long totalMicroseconds = (long)timeout.TotalMicroseconds;
-            if (totalMicroseconds < -1 || totalMicroseconds > int.MaxValue)
-            {
-                throw new ArgumentOutOfRangeException(nameof(timeout));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(totalMicroseconds, -1, int.MaxValue);
             return (int)totalMicroseconds;
         }
 

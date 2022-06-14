@@ -410,7 +410,7 @@ namespace System.Collections
         public virtual void Insert(int index, object? value)
         {
             // Note that insertions at the end are legal.
-            if (index < 0 || index > _size) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
+            ArgumentOutOfRangeException.ThrowIfNotBetween(index, 0, _size);
 
             if (_size == _items.Length) EnsureCapacity(_size + 1);
             if (index < _size)
@@ -431,7 +431,7 @@ namespace System.Collections
         {
             ArgumentNullException.ThrowIfNull(c);
 
-            if (index < 0 || index > _size) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
+            ArgumentOutOfRangeException.ThrowIfNotBetween(index, 0, _size);
 
             int count = c.Count;
             if (count > 0)
@@ -613,7 +613,7 @@ namespace System.Collections
             ArgumentNullException.ThrowIfNull(c);
 
             int count = c.Count;
-            if (index < 0 || index > _size - count) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
+            ArgumentOutOfRangeException.ThrowIfNotBetween(index, 0, _size - count);
 
             if (count > 0)
             {
@@ -885,7 +885,7 @@ namespace System.Collections
 
             public override int IndexOf(object? value, int startIndex, int count)
             {
-                if (startIndex < 0 || startIndex > Count) throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
+                ArgumentOutOfRangeException.ThrowIfNotBetween(startIndex, 0, Count);
                 if (count < 0 || startIndex > Count - count) throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_Count);
 
                 int endIndex = startIndex + count;
@@ -915,7 +915,7 @@ namespace System.Collections
             {
                 ArgumentNullException.ThrowIfNull(c);
 
-                if (index < 0 || index > Count) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
+                ArgumentOutOfRangeException.ThrowIfNotBetween(index, 0, Count);
 
                 if (c.Count > 0)
                 {
@@ -954,7 +954,7 @@ namespace System.Collections
                     return -1;
 
                 if (startIndex < 0 || startIndex >= _list.Count) throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexMustBeLess);
-                if (count < 0 || count > startIndex + 1) throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_Count);
+                ArgumentOutOfRangeException.ThrowIfNotBetween(count, 0, startIndex + 1);
 
                 int endIndex = startIndex - count + 1;
                 if (value == null)
@@ -1027,10 +1027,7 @@ namespace System.Collections
             {
                 ArgumentNullException.ThrowIfNull(c);
 
-                if (index < 0 || index > _list.Count - c.Count)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
-                }
+                ArgumentOutOfRangeException.ThrowIfNotBetween(index, 0, _list.Count - c.Count);
 
                 if (c.Count > 0)
                 {
@@ -2394,8 +2391,7 @@ namespace System.Collections
 
             public override int IndexOf(object? value, int startIndex, int count)
             {
-                if (startIndex < 0 || startIndex > _baseSize)
-                    throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
+                ArgumentOutOfRangeException.ThrowIfNotBetween(startIndex, 0, _baseSize);
 
                 if (count < 0 || (startIndex > _baseSize - count))
                     throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_Count);
@@ -2408,7 +2404,7 @@ namespace System.Collections
 
             public override void Insert(int index, object? value)
             {
-                if (index < 0 || index > _baseSize) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
+                ArgumentOutOfRangeException.ThrowIfNotBetween(index, 0, _baseSize);
 
                 InternalUpdateRange();
                 _baseList.Insert(_baseIndex + index, value);
@@ -2418,7 +2414,7 @@ namespace System.Collections
 
             public override void InsertRange(int index, ICollection c)
             {
-                if (index < 0 || index > _baseSize) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
+                ArgumentOutOfRangeException.ThrowIfNotBetween(index, 0, _baseSize);
                 ArgumentNullException.ThrowIfNull(c);
 
                 InternalUpdateRange();

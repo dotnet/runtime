@@ -217,16 +217,7 @@ namespace System.Globalization
 
         internal void CheckTicksRange(long ticks)
         {
-            if (ticks < m_Cal.MinSupportedDateTime.Ticks || ticks > m_Cal.MaxSupportedDateTime.Ticks)
-            {
-                throw new ArgumentOutOfRangeException(
-                            "time",
-                            SR.Format(
-                                CultureInfo.InvariantCulture,
-                                SR.ArgumentOutOfRange_CalendarRange,
-                                m_Cal.MinSupportedDateTime,
-                                m_Cal.MaxSupportedDateTime));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(ticks, m_Cal.MinSupportedDateTime.Ticks, m_Cal.MaxSupportedDateTime.Ticks);
         }
 
         // Returns the DateTime resulting from adding the given number of
@@ -248,15 +239,7 @@ namespace System.Globalization
         //
         public DateTime AddMonths(DateTime time, int months)
         {
-            if (months < -120000 || months > 120000)
-            {
-                throw new ArgumentOutOfRangeException(
-                            nameof(months),
-                            SR.Format(
-                                SR.ArgumentOutOfRange_Range,
-                                -120000,
-                                120000));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(months, -120000, 120000);
             CheckTicksRange(time.Ticks);
 
             time.GetDate(out int y, out int m, out int d);
@@ -444,15 +427,7 @@ namespace System.Globalization
         public bool IsLeapDay(int year, int month, int day, int era)
         {
             // year/month/era checking is done in GetDaysInMonth()
-            if (day < 1 || day > GetDaysInMonth(year, month, era))
-            {
-                throw new ArgumentOutOfRangeException(
-                            nameof(day),
-                            SR.Format(
-                                SR.ArgumentOutOfRange_Range,
-                                1,
-                                GetDaysInMonth(year, month, era)));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(day, 1, GetDaysInMonth(year, month, era));
 
             if (!IsLeapYear(year, era))
             {
@@ -484,15 +459,7 @@ namespace System.Globalization
         public bool IsLeapMonth(int year, int month, int era)
         {
             ValidateYearInEra(year, era);
-            if (month < 1 || month > 12)
-            {
-                throw new ArgumentOutOfRangeException(
-                            nameof(month),
-                            SR.Format(
-                                SR.ArgumentOutOfRange_Range,
-                                1,
-                                12));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(month, 1, 12);
             return false;
         }
 
@@ -533,12 +500,7 @@ namespace System.Globalization
                 return (twoDigitYearMax / 100 - (y > twoDigitYearMax % 100 ? 1 : 0)) * 100 + y;
             }
 
-            if (year < m_minYear || year > m_maxYear)
-            {
-                throw new ArgumentOutOfRangeException(
-                            nameof(year),
-                            SR.Format(SR.ArgumentOutOfRange_Range, m_minYear, m_maxYear));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(year, m_minYear, m_maxYear);
             // If the year value is above 100, just return the year value.  Don't have to do
             // the TwoDigitYearMax comparison.
             return year;

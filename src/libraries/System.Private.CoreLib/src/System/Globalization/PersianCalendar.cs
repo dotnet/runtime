@@ -72,13 +72,7 @@ namespace System.Globalization
 
         internal static void CheckTicksRange(long ticks)
         {
-            if (ticks < s_minDate.Ticks || ticks > s_maxDate.Ticks)
-            {
-                throw new ArgumentOutOfRangeException(
-                    "time",
-                    ticks,
-                    SR.Format(SR.ArgumentOutOfRange_CalendarRange, s_minDate, s_maxDate));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(ticks, s_minDate.Ticks, s_maxDate.Ticks);
         }
 
         internal static void CheckEraRange(int era)
@@ -92,13 +86,7 @@ namespace System.Globalization
         internal static void CheckYearRange(int year, int era)
         {
             CheckEraRange(era);
-            if (year < 1 || year > MaxCalendarYear)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(year),
-                    year,
-                    SR.Format(SR.ArgumentOutOfRange_Range, 1, MaxCalendarYear));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(year, 1, MaxCalendarYear);
         }
 
         internal static void CheckYearMonthRange(int year, int month, int era)
@@ -212,13 +200,7 @@ namespace System.Globalization
 
         public override DateTime AddMonths(DateTime time, int months)
         {
-            if (months < -120000 || months > 120000)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(months),
-                    months,
-                    SR.Format(SR.ArgumentOutOfRange_Range, -120000, 120000));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(months, -120000, 120000);
 
             // Get the date in Persian calendar.
             GetDate(time.Ticks, out int y, out int m, out int d);
@@ -324,13 +306,7 @@ namespace System.Globalization
         {
             // The year/month/era value checking is done in GetDaysInMonth().
             int daysInMonth = GetDaysInMonth(year, month, era);
-            if (day < 1 || day > daysInMonth)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(day),
-                    day,
-                    SR.Format(SR.ArgumentOutOfRange_Day, daysInMonth, month));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(day, 1, daysInMonth);
 
             return IsLeapYear(year, era) && month == 12 && day == 30;
         }
@@ -363,13 +339,7 @@ namespace System.Globalization
         {
             // The year/month/era checking is done in GetDaysInMonth().
             int daysInMonth = GetDaysInMonth(year, month, era);
-            if (day < 1 || day > daysInMonth)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(day),
-                    day,
-                    SR.Format(SR.ArgumentOutOfRange_Day, daysInMonth, month));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(day, 1, daysInMonth);
 
             long lDate = GetAbsoluteDatePersian(year, month, day);
 
@@ -394,13 +364,7 @@ namespace System.Globalization
             set
             {
                 VerifyWritable();
-                if (value < 99 || value > MaxCalendarYear)
-                {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(value),
-                        value,
-                        SR.Format(SR.ArgumentOutOfRange_Range, 99, MaxCalendarYear));
-                }
+                ArgumentOutOfRangeException.ThrowIfNotBetween(value, 99, MaxCalendarYear);
 
                 _twoDigitYearMax = value;
             }

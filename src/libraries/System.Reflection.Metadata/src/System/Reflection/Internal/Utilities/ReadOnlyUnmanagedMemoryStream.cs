@@ -88,10 +88,7 @@ namespace System.Reflection.Internal
                 throw new ArgumentOutOfRangeException(nameof(offset));
             }
 
-            if (target < 0 || target > int.MaxValue)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(target, 0, int.MaxValue);
 
             _position = (int)target;
             return target;

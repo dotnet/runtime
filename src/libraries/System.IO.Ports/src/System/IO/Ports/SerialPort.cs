@@ -205,8 +205,7 @@ namespace System.IO.Ports
             { return _dataBits; }
             set
             {
-                if (value < MinDataBits || value > MaxDataBits)
-                    throw new ArgumentOutOfRangeException(nameof(DataBits), SR.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, MinDataBits, MaxDataBits));
+                ArgumentOutOfRangeException.ThrowIfNotBetween(value, MinDataBits, MaxDataBits);
 
                 if (IsOpen)
                     _internalSerialStream.DataBits = value;

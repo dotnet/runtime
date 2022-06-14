@@ -640,10 +640,7 @@ namespace System.Web.Util
             }
 
             ArgumentNullException.ThrowIfNull(bytes);
-            if (offset < 0 || offset > bytes.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(offset, 0, bytes.Length);
             if (count < 0 || offset + count > bytes.Length)
             {
                 throw new ArgumentOutOfRangeException(nameof(count));

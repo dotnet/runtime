@@ -50,10 +50,7 @@ namespace System.Net
             //
             timeoutValue = Convert.ToInt64(value.TotalSeconds);
 
-            if (timeoutValue < 0 || timeoutValue > ushort.MaxValue)
-            {
-                throw new ArgumentOutOfRangeException(nameof(value));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(timeoutValue, 0, ushort.MaxValue);
 
             //
             // Use local state to get values for other timeouts. Call into the native layer and if that
@@ -183,10 +180,7 @@ namespace System.Net
                 //
                 // MinSendRate value is ULONG in native layer.
                 //
-                if (value < 0 || value > uint.MaxValue)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfNotBetween(value, 0, uint.MaxValue);
 
                 _listener.SetServerTimeout(_timeouts, (uint)value);
                 _minSendBytesPerSecond = (uint)value;

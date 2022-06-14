@@ -143,10 +143,7 @@ namespace System.IO
                 throw new ArgumentOutOfRangeException(nameof(mode), SR.ArgumentOutOfRange_Enum);
             }
 
-            if (tempshare < FileShare.None || tempshare > (FileShare.ReadWrite | FileShare.Delete))
-            {
-                throw new ArgumentOutOfRangeException(nameof(share), SR.ArgumentOutOfRange_Enum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(tempshare, FileShare.None, (FileShare.ReadWrite | FileShare.Delete));
 
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bufferSize);
 

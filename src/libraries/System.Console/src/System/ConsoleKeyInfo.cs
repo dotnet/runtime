@@ -17,10 +17,7 @@ namespace System
             // key is a valid value in our ConsoleKey enum.  There are a few
             // values in that enum that we didn't define, and reserved keys
             // that might start showing up on keyboards in a few years.
-            if (((int)key) < 0 || ((int)key) > 255)
-            {
-                throw new ArgumentOutOfRangeException(nameof(key), SR.ArgumentOutOfRange_ConsoleKey);
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(((int)key), 0, 255);
 
             _keyChar = keyChar;
             _key = key;

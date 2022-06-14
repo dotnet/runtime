@@ -47,8 +47,7 @@ namespace System.Text
 
         public override int GetMaxCharCount(int byteCount)
         {
-            if (byteCount < 0 || byteCount > int.MaxValue / 2)
-                throw new ArgumentOutOfRangeException(nameof(byteCount), SR.Format(SR.ValueMustBeInRange, 0, int.MaxValue / 2));
+            ArgumentOutOfRangeException.ThrowIfNotBetween(byteCount, 0, int.MaxValue / 2);
             return byteCount * 2;
         }
 

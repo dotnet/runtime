@@ -257,8 +257,7 @@ namespace System.IO.Compression
                     throw new NotSupportedException(SR.ReadOnlyArchive);
                 if (_archive.Mode == ZipArchiveMode.Create && _everOpenedForWrite)
                     throw new IOException(SR.FrozenAfterWrite);
-                if (value.DateTime.Year < ZipHelper.ValidZipDate_YearMin || value.DateTime.Year > ZipHelper.ValidZipDate_YearMax)
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.DateTimeOutOfRange);
+                ArgumentOutOfRangeException.ThrowIfNotBetween(value.DateTime.Year, ZipHelper.ValidZipDate_YearMin, ZipHelper.ValidZipDate_YearMax);
 
                 _lastModified = value;
             }

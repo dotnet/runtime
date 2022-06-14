@@ -292,17 +292,7 @@ namespace System.Globalization
 
         internal static void CheckTicksRange(long ticks)
         {
-            if (ticks < s_minDate.Ticks || ticks > s_maxDate.Ticks)
-            {
-                throw new ArgumentOutOfRangeException(
-                    "time",
-                    ticks,
-                    SR.Format(
-                        CultureInfo.InvariantCulture,
-                        SR.ArgumentOutOfRange_CalendarRange,
-                        s_minDate,
-                        s_maxDate));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(ticks, s_minDate.Ticks, s_maxDate.Ticks);
         }
 
         internal static void CheckEraRange(int era)
@@ -316,13 +306,7 @@ namespace System.Globalization
         internal static void CheckYearRange(int year, int era)
         {
             CheckEraRange(era);
-            if (year < MinCalendarYear || year > MaxCalendarYear)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(year),
-                    year,
-                    SR.Format(SR.ArgumentOutOfRange_Range, MinCalendarYear, MaxCalendarYear));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(year, MinCalendarYear, MaxCalendarYear);
         }
 
         internal static void CheckYearMonthRange(int year, int month, int era)
@@ -409,13 +393,7 @@ namespace System.Globalization
 
         public override DateTime AddMonths(DateTime time, int months)
         {
-            if (months < -120000 || months > 120000)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(months),
-                    months,
-                    SR.Format(SR.ArgumentOutOfRange_Range, -120000, 120000));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(months, -120000, 120000);
 
             // Get the date in UmAlQura calendar.
             int y = GetDatePart(time, DatePartYear);
@@ -538,13 +516,7 @@ namespace System.Globalization
 
             // The year/month/era value checking is done in GetDaysInMonth().
             int daysInMonth = GetDaysInMonth(year, month, era);
-            if (day < 1 || day > daysInMonth)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(day),
-                    day,
-                    SR.Format(SR.ArgumentOutOfRange_Day, daysInMonth, month));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(day, 1, daysInMonth);
             return false;
         }
 
@@ -577,13 +549,7 @@ namespace System.Globalization
             // The year/month/era value checking is done in GetDaysInMonth().
             int daysInMonth = GetDaysInMonth(year, month, era);
 
-            if (day < 1 || day > daysInMonth)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(day),
-                    day,
-                    SR.Format(SR.ArgumentOutOfRange_Day, daysInMonth, month));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(day, 1, daysInMonth);
         DayInRang:
             long lDate = GetAbsoluteDateUmAlQura(year, month, day);
             ArgumentOutOfRangeException.ThrowIfNegative(lDate);
@@ -629,13 +595,7 @@ namespace System.Globalization
                 return base.ToFourDigitYear(year);
             }
 
-            if (year < MinCalendarYear || year > MaxCalendarYear)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(year),
-                    year,
-                    SR.Format(SR.ArgumentOutOfRange_Range, MinCalendarYear, MaxCalendarYear));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(year, MinCalendarYear, MaxCalendarYear);
 
             return year;
         }

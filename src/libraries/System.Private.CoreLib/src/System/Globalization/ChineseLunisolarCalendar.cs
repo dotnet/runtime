@@ -253,10 +253,7 @@ namespace System.Globalization
 
         internal override int GetYearInfo(int lunarYear, int index)
         {
-            if (lunarYear < MinLunisolarYear || lunarYear > MaxLunisolarYear)
-            {
-                throw new ArgumentOutOfRangeException("year", lunarYear, SR.Format(SR.ArgumentOutOfRange_Range, MinLunisolarYear, MaxLunisolarYear));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(lunarYear, MinLunisolarYear, MaxLunisolarYear);
 
             return s_yinfo[lunarYear - MinLunisolarYear, index];
         }
@@ -272,10 +269,7 @@ namespace System.Globalization
             {
                 throw new ArgumentOutOfRangeException(nameof(era), era, SR.ArgumentOutOfRange_InvalidEraValue);
             }
-            if (year < MinLunisolarYear || year > MaxLunisolarYear)
-            {
-                throw new ArgumentOutOfRangeException(nameof(year), year, SR.Format(SR.ArgumentOutOfRange_Range, MinLunisolarYear, MaxLunisolarYear));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(year, MinLunisolarYear, MaxLunisolarYear);
 
             return year;
         }

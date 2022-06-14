@@ -1027,8 +1027,7 @@ namespace System.Diagnostics
             long retentionvalue = (long)action;
             if (action == OverflowAction.OverwriteOlder)
             {
-                if (retentionDays < 1 || retentionDays > 365)
-                    throw new ArgumentOutOfRangeException(SR.RentionDaysOutOfRange);
+                ArgumentOutOfRangeException.ThrowIfNotBetween(retentionDays, 1, 365);
 
                 retentionvalue = (long)retentionDays * SecondsPerDay;
             }

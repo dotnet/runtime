@@ -157,8 +157,7 @@ namespace System.Text
 
             ArgumentOutOfRangeException.ThrowIfLessThan(s.Length - charIndex, charCount);
 
-            if (byteIndex < 0 || byteIndex > bytes.Length)
-                throw new ArgumentOutOfRangeException(nameof(byteIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
+            ArgumentOutOfRangeException.ThrowIfNotBetween(byteIndex, 0, bytes.Length);
 
             int byteCount = bytes.Length - byteIndex;
 
@@ -192,8 +191,7 @@ namespace System.Text
 
             ArgumentOutOfRangeException.ThrowIfLessThan(chars.Length - charIndex, charCount);
 
-            if (byteIndex < 0 || byteIndex > bytes.Length)
-                throw new ArgumentOutOfRangeException(nameof(byteIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
+            ArgumentOutOfRangeException.ThrowIfNotBetween(byteIndex, 0, bytes.Length);
 
             // If nothing to encode return 0, avoid fixed problem
             if (charCount == 0)
@@ -282,8 +280,7 @@ namespace System.Text
 
             ArgumentOutOfRangeException.ThrowIfLessThan(bytes.Length - byteIndex, byteCount);
 
-            if (charIndex < 0 || charIndex > chars.Length)
-                throw new ArgumentOutOfRangeException(nameof(charIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
+            ArgumentOutOfRangeException.ThrowIfNotBetween(charIndex, 0, chars.Length);
 
             // If no input, return 0 & avoid fixed problem
             if (byteCount == 0)

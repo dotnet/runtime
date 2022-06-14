@@ -97,10 +97,7 @@ namespace System.Collections.Generic
         {
             ArgumentNullException.ThrowIfNull(array);
 
-            if (arrayIndex < 0 || arrayIndex > array.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(arrayIndex), arrayIndex, SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(arrayIndex, 0, array.Length);
 
             if (array.Length - arrayIndex < _size)
             {
@@ -130,10 +127,7 @@ namespace System.Collections.Generic
                 throw new ArgumentException(SR.Arg_NonZeroLowerBound, nameof(array));
             }
 
-            if (arrayIndex < 0 || arrayIndex > array.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(arrayIndex), arrayIndex, SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(arrayIndex, 0, array.Length);
 
             if (array.Length - arrayIndex < _size)
             {

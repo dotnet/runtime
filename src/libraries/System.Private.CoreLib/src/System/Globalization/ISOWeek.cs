@@ -84,10 +84,7 @@ namespace System.Globalization
         // All other week-numbering years are short years and have 52 weeks.
         public static int GetWeeksInYear(int year)
         {
-            if (year < MinYear || year > MaxYear)
-            {
-                throw new ArgumentOutOfRangeException(nameof(year), SR.ArgumentOutOfRange_Year);
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(year, MinYear, MaxYear);
 
             static int P(int y) => (y + (y / 4) - (y / 100) + (y / 400)) % 7;
 
@@ -111,23 +108,14 @@ namespace System.Globalization
         // If greater than the number of days in the year, to the following year.
         public static DateTime ToDateTime(int year, int week, DayOfWeek dayOfWeek)
         {
-            if (year < MinYear || year > MaxYear)
-            {
-                throw new ArgumentOutOfRangeException(nameof(year), SR.ArgumentOutOfRange_Year);
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(year, MinYear, MaxYear);
 
-            if (week < MinWeek || week > MaxWeek)
-            {
-                throw new ArgumentOutOfRangeException(nameof(week), SR.ArgumentOutOfRange_Week_ISO);
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(week, MinWeek, MaxWeek);
 
             // We allow 7 for convenience in cases where a user already has a valid ISO
             // day of week value for Sunday. This means that both 0 and 7 will map to Sunday.
             // The GetWeekday method will normalize this into the 1-7 range required by ISO.
-            if ((int)dayOfWeek < 0 || (int)dayOfWeek > 7)
-            {
-                throw new ArgumentOutOfRangeException(nameof(dayOfWeek), SR.ArgumentOutOfRange_DayOfWeek);
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween((int)dayOfWeek, 0, 7);
 
             var jan4 = new DateTime(year, month: 1, day: 4);
 

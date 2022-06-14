@@ -37,8 +37,7 @@ namespace System.Diagnostics
             get { return _categoryCount; }
             set
             {
-                if (value > ushort.MaxValue || value < 0)
-                    throw new ArgumentOutOfRangeException(nameof(CategoryCount));
+                ArgumentOutOfRangeException.ThrowIfNotBetween(value, 0, ushort.MaxValue);
 
                 _categoryCount = value;
             }

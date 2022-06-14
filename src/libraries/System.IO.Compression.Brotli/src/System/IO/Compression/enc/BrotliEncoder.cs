@@ -74,10 +74,7 @@ namespace System.IO.Compression
                 InitializeEncoder();
                 Debug.Assert(_state != null && !_state.IsInvalid && !_state.IsClosed);
             }
-            if (quality < BrotliUtils.Quality_Min || quality > BrotliUtils.Quality_Max)
-            {
-                throw new ArgumentOutOfRangeException(nameof(quality), SR.Format(SR.BrotliEncoder_Quality, quality, 0, BrotliUtils.Quality_Max));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(quality, BrotliUtils.Quality_Min, BrotliUtils.Quality_Max);
             if (Interop.Brotli.BrotliEncoderSetParameter(_state, BrotliEncoderParameter.Quality, (uint)quality) == Interop.BOOL.FALSE)
             {
                 throw new InvalidOperationException(SR.Format(SR.BrotliEncoder_InvalidSetParameter, "Quality"));
@@ -92,10 +89,7 @@ namespace System.IO.Compression
                 InitializeEncoder();
                 Debug.Assert(_state != null && !_state.IsInvalid && !_state.IsClosed);
             }
-            if (window < BrotliUtils.WindowBits_Min || window > BrotliUtils.WindowBits_Max)
-            {
-                throw new ArgumentOutOfRangeException(nameof(window), SR.Format(SR.BrotliEncoder_Window, window, BrotliUtils.WindowBits_Min, BrotliUtils.WindowBits_Max));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(window, BrotliUtils.WindowBits_Min, BrotliUtils.WindowBits_Max);
             if (Interop.Brotli.BrotliEncoderSetParameter(_state, BrotliEncoderParameter.LGWin, (uint)window) == Interop.BOOL.FALSE)
             {
                 throw new InvalidOperationException(SR.Format(SR.BrotliEncoder_InvalidSetParameter, "Window"));
@@ -109,10 +103,7 @@ namespace System.IO.Compression
         /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="inputSize" /> is less than 0, the minimum allowed input size, or greater than <see cref="int.MaxValue" /> - 515, the maximum allowed input size.</exception>
         public static int GetMaxCompressedLength(int inputSize)
         {
-            if (inputSize < 0 || inputSize > BrotliUtils.MaxInputSize)
-            {
-                throw new ArgumentOutOfRangeException(nameof(inputSize));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(inputSize, 0, BrotliUtils.MaxInputSize);
             if (inputSize == 0)
                 return 1;
             int numLargeBlocks = inputSize >> 24;
@@ -203,14 +194,8 @@ namespace System.IO.Compression
         /// <returns><see langword="true" /> if the compression operation was successful; <see langword="false" /> otherwise.</returns>
         public static bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, int quality, int window)
         {
-            if (quality < 0 || quality > BrotliUtils.Quality_Max)
-            {
-                throw new ArgumentOutOfRangeException(nameof(quality), SR.Format(SR.BrotliEncoder_Quality, quality, 0, BrotliUtils.Quality_Max));
-            }
-            if (window < BrotliUtils.WindowBits_Min || window > BrotliUtils.WindowBits_Max)
-            {
-                throw new ArgumentOutOfRangeException(nameof(window), SR.Format(SR.BrotliEncoder_Window, window, BrotliUtils.WindowBits_Min, BrotliUtils.WindowBits_Max));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(quality, 0, BrotliUtils.Quality_Max);
+            ArgumentOutOfRangeException.ThrowIfNotBetween(window, BrotliUtils.WindowBits_Min, BrotliUtils.WindowBits_Max);
 
             unsafe
             {

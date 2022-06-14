@@ -296,14 +296,11 @@ namespace System.Data.SqlTypes
             if (buffer == null)
                 throw new ArgumentNullException(nameof(buffer));
 
-            if (offset > Length || offset < 0)
-                throw new ArgumentOutOfRangeException(nameof(offset));
+            ArgumentOutOfRangeException.ThrowIfNotBetween(offset, 0, Length);
 
-            if (offsetInBuffer > buffer.Length || offsetInBuffer < 0)
-                throw new ArgumentOutOfRangeException(nameof(offsetInBuffer));
+            ArgumentOutOfRangeException.ThrowIfNotBetween(offsetInBuffer, 0, buffer.Length);
 
-            if (count < 0 || count > buffer.Length - offsetInBuffer)
-                throw new ArgumentOutOfRangeException(nameof(count));
+            ArgumentOutOfRangeException.ThrowIfNotBetween(count, 0, buffer.Length - offsetInBuffer);
 
             // Adjust count based on data length
             if (count > Length - offset)
@@ -350,11 +347,9 @@ namespace System.Data.SqlTypes
                 if (offset > _rgchBuf.Length)
                     throw new SqlTypeException(SR.SqlMisc_BufferInsufficientMessage);
 
-                if (offsetInBuffer < 0 || offsetInBuffer > buffer.Length)
-                    throw new ArgumentOutOfRangeException(nameof(offsetInBuffer));
+                ArgumentOutOfRangeException.ThrowIfNotBetween(offsetInBuffer, 0, buffer.Length);
 
-                if (count < 0 || count > buffer.Length - offsetInBuffer)
-                    throw new ArgumentOutOfRangeException(nameof(count));
+                ArgumentOutOfRangeException.ThrowIfNotBetween(count, 0, buffer.Length - offsetInBuffer);
 
                 if (count > _rgchBuf.Length - offset)
                     throw new SqlTypeException(SR.SqlMisc_BufferInsufficientMessage);
@@ -597,8 +592,7 @@ namespace System.Data.SqlTypes
             set
             {
                 CheckIfStreamClosed("set_Position");
-                if (value < 0 || value > _sqlchars.Length)
-                    throw new ArgumentOutOfRangeException(nameof(value));
+                ArgumentOutOfRangeException.ThrowIfNotBetween(value, 0, _sqlchars.Length);
                 _lPosition = value;
             }
         }
@@ -649,10 +643,8 @@ namespace System.Data.SqlTypes
 
             if (buffer == null)
                 throw new ArgumentNullException(nameof(buffer));
-            if (offset < 0 || offset > buffer.Length)
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            if (count < 0 || count > buffer.Length - offset)
-                throw new ArgumentOutOfRangeException(nameof(count));
+            ArgumentOutOfRangeException.ThrowIfNotBetween(offset, 0, buffer.Length);
+            ArgumentOutOfRangeException.ThrowIfNotBetween(count, 0, buffer.Length - offset);
 
             int icharsRead = (int)_sqlchars.Read(_lPosition, buffer, offset, count);
             _lPosition += icharsRead;
@@ -666,10 +658,8 @@ namespace System.Data.SqlTypes
 
             if (buffer == null)
                 throw new ArgumentNullException(nameof(buffer));
-            if (offset < 0 || offset > buffer.Length)
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            if (count < 0 || count > buffer.Length - offset)
-                throw new ArgumentOutOfRangeException(nameof(count));
+            ArgumentOutOfRangeException.ThrowIfNotBetween(offset, 0, buffer.Length);
+            ArgumentOutOfRangeException.ThrowIfNotBetween(count, 0, buffer.Length - offset);
 
             _sqlchars.Write(_lPosition, buffer, offset, count);
             _lPosition += count;

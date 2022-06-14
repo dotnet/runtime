@@ -164,10 +164,7 @@ namespace System
             if (stream.CanSeek)
             {
                 long longLength = stream.Length - stream.Position;
-                if (longLength > int.MaxValue || longLength < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(stream), SR.ArgumentOutOfRange_StreamLengthMustBeNonNegativeInt32);
-                }
+                ArgumentOutOfRangeException.ThrowIfNotBetween(longLength, 0, int.MaxValue);
 
                 // choose a minimum valid (non-zero) buffer size.
                 bufferSize = longLength == 0 ? 1 : Math.Min((int)longLength, CopyToBufferSize);

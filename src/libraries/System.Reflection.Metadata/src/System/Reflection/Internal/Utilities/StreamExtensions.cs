@@ -109,10 +109,7 @@ namespace System.Reflection.Internal
         {
             long maxSize = stream.Length - stream.Position;
 
-            if (size < 0 || size > maxSize)
-            {
-                throw new ArgumentOutOfRangeException(nameof(size));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(size, 0, maxSize);
 
             if (size != 0)
             {

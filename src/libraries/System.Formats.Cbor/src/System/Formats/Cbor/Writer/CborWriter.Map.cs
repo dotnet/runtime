@@ -63,10 +63,7 @@ namespace System.Formats.Cbor
 
         private void WriteStartMapDefiniteLength(int definiteLength)
         {
-            if (definiteLength < 0 || definiteLength > int.MaxValue / 2)
-            {
-                throw new ArgumentOutOfRangeException(nameof(definiteLength));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(definiteLength, 0, int.MaxValue / 2);
 
             WriteUnsignedInteger(CborMajorType.Map, (ulong)definiteLength);
             PushDataItem(CborMajorType.Map, definiteLength: 2 * definiteLength);

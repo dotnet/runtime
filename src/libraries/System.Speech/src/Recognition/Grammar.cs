@@ -239,11 +239,7 @@ namespace System.Speech.Recognition
             get { return _priority; }
             set
             {
-                if (value < -128 || value > 127)
-                {
-                    // We could have used sbyte in the signature of this property but int is probably simpler.
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.Get(SRID.GrammarInvalidPriority));
-                }
+                ArgumentOutOfRangeException.ThrowIfNotBetween(value, -128, 127);
                 if (_grammarState != GrammarState.Unloaded && _priority != value)
                 {
                     _recognizer.SetGrammarPriority(this, value);

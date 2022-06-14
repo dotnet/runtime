@@ -153,10 +153,7 @@ namespace System.Speech.Recognition
             get { return TimeSpan.FromMilliseconds(RecoBase.QueryRecognizerSettingAsInt(SapiConstants.SPPROP_RESPONSE_SPEED)); }
             set
             {
-                if (value.TotalMilliseconds < 0.0f || value.TotalMilliseconds > 10000.0f)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.Get(SRID.EndSilenceOutOfRange));
-                }
+                ArgumentOutOfRangeException.ThrowIfNotBetween(value.TotalMilliseconds, 0.0f, 10000.0f);
                 RecoBase.UpdateRecognizerSetting(SapiConstants.SPPROP_RESPONSE_SPEED, (int)value.TotalMilliseconds);
             }
         }
@@ -166,10 +163,7 @@ namespace System.Speech.Recognition
             get { return TimeSpan.FromMilliseconds(RecoBase.QueryRecognizerSettingAsInt(SapiConstants.SPPROP_COMPLEX_RESPONSE_SPEED)); }
             set
             {
-                if (value.TotalMilliseconds < 0.0f || value.TotalMilliseconds > 10000.0f)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.Get(SRID.EndSilenceOutOfRange));
-                }
+                ArgumentOutOfRangeException.ThrowIfNotBetween(value.TotalMilliseconds, 0.0f, 10000.0f);
                 RecoBase.UpdateRecognizerSetting(SapiConstants.SPPROP_COMPLEX_RESPONSE_SPEED, (int)value.TotalMilliseconds);
             }
         }

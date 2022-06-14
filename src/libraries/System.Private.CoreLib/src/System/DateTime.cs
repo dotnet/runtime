@@ -946,7 +946,7 @@ namespace System
         //
         public DateTime AddMonths(int months)
         {
-            if (months < -120000 || months > 120000) throw new ArgumentOutOfRangeException(nameof(months), SR.ArgumentOutOfRange_DateTimeBadMonths);
+            ArgumentOutOfRangeException.ThrowIfNotBetween(months, -120000, 120000);
             GetDate(out int year, out int month, out int day);
             int y = year, d = day;
             int m = month + months;
@@ -1007,10 +1007,7 @@ namespace System
         //
         public DateTime AddYears(int value)
         {
-            if (value < -10000 || value > 10000)
-            {
-                throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_DateTimeBadYears);
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(value, -10000, 10000);
             GetDate(out int year, out int month, out int day);
             int y = year + value;
             if (y < 1 || y > 9999) ThrowDateArithmetic(0);

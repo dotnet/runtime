@@ -44,17 +44,9 @@ namespace System.Security.AccessControl
                 throw new ArgumentException(SR.Argument_ArgumentZero, nameof(accessMask));
             }
 
-            if (inheritanceFlags < InheritanceFlags.None || inheritanceFlags > (InheritanceFlags.ObjectInherit | InheritanceFlags.ContainerInherit))
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(inheritanceFlags), SR.Format(SR.Argument_InvalidEnumValue, inheritanceFlags, "InheritanceFlags"));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(inheritanceFlags, InheritanceFlags.None, (InheritanceFlags.ObjectInherit | InheritanceFlags.ContainerInherit));
 
-            if (propagationFlags < PropagationFlags.None || propagationFlags > (PropagationFlags.NoPropagateInherit | PropagationFlags.InheritOnly))
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(propagationFlags), SR.Format(SR.Argument_InvalidEnumValue, inheritanceFlags, "PropagationFlags"));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(propagationFlags, PropagationFlags.None, (PropagationFlags.NoPropagateInherit | PropagationFlags.InheritOnly));
 
             if (identity.IsValidTargetType(typeof(SecurityIdentifier)) == false)
             {
@@ -136,17 +128,9 @@ namespace System.Security.AccessControl
                 throw new ArgumentOutOfRangeException(nameof(type), SR.ArgumentOutOfRange_Enum);
             }
 
-            if (inheritanceFlags < InheritanceFlags.None || inheritanceFlags > (InheritanceFlags.ObjectInherit | InheritanceFlags.ContainerInherit))
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(inheritanceFlags), SR.Format(SR.Argument_InvalidEnumValue, inheritanceFlags, "InheritanceFlags"));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(inheritanceFlags, InheritanceFlags.None, (InheritanceFlags.ObjectInherit | InheritanceFlags.ContainerInherit));
 
-            if (propagationFlags < PropagationFlags.None || propagationFlags > (PropagationFlags.NoPropagateInherit | PropagationFlags.InheritOnly))
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(propagationFlags), SR.Format(SR.Argument_InvalidEnumValue, inheritanceFlags, "PropagationFlags"));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(propagationFlags, PropagationFlags.None, (PropagationFlags.NoPropagateInherit | PropagationFlags.InheritOnly));
 
             _type = type;
         }

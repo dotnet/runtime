@@ -291,13 +291,7 @@ namespace System.Globalization
         private static void CheckHebrewYearValue(int y, int era, string varName)
         {
             CheckEraRange(era);
-            if (y > MaxHebrewYear || y < MinHebrewYear)
-            {
-                throw new ArgumentOutOfRangeException(
-                    varName,
-                    y,
-                    SR.Format(SR.ArgumentOutOfRange_Range, MinHebrewYear, MaxHebrewYear));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(y, MinHebrewYear, MaxHebrewYear);
         }
 
         /// <summary>
@@ -309,13 +303,7 @@ namespace System.Globalization
         private void CheckHebrewMonthValue(int year, int month, int era)
         {
             int monthsInYear = GetMonthsInYear(year, era);
-            if (month < 1 || month > monthsInYear)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(month),
-                    month,
-                    SR.Format(SR.ArgumentOutOfRange_Range, 1, monthsInYear));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(month, 1, monthsInYear);
         }
 
         /// <summary>
@@ -327,13 +315,7 @@ namespace System.Globalization
         private void CheckHebrewDayValue(int year, int month, int day, int era)
         {
             int daysInMonth = GetDaysInMonth(year, month, era);
-            if (day < 1 || day > daysInMonth)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(day),
-                    day,
-                    SR.Format(SR.ArgumentOutOfRange_Range, 1, daysInMonth));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(day, 1, daysInMonth);
         }
 
         private static void CheckEraRange(int era)
@@ -346,18 +328,7 @@ namespace System.Globalization
 
         private static void CheckTicksRange(long ticks)
         {
-            if (ticks < s_calendarMinValue.Ticks || ticks > s_calendarMaxValue.Ticks)
-            {
-                throw new ArgumentOutOfRangeException(
-                    "time",
-                    ticks,
-                    // Print out the date in Gregorian using InvariantCulture since the DateTime is based on GreograinCalendar.
-                    SR.Format(
-                        CultureInfo.InvariantCulture,
-                        SR.ArgumentOutOfRange_CalendarRange,
-                        s_calendarMinValue,
-                        s_calendarMaxValue));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(ticks, s_calendarMinValue.Ticks, s_calendarMaxValue.Ticks);
         }
 
         private static int GetResult(DateBuffer result, int part)
@@ -389,10 +360,7 @@ namespace System.Globalization
             // Get the offset into the LunarMonthLen array and the lunar day
             //  for January 1st.
             int index = gregorianYear - FirstGregorianTableYear;
-            if (index < 0 || index > TableSize)
-            {
-                throw new ArgumentOutOfRangeException(nameof(gregorianYear));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(index, 0, TableSize);
 
             index *= 2;
             lunarDate.day = HebrewTable[index];
@@ -878,13 +846,7 @@ namespace System.Globalization
                 return base.ToFourDigitYear(year);
             }
 
-            if (year > MaxHebrewYear || year < MinHebrewYear)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(year),
-                    year,
-                    SR.Format(SR.ArgumentOutOfRange_Range, MinHebrewYear, MaxHebrewYear));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(year, MinHebrewYear, MaxHebrewYear);
             return year;
         }
 

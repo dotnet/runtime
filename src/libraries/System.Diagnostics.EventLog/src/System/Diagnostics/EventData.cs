@@ -27,8 +27,7 @@ namespace System.Diagnostics
             get => _categoryNumber;
             set
             {
-                if (value > ushort.MaxValue || value < 0)
-                    throw new ArgumentOutOfRangeException(nameof(CategoryId));
+                ArgumentOutOfRangeException.ThrowIfNotBetween(value, 0, ushort.MaxValue);
 
                 _categoryNumber = value;
             }
@@ -51,8 +50,7 @@ namespace System.Diagnostics
             get => _instanceId;
             set
             {
-                if (value > uint.MaxValue || value < 0)
-                    throw new ArgumentOutOfRangeException(nameof(InstanceId));
+                ArgumentOutOfRangeException.ThrowIfNotBetween(value, 0, uint.MaxValue);
 
                 _instanceId = value;
             }

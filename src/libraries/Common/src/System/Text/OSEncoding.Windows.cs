@@ -60,8 +60,7 @@ namespace System.Text
 
             ArgumentOutOfRangeException.ThrowIfLessThan(s.Length - charIndex, charCount);
 
-            if (byteIndex < 0 || byteIndex > bytes.Length)
-                throw new ArgumentOutOfRangeException(nameof(byteIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
+            ArgumentOutOfRangeException.ThrowIfNotBetween(byteIndex, 0, bytes.Length);
 
             if (charCount == 0)
                 return 0;
@@ -86,8 +85,7 @@ namespace System.Text
 
             ArgumentOutOfRangeException.ThrowIfLessThan(chars.Length - charIndex, charCount);
 
-            if (byteIndex < 0 || byteIndex > bytes.Length)
-                throw new ArgumentOutOfRangeException(nameof(byteIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
+            ArgumentOutOfRangeException.ThrowIfNotBetween(byteIndex, 0, bytes.Length);
 
             if (charCount == 0)
                 return 0;
@@ -131,8 +129,7 @@ namespace System.Text
 
             ArgumentOutOfRangeException.ThrowIfLessThan(bytes.Length - byteIndex, byteCount);
 
-            if (charIndex < 0 || charIndex > chars.Length)
-                throw new ArgumentOutOfRangeException(nameof(charIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
+            ArgumentOutOfRangeException.ThrowIfNotBetween(charIndex, 0, chars.Length);
 
             if (byteCount == 0)
                 return 0;

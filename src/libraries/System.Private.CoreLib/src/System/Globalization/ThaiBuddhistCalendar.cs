@@ -142,13 +142,7 @@ namespace System.Globalization
             set
             {
                 VerifyWritable();
-                if (value < 99 || value > _helper.MaxYear)
-                {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(value),
-                        value,
-                        SR.Format(SR.ArgumentOutOfRange_Range, 99, _helper.MaxYear));
-                }
+                ArgumentOutOfRangeException.ThrowIfNotBetween(value, 99, _helper.MaxYear);
 
                 _twoDigitYearMax = value;
             }

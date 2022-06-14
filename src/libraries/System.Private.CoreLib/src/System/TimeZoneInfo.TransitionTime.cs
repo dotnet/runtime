@@ -76,28 +76,16 @@ namespace System
                 }
 
                 // Month range 1-12
-                if (month < 1 || month > 12)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(month), SR.ArgumentOutOfRange_MonthParam);
-                }
+                ArgumentOutOfRangeException.ThrowIfNotBetween(month, 1, 12);
 
                 // Day range 1-31
-                if (day < 1 || day > 31)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(day), SR.ArgumentOutOfRange_DayParam);
-                }
+                ArgumentOutOfRangeException.ThrowIfNotBetween(day, 1, 31);
 
                 // Week range 1-5
-                if (week < 1 || week > 5)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(week), SR.ArgumentOutOfRange_Week);
-                }
+                ArgumentOutOfRangeException.ThrowIfNotBetween(week, 1, 5);
 
                 // DayOfWeek range 0-6
-                if ((int)dayOfWeek < 0 || (int)dayOfWeek > 6)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(dayOfWeek), SR.ArgumentOutOfRange_DayOfWeek);
-                }
+                ArgumentOutOfRangeException.ThrowIfNotBetween((int)dayOfWeek, 0, 6);
 
                 timeOfDay.GetDate(out int timeOfDayYear, out int timeOfDayMonth, out int timeOfDayDay);
                 if (timeOfDayYear != 1 || timeOfDayMonth != 1 || timeOfDayDay != 1 || (timeOfDay.Ticks % TimeSpan.TicksPerMillisecond != 0))

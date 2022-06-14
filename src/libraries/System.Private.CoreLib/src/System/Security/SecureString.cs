@@ -169,10 +169,7 @@ namespace System.Security
         {
             lock (_methodLock)
             {
-                if (index < 0 || index > _decryptedLength)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexString);
-                }
+                ArgumentOutOfRangeException.ThrowIfNotBetween(index, 0, _decryptedLength);
 
                 EnsureNotDisposed();
                 EnsureNotReadOnly();

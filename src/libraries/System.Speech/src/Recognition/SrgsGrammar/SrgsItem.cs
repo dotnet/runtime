@@ -71,19 +71,13 @@ namespace System.Speech.Recognition.SrgsGrammar
         public void SetRepeat(int count)
         {
             // Negative values are not allowed
-            if (count < 0 || count > 255)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(count, 0, 255);
             _minRepeat = _maxRepeat = count;
         }
         public void SetRepeat(int minRepeat, int maxRepeat)
         {
             // Negative values are not allowed
-            if (minRepeat < 0 || minRepeat > 255)
-            {
-                throw new ArgumentOutOfRangeException(nameof(minRepeat), SR.Get(SRID.InvalidMinRepeat, minRepeat));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(minRepeat, 0, 255);
             if (maxRepeat != int.MaxValue && (maxRepeat < 0 || maxRepeat > 255))
             {
                 throw new ArgumentOutOfRangeException(nameof(maxRepeat), SR.Get(SRID.InvalidMinRepeat, maxRepeat));
@@ -123,10 +117,7 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
             set
             {
-                if (value < 0.0f || value > 1.0f)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.Get(SRID.InvalidRepeatProbability, value));
-                }
+                ArgumentOutOfRangeException.ThrowIfNotBetween(value, 0.0f, 1.0f);
 
                 _repeatProbability = value;
             }

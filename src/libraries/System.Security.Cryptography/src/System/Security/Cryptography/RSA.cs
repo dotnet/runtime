@@ -177,10 +177,8 @@ namespace System.Security.Cryptography
             RSASignaturePadding padding)
         {
             ArgumentNullException.ThrowIfNull(data);
-            if (offset < 0 || offset > data.Length)
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            if (count < 0 || count > data.Length - offset)
-                throw new ArgumentOutOfRangeException(nameof(count));
+            ArgumentOutOfRangeException.ThrowIfNotBetween(offset, 0, data.Length);
+            ArgumentOutOfRangeException.ThrowIfNotBetween(count, 0, data.Length - offset);
             ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
             ArgumentNullException.ThrowIfNull(padding);
 
@@ -229,10 +227,8 @@ namespace System.Security.Cryptography
             RSASignaturePadding padding)
         {
             ArgumentNullException.ThrowIfNull(data);
-            if (offset < 0 || offset > data.Length)
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            if (count < 0 || count > data.Length - offset)
-                throw new ArgumentOutOfRangeException(nameof(count));
+            ArgumentOutOfRangeException.ThrowIfNotBetween(offset, 0, data.Length);
+            ArgumentOutOfRangeException.ThrowIfNotBetween(count, 0, data.Length - offset);
             ArgumentNullException.ThrowIfNull(signature);
             ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
             ArgumentNullException.ThrowIfNull(padding);

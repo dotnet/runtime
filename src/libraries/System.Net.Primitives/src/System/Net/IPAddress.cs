@@ -104,10 +104,7 @@ namespace System.Net
         /// </devdoc>
         public IPAddress(long newAddress)
         {
-            if (newAddress < 0 || newAddress > 0x00000000FFFFFFFF)
-            {
-                throw new ArgumentOutOfRangeException(nameof(newAddress));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(newAddress, 0, 0x00000000FFFFFFFF);
 
             PrivateAddress = (uint)newAddress;
         }
@@ -131,10 +128,7 @@ namespace System.Net
 
             // Consider: Since scope is only valid for link-local and site-local
             //           addresses we could implement some more robust checking here
-            if (scopeid < 0 || scopeid > 0x00000000FFFFFFFF)
-            {
-                throw new ArgumentOutOfRangeException(nameof(scopeid));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(scopeid, 0, 0x00000000FFFFFFFF);
 
             _numbers = new ushort[NumberOfLabels];
 
@@ -347,10 +341,7 @@ namespace System.Net
 
                 // Consider: Since scope is only valid for link-local and site-local
                 //           addresses we could implement some more robust checking here
-                if (value < 0 || value > 0x00000000FFFFFFFF)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfNotBetween(value, 0, 0x00000000FFFFFFFF);
 
                 PrivateScopeId = (uint)value;
             }

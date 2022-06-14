@@ -45,8 +45,7 @@ namespace System.IO.Pipes
         // purist point of view.
         internal static int AccessMaskFromRights(PipeAccessRights rights, AccessControlType controlType)
         {
-            if (rights < (PipeAccessRights)0 || rights > (PipeAccessRights.FullControl | PipeAccessRights.AccessSystemSecurity))
-                throw new ArgumentOutOfRangeException(nameof(rights), SR.ArgumentOutOfRange_NeedValidPipeAccessRights);
+            ArgumentOutOfRangeException.ThrowIfNotBetween(rights, (PipeAccessRights)0, (PipeAccessRights.FullControl | PipeAccessRights.AccessSystemSecurity));
 
             if (controlType == AccessControlType.Allow)
             {

@@ -299,14 +299,11 @@ namespace System.Data.SqlTypes
             if (buffer == null)
                 throw new ArgumentNullException(nameof(buffer));
 
-            if (offset > Length || offset < 0)
-                throw new ArgumentOutOfRangeException(nameof(offset));
+            ArgumentOutOfRangeException.ThrowIfNotBetween(offset, 0, Length);
 
-            if (offsetInBuffer > buffer.Length || offsetInBuffer < 0)
-                throw new ArgumentOutOfRangeException(nameof(offsetInBuffer));
+            ArgumentOutOfRangeException.ThrowIfNotBetween(offsetInBuffer, 0, buffer.Length);
 
-            if (count < 0 || count > buffer.Length - offsetInBuffer)
-                throw new ArgumentOutOfRangeException(nameof(count));
+            ArgumentOutOfRangeException.ThrowIfNotBetween(count, 0, buffer.Length - offsetInBuffer);
 
             // Adjust count based on data length
             if (count > Length - offset)
@@ -352,11 +349,9 @@ namespace System.Data.SqlTypes
                 if (offset > _rgbBuf.Length)
                     throw new SqlTypeException(SR.SqlMisc_BufferInsufficientMessage);
 
-                if (offsetInBuffer < 0 || offsetInBuffer > buffer.Length)
-                    throw new ArgumentOutOfRangeException(nameof(offsetInBuffer));
+                ArgumentOutOfRangeException.ThrowIfNotBetween(offsetInBuffer, 0, buffer.Length);
 
-                if (count < 0 || count > buffer.Length - offsetInBuffer)
-                    throw new ArgumentOutOfRangeException(nameof(count));
+                ArgumentOutOfRangeException.ThrowIfNotBetween(count, 0, buffer.Length - offsetInBuffer);
 
                 if (count > _rgbBuf.Length - offset)
                     throw new SqlTypeException(SR.SqlMisc_BufferInsufficientMessage);
@@ -642,8 +637,7 @@ namespace System.Data.SqlTypes
             set
             {
                 CheckIfStreamClosed("set_Position");
-                if (value < 0 || value > _sb.Length)
-                    throw new ArgumentOutOfRangeException(nameof(value));
+                ArgumentOutOfRangeException.ThrowIfNotBetween(value, 0, _sb.Length);
                 _lPosition = value;
             }
         }
@@ -661,22 +655,19 @@ namespace System.Data.SqlTypes
             switch (origin)
             {
                 case SeekOrigin.Begin:
-                    if (offset < 0 || offset > _sb.Length)
-                        throw new ArgumentOutOfRangeException(nameof(offset));
+                    ArgumentOutOfRangeException.ThrowIfNotBetween(offset, 0, _sb.Length);
                     _lPosition = offset;
                     break;
 
                 case SeekOrigin.Current:
                     lPosition = _lPosition + offset;
-                    if (lPosition < 0 || lPosition > _sb.Length)
-                        throw new ArgumentOutOfRangeException(nameof(offset));
+                    ArgumentOutOfRangeException.ThrowIfNotBetween(lPosition, 0, _sb.Length);
                     _lPosition = lPosition;
                     break;
 
                 case SeekOrigin.End:
                     lPosition = _sb.Length + offset;
-                    if (lPosition < 0 || lPosition > _sb.Length)
-                        throw new ArgumentOutOfRangeException(nameof(offset));
+                    ArgumentOutOfRangeException.ThrowIfNotBetween(lPosition, 0, _sb.Length);
                     _lPosition = lPosition;
                     break;
 

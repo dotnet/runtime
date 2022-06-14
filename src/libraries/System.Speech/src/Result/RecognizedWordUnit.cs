@@ -20,10 +20,7 @@ namespace System.Speech.Recognition
         {
             ArgumentNullException.ThrowIfNull(lexicalForm);
 
-            if (confidence < 0.0f || confidence > 1.0f)
-            {
-                throw new ArgumentOutOfRangeException(SR.Get(SRID.InvalidConfidence));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(confidence, 0.0f, 1.0f);
 
             _text = text == null || text.Length == 0 ? null : text;
             _confidence = confidence;

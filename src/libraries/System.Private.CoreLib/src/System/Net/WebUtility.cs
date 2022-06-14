@@ -689,10 +689,7 @@ namespace System.Net
             if (bytes == null && count == 0)
                 return false;
             ArgumentNullException.ThrowIfNull(bytes);
-            if (offset < 0 || offset > bytes.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(offset, 0, bytes.Length);
             if (count < 0 || offset + count > bytes.Length)
             {
                 throw new ArgumentOutOfRangeException(nameof(count));

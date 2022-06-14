@@ -21,10 +21,7 @@ namespace System.Collections
                 throw new ArgumentException(SR.Arg_NonZeroLowerBound, nameof(array));
             }
 
-            if (index < 0 || index > array.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(index, 0, array.Length);
 
             if (array.Length - index < sourceCount)
             {

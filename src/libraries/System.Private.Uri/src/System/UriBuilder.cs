@@ -179,10 +179,7 @@ namespace System
             get => _port;
             set
             {
-                if (value < -1 || value > 0xFFFF)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfNotBetween(value, -1, 0xFFFF);
                 _port = value;
                 _changed = true;
             }

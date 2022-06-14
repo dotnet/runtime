@@ -312,10 +312,7 @@ namespace System.Net.Sockets
 
             ArgumentNullException.ThrowIfNull(datagram);
 
-            if (bytes > datagram.Length || bytes < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(bytes));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(bytes, 0, datagram.Length);
 
             if (_active && endPoint != null)
             {

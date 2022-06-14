@@ -608,11 +608,7 @@ namespace System
 
         public static DateTimeOffset FromUnixTimeSeconds(long seconds)
         {
-            if (seconds < UnixMinSeconds || seconds > UnixMaxSeconds)
-            {
-                throw new ArgumentOutOfRangeException(nameof(seconds),
-                    SR.Format(SR.ArgumentOutOfRange_Range, UnixMinSeconds, UnixMaxSeconds));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(seconds, UnixMinSeconds, UnixMaxSeconds);
 
             long ticks = seconds * TimeSpan.TicksPerSecond + DateTime.UnixEpochTicks;
             return new DateTimeOffset(ticks, TimeSpan.Zero);
@@ -623,11 +619,7 @@ namespace System
             const long MinMilliseconds = DateTime.MinTicks / TimeSpan.TicksPerMillisecond - UnixEpochMilliseconds;
             const long MaxMilliseconds = DateTime.MaxTicks / TimeSpan.TicksPerMillisecond - UnixEpochMilliseconds;
 
-            if (milliseconds < MinMilliseconds || milliseconds > MaxMilliseconds)
-            {
-                throw new ArgumentOutOfRangeException(nameof(milliseconds),
-                    SR.Format(SR.ArgumentOutOfRange_Range, MinMilliseconds, MaxMilliseconds));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(milliseconds, MinMilliseconds, MaxMilliseconds);
 
             long ticks = milliseconds * TimeSpan.TicksPerMillisecond + DateTime.UnixEpochTicks;
             return new DateTimeOffset(ticks, TimeSpan.Zero);
@@ -955,10 +947,7 @@ namespace System
             {
                 throw new ArgumentException(SR.Argument_OffsetPrecision, nameof(offset));
             }
-            if (ticks < MinOffset || ticks > MaxOffset)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.Argument_OffsetOutOfRange);
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(ticks, MinOffset, MaxOffset);
             return (short)(offset.Ticks / TimeSpan.TicksPerMinute);
         }
 

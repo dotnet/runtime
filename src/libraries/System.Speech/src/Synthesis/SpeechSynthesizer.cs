@@ -411,10 +411,7 @@ namespace System.Speech.Synthesis
             }
             set
             {
-                if (value < -10 || value > 10)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.Get(SRID.RateOutOfRange));
-                }
+                ArgumentOutOfRangeException.ThrowIfNotBetween(value, -10, 10);
                 VoiceSynthesizer.Rate = value;
             }
         }
@@ -426,10 +423,7 @@ namespace System.Speech.Synthesis
             }
             set
             {
-                if (value < 0 || value > 100)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.Get(SRID.ResourceUsageOutOfRange));
-                }
+                ArgumentOutOfRangeException.ThrowIfNotBetween(value, 0, 100);
                 VoiceSynthesizer.Volume = value;
             }
         }

@@ -119,13 +119,7 @@ namespace System.Globalization
 
             set
             {
-                if (value < MinAdvancedHijri || value > MaxAdvancedHijri)
-                {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(value),
-                        value,
-                        SR.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, MinAdvancedHijri, MaxAdvancedHijri));
-                }
+                ArgumentOutOfRangeException.ThrowIfNotBetween(value, MinAdvancedHijri, MaxAdvancedHijri);
 
                 VerifyWritable();
                 _hijriAdvance = value;
@@ -134,17 +128,7 @@ namespace System.Globalization
 
         internal static void CheckTicksRange(long ticks)
         {
-            if (ticks < s_calendarMinValue.Ticks || ticks > s_calendarMaxValue.Ticks)
-            {
-                throw new ArgumentOutOfRangeException(
-                    "time",
-                    ticks,
-                    SR.Format(
-                        CultureInfo.InvariantCulture,
-                        SR.ArgumentOutOfRange_CalendarRange,
-                        s_calendarMinValue,
-                        s_calendarMaxValue));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(ticks, s_calendarMinValue.Ticks, s_calendarMaxValue.Ticks);
         }
 
         internal static void CheckEraRange(int era)
@@ -158,12 +142,7 @@ namespace System.Globalization
         internal static void CheckYearRange(int year, int era)
         {
             CheckEraRange(era);
-            if (year < 1 || year > MaxCalendarYear)
-            {
-                throw new ArgumentOutOfRangeException(
-                            nameof(year),
-                            SR.Format(SR.ArgumentOutOfRange_Range, 1, MaxCalendarYear));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(year, 1, MaxCalendarYear);
         }
 
         internal static void CheckYearMonthRange(int year, int month, int era)
@@ -260,13 +239,7 @@ namespace System.Globalization
 
         public override DateTime AddMonths(DateTime time, int months)
         {
-            if (months < -120000 || months > 120000)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(months),
-                    months,
-                    SR.Format(SR.ArgumentOutOfRange_Range, -120000, 120000));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(months, -120000, 120000);
 
             // Get the date in Hijri calendar.
             int y = GetDatePart(time.Ticks, DatePartYear);
@@ -360,13 +333,7 @@ namespace System.Globalization
         {
             // The year/month/era value checking is done in GetDaysInMonth().
             int daysInMonth = GetDaysInMonth(year, month, era);
-            if (day < 1 || day > daysInMonth)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(day),
-                    day,
-                    SR.Format(SR.ArgumentOutOfRange_Day, daysInMonth, month));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(day, 1, daysInMonth);
 
             return IsLeapYear(year, era) && month == 12 && day == 30;
         }
@@ -393,13 +360,7 @@ namespace System.Globalization
         {
             // The year/month/era checking is done in GetDaysInMonth().
             int daysInMonth = GetDaysInMonth(year, month, era);
-            if (day < 1 || day > daysInMonth)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(day),
-                    day,
-                    SR.Format(SR.ArgumentOutOfRange_Day, daysInMonth, month));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(day, 1, daysInMonth);
 
             long lDate = GetAbsoluteDateHijri(year, month, day);
             ArgumentOutOfRangeException.ThrowIfNegative(lDate);
@@ -423,13 +384,7 @@ namespace System.Globalization
             set
             {
                 VerifyWritable();
-                if (value < 99 || value > MaxCalendarYear)
-                {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(value),
-                        value,
-                        SR.Format(SR.ArgumentOutOfRange_Range, 99, MaxCalendarYear));
-                }
+                ArgumentOutOfRangeException.ThrowIfNotBetween(value, 99, MaxCalendarYear);
 
                 _twoDigitYearMax = value;
             }

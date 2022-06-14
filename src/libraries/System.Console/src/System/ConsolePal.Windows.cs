@@ -535,8 +535,7 @@ namespace System
             set
             {
                 // Value should be a percentage from [1, 100].
-                if (value < 1 || value > 100)
-                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.ArgumentOutOfRange_CursorSize);
+                ArgumentOutOfRangeException.ThrowIfNotBetween(value, 1, 100);
 
                 Interop.Kernel32.CONSOLE_CURSOR_INFO cci;
                 if (!Interop.Kernel32.GetConsoleCursorInfo(OutputHandle, out cci))
@@ -649,8 +648,7 @@ namespace System
             const int MinBeepFrequency = 37;
             const int MaxBeepFrequency = 32767;
 
-            if (frequency < MinBeepFrequency || frequency > MaxBeepFrequency)
-                throw new ArgumentOutOfRangeException(nameof(frequency), frequency, SR.Format(SR.ArgumentOutOfRange_BeepFrequency, MinBeepFrequency, MaxBeepFrequency));
+            ArgumentOutOfRangeException.ThrowIfNotBetween(frequency, MinBeepFrequency, MaxBeepFrequency);
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(duration);
 
             Interop.Kernel32.Beep(frequency, duration);
@@ -668,21 +666,16 @@ namespace System
 
             Interop.Kernel32.CONSOLE_SCREEN_BUFFER_INFO csbi = GetBufferInfo();
             Interop.Kernel32.COORD bufferSize = csbi.dwSize;
-            if (sourceLeft < 0 || sourceLeft > bufferSize.X)
-                throw new ArgumentOutOfRangeException(nameof(sourceLeft), sourceLeft, SR.ArgumentOutOfRange_ConsoleBufferBoundaries);
-            if (sourceTop < 0 || sourceTop > bufferSize.Y)
-                throw new ArgumentOutOfRangeException(nameof(sourceTop), sourceTop, SR.ArgumentOutOfRange_ConsoleBufferBoundaries);
-            if (sourceWidth < 0 || sourceWidth > bufferSize.X - sourceLeft)
-                throw new ArgumentOutOfRangeException(nameof(sourceWidth), sourceWidth, SR.ArgumentOutOfRange_ConsoleBufferBoundaries);
+            ArgumentOutOfRangeException.ThrowIfNotBetween(sourceLeft, 0, bufferSize.X);
+            ArgumentOutOfRangeException.ThrowIfNotBetween(sourceTop, 0, bufferSize.Y);
+            ArgumentOutOfRangeException.ThrowIfNotBetween(sourceWidth, 0, bufferSize.X - sourceLeft);
             if (sourceHeight < 0 || sourceTop > bufferSize.Y - sourceHeight)
                 throw new ArgumentOutOfRangeException(nameof(sourceHeight), sourceHeight, SR.ArgumentOutOfRange_ConsoleBufferBoundaries);
 
             // Note: if the target range is partially in and partially out
             // of the buffer, then we let the OS clip it for us.
-            if (targetLeft < 0 || targetLeft > bufferSize.X)
-                throw new ArgumentOutOfRangeException(nameof(targetLeft), targetLeft, SR.ArgumentOutOfRange_ConsoleBufferBoundaries);
-            if (targetTop < 0 || targetTop > bufferSize.Y)
-                throw new ArgumentOutOfRangeException(nameof(targetTop), targetTop, SR.ArgumentOutOfRange_ConsoleBufferBoundaries);
+            ArgumentOutOfRangeException.ThrowIfNotBetween(targetLeft, 0, bufferSize.X);
+            ArgumentOutOfRangeException.ThrowIfNotBetween(targetTop, 0, bufferSize.Y);
 
             // If we're not doing any work, bail out now (Windows will return
             // an error otherwise)

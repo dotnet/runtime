@@ -54,7 +54,7 @@ namespace System.Xml.Schema
             ArgumentOutOfRangeException.ThrowIfNegative(hours);
             ArgumentOutOfRangeException.ThrowIfNegative(minutes);
             ArgumentOutOfRangeException.ThrowIfNegative(seconds);
-            if (nanoseconds < 0 || nanoseconds > 999999999) throw new ArgumentOutOfRangeException(nameof(nanoseconds));
+            ArgumentOutOfRangeException.ThrowIfNotBetween(nanoseconds, 0, 999999999);
 
             _years = years;
             _months = months;

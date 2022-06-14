@@ -139,29 +139,17 @@ namespace System.Net.WebSockets
             {
                 throw new ArgumentNullException(parameterName + "." + nameof(arraySegment.Array));
             }
-            if (arraySegment.Offset < 0 || arraySegment.Offset > arraySegment.Array.Length)
-            {
-                throw new ArgumentOutOfRangeException(parameterName + "." + nameof(arraySegment.Offset));
-            }
-            if (arraySegment.Count < 0 || arraySegment.Count > (arraySegment.Array.Length - arraySegment.Offset))
-            {
-                throw new ArgumentOutOfRangeException(parameterName + "." + nameof(arraySegment.Count));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(arraySegment.Offset, 0, arraySegment.Array.Length);
+            ArgumentOutOfRangeException.ThrowIfNotBetween(arraySegment.Count, 0, (arraySegment.Array.Length - arraySegment.Offset));
         }
 
         internal static void ValidateBuffer(byte[] buffer, int offset, int count)
         {
             ArgumentNullException.ThrowIfNull(buffer);
 
-            if (offset < 0 || offset > buffer.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(offset, 0, buffer.Length);
 
-            if (count < 0 || count > (buffer.Length - offset))
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(count, 0, (buffer.Length - offset));
         }
     }
 }

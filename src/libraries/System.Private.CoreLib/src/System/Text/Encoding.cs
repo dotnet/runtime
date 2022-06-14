@@ -243,11 +243,7 @@ namespace System.Text
                     }
             }
 
-            if (codepage < 0 || codepage > 65535)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(codepage), SR.Format(SR.ArgumentOutOfRange_Range, 0, 65535));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(codepage, 0, 65535);
 
             throw new NotSupportedException(SR.Format(SR.NotSupported_NoCodepageData, codepage));
         }

@@ -439,10 +439,7 @@ namespace System.Collections.Generic
         {
             ArgumentNullException.ThrowIfNull(array);
 
-            if (arrayIndex < 0 || arrayIndex > array.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(arrayIndex), arrayIndex, SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(arrayIndex, 0, array.Length);
 
             if (array.Length - arrayIndex < Count)
             {
@@ -470,10 +467,7 @@ namespace System.Collections.Generic
                 throw new ArgumentException(SR.Arg_NonZeroLowerBound, nameof(array));
             }
 
-            if (index < 0 || index > array.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(index, 0, array.Length);
 
             if (array.Length - index < Count)
             {

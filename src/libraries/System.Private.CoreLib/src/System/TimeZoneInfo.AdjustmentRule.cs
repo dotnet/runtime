@@ -203,10 +203,7 @@ namespace System
                 // which caused their current BaseUtcOffset to be +13. But on the other side of the line it was UTC-11 (+1 for daylight).
                 // So when trying to describe DaylightDeltas for those times, the DaylightDelta needs
                 // to be -23 (what it takes to go from UTC+13 to UTC-10)
-                if (daylightDelta.TotalHours < -23.0 || daylightDelta.TotalHours > 14.0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(daylightDelta), daylightDelta, SR.ArgumentOutOfRange_UtcOffset);
-                }
+                ArgumentOutOfRangeException.ThrowIfNotBetween(daylightDelta.TotalHours, -23.0, 14.0);
 
                 if (daylightDelta.Ticks % TimeSpan.TicksPerMinute != 0)
                 {

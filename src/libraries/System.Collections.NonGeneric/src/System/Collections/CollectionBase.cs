@@ -188,8 +188,7 @@ namespace System.Collections
 
         void IList.Insert(int index, object? value)
         {
-            if (index < 0 || index > Count)
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
+            ArgumentOutOfRangeException.ThrowIfNotBetween(index, 0, Count);
             OnValidate(value!);
             OnInsert(index, value);
             InnerList.Insert(index, value);

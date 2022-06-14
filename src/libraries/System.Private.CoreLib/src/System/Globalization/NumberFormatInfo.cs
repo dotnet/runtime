@@ -221,13 +221,7 @@ namespace System.Globalization
             get => _currencyDecimalDigits;
             set
             {
-                if (value < 0 || value > 99)
-                {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(value),
-                        value,
-                        SR.Format(SR.ArgumentOutOfRange_Range, 0, 99));
-                }
+                ArgumentOutOfRangeException.ThrowIfNotBetween(value, 0, 99);
 
                 VerifyWritable();
                 _currencyDecimalDigits = value;
@@ -378,13 +372,7 @@ namespace System.Globalization
             get => _currencyNegativePattern;
             set
             {
-                if (value < 0 || value > 15)
-                {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(value),
-                        value,
-                        SR.Format(SR.ArgumentOutOfRange_Range, 0, 15));
-                }
+                ArgumentOutOfRangeException.ThrowIfNotBetween(value, 0, 15);
 
                 VerifyWritable();
                 _currencyNegativePattern = value;
@@ -397,13 +385,7 @@ namespace System.Globalization
             set
             {
                 // NOTENOTE: the range of value should correspond to negNumberFormats[] in vm\COMNumber.cpp.
-                if (value < 0 || value > 4)
-                {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(value),
-                        value,
-                        SR.Format(SR.ArgumentOutOfRange_Range, 0, 4));
-                }
+                ArgumentOutOfRangeException.ThrowIfNotBetween(value, 0, 4);
 
                 VerifyWritable();
                 _numberNegativePattern = value;
@@ -416,13 +398,7 @@ namespace System.Globalization
             set
             {
                 // NOTENOTE: the range of value should correspond to posPercentFormats[] in vm\COMNumber.cpp.
-                if (value < 0 || value > 3)
-                {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(value),
-                        value,
-                        SR.Format(SR.ArgumentOutOfRange_Range, 0, 3));
-                }
+                ArgumentOutOfRangeException.ThrowIfNotBetween(value, 0, 3);
 
                 VerifyWritable();
                 _percentPositivePattern = value;
@@ -435,13 +411,7 @@ namespace System.Globalization
             set
             {
                 // NOTENOTE: the range of value should correspond to posPercentFormats[] in vm\COMNumber.cpp.
-                if (value < 0 || value > 11)
-                {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(value),
-                        value,
-                        SR.Format(SR.ArgumentOutOfRange_Range, 0, 11));
-                }
+                ArgumentOutOfRangeException.ThrowIfNotBetween(value, 0, 11);
 
                 VerifyWritable();
                 _percentNegativePattern = value;
@@ -478,13 +448,7 @@ namespace System.Globalization
             get => _numberDecimalDigits;
             set
             {
-                if (value < 0 || value > 99)
-                {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(value),
-                        value,
-                        SR.Format(SR.ArgumentOutOfRange_Range, 0, 99));
-                }
+                ArgumentOutOfRangeException.ThrowIfNotBetween(value, 0, 99);
 
                 VerifyWritable();
                 _numberDecimalDigits = value;
@@ -518,13 +482,7 @@ namespace System.Globalization
             get => _currencyPositivePattern;
             set
             {
-                if (value < 0 || value > 3)
-                {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(value),
-                        value,
-                        SR.Format(SR.ArgumentOutOfRange_Range, 0, 3));
-                }
+                ArgumentOutOfRangeException.ThrowIfNotBetween(value, 0, 3);
 
                 VerifyWritable();
                 _currencyPositivePattern = value;
@@ -561,13 +519,7 @@ namespace System.Globalization
             get => _percentDecimalDigits;
             set
             {
-                if (value < 0 || value > 99)
-                {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(value),
-                        value,
-                        SR.Format(SR.ArgumentOutOfRange_Range, 0, 99));
-                }
+                ArgumentOutOfRangeException.ThrowIfNotBetween(value, 0, 99);
 
                 VerifyWritable();
                 _percentDecimalDigits = value;

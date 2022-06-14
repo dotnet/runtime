@@ -136,13 +136,7 @@ namespace System.Globalization
         /// </summary>
         public override DateTime AddMonths(DateTime time, int months)
         {
-            if (months < -120000 || months > 120000)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(months),
-                    months,
-                    SR.Format(SR.ArgumentOutOfRange_Range, -120000, 120000));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(months, -120000, 120000);
 
             time.GetDate(out int y, out int m, out int d);
             int i = m - 1 + months;
@@ -249,13 +243,7 @@ namespace System.Globalization
             {
                 throw new ArgumentOutOfRangeException(nameof(era), era, SR.ArgumentOutOfRange_InvalidEraValue);
             }
-            if (year < 1 || year > MaxYear)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(year),
-                    year,
-                    SR.Format(SR.ArgumentOutOfRange_Range, 1, MaxYear));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(year, 1, MaxYear);
 
             return 12;
         }
@@ -288,32 +276,14 @@ namespace System.Globalization
         /// </summary>
         public override bool IsLeapDay(int year, int month, int day, int era)
         {
-            if (month < 1 || month > 12)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(month),
-                    month,
-                    SR.Format(SR.ArgumentOutOfRange_Range, 1, 12));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(month, 1, 12);
 
             if (era != CurrentEra && era != ADEra)
             {
                 throw new ArgumentOutOfRangeException(nameof(era), era, SR.ArgumentOutOfRange_InvalidEraValue);
             }
-            if (year < 1 || year > MaxYear)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(year),
-                    year,
-                    SR.Format(SR.ArgumentOutOfRange_Range, 1, MaxYear));
-            }
-            if (day < 1 || day > GetDaysInMonth(year, month))
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(day),
-                    day,
-                    SR.Format(SR.ArgumentOutOfRange_Range, 1, GetDaysInMonth(year, month)));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(year, 1, MaxYear);
+            ArgumentOutOfRangeException.ThrowIfNotBetween(day, 1, GetDaysInMonth(year, month));
 
             return IsLeapYear(year) && month == 2 && day == 29;
         }
@@ -329,13 +299,7 @@ namespace System.Globalization
             {
                 throw new ArgumentOutOfRangeException(nameof(era), era, SR.ArgumentOutOfRange_InvalidEraValue);
             }
-            if (year < 1 || year > MaxYear)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(year),
-                    year,
-                    SR.Format(SR.ArgumentOutOfRange_Range, 1, MaxYear));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(year, 1, MaxYear);
 
             return 0;
         }
@@ -350,20 +314,8 @@ namespace System.Globalization
             {
                 throw new ArgumentOutOfRangeException(nameof(era), era, SR.ArgumentOutOfRange_InvalidEraValue);
             }
-            if (year < 1 || year > MaxYear)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(year),
-                    year,
-                    SR.Format(SR.ArgumentOutOfRange_Range, 1, MaxYear));
-            }
-            if (month < 1 || month > 12)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(month),
-                    month,
-                    SR.Format(SR.ArgumentOutOfRange_Range, 1, 12));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(year, 1, MaxYear);
+            ArgumentOutOfRangeException.ThrowIfNotBetween(month, 1, 12);
 
             return false;
         }
@@ -422,13 +374,7 @@ namespace System.Globalization
             set
             {
                 VerifyWritable();
-                if (value < 99 || value > MaxYear)
-                {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(value),
-                        value,
-                        SR.Format(SR.ArgumentOutOfRange_Range, 99, MaxYear));
-                }
+                ArgumentOutOfRangeException.ThrowIfNotBetween(value, 99, MaxYear);
                 _twoDigitYearMax = value;
             }
         }

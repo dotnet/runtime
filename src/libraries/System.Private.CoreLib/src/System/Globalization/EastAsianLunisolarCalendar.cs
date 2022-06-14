@@ -34,13 +34,7 @@ namespace System.Globalization
         /// </summary>
         public int GetCelestialStem(int sexagenaryYear)
         {
-            if (sexagenaryYear < 1 || sexagenaryYear > 60)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(sexagenaryYear),
-                    sexagenaryYear,
-                    SR.Format(SR.ArgumentOutOfRange_Range, 1, 60));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(sexagenaryYear, 1, 60);
 
             return ((sexagenaryYear - 1) % 10) + 1;
         }
@@ -51,13 +45,7 @@ namespace System.Globalization
         /// </summary>
         public int GetTerrestrialBranch(int sexagenaryYear)
         {
-            if (sexagenaryYear < 1 || sexagenaryYear > 60)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(sexagenaryYear),
-                    sexagenaryYear,
-                    SR.Format(SR.ArgumentOutOfRange_Range, 1, 60));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(sexagenaryYear, 1, 60);
 
             return ((sexagenaryYear - 1) % 12) + 1;
         }
@@ -158,10 +146,7 @@ namespace System.Globalization
                 era = CurrentEraValue;
             }
 
-            if (era < GetEra(MinDate) || era > GetEra(MaxDate))
-            {
-                throw new ArgumentOutOfRangeException(nameof(era), era, SR.ArgumentOutOfRange_InvalidEraValue);
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(era, GetEra(MinDate), GetEra(MaxDate));
         }
 
         internal int CheckYearRange(int year, int era)
@@ -169,13 +154,7 @@ namespace System.Globalization
             CheckEraRange(era);
             year = GetGregorianYear(year, era);
 
-            if (year < MinCalendarYear || year > MaxCalendarYear)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(year),
-                    year,
-                    SR.Format(SR.ArgumentOutOfRange_Range, MinEraCalendarYear(era), MaxEraCalendarYear(era)));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(year, MinCalendarYear, MaxCalendarYear);
             return year;
         }
 
@@ -246,13 +225,7 @@ namespace System.Globalization
         {
             year = CheckYearMonthRange(year, month, era);
             int daysInMonth = InternalGetDaysInMonth(year, month);
-            if (day < 1 || day > daysInMonth)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(day),
-                    day,
-                    SR.Format(SR.ArgumentOutOfRange_Day, daysInMonth, month));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(day, 1, daysInMonth);
 
             if (!LunarToGregorian(year, month, day, out int gy, out int gm, out int gd))
             {
@@ -424,13 +397,7 @@ namespace System.Globalization
         /// </summary>
         public override DateTime AddMonths(DateTime time, int months)
         {
-            if (months < -120000 || months > 120000)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(months),
-                    months,
-                    SR.Format(SR.ArgumentOutOfRange_Range, -120000, 120000));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(months, -120000, 120000);
 
             CheckTicksRange(time.Ticks);
             TimeToLunar(time, out int y, out int m, out int d);
@@ -597,13 +564,7 @@ namespace System.Globalization
             year = CheckYearMonthRange(year, month, era);
             int daysInMonth = InternalGetDaysInMonth(year, month);
 
-            if (day < 1 || day > daysInMonth)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(day),
-                    day,
-                    SR.Format(SR.ArgumentOutOfRange_Day, daysInMonth, month));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(day, 1, daysInMonth);
 
             int m = GetYearInfo(year, LeapMonth);
             return (m != 0) && (month == (m + 1));
@@ -662,13 +623,7 @@ namespace System.Globalization
             set
             {
                 VerifyWritable();
-                if (value < 99 || value > MaxCalendarYear)
-                {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(value),
-                        value,
-                        SR.Format(SR.ArgumentOutOfRange_Range, 99, MaxCalendarYear));
-                }
+                ArgumentOutOfRangeException.ThrowIfNotBetween(value, 99, MaxCalendarYear);
 
                 _twoDigitYearMax = value;
             }

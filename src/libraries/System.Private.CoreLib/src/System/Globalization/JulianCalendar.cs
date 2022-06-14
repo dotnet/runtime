@@ -105,13 +105,7 @@ namespace System.Globalization
             bool isLeapYear = (year % 4) == 0;
             int[] days = isLeapYear ? s_daysToMonth366 : s_daysToMonth365;
             int monthDays = days[month] - days[month - 1];
-            if (day < 1 || day > monthDays)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(day),
-                    day,
-                    SR.Format(SR.ArgumentOutOfRange_Range, 1, monthDays));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(day, 1, monthDays);
         }
 
         /// <summary>
@@ -186,13 +180,7 @@ namespace System.Globalization
 
         public override DateTime AddMonths(DateTime time, int months)
         {
-            if (months < -120000 || months > 120000)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(months),
-                    months,
-                    SR.Format(SR.ArgumentOutOfRange_Range, -120000, 120000));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(months, -120000, 120000);
 
             int y = GetDatePart(time.Ticks, DatePartYear);
             int m = GetDatePart(time.Ticks, DatePartMonth);
@@ -332,13 +320,7 @@ namespace System.Globalization
             set
             {
                 VerifyWritable();
-                if (value < 99 || value > MaxYear)
-                {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(value),
-                        value,
-                        SR.Format(SR.ArgumentOutOfRange_Range, 99, MaxYear));
-                }
+                ArgumentOutOfRangeException.ThrowIfNotBetween(value, 99, MaxYear);
 
                 _twoDigitYearMax = value;
             }

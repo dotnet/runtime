@@ -50,10 +50,7 @@ namespace System.IO
             set
             {
                 EnsureNotClosed();
-                if (value < 0 || value > int.MaxValue)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfNotBetween(value, 0, int.MaxValue);
                 _position = (int)value;
             }
         }

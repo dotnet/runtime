@@ -357,8 +357,7 @@ namespace System.Data.SqlTypes
             {
                 ThrowIfStreamClosed("set_Position");
                 ThrowIfStreamCannotSeek("set_Position");
-                if (value < 0 || value > _stream.Length)
-                    throw new ArgumentOutOfRangeException(nameof(value));
+                ArgumentOutOfRangeException.ThrowIfNotBetween(value, 0, _stream.Length);
                 _lPosition = value;
             }
         }
@@ -376,22 +375,19 @@ namespace System.Data.SqlTypes
             switch (origin)
             {
                 case SeekOrigin.Begin:
-                    if (offset < 0 || offset > _stream.Length)
-                        throw new ArgumentOutOfRangeException(nameof(offset));
+                    ArgumentOutOfRangeException.ThrowIfNotBetween(offset, 0, _stream.Length);
                     _lPosition = offset;
                     break;
 
                 case SeekOrigin.Current:
                     lPosition = _lPosition + offset;
-                    if (lPosition < 0 || lPosition > _stream.Length)
-                        throw new ArgumentOutOfRangeException(nameof(offset));
+                    ArgumentOutOfRangeException.ThrowIfNotBetween(lPosition, 0, _stream.Length);
                     _lPosition = lPosition;
                     break;
 
                 case SeekOrigin.End:
                     lPosition = _stream.Length + offset;
-                    if (lPosition < 0 || lPosition > _stream.Length)
-                        throw new ArgumentOutOfRangeException(nameof(offset));
+                    ArgumentOutOfRangeException.ThrowIfNotBetween(lPosition, 0, _stream.Length);
                     _lPosition = lPosition;
                     break;
 
@@ -409,10 +405,8 @@ namespace System.Data.SqlTypes
 
             if (buffer == null)
                 throw new ArgumentNullException(nameof(buffer));
-            if (offset < 0 || offset > buffer.Length)
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            if (count < 0 || count > buffer.Length - offset)
-                throw new ArgumentOutOfRangeException(nameof(count));
+            ArgumentOutOfRangeException.ThrowIfNotBetween(offset, 0, buffer.Length);
+            ArgumentOutOfRangeException.ThrowIfNotBetween(count, 0, buffer.Length - offset);
 
             if (_stream.CanSeek && _stream.Position != _lPosition)
                 _stream.Seek(_lPosition, SeekOrigin.Begin);
@@ -446,10 +440,8 @@ namespace System.Data.SqlTypes
 
             if (buffer == null)
                 throw new ArgumentNullException(nameof(buffer));
-            if (offset < 0 || offset > buffer.Length)
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            if (count < 0 || count > buffer.Length - offset)
-                throw new ArgumentOutOfRangeException(nameof(count));
+            ArgumentOutOfRangeException.ThrowIfNotBetween(offset, 0, buffer.Length);
+            ArgumentOutOfRangeException.ThrowIfNotBetween(count, 0, buffer.Length - offset);
 
             if (_stream.CanSeek && _stream.Position != _lPosition)
                 _stream.Seek(_lPosition, SeekOrigin.Begin);

@@ -316,10 +316,7 @@ namespace System.Collections.Specialized
             {
                 throw new NotSupportedException(SR.OrderedDictionary_ReadOnly);
             }
-            if (index > Count || index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(index, 0, Count);
             Hashtable objectsTable = EnsureObjectsTable();
             ArrayList objectsArray = EnsureObjectsArray();
             objectsTable.Add(key, value);

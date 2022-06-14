@@ -49,10 +49,7 @@ namespace System.IO.Pipes
 
         private static int AccessMaskFromRights(PipeAccessRights rights)
         {
-            if (rights < (PipeAccessRights)0 || rights > (PipeAccessRights.FullControl | PipeAccessRights.AccessSystemSecurity))
-            {
-                throw new ArgumentOutOfRangeException(nameof(rights), SR.ArgumentOutOfRange_NeedValidPipeAccessRights);
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(rights, (PipeAccessRights)0, (PipeAccessRights.FullControl | PipeAccessRights.AccessSystemSecurity));
 
             return (int)rights;
         }

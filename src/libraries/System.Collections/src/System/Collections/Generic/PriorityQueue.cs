@@ -813,10 +813,7 @@ namespace System.Collections.Generic
                     throw new ArgumentException(SR.Arg_NonZeroLowerBound, nameof(array));
                 }
 
-                if (index < 0 || index > array.Length)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
-                }
+                ArgumentOutOfRangeException.ThrowIfNotBetween(index, 0, array.Length);
 
                 if (array.Length - index < _queue._size)
                 {

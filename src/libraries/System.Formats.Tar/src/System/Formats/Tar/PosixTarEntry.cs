@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 namespace System.Formats.Tar
@@ -38,10 +38,7 @@ namespace System.Formats.Tar
                     throw new InvalidOperationException(SR.TarEntryBlockOrCharacterExpected);
                 }
 
-                if (value < 0 || value > 2097151) // 7777777 in octal
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfNotBetween(value, 0, 2097151);
                 _header._devMajor = value;
             }
         }
@@ -61,10 +58,7 @@ namespace System.Formats.Tar
                 {
                     throw new InvalidOperationException(SR.TarEntryBlockOrCharacterExpected);
                 }
-                if (value < 0 || value > 2097151) // 7777777 in octal
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfNotBetween(value, 0, 2097151);
                 _header._devMinor = value;
             }
         }

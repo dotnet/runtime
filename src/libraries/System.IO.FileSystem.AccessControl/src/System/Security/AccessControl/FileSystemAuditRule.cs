@@ -84,8 +84,7 @@ namespace System.Security.AccessControl
 
         private static int AccessMaskFromRights(FileSystemRights fileSystemRights)
         {
-            if (fileSystemRights < 0 || fileSystemRights > FileSystemRights.FullControl)
-                throw new ArgumentOutOfRangeException(nameof(fileSystemRights), SR.Format(SR.Argument_InvalidEnumValue, fileSystemRights, nameof(AccessControl.FileSystemRights)));
+            ArgumentOutOfRangeException.ThrowIfNotBetween(fileSystemRights, 0, FileSystemRights.FullControl);
 
             return (int)fileSystemRights;
         }

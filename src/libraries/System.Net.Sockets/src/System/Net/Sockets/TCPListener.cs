@@ -134,10 +134,7 @@ namespace System.Net.Sockets
 
         public void Start(int backlog)
         {
-            if (backlog > (int)SocketOptionName.MaxConnections || backlog < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(backlog));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(backlog, 0, (int)SocketOptionName.MaxConnections);
 
             // Already listening.
             if (_active)

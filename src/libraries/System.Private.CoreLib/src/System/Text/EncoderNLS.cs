@@ -84,9 +84,7 @@ namespace System.Text
 
             ArgumentOutOfRangeException.ThrowIfLessThan(chars.Length - charIndex, charCount);
 
-            if (byteIndex < 0 || byteIndex > bytes.Length)
-                throw new ArgumentOutOfRangeException(nameof(byteIndex),
-                     SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
+            ArgumentOutOfRangeException.ThrowIfNotBetween(byteIndex, 0, bytes.Length);
 
             int byteCount = bytes.Length - byteIndex;
 

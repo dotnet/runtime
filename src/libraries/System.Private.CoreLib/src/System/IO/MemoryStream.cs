@@ -559,8 +559,7 @@ namespace System.IO
         //
         public override void SetLength(long value)
         {
-            if (value < 0 || value > int.MaxValue)
-                throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_StreamLength);
+            ArgumentOutOfRangeException.ThrowIfNotBetween(value, 0, int.MaxValue);
 
             EnsureWriteable();
 

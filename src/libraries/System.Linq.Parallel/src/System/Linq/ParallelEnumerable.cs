@@ -290,10 +290,7 @@ namespace System.Linq
         {
             ArgumentNullException.ThrowIfNull(source);
 
-            if (degreeOfParallelism < 1 || degreeOfParallelism > Scheduling.MAX_SUPPORTED_DOP)
-            {
-                throw new ArgumentOutOfRangeException(nameof(degreeOfParallelism));
-            }
+            ArgumentOutOfRangeException.ThrowIfNotBetween(degreeOfParallelism, 1, Scheduling.MAX_SUPPORTED_DOP);
 
             QuerySettings settings = QuerySettings.Empty;
             settings.DegreeOfParallelism = degreeOfParallelism;
