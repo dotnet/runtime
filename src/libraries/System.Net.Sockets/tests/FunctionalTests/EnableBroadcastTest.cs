@@ -5,7 +5,7 @@ using Xunit;
 
 namespace System.Net.Sockets.Tests
 {
-    public class EnableBroadcastSocketTest
+    public class EnableBroadcastTest
     {
         [Fact]
         public void TcpConstructor_EnableBroadcast_GetterReturnsFalse()
