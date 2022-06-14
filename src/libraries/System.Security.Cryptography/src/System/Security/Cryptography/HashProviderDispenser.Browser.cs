@@ -36,7 +36,7 @@ namespace System.Security.Cryptography
                 }
                 else
                 {
-                    HashProvider provider = CreateMacProvider(hashAlgorithmId, key);
+                    using HashProvider provider = CreateMacProvider(hashAlgorithmId, key);
                     provider.AppendHashData(source);
                     return provider.FinalizeHashAndReset(destination);
                 }
