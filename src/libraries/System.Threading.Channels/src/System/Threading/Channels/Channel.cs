@@ -40,10 +40,7 @@ namespace System.Threading.Channels
         /// </remarks>
         public static Channel<T> CreateBounded<T>(int capacity)
         {
-            if (capacity < 1)
-            {
-                throw new ArgumentOutOfRangeException(nameof(capacity));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(capacity, 1);
 
             return new BoundedChannel<T>(capacity, BoundedChannelFullMode.Wait, runContinuationsAsynchronously: true, itemDropped: null);
         }

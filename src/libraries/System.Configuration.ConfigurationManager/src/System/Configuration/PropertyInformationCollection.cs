@@ -46,7 +46,7 @@ namespace System.Configuration
                 throw new ArgumentNullException(nameof(array));
             }
 
-            if (array.Length < Count + index) throw new ArgumentOutOfRangeException(nameof(index));
+            ArgumentOutOfRangeException.ThrowIfLessThan(array.Length, Count + index);
 
             foreach (PropertyInformation pi in this) array[index++] = pi;
         }

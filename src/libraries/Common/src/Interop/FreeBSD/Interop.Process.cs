@@ -110,10 +110,7 @@ internal static partial class Interop
             kinfo_proc* kinfo = GetProcInfo(pid, true, out int count);
             try
             {
-                if (count < 1)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(pid));
-                }
+                ArgumentOutOfRangeException.ThrowIfLessThan(count, 1);
 
                 var process = new ReadOnlySpan<kinfo_proc>(kinfo, count);
 

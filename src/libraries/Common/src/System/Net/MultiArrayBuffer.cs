@@ -384,10 +384,7 @@ namespace System.Net
 
         public void CopyTo(Span<byte> destination)
         {
-            if (destination.Length < _length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(destination));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, _length);
 
             int blockCount = BlockCount;
             for (int blockIndex = 0; blockIndex < blockCount; blockIndex++)
@@ -400,10 +397,7 @@ namespace System.Net
 
         public void CopyFrom(ReadOnlySpan<byte> source)
         {
-            if (_length < source.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(source));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(_length, source.Length);
 
             int blockCount = BlockCount;
             for (int blockIndex = 0; blockIndex < blockCount; blockIndex++)

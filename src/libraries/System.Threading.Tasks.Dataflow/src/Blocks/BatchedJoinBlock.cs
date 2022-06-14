@@ -54,7 +54,7 @@ namespace System.Threading.Tasks.Dataflow
         public BatchedJoinBlock(int batchSize, GroupingDataflowBlockOptions dataflowBlockOptions)
         {
             // Validate arguments
-            if (batchSize < 1) throw new ArgumentOutOfRangeException(nameof(batchSize), SR.ArgumentOutOfRange_GenericPositive);
+            ArgumentOutOfRangeException.ThrowIfLessThan(batchSize, 1);
             if (dataflowBlockOptions == null) throw new ArgumentNullException(nameof(dataflowBlockOptions));
             if (!dataflowBlockOptions.Greedy) throw new ArgumentException(SR.Argument_NonGreedyNotSupported, nameof(dataflowBlockOptions));
             if (dataflowBlockOptions.BoundedCapacity != DataflowBlockOptions.Unbounded) throw new ArgumentException(SR.Argument_BoundedCapacityNotSupported, nameof(dataflowBlockOptions));
@@ -302,7 +302,7 @@ namespace System.Threading.Tasks.Dataflow
         public BatchedJoinBlock(int batchSize, GroupingDataflowBlockOptions dataflowBlockOptions)
         {
             // Validate arguments
-            if (batchSize < 1) throw new ArgumentOutOfRangeException(nameof(batchSize), SR.ArgumentOutOfRange_GenericPositive);
+            ArgumentOutOfRangeException.ThrowIfLessThan(batchSize, 1);
             if (dataflowBlockOptions == null) throw new ArgumentNullException(nameof(dataflowBlockOptions));
             if (!dataflowBlockOptions.Greedy ||
                 dataflowBlockOptions.BoundedCapacity != DataflowBlockOptions.Unbounded)

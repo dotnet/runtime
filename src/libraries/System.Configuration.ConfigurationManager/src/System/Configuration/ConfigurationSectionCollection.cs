@@ -76,7 +76,7 @@ namespace System.Configuration
             }
 
             int c = Count;
-            if (array.Length < c + index) throw new ArgumentOutOfRangeException(nameof(index));
+            ArgumentOutOfRangeException.ThrowIfLessThan(array.Length, c + index);
 
             for (int i = 0, j = index; i < c; i++, j++) array[j] = Get(i);
         }

@@ -71,10 +71,7 @@ namespace System.Net
             get { return s_maxServicePointIdleTime; }
             set
             {
-                if (value < Timeout.Infinite)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfLessThan(value, Timeout.Infinite);
                 s_maxServicePointIdleTime = value;
             }
         }

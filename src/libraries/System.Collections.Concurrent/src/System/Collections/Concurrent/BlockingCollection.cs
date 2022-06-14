@@ -177,12 +177,7 @@ namespace System.Collections.Concurrent
         {
             ArgumentNullException.ThrowIfNull(collection);
 
-            if (boundedCapacity < 1)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(boundedCapacity), boundedCapacity,
-                    SR.BlockingCollection_ctor_BoundedCapacityRange);
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(boundedCapacity, 1);
 
             int count = collection.Count;
             if (count > boundedCapacity)

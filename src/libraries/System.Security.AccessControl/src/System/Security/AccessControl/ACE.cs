@@ -116,16 +116,7 @@ namespace System.Security.AccessControl
 
             ArgumentOutOfRangeException.ThrowIfNegative(offset);
 
-            if (binaryForm.Length - offset < BinaryLength)
-            {
-                //
-                // The buffer will not fit the header
-                //
-
-                throw new ArgumentOutOfRangeException(
-                    nameof(binaryForm),
-                    SR.ArgumentOutOfRange_ArrayTooSmall);
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(binaryForm.Length - offset, BinaryLength);
 
             if (Length > ushort.MaxValue)
             {
@@ -242,16 +233,7 @@ namespace System.Security.AccessControl
 
             ArgumentOutOfRangeException.ThrowIfNegative(offset);
 
-            if (binaryForm.Length - offset < HeaderLength)
-            {
-                //
-                // We expect at least the ACE header ( 4 bytes )
-                //
-
-                throw new ArgumentOutOfRangeException(
-                    nameof(binaryForm),
-                    SR.ArgumentOutOfRange_ArrayTooSmall);
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(binaryForm.Length - offset, HeaderLength);
 
             if ((binaryForm[offset + 3] << 8) + (binaryForm[offset + 2] << 0) > binaryForm.Length - offset)
             {

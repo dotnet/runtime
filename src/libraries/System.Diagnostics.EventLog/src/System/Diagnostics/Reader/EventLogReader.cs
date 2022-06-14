@@ -118,8 +118,7 @@ namespace System.Diagnostics.Eventing.Reader
             }
             set
             {
-                if (value < 1)
-                    throw new ArgumentOutOfRangeException(nameof(value));
+                ArgumentOutOfRangeException.ThrowIfLessThan(value, 1);
                 _batchSize = value;
             }
         }

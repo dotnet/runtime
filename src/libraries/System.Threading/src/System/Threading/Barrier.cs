@@ -318,11 +318,7 @@ namespace System.Threading
         {
             ThrowIfDisposed();
 
-            if (participantCount < 1)
-            {
-                throw new ArgumentOutOfRangeException(nameof(participantCount), participantCount,
-                    SR.Barrier_AddParticipants_NonPositive_ArgumentOutOfRange);
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(participantCount, 1);
 
             ArgumentOutOfRangeException.ThrowIfGreaterThan(participantCount, MAX_PARTICIPANTS);
 
@@ -415,11 +411,7 @@ namespace System.Threading
         {
             ThrowIfDisposed();
 
-            if (participantCount < 1)
-            {
-                throw new ArgumentOutOfRangeException(nameof(participantCount), participantCount,
-                    SR.Barrier_RemoveParticipants_NonPositive_ArgumentOutOfRange);
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(participantCount, 1);
 
             // in case of this is called from the PHA
             if (_actionCallerID != 0 && Environment.CurrentManagedThreadId == _actionCallerID)
@@ -436,11 +428,7 @@ namespace System.Threading
                 bool sense;
                 GetCurrentTotal(currentTotal, out current, out total, out sense);
 
-                if (total < participantCount)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(participantCount),
-                        SR.Barrier_RemoveParticipants_ArgumentOutOfRange);
-                }
+                ArgumentOutOfRangeException.ThrowIfLessThan(total, participantCount);
                 if (total - participantCount < current)
                 {
                     throw new InvalidOperationException(SR.Barrier_RemoveParticipants_InvalidOperation);

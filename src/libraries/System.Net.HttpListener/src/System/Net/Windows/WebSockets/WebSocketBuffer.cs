@@ -643,11 +643,7 @@ namespace System.Net.WebSockets
             Debug.Assert(sendBufferSize >= HttpWebSocket.MinSendBufferSize, $"'sendBufferSize' MUST be at least {HttpWebSocket.MinSendBufferSize}.");
 
             int minBufferSize = GetInternalBufferSize(receiveBufferSize, sendBufferSize, isServerBuffer);
-            if (count < minBufferSize)
-            {
-                throw new ArgumentOutOfRangeException("internalBuffer",
-                    SR.Format(SR.net_WebSockets_ArgumentOutOfRange_InternalBuffer, minBufferSize));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(count, minBufferSize);
         }
 
         private static int GetInternalBufferSize(int receiveBufferSize, int sendBufferSize, bool isServerBuffer)

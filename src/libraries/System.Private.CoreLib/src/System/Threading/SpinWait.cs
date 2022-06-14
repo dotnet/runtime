@@ -143,10 +143,7 @@ namespace System.Threading
         /// </remarks>
         public void SpinOnce(int sleep1Threshold)
         {
-            if (sleep1Threshold < -1)
-            {
-                throw new ArgumentOutOfRangeException(nameof(sleep1Threshold), sleep1Threshold, SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(sleep1Threshold, -1);
 
             if (sleep1Threshold >= 0 && sleep1Threshold < YieldThreshold)
             {
@@ -305,11 +302,7 @@ namespace System.Threading
         /// negative number other than -1, which represents an infinite time-out.</exception>
         public static bool SpinUntil(Func<bool> condition, int millisecondsTimeout)
         {
-            if (millisecondsTimeout < Timeout.Infinite)
-            {
-                throw new ArgumentOutOfRangeException(
-                   nameof(millisecondsTimeout), millisecondsTimeout, SR.SpinWait_SpinUntil_TimeoutWrong);
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, Timeout.Infinite);
             ArgumentNullException.ThrowIfNull(condition);
             uint startTime = 0;
             if (millisecondsTimeout != 0 && millisecondsTimeout != Timeout.Infinite)

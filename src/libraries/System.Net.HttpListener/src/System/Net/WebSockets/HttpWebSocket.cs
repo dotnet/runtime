@@ -83,27 +83,15 @@ namespace System.Net.WebSockets
                 WebSocketValidate.ValidateSubprotocol(subProtocol);
             }
 
-            if (receiveBufferSize < MinReceiveBufferSize)
-            {
-                throw new ArgumentOutOfRangeException(nameof(receiveBufferSize), receiveBufferSize,
-                    SR.Format(SR.net_WebSockets_ArgumentOutOfRange_TooSmall, MinReceiveBufferSize));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(receiveBufferSize, MinReceiveBufferSize);
 
-            if (sendBufferSize < MinSendBufferSize)
-            {
-                throw new ArgumentOutOfRangeException(nameof(sendBufferSize), sendBufferSize,
-                    SR.Format(SR.net_WebSockets_ArgumentOutOfRange_TooSmall, MinSendBufferSize));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(sendBufferSize, MinSendBufferSize);
 
             ArgumentOutOfRangeException.ThrowIfGreaterThan(receiveBufferSize, MaxBufferSize);
 
             ArgumentOutOfRangeException.ThrowIfGreaterThan(sendBufferSize, MaxBufferSize);
 
-            if (keepAliveInterval < Timeout.InfiniteTimeSpan) // -1 millisecond
-            {
-                throw new ArgumentOutOfRangeException(nameof(keepAliveInterval), keepAliveInterval,
-                    SR.Format(SR.net_WebSockets_ArgumentOutOfRange_TooSmall, Timeout.InfiniteTimeSpan.ToString()));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(keepAliveInterval, Timeout.InfiniteTimeSpan);
         }
 
         internal const int MinSendBufferSize = 16;

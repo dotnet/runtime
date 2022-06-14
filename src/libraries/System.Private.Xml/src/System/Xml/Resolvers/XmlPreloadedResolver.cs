@@ -294,10 +294,7 @@ namespace System.Xml.Resolvers
 
             ArgumentOutOfRangeException.ThrowIfNegative(count);
             ArgumentOutOfRangeException.ThrowIfNegative(offset);
-            if (value.Length - offset < count)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(value.Length - offset, count);
 
             Add(uri, new ByteArrayChunk(value, offset, count));
         }

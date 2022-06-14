@@ -25,8 +25,7 @@ namespace System.Configuration
             {
                 TimeSpan timeValue = TimeSpan.Parse(value, CultureInfo.InvariantCulture);
 
-                if (MaxValue < timeValue)
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.Validator_min_greater_than_max);
+                ArgumentOutOfRangeException.ThrowIfLessThan(MaxValue, timeValue);
 
                 MinValue = timeValue;
             }

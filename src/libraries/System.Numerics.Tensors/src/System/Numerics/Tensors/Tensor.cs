@@ -289,10 +289,7 @@ namespace System.Numerics.Tensors
             long size = 1;
             for (int i = 0; i < dimensions.Length; i++)
             {
-                if (dimensions[i] < 1)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(dimensions), SR.DimensionsMustBePositiveAndNonZero);
-                }
+                ArgumentOutOfRangeException.ThrowIfLessThan(dimensions[i], 1);
                 this.dimensions[i] = dimensions[i];
                 size *= dimensions[i];
             }

@@ -1586,10 +1586,7 @@ namespace System.Xml
 
             ArgumentOutOfRangeException.ThrowIfNegative(count);
             ArgumentOutOfRangeException.ThrowIfNegative(index);
-            if (buffer.Length - index < count)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(buffer.Length - index, count);
         }
     }
 }

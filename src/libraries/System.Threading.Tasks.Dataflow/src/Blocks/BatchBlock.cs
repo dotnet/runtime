@@ -46,7 +46,7 @@ namespace System.Threading.Tasks.Dataflow
         public BatchBlock(int batchSize, GroupingDataflowBlockOptions dataflowBlockOptions)
         {
             // Validate arguments
-            if (batchSize < 1) throw new ArgumentOutOfRangeException(nameof(batchSize), SR.ArgumentOutOfRange_GenericPositive);
+            ArgumentOutOfRangeException.ThrowIfLessThan(batchSize, 1);
             if (dataflowBlockOptions == null) throw new ArgumentNullException(nameof(dataflowBlockOptions));
             if (dataflowBlockOptions.BoundedCapacity > 0 && dataflowBlockOptions.BoundedCapacity < batchSize) throw new ArgumentOutOfRangeException(nameof(batchSize), SR.ArgumentOutOfRange_BatchSizeMustBeNoGreaterThanBoundedCapacity);
 

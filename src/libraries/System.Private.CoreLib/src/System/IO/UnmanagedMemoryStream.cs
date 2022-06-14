@@ -162,8 +162,7 @@ namespace System.IO
             ArgumentOutOfRangeException.ThrowIfNegative(capacity);
             ArgumentOutOfRangeException.ThrowIfGreaterThan(length, capacity);
             // Check for wraparound.
-            if (((byte*)((long)pointer + capacity)) < pointer)
-                throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_UnmanagedMemStreamWrapAround);
+            ArgumentOutOfRangeException.ThrowIfLessThan(((byte*)((long)pointer + capacity)), pointer);
             if (access < FileAccess.Read || access > FileAccess.ReadWrite)
                 throw new ArgumentOutOfRangeException(nameof(access), SR.ArgumentOutOfRange_Enum);
             if (_isOpen)

@@ -28,10 +28,7 @@ namespace System.Net
             get { return _connectionLeaseTimeout; }
             set
             {
-                if (value < Timeout.Infinite)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfLessThan(value, Timeout.Infinite);
                 _connectionLeaseTimeout = value;
             }
         }
@@ -43,10 +40,7 @@ namespace System.Net
             get { return _maxIdleTime; }
             set
             {
-                if (value < Timeout.Infinite)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfLessThan(value, Timeout.Infinite);
                 _maxIdleTime = value;
             }
         }
@@ -58,10 +52,7 @@ namespace System.Net
             get { return _receiveBufferSize; }
             set
             {
-                if (value < -1)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfLessThan(value, -1);
                 _receiveBufferSize = value;
             }
         }

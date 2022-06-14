@@ -479,10 +479,7 @@ namespace System.Threading
             ThrowIfDisposed();
             cancellationToken.ThrowIfCancellationRequested(); // an early convenience check
 
-            if (millisecondsTimeout < -1)
-            {
-                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
 
             if (!IsSet)
             {

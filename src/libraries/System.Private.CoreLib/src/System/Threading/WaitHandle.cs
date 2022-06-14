@@ -77,10 +77,7 @@ namespace System.Threading
         internal static int ToTimeoutMilliseconds(TimeSpan timeout)
         {
             long timeoutMilliseconds = (long)timeout.TotalMilliseconds;
-            if (timeoutMilliseconds < -1)
-            {
-                throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(timeoutMilliseconds, -1);
             ArgumentOutOfRangeException.ThrowIfGreaterThan(timeoutMilliseconds, int.MaxValue);
             return (int)timeoutMilliseconds;
         }
@@ -100,10 +97,7 @@ namespace System.Threading
 
         public virtual bool WaitOne(int millisecondsTimeout)
         {
-            if (millisecondsTimeout < -1)
-            {
-                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
 
             return WaitOneNoCheck(millisecondsTimeout);
         }
@@ -252,10 +246,7 @@ namespace System.Threading
             {
                 throw new NotSupportedException(SR.NotSupported_MaxWaitHandles);
             }
-            if (millisecondsTimeout < -1)
-            {
-                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
 
             SynchronizationContext? context = SynchronizationContext.Current;
             bool useWaitContext = context != null && context.IsWaitNotificationRequired();
@@ -352,10 +343,7 @@ namespace System.Threading
             ArgumentNullException.ThrowIfNull(toSignal);
             ArgumentNullException.ThrowIfNull(toWaitOn);
 
-            if (millisecondsTimeout < -1)
-            {
-                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
 
             // The field value is modifiable via the public <see cref="WaitHandle.SafeWaitHandle"/> property, save it locally
             // to ensure that one instance is used in all places in this method

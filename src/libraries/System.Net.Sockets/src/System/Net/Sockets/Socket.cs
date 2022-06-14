@@ -525,10 +525,7 @@ namespace System.Net.Sockets
             }
             set
             {
-                if (value < -1)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfLessThan(value, -1);
                 if (value == -1)
                 {
                     value = 0;
@@ -547,10 +544,7 @@ namespace System.Net.Sockets
 
             set
             {
-                if (value < -1)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfLessThan(value, -1);
                 if (value == -1)
                 {
                     value = 0;
@@ -948,10 +942,7 @@ namespace System.Net.Sockets
 
         public void Close(int timeout)
         {
-            if (timeout < -1)
-            {
-                throw new ArgumentOutOfRangeException(nameof(timeout));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(timeout, -1);
 
             _closeTimeout = timeout;
 

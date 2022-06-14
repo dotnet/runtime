@@ -936,10 +936,7 @@ ISpGrammarResourceLoader
             get { lock (SapiRecognizer) { return _initialSilenceTimeout; } }
             set
             {
-                if (value < TimeSpan.Zero)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.Get(SRID.NegativeTimesNotSupported));
-                }
+                ArgumentOutOfRangeException.ThrowIfLessThan(value, TimeSpan.Zero);
 
                 lock (SapiRecognizer)
                 {
@@ -958,10 +955,7 @@ ISpGrammarResourceLoader
             get { lock (SapiRecognizer) { return _babbleTimeout; } }
             set
             {
-                if (value < TimeSpan.Zero)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.Get(SRID.NegativeTimesNotSupported));
-                }
+                ArgumentOutOfRangeException.ThrowIfLessThan(value, TimeSpan.Zero);
 
                 lock (SapiRecognizer)
                 {

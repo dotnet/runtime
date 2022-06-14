@@ -23,8 +23,7 @@ namespace System.Threading
         {
             ArgumentOutOfRangeException.ThrowIfNegative(initialCount);
 
-            if (maximumCount < 1)
-                throw new ArgumentOutOfRangeException(nameof(maximumCount), SR.ArgumentOutOfRange_NeedPosNum);
+            ArgumentOutOfRangeException.ThrowIfLessThan(maximumCount, 1);
 
             if (initialCount > maximumCount)
                 throw new ArgumentException(SR.Argument_SemaphoreInitialMaximum);
@@ -58,8 +57,7 @@ namespace System.Threading
         // increase the count on a semaphore, returns previous count
         public int Release(int releaseCount)
         {
-            if (releaseCount < 1)
-                throw new ArgumentOutOfRangeException(nameof(releaseCount), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfLessThan(releaseCount, 1);
 
             return ReleaseCore(releaseCount);
         }

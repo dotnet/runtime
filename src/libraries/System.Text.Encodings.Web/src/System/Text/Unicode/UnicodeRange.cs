@@ -53,10 +53,7 @@ namespace System.Text.Unicode
         /// <returns>The <see cref="UnicodeRange"/> representing this span.</returns>
         public static UnicodeRange Create(char firstCharacter, char lastCharacter)
         {
-            if (lastCharacter < firstCharacter)
-            {
-                throw new ArgumentOutOfRangeException(nameof(lastCharacter));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(lastCharacter, firstCharacter);
 
             return new UnicodeRange(firstCharacter, 1 + (int)(lastCharacter - firstCharacter));
         }

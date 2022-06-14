@@ -43,8 +43,7 @@ namespace System.Security.Cryptography.Pkcs
                 throw new ArgumentNullException(nameof(pbeParameters));
             }
 
-            if (pbeParameters.IterationCount < 1)
-                throw new ArgumentOutOfRangeException(nameof(pbeParameters));
+            ArgumentOutOfRangeException.ThrowIfLessThan(pbeParameters.IterationCount, 1);
             if (safeContents.ConfidentialityMode != Pkcs12ConfidentialityMode.None)
                 throw new ArgumentException(SR.Cryptography_Pkcs12_CannotProcessEncryptedSafeContents, nameof(safeContents));
             if (IsSealed)
@@ -96,8 +95,7 @@ namespace System.Security.Cryptography.Pkcs
                 throw new ArgumentNullException(nameof(pbeParameters));
             }
 
-            if (pbeParameters.IterationCount < 1)
-                throw new ArgumentOutOfRangeException(nameof(pbeParameters));
+            ArgumentOutOfRangeException.ThrowIfLessThan(pbeParameters.IterationCount, 1);
             if (safeContents.ConfidentialityMode != Pkcs12ConfidentialityMode.None)
                 throw new ArgumentException(SR.Cryptography_Pkcs12_CannotProcessEncryptedSafeContents, nameof(safeContents));
             if (IsSealed)
@@ -168,8 +166,7 @@ namespace System.Security.Cryptography.Pkcs
             HashAlgorithmName hashAlgorithm,
             int iterationCount)
         {
-            if (iterationCount < 1)
-                throw new ArgumentOutOfRangeException(nameof(iterationCount));
+            ArgumentOutOfRangeException.ThrowIfLessThan(iterationCount, 1);
             if (IsSealed)
                 throw new InvalidOperationException(SR.Cryptography_Pkcs12_PfxIsSealed);
 

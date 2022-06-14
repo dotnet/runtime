@@ -399,10 +399,7 @@ namespace System.Security.Principal
             // At least a minimum-size SID should fit in the buffer
             //
 
-            if (binaryForm.Length - offset < SecurityIdentifier.MinBinaryLength)
-            {
-                throw new ArgumentOutOfRangeException(nameof(binaryForm), SR.ArgumentOutOfRange_ArrayTooSmall);
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(binaryForm.Length - offset, SecurityIdentifier.MinBinaryLength);
 
             //
             // Extract the elements of a SID

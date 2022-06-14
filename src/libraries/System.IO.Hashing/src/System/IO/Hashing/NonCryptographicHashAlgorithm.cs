@@ -32,8 +32,7 @@ namespace System.IO.Hashing
         /// </exception>
         protected NonCryptographicHashAlgorithm(int hashLengthInBytes)
         {
-            if (hashLengthInBytes < 1)
-                throw new ArgumentOutOfRangeException(nameof(hashLengthInBytes));
+            ArgumentOutOfRangeException.ThrowIfLessThan(hashLengthInBytes, 1);
 
             HashLengthInBytes = hashLengthInBytes;
         }

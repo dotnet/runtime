@@ -86,10 +86,7 @@ namespace System.Net.Internals
 
         public SocketAddress(AddressFamily family, int size)
         {
-            if (size < MinSize)
-            {
-                throw new ArgumentOutOfRangeException(nameof(size));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(size, MinSize);
 
             InternalSize = size;
             Buffer = new byte[(size / IntPtr.Size + 2) * IntPtr.Size];

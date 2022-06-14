@@ -193,10 +193,7 @@ namespace System.Collections
             }
             set
             {
-                if (value < Count)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_SmallCapacity);
-                }
+                ArgumentOutOfRangeException.ThrowIfLessThan(value, Count);
 
                 if (value != keys.Length)
                 {

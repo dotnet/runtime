@@ -481,10 +481,7 @@ namespace System.Xml
             ArgumentNullException.ThrowIfNull(buffer);
             ArgumentOutOfRangeException.ThrowIfNegative(count);
             ArgumentOutOfRangeException.ThrowIfNegative(index);
-            if (buffer.Length - index < count)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(buffer.Length - index, count);
 
             if (ReadState != ReadState.Interactive)
             {
@@ -532,10 +529,7 @@ namespace System.Xml
             ArgumentNullException.ThrowIfNull(buffer);
             ArgumentOutOfRangeException.ThrowIfNegative(count);
             ArgumentOutOfRangeException.ThrowIfNegative(index);
-            if (buffer.Length - index < count)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(buffer.Length - index, count);
             if (ReadState != ReadState.Interactive)
             {
                 return 0;

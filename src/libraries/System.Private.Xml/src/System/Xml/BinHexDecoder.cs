@@ -43,10 +43,7 @@ namespace System.Xml
 
             ArgumentOutOfRangeException.ThrowIfNegative(len);
             ArgumentOutOfRangeException.ThrowIfNegative(startPos);
-            if (chars.Length - startPos < len)
-            {
-                throw new ArgumentOutOfRangeException(nameof(len));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(chars.Length - startPos, len);
 
             if (len == 0)
             {
@@ -67,10 +64,7 @@ namespace System.Xml
 
             ArgumentOutOfRangeException.ThrowIfNegative(len);
             ArgumentOutOfRangeException.ThrowIfNegative(startPos);
-            if (str.Length - startPos < len)
-            {
-                throw new ArgumentOutOfRangeException(nameof(len));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(str.Length - startPos, len);
 
             if (len == 0)
             {

@@ -228,10 +228,7 @@ namespace System.Collections.Generic
             {
                 if (value != keys.Length)
                 {
-                    if (value < _size)
-                    {
-                        throw new ArgumentOutOfRangeException(nameof(value), value, SR.ArgumentOutOfRange_SmallCapacity);
-                    }
+                    ArgumentOutOfRangeException.ThrowIfLessThan(value, _size);
 
                     if (value > 0)
                     {

@@ -51,10 +51,7 @@ namespace System.Threading.Channels
         /// <param name="capacity">The maximum number of items the bounded channel may store.</param>
         public BoundedChannelOptions(int capacity)
         {
-            if (capacity < 1)
-            {
-                throw new ArgumentOutOfRangeException(nameof(capacity));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(capacity, 1);
 
             _capacity = capacity;
         }
@@ -65,10 +62,7 @@ namespace System.Threading.Channels
             get => _capacity;
             set
             {
-                if (value < 1)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfLessThan(value, 1);
                 _capacity = value;
             }
         }

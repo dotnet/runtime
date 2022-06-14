@@ -99,10 +99,7 @@ namespace System.Globalization
             if (year == 1 && month == 1)
             {
                 // The minimum supported Julia date is Julian 0001/01/03.
-                if (day < 3)
-                {
-                    throw new ArgumentOutOfRangeException(null, SR.ArgumentOutOfRange_BadYearMonthDay);
-                }
+                ArgumentOutOfRangeException.ThrowIfLessThan(day, 3);
             }
 
             bool isLeapYear = (year % 4) == 0;

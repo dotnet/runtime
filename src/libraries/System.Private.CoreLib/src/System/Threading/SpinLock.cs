@@ -281,11 +281,7 @@ namespace System.Threading
                 throw new ArgumentException(SR.SpinLock_TryReliableEnter_ArgumentException);
             }
 
-            if (millisecondsTimeout < -1)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(millisecondsTimeout), millisecondsTimeout, SR.SpinLock_TryEnter_ArgumentOutOfRange);
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
 
             uint startTime = 0;
             if (millisecondsTimeout != Timeout.Infinite && millisecondsTimeout != 0)

@@ -175,10 +175,7 @@ namespace System.Security.AccessControl
 
             ArgumentOutOfRangeException.ThrowIfNegative(index);
 
-            if (array.Length - index < Count)
-            {
-                throw new ArgumentOutOfRangeException(nameof(array), SR.ArgumentOutOfRange_ArrayTooSmall);
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(array.Length - index, Count);
 
             for (int i = 0; i < Count; i++)
             {

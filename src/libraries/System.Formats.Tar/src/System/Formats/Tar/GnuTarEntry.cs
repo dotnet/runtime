@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 namespace System.Formats.Tar
@@ -42,10 +42,7 @@ namespace System.Formats.Tar
             get => _header._aTime;
             set
             {
-                if (value < DateTimeOffset.UnixEpoch)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfLessThan(value, DateTimeOffset.UnixEpoch);
                 _header._aTime = value;
             }
         }
@@ -59,10 +56,7 @@ namespace System.Formats.Tar
             get => _header._cTime;
             set
             {
-                if (value < DateTimeOffset.UnixEpoch)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfLessThan(value, DateTimeOffset.UnixEpoch);
                 _header._cTime = value;
             }
         }

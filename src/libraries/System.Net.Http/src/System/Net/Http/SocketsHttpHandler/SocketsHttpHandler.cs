@@ -151,10 +151,7 @@ namespace System.Net.Http
             get => _settings._maxConnectionsPerServer;
             set
             {
-                if (value < 1)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.Format(SR.net_http_value_must_be_greater_than, 0));
-                }
+                ArgumentOutOfRangeException.ThrowIfLessThan(value, 1);
 
                 CheckDisposedOrStarted();
                 _settings._maxConnectionsPerServer = value;

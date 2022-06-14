@@ -33,10 +33,7 @@ namespace System.Threading
 
             ArgumentOutOfRangeException.ThrowIfNegative(initialCount);
 
-            if (maximumCount < 1)
-            {
-                throw new ArgumentOutOfRangeException(nameof(maximumCount), SR.ArgumentOutOfRange_NeedPosNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(maximumCount, 1);
 
             if (initialCount > maximumCount)
             {

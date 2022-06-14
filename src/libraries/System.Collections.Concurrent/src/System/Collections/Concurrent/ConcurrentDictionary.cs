@@ -208,10 +208,7 @@ namespace System.Collections.Concurrent
 
         internal ConcurrentDictionary(int concurrencyLevel, int capacity, bool growLockArray, IEqualityComparer<TKey>? comparer)
         {
-            if (concurrencyLevel < 1)
-            {
-                throw new ArgumentOutOfRangeException(nameof(concurrencyLevel), SR.ConcurrentDictionary_ConcurrencyLevelMustBePositive);
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(concurrencyLevel, 1);
             ArgumentOutOfRangeException.ThrowIfNegative(capacity);
 
             // The capacity should be at least as large as the concurrency level. Otherwise, we would have locks that don't guard

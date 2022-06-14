@@ -79,8 +79,7 @@ namespace System.Runtime.CompilerServices
             get { return _items.Length; }
             set
             {
-                if (value < _size)
-                    throw new ArgumentOutOfRangeException(nameof(value));
+                ArgumentOutOfRangeException.ThrowIfLessThan(value, _size);
 
                 if (value != _items.Length)
                 {

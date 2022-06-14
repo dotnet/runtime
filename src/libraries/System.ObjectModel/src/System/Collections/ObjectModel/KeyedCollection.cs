@@ -32,10 +32,7 @@ namespace System.Collections.ObjectModel
             : base(new List<TItem>()) // Be explicit about the use of List<T> so we can foreach over
                                       // Items internally without enumerator allocations.
         {
-            if (dictionaryCreationThreshold < -1)
-            {
-                throw new ArgumentOutOfRangeException(nameof(dictionaryCreationThreshold), SR.ArgumentOutOfRange_InvalidThreshold);
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(dictionaryCreationThreshold, -1);
 
             this.comparer = comparer ?? EqualityComparer<TKey>.Default;
             threshold = dictionaryCreationThreshold == -1 ? int.MaxValue : dictionaryCreationThreshold;

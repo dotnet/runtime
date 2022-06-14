@@ -332,10 +332,7 @@ namespace System.Security.Cryptography
                 case PaddingMode.PKCS7:
                 case PaddingMode.ANSIX923:
                 case PaddingMode.ISO10126:
-                    if (int.MaxValue - wholeBlocks < blockSizeBytes)
-                    {
-                        throw new ArgumentOutOfRangeException(nameof(plaintextLength), SR.Cryptography_PlaintextTooLarge);
-                    }
+                    ArgumentOutOfRangeException.ThrowIfLessThan(int.MaxValue - wholeBlocks, blockSizeBytes);
 
                     return wholeBlocks + blockSizeBytes;
                 default:
@@ -413,10 +410,7 @@ namespace System.Security.Cryptography
                 case PaddingMode.PKCS7:
                 case PaddingMode.ANSIX923:
                 case PaddingMode.ISO10126:
-                    if (int.MaxValue - feedbackAligned < feedbackSizeInBytes)
-                    {
-                        throw new ArgumentOutOfRangeException(nameof(plaintextLength), SR.Cryptography_PlaintextTooLarge);
-                    }
+                    ArgumentOutOfRangeException.ThrowIfLessThan(int.MaxValue - feedbackAligned, feedbackSizeInBytes);
 
                     return feedbackAligned + feedbackSizeInBytes;
                 default:
