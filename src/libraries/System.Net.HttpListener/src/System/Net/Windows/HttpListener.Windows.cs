@@ -736,9 +736,9 @@ namespace System.Net
             // Figure out what schemes we're allowing, what context we have.
             stoleBlob = true;
             HttpListenerContext? httpContext = null;
-            NegotiateAuthentication? oldContext = null;
-            NegotiateAuthentication? newContext = null;
-            NegotiateAuthentication? context = null;
+            NTAuthentication? oldContext = null;
+            NTAuthentication? newContext = null;
+            NTAuthentication? context = null;
             AuthenticationSchemes headerScheme = AuthenticationSchemes.None;
             AuthenticationSchemes authenticationScheme = AuthenticationSchemes;
             ExtendedProtectionPolicy extendedProtectionPolicy = _extendedProtectionPolicy;
@@ -884,7 +884,7 @@ namespace System.Net
                     string inBlob = index < authorizationHeader.Length ? authorizationHeader.Substring(index) : "";
 
                     IPrincipal? principal = null;
-                    NegotiateAuthenticationStatusCode statusCodeNew;
+                    SecurityStatusPal statusCodeNew;
                     ChannelBinding? binding;
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Performing Authentication headerScheme: {headerScheme}");
                     switch (headerScheme)
@@ -901,14 +901,8 @@ namespace System.Net
                             else
                             {
                                 binding = GetChannelBinding(session, connectionId, isSecureConnection, extendedProtectionPolicy);
-                                // FIXME
-                                //ContextFlagsPal contextFlags = GetContextFlags(extendedProtectionPolicy, isSecureConnection);
-                                NegotiateAuthenticationServerOptions serverOptions = new NegotiateAuthenticationServerOptions
-                                {
-                                    Package = package,
-                                    Binding = binding,
-                                };
-                                context = new NegotiateAuthentication(serverOptions);
+                                ContextFlagsPal contextFlags = GetContextFlags(extendedProtectionPolicy, isSecureConnection);
+                                context = new NTAuthentication(true, package, CredentialCache.DefaultNetworkCredentials, null, contextFlags, binding);
                             }
 
                             try
@@ -923,20 +917,20 @@ namespace System.Net
                             }
                             if (!error)
                             {
-                                decodedOutgoingBlob = context.GetOutgoingBlob(bytes, out statusCodeNew);
-                                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"GetOutgoingBlob returned IsAuthenticated: {context.IsAuthenticated} and statusCodeNew: {statusCodeNew}");
-                                error = statusCodeNew >= NegotiateAuthenticationStatusCode.GenericFailure;
+                                decodedOutgoingBlob = context.GetOutgoingBlob(bytes, false, out statusCodeNew);
+                                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"GetOutgoingBlob returned IsCompleted: {context.IsCompleted} and statusCodeNew: {statusCodeNew}");
+                                error = !context.IsValidContext;
                                 if (error)
                                 {
                                     // SSPI Workaround
                                     // If a client sends up a blob on the initial request, Negotiate returns SEC_E_INVALID_HANDLE
                                     // when it should return SEC_E_INVALID_TOKEN.
-                                    //if (statusCodeNew.ErrorCode == SecurityStatusPalErrorCode.InvalidHandle && oldContext == null && bytes != null && bytes.Length > 0)
-                                    //{
-                                    //    statusCodeNew = new SecurityStatusPal(SecurityStatusPalErrorCode.InvalidToken);
-                                    //}
+                                    if (statusCodeNew.ErrorCode == SecurityStatusPalErrorCode.InvalidHandle && oldContext == null && bytes != null && bytes.Length > 0)
+                                    {
+                                        statusCodeNew = new SecurityStatusPal(SecurityStatusPalErrorCode.InvalidToken);
+                                    }
 
-                                    httpError = HttpStatusFromSecurityStatus(statusCodeNew);
+                                    httpError = HttpStatusFromSecurityStatus(statusCodeNew.ErrorCode);
                                 }
                             }
 
@@ -948,7 +942,7 @@ namespace System.Net
 
                             if (!error)
                             {
-                                if (context.IsAuthenticated)
+                                if (context.IsCompleted)
                                 {
                                     SecurityContextTokenHandle? userContext = null;
                                     try
@@ -959,71 +953,66 @@ namespace System.Net
                                         }
                                         else
                                         {
-                                            httpContext.Request.ServiceName = context.TargetName;
+                                            httpContext.Request.ServiceName = context.ClientSpecifiedSpn;
 
-                                            try
-                                            {
-                                                IIdentity identity = context.RemoteIdentity;
-
-                                                if (identity is not WindowsIdentity windowsIdentity)
-                                                {
-                                                    if (NetEventSource.Log.IsEnabled())
-                                                    {
-                                                        NetEventSource.Info(this,
-                                                            $"HandleAuthentication RemoteIdentity return non-Windows identity: {identity.GetType().Name}");
-                                                    }
-
-                                                    httpError = HttpStatusCode.InternalServerError;
-                                                }
-                                                else
-                                                {
-                                                    WindowsPrincipal windowsPrincipal = new WindowsPrincipal(windowsIdentity);
-
-                                                    principal = windowsPrincipal;
-                                                    // if appropriate, cache this credential on this connection
-                                                    if (UnsafeConnectionNtlmAuthentication && context.Package == NegotiationInfoClass.NTLM)
-                                                    {
-                                                        if (NetEventSource.Log.IsEnabled())
-                                                        {
-                                                            NetEventSource.Info(this,
-                                                                $"HandleAuthentication inserting principal: {principal} for connectionId: {connectionId}");
-                                                        }
-
-                                                        // We may need to call WaitForDisconnect.
-                                                        if (disconnectResult == null)
-                                                        {
-                                                            RegisterForDisconnectNotification(session, connectionId, ref disconnectResult);
-                                                        }
-                                                        if (disconnectResult != null)
-                                                        {
-                                                            lock ((DisconnectResults as ICollection).SyncRoot)
-                                                            {
-                                                                if (UnsafeConnectionNtlmAuthentication)
-                                                                {
-                                                                    disconnectResult.AuthenticatedConnection = windowsPrincipal;
-                                                                }
-                                                            }
-                                                        }
-                                                        else
-                                                        {
-                                                            // Registration failed - UnsafeConnectionNtlmAuthentication ignored.
-                                                            if (NetEventSource.Log.IsEnabled())
-                                                            {
-                                                                NetEventSource.Info(this, $"HandleAuthentication RegisterForDisconnectNotification failed.");
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                            catch (Exception e)
+                                            SafeDeleteContext securityContext = context.GetContext(out statusCodeNew)!;
+                                            if (statusCodeNew.ErrorCode != SecurityStatusPalErrorCode.OK)
                                             {
                                                 if (NetEventSource.Log.IsEnabled())
                                                 {
                                                     NetEventSource.Info(this,
-                                                        $"HandleAuthentication RemoteIdentity failed with exception: {e.Message}");
+                                                        $"HandleAuthentication GetContextToken failed with statusCodeNew: {statusCodeNew}");
                                                 }
 
-                                                httpError = HttpStatusCode.InternalServerError;
+                                                httpError = HttpStatusFromSecurityStatus(statusCodeNew.ErrorCode);
+                                            }
+                                            else
+                                            {
+                                                SSPIWrapper.QuerySecurityContextToken(GlobalSSPI.SSPIAuth, securityContext, out userContext);
+
+                                                if (NetEventSource.Log.IsEnabled())
+                                                {
+                                                    NetEventSource.Info(this,
+                                                        $"HandleAuthentication creating new WindowsIdentity from user context: {userContext.DangerousGetHandle():x8}");
+                                                }
+
+                                                WindowsPrincipal windowsPrincipal = new WindowsPrincipal(
+                                                    new WindowsIdentity(userContext.DangerousGetHandle(), context.ProtocolName));
+
+                                                principal = windowsPrincipal;
+                                                // if appropriate, cache this credential on this connection
+                                                if (UnsafeConnectionNtlmAuthentication && context.ProtocolName == NegotiationInfoClass.NTLM)
+                                                {
+                                                    if (NetEventSource.Log.IsEnabled())
+                                                    {
+                                                        NetEventSource.Info(this,
+                                                            $"HandleAuthentication inserting principal: {principal} for connectionId: {connectionId}");
+                                                    }
+
+                                                    // We may need to call WaitForDisconnect.
+                                                    if (disconnectResult == null)
+                                                    {
+                                                        RegisterForDisconnectNotification(session, connectionId, ref disconnectResult);
+                                                    }
+                                                    if (disconnectResult != null)
+                                                    {
+                                                        lock ((DisconnectResults as ICollection).SyncRoot)
+                                                        {
+                                                            if (UnsafeConnectionNtlmAuthentication)
+                                                            {
+                                                                disconnectResult.AuthenticatedConnection = windowsPrincipal;
+                                                            }
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        // Registration failed - UnsafeConnectionNtlmAuthentication ignored.
+                                                        if (NetEventSource.Log.IsEnabled())
+                                                        {
+                                                            NetEventSource.Info(this, $"HandleAuthentication RegisterForDisconnectNotification failed.");
+                                                        }
+                                                    }
+                                                }
                                             }
                                         }
                                     }
@@ -1121,9 +1110,9 @@ namespace System.Net
 
                             if (newContext != oldContext)
                             {
-                                NegotiateAuthentication toClose = newContext;
+                                NTAuthentication toClose = newContext;
                                 newContext = null;
-                                toClose.Dispose();
+                                toClose.CloseContext();
                             }
                             else
                             {
@@ -1161,9 +1150,9 @@ namespace System.Net
 
                             if (newContext != oldContext)
                             {
-                                NegotiateAuthentication toClose = newContext;
+                                NTAuthentication toClose = newContext;
                                 newContext = null;
-                                toClose.Dispose();
+                                toClose.CloseContext();
                             }
                             else
                             {
@@ -1187,13 +1176,16 @@ namespace System.Net
                         context = null;
                     }
 
-                    NegotiateAuthentication? toClose = oldContext;
+                    NTAuthentication? toClose = oldContext;
                     oldContext = newContext;
                     // TODO: Can disconnectResult be null here?
                     Debug.Assert(disconnectResult != null);
                     disconnectResult!.Session = newContext;
 
-                    toClose?.Dispose();
+                    if (toClose != null)
+                    {
+                        toClose.CloseContext();
+                    }
                 }
 
                 // Send the 401 here.
@@ -1224,9 +1216,9 @@ namespace System.Net
 
                     if (newContext != oldContext)
                     {
-                        NegotiateAuthentication toClose = newContext;
+                        NTAuthentication toClose = newContext;
                         newContext = null;
-                        toClose.Dispose();
+                        toClose.CloseContext();
                     }
                     else
                     {
@@ -1248,13 +1240,13 @@ namespace System.Net
                             disconnectResult.Session = null;
                         }
 
-                        oldContext.Dispose();
+                        oldContext.CloseContext();
                     }
 
                     // Delete any context created but not stored.
                     if (context != null && oldContext != context && newContext != context)
                     {
-                        context.Dispose();
+                        context.CloseContext();
                     }
                 }
                 finally
@@ -1333,10 +1325,10 @@ namespace System.Net
             return result;
         }
 
-        private bool CheckSpn(NegotiateAuthentication context, bool isSecureConnection, ExtendedProtectionPolicy policy)
+        private bool CheckSpn(NTAuthentication context, bool isSecureConnection, ExtendedProtectionPolicy policy)
         {
             // Kerberos does SPN check already in ASC
-            if (context.Package == NegotiationInfoClass.Kerberos)
+            if (context.IsKerberos)
             {
                 if (NetEventSource.Log.IsEnabled())
                 {
@@ -1364,7 +1356,7 @@ namespace System.Net
                 return true;
             }
 
-            string? clientSpn = context.TargetName;
+            string? clientSpn = context.ClientSpecifiedSpn;
 
             // An empty SPN is only allowed in the WhenSupported case
             if (string.IsNullOrEmpty(clientSpn))
@@ -1485,7 +1477,7 @@ namespace System.Net
         }
 
         // This only works for context-destroying errors.
-        private static HttpStatusCode HttpStatusFromSecurityStatus(NegotiateAuthenticationStatusCode statusErrorCode)
+        private static HttpStatusCode HttpStatusFromSecurityStatus(SecurityStatusPalErrorCode statusErrorCode)
         {
             if (IsCredentialFailure(statusErrorCode))
             {
@@ -1499,22 +1491,36 @@ namespace System.Net
         }
 
         // This only works for context-destroying errors.
-        internal static bool IsCredentialFailure(NegotiateAuthenticationStatusCode error)
+        internal static bool IsCredentialFailure(SecurityStatusPalErrorCode error)
         {
-            return error == NegotiateAuthenticationStatusCode.UnknownCredentials ||
-                error == NegotiateAuthenticationStatusCode.CredentialsExpired ||
-                error == NegotiateAuthenticationStatusCode.BadBinding;
+            return error == SecurityStatusPalErrorCode.LogonDenied ||
+                error == SecurityStatusPalErrorCode.UnknownCredentials ||
+                error == SecurityStatusPalErrorCode.NoImpersonation ||
+                error == SecurityStatusPalErrorCode.NoAuthenticatingAuthority ||
+                error == SecurityStatusPalErrorCode.UntrustedRoot ||
+                error == SecurityStatusPalErrorCode.CertExpired ||
+                error == SecurityStatusPalErrorCode.SmartcardLogonRequired ||
+                error == SecurityStatusPalErrorCode.BadBinding;
         }
 
         // This only works for context-destroying errors.
-        internal static bool IsClientFault(NegotiateAuthenticationStatusCode error)
+        internal static bool IsClientFault(SecurityStatusPalErrorCode error)
         {
-            return error == NegotiateAuthenticationStatusCode.InvalidToken ||
-                error == NegotiateAuthenticationStatusCode.QopNotSupported ||
-                error == NegotiateAuthenticationStatusCode.UnknownCredentials ||
-                error == NegotiateAuthenticationStatusCode.MessageAltered ||
-                error == NegotiateAuthenticationStatusCode.OutOfSequence ||
-                error == NegotiateAuthenticationStatusCode.InvalidCredentials;
+            return error == SecurityStatusPalErrorCode.InvalidToken ||
+                error == SecurityStatusPalErrorCode.CannotPack ||
+                error == SecurityStatusPalErrorCode.QopNotSupported ||
+                error == SecurityStatusPalErrorCode.NoCredentials ||
+                error == SecurityStatusPalErrorCode.MessageAltered ||
+                error == SecurityStatusPalErrorCode.OutOfSequence ||
+                error == SecurityStatusPalErrorCode.IncompleteMessage ||
+                error == SecurityStatusPalErrorCode.IncompleteCredentials ||
+                error == SecurityStatusPalErrorCode.WrongPrincipal ||
+                error == SecurityStatusPalErrorCode.TimeSkew ||
+                error == SecurityStatusPalErrorCode.IllegalMessage ||
+                error == SecurityStatusPalErrorCode.CertUnknown ||
+                error == SecurityStatusPalErrorCode.AlgorithmMismatch ||
+                error == SecurityStatusPalErrorCode.SecurityQosFailed ||
+                error == SecurityStatusPalErrorCode.UnsupportedPreauth;
         }
 
         private static void AddChallenge(ref ArrayList? challenges, string challenge)
@@ -1535,7 +1541,7 @@ namespace System.Net
         }
 
         private ArrayList? BuildChallenge(AuthenticationSchemes authenticationScheme, ulong connectionId,
-            out NegotiateAuthentication? newContext, ExtendedProtectionPolicy policy, bool isSecureConnection)
+            out NTAuthentication? newContext, ExtendedProtectionPolicy policy, bool isSecureConnection)
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "AuthenticationScheme:" + authenticationScheme.ToString());
             ArrayList? challenges = null;
@@ -1792,7 +1798,7 @@ namespace System.Net
             private int _ownershipState;   // 0 = normal, 1 = in HandleAuthentication(), 2 = disconnected, 3 = cleaned up
 
             private WindowsPrincipal? _authenticatedConnection;
-            private NegotiateAuthentication? _session;
+            private NTAuthentication? _session;
 
             internal NativeOverlapped* NativeOverlapped
             {
@@ -1899,7 +1905,7 @@ namespace System.Net
                 listener.DisconnectResults.Remove(_connectionId);
                 if (_session != null)
                 {
-                    _session.Dispose();
+                    _session.CloseContext();
                 }
 
                 // Clean up the identity. This is for scenarios where identity was not cleaned up before due to
@@ -1931,7 +1937,7 @@ namespace System.Net
                 }
             }
 
-            internal NegotiateAuthentication? Session
+            internal NTAuthentication? Session
             {
                 get
                 {
