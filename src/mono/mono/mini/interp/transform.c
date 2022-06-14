@@ -6812,6 +6812,9 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 
 					if (jit_icall_id == MONO_JIT_ICALL_mono_threads_attach_coop) {
 						rtm->needs_thread_attach = 1;
+						// Add dummy return value
+						interp_add_ins (td, MINT_LDNULL);
+						interp_ins_set_dreg (td->last_ins, dreg);
 					} else if (jit_icall_id == MONO_JIT_ICALL_mono_threads_detach_coop) {
 						g_assert (rtm->needs_thread_attach);
 					} else {
@@ -6974,7 +6977,9 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 
 				if (info->sig->ret->type != MONO_TYPE_VOID) {
 					// Push a dummy coop gc var
+					interp_add_ins (td, MINT_LDNULL);
 					push_simple_type (td, STACK_TYPE_I);
+					td->last_ins->dreg = td->sp [-1].local;
 					interp_add_ins (td, MINT_MONO_ENABLE_GCTRANS);
 				} else {
 					// Pop the unused gc var
