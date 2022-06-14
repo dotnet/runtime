@@ -579,7 +579,8 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void ReverseInner<T>(ref T elements, nuint length)
         {
-            Debug.Assert(length > 0);
+            if (length <= 1)
+                return;
             ref T first = ref elements;
             ref T last = ref Unsafe.Subtract(ref Unsafe.Add(ref first, (int)length), 1);
             do
