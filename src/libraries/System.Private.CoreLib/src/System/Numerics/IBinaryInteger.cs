@@ -14,12 +14,26 @@ namespace System.Numerics
         /// <param name="left">The value which <paramref name="right" /> divides.</param>
         /// <param name="right">The value which divides <paramref name="left" />.</param>
         /// <returns>The quotient and remainder of <paramref name="left" /> divided-by <paramref name="right" />.</returns>
-        static abstract (TSelf Quotient, TSelf Remainder) DivRem(TSelf left, TSelf right);
+        static virtual (TSelf Quotient, TSelf Remainder) DivRem(TSelf left, TSelf right)
+        {
+            TSelf quotient = left / right;
+            return (quotient, (left - (quotient * right)));
+        }
 
         /// <summary>Computes the number of leading zeros in a value.</summary>
         /// <param name="value">The value whose leading zeroes are to be counted.</param>
         /// <returns>The number of leading zeros in <paramref name="value" />.</returns>
-        static abstract TSelf LeadingZeroCount(TSelf value);
+        static virtual TSelf LeadingZeroCount(TSelf value)
+        {
+            TSelf bitCount = TSelf.CreateChecked(value.GetByteCount() * 8L);
+
+            if (value == TSelf.Zero)
+            {
+                return TSelf.CreateChecked(bitCount);
+            }
+
+            return (bitCount - TSelf.One) ^ TSelf.Log2(value);
+        }
 
         /// <summary>Computes the number of bits that are set in a value.</summary>
         /// <param name="value">The value whose set bits are to be counted.</param>
@@ -30,13 +44,21 @@ namespace System.Numerics
         /// <param name="value">The value which is rotated left by <paramref name="rotateAmount" />.</param>
         /// <param name="rotateAmount">The amount by which <paramref name="value" /> is rotated left.</param>
         /// <returns>The result of rotating <paramref name="value" /> left by <paramref name="rotateAmount" />.</returns>
-        static abstract TSelf RotateLeft(TSelf value, int rotateAmount);
+        static virtual TSelf RotateLeft(TSelf value, int rotateAmount)
+        {
+            int bitCount = checked(value.GetByteCount() * 8);
+            return (value << rotateAmount) | (value >> (bitCount - rotateAmount));
+        }
 
         /// <summary>Rotates a value right by a given amount.</summary>
         /// <param name="value">The value which is rotated right by <paramref name="rotateAmount" />.</param>
         /// <param name="rotateAmount">The amount by which <paramref name="value" /> is rotated right.</param>
         /// <returns>The result of rotating <paramref name="value" /> right by <paramref name="rotateAmount" />.</returns>
-        static abstract TSelf RotateRight(TSelf value, int rotateAmount);
+        static virtual TSelf RotateRight(TSelf value, int rotateAmount)
+        {
+            int bitCount = checked(value.GetByteCount() * 8);
+            return (value >> rotateAmount) | (value << (bitCount - rotateAmount));
+        }
 
         /// <summary>Computes the number of trailing zeros in a value.</summary>
         /// <param name="value">The value whose trailing zeroes are to be counted.</param>

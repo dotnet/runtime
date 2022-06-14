@@ -164,7 +164,7 @@ namespace System.Xml.Schema
                 if (xsc != null && include is XmlSchemaImport)
                 { //Added for SchemaCollection compatibility
                     XmlSchemaImport import = (XmlSchemaImport)include;
-                    string importNS = import.Namespace != null ? import.Namespace : string.Empty;
+                    string importNS = import.Namespace ?? string.Empty;
                     include.Schema = xsc[importNS]; //Fetch it from the collection
                     if (include.Schema != null)
                     {
@@ -181,7 +181,7 @@ namespace System.Xml.Schema
                             if (subInc is XmlSchemaImport)
                             {
                                 XmlSchemaImport subImp = (XmlSchemaImport)subInc;
-                                subUri = subImp.BaseUri != null ? subImp.BaseUri : (subImp.Schema != null && subImp.Schema.BaseUri != null ? subImp.Schema.BaseUri : null);
+                                subUri = subImp.BaseUri ?? (subImp.Schema != null && subImp.Schema.BaseUri != null ? subImp.Schema.BaseUri : null);
                                 if (subUri != null)
                                 {
                                     if (_schemaLocations![subUri] != null)
@@ -430,7 +430,7 @@ namespace System.Xml.Schema
             //Build the namespaces that can be referenced in the current schema
             BuildRefNamespaces(schema);
 
-            _targetNamespace = targetNamespace == null ? string.Empty : targetNamespace;
+            _targetNamespace = targetNamespace ?? string.Empty;
 
             if (schema.BlockDefault == XmlSchemaDerivationMethod.All)
             {

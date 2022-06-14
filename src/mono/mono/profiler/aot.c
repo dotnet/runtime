@@ -454,7 +454,7 @@ emit_string (MonoProfiler *prof, const char *str)
 static void
 emit_record (MonoProfiler *prof, AotProfRecordType type, int id)
 {
-	emit_byte (prof, type);
+	emit_byte (prof, (guint8)type);
 	emit_int32 (prof, id);
 }
 

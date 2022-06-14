@@ -11,7 +11,11 @@
 #define DEFAULT_DUMP_TEMPLATE "coredump.%p"
 #endif
 
+#ifdef HOST_UNIX
 const char* g_help = "createdump [options] pid\n"
+#else
+const char* g_help = "createdump [options]\n"
+#endif
 "-f, --name - dump path and file name. The default is '" DEFAULT_DUMP_PATH DEFAULT_DUMP_TEMPLATE "'. These specifiers are substituted with following values:\n"
 "   %p  PID of dumped process.\n"
 "   %e  The process executable filename.\n"
@@ -57,6 +61,7 @@ int __cdecl main(const int argc, const char* argv[])
     const char* dumpType = "minidump with heap";
     const char* dumpPathTemplate = nullptr;
     bool crashReport = false;
+    bool help = false;
     int signal = 0;
     int crashThread = 0;
     int exitCode = 0;
@@ -161,60 +166,71 @@ int __cdecl main(const int argc, const char* argv[])
                 }
                 g_stdout = g_logfile;
             }
-            else {
+            else if ((strcmp(*argv, "-?") == 0) || (strcmp(*argv, "--help") == 0))
+            {
+                help = true;
+            }
+            else
+            {
+#ifdef HOST_UNIX
                 pid = atoi(*argv);
+#else
+                printf_error("The pid argument is no longer supported\n");
+                return -1;
+#endif
             }
             argv++;
         }
     }
 
 #ifdef HOST_UNIX
+    if (pid == 0)
+    {
+        help = true;
+    }
     g_ticksPerMS = GetTickFrequency() / 1000000UL;
     TRACE("TickFrequency: %d ticks per ms\n", g_ticksPerMS);
 #endif
 
-    if (pid != 0)
-    {
-        ArrayHolder<char> tmpPath = new char[MAX_LONGPATH];
-
-        if (dumpPathTemplate == nullptr)
-        {
-            if (::GetTempPathA(MAX_LONGPATH, tmpPath) == 0)
-            {
-                printf_error("GetTempPath failed %s", GetLastErrorString().c_str());
-                return -1;
-            }
-            exitCode = strcat_s(tmpPath, MAX_LONGPATH, DEFAULT_DUMP_TEMPLATE);
-            if (exitCode != 0)
-            {
-                printf_error("strcat_s failed (%d)", exitCode);
-                return exitCode;
-            }
-            dumpPathTemplate = tmpPath;
-        }
-
-        if (CreateDump(dumpPathTemplate, pid, dumpType, minidumpType, crashReport, crashThread, signal))
-        {
-            printf_status("Dump successfully written\n");
-        }
-        else
-        {
-            exitCode = -1;
-        }
-
-        fflush(g_stdout);
-
-        if (g_logfile != nullptr)
-        {
-            fflush(g_logfile);
-            fclose(g_logfile);
-        }
-    }
-    else
+    if (help)
     {
         // if no pid or invalid command line option
         printf_error("%s", g_help);
+        return -1;
+    }
+
+    ArrayHolder<char> tmpPath = new char[MAX_LONGPATH];
+    if (dumpPathTemplate == nullptr)
+    {
+        if (::GetTempPathA(MAX_LONGPATH, tmpPath) == 0)
+        {
+            printf_error("GetTempPath failed %s", GetLastErrorString().c_str());
+            return ::GetLastError();
+        }
+        exitCode = strcat_s(tmpPath, MAX_LONGPATH, DEFAULT_DUMP_TEMPLATE);
+        if (exitCode != 0)
+        {
+            printf_error("strcat_s failed (%d)", exitCode);
+            return exitCode;
+        }
+        dumpPathTemplate = tmpPath;
+    }
+
+    if (CreateDump(dumpPathTemplate, pid, dumpType, minidumpType, crashReport, crashThread, signal))
+    {
+        printf_status("Dump successfully written\n");
+    }
+    else
+    {
         exitCode = -1;
+    }
+
+    fflush(g_stdout);
+
+    if (g_logfile != nullptr)
+    {
+        fflush(g_logfile);
+        fclose(g_logfile);
     }
 #ifdef HOST_UNIX
     PAL_TerminateEx(exitCode);

@@ -101,10 +101,6 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>Number of capture groups.</summary>
         private readonly int _capsize;
 
-        /// <summary>Fixed-length of any possible match.</summary>
-        /// <remarks>This will be null if matches may be of varying lengths or if a fixed-length couldn't otherwise be computed.</remarks>
-        private readonly int? _fixedMatchLength;
-
         /// <summary>Gets whether the regular expression contains captures (beyond the implicit root-level capture).</summary>
         /// <remarks>This determines whether the matcher uses the special capturing NFA simulation mode.</remarks>
         internal bool HasSubcaptures => _capsize > 1;
@@ -159,13 +155,11 @@ namespace System.Text.RegularExpressions.Symbolic
                 ((BitVectorSolver)(object)_builder._solver)._classifier;
             _capsize = captureCount;
 
-            if (findOptimizations.MinRequiredLength == findOptimizations.MaxPossibleLength)
-            {
-                _fixedMatchLength = findOptimizations.MinRequiredLength;
-            }
-
-            if (findOptimizations.FindMode != FindNextStartingPositionMode.NoSearch &&
-                findOptimizations.LeadingAnchor == 0) // If there are any anchors, we're better off letting the DFA quickly do its job of determining whether there's a match.
+            // Store the find optimizations that can be used to jump ahead to the next possible starting location.
+            // If there's a leading beginning anchor, the find optimizations are unnecessary on top of the DFA's
+            // handling for beginning anchors.
+            if (findOptimizations.IsUseful &&
+                findOptimizations.LeadingAnchor is not RegexNodeKind.Beginning)
             {
                 _findOpts = findOptimizations;
             }
@@ -347,10 +341,6 @@ namespace System.Text.RegularExpressions.Symbolic
             {
                 matchStart = matchEnd - matchStartLengthMarker;
             }
-            else if (_fixedMatchLength.HasValue)
-            {
-                matchStart = matchEnd - _fixedMatchLength.GetValueOrDefault();
-            }
             else
             {
                 Debug.Assert(matchEnd >= startat - 1);
@@ -431,7 +421,6 @@ namespace System.Text.RegularExpressions.Symbolic
                 {
                     // Because there was still more input available, a failure to transition in DFA mode must be the cause
                     // of the early exit. Upgrade to NFA mode.
-                    Debug.Assert(pos < inputForInnerLoop.Length);
                     DfaMatchingState<TSet>? dfaState = currentState.DfaState(_builder);
                     Debug.Assert(dfaState is not null);
                     NfaMatchingState nfaState = perThreadData.NfaState;
@@ -488,6 +477,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 while (true)
                 {
                     (bool isInitial, bool isDeadend, bool isNullable, bool canBeNullable) = TStateHandler.GetStateInfo(builder, ref state);
+
                     // Check if currentState represents an initial state. If it does, call into any possible find optimizations
                     // to hopefully more quickly find the next possible starting location.
                     if (isInitial)
@@ -496,6 +486,7 @@ namespace System.Text.RegularExpressions.Symbolic
                         {
                             return true;
                         }
+
                         initialStatePosCandidate = pos;
                     }
 
@@ -753,6 +744,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     return endRegisters;
                 }
             }
+
             Debug.Fail("No nullable state found in the set of end states");
             return default;
         }
@@ -1002,6 +994,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     state.DfaStateId = nextStateId;
                     return true;
                 }
+
                 if (builder.TryCreateNewTransition(state.DfaState(builder)!, mintermId, dfaOffset, checkThreshold: true, out DfaMatchingState<TSet>? nextState))
                 {
                     // We were able to create a new DFA transition to some state. Move to it and
@@ -1071,6 +1064,7 @@ namespace System.Text.RegularExpressions.Symbolic
                         return coreState.Id;
                     }
                 }
+
                 Debug.Fail("ExtractNullableCoreStateId should only be called in nullable state/context.");
                 return -1;
             }
@@ -1086,6 +1080,7 @@ namespace System.Text.RegularExpressions.Symbolic
                         return coreState.FixedLength(nextCharKind);
                     }
                 }
+
                 Debug.Fail("FixedLength should only be called in nullable state/context.");
                 return -1;
             }

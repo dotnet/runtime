@@ -1016,7 +1016,7 @@ namespace System.Data
             Debug.Assert(ds == null || dt == null);
             Debug.Assert(_dsElement != null);
 
-            DataSet? dataSet = (ds != null) ? ds : dt!.DataSet;
+            DataSet? dataSet = ds ?? dt!.DataSet;
             if (dataSet != null)
             {
                 _dsElement.SetAttribute(Keywords.NAME, XmlConvert.EncodeLocalName(dataSet.DataSetName));

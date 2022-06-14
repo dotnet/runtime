@@ -15,7 +15,7 @@ namespace System.Xml.Schema
         public XmlQualifiedName ItemTypeName
         {
             get { return _itemTypeName; }
-            set { _itemTypeName = (value == null ? XmlQualifiedName.Empty : value); }
+            set { _itemTypeName = value ?? XmlQualifiedName.Empty; }
         }
 
         [XmlElement("simpleType", typeof(XmlSchemaSimpleType))]

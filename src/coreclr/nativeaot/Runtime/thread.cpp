@@ -63,7 +63,6 @@ PInvokeTransitionFrame* Thread::GetTransitionFrame()
 
 PInvokeTransitionFrame* Thread::GetTransitionFrameForStackTrace()
 {
-    ASSERT_MSG(ThreadStore::GetSuspendingThread() == NULL, "Not allowed when suspended for GC.");
     ASSERT_MSG(this == ThreadStore::GetCurrentThread(), "Only supported for current thread.");
     ASSERT(Thread::IsCurrentThreadInCooperativeMode());
     ASSERT(m_pDeferredTransitionFrame != NULL);
@@ -80,6 +79,10 @@ void Thread::WaitForGC(PInvokeTransitionFrame* pTransitionFrame)
 {
     ASSERT(!IsDoNotTriggerGcSet());
 
+    // The wait operation below may trash the last win32 error. We save the error here so that it can be
+    // restored after the wait operation;
+    int32_t lastErrorOnEntry = PalGetLastError();
+
     do
     {
         m_pTransitionFrame = pTransitionFrame;
@@ -93,6 +96,9 @@ void Thread::WaitForGC(PInvokeTransitionFrame* pTransitionFrame)
         _ReadWriteBarrier();
     }
     while (ThreadStore::IsTrapThreadsRequested());
+
+    // Restore the saved error
+    PalSetLastError(lastErrorOnEntry);
 }
 
 //
@@ -305,6 +311,11 @@ void Thread::Construct()
 #endif // STRESS_LOG
 
     m_threadAbortException = NULL;
+
+#ifdef FEATURE_SUSPEND_REDIRECTION
+    m_redirectionContextBuffer = NULL;
+    m_redirectionContext = NULL;
+#endif //FEATURE_SUSPEND_REDIRECTION
 }
 
 bool Thread::IsInitialized()
@@ -391,6 +402,13 @@ void Thread::Destroy()
     ThreadStressLog* ptsl = reinterpret_cast<ThreadStressLog*>(GetThreadStressLog());
     StressLog::ThreadDetach(ptsl);
 #endif // STRESS_LOG
+
+#ifdef FEATURE_SUSPEND_REDIRECTION
+    if (m_redirectionContextBuffer != NULL)
+    {
+        delete[] m_redirectionContextBuffer;
+    }
+#endif //FEATURE_SUSPEND_REDIRECTION
 }
 
 #ifdef HOST_WASM
@@ -514,7 +532,8 @@ void Thread::GcScanRootsWorker(void * pfnEnumCallback, void * pvCallbackData, St
                                                frameIterator.GetEffectiveSafePointAddress(),
                                                frameIterator.GetRegisterSet(),
                                                pfnEnumCallback,
-                                               pvCallbackData);
+                                               pvCallbackData,
+                                               frameIterator.IsActiveStackFrame());
             }
 
             // Each enumerated frame (including the first one) may have an associated stack range we need to
@@ -561,6 +580,8 @@ void Thread::GcScanRootsWorker(void * pfnEnumCallback, void * pvCallbackData, St
 }
 
 #ifndef DACCESS_COMPILE
+
+EXTERN_C void FASTCALL RhpSuspendRedirected();
 
 #ifndef TARGET_ARM64
 EXTERN_C void FASTCALL RhpGcProbeHijackScalar();
@@ -655,14 +676,25 @@ UInt32_BOOL Thread::HijackCallback(HANDLE /*hThread*/, PAL_LIMITED_CONTEXT* pThr
         return true;
     }
 
-    if (!GetRuntimeInstance()->IsManaged((PTR_VOID)pThreadContext->IP))
+    void* pvAddress = (void*)pThreadContext->IP;
+    RuntimeInstance* runtime = GetRuntimeInstance();
+    if (!runtime->IsManaged(pvAddress))
     {
         // Running in cooperative mode, but not managed.
         // We cannot continue.
         return false;
     }
 
-    // TODO: attempt to redirect 
+    ICodeManager* codeManager = runtime->GetCodeManagerForAddress(pvAddress);
+    if (codeManager->IsSafePoint(pvAddress))
+    {
+#ifdef FEATURE_SUSPEND_REDIRECTION
+        if (pThread->Redirect())
+        {
+            return true;
+        }
+#endif //FEATURE_SUSPEND_REDIRECTION
+    }
 
     return pThread->InternalHijack(pThreadContext, NormalHijackTargets);
 }
@@ -768,6 +800,43 @@ bool Thread::InternalHijack(PAL_LIMITED_CONTEXT * pSuspendCtx, void * pvHijackTa
 
     return fSuccess;
 }
+
+#ifdef FEATURE_SUSPEND_REDIRECTION
+CONTEXT* Thread::GetRedirectionContext()
+{
+    if (m_redirectionContext == NULL)
+    {
+        m_redirectionContext = PalAllocateCompleteOSContext(&m_redirectionContextBuffer);
+    }
+
+    return m_redirectionContext;
+}
+
+bool Thread::Redirect()
+{
+    if (IsDoNotTriggerGcSet())
+        return false;
+
+    CONTEXT* redirectionContext = GetRedirectionContext();
+    if (redirectionContext == NULL)
+        return false;
+
+    if (!PalGetCompleteThreadContext(m_hPalThread, redirectionContext))
+        return false;
+
+    uintptr_t origIP = redirectionContext->GetIp();
+    redirectionContext->SetIp((uintptr_t)RhpSuspendRedirected);
+    if (!PalSetThreadContext(m_hPalThread, redirectionContext))
+        return false;
+
+    redirectionContext->SetIp(origIP);
+
+    STRESS_LOG2(LF_STACKWALK, LL_INFO10000, "InternalRedirect: TgtThread = %llx, IP = %p\n",
+        GetPalThreadIdForLogging(), origIP);
+
+    return true;
+}
+#endif //FEATURE_SUSPEND_REDIRECTION
 
 // This is the standard Unhijack, which is only allowed to be called on your own thread.
 // Note that all the asm-implemented Unhijacks should also only be operating on their
@@ -949,20 +1018,11 @@ EXTERN_C NOINLINE void FASTCALL RhpWaitForSuspend2()
 // Standard calling convention variant and actual implementation for RhpWaitForGC
 EXTERN_C NOINLINE void FASTCALL RhpWaitForGC2(PInvokeTransitionFrame * pFrame)
 {
-
     Thread * pThread = pFrame->m_pThread;
-
     if (pThread->IsDoNotTriggerGcSet())
         return;
 
-    // The wait operation below may trash the last win32 error. We save the error here so that it can be
-    // restored after the wait operation;
-    int32_t lastErrorOnEntry = PalGetLastError();
-
     pThread->WaitForGC(pFrame);
-
-    // Restore the saved error
-    PalSetLastError(lastErrorOnEntry);
 }
 
 // Standard calling convention variant and actual implementation for RhpGcPoll
@@ -973,6 +1033,20 @@ EXTERN_C NOINLINE void FASTCALL RhpGcPoll2(PInvokeTransitionFrame* pFrame)
 
     RhpWaitForGC2(pFrame);
 }
+
+#ifdef FEATURE_SUSPEND_REDIRECTION
+
+EXTERN_C NOINLINE void FASTCALL RhpSuspendRedirected()
+{
+    Thread* pThread = ThreadStore::GetCurrentThread();
+    pThread->WaitForGC(REDIRECTED_THREAD_MARKER);
+
+    // restore execution at interrupted location
+    PalRestoreContext(pThread->GetRedirectionContext());
+    UNREACHABLE();
+}
+
+#endif //FEATURE_SUSPEND_REDIRECTION
 
 void Thread::PushExInfo(ExInfo * pExInfo)
 {

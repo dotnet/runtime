@@ -208,7 +208,7 @@ namespace System.Xml
         {
             if (_empty == true)
                 return null;
-            XmlNode node = (n == null) ? _rootNode : n;
+            XmlNode node = n ?? _rootNode;
             return GetMatchingNode(node, true);
         }
 
