@@ -43,30 +43,8 @@ namespace Sample
 
             public override Task BeforeBatch()
             {
-                //Console.WriteLine($"wasm: {WasmBase.IsSupported}");
-
                 data = new byte[len];
                 Random.Shared.NextBytes(data);
-
-                Console.Write("orig:");
-                for(int i=0; i<48; i++)
-                    Console.Write($" {data[i]}");
-                Console.WriteLine();
-
-                var span = new Span<byte>(data);
-                span.Reverse<byte>();
-
-                Console.Write("rev: ");
-                for (int i = 0; i < 48; i++)
-                    Console.Write($" {data[len-i-1]}");
-                Console.WriteLine();
-
-                span.Reverse<byte>();
-
-                Console.Write("rev2: ");
-                for (int i = 0; i < 48; i++)
-                    Console.Write($" {data[i]}");
-                Console.WriteLine();
 
                 return Task.CompletedTask;
             }
@@ -93,31 +71,9 @@ namespace Sample
 
             public override Task BeforeBatch()
             {
-                //Console.WriteLine($"wasm: {WasmBase.IsSupported}");
-
                 data = new char[len];
                 for (int i = 0; i < len; i++)
                     data[i] = (char)Random.Shared.Next(0x10000);
-
-                Console.Write("orig:");
-                for (int i = 0; i < 48; i++)
-                    Console.Write($" {data[i]}");
-                Console.WriteLine();
-
-                var span = new Span<char>(data);
-                span.Reverse<char>();
-
-                Console.Write("rev: ");
-                for (int i = 0; i < 48; i++)
-                    Console.Write($" {data[len - i - 1]}");
-                Console.WriteLine();
-
-                span.Reverse<char>();
-
-                Console.Write("rev2: ");
-                for (int i = 0; i < 48; i++)
-                    Console.Write($" {data[i]}");
-                Console.WriteLine();
 
                 return Task.CompletedTask;
             }
