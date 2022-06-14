@@ -576,6 +576,7 @@ namespace System
             ReverseInner(ref elements, length);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void ReverseInner<T>(ref T elements, nuint length)
         {
             Debug.Assert(length > 0);
