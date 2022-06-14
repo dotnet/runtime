@@ -1,5 +1,0 @@
-
-
-
-
-sft30a\.xsl\(17,22\) : warning : Execution of scripts is prohibited and will cause a runtime error\. For trusted stylesheets use /settings:script option to enable this feature\.

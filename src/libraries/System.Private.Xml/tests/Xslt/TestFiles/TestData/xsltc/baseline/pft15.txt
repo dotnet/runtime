@@ -1,5 +1,0 @@
-
-
-
-
-error : Invalid value 'x86,x64' for option /platform; must be x86, Itanium, x64, or anycpu\.

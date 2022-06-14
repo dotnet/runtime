@@ -1,5 +1,0 @@
-
-
-
-
-fatal error : Error saving assembly 'D:\\OASys\\Working\\dft5\.dll'\. ---> Access is denied\. \(Exception from HRESULT: 0x80070005 \(E_ACCESSDENIED\)\)

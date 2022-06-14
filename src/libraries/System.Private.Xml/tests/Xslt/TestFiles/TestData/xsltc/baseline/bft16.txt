@@ -1,5 +1,0 @@
-
-
-
-
-error : Duplicate class name 'bft16'\. Specify a different class name with /class option\.

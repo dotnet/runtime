@@ -1,5 +1,0 @@
-
-
-
-
-fatal error : Error saving assembly '\\\\foo\\foo\\bar\.dll'\. ---> Invalid directory, '\\\\foo\\foo\\'\.

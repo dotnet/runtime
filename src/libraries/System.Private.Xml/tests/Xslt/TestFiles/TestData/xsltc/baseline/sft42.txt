@@ -1,5 +1,0 @@
-
-
-
-
-error : Invalid setting 'script\*'; must be dtd\[\+\|-], document\[\+\|-] or script\[\+\|-]\.

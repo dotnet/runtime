@@ -1,6 +1,0 @@
-
-
-
-
-fatal error : Type name was too long\. The fully qualified type name must be less than 1,024 characters\.
-Parameter name: fullname

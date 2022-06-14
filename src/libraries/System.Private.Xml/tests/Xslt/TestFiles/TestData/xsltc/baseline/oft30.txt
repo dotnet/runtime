@@ -1,5 +1,0 @@
-
-
-
-
-fatal error : No directory specified with option '/out:\\\\foo\\bar\.dll'\.

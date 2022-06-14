@@ -1,5 +1,0 @@
-
-
-
-
-error : Source file 'mystylesheet,xsl' could not be found\.

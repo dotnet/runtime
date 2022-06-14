@@ -1,5 +1,0 @@
-
-
-
-
-fatal error : Class name cannot be empty\.

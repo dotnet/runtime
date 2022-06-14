@@ -1,5 +1,0 @@
-
-
-
-
-sft2\.xsl\(0,0\) : fatal error : Processing DTDs is prohibited\. For trusted stylesheets use /settings:dtd option to enable this feature\.

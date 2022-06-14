@@ -1,5 +1,0 @@
-
-
-
-
-fatal error : No filename specified with option '/out:'\.

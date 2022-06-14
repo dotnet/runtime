@@ -1,5 +1,0 @@
-
-
-
-
-error : Invalid setting 'document%'; must be dtd\[\+\|-], document\[\+\|-] or script\[\+\|-]\.

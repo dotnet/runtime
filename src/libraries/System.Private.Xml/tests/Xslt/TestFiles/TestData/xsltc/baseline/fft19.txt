@@ -1,5 +1,0 @@
-
-
-
-
-fatal error : Response file '\*\.txt' could not be found\. ---> Illegal characters in path\.

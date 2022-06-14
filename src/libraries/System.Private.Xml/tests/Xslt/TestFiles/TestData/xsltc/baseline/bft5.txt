@@ -1,5 +1,0 @@
-
-
-
-
-fatal error : No input sources specified\.

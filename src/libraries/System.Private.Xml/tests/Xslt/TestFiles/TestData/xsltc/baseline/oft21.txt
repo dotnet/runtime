@@ -1,5 +1,0 @@
-
-
-
-
-fatal error : The path 'COM1\.dll' is not valid\. ---> Win32 device names are not allowed\.

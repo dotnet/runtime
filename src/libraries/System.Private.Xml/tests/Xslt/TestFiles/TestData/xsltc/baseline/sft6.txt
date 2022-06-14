@@ -1,5 +1,0 @@
-
-
-
-
-sft6\.xsl\(4,5\) : warning : Execution of the document\(\) function is prohibited and will cause a runtime error\. For trusted stylesheets use /settings:document option to enable this feature\.

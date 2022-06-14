@@ -1,6 +1,0 @@
-
-
-
-
-bft15b\.xsl\(3,18\) : error : Stylesheet 'bft15a\.xsl' cannot directly or indirectly include or import itself\.
-bft15a\.xsl\(3,18\) : error : Stylesheet 'bft15b\.xsl' cannot directly or indirectly include or import itself\.
