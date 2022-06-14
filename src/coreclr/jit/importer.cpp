@@ -862,26 +862,10 @@ void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
             // Morph trees that aren't already OBJs or MKREFANY to be OBJs
             assert(ti.IsType(TI_STRUCT));
 
-            bool forceNormalization = false;
-            if (varTypeIsSIMD(argNode))
-            {
-                // We need to ensure that fgMorphArgs will use the correct struct handle to ensure proper
-                // ABI handling of this argument.
-                // Note that this can happen, for example, if we have a SIMD intrinsic that returns a SIMD type
-                // with a different baseType than we've seen.
-                // We also need to ensure an OBJ node if we have a FIELD node that might be transformed to LCL_FLD
-                // or a plain GT_IND.
-                // TODO-Cleanup: Consider whether we can eliminate all of these cases.
-                if ((gtGetStructHandleIfPresent(argNode) != classHnd) || argNode->OperIs(GT_FIELD))
-                {
-                    forceNormalization = true;
-                }
-            }
-
             JITDUMP("Calling impNormStructVal on:\n");
             DISPTREE(argNode);
 
-            argNode = impNormStructVal(argNode, classHnd, spillCheckLevel, forceNormalization);
+            argNode = impNormStructVal(argNode, classHnd, spillCheckLevel);
             // For SIMD types the normalization can normalize TYP_STRUCT to
             // e.g. TYP_SIMD16 which we keep (along with the class handle) in
             // the CallArgs.
@@ -1404,10 +1388,7 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
     else if (src->OperIsBlk())
     {
         asgType = impNormStructType(structHnd);
-        if (src->gtOper == GT_OBJ)
-        {
-            assert(src->AsObj()->GetLayout()->GetClassHandle() == structHnd);
-        }
+        assert(ClassLayout::AreCompatible(src->AsBlk()->GetLayout(), typGetObjLayout(structHnd)));
     }
     else if (src->gtOper == GT_MKREFANY)
     {
@@ -1650,7 +1631,7 @@ GenTree* Compiler::impGetStructAddr(GenTree*             structVal,
 //    be modified to one that is handled specially by the JIT, possibly being a candidate
 //    for full enregistration, e.g. TYP_SIMD16. If the size of the struct is already known
 //    call structSizeMightRepresentSIMDType to determine if this api needs to be called.
-
+//
 var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd, CorInfoType* pSimdBaseJitType)
 {
     assert(structHnd != NO_CLASS_HANDLE);
@@ -1694,7 +1675,6 @@ var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd, CorInfoTyp
 //     structVal          - the node we are going to normalize
 //     structHnd          - the class handle for the node
 //     curLevel           - the current stack level
-//     forceNormalization - Force the creation of an OBJ node (default is false).
 //
 // Notes:
 //     Given struct value 'structVal', make sure it is 'canonical', that is
@@ -1704,12 +1684,9 @@ var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd, CorInfoTyp
 //     - a node (e.g. GT_FIELD) that will be morphed.
 //    If the node is a CALL or RET_EXPR, a copy will be made to a new temp.
 //
-GenTree* Compiler::impNormStructVal(GenTree*             structVal,
-                                    CORINFO_CLASS_HANDLE structHnd,
-                                    unsigned             curLevel,
-                                    bool                 forceNormalization /*=false*/)
+GenTree* Compiler::impNormStructVal(GenTree* structVal, CORINFO_CLASS_HANDLE structHnd, unsigned curLevel)
 {
-    assert(forceNormalization || varTypeIsStruct(structVal));
+    assert(varTypeIsStruct(structVal));
     assert(structHnd != NO_CLASS_HANDLE);
     var_types structType = structVal->TypeGet();
     bool      makeTemp   = false;
@@ -1736,7 +1713,7 @@ GenTree* Compiler::impNormStructVal(GenTree*             structVal,
         case GT_FIELD:
             // Wrap it in a GT_OBJ, if needed.
             structVal->gtType = structType;
-            if ((structType == TYP_STRUCT) || forceNormalization)
+            if (structType == TYP_STRUCT)
             {
                 structVal = gtNewObjNode(structHnd, gtNewOperNode(GT_ADDR, TYP_BYREF, structVal));
             }
@@ -1807,7 +1784,7 @@ GenTree* Compiler::impNormStructVal(GenTree*             structVal,
 #ifdef FEATURE_SIMD
             if (blockNode->OperIsSimdOrHWintrinsic() || blockNode->IsCnsVec())
             {
-                parent->AsOp()->gtOp2 = impNormStructVal(blockNode, structHnd, curLevel, forceNormalization);
+                parent->AsOp()->gtOp2 = impNormStructVal(blockNode, structHnd, curLevel);
                 alreadyNormalized     = true;
             }
             else
@@ -1842,7 +1819,7 @@ GenTree* Compiler::impNormStructVal(GenTree*             structVal,
     }
     structVal->gtType = structType;
 
-    if (!alreadyNormalized || forceNormalization)
+    if (!alreadyNormalized)
     {
         if (makeTemp)
         {
@@ -1855,7 +1832,7 @@ GenTree* Compiler::impNormStructVal(GenTree*             structVal,
             structLcl = gtNewLclvNode(tmpNum, structType)->AsLclVarCommon();
             structVal = structLcl;
         }
-        if ((forceNormalization || (structType == TYP_STRUCT)) && !structVal->OperIsBlk())
+        if ((structType == TYP_STRUCT) && !structVal->OperIsBlk())
         {
             // Wrap it in a GT_OBJ
             structVal = gtNewObjNode(structHnd, gtNewOperNode(GT_ADDR, TYP_BYREF, structVal));
