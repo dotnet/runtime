@@ -34,7 +34,7 @@ Think of:
 Reflection-free mode **supports a limited set of reflection APIs** that keep their expected semantics.
 
 * `typeof(SomeType)` will return a `System.Type` that can be compared with results of other `typeof` expressions or results of `Object.GetType()` calls. The patterns commonly used in perf optimizations of generic code (e.g. `typeof(T) == typeof(byte)`) will work fine, and so will `obj.GetType() == typeof(SomeType)`.
-* Following APIs on `System.Type` work: `TypeHandle`, `UnderlyingSystemType`, `BaseType`, `IsByRefLike`, `IsValueType`, `GetTypeCode`, `GetHashCode`, `GetElementType`, `GetInterfaces`, `HasElementType`, `IsArray`, `IsByRef`, `IsPointer`, `IsPrimitive`, `IsAssignableFrom`, `IsInstanceOfType`.
+* Following APIs on `System.Type` work: `TypeHandle`, `UnderlyingSystemType`, `BaseType`, `IsByRefLike`, `IsValueType`, `GetTypeCode`, `GetHashCode`, `GetElementType`, `GetInterfaces`, `HasElementType`, `IsArray`, `IsByRef`, `IsPointer`, `IsPrimitive`, `IsAssignableFrom`, `IsAssignableTo`, `IsInstanceOfType`.
 * `Activator.CreateInstance<T>()` will work. The compiler statically analyzes and expands this to efficient code at compile time. No reflection is involved at runtime.
 * `Assembly.GetExecutingAssembly()` will return a `System.Reflection.Assembly` that can be compared with other runtime `Assembly` instances. This is mostly to make it possible to use the `NativeLibrary.SetDllImportResolver` API.
 
