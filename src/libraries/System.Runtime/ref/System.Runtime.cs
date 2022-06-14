@@ -2615,6 +2615,13 @@ namespace System
         /// </summary>
         /// <returns> A Dictionary of the Configuration Variables keyed on the name of the configuration with the values as the configuration values </returns> 
         public static System.Collections.Generic.IReadOnlyDictionary<string, object> GetConfigurationVariables() { throw null; }
+
+        public enum GCConfigurationType : short
+        {
+            LONG,
+            STRING,
+            BOOLEAN
+        }
     }
 
     /// <summary>Specifies the behavior for a forced garbage collection.</summary>

@@ -7,11 +7,13 @@
 
 #define BOOL_CONFIG(name, unused_private_key, unused_public_key, default, unused_enumerated, unused_doc) \
   bool GCConfig::Get##name() { return s_##name; }                                     \
-  bool GCConfig::s_##name = default;
+  bool GCConfig::s_##name = default;                                                  \
+  bool GCConfig::s_Updated##name = default;
 
 #define INT_CONFIG(name, unused_private_key, unused_public_key, default, unused_enumerated, unused_doc)  \
   int64_t GCConfig::Get##name() { return s_##name; }                                  \
-  int64_t GCConfig::s_##name = default;
+  int64_t GCConfig::s_##name = default;                                               \
+  int64_t GCConfig::s_Updated##name = default;
 
 // String configs are not cached because 1) they are rare and
 // not on hot paths and 2) they involve transfers of ownership
@@ -26,36 +28,37 @@
 
 GC_CONFIGURATION_KEYS
 
-void GCConfig::SetConcurrentGC(bool isConcurrentGC)        { s_ConcurrentGC       = isConcurrentGC;   }
-void GCConfig::SetGCLatencyMode(int latencyMode)           { s_LatencyMode        = latencyMode;      }
-void GCConfig::SetGCHeapCount(int heapCount)               { s_HeapCount          = heapCount;        }
-void GCConfig::SetGCHeapHardLimit(int heapHardLimit)       { s_GCHeapHardLimit    = heapHardLimit;    }
-void GCConfig::SetGCHeapHardLimitSOH(int heapHardLimitSOH) { s_GCHeapHardLimitSOH = heapHardLimitSOH; }
-void GCConfig::SetGCHeapHardLimitLOH(int heapHardLimitLOH) { s_GCHeapHardLimitLOH = heapHardLimitLOH; }
-void GCConfig::SetGCHeapHardLimitPOH(int heapHardLimitPOH) { s_GCHeapHardLimitPOH = heapHardLimitPOH; }
-void GCConfig::SetGCHeapAffinitizedMask(int gcHeapAffinitizedMask) { s_GCHeapAffinitizeMask = gcHeapAffinitizedMask;}
+void GCConfig::SetConcurrentGC(bool isConcurrentGC)                    { s_UpdatedConcurrentGC       = isConcurrentGC;   }
+void GCConfig::SetGCLatencyMode(int64_t latencyMode)                   { s_UpdatedLatencyMode        = latencyMode;      }
+void GCConfig::SetGCHeapCount(int64_t heapCount)                       { s_UpdatedHeapCount          = heapCount;        }
+void GCConfig::SetGCHeapHardLimit(int64_t heapHardLimit)               { s_UpdatedGCHeapHardLimit    = heapHardLimit;    }
+void GCConfig::SetGCHeapHardLimitSOH(int64_t heapHardLimitSOH)         { s_UpdatedGCHeapHardLimitSOH = heapHardLimitSOH; }
+void GCConfig::SetGCHeapHardLimitLOH(int64_t heapHardLimitLOH)         { s_UpdatedGCHeapHardLimitLOH = heapHardLimitLOH; }
+void GCConfig::SetGCHeapHardLimitPOH(int64_t heapHardLimitPOH)         { s_UpdatedGCHeapHardLimitPOH = heapHardLimitPOH; }
+void GCConfig::SetGCHeapAffinitizedMask(int64_t gcHeapAffinitizedMask) { s_UpdatedGCHeapAffinitizeMask = gcHeapAffinitizedMask; }
 
 #undef BOOL_CONFIG
 #undef INT_CONFIG
 #undef STRING_CONFIG
 
-void GCConfig::EnumerateConfigurationValues(void* context, ConfigurationValueFunc configurationValueFunc)
+void GCConfig::EnumerateConfigurationValues(ConfigurationValueFunc configurationValueFunc)
 {
 #define INT_CONFIG_false(name, default)
 #define INT_CONFIG_true(name, default)  \
-    configurationValueFunc(context, #name, 0, s_##name, nullptr, false);
+    configurationValueFunc((void*)(#name), GCConfigurationType::LONG, static_cast<int64_t>(s_Updated##name));
     
 #define STRING_CONFIG_false(name, private_key, public_key)
 #define STRING_CONFIG_true(name, private_key, public_key)                            \
     {                                                                                \
         const char* resultStr = nullptr;                                             \
         GCToEEInterface::GetStringConfigValue(private_key, public_key, &resultStr);  \
-        configurationValueFunc(context, #name, 1, 0, resultStr, false);                     \
+        GCConfigStringHolder holder(resultStr);                                      \
+        configurationValueFunc((void*)(#name), GCConfigurationType::STRING, reinterpret_cast<int64_t>(resultStr));               \
     }
 
 #define BOOL_CONFIG_false(name, default)
 #define BOOL_CONFIG_true(name, default)  \
-    configurationValueFunc(context, #name, 2, 0, nullptr, s_##name);
+    configurationValueFunc((void*)(#name), GCConfigurationType::BOOLEAN, static_cast<int64_t>(s_Updated##name));
 
 #define INT_CONFIG(name, unused_private_key, unused_public_key, default, enumerated, unused_doc)   \
     INT_CONFIG_##enumerated(name, default)

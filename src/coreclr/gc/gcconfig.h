@@ -141,10 +141,12 @@ class GCConfig
 {
 #define BOOL_CONFIG(name, unused_private_key, unused_public_key, unused_default, unused_enumerated, unused_doc) \
   public: static bool Get##name();                                \
-  private: static bool s_##name;
+  private: static bool s_##name;                                  \
+  private: static bool s_Updated##name;                           
 #define INT_CONFIG(name, unused_private_key, unused_public_key, unused_default, unused_enumerated, unused_doc) \
   public: static int64_t Get##name();                            \
-  private: static int64_t s_##name;
+  private: static int64_t s_##name;                              \
+  private: static int64_t s_Updated##name;
 #define STRING_CONFIG(name, unused_private_key, unused_public_key, unused_enumerated, unused_doc) \
   public: static GCConfigStringHolder Get##name();
 
@@ -152,13 +154,13 @@ GC_CONFIGURATION_KEYS
 
 public:
   static void SetConcurrentGC(bool isConcurrentGC);
-  static void SetGCLatencyMode(int latencyMode);
-  static void SetGCHeapCount(int heapNumber);
-  static void SetGCHeapAffinitizedMask(int heapAffinitizedMask);
-  static void SetGCHeapHardLimit(int heapHardLimit);
-  static void SetGCHeapHardLimitSOH(int heapHardLimitSOH);
-  static void SetGCHeapHardLimitLOH(int heapHardLimitLOH);
-  static void SetGCHeapHardLimitPOH(int heapHardLimitPOH);
+  static void SetGCLatencyMode(int64_t latencyMode);
+  static void SetGCHeapCount(int64_t heapCount);
+  static void SetGCHeapAffinitizedMask(int64_t heapAffinitizedMask);
+  static void SetGCHeapHardLimit(int64_t heapHardLimit);
+  static void SetGCHeapHardLimitSOH(int64_t heapHardLimitSOH);
+  static void SetGCHeapHardLimitLOH(int64_t heapHardLimitLOH);
+  static void SetGCHeapHardLimitPOH(int64_t heapHardLimitPOH);
 
 #undef BOOL_CONFIG
 #undef INT_CONFIG
@@ -166,7 +168,7 @@ public:
 
 public:
 
-  static void EnumerateConfigurationValues(void* context, ConfigurationValueFunc configurationValueFunc);
+  static void EnumerateConfigurationValues(ConfigurationValueFunc configurationValueFunc);
 
 // Flags that may inhabit the number returned for the HeapVerifyLevel config option.
 // Keep this in sync with vm\eeconfig.h if this ever changes.

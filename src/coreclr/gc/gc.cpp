@@ -46417,9 +46417,9 @@ int64_t GCHeap::GetTotalPauseDuration()
     return (int64_t)(gc_heap::total_suspended_time * 10);
 }
 
-void GCHeap::EnumerateConfigurationValues(void* context, ConfigurationValueFunc configurationValueFunc)
+void GCHeap::EnumerateConfigurationValues(ConfigurationValueFunc configurationValueFunc)
 {
-    GCConfig::EnumerateConfigurationValues(context, configurationValueFunc);
+    GCConfig::EnumerateConfigurationValues(configurationValueFunc);
 }
 
 uint32_t GCHeap::GetMemoryLoad()
@@ -47748,7 +47748,6 @@ void GCHeap::TemporaryEnableConcurrentGC()
 {
 #ifdef BACKGROUND_GC
     gc_heap::temp_disable_concurrent_p = false;
-    GCConfig::SetConcurrentGC((gc_heap::gc_can_use_concurrent && !(gc_heap::temp_disable_concurrent_p)));
 #endif //BACKGROUND_GC
 }
 
@@ -47756,14 +47755,12 @@ void GCHeap::TemporaryDisableConcurrentGC()
 {
 #ifdef BACKGROUND_GC
     gc_heap::temp_disable_concurrent_p = true;
-    GCConfig::SetConcurrentGC((gc_heap::gc_can_use_concurrent && !(gc_heap::temp_disable_concurrent_p)));
 #endif //BACKGROUND_GC
 }
 
 bool GCHeap::IsConcurrentGCEnabled()
 {
 #ifdef BACKGROUND_GC
-    GCConfig::SetConcurrentGC((gc_heap::gc_can_use_concurrent && !(gc_heap::temp_disable_concurrent_p)));
     return (gc_heap::gc_can_use_concurrent && !(gc_heap::temp_disable_concurrent_p));
 #else
     GCConfig::SetConcurrentGC(false);

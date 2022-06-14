@@ -1309,59 +1309,27 @@ extern "C" void QCALLTYPE GCInterface_AddMemoryPressure(UINT64 bytesAllocated)
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE GCInterface_EnumerateConfigurationValues(QCall::StringHandleOnStack nameHandle, QCall::StringHandleOnStack valueHandle, EnumerateConfigurationValuesCallback callback)
+extern "C" void QCALLTYPE GCInterface_EnumerateConfigurationValues(EnumerateConfigurationValuesCallback callback)
 {
     QCALL_CONTRACT;
 
     BEGIN_QCALL;
-    GCInterface::EnumerateConfigurationValues(nameHandle, valueHandle, callback);
+    GCInterface::EnumerateConfigurationValues(callback);
     END_QCALL;
 }
 
-struct ConfigurationvaluesEnumerationContext
-{
-    QCall::StringHandleOnStack* nameHandle;
-    QCall::StringHandleOnStack* valueHandle;
-    EnumerateConfigurationValuesCallback callback;
-};
-
-void ConfigurationValue(void* context, const char* name, int type, int64_t intValue, const char* stringValue, bool boolValue)
-{
-    ConfigurationvaluesEnumerationContext* configurationContext = (ConfigurationvaluesEnumerationContext*)context;
-    configurationContext->nameHandle->Set(name);
-    if (type == 1)
-    {
-        if (stringValue == nullptr)
-        {
-            configurationContext->valueHandle->Set((const wchar_t*)nullptr);
-        }
-
-        else
-        {
-            configurationContext->valueHandle->Set(stringValue);
-        }
-    }
-
-    configurationContext->callback(type, intValue, boolValue);
-}
-
-void GCInterface::EnumerateConfigurationValues(QCall::StringHandleOnStack& nameHandle, QCall::StringHandleOnStack& valueHandle, EnumerateConfigurationValuesCallback callback)
+void GCInterface::EnumerateConfigurationValues(EnumerateConfigurationValuesCallback callback)
 {
     CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
-        MODE_ANY;
+        MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
 
-    ConfigurationvaluesEnumerationContext context;
-    context.nameHandle  = &nameHandle;
-    context.valueHandle = &valueHandle;
-    context.callback    = callback;
-
     IGCHeap* pHeap = GCHeapUtilities::GetGCHeap();
-    pHeap->EnumerateConfigurationValues(&context, ConfigurationValue);
+    pHeap->EnumerateConfigurationValues(callback);
 }
 
 #ifdef HOST_64BIT

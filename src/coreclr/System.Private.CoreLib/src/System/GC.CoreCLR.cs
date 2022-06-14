@@ -738,52 +738,61 @@ namespace System
             return new TimeSpan(_GetTotalPauseDuration());
         }
 
-        internal delegate void EnumerateConfigurationValuesCallback(int type, long intValue, bool boolValue);
+        [ThreadStatic]
+        private static Dictionary<string, object>? _result;
+
+        [UnmanagedCallersOnly]
+        private static unsafe void Callback(void* name, GCConfigurationType type, long data)
+        {
+            if (name == null || _result == null)
+            {
+                return;
+            }
+
+            string? nameAsString = Marshal.PtrToStringUTF8((IntPtr)name);
+            if (nameAsString == null)
+            {
+                return;
+            }
+
+            switch(type)
+            {
+                case GCConfigurationType.LONG:
+                    _result[nameAsString] = data;
+                    break;
+
+                case GCConfigurationType.STRING:
+                    {
+                        string? dataAsString = Marshal.PtrToStringUTF8((IntPtr)data);
+                        _result[nameAsString] = dataAsString ?? string.Empty;
+                        break;
+                    }
+
+                case GCConfigurationType.BOOLEAN:
+                    _result[nameAsString] = data != 0 ? true : false;
+                    break;
+            }
+        }
 
         /// <summary>
         /// Returns a dictionary keyed on GC Configuration Names with values as the configuration values.
         /// </summary>
-        /// <remarks>
-        /// Corresponding issue: https://github.com/dotnet/runtime/issues/67471
-        /// </remarks>
         public static unsafe IReadOnlyDictionary<string, object> GetConfigurationVariables()
         {
-            Dictionary<string, object> result = new Dictionary<string, object>();
+            _result = new Dictionary<string, object>();
+            _EnumerateConfigurationValues(&Callback);
+            return _result;
+        }
 
-            string? name  = null;
-            string? value = null;
-
-            // It is important that we do not capture name or value in the lambda
-            // That capture will lead to the failure of QCall::StringHandleOnStack.Set()
-            // because name is no longer allocated on the stack.
-            void* addressOfName  = (void*)Unsafe.AsPointer(ref name);
-            void* addressOfValue = (void*)Unsafe.AsPointer(ref value);
-            StringHandleOnStack nameHandle  = new StringHandleOnStack(ref name);
-            StringHandleOnStack valueHandle = new StringHandleOnStack(ref value);
-
-            _EnumerateConfigurationValues(nameHandle: nameHandle, valueHandle: valueHandle,
-                callback: (type, intValue, boolValue) =>
-                {
-                    switch(type)
-                    {
-                        case 0:
-                            result.Add(Unsafe.AsRef<string>(addressOfName), intValue);
-                            break;
-
-                        case 1:
-                            result.Add(Unsafe.AsRef<string>(addressOfName), Unsafe.AsRef<string>(addressOfValue));
-                            break;
-
-                        case 2:
-                            result.Add(Unsafe.AsRef<string>(addressOfName), boolValue);
-                            break;
-                    }
-                });
-
-            return result;
+        // Corresponding Enum for the managed side of things in gcinterface.h that indicates the type of the configuration.
+        public enum GCConfigurationType : short
+        {
+            LONG,
+            STRING,
+            BOOLEAN
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_EnumerateConfigurationValues")]
-        internal static partial void _EnumerateConfigurationValues(StringHandleOnStack nameHandle, StringHandleOnStack valueHandle, EnumerateConfigurationValuesCallback callback);
+        internal static unsafe partial void _EnumerateConfigurationValues(delegate* unmanaged<void*, GCConfigurationType, long, void> callback);
     }
 }
