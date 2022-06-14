@@ -71,6 +71,10 @@ namespace System.Net.Security
         public void Dispose()
         {
             _ntAuthentication.CloseContext();
+            if (_remoteIdentity is IDisposable disposableRemoteIdentity)
+            {
+                disposableRemoteIdentity.Dispose();
+            }
         }
 
         /// <summary>
