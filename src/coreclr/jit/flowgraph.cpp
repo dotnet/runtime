@@ -768,6 +768,12 @@ bool Compiler::fgIsSafeToRemoveIntToIntCastOnAssignment(GenTree* tree)
     if (genTypeSize(castToType) < genTypeSize(effectiveOp1))
         return false;
 
+    if (genActualType(effectiveOp1) != genActualType(castToType))
+        return false;
+
+    if (genActualType(effectiveOp1) != genActualType(castFromType))
+        return false;
+
     return true;
 }
 
