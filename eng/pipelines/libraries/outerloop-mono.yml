@@ -20,6 +20,7 @@ jobs:
       helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
       buildConfig: Release
       runtimeFlavor: mono
+      shouldContinueOnError: true
       platforms:
       - windows_x86
       - Browser_wasm
@@ -43,7 +44,7 @@ jobs:
           testScope: outerloop
           creator: dotnet-bot
           testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-    
+
   - ${{ if eq(variables['isRollingBuild'], false) }}:
     - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
@@ -51,6 +52,7 @@ jobs:
         helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
         buildConfig: Debug
         runtimeFlavor: mono
+        shouldContinueOnError: true
         platforms:
         - windows_x64
         - Linux_x64

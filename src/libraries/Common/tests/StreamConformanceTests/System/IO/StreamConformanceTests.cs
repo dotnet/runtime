@@ -1728,7 +1728,7 @@ namespace System.IO.Tests
             select new object[] { mode, writeSize, startWithFlush };
 
         [OuterLoop]
-        [Theory]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(ReadWrite_Success_Large_MemberData))]
         public virtual async Task ReadWrite_Success_Large(ReadWriteMode mode, int writeSize, bool startWithFlush) =>
             await ReadWrite_Success(mode, writeSize, startWithFlush);
@@ -2427,7 +2427,7 @@ namespace System.IO.Tests
             select new object[] { byteCount, useAsync };
 
         [OuterLoop]
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public virtual async Task CopyToAsync_AllDataCopied_Large(bool useAsync) =>

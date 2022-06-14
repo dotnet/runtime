@@ -287,6 +287,7 @@ public class WindowAndCursorProps
     [Fact]
     [OuterLoop] // makes noise, not very inner-loop friendly
     [PlatformSpecific(TestPlatforms.Windows)]
+    [SkipOnPlatform(TestPlatforms.Browser, "Console.Beep is not supported on browser")]
     public static void BeepWithFrequency_Invoke_Success()
     {
         // Nothing to verify; just run the code.
