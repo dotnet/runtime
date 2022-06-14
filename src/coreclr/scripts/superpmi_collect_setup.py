@@ -169,11 +169,6 @@ native_binaries_to_ignore = [
     "System.IO.Compression.Native.dll",
     "ucrtbase.dll",
     "xunit.console.exe",
-
-    # The following cause VM asserts. Disabling to attempt to fix periodic SPMI collection pipeline failures.
-    # Tracked by: https://github.com/dotnet/runtime/issues/70293
-    "System.Runtime.InteropServices.Tests.dll", # libraries test
-    "DllImportPathTest.dll", # coreclr test
 ]
 
 MAX_FILES_COUNT = 1500

@@ -1944,11 +1944,12 @@ void CodeGen::genGenerateMachineCode()
 #endif // DEBUG
 
     /* We can now generate the function prolog and epilog */
-
     genGeneratePrologsAndEpilogs();
 
-    /* Bind jump distances */
+    // check to see if any jumps can be removed
+    GetEmitter()->emitRemoveJumpToNextInst();
 
+    /* Bind jump distances */
     GetEmitter()->emitJumpDistBind();
 
 #if FEATURE_LOOP_ALIGN
@@ -6578,35 +6579,6 @@ bool Compiler::IsMultiRegReturnedType(CORINFO_CLASS_HANDLE hClass, CorInfoCallCo
 bool Compiler::IsHfa(CORINFO_CLASS_HANDLE hClass)
 {
     return varTypeIsValidHfaType(GetHfaType(hClass));
-}
-
-bool Compiler::IsHfa(GenTree* tree)
-{
-    if (GlobalJitOptions::compFeatureHfa)
-    {
-        return IsHfa(gtGetStructHandleIfPresent(tree));
-    }
-    else
-    {
-        return false;
-    }
-}
-
-var_types Compiler::GetHfaType(GenTree* tree)
-{
-    if (GlobalJitOptions::compFeatureHfa)
-    {
-        return GetHfaType(gtGetStructHandleIfPresent(tree));
-    }
-    else
-    {
-        return TYP_UNDEF;
-    }
-}
-
-unsigned Compiler::GetHfaCount(GenTree* tree)
-{
-    return GetHfaCount(gtGetStructHandle(tree));
 }
 
 var_types Compiler::GetHfaType(CORINFO_CLASS_HANDLE hClass)

@@ -41,69 +41,6 @@
 
 #include "arraynative.inl"
 
-/*===================================IsDigit====================================
-**Returns a bool indicating whether the character passed in represents a   **
-**digit.
-==============================================================================*/
-bool IsDigit(WCHAR c, int radix, int *result)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(result));
-    }
-    CONTRACTL_END;
-
-    if (IS_DIGIT(c)) {
-        *result = DIGIT_TO_INT(c);
-    }
-    else if (c>='A' && c<='Z') {
-        //+10 is necessary because A is actually 10, etc.
-        *result = c-'A'+10;
-    }
-    else if (c>='a' && c<='z') {
-        //+10 is necessary because a is actually 10, etc.
-        *result = c-'a'+10;
-    }
-    else {
-        *result = -1;
-    }
-
-    if ((*result >=0) && (*result < radix))
-        return true;
-
-    return false;
-}
-
-INT32 wtoi(_In_reads_(length) WCHAR* wstr, DWORD length)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(wstr));
-        PRECONDITION(length >= 0);
-    }
-    CONTRACTL_END;
-
-    DWORD i = 0;
-    int value;
-    INT32 result = 0;
-
-    while ( (i < length) && (IsDigit(wstr[i], 10 ,&value)) ) {
-        //Read all of the digits and convert to a number
-        result = result*10 + value;
-        i++;
-    }
-
-    return result;
-}
-
-
-
 //
 //
 // EXCEPTION NATIVE
@@ -260,6 +197,8 @@ FCIMPL3(VOID, ExceptionNative::SaveStackTracesFromDeepCopy, Object* pExceptionOb
 }
 FCIMPLEND
 
+#ifdef FEATURE_COMINTEROP
+
 BSTR BStrFromString(STRINGREF s)
 {
     CONTRACTL
@@ -369,79 +308,17 @@ static void GetExceptionHelp(OBJECTREF objException, BSTR *pbstrHelpFile, DWORD 
 
     GCPROTECT_BEGIN(objException);
 
-    // read Exception.HelpLink property
-    MethodDescCallSite getHelpLink(METHOD__EXCEPTION__GET_HELP_LINK, &objException);
+    // call managed code to parse help context
+    MethodDescCallSite getHelpContext(METHOD__EXCEPTION__GET_HELP_CONTEXT, &objException);
 
-    ARG_SLOT GetHelpLinkArgs[] = { ObjToArgSlot(objException)};
-    *pbstrHelpFile = BStrFromString(getHelpLink.Call_RetSTRINGREF(GetHelpLinkArgs));
+    ARG_SLOT GetHelpContextArgs[] =
+    {
+        ObjToArgSlot(objException),
+        PtrToArgSlot(pdwHelpContext)
+    };
+    *pbstrHelpFile = BStrFromString(getHelpContext.Call_RetSTRINGREF(GetHelpContextArgs));
 
     GCPROTECT_END();
-
-    // parse the help file to check for the presence of helpcontext
-    int len = SysStringLen(*pbstrHelpFile);
-    int pos = len;
-    WCHAR *pwstr = *pbstrHelpFile;
-    if (pwstr) {
-        BOOL fFoundPound = FALSE;
-
-        for (pos = len - 1; pos >= 0; pos--) {
-            if (pwstr[pos] == W('#')) {
-                fFoundPound = TRUE;
-                break;
-            }
-        }
-
-        if (fFoundPound) {
-            int PoundPos = pos;
-            int NumberStartPos = -1;
-            BOOL bNumberStarted = FALSE;
-            BOOL bNumberFinished = FALSE;
-            BOOL bInvalidDigitsFound = FALSE;
-
-            _ASSERTE(pwstr[pos] == W('#'));
-
-            // Check to see if the string to the right of the pound a valid number.
-            for (pos++; pos < len; pos++) {
-                if (bNumberFinished) {
-                    if (!COMCharacter::nativeIsWhiteSpace(pwstr[pos])) {
-                        bInvalidDigitsFound = TRUE;
-                        break;
-                    }
-                }
-                else if (bNumberStarted) {
-                    if (COMCharacter::nativeIsWhiteSpace(pwstr[pos])) {
-                        bNumberFinished = TRUE;
-                    }
-                    else if (!COMCharacter::nativeIsDigit(pwstr[pos])) {
-                        bInvalidDigitsFound = TRUE;
-                        break;
-                    }
-                }
-                else {
-                    if (COMCharacter::nativeIsDigit(pwstr[pos])) {
-                        NumberStartPos = pos;
-                        bNumberStarted = TRUE;
-                    }
-                    else if (!COMCharacter::nativeIsWhiteSpace(pwstr[pos])) {
-                        bInvalidDigitsFound = TRUE;
-                        break;
-                    }
-                }
-            }
-
-            if (bNumberStarted && !bInvalidDigitsFound) {
-                // Grab the help context and remove it from the help file.
-                *pdwHelpContext = (DWORD)wtoi(&pwstr[NumberStartPos], len - NumberStartPos);
-
-                // Allocate a new help file string of the right length.
-                BSTR strOld = *pbstrHelpFile;
-                *pbstrHelpFile = SysAllocStringLen(strOld, PoundPos);
-                SysFreeString(strOld);
-                if (!*pbstrHelpFile)
-                    COMPlusThrowOM();
-            }
-        }
-    }
 }
 
 // NOTE: caller cleans up any partially initialized BSTRs in pED
@@ -467,8 +344,6 @@ void ExceptionNative::GetExceptionData(OBJECTREF objException, ExceptionData *pE
     GCPROTECT_END();
     return;
 }
-
-#ifdef FEATURE_COMINTEROP
 
 HRESULT SimpleComCallWrapper::IErrorInfo_hr()
 {

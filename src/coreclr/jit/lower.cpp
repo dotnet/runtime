@@ -2283,10 +2283,58 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
     }
 
     GenTree* callTarget = call->gtCallType == CT_INDIRECT ? call->gtCallAddr : call->gtControlExpr;
-    if ((callTarget == nullptr) || callTarget->IsIntegralConst())
+    if (callTarget == nullptr)
     {
-        // This is a direct call, no CFG check is necessary.
-        return;
+        assert((call->gtCallType != CT_INDIRECT) && (!call->IsVirtual() || call->IsVirtualStubRelativeIndir()));
+        if (!call->IsVirtual())
+        {
+            // Direct call with stashed address
+            return;
+        }
+
+        // This is a VSD call with the call target being null because we are
+        // supposed to load it from the indir cell. Due to CFG we will need
+        // this address twice, and at least on ARM64 we do not want to
+        // materialize the constant both times.
+        CallArg* indirCellArg = call->gtArgs.FindWellKnownArg(WellKnownArg::VirtualStubCell);
+        assert((indirCellArg != nullptr) && indirCellArg->GetNode()->OperIs(GT_PUTARG_REG));
+
+        GenTreeOp* putArgNode = indirCellArg->GetNode()->AsOp();
+        LIR::Use   indirCellArgUse(BlockRange(), &putArgNode->gtOp1, putArgNode);
+
+        // On non-xarch, we create a local even for constants. On xarch cloning
+        // the constant is better since it can be contained in the load below.
+        bool cloneConsts = false;
+#ifdef TARGET_XARCH
+        cloneConsts = true;
+#endif
+
+        GenTree* indirCellClone;
+
+        if (indirCellArgUse.Def()->OperIs(GT_LCL_VAR) || (cloneConsts && indirCellArgUse.Def()->IsCnsIntOrI()))
+        {
+            indirCellClone = comp->gtClone(indirCellArgUse.Def());
+        }
+        else
+        {
+            unsigned newLcl = indirCellArgUse.ReplaceWithLclVar(comp);
+            indirCellClone  = comp->gtNewLclvNode(newLcl, TYP_I_IMPL);
+        }
+
+        callTarget                  = Ind(indirCellClone);
+        LIR::Range controlExprRange = LIR::SeqTree(comp, callTarget);
+        ContainCheckRange(controlExprRange);
+
+        BlockRange().InsertBefore(call, std::move(controlExprRange));
+        call->gtControlExpr = callTarget;
+    }
+    else
+    {
+        if (callTarget->IsIntegralConst())
+        {
+            // This is a direct call, no CFG check is necessary.
+            return;
+        }
     }
 
     CFGCallKind cfgKind = call->GetCFGCallKind();
@@ -3814,18 +3862,18 @@ void Lowering::LowerCallStruct(GenTreeCall* call)
 
     if (GlobalJitOptions::compFeatureHfa)
     {
-        if (comp->IsHfa(call))
+        if (comp->IsHfa(call->gtRetClsHnd))
         {
 #if defined(TARGET_ARM64)
-            assert(comp->GetHfaCount(call) == 1);
+            assert(comp->GetHfaCount(call->gtRetClsHnd) == 1);
 #elif defined(TARGET_ARM)
             // ARM returns double in 2 float registers, but
             // `call->HasMultiRegRetVal()` count double registers.
-            assert(comp->GetHfaCount(call) <= 2);
+            assert(comp->GetHfaCount(call->gtRetClsHnd) <= 2);
 #else  // !TARGET_ARM64 && !TARGET_ARM
             NYI("Unknown architecture");
 #endif // !TARGET_ARM64 && !TARGET_ARM
-            var_types hfaType = comp->GetHfaType(call);
+            var_types hfaType = comp->GetHfaType(call->gtRetClsHnd);
             if (call->TypeIs(hfaType))
             {
                 return;
@@ -5127,7 +5175,7 @@ GenTree* Lowering::LowerVirtualStubCall(GenTreeCall* call)
             // Skip inserting the indirection node to load the address that is already
             // computed in the VSD stub arg register as a hidden parameter. Instead during the
             // codegen, just load the call target from there.
-            shouldOptimizeVirtualStubCall = !comp->opts.IsCFGEnabled();
+            shouldOptimizeVirtualStubCall = true;
 #endif
 
             if (!shouldOptimizeVirtualStubCall)
@@ -5838,7 +5886,8 @@ GenTree* Lowering::LowerConstIntDivOrMod(GenTree* node)
 #if defined(TARGET_ARM64)
     if (divMod->OperIs(GT_MOD) && divisor->IsIntegralConstPow2())
     {
-        return LowerModPow2(node);
+        LowerModPow2(node);
+        return node->gtNext;
     }
     assert(node->OperGet() != GT_MOD);
 #endif // TARGET_ARM64

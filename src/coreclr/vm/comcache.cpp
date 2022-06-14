@@ -8,9 +8,7 @@
 #include <crtwrap.h>
 #include "comcache.h"
 #include "runtimecallablewrapper.h"
-#include "mtx.h"
-#include "contxt.h"
-#include "ctxtcall.h"
+#include <mtx.h>
 #include "win32threadpool.h"
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT

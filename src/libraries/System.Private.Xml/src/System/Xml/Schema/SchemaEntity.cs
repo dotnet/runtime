@@ -165,7 +165,7 @@ namespace System.Xml.Schema
 
         internal string BaseURI
         {
-            get { return (_baseURI == null) ? string.Empty : _baseURI; }
+            get { return _baseURI ?? string.Empty; }
             set { _baseURI = value; }
         }
 
@@ -177,7 +177,7 @@ namespace System.Xml.Schema
 
         internal string DeclaredURI
         {
-            get { return (_declaredURI == null) ? string.Empty : _declaredURI; }
+            get { return _declaredURI ?? string.Empty; }
             set { _declaredURI = value; }
         }
     };

@@ -1019,6 +1019,71 @@ namespace System.Net.Security.Tests
 
         }
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.SupportsTls10))]
+        [InlineData(true)]
+        [InlineData(false)]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public async Task SslStream_UnifiedHello_Ok(bool useOptionCallback)
+        {
+            (Stream client, Stream server) = TestHelper.GetConnectedTcpStreams();
+            SslStream ssl = new SslStream(server);
+
+            var cts = new CancellationTokenSource();
+            cts.CancelAfter(TestConfiguration.PassingTestTimeout);
+            bool callbackCalled = false;
+            Task serverTask;
+
+            var options = new SslServerAuthenticationOptions();
+            if (useOptionCallback)
+            {
+                serverTask = ssl.AuthenticateAsServerAsync((ssl, info, o, ct) =>
+                {
+                    callbackCalled = true;
+                    options.ServerCertificate = Configuration.Certificates.GetServerCertificate();
+                    return new ValueTask<SslServerAuthenticationOptions>(options);
+                }, null, cts.Token);
+
+            }
+            else
+            {
+                options.ServerCertificateSelectionCallback = (o, name) =>
+                {
+                    callbackCalled = true;
+                    return Configuration.Certificates.GetServerCertificate();
+                };
+
+                serverTask = ssl.AuthenticateAsServerAsync(options, cts.Token);
+            }
+
+            Task.WaitAny(client.WriteAsync(TlsFrameHelperTests.s_UnifiedHello).AsTask(), serverTask);
+            if (serverTask.IsCompleted)
+            {
+                // Something failed. Raise exception.
+                await serverTask;
+            }
+
+            byte[] buffer = new byte[1024];
+            Task<int> readTask = client.ReadAsync(buffer, cts.Token).AsTask();
+            Task.WaitAny(readTask, serverTask);
+            if (serverTask.IsCompleted)
+            {
+                // Something failed. Raise exception.
+                await serverTask;
+            }
+
+            int readLength = await readTask;
+            // We should get back ServerHello
+            Assert.True(readLength > 0);
+            Assert.True(callbackCalled);
+            Assert.Equal(22, buffer[0]); // Handshake Protocol
+            Assert.Equal(2, buffer[5]);  // ServerHello
+
+            // Handshake should not be finished at this point.
+            Assert.False(serverTask.IsCompleted);
+            cts.Cancel();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => serverTask);
+        }
+
         private static bool ValidateServerCertificate(
             object sender,
             X509Certificate retrievedServerPublicCertificate,

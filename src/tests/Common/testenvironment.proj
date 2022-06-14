@@ -36,7 +36,6 @@
       COMPlus_EnableSSE42;
       COMPlus_EnableSSSE3;
       COMPlus_ForceRelocs;
-      COMPlus_GCgen0size;
       COMPlus_GCStress;
       COMPlus_GCName;
       COMPlus_gcServer;

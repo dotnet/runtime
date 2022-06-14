@@ -3181,12 +3181,12 @@ namespace System.Configuration
         // per record by creating the table on demand.
         protected Hashtable EnsureFactories()
         {
-            return _factoryRecords ?? (_factoryRecords = new Hashtable());
+            return _factoryRecords ??= new Hashtable();
         }
 
         private ArrayList EnsureLocationSections()
         {
-            return _locationSections ?? (_locationSections = new ArrayList());
+            return _locationSections ??= new ArrayList();
         }
 
         internal static string NormalizeConfigSource(string configSource, IConfigErrorInfo errorInfo)
@@ -3714,7 +3714,7 @@ namespace System.Configuration
 
             internal StreamChangeCallback CallbackDelegate { get; set; }
 
-            internal HybridDictionary StreamInfos => _streamInfos ?? (_streamInfos = new HybridDictionary(true));
+            internal HybridDictionary StreamInfos => _streamInfos ??= new HybridDictionary(true);
 
             internal bool HasStreamInfos => _streamInfos != null;
 

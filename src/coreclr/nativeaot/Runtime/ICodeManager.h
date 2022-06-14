@@ -139,6 +139,8 @@ enum class AssociatedDataFlags : unsigned char
 class ICodeManager
 {
 public:
+    virtual bool IsSafePoint(PTR_VOID pvAddress) = 0;
+
     virtual bool FindMethodInfo(PTR_VOID        ControlPC,
                                 MethodInfo *    pMethodInfoOut) = 0;
 
@@ -150,7 +152,8 @@ public:
     virtual void EnumGcRefs(MethodInfo *    pMethodInfo,
                             PTR_VOID        safePointAddress,
                             REGDISPLAY *    pRegisterSet,
-                            GCEnumContext * hCallback) = 0;
+                            GCEnumContext * hCallback,
+                            bool            isActiveStackFrame) = 0;
 
     virtual bool UnwindStackFrame(MethodInfo *    pMethodInfo,
                                   REGDISPLAY *    pRegisterSet,                     // in/out

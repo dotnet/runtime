@@ -38,12 +38,12 @@ namespace System.Text.RegularExpressions.Symbolic
 
             // Create helper BDDs for handling anchors and preferentially generating ASCII inputs
             BDD asciiWordCharacters = charSetSolver.Or(new BDD[] {
-                charSetSolver.CreateSetFromRange('A', 'Z'),
-                charSetSolver.CreateSetFromRange('a', 'z'),
-                charSetSolver.CreateFromChar('_'),
-                charSetSolver.CreateSetFromRange('0', '9')});
+                charSetSolver.CreateBDDFromRange('A', 'Z'),
+                charSetSolver.CreateBDDFromRange('a', 'z'),
+                charSetSolver.CreateBDDFromChar('_'),
+                charSetSolver.CreateBDDFromRange('0', '9')});
             // Visible ASCII range for input character generation
-            BDD ascii = charSetSolver.CreateSetFromRange('\x20', '\x7E');
+            BDD ascii = charSetSolver.CreateBDDFromRange('\x20', '\x7E');
             BDD asciiNonWordCharacters = charSetSolver.And(ascii, charSetSolver.Not(asciiWordCharacters));
 
             // Set up two sets of minterms, one with the additional special minterm for the last end-of-line

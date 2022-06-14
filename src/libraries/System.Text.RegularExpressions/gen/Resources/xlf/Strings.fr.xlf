@@ -92,11 +92,6 @@
         <target state="translated">Chiffres hexadécimaux insuffisants.</target>
         <note />
       </trans-unit>
-      <trans-unit id="InternalError_ScanRegex">
-        <source>Internal error in ScanRegex.</source>
-        <target state="translated">Erreur interne dans ScanRegex.</target>
-        <note>{Locked="ScanRegex"}</note>
-      </trans-unit>
       <trans-unit id="InvalidGroupingConstruct">
         <source>Unrecognized grouping construct.</source>
         <target state="translated">Construction de regroupement non reconnue.</target>
@@ -212,11 +207,6 @@
         <target state="translated">La méthode RegexGenerator doit être partielle, sans paramètre, non générique, non abstraite et renvoyer Regex.</target>
         <note />
       </trans-unit>
-      <trans-unit id="ReplacementError">
-        <source>Replacement pattern error.</source>
-        <target state="translated">Erreur de modèle de remplacement.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="ReversedCharacterRange">
         <source>[x-y] range in reverse order.</source>
         <target state="translated">Plage [x-y] en ordre inverse.</target>
@@ -274,12 +264,12 @@
       </trans-unit>
       <trans-unit id="UseRegexSourceGeneratorMessage">
         <source>Use 'RegexGeneratorAttribute' to generate the regular expression implementation at compile-time.</source>
-        <target state="new">Use 'RegexGeneratorAttribute' to generate the regular expression implementation at compile-time.</target>
+        <target state="translated">Utilisez « RegexGeneratorAttribute » pour générer l’implémentation d’expression régulière au moment de la compilation.</target>
         <note />
       </trans-unit>
       <trans-unit id="UseRegexSourceGeneratorTitle">
         <source>Convert to 'RegexGenerator'.</source>
-        <target state="new">Convert to 'RegexGenerator'.</target>
+        <target state="translated">Convertissez en 'RegexGenerator'.</target>
         <note />
       </trans-unit>
     </body>

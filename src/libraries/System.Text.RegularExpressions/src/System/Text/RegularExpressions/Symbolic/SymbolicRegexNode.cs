@@ -888,7 +888,8 @@ namespace System.Text.RegularExpressions.Symbolic
                     if (suffix == left)
                     {
                         // We found a split, so store the prefix and return success
-                        prefix = left._builder.CreateConcat(prefixElements);
+                        prefixElements.Reverse();
+                        prefix = left._builder.CreateConcatAlreadyReversed(prefixElements);
                         return true;
                     }
                     else if (suffix._right.Subsumes(left))
@@ -900,7 +901,8 @@ namespace System.Text.RegularExpressions.Symbolic
                     else if (left.Subsumes(suffix))
                     {
                         // If left subsumes the suffix, then due to the loop invariant we have equivalence
-                        prefix = left._builder.CreateConcat(prefixElements);
+                        prefixElements.Reverse();
+                        prefix = left._builder.CreateConcatAlreadyReversed(prefixElements);
                         return true;
                     }
                     else
@@ -1676,7 +1678,7 @@ namespace System.Text.RegularExpressions.Symbolic
                         ToStringGrouped(_left, sb);
                         sb.Append('{');
                         sb.Append(_lower);
-                        if (!IsBoundedLoop)
+                        if (_upper == int.MaxValue)
                         {
                             sb.Append(',');
                         }
@@ -1861,7 +1863,7 @@ namespace System.Text.RegularExpressions.Symbolic
         public TSet[] ComputeMinterms()
         {
             HashSet<TSet> sets = GetSets();
-            List<TSet> minterms = _builder._solver.GenerateMinterms(sets);
+            List<TSet> minterms = MintermGenerator<TSet>.GenerateMinterms(_builder._solver, sets);
             minterms.Sort();
             return minterms.ToArray();
         }
@@ -1926,8 +1928,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     return _builder.EndAnchorZReverse;
 
                 case SymbolicRegexNodeKind.EndAnchorZReverse:
-                    // This can potentially only happen if a reversed regex is reversed again.
-                    // Thus, this case is unreachable here, but included for completeness.
+                    Debug.Fail("Should only happen if a reversed regex is reversed again, which isn't expected");
                     return _builder.EndAnchorZ;
 
                 case SymbolicRegexNodeKind.DisableBacktrackingSimulation:
@@ -2028,11 +2029,6 @@ namespace System.Text.RegularExpressions.Symbolic
                     return _builder._solver.Full;
             }
         }
-
-        /// <summary>
-        /// Returns true if this is a loop with an upper bound
-        /// </summary>
-        public bool IsBoundedLoop => _kind == SymbolicRegexNodeKind.Loop && _upper < int.MaxValue;
 
         /// <summary>
         /// Replace anchors that are infeasible by [] wrt the given previous character kind and what continuation is possible.

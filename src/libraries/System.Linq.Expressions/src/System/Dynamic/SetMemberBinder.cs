@@ -26,7 +26,7 @@ namespace System.Dynamic
         /// <summary>
         /// The result type of the operation.
         /// </summary>
-        public override sealed Type ReturnType => typeof(object);
+        public sealed override Type ReturnType => typeof(object);
 
         /// <summary>
         /// Gets the name of the member to get.
@@ -59,7 +59,7 @@ namespace System.Dynamic
         /// <summary>
         /// Always returns <c>true</c> because this is a standard <see cref="DynamicMetaObjectBinder"/>.
         /// </summary>
-        internal override sealed bool IsStandardBinder => true;
+        internal sealed override bool IsStandardBinder => true;
 
         /// <summary>
         /// Performs the binding of the dynamic set member operation if the target dynamic object cannot bind.
