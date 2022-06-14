@@ -365,7 +365,7 @@ jobs:
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
       osGroup: Linux
-      archType: PPC64le
+      archType: ppc64le
       targetRid: linux-ppc64le
       platform: Linux_ppc64le
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
