@@ -21,6 +21,24 @@ namespace System.Net.Security.Tests
         private static readonly byte[] s_Hello = "Hello"u8.ToArray();
 
         [Fact]
+        public void Constructor_Overloads_Validation()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("clientOptions", () => { new NegotiateAuthentication((NegotiateAuthenticationClientOptions)null); });
+            AssertExtensions.Throws<ArgumentNullException>("serverOptions", () => { new NegotiateAuthentication((NegotiateAuthenticationServerOptions)null); });
+        }
+
+        // TODO: Currently fails both on Linux (proceeds with Negotiate) and managed implementation (throws PlatformNotSupportedException)
+        /*[Fact]
+        public void Unsupported_Package()
+        {
+            NegotiateAuthenticationClientOptions clientOptions = new NegotiateAuthenticationClientOptions { Package = "INVALID", Credential = s_testCredentialRight, TargetName = "HTTP/foo" };
+            NegotiateAuthentication negotiateAuthentication = new NegotiateAuthentication(clientOptions);
+            NegotiateAuthenticationStatusCode statusCode;
+            negotiateAuthentication.GetOutgoingBlob((byte[]?)null, out statusCode);
+            Assert.Equal(NegotiateAuthenticationStatusCode.Unsupported, statusCode);
+        }*/
+
+        [Fact]
         public void NtlmProtocolExampleTest()
         {
             // Mirrors the NTLMv2 example in the NTLM specification:

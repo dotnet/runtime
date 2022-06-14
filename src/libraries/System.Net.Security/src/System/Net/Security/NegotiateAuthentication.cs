@@ -23,6 +23,8 @@ namespace System.Net.Security
         /// <param name="clientOptions">The property bag for the authentication options.</param>
         public NegotiateAuthentication(NegotiateAuthenticationClientOptions clientOptions)
         {
+            ArgumentNullException.ThrowIfNull(clientOptions);
+
             ContextFlagsPal contextFlags = ContextFlagsPal.Connection | clientOptions.RequiredProtectionLevel switch
             {
                 ProtectionLevel.Sign => ContextFlagsPal.InitIntegrity,
@@ -47,6 +49,8 @@ namespace System.Net.Security
         /// <param name="serverOptions">The property bag for the authentication options.</param>
         public NegotiateAuthentication(NegotiateAuthenticationServerOptions serverOptions)
         {
+            ArgumentNullException.ThrowIfNull(serverOptions);
+
             ContextFlagsPal contextFlags = ContextFlagsPal.Connection | serverOptions.RequiredProtectionLevel switch
             {
                 ProtectionLevel.Sign => ContextFlagsPal.AcceptIntegrity,
@@ -162,6 +166,10 @@ namespace System.Net.Security
                 IIdentity? identity = _remoteIdentity;
                 if (identity is null)
                 {
+                    if (!IsAuthenticated)
+                    {
+                        throw new InvalidOperationException(SR.net_auth_noauth);
+                    }
                     if (IsServer)
                     {
                         // Server authentication is not supported on tvOS
