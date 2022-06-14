@@ -59,11 +59,20 @@ namespace System.IO
                 case Interop.Errors.ERROR_INVALID_PARAMETER:
                 default:
                     string msg = string.IsNullOrEmpty(path)
-                        ? Marshal.GetPInvokeErrorMessage(errorCode)
-                        : $"{Marshal.GetPInvokeErrorMessage(errorCode)} : '{path}'";
+                        ? GetPInvokeErrorMessage(errorCode)
+                        : $"{GetPInvokeErrorMessage(errorCode)} : '{path}'";
                     return new IOException(
                         msg,
                         MakeHRFromErrorCode(errorCode));
+            }
+
+            static string GetPInvokeErrorMessage(int errorCode)
+            {
+#if NET7_0_OR_GREATER
+                return Marshal.GetPInvokeErrorMessage(errorCode);
+#else
+                return Interop.Kernel32.GetMessage(errorCode);
+#endif
             }
         }
 
