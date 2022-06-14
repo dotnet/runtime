@@ -17389,17 +17389,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleIfPresent(GenTree* tree)
                     }
 #endif
                 }
-                else
 #endif
-                {
-                    // Attempt to find a handle for this expression.
-                    // We can do this for an array element indirection, or for a field indirection.
-                    GenTree* addr = tree->AsIndir()->Addr();
-                    if (addr->OperIs(GT_ARR_ADDR))
-                    {
-                        structHnd = addr->AsArrAddr()->GetElemClassHandle();
-                    }
-                }
                 break;
 #ifdef FEATURE_SIMD
             case GT_SIMD:
