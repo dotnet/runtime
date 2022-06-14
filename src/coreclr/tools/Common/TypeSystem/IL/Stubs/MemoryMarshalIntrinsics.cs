@@ -26,9 +26,10 @@ namespace Internal.IL.Stubs
             if (methodName == "GetArrayDataReference")
             {
                 var rawArrayData = method.Context.SystemModule.GetKnownType("System.Runtime.CompilerServices", "RawArrayData");
+#if READYTORUN
                 if (!rawArrayData.IsNonVersionable())
                     return null; // This is only an intrinsic if we can prove that RawArrayData is known to be of fixed offset
-
+#endif
                 ILEmitter emit = new ILEmitter();
                 ILCodeStream codeStream = emit.NewCodeStream();
                 codeStream.EmitLdArg(0);
