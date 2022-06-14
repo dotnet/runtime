@@ -350,13 +350,7 @@ namespace System.Globalization
         public override int ToFourDigitYear(int year)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(year);
-            if (year > MaxYear)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(year),
-                    year,
-                    SR.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, 1, MaxYear));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(year, MaxYear);
 
             return base.ToFourDigitYear(year);
         }

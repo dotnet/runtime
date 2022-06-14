@@ -95,23 +95,9 @@ namespace System.Net.WebSockets
                     SR.Format(SR.net_WebSockets_ArgumentOutOfRange_TooSmall, MinSendBufferSize));
             }
 
-            if (receiveBufferSize > MaxBufferSize)
-            {
-                throw new ArgumentOutOfRangeException(nameof(receiveBufferSize), receiveBufferSize,
-                    SR.Format(SR.net_WebSockets_ArgumentOutOfRange_TooBig,
-                        nameof(receiveBufferSize),
-                        receiveBufferSize,
-                        MaxBufferSize));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(receiveBufferSize, MaxBufferSize);
 
-            if (sendBufferSize > MaxBufferSize)
-            {
-                throw new ArgumentOutOfRangeException(nameof(sendBufferSize), sendBufferSize,
-                    SR.Format(SR.net_WebSockets_ArgumentOutOfRange_TooBig,
-                        nameof(sendBufferSize),
-                        sendBufferSize,
-                        MaxBufferSize));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(sendBufferSize, MaxBufferSize);
 
             if (keepAliveInterval < Timeout.InfiniteTimeSpan) // -1 millisecond
             {

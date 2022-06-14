@@ -74,11 +74,7 @@ namespace System.Net.Http
             // boundary := 0*69<bchars> bcharsnospace
             // bchars := bcharsnospace / " "
             // bcharsnospace := DIGIT / ALPHA / "'" / "(" / ")" / "+" / "_" / "," / "-" / "." / "/" / ":" / "=" / "?"
-            if (boundary.Length > 70)
-            {
-                throw new ArgumentOutOfRangeException(nameof(boundary), boundary,
-                    SR.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_content_field_too_long, 70));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(boundary.Length, 70);
             // Cannot end with space.
             if (boundary.EndsWith(' '))
             {

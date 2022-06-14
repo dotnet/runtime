@@ -13,10 +13,7 @@ namespace System.Xml
 
             ArgumentOutOfRangeException.ThrowIfNegative(index);
             ArgumentOutOfRangeException.ThrowIfNegative(count);
-            if (count > buffer.Length - index)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(count, buffer.Length - index);
 
             char[] chars = new char[(count * 2) < CharsChunkSize ? (count * 2) : CharsChunkSize];
             int endIndex = index + count;

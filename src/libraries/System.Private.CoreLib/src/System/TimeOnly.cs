@@ -77,10 +77,7 @@ namespace System
         /// <param name="ticks">A time of day expressed in the number of 100-nanosecond units since 00:00:00.0000000.</param>
         public TimeOnly(long ticks)
         {
-            if ((ulong)ticks > MaxTimeTicks)
-            {
-                throw new ArgumentOutOfRangeException(nameof(ticks), SR.ArgumentOutOfRange_TimeOnlyBadTicks);
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan((ulong)ticks, MaxTimeTicks);
 
             _ticks = ticks;
         }

@@ -117,12 +117,7 @@ namespace System.Net.Http
             set
             {
                 ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
-                if (value > HttpContent.MaxBufferSize)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), value,
-                        SR.Format(System.Globalization.CultureInfo.InvariantCulture,
-                        SR.net_http_content_buffersize_limit, HttpContent.MaxBufferSize));
-                }
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(value, HttpContent.MaxBufferSize);
                 CheckDisposedOrStarted();
 
                 Debug.Assert(HttpContent.MaxBufferSize <= int.MaxValue);

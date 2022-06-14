@@ -22,8 +22,7 @@ namespace System.Configuration
         {
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(resolution);
 
-            if (minValue > maxValue)
-                throw new ArgumentOutOfRangeException(nameof(minValue), SR.Validator_min_greater_than_max);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(minValue, maxValue);
 
             _minValue = minValue;
             _maxValue = maxValue;

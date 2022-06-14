@@ -25,15 +25,12 @@ namespace System.Text
         {
             ArgumentNullException.ThrowIfNull(chars);
             ArgumentOutOfRangeException.ThrowIfNegative(charIndex);
-            if (charIndex > chars.Length)
-                throw new ArgumentOutOfRangeException(nameof(charIndex), SR.Format(SR.OffsetExceedsBufferSize, chars.Length));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(charIndex, chars.Length);
             ArgumentOutOfRangeException.ThrowIfNegative(charCount);
-            if (charCount > chars.Length - charIndex)
-                throw new ArgumentOutOfRangeException(nameof(charCount), SR.Format(SR.SizeExceedsRemainingBufferSpace, chars.Length - charIndex));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(charCount, chars.Length - charIndex);
             ArgumentNullException.ThrowIfNull(bytes);
             ArgumentOutOfRangeException.ThrowIfNegative(byteIndex);
-            if (byteIndex > bytes.Length)
-                throw new ArgumentOutOfRangeException(nameof(byteIndex), SR.Format(SR.OffsetExceedsBufferSize, bytes.Length));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(byteIndex, bytes.Length);
             int byteCount = GetByteCount(chars, charIndex, charCount);
             if (byteCount < 0 || byteCount > bytes.Length - byteIndex)
                 throw new ArgumentException(SR.XmlArrayTooSmall, nameof(bytes));
@@ -64,16 +61,13 @@ namespace System.Text
         {
             ArgumentNullException.ThrowIfNull(bytes);
             ArgumentOutOfRangeException.ThrowIfNegative(byteIndex);
-            if (byteIndex > bytes.Length)
-                throw new ArgumentOutOfRangeException(nameof(byteIndex), SR.Format(SR.OffsetExceedsBufferSize, bytes.Length));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(byteIndex, bytes.Length);
             ArgumentOutOfRangeException.ThrowIfNegative(byteCount);
-            if (byteCount > bytes.Length - byteIndex)
-                throw new ArgumentOutOfRangeException(nameof(byteCount), SR.Format(SR.SizeExceedsRemainingBufferSpace, bytes.Length - byteIndex));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(byteCount, bytes.Length - byteIndex);
             int charCount = GetCharCount(bytes, byteIndex, byteCount);
             ArgumentNullException.ThrowIfNull(chars);
             ArgumentOutOfRangeException.ThrowIfNegative(charIndex);
-            if (charIndex > chars.Length)
-                throw new ArgumentOutOfRangeException(nameof(charIndex), SR.Format(SR.OffsetExceedsBufferSize, chars.Length));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(charIndex, chars.Length);
             if (charCount < 0 || charCount > chars.Length - charIndex)
                 throw new ArgumentException(SR.XmlArrayTooSmall, nameof(chars));
             if (byteCount > 0)

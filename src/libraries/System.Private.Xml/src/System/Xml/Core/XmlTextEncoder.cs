@@ -111,20 +111,11 @@ namespace System.Xml
         {
             ArgumentNullException.ThrowIfNull(array);
 
-            if (0 > offset)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(0, offset);
 
-            if (0 > count)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(0, count);
 
-            if (count > array.Length - offset)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(count, array.Length - offset);
 
             if (_cacheAttrValue)
             {
@@ -448,20 +439,11 @@ namespace System.Xml
         {
             ArgumentNullException.ThrowIfNull(array);
 
-            if (0 > count)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(0, count);
 
-            if (0 > offset)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(0, offset);
 
-            if (count > array.Length - offset)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(count, array.Length - offset);
 
             if (_cacheAttrValue)
             {

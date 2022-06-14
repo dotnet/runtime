@@ -124,10 +124,7 @@ namespace System.Text
             {
                 value = string.Empty;
             }
-            if (startIndex > value.Length - length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_IndexLength);
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(startIndex, value.Length - length);
 
             m_MaxCapacity = int.MaxValue;
             if (capacity == 0)
@@ -149,10 +146,7 @@ namespace System.Text
         /// <param name="maxCapacity">The maximum capacity of this builder.</param>
         public StringBuilder(int capacity, int maxCapacity)
         {
-            if (capacity > maxCapacity)
-            {
-                throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_Capacity);
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(capacity, maxCapacity);
             if (maxCapacity < 1)
             {
                 throw new ArgumentOutOfRangeException(nameof(maxCapacity), SR.ArgumentOutOfRange_SmallMaxCapacity);
@@ -275,10 +269,7 @@ namespace System.Text
             set
             {
                 ArgumentOutOfRangeException.ThrowIfNegative(value);
-                if (value > MaxCapacity)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_Capacity);
-                }
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(value, MaxCapacity);
                 if (value < Length)
                 {
                     throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_SmallCapacity);
@@ -365,15 +356,9 @@ namespace System.Text
         {
             int currentLength = this.Length;
             ArgumentOutOfRangeException.ThrowIfNegative(startIndex);
-            if (startIndex > currentLength)
-            {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndexLargerThanLength);
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(startIndex, currentLength);
             ArgumentOutOfRangeException.ThrowIfNegative(length);
-            if (startIndex > currentLength - length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_IndexLength);
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(startIndex, currentLength - length);
 
             AssertInvariants();
             string result = string.FastAllocateString(length);
@@ -398,10 +383,7 @@ namespace System.Text
                 // If the new length is less than 0 or greater than our Maximum capacity, bail.
                 ArgumentOutOfRangeException.ThrowIfNegative(value);
 
-                if (value > MaxCapacity)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_SmallCapacity);
-                }
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(value, MaxCapacity);
 
                 if (value == 0 && m_ChunkPrevious == null)
                 {
@@ -717,10 +699,7 @@ namespace System.Text
 
                 ArgumentNullException.Throw(nameof(value));
             }
-            if (charCount > value.Length - startIndex)
-            {
-                throw new ArgumentOutOfRangeException(nameof(charCount), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(charCount, value.Length - startIndex);
 
             if (charCount != 0)
             {
@@ -766,10 +745,7 @@ namespace System.Text
 
             if (count != 0)
             {
-                if (startIndex > value.Length - count)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
-                }
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(startIndex, value.Length - count);
 
                 Append(ref Unsafe.Add(ref value.GetRawStringData(), startIndex), count);
             }
@@ -806,10 +782,7 @@ namespace System.Text
                 return this;
             }
 
-            if (count > value.Length - startIndex)
-            {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(count, value.Length - startIndex);
 
             return AppendCore(value, startIndex, count);
         }
@@ -823,10 +796,7 @@ namespace System.Text
 
             int newLength = Length + count;
 
-            if ((uint)newLength > (uint)m_MaxCapacity)
-            {
-                throw new ArgumentOutOfRangeException(nameof(Capacity), SR.ArgumentOutOfRange_Capacity);
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan((uint)newLength, (uint)m_MaxCapacity);
 
             while (count > 0)
             {
@@ -872,10 +842,7 @@ namespace System.Text
         {
             ArgumentOutOfRangeException.ThrowIfNegative(count);
 
-            if ((uint)sourceIndex > (uint)Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(sourceIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan((uint)sourceIndex, (uint)Length);
 
             if (sourceIndex > Length - count)
             {
@@ -924,10 +891,7 @@ namespace System.Text
             ArgumentOutOfRangeException.ThrowIfNegative(count);
 
             int currentLength = Length;
-            if ((uint)index > (uint)currentLength)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan((uint)index, (uint)currentLength);
 
             if (value.IsEmpty || count == 0)
             {
@@ -966,10 +930,7 @@ namespace System.Text
 
             ArgumentOutOfRangeException.ThrowIfNegative(startIndex);
 
-            if (length > Length - startIndex)
-            {
-                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(length, Length - startIndex);
 
             if (Length == length && startIndex == 0)
             {
@@ -1206,10 +1167,7 @@ namespace System.Text
 
         public StringBuilder Insert(int index, string? value)
         {
-            if ((uint)index > (uint)Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan((uint)index, (uint)Length);
 
             if (value != null)
             {
@@ -1233,10 +1191,7 @@ namespace System.Text
 
         public StringBuilder Insert(int index, char value)
         {
-            if ((uint)index > (uint)Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan((uint)index, (uint)Length);
 
             Insert(index, ref value, 1);
             return this;
@@ -1244,10 +1199,7 @@ namespace System.Text
 
         public StringBuilder Insert(int index, char[]? value)
         {
-            if ((uint)index > (uint)Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan((uint)index, (uint)Length);
 
             if (value != null)
             {
@@ -1259,10 +1211,7 @@ namespace System.Text
         public StringBuilder Insert(int index, char[]? value, int startIndex, int charCount)
         {
             int currentLength = Length;
-            if ((uint)index > (uint)currentLength)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan((uint)index, (uint)currentLength);
 
             if (value == null)
             {
@@ -1277,10 +1226,7 @@ namespace System.Text
 
             ArgumentOutOfRangeException.ThrowIfNegative(charCount);
 
-            if (startIndex > value.Length - charCount)
-            {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(startIndex, value.Length - charCount);
 
             if (charCount > 0)
             {
@@ -1313,10 +1259,7 @@ namespace System.Text
 
         public StringBuilder Insert(int index, ReadOnlySpan<char> value)
         {
-            if ((uint)index > (uint)Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan((uint)index, (uint)Length);
 
             if (value.Length != 0)
             {
@@ -1793,10 +1736,7 @@ namespace System.Text
         public StringBuilder Replace(string oldValue, string? newValue, int startIndex, int count)
         {
             int currentLength = Length;
-            if ((uint)startIndex > (uint)currentLength)
-            {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan((uint)startIndex, (uint)currentLength);
             if (count < 0 || startIndex > currentLength - count)
             {
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
@@ -1878,10 +1818,7 @@ namespace System.Text
         public StringBuilder Replace(char oldChar, char newChar, int startIndex, int count)
         {
             int currentLength = Length;
-            if ((uint)startIndex > (uint)currentLength)
-            {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan((uint)startIndex, (uint)currentLength);
 
             if (count < 0 || startIndex > currentLength - count)
             {

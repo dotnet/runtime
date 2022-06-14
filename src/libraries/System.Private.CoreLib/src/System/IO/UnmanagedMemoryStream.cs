@@ -160,8 +160,7 @@ namespace System.IO
             ArgumentOutOfRangeException.ThrowIfNegative(length);
 
             ArgumentOutOfRangeException.ThrowIfNegative(capacity);
-            if (length > capacity)
-                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_LengthGreaterThanCapacity);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(length, capacity);
             // Check for wraparound.
             if (((byte*)((long)pointer + capacity)) < pointer)
                 throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_UnmanagedMemStreamWrapAround);

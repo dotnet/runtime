@@ -208,10 +208,7 @@ namespace System.Xml
             set
             {
                 CheckReadOnly();
-                if (unchecked((uint)value) > (uint)(NamespaceHandling.OmitDuplicates))
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(unchecked((uint)value), (uint)(NamespaceHandling.OmitDuplicates));
                 _namespaceHandling = value;
             }
         }

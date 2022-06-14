@@ -13,8 +13,8 @@ namespace GenUnicodeProp
 
         public TableLevels(int level2Bits, int level3Bits)
         {
-            if ((uint)level2Bits > 20) { throw new ArgumentOutOfRangeException(nameof(level2Bits)); }
-            if ((uint)level3Bits > 20) { throw new ArgumentOutOfRangeException(nameof(level3Bits)); }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan((uint)level2Bits, 20);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan((uint)level3Bits, 20);
 
             Level1Bits = 20 - level2Bits - level3Bits;
             if (Level1Bits < 0) { throw new Exception("Level2Bits + Level3Bits cannot exceed 20."); }

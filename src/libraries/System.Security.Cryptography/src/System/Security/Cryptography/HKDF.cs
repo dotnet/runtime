@@ -216,8 +216,7 @@ namespace System.Security.Cryptography
 
             // Constant comes from section 2.3 (the constraint on L in the Inputs section)
             int maxOkmLength = 255 * hashLength;
-            if (outputLength > maxOkmLength)
-                throw new ArgumentOutOfRangeException(nameof(outputLength), SR.Format(SR.Cryptography_Okm_TooLarge, maxOkmLength));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(outputLength, maxOkmLength);
 
             Span<byte> prk = stackalloc byte[hashLength];
 

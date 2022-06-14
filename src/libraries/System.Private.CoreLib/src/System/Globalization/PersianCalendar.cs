@@ -106,13 +106,7 @@ namespace System.Globalization
             CheckYearRange(year, era);
             if (year == MaxCalendarYear)
             {
-                if (month > MaxCalendarMonth)
-                {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(month),
-                        month,
-                        SR.Format(SR.ArgumentOutOfRange_Range, 1, MaxCalendarMonth));
-                }
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(month, MaxCalendarMonth);
             }
 
             if (month < 1 || month > 12)
@@ -420,13 +414,7 @@ namespace System.Globalization
                 return base.ToFourDigitYear(year);
             }
 
-            if (year > MaxCalendarYear)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(year),
-                    year,
-                    SR.Format(SR.ArgumentOutOfRange_Range, 1, MaxCalendarYear));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(year, MaxCalendarYear);
 
             return year;
         }

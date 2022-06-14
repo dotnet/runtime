@@ -284,10 +284,7 @@ namespace System.Diagnostics
         /// <exception cref="T:System.ArgumentOutOfRangeException"> <paramref name="index" /> index is less than 0 or <paramref name="index" /> is greater than <see cref="M:System.Diagnostics.TagList.Count" />.</exception>
         public void Insert(int index, KeyValuePair<string, object?> item)
         {
-            if ((uint)index > (uint)_tagsCount)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan((uint)index, (uint)_tagsCount);
 
             if (index == _tagsCount)
             {

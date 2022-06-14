@@ -1259,10 +1259,7 @@ namespace System
 
         public static DateTime FromFileTimeUtc(long fileTime)
         {
-            if ((ulong)fileTime > MaxTicks - FileTimeOffset)
-            {
-                throw new ArgumentOutOfRangeException(nameof(fileTime), SR.ArgumentOutOfRange_FileTimeInvalid);
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan((ulong)fileTime, MaxTicks - FileTimeOffset);
 
 #pragma warning disable 162 // Unrechable code on Unix
             if (s_systemSupportsLeapSeconds)

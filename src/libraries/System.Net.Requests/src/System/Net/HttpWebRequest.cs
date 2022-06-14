@@ -1435,10 +1435,7 @@ namespace System.Net
             {
                 throw new ArgumentOutOfRangeException(from < 0 ? nameof(from) : nameof(to), SR.net_rangetoosmall);
             }
-            if (from > to)
-            {
-                throw new ArgumentOutOfRangeException(nameof(from), SR.net_fromto);
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(from, to);
             if (!HttpValidationHelpers.IsValidToken(rangeSpecifier))
             {
                 throw new ArgumentException(SR.net_nottoken, nameof(rangeSpecifier));

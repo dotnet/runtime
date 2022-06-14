@@ -12,10 +12,7 @@ namespace System.IO.MemoryMappedFiles
             SafeMemoryMappedFileHandle memMappedFileHandle, MemoryMappedFileAccess access,
             long requestedOffset, long requestedSize)
         {
-            if (requestedOffset > memMappedFileHandle._capacity)
-            {
-                throw new ArgumentOutOfRangeException("offset");
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(requestedOffset, memMappedFileHandle._capacity);
             if (requestedSize > MaxProcessAddressSpace)
             {
                 throw new IOException(SR.ArgumentOutOfRange_CapacityLargerThanLogicalAddressSpaceNotAllowed);

@@ -1099,10 +1099,7 @@ namespace System.Xml
                 ArgumentNullException.ThrowIfNull(buffer);
                 ArgumentOutOfRangeException.ThrowIfNegative(index);
                 ArgumentOutOfRangeException.ThrowIfNegative(count);
-                if (count > buffer.Length - index)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(count));
-                }
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(count, buffer.Length - index);
 
                 AdvanceState(Token.Text);
                 if (SaveAttrValue)
@@ -1128,10 +1125,7 @@ namespace System.Xml
                 ArgumentNullException.ThrowIfNull(buffer);
                 ArgumentOutOfRangeException.ThrowIfNegative(index);
                 ArgumentOutOfRangeException.ThrowIfNegative(count);
-                if (count > buffer.Length - index)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(count));
-                }
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(count, buffer.Length - index);
 
                 AdvanceState(Token.RawData);
                 if (SaveAttrValue)
@@ -1183,10 +1177,7 @@ namespace System.Xml
                 ArgumentNullException.ThrowIfNull(buffer);
                 ArgumentOutOfRangeException.ThrowIfNegative(index);
                 ArgumentOutOfRangeException.ThrowIfNegative(count);
-                if (count > buffer.Length - index)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(count));
-                }
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(count, buffer.Length - index);
 
                 AdvanceState(Token.Base64);
                 _writer.WriteBase64(buffer, index, count);

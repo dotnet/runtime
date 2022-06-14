@@ -175,12 +175,7 @@ namespace System.Threading
         {
             ArgumentOutOfRangeException.ThrowIfNegative(spinCount);
 
-            if (spinCount > SpinCountState_MaxValue)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(spinCount),
-                    SR.Format(SR.ManualResetEventSlim_ctor_SpinCountOutOfRange, SpinCountState_MaxValue));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(spinCount, SpinCountState_MaxValue);
 
             // We will suppress default spin  because the user specified a count.
             Initialize(initialState, spinCount);

@@ -194,10 +194,7 @@ namespace System.Collections.Generic
 
             ArgumentOutOfRangeException.ThrowIfNegative(index);
 
-            if (index > array.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_BiggerThanCollection);
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(index, array.Length);
 
             if (array.Length - index < Count)
             {

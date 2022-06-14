@@ -810,12 +810,7 @@ namespace System.Security.AccessControl
         {
             if (opaque != null)
             {
-                if (opaque.Length > MaxOpaqueLength)
-                {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(opaque),
-                        SR.Format(SR.ArgumentOutOfRange_ArrayLength, 0, MaxOpaqueLength));
-                }
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(opaque.Length, MaxOpaqueLength);
                 if (opaque.Length % 4 != 0)
                 {
                     throw new ArgumentOutOfRangeException(
@@ -1263,12 +1258,7 @@ namespace System.Security.AccessControl
         {
             if (opaque != null)
             {
-                if (opaque.Length > MaxOpaqueLengthInternal)
-                {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(opaque),
-                        SR.Format(SR.ArgumentOutOfRange_ArrayLength, 0, MaxOpaqueLengthInternal));
-                }
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(opaque.Length, MaxOpaqueLengthInternal);
                 if (opaque.Length % 4 != 0)
                 {
                     throw new ArgumentOutOfRangeException(

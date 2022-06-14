@@ -23,10 +23,7 @@ namespace System.IO.MemoryMappedFiles
                 }
 
                 // one can always create a small view if they do not want to map an entire file
-                if (fileSize > capacity)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_CapacityGEFileSizeRequired);
-                }
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(fileSize, capacity);
 
                 if (access == MemoryMappedFileAccess.Write)
                 {

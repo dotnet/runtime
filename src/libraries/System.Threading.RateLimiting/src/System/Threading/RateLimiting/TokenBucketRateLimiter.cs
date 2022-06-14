@@ -63,10 +63,7 @@ namespace System.Threading.RateLimiting
         protected override RateLimitLease AcquireCore(int tokenCount)
         {
             // These amounts of resources can never be acquired
-            if (tokenCount > _options.TokenLimit)
-            {
-                throw new ArgumentOutOfRangeException(nameof(tokenCount), tokenCount, SR.Format(SR.TokenLimitExceeded, tokenCount, _options.TokenLimit));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(tokenCount, _options.TokenLimit);
 
             // Return SuccessfulLease or FailedLease depending to indicate limiter state
             if (tokenCount == 0 && !_disposed)
@@ -94,10 +91,7 @@ namespace System.Threading.RateLimiting
         protected override ValueTask<RateLimitLease> WaitAsyncCore(int tokenCount, CancellationToken cancellationToken = default)
         {
             // These amounts of resources can never be acquired
-            if (tokenCount > _options.TokenLimit)
-            {
-                throw new ArgumentOutOfRangeException(nameof(tokenCount), tokenCount, SR.Format(SR.TokenLimitExceeded, tokenCount, _options.TokenLimit));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(tokenCount, _options.TokenLimit);
 
             ThrowIfDisposed();
 

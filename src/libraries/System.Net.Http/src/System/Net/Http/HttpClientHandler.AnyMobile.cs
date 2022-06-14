@@ -309,12 +309,7 @@ namespace System.Net.Http
             {
                 ArgumentOutOfRangeException.ThrowIfNegative(value);
 
-                if (value > HttpContent.MaxBufferSize)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), value,
-                        SR.Format(CultureInfo.InvariantCulture, SR.net_http_content_buffersize_limit,
-                        HttpContent.MaxBufferSize));
-                }
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(value, HttpContent.MaxBufferSize);
 
                 CheckDisposed();
 

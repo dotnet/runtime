@@ -68,10 +68,7 @@ namespace System.IO
                 origin == SeekOrigin.End ? _content.Length + offset :
                 throw new ArgumentOutOfRangeException(nameof(origin));
 
-            if (pos > int.MaxValue)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(pos, int.MaxValue);
 
             if (pos < 0)
             {

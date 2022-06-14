@@ -324,11 +324,7 @@ namespace System.Threading
                     SR.Barrier_AddParticipants_NonPositive_ArgumentOutOfRange);
             }
 
-            if (participantCount > MAX_PARTICIPANTS) //overflow
-            {
-                throw new ArgumentOutOfRangeException(nameof(participantCount),
-                        SR.Barrier_AddParticipants_Overflow_ArgumentOutOfRange);
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(participantCount, MAX_PARTICIPANTS);
 
             // in case of this is called from the PHA
             if (_actionCallerID != 0 && Environment.CurrentManagedThreadId == _actionCallerID)
@@ -345,11 +341,7 @@ namespace System.Threading
                 int current;
                 bool sense;
                 GetCurrentTotal(currentTotal, out current, out total, out sense);
-                if (participantCount + total > MAX_PARTICIPANTS) //overflow
-                {
-                    throw new ArgumentOutOfRangeException(nameof(participantCount),
-                        SR.Barrier_AddParticipants_Overflow_ArgumentOutOfRange);
-                }
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(participantCount + total, MAX_PARTICIPANTS);
 
                 if (SetCurrentTotal(currentTotal, current, total + participantCount, sense))
                 {

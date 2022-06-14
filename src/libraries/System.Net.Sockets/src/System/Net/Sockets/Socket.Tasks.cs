@@ -734,28 +734,16 @@ namespace System.Net.Sockets
         {
             ArgumentNullException.ThrowIfNull(buffer);
 
-            if ((uint)offset > (uint)buffer.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
-            if ((uint)size > (uint)(buffer.Length - offset))
-            {
-                throw new ArgumentOutOfRangeException(nameof(size));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan((uint)offset, (uint)buffer.Length);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan((uint)size, (uint)(buffer.Length - offset));
         }
 
         /// <summary>Validates the supplied array segment, throwing if its array or indices are null or out-of-bounds, respectively.</summary>
         private static void ValidateBuffer(ArraySegment<byte> buffer)
         {
             ArgumentNullException.ThrowIfNull(buffer.Array, nameof(buffer.Array));
-            if ((uint)buffer.Offset > (uint)buffer.Array.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(buffer.Offset));
-            }
-            if ((uint)buffer.Count > (uint)(buffer.Array.Length - buffer.Offset))
-            {
-                throw new ArgumentOutOfRangeException(nameof(buffer.Count));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan((uint)buffer.Offset, (uint)buffer.Array.Length);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan((uint)buffer.Count, (uint)(buffer.Array.Length - buffer.Offset));
         }
 
         /// <summary>Validates the supplied buffer list, throwing if it's null or empty.</summary>

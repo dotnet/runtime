@@ -319,14 +319,7 @@ namespace System.Security.Principal
             //
             // Check the number of subauthorities passed in
             //
-            if (subAuthorities.Length > MaxSubAuthorities)
-            {
-                throw new ArgumentOutOfRangeException(
-                    "subAuthorities.Length",
-                    subAuthorities.Length,
-                    SR.Format(SR.IdentityReference_InvalidNumberOfSubauthorities, MaxSubAuthorities)
-                );
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(subAuthorities.Length, MaxSubAuthorities);
 
             //
             // Identifier authority is at most 6 bytes long

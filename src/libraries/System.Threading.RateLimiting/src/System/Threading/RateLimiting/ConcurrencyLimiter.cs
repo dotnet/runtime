@@ -49,10 +49,7 @@ namespace System.Threading.RateLimiting
         protected override RateLimitLease AcquireCore(int permitCount)
         {
             // These amounts of resources can never be acquired
-            if (permitCount > _options.PermitLimit)
-            {
-                throw new ArgumentOutOfRangeException(nameof(permitCount), permitCount, SR.Format(SR.PermitLimitExceeded, permitCount, _options.PermitLimit));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(permitCount, _options.PermitLimit);
 
             ThrowIfDisposed();
 
@@ -81,10 +78,7 @@ namespace System.Threading.RateLimiting
         protected override ValueTask<RateLimitLease> WaitAsyncCore(int permitCount, CancellationToken cancellationToken = default)
         {
             // These amounts of resources can never be acquired
-            if (permitCount > _options.PermitLimit)
-            {
-                throw new ArgumentOutOfRangeException(nameof(permitCount), permitCount, SR.Format(SR.PermitLimitExceeded, permitCount, _options.PermitLimit));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(permitCount, _options.PermitLimit);
 
             // Return SuccessfulLease if requestedCount is 0 and resources are available
             if (permitCount == 0 && _permitCount > 0 && !_disposed)

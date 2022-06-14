@@ -377,10 +377,7 @@ namespace System.Runtime.Serialization.Json
             ArgumentOutOfRangeException.ThrowIfNegative(index);
 
             ArgumentOutOfRangeException.ThrowIfNegative(count);
-            if (count > buffer.Length - index)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.JsonSizeExceedsRemainingBufferSpace, buffer.Length - index));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(count, buffer.Length - index);
 
             StartText();
             _nodeWriter.WriteBase64Text(buffer, 0, buffer, index, count);
@@ -394,10 +391,7 @@ namespace System.Runtime.Serialization.Json
             ArgumentOutOfRangeException.ThrowIfNegative(index);
 
             ArgumentOutOfRangeException.ThrowIfNegative(count);
-            if (count > buffer.Length - index)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.JsonSizeExceedsRemainingBufferSpace, buffer.Length - index));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(count, buffer.Length - index);
 
             StartText();
             WriteEscapedJsonString(BinHexEncoding.GetString(buffer, index, count));
@@ -421,10 +415,7 @@ namespace System.Runtime.Serialization.Json
             ArgumentOutOfRangeException.ThrowIfNegative(index);
 
             ArgumentOutOfRangeException.ThrowIfNegative(count);
-            if (count > buffer.Length - index)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.JsonSizeExceedsRemainingBufferSpace, buffer.Length - index));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(count, buffer.Length - index);
 
             WriteString(new string(buffer, index, count));
         }
@@ -715,10 +706,7 @@ namespace System.Runtime.Serialization.Json
             ArgumentOutOfRangeException.ThrowIfNegative(index);
 
             ArgumentOutOfRangeException.ThrowIfNegative(count);
-            if (count > buffer.Length - index)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.JsonSizeExceedsRemainingBufferSpace, buffer.Length - index));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(count, buffer.Length - index);
 
             WriteString(new string(buffer, index, count));
         }

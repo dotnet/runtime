@@ -30,8 +30,7 @@ namespace System.Text.Json
             set
             {
                 Debug.Assert(value >= 0);
-                if (value > JsonCommentHandling.Skip)
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.JsonDocumentDoesNotSupportComments);
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(value, JsonCommentHandling.Skip);
 
                 _commentHandling = value;
             }

@@ -750,8 +750,7 @@ namespace System.Text
             long byteCount = (long)charCount * 3 + 2;
 
             // check for overflow
-            if (byteCount > 0x7fffffff)
-                throw new ArgumentOutOfRangeException(nameof(charCount), SR.ArgumentOutOfRange_GetByteCountOverflow);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(byteCount, 0x7fffffff);
 
             return (int)byteCount;
         }

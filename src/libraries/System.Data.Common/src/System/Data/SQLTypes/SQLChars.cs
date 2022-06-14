@@ -272,8 +272,7 @@ namespace System.Data.SqlTypes
                 if (null == _rgchBuf)
                     throw new SqlTypeException(SR.SqlMisc_NoBufferMessage);
 
-                if (value > _rgchBuf.Length)
-                    throw new ArgumentOutOfRangeException(nameof(value));
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(value, _rgchBuf.Length);
 
                 if (IsNull)
                     // At this point we know that value is small enough

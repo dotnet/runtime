@@ -79,10 +79,7 @@ namespace System.Globalization
             {
                 throw new ArgumentOutOfRangeException(nameof(startingTextElement), startingTextElement, SR.Arg_ArgumentOutOfRangeException);
             }
-            if ((uint)lengthInTextElements > (uint)(indexes.Length - startingTextElement))
-            {
-                throw new ArgumentOutOfRangeException(nameof(lengthInTextElements), lengthInTextElements, SR.Arg_ArgumentOutOfRangeException);
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan((uint)lengthInTextElements, (uint)(indexes.Length - startingTextElement));
 
             int start = indexes[startingTextElement];
             Index end = ^0; // assume reading to end of the string unless the caller told us to stop early

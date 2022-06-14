@@ -2328,8 +2328,7 @@ namespace System
 
             ArgumentOutOfRangeException.ThrowIfNegative(length);
             ArgumentOutOfRangeException.ThrowIfNegative(offset);
-            if (offset > (inArray.Length - length))
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_OffsetLength);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, (inArray.Length - length));
 
             return ToBase64String(new ReadOnlySpan<byte>(inArray, offset, length), options);
         }
@@ -2389,8 +2388,7 @@ namespace System
 
             inArrayLength = inArray.Length;
 
-            if (offsetIn > (int)(inArrayLength - length))
-                throw new ArgumentOutOfRangeException(nameof(offsetIn), SR.ArgumentOutOfRange_OffsetLength);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(offsetIn, (int)(inArrayLength - length));
 
             if (inArrayLength == 0)
                 return 0;
@@ -2402,8 +2400,7 @@ namespace System
             // Length of the char buffer required
             numElementsToCopy = ToBase64_CalculateAndValidateOutputLength(length, insertLineBreaks);
 
-            if (offsetOut > (int)(outArrayLength - numElementsToCopy))
-                throw new ArgumentOutOfRangeException(nameof(offsetOut), SR.ArgumentOutOfRange_OffsetOut);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(offsetOut, (int)(outArrayLength - numElementsToCopy));
 
             fixed (char* outChars = &outArray[offsetOut])
             {
@@ -2700,8 +2697,7 @@ namespace System
 
             ArgumentOutOfRangeException.ThrowIfNegative(offset);
 
-            if (offset > inArray.Length - length)
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_OffsetLength);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, inArray.Length - length);
 
             if (inArray.Length == 0)
             {
@@ -2892,8 +2888,7 @@ namespace System
 
             ArgumentOutOfRangeException.ThrowIfNegative(length);
             ArgumentOutOfRangeException.ThrowIfNegative(offset);
-            if (offset > (inArray.Length - length))
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_OffsetLength);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, (inArray.Length - length));
 
             return ToHexString(new ReadOnlySpan<byte>(inArray, offset, length));
         }
@@ -2908,8 +2903,7 @@ namespace System
         {
             if (bytes.Length == 0)
                 return string.Empty;
-            if (bytes.Length > int.MaxValue / 2)
-                throw new ArgumentOutOfRangeException(nameof(bytes), SR.ArgumentOutOfRange_InputTooLarge);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(bytes.Length, int.MaxValue / 2);
 
             return HexConverter.ToString(bytes, HexConverter.Casing.Upper);
         }

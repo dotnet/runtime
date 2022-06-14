@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -63,10 +63,7 @@ namespace System.Threading.RateLimiting
         {
             // These amounts of resources can never be acquired
             // Raises a PermitLimitExceeded ArgumentOutOFRangeException
-            if (requestCount > _options.PermitLimit)
-            {
-                throw new ArgumentOutOfRangeException(nameof(requestCount), requestCount, SR.Format(SR.PermitLimitExceeded, requestCount, _options.PermitLimit));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(requestCount, _options.PermitLimit);
 
             // Return SuccessfulLease or FailedLease depending to indicate limiter state
             if (requestCount == 0 && !_disposed)
@@ -96,10 +93,7 @@ namespace System.Threading.RateLimiting
         protected override ValueTask<RateLimitLease> WaitAsyncCore(int requestCount, CancellationToken cancellationToken = default)
         {
             // These amounts of resources can never be acquired
-            if (requestCount > _options.PermitLimit)
-            {
-                throw new ArgumentOutOfRangeException(nameof(requestCount), requestCount, SR.Format(SR.PermitLimitExceeded, requestCount, _options.PermitLimit));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(requestCount, _options.PermitLimit);
 
             ThrowIfDisposed();
 

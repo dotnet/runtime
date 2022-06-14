@@ -1039,10 +1039,7 @@ namespace System.Xml
                 ArgumentNullException.ThrowIfNull(buffer);
                 ArgumentOutOfRangeException.ThrowIfNegative(index);
                 ArgumentOutOfRangeException.ThrowIfNegative(count);
-                if (count > buffer.Length - index)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(count));
-                }
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(count, buffer.Length - index);
 
                 await AdvanceStateAsync(Token.Text).ConfigureAwait(false);
                 if (SaveAttrValue)
@@ -1068,10 +1065,7 @@ namespace System.Xml
                 ArgumentNullException.ThrowIfNull(buffer);
                 ArgumentOutOfRangeException.ThrowIfNegative(index);
                 ArgumentOutOfRangeException.ThrowIfNegative(count);
-                if (count > buffer.Length - index)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(count));
-                }
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(count, buffer.Length - index);
 
                 await AdvanceStateAsync(Token.RawData).ConfigureAwait(false);
                 if (SaveAttrValue)
@@ -1123,10 +1117,7 @@ namespace System.Xml
                 ArgumentNullException.ThrowIfNull(buffer);
                 ArgumentOutOfRangeException.ThrowIfNegative(index);
                 ArgumentOutOfRangeException.ThrowIfNegative(count);
-                if (count > buffer.Length - index)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(count));
-                }
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(count, buffer.Length - index);
 
                 Task task = AdvanceStateAsync(Token.Base64);
 

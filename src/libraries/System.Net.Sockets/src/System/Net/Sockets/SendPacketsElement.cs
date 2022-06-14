@@ -73,14 +73,8 @@ namespace System.Net.Sockets
         {
             ArgumentNullException.ThrowIfNull(buffer);
 
-            if ((uint)offset > (uint)buffer.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
-            if ((uint)count > (uint)(buffer.Length - offset))
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan((uint)offset, (uint)buffer.Length);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan((uint)count, (uint)(buffer.Length - offset));
 
             Initialize(null, null, buffer, buffer.AsMemory(offset, count), offset, count, endOfPacket);
         }

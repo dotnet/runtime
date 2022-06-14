@@ -70,19 +70,15 @@ namespace System.Security.Cryptography
         {
             ArgumentNullException.ThrowIfNull(inputBuffer);
             ArgumentOutOfRangeException.ThrowIfNegative(inputOffset);
-            if (inputOffset > inputBuffer.Length)
-                throw new ArgumentOutOfRangeException(nameof(inputOffset));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(inputOffset, inputBuffer.Length);
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(inputCount);
             if (inputCount % InputBlockSize != 0)
                 throw new ArgumentOutOfRangeException(nameof(inputCount), SR.Cryptography_MustTransformWholeBlock);
-            if (inputCount > inputBuffer.Length - inputOffset)
-                throw new ArgumentOutOfRangeException(nameof(inputCount), SR.Argument_InvalidOffLen);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(inputCount, inputBuffer.Length - inputOffset);
 
             ArgumentNullException.ThrowIfNull(outputBuffer);
-            if (outputOffset > outputBuffer.Length)
-                throw new ArgumentOutOfRangeException(nameof(outputOffset));
-            if (inputCount > outputBuffer.Length - outputOffset)
-                throw new ArgumentOutOfRangeException(nameof(outputOffset), SR.Argument_InvalidOffLen);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(outputOffset, outputBuffer.Length);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(inputCount, outputBuffer.Length - outputOffset);
 
             int numBytesWritten = UncheckedTransformBlock(inputBuffer, inputOffset, inputCount, outputBuffer, outputOffset);
             Debug.Assert(numBytesWritten >= 0 && numBytesWritten <= inputCount);
@@ -95,10 +91,8 @@ namespace System.Security.Cryptography
 
             ArgumentOutOfRangeException.ThrowIfNegative(inputOffset);
             ArgumentOutOfRangeException.ThrowIfNegative(inputCount);
-            if (inputOffset > inputBuffer.Length)
-                throw new ArgumentOutOfRangeException(nameof(inputOffset));
-            if (inputCount > inputBuffer.Length - inputOffset)
-                throw new ArgumentOutOfRangeException(nameof(inputCount), SR.Argument_InvalidOffLen);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(inputOffset, inputBuffer.Length);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(inputCount, inputBuffer.Length - inputOffset);
 
             byte[] output = UncheckedTransformFinalBlock(inputBuffer, inputOffset, inputCount);
             return output;

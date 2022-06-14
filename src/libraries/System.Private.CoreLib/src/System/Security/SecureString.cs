@@ -27,10 +27,7 @@ namespace System.Security
             ArgumentNullException.ThrowIfNull(value);
 
             ArgumentOutOfRangeException.ThrowIfNegative(length);
-            if (length > MaxLength)
-            {
-                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_Length);
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(length, MaxLength);
 
             Initialize(new ReadOnlySpan<char>(value, length));
         }
@@ -77,10 +74,7 @@ namespace System.Security
 
         private void EnsureCapacity(int capacity)
         {
-            if (capacity > MaxLength)
-            {
-                throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_Capacity);
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(capacity, MaxLength);
 
             Debug.Assert(_buffer != null);
             if ((uint)capacity * sizeof(char) <= _buffer.ByteLength)

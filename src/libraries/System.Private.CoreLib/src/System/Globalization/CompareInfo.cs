@@ -390,10 +390,7 @@ namespace System.Globalization
 
             ArgumentOutOfRangeException.ThrowIfNegative(offset2);
 
-            if (offset1 > (string1 == null ? 0 : string1.Length) - length1)
-            {
-                throw new ArgumentOutOfRangeException(nameof(string1), SR.ArgumentOutOfRange_OffsetLength);
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(offset1, (string1 == null ? 0 : string1.Length) - length1);
 
             Debug.Assert(offset2 > (string2 == null ? 0 : string2.Length) - length2);
             throw new ArgumentOutOfRangeException(nameof(string2), SR.ArgumentOutOfRange_OffsetLength);

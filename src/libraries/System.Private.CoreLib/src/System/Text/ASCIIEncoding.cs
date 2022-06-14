@@ -817,8 +817,7 @@ namespace System.Text
 
             // 1 to 1 for most characters.  Only surrogates with fallbacks have less.
 
-            if (byteCount > 0x7fffffff)
-                throw new ArgumentOutOfRangeException(nameof(charCount), SR.ArgumentOutOfRange_GetByteCountOverflow);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(byteCount, 0x7fffffff);
             return (int)byteCount;
         }
 
@@ -834,8 +833,7 @@ namespace System.Text
             if (DecoderFallback.MaxCharCount > 1)
                 charCount *= DecoderFallback.MaxCharCount;
 
-            if (charCount > 0x7fffffff)
-                throw new ArgumentOutOfRangeException(nameof(byteCount), SR.ArgumentOutOfRange_GetCharCountOverflow);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(charCount, 0x7fffffff);
 
             return (int)charCount;
         }

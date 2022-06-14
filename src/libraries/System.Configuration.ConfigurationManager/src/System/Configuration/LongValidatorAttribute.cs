@@ -27,8 +27,7 @@ namespace System.Configuration
             get { return _max; }
             set
             {
-                if (_min > value)
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.Validator_min_greater_than_max);
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(_min, value);
                 _max = value;
             }
         }

@@ -1074,12 +1074,7 @@ namespace System
             // whose message fingers it as invalid. If it's within the expected range,
             // change the message to read that the low surrogate was the problem.
 
-            if (highSurrogateOffset > CharUnicodeInfo.HIGH_SURROGATE_RANGE)
-            {
-                throw new ArgumentOutOfRangeException(
-                    paramName: "highSurrogate",
-                    message: SR.ArgumentOutOfRange_InvalidHighSurrogate);
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(highSurrogateOffset, CharUnicodeInfo.HIGH_SURROGATE_RANGE);
             // If the high surrogate is not within its expected range, throw an exception
             // whose message fingers it as invalid. If it's within the expected range,
             // change the message to read that the low surrogate was the problem.

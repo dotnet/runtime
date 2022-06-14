@@ -65,10 +65,7 @@ namespace System.Diagnostics.Tracing
         {
             ArgumentOutOfRangeException.ThrowIfNegative(id);
 
-            if (id > ushort.MaxValue)
-            {
-                throw new ArgumentOutOfRangeException(nameof(id), SR.Format(SR.ArgumentOutOfRange_NeedValidId, 1, ushort.MaxValue));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(id, ushort.MaxValue);
 
             m_traceloggingId = 0;
             m_id = (ushort)id;
@@ -80,10 +77,7 @@ namespace System.Diagnostics.Tracing
 
             ArgumentOutOfRangeException.ThrowIfNegative(task);
 
-            if (task > ushort.MaxValue)
-            {
-                throw new ArgumentOutOfRangeException(nameof(task), SR.Format(SR.ArgumentOutOfRange_NeedValidId, 1, ushort.MaxValue));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(task, ushort.MaxValue);
 
             m_task = (ushort)task;
         }

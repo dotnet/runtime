@@ -96,10 +96,7 @@ namespace System.Net.Security
             Debug.Assert(success);
 
             int maxCount = checked(int.MaxValue - 4 - sizes.cbBlockSize - sizes.cbSecurityTrailer);
-            if (buffer.Length > maxCount)
-            {
-                throw new ArgumentOutOfRangeException(nameof(buffer.Length), SR.Format(SR.net_io_out_range, maxCount));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(buffer.Length, maxCount);
 
             int resultSize = buffer.Length + sizes.cbSecurityTrailer + sizes.cbBlockSize;
             if (output == null || output.Length < resultSize + 4)

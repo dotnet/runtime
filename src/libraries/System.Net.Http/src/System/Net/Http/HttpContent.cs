@@ -613,14 +613,7 @@ namespace System.Net.Http
 
         private bool CreateTemporaryBuffer(long maxBufferSize, out MemoryStream? tempBuffer, out Exception? error)
         {
-            if (maxBufferSize > HttpContent.MaxBufferSize)
-            {
-                // This should only be hit when called directly; HttpClient/HttpClientHandler
-                // will not exceed this limit.
-                throw new ArgumentOutOfRangeException(nameof(maxBufferSize), maxBufferSize,
-                    SR.Format(System.Globalization.CultureInfo.InvariantCulture,
-                        SR.net_http_content_buffersize_limit, HttpContent.MaxBufferSize));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(maxBufferSize, HttpContent.MaxBufferSize);
 
             if (IsBuffered)
             {

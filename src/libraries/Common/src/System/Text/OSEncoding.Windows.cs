@@ -156,8 +156,7 @@ namespace System.Text
             ArgumentOutOfRangeException.ThrowIfNegative(charCount);
 
             long byteCount = (long)charCount * 14; // Max possible value for all encodings
-            if (byteCount > 0x7fffffff)
-                throw new ArgumentOutOfRangeException(nameof(charCount), SR.ArgumentOutOfRange_GetByteCountOverflow);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(byteCount, 0x7fffffff);
 
             return (int)byteCount;
         }
@@ -168,8 +167,7 @@ namespace System.Text
 
             long charCount = byteCount * 4; // Max possible value for all encodings
 
-            if (charCount > 0x7fffffff)
-                throw new ArgumentOutOfRangeException(nameof(byteCount), SR.ArgumentOutOfRange_GetCharCountOverflow);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(charCount, 0x7fffffff);
 
             return (int)charCount;
         }
