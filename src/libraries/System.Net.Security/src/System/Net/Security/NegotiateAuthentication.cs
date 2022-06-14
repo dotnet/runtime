@@ -3,7 +3,6 @@
 
 using System.Diagnostics;
 using System.Security.Principal;
-using System.Runtime.Versioning;
 
 namespace System.Net.Security
 {
@@ -13,10 +12,15 @@ namespace System.Net.Security
     /// </summary>
     public sealed class NegotiateAuthentication : IDisposable
     {
-        private NTAuthentication _ntAuthentication;
-        private bool _isServer;
+        private readonly NTAuthentication _ntAuthentication;
+        private readonly bool _isServer;
         private IIdentity? _remoteIdentity;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="NegotiateAuthentication"/>
+        /// for client-side authentication session.
+        /// </summary>
+        /// <param name="clientOptions">The property bag for the authentication options.</param>
         public NegotiateAuthentication(NegotiateAuthenticationClientOptions clientOptions)
         {
             ContextFlagsPal contextFlags = ContextFlagsPal.Connection | clientOptions.RequiredProtectionLevel switch
@@ -36,6 +40,11 @@ namespace System.Net.Security
                 clientOptions.Binding);
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="NegotiateAuthentication"/>
+        /// for server-side authentication session.
+        /// </summary>
+        /// <param name="serverOptions">The property bag for the authentication options.</param>
         public NegotiateAuthentication(NegotiateAuthenticationServerOptions serverOptions)
         {
             ContextFlagsPal contextFlags = ContextFlagsPal.Connection | serverOptions.RequiredProtectionLevel switch
@@ -55,30 +64,93 @@ namespace System.Net.Security
                 serverOptions.Binding);
         }
 
+        /// <summary>
+        /// Releases the unmanaged resources used by the <see cref="NegotiateAuthentication"/>
+        /// and optionally releases the managed resources.
+        /// </summary>
         public void Dispose()
         {
             _ntAuthentication.CloseContext();
         }
 
+        /// <summary>
+        /// Indicates whether authentication was successfully completed and the session
+        /// was established.
+        /// </summary>
         public bool IsAuthenticated => _ntAuthentication.IsCompleted;
 
+        /// <summary>
+        /// Indicates the negotiated level of protection.
+        /// </summary>
+        /// <remarks>
+        /// The negotiated level of protection is only available when the session
+        /// authentication was finished (see <see cref="IsAuthenticated" />). The
+        /// protection level can be higher than the initially requested protection
+        /// level specified by <see cref="NegotiateAuthenticationClientOptions.RequiredProtectionLevel" /> or
+        /// <see cref="NegotiateAuthenticationServerOptions.RequiredProtectionLevel" />.
+        /// </remarks>
         public ProtectionLevel ProtectionLevel
         {
             get => IsSigned ? (IsEncrypted ? ProtectionLevel.EncryptAndSign : ProtectionLevel.Sign) : ProtectionLevel.None;
         }
 
+        /// <summary>
+        /// Indicates whether data signing was negotiated.
+        /// </summary>
         public bool IsSigned => _ntAuthentication.IsIntegrityFlag;
 
+        /// <summary>
+        /// Indicates whether data encryption was negotiated.
+        /// </summary>
         public bool IsEncrypted => _ntAuthentication.IsConfidentialityFlag;
 
+        /// <summary>
+        /// Indicates whether both server and client have been authenticated.
+        /// </summary>
         public bool IsMutuallyAuthenticated => _ntAuthentication.IsMutualAuthFlag;
 
+        /// <summary>
+        /// Indicates whether the local side of the authentication is representing
+        /// the server.
+        /// </summary>
         public bool IsServer => _isServer;
 
+        /// <summary>
+        /// Name of the negotiated authentication package.
+        /// </summary>
+        /// <remarks>
+        /// The negotiated authentication package is only available when the session
+        /// authentication was finished (see <see cref="IsAuthenticated" />). For
+        /// unfinished authentication sessions the value is undefined and usually
+        /// returns the initial authentication package name specified in
+        /// <see cref="NegotiateAuthenticationClientOptions.Package" /> or
+        /// <see cref="NegotiateAuthenticationServerOptions.Package" />.
+        ///
+        /// If the Negotiate package was used for authentication the value of this
+        /// property will be Kerberos, NTLM, or any other specific protocol that was
+        /// negotiated between both sides of the authentication.
+        /// </remarks>
         public string Package => _ntAuthentication.ProtocolName;
 
+        /// <summary>
+        /// Gets target name (service principal name) of the server.
+        /// </summary>
+        /// <remarks>
+        /// For server-side of the authentication the property returns the target name
+        /// specified by the client after successful authentication (see <see cref="IsAuthenticated" />).
+        ///
+        /// For client-side of the authentication the property returns the target name
+        /// specified in <see cref="NegotiateAuthenticationClientOptions.TargetName" />.
+        /// </remarks>
         public string? TargetName => IsServer ? _ntAuthentication.ClientSpecifiedSpn : _ntAuthentication.Spn;
 
+        /// <summary>
+        /// Gets information about the identity of the remote party.
+        /// </summary>
+        /// <returns>
+        /// An <see cref="IIdentity" /> object that describes the identity of the remote endpoint.
+        /// </returns>
+        /// <exception cref="InvalidOperationException">Authentication failed or has not occurred.</exception>
         public IIdentity RemoteIdentity
         {
             get
@@ -101,6 +173,23 @@ namespace System.Net.Security
             }
         }
 
+        /// <summary>
+        /// Evaluates an authentication token sent by the other party and returns a token in response.
+        /// </summary>
+        /// <param name="incomingBlob">Incoming authentication token, or empty value when initiating the authentication exchange.</param>
+        /// <param name="statusCode">Status code returned by the authentication provider.</param>
+        /// <returns>Outgoing authentication token to be sent to the other party.</returns>
+        /// <remarks>
+        /// When initiating the authentication exchange, one of the parties starts
+        /// with an empty incomingBlob parameter.
+        ///
+        /// Successful step of the authentication returns either <see cref="NegotiateAuthenticationStatusCode.Completed" />
+        /// or <see cref="NegotiateAuthenticationStatusCode.ContinueNeeded" /> status codes.
+        /// Any other status code indicates an unrecoverable error.
+        ///
+        /// When <see cref="NegotiateAuthenticationStatusCode.ContinueNeeded" /> is returned the
+        /// return value is an authentication token to be transported to the other party.
+        /// </remarks>
         public byte[]? GetOutgoingBlob(ReadOnlySpan<byte> incomingBlob, out NegotiateAuthenticationStatusCode statusCode)
         {
             byte[]? blob = _ntAuthentication.GetOutgoingBlob(incomingBlob, false, out SecurityStatusPal securityStatus);
@@ -151,6 +240,23 @@ namespace System.Net.Security
             return blob;
         }
 
+        /// <summary>
+        /// Evaluates an authentication token sent by the other party and returns a token in response.
+        /// </summary>
+        /// <param name="incomingBlob">Incoming authentication token, or empty value when initiating the authentication exchange. Encoded as base64.</param>
+        /// <param name="statusCode">Status code returned by the authentication provider.</param>
+        /// <returns>Outgoing authentication token to be sent to the other party, encoded as base64.</returns>
+        /// <remarks>
+        /// When initiating the authentication exchange, one of the parties starts
+        /// with an empty incomingBlob parameter.
+        ///
+        /// Successful step of the authentication returns either <see cref="NegotiateAuthenticationStatusCode.Completed" />
+        /// or <see cref="NegotiateAuthenticationStatusCode.ContinueNeeded" /> status codes.
+        /// Any other status code indicates an unrecoverable error.
+        ///
+        /// When <see cref="NegotiateAuthenticationStatusCode.ContinueNeeded" /> is returned the
+        /// return value is an authentication token to be transported to the other party.
+        /// </remarks>
         public string? GetOutgoingBlob(string? incomingBlob, out NegotiateAuthenticationStatusCode statusCode)
         {
             byte[]? decodedIncomingBlob = null;

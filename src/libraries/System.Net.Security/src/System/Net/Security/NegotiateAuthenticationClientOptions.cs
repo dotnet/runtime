@@ -5,6 +5,9 @@ using System.Security.Authentication.ExtendedProtection;
 
 namespace System.Net.Security
 {
+    /// <summary>
+    /// Represents a propery bag for client-side of an authentication exchange.
+    /// </summary>
     public class NegotiateAuthenticationClientOptions
     {
         /// <summary>
