@@ -12,7 +12,9 @@ Copyright (c) .NET Foundation. All rights reserved.
 <Project>
 
   <PropertyGroup>
-    <UsingILLinkTasksSdk>true</UsingILLinkTasksSdk>
+    <!-- N.B. The ILLinkTargetsPath is used as a sentinel to indicate a version of this file has already been imported. It will also be the path
+         used to import the targets later in the SDK. -->
+    <ILLinkTargetsPath>$(MSBuildThisFileDirectory)Microsoft.NET.ILLink.targets</ILLinkTargetsPath>
     <ILLinkTasksAssembly Condition="'$(MSBuildRuntimeType)' == 'Core'">$(MSBuildThisFileDirectory)..\tools\net6.0\ILLink.Tasks.dll</ILLinkTasksAssembly>
     <ILLinkTasksAssembly Condition="'$(MSBuildRuntimeType)' != 'Core'">$(MSBuildThisFileDirectory)..\tools\net472\ILLink.Tasks.dll</ILLinkTasksAssembly>
   </PropertyGroup>
