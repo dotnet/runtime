@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
+using System.Runtime.Intrinsics.Wasm;
 
 namespace System
 {
@@ -2061,7 +2062,7 @@ namespace System
                 bufByte = ref Unsafe.Add(ref bufByte, numIters * numElements);
                 length -= numIters * (nuint)Vector256<short>.Count * 2;
             }
-            else if (Ssse3.IsSupported && (nuint)Vector128<short>.Count * 2 <= length)
+            else if ((Ssse3.IsSupported || WasmBase.IsSupported) && (nuint)Vector128<short>.Count * 2 <= length)
             {
                 Vector128<byte> reverseMask = Vector128.Create((byte)14, 15, 12, 13, 10, 11, 8, 9, 6, 7, 4, 5, 2, 3, 0, 1);
                 nuint numElements = (nuint)Vector128<byte>.Count;
@@ -2083,8 +2084,13 @@ namespace System
                     //     +-------------------------------+
                     //     | H | G | F | E | D | C | B | A |
                     //     +-------------------------------+
-                    tempFirst = Ssse3.Shuffle(tempFirst, reverseMask);
-                    tempLast = Ssse3.Shuffle(tempLast, reverseMask);
+                    if (Ssse3.IsSupported) {
+                        tempFirst = Ssse3.Shuffle(tempFirst, reverseMask);
+                        tempLast = Ssse3.Shuffle(tempLast, reverseMask);
+                    } else {
+                        tempFirst = WasmBase.Swizzle(tempFirst, reverseMask);
+                        tempLast = WasmBase.Swizzle(tempLast, reverseMask);
+                    }
 
                     // Store the reversed vectors
                     tempLast.StoreUnsafe(ref bufByte, firstOffset);
