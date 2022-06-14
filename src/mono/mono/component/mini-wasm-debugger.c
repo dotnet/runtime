@@ -232,7 +232,7 @@ write_value_to_buffer (MdbgProtBuffer *buf, MonoTypeEnum type, const char* varia
 	char* endptr = NULL;
 	const char *variableValueEnd = variableValue + strlen(variableValue);
 	errno = 0;
-	buffer_add_byte (buf, type);
+	buffer_add_byte (buf, GINT_TO_UINT8 (type));
 	switch (type) {
 		case MONO_TYPE_BOOLEAN:
 			if (!strcasecmp (variableValue, "True"))
