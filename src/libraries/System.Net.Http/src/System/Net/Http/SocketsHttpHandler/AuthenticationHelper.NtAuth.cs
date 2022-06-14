@@ -17,7 +17,6 @@ namespace System.Net.Http
     {
         private const string UsePortInSpnCtxSwitch = "System.Net.Http.UsePortInSpn";
         private const string UsePortInSpnEnvironmentVariable = "DOTNET_SYSTEM_NET_HTTP_USEPORTINSPN";
-        private const int NTE_FAIL = unchecked((int)0x80090020);
 
         private static volatile int s_usePortInSpn = -1;
 
@@ -182,7 +181,6 @@ namespace System.Net.Http
                         NegotiateAuthenticationStatusCode statusCode;
                         while (true)
                         {
-                            NegotiateAuthenticationStatusCode statusCode;
                             string? challengeResponse = authContext.GetOutgoingBlob(challengeData, out statusCode);
                             if (statusCode > NegotiateAuthenticationStatusCode.ContinueNeeded || challengeResponse == null)
                             {
@@ -198,7 +196,7 @@ namespace System.Net.Http
                             SetRequestAuthenticationHeaderValue(request, new AuthenticationHeaderValue(challenge.SchemeName, challengeResponse), isProxyAuth);
 
                             response = await InnerSendAsync(request, async, isProxyAuth, connectionPool, connection, cancellationToken).ConfigureAwait(false);
-                            if (authContext.IsCompleted || !TryGetChallengeDataForScheme(challenge.SchemeName, GetResponseAuthenticationHeaderValues(response, isProxyAuth), out challengeData))
+                            if (authContext.IsAuthenticated || !TryGetChallengeDataForScheme(challenge.SchemeName, GetResponseAuthenticationHeaderValues(response, isProxyAuth), out challengeData))
                             {
                                 break;
                             }
@@ -206,7 +204,7 @@ namespace System.Net.Http
                             if (!IsAuthenticationChallenge(response, isProxyAuth))
                             {
                                 // Tail response for Negoatiate on successful authentication. Validate it before we proceed.
-                                authContext.GetOutgoingBlob(challengeData,  out statusCode);
+                                authContext.GetOutgoingBlob(challengeData, out statusCode);
                                 if (statusCode > NegotiateAuthenticationStatusCode.ContinueNeeded)
                                 {
                                     isNewConnection = false;
