@@ -3903,6 +3903,9 @@ bool Compiler::gtCanSwapOrder(GenTree* firstNode, GenTree* secondNode)
 //
 bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_types type)
 {
+    GenTree* addrComma = addr;
+    addr               = addr->gtEffectiveVal(/* commaOnly */ true);
+
     // These are "out" parameters on the call to genCreateAddrMode():
     bool rev;      // This will be true if the operands will need to be reversed. At this point we
                    // don't care about this because we're not yet instantiating this addressing mode.
@@ -3929,8 +3932,13 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
 
         // We can form a complex addressing mode, so mark each of the interior
         // nodes with GTF_ADDRMODE_NO_CSE and calculate a more accurate cost.
-
         addr->gtFlags |= GTF_ADDRMODE_NO_CSE;
+
+        int originalAddrCostEx = addr->GetCostEx();
+        int originalAddrCostSz = addr->GetCostSz();
+        int addrModeCostEx     = 0;
+        int addrModeCostSz     = 0;
+
 #ifdef TARGET_XARCH
         // addrmodeCount is the count of items that we used to form
         // an addressing mode.  The maximum value is 4 when we have
@@ -3939,15 +3947,15 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
         unsigned addrmodeCount = 0;
         if (base)
         {
-            *pCostEx += base->GetCostEx();
-            *pCostSz += base->GetCostSz();
+            addrModeCostEx += base->GetCostEx();
+            addrModeCostSz += base->GetCostSz();
             addrmodeCount++;
         }
 
         if (idx)
         {
-            *pCostEx += idx->GetCostEx();
-            *pCostSz += idx->GetCostSz();
+            addrModeCostEx += idx->GetCostEx();
+            addrModeCostSz += idx->GetCostSz();
             addrmodeCount++;
         }
 
@@ -3955,11 +3963,11 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
         {
             if (((signed char)cns) == ((int)cns))
             {
-                *pCostSz += 1;
+                addrModeCostSz += 1;
             }
             else
             {
-                *pCostSz += 4;
+                addrModeCostSz += 4;
             }
             addrmodeCount++;
         }
@@ -4026,21 +4034,21 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
 #elif defined TARGET_ARM
         if (base)
         {
-            *pCostEx += base->GetCostEx();
-            *pCostSz += base->GetCostSz();
+            addrModeCostEx += base->GetCostEx();
+            addrModeCostSz += base->GetCostSz();
             if ((base->gtOper == GT_LCL_VAR) && ((idx == NULL) || (cns == 0)))
             {
-                *pCostSz -= 1;
+                addrModeCostSz -= 1;
             }
         }
 
         if (idx)
         {
-            *pCostEx += idx->GetCostEx();
-            *pCostSz += idx->GetCostSz();
+            addrModeCostEx += idx->GetCostEx();
+            addrModeCostSz += idx->GetCostSz();
             if (mul > 0)
             {
-                *pCostSz += 2;
+                addrModeCostSz += 2;
             }
         }
 
@@ -4052,56 +4060,56 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
                 {
                     if (!varTypeIsFloating(type))
                     {
-                        *pCostSz += 2;
+                        addrModeCostSz += 2;
                     }
                 }
                 else
                 {
-                    *pCostEx += 2; // Very large offsets require movw/movt instructions
-                    *pCostSz += 8;
+                    addrModeCostEx += 2; // Very large offsets require movw/movt instructions
+                    addrModeCostSz += 8;
                 }
             }
         }
 #elif defined TARGET_ARM64
         if (base)
         {
-            *pCostEx += base->GetCostEx();
-            *pCostSz += base->GetCostSz();
+            addrModeCostEx += base->GetCostEx();
+            addrModeCostSz += base->GetCostSz();
         }
 
         if (idx)
         {
-            *pCostEx += idx->GetCostEx();
-            *pCostSz += idx->GetCostSz();
+            addrModeCostEx += idx->GetCostEx();
+            addrModeCostSz += idx->GetCostSz();
         }
 
         if (cns != 0)
         {
             if (cns >= (4096 * genTypeSize(type)))
             {
-                *pCostEx += 1;
-                *pCostSz += 4;
+                addrModeCostEx += 1;
+                addrModeCostSz += 4;
             }
         }
 #elif defined(TARGET_LOONGARCH64)
         if (base)
         {
-            *pCostEx += base->GetCostEx();
-            *pCostSz += base->GetCostSz();
+            addrModeCostEx += base->GetCostEx();
+            addrModeCostSz += base->GetCostSz();
         }
 
         if (idx)
         {
-            *pCostEx += idx->GetCostEx();
-            *pCostSz += idx->GetCostSz();
+            addrModeCostEx += idx->GetCostEx();
+            addrModeCostSz += idx->GetCostSz();
         }
         if (cns != 0)
         {
             if (!emitter::isValidSimm12(cns))
             {
                 // TODO-LoongArch64-CQ: tune for LoongArch64.
-                *pCostEx += 1;
-                *pCostSz += 4;
+                addrModeCostEx += 1;
+                addrModeCostSz += 4;
             }
         }
 #else
@@ -4243,9 +4251,27 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
                 // op1 isn't base or idx. Is this possible? Or should there be an assert?
             }
         }
+
+        // Finally, adjust the costs on the parenting COMMAs.
+        while (addrComma != addr)
+        {
+            int addrCostExDelta = originalAddrCostEx - addrModeCostEx;
+            int addrCostSzDelta = originalAddrCostSz - addrModeCostSz;
+            addrComma->SetCosts(addrComma->GetCostEx() - addrCostExDelta, addrComma->GetCostSz() - addrCostExDelta);
+
+            *pCostEx += addrComma->AsOp()->gtGetOp1()->GetCostEx();
+            *pCostSz += addrComma->AsOp()->gtGetOp1()->GetCostSz();
+
+            addrComma = addrComma->AsOp()->gtGetOp2();
+        }
+
+        *pCostEx += addrModeCostEx;
+        *pCostSz += addrModeCostSz;
+
         return true;
 
-    } // end  if  (genCreateAddrMode(...))
+    } // if (genCreateAddrMode(...))
+
     return false;
 }
 
@@ -4968,7 +4994,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
                 case GT_BLK:
                 case GT_IND:
-
+                {
                     /* An indirection should always have a non-zero level.
                      * Only constant leaf nodes have level 0.
                      */
@@ -4997,35 +5023,31 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 #endif // TARGET_ARM
 
                     // Can we form an addressing mode with this indirection?
-                    // TODO-CQ: Consider changing this to op1->gtEffectiveVal() to take into account
-                    // addressing modes hidden under a comma node.
+                    GenTree* addr = op1->gtEffectiveVal();
 
-                    if (op1->gtOper == GT_ADD)
+                    if (addr->OperIs(GT_ADD))
                     {
                         // See if we can form a complex addressing mode.
-
-                        GenTree* addr = op1->gtEffectiveVal();
-
                         bool doAddrMode = true;
+
                         // TODO-1stClassStructs: Always do this, but first make sure it's done in Lowering as well.
                         if (tree->TypeGet() == TYP_STRUCT)
                         {
                             doAddrMode = false;
                         }
-
 #ifdef TARGET_ARM64
-                        if (tree->gtFlags & GTF_IND_VOLATILE)
+                        if (tree->AsIndir()->IsVolatile())
                         {
                             // For volatile store/loads when address is contained we always emit `dmb`
                             // if it's not - we emit one-way barriers i.e. ldar/stlr
                             doAddrMode = false;
                         }
 #endif // TARGET_ARM64
-                        if (doAddrMode && gtMarkAddrMode(addr, &costEx, &costSz, tree->TypeGet()))
+                        if (doAddrMode && gtMarkAddrMode(op1, &costEx, &costSz, tree->TypeGet()))
                         {
                             goto DONE;
                         }
-                    } // end if  (op1->gtOper == GT_ADD)
+                    }
                     else if (gtIsLikelyRegVar(op1))
                     {
                         /* Indirection of an enregister LCL_VAR, don't increase costEx/costSz */
@@ -5042,7 +5064,8 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         goto DONE;
                     }
 #endif
-                    break;
+                }
+                break;
 
                 default:
                     break;
