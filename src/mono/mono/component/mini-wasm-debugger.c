@@ -418,6 +418,24 @@ mono_wasm_send_dbg_command (int id, MdbgProtCommandSet command_set, int command,
 		invoke_data.endp = data + size;
 		error = mono_do_invoke_method (tls, &buf, &invoke_data, data, &data);
 	}
+	else if (command_set == MDBGPROT_CMD_SET_VM && (command ==  MDBGPROT_CMD_GET_ASSEMBLY_BYTES))
+	{
+		char* assembly_name = m_dbgprot_decode_string (data, &data, data + size);
+		if (assembly_name == NULL)
+		{
+			m_dbgprot_buffer_add_int (&buf, 0);
+			m_dbgprot_buffer_add_int (&buf, 0);
+		}
+		else
+		{
+			unsigned int assembly_size = 0;
+			int symfile_size = 0;
+			const unsigned char* assembly_bytes = mono_wasm_get_assembly_bytes (assembly_name, &assembly_size);
+			const unsigned char* pdb_bytes = mono_get_symfile_bytes_from_bundle (assembly_name, &symfile_size);
+			m_dbgprot_buffer_add_byte_array (&buf, (uint8_t *) assembly_bytes, assembly_size);
+			m_dbgprot_buffer_add_byte_array (&buf, (uint8_t *) pdb_bytes, symfile_size);
+		}
+	}
 	else
 		error = mono_process_dbg_packet (id, command_set, command, &no_reply, data, data + size, &buf);
 
