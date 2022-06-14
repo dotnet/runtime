@@ -32,6 +32,8 @@
              Link="Common\Interop\Windows\Kernel32\Interop.CloseHandle.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs"
              Link="Common\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.FormatMessage.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage_SafeLibraryHandle.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.FormatMessage_SafeLibraryHandle.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FreeLibrary.cs"

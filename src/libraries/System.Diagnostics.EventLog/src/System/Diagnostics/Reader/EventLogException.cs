@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.IO;
 using System.Runtime.Serialization;
 
 namespace System.Diagnostics.Eventing.Reader
@@ -16,30 +17,30 @@ namespace System.Diagnostics.Eventing.Reader
         {
             switch (errorCode)
             {
-                case 2:
-                case 3:
-                case 15007:
-                case 15027:
-                case 15028:
-                case 15002:
+                case 2: // ERROR_FILE_NOT_FOUND
+                case 3: // ERROR_PATH_NOT_FOUND
+                case 15007: // ERROR_EVT_CHANNEL_NOT_FOUND
+                case 15027: // ERROR_EVT_MESSAGE_NOT_FOUND
+                case 15028: // ERROR_EVT_MESSAGE_ID_NOT_FOUND
+                case 15002: // ERROR_EVT_PUBLISHER_METADATA_NOT_FOUND
                     throw new EventLogNotFoundException(errorCode);
 
-                case 13:
-                case 15005:
+                case 13: // ERROR_INVALID_DATA
+                case 15005: // ERROR_EVT_INVALID_EVENT_DATA
                     throw new EventLogInvalidDataException(errorCode);
 
                 case 1818: // RPC_S_CALL_CANCELED is converted to ERROR_CANCELLED
-                case 1223:
+                case 1223: // ERROR_CANCELLED
                     throw new OperationCanceledException();
 
-                case 15037:
+                case 15037: // ERROR_EVT_PUBLISHER_DISABLED
                     throw new EventLogProviderDisabledException(errorCode);
 
-                case 5:
+                case 5: // ERROR_ACCESS_DENIED
                     throw new UnauthorizedAccessException();
 
-                case 15011:
-                case 15012:
+                case 15011: // ERROR_EVT_QUERY_RESULT_STALE
+                case 15012: // ERROR_EVT_QUERY_RESULT_INVALID_POSITION
                     throw new EventLogReadingException(errorCode);
 
                 default:
@@ -50,7 +51,11 @@ namespace System.Diagnostics.Eventing.Reader
         public EventLogException() { }
         public EventLogException(string message) : base(message) { }
         public EventLogException(string message, Exception innerException) : base(message, innerException) { }
-        protected EventLogException(int errorCode) { _errorCode = errorCode; HResult = errorCode; }
+        protected EventLogException(int errorCode)
+        {
+            _errorCode = errorCode;
+            HResult = Win32Marshal.MakeHRFromErrorCode(errorCode);
+        }
 
         public override string Message
         {

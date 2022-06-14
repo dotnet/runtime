@@ -110,6 +110,10 @@ System.Diagnostics.EventLog</PackageDescription>
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)System\Diagnostics\NetFrameworkUtils.cs"
              Link="Common\System\Diagnostics\NetFrameworkUtils.cs" />
+    <Compile Include="$(CommonPath)System\IO\Win32Marshal.cs"
+             Link="Common\System\IO\Win32Marshal.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.FormatMessage.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">

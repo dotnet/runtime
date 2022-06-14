@@ -114,7 +114,7 @@ namespace System.Diagnostics.Tests
             using (var session = new EventLogSession())
             {
                 EventLogNotFoundException exception = Assert.Throws<EventLogNotFoundException>(() => session.ExportLog(LogName, PathType.FilePath, LogName, GetTestFilePath()));
-                Assert.Equal(2, exception.HResult);
+                Assert.Equal(unchecked((int)0x80070002), exception.HResult);
                 session.CancelCurrentOperations();
             }
         }
