@@ -22,6 +22,7 @@ namespace Sample
             new AppStartTask(),
             new ExceptionsTask(),
             new JsonTask(),
+            new SpanTask(),
             new VectorTask(),
             new WebSocketTask()
         };
