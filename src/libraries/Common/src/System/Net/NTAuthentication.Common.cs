@@ -94,10 +94,7 @@ namespace System.Net
         {
             get
             {
-                if (_lastProtocolName == null)
-                {
-                    _lastProtocolName = ProtocolName;
-                }
+                _lastProtocolName ??= ProtocolName;
 
                 return (object)_lastProtocolName == (object)NegotiationInfoClass.NTLM;
             }
@@ -232,13 +229,13 @@ namespace System.Net
 
         internal byte[]? GetOutgoingBlob(byte[]? incomingBlob, bool throwOnError)
         {
-            return GetOutgoingBlob(incomingBlob != null ? incomingBlob.AsSpan() : default, throwOnError, out _);
+            return GetOutgoingBlob(incomingBlob.AsSpan(), throwOnError, out _);
         }
 
         // Accepts an incoming binary security blob and returns an outgoing binary security blob.
         internal byte[]? GetOutgoingBlob(byte[]? incomingBlob, bool throwOnError, out SecurityStatusPal statusCode)
         {
-            return GetOutgoingBlob(incomingBlob != null ? incomingBlob.AsSpan() : default, throwOnError, out statusCode);
+            return GetOutgoingBlob(incomingBlob.AsSpan(), throwOnError, out statusCode);
         }
 
         internal byte[]? GetOutgoingBlob(ReadOnlySpan<byte> incomingBlob, bool throwOnError, out SecurityStatusPal statusCode)

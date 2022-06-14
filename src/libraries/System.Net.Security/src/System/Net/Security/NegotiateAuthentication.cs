@@ -25,12 +25,12 @@ namespace System.Net.Security
         {
             ArgumentNullException.ThrowIfNull(clientOptions);
 
-            ContextFlagsPal contextFlags = ContextFlagsPal.Connection | clientOptions.RequiredProtectionLevel switch
+            ContextFlagsPal contextFlags = clientOptions.RequiredProtectionLevel switch
             {
                 ProtectionLevel.Sign => ContextFlagsPal.InitIntegrity,
                 ProtectionLevel.EncryptAndSign => ContextFlagsPal.InitIntegrity | ContextFlagsPal.Confidentiality,
                 _ => 0
-            };
+            } | ContextFlagsPal.Connection;
 
             _isServer = false;
             _ntAuthentication = new NTAuthentication(
@@ -51,12 +51,12 @@ namespace System.Net.Security
         {
             ArgumentNullException.ThrowIfNull(serverOptions);
 
-            ContextFlagsPal contextFlags = ContextFlagsPal.Connection | serverOptions.RequiredProtectionLevel switch
+            ContextFlagsPal contextFlags = serverOptions.RequiredProtectionLevel switch
             {
                 ProtectionLevel.Sign => ContextFlagsPal.AcceptIntegrity,
                 ProtectionLevel.EncryptAndSign => ContextFlagsPal.AcceptIntegrity | ContextFlagsPal.Confidentiality,
                 _ => 0
-            };
+            } | ContextFlagsPal.Connection;
 
             _isServer = true;
             _ntAuthentication = new NTAuthentication(
@@ -97,10 +97,10 @@ namespace System.Net.Security
         /// level specified by <see cref="NegotiateAuthenticationClientOptions.RequiredProtectionLevel" /> or
         /// <see cref="NegotiateAuthenticationServerOptions.RequiredProtectionLevel" />.
         /// </remarks>
-        public ProtectionLevel ProtectionLevel
-        {
-            get => IsSigned ? (IsEncrypted ? ProtectionLevel.EncryptAndSign : ProtectionLevel.Sign) : ProtectionLevel.None;
-        }
+        public ProtectionLevel ProtectionLevel =>
+            !IsSigned ? ProtectionLevel.None :
+            !IsEncrypted ? ProtectionLevel.Sign :
+            ProtectionLevel.EncryptAndSign;
 
         /// <summary>
         /// Indicates whether data signing was negotiated.
@@ -170,10 +170,10 @@ namespace System.Net.Security
                     {
                         throw new InvalidOperationException(SR.net_auth_noauth);
                     }
+
                     if (IsServer)
                     {
-                        // Server authentication is not supported on tvOS
-                        Debug.Assert(!OperatingSystem.IsTvOS());
+                        Debug.Assert(!OperatingSystem.IsTvOS(), "Server authentication is not supported on tvOS");
                         _remoteIdentity = identity = NegotiateStreamPal.GetIdentity(_ntAuthentication);
                     }
                     else
@@ -272,7 +272,7 @@ namespace System.Net.Security
         public string? GetOutgoingBlob(string? incomingBlob, out NegotiateAuthenticationStatusCode statusCode)
         {
             byte[]? decodedIncomingBlob = null;
-            if (incomingBlob != null && incomingBlob.Length > 0)
+            if (!string.IsNullOrEmpty(incomingBlob))
             {
                 decodedIncomingBlob = Convert.FromBase64String(incomingBlob);
             }

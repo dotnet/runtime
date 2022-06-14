@@ -395,15 +395,9 @@ namespace System.Net.Security
             securityBuffer[0] = new SecurityBuffer(buffer, offset, count, SecurityBufferType.SECBUFFER_STREAM);
             securityBuffer[1] = new SecurityBuffer(0, SecurityBufferType.SECBUFFER_DATA);
 
-            int errorCode;
-            if (isConfidential)
-            {
-                errorCode = SSPIWrapper.DecryptMessage(GlobalSSPI.SSPIAuth, securityContext, securityBuffer, sequenceNumber);
-            }
-            else
-            {
-                errorCode = SSPIWrapper.VerifySignature(GlobalSSPI.SSPIAuth, securityContext, securityBuffer, sequenceNumber);
-            }
+            int errorCode = isConfidential ?
+                SSPIWrapper.DecryptMessage(GlobalSSPI.SSPIAuth, securityContext, securityBuffer, sequenceNumber) :
+                SSPIWrapper.VerifySignature(GlobalSSPI.SSPIAuth, securityContext, securityBuffer, sequenceNumber);
 
             if (errorCode != 0)
             {
