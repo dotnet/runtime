@@ -1080,12 +1080,13 @@ namespace System
                     paramName: "highSurrogate",
                     message: SR.ArgumentOutOfRange_InvalidHighSurrogate);
             }
-            else
-            {
-                throw new ArgumentOutOfRangeException(
+            // If the high surrogate is not within its expected range, throw an exception
+            // whose message fingers it as invalid. If it's within the expected range,
+            // change the message to read that the low surrogate was the problem.
+
+            throw new ArgumentOutOfRangeException(
                     paramName: "lowSurrogate",
                     message: SR.ArgumentOutOfRange_InvalidLowSurrogate);
-            }
         }
 
         /*=============================ConvertToUtf32===================================

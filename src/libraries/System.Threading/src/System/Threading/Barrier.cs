@@ -323,7 +323,8 @@ namespace System.Threading
                 throw new ArgumentOutOfRangeException(nameof(participantCount), participantCount,
                     SR.Barrier_AddParticipants_NonPositive_ArgumentOutOfRange);
             }
-            else if (participantCount > MAX_PARTICIPANTS) //overflow
+
+            if (participantCount > MAX_PARTICIPANTS) //overflow
             {
                 throw new ArgumentOutOfRangeException(nameof(participantCount),
                         SR.Barrier_AddParticipants_Overflow_ArgumentOutOfRange);

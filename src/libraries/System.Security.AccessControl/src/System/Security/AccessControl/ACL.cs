@@ -177,7 +177,8 @@ namespace System.Security.AccessControl
             {
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
-            else if (array.Length - index < Count)
+
+            if (array.Length - index < Count)
             {
                 throw new ArgumentOutOfRangeException(nameof(array), SR.ArgumentOutOfRange_ArrayTooSmall);
             }
@@ -285,7 +286,8 @@ namespace System.Security.AccessControl
             {
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
-            else if (BinaryLength > MaxBinaryLength)
+
+            if (BinaryLength > MaxBinaryLength)
             {
                 throw new InvalidOperationException(SR.AccessControl_AclTooLong);
             }

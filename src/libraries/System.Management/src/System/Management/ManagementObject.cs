@@ -386,7 +386,9 @@ namespace System.Management
                 // and if this is a ManagementClass the path has to be a class.
                 if (GetType() == typeof(ManagementObject) && path.IsClass)
                     throw new ArgumentOutOfRangeException(nameof(path));
-                else if (GetType() == typeof(ManagementClass) && path.IsInstance)
+                //If this is a ManagementObject then the path has to be an instance,
+                // and if this is a ManagementClass the path has to be a class.
+                if (GetType() == typeof(ManagementClass) && path.IsInstance)
                     throw new ArgumentOutOfRangeException(nameof(path));
 
                 // Save the namespace path portion of the path (if any) in case

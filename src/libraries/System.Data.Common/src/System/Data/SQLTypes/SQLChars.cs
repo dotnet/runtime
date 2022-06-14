@@ -276,7 +276,7 @@ namespace System.Data.SqlTypes
                 if (value > _rgchBuf.Length)
                     throw new ArgumentOutOfRangeException(nameof(value));
 
-                else if (IsNull)
+                if (IsNull)
                     // At this point we know that value is small enough
                     // Go back in buffer mode
                     _state = SqlBytesCharsState.Buffer;
@@ -602,8 +602,7 @@ namespace System.Data.SqlTypes
                 CheckIfStreamClosed("set_Position");
                 if (value < 0 || value > _sqlchars.Length)
                     throw new ArgumentOutOfRangeException(nameof(value));
-                else
-                    _lPosition = value;
+                _lPosition = value;
             }
         }
 

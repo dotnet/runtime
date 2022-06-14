@@ -120,7 +120,8 @@ namespace System.Security.AccessControl
                     nameof(offset),
                     SR.ArgumentOutOfRange_NeedNonNegNum);
             }
-            else if (binaryForm.Length - offset < BinaryLength)
+
+            if (binaryForm.Length - offset < BinaryLength)
             {
                 //
                 // The buffer will not fit the header
@@ -249,7 +250,8 @@ namespace System.Security.AccessControl
                     nameof(offset),
                     SR.ArgumentOutOfRange_NeedNonNegNum);
             }
-            else if (binaryForm.Length - offset < HeaderLength)
+
+            if (binaryForm.Length - offset < HeaderLength)
             {
                 //
                 // We expect at least the ACE header ( 4 bytes )
@@ -822,7 +824,7 @@ namespace System.Security.AccessControl
                         nameof(opaque),
                         SR.Format(SR.ArgumentOutOfRange_ArrayLength, 0, MaxOpaqueLength));
                 }
-                else if (opaque.Length % 4 != 0)
+                if (opaque.Length % 4 != 0)
                 {
                     throw new ArgumentOutOfRangeException(
                         nameof(opaque),
@@ -1275,7 +1277,7 @@ namespace System.Security.AccessControl
                         nameof(opaque),
                         SR.Format(SR.ArgumentOutOfRange_ArrayLength, 0, MaxOpaqueLengthInternal));
                 }
-                else if (opaque.Length % 4 != 0)
+                if (opaque.Length % 4 != 0)
                 {
                     throw new ArgumentOutOfRangeException(
                         nameof(opaque),

@@ -82,7 +82,9 @@ namespace System.IO.Strategies
             {
                 throw new ArgumentOutOfRangeException(nameof(options), SR.ArgumentOutOfRange_Enum);
             }
-            else if (bufferSize < 0)
+
+            // NOTE: any change to FileOptions enum needs to be matched here in the error validation
+            if (bufferSize < 0)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException_NeedNonNegNum(nameof(bufferSize));
             }

@@ -315,10 +315,7 @@ namespace System.IO
                 {
                     throw new ArgumentOutOfRangeException(nameof(position), SR.ArgumentOutOfRange_PositionLessThanCapacityRequired);
                 }
-                else
-                {
-                    throw new ArgumentException(SR.Argument_NotEnoughBytesToRead, nameof(position));
-                }
+                throw new ArgumentException(SR.Argument_NotEnoughBytesToRead, nameof(position));
             }
 
             structure = _buffer.Read<T>((ulong)(_offset + position));
@@ -555,10 +552,7 @@ namespace System.IO
                 {
                     throw new ArgumentOutOfRangeException(nameof(position), SR.ArgumentOutOfRange_PositionLessThanCapacityRequired);
                 }
-                else
-                {
-                    throw new ArgumentException(SR.Argument_NotEnoughBytesToWrite, nameof(position));
-                }
+                throw new ArgumentException(SR.Argument_NotEnoughBytesToWrite, nameof(position));
             }
 
             _buffer.Write<T>((ulong)(_offset + position), structure);
@@ -622,10 +616,7 @@ namespace System.IO
                 {
                     throw new ArgumentOutOfRangeException(nameof(position), SR.ArgumentOutOfRange_PositionLessThanCapacityRequired);
                 }
-                else
-                {
-                    throw new ArgumentException(SR.Argument_NotEnoughBytesToRead, nameof(position));
-                }
+                throw new ArgumentException(SR.Argument_NotEnoughBytesToRead, nameof(position));
             }
         }
 
@@ -649,10 +640,7 @@ namespace System.IO
                 {
                     throw new ArgumentOutOfRangeException(nameof(position), SR.ArgumentOutOfRange_PositionLessThanCapacityRequired);
                 }
-                else
-                {
-                    throw new ArgumentException(SR.Argument_NotEnoughBytesToWrite, nameof(position));
-                }
+                throw new ArgumentException(SR.Argument_NotEnoughBytesToWrite, nameof(position));
             }
         }
     }

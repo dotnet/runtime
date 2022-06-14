@@ -72,7 +72,8 @@ namespace System.IO
             {
                 throw new ArgumentOutOfRangeException(nameof(offset));
             }
-            else if (pos < 0)
+
+            if (pos < 0)
             {
                 throw new IOException(SR.IO_SeekBeforeBegin);
             }

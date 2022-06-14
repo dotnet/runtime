@@ -359,8 +359,7 @@ namespace System.Data.SqlTypes
                 ThrowIfStreamCannotSeek("set_Position");
                 if (value < 0 || value > _stream.Length)
                     throw new ArgumentOutOfRangeException(nameof(value));
-                else
-                    _lPosition = value;
+                _lPosition = value;
             }
         }
 

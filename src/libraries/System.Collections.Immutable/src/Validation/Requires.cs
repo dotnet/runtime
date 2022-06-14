@@ -99,10 +99,7 @@ namespace System.Collections.Immutable
             {
                 throw new ArgumentOutOfRangeException(parameterName);
             }
-            else
-            {
-                throw new ArgumentOutOfRangeException(parameterName, message);
-            }
+            throw new ArgumentOutOfRangeException(parameterName, message);
         }
 
         /// <summary>

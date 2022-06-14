@@ -78,11 +78,8 @@ namespace System.IO.Ports
                     {
                         throw new ArgumentOutOfRangeException(nameof(BaudRate), SR.ArgumentOutOfRange_NeedPosNum);
                     }
-                    else
-                    {
-                        // otherwise, we can present the bounds on the baud rate for this driver
-                        throw new ArgumentOutOfRangeException(nameof(BaudRate), SR.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, 0, _commProp.dwMaxBaud));
-                    }
+                    // if no upper bound on baud rate imposed by serial driver, note that argument must be positive
+                    throw new ArgumentOutOfRangeException(nameof(BaudRate), SR.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, 0, _commProp.dwMaxBaud));
                 }
                 // Set only if it's different.  Rollback to previous values if setting fails.
                 //  This pattern occurs through most of the other properties in this class.
