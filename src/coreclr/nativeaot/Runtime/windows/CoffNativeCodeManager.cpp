@@ -722,7 +722,7 @@ bool CoffNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
 #if defined(TARGET_ARM) || defined(TARGET_ARM64)
     flags = (GcInfoDecoderFlags)(flags | DECODE_HAS_TAILCALLS);
 #endif // TARGET_ARM || TARGET_ARM64
-    GcInfoDecoder decoder(GCInfoToken(p), DECODE_RETURN_KIND);
+    GcInfoDecoder decoder(GCInfoToken(p), flags);
 
     GCRefKind gcRefKind = GetGcRefKind(decoder.GetReturnKind());
 
