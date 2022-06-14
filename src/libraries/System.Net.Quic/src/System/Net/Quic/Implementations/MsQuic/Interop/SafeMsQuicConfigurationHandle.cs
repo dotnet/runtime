@@ -26,16 +26,36 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
             if (options.ClientAuthenticationOptions != null)
             {
+                SslClientAuthenticationOptions clientAuthenticationOptions = options.ClientAuthenticationOptions;
+
 #pragma warning disable SYSLIB0040 // NoEncryption and AllowNoEncryption are obsolete
-                if (options.ClientAuthenticationOptions.EncryptionPolicy == EncryptionPolicy.NoEncryption)
+                if (clientAuthenticationOptions.EncryptionPolicy == EncryptionPolicy.NoEncryption)
                 {
-                    throw new PlatformNotSupportedException(SR.Format(SR.net_quic_ssl_option, nameof(options.ClientAuthenticationOptions.EncryptionPolicy)));
+                    throw new PlatformNotSupportedException(SR.Format(SR.net_quic_ssl_option, nameof(clientAuthenticationOptions.EncryptionPolicy)));
                 }
 #pragma warning restore SYSLIB0040
 
-                if (options.ClientAuthenticationOptions.ClientCertificates != null)
+                if (clientAuthenticationOptions.LocalCertificateSelectionCallback != null)
                 {
-                    foreach (var cert in options.ClientAuthenticationOptions.ClientCertificates)
+                    X509Certificate? cert = clientAuthenticationOptions.LocalCertificateSelectionCallback(
+                        options,
+                        clientAuthenticationOptions.TargetHost ?? string.Empty,
+                        clientAuthenticationOptions.ClientCertificates ?? new X509CertificateCollection(),
+                        null,
+                        Array.Empty<string>());
+
+                    try
+                    {
+                        if (((X509Certificate2)cert).HasPrivateKey)
+                        {
+                            certificate = cert;
+                        }
+                    }
+                    catch { }
+                }
+                else if (clientAuthenticationOptions.ClientCertificates != null)
+                {
+                    foreach (var cert in clientAuthenticationOptions.ClientCertificates)
                     {
                         try
                         {
