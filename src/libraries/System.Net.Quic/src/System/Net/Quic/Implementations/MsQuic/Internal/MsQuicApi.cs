@@ -132,9 +132,16 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             {
                 using var regKey = Registry.LocalMachine.OpenSubKey(key);
 
-                if (regKey is null) return false;
+                if (regKey is null) continue;
 
-                if (regKey.GetValue("Enabled") is int enabled && enabled == 0)
+                if (regKey.GetValue("Enabled") is int enabled)
+                {
+                    if (enabled == 0) return true;
+                    else continue;
+                }
+
+                // if Enabled key is not present, check the default settings
+                if (regKey.GetValue("DisabledByDefault") is int disabled && disabled == 1)
                 {
                     return true;
                 }
