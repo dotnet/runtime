@@ -106,5 +106,17 @@ namespace System.Diagnostics.Tests
                 session.CancelCurrentOperations();
             }
         }
+
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.SupportsEventLogs))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public void EventLogExceptionShouldHaveHResultSet()
+        {
+            using (var session = new EventLogSession())
+            {
+                EventLogNotFoundException exception = Assert.Throws<EventLogNotFoundException>(() => session.ExportLog(LogName, PathType.FilePath, LogName, GetTestFilePath()));
+                Assert.Equal(2, exception.HResult);
+                session.CancelCurrentOperations();
+            }
+        }
     }
 }
