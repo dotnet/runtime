@@ -2,7 +2,7 @@
 # Unix temporary files
 
 The Unix support for temporary files is different from the Windows model and developers who
-are used to Windows may inadvertantly create security risk if they use the same practices on Unix.
+are used to Windows may inadvertently create security risk if they use the same practices on Unix.
 
 Most notably, the Windows model for temporary files is that the operating system provides each user with a *unique*, *user-owned* temporary directory.
 Moreover, all Windows users, including the service and system users, have designated user folders, including temporary folders.
