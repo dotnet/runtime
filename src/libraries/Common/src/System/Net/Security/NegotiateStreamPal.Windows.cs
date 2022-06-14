@@ -143,7 +143,7 @@ namespace System.Net.Security
             ref ContextFlagsPal contextFlags)
         {
             InputSecurityBuffers inputBuffers = default;
-            if (incomingBlob.IsEmpty)
+            if (!incomingBlob.IsEmpty)
             {
                 inputBuffers.SetNextBuffer(new InputSecurityBuffer(incomingBlob, SecurityBufferType.SECBUFFER_TOKEN));
             }
