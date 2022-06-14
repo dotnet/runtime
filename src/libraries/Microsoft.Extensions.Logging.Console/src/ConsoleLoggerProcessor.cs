@@ -14,10 +14,6 @@ namespace Microsoft.Extensions.Logging.Console
     [UnsupportedOSPlatform("browser")]
     internal class ConsoleLoggerProcessor : IDisposable
     {
-        private static int s_processorCount;
-        private int _processorId;
-        private static List<ConsoleLoggerProcessor> s_processors = new List<ConsoleLoggerProcessor>();
-        private static readonly Meter s_meter = new Meter("Microsoft.Extensions.Logging.Console", "1.0.0");
         private const string WarningMessageOnDrop = " message(s) dropped because of queue size limit. Increase the queue size or decrease logging verbosity to avoid this. You may change `ConsoleLoggerBufferFullMode` to stop dropping messages.";
         private readonly Queue<LogMessageEntry> _messageQueue;
         private int _messagesDropped;
@@ -73,13 +69,6 @@ namespace Microsoft.Extensions.Logging.Console
                 Name = "Console logger queue processing thread"
             };
             _outputThread.Start();
-            _processorId = ++s_processorCount;
-            s_processors.Add(this);
-        }
-
-        static ConsoleLoggerProcessor()
-        {
-            s_meter.CreateObservableGauge<long>("queue-size", GetQueueSize);
         }
 
         public virtual void EnqueueMessage(LogMessageEntry message)
@@ -208,18 +197,6 @@ namespace Microsoft.Extensions.Logging.Console
                 Monitor.PulseAll(_messageQueue);
                 _isAddingCompleted = true;
             }
-        }
-
-        private static IEnumerable<Measurement<long>> GetQueueSize()
-        {
-            var measures = new Measurement<long>[s_processorCount];
-            for (int i = 0; i < s_processorCount; i++)
-            {
-                ConsoleLoggerProcessor p = s_processors[i];
-                measures[i] = new Measurement<long>(p._messageQueue.Count, new KeyValuePair<string, object?>("queue-name", nameof(ConsoleLoggerProcessor) + p._processorId));
-            }
-
-            return measures;
         }
     }
 }
