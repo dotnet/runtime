@@ -42,6 +42,9 @@
         <?if $(var.Platform)~=x64 ?>
         <!-- For x64 installer, only add to PATH when actually on native architecture -->
         <Condition>NOT NON_NATIVE_ARCHITECTURE</Condition>
+        <?elseif $(var.Platform)~=x86 ?>
+        <!-- For x86 installer, only add to PATH when not on 64-bit platform -->
+        <Condition>NOT VersionNT64</Condition>
         <?endif?>
 
         <!-- A stable keypath with the right SxS characteristics for our PATH entry-->

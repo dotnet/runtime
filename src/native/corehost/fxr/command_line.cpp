@@ -282,11 +282,12 @@ int command_line::parse_args_for_sdk_command(
 void command_line::print_muxer_info(const pal::string_t &dotnet_root)
 {
     trace::println();
-    trace::println(_X("Host (useful for support):"));
-    trace::println(_X("  Version: %s"), _STRINGIFY(HOST_FXR_PKG_VER));
+    trace::println(_X("Host:"));
+    trace::println(_X("  Version:      %s"), _STRINGIFY(HOST_FXR_PKG_VER));
+    trace::println(_X("  Architecture: %s"), get_arch());
 
     pal::string_t commit = _STRINGIFY(REPO_COMMIT_HASH);
-    trace::println(_X("  Commit:  %s"), commit.substr(0, 10).c_str());
+    trace::println(_X("  Commit:       %s"), commit.substr(0, 10).c_str());
 
     trace::println();
     trace::println(_X(".NET SDKs installed:"));
@@ -303,9 +304,12 @@ void command_line::print_muxer_info(const pal::string_t &dotnet_root)
     }
 
     trace::println();
-    trace::println(_X("To install additional .NET runtimes or SDKs:"));
+    trace::println(_X("Download .NET:"));
     trace::println(_X("  %s"), DOTNET_CORE_DOWNLOAD_URL);
-}
+
+    trace::println();
+    trace::println(_X("Learn about .NET Runtimes and SDKs:"));
+    trace::println(_X("  %s"), DOTNET_INFO_URL);}
 
 void command_line::print_muxer_usage(bool is_sdk_present)
 {

@@ -134,7 +134,7 @@ jobs:
           - ${{ if ne(parameters.jobParameters.isFullMatrix, true) }}:
             - Windows.81.Amd64.Open
             - Windows.10.Amd64.Server2022.ES.Open
-            - Windows.11.Amd64.ClientPre.Open
+            - Windows.11.Amd64.Client.Open
             - ${{ if eq(parameters.jobParameters.testScope, 'outerloop') }}:
               - (Windows.Server.Core.1909.Amd64.Open)windows.10.amd64.server20H2.open@mcr.microsoft.com/dotnet-buildtools/prereqs:windowsservercore-2004-helix-amd64-20200904200251-272704c
             - ${{ if ne(parameters.jobParameters.runtimeFlavor, 'mono') }}:

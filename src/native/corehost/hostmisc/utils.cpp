@@ -29,23 +29,32 @@ bool coreclr_exists_in_dir(const pal::string_t& candidate)
     return pal::file_exists(test);
 }
 
-bool ends_with(const pal::string_t& value, const pal::string_t& suffix, bool match_case)
+bool utils::starts_with(const pal::string_t& value, const pal::char_t* prefix, size_t prefix_len, bool match_case)
+{
+    // Cannot start with an empty string.
+    if (prefix_len == 0)
+        return false;
+
+    auto cmp = match_case ? pal::strncmp : pal::strncasecmp;
+    return (value.size() >= prefix_len) &&
+        cmp(value.c_str(), prefix, prefix_len) == 0;
+}
+
+bool utils::ends_with(const pal::string_t& value, const pal::char_t* suffix, size_t suffix_len, bool match_case)
 {
     auto cmp = match_case ? pal::strcmp : pal::strcasecmp;
-    return (value.size() >= suffix.size()) &&
-        cmp(value.c_str() + value.size() - suffix.size(), suffix.c_str()) == 0;
+    return (value.size() >= suffix_len) &&
+        cmp(value.c_str() + value.size() - suffix_len, suffix) == 0;
+}
+
+bool ends_with(const pal::string_t& value, const pal::string_t& suffix, bool match_case)
+{
+    return utils::ends_with(value, suffix.c_str(), suffix.size(), match_case);
 }
 
 bool starts_with(const pal::string_t& value, const pal::string_t& prefix, bool match_case)
 {
-    if (prefix.empty())
-    {
-        // Cannot start with an empty string.
-        return false;
-    }
-    auto cmp = match_case ? pal::strncmp : pal::strncasecmp;
-    return (value.size() >= prefix.size()) &&
-        cmp(value.c_str(), prefix.c_str(), prefix.size()) == 0;
+    return utils::starts_with(value, prefix.c_str(), prefix.size(), match_case);
 }
 
 void append_path(pal::string_t* path1, const pal::char_t* path2)

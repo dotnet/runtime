@@ -2887,6 +2887,13 @@ namespace System.Tests
             Assert.Equal(tzCollection.Count, tzDisplayNames.Count);
         }
 
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Android | TestPlatforms.iOS | TestPlatforms.tvOS)]
+        public static void LocalTzIsNotUtc()
+        {
+            Assert.NotEqual(TimeZoneInfo.Utc.StandardName, TimeZoneInfo.Local.StandardName);
+        }
+
         private static bool IsEnglishUILanguage => CultureInfo.CurrentUICulture.Name.Length == 0 || CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "en";
 
         private static bool IsEnglishUILanguageAndRemoteExecutorSupported => IsEnglishUILanguage && RemoteExecutor.IsSupported;

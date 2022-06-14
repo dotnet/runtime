@@ -19,10 +19,45 @@
 #define DOTNET_CORE_DOWNLOAD_URL _X("https://aka.ms/dotnet-download")
 #define DOTNET_CORE_APPLAUNCH_URL _X("https://aka.ms/dotnet-core-applaunch")
 
+#define DOTNET_INFO_URL _X("https://aka.ms/dotnet/runtimes-sdk-info")
+#define DOTNET_APP_LAUNCH_FAILED_URL _X("https://aka.ms/dotnet/app-launch-failed")
+#define DOTNET_SDK_NOT_FOUND_URL _X("https://aka.ms/dotnet/sdk-not-found")
+
+// This message is defined here for consistency between errors on the command line and GUI (Windows apphost).
+#define INSTALL_OR_UPDATE_NET_ERROR_MESSAGE _X("You must install or update .NET to run this application.")
+
+#define INSTALL_NET_ERROR_MESSAGE _X("You must install .NET to run this application.")
+#define INSTALL_NET_DESKTOP_ERROR_MESSAGE _X("You must install .NET Desktop Runtime to run this application.")
+
 #define RUNTIME_STORE_DIRECTORY_NAME _X("store")
 
 bool ends_with(const pal::string_t& value, const pal::string_t& suffix, bool match_case);
 bool starts_with(const pal::string_t& value, const pal::string_t& prefix, bool match_case);
+
+namespace utils
+{
+    template<size_t L>
+    inline constexpr size_t strlen(const pal::char_t(&)[L])
+    {
+        return L - 1;
+    }
+
+    bool ends_with(const pal::string_t& value, const pal::char_t *suffix, size_t suffix_len, bool match_case);
+    bool starts_with(const pal::string_t& value, const pal::char_t* prefix, size_t prefix_len, bool match_case);
+
+    template<size_t L>
+    bool ends_with(const pal::string_t& value, const pal::char_t (&suffix)[L], bool match_case)
+    {
+        return ends_with(value, suffix, L - 1, match_case);
+    }
+
+    template<size_t L>
+    bool starts_with(const pal::string_t& value, const pal::char_t (&prefix)[L], bool match_case)
+    {
+        return starts_with(value, prefix, L - 1, match_case);
+    }
+}
+
 pal::string_t strip_executable_ext(const pal::string_t& filename);
 pal::string_t get_directory(const pal::string_t& path);
 pal::string_t strip_file_ext(const pal::string_t& path);
