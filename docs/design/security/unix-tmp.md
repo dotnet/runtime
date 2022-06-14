@@ -24,7 +24,7 @@ considered. In general, the best use of the temp directory is for programs which
 
 In these cases, the process can create a file or files with
   1. A pseudorandom name, unlikely to cause collisions
-  1. Permissions which restrict all access to owner-only, i.e. 700
+  1. Permissions which restrict all access to owner-only, i.e. 700 for directories, 600 for files
 
 Any other use needs to be carefully audited, particularly if the temporary file is intended for use across
 multiple processes. Some considerations:
