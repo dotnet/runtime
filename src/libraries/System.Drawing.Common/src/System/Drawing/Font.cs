@@ -297,7 +297,7 @@ namespace System.Drawing
         /// <param name="logFont">A structure to populate with LOGFONT data.</param>
         /// <param name="graphics">Graphics object which provide information about font.</param>
         public unsafe void ToLogFont<T>(ref T logFont, Graphics graphics)
-            where T: struct, unmanaged
+            where T: unmanaged
         {
             ArgumentNullException.ThrowIfNull(logFont);
 
@@ -577,7 +577,7 @@ namespace System.Drawing
         /// <param name="logFont">A structure holding LOGFONT data.</param>
         /// <returns>The newly created <see cref="Font"/>.</returns>
         public static Font FromLogFont<T>(in T logFont)
-            where T: struct, unmanaged
+            where T: unmanaged
         {
             using (ScreenDC dc = ScreenDC.Create())
             {
@@ -657,7 +657,7 @@ namespace System.Drawing
         /// <param name="hdc">Handle to a device context (HDC).</param>
         /// <returns>The newly created <see cref="Font"/>.</returns>
         public static unsafe Font FromLogFont<T>(in T logFont, IntPtr hdc)
-            where T: struct, unmanaged
+            where T: unmanaged
         {
             ArgumentNullException.ThrowIfNull(logFont);
 
@@ -741,7 +741,7 @@ namespace System.Drawing
         /// </summary>
         /// <param name="logFont">A structure to populate with LOGFONT data.</param>
         public void ToLogFont<T>(ref T logFont)
-            where T: struct, unmanaged
+            where T: unmanaged
         {
             using (ScreenDC dc = ScreenDC.Create())
             using (Graphics graphics = Graphics.FromHdcInternal(dc))

@@ -28,10 +28,10 @@ namespace System.Drawing
     }
     public sealed partial class Font
     {
-        public void ToLogFont<T>(ref T logFont, Graphics graphics) where T: struct, unmanaged  { throw null; }
-        public static Font FromLogFont<T>(in T logFont) where T: struct, unmanaged { throw null; }
-        public static Font FromLogFont<T>(in T logFont, IntPtr hdc) where T: struct, unmanaged { throw null; }
-        public void ToLogFont<T>(ref T logFont) where T: struct, unmanaged { throw null; }
+        public void ToLogFont<T>(ref T logFont, Graphics graphics) where T: unmanaged  { throw null; }
+        public static Font FromLogFont<T>(in T logFont) where T: unmanaged { throw null; }
+        public static Font FromLogFont<T>(in T logFont, IntPtr hdc) where T: unmanaged { throw null; }
+        public void ToLogFont<T>(ref T logFont) where T: unmanaged { throw null; }
     }
 }
 namespace System.Drawing.Drawing2D
