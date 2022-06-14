@@ -5,6 +5,7 @@ import { AllAssetEntryTypes, mono_assert, AssetEntry, CharPtrNull, DotnetModule,
 import { ENVIRONMENT_IS_ESM, ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, INTERNAL, locateFile, Module, MONO, requirePromise, runtimeHelpers } from "./imports";
 import cwraps from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
+import GuardedPromise from "./guarded-promise";
 import { mono_wasm_globalization_init, mono_wasm_load_icu_data } from "./icu";
 import { toBase64StringImpl } from "./base64";
 import { mono_wasm_init_aot_profiler, mono_wasm_init_coverage_profiler } from "./profiler";
@@ -17,24 +18,11 @@ import { mono_on_abort } from "./run";
 import { mono_wasm_new_root } from "./roots";
 import { init_crypto } from "./crypto-worker";
 
-/// Given a function name (for diagnostic purposes) and a function, returns a function that invokes the original function
-/// the first time it is called, and otherwise throws an exception.
-function oneShot<T extends any[], TRes>(name: string, f: (...args: [...T]) => TRes): (...args: [...T]) => TRes {
-    let wasCalled = false;
-    function guardedF(...args: [...T]): TRes {
-        if (wasCalled)
-            throw new Error(`${name} called more than once`);
-        wasCalled = true;
-        return f(...args);
-    }
-    return guardedF;
-}
-
 export let runtime_is_initialized_resolve: () => void;
 export let runtime_is_initialized_reject: (reason?: any) => void;
-export const mono_wasm_runtime_is_initialized = new Promise<void>((resolve, reject) => {
-    runtime_is_initialized_resolve = oneShot("resolve", resolve);
-    runtime_is_initialized_reject = oneShot("reject", reject);
+export const mono_wasm_runtime_is_initialized = new GuardedPromise<void>((resolve, reject) => {
+    runtime_is_initialized_resolve = resolve;
+    runtime_is_initialized_reject = reject;
 });
 
 let ctx: DownloadAssetsContext | null = null;
