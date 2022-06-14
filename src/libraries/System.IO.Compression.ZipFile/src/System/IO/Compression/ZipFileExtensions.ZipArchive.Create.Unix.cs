@@ -10,7 +10,7 @@ namespace System.IO.Compression
             Interop.Sys.FileStatus status;
             Interop.CheckIo(Interop.Sys.FStat(fs.SafeFileHandle, out status), fs.Name);
 
-            entry.ExternalAttributes |= status.Mode << 16;
+            entry.ExternalAttributes = status.Mode << 16;
         }
     }
 }
