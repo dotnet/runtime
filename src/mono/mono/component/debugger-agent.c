@@ -3554,7 +3554,7 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 	buffer_add_int (&buf, nevents);
 
 	for (l = events; l; l = l->next) {
-		buffer_add_byte (&buf, event); // event kind
+		buffer_add_byte (&buf, GINT_TO_UINT8 (event)); // event kind
 		buffer_add_int (&buf, GPOINTER_TO_INT (l->data)); // request id
 
 		ecount ++;
@@ -3628,7 +3628,7 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 			EventInfo *ei = (EventInfo *)arg;
 			buffer_add_objid (&buf, ei->exc);
 #ifdef TARGET_WASM
-			buffer_add_byte (&buf, ei->caught);
+			buffer_add_byte (&buf, GINT_TO_UINT8 (ei->caught));
 #endif
 			/*
 			 * We are not yet suspending, so get_objref () will not keep this object alive. So we need to do it
@@ -7243,7 +7243,7 @@ event_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 			if (!isBPOnManagedCode) {
 				mono_de_cancel_all_ss ();
 			}
-			buffer_add_byte (buf, isBPOnManagedCode);
+			buffer_add_byte (buf, GINT_TO_UINT8 (isBPOnManagedCode));
 #endif
 		} else if (req->event_kind == EVENT_KIND_METHOD_ENTRY) {
 			req->info = mono_de_set_breakpoint (NULL, METHOD_ENTRY_IL_OFFSET, req, NULL);

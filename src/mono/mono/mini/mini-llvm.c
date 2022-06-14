@@ -1989,13 +1989,13 @@ get_aotconst_name (MonoJumpInfoType type, gconstpointer data, int got_offset)
 		name = g_strdup_printf ("%s", mono_ji_type_to_string (type));
 		len = strlen (name);
 		for (size_t i = 0; i < len; ++i)
-			name [i] = tolower (name [i]);
+			name [i] = GINT_TO_CHAR (tolower (name [i]));
 		break;
 	default:
 		name = g_strdup_printf ("%s_%d", mono_ji_type_to_string (type), got_offset);
 		len = strlen (name);
 		for (size_t i = 0; i < len; ++i)
-			name [i] = tolower (name [i]);
+			name [i] = GINT_TO_CHAR (tolower (name [i]));
 		break;
 	}
 
@@ -12584,7 +12584,7 @@ add_intrinsic (LLVMModuleRef module, int id)
 		for (int vw = 0; vw < INTRIN_vectorwidths; ++vw) {
 			for (int ew = 0; ew < INTRIN_elementwidths; ++ew) {
 				llvm_ovr_tag_t vec_bit = INTRIN_vector128 >> ((INTRIN_vectorwidths - 1) - vw);
-				llvm_ovr_tag_t elem_bit = INTRIN_int8 << ew;
+				llvm_ovr_tag_t elem_bit = GINT_TO_UINT16 (INTRIN_int8 << ew);
 				llvm_ovr_tag_t test = vec_bit | elem_bit;
 				if ((spec & test) == test) {
 					uint8_t kind = intrin_kind [id];
