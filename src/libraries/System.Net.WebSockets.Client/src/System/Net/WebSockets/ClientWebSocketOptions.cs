@@ -139,12 +139,7 @@ namespace System.Net.WebSockets
             set
             {
                 ThrowIfReadOnly();
-                if (value != Timeout.InfiniteTimeSpan && value < TimeSpan.Zero)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), value,
-                        SR.Format(SR.net_WebSockets_ArgumentOutOfRange_TooSmall,
-                        Timeout.InfiniteTimeSpan.ToString()));
-                }
+                ArgumentOutOfRangeException.ThrowIf(value != Timeout.InfiniteTimeSpan && value < TimeSpan.Zero);
                 _keepAliveInterval = value;
             }
         }

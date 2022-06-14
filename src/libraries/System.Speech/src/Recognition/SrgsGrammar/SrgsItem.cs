@@ -78,10 +78,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         {
             // Negative values are not allowed
             ArgumentOutOfRangeException.ThrowIfNotBetween(minRepeat, 0, 255);
-            if (maxRepeat != int.MaxValue && (maxRepeat < 0 || maxRepeat > 255))
-            {
-                throw new ArgumentOutOfRangeException(nameof(maxRepeat), SR.Get(SRID.InvalidMinRepeat, maxRepeat));
-            }
+            ArgumentOutOfRangeException.ThrowIf(maxRepeat != int.MaxValue && (maxRepeat < 0 || maxRepeat > 255));
 
             // Max be greater or equal to min
             if (minRepeat > maxRepeat)

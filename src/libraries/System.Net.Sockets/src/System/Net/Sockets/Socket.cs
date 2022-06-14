@@ -829,10 +829,7 @@ namespace System.Net.Sockets
             ThrowIfDisposed();
             ArgumentNullException.ThrowIfNull(address);
 
-            if (!TcpValidationHelpers.ValidatePortNumber(port))
-            {
-                throw new ArgumentOutOfRangeException(nameof(port));
-            }
+            ArgumentOutOfRangeException.ThrowIf(!TcpValidationHelpers.ValidatePortNumber(port));
 
             if (_isConnected)
             {
@@ -855,10 +852,7 @@ namespace System.Net.Sockets
             ThrowIfDisposed();
             ArgumentNullException.ThrowIfNull(host);
 
-            if (!TcpValidationHelpers.ValidatePortNumber(port))
-            {
-                throw new ArgumentOutOfRangeException(nameof(port));
-            }
+            ArgumentOutOfRangeException.ThrowIf(!TcpValidationHelpers.ValidatePortNumber(port));
             if (_addressFamily != AddressFamily.InterNetwork && _addressFamily != AddressFamily.InterNetworkV6)
             {
                 throw new NotSupportedException(SR.net_invalidversion);
@@ -888,10 +882,7 @@ namespace System.Net.Sockets
             {
                 throw new ArgumentException(SR.net_sockets_invalid_ipaddress_length, nameof(addresses));
             }
-            if (!TcpValidationHelpers.ValidatePortNumber(port))
-            {
-                throw new ArgumentOutOfRangeException(nameof(port));
-            }
+            ArgumentOutOfRangeException.ThrowIf(!TcpValidationHelpers.ValidatePortNumber(port));
             if (_addressFamily != AddressFamily.InterNetwork && _addressFamily != AddressFamily.InterNetworkV6)
             {
                 throw new NotSupportedException(SR.net_invalidversion);
@@ -2135,18 +2126,9 @@ namespace System.Net.Sockets
                 throw new ArgumentNullException(null, SR.net_sockets_empty_select);
             }
             const int MaxSelect = 65536;
-            if (checkRead != null && checkRead.Count > MaxSelect)
-            {
-                throw new ArgumentOutOfRangeException(nameof(checkRead), SR.Format(SR.net_sockets_toolarge_select, nameof(checkRead), MaxSelect.ToString()));
-            }
-            if (checkWrite != null && checkWrite.Count > MaxSelect)
-            {
-                throw new ArgumentOutOfRangeException(nameof(checkWrite), SR.Format(SR.net_sockets_toolarge_select, nameof(checkWrite), MaxSelect.ToString()));
-            }
-            if (checkError != null && checkError.Count > MaxSelect)
-            {
-                throw new ArgumentOutOfRangeException(nameof(checkError), SR.Format(SR.net_sockets_toolarge_select, nameof(checkError), MaxSelect.ToString()));
-            }
+            ArgumentOutOfRangeException.ThrowIf(checkRead != null && checkRead.Count > MaxSelect);
+            ArgumentOutOfRangeException.ThrowIf(checkWrite != null && checkWrite.Count > MaxSelect);
+            ArgumentOutOfRangeException.ThrowIf(checkError != null && checkError.Count > MaxSelect);
 
             SocketError errorCode = SocketPal.Select(checkRead, checkWrite, checkError, microSeconds);
 

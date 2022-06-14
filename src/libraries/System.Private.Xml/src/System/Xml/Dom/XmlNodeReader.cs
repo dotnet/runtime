@@ -343,10 +343,7 @@ namespace System.Xml
 
         private void CheckIndexCondition(int attributeIndex)
         {
-            if (attributeIndex < 0 || attributeIndex >= AttributeCount)
-            {
-                throw new ArgumentOutOfRangeException(nameof(attributeIndex));
-            }
+            ArgumentOutOfRangeException.ThrowIf(attributeIndex < 0 || attributeIndex >= AttributeCount);
         }
 
         //8 functions below are the helper functions to deal with virtual attributes of XmlDeclaration nodes and DocumentType nodes.
@@ -1347,8 +1344,7 @@ namespace System.Xml
         // Gets the value of the attribute with the specified index.
         public override string GetAttribute(int attributeIndex)
         {
-            if (!IsInReadingStates())
-                throw new ArgumentOutOfRangeException(nameof(attributeIndex));
+            ArgumentOutOfRangeException.ThrowIf(!IsInReadingStates());
             //CheckIndexCondition( i );
             //Debug.Assert( nav.NodeType == XmlNodeType.Element );
             return _readerNav.GetAttribute(attributeIndex)!;
@@ -1398,8 +1394,7 @@ namespace System.Xml
         // Moves to the attribute with the specified index.
         public override void MoveToAttribute(int attributeIndex)
         {
-            if (!IsInReadingStates())
-                throw new ArgumentOutOfRangeException(nameof(attributeIndex));
+            ArgumentOutOfRangeException.ThrowIf(!IsInReadingStates());
             _readerNav.ResetMove(ref _curDepth, ref _nodeType);
             try
             {

@@ -871,7 +871,7 @@ namespace System.Threading.Tasks.Dataflow
             }
 
             // Validate arguments
-            if (!Common.IsValidTimeout(timeout)) throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+            ArgumentOutOfRangeException.ThrowIf(!Common.IsValidTimeout(timeout));
 
             // Return the task representing the core receive operation
             return ReceiveCore(source, true, timeout, cancellationToken);
@@ -956,7 +956,7 @@ namespace System.Threading.Tasks.Dataflow
             }
 
             // Validate arguments
-            if (!Common.IsValidTimeout(timeout)) throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+            ArgumentOutOfRangeException.ThrowIf(!Common.IsValidTimeout(timeout));
 
             // Do fast path checks for both cancellation and data already existing.
             cancellationToken.ThrowIfCancellationRequested();

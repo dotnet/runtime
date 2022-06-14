@@ -19,16 +19,14 @@ namespace System.Security.Cryptography.X509Certificates
 
         public void AddEmailAddress(string emailAddress)
         {
-            if (string.IsNullOrEmpty(emailAddress))
-                throw new ArgumentOutOfRangeException(nameof(emailAddress), SR.Arg_EmptyOrNullString);
+            ArgumentOutOfRangeException.ThrowIf(string.IsNullOrEmpty(emailAddress));
 
             AddGeneralName(new GeneralNameAsn { Rfc822Name = emailAddress });
         }
 
         public void AddDnsName(string dnsName)
         {
-            if (string.IsNullOrEmpty(dnsName))
-                throw new ArgumentOutOfRangeException(nameof(dnsName), SR.Arg_EmptyOrNullString);
+            ArgumentOutOfRangeException.ThrowIf(string.IsNullOrEmpty(dnsName));
 
             AddGeneralName(new GeneralNameAsn { DnsName = s_idnMapping.GetAscii(dnsName) });
         }
@@ -49,8 +47,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         public void AddUserPrincipalName(string upn)
         {
-            if (string.IsNullOrEmpty(upn))
-                throw new ArgumentOutOfRangeException(nameof(upn), SR.Arg_EmptyOrNullString);
+            ArgumentOutOfRangeException.ThrowIf(string.IsNullOrEmpty(upn));
 
             AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
             writer.WriteCharacterString(UniversalTagNumber.UTF8String, upn);

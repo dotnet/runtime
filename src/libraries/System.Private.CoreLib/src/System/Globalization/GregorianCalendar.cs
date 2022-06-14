@@ -204,10 +204,7 @@ namespace System.Globalization
         /// </summary>
         public override int GetDaysInMonth(int year, int month, int era)
         {
-            if (era != CurrentEra && era != ADEra)
-            {
-                throw new ArgumentOutOfRangeException(nameof(era), era, SR.ArgumentOutOfRange_InvalidEraValue);
-            }
+            ArgumentOutOfRangeException.ThrowIf(era != CurrentEra && era != ADEra);
             return DateTime.DaysInMonth(year, month);
         }
 
@@ -217,10 +214,7 @@ namespace System.Globalization
         /// </summary>
         public override int GetDaysInYear(int year, int era)
         {
-            if (era != CurrentEra && era != ADEra)
-            {
-                throw new ArgumentOutOfRangeException(nameof(era), era, SR.ArgumentOutOfRange_InvalidEraValue);
-            }
+            ArgumentOutOfRangeException.ThrowIf(era != CurrentEra && era != ADEra);
             return DateTime.IsLeapYear(year) ? 366 : 365;
         }
 
@@ -239,10 +233,7 @@ namespace System.Globalization
         /// </summary>
         public override int GetMonthsInYear(int year, int era)
         {
-            if (era != CurrentEra && era != ADEra)
-            {
-                throw new ArgumentOutOfRangeException(nameof(era), era, SR.ArgumentOutOfRange_InvalidEraValue);
-            }
+            ArgumentOutOfRangeException.ThrowIf(era != CurrentEra && era != ADEra);
             ArgumentOutOfRangeException.ThrowIfNotBetween(year, 1, MaxYear);
 
             return 12;
@@ -278,10 +269,7 @@ namespace System.Globalization
         {
             ArgumentOutOfRangeException.ThrowIfNotBetween(month, 1, 12);
 
-            if (era != CurrentEra && era != ADEra)
-            {
-                throw new ArgumentOutOfRangeException(nameof(era), era, SR.ArgumentOutOfRange_InvalidEraValue);
-            }
+            ArgumentOutOfRangeException.ThrowIf(era != CurrentEra && era != ADEra);
             ArgumentOutOfRangeException.ThrowIfNotBetween(year, 1, MaxYear);
             ArgumentOutOfRangeException.ThrowIfNotBetween(day, 1, GetDaysInMonth(year, month));
 
@@ -295,10 +283,7 @@ namespace System.Globalization
         /// </summary>
         public override int GetLeapMonth(int year, int era)
         {
-            if (era != CurrentEra && era != ADEra)
-            {
-                throw new ArgumentOutOfRangeException(nameof(era), era, SR.ArgumentOutOfRange_InvalidEraValue);
-            }
+            ArgumentOutOfRangeException.ThrowIf(era != CurrentEra && era != ADEra);
             ArgumentOutOfRangeException.ThrowIfNotBetween(year, 1, MaxYear);
 
             return 0;
@@ -310,10 +295,7 @@ namespace System.Globalization
         /// </summary>
         public override bool IsLeapMonth(int year, int month, int era)
         {
-            if (era != CurrentEra && era != ADEra)
-            {
-                throw new ArgumentOutOfRangeException(nameof(era), era, SR.ArgumentOutOfRange_InvalidEraValue);
-            }
+            ArgumentOutOfRangeException.ThrowIf(era != CurrentEra && era != ADEra);
             ArgumentOutOfRangeException.ThrowIfNotBetween(year, 1, MaxYear);
             ArgumentOutOfRangeException.ThrowIfNotBetween(month, 1, 12);
 
@@ -326,10 +308,7 @@ namespace System.Globalization
         /// </summary>
         public override bool IsLeapYear(int year, int era)
         {
-            if (era != CurrentEra && era != ADEra)
-            {
-                throw new ArgumentOutOfRangeException(nameof(era), era, SR.ArgumentOutOfRange_InvalidEraValue);
-            }
+            ArgumentOutOfRangeException.ThrowIf(era != CurrentEra && era != ADEra);
             return DateTime.IsLeapYear(year);
         }
 
@@ -339,10 +318,7 @@ namespace System.Globalization
         /// </summary>
         public override DateTime ToDateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int era)
         {
-            if (era != CurrentEra && era != ADEra)
-            {
-                throw new ArgumentOutOfRangeException(nameof(era), era, SR.ArgumentOutOfRange_InvalidEraValue);
-            }
+            ArgumentOutOfRangeException.ThrowIf(era != CurrentEra && era != ADEra);
 
             return new DateTime(year, month, day, hour, minute, second, millisecond);
         }

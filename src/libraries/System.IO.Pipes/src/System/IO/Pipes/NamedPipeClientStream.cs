@@ -62,10 +62,7 @@ namespace System.IO.Pipes
             {
                 throw new ArgumentException(SR.Argument_EmptyServerName);
             }
-            if ((options & ~(PipeOptions.WriteThrough | PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly)) != 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(options), SR.ArgumentOutOfRange_OptionsInvalid);
-            }
+            ArgumentOutOfRangeException.ThrowIf((options & ~(PipeOptions.WriteThrough | PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly)) != 0);
             if (impersonationLevel < TokenImpersonationLevel.None || impersonationLevel > TokenImpersonationLevel.Delegation)
             {
                 throw new ArgumentOutOfRangeException(nameof(impersonationLevel), SR.ArgumentOutOfRange_ImpersonationInvalid);
@@ -119,10 +116,7 @@ namespace System.IO.Pipes
         {
             CheckConnectOperationsClient();
 
-            if (timeout < 0 && timeout != Timeout.Infinite)
-            {
-                throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_InvalidTimeout);
-            }
+            ArgumentOutOfRangeException.ThrowIf(timeout < 0 && timeout != Timeout.Infinite);
 
             ConnectInternal(timeout, CancellationToken.None, Environment.TickCount);
         }
@@ -183,10 +177,7 @@ namespace System.IO.Pipes
         {
             CheckConnectOperationsClient();
 
-            if (timeout < 0 && timeout != Timeout.Infinite)
-            {
-                throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_InvalidTimeout);
-            }
+            ArgumentOutOfRangeException.ThrowIf(timeout < 0 && timeout != Timeout.Infinite);
 
             if (cancellationToken.IsCancellationRequested)
             {

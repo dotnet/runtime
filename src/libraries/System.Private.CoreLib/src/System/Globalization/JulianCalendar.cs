@@ -61,22 +61,13 @@ namespace System.Globalization
 
         internal static void CheckEraRange(int era)
         {
-            if (era != CurrentEra && era != JulianEra)
-            {
-                throw new ArgumentOutOfRangeException(nameof(era), era, SR.ArgumentOutOfRange_InvalidEraValue);
-            }
+            ArgumentOutOfRangeException.ThrowIf(era != CurrentEra && era != JulianEra);
         }
 
         internal void CheckYearEraRange(int year, int era)
         {
             CheckEraRange(era);
-            if (year <= 0 || year > MaxYear)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(year),
-                    year,
-                    SR.Format(SR.ArgumentOutOfRange_Range, 1, MaxYear));
-            }
+            ArgumentOutOfRangeException.ThrowIf(year <= 0 || year > MaxYear);
         }
 
         internal static void CheckMonthRange(int month)
@@ -298,18 +289,9 @@ namespace System.Globalization
             CheckYearEraRange(year, era);
             CheckMonthRange(month);
             CheckDayRange(year, month, day);
-            if (millisecond < 0 || millisecond >= MillisPerSecond)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(millisecond),
-                    millisecond,
-                    SR.Format(SR.ArgumentOutOfRange_Range, 0, MillisPerSecond - 1));
-            }
+            ArgumentOutOfRangeException.ThrowIf(millisecond < 0 || millisecond >= MillisPerSecond);
 
-            if (hour < 0 || hour >= 24 || minute < 0 || minute >= 60 || second < 0 || second >= 60)
-            {
-                throw new ArgumentOutOfRangeException(null, SR.ArgumentOutOfRange_BadHourMinuteSecond);
-            }
+            ArgumentOutOfRangeException.ThrowIf(hour < 0 || hour >= 24 || minute < 0 || minute >= 60 || second < 0 || second >= 60);
 
             return new DateTime(DateToTicks(year, month, day) + (new TimeSpan(0, hour, minute, second, millisecond)).Ticks);
         }

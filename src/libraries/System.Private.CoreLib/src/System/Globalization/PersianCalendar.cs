@@ -57,10 +57,7 @@ namespace System.Globalization
 
         private static long GetAbsoluteDatePersian(int year, int month, int day)
         {
-            if (year < 1 || year > MaxCalendarYear || month < 1 || month > 12)
-            {
-                throw new ArgumentOutOfRangeException(null, SR.ArgumentOutOfRange_BadYearMonthDay);
-            }
+            ArgumentOutOfRangeException.ThrowIf(year < 1 || year > MaxCalendarYear || month < 1 || month > 12);
 
             // day is one based, make 0 based since this will be the number of days we add to beginning of year below
             int ordinalDay = DaysInPreviousMonths(month) + day - 1;
@@ -77,10 +74,7 @@ namespace System.Globalization
 
         internal static void CheckEraRange(int era)
         {
-            if (era != CurrentEra && era != PersianEra)
-            {
-                throw new ArgumentOutOfRangeException(nameof(era), era, SR.ArgumentOutOfRange_InvalidEraValue);
-            }
+            ArgumentOutOfRangeException.ThrowIf(era != CurrentEra && era != PersianEra);
         }
 
         internal static void CheckYearRange(int year, int era)

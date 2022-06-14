@@ -324,10 +324,7 @@ namespace System.Text
                     int chunkLength = chunk.m_ChunkLength;
 
                     // Check that we will not overrun our boundaries.
-                    if ((uint)(chunkLength + chunkOffset) > (uint)result.Length || (uint)chunkLength > (uint)sourceArray.Length)
-                    {
-                        throw new ArgumentOutOfRangeException(nameof(chunkLength), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
-                    }
+                    ArgumentOutOfRangeException.ThrowIf((uint)(chunkLength + chunkOffset) > (uint)result.Length || (uint)chunkLength > (uint)sourceArray.Length);
 
                     Buffer.Memmove(
                         ref Unsafe.Add(ref result.GetRawStringData(), chunkOffset),
@@ -463,10 +460,7 @@ namespace System.Text
                         return;
                     }
                     chunk = chunk.m_ChunkPrevious;
-                    if (chunk == null)
-                    {
-                        throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLess);
-                    }
+                    ArgumentOutOfRangeException.ThrowIf(chunk == null);
                 }
             }
         }
@@ -1725,10 +1719,7 @@ namespace System.Text
         {
             int currentLength = Length;
             ArgumentOutOfRangeException.ThrowIfGreaterThan((uint)startIndex, (uint)currentLength);
-            if (count < 0 || startIndex > currentLength - count)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
-            }
+            ArgumentOutOfRangeException.ThrowIf(count < 0 || startIndex > currentLength - count);
             ArgumentException.ThrowIfNullOrEmpty(oldValue);
 
             newValue ??= string.Empty;
@@ -1808,10 +1799,7 @@ namespace System.Text
             int currentLength = Length;
             ArgumentOutOfRangeException.ThrowIfGreaterThan((uint)startIndex, (uint)currentLength);
 
-            if (count < 0 || startIndex > currentLength - count)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
-            }
+            ArgumentOutOfRangeException.ThrowIf(count < 0 || startIndex > currentLength - count);
 
             int endIndex = startIndex + count;
             StringBuilder chunk = this;
@@ -2149,10 +2137,7 @@ namespace System.Text
 
             AssertInvariants();
 
-            if ((minBlockCharCount + Length) > m_MaxCapacity || minBlockCharCount + Length < minBlockCharCount)
-            {
-                throw new ArgumentOutOfRangeException("requiredLength", SR.ArgumentOutOfRange_SmallCapacity);
-            }
+            ArgumentOutOfRangeException.ThrowIf((minBlockCharCount + Length) > m_MaxCapacity || minBlockCharCount + Length < minBlockCharCount);
 
             // - We always need to make the new chunk at least as big as was requested (`minBlockCharCount`).
             // - We'd also prefer to make it at least at big as the current length (thus doubling capacity).

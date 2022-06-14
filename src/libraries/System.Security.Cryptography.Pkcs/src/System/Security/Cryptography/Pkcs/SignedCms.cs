@@ -402,10 +402,7 @@ namespace System.Security.Cryptography.Pkcs
                 throw new InvalidOperationException(SR.Cryptography_Cms_MessageNotSigned);
             }
 
-            if (index < 0 || index >= _signedData.SignerInfos.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLess);
-            }
+            ArgumentOutOfRangeException.ThrowIf(index < 0 || index >= _signedData.SignerInfos.Length);
 
             AlgorithmIdentifierAsn signerAlgorithm = _signedData.SignerInfos[index].DigestAlgorithm;
             PkcsHelpers.RemoveAt(ref _signedData.SignerInfos, index);

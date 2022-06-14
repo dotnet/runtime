@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 namespace System.Text.Json.Serialization
@@ -20,10 +20,7 @@ namespace System.Text.Json.Serialization
         /// </summary>
         public JsonNumberHandlingAttribute(JsonNumberHandling handling)
         {
-            if (!JsonSerializer.IsValidNumberHandlingValue(handling))
-            {
-                throw new ArgumentOutOfRangeException(nameof(handling));
-            }
+            ArgumentOutOfRangeException.ThrowIf(!JsonSerializer.IsValidNumberHandlingValue(handling));
             Handling = handling;
         }
     }

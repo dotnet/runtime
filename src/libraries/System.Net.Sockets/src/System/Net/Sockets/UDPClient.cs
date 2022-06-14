@@ -52,10 +52,7 @@ namespace System.Net.Sockets
         // specified port number.
         public UdpClient(int port, AddressFamily family)
         {
-            if (!TcpValidationHelpers.ValidatePortNumber(port))
-            {
-                throw new ArgumentOutOfRangeException(nameof(port));
-            }
+            ArgumentOutOfRangeException.ThrowIf(!TcpValidationHelpers.ValidatePortNumber(port));
             if (family != AddressFamily.InterNetwork && family != AddressFamily.InterNetworkV6)
             {
                 throw new ArgumentException(SR.Format(SR.net_protocol_invalid_family, "UDP"), nameof(family));
@@ -460,10 +457,7 @@ namespace System.Net.Sockets
             ThrowIfDisposed();
 
             ArgumentNullException.ThrowIfNull(multicastAddr);
-            if (!RangeValidationHelpers.ValidateRange(timeToLive, 0, 255))
-            {
-                throw new ArgumentOutOfRangeException(nameof(timeToLive));
-            }
+            ArgumentOutOfRangeException.ThrowIf(!RangeValidationHelpers.ValidateRange(timeToLive, 0, 255));
 
             // Join the Multicast Group.
             JoinMulticastGroup(multicastAddr);
@@ -678,10 +672,7 @@ namespace System.Net.Sockets
         public UdpClient(string hostname, int port)
         {
             ArgumentNullException.ThrowIfNull(hostname);
-            if (!TcpValidationHelpers.ValidatePortNumber(port))
-            {
-                throw new ArgumentOutOfRangeException(nameof(port));
-            }
+            ArgumentOutOfRangeException.ThrowIf(!TcpValidationHelpers.ValidatePortNumber(port));
 
             // NOTE: Need to create different kinds of sockets based on the addresses
             //       returned from DNS. As a result, we defer the creation of the
@@ -700,10 +691,7 @@ namespace System.Net.Sockets
             ThrowIfDisposed();
 
             ArgumentNullException.ThrowIfNull(hostname);
-            if (!TcpValidationHelpers.ValidatePortNumber(port))
-            {
-                throw new ArgumentOutOfRangeException(nameof(port));
-            }
+            ArgumentOutOfRangeException.ThrowIf(!TcpValidationHelpers.ValidatePortNumber(port));
 
             // We must now look for addresses that use a compatible address family to the client socket. However, in the
             // case of the <hostname,port> constructor we will have deferred creating the socket and will do that here
@@ -826,10 +814,7 @@ namespace System.Net.Sockets
             ThrowIfDisposed();
 
             ArgumentNullException.ThrowIfNull(addr);
-            if (!TcpValidationHelpers.ValidatePortNumber(port))
-            {
-                throw new ArgumentOutOfRangeException(nameof(port));
-            }
+            ArgumentOutOfRangeException.ThrowIf(!TcpValidationHelpers.ValidatePortNumber(port));
 
             IPEndPoint endPoint = new IPEndPoint(addr, port);
 

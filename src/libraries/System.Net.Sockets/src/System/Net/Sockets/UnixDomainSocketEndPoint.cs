@@ -38,12 +38,7 @@ namespace System.Net.Sockets
                 bufferLength++;
             }
 
-            if (path.Length == 0 || bufferLength > s_nativePathLength)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(path), path,
-                    SR.Format(SR.ArgumentOutOfRange_PathLengthInvalid, path, s_nativePathLength));
-            }
+            ArgumentOutOfRangeException.ThrowIf(path.Length == 0 || bufferLength > s_nativePathLength);
 
             _path = path;
             _encodedPath = new byte[bufferLength];
@@ -62,11 +57,8 @@ namespace System.Net.Sockets
         {
             ArgumentNullException.ThrowIfNull(socketAddress);
 
-            if (socketAddress.Family != EndPointAddressFamily ||
-                socketAddress.Size > s_nativeAddressSize)
-            {
-                throw new ArgumentOutOfRangeException(nameof(socketAddress));
-            }
+            ArgumentOutOfRangeException.ThrowIf(socketAddress.Family != EndPointAddressFamily ||
+                socketAddress.Size > s_nativeAddressSize);
 
             if (socketAddress.Size > s_nativePathOffset)
             {

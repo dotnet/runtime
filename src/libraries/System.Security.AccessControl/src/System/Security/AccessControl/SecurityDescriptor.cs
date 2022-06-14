@@ -475,11 +475,7 @@ namespace System.Security.AccessControl
             // We only understand revision-1 security descriptors
             //
 
-            if (binaryForm[offset + 0] != Revision)
-            {
-                throw new ArgumentOutOfRangeException(nameof(binaryForm),
-                     SR.AccessControl_InvalidSecurityDescriptorRevision);
-            }
+            ArgumentOutOfRangeException.ThrowIf(binaryForm[offset + 0] != Revision);
 
 
             ControlFlags flags;

@@ -133,10 +133,7 @@ namespace System.Globalization
 
         internal static void CheckEraRange(int era)
         {
-            if (era != CurrentEra && era != HijriEra)
-            {
-                throw new ArgumentOutOfRangeException(nameof(era), era, SR.ArgumentOutOfRange_InvalidEraValue);
-            }
+            ArgumentOutOfRangeException.ThrowIf(era != CurrentEra && era != HijriEra);
         }
 
         internal static void CheckYearRange(int year, int era)

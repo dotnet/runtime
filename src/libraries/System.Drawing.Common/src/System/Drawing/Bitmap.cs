@@ -300,15 +300,9 @@ namespace System.Drawing
 
         public Color GetPixel(int x, int y)
         {
-            if (x < 0 || x >= Width)
-            {
-                throw new ArgumentOutOfRangeException(nameof(x), SR.ValidRangeX);
-            }
+            ArgumentOutOfRangeException.ThrowIf(x < 0 || x >= Width);
 
-            if (y < 0 || y >= Height)
-            {
-                throw new ArgumentOutOfRangeException(nameof(y), SR.ValidRangeY);
-            }
+            ArgumentOutOfRangeException.ThrowIf(y < 0 || y >= Height);
 
             int color;
             int status = Gdip.GdipBitmapGetPixel(new HandleRef(this, nativeImage), x, y, out color);
@@ -324,15 +318,9 @@ namespace System.Drawing
                 throw new InvalidOperationException(SR.GdiplusCannotSetPixelFromIndexedPixelFormat);
             }
 
-            if (x < 0 || x >= Width)
-            {
-                throw new ArgumentOutOfRangeException(nameof(x), SR.ValidRangeX);
-            }
+            ArgumentOutOfRangeException.ThrowIf(x < 0 || x >= Width);
 
-            if (y < 0 || y >= Height)
-            {
-                throw new ArgumentOutOfRangeException(nameof(y), SR.ValidRangeY);
-            }
+            ArgumentOutOfRangeException.ThrowIf(y < 0 || y >= Height);
 
             int status = Gdip.GdipBitmapSetPixel(new HandleRef(this, nativeImage), x, y, color.ToArgb());
             Gdip.CheckStatus(status);

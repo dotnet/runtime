@@ -122,11 +122,8 @@ namespace System.Security.AccessControl
             AccessControlType type)
             : base(identity, accessMask, isInherited, inheritanceFlags, propagationFlags)
         {
-            if (type != AccessControlType.Allow &&
-                type != AccessControlType.Deny)
-            {
-                throw new ArgumentOutOfRangeException(nameof(type), SR.ArgumentOutOfRange_Enum);
-            }
+            ArgumentOutOfRangeException.ThrowIf(type != AccessControlType.Allow &&
+                type != AccessControlType.Deny);
 
             ArgumentOutOfRangeException.ThrowIfNotBetween(inheritanceFlags, InheritanceFlags.None, (InheritanceFlags.ObjectInherit | InheritanceFlags.ContainerInherit));
 

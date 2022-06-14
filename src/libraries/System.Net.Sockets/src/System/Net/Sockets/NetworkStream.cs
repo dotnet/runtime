@@ -126,10 +126,7 @@ namespace System.Net.Sockets
             }
             set
             {
-                if (value <= 0 && value != System.Threading.Timeout.Infinite)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.net_io_timeout_use_gt_zero);
-                }
+                ArgumentOutOfRangeException.ThrowIf(value <= 0 && value != System.Threading.Timeout.Infinite);
                 SetSocketTimeoutOption(SocketShutdown.Receive, value, false);
             }
         }
@@ -149,10 +146,7 @@ namespace System.Net.Sockets
             }
             set
             {
-                if (value <= 0 && value != System.Threading.Timeout.Infinite)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.net_io_timeout_use_gt_zero);
-                }
+                ArgumentOutOfRangeException.ThrowIf(value <= 0 && value != System.Threading.Timeout.Infinite);
                 SetSocketTimeoutOption(SocketShutdown.Send, value, false);
             }
         }

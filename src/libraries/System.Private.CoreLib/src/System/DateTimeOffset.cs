@@ -131,11 +131,8 @@ namespace System
 
             _dateTime = ValidateDate(new DateTime(year, month, day, hour, minute, second), offset);
 
-            if (originalSecond == 60 &&
-               !DateTime.IsValidTimeWithLeapSeconds(_dateTime.Year, _dateTime.Month, _dateTime.Day, _dateTime.Hour, _dateTime.Minute, DateTimeKind.Utc))
-            {
-                throw new ArgumentOutOfRangeException(null, SR.ArgumentOutOfRange_BadHourMinuteSecond);
-            }
+            ArgumentOutOfRangeException.ThrowIf(originalSecond == 60 &&
+               !DateTime.IsValidTimeWithLeapSeconds(_dateTime.Year, _dateTime.Month, _dateTime.Day, _dateTime.Hour, _dateTime.Minute, DateTimeKind.Utc));
         }
 
         // Constructs a DateTimeOffset from a given year, month, day, hour,
@@ -153,11 +150,8 @@ namespace System
 
             _dateTime = ValidateDate(new DateTime(year, month, day, hour, minute, second, millisecond), offset);
 
-            if (originalSecond == 60 &&
-               !DateTime.IsValidTimeWithLeapSeconds(_dateTime.Year, _dateTime.Month, _dateTime.Day, _dateTime.Hour, _dateTime.Minute, DateTimeKind.Utc))
-            {
-                throw new ArgumentOutOfRangeException(null, SR.ArgumentOutOfRange_BadHourMinuteSecond);
-            }
+            ArgumentOutOfRangeException.ThrowIf(originalSecond == 60 &&
+               !DateTime.IsValidTimeWithLeapSeconds(_dateTime.Year, _dateTime.Month, _dateTime.Day, _dateTime.Hour, _dateTime.Minute, DateTimeKind.Utc));
         }
 
         // Constructs a DateTimeOffset from a given year, month, day, hour,
@@ -175,11 +169,8 @@ namespace System
 
             _dateTime = ValidateDate(new DateTime(year, month, day, hour, minute, second, millisecond, calendar), offset);
 
-            if (originalSecond == 60 &&
-               !DateTime.IsValidTimeWithLeapSeconds(_dateTime.Year, _dateTime.Month, _dateTime.Day, _dateTime.Hour, _dateTime.Minute, DateTimeKind.Utc))
-            {
-                throw new ArgumentOutOfRangeException(null, SR.ArgumentOutOfRange_BadHourMinuteSecond);
-            }
+            ArgumentOutOfRangeException.ThrowIf(originalSecond == 60 &&
+               !DateTime.IsValidTimeWithLeapSeconds(_dateTime.Year, _dateTime.Month, _dateTime.Day, _dateTime.Hour, _dateTime.Minute, DateTimeKind.Utc));
         }
 
         /// <summary>

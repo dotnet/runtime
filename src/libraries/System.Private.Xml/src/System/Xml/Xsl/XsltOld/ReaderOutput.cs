@@ -262,10 +262,7 @@ namespace System.Xml.Xsl.XsltOld
 
         public override void MoveToAttribute(int i)
         {
-            if (i < 0 || _attributeCount <= i)
-            {
-                throw new ArgumentOutOfRangeException(nameof(i));
-            }
+            ArgumentOutOfRangeException.ThrowIf(i < 0 || _attributeCount <= i);
             SetAttribute(i);
         }
 
@@ -616,10 +613,7 @@ namespace System.Xml.Xsl.XsltOld
 
         private BuilderInfo GetBuilderInfo(int attrib)
         {
-            if (attrib < 0 || _attributeCount <= attrib)
-            {
-                throw new ArgumentOutOfRangeException(nameof(attrib));
-            }
+            ArgumentOutOfRangeException.ThrowIf(attrib < 0 || _attributeCount <= attrib);
 
             Debug.Assert(_attributeList![attrib] is BuilderInfo);
 

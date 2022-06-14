@@ -39,11 +39,7 @@ namespace System.Net.Security
 
         internal static void ValidateImpersonationLevel(TokenImpersonationLevel impersonationLevel)
         {
-            if (impersonationLevel != TokenImpersonationLevel.Identification)
-            {
-                throw new ArgumentOutOfRangeException(nameof(impersonationLevel), impersonationLevel.ToString(),
-                    SR.net_auth_supported_impl_levels);
-            }
+            ArgumentOutOfRangeException.ThrowIf(impersonationLevel != TokenImpersonationLevel.Identification);
         }
     }
 }

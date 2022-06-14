@@ -89,8 +89,7 @@ namespace System.IO.Ports
             get { return _readTimeout; }
             set
             {
-                if (value < 0 && value != SerialPort.InfiniteTimeout)
-                    throw new ArgumentOutOfRangeException(nameof(ReadTimeout), SR.ArgumentOutOfRange_Timeout);
+                ArgumentOutOfRangeException.ThrowIf(value < 0 && value != SerialPort.InfiniteTimeout);
                 if (_handle == null) {
                     InternalResources.FileNotOpen();
                 }
@@ -103,8 +102,7 @@ namespace System.IO.Ports
             get { return _writeTimeout; }
             set
             {
-                if (value < 0 && value != SerialPort.InfiniteTimeout)
-                    throw new ArgumentOutOfRangeException(nameof(ReadTimeout), SR.ArgumentOutOfRange_Timeout);
+                ArgumentOutOfRangeException.ThrowIf(value < 0 && value != SerialPort.InfiniteTimeout);
                 if (_handle == null) {
                     InternalResources.FileNotOpen();
                 }

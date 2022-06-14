@@ -192,8 +192,7 @@ namespace System.Data.SqlTypes
         {
             get
             {
-                if (offset < 0 || offset >= Length)
-                    throw new ArgumentOutOfRangeException(nameof(offset));
+                ArgumentOutOfRangeException.ThrowIf(offset < 0 || offset >= Length);
 
                 if (_rgchWorkBuf == null)
                     _rgchWorkBuf = new char[1];

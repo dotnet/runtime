@@ -56,14 +56,8 @@ namespace System.Net.Http.Headers
             // Scenario: "Content-Range: bytes 12-34/5678"
 
             ArgumentOutOfRangeException.ThrowIfNegative(length);
-            if ((to < 0) || (to > length))
-            {
-                throw new ArgumentOutOfRangeException(nameof(to));
-            }
-            if ((from < 0) || (from > to))
-            {
-                throw new ArgumentOutOfRangeException(nameof(from));
-            }
+            ArgumentOutOfRangeException.ThrowIf((to < 0) || (to > length));
+            ArgumentOutOfRangeException.ThrowIf((from < 0) || (from > to));
 
             _from = from;
             _to = to;
@@ -86,10 +80,7 @@ namespace System.Net.Http.Headers
             // Scenario: "Content-Range: bytes 12-34/*"
 
             ArgumentOutOfRangeException.ThrowIfNegative(to);
-            if ((from < 0) || (from > to))
-            {
-                throw new ArgumentOutOfRangeException(nameof(from));
-            }
+            ArgumentOutOfRangeException.ThrowIf((from < 0) || (from > to));
 
             _from = from;
             _to = to;

@@ -180,8 +180,7 @@ namespace System.Management
             if (null == array)
                 throw new ArgumentNullException(nameof(array));
 
-            if ((index < array.GetLowerBound(0)) || (index > array.GetUpperBound(0)))
-                throw new ArgumentOutOfRangeException(nameof(index));
+            ArgumentOutOfRangeException.ThrowIf((index < array.GetLowerBound(0)) || (index > array.GetUpperBound(0)));
 
             // Get the names of the qualifiers
             string[] qualifierNames = null;

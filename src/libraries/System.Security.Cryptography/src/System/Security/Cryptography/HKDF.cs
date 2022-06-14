@@ -91,8 +91,7 @@ namespace System.Security.Cryptography
 
             // Constant comes from section 2.3 (the constraint on L in the Inputs section)
             int maxOkmLength = 255 * hashLength;
-            if (outputLength <= 0 || outputLength > maxOkmLength)
-                throw new ArgumentOutOfRangeException(nameof(outputLength), SR.Format(SR.Cryptography_Okm_TooLarge, maxOkmLength));
+            ArgumentOutOfRangeException.ThrowIf(outputLength <= 0 || outputLength > maxOkmLength);
 
             byte[] result = new byte[outputLength];
             Expand(hashAlgorithmName, hashLength, prk, result, info);

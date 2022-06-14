@@ -85,10 +85,7 @@ namespace System.Reflection.Metadata.Ecma335
                     continue;
                 }
 
-                if ((unchecked((uint)typeSystemRowCounts[i]) & ~TokenTypeIds.RIDMask) != 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(typeSystemRowCounts), SR.Format(SR.RowCountOutOfRange, i));
-                }
+                ArgumentOutOfRangeException.ThrowIf((unchecked((uint)typeSystemRowCounts[i]) & ~TokenTypeIds.RIDMask) != 0);
 
                 if (((1UL << i) & (ulong)TableMask.ValidPortablePdbExternalTables) == 0)
                 {

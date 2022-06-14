@@ -169,10 +169,7 @@ namespace System.Reflection.Metadata
                 throw new ArgumentException(SR.StreamMustSupportReadAndSeek, nameof(stream));
             }
 
-            if (!options.IsValid())
-            {
-                throw new ArgumentOutOfRangeException(nameof(options));
-            }
+            ArgumentOutOfRangeException.ThrowIf(!options.IsValid());
 
             long start = stream.Position;
             int actualSize = StreamExtensions.GetAndValidateSize(stream, size, nameof(stream));

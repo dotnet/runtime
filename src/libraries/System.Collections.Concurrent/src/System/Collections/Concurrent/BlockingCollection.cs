@@ -1698,13 +1698,8 @@ namespace System.Collections.Concurrent
                 throw new ArgumentException(
                     SR.BlockingCollection_ValidateCollectionsArray_ZeroSize, nameof(collections));
             }
-            if ((collections.Length > 63) ||
-                ((collections.Length == 63) && (Thread.CurrentThread.GetApartmentState() == ApartmentState.STA)))
-            {
-                //The number of WaitHandles must be <= 64 for MTA, and <=63 for STA, as we reserve one for CancellationToken
-                throw new ArgumentOutOfRangeException(
-                    nameof(collections), SR.BlockingCollection_ValidateCollectionsArray_LargeSize);
-            }
+            ArgumentOutOfRangeException.ThrowIf((collections.Length > 63) ||
+                ((collections.Length == 63) && (Thread.CurrentThread.GetApartmentState() == ApartmentState.STA)));
 
             for (int i = 0; i < collections.Length; ++i)
             {
@@ -1735,11 +1730,7 @@ namespace System.Collections.Concurrent
         private static void ValidateTimeout(TimeSpan timeout)
         {
             long totalMilliseconds = (long)timeout.TotalMilliseconds;
-            if ((totalMilliseconds < 0 || totalMilliseconds > int.MaxValue) && (totalMilliseconds != Timeout.Infinite))
-            {
-                throw new ArgumentOutOfRangeException(nameof(timeout), timeout,
-                    SR.Format(CultureInfo.InvariantCulture, SR.BlockingCollection_TimeoutInvalid, int.MaxValue));
-            }
+            ArgumentOutOfRangeException.ThrowIf((totalMilliseconds < 0 || totalMilliseconds > int.MaxValue) && (totalMilliseconds != Timeout.Infinite));
         }
 
         /// <summary>Centralizes the logic of validating the millisecondsTimeout input argument.</summary>
@@ -1749,11 +1740,7 @@ namespace System.Collections.Concurrent
         /// equal to Timeout.Infinite.</exception>
         private static void ValidateMillisecondsTimeout(int millisecondsTimeout)
         {
-            if ((millisecondsTimeout < 0) && (millisecondsTimeout != Timeout.Infinite))
-            {
-                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), millisecondsTimeout,
-                    SR.Format(CultureInfo.InvariantCulture, SR.BlockingCollection_TimeoutInvalid, int.MaxValue));
-            }
+            ArgumentOutOfRangeException.ThrowIf((millisecondsTimeout < 0) && (millisecondsTimeout != Timeout.Infinite));
         }
 
         /// <summary>Throws a System.ObjectDisposedException if the collection was disposed</summary>

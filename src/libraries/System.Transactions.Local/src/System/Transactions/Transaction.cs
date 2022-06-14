@@ -502,10 +502,7 @@ namespace System.Transactions
 
             ArgumentNullException.ThrowIfNull(enlistmentNotification);
 
-            if (enlistmentOptions != EnlistmentOptions.None && enlistmentOptions != EnlistmentOptions.EnlistDuringPrepareRequired)
-            {
-                throw new ArgumentOutOfRangeException(nameof(enlistmentOptions));
-            }
+            ArgumentOutOfRangeException.ThrowIf(enlistmentOptions != EnlistmentOptions.None && enlistmentOptions != EnlistmentOptions.EnlistDuringPrepareRequired);
 
             if (_complete)
             {
@@ -553,10 +550,7 @@ namespace System.Transactions
 
             ArgumentNullException.ThrowIfNull(singlePhaseNotification);
 
-            if (enlistmentOptions != EnlistmentOptions.None && enlistmentOptions != EnlistmentOptions.EnlistDuringPrepareRequired)
-            {
-                throw new ArgumentOutOfRangeException(nameof(enlistmentOptions));
-            }
+            ArgumentOutOfRangeException.ThrowIf(enlistmentOptions != EnlistmentOptions.None && enlistmentOptions != EnlistmentOptions.EnlistDuringPrepareRequired);
 
             if (_complete)
             {
@@ -649,10 +643,7 @@ namespace System.Transactions
 
             ArgumentNullException.ThrowIfNull(enlistmentNotification);
 
-            if (enlistmentOptions != EnlistmentOptions.None && enlistmentOptions != EnlistmentOptions.EnlistDuringPrepareRequired)
-            {
-                throw new ArgumentOutOfRangeException(nameof(enlistmentOptions));
-            }
+            ArgumentOutOfRangeException.ThrowIf(enlistmentOptions != EnlistmentOptions.None && enlistmentOptions != EnlistmentOptions.EnlistDuringPrepareRequired);
 
             if (_complete)
             {
@@ -691,10 +682,7 @@ namespace System.Transactions
 
             ArgumentNullException.ThrowIfNull(singlePhaseNotification);
 
-            if (enlistmentOptions != EnlistmentOptions.None && enlistmentOptions != EnlistmentOptions.EnlistDuringPrepareRequired)
-            {
-                throw new ArgumentOutOfRangeException(nameof(enlistmentOptions));
-            }
+            ArgumentOutOfRangeException.ThrowIf(enlistmentOptions != EnlistmentOptions.None && enlistmentOptions != EnlistmentOptions.EnlistDuringPrepareRequired);
 
             if (_complete)
             {
@@ -770,11 +758,8 @@ namespace System.Transactions
                 etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
             }
 
-            if (cloneOption != DependentCloneOption.BlockCommitUntilComplete
-                && cloneOption != DependentCloneOption.RollbackIfNotComplete)
-            {
-                throw new ArgumentOutOfRangeException(nameof(cloneOption));
-            }
+            ArgumentOutOfRangeException.ThrowIf(cloneOption != DependentCloneOption.BlockCommitUntilComplete
+                && cloneOption != DependentCloneOption.RollbackIfNotComplete);
 
             if (Disposed)
             {
@@ -1026,10 +1011,7 @@ namespace System.Transactions
             ArgumentNullException.ThrowIfNull(promotableNotification);
             ArgumentNullException.ThrowIfNull(enlistmentNotification);
 
-            if (enlistmentOptions != EnlistmentOptions.None && enlistmentOptions != EnlistmentOptions.EnlistDuringPrepareRequired)
-            {
-                throw new ArgumentOutOfRangeException(nameof(enlistmentOptions));
-            }
+            ArgumentOutOfRangeException.ThrowIf(enlistmentOptions != EnlistmentOptions.None && enlistmentOptions != EnlistmentOptions.EnlistDuringPrepareRequired);
 
             if (_complete)
             {

@@ -258,8 +258,7 @@ namespace System.Collections
         public Hashtable(int capacity, float loadFactor)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(capacity);
-            if (!(loadFactor >= 0.1f && loadFactor <= 1.0f))
-                throw new ArgumentOutOfRangeException(nameof(loadFactor), SR.ArgumentOutOfRange_HashtableLoadFactor);
+            ArgumentOutOfRangeException.ThrowIf(!(loadFactor >= 0.1f && loadFactor <= 1.0f));
 
             // Based on perf work, .72 is the optimal load factor for this table.
             _loadFactor = 0.72f * loadFactor;

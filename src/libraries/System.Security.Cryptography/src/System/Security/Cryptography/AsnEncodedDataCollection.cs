@@ -69,8 +69,7 @@ namespace System.Security.Cryptography
 
             if (array.Rank != 1)
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported);
-            if (index < 0 || index >= array.Length)
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLess);
+            ArgumentOutOfRangeException.ThrowIf(index < 0 || index >= array.Length);
             if (Count > array.Length - index)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
 
@@ -88,8 +87,7 @@ namespace System.Security.Cryptography
             // Need to do part of the argument validation ourselves as AsnEncodedDataCollection throws
             // ArgumentOutOfRangeException where List<>.CopyTo() throws ArgumentException.
 
-            if (index < 0 || index >= array.Length)
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLess);
+            ArgumentOutOfRangeException.ThrowIf(index < 0 || index >= array.Length);
 
             _list.CopyTo(array, index);
         }

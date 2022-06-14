@@ -190,11 +190,7 @@ namespace System.IO.Pipes
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_RemotePipes);
             }
 
-            if (string.Equals(pipeName, AnonymousPipeName, StringComparison.OrdinalIgnoreCase))
-            {
-                // Match Windows constraint
-                throw new ArgumentOutOfRangeException(nameof(pipeName), SR.ArgumentOutOfRange_AnonymousReserved);
-            }
+            ArgumentOutOfRangeException.ThrowIf(string.Equals(pipeName, AnonymousPipeName, StringComparison.OrdinalIgnoreCase));
 
             // Since pipes are stored as files in the system we support either an absolute path to a file name
             // or a file name. The support of absolute path was added to allow working around the limited

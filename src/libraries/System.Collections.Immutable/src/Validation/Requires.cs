@@ -95,10 +95,7 @@ namespace System.Collections.Immutable
         [DebuggerStepThrough]
         public static void FailRange(string? parameterName, string? message = null)
         {
-            if (string.IsNullOrEmpty(message))
-            {
-                throw new ArgumentOutOfRangeException(parameterName);
-            }
+            ArgumentOutOfRangeException.ThrowIf(string.IsNullOrEmpty(message));
             throw new ArgumentOutOfRangeException(parameterName, message);
         }
 

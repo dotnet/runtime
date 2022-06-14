@@ -578,10 +578,7 @@ namespace System.Xml
         // Moves to the attribute with the specified index.
         public virtual void MoveToAttribute(int i)
         {
-            if (i < 0 || i >= AttributeCount)
-            {
-                throw new ArgumentOutOfRangeException(nameof(i));
-            }
+            ArgumentOutOfRangeException.ThrowIf(i < 0 || i >= AttributeCount);
             MoveToElement();
             MoveToFirstAttribute();
             int j = 0;

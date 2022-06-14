@@ -297,10 +297,7 @@ namespace System.Globalization
 
         internal static void CheckEraRange(int era)
         {
-            if (era != CurrentEra && era != UmAlQuraEra)
-            {
-                throw new ArgumentOutOfRangeException(nameof(era), era, SR.ArgumentOutOfRange_InvalidEraValue);
-            }
+            ArgumentOutOfRangeException.ThrowIf(era != CurrentEra && era != UmAlQuraEra);
         }
 
         internal static void CheckYearRange(int year, int era)
@@ -572,13 +569,7 @@ namespace System.Globalization
             }
             set
             {
-                if (value != 99 && (value < MinCalendarYear || value > MaxCalendarYear))
-                {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(value),
-                        value,
-                        SR.Format(SR.ArgumentOutOfRange_Range, MinCalendarYear, MaxCalendarYear));
-                }
+                ArgumentOutOfRangeException.ThrowIf(value != 99 && (value < MinCalendarYear || value > MaxCalendarYear));
 
                 VerifyWritable();
                 // We allow year 99 to be set so that one can make ToFourDigitYearMax a no-op by setting TwoDigitYearMax to 99.

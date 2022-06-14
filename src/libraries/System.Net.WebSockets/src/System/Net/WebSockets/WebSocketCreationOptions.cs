@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Threading;
@@ -43,11 +43,7 @@ namespace System.Net.WebSockets
             get => _keepAliveInterval;
             set
             {
-                if (value != Timeout.InfiniteTimeSpan && value < TimeSpan.Zero)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(KeepAliveInterval), value,
-                        SR.Format(SR.net_WebSockets_ArgumentOutOfRange_TooSmall, 0));
-                }
+                ArgumentOutOfRangeException.ThrowIf(value != Timeout.InfiniteTimeSpan && value < TimeSpan.Zero);
                 _keepAliveInterval = value;
             }
         }

@@ -337,8 +337,7 @@ namespace System.IO.Ports
             }
             set
             {
-                if (value < 0 && value != SerialPort.InfiniteTimeout)
-                    throw new ArgumentOutOfRangeException(nameof(ReadTimeout), SR.ArgumentOutOfRange_Timeout);
+                ArgumentOutOfRangeException.ThrowIf(value < 0 && value != SerialPort.InfiniteTimeout);
                 if (_handle == null) InternalResources.FileNotOpen();
 
                 int oldReadConstant = _commTimeouts.ReadTotalTimeoutConstant;
@@ -462,8 +461,7 @@ namespace System.IO.Ports
             }
             set
             {
-                if (value <= 0 && value != SerialPort.InfiniteTimeout)
-                    throw new ArgumentOutOfRangeException(nameof(WriteTimeout), SR.ArgumentOutOfRange_WriteTimeout);
+                ArgumentOutOfRangeException.ThrowIf(value <= 0 && value != SerialPort.InfiniteTimeout);
                 if (_handle == null) InternalResources.FileNotOpen();
 
                 int oldWriteConstant = _commTimeouts.WriteTotalTimeoutConstant;
@@ -615,8 +613,7 @@ namespace System.IO.Ports
                         throw Win32Marshal.GetExceptionForWin32Error(errorCode, string.Empty);
                 }
 
-                if (_commProp.dwMaxBaud != 0 && baudRate > _commProp.dwMaxBaud)
-                    throw new ArgumentOutOfRangeException(nameof(baudRate), SR.Format(SR.Max_Baud, _commProp.dwMaxBaud));
+                ArgumentOutOfRangeException.ThrowIf(_commProp.dwMaxBaud != 0 && baudRate > _commProp.dwMaxBaud);
 
                 _comStat = default;
                 // create internal DCB structure, initialize according to Platform SDK

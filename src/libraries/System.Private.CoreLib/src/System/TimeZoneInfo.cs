@@ -2001,10 +2001,7 @@ namespace System
         {
             ArgumentException.ThrowIfNullOrEmpty(id);
 
-            if (UtcOffsetOutOfRange(baseUtcOffset))
-            {
-                throw new ArgumentOutOfRangeException(nameof(baseUtcOffset), SR.ArgumentOutOfRange_UtcOffset);
-            }
+            ArgumentOutOfRangeException.ThrowIf(UtcOffsetOutOfRange(baseUtcOffset));
 
             if (baseUtcOffset.Ticks % TimeSpan.TicksPerMinute != 0)
             {

@@ -27,10 +27,7 @@ namespace System.Net
 
         internal FileWebRequest(Uri uri)
         {
-            if (uri.Scheme != (object)Uri.UriSchemeFile)
-            {
-                throw new ArgumentOutOfRangeException(nameof(uri));
-            }
+            ArgumentOutOfRangeException.ThrowIf(uri.Scheme != (object)Uri.UriSchemeFile);
 
             _uri = uri;
         }
@@ -100,10 +97,7 @@ namespace System.Net
             get { return _timeout; }
             set
             {
-                if (value < 0 && value != System.Threading.Timeout.Infinite)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.net_io_timeout_use_ge_zero);
-                }
+                ArgumentOutOfRangeException.ThrowIf(value < 0 && value != System.Threading.Timeout.Infinite);
                 _timeout = value;
             }
         }

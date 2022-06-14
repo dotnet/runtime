@@ -99,13 +99,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 // this method does not set AbsoluteExpiration as it would require calling Clock.UtcNow twice:
                 // once here and once in MemoryCache.SetEntry
 
-                if (value is { Ticks: <= 0 })
-                {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(AbsoluteExpirationRelativeToNow),
-                        value,
-                        "The relative expiration value must be positive.");
-                }
+                ArgumentOutOfRangeException.ThrowIf(value is { Ticks: <= 0 });
 
                 _absoluteExpirationRelativeToNow = value.GetValueOrDefault();
             }
@@ -120,13 +114,7 @@ namespace Microsoft.Extensions.Caching.Memory
             get => _slidingExpiration.Ticks == 0 ? null : _slidingExpiration;
             set
             {
-                if (value is { Ticks: <= 0 })
-                {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(SlidingExpiration),
-                        value,
-                        "The sliding expiration value must be positive.");
-                }
+                ArgumentOutOfRangeException.ThrowIf(value is { Ticks: <= 0 });
 
                 _slidingExpiration = value.GetValueOrDefault();
             }

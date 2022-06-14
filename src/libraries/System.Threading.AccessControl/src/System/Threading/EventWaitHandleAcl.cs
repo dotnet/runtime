@@ -33,10 +33,7 @@ namespace System.Threading
                 return new EventWaitHandle(initialState, mode, name, out createdNew);
             }
 
-            if (mode != EventResetMode.AutoReset && mode != EventResetMode.ManualReset)
-            {
-                throw new ArgumentOutOfRangeException(nameof(mode));
-            }
+            ArgumentOutOfRangeException.ThrowIf(mode != EventResetMode.AutoReset && mode != EventResetMode.ManualReset);
 
             uint eventFlags = initialState ? Interop.Kernel32.CREATE_EVENT_INITIAL_SET : 0;
             if (mode == EventResetMode.ManualReset)

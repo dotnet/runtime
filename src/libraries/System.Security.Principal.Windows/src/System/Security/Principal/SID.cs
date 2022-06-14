@@ -325,14 +325,7 @@ namespace System.Security.Principal
             // Identifier authority is at most 6 bytes long
             //
 
-            if (identifierAuthority < 0 || (long)identifierAuthority > MaxIdentifierAuthority)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(identifierAuthority),
-                    identifierAuthority,
-                    SR.IdentityReference_IdentifierAuthorityTooLarge
-                );
-            }
+            ArgumentOutOfRangeException.ThrowIf(identifierAuthority < 0 || (long)identifierAuthority > MaxIdentifierAuthority);
 
             //
             // Create a local copy of the data passed in

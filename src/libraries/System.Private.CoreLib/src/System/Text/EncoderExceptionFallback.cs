@@ -40,16 +40,8 @@ namespace System.Text
 
         public override bool Fallback(char charUnknownHigh, char charUnknownLow, int index)
         {
-            if (!char.IsHighSurrogate(charUnknownHigh))
-            {
-                throw new ArgumentOutOfRangeException(nameof(charUnknownHigh),
-                    SR.Format(SR.ArgumentOutOfRange_Range, 0xD800, 0xDBFF));
-            }
-            if (!char.IsLowSurrogate(charUnknownLow))
-            {
-                throw new ArgumentOutOfRangeException(nameof(charUnknownLow),
-                    SR.Format(SR.ArgumentOutOfRange_Range, 0xDC00, 0xDFFF));
-            }
+            ArgumentOutOfRangeException.ThrowIf(!char.IsHighSurrogate(charUnknownHigh));
+            ArgumentOutOfRangeException.ThrowIf(!char.IsLowSurrogate(charUnknownLow));
 
             int iTemp = char.ConvertToUtf32(charUnknownHigh, charUnknownLow);
 
@@ -104,16 +96,8 @@ namespace System.Text
         internal EncoderFallbackException(
             string message, char charUnknownHigh, char charUnknownLow, int index) : base(message)
         {
-            if (!char.IsHighSurrogate(charUnknownHigh))
-            {
-                throw new ArgumentOutOfRangeException(nameof(charUnknownHigh),
-                    SR.Format(SR.ArgumentOutOfRange_Range, 0xD800, 0xDBFF));
-            }
-            if (!char.IsLowSurrogate(charUnknownLow))
-            {
-                throw new ArgumentOutOfRangeException(nameof(CharUnknownLow),
-                    SR.Format(SR.ArgumentOutOfRange_Range, 0xDC00, 0xDFFF));
-            }
+            ArgumentOutOfRangeException.ThrowIf(!char.IsHighSurrogate(charUnknownHigh));
+            ArgumentOutOfRangeException.ThrowIf(!char.IsLowSurrogate(charUnknownLow));
 
             _charUnknownHigh = charUnknownHigh;
             _charUnknownLow = charUnknownLow;

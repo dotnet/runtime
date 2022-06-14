@@ -38,15 +38,13 @@ namespace System.Xml
             {
                 get
                 {
-                    if (_field == null)
-                        throw new ArgumentOutOfRangeException(nameof(index));
+                    ArgumentOutOfRangeException.ThrowIf(_field == null);
 
                     List<object>? list = _field as List<object>;
                     if (list != null)
                         return list[index];
 
-                    if (index != 0)
-                        throw new ArgumentOutOfRangeException(nameof(index));
+                    ArgumentOutOfRangeException.ThrowIf(index != 0);
 
                     return _field;
                 }
@@ -87,8 +85,7 @@ namespace System.Xml
 
             public void RemoveAt(int index)
             {
-                if (_field == null)
-                    throw new ArgumentOutOfRangeException(nameof(index));
+                ArgumentOutOfRangeException.ThrowIf(_field == null);
 
                 List<object?>? list = _field as List<object?>;
                 if (list != null)
@@ -97,8 +94,7 @@ namespace System.Xml
                     return;
                 }
 
-                if (index != 0)
-                    throw new ArgumentOutOfRangeException(nameof(index));
+                ArgumentOutOfRangeException.ThrowIf(index != 0);
 
                 _field = null;
             }
@@ -107,8 +103,7 @@ namespace System.Xml
             {
                 if (_field == null)
                 {
-                    if (index != 0)
-                        throw new ArgumentOutOfRangeException(nameof(index));
+                    ArgumentOutOfRangeException.ThrowIf(index != 0);
                     Add(value);
                     return;
                 }

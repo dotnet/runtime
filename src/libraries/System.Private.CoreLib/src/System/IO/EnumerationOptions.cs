@@ -41,8 +41,7 @@ namespace System.IO
         /// </summary>
         internal static EnumerationOptions FromSearchOption(SearchOption searchOption)
         {
-            if ((searchOption != SearchOption.TopDirectoryOnly) && (searchOption != SearchOption.AllDirectories))
-                throw new ArgumentOutOfRangeException(nameof(searchOption), SR.ArgumentOutOfRange_Enum);
+            ArgumentOutOfRangeException.ThrowIf((searchOption != SearchOption.TopDirectoryOnly) && (searchOption != SearchOption.AllDirectories));
 
             return searchOption == SearchOption.AllDirectories ? CompatibleRecursive : Compatible;
         }

@@ -32,10 +32,7 @@ namespace System.Net
         /// </summary>
         public IPEndPoint(long address, int port)
         {
-            if (!TcpValidationHelpers.ValidatePortNumber(port))
-            {
-                throw new ArgumentOutOfRangeException(nameof(port));
-            }
+            ArgumentOutOfRangeException.ThrowIf(!TcpValidationHelpers.ValidatePortNumber(port));
 
             _port = port;
             _address = new IPAddress(address);
@@ -48,10 +45,7 @@ namespace System.Net
         {
             ArgumentNullException.ThrowIfNull(address);
 
-            if (!TcpValidationHelpers.ValidatePortNumber(port))
-            {
-                throw new ArgumentOutOfRangeException(nameof(port));
-            }
+            ArgumentOutOfRangeException.ThrowIf(!TcpValidationHelpers.ValidatePortNumber(port));
 
             _port = port;
             _address = address;
@@ -78,10 +72,7 @@ namespace System.Net
             get => _port;
             set
             {
-                if (!TcpValidationHelpers.ValidatePortNumber(value))
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIf(!TcpValidationHelpers.ValidatePortNumber(value));
 
                 _port = value;
             }

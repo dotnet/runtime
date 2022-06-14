@@ -52,8 +52,7 @@ namespace System.Collections
         public Queue(int capacity, float growFactor)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(capacity);
-            if (!(growFactor >= 1.0 && growFactor <= 10.0))
-                throw new ArgumentOutOfRangeException(nameof(growFactor), SR.Format(SR.ArgumentOutOfRange_QueueGrowFactor, 1, 10));
+            ArgumentOutOfRangeException.ThrowIf(!(growFactor >= 1.0 && growFactor <= 10.0));
 
             _array = new object[capacity];
             _head = 0;

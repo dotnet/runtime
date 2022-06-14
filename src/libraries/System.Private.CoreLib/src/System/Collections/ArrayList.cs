@@ -129,12 +129,12 @@ namespace System.Collections
         {
             get
             {
-                if (index < 0 || index >= _size) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLess);
+                ArgumentOutOfRangeException.ThrowIf(index < 0 || index >= _size);
                 return _items[index];
             }
             set
             {
-                if (index < 0 || index >= _size) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLess);
+                ArgumentOutOfRangeException.ThrowIf(index < 0 || index >= _size);
                 _items[index] = value;
                 _version++;
             }
@@ -399,7 +399,7 @@ namespace System.Collections
         public virtual int IndexOf(object? value, int startIndex, int count)
         {
             ArgumentOutOfRangeException.ThrowIfGreaterThan(startIndex, _size);
-            if (count < 0 || startIndex > _size - count) throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_Count);
+            ArgumentOutOfRangeException.ThrowIf(count < 0 || startIndex > _size - count);
             return Array.IndexOf((Array)_items, value, startIndex, count);
         }
 
@@ -490,14 +490,12 @@ namespace System.Collections
         //
         public virtual int LastIndexOf(object? value, int startIndex, int count)
         {
-            if (Count != 0 && (startIndex < 0 || count < 0))
-                throw new ArgumentOutOfRangeException(startIndex < 0 ? nameof(startIndex) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIf(Count != 0 && (startIndex < 0 || count < 0));
 
             if (_size == 0)  // Special case for an empty list
                 return -1;
 
-            if (startIndex >= _size || count > startIndex + 1)
-                throw new ArgumentOutOfRangeException(startIndex >= _size ? nameof(startIndex) : nameof(count), SR.ArgumentOutOfRange_BiggerThanCollection);
+            ArgumentOutOfRangeException.ThrowIf(startIndex >= _size || count > startIndex + 1);
 
             return Array.LastIndexOf((Array)_items, value, startIndex, count);
         }
@@ -535,7 +533,7 @@ namespace System.Collections
         //
         public virtual void RemoveAt(int index)
         {
-            if (index < 0 || index >= _size) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLess);
+            ArgumentOutOfRangeException.ThrowIf(index < 0 || index >= _size);
 
             _size--;
             if (index < _size)
@@ -886,7 +884,7 @@ namespace System.Collections
             public override int IndexOf(object? value, int startIndex, int count)
             {
                 ArgumentOutOfRangeException.ThrowIfNotBetween(startIndex, 0, Count);
-                if (count < 0 || startIndex > Count - count) throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_Count);
+                ArgumentOutOfRangeException.ThrowIf(count < 0 || startIndex > Count - count);
 
                 int endIndex = startIndex + count;
                 if (value == null)
@@ -953,7 +951,7 @@ namespace System.Collections
                 if (_list.Count == 0)
                     return -1;
 
-                if (startIndex < 0 || startIndex >= _list.Count) throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexMustBeLess);
+                ArgumentOutOfRangeException.ThrowIf(startIndex < 0 || startIndex >= _list.Count);
                 ArgumentOutOfRangeException.ThrowIfNotBetween(count, 0, startIndex + 1);
 
                 int endIndex = startIndex - count + 1;
@@ -2393,8 +2391,7 @@ namespace System.Collections
             {
                 ArgumentOutOfRangeException.ThrowIfNotBetween(startIndex, 0, _baseSize);
 
-                if (count < 0 || (startIndex > _baseSize - count))
-                    throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_Count);
+                ArgumentOutOfRangeException.ThrowIf(count < 0 || (startIndex > _baseSize - count));
 
                 InternalUpdateRange();
                 int i = _baseList.IndexOf(value, _baseIndex + startIndex, count);
@@ -2458,7 +2455,7 @@ namespace System.Collections
 
             public override void RemoveAt(int index)
             {
-                if (index < 0 || index >= _baseSize) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLess);
+                ArgumentOutOfRangeException.ThrowIf(index < 0 || index >= _baseSize);
 
                 InternalUpdateRange();
                 _baseList.RemoveAt(_baseIndex + index);
@@ -2499,7 +2496,7 @@ namespace System.Collections
             public override void SetRange(int index, ICollection c)
             {
                 InternalUpdateRange();
-                if (index < 0 || index >= _baseSize) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLess);
+                ArgumentOutOfRangeException.ThrowIf(index < 0 || index >= _baseSize);
                 _baseList.SetRange(_baseIndex + index, c);
                 if (c.Count > 0)
                 {
@@ -2524,13 +2521,13 @@ namespace System.Collections
                 get
                 {
                     InternalUpdateRange();
-                    if (index < 0 || index >= _baseSize) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLess);
+                    ArgumentOutOfRangeException.ThrowIf(index < 0 || index >= _baseSize);
                     return _baseList[_baseIndex + index];
                 }
                 set
                 {
                     InternalUpdateRange();
-                    if (index < 0 || index >= _baseSize) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLess);
+                    ArgumentOutOfRangeException.ThrowIf(index < 0 || index >= _baseSize);
                     _baseList[_baseIndex + index] = value;
                     InternalUpdateVersion();
                 }

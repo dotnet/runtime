@@ -151,12 +151,9 @@ namespace System.Net.Http
 
             set
             {
-                if (value != CookieUsePolicy.IgnoreCookies
+                ArgumentOutOfRangeException.ThrowIf(value != CookieUsePolicy.IgnoreCookies
                     && value != CookieUsePolicy.UseInternalCookieStoreOnly
-                    && value != CookieUsePolicy.UseSpecifiedCookieContainer)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                    && value != CookieUsePolicy.UseSpecifiedCookieContainer);
 
                 CheckDisposedOrStarted();
                 _cookieUsePolicy = value;
@@ -235,11 +232,8 @@ namespace System.Net.Http
 
             set
             {
-                if (value != ClientCertificateOption.Manual
-                    && value != ClientCertificateOption.Automatic)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIf(value != ClientCertificateOption.Manual
+                    && value != ClientCertificateOption.Automatic);
 
                 CheckDisposedOrStarted();
                 _clientCertificateOption = value;
@@ -299,13 +293,10 @@ namespace System.Net.Http
 
             set
             {
-                if (value != WindowsProxyUsePolicy.DoNotUseProxy &&
+                ArgumentOutOfRangeException.ThrowIf(value != WindowsProxyUsePolicy.DoNotUseProxy &&
                     value != WindowsProxyUsePolicy.UseWinHttpProxy &&
                     value != WindowsProxyUsePolicy.UseWinInetProxy &&
-                    value != WindowsProxyUsePolicy.UseCustomProxy)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                    value != WindowsProxyUsePolicy.UseCustomProxy);
 
                 CheckDisposedOrStarted();
                 _windowsProxyUsePolicy = value;
@@ -1611,10 +1602,7 @@ namespace System.Net.Http
 
         private static void CheckTimeSpanPropertyValue(TimeSpan timeSpan)
         {
-            if (timeSpan != Timeout.InfiniteTimeSpan && (timeSpan <= TimeSpan.Zero || timeSpan > s_maxTimeout))
-            {
-                throw new ArgumentOutOfRangeException("value");
-            }
+            ArgumentOutOfRangeException.ThrowIf(timeSpan != Timeout.InfiniteTimeSpan && (timeSpan <= TimeSpan.Zero || timeSpan > s_maxTimeout));
         }
 
         private void SetStatusCallback(

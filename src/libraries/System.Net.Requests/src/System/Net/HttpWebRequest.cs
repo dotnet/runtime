@@ -233,10 +233,7 @@ namespace System.Net
                 {
                     throw new InvalidOperationException(SR.net_reqsubmitted);
                 }
-                if (value < 0 && value != System.Threading.Timeout.Infinite)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.net_toosmall);
-                }
+                ArgumentOutOfRangeException.ThrowIf(value < 0 && value != System.Threading.Timeout.Infinite);
                 _maximumResponseHeadersLen = value;
             }
         }
@@ -281,10 +278,7 @@ namespace System.Net
                 {
                     throw new InvalidOperationException(SR.net_reqsubmitted);
                 }
-                if ((value < 0) && (value != System.Threading.Timeout.Infinite))
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.net_io_timeout_use_ge_zero);
-                }
+                ArgumentOutOfRangeException.ThrowIf((value < 0) && (value != System.Threading.Timeout.Infinite));
                 _continueTimeout = value;
             }
         }
@@ -297,10 +291,7 @@ namespace System.Net
             }
             set
             {
-                if (value < 0 && value != System.Threading.Timeout.Infinite)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.net_io_timeout_use_ge_zero);
-                }
+                ArgumentOutOfRangeException.ThrowIf(value < 0 && value != System.Threading.Timeout.Infinite);
 
                 _timeout = value;
             }
@@ -830,10 +821,7 @@ namespace System.Net
                     throw new InvalidOperationException(SR.net_reqsubmitted);
                 }
 
-                if (value <= 0 && value != System.Threading.Timeout.Infinite)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.net_io_timeout_use_gt_zero);
-                }
+                ArgumentOutOfRangeException.ThrowIf(value <= 0 && value != System.Threading.Timeout.Infinite);
 
                 _readWriteTimeout = value;
             }
@@ -1431,10 +1419,7 @@ namespace System.Net
         {
             ArgumentNullException.ThrowIfNull(rangeSpecifier);
 
-            if ((from < 0) || (to < 0))
-            {
-                throw new ArgumentOutOfRangeException(from < 0 ? nameof(from) : nameof(to), SR.net_rangetoosmall);
-            }
+            ArgumentOutOfRangeException.ThrowIf((from < 0) || (to < 0));
             ArgumentOutOfRangeException.ThrowIfGreaterThan(from, to);
             if (!HttpValidationHelpers.IsValidToken(rangeSpecifier))
             {

@@ -175,11 +175,8 @@ namespace System.Net.Http
             get => _settings._maxResponseDrainTime;
             set
             {
-                if ((value < TimeSpan.Zero && value != Timeout.InfiniteTimeSpan) ||
-                    (value.TotalMilliseconds > int.MaxValue))
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIf((value < TimeSpan.Zero && value != Timeout.InfiniteTimeSpan) ||
+                    (value.TotalMilliseconds > int.MaxValue));
 
                 CheckDisposedOrStarted();
                 _settings._maxResponseDrainTime = value;
@@ -214,10 +211,7 @@ namespace System.Net.Http
             get => _settings._pooledConnectionLifetime;
             set
             {
-                if (value < TimeSpan.Zero && value != Timeout.InfiniteTimeSpan)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIf(value < TimeSpan.Zero && value != Timeout.InfiniteTimeSpan);
 
                 CheckDisposedOrStarted();
                 _settings._pooledConnectionLifetime = value;
@@ -229,10 +223,7 @@ namespace System.Net.Http
             get => _settings._pooledConnectionIdleTimeout;
             set
             {
-                if (value < TimeSpan.Zero && value != Timeout.InfiniteTimeSpan)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIf(value < TimeSpan.Zero && value != Timeout.InfiniteTimeSpan);
 
                 CheckDisposedOrStarted();
                 _settings._pooledConnectionIdleTimeout = value;
@@ -244,11 +235,8 @@ namespace System.Net.Http
             get => _settings._connectTimeout;
             set
             {
-                if ((value <= TimeSpan.Zero && value != Timeout.InfiniteTimeSpan) ||
-                    (value.TotalMilliseconds > int.MaxValue))
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIf((value <= TimeSpan.Zero && value != Timeout.InfiniteTimeSpan) ||
+                    (value.TotalMilliseconds > int.MaxValue));
 
                 CheckDisposedOrStarted();
                 _settings._connectTimeout = value;
@@ -260,11 +248,8 @@ namespace System.Net.Http
             get => _settings._expect100ContinueTimeout;
             set
             {
-                if ((value < TimeSpan.Zero && value != Timeout.InfiniteTimeSpan) ||
-                    (value.TotalMilliseconds > int.MaxValue))
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIf((value < TimeSpan.Zero && value != Timeout.InfiniteTimeSpan) ||
+                    (value.TotalMilliseconds > int.MaxValue));
 
                 CheckDisposedOrStarted();
                 _settings._expect100ContinueTimeout = value;
@@ -312,10 +297,7 @@ namespace System.Net.Http
             get => _settings._keepAlivePingDelay;
             set
             {
-                if (value.Ticks < TimeSpan.TicksPerSecond && value != Timeout.InfiniteTimeSpan)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.Format(SR.net_http_value_must_be_greater_than_or_equal, value, TimeSpan.FromSeconds(1)));
-                }
+                ArgumentOutOfRangeException.ThrowIf(value.Ticks < TimeSpan.TicksPerSecond && value != Timeout.InfiniteTimeSpan);
 
                 CheckDisposedOrStarted();
                 _settings._keepAlivePingDelay = value;
@@ -337,10 +319,7 @@ namespace System.Net.Http
             get => _settings._keepAlivePingTimeout;
             set
             {
-                if (value.Ticks < TimeSpan.TicksPerSecond && value != Timeout.InfiniteTimeSpan)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.Format(SR.net_http_value_must_be_greater_than_or_equal, value, TimeSpan.FromSeconds(1)));
-                }
+                ArgumentOutOfRangeException.ThrowIf(value.Ticks < TimeSpan.TicksPerSecond && value != Timeout.InfiniteTimeSpan);
 
                 CheckDisposedOrStarted();
                 _settings._keepAlivePingTimeout = value;

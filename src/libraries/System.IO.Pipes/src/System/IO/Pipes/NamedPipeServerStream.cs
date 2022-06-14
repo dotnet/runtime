@@ -103,19 +103,10 @@ namespace System.IO.Pipes
             {
                 throw new ArgumentOutOfRangeException(nameof(transmissionMode), SR.ArgumentOutOfRange_TransmissionModeByteOrMsg);
             }
-            if ((options & ~(PipeOptions.WriteThrough | PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly)) != 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(options), SR.ArgumentOutOfRange_OptionsInvalid);
-            }
+            ArgumentOutOfRangeException.ThrowIf((options & ~(PipeOptions.WriteThrough | PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly)) != 0);
             ArgumentOutOfRangeException.ThrowIfNegative(inBufferSize);
             ArgumentOutOfRangeException.ThrowIfNegative(outBufferSize);
-            if ((maxNumberOfServerInstances < 1 || maxNumberOfServerInstances > 254) && (maxNumberOfServerInstances != MaxAllowedServerInstances))
-            {
-                // win32 allows fixed values of 1-254 or 255 to mean max allowed by system. We expose 255 as -1 (unlimited)
-                // through the MaxAllowedServerInstances constant. This is consistent e.g. with -1 as infinite timeout, etc.
-                // We do this check for consistency on Unix, even though maxNumberOfServerInstances is otherwise ignored.
-                throw new ArgumentOutOfRangeException(nameof(maxNumberOfServerInstances), SR.ArgumentOutOfRange_MaxNumServerInstances);
-            }
+            ArgumentOutOfRangeException.ThrowIf((maxNumberOfServerInstances < 1 || maxNumberOfServerInstances > 254) && (maxNumberOfServerInstances != MaxAllowedServerInstances));
 
             // inheritability will always be None since this private constructor is only called from other constructors from which
             // inheritability is always set to None. Desktop has a public constructor to allow setting it to something else, but Core

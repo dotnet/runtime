@@ -90,10 +90,7 @@ namespace System.IO.Pipes
             string fullPipeName = Path.GetFullPath(@"\\.\pipe\" + pipeName);
 
             // Make sure the pipe name isn't one of our reserved names for anonymous pipes.
-            if (string.Equals(fullPipeName, @"\\.\pipe\anonymous", StringComparison.OrdinalIgnoreCase))
-            {
-                throw new ArgumentOutOfRangeException(nameof(pipeName), SR.ArgumentOutOfRange_AnonymousReserved);
-            }
+            ArgumentOutOfRangeException.ThrowIf(string.Equals(fullPipeName, @"\\.\pipe\anonymous", StringComparison.OrdinalIgnoreCase));
 
             if (IsCurrentUserOnly)
             {

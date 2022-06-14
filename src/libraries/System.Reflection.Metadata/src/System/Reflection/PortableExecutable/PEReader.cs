@@ -159,10 +159,7 @@ namespace System.Reflection.PortableExecutable
                 throw new ArgumentException(SR.StreamMustSupportReadAndSeek, nameof(peStream));
             }
 
-            if (!options.IsValid())
-            {
-                throw new ArgumentOutOfRangeException(nameof(options));
-            }
+            ArgumentOutOfRangeException.ThrowIf(!options.IsValid());
 
             IsLoadedImage = (options & PEStreamOptions.IsLoadedImage) != 0;
 

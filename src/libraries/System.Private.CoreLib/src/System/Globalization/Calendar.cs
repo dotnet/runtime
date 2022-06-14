@@ -149,10 +149,7 @@ namespace System.Globalization
             // Based upon this, this method should be performing the comparison against the double
             // before attempting a cast. Otherwise, the result is undefined.
             double tempMillis = (value * scale + (value >= 0 ? 0.5 : -0.5));
-            if (!((tempMillis > -(double)MaxMillis) && (tempMillis < (double)MaxMillis)))
-            {
-                throw new ArgumentOutOfRangeException(nameof(value), value, SR.ArgumentOutOfRange_AddValue);
-            }
+            ArgumentOutOfRangeException.ThrowIf(!((tempMillis > -(double)MaxMillis) && (tempMillis < (double)MaxMillis)));
 
             long millis = (long)tempMillis;
             long ticks = time.Ticks + millis * TicksPerMillisecond;
@@ -690,10 +687,7 @@ namespace System.Globalization
         /// </summary>
         internal static long TimeToTicks(int hour, int minute, int second, int millisecond)
         {
-            if ((uint)hour >= 24 || (uint)minute >= 60 || (uint)second >= 60)
-            {
-                throw new ArgumentOutOfRangeException(null, SR.ArgumentOutOfRange_BadHourMinuteSecond);
-            }
+            ArgumentOutOfRangeException.ThrowIf((uint)hour >= 24 || (uint)minute >= 60 || (uint)second >= 60);
             ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual((uint)millisecond, MillisPerSecond);
 
             int totalSeconds = hour * 3600 + minute * 60 + second;

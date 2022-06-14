@@ -235,17 +235,7 @@ namespace System.Security.AccessControl
 
             ArgumentOutOfRangeException.ThrowIfLessThan(binaryForm.Length - offset, HeaderLength);
 
-            if ((binaryForm[offset + 3] << 8) + (binaryForm[offset + 2] << 0) > binaryForm.Length - offset)
-            {
-                //
-                // Reported length of ACE ought to be no longer than the
-                // length of the buffer passed in
-                //
-
-                throw new ArgumentOutOfRangeException(
-                    nameof(binaryForm),
-                    SR.ArgumentOutOfRange_ArrayTooSmall);
-            }
+            ArgumentOutOfRangeException.ThrowIf((binaryForm[offset + 3] << 8) + (binaryForm[offset + 2] << 0) > binaryForm.Length - offset);
         }
 
         //
@@ -788,12 +778,7 @@ namespace System.Security.AccessControl
             if (opaque != null)
             {
                 ArgumentOutOfRangeException.ThrowIfGreaterThan(opaque.Length, MaxOpaqueLength);
-                if (opaque.Length % 4 != 0)
-                {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(opaque),
-                        SR.Format(SR.ArgumentOutOfRange_ArrayLengthMultiple, 4));
-                }
+                ArgumentOutOfRangeException.ThrowIf(opaque.Length % 4 != 0);
             }
 
             _opaque = opaque;
@@ -1236,12 +1221,7 @@ namespace System.Security.AccessControl
             if (opaque != null)
             {
                 ArgumentOutOfRangeException.ThrowIfGreaterThan(opaque.Length, MaxOpaqueLengthInternal);
-                if (opaque.Length % 4 != 0)
-                {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(opaque),
-                        SR.Format(SR.ArgumentOutOfRange_ArrayLengthMultiple, 4));
-                }
+                ArgumentOutOfRangeException.ThrowIf(opaque.Length % 4 != 0);
             }
 
             _opaque = opaque;

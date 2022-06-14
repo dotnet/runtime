@@ -169,10 +169,7 @@ namespace System.Diagnostics.Tracing
 
         public static void CheckName(string? name)
         {
-            if (name != null && 0 <= name.IndexOf('\0'))
-            {
-                throw new ArgumentOutOfRangeException(nameof(name));
-            }
+            ArgumentOutOfRangeException.ThrowIf(name != null && 0 <= name.IndexOf('\0'));
         }
 
         public static bool ShouldOverrideFieldName(string fieldName)

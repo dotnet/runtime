@@ -821,8 +821,7 @@ namespace System.Management
                     throw new ArgumentOutOfRangeException(nameof(newClassName));
                 }
 
-                if (!path.IsClass)
-                    throw new ArgumentOutOfRangeException(nameof(newClassName));
+                ArgumentOutOfRangeException.ThrowIf(!path.IsClass);
             }
 
             if (PutButNotGot)

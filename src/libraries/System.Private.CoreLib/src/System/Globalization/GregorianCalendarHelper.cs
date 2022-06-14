@@ -85,10 +85,7 @@ namespace System.Globalization
         {
             if (year < 0)
             {
-                if (throwOnError)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(year), SR.ArgumentOutOfRange_NeedNonNegNum);
-                }
+                ArgumentOutOfRangeException.ThrowIf(throwOnError);
                 return -1;
             }
 
@@ -134,24 +131,13 @@ namespace System.Globalization
                         }
                     }
 
-                    if (throwOnError)
-                    {
-                        throw new ArgumentOutOfRangeException(
-                                    nameof(year),
-                                    SR.Format(
-                                        SR.ArgumentOutOfRange_Range,
-                                        eraInfo.minEraYear,
-                                        eraInfo.maxEraYear));
-                    }
+                    ArgumentOutOfRangeException.ThrowIf(throwOnError);
 
                     break; // no need to iterate more on eras.
                 }
             }
 
-            if (throwOnError)
-            {
-                throw new ArgumentOutOfRangeException(nameof(era), SR.ArgumentOutOfRange_InvalidEraValue);
-            }
+            ArgumentOutOfRangeException.ThrowIf(throwOnError);
             return -1;
         }
 

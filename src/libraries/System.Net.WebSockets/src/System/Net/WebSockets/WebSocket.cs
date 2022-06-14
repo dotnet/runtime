@@ -143,12 +143,7 @@ namespace System.Net.WebSockets
                 WebSocketValidate.ValidateSubprotocol(subProtocol);
             }
 
-            if (keepAliveInterval != Timeout.InfiniteTimeSpan && keepAliveInterval < TimeSpan.Zero)
-            {
-                throw new ArgumentOutOfRangeException(nameof(keepAliveInterval), keepAliveInterval,
-                    SR.Format(SR.net_WebSockets_ArgumentOutOfRange_TooSmall,
-                    0));
-            }
+            ArgumentOutOfRangeException.ThrowIf(keepAliveInterval != Timeout.InfiniteTimeSpan && keepAliveInterval < TimeSpan.Zero);
 
             return new ManagedWebSocket(stream, isServer, subProtocol, keepAliveInterval);
         }
@@ -197,12 +192,7 @@ namespace System.Net.WebSockets
                 WebSocketValidate.ValidateSubprotocol(subProtocol);
             }
 
-            if (keepAliveInterval != Timeout.InfiniteTimeSpan && keepAliveInterval < TimeSpan.Zero)
-            {
-                throw new ArgumentOutOfRangeException(nameof(keepAliveInterval), keepAliveInterval,
-                    SR.Format(SR.net_WebSockets_ArgumentOutOfRange_TooSmall,
-                    0));
-            }
+            ArgumentOutOfRangeException.ThrowIf(keepAliveInterval != Timeout.InfiniteTimeSpan && keepAliveInterval < TimeSpan.Zero);
 
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(receiveBufferSize);
 

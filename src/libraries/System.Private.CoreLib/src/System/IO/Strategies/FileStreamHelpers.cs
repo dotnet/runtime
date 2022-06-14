@@ -72,16 +72,10 @@ namespace System.IO.Strategies
                 badArg = nameof(share);
             }
 
-            if (badArg != null)
-            {
-                throw new ArgumentOutOfRangeException(badArg, SR.ArgumentOutOfRange_Enum);
-            }
+            ArgumentOutOfRangeException.ThrowIf(badArg != null);
 
             // NOTE: any change to FileOptions enum needs to be matched here in the error validation
-            if (options != FileOptions.None && (options & ~(FileOptions.WriteThrough | FileOptions.Asynchronous | FileOptions.RandomAccess | FileOptions.DeleteOnClose | FileOptions.SequentialScan | FileOptions.Encrypted | (FileOptions)0x20000000 /* NoBuffering */)) != 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(options), SR.ArgumentOutOfRange_Enum);
-            }
+            ArgumentOutOfRangeException.ThrowIf(options != FileOptions.None && (options & ~(FileOptions.WriteThrough | FileOptions.Asynchronous | FileOptions.RandomAccess | FileOptions.DeleteOnClose | FileOptions.SequentialScan | FileOptions.Encrypted | (FileOptions)0x20000000 /* NoBuffering */)) != 0);
 
             // NOTE: any change to FileOptions enum needs to be matched here in the error validation
             if (bufferSize < 0)

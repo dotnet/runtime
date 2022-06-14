@@ -145,8 +145,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="index">The zero-based index of the item to remove.</param>
         public void RemoveAt(int index)
         {
-            if (index < 0 || index >= _size)
-                throw new ArgumentOutOfRangeException(nameof(index));
+            ArgumentOutOfRangeException.ThrowIf(index < 0 || index >= _size);
 
             _size--;
             if (index < _size)

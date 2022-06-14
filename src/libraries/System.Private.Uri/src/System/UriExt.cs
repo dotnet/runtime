@@ -342,11 +342,9 @@ namespace System
 
         private string InternalGetComponents(UriComponents components, UriFormat format)
         {
-            if (((components & UriComponents.SerializationInfoString) != 0) && components != UriComponents.SerializationInfoString)
-                throw new ArgumentOutOfRangeException(nameof(components), components, SR.net_uri_NotJustSerialization);
+            ArgumentOutOfRangeException.ThrowIf(((components & UriComponents.SerializationInfoString) != 0) && components != UriComponents.SerializationInfoString);
 
-            if ((format & ~UriFormat.SafeUnescaped) != 0)
-                throw new ArgumentOutOfRangeException(nameof(format));
+            ArgumentOutOfRangeException.ThrowIf((format & ~UriFormat.SafeUnescaped) != 0);
 
             if (IsNotAbsoluteUri)
             {

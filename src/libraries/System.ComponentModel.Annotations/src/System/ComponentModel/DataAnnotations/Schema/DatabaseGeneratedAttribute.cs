@@ -15,10 +15,7 @@ namespace System.ComponentModel.DataAnnotations.Schema
         /// <param name="databaseGeneratedOption">The pattern used to generate values for the property in the database.</param>
         public DatabaseGeneratedAttribute(DatabaseGeneratedOption databaseGeneratedOption)
         {
-            if (!(Enum.IsDefined(typeof(DatabaseGeneratedOption), databaseGeneratedOption)))
-            {
-                throw new ArgumentOutOfRangeException(nameof(databaseGeneratedOption));
-            }
+            ArgumentOutOfRangeException.ThrowIf(!(Enum.IsDefined(typeof(DatabaseGeneratedOption), databaseGeneratedOption)));
 
             DatabaseGeneratedOption = databaseGeneratedOption;
         }

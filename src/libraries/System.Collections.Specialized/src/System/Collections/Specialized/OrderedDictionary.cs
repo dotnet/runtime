@@ -158,10 +158,7 @@ namespace System.Collections.Specialized
                 {
                     throw new NotSupportedException(SR.OrderedDictionary_ReadOnly);
                 }
-                if (_objectsArray == null || index < 0 || index >= _objectsArray.Count)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(index));
-                }
+                ArgumentOutOfRangeException.ThrowIf(_objectsArray == null || index < 0 || index >= _objectsArray.Count);
                 ArrayList objectsArray = EnsureObjectsArray();
                 Hashtable objectsTable = EnsureObjectsTable();
                 object key = ((DictionaryEntry)objectsArray[index]!).Key;
@@ -332,10 +329,7 @@ namespace System.Collections.Specialized
             {
                 throw new NotSupportedException(SR.OrderedDictionary_ReadOnly);
             }
-            if (index >= Count || index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index));
-            }
+            ArgumentOutOfRangeException.ThrowIf(index >= Count || index < 0);
             Hashtable objectsTable = EnsureObjectsTable();
             ArrayList objectsArray = EnsureObjectsArray();
             object key = ((DictionaryEntry)objectsArray[index]!).Key;

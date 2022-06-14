@@ -36,10 +36,7 @@ namespace System.Net.Sockets
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, localaddr);
 
             ArgumentNullException.ThrowIfNull(localaddr);
-            if (!TcpValidationHelpers.ValidatePortNumber(port))
-            {
-                throw new ArgumentOutOfRangeException(nameof(port));
-            }
+            ArgumentOutOfRangeException.ThrowIf(!TcpValidationHelpers.ValidatePortNumber(port));
 
             _serverSocketEP = new IPEndPoint(localaddr, port);
             _serverSocket = new Socket(_serverSocketEP.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
@@ -49,10 +46,7 @@ namespace System.Net.Sockets
         [Obsolete("This constructor has been deprecated. Use TcpListener(IPAddress localaddr, int port) instead.")]
         public TcpListener(int port)
         {
-            if (!TcpValidationHelpers.ValidatePortNumber(port))
-            {
-                throw new ArgumentOutOfRangeException(nameof(port));
-            }
+            ArgumentOutOfRangeException.ThrowIf(!TcpValidationHelpers.ValidatePortNumber(port));
 
             _serverSocketEP = new IPEndPoint(IPAddress.Any, port);
             _serverSocket = new Socket(_serverSocketEP.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
@@ -237,10 +231,7 @@ namespace System.Net.Sockets
         // This creates a TcpListener that listens on both IPv4 and IPv6 on the given port.
         public static TcpListener Create(int port)
         {
-            if (!TcpValidationHelpers.ValidatePortNumber(port))
-            {
-                throw new ArgumentOutOfRangeException(nameof(port));
-            }
+            ArgumentOutOfRangeException.ThrowIf(!TcpValidationHelpers.ValidatePortNumber(port));
 
             TcpListener listener;
             if (Socket.OSSupportsIPv6)

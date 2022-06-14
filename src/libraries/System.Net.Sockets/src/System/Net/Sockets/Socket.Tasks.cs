@@ -169,10 +169,7 @@ namespace System.Net.Sockets
                 throw new ArgumentException(SR.net_invalidAddressList, nameof(addresses));
             }
 
-            if (!TcpValidationHelpers.ValidatePortNumber(port))
-            {
-                throw new ArgumentOutOfRangeException(nameof(port));
-            }
+            ArgumentOutOfRangeException.ThrowIf(!TcpValidationHelpers.ValidatePortNumber(port));
 
             if (_isListening)
             {

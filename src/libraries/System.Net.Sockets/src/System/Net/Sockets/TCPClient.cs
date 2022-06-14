@@ -59,10 +59,7 @@ namespace System.Net.Sockets
             ArgumentNullException.ThrowIfNull(hostname);
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, hostname);
-            if (!TcpValidationHelpers.ValidatePortNumber(port))
-            {
-                throw new ArgumentOutOfRangeException(nameof(port));
-            }
+            ArgumentOutOfRangeException.ThrowIf(!TcpValidationHelpers.ValidatePortNumber(port));
 
             try
             {
@@ -126,10 +123,7 @@ namespace System.Net.Sockets
             ThrowIfDisposed();
 
             ArgumentNullException.ThrowIfNull(hostname);
-            if (!TcpValidationHelpers.ValidatePortNumber(port))
-            {
-                throw new ArgumentOutOfRangeException(nameof(port));
-            }
+            ArgumentOutOfRangeException.ThrowIf(!TcpValidationHelpers.ValidatePortNumber(port));
 
             Client.Connect(hostname, port);
             _family = Client.AddressFamily;
@@ -143,10 +137,7 @@ namespace System.Net.Sockets
             ThrowIfDisposed();
 
             ArgumentNullException.ThrowIfNull(address);
-            if (!TcpValidationHelpers.ValidatePortNumber(port))
-            {
-                throw new ArgumentOutOfRangeException(nameof(port));
-            }
+            ArgumentOutOfRangeException.ThrowIf(!TcpValidationHelpers.ValidatePortNumber(port));
 
             IPEndPoint remoteEP = new IPEndPoint(address, port);
             Connect(remoteEP);

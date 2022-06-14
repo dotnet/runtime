@@ -641,10 +641,7 @@ namespace System.Web.Util
 
             ArgumentNullException.ThrowIfNull(bytes);
             ArgumentOutOfRangeException.ThrowIfNotBetween(offset, 0, bytes.Length);
-            if (count < 0 || offset + count > bytes.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
+            ArgumentOutOfRangeException.ThrowIf(count < 0 || offset + count > bytes.Length);
 
             return true;
         }

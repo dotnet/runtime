@@ -38,14 +38,8 @@ namespace System.Speech.AudioFormat
             {
                 case EncodingFormat.ALaw:
                 case EncodingFormat.ULaw:
-                    if (bitsPerSample != 8)
-                    {
-                        throw new ArgumentOutOfRangeException(nameof(bitsPerSample));
-                    }
-                    if (formatSpecificData != null && formatSpecificData.Length != 0)
-                    {
-                        throw new ArgumentOutOfRangeException(nameof(formatSpecificData));
-                    }
+                    ArgumentOutOfRangeException.ThrowIf(bitsPerSample != 8);
+                    ArgumentOutOfRangeException.ThrowIf(formatSpecificData != null && formatSpecificData.Length != 0);
                     break;
             }
         }

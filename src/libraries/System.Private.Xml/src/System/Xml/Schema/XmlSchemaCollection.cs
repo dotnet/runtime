@@ -232,10 +232,7 @@ namespace System.Xml.Schema
             ArgumentOutOfRangeException.ThrowIfNegative(index);
             for (XmlSchemaCollectionEnumerator e = this.GetEnumerator(); e.MoveNext();)
             {
-                if (index == array.Length)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(index));
-                }
+                ArgumentOutOfRangeException.ThrowIf(index == array.Length);
                 array.SetValue(e.Current, index++);
             }
         }
@@ -250,10 +247,7 @@ namespace System.Xml.Schema
                 XmlSchema? schema = e.Current;
                 if (schema != null)
                 {
-                    if (index == array.Length)
-                    {
-                        throw new ArgumentOutOfRangeException(nameof(index));
-                    }
+                    ArgumentOutOfRangeException.ThrowIf(index == array.Length);
 
                     array[index++] = e.Current!;
                 }

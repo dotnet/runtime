@@ -334,10 +334,7 @@ namespace System.Text.Json
             {
                 VerifyMutable();
 
-                if (!JsonSerializer.IsValidNumberHandlingValue(value))
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIf(!JsonSerializer.IsValidNumberHandlingValue(value));
                 _numberHandling = value;
             }
         }

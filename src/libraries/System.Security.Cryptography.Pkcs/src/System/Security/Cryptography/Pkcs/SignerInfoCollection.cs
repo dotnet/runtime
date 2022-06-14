@@ -40,8 +40,7 @@ namespace System.Security.Cryptography.Pkcs
         {
             get
             {
-                if (index < 0 || index >= _signerInfos.Length)
-                    throw new ArgumentOutOfRangeException(nameof(index));
+                ArgumentOutOfRangeException.ThrowIf(index < 0 || index >= _signerInfos.Length);
                 return _signerInfos[index];
             }
         }
@@ -60,8 +59,7 @@ namespace System.Security.Cryptography.Pkcs
 
             if (array.Rank != 1)
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
-            if (index < 0 || index >= array.Length)
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLess);
+            ArgumentOutOfRangeException.ThrowIf(index < 0 || index >= array.Length);
             if (index + Count > array.Length)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
 

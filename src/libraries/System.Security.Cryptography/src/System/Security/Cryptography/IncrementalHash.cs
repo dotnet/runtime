@@ -88,8 +88,7 @@ namespace System.Security.Cryptography
             ArgumentNullException.ThrowIfNull(data);
 
             ArgumentOutOfRangeException.ThrowIfNegative(offset);
-            if (count < 0 || (count > data.Length))
-                throw new ArgumentOutOfRangeException(nameof(count));
+            ArgumentOutOfRangeException.ThrowIf(count < 0 || (count > data.Length));
             if ((data.Length - count) < offset)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
             if (_disposed)

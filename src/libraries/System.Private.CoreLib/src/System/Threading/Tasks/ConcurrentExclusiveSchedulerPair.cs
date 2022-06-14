@@ -100,8 +100,8 @@ namespace System.Threading.Tasks
         {
             ArgumentNullException.ThrowIfNull(taskScheduler);
 
-            if (maxConcurrencyLevel == 0 || maxConcurrencyLevel < -1) throw new ArgumentOutOfRangeException(nameof(maxConcurrencyLevel));
-            if (maxItemsPerTask == 0 || maxItemsPerTask < -1) throw new ArgumentOutOfRangeException(nameof(maxItemsPerTask));
+            ArgumentOutOfRangeException.ThrowIf(maxConcurrencyLevel == 0 || maxConcurrencyLevel < -1);
+            ArgumentOutOfRangeException.ThrowIf(maxItemsPerTask == 0 || maxItemsPerTask < -1);
 
             // Store configuration
             m_underlyingTaskScheduler = taskScheduler;

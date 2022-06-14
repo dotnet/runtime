@@ -213,10 +213,7 @@ namespace System.Security
         {
             lock (_methodLock)
             {
-                if (index < 0 || index >= _decryptedLength)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexString);
-                }
+                ArgumentOutOfRangeException.ThrowIf(index < 0 || index >= _decryptedLength);
 
                 EnsureNotDisposed();
                 EnsureNotReadOnly();
@@ -245,10 +242,7 @@ namespace System.Security
         {
             lock (_methodLock)
             {
-                if (index < 0 || index >= _decryptedLength)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexString);
-                }
+                ArgumentOutOfRangeException.ThrowIf(index < 0 || index >= _decryptedLength);
 
                 EnsureNotDisposed();
                 EnsureNotReadOnly();

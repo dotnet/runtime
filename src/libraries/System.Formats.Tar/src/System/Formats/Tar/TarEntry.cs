@@ -119,10 +119,7 @@ namespace System.Formats.Tar
             get => (TarFileMode)_header._mode;
             set
             {
-                if ((int)value is < 0 or > 4095) // 4095 in decimal is 7777 in octal
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIf((int)value is < 0 or > 4095);
                 _header._mode = (int)value;
             }
         }

@@ -29,18 +29,9 @@ namespace System.Net.Http.Headers
             {
                 throw new ArgumentException(SR.net_http_headers_invalid_range);
             }
-            if (from.HasValue && (from.Value < 0))
-            {
-                throw new ArgumentOutOfRangeException(nameof(from));
-            }
-            if (to.HasValue && (to.Value < 0))
-            {
-                throw new ArgumentOutOfRangeException(nameof(to));
-            }
-            if (from.HasValue && to.HasValue && (from.Value > to.Value))
-            {
-                throw new ArgumentOutOfRangeException(nameof(from));
-            }
+            ArgumentOutOfRangeException.ThrowIf(from.HasValue && (from.Value < 0));
+            ArgumentOutOfRangeException.ThrowIf(to.HasValue && (to.Value < 0));
+            ArgumentOutOfRangeException.ThrowIf(from.HasValue && to.HasValue && (from.Value > to.Value));
 
             _from = from;
             _to = to;

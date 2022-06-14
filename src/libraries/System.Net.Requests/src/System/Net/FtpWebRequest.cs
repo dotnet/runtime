@@ -360,10 +360,7 @@ namespace System.Net
                 {
                     throw new InvalidOperationException(SR.net_reqsubmitted);
                 }
-                if (value < 0 && value != System.Threading.Timeout.Infinite)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.net_io_timeout_use_ge_zero);
-                }
+                ArgumentOutOfRangeException.ThrowIf(value < 0 && value != System.Threading.Timeout.Infinite);
                 if (_timeout != value)
                 {
                     _timeout = value;
@@ -398,10 +395,7 @@ namespace System.Net
                 {
                     throw new InvalidOperationException(SR.net_reqsubmitted);
                 }
-                if (value <= 0 && value != System.Threading.Timeout.Infinite)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.net_io_timeout_use_gt_zero);
-                }
+                ArgumentOutOfRangeException.ThrowIf(value <= 0 && value != System.Threading.Timeout.Infinite);
                 _readWriteTimeout = value;
             }
         }
@@ -488,8 +482,7 @@ namespace System.Net
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, uri);
 
-            if ((object)uri.Scheme != (object)Uri.UriSchemeFtp)
-                throw new ArgumentOutOfRangeException(nameof(uri));
+            ArgumentOutOfRangeException.ThrowIf((object)uri.Scheme != (object)Uri.UriSchemeFtp);
 
             _timerCallback = new TimerThread.Callback(TimerCallback);
             _syncObject = new object();

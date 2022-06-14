@@ -73,10 +73,7 @@ namespace System
         private static unsafe DateTime FromFileTimeLeapSecondsAware(ulong fileTime)
         {
             Interop.Kernel32.SYSTEMTIME time;
-            if (Interop.Kernel32.FileTimeToSystemTime(&fileTime, &time) == Interop.BOOL.FALSE)
-            {
-                throw new ArgumentOutOfRangeException(nameof(fileTime), SR.ArgumentOutOfRange_DateTimeBadTicks);
-            }
+            ArgumentOutOfRangeException.ThrowIf(Interop.Kernel32.FileTimeToSystemTime(&fileTime, &time) == Interop.BOOL.FALSE);
             return CreateDateTimeFromSystemTime(in time, fileTime % TicksPerMillisecond);
         }
 
@@ -98,10 +95,7 @@ namespace System
             time.Milliseconds = 0;
 
             ulong fileTime;
-            if (Interop.Kernel32.SystemTimeToFileTime(&time, &fileTime) == Interop.BOOL.FALSE)
-            {
-                throw new ArgumentOutOfRangeException(null, SR.ArgumentOutOfRange_FileTimeInvalid);
-            }
+            ArgumentOutOfRangeException.ThrowIf(Interop.Kernel32.SystemTimeToFileTime(&time, &fileTime) == Interop.BOOL.FALSE);
 
             return fileTime + (uint)tick;
         }

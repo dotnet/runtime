@@ -258,19 +258,13 @@ namespace System.Runtime.Caching
             {
                 throw new ArgumentException(SR.Invalid_expiration_combination, nameof(policy));
             }
-            if (policy.SlidingExpiration < ObjectCache.NoSlidingExpiration || s_oneYear < policy.SlidingExpiration)
-            {
-                throw new ArgumentOutOfRangeException(nameof(policy), RH.Format(SR.Argument_out_of_range, "SlidingExpiration", ObjectCache.NoSlidingExpiration, s_oneYear));
-            }
+            ArgumentOutOfRangeException.ThrowIf(policy.SlidingExpiration < ObjectCache.NoSlidingExpiration || s_oneYear < policy.SlidingExpiration);
             if (policy.RemovedCallback != null
                 && policy.UpdateCallback != null)
             {
                 throw new ArgumentException(SR.Invalid_callback_combination, nameof(policy));
             }
-            if (policy.Priority != CacheItemPriority.Default && policy.Priority != CacheItemPriority.NotRemovable)
-            {
-                throw new ArgumentOutOfRangeException(nameof(policy), RH.Format(SR.Argument_out_of_range, "Priority", CacheItemPriority.Default, CacheItemPriority.NotRemovable));
-            }
+            ArgumentOutOfRangeException.ThrowIf(policy.Priority != CacheItemPriority.Default && policy.Priority != CacheItemPriority.NotRemovable);
         }
 
         // public

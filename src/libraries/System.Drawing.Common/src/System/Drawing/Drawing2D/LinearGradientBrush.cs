@@ -237,8 +237,7 @@ namespace System.Drawing.Drawing2D
 
                 if (count == 0 || value.Positions.Length == 0)
                     throw new ArgumentException(SR.BlendObjectMustHaveTwoElements);
-                if (count >= 2 && count != value.Positions.Length)
-                    throw new ArgumentOutOfRangeException(nameof(value));
+                ArgumentOutOfRangeException.ThrowIf(count >= 2 && count != value.Positions.Length);
                 if (count >= 2 && value.Positions[0] != 0.0F)
                     throw new ArgumentException(SR.BlendObjectFirstElementInvalid);
                 if (count >= 2 && value.Positions[count - 1] != 1.0F)

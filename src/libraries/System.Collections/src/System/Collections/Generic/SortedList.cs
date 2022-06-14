@@ -519,16 +519,14 @@ namespace System.Collections.Generic
         // Returns the value of the entry at the given index.
         public TValue GetValueAtIndex(int index)
         {
-            if (index < 0 || index >= _size)
-                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_IndexMustBeLess);
+            ArgumentOutOfRangeException.ThrowIf(index < 0 || index >= _size);
             return values[index];
         }
 
         // Sets the value of the entry at the given index.
         public void SetValueAtIndex(int index, TValue value)
         {
-            if (index < 0 || index >= _size)
-                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_IndexMustBeLess);
+            ArgumentOutOfRangeException.ThrowIf(index < 0 || index >= _size);
             values[index] = value;
             version++;
         }
@@ -556,8 +554,7 @@ namespace System.Collections.Generic
         // Returns the key of the entry at the given index.
         public TKey GetKeyAtIndex(int index)
         {
-            if (index < 0 || index >= _size)
-                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_IndexMustBeLess);
+            ArgumentOutOfRangeException.ThrowIf(index < 0 || index >= _size);
             return keys[index];
         }
 
@@ -680,8 +677,7 @@ namespace System.Collections.Generic
         // decreased by one.
         public void RemoveAt(int index)
         {
-            if (index < 0 || index >= _size)
-                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_IndexMustBeLess);
+            ArgumentOutOfRangeException.ThrowIf(index < 0 || index >= _size);
             _size--;
             if (index < _size)
             {

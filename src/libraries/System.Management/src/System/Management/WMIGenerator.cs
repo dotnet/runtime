@@ -166,10 +166,7 @@ namespace System.Management
         public bool GenerateCode(CodeLanguage lang, string filePath, string netNamespace)
         {
             // check for proper arguments
-            if (filePath == null)
-            {
-                throw new ArgumentOutOfRangeException(SR.NullFilePathException);
-            }
+            ArgumentOutOfRangeException.ThrowIf(filePath == null);
 
             ArgumentOutOfRangeException.ThrowIfZero(filePath.Length);
 
@@ -192,15 +189,9 @@ namespace System.Management
         {
             if (classobj == null)
             {
-                if (OriginalNamespace == null || (OriginalNamespace != null && OriginalNamespace.Length == 0))
-                {
-                    throw new ArgumentOutOfRangeException(SR.NamespaceNotInitializedException);
-                }
+                ArgumentOutOfRangeException.ThrowIf(OriginalNamespace == null || (OriginalNamespace != null && OriginalNamespace.Length == 0));
 
-                if (OriginalClassName == null || (OriginalClassName != null && OriginalClassName.Length == 0))
-                {
-                    throw new ArgumentOutOfRangeException(SR.ClassNameNotInitializedException);
-                }
+                ArgumentOutOfRangeException.ThrowIf(OriginalClassName == null || (OriginalClassName != null && OriginalClassName.Length == 0));
             }
         }
         private void InitializeCodeGeneration()

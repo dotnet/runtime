@@ -1172,13 +1172,7 @@ namespace System.Globalization
 
             // The month range is from 1 ~ m_monthNames.Length
             // (actually is 13 right now for all cases)
-            if ((month < 1) || (month > monthNamesArray.Length))
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(month),
-                    month,
-                    SR.Format(SR.ArgumentOutOfRange_Range, 1, monthNamesArray.Length));
-            }
+            ArgumentOutOfRangeException.ThrowIf((month < 1) || (month > monthNamesArray.Length));
 
             return monthNamesArray[month - 1];
         }

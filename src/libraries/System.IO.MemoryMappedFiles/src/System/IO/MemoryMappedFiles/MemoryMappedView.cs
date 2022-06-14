@@ -87,10 +87,7 @@ namespace System.IO.MemoryMappedFiles
             newOffset = offset - extraMemNeeded;
             newSize = (size != MemoryMappedFile.DefaultSize) ? (ulong)size + (ulong)extraMemNeeded : 0;
 
-            if (IntPtr.Size == 4 && newSize > uint.MaxValue)
-            {
-                throw new ArgumentOutOfRangeException(nameof(size), SR.ArgumentOutOfRange_CapacityLargerThanLogicalAddressSpaceNotAllowed);
-            }
+            ArgumentOutOfRangeException.ThrowIf(IntPtr.Size == 4 && newSize > uint.MaxValue);
         }
     }
 }

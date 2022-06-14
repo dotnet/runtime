@@ -171,8 +171,7 @@ namespace System.DirectoryServices
         public void RemoveAt(int index)
         {
             object?[] oldValues = GetValue();
-            if (index >= oldValues.Length || index < 0)
-                throw new ArgumentOutOfRangeException(nameof(index));
+            ArgumentOutOfRangeException.ThrowIf(index >= oldValues.Length || index < 0);
 
             object?[] newValues = new object[oldValues.Length - 1];
             for (int i = 0; i < index; i++)

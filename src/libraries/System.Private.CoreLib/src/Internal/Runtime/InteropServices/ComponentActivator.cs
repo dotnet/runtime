@@ -75,10 +75,7 @@ namespace Internal.Runtime.InteropServices
                 string typeName = MarshalToString(typeNameNative, nameof(typeNameNative));
                 string methodName = MarshalToString(methodNameNative, nameof(methodNameNative));
 
-                if (reserved != IntPtr.Zero)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(reserved));
-                }
+                ArgumentOutOfRangeException.ThrowIf(reserved != IntPtr.Zero);
 
                 ArgumentNullException.ThrowIfNull(functionHandle);
 
@@ -140,15 +137,9 @@ namespace Internal.Runtime.InteropServices
                 string typeName = MarshalToString(typeNameNative, nameof(typeNameNative));
                 string methodName = MarshalToString(methodNameNative, nameof(methodNameNative));
 
-                if (loadContext != IntPtr.Zero)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(loadContext));
-                }
+                ArgumentOutOfRangeException.ThrowIf(loadContext != IntPtr.Zero);
 
-                if (reserved != IntPtr.Zero)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(reserved));
-                }
+                ArgumentOutOfRangeException.ThrowIf(reserved != IntPtr.Zero);
 
                 ArgumentNullException.ThrowIfNull(functionHandle);
 

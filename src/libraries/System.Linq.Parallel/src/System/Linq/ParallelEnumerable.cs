@@ -411,7 +411,7 @@ namespace System.Linq
         /// </exception>
         public static ParallelQuery<int> Range(int start, int count)
         {
-            if (count < 0 || (count > 0 && int.MaxValue - (count - 1) < start)) throw new ArgumentOutOfRangeException(nameof(count));
+            ArgumentOutOfRangeException.ThrowIf(count < 0 || (count > 0 && int.MaxValue - (count - 1) < start));
             return new RangeEnumerable(start, count);
         }
 
@@ -1615,7 +1615,7 @@ namespace System.Linq
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(func);
 
-            if ((~(QueryAggregationOptions.Associative | QueryAggregationOptions.Commutative) & options) != 0) throw new ArgumentOutOfRangeException(nameof(options));
+            ArgumentOutOfRangeException.ThrowIf((~(QueryAggregationOptions.Associative | QueryAggregationOptions.Commutative) & options) != 0);
 
             if ((options & QueryAggregationOptions.Associative) != QueryAggregationOptions.Associative)
             {
@@ -1663,7 +1663,7 @@ namespace System.Linq
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(func);
 
-            if ((~(QueryAggregationOptions.Associative | QueryAggregationOptions.Commutative) & options) != 0) throw new ArgumentOutOfRangeException(nameof(options));
+            ArgumentOutOfRangeException.ThrowIf((~(QueryAggregationOptions.Associative | QueryAggregationOptions.Commutative) & options) != 0);
 
             return source.PerformSequentialAggregation(seed, true, func);
         }

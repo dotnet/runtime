@@ -88,8 +88,7 @@ namespace System.Runtime.InteropServices
         [CLSCompliant(false)]
         public void Initialize(ulong numBytes)
         {
-            if (IntPtr.Size == 4 && numBytes > uint.MaxValue)
-                throw new ArgumentOutOfRangeException(nameof(numBytes), SR.ArgumentOutOfRange_AddressSpace);
+            ArgumentOutOfRangeException.ThrowIf(IntPtr.Size == 4 && numBytes > uint.MaxValue);
 
             ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(numBytes, (ulong)Uninitialized);
 

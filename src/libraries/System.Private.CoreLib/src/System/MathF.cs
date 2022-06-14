@@ -446,10 +446,7 @@ namespace System
 
         public static unsafe float Round(float x, int digits, MidpointRounding mode)
         {
-            if ((digits < 0) || (digits > maxRoundingDigits))
-            {
-                throw new ArgumentOutOfRangeException(nameof(digits), SR.ArgumentOutOfRange_RoundingDigits_MathF);
-            }
+            ArgumentOutOfRangeException.ThrowIf((digits < 0) || (digits > maxRoundingDigits));
 
             if (mode < MidpointRounding.ToEven || mode > MidpointRounding.ToPositiveInfinity)
             {

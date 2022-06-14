@@ -102,10 +102,7 @@ namespace System.Net.Http
             get => _timeout;
             set
             {
-                if (value != s_infiniteTimeout && (value <= TimeSpan.Zero || value > s_maxTimeout))
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIf(value != s_infiniteTimeout && (value <= TimeSpan.Zero || value > s_maxTimeout));
                 CheckDisposedOrStarted();
                 _timeout = value;
             }

@@ -227,10 +227,7 @@ namespace System.Globalization
             int daysInMonth = InternalGetDaysInMonth(year, month);
             ArgumentOutOfRangeException.ThrowIfNotBetween(day, 1, daysInMonth);
 
-            if (!LunarToGregorian(year, month, day, out int gy, out int gm, out int gd))
-            {
-                throw new ArgumentOutOfRangeException(null, SR.ArgumentOutOfRange_BadYearMonthDay);
-            }
+            ArgumentOutOfRangeException.ThrowIf(!LunarToGregorian(year, month, day, out int gy, out int gm, out int gd));
 
             return new DateTime(gy, gm, gd, hour, minute, second, millisecond);
         }

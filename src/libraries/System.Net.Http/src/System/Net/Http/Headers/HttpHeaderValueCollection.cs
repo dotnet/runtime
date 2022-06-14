@@ -83,10 +83,7 @@ namespace System.Net.Http.Headers
             ArgumentNullException.ThrowIfNull(array);
 
             // Allow arrayIndex == array.Length in case our own collection is empty
-            if ((arrayIndex < 0) || (arrayIndex > array.Length))
-            {
-                throw new ArgumentOutOfRangeException(nameof(arrayIndex));
-            }
+            ArgumentOutOfRangeException.ThrowIf((arrayIndex < 0) || (arrayIndex > array.Length));
 
             object? storeValue = _store.GetParsedAndInvalidValues(_descriptor);
 

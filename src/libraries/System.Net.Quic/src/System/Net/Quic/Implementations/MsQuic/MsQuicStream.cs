@@ -221,10 +221,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             set
             {
                 ThrowIfDisposed();
-                if (value <= 0 && value != System.Threading.Timeout.Infinite)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.net_quic_timeout_use_gt_zero);
-                }
+                ArgumentOutOfRangeException.ThrowIf(value <= 0 && value != System.Threading.Timeout.Infinite);
                 _readTimeout = value;
             }
         }
@@ -240,10 +237,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             set
             {
                 ThrowIfDisposed();
-                if (value <= 0 && value != System.Threading.Timeout.Infinite)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.net_quic_timeout_use_gt_zero);
-                }
+                ArgumentOutOfRangeException.ThrowIf(value <= 0 && value != System.Threading.Timeout.Infinite);
                 _writeTimeout = value;
             }
         }

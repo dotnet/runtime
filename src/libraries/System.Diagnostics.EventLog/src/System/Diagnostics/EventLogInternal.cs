@@ -262,8 +262,7 @@ namespace System.Diagnostics
             {
                 string currentMachineName = this.machineName;
                 // valid range is 64 KB to 4 GB
-                if (value < 64 || value > 0x3FFFC0 || value % 64 != 0)
-                    throw new ArgumentOutOfRangeException("MaximumKilobytes", SR.MaximumKilobytesOutOfRange);
+                ArgumentOutOfRangeException.ThrowIf(value < 64 || value > 0x3FFFC0 || value % 64 != 0);
 
                 long regvalue = value * 1024; // convert to bytes
                 int i = unchecked((int)regvalue);

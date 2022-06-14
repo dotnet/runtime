@@ -70,8 +70,7 @@ namespace System.Collections
 
         public void RemoveAt(int index)
         {
-            if (index < 0 || index >= Count)
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLess);
+            ArgumentOutOfRangeException.ThrowIf(index < 0 || index >= Count);
             object? temp = InnerList[index];
             OnValidate(temp!);
             OnRemove(index, temp);
@@ -116,14 +115,12 @@ namespace System.Collections
         {
             get
             {
-                if (index < 0 || index >= Count)
-                    throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLess);
+                ArgumentOutOfRangeException.ThrowIf(index < 0 || index >= Count);
                 return InnerList[index];
             }
             set
             {
-                if (index < 0 || index >= Count)
-                    throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLess);
+                ArgumentOutOfRangeException.ThrowIf(index < 0 || index >= Count);
                 OnValidate(value!);
                 object? temp = InnerList[index];
                 OnSet(index, temp, value);

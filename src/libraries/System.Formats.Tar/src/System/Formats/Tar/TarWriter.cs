@@ -52,10 +52,7 @@ namespace System.Formats.Tar
                 throw new IOException(SR.IO_NotSupported_UnwritableStream);
             }
 
-            if (archiveFormat is not TarEntryFormat.V7 and not TarEntryFormat.Ustar and not TarEntryFormat.Pax and not TarEntryFormat.Gnu)
-            {
-                throw new ArgumentOutOfRangeException(nameof(archiveFormat));
-            }
+            ArgumentOutOfRangeException.ThrowIf(archiveFormat is not TarEntryFormat.V7 and not TarEntryFormat.Ustar and not TarEntryFormat.Pax and not TarEntryFormat.Gnu);
 
             _archiveStream = archiveStream;
             Format = archiveFormat;

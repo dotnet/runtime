@@ -52,15 +52,9 @@ namespace System.Text
         public override bool Fallback(char charUnknownHigh, char charUnknownLow, int index)
         {
             // Double check input surrogate pair
-            if (!char.IsHighSurrogate(charUnknownHigh))
-                throw new ArgumentOutOfRangeException(nameof(charUnknownHigh),
-                    SR.Format(SR.ArgumentOutOfRange_Range,
-                    0xD800, 0xDBFF));
+            ArgumentOutOfRangeException.ThrowIf(!char.IsHighSurrogate(charUnknownHigh));
 
-            if (!char.IsLowSurrogate(charUnknownLow))
-                throw new ArgumentOutOfRangeException(nameof(charUnknownLow),
-                    SR.Format(SR.ArgumentOutOfRange_Range,
-                    0xDC00, 0xDFFF));
+            ArgumentOutOfRangeException.ThrowIf(!char.IsLowSurrogate(charUnknownLow));
 
             // If we had a buffer already we're being recursive, throw, it's probably at the suspect
             // character in our array.  0 is processing last character, < 0 is not falling back

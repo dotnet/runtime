@@ -67,10 +67,7 @@ namespace System.IO.MemoryMappedFiles
                 throw new ArgumentOutOfRangeException(nameof(inheritability));
             }
 
-            if (((int)desiredAccessRights & ~((int)(MemoryMappedFileRights.FullControl | MemoryMappedFileRights.AccessSystemSecurity))) != 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(desiredAccessRights));
-            }
+            ArgumentOutOfRangeException.ThrowIf(((int)desiredAccessRights & ~((int)(MemoryMappedFileRights.FullControl | MemoryMappedFileRights.AccessSystemSecurity))) != 0);
 
             SafeMemoryMappedFileHandle handle = OpenCore(mapName, inheritability, desiredAccessRights, false);
             return new MemoryMappedFile(handle);
@@ -258,10 +255,7 @@ namespace System.IO.MemoryMappedFiles
 
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(capacity);
 
-            if (IntPtr.Size == 4 && capacity > uint.MaxValue)
-            {
-                throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_CapacityLargerThanLogicalAddressSpaceNotAllowed);
-            }
+            ArgumentOutOfRangeException.ThrowIf(IntPtr.Size == 4 && capacity > uint.MaxValue);
 
             if (access < MemoryMappedFileAccess.ReadWrite ||
                 access > MemoryMappedFileAccess.ReadWriteExecute)
@@ -274,10 +268,7 @@ namespace System.IO.MemoryMappedFiles
                 throw new ArgumentException(SR.Argument_NewMMFWriteAccessNotAllowed, nameof(access));
             }
 
-            if (((int)options & ~((int)(MemoryMappedFileOptions.DelayAllocatePages))) != 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(options));
-            }
+            ArgumentOutOfRangeException.ThrowIf(((int)options & ~((int)(MemoryMappedFileOptions.DelayAllocatePages))) != 0);
 
             if (inheritability < HandleInheritability.None || inheritability > HandleInheritability.Inheritable)
             {
@@ -315,10 +306,7 @@ namespace System.IO.MemoryMappedFiles
 
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(capacity);
 
-            if (IntPtr.Size == 4 && capacity > uint.MaxValue)
-            {
-                throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_CapacityLargerThanLogicalAddressSpaceNotAllowed);
-            }
+            ArgumentOutOfRangeException.ThrowIf(IntPtr.Size == 4 && capacity > uint.MaxValue);
 
             if (access < MemoryMappedFileAccess.ReadWrite ||
                 access > MemoryMappedFileAccess.ReadWriteExecute)
@@ -326,10 +314,7 @@ namespace System.IO.MemoryMappedFiles
                 throw new ArgumentOutOfRangeException(nameof(access));
             }
 
-            if (((int)options & ~((int)(MemoryMappedFileOptions.DelayAllocatePages))) != 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(options));
-            }
+            ArgumentOutOfRangeException.ThrowIf(((int)options & ~((int)(MemoryMappedFileOptions.DelayAllocatePages))) != 0);
 
             if (inheritability < HandleInheritability.None || inheritability > HandleInheritability.Inheritable)
             {
@@ -371,10 +356,7 @@ namespace System.IO.MemoryMappedFiles
                 throw new ArgumentOutOfRangeException(nameof(access));
             }
 
-            if (IntPtr.Size == 4 && size > uint.MaxValue)
-            {
-                throw new ArgumentOutOfRangeException(nameof(size), SR.ArgumentOutOfRange_CapacityLargerThanLogicalAddressSpaceNotAllowed);
-            }
+            ArgumentOutOfRangeException.ThrowIf(IntPtr.Size == 4 && size > uint.MaxValue);
 
             MemoryMappedView view = MemoryMappedView.CreateView(_handle, access, offset, size);
             return new MemoryMappedViewStream(view);
@@ -402,10 +384,7 @@ namespace System.IO.MemoryMappedFiles
                 throw new ArgumentOutOfRangeException(nameof(access));
             }
 
-            if (IntPtr.Size == 4 && size > uint.MaxValue)
-            {
-                throw new ArgumentOutOfRangeException(nameof(size), SR.ArgumentOutOfRange_CapacityLargerThanLogicalAddressSpaceNotAllowed);
-            }
+            ArgumentOutOfRangeException.ThrowIf(IntPtr.Size == 4 && size > uint.MaxValue);
 
             MemoryMappedView view = MemoryMappedView.CreateView(_handle, access, offset, size);
             return new MemoryMappedViewAccessor(view);

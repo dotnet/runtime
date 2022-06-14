@@ -15,10 +15,7 @@ namespace System.Xml
         internal Task EncodeAsync(byte[] buffer, int index, int count)
         {
             ArgumentNullException.ThrowIfNull(buffer);
-            if (index < 0 || (uint)count > buffer.Length - index)
-            {
-                throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count));
-            }
+            ArgumentOutOfRangeException.ThrowIf(index < 0 || (uint)count > buffer.Length - index);
             return Core(buffer, index, count);
 
             async Task Core(byte[] buffer, int index, int count)

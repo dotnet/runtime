@@ -1909,13 +1909,8 @@ namespace System.Security.AccessControl
 
         internal static void CheckAccessType(AccessControlType accessType)
         {
-            if (accessType != AccessControlType.Allow &&
-                accessType != AccessControlType.Deny)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(accessType),
-                    SR.ArgumentOutOfRange_Enum);
-            }
+            ArgumentOutOfRangeException.ThrowIf(accessType != AccessControlType.Allow &&
+                accessType != AccessControlType.Deny);
         }
 
         internal void CheckFlags(InheritanceFlags inheritanceFlags, PropagationFlags propagationFlags)

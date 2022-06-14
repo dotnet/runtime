@@ -395,8 +395,7 @@ namespace System
         {
             ArgumentNullException.ThrowIfNull(baseUri);
 
-            if (!baseUri.IsAbsoluteUri)
-                throw new ArgumentOutOfRangeException(nameof(baseUri));
+            ArgumentOutOfRangeException.ThrowIf(!baseUri.IsAbsoluteUri);
 
             CreateUri(baseUri, relativeUri, dontEscape);
             DebugSetLeftCtor();
@@ -437,8 +436,7 @@ namespace System
         {
             ArgumentNullException.ThrowIfNull(baseUri);
 
-            if (!baseUri.IsAbsoluteUri)
-                throw new ArgumentOutOfRangeException(nameof(baseUri));
+            ArgumentOutOfRangeException.ThrowIf(!baseUri.IsAbsoluteUri);
 
             CreateUri(baseUri, relativeUri, false);
             DebugSetLeftCtor();
@@ -538,8 +536,7 @@ namespace System
         {
             ArgumentNullException.ThrowIfNull(baseUri);
 
-            if (!baseUri.IsAbsoluteUri)
-                throw new ArgumentOutOfRangeException(nameof(baseUri));
+            ArgumentOutOfRangeException.ThrowIf(!baseUri.IsAbsoluteUri);
 
             CreateThisFromUri(relativeUri);
 
@@ -1425,10 +1422,7 @@ namespace System
 
         public static char HexUnescape(string pattern, ref int index)
         {
-            if ((index < 0) || (index >= pattern.Length))
-            {
-                throw new ArgumentOutOfRangeException(nameof(index));
-            }
+            ArgumentOutOfRangeException.ThrowIf((index < 0) || (index >= pattern.Length));
             if ((pattern[index] == '%')
                 && (pattern.Length - index >= 3))
             {

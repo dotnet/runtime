@@ -1508,10 +1508,8 @@ namespace System.Threading.Tasks
             if (hasBeginMethod)
             {
                 // Options detected here cause exceptions in FromAsync methods that take beginMethod as a parameter
-                if ((creationOptions & TaskCreationOptions.LongRunning) != 0)
-                    throw new ArgumentOutOfRangeException(nameof(creationOptions), SR.Task_FromAsync_LongRunning);
-                if ((creationOptions & TaskCreationOptions.PreferFairness) != 0)
-                    throw new ArgumentOutOfRangeException(nameof(creationOptions), SR.Task_FromAsync_PreferFairness);
+                ArgumentOutOfRangeException.ThrowIf((creationOptions & TaskCreationOptions.LongRunning) != 0);
+                ArgumentOutOfRangeException.ThrowIf((creationOptions & TaskCreationOptions.PreferFairness) != 0);
             }
 
             // Check for general validity of options
@@ -3014,13 +3012,10 @@ namespace System.Threading.Tasks
 
             // Check that LongRunning and ExecuteSynchronously are not specified together
             const TaskContinuationOptions illegalMask = TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.LongRunning;
-            if ((continuationOptions & illegalMask) == illegalMask)
-            {
-                throw new ArgumentOutOfRangeException(nameof(continuationOptions), SR.Task_ContinueWith_ESandLR);
-            }
+            ArgumentOutOfRangeException.ThrowIf((continuationOptions & illegalMask) == illegalMask);
 
             // Check that no nonsensical options are specified.
-            if ((continuationOptions & ~(
+            ArgumentOutOfRangeException.ThrowIf((continuationOptions & ~(
                 TaskContinuationOptions.LongRunning |
                 TaskContinuationOptions.PreferFairness |
                 TaskContinuationOptions.AttachedToParent |
@@ -3028,14 +3023,10 @@ namespace System.Threading.Tasks
                 TaskContinuationOptions.HideScheduler |
                 TaskContinuationOptions.LazyCancellation |
                 NotOnAny |
-                TaskContinuationOptions.ExecuteSynchronously)) != 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(continuationOptions));
-            }
+                TaskContinuationOptions.ExecuteSynchronously)) != 0);
 
             // Check that no "fire" options are specified.
-            if ((continuationOptions & NotOnAny) != 0)
-                throw new ArgumentOutOfRangeException(nameof(continuationOptions), SR.Task_MultiTaskContinuation_FireOptions);
+            ArgumentOutOfRangeException.ThrowIf((continuationOptions & NotOnAny) != 0);
         }
     }
 }

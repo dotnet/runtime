@@ -139,8 +139,7 @@ namespace System.Dynamic.Utils
             Debug.Assert(array != null);
 
             ArgumentOutOfRangeException.ThrowIfNegative(count);
-            if (offset < 0 || array.Count - offset < count)
-                throw new ArgumentOutOfRangeException(offsetName);
+            ArgumentOutOfRangeException.ThrowIf(offset < 0 || array.Count - offset < count);
         }
     }
 }

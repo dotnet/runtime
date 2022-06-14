@@ -191,8 +191,7 @@ namespace System.Drawing.Drawing2D
                 // Explicit argument validation, because libgdiplus does not correctly validate all parameters.
                 if (count == 0 || value.Positions.Length == 0)
                     throw new ArgumentException(SR.BlendObjectMustHaveTwoElements);
-                if (count >= 2 && count != value.Positions.Length)
-                    throw new ArgumentOutOfRangeException(nameof(value));
+                ArgumentOutOfRangeException.ThrowIf(count >= 2 && count != value.Positions.Length);
                 if (count >= 2 && value.Positions[0] != 0.0F)
                     throw new ArgumentException(SR.BlendObjectFirstElementInvalid);
                 if (count >= 2 && value.Positions[count - 1] != 1.0F)
@@ -298,8 +297,7 @@ namespace System.Drawing.Drawing2D
 
                 if (value.Positions == null)
                     throw new ArgumentException(SR.Format(SR.InvalidArgumentValue, "value.Positions", value.Positions), nameof(value));
-                if (value.Colors.Length != value.Positions.Length)
-                    throw new ArgumentOutOfRangeException(nameof(value));
+                ArgumentOutOfRangeException.ThrowIf(value.Colors.Length != value.Positions.Length);
 
                 float[] positions = value.Positions;
                 int[] argbs = new int[count];

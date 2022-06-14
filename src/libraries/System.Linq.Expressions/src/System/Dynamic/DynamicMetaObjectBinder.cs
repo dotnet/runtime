@@ -58,10 +58,7 @@ namespace System.Dynamic
             {
                 throw System.Linq.Expressions.Error.OutOfRange("parameters.Count", 1);
             }
-            if (args.Length != parameters.Count)
-            {
-                throw new ArgumentOutOfRangeException(nameof(args));
-            }
+            ArgumentOutOfRangeException.ThrowIf(args.Length != parameters.Count);
 
             // Ensure that the binder's ReturnType matches CallSite's return
             // type. We do this so meta objects and language binders can

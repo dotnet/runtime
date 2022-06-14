@@ -51,10 +51,7 @@ namespace System.Collections.Generic
 
             internal override bool AddIfNotPresent(T item)
             {
-                if (!IsWithinRange(item))
-                {
-                    throw new ArgumentOutOfRangeException(nameof(item));
-                }
+                ArgumentOutOfRangeException.ThrowIf(!IsWithinRange(item));
 
                 bool ret = _underlying.AddIfNotPresent(item);
                 VersionCheck();
@@ -341,14 +338,8 @@ namespace System.Collections.Generic
             // Cannot increase the bounds of the subset, can only decrease it
             public override SortedSet<T> GetViewBetween(T? lowerValue, T? upperValue)
             {
-                if (_lBoundActive && Comparer.Compare(_min, lowerValue) > 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(lowerValue));
-                }
-                if (_uBoundActive && Comparer.Compare(_max, upperValue) < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(upperValue));
-                }
+                ArgumentOutOfRangeException.ThrowIf(_lBoundActive && Comparer.Compare(_min, lowerValue) > 0);
+                ArgumentOutOfRangeException.ThrowIf(_uBoundActive && Comparer.Compare(_max, upperValue) < 0);
                 return (TreeSubSet)_underlying.GetViewBetween(lowerValue, upperValue);
             }
 

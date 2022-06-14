@@ -320,10 +320,7 @@ namespace System.Globalization
 
         private static void CheckEraRange(int era)
         {
-            if (era != CurrentEra && era != HebrewEra)
-            {
-                throw new ArgumentOutOfRangeException(nameof(era), era, SR.ArgumentOutOfRange_InvalidEraValue);
-            }
+            ArgumentOutOfRangeException.ThrowIf(era != CurrentEra && era != HebrewEra);
         }
 
         private static void CheckTicksRange(long ticks)

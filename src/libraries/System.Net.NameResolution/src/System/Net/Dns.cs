@@ -630,12 +630,8 @@ namespace System.Net
         {
             const int MaxHostName = 255;
 
-            if (hostName.Length > MaxHostName ||
-               (hostName.Length == MaxHostName && hostName[MaxHostName - 1] != '.')) // If 255 chars, the last one must be a dot.
-            {
-                throw new ArgumentOutOfRangeException(nameof(hostName),
-                    SR.Format(SR.net_toolong, nameof(hostName), MaxHostName.ToString(NumberFormatInfo.CurrentInfo)));
-            }
+            ArgumentOutOfRangeException.ThrowIf(hostName.Length > MaxHostName ||
+               (hostName.Length == MaxHostName && hostName[MaxHostName - 1] != '.'));
         }
 
         private static bool LogFailure(long startingTimestamp)

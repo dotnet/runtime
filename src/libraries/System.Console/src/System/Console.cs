@@ -545,10 +545,8 @@ namespace System
         public static void SetCursorPosition(int left, int top)
         {
             // Basic argument validation.  The PAL implementation may provide further validation.
-            if (left < 0 || left >= short.MaxValue)
-                throw new ArgumentOutOfRangeException(nameof(left), left, SR.ArgumentOutOfRange_ConsoleBufferBoundaries);
-            if (top < 0 || top >= short.MaxValue)
-                throw new ArgumentOutOfRangeException(nameof(top), top, SR.ArgumentOutOfRange_ConsoleBufferBoundaries);
+            ArgumentOutOfRangeException.ThrowIf(left < 0 || left >= short.MaxValue);
+            ArgumentOutOfRangeException.ThrowIf(top < 0 || top >= short.MaxValue);
 
             ConsolePal.SetCursorPosition(left, top);
         }

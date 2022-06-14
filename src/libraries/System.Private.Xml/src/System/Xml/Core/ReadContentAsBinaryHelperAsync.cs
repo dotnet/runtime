@@ -13,10 +13,7 @@ namespace System.Xml
         internal async Task<int> ReadContentAsBase64Async(byte[] buffer, int index, int count) // only ever awaited, so no need to separate out argument handling
         {
             ArgumentNullException.ThrowIfNull(buffer);
-            if (index < 0 || (uint)count > buffer.Length - index)
-            {
-                throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count));
-            }
+            ArgumentOutOfRangeException.ThrowIf(index < 0 || (uint)count > buffer.Length - index);
 
             switch (_state)
             {
@@ -57,10 +54,7 @@ namespace System.Xml
         internal async Task<int> ReadContentAsBinHexAsync(byte[] buffer, int index, int count) // only ever awaited, so no need to separate out argument handling
         {
             ArgumentNullException.ThrowIfNull(buffer);
-            if (index < 0 || (uint)count > buffer.Length - index)
-            {
-                throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count));
-            }
+            ArgumentOutOfRangeException.ThrowIf(index < 0 || (uint)count > buffer.Length - index);
 
             switch (_state)
             {
@@ -101,10 +95,7 @@ namespace System.Xml
         internal async Task<int> ReadElementContentAsBase64Async(byte[] buffer, int index, int count) // only ever awaited, so no need to separate out argument handling
         {
             ArgumentNullException.ThrowIfNull(buffer);
-            if (index < 0 || (uint)count > buffer.Length - index)
-            {
-                throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count));
-            }
+            ArgumentOutOfRangeException.ThrowIf(index < 0 || (uint)count > buffer.Length - index);
 
             switch (_state)
             {
@@ -145,10 +136,7 @@ namespace System.Xml
         internal async Task<int> ReadElementContentAsBinHexAsync(byte[] buffer, int index, int count) // only ever awaited, so no need to separate out argument handling
         {
             ArgumentNullException.ThrowIfNull(buffer);
-            if (index < 0 || (uint)count > buffer.Length - index)
-            {
-                throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count));
-            }
+            ArgumentOutOfRangeException.ThrowIf(index < 0 || (uint)count > buffer.Length - index);
 
             switch (_state)
             {

@@ -166,8 +166,7 @@ namespace System.Collections.Concurrent
         {
             ArgumentNullException.ThrowIfNull(source);
 
-            if ((partitionerOptions & (~EnumerablePartitionerOptions.NoBuffering)) != 0)
-                throw new ArgumentOutOfRangeException(nameof(partitionerOptions));
+            ArgumentOutOfRangeException.ThrowIf((partitionerOptions & (~EnumerablePartitionerOptions.NoBuffering)) != 0);
 
             return (new DynamicPartitionerForIEnumerable<TSource>(source, partitionerOptions));
         }

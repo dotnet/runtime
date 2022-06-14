@@ -265,10 +265,7 @@ namespace System.Globalization
 
         internal override int GetGregorianYear(int year, int era)
         {
-            if (era != CurrentEra && era != ChineseEra)
-            {
-                throw new ArgumentOutOfRangeException(nameof(era), era, SR.ArgumentOutOfRange_InvalidEraValue);
-            }
+            ArgumentOutOfRangeException.ThrowIf(era != CurrentEra && era != ChineseEra);
             ArgumentOutOfRangeException.ThrowIfNotBetween(year, MinLunisolarYear, MaxLunisolarYear);
 
             return year;

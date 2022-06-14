@@ -74,10 +74,7 @@ namespace System.IO.Packaging
 
         private static void CheckIdRange(PackageXmlEnum id)
         {
-            if ((id <= PackageXmlEnum.NotDefined) || (id >= (PackageXmlEnum.LastPrinted | PackageXmlEnum.XmlSchemaInstanceNamespace)))
-            {
-                throw new ArgumentOutOfRangeException(nameof(id));
-            }
+            ArgumentOutOfRangeException.ThrowIf((id <= PackageXmlEnum.NotDefined) || (id >= (PackageXmlEnum.LastPrinted | PackageXmlEnum.XmlSchemaInstanceNamespace)));
         }
 
         internal static PackageXmlEnum GetEnumOf(object xmlString)

@@ -1034,10 +1034,7 @@ namespace System
 
         public static string ConvertFromUtf32(int utf32)
         {
-            if (!UnicodeUtility.IsValidUnicodeScalar((uint)utf32))
-            {
-                throw new ArgumentOutOfRangeException(nameof(utf32), SR.ArgumentOutOfRange_InvalidUTF32);
-            }
+            ArgumentOutOfRangeException.ThrowIf(!UnicodeUtility.IsValidUnicodeScalar((uint)utf32));
 
             return Rune.UnsafeCreate((uint)utf32).ToString();
         }
@@ -1099,10 +1096,7 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
 
-            if (index < 0 || index >= s.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLess);
-            }
+            ArgumentOutOfRangeException.ThrowIf(index < 0 || index >= s.Length);
             // Check if the character at index is a high surrogate.
             int temp1 = (int)s[index] - CharUnicodeInfo.HIGH_SURROGATE_START;
             if (temp1 >= 0 && temp1 <= 0x7ff)

@@ -293,8 +293,7 @@ namespace System.IO.Ports
             }
             set
             {
-                if (value < Handshake.None || value > Handshake.RequestToSendXOnXOff)
-                    throw new ArgumentOutOfRangeException(nameof(Handshake), SR.ArgumentOutOfRange_Enum);
+                ArgumentOutOfRangeException.ThrowIfNotBetween(value, Handshake.None, Handshake.RequestToSendXOnXOff);
 
                 if (IsOpen)
                     _internalSerialStream.Handshake = value;
@@ -397,8 +396,7 @@ namespace System.IO.Ports
             }
             set
             {
-                if (value < 0 && value != InfiniteTimeout)
-                    throw new ArgumentOutOfRangeException(nameof(ReadTimeout), SR.ArgumentOutOfRange_Timeout);
+                ArgumentOutOfRangeException.ThrowIf(value < 0 && value != InfiniteTimeout);
 
                 if (IsOpen)
                     _internalSerialStream.ReadTimeout = value;
@@ -493,8 +491,7 @@ namespace System.IO.Ports
             }
             set
             {
-                if (value <= 0 && value != InfiniteTimeout)
-                    throw new ArgumentOutOfRangeException(nameof(WriteTimeout), SR.ArgumentOutOfRange_WriteTimeout);
+                ArgumentOutOfRangeException.ThrowIf(value <= 0 && value != InfiniteTimeout);
 
                 if (IsOpen)
                     _internalSerialStream.WriteTimeout = value;

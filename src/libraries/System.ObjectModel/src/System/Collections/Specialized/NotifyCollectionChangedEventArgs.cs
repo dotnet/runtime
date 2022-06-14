@@ -337,10 +337,7 @@ namespace System.Collections.Specialized
         {
             get
             {
-                if (index != 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(index));
-                }
+                ArgumentOutOfRangeException.ThrowIf(index != 0);
 
                 return _item;
             }

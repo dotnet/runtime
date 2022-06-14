@@ -1320,10 +1320,7 @@ namespace System
 
         public static unsafe double Round(double value, int digits, MidpointRounding mode)
         {
-            if ((digits < 0) || (digits > maxRoundingDigits))
-            {
-                throw new ArgumentOutOfRangeException(nameof(digits), SR.ArgumentOutOfRange_RoundingDigits);
-            }
+            ArgumentOutOfRangeException.ThrowIf((digits < 0) || (digits > maxRoundingDigits));
 
             if (mode < MidpointRounding.ToEven || mode > MidpointRounding.ToPositiveInfinity)
             {

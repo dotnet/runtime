@@ -290,10 +290,7 @@ namespace System.Xml
 
         public override string GetAttribute(int i)
         {
-            if (!InAttributeActiveState)
-            {
-                throw new ArgumentOutOfRangeException(nameof(i));
-            }
+            ArgumentOutOfRangeException.ThrowIf(!InAttributeActiveState);
             int n = reader.AttributeCount;
             if (i < n)
             {
@@ -359,10 +356,7 @@ namespace System.Xml
 
         public override void MoveToAttribute(int i)
         {
-            if (!InAttributeActiveState)
-            {
-                throw new ArgumentOutOfRangeException(nameof(i));
-            }
+            ArgumentOutOfRangeException.ThrowIf(!InAttributeActiveState);
             int n = reader.AttributeCount;
             if (i < n)
             {

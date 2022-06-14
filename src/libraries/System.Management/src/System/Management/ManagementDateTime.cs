@@ -120,18 +120,12 @@ namespace System.Management
 
             // If the string passed is empty or null then throw
             // an exception
-            if (dmtf == null)
-            {
-                throw new ArgumentOutOfRangeException(nameof(dmtfDate));
-            }
+            ArgumentOutOfRangeException.ThrowIf(dmtf == null);
             ArgumentOutOfRangeException.ThrowIfZero(dmtf.Length);
 
             // if the length of the string is not equal to the
             // standard length of the DMTF datetime then throw an exception
-            if (dmtf.Length != SIZEOFDMTFDATETIME)
-            {
-                throw new ArgumentOutOfRangeException(nameof(dmtfDate));
-            }
+            ArgumentOutOfRangeException.ThrowIf(dmtf.Length != SIZEOFDMTFDATETIME);
 
             IFormatProvider frmInt32 = (IFormatProvider)CultureInfo.InvariantCulture.GetFormat(typeof(int));
             long ticks = 0;
@@ -180,10 +174,7 @@ namespace System.Management
                     utcOffset = int.Parse(tempString, frmInt32);
                 }
 
-                if (year < 0 || month < 0 || day < 0 || hour < 0 || minute < 0 || second < 0 || ticks < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(dmtfDate));
-                }
+                ArgumentOutOfRangeException.ThrowIf(year < 0 || month < 0 || day < 0 || hour < 0 || minute < 0 || second < 0 || ticks < 0);
             }
             catch
             {

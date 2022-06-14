@@ -690,8 +690,7 @@ namespace System.Xml
             }
             else
             {
-                if (i < 0 || i >= _attrCount)
-                    throw new ArgumentOutOfRangeException(nameof(i));
+                ArgumentOutOfRangeException.ThrowIf(i < 0 || i >= _attrCount);
                 return GetAttributeText(i);
             }
         }
@@ -747,10 +746,7 @@ namespace System.Xml
             }
             else
             {
-                if (i < 0 || i >= _attrCount)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(i));
-                }
+                ArgumentOutOfRangeException.ThrowIf(i < 0 || i >= _attrCount);
                 PositionOnAttribute(i + 1);
             }
         }

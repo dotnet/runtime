@@ -26,14 +26,8 @@ namespace System.Net.Http
         {
             ArgumentNullException.ThrowIfNull(content);
 
-            if ((offset < 0) || (offset > content.Length))
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
-            if ((count < 0) || (count > (content.Length - offset)))
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
+            ArgumentOutOfRangeException.ThrowIf((offset < 0) || (offset > content.Length));
+            ArgumentOutOfRangeException.ThrowIf((count < 0) || (count > (content.Length - offset)));
 
             _content = content;
             _offset = offset;

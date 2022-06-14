@@ -204,8 +204,7 @@ namespace System.Management
             if (null == array)
                 throw new ArgumentNullException(nameof(array));
 
-            if ((index < array.GetLowerBound(0)) || (index > array.GetUpperBound(0)))
-                throw new ArgumentOutOfRangeException(nameof(index));
+            ArgumentOutOfRangeException.ThrowIf((index < array.GetLowerBound(0)) || (index > array.GetUpperBound(0)));
 
             // Since we don't know the size until we've enumerated
             // we'll have to dump the objects in a list first then

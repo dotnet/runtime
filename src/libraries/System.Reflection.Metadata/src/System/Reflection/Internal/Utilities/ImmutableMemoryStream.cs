@@ -51,10 +51,7 @@ namespace System.Reflection.Internal
             }
             set
             {
-                if (value < 0 || value >= _array.Length)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIf(value < 0 || value >= _array.Length);
 
                 _position = (int)value;
             }
@@ -102,10 +99,7 @@ namespace System.Reflection.Internal
                 throw new ArgumentOutOfRangeException(nameof(offset));
             }
 
-            if (target < 0 || target >= _array.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
+            ArgumentOutOfRangeException.ThrowIf(target < 0 || target >= _array.Length);
 
             _position = (int)target;
             return target;

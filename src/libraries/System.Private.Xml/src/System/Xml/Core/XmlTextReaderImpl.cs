@@ -1067,10 +1067,7 @@ namespace System.Xml
         // Returns value of an attribute at the specified index (position)
         public override string GetAttribute(int i)
         {
-            if (i < 0 || i >= _attrCount)
-            {
-                throw new ArgumentOutOfRangeException(nameof(i));
-            }
+            ArgumentOutOfRangeException.ThrowIf(i < 0 || i >= _attrCount);
 
             return _nodes[_index + i + 1].StringValue;
         }
@@ -1131,10 +1128,7 @@ namespace System.Xml
         // Moves to an attribute at the specified index (position)
         public override void MoveToAttribute(int i)
         {
-            if (i < 0 || i >= _attrCount)
-            {
-                throw new ArgumentOutOfRangeException(nameof(i));
-            }
+            ArgumentOutOfRangeException.ThrowIf(i < 0 || i >= _attrCount);
 
             if (InAttributeValueIterator)
             {

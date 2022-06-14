@@ -72,8 +72,7 @@ namespace System.Security.Cryptography
             ArgumentOutOfRangeException.ThrowIfNegative(inputOffset);
             ArgumentOutOfRangeException.ThrowIfGreaterThan(inputOffset, inputBuffer.Length);
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(inputCount);
-            if (inputCount % InputBlockSize != 0)
-                throw new ArgumentOutOfRangeException(nameof(inputCount), SR.Cryptography_MustTransformWholeBlock);
+            ArgumentOutOfRangeException.ThrowIf(inputCount % InputBlockSize != 0);
             ArgumentOutOfRangeException.ThrowIfGreaterThan(inputCount, inputBuffer.Length - inputOffset);
 
             ArgumentNullException.ThrowIfNull(outputBuffer);

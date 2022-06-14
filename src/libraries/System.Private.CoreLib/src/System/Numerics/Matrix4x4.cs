@@ -917,8 +917,7 @@ namespace System.Numerics
         /// <paramref name="nearPlaneDistance" /> is greater than or equal to <paramref name="farPlaneDistance" />.</exception>
         public static Matrix4x4 CreatePerspectiveFieldOfView(float fieldOfView, float aspectRatio, float nearPlaneDistance, float farPlaneDistance)
         {
-            if (fieldOfView <= 0.0f || fieldOfView >= MathF.PI)
-                throw new ArgumentOutOfRangeException(nameof(fieldOfView));
+            ArgumentOutOfRangeException.ThrowIf(fieldOfView <= 0.0f || fieldOfView >= MathF.PI);
 
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(nearPlaneDistance);
 

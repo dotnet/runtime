@@ -669,8 +669,7 @@ namespace System
             ArgumentOutOfRangeException.ThrowIfNotBetween(sourceLeft, 0, bufferSize.X);
             ArgumentOutOfRangeException.ThrowIfNotBetween(sourceTop, 0, bufferSize.Y);
             ArgumentOutOfRangeException.ThrowIfNotBetween(sourceWidth, 0, bufferSize.X - sourceLeft);
-            if (sourceHeight < 0 || sourceTop > bufferSize.Y - sourceHeight)
-                throw new ArgumentOutOfRangeException(nameof(sourceHeight), sourceHeight, SR.ArgumentOutOfRange_ConsoleBufferBoundaries);
+            ArgumentOutOfRangeException.ThrowIf(sourceHeight < 0 || sourceTop > bufferSize.Y - sourceHeight);
 
             // Note: if the target range is partially in and partially out
             // of the buffer, then we let the OS clip it for us.
@@ -821,10 +820,8 @@ namespace System
             // Ensure the new size is not smaller than the console window
             Interop.Kernel32.CONSOLE_SCREEN_BUFFER_INFO csbi = GetBufferInfo();
             Interop.Kernel32.SMALL_RECT srWindow = csbi.srWindow;
-            if (width < srWindow.Right + 1 || width >= short.MaxValue)
-                throw new ArgumentOutOfRangeException(nameof(width), width, SR.ArgumentOutOfRange_ConsoleBufferLessThanWindowSize);
-            if (height < srWindow.Bottom + 1 || height >= short.MaxValue)
-                throw new ArgumentOutOfRangeException(nameof(height), height, SR.ArgumentOutOfRange_ConsoleBufferLessThanWindowSize);
+            ArgumentOutOfRangeException.ThrowIf(width < srWindow.Right + 1 || width >= short.MaxValue);
+            ArgumentOutOfRangeException.ThrowIf(height < srWindow.Bottom + 1 || height >= short.MaxValue);
 
             Interop.Kernel32.COORD size = default;
             size.X = (short)width;
@@ -919,11 +916,9 @@ namespace System
 
             // Check for arithmetic underflows & overflows.
             int newRight = left + srWindow.Right - srWindow.Left;
-            if (left < 0 || newRight > csbi.dwSize.X - 1 || newRight < left)
-                throw new ArgumentOutOfRangeException(nameof(left), left, SR.ArgumentOutOfRange_ConsoleWindowPos);
+            ArgumentOutOfRangeException.ThrowIf(left < 0 || newRight > csbi.dwSize.X - 1 || newRight < left);
             int newBottom = top + srWindow.Bottom - srWindow.Top;
-            if (top < 0 || newBottom > csbi.dwSize.Y - 1 || newBottom < top)
-                throw new ArgumentOutOfRangeException(nameof(top), top, SR.ArgumentOutOfRange_ConsoleWindowPos);
+            ArgumentOutOfRangeException.ThrowIf(top < 0 || newBottom > csbi.dwSize.Y - 1 || newBottom < top);
 
             // Preserve the size, but move the position.
             srWindow.Bottom = (short)newBottom;

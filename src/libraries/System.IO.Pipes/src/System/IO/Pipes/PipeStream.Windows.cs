@@ -233,10 +233,7 @@ namespace System.IO.Pipes
         internal static string GetPipePath(string serverName, string pipeName)
         {
             string normalizedPipePath = Path.GetFullPath(@"\\" + serverName + @"\pipe\" + pipeName);
-            if (string.Equals(normalizedPipePath, @"\\.\pipe\" + AnonymousPipeName, StringComparison.OrdinalIgnoreCase))
-            {
-                throw new ArgumentOutOfRangeException(nameof(pipeName), SR.ArgumentOutOfRange_AnonymousReserved);
-            }
+            ArgumentOutOfRangeException.ThrowIf(string.Equals(normalizedPipePath, @"\\.\pipe\" + AnonymousPipeName, StringComparison.OrdinalIgnoreCase));
             return normalizedPipePath;
         }
 

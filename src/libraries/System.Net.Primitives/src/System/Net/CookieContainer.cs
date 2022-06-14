@@ -122,10 +122,7 @@ namespace System.Net
 
         public CookieContainer(int capacity, int perDomainCapacity, int maxCookieSize) : this(capacity)
         {
-            if (perDomainCapacity != int.MaxValue && (perDomainCapacity <= 0 || perDomainCapacity > capacity))
-            {
-                throw new ArgumentOutOfRangeException(nameof(perDomainCapacity), SR.Format(SR.net_cookie_capacity_range, "PerDomainCapacity", 0, capacity));
-            }
+            ArgumentOutOfRangeException.ThrowIf(perDomainCapacity != int.MaxValue && (perDomainCapacity <= 0 || perDomainCapacity > capacity));
             m_maxCookiesPerDomain = perDomainCapacity;
             if (maxCookieSize <= 0)
             {
@@ -151,10 +148,7 @@ namespace System.Net
             }
             set
             {
-                if (value <= 0 || (value < m_maxCookiesPerDomain && m_maxCookiesPerDomain != int.MaxValue))
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.Format(SR.net_cookie_capacity_range, "Capacity", 0, m_maxCookiesPerDomain));
-                }
+                ArgumentOutOfRangeException.ThrowIf(value <= 0 || (value < m_maxCookiesPerDomain && m_maxCookiesPerDomain != int.MaxValue));
                 if (value < m_maxCookies)
                 {
                     m_maxCookies = value;
@@ -199,10 +193,7 @@ namespace System.Net
             }
             set
             {
-                if (value <= 0 || (value > m_maxCookies && value != int.MaxValue))
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIf(value <= 0 || (value > m_maxCookies && value != int.MaxValue));
                 if (value < m_maxCookiesPerDomain)
                 {
                     m_maxCookiesPerDomain = value;

@@ -190,10 +190,7 @@ namespace System.ServiceModel.Syndication
             get => InternalTimeToLive ?? (InternalTimeToLive = TryReadTimeToLiveFromExtension(ElementExtensions));
             set
             {
-                if (value.HasValue && (value.Value.Milliseconds != 0 || value.Value.Seconds != 0 || value.Value.TotalMinutes < 0))
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), value.Value, SR.InvalidTimeToLiveValue);
-                }
+                ArgumentOutOfRangeException.ThrowIf(value.HasValue && (value.Value.Milliseconds != 0 || value.Value.Seconds != 0 || value.Value.TotalMinutes < 0));
 
                 InternalTimeToLive = value;
             }

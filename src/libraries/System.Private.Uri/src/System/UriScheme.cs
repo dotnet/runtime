@@ -134,11 +134,9 @@ namespace System
         //
         protected virtual string GetComponents(Uri uri, UriComponents components, UriFormat format)
         {
-            if (((components & UriComponents.SerializationInfoString) != 0) && components != UriComponents.SerializationInfoString)
-                throw new ArgumentOutOfRangeException(nameof(components), components, SR.net_uri_NotJustSerialization);
+            ArgumentOutOfRangeException.ThrowIf(((components & UriComponents.SerializationInfoString) != 0) && components != UriComponents.SerializationInfoString);
 
-            if ((format & ~UriFormat.SafeUnescaped) != 0)
-                throw new ArgumentOutOfRangeException(nameof(format));
+            ArgumentOutOfRangeException.ThrowIf((format & ~UriFormat.SafeUnescaped) != 0);
 
             if (uri.UserDrivenParsing)
                 throw new InvalidOperationException(SR.Format(SR.net_uri_UserDrivenParsing, this.GetType()));
@@ -168,14 +166,11 @@ namespace System
             ArgumentNullException.ThrowIfNull(uriParser);
             ArgumentNullException.ThrowIfNull(schemeName);
 
-            if (schemeName.Length == 1)
-                throw new ArgumentOutOfRangeException(nameof(schemeName));
+            ArgumentOutOfRangeException.ThrowIf(schemeName.Length == 1);
 
-            if (!Uri.CheckSchemeName(schemeName))
-                throw new ArgumentOutOfRangeException(nameof(schemeName));
+            ArgumentOutOfRangeException.ThrowIf(!Uri.CheckSchemeName(schemeName));
 
-            if ((defaultPort > 0xFFFF || defaultPort < 0) && defaultPort != -1)
-                throw new ArgumentOutOfRangeException(nameof(defaultPort));
+            ArgumentOutOfRangeException.ThrowIf((defaultPort > 0xFFFF || defaultPort < 0) && defaultPort != -1);
 
             schemeName = schemeName.ToLowerInvariant();
             FetchSyntax(uriParser, schemeName, defaultPort);
@@ -188,8 +183,7 @@ namespace System
         {
             ArgumentNullException.ThrowIfNull(schemeName);
 
-            if (!Uri.CheckSchemeName(schemeName))
-                throw new ArgumentOutOfRangeException(nameof(schemeName));
+            ArgumentOutOfRangeException.ThrowIf(!Uri.CheckSchemeName(schemeName));
 
             UriParser? syntax = UriParser.GetSyntax(schemeName.ToLowerInvariant());
             return syntax != null && syntax.NotAny(UriSyntaxFlags.V1_UnknownUri);

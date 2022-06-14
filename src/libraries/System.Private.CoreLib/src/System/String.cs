@@ -147,8 +147,7 @@ namespace System
             if (length == 0)
                 return Empty;
 
-            if (ptr == null)
-                throw new ArgumentOutOfRangeException(nameof(ptr), SR.ArgumentOutOfRange_PartialWCHAR);
+            ArgumentOutOfRangeException.ThrowIf(ptr == null);
 
             string result = FastAllocateString(length);
 
@@ -446,8 +445,7 @@ namespace System
         public char[] ToCharArray(int startIndex, int length)
         {
             // Range check everything.
-            if (startIndex < 0 || startIndex > Length || startIndex > Length - length)
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
+            ArgumentOutOfRangeException.ThrowIf(startIndex < 0 || startIndex > Length || startIndex > Length - length);
 
             if (length <= 0)
             {

@@ -158,10 +158,7 @@ namespace System.Diagnostics
             get { return _traceOptions; }
             set
             {
-                if (((int)value >> 6) != 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIf(((int)value >> 6) != 0);
 
                 _traceOptions = value;
             }

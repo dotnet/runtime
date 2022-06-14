@@ -33,10 +33,7 @@ namespace System.Net.Http.Headers
                 // using Parameters.Add() they could always add invalid values using HttpHeaders.AddWithoutValidation().
                 // So this check is really for convenience to show users that they're trying to add an invalid
                 // value.
-                if ((value < 0) || (value > 1))
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIf((value < 0) || (value > 1));
 
                 string qualityString = ((double)value).ToString("0.0##", NumberFormatInfo.InvariantInfo);
                 if (qualityParameter != null)
