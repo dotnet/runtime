@@ -8000,10 +8000,6 @@ private:
     void unwindReserveFuncHelper(FuncInfoDsc* func, bool isHotCode);
     void unwindEmitFuncHelper(FuncInfoDsc* func, void* pHotCode, void* pColdCode, bool isHotCode);
 
-#ifdef DEBUG
-    void fakeUnwindEmitFuncHelper(FuncInfoDsc* func, void* pHotCode);
-#endif // DEBUG
-
 #endif // TARGET_AMD64 || (TARGET_X86 && FEATURE_EH_FUNCLETS)
 
     UNATIVE_OFFSET unwindGetCurrentOffset(FuncInfoDsc* func);
