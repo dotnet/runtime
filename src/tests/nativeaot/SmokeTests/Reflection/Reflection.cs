@@ -30,6 +30,7 @@ internal static class ReflectionTest
         TestSimpleDelegateTargets.Run();
         TestVirtualDelegateTargets.Run();
         TestRunClassConstructor.Run();
+        TestFieldMetadata.Run();
 #if !OPTIMIZED_MODE_WITHOUT_SCANNER
         TestContainment.Run();
         TestInterfaceMethod.Run();
@@ -1756,6 +1757,104 @@ internal static class ReflectionTest
         }
     }
 
+    class TestFieldMetadata
+    {
+        class ClassWithTwoFields
+        {
+            public static int UsedField;
+            public static UnusedClass UnusedField;
+        }
+
+        class UnusedClass { }
+
+        interface IMessWithYou { }
+        class GenericTypeWithUnsatisfiableConstrains<T> where T : struct, IMessWithYou
+        {
+            public static int SomeField;
+        }
+
+        class GenericClass<T>
+        {
+            public static string SomeField;
+        }
+
+        struct Atom1 { }
+        struct Atom2 { }
+        struct Atom3 { }
+
+        public static void Run()
+        {
+            ClassWithTwoFields.UsedField = 123;
+
+#if REFLECTION_FROM_USAGE
+            // Merely accessing a field should trigger full reflectability of it when reflection from
+            // usage is active.
+            Type classWithTwoFields = GetTestType(nameof(TestFieldMetadata), nameof(ClassWithTwoFields));
+            if ((int)classWithTwoFields.GetField(nameof(ClassWithTwoFields.UsedField)).GetValue(null) != 123)
+            {
+                throw new Exception();
+            }
+
+            // But the unused field should not exist
+            if (classWithTwoFields.GetField(nameof(ClassWithTwoFields.UnusedField)) != null)
+            {
+                throw new Exception();
+            }
+#else
+            // If reflection from usage is not active, we shouldn't even see the owning type, despite the field use
+            if (SecretGetType(nameof(TestFieldMetadata), nameof(ClassWithTwoFields)) != null)
+            {
+                throw new Exception();
+            }
+#endif
+            // The type of the unused field shouldn't be generated under any circumstances
+            if (SecretGetType(nameof(TestFieldMetadata), nameof(UnusedClass)) != null)
+            {
+                throw new Exception();
+            }
+
+            // The compiler cannot fulfil this instantiation without universal shared code.
+            // We should get a working metadata-only type that can be inspected.
+            if (typeof(GenericTypeWithUnsatisfiableConstrains<>).GetField("SomeField").Name != "SomeField")
+            {
+                throw new Exception();
+            }
+
+            // Access a field on a generic type in an obvious way
+            if (typeof(GenericClass<Atom1>).GetField(nameof(GenericClass<Atom1>.SomeField)).Name != "SomeField")
+            {
+                throw new Exception();
+            }
+
+            // We should be able to reflection-see the field on other reflection visible generic instances
+            // of the same generic type definition.
+            GetGenericClassOfAtom2().GetField("SomeField").SetValue(null, "Cookie");
+            static Type GetGenericClassOfAtom2() => typeof(GenericClass<Atom2>);
+
+            GenericClass<Atom3>.SomeField = "1234";
+#if REFLECTION_FROM_USAGE
+            // If we're doing reflection from usage, we used the field and we expect it to be reflectable
+            typeof(GenericClass<>).MakeGenericType(GetAtom3()).GetField("SomeField").SetValue(null, "Cookie");
+#else
+            // If we're not doing reflection from usage, the generic instance shouldn't even exist.
+            // We only touched the static base of the type, not the whole type.
+            bool exists = false;
+            try
+            {
+                typeof(GenericClass<>).MakeGenericType(GetAtom3());
+                exists = true;
+            }
+            catch
+            {
+                exists = false;
+            }
+            if (exists)
+                throw new Exception();
+#endif
+            static Type GetAtom3() => typeof(Atom3);
+        }
+    }
+
     class TestRunClassConstructor
     {
         static class TypeWithNoStaticFieldsButACCtor
@@ -1778,12 +1877,17 @@ internal static class ReflectionTest
 
     #region Helpers
 
-    private static Type GetTestType(string testName, string typeName)
+    private static Type SecretGetType(string testName, string typeName)
     {
         string fullTypeName = $"{nameof(ReflectionTest)}+{testName}+{typeName}";
-        Type result = Type.GetType(fullTypeName);
+        return Type.GetType(fullTypeName);
+    }
+
+    private static Type GetTestType(string testName, string typeName)
+    {
+        Type result = SecretGetType(testName, typeName);
         if (result == null)
-            throw new Exception($"'{fullTypeName}' could not be located");
+            throw new Exception($"'{testName}.{typeName}' could not be located");
         return result;
     }
 

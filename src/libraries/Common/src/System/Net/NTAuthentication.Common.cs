@@ -164,6 +164,11 @@ namespace System.Net
 
         internal string? GetOutgoingBlob(string? incomingBlob)
         {
+            return GetOutgoingBlob(incomingBlob, throwOnError: true, out _);
+        }
+
+        internal string? GetOutgoingBlob(string? incomingBlob, bool throwOnError, out SecurityStatusPal statusCode)
+        {
             byte[]? decodedIncomingBlob = null;
             if (incomingBlob != null && incomingBlob.Length > 0)
             {
@@ -176,10 +181,11 @@ namespace System.Net
                 // we tried auth previously, now we got a null blob, we're done. this happens
                 // with Kerberos & valid credentials on the domain but no ACLs on the resource
                 _isCompleted = true;
+                statusCode = new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
             }
             else
             {
-                decodedOutgoingBlob = GetOutgoingBlob(decodedIncomingBlob, true);
+                decodedOutgoingBlob = GetOutgoingBlob(decodedIncomingBlob, throwOnError, out statusCode);
             }
 
             string? outgoingBlob = null;

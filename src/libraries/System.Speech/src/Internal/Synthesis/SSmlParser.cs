@@ -1197,7 +1197,7 @@ namespace System.Speech.Internal.Synthesis
             }
 
             // Try to change the voice
-            culture = culture == null ? new CultureInfo(ssmlAttributes._fragmentState.LangId) : culture;
+            culture ??= new CultureInfo(ssmlAttributes._fragmentState.LangId);
             bool fNewCulture = culture.LCID != ssmlAttributes._fragmentState.LangId;
             ssmlAttributes._voice = engine.ProcessVoice(sName, culture, ssmlAttributes._gender, ssmlAttributes._age, variant, fNewCulture, localUnknownNamespaces);
             ssmlAttributes._fragmentState.LangId = culture.LCID;

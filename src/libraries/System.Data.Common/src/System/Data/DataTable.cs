@@ -183,7 +183,7 @@ namespace System.Data
         /// </summary>
         public DataTable(string? tableName) : this()
         {
-            _tableName = tableName == null ? "" : tableName;
+            _tableName = tableName ?? "";
         }
 
         public DataTable(string? tableName, string? tableNamespace) : this(tableName)
@@ -1904,7 +1904,7 @@ namespace System.Data
                     {
                         if (_dataSet != null)
                         {
-                            string realNamespace = (value == null ? GetInheritedNamespace(new List<DataTable>()) : value);
+                            string realNamespace = value ?? GetInheritedNamespace(new List<DataTable>());
                             if (realNamespace != Namespace)
                             {
                                 // do this extra check only if the namespace is really going to change

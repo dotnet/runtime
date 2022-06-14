@@ -15,6 +15,7 @@ list(APPEND SOURCES
     ${CMAKE_CURRENT_LIST_DIR}/fx_resolver.messages.cpp
     ${CMAKE_CURRENT_LIST_DIR}/framework_info.cpp
     ${CMAKE_CURRENT_LIST_DIR}/host_context.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/install_info.cpp
     ${CMAKE_CURRENT_LIST_DIR}/sdk_info.cpp
     ${CMAKE_CURRENT_LIST_DIR}/sdk_resolver.cpp
 )
@@ -31,6 +32,7 @@ list(APPEND HEADERS
     ${CMAKE_CURRENT_LIST_DIR}/fx_resolver.h
     ${CMAKE_CURRENT_LIST_DIR}/framework_info.h
     ${CMAKE_CURRENT_LIST_DIR}/host_context.h
+    ${CMAKE_CURRENT_LIST_DIR}/install_info.h
     ${CMAKE_CURRENT_LIST_DIR}/sdk_info.h
     ${CMAKE_CURRENT_LIST_DIR}/sdk_resolver.h
 )

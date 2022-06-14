@@ -112,6 +112,238 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             public IConfigurationSection DerivedSection { get; set; }
         }
 
+        public record struct RecordStructTypeOptions(string Color, int Length);
+
+        // Here, the constructor has three parameters, but not all of those match
+        // match to a property or field
+        public class ClassWhereParametersDoNotMatchProperties
+        {
+            public string Name { get; }
+            public string Address { get; }
+
+            public ClassWhereParametersDoNotMatchProperties(string name, string address, int age)
+            {
+                Name = name;
+                Address = address;
+            }
+        }
+
+        // Here, the constructor has three parameters, and two of them match properties
+        // and one of them match a field.
+        public class ClassWhereParametersMatchPropertiesAndFields
+        {
+            private int Age;
+
+            public string Name { get; }
+            public string Address { get; }
+
+            public ClassWhereParametersMatchPropertiesAndFields(string name, string address, int age)
+            {
+                Name = name;
+                Address = address;
+                Age = age;
+            }
+
+            public int GetAge() => Age;
+        }
+
+        public record RecordWhereParametersHaveDefaultValue(string Name, string Address, int Age = 42);
+
+        public record ClassWhereParametersHaveDefaultValue
+        {
+            public string? Name { get; }
+            public string Address { get; }
+            public int Age { get; }
+
+            public ClassWhereParametersHaveDefaultValue(string? name, string address, int age = 42)
+            {
+                Name = name;
+                Address = address;
+                Age = age;
+            }
+        }
+        
+
+        public record RecordTypeOptions(string Color, int Length);
+
+        public record Line(string Color, int Length, int Thickness);
+
+        public class ClassWithMatchingParametersAndProperties
+        {
+            private readonly string _color;
+
+            public ClassWithMatchingParametersAndProperties(string Color, int Length)
+            {
+                _color = Color;
+                this.Length = Length;
+            }
+
+            public int Length { get; set; }
+
+            public string Color
+            {
+                get => _color;
+                init => _color = "the color is " + value;
+            }
+        }
+
+        public readonly record struct ReadonlyRecordStructTypeOptions(string Color, int Length);
+
+        public class ContainerWithNestedImmutableObject
+        {
+            public string ContainerName { get; set; }
+            public ImmutableLengthAndColorClass LengthAndColor { get; set; }
+        }
+
+        public struct MutableStructWithConstructor
+        {
+            public MutableStructWithConstructor(string randomParameter)
+            {
+                Color = randomParameter;
+                Length = randomParameter.Length;
+            }
+
+            public string Color { get; set; }
+            public int Length { get; set;  }
+        }
+        
+        public class ImmutableLengthAndColorClass
+        {
+            public ImmutableLengthAndColorClass(string color, int length)
+            {
+                Color = color;
+                Length = length;
+            }
+
+            public string Color { get; }
+            public int Length { get; }
+        }
+
+        public class ImmutableClassWithOneParameterizedConstructor
+        {
+            public ImmutableClassWithOneParameterizedConstructor(string string1, int int1, string string2, int int2)
+            {
+                String1 = string1;
+                Int1 = int1;
+                String2 = string2;
+                Int2 = int2;
+            }
+
+            public string String1 { get; }
+            public string String2 { get; }
+            public int Int1 { get; }
+            public int Int2 { get; }
+        }
+
+        public class ImmutableClassWithOneParameterizedConstructorButWithInParameter
+        {
+            public ImmutableClassWithOneParameterizedConstructorButWithInParameter(in string string1, int int1, string string2, int int2)
+            {
+                String1 = string1;
+                Int1 = int1;
+                String2 = string2;
+                Int2 = int2;
+            }
+
+            public string String1 { get; }
+            public string String2 { get; }
+            public int Int1 { get; }
+            public int Int2 { get; }
+        }
+
+        public class ImmutableClassWithOneParameterizedConstructorButWithRefParameter
+        {
+            public ImmutableClassWithOneParameterizedConstructorButWithRefParameter(string string1, ref int int1, string string2, int int2)
+            {
+                String1 = string1;
+                Int1 = int1;
+                String2 = string2;
+                Int2 = int2;
+            }
+
+            public string String1 { get; }
+            public string String2 { get; }
+            public int Int1 { get; }
+            public int Int2 { get; }
+        }
+
+        public class ImmutableClassWithOneParameterizedConstructorButWithOutParameter
+        {
+            public ImmutableClassWithOneParameterizedConstructorButWithOutParameter(string string1, int int1,
+                string string2, out decimal int2)
+            {
+                String1 = string1;
+                Int1 = int1;
+                String2 = string2;
+                int2 = 0;
+            }
+
+            public string String1 { get; }
+            public string String2 { get; }
+            public int Int1 { get; }
+            public int Int2 { get; }
+        }
+
+        public class ImmutableClassWithMultipleParameterizedConstructors
+        {
+            public ImmutableClassWithMultipleParameterizedConstructors(string string1, int int1)
+            {
+                String1 = string1;
+                Int1 = int1;
+            }
+
+            public ImmutableClassWithMultipleParameterizedConstructors(string string1, int int1, string string2)
+            {
+                String1 = string1;
+                Int1 = int1;
+                String2 = string2;
+            }
+
+            public ImmutableClassWithMultipleParameterizedConstructors(string string1, int int1, string string2, int int2)
+            {
+                String1 = string1;
+                Int1 = int1;
+                String2 = string2;
+                Int2 = int2;
+            }
+
+            public ImmutableClassWithMultipleParameterizedConstructors(string string1)
+            {
+                String1 = string1;
+            }
+
+            public string String1 { get; }
+            public string String2 { get; }
+            public int Int1 { get; }
+            public int Int2 { get; }
+        }
+
+        public class SemiImmutableClass
+        {
+            public SemiImmutableClass(string color, int length)
+            {
+                Color = color;
+                Length = length;
+            }
+
+            public string Color { get; }
+            public int Length { get; }
+            public decimal Thickness { get; set; }
+        }
+
+        public class SemiImmutableClassWithInit
+        {
+            public SemiImmutableClassWithInit(string color, int length)
+            {
+                Color = color;
+                Length = length;
+            }
+
+            public string Color { get; }
+            public int Length { get; }
+            public decimal Thickness { get; init; }
+        }
+
         public struct ValueTypeOptions
         {
             public int MyInt32 { get; set; }
@@ -934,8 +1166,134 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             var exception = Assert.Throws<InvalidOperationException>(
                 () => config.Bind(new TestOptions()));
             Assert.Equal(
-                SR.Format(SR.Error_MissingParameterlessConstructor, typeof(ClassWithoutPublicConstructor)),
+                SR.Format(SR.Error_MissingPublicInstanceConstructor, typeof(ClassWithoutPublicConstructor)),
                 exception.Message);
+        }
+
+        [Fact]
+        public void ExceptionWhenTryingToBindClassWherePropertiesDoMatchConstructorParameters()
+        {
+            var input = new Dictionary<string, string>
+            {
+                {"ClassWhereParametersDoNotMatchPropertiesProperty:Name", "John"},
+                {"ClassWhereParametersDoNotMatchPropertiesProperty:Address", "123, Abc St."},
+                {"ClassWhereParametersDoNotMatchPropertiesProperty:Age", "42"}
+            };
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(input);
+            var config = configurationBuilder.Build();
+
+            var exception = Assert.Throws<InvalidOperationException>(
+                () => config.Bind(new TestOptions()));
+            Assert.Equal(
+                SR.Format(SR.Error_ConstructorParametersDoNotMatchProperties, typeof(ClassWhereParametersDoNotMatchProperties), "age"),
+                exception.Message);
+        }
+
+        [Fact]
+        public void ExceptionWhenTryingToBindToConstructorWithMissingConfig()
+        {
+            var input = new Dictionary<string, string>
+            {
+                {"LineProperty:Color", "Red"},
+                {"LineProperty:Length", "22"}
+            };
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(input);
+            var config = configurationBuilder.Build();
+
+            var exception = Assert.Throws<InvalidOperationException>(
+                () => config.Bind(new TestOptions()));
+            Assert.Equal(
+                SR.Format(SR.Error_ParameterHasNoMatchingConfig, typeof(Line), nameof(Line.Thickness)),
+                exception.Message);
+        }
+
+        [Fact]
+        public void ExceptionWhenTryingToBindConfigToClassWhereNoMatchingParameterIsFoundInConstructor()
+        {
+            var input = new Dictionary<string, string>
+            {
+                {"ClassWhereParametersDoNotMatchPropertiesProperty:Name", "John"},
+                {"ClassWhereParametersDoNotMatchPropertiesProperty:Address", "123, Abc St."},
+                {"ClassWhereParametersDoNotMatchPropertiesProperty:Age", "42"}
+            };
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(input);
+            var config = configurationBuilder.Build();
+
+            var exception = Assert.Throws<InvalidOperationException>(
+                () => config.Bind(new TestOptions()));
+            Assert.Equal(
+                SR.Format(SR.Error_ConstructorParametersDoNotMatchProperties, typeof(ClassWhereParametersDoNotMatchProperties), "age"),
+                exception.Message);
+        }
+
+        [Fact]
+        public void BindsToClassConstructorParametersWithDefaultValues()
+        {
+            var input = new Dictionary<string, string>
+            {
+                {"ClassWhereParametersHaveDefaultValueProperty:Name", "John"},
+                {"ClassWhereParametersHaveDefaultValueProperty:Address", "123, Abc St."}
+            };
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(input);
+            var config = configurationBuilder.Build();
+
+            TestOptions testOptions = new TestOptions();
+
+            config.Bind(testOptions);
+            Assert.Equal("John", testOptions.ClassWhereParametersHaveDefaultValueProperty.Name);
+            Assert.Equal("123, Abc St.", testOptions.ClassWhereParametersHaveDefaultValueProperty.Address);
+            Assert.Equal(42, testOptions.ClassWhereParametersHaveDefaultValueProperty.Age);
+        }
+
+        [Fact]
+        public void FieldsNotSupported_ExceptionBindingToConstructorWithParameterMatchingAField()
+        {
+            var input = new Dictionary<string, string>
+            {
+                {"ClassWhereParametersMatchPropertiesAndFieldsProperty:Name", "John"},
+                {"ClassWhereParametersMatchPropertiesAndFieldsProperty:Address", "123, Abc St."},
+                {"ClassWhereParametersMatchPropertiesAndFieldsProperty:Age", "42"}
+            };
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(input);
+            var config = configurationBuilder.Build();
+
+            var exception = Assert.Throws<InvalidOperationException>(
+                () => config.Bind(new TestOptions()));
+
+            Assert.Equal(
+                SR.Format(SR.Error_ConstructorParametersDoNotMatchProperties, typeof(ClassWhereParametersMatchPropertiesAndFields), "age"),
+                exception.Message);
+        }
+
+        [Fact]
+        public void BindsToRecordPrimaryConstructorParametersWithDefaultValues()
+        {
+            var input = new Dictionary<string, string>
+            {
+                {"RecordWhereParametersHaveDefaultValueProperty:Name", "John"},
+                {"RecordWhereParametersHaveDefaultValueProperty:Address", "123, Abc St."}
+            };
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(input);
+            var config = configurationBuilder.Build();
+
+            TestOptions testOptions = new TestOptions();
+
+            config.Bind(testOptions);
+            Assert.Equal("John", testOptions.RecordWhereParametersHaveDefaultValueProperty.Name);
+            Assert.Equal("123, Abc St.", testOptions.RecordWhereParametersHaveDefaultValueProperty.Address);
+            Assert.Equal(42, testOptions.RecordWhereParametersHaveDefaultValueProperty.Age);
         }
 
         [Fact]
@@ -992,6 +1350,280 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             var options = config.Get<ValueTypeOptions>();
             Assert.Equal(42, options.MyInt32);
             Assert.Equal("hello world", options.MyString);
+        }
+
+        [Fact]
+        public void CanBindImmutableClass()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Length", "42"},
+                {"Color", "Green"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ImmutableLengthAndColorClass>();
+            Assert.Equal(42, options.Length);
+            Assert.Equal("Green", options.Color);
+        }
+
+        [Fact]
+        public void CanBindMutableClassWitNestedImmutableObject()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"ContainerName", "Container123"},
+                {"LengthAndColor:Length", "42"},
+                {"LengthAndColor:Color", "Green"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ContainerWithNestedImmutableObject>();
+            Assert.Equal("Container123", options.ContainerName);
+            Assert.Equal(42, options.LengthAndColor.Length);
+            Assert.Equal("Green", options.LengthAndColor.Color);
+        }
+
+        // If the immutable type has multiple public parameterized constructors, then throw
+        // an exception.
+        [Fact]
+        public void CanBindImmutableClass_ThrowsOnMultipleParameterizedConstructors()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"String1", "s1"},
+                {"Int1", "1"},
+                {"String2", "s2"},
+                {"Int2", "2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            string expectedMessage = SR.Format(SR.Error_MultipleParameterizedConstructors, "Microsoft.Extensions.Configuration.Binder.Test.ConfigurationBinderTests+ImmutableClassWithMultipleParameterizedConstructors");
+
+            var ex = Assert.Throws<InvalidOperationException>(() => config.Get<ImmutableClassWithMultipleParameterizedConstructors>());
+
+            Assert.Equal(expectedMessage, ex.Message);
+        }
+
+        // If the immutable type has a parameterized constructor, then throw
+        // that constructor has an 'in' parameter
+        [Fact]
+        public void CanBindImmutableClass_ThrowsOnParameterizedConstructorWithAnInParameter()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"String1", "s1"},
+                {"Int1", "1"},
+                {"String2", "s2"},
+                {"Int2", "2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            string expectedMessage = SR.Format(SR.Error_CannotBindToConstructorParameter, "Microsoft.Extensions.Configuration.Binder.Test.ConfigurationBinderTests+ImmutableClassWithOneParameterizedConstructorButWithInParameter", "string1");
+
+            var ex = Assert.Throws<InvalidOperationException>(() => config.Get<ImmutableClassWithOneParameterizedConstructorButWithInParameter>());
+
+            Assert.Equal(expectedMessage, ex.Message);
+        }
+
+        // If the immutable type has a parameterized constructors, then throw
+        // that constructor has a 'ref' parameter
+        [Fact]
+        public void CanBindImmutableClass_ThrowsOnParameterizedConstructorWithARefParameter()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"String1", "s1"},
+                {"Int1", "1"},
+                {"String2", "s2"},
+                {"Int2", "2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            string expectedMessage = SR.Format(SR.Error_CannotBindToConstructorParameter, "Microsoft.Extensions.Configuration.Binder.Test.ConfigurationBinderTests+ImmutableClassWithOneParameterizedConstructorButWithRefParameter", "int1");
+
+            var ex = Assert.Throws<InvalidOperationException>(() => config.Get<ImmutableClassWithOneParameterizedConstructorButWithRefParameter>());
+
+            Assert.Equal(expectedMessage, ex.Message);
+        }
+
+        // If the immutable type has a parameterized constructors, then throw
+        // if the constructor has an 'out' parameter
+        [Fact]
+        public void CanBindImmutableClass_ThrowsOnParameterizedConstructorWithAnOutParameter()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"String1", "s1"},
+                {"Int1", "1"},
+                {"String2", "s2"},
+                {"Int2", "2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            string expectedMessage = SR.Format(SR.Error_CannotBindToConstructorParameter, "Microsoft.Extensions.Configuration.Binder.Test.ConfigurationBinderTests+ImmutableClassWithOneParameterizedConstructorButWithOutParameter", "int2");
+
+            var ex = Assert.Throws<InvalidOperationException>(() => config.Get<ImmutableClassWithOneParameterizedConstructorButWithOutParameter>());
+
+            Assert.Equal(expectedMessage, ex.Message);
+        }
+
+        [Fact]
+        public void CanBindMutableStruct_UnmatchedConstructorsAreIgnored()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Length", "42"},
+                {"Color", "Green"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<MutableStructWithConstructor>();
+            Assert.Equal(42, options.Length);
+            Assert.Equal("Green", options.Color);
+        }        
+
+        // If the immutable type has a public parameterized constructor,
+        // then pick it.
+        [Fact]
+        public void CanBindImmutableClass_PicksParameterizedConstructorIfNoParameterlessConstructorExists()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"String1", "s1"},
+                {"Int1", "1"},
+                {"String2", "s2"},
+                {"Int2", "2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ImmutableClassWithOneParameterizedConstructor>();
+            Assert.Equal("s1", options.String1);
+            Assert.Equal("s2", options.String2);
+            Assert.Equal(1, options.Int1);
+            Assert.Equal(2, options.Int2);
+        }
+
+        [Fact]
+        public void CanBindSemiImmutableClass()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Length", "42"},
+                {"Color", "Green"},
+                {"Thickness", "1.23"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<SemiImmutableClass>();
+            Assert.Equal(42, options.Length);
+            Assert.Equal("Green", options.Color);
+            Assert.Equal(1.23m, options.Thickness);
+        }
+
+        [Fact]
+        public void CanBindSemiImmutableClass_WithInitProperties()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Length", "42"},
+                {"Color", "Green"},
+                {"Thickness", "1.23"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<SemiImmutableClassWithInit>();
+            Assert.Equal(42, options.Length);
+            Assert.Equal("Green", options.Color);
+            Assert.Equal(1.23m, options.Thickness);
+        }
+
+        [Fact]
+        public void CanBindRecordOptions()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Length", "42"},
+                {"Color", "Green"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<RecordTypeOptions>();
+            Assert.Equal(42, options.Length);
+            Assert.Equal("Green", options.Color);
+        }
+
+        [Fact]
+        public void CanBindRecordStructOptions()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Length", "42"},
+                {"Color", "Green"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<RecordStructTypeOptions>();
+            Assert.Equal(42, options.Length);
+            Assert.Equal("Green", options.Color);
+        }
+
+        [Fact]
+        public void CanBindOnParametersAndProperties_PropertiesAreSetAfterTheConstructor()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Length", "42"},
+                {"Color", "Green"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ClassWithMatchingParametersAndProperties>();
+            Assert.Equal(42, options.Length);
+            Assert.Equal("the color is Green", options.Color);
+        }
+
+        [Fact]
+        public void CanBindReadonlyRecordStructOptions()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Length", "42"},
+                {"Color", "Green"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ReadonlyRecordStructTypeOptions>();
+            Assert.Equal(42, options.Length);
+            Assert.Equal("Green", options.Color);
         }
 
         [Fact]
@@ -1153,6 +1785,11 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             public ISomeInterface ISomeInterfaceProperty { get; set; }
 
             public ClassWithoutPublicConstructor ClassWithoutPublicConstructorProperty { get; set; }
+            public ClassWhereParametersDoNotMatchProperties ClassWhereParametersDoNotMatchPropertiesProperty { get; set; }
+            public Line LineProperty { get; set; }
+            public ClassWhereParametersHaveDefaultValue ClassWhereParametersHaveDefaultValueProperty { get; set; }
+            public ClassWhereParametersMatchPropertiesAndFields ClassWhereParametersMatchPropertiesAndFieldsProperty { get; set; }
+            public RecordWhereParametersHaveDefaultValue RecordWhereParametersHaveDefaultValueProperty { get; set; }
 
             public int IntProperty { get; set; }
 

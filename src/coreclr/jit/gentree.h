@@ -605,11 +605,6 @@ enum GenTreeFlags : unsigned int
 
     GTF_SIMDASHW_OP             = 0x80000000, // GT_HWINTRINSIC -- Indicates that the structHandle should be gotten from gtGetStructHandleForSIMD
                                               //                   rather than from gtGetStructHandleForHWSIMD.
-
-    // Flag used by assertion prop to indicate that a type is a TYP_LONG
-#ifdef TARGET_64BIT
-    GTF_ASSERTION_PROP_LONG     = 0x00000001,
-#endif // TARGET_64BIT
 };
 
 inline constexpr GenTreeFlags operator ~(GenTreeFlags a)
@@ -3056,8 +3051,7 @@ struct GenTreeIntCon : public GenTreeIntConCommon
     FieldSeqNode* gtFieldSeq;
 
 #ifdef DEBUG
-    // If the value represents target address, holds the method handle to that target which is used
-    // to fetch target method name and display in the disassembled code.
+    // If the value represents target address (for a field or call), holds the handle of the field (or call).
     size_t gtTargetHandle = 0;
 #endif
 
@@ -3677,9 +3671,10 @@ private:
 
 public:
     GenTreeLclFld(genTreeOps oper, var_types type, unsigned lclNum, unsigned lclOffs, ClassLayout* layout = nullptr)
-        : GenTreeLclVarCommon(oper, type, lclNum), m_lclOffs(static_cast<uint16_t>(lclOffs)), m_layout(layout)
+        : GenTreeLclVarCommon(oper, type, lclNum), m_lclOffs(static_cast<uint16_t>(lclOffs))
     {
         assert(lclOffs <= UINT16_MAX);
+        SetLayout(layout);
     }
 
     uint16_t GetLclOffs() const
@@ -3695,6 +3690,7 @@ public:
 
     ClassLayout* GetLayout() const
     {
+        assert(!TypeIs(TYP_STRUCT) || (m_layout != nullptr));
         return m_layout;
     }
 
@@ -5308,7 +5304,7 @@ struct GenTreeCall final : public GenTree
 
 #if defined(TARGET_ARMARCH)
         // For ARM architectures, we always use an indirection cell for R2R calls.
-        if (IsR2RRelativeIndir())
+        if (IsR2RRelativeIndir() && !IsDelegateInvoke())
         {
             return WellKnownArg::R2RIndirectionCell;
         }
@@ -7441,12 +7437,18 @@ public:
     // TODO-Throughput: The following information should be obtained from the child
     // block node.
 
-    enum class Kind : __int8{
+    enum class Kind : int8_t{
         Invalid, RepInstr, PartialRepInstr, Unroll, Push,
     };
     Kind gtPutArgStkKind;
-#endif
 
+#ifdef TARGET_XARCH
+private:
+    uint8_t m_argLoadSizeDelta;
+#endif // TARGET_XARCH
+#endif // FEATURE_PUT_STRUCT_ARG_STK
+
+public:
     GenTreePutArgStk(genTreeOps oper,
                      var_types  type,
                      GenTree*   op1,
@@ -7472,7 +7474,10 @@ public:
 #endif // FEATURE_FASTTAILCALL
 #if defined(FEATURE_PUT_STRUCT_ARG_STK)
         , gtPutArgStkKind(Kind::Invalid)
+#if defined(TARGET_XARCH)
+        , m_argLoadSizeDelta(UINT8_MAX)
 #endif
+#endif // FEATURE_PUT_STRUCT_ARG_STK
     {
     }
 
@@ -7518,6 +7523,36 @@ public:
     {
         return m_byteSize;
     }
+
+#ifdef TARGET_XARCH
+    //------------------------------------------------------------------------
+    // SetArgLoadSize: Set the optimal number of bytes to load for this argument.
+    //
+    // On XARCH, it is profitable to use wider loads when our source is a local
+    // variable. To not duplicate the logic between lowering, LSRA and codegen,
+    // we do the legality check once, in lowering, and save the result here, as
+    // a negative delta relative to the size of the argument with padding.
+    //
+    // Arguments:
+    //    loadSize - The optimal number of bytes to load
+    //
+    void SetArgLoadSize(unsigned loadSize)
+    {
+        unsigned argSize = GetStackByteSize();
+        assert(roundUp(loadSize, TARGET_POINTER_SIZE) == argSize);
+
+        m_argLoadSizeDelta = static_cast<uint8_t>(argSize - loadSize);
+    }
+
+    //------------------------------------------------------------------------
+    // GetArgLoadSize: Get the optimal number of bytes to load for this argument.
+    //
+    unsigned GetArgLoadSize() const
+    {
+        assert(m_argLoadSizeDelta != UINT8_MAX);
+        return GetStackByteSize() - m_argLoadSizeDelta;
+    }
+#endif // TARGET_XARCH
 
     // Return true if this is a PutArgStk of a SIMD12 struct.
     // This is needed because such values are re-typed to SIMD16, and the type of PutArgStk is VOID.

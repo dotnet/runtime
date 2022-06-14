@@ -101,7 +101,7 @@ decompose_long_opcode (MonoCompile *cfg, MonoInst *ins, MonoInst **repl_ins)
 		NULLIFY_INS (ins);
 		break;
 	}
-#ifndef __mono_ppc64__
+#ifndef TARGET_POWERPC64
 	case OP_LSUB_OVF: {
 		guint16 opcode;
 

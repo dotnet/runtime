@@ -107,7 +107,7 @@ namespace System.Xml.Xsl.Qil
         protected override QilNode VisitReference(QilNode oldNode)
         {
             QilNode? newNode = FindClonedReference(oldNode);
-            return base.VisitReference(newNode == null ? oldNode : newNode);
+            return base.VisitReference(newNode ?? oldNode);
         }
 
 

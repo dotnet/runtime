@@ -60,7 +60,7 @@ namespace System.Xml.Serialization
         /// </summary>
         public string ExpectedAttributes
         {
-            get { return _qnames == null ? string.Empty : _qnames; }
+            get { return _qnames ?? string.Empty; }
         }
     }
 
@@ -108,7 +108,7 @@ namespace System.Xml.Serialization
         /// </summary>
         public string ExpectedElements
         {
-            get { return _qnames == null ? string.Empty : _qnames; }
+            get { return _qnames ?? string.Empty; }
         }
     }
 
