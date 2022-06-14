@@ -358,7 +358,7 @@ jobs:
 
 # Linux PPC64le
 
-- ${{ if containsValue(parameters.platforms, 'Linux_s390x') }}:
+- ${{ if containsValue(parameters.platforms, 'Linux_ppc64le') }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
