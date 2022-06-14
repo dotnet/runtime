@@ -799,7 +799,6 @@ class COMCharacter {
 public:
     //These are here for support from native code.  They are never called from our managed classes.
     static BOOL nativeIsWhiteSpace(WCHAR c);
-    static BOOL nativeIsDigit(WCHAR c);
 };
 
 // ======================================================================================

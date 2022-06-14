@@ -233,7 +233,7 @@ add_general (guint32 *gr, guint32 *stack_size, ArgInfo *ainfo)
 		(*stack_size) += sizeof (target_mgreg_t);
 	} else {
 		ainfo->storage = ArgInIReg;
-		ainfo->reg = param_regs [*gr];
+		ainfo->reg = GINT32_TO_UINT8 (param_regs [*gr]);
 		(*gr) ++;
 	}
 }
@@ -676,7 +676,7 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 
 	if (pass_on_stack) {
 		/* Allways pass in memory */
-		ainfo->offset = *stack_size;
+		ainfo->offset = GINT32_TO_INT16 (*stack_size);
 		*stack_size += ALIGN_TO (size, 8);
 		ainfo->storage = is_return ? ArgValuetypeAddrInIReg : ArgOnStack;
 		if (!is_return)
@@ -718,7 +718,7 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 		}
 
 		if (struct_size > 16) {
-			ainfo->offset = *stack_size;
+			ainfo->offset = GINT32_TO_INT16 (*stack_size);
 			*stack_size += ALIGN_TO (struct_size, 8);
 			ainfo->storage = is_return ? ArgValuetypeAddrInIReg : ArgOnStack;
 			if (!is_return)
@@ -793,9 +793,9 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 				else {
 					ainfo->pair_storage [quad] = ArgInIReg;
 					if (is_return)
-						ainfo->pair_regs [quad] = return_regs [*gr];
+						ainfo->pair_regs [quad] = GINT32_TO_UINT8 (return_regs [*gr]);
 					else
-						ainfo->pair_regs [quad] = param_regs [*gr];
+						ainfo->pair_regs [quad] = GINT32_TO_UINT8 (param_regs [*gr]);
 					(*gr) ++;
 				}
 				break;
@@ -805,8 +805,9 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 				else {
 					if (quadsize[quad] <= 4)
 						ainfo->pair_storage [quad] = ArgInFloatSSEReg;
-					else ainfo->pair_storage [quad] = ArgInDoubleSSEReg;
-					ainfo->pair_regs [quad] = *fr;
+					else
+						ainfo->pair_storage [quad] = ArgInDoubleSSEReg;
+					ainfo->pair_regs [quad] = GINT32_TO_UINT8 (*fr);
 					(*fr) ++;
 				}
 				break;
@@ -825,7 +826,7 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 			*gr = orig_gr;
 			*fr = orig_fr;
 
-			ainfo->offset = *stack_size;
+			ainfo->offset = GINT32_TO_UINT16 (*stack_size);
 			if (sig->pinvoke)
 				arg_size = ALIGN_TO (struct_size, 8);
 			else

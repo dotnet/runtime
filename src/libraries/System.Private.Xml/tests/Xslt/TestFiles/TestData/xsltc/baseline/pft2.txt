@@ -1,5 +1,0 @@
-Microsoft (R) XSLT Compiler version 2.0.61009
-for Microsoft (R) Windows (R) 2005 Framework version 2.0.50727
-Copyright (C) Microsoft Corporation 2007. All rights reserved.
-
-error : Invalid value '' for option /platform; must be x86, Itanium, x64, or anycpu.
