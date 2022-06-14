@@ -599,7 +599,19 @@ namespace Microsoft.Interop
 
         public IEnumerable<StatementSyntax> GenerateUnmarshalCaptureStatements(TypePositionInfo info, StubCodeContext context)
         {
-            return _innerMarshaller.GenerateUnmarshalCaptureStatements(info, context);
+            // To fulfill the generic contiguous collection marshaller design,
+            // we need to emit code to initialize the collection marshaller with the size of native elements
+            // and set the unmanaged collection length before we marshal back the native data.
+            // This ensures that the marshaller object has enough state to successfully set up the ManagedValues
+            // and NativeValueStorage spans when the actual collection value is unmarshalled from native to the marshaller.
+            foreach (StatementSyntax statement in GenerateUnmarshallerCollectionInitialization(info, context))
+            {
+                yield return statement;
+            }
+            foreach (StatementSyntax statement in _innerMarshaller.GenerateUnmarshalCaptureStatements(info, context))
+            {
+                yield return statement;
+            }
         }
 
         private IEnumerable<StatementSyntax> GenerateUnmarshallerCollectionInitialization(TypePositionInfo info, StubCodeContext context)
@@ -615,20 +627,7 @@ namespace Microsoft.Interop
 
         public IEnumerable<StatementSyntax> GenerateUnmarshalStatements(TypePositionInfo info, StubCodeContext context)
         {
-            // To fulfill the generic contiguous collection marshaller design,
-            // we need to emit code to initialize the collection marshaller with the size of native elements
-            // and set the unmanaged collection length before we marshal back the native data.
-            // This ensures that the marshaller object has enough state to successfully set up the ManagedValues
-            // and NativeValueStorage spans when the actual collection value is unmarshalled from native to the marshaller.
-            foreach (StatementSyntax statement in GenerateUnmarshallerCollectionInitialization(info, context))
-            {
-                yield return statement;
-            }
-
-            foreach (StatementSyntax statement in _innerMarshaller.GenerateUnmarshalStatements(info, context))
-            {
-                yield return statement;
-            }
+            return _innerMarshaller.GenerateUnmarshalStatements(info, context);
         }
 
         public IEnumerable<ArgumentSyntax> GetNativeTypeConstructorArguments(TypePositionInfo info, StubCodeContext context)
@@ -1005,7 +1004,7 @@ namespace Microsoft.Interop
                             ArgumentList(SingletonSeparatedList(Argument(IdentifierName(numElementsIdentifier))))))))));
         }
 
-        private StatementSyntax GenerateContentsMarshallingStatement(TypePositionInfo info, StubCodeContext context, ExpressionSyntax lengthExpression)
+        private StatementSyntax GenerateContentsMarshallingStatement(TypePositionInfo info, StubCodeContext context, StubCodeContext.Stage marshallingStage1, StubCodeContext.Stage? marshallingStage2, ExpressionSyntax lengthExpression)
         {
             string managedSpanIdentifier = MarshallerHelpers.GetManagedSpanIdentifier(info, context);
             string nativeSpanIdentifier = MarshallerHelpers.GetNativeSpanIdentifier(info, context);
@@ -1014,8 +1013,8 @@ namespace Microsoft.Interop
                 managedSpanIdentifier,
                 nativeSpanIdentifier,
                 context);
-            var elementSubContext = new LinearCollectionElementMarshallingCodeContext(
-                context.CurrentStage,
+            var elementSubContext1 = new LinearCollectionElementMarshallingCodeContext(
+                marshallingStage1,
                 managedSpanIdentifier,
                 nativeSpanIdentifier,
                 context);
@@ -1028,7 +1027,18 @@ namespace Microsoft.Interop
                 NativeIndex = info.NativeIndex
             };
 
-            List<StatementSyntax> elementStatements = _elementMarshaller.Generate(localElementInfo, elementSubContext).ToList();
+            List<StatementSyntax> elementStatements = _elementMarshaller.Generate(localElementInfo, elementSubContext1).ToList();
+
+            if (marshallingStage2 != null)
+            {
+                var elementSubContext2 = new LinearCollectionElementMarshallingCodeContext(
+                    marshallingStage2.Value,
+                    managedSpanIdentifier,
+                    nativeSpanIdentifier,
+                    context);
+
+                elementStatements.AddRange(_elementMarshaller.Generate(localElementInfo, elementSubContext2));
+            }
 
             if (elementStatements.Any())
             {
@@ -1038,12 +1048,12 @@ namespace Microsoft.Interop
 
                 if (_elementMarshaller.AsNativeType(_elementInfo) is PointerTypeSyntax elementNativeType)
                 {
-                    PointerNativeTypeAssignmentRewriter rewriter = new(elementSubContext.GetIdentifiers(localElementInfo).native, elementNativeType);
+                    PointerNativeTypeAssignmentRewriter rewriter = new(elementSetupSubContext.GetIdentifiers(localElementInfo).native, elementNativeType);
                     marshallingStatement = (StatementSyntax)rewriter.Visit(marshallingStatement);
                 }
 
                 // Iterate through the elements of the native collection to unmarshal them
-                return MarshallerHelpers.GetForLoop(lengthExpression, elementSubContext.IndexerIdentifier)
+                return MarshallerHelpers.GetForLoop(lengthExpression, elementSetupSubContext.IndexerIdentifier)
                                     .WithStatement(marshallingStatement);
             }
             return EmptyStatement();
@@ -1057,6 +1067,8 @@ namespace Microsoft.Interop
         public IEnumerable<StatementSyntax> GenerateCleanupStatements(TypePositionInfo info, StubCodeContext context)
         {
             StatementSyntax contentsCleanupStatements = GenerateContentsMarshallingStatement(info, context,
+                                StubCodeContext.Stage.Cleanup,
+                                null,
                                 MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                                     IdentifierName(MarshallerHelpers.GetNativeSpanIdentifier(info, context)),
                                     IdentifierName("Length")));
@@ -1105,6 +1117,12 @@ namespace Microsoft.Interop
                 GeneratedManagedValuesSourceDeclaration(info, context),
                 GenerateNativeValuesDestinationDeclaration(info, context),
                 GenerateContentsMarshallingStatement(info, context,
+                    StubCodeContext.Stage.Marshal,
+                    // Using the PinnedMarshal stage here isn't strictly valid as we don't guarantee that GetPinnableReference
+                    // is pinned, but for our existing marshallers this is not an issue and we'll be removing support for stateful element marshallers soon
+                    // (at which point we can remove this)
+                    // and address this problem better when we bring them back in the future.
+                    StubCodeContext.Stage.PinnedMarshal,
                     MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                         IdentifierName(MarshallerHelpers.GetManagedSpanIdentifier(info, context)),
                         IdentifierName("Length"))));
@@ -1203,6 +1221,8 @@ namespace Microsoft.Interop
                 managedValuesDeclaration,
                 nativeValuesDeclaration,
                 GenerateContentsMarshallingStatement(info, context,
+                    StubCodeContext.Stage.UnmarshalCapture,
+                    StubCodeContext.Stage.Unmarshal,
                     IdentifierName(numElementsIdentifier)));
         }
 
@@ -1223,6 +1243,8 @@ namespace Microsoft.Interop
                     GeneratedManagedValuesDestinationDeclaration(info, context, numElementsIdentifier),
                     GenerateNativeValuesSourceDeclaration(info, context, numElementsIdentifier),
                     GenerateContentsMarshallingStatement(info, context,
+                        StubCodeContext.Stage.UnmarshalCapture,
+                        StubCodeContext.Stage.Unmarshal,
                         IdentifierName(numElementsIdentifier)));
             }
 
