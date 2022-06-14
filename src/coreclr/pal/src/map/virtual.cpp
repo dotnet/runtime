@@ -2199,7 +2199,7 @@ void ExecutableMemoryAllocator::TryReserveInitialMemory()
 #else
 
     // Always try to allocate above the location of libcoreclr on arm - we want to start allocating near it (withih 128Mb distance)
-    // however, we want to reserve as much as possible (ideally, 1Gb)
+    // however, we want to reserve as much as possible (ideally, 756Mb)
     preferredStartAddress = coreclrLoadAddress + CoreClrLibrarySize;
 
     do
@@ -2223,7 +2223,7 @@ void ExecutableMemoryAllocator::TryReserveInitialMemory()
         preferredStartAddress += 8 * 1024 * 1024;
 
         // bail out if preferredStartAddress is already too far from coreclr and we won't be able to use relocs
-    } while ((preferredStartAddress - coreclrLoadAddress) < (100 * 1024 * 1024));
+    } while ((preferredStartAddress - coreclrLoadAddress) < (128 * 1024 * 1024));
 #endif
 
     if (m_startAddress == nullptr)

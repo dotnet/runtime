@@ -181,22 +181,23 @@ private:
 
 private:
 
-#ifdef TARGET_XARCH
     // There does not seem to be an easy way find the size of a library on Unix.
-    // So this constant represents an approximation of the libcoreclr size (on debug build)
+    // So this constant represents an approximation of the libcoreclr size
     // that can be used to calculate an approximate location of the memory that
     // is in 2GB range from the coreclr library. In addition, having precise size of libcoreclr
     // is not necessary for the calculations.
-    static const int32_t CoreClrLibrarySize = 100 * 1024 * 1024;
+    static const int32_t CoreClrLibrarySize = 10 * 1024 * 1024;
 
+#ifdef TARGET_XARCH
     // This constant represent the max size of the virtual memory that this allocator
     // will try to reserve during initialization. We want all JIT-ed code and the
     // entire libcoreclr to be located in a 2GB range.
     static const int32_t MaxExecutableMemorySize = 0x7FFF0000;
 #else
-    static const int32_t CoreClrLibrarySize = 16 * 1024 * 1024;
+    // It seems to be more difficult to reserve a 2Gb chunk on arm so we'll try smaller one
     static const int32_t MaxExecutableMemorySize = 768 * 1024 * 1024;
 #endif
+
     static const int32_t MaxExecutableMemorySizeNearCoreClr = MaxExecutableMemorySize - CoreClrLibrarySize;
 
     // Start address of the reserved virtual address space
