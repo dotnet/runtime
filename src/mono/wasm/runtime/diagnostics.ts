@@ -3,10 +3,10 @@
 
 import { Module } from "./imports";
 import cwraps from "./cwraps";
-import type { DiagnosticOptions, EventPipeSession, EventPipeStreamingSession, EventPipeSessionOptions, EventPipeSessionIPCOptions, EventPipeSessionAutoStopOptions } from "./types";
+import type { DiagnosticOptions, EventPipeSession, EventPipeStreamingSession, EventPipeSessionOptions, EventPipeSessionIPCOptions, EventPipeSessionDiagnosticServerID, EventPipeSessionAutoStopOptions } from "./types";
 import { mono_assert } from "./types";
 import type { VoidPtr } from "./types/emscripten";
-import serverController from "./diagnostic-server-controller";
+import { getController } from "./diagnostic-server-controller";
 import * as memory from "./memory";
 
 const sizeOfInt32 = 4;
@@ -31,11 +31,11 @@ function stop_streaming(sessionID: EventPipeSessionIDImpl): void {
 
 class EventPipeIPCSession implements EventPipeStreamingSession {
     private _sessionID: EventPipeSessionIDImpl;
-    private _messagePort: MessagePort;
+    private _diagnosticServerID: EventPipeSessionDiagnosticServerID;
 
-    constructor(messagePort: MessagePort, sessionID: EventPipeSessionIDImpl) {
-        this._messagePort = messagePort;
+    constructor(diagnosticServerID: EventPipeSessionDiagnosticServerID, sessionID: EventPipeSessionIDImpl) {
         this._sessionID = sessionID;
+        this._diagnosticServerID = diagnosticServerID;
     }
 
     get sessionID(): bigint {
@@ -54,10 +54,7 @@ class EventPipeIPCSession implements EventPipeStreamingSession {
         throw new Error("implement me");
     }
     postIPCStreamingSessionStarted() {
-        this._messagePort.postMessage({
-            "type": "started",
-            "sessionID": this._sessionID,
-        });
+        getController().postIPCStreamingSessionStarted(this._diagnosticServerID, this._sessionID);
     }
 }
 
@@ -308,8 +305,8 @@ function createEventPipeSession(options?: EventPipeSessionOptions & Partial<Even
         return null;
     const sessionID = success;
 
-    if (options?.message_port !== undefined) {
-        return new EventPipeIPCSession(options.message_port, sessionID);
+    if (options?.diagnostic_server_id !== undefined) {
+        return new EventPipeIPCSession(options.diagnostic_server_id, sessionID);
     } else {
         const session = new EventPipeFileSession(sessionID, tracePath);
         return session;
@@ -354,7 +351,7 @@ export async function configure_diagnostics(options: DiagnosticOptions): Promise
     mono_assert(options.server !== undefined && (options.server === true || options.server === "wait"), "options.server must be a boolean or 'wait'");
     // serverController.startServer
     // if diagnostic_options.await is true, wait for the server to get a connection
-    const q = await serverController.configureServer(options);
+    const q = await getController().configureServer(options);
     const wait = options.server == "wait";
     if (q.serverStarted) {
         if (wait && q.serverReady) {

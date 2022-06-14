@@ -196,11 +196,12 @@ export interface EventPipeSessionAutoStopOptions {
     /// Called after the session has been stopped.
     on_session_stopped?: (session: EventPipeSession) => void;
 }
-/// For EventPipe sessions started by the diagnostic server, a message port to send back the session data
-export interface EventPipeSessionIPCOptions {
-    message_port: MessagePort;
-}
 
+export type EventPipeSessionDiagnosticServerID = number;
+/// For EventPipe sessions started by the diagnostic server, an id is assigned to each session before it is associated with an eventpipe session in the runtime.
+export interface EventPipeSessionIPCOptions {
+    diagnostic_server_id: EventPipeSessionDiagnosticServerID;
+}
 
 /// Options to configure the event pipe session
 /// The recommended method is to MONO.diagnostics.SesisonOptionsBuilder to create an instance of this type
@@ -309,11 +310,11 @@ export function is_nullish<T>(value: T | null | undefined): value is null | unde
     return (value === undefined) || (value === null);
 }
 
-export type DiagnosticServerControlCommand = {};
 
 /// An identifier for an EventPipe session. The id is unique during the lifetime of the runtime.
 /// Primarily intended for debugging purposes.
 export type EventPipeSessionID = bigint;
+
 
 /// An EventPipe session object represents a single diagnostic tracing session that is collecting
 /// events from the runtime and managed libraries.  There may be multiple active sessions at the same time.
@@ -323,12 +324,12 @@ export type EventPipeSessionID = bigint;
 export interface EventPipeSession {
     // session ID for debugging logging only
     get sessionID(): EventPipeSessionID;
-    get isIPCStreamingSession(): boolean;
+    readonly isIPCStreamingSession: boolean;
     start(): void;
     stop(): void;
     getTraceBlob(): Blob;
 }
 
 export interface EventPipeStreamingSession extends EventPipeSession {
-    get isIPCStreamingSession(): true;
+    readonly isIPCStreamingSession: true;
 }

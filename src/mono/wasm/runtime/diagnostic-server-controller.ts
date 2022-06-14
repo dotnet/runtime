@@ -1,7 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { DiagnosticOptions, EventPipeSessionOptions, EventPipeSessionIPCOptions } from "./types";
+import type { DiagnosticOptions, EventPipeSessionOptions, EventPipeSessionIPCOptions, EventPipeSessionDiagnosticServerID } from "./types";
+import type { EventPipeSessionIDImpl } from "./diagnostic-server-controller-commands";
+
+
 
 interface ServerReadyResult {
     sessions?: (EventPipeSessionOptions & EventPipeSessionIPCOptions)[]; // provider configs
@@ -29,13 +32,25 @@ async function configureServer(options: DiagnosticOptions): Promise<ServerConfig
         return { serverStarted: false };
 }
 
-function postIPCStreamingSessionStarted(/*sessionID: EventPipeSessionID*/): void {
+function postIPCStreamingSessionStarted(diagnosticSessionID: EventPipeSessionDiagnosticServerID, sessionID: EventPipeSessionIDImpl): void {
     // TODO: For IPC streaming sessions this is the place to send back an acknowledgement with the session ID
 }
 
-const serverController = {
-    configureServer,
-    postIPCStreamingSessionStarted,
-};
+/// An object that can be used to control the diagnostic server.
+export interface ServerController {
+    configureServer(options: DiagnosticOptions): Promise<ServerConfigureResult>;
+    postIPCStreamingSessionStarted(diagnosticSessionID: EventPipeSessionDiagnosticServerID, sessionID: EventPipeSessionIDImpl): void;
+}
 
-export default serverController;
+let serverController: ServerController | null = null;
+
+export function getController(): ServerController {
+    if (serverController)
+        return serverController;
+    serverController = {
+        configureServer,
+        postIPCStreamingSessionStarted,
+    };
+    return serverController;
+}
+
