@@ -6,10 +6,8 @@
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
-#include "mtx.h"
+#include "olecontexthelpers.h"
 #include "oletls.h"
-#include "contxt.h"
-#include "ctxtcall.h"
 
 HRESULT GetCurrentObjCtx(IUnknown **ppObjCtx)
 {

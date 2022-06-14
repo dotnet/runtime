@@ -1095,7 +1095,7 @@ TypeHandle TypeName::GetTypeFromAsm()
         {
             if (bThrowIfNotFound)
             {
-                COMPlusThrow(kArgumentException, IDS_EE_ASSEMBLY_GETTYPE_CANNONT_HAVE_ASSEMBLY_SPEC);
+                COMPlusThrow(kArgumentException, W("Argument_AssemblyGetTypeCannotSpecifyAssembly"));
             }
             else
             {

@@ -1882,11 +1882,6 @@ public:
     //
 
     bool IsHfa(CORINFO_CLASS_HANDLE hClass);
-    bool IsHfa(GenTree* tree);
-
-    var_types GetHfaType(GenTree* tree);
-    unsigned GetHfaCount(GenTree* tree);
-
     var_types GetHfaType(CORINFO_CLASS_HANDLE hClass);
     unsigned GetHfaCount(CORINFO_CLASS_HANDLE hClass);
 
@@ -2269,7 +2264,7 @@ public:
 
     GenTree* gtNewIndOfIconHandleNode(var_types indType, size_t value, GenTreeFlags iconFlags, bool isInvariant);
 
-    GenTree* gtNewIconHandleNode(size_t value, GenTreeFlags flags, FieldSeqNode* fields = nullptr);
+    GenTreeIntCon* gtNewIconHandleNode(size_t value, GenTreeFlags flags, FieldSeqNode* fields = nullptr);
 
     GenTreeFlags gtTokenToIconFlags(unsigned token);
 
@@ -5936,13 +5931,11 @@ protected:
         VNSet* m_pHoistedInCurLoop;
 
     public:
-        // Value numbers of expressions that have been hoisted in parent loops in the loop nest.
-        VNSet m_hoistedInParentLoops;
-
         // Value numbers of expressions that have been hoisted in the current (or most recent) loop in the nest.
         // Previous decisions on loop-invariance of value numbers in the current loop.
         VNSet m_curLoopVnInvariantCache;
 
+        // Get the VN cache for current loop
         VNSet* GetHoistedInCurLoop(Compiler* comp)
         {
             if (m_pHoistedInCurLoop == nullptr)
@@ -5952,35 +5945,35 @@ protected:
             return m_pHoistedInCurLoop;
         }
 
-        VNSet* ExtractHoistedInCurLoop()
+        // Return the so far collected VNs in cache for current loop and reset it.
+        void ResetHoistedInCurLoop()
         {
-            VNSet* res          = m_pHoistedInCurLoop;
             m_pHoistedInCurLoop = nullptr;
-            return res;
+            JITDUMP("Resetting m_pHoistedInCurLoop\n");
         }
 
         LoopHoistContext(Compiler* comp)
-            : m_pHoistedInCurLoop(nullptr)
-            , m_hoistedInParentLoops(comp->getAllocatorLoopHoist())
-            , m_curLoopVnInvariantCache(comp->getAllocatorLoopHoist())
+            : m_pHoistedInCurLoop(nullptr), m_curLoopVnInvariantCache(comp->getAllocatorLoopHoist())
         {
         }
     };
 
-    // Do hoisting for loop "lnum" (an index into the optLoopTable), and all loops nested within it.
-    // Tracks the expressions that have been hoisted by containing loops by temporarily recording their
-    // value numbers in "m_hoistedInParentLoops".  This set is not modified by the call.
+    // Do hoisting of all loops nested within loop "lnum" (an index into the optLoopTable), followed
+    // by the loop "lnum" itself.
+    //
+    // "m_pHoistedInCurLoop" helps a lot in eliminating duplicate expressions getting hoisted
+    // and reducing the count of total expressions hoisted out of loop. When calculating the
+    // profitability, we compare this with number of registers and hence, lower the number of expressions
+    // getting hoisted, better chances that they will get enregistered and CSE considering them.
+    //
     void optHoistLoopNest(unsigned lnum, LoopHoistContext* hoistCtxt);
 
     // Do hoisting for a particular loop ("lnum" is an index into the optLoopTable.)
-    // Assumes that expressions have been hoisted in containing loops if their value numbers are in
-    // "m_hoistedInParentLoops".
-    //
-    void optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt);
+    // Returns the new preheaders created.
+    void optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt, BasicBlockList* existingPreHeaders);
 
     // Hoist all expressions in "blocks" that are invariant in loop "loopNum" (an index into the optLoopTable)
-    // outside of that loop.  Exempt expressions whose value number is in "m_hoistedInParentLoops"; add VN's of hoisted
-    // expressions to "hoistInLoop".
+    // outside of that loop.
     void optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blocks, LoopHoistContext* hoistContext);
 
     // Return true if the tree looks profitable to hoist out of loop 'lnum'.
@@ -6362,6 +6355,9 @@ protected:
     // Returns true iff "l2" is not NOT_IN_LOOP, and "l1" contains "l2".
     // A loop contains itself.
     bool optLoopContains(unsigned l1, unsigned l2) const;
+
+    // Returns the lpEntry for given preheader block of a loop
+    BasicBlock* optLoopEntry(BasicBlock* preHeader);
 
     // Updates the loop table by changing loop "loopInd", whose head is required
     // to be "from", to be "to".  Also performs this transformation for any
@@ -7264,6 +7260,7 @@ public:
     GenTree* optConstantAssertionProp(AssertionDsc*        curAssertion,
                                       GenTreeLclVarCommon* tree,
                                       Statement* stmt DEBUGARG(AssertionIndex index));
+    bool optIsProfitableToSubstitute(GenTreeLclVarCommon* lcl, BasicBlock* lclBlock, GenTree* value);
     bool optZeroObjAssertionProp(GenTree* tree, ASSERT_VALARG_TP assertions);
 
     // Assertion propagation functions.

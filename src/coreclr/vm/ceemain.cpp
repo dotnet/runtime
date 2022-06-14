@@ -1335,11 +1335,6 @@ part2:
                 // No longer process exceptions
                 g_fNoExceptions = true;
 
-                //
-                // Remove our global exception filter. If it was NULL before, we want it to be null now.
-                //
-                UninstallUnhandledExceptionFilter();
-
                 // <TODO>@TODO: This does things which shouldn't occur in part 2.  Namely,
                 // calling managed dll main callbacks (AppDomain::SignalProcessDetach), and
                 // RemoveAppDomainFromIPC.

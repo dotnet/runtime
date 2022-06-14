@@ -276,6 +276,6 @@ namespace System.Net.Http.Headers
             }
         }
 
-        private HttpGeneralHeaders GeneralHeaders => _generalHeaders ?? (_generalHeaders = new HttpGeneralHeaders(this));
+        private HttpGeneralHeaders GeneralHeaders => _generalHeaders ??= new HttpGeneralHeaders(this);
     }
 }

@@ -34,7 +34,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private XmlDocument Document => _xmlDocument ?? (_xmlDocument = new XmlDocument());
+        private XmlDocument Document => _xmlDocument ??= new XmlDocument();
 
 
         internal override bool IsGetOnlyCollection

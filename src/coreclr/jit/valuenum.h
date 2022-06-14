@@ -379,6 +379,8 @@ private:
     // returns true iff vn is known to be a constant int32 that is > 0
     bool IsVNPositiveInt32Constant(ValueNum vn);
 
+    GenTreeFlags GetFoldedArithOpResultHandleFlags(ValueNum vn);
+
 public:
     // Initializes any static variables of ValueNumStore.
     static void InitValueNumStoreStatics();

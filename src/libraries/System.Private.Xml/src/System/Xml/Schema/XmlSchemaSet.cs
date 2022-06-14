@@ -946,7 +946,7 @@ namespace System.Xml.Schema
             if (schema != null)
             {
                 Debug.Assert(ns != null);
-                string tns = schema.TargetNamespace == null ? string.Empty : schema.TargetNamespace;
+                string tns = schema.TargetNamespace ?? string.Empty;
                 if (tns == ns)
                 {
                     return schema;
@@ -1383,7 +1383,7 @@ namespace System.Xml.Schema
 
         internal static string GetTargetNamespace(XmlSchema schema)
         {
-            return schema.TargetNamespace == null ? string.Empty : schema.TargetNamespace;
+            return schema.TargetNamespace ?? string.Empty;
         }
 
         internal SortedList SortedSchemas

@@ -497,7 +497,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             return MsQuicParameterHelpers.GetUShortParam(MsQuicApi.Api, _state.Handle, QUIC_PARAM_CONN_LOCAL_BIDI_STREAM_COUNT);
         }
 
-        internal unsafe override ValueTask ConnectAsync(CancellationToken cancellationToken = default)
+        internal override unsafe ValueTask ConnectAsync(CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
 

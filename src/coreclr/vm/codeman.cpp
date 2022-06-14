@@ -1552,6 +1552,28 @@ void EEJitManager::SetCpuInfo()
     {
         CPUCompileFlags.Set(InstructionSet_Crc32);
     }
+
+// Older version of SDK would return false for these intrinsics
+// but make sure we pass the right values to the APIs
+#ifndef PF_ARM_V81_ATOMIC_INSTRUCTIONS_AVAILABLE
+#define PF_ARM_V81_ATOMIC_INSTRUCTIONS_AVAILABLE 34
+#endif
+#ifndef PF_ARM_V82_DP_INSTRUCTIONS_AVAILABLE
+# define PF_ARM_V82_DP_INSTRUCTIONS_AVAILABLE 43
+#endif
+
+    // PF_ARM_V81_ATOMIC_INSTRUCTIONS_AVAILABLE (34)
+    if (IsProcessorFeaturePresent(PF_ARM_V81_ATOMIC_INSTRUCTIONS_AVAILABLE))
+    {
+        CPUCompileFlags.Set(InstructionSet_Atomics);
+    }
+
+    // PF_ARM_V82_DP_INSTRUCTIONS_AVAILABLE (43)
+    if (IsProcessorFeaturePresent(PF_ARM_V82_DP_INSTRUCTIONS_AVAILABLE))
+    {
+        CPUCompileFlags.Set(InstructionSet_Dp);
+    }
+
 #endif // HOST_64BIT
     if (GetDataCacheZeroIDReg() == 4)
     {

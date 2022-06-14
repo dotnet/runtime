@@ -54,16 +54,16 @@ namespace System.Runtime.Serialization.Formatters.Binary
         }
 
         internal BinaryAssemblyInfo SystemAssemblyInfo =>
-            _systemAssemblyInfo ?? (_systemAssemblyInfo = new BinaryAssemblyInfo(Converter.s_urtAssemblyString, Converter.s_urtAssembly));
+            _systemAssemblyInfo ??= new BinaryAssemblyInfo(Converter.s_urtAssemblyString, Converter.s_urtAssembly);
 
         internal SizedArray ObjectMapIdTable =>
-            _objectMapIdTable ?? (_objectMapIdTable = new SizedArray());
+            _objectMapIdTable ??= new SizedArray();
 
         internal SizedArray AssemIdToAssemblyTable =>
-            _assemIdToAssemblyTable ?? (_assemIdToAssemblyTable = new SizedArray(2));
+            _assemIdToAssemblyTable ??= new SizedArray(2);
 
         internal ParseRecord PRs =>
-            _prs ?? (_prs = new ParseRecord());
+            _prs ??= new ParseRecord();
 
         // Parse the input
         // Reads each record from the input stream. If the record is a primitive type (A number)

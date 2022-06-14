@@ -7955,6 +7955,12 @@ exit: ;
     return result;
 }
 
+void CEEInfo::beginInlining(CORINFO_METHOD_HANDLE inlinerHnd,
+                            CORINFO_METHOD_HANDLE inlineeHnd)
+{
+    // do nothing
+}
+
 void CEEInfo::reportInliningDecision (CORINFO_METHOD_HANDLE inlinerHnd,
                                       CORINFO_METHOD_HANDLE inlineeHnd,
                                       CorInfoInline inlineResult,
@@ -8007,7 +8013,7 @@ void CEEInfo::reportInliningDecision (CORINFO_METHOD_HANDLE inlinerHnd,
                  (LPCWSTR)currentMethodName, (LPCWSTR)inlineeMethodName,
                  (LPCWSTR)inlinerMethodName, reason));
         }
-        else
+        else if(inlineResult == INLINE_PASS)
         {
             LOG((LF_JIT, LL_INFO100000, "While compiling '%S', inline of '%S' into '%S' succeeded.\n",
                  (LPCWSTR)currentMethodName, (LPCWSTR)inlineeMethodName,
@@ -8020,7 +8026,8 @@ void CEEInfo::reportInliningDecision (CORINFO_METHOD_HANDLE inlinerHnd,
     //I'm gonna duplicate this code because the format is slightly different.  And LoggingOn is debug only.
     if (ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
                                      TRACE_LEVEL_VERBOSE,
-                                     CLR_JITTRACING_KEYWORD))
+                                     CLR_JITTRACING_KEYWORD) &&
+        (inlineResult <= INLINE_PASS)) // Only report pass, and failure inliner information. The various informative reports such as INLINE_CHECK_CAN_INLINE_SUCCESS are not to be reported via ETW
     {
         SString methodBeingCompiledNamespace, methodBeingCompiledMethodName, methodBeingCompiledMethodSignature;
         SString inlinerNamespace, inlinerMethodName, inlinerMethodSignature;
@@ -8062,7 +8069,7 @@ void CEEInfo::reportInliningDecision (CORINFO_METHOD_HANDLE inlinerHnd,
                                            (LPCWSTR)strReason,
                                            GetClrInstanceId());
         }
-        else
+        else if(inlineResult == INLINE_PASS)
         {
             FireEtwMethodJitInliningSucceeded((LPCWSTR)methodBeingCompiledNamespace,
                                            (LPCWSTR)methodBeingCompiledMethodName,

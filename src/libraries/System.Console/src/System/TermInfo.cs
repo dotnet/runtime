@@ -903,12 +903,12 @@ namespace System
                 if (char.IsAsciiLetterUpper(c))
                 {
                     index = c - 'A';
-                    return staticVars ?? (staticVars = new FormatParam[26]); // one slot for each letter of alphabet
+                    return staticVars ??= new FormatParam[26]; // one slot for each letter of alphabet
                 }
                 else if (char.IsAsciiLetterLower(c))
                 {
                     index = c - 'a';
-                    return dynamicVars ?? (dynamicVars = new FormatParam[26]); // one slot for each letter of alphabet
+                    return dynamicVars ??= new FormatParam[26]; // one slot for each letter of alphabet
                 }
                 else throw new InvalidOperationException(SR.IO_TermInfoInvalid);
             }

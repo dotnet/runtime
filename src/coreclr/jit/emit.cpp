@@ -4045,16 +4045,12 @@ void emitter::emitRecomputeIGoffsets()
 //
 // Arguments:
 //    handle - a constant value to display a comment for
+//    cookie - the cookie stored with the handle
 //    flags  - a flag that the describes the handle
 //
-void emitter::emitDispCommentForHandle(size_t handle, GenTreeFlags flag)
+void emitter::emitDispCommentForHandle(size_t handle, size_t cookie, GenTreeFlags flag)
 {
 #ifdef DEBUG
-    if (handle == 0)
-    {
-        return;
-    }
-
 #ifdef TARGET_XARCH
     const char* commentPrefix = "      ;";
 #else
@@ -4062,8 +4058,35 @@ void emitter::emitDispCommentForHandle(size_t handle, GenTreeFlags flag)
 #endif
 
     flag &= GTF_ICON_HDL_MASK;
-    const char* str = nullptr;
 
+    if (cookie != 0)
+    {
+        if (flag == GTF_ICON_FTN_ADDR)
+        {
+            const char* className = nullptr;
+            const char* methName =
+                emitComp->eeGetMethodName(reinterpret_cast<CORINFO_METHOD_HANDLE>(cookie), &className);
+            printf("%s code for %s:%s", commentPrefix, className, methName);
+            return;
+        }
+
+        if ((flag == GTF_ICON_STATIC_HDL) || (flag == GTF_ICON_STATIC_BOX_PTR))
+        {
+            const char* className = nullptr;
+            const char* fieldName =
+                emitComp->eeGetFieldName(reinterpret_cast<CORINFO_FIELD_HANDLE>(cookie), &className);
+            printf("%s %s for %s%s%s", commentPrefix, flag == GTF_ICON_STATIC_HDL ? "data" : "box", className,
+                   className != nullptr ? ":" : "", fieldName);
+            return;
+        }
+    }
+
+    if (handle == 0)
+    {
+        return;
+    }
+
+    const char* str = nullptr;
     if (flag == GTF_ICON_STR_HDL)
     {
         const WCHAR* wstr = emitComp->eeGetCPString(handle);
@@ -4103,8 +4126,6 @@ void emitter::emitDispCommentForHandle(size_t handle, GenTreeFlags flag)
     {
         str = emitComp->eeGetClassName(reinterpret_cast<CORINFO_CLASS_HANDLE>(handle));
     }
-#ifndef TARGET_XARCH
-    // These are less useful for xarch:
     else if (flag == GTF_ICON_CONST_PTR)
     {
         str = "const ptr";
@@ -4133,11 +4154,6 @@ void emitter::emitDispCommentForHandle(size_t handle, GenTreeFlags flag)
     {
         str = "token handle";
     }
-    else
-    {
-        str = "unknown";
-    }
-#endif // TARGET_XARCH
 
     if (str != nullptr)
     {

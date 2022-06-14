@@ -13,9 +13,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data
 {
-#pragma warning disable CA1052 // TODO: https://github.com/dotnet/roslyn-analyzers/issues/4968
-    internal class XMLSchema
-#pragma warning restore CA1052
+    internal abstract class XMLSchema
     {
         [RequiresUnreferencedCode("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
         internal static TypeConverter GetConverter(Type type)
@@ -680,9 +678,9 @@ namespace System.Data
                 }
                 ds.DataSetName = XmlConvert.DecodeName(_schemaName);
                 string? ns = schemaRoot.TargetNamespace;
-                if (ds._namespaceURI == null || ds._namespaceURI.Length == 0)
+                if (string.IsNullOrEmpty(ds._namespaceURI))
                 {// set just one time, for backward compatibility
-                    ds._namespaceURI = (ns == null) ? string.Empty : ns;           // see fx\Data\XDO\ReadXml\SchemaM2.xml for more info
+                    ds._namespaceURI = ns ?? string.Empty;           // see fx\Data\XDO\ReadXml\SchemaM2.xml for more info
                 }
                 break; // we just need to take Name and NS from first schema [V1.0 & v1.1 semantics]
             }
@@ -1349,9 +1347,9 @@ namespace System.Data
 
                     if (FromInference && relation.Nested)
                     {
-                        if (_tableDictionary!.ContainsKey(relation.ParentTable))
+                        if (_tableDictionary!.TryGetValue(relation.ParentTable, out List<DataTable>? value))
                         {
-                            _tableDictionary[relation.ParentTable].Add(relation.ChildTable);
+                            value.Add(relation.ChildTable);
                         }
                     }
 
@@ -1542,12 +1540,12 @@ namespace System.Data
             if (node is XmlSchemaElement)
             {
                 XmlSchemaElement el = (XmlSchemaElement)node;
-                instanceName = el.Name != null ? el.Name : el.RefName.Name;
+                instanceName = el.Name ?? el.RefName.Name;
             }
             else if (node is XmlSchemaAttribute)
             {
                 XmlSchemaAttribute el = (XmlSchemaAttribute)node;
-                instanceName = el.Name != null ? el.Name : el.RefName.Name;
+                instanceName = el.Name ?? el.RefName.Name;
             }
 
             Debug.Assert((instanceName != null) && (instanceName.Length != 0), "instanceName cannot be null or empty. There's an error in the XSD compiler");
@@ -1762,9 +1760,9 @@ namespace System.Data
                 _tableChild.DataSet!.Relations.Add(relation);
                 if (FromInference && relation.Nested)
                 {
-                    if (_tableDictionary!.ContainsKey(relation.ParentTable))
+                    if (_tableDictionary!.TryGetValue(relation.ParentTable, out List<DataTable>? value))
                     {
-                        _tableDictionary[relation.ParentTable].Add(relation.ChildTable);
+                        value.Add(relation.ChildTable);
                     }
                 }
             }
