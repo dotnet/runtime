@@ -12706,11 +12706,10 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithFullRangeConst(GenTreeOp* c
     }
 
     GenTree* ret        = nullptr;
-    bool     isLhsConst = lhsMin == lhsMax;
+    //bool     isLhsConst = lhsMin == lhsMax;
     // [x0, x1] <  [y0, y1] is false if x0 >= y1
     // [x0, x1] <= [y0, y1] is false if x0 > y1
-    if (((op == GT_LT) && (lhsMin >= rhsMax)) || (((op == GT_LE) && (lhsMin > rhsMax))) ||
-        (cmp->IsUnsigned() && (op == GT_LT) && ((rhsMin < 0 && !isLhsConst) || (lhsMin < 0 && isLhsConst))))
+    if (((op == GT_LT) && (lhsMin >= rhsMax)) || (((op == GT_LE) && (lhsMin > rhsMax))))
     {
         ret = gtNewZeroConNode(TYP_INT);
     }
