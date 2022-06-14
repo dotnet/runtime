@@ -12664,6 +12664,10 @@ SKIP:
 //
 GenTree* Compiler::fgOptimizeRelationalComparisonWithFullRangeConst(GenTreeOp* cmp)
 {
+    if (gtTreeHasSideEffects(cmp, GTF_SIDE_EFFECT))
+    {
+        return cmp;
+    }
 
     int64_t lhsMin;
     int64_t lhsMax;
@@ -12701,23 +12705,23 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithFullRangeConst(GenTreeOp* c
         std::swap(lhsMax, rhsMax);
     }
 
-    int64_t lefOpValue   = lhsMin;
-    int64_t rightOpValue = rhsMax;
-
-    if (cmp->IsUnsigned() && lefOpValue == -1 && lhsMax == -1)
+    GenTree* ret        = nullptr;
+    bool     isLhsConst = lhsMin == lhsMax;
+    // [x0, x1] <  [y0, y1] is false if x0 >= y1
+    // [x0, x1] <= [y0, y1] is false if x0 > y1
+    if (((op == GT_LT) && (lhsMin >= rhsMax)) || (((op == GT_LE) && (lhsMin > rhsMax))) ||
+        (cmp->IsUnsigned() && (op == GT_LT) && ((rhsMin < 0 && !isLhsConst) || (lhsMin < 0 && isLhsConst))))
     {
-        rightOpValue = -1;
+        ret = gtNewZeroConNode(TYP_INT);
+    }
+    // [x0, x1] < [y0, y1] is true if x1 < y0
+    else if ((op == GT_LT) && lhsMax < rhsMin)
+    {
+        ret = gtNewOneConNode(TYP_INT);
     }
 
-    if ((op == GT_LT && lefOpValue == rightOpValue) || (op == GT_LE && lefOpValue > rightOpValue))
+    if (ret != nullptr)
     {
-        GenTree* ret = gtNewZeroConNode(TYP_INT);
-
-        if (gtTreeHasSideEffects(cmp, GTF_SIDE_EFFECT))
-        {
-            return cmp;
-        }
-
         ret->SetVNsFromNode(cmp);
 
         DEBUG_DESTROY_NODE(cmp);
