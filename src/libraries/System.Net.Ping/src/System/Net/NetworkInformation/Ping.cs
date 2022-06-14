@@ -49,10 +49,7 @@ namespace System.Net.NetworkInformation
                 throw new ArgumentException(SR.net_invalidPingBufferSize, nameof(buffer));
             }
 
-            if (timeout < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(timeout));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(timeout);
         }
 
         private void CheckArgs(IPAddress address, int timeout, byte[] buffer, PingOptions? options)

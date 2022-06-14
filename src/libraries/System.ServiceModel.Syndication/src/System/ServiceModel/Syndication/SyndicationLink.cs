@@ -18,10 +18,7 @@ namespace System.ServiceModel.Syndication
 
         public SyndicationLink(Uri uri, string relationshipType, string title, string mediaType, long length)
         {
-            if (length < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(length));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
 
             BaseUri = null;
             Uri = uri;
@@ -62,10 +59,7 @@ namespace System.ServiceModel.Syndication
             get => _length;
             set
             {
-                if (value < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
 
                 _length = value;
             }

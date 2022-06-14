@@ -81,8 +81,7 @@ namespace System.Security.Cryptography
         {
             ArgumentNullException.ThrowIfNull(buffer);
 
-            if (offset < 0)
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
             if (count < 0 || (count > buffer.Length))
                 throw new ArgumentException(SR.Argument_InvalidValue);
             if ((buffer.Length - count) < offset)
@@ -243,8 +242,7 @@ namespace System.Security.Cryptography
         {
             ArgumentNullException.ThrowIfNull(inputBuffer);
 
-            if (inputOffset < 0)
-                throw new ArgumentOutOfRangeException(nameof(inputOffset), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(inputOffset);
             if (inputCount < 0 || inputCount > inputBuffer.Length)
                 throw new ArgumentException(SR.Argument_InvalidValue);
             if ((inputBuffer.Length - inputCount) < inputOffset)

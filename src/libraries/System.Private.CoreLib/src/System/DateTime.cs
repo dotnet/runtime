@@ -1741,10 +1741,7 @@ namespace System
 #pragma warning restore 162
 
             ticks -= FileTimeOffset;
-            if (ticks < 0)
-            {
-                throw new ArgumentOutOfRangeException(null, SR.ArgumentOutOfRange_FileTimeInvalid);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(ticks);
 
             return ticks;
         }

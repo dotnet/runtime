@@ -52,9 +52,7 @@ namespace System.Diagnostics
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public StackTrace(int skipFrames)
         {
-            if (skipFrames < 0)
-                throw new ArgumentOutOfRangeException(nameof(skipFrames),
-                    SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(skipFrames);
 
             InitializeForCurrentThread(skipFrames + METHODS_TO_SKIP, false);
         }
@@ -66,9 +64,7 @@ namespace System.Diagnostics
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public StackTrace(int skipFrames, bool fNeedFileInfo)
         {
-            if (skipFrames < 0)
-                throw new ArgumentOutOfRangeException(nameof(skipFrames),
-                    SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(skipFrames);
 
             InitializeForCurrentThread(skipFrames + METHODS_TO_SKIP, fNeedFileInfo);
         }
@@ -101,9 +97,7 @@ namespace System.Diagnostics
         {
             ArgumentNullException.ThrowIfNull(e);
 
-            if (skipFrames < 0)
-                throw new ArgumentOutOfRangeException(nameof(skipFrames),
-                    SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(skipFrames);
 
             InitializeForException(e, skipFrames + METHODS_TO_SKIP, false);
         }
@@ -116,9 +110,7 @@ namespace System.Diagnostics
         {
             ArgumentNullException.ThrowIfNull(e);
 
-            if (skipFrames < 0)
-                throw new ArgumentOutOfRangeException(nameof(skipFrames),
-                    SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(skipFrames);
 
             InitializeForException(e, skipFrames + METHODS_TO_SKIP, fNeedFileInfo);
         }

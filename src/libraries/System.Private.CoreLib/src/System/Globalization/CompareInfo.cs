@@ -386,9 +386,9 @@ namespace System.Globalization
                 throw new ArgumentOutOfRangeException((length1 < 0) ? nameof(length1) : nameof(length2), SR.ArgumentOutOfRange_NeedPosNum);
             }
 
-            if (offset1 < 0 ) throw new ArgumentOutOfRangeException(nameof(offset1) ;
+            ArgumentOutOfRangeException.ThrowIfNegative(offset1);
 
-            if (offset2 < 0) throw new ArgumentOutOfRangeException(nameof(offset2);
+            ArgumentOutOfRangeException.ThrowIfNegative(offset2);
 
             if (offset1 > (string1 == null ? 0 : string1.Length) - length1)
             {

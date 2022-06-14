@@ -15,8 +15,7 @@ namespace System.DirectoryServices.AccountManagement
         //
         void ICollection.CopyTo(Array array, int index)
         {
-            if (index < 0)
-                throw new ArgumentOutOfRangeException(nameof(index));
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
 
             if (array == null)
                 throw new ArgumentNullException(nameof(array));

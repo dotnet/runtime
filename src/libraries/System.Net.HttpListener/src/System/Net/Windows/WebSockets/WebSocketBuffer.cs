@@ -676,10 +676,7 @@ namespace System.Net.WebSockets
 
             public PayloadReceiveResult(int count, WebSocketMessageType messageType, bool endOfMessage)
             {
-                if (count < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(count));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(count);
 
                 Count = count;
                 EndOfMessage = endOfMessage;

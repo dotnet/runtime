@@ -351,10 +351,7 @@ namespace System.Speech.Recognition
 
         internal static void ValidateRepeatArguments(int minRepeat, int maxRepeat, string minParamName, string maxParamName)
         {
-            if (minRepeat < 0)
-            {
-                throw new ArgumentOutOfRangeException(minParamName, SR.Get(SRID.InvalidMinRepeat, minRepeat));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(minRepeat);
             if (minRepeat > maxRepeat)
             {
                 throw new ArgumentException(SR.Get(SRID.MinGreaterThanMax), maxParamName);

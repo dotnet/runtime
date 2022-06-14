@@ -129,10 +129,7 @@ namespace System.Text
         protected Encoding(int codePage)
         {
             // Validate code page
-            if (codePage < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(codePage));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(codePage);
 
             // Remember code page
             _codePage = codePage;
@@ -147,10 +144,7 @@ namespace System.Text
         protected Encoding(int codePage, EncoderFallback? encoderFallback, DecoderFallback? decoderFallback)
         {
             // Validate code page
-            if (codePage < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(codePage));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(codePage);
 
             // Remember code page
             _codePage = codePage;
@@ -557,12 +551,8 @@ namespace System.Text
         {
             ArgumentNullException.ThrowIfNull(s);
 
-            if (index < 0)
-                throw new ArgumentOutOfRangeException(nameof(index),
-                      SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count),
-                      SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             if (index > s.Length - count)
                 throw new ArgumentOutOfRangeException(nameof(index),
                       SR.ArgumentOutOfRange_IndexCount);
@@ -585,9 +575,7 @@ namespace System.Text
         {
             ArgumentNullException.ThrowIfNull(chars);
 
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count),
-                      SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
 
             char[] arrChar = new ReadOnlySpan<char>(chars, count).ToArray();
 
@@ -655,12 +643,8 @@ namespace System.Text
         {
             ArgumentNullException.ThrowIfNull(s);
 
-            if (index < 0)
-                throw new ArgumentOutOfRangeException(nameof(index),
-                      SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count),
-                      SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             if (index > s.Length - count)
                 throw new ArgumentOutOfRangeException(nameof(index),
                       SR.ArgumentOutOfRange_IndexCount);
@@ -719,9 +703,9 @@ namespace System.Text
             ArgumentNullException.ThrowIfNull(chars);
             ArgumentNullException.ThrowIfNull(bytes);
 
-            if (charCount < 0 ) throw new ArgumentOutOfRangeException(nameof(charCount) ;
+            ArgumentOutOfRangeException.ThrowIfNegative(charCount);
 
-            if (byteCount < 0) throw new ArgumentOutOfRangeException(nameof(byteCount);
+            ArgumentOutOfRangeException.ThrowIfNegative(byteCount);
 
             // Get the char array to convert
             char[] arrChar = new ReadOnlySpan<char>(chars, charCount).ToArray();
@@ -779,9 +763,7 @@ namespace System.Text
         {
             ArgumentNullException.ThrowIfNull(bytes);
 
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count),
-                      SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
 
             byte[] arrByte = new ReadOnlySpan<byte>(bytes, count).ToArray();
 
@@ -853,9 +835,9 @@ namespace System.Text
             ArgumentNullException.ThrowIfNull(bytes);
             ArgumentNullException.ThrowIfNull(chars);
 
-            if (byteCount < 0 ) throw new ArgumentOutOfRangeException(nameof(byteCount) ;
+            ArgumentOutOfRangeException.ThrowIfNegative(byteCount);
 
-            if (charCount < 0) throw new ArgumentOutOfRangeException(nameof(charCount);
+            ArgumentOutOfRangeException.ThrowIfNegative(charCount);
 
             // Get the byte array to convert
             byte[] arrByte = new ReadOnlySpan<byte>(bytes, byteCount).ToArray();
@@ -896,8 +878,7 @@ namespace System.Text
         {
             ArgumentNullException.ThrowIfNull(bytes);
 
-            if (byteCount < 0)
-                throw new ArgumentOutOfRangeException(nameof(byteCount), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(byteCount);
 
             return string.CreateStringFromEncoding(bytes, byteCount, this);
         }

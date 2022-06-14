@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 namespace System.Threading.RateLimiting
@@ -30,14 +30,8 @@ namespace System.Threading.RateLimiting
             int segmentsPerWindow,
             bool autoReplenishment = true)
         {
-            if (permitLimit < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(permitLimit));
-            }
-            if (queueLimit < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(queueLimit));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(permitLimit);
+            ArgumentOutOfRangeException.ThrowIfNegative(queueLimit);
             if (segmentsPerWindow <= 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(segmentsPerWindow));

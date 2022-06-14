@@ -75,10 +75,7 @@ namespace System.Reflection.Metadata
                 Throw.ArgumentNull(nameof(start));
             }
 
-            if (size < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(size));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(size);
 
             return new MetadataReaderProvider(new ExternalMemoryBlockProvider(start, size));
         }

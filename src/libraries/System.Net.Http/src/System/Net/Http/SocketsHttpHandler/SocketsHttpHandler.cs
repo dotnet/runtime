@@ -169,10 +169,7 @@ namespace System.Net.Http
             get => _settings._maxResponseDrainSize;
             set
             {
-                if (value < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.ArgumentOutOfRange_NeedNonNegativeNum);
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
 
                 CheckDisposedOrStarted();
                 _settings._maxResponseDrainSize = value;

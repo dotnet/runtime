@@ -51,10 +51,7 @@ namespace System.Net
             get { return s_maxServicePoints; }
             set
             {
-                if (value < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
                 s_maxServicePoints = value;
             }
         }

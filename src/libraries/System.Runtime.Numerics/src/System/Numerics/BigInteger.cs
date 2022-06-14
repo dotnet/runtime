@@ -964,8 +964,7 @@ namespace System.Numerics
 
         public static BigInteger ModPow(BigInteger value, BigInteger exponent, BigInteger modulus)
         {
-            if (exponent.Sign < 0)
-                throw new ArgumentOutOfRangeException(nameof(exponent), SR.ArgumentOutOfRange_MustBeNonNeg);
+            ArgumentOutOfRangeException.ThrowIfNegative(exponent.Sign);
 
             value.AssertValid();
             exponent.AssertValid();
@@ -1025,8 +1024,7 @@ namespace System.Numerics
 
         public static BigInteger Pow(BigInteger value, int exponent)
         {
-            if (exponent < 0)
-                throw new ArgumentOutOfRangeException(nameof(exponent), SR.ArgumentOutOfRange_MustBeNonNeg);
+            ArgumentOutOfRangeException.ThrowIfNegative(exponent);
 
             value.AssertValid();
 

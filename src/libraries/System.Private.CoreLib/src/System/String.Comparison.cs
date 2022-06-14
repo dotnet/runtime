@@ -380,10 +380,7 @@ namespace System
                 return strA == null ? -1 : 1;
             }
 
-            if (length < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NegativeLength);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
 
             if (indexA < 0 || indexB < 0)
             {
@@ -475,10 +472,7 @@ namespace System
             // COMPAT: Checking for nulls should become before the arguments are validated,
             // but other optimizations which allow us to return early should come after.
 
-            if (length < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NegativeCount);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
 
             if (indexA < 0 || indexB < 0)
             {

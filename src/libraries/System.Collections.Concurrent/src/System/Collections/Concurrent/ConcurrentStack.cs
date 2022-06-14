@@ -391,10 +391,7 @@ namespace System.Collections.Concurrent
         {
             ArgumentNullException.ThrowIfNull(items);
 
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ConcurrentStack_PushPopRange_CountOutOfRange);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             int length = items.Length;
             if (startIndex > length || startIndex < 0)
             {

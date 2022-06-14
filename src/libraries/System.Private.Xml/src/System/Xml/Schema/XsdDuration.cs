@@ -48,12 +48,12 @@ namespace System.Xml.Schema
         /// </summary>
         public XsdDuration(bool isNegative, int years, int months, int days, int hours, int minutes, int seconds, int nanoseconds)
         {
-            if (years < 0) throw new ArgumentOutOfRangeException(nameof(years));
-            if (months < 0) throw new ArgumentOutOfRangeException(nameof(months));
-            if (days < 0) throw new ArgumentOutOfRangeException(nameof(days));
-            if (hours < 0) throw new ArgumentOutOfRangeException(nameof(hours));
-            if (minutes < 0) throw new ArgumentOutOfRangeException(nameof(minutes));
-            if (seconds < 0) throw new ArgumentOutOfRangeException(nameof(seconds));
+            ArgumentOutOfRangeException.ThrowIfNegative(years);
+            ArgumentOutOfRangeException.ThrowIfNegative(months);
+            ArgumentOutOfRangeException.ThrowIfNegative(days);
+            ArgumentOutOfRangeException.ThrowIfNegative(hours);
+            ArgumentOutOfRangeException.ThrowIfNegative(minutes);
+            ArgumentOutOfRangeException.ThrowIfNegative(seconds);
             if (nanoseconds < 0 || nanoseconds > 999999999) throw new ArgumentOutOfRangeException(nameof(nanoseconds));
 
             _years = years;

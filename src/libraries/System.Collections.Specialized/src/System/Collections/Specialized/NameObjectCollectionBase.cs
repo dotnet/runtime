@@ -372,10 +372,7 @@ namespace System.Collections.Specialized
                 throw new ArgumentException(SR.Arg_MultiRank, nameof(array));
             }
 
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum_Index);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
 
             if (array.Length - index < _entriesArray.Count)
             {
@@ -605,10 +602,7 @@ namespace System.Collections.Specialized
                     throw new ArgumentException(SR.Arg_MultiRank, nameof(array));
                 }
 
-                if (index < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum_Index);
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(index);
 
                 if (array.Length - index < _coll.Count)
                 {

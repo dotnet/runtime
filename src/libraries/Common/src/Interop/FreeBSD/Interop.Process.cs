@@ -103,10 +103,7 @@ internal static partial class Interop
         public static unsafe ProcessInfo GetProcessInfoById(int pid)
         {
             // Negative PIDs are invalid
-            if (pid < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(pid));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(pid);
 
             ProcessInfo info;
 

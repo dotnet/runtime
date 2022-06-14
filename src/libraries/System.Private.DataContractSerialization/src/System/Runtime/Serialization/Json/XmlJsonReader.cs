@@ -733,18 +733,12 @@ namespace System.Runtime.Serialization.Json
             if (IsAttributeValue)
             {
                 ArgumentNullException.ThrowIfNull(buffer);
-                if (offset < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(offset), SR.ValueMustBeNonNegative);
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(offset);
                 if (offset > buffer.Length)
                 {
                     throw new ArgumentOutOfRangeException(nameof(offset), SR.Format(SR.OffsetExceedsBufferSize, buffer.Length));
                 }
-                if (count < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(count), SR.ValueMustBeNonNegative);
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(count);
                 if (count > buffer.Length - offset)
                 {
                     throw new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.SizeExceedsRemainingBufferSpace, buffer.Length - offset));
@@ -761,18 +755,12 @@ namespace System.Runtime.Serialization.Json
             if (IsAttributeValue)
             {
                 ArgumentNullException.ThrowIfNull(chars);
-                if (offset < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(offset), SR.ValueMustBeNonNegative);
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(offset);
                 if (offset > chars.Length)
                 {
                     throw new ArgumentOutOfRangeException(nameof(offset), SR.Format(SR.OffsetExceedsBufferSize, chars.Length));
                 }
-                if (count < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(count), SR.ValueMustBeNonNegative);
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(count);
                 if (count > chars.Length - offset)
                 {
                     throw new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.SizeExceedsRemainingBufferSpace, chars.Length - offset));
@@ -804,18 +792,12 @@ namespace System.Runtime.Serialization.Json
         {
             ArgumentNullException.ThrowIfNull(buffer);
 
-            if (offset < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ValueMustBeNonNegative);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
             if (offset > buffer.Length)
             {
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.Format(SR.JsonOffsetExceedsBufferSize, buffer.Length));
             }
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ValueMustBeNonNegative);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             if (count > buffer.Length - offset)
             {
                 throw new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.JsonSizeExceedsRemainingBufferSpace, buffer.Length - offset));
@@ -851,18 +833,12 @@ namespace System.Runtime.Serialization.Json
         {
             ArgumentNullException.ThrowIfNull(array);
 
-            if (offset < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ValueMustBeNonNegative);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
             if (offset > array.Length)
             {
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.Format(SR.OffsetExceedsBufferSize, array.Length));
             }
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ValueMustBeNonNegative);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             if (count > array.Length - offset)
             {
                 throw new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.SizeExceedsRemainingBufferSpace, array.Length - offset));

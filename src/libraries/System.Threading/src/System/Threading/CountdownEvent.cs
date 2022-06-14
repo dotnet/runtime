@@ -47,10 +47,7 @@ namespace System.Threading
         /// than 0.</exception>
         public CountdownEvent(int initialCount)
         {
-            if (initialCount < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(initialCount));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(initialCount);
 
             _initialCount = initialCount;
             _currentCount = initialCount;
@@ -388,10 +385,7 @@ namespace System.Threading
         {
             ThrowIfDisposed();
 
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
 
             _currentCount = count;
             _initialCount = count;

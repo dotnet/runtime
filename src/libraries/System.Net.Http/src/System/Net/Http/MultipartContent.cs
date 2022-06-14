@@ -570,10 +570,7 @@ namespace System.Net.Http
                 get { return _position; }
                 set
                 {
-                    if (value < 0)
-                    {
-                        throw new ArgumentOutOfRangeException(nameof(value));
-                    }
+                    ArgumentOutOfRangeException.ThrowIfNegative(value);
 
                     long previousStreamsLength = 0;
                     for (int i = 0; i < _streams.Length; i++)

@@ -21,8 +21,7 @@ namespace System.Threading
 
         public Semaphore(int initialCount, int maximumCount, string? name, out bool createdNew)
         {
-            if (initialCount < 0)
-                throw new ArgumentOutOfRangeException(nameof(initialCount), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(initialCount);
 
             if (maximumCount < 1)
                 throw new ArgumentOutOfRangeException(nameof(maximumCount), SR.ArgumentOutOfRange_NeedPosNum);

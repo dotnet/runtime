@@ -42,8 +42,7 @@ namespace System.ServiceModel
 
         public XmlBuffer(int maxBufferSize)
         {
-            if (maxBufferSize < 0)
-                throw new ArgumentOutOfRangeException(nameof(maxBufferSize), maxBufferSize, SR.ValueMustBeNonNegative);
+            ArgumentOutOfRangeException.ThrowIfNegative(maxBufferSize);
 
             int initialBufferSize = Math.Min(512, maxBufferSize);
             _stream = new BufferedStream(new MemoryStream(), initialBufferSize);

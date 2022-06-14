@@ -116,18 +116,9 @@ namespace System.Text
         /// <param name="capacity">The initial capacity of this builder.</param>
         public StringBuilder(string? value, int startIndex, int length, int capacity)
         {
-            if (capacity < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(capacity), SR.Format(SR.ArgumentOutOfRange_MustBePositive, nameof(capacity)));
-            }
-            if (length < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(length), SR.Format(SR.ArgumentOutOfRange_MustBeNonNegNum, nameof(length)));
-            }
-            if (startIndex < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(capacity);
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
+            ArgumentOutOfRangeException.ThrowIfNegative(startIndex);
 
             if (value == null)
             {
@@ -166,10 +157,7 @@ namespace System.Text
             {
                 throw new ArgumentOutOfRangeException(nameof(maxCapacity), SR.ArgumentOutOfRange_SmallMaxCapacity);
             }
-            if (capacity < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(capacity), SR.Format(SR.ArgumentOutOfRange_MustBePositive, nameof(capacity)));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(capacity);
 
             if (capacity == 0)
             {
@@ -286,10 +274,7 @@ namespace System.Text
             get => m_ChunkChars.Length + m_ChunkOffset;
             set
             {
-                if (value < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NegativeCapacity);
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
                 if (value > MaxCapacity)
                 {
                     throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_Capacity);
@@ -324,10 +309,7 @@ namespace System.Text
         /// </remarks>
         public int EnsureCapacity(int capacity)
         {
-            if (capacity < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_NegativeCapacity);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(capacity);
 
             if (Capacity < capacity)
             {
@@ -382,18 +364,12 @@ namespace System.Text
         public string ToString(int startIndex, int length)
         {
             int currentLength = this.Length;
-            if (startIndex < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(startIndex);
             if (startIndex > currentLength)
             {
                 throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndexLargerThanLength);
             }
-            if (length < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NegativeLength);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
             if (startIndex > currentLength - length)
             {
                 throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_IndexLength);
@@ -420,10 +396,7 @@ namespace System.Text
             set
             {
                 // If the new length is less than 0 or greater than our Maximum capacity, bail.
-                if (value < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NegativeLength);
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
 
                 if (value > MaxCapacity)
                 {
@@ -687,10 +660,7 @@ namespace System.Text
         /// <param name="repeatCount">The number of times to append <paramref name="value"/>.</param>
         public StringBuilder Append(char value, int repeatCount)
         {
-            if (repeatCount < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(repeatCount), SR.ArgumentOutOfRange_NegativeCount);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(repeatCount);
 
             if (repeatCount == 0)
             {
@@ -735,14 +705,8 @@ namespace System.Text
         /// <param name="charCount">The number of characters to read in <paramref name="value"/>.</param>
         public StringBuilder Append(char[]? value, int startIndex, int charCount)
         {
-            if (startIndex < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_GenericPositive);
-            }
-            if (charCount < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(charCount), SR.ArgumentOutOfRange_GenericPositive);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(startIndex);
+            ArgumentOutOfRangeException.ThrowIfNegative(charCount);
 
             if (value == null)
             {
@@ -788,14 +752,8 @@ namespace System.Text
         /// <param name="count">The number of characters to read in <paramref name="value"/>.</param>
         public StringBuilder Append(string? value, int startIndex, int count)
         {
-            if (startIndex < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
-            }
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_GenericPositive);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(startIndex);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
 
             if (value == null)
             {
@@ -830,15 +788,9 @@ namespace System.Text
 
         public StringBuilder Append(StringBuilder? value, int startIndex, int count)
         {
-            if (startIndex < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(startIndex);
 
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_GenericPositive);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
 
             if (value == null)
             {
@@ -906,10 +858,7 @@ namespace System.Text
         {
             ArgumentNullException.ThrowIfNull(destination);
 
-            if (destinationIndex < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(destinationIndex), SR.Format(SR.ArgumentOutOfRange_MustBeNonNegNum, nameof(destinationIndex)));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(destinationIndex);
 
             if (destinationIndex > destination.Length - count)
             {
@@ -921,10 +870,7 @@ namespace System.Text
 
         public void CopyTo(int sourceIndex, Span<char> destination, int count)
         {
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.Arg_NegativeArgCount);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
 
             if ((uint)sourceIndex > (uint)Length)
             {
@@ -975,10 +921,7 @@ namespace System.Text
 
         private StringBuilder Insert(int index, ReadOnlySpan<char> value, int count)
         {
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
 
             int currentLength = Length;
             if ((uint)index > (uint)currentLength)
@@ -1019,15 +962,9 @@ namespace System.Text
         /// </remarks>
         public StringBuilder Remove(int startIndex, int length)
         {
-            if (length < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NegativeLength);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
 
-            if (startIndex < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(startIndex);
 
             if (length > Length - startIndex)
             {
@@ -1336,15 +1273,9 @@ namespace System.Text
                 ArgumentNullException.Throw(nameof(value));
             }
 
-            if (startIndex < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(startIndex);
 
-            if (charCount < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(charCount), SR.ArgumentOutOfRange_GenericPositive);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(charCount);
 
             if (startIndex > value.Length - charCount)
             {
@@ -2000,10 +1931,7 @@ namespace System.Text
         public unsafe StringBuilder Append(char* value, int valueCount)
         {
             // We don't check null value as this case will throw null reference exception anyway
-            if (valueCount < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(valueCount), SR.ArgumentOutOfRange_NegativeCount);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(valueCount);
 
             Append(ref *value, valueCount);
             return this;

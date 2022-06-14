@@ -400,10 +400,7 @@ namespace System.Security.Principal
             // Negative offsets are not allowed
             //
 
-            if (offset < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset), offset, SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
 
             //
             // At least a minimum-size SID should fit in the buffer

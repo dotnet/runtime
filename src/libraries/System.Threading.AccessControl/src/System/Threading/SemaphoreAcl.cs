@@ -31,10 +31,7 @@ namespace System.Threading
                 return new Semaphore(initialCount, maximumCount, name, out createdNew);
             }
 
-            if (initialCount < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(initialCount), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(initialCount);
 
             if (maximumCount < 1)
             {

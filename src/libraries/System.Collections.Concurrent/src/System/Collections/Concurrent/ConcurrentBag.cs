@@ -278,10 +278,7 @@ namespace System.Collections.Concurrent
         {
             ArgumentNullException.ThrowIfNull(array);
 
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.Collection_CopyTo_ArgumentOutOfRangeException);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
 
             // Short path if the bag is empty
             if (_workStealingQueues == null)

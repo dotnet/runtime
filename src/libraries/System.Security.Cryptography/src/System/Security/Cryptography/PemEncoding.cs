@@ -353,10 +353,8 @@ namespace System.Security.Cryptography
             // is accounted for assuming an empty label.
             const int MaxDataLength = 1_585_834_053;
 
-            if (labelLength < 0)
-                throw new ArgumentOutOfRangeException(nameof(labelLength), SR.ArgumentOutOfRange_NeedPosNum);
-            if (dataLength < 0)
-                throw new ArgumentOutOfRangeException(nameof(dataLength), SR.ArgumentOutOfRange_NeedPosNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(labelLength);
+            ArgumentOutOfRangeException.ThrowIfNegative(dataLength);
             if (labelLength > MaxLabelSize)
                 throw new ArgumentOutOfRangeException(nameof(labelLength), SR.Argument_PemEncoding_EncodedSizeTooLarge);
             if (dataLength > MaxDataLength)

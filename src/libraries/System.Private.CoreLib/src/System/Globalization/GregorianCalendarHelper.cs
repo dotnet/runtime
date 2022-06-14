@@ -525,11 +525,7 @@ namespace System.Globalization
 
         public int ToFourDigitYear(int year, int twoDigitYearMax)
         {
-            if (year < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(year),
-                    SR.ArgumentOutOfRange_NeedPosNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(year);
 
             if (year < 100)
             {

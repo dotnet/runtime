@@ -173,10 +173,7 @@ namespace System.Security.AccessControl
                 throw new RankException(SR.Rank_MultiDimNotSupported);
             }
 
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
 
             if (array.Length - index < Count)
             {
@@ -239,14 +236,7 @@ namespace System.Security.AccessControl
         {
             ArgumentNullException.ThrowIfNull(binaryForm);
 
-            if (offset < 0)
-            {
-                //
-                // Offset must not be negative
-                //
-
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
 
             if (binaryForm.Length - offset < HeaderLength)
             {
@@ -282,10 +272,7 @@ namespace System.Security.AccessControl
         {
             ArgumentNullException.ThrowIfNull(binaryForm);
 
-            if (offset < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
 
             if (BinaryLength > MaxBinaryLength)
             {

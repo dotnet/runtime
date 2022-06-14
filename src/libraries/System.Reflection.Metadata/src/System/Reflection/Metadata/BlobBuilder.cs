@@ -684,10 +684,7 @@ namespace System.Reflection.Metadata
                 Throw.ArgumentNull(nameof(source));
             }
 
-            if (byteCount < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(byteCount));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(byteCount);
 
             if (byteCount == 0)
             {

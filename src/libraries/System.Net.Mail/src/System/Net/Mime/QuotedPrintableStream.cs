@@ -67,10 +67,7 @@ namespace System.Net.Mime
         /// <param name="lineLength">Preferred maximum line-length for writes</param>
         internal QuotedPrintableStream(Stream stream, int lineLength) : base(stream)
         {
-            if (lineLength < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(lineLength));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(lineLength);
 
             _lineLength = lineLength;
         }

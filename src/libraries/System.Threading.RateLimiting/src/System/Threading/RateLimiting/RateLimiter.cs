@@ -36,10 +36,7 @@ namespace System.Threading.RateLimiting
         /// <exception cref="ArgumentOutOfRangeException"></exception>
         public RateLimitLease Acquire(int permitCount = 1)
         {
-            if (permitCount < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(permitCount));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(permitCount);
 
             return AcquireCore(permitCount);
         }
@@ -63,10 +60,7 @@ namespace System.Threading.RateLimiting
         /// <exception cref="ArgumentOutOfRangeException"></exception>
         public ValueTask<RateLimitLease> WaitAsync(int permitCount = 1, CancellationToken cancellationToken = default)
         {
-            if (permitCount < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(permitCount));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(permitCount);
 
             if (cancellationToken.IsCancellationRequested)
             {

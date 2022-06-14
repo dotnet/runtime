@@ -496,10 +496,7 @@ namespace System.Net.Sockets
             }
             set
             {
-                if (value < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
 
                 SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveBuffer, value);
             }
@@ -514,10 +511,7 @@ namespace System.Net.Sockets
 
             set
             {
-                if (value < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
 
                 SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendBuffer, value);
             }
@@ -2503,10 +2497,7 @@ namespace System.Net.Sockets
         // There's no direct equivalent of this in the Task APIs, so we mimic it here.
         private async Task<(Socket s, byte[] buffer, int bytesReceived)> AcceptAndReceiveHelperAsync(Socket? acceptSocket, int receiveSize)
         {
-            if (receiveSize < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(receiveSize));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(receiveSize);
 
             Socket s = await AcceptAsync(acceptSocket).ConfigureAwait(false);
 

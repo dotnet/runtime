@@ -120,10 +120,7 @@ namespace System.Threading
         {
             ArgumentNullException.ThrowIfNull(start);
 
-            if (maxStackSize < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(maxStackSize), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(maxStackSize);
 
             _startHelper = new StartHelper(start) { _maxStackSize = maxStackSize };
 
@@ -143,10 +140,7 @@ namespace System.Threading
         {
             ArgumentNullException.ThrowIfNull(start);
 
-            if (maxStackSize < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(maxStackSize), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(maxStackSize);
 
             _startHelper = new StartHelper(start) { _maxStackSize = maxStackSize };
 

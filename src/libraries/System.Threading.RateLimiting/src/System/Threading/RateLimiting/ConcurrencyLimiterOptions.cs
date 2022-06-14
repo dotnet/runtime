@@ -17,14 +17,8 @@ namespace System.Threading.RateLimiting
         /// <exception cref="ArgumentOutOfRangeException">When <paramref name="permitLimit"/> or <paramref name="queueLimit"/> are less than 0.</exception>
         public ConcurrencyLimiterOptions(int permitLimit, QueueProcessingOrder queueProcessingOrder, int queueLimit)
         {
-            if (permitLimit < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(permitLimit));
-            }
-            if (queueLimit < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(queueLimit));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(permitLimit);
+            ArgumentOutOfRangeException.ThrowIfNegative(queueLimit);
             PermitLimit = permitLimit;
             QueueProcessingOrder = queueProcessingOrder;
             QueueLimit = queueLimit;

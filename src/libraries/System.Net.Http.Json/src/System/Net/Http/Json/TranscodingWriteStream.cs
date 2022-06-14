@@ -73,15 +73,9 @@ namespace System.Net.Http.Json
                 throw new ArgumentNullException(nameof(buffer));
             }
 
-            if (offset < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
 
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
 
             if (buffer.Length - offset < count)
             {

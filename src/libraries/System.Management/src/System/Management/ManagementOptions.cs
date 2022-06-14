@@ -212,8 +212,7 @@ namespace System.Management
             set
             {
                 //Timespan allows for negative values, but we want to make sure it's positive here...
-                if (value.Ticks < 0)
-                    throw new ArgumentOutOfRangeException(nameof(value));
+                ArgumentOutOfRangeException.ThrowIfNegative(value.Ticks);
 
                 timeout = value;
                 FireIdentifierChanged();

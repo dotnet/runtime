@@ -33,10 +33,7 @@ namespace Microsoft.Extensions.Caching.Memory
             get => _sizeLimit < 0 ? null : _sizeLimit;
             set
             {
-                if (value < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), value, $"{nameof(value)} must be non-negative.");
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
 
                 _sizeLimit = value ?? NotSet;
             }

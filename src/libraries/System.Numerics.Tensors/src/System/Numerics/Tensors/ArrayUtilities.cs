@@ -19,10 +19,7 @@ namespace System.Numerics.Tensors
             long product = 1;
             for (int i = startIndex; i < dimensions.Length; i++)
             {
-                if (dimensions[i] < 0)
-                {
-                    throw new ArgumentOutOfRangeException($"{nameof(dimensions)}[{i}]");
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(dimensions[i]);
 
                 // we use a long which should be much larger than is ever used here,
                 // but still force checked

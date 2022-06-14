@@ -69,8 +69,7 @@ namespace System.Security.Cryptography
         public int TransformBlock(byte[] inputBuffer, int inputOffset, int inputCount, byte[] outputBuffer, int outputOffset)
         {
             ArgumentNullException.ThrowIfNull(inputBuffer);
-            if (inputOffset < 0)
-                throw new ArgumentOutOfRangeException(nameof(inputOffset));
+            ArgumentOutOfRangeException.ThrowIfNegative(inputOffset);
             if (inputOffset > inputBuffer.Length)
                 throw new ArgumentOutOfRangeException(nameof(inputOffset));
             if (inputCount <= 0)
@@ -95,10 +94,8 @@ namespace System.Security.Cryptography
         {
             ArgumentNullException.ThrowIfNull(inputBuffer);
 
-            if (inputOffset < 0)
-                throw new ArgumentOutOfRangeException(nameof(inputOffset));
-            if (inputCount < 0)
-                throw new ArgumentOutOfRangeException(nameof(inputCount));
+            ArgumentOutOfRangeException.ThrowIfNegative(inputOffset);
+            ArgumentOutOfRangeException.ThrowIfNegative(inputCount);
             if (inputOffset > inputBuffer.Length)
                 throw new ArgumentOutOfRangeException(nameof(inputOffset));
             if (inputCount > inputBuffer.Length - inputOffset)

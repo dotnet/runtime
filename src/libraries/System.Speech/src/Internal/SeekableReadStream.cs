@@ -87,10 +87,7 @@ namespace System.Speech.Internal
                 }
                 else if (value != _virtualPosition)
                 {
-                    if (value < 0)
-                    {
-                        throw new ArgumentOutOfRangeException(nameof(value), SR.Get(SRID.MustBeGreaterThanZero));
-                    }
+                    ArgumentOutOfRangeException.ThrowIfNegative(value);
                     // We can't check the length here so you can Seek beyond the end of the Stream. This will error later though.
 
                     if (_cacheDataForSeeking)

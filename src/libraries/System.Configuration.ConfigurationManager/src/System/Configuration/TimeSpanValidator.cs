@@ -20,7 +20,7 @@ namespace System.Configuration
 
         public TimeSpanValidator(TimeSpan minValue, TimeSpan maxValue, bool rangeIsExclusive, long resolutionInSeconds)
         {
-            if (resolutionInSeconds < 0) throw new ArgumentOutOfRangeException(nameof(resolutionInSeconds));
+            ArgumentOutOfRangeException.ThrowIfNegative(resolutionInSeconds);
 
             if (minValue > maxValue)
                 throw new ArgumentOutOfRangeException(nameof(minValue), SR.Validator_min_greater_than_max);

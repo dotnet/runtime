@@ -86,14 +86,8 @@ namespace System.IO
         {
             ArgumentNullException.ThrowIfNull(buffer);
 
-            if (offset < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
-            if (length < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
             if (buffer.ByteLength < (ulong)(offset + length))
             {
                 throw new ArgumentException(SR.Argument_InvalidSafeBufferOffLen);
@@ -163,9 +157,9 @@ namespace System.IO
         {
             ArgumentNullException.ThrowIfNull(pointer);
 
-            if (length < 0 ) throw new ArgumentOutOfRangeException(nameof(length) ;
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
 
-            if (capacity < 0) throw new ArgumentOutOfRangeException(nameof(capacity);
+            ArgumentOutOfRangeException.ThrowIfNegative(capacity);
             if (length > capacity)
                 throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_LengthGreaterThanCapacity);
             // Check for wraparound.
@@ -294,7 +288,7 @@ namespace System.IO
             }
             set
             {
-                if (value < 0) throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NeedNonNegNum);
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
                 if (!CanSeek) ThrowHelper.ThrowObjectDisposedException_StreamClosed(null);
 
                 Interlocked.Exchange(ref _position, value);
@@ -331,8 +325,7 @@ namespace System.IO
                 if (value < _mem)
                     throw new IOException(SR.IO_SeekBeforeBegin);
                 long newPosition = (long)value - (long)_mem;
-                if (newPosition < 0)
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_UnmanagedMemStreamLength);
+                ArgumentOutOfRangeException.ThrowIfNegative(newPosition);
 
                 Interlocked.Exchange(ref _position, newPosition);
             }
@@ -573,8 +566,7 @@ namespace System.IO
         /// <param name="value"></param>
         public override void SetLength(long value)
         {
-            if (value < 0)
-                throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(value);
             if (_buffer != null)
                 throw new NotSupportedException(SR.NotSupported_UmsSafeBuffer);
 

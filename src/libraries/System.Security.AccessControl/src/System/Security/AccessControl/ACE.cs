@@ -114,12 +114,7 @@ namespace System.Security.AccessControl
 
             int Length = BinaryLength; // Invokes the most derived property
 
-            if (offset < 0)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(offset),
-                    SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
 
             if (binaryForm.Length - offset < BinaryLength)
             {
@@ -245,12 +240,7 @@ namespace System.Security.AccessControl
         {
             ArgumentNullException.ThrowIfNull(binaryForm);
 
-            if (offset < 0)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(offset),
-                    SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
 
             if (binaryForm.Length - offset < HeaderLength)
             {

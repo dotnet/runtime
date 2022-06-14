@@ -26,17 +26,13 @@ namespace System
 
         public Version(int major, int minor, int build, int revision)
         {
-            if (major < 0)
-                throw new ArgumentOutOfRangeException(nameof(major), SR.ArgumentOutOfRange_Version);
+            ArgumentOutOfRangeException.ThrowIfNegative(major);
 
-            if (minor < 0)
-                throw new ArgumentOutOfRangeException(nameof(minor), SR.ArgumentOutOfRange_Version);
+            ArgumentOutOfRangeException.ThrowIfNegative(minor);
 
-            if (build < 0)
-                throw new ArgumentOutOfRangeException(nameof(build), SR.ArgumentOutOfRange_Version);
+            ArgumentOutOfRangeException.ThrowIfNegative(build);
 
-            if (revision < 0)
-                throw new ArgumentOutOfRangeException(nameof(revision), SR.ArgumentOutOfRange_Version);
+            ArgumentOutOfRangeException.ThrowIfNegative(revision);
 
             _Major = major;
             _Minor = minor;
@@ -46,14 +42,11 @@ namespace System
 
         public Version(int major, int minor, int build)
         {
-            if (major < 0)
-                throw new ArgumentOutOfRangeException(nameof(major), SR.ArgumentOutOfRange_Version);
+            ArgumentOutOfRangeException.ThrowIfNegative(major);
 
-            if (minor < 0)
-                throw new ArgumentOutOfRangeException(nameof(minor), SR.ArgumentOutOfRange_Version);
+            ArgumentOutOfRangeException.ThrowIfNegative(minor);
 
-            if (build < 0)
-                throw new ArgumentOutOfRangeException(nameof(build), SR.ArgumentOutOfRange_Version);
+            ArgumentOutOfRangeException.ThrowIfNegative(build);
 
             _Major = major;
             _Minor = minor;
@@ -63,11 +56,9 @@ namespace System
 
         public Version(int major, int minor)
         {
-            if (major < 0)
-                throw new ArgumentOutOfRangeException(nameof(major), SR.ArgumentOutOfRange_Version);
+            ArgumentOutOfRangeException.ThrowIfNegative(major);
 
-            if (minor < 0)
-                throw new ArgumentOutOfRangeException(nameof(minor), SR.ArgumentOutOfRange_Version);
+            ArgumentOutOfRangeException.ThrowIfNegative(minor);
 
             _Major = major;
             _Minor = minor;
@@ -361,10 +352,7 @@ namespace System
         {
             if (throwOnFailure)
             {
-                if ((parsedComponent = int.Parse(component, NumberStyles.Integer, CultureInfo.InvariantCulture)) < 0)
-                {
-                    throw new ArgumentOutOfRangeException(componentName, SR.ArgumentOutOfRange_Version);
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative((parsedComponent = int.Parse(component, NumberStyles.Integer, CultureInfo.InvariantCulture)));
                 return true;
             }
 

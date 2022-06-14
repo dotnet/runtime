@@ -88,10 +88,7 @@ namespace System.IO
             get => _maxRecursionDepth;
             set
             {
-                if (value < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NeedNonNegNum);
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
 
                 _maxRecursionDepth = value;
             }

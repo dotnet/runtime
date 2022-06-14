@@ -479,14 +479,8 @@ namespace System.Xml
         public override int ReadElementContentAsBase64(byte[] buffer, int index, int count)
         {
             ArgumentNullException.ThrowIfNull(buffer);
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
             if (buffer.Length - index < count)
             {
                 throw new ArgumentOutOfRangeException(nameof(count));
@@ -536,14 +530,8 @@ namespace System.Xml
         public override int ReadElementContentAsBinHex(byte[] buffer, int index, int count)
         {
             ArgumentNullException.ThrowIfNull(buffer);
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
             if (buffer.Length - index < count)
             {
                 throw new ArgumentOutOfRangeException(nameof(count));

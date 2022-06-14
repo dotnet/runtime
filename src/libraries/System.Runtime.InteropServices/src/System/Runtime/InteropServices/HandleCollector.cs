@@ -22,14 +22,8 @@ namespace System.Runtime.InteropServices
 
         public HandleCollector(string? name, int initialThreshold, int maximumThreshold)
         {
-            if (initialThreshold < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(initialThreshold), initialThreshold, SR.Arg_NeedNonNegNumRequired);
-            }
-            if (maximumThreshold < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(maximumThreshold), maximumThreshold, SR.Arg_NeedNonNegNumRequired);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(initialThreshold);
+            ArgumentOutOfRangeException.ThrowIfNegative(maximumThreshold);
             if (initialThreshold > maximumThreshold)
             {
                 throw new ArgumentException(SR.Arg_InvalidThreshold, nameof(initialThreshold));

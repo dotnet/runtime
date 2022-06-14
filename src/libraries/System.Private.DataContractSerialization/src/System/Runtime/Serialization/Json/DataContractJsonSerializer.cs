@@ -549,10 +549,7 @@ namespace System.Runtime.Serialization.Json
                 }
             }
 
-            if (maxItemsInObjectGraph < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(maxItemsInObjectGraph), SR.ValueMustBeNonNegative);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(maxItemsInObjectGraph);
             _maxItemsInObjectGraph = maxItemsInObjectGraph;
             _ignoreExtensionDataObject = ignoreExtensionDataObject;
             _emitTypeInformation = emitTypeInformation;

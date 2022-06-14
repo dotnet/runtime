@@ -17,8 +17,7 @@ namespace System.DirectoryServices.AccountManagement
         {
             CheckDisposed();
 
-            if (index < 0)
-                throw new ArgumentOutOfRangeException(nameof(index));
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
 
             if (array == null)
                 throw new ArgumentNullException(nameof(array));

@@ -757,9 +757,7 @@ namespace System.Text
 
         public override int GetMaxByteCount(int charCount)
         {
-            if (charCount < 0)
-                throw new ArgumentOutOfRangeException(nameof(charCount),
-                     SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(charCount);
 
             // GetMaxByteCount assumes that the caller might have a stateful Encoder instance. If the
             // Encoder instance already has a captured high surrogate, then one of two things will
@@ -790,9 +788,7 @@ namespace System.Text
 
         public override int GetMaxCharCount(int byteCount)
         {
-            if (byteCount < 0)
-                throw new ArgumentOutOfRangeException(nameof(byteCount),
-                     SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(byteCount);
 
             // GetMaxCharCount assumes that the caller might have a stateful Decoder instance. If the
             // Decoder instance already has a captured partial UTF-8 subsequence, then one of two

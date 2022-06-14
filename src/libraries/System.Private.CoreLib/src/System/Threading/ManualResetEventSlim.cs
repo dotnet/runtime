@@ -173,10 +173,7 @@ namespace System.Threading
         /// 0 or greater than the maximum allowed value.</exception>
         public ManualResetEventSlim(bool initialState, int spinCount)
         {
-            if (spinCount < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(spinCount));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(spinCount);
 
             if (spinCount > SpinCountState_MaxValue)
             {

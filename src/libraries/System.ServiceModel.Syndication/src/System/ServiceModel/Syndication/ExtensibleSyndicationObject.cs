@@ -70,10 +70,7 @@ namespace System.ServiceModel.Syndication
                 throw new ArgumentNullException(nameof(readerOverUnparsedExtensions));
             }
 
-            if (maxExtensionSize < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(maxExtensionSize));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(maxExtensionSize);
 
             XmlDictionaryReader r = XmlDictionaryReader.CreateDictionaryReader(readerOverUnparsedExtensions);
             _elementExtensions = new SyndicationElementExtensionCollection(CreateXmlBuffer(r, maxExtensionSize));

@@ -25,10 +25,7 @@ namespace System.Reflection.Internal
 
         internal static MemoryBlock CreateChecked(byte* buffer, int length)
         {
-            if (length < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(length));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
 
             if (buffer == null && length != 0)
             {

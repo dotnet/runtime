@@ -562,8 +562,7 @@ namespace System.Collections.Specialized
             {
                 ArgumentNullException.ThrowIfNull(array);
 
-                if (index < 0)
-                    throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum_Index);
+                ArgumentOutOfRangeException.ThrowIfNegative(index);
                 foreach (object? o in _objects)
                 {
                     Debug.Assert(o != null);

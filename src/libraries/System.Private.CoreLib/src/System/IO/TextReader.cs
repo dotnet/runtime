@@ -71,14 +71,8 @@ namespace System.IO
         {
             ArgumentNullException.ThrowIfNull(buffer);
 
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             if (buffer.Length - index < count)
             {
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
@@ -267,9 +261,9 @@ namespace System.IO
         {
             ArgumentNullException.ThrowIfNull(buffer);
 
-            if (index < 0 ) throw new ArgumentOutOfRangeException(nameof(index) ;
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
 
-            if (count < 0) throw new ArgumentOutOfRangeException(nameof(count);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             if (buffer.Length - index < count)
             {
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
@@ -298,9 +292,9 @@ namespace System.IO
         {
             ArgumentNullException.ThrowIfNull(buffer);
 
-            if (index < 0 ) throw new ArgumentOutOfRangeException(nameof(index) ;
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
 
-            if (count < 0) throw new ArgumentOutOfRangeException(nameof(count);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             if (buffer.Length - index < count)
             {
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
@@ -399,9 +393,9 @@ namespace System.IO
             {
                 ArgumentNullException.ThrowIfNull(buffer);
 
-                if (index < 0 ) throw new ArgumentOutOfRangeException(nameof(index) ;
+                ArgumentOutOfRangeException.ThrowIfNegative(index);
 
-                if (count < 0) throw new ArgumentOutOfRangeException(nameof(count);
+                ArgumentOutOfRangeException.ThrowIfNegative(count);
                 if (buffer.Length - index < count)
                     throw new ArgumentException(SR.Argument_InvalidOffLen);
 
@@ -413,9 +407,9 @@ namespace System.IO
             {
                 ArgumentNullException.ThrowIfNull(buffer);
 
-                if (index < 0 ) throw new ArgumentOutOfRangeException(nameof(index) ;
+                ArgumentOutOfRangeException.ThrowIfNegative(index);
 
-                if (count < 0) throw new ArgumentOutOfRangeException(nameof(count);
+                ArgumentOutOfRangeException.ThrowIfNegative(count);
                 if (buffer.Length - index < count)
                     throw new ArgumentException(SR.Argument_InvalidOffLen);
 

@@ -81,8 +81,7 @@ namespace System.Security.Cryptography
         {
             if (iterations <= 0)
                 throw new ArgumentOutOfRangeException(nameof(iterations), SR.ArgumentOutOfRange_NeedPosNum);
-            if (outputLength < 0)
-                throw new ArgumentOutOfRangeException(nameof(outputLength), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(outputLength);
 
             ValidateHashAlgorithm(hashAlgorithm);
 
@@ -209,8 +208,7 @@ namespace System.Security.Cryptography
             HashAlgorithmName hashAlgorithm,
             int outputLength)
         {
-            if (outputLength < 0)
-                throw new ArgumentOutOfRangeException(nameof(outputLength), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(outputLength);
             if (iterations <= 0)
                 throw new ArgumentOutOfRangeException(nameof(iterations), SR.ArgumentOutOfRange_NeedPosNum);
 

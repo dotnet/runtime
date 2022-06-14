@@ -60,10 +60,7 @@ namespace System.Speech.Synthesis
         {
             Helpers.ThrowIfNull(culture, nameof(culture));
 
-            if (voiceAlternate < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(voiceAlternate), SR.Get(SRID.PromptBuilderInvalidVariant));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(voiceAlternate);
             if (!VoiceInfo.ValidateGender(gender))
             {
                 throw new ArgumentException(SR.Get(SRID.EnumInvalid, "VoiceGender"), nameof(gender));

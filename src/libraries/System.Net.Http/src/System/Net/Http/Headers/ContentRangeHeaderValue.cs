@@ -55,10 +55,7 @@ namespace System.Net.Http.Headers
         {
             // Scenario: "Content-Range: bytes 12-34/5678"
 
-            if (length < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(length));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
             if ((to < 0) || (to > length))
             {
                 throw new ArgumentOutOfRangeException(nameof(to));
@@ -78,10 +75,7 @@ namespace System.Net.Http.Headers
         {
             // Scenario: "Content-Range: bytes */1234"
 
-            if (length < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(length));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
 
             _length = length;
             _unit = HeaderUtilities.BytesUnit;
@@ -91,10 +85,7 @@ namespace System.Net.Http.Headers
         {
             // Scenario: "Content-Range: bytes 12-34/*"
 
-            if (to < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(to));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(to);
             if ((from < 0) || (from > to))
             {
                 throw new ArgumentOutOfRangeException(nameof(from));

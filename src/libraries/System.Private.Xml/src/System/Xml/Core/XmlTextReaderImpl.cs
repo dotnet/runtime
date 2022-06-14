@@ -1599,14 +1599,8 @@ namespace System.Xml
         public override int ReadContentAsBase64(byte[] buffer, int index, int count)
         {
             ArgumentNullException.ThrowIfNull(buffer);
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
             if (buffer.Length - index < count)
             {
                 throw new ArgumentOutOfRangeException(nameof(count));
@@ -1655,14 +1649,8 @@ namespace System.Xml
         public override int ReadContentAsBinHex(byte[] buffer, int index, int count)
         {
             ArgumentNullException.ThrowIfNull(buffer);
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
             if (buffer.Length - index < count)
             {
                 throw new ArgumentOutOfRangeException(nameof(count));
@@ -1710,14 +1698,8 @@ namespace System.Xml
         public override int ReadElementContentAsBase64(byte[] buffer, int index, int count)
         {
             ArgumentNullException.ThrowIfNull(buffer);
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
             if (buffer.Length - index < count)
             {
                 throw new ArgumentOutOfRangeException(nameof(count));
@@ -1766,14 +1748,8 @@ namespace System.Xml
         public override int ReadElementContentAsBinHex(byte[] buffer, int index, int count)
         {
             ArgumentNullException.ThrowIfNull(buffer);
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
             if (buffer.Length - index < count)
             {
                 throw new ArgumentOutOfRangeException(nameof(count));
@@ -1835,14 +1811,8 @@ namespace System.Xml
                 throw new InvalidOperationException(SR.Format(SR.Xml_InvalidReadValueChunk, _curNode.type));
             }
             ArgumentNullException.ThrowIfNull(buffer);
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
             if (buffer.Length - index < count)
             {
                 throw new ArgumentOutOfRangeException(nameof(count));
@@ -8245,15 +8215,9 @@ namespace System.Xml
                 throw new ArgumentNullException((_incReadDecoder is IncrementalReadCharsDecoder) ? "buffer" : nameof(array));
             }
 
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException((_incReadDecoder is IncrementalReadCharsDecoder) ? nameof(count) : "len");
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
 
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException((_incReadDecoder is IncrementalReadCharsDecoder) ? nameof(index) : "offset");
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
 
             if (array.Length - index < count)
             {

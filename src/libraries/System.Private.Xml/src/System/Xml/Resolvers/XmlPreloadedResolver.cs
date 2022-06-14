@@ -292,14 +292,8 @@ namespace System.Xml.Resolvers
             ArgumentNullException.ThrowIfNull(uri);
             ArgumentNullException.ThrowIfNull(value);
 
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
-            if (offset < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
             if (value.Length - offset < count)
             {
                 throw new ArgumentOutOfRangeException(nameof(count));

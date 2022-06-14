@@ -76,10 +76,7 @@ namespace System.Reflection.PortableExecutable
                 Throw.ArgumentNull(nameof(peImage));
             }
 
-            if (size < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(size));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(size);
 
             _peImage = new ExternalMemoryBlockProvider(peImage, size);
             IsLoadedImage = isLoadedImage;

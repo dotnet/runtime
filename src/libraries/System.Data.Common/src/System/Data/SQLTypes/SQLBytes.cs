@@ -261,8 +261,7 @@ namespace System.Data.SqlTypes
         // If the SqlBytes is Null, setLength will make it non-Null.
         public void SetLength(long value)
         {
-            if (value < 0)
-                throw new ArgumentOutOfRangeException(nameof(value));
+            ArgumentOutOfRangeException.ThrowIfNegative(value);
 
             if (FStream())
             {
@@ -350,8 +349,7 @@ namespace System.Data.SqlTypes
                 if (_rgbBuf == null)
                     throw new SqlTypeException(SR.SqlMisc_NoBufferMessage);
 
-                if (offset < 0)
-                    throw new ArgumentOutOfRangeException(nameof(offset));
+                ArgumentOutOfRangeException.ThrowIfNegative(offset);
                 if (offset > _rgbBuf.Length)
                     throw new SqlTypeException(SR.SqlMisc_BufferInsufficientMessage);
 

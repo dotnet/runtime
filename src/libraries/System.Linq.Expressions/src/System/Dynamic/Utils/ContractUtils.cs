@@ -138,8 +138,7 @@ namespace System.Dynamic.Utils
             Debug.Assert(!string.IsNullOrEmpty(countName));
             Debug.Assert(array != null);
 
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(countName);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             if (offset < 0 || array.Count - offset < count)
                 throw new ArgumentOutOfRangeException(offsetName);
         }

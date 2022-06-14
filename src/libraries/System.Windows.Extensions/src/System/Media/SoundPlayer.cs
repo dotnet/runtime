@@ -71,10 +71,7 @@ namespace System.Media
             get => _loadTimeout;
             set
             {
-                if (value < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(LoadTimeout), value, SR.SoundAPILoadTimeout);
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
 
                 _loadTimeout = value;
             }

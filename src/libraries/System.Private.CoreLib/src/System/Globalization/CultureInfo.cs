@@ -203,10 +203,7 @@ namespace System.Globalization
         public CultureInfo(int culture, bool useUserOverride)
         {
             // We don't check for other invalid LCIDS here...
-            if (culture < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(culture), SR.ArgumentOutOfRange_NeedPosNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(culture);
 
             switch (culture)
             {

@@ -177,10 +177,7 @@ namespace System.Drawing.Printing
 
         private static void CheckMargin(int margin, string name)
         {
-            if (margin < 0)
-            {
-                throw new ArgumentOutOfRangeException(name, margin, SR.Format(SR.InvalidLowBoundArgumentEx, name, margin, 0));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(margin);
         }
 
         /// <summary>

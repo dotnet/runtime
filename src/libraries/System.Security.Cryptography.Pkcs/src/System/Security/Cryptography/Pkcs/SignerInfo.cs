@@ -357,10 +357,7 @@ namespace System.Security.Cryptography.Pkcs
 
         public void RemoveCounterSignature(int index)
         {
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
 
             // The SignerInfo class is a projection of data contained within the SignedCms.
             // The projection is applied at construction time, and is not live.

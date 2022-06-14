@@ -158,8 +158,7 @@ namespace System.DirectoryServices
             if (array.Rank != 1)
                 throw new ArgumentException(SR.OnlyAllowSingleDimension, nameof(array));
 
-            if (index < 0)
-                throw new ArgumentOutOfRangeException(SR.LessThanZero, nameof(index));
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
 
             if (((index + Count) > array.Length) || ((index + Count) < index))
                 throw new ArgumentException(SR.DestinationArrayNotLargeEnough);

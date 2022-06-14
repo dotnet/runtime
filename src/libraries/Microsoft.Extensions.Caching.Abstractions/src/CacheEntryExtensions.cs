@@ -142,10 +142,7 @@ namespace Microsoft.Extensions.Caching.Memory
             this ICacheEntry entry,
             long size)
         {
-            if (size < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(size), size, $"{nameof(size)} must be non-negative.");
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(size);
 
             entry.Size = size;
             return entry;

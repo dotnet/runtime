@@ -30,14 +30,8 @@ namespace System.Threading.RateLimiting
             int tokensPerPeriod,
             bool autoReplenishment = true)
         {
-            if (tokenLimit < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(tokenLimit));
-            }
-            if (queueLimit < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(queueLimit));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(tokenLimit);
+            ArgumentOutOfRangeException.ThrowIfNegative(queueLimit);
             if (tokensPerPeriod <= 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(tokensPerPeriod));

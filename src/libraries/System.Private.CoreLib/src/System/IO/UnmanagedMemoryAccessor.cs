@@ -49,14 +49,8 @@ namespace System.IO
         {
             ArgumentNullException.ThrowIfNull(buffer);
 
-            if (offset < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
-            if (capacity < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
+            ArgumentOutOfRangeException.ThrowIfNegative(capacity);
             if (buffer.ByteLength < (ulong)(offset + capacity))
             {
                 throw new ArgumentException(SR.Argument_OffsetAndCapacityOutOfBounds);
@@ -294,10 +288,7 @@ namespace System.IO
         // bools, etc.
         public void Read<T>(long position, out T structure) where T : struct
         {
-            if (position < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(position), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(position);
 
             if (!_isOpen)
             {
@@ -328,14 +319,8 @@ namespace System.IO
         {
             ArgumentNullException.ThrowIfNull(array);
 
-            if (offset < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             if (array.Length - offset < count)
             {
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
@@ -348,10 +333,7 @@ namespace System.IO
             {
                 throw new NotSupportedException(SR.NotSupported_Reading);
             }
-            if (position < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(position), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(position);
 
             uint sizeOfT = SafeBuffer.AlignedSizeOf<T>();
 
@@ -532,10 +514,7 @@ namespace System.IO
         // the WriteX methods for small standard types such as ints, longs, bools, etc.
         public void Write<T>(long position, ref T structure) where T : struct
         {
-            if (position < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(position), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(position);
             if (!_isOpen)
             {
                 throw new ObjectDisposedException(nameof(UnmanagedMemoryAccessor), SR.ObjectDisposed_ViewAccessorClosed);
@@ -563,22 +542,13 @@ namespace System.IO
         {
             ArgumentNullException.ThrowIfNull(array);
 
-            if (offset < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             if (array.Length - offset < count)
             {
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
             }
-            if (position < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(position), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(position);
             if (position >= Capacity)
             {
                 throw new ArgumentOutOfRangeException(nameof(position), SR.ArgumentOutOfRange_PositionLessThanCapacityRequired);
@@ -606,10 +576,7 @@ namespace System.IO
             {
                 throw new NotSupportedException(SR.NotSupported_Reading);
             }
-            if (position < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(position), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(position);
             if (position > _capacity - sizeOfType)
             {
                 if (position >= _capacity)
@@ -630,10 +597,7 @@ namespace System.IO
             {
                 throw new NotSupportedException(SR.NotSupported_Writing);
             }
-            if (position < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(position), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(position);
             if (position > _capacity - sizeOfType)
             {
                 if (position >= _capacity)

@@ -45,10 +45,7 @@ namespace System.Formats.Cbor
 
         private void WriteStartArrayDefiniteLength(int definiteLength)
         {
-            if (definiteLength < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(definiteLength));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(definiteLength);
 
             WriteUnsignedInteger(CborMajorType.Array, (ulong)definiteLength);
             PushDataItem(CborMajorType.Array, definiteLength);

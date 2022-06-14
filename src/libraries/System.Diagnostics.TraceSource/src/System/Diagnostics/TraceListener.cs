@@ -119,8 +119,7 @@ namespace System.Diagnostics
 
             set
             {
-                if (value < 0)
-                    throw new ArgumentOutOfRangeException(nameof(IndentSize), value, SR.TraceListenerIndentSize);
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
                 _indentSize = value;
             }
         }

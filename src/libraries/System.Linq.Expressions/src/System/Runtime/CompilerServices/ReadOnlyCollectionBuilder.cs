@@ -36,8 +36,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="capacity">Initial capacity of the builder.</param>
         public ReadOnlyCollectionBuilder(int capacity)
         {
-            if (capacity < 0)
-                throw new ArgumentOutOfRangeException(nameof(capacity));
+            ArgumentOutOfRangeException.ThrowIfNegative(capacity);
 
             _items = new T[capacity];
         }
@@ -412,10 +411,8 @@ namespace System.Runtime.CompilerServices
         /// <param name="count">The number of elements in the range to reverse.</param>
         public void Reverse(int index, int count)
         {
-            if (index < 0)
-                throw new ArgumentOutOfRangeException(nameof(index));
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count));
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
 
             Array.Reverse(_items, index, count);
             _version++;

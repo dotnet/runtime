@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Threading.Tasks;
@@ -29,10 +29,7 @@ namespace System.Threading.RateLimiting
         /// <exception cref="ArgumentOutOfRangeException"></exception>
         public RateLimitLease Acquire(TResource resourceID, int permitCount = 1)
         {
-            if (permitCount < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(permitCount));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(permitCount);
 
             return AcquireCore(resourceID, permitCount);
         }
@@ -58,10 +55,7 @@ namespace System.Threading.RateLimiting
         /// <exception cref="ArgumentOutOfRangeException"></exception>
         public ValueTask<RateLimitLease> WaitAsync(TResource resourceID, int permitCount = 1, CancellationToken cancellationToken = default)
         {
-            if (permitCount < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(permitCount));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(permitCount);
 
             if (cancellationToken.IsCancellationRequested)
             {

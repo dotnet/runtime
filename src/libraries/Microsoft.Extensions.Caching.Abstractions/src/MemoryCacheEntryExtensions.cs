@@ -32,10 +32,7 @@ namespace Microsoft.Extensions.Caching.Memory
             this MemoryCacheEntryOptions options,
             long size)
         {
-            if (size < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(size), size, $"{nameof(size)} must be non-negative.");
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(size);
 
             options.Size = size;
             return options;

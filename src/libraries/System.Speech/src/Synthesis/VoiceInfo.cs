@@ -104,10 +104,7 @@ namespace System.Speech.Synthesis
         }
         internal VoiceInfo(VoiceGender gender, VoiceAge age, int voiceAlternate)
         {
-            if (voiceAlternate < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(voiceAlternate), SR.Get(SRID.PromptBuilderInvalidVariant));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(voiceAlternate);
 
             _gender = gender;
             _age = age;

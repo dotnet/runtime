@@ -644,10 +644,7 @@ namespace System.Speech.Synthesis
             // check for well formed document
             ValidateElement(_elementStack.Peek(), SsmlElement.Break);
 
-            if (duration.Ticks < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(duration));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(duration.Ticks);
 
             Element breakElement = new(ElementType.Break);
             _elements.Add(breakElement);
