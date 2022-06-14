@@ -3604,7 +3604,8 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
     }
     else if (src->OperIs(GT_CAST) && varTypeIsIntegral(src) && varTypeIsIntegral(lclRegType) &&
              !varTypeUsesFloatReg(lclRegType) && !varTypeUsesFloatReg(src->gtGetOp1()) &&
-             genActualType(lclRegType) == genActualType(src->gtGetOp1()))
+             genActualType(lclRegType) == genActualType(src->gtGetOp1()) &&
+             !src->gtOverflow())
     {
         GenTree* cast   = src;
         src             = src->gtGetOp1();
